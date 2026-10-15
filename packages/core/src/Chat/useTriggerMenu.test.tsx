@@ -76,8 +76,20 @@ describe('useTriggerMenu', () => {
     selection?.removeAllRanges();
   });
 
+  // Typing in a real editor grows the same text node; reuse it so state tied to
+  // the node (an Escape dismissal) behaves as it does in a browser. Assigning
+  // `editable.textContent` directly models an external rewrite instead.
   function setCursor(text: string, cursorOffset?: number) {
-    editable.textContent = text;
+    const existing = editable.firstChild;
+    if (
+      existing?.nodeType === Node.TEXT_NODE &&
+      editable.childNodes.length === 1 &&
+      text !== ''
+    ) {
+      (existing as Text).data = text;
+    } else {
+      editable.textContent = text;
+    }
     const textNode = editable.firstChild;
     const offset = cursorOffset ?? text.length;
 
@@ -865,5 +877,74 @@ describe('useTriggerMenu', () => {
     expect(result.current.state.isActive).toBe(false);
     expect(result.current.state.items).toEqual([]);
     expect(result.current.renderMenu()).toBeNull();
+  });
+
+  // 24. FR11: another trigger's character inside a multi-word query is text.
+  it('24. continues a multi-word query through another trigger character', async () => {
+    const {result} = renderTriggerHook();
+
+    await act(async () => {
+      setCursor('@jordan /s');
+      result.current.handleInput();
+      await Promise.resolve();
+    });
+    expect(result.current.state.activeTrigger?.character).toBe('@');
+    expect(result.current.state.query).toBe('jordan /s');
+  });
+
+  // 25. FR11: the same trigger's character after a boundary starts a new query.
+  it('25. restarts a multi-word query at the same trigger character after a space', async () => {
+    const {result} = renderTriggerHook();
+
+    await act(async () => {
+      setCursor('@jordan @sa');
+      result.current.handleInput();
+      await Promise.resolve();
+    });
+    expect(result.current.state.activeTrigger?.character).toBe('@');
+    expect(result.current.state.query).toBe('sa');
+  });
+
+  // 26. FR10: with no open multi-word query, another trigger after a space activates.
+  it('26. activates a single-token trigger after a closed query', async () => {
+    const {result} = renderTriggerHook();
+
+    await act(async () => {
+      setCursor('hello /su');
+      result.current.handleInput();
+      await Promise.resolve();
+    });
+    expect(result.current.state.activeTrigger?.character).toBe('/');
+    expect(result.current.state.query).toBe('su');
+  });
+
+  // 27. A visible empty menu keeps the arrows.
+  it('27. keeps ArrowDown and ArrowUp while a visible menu shows its empty message', async () => {
+    const {result} = renderTriggerHook();
+
+    await act(async () => {
+      setCursor('/zzz');
+      result.current.handleInput();
+      await Promise.resolve();
+    });
+    expect(result.current.state.items).toEqual([]);
+    expect(result.current.renderMenu()).not.toBeNull();
+
+    for (const key of ['ArrowDown', 'ArrowUp']) {
+      const event = keyEvent(key);
+      let consumed = false;
+      act(() => {
+        consumed = result.current.handleKeyDown(event);
+      });
+      expect(consumed).toBe(true);
+      expect(event.preventDefault).toHaveBeenCalled();
+    }
+
+    // Enter has nothing to pick, so it keeps its editor meaning.
+    let consumedEnter = true;
+    act(() => {
+      consumedEnter = result.current.handleKeyDown(keyEvent('Enter'));
+    });
+    expect(consumedEnter).toBe(false);
   });
 });

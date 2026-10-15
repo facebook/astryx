@@ -1460,6 +1460,38 @@ describe('ChatComposerInput', () => {
       expect(editable.getAttribute('aria-activedescendant')).toBeTruthy();
     });
 
+    it('forgets an Escape-dismissed trigger when the send button sends the draft', async () => {
+      const onSubmit = vi.fn();
+      render(
+        <ChatComposer
+          onSubmit={onSubmit}
+          input={<ChatComposerInput triggers={[createCommandTrigger()]} />}
+        />,
+      );
+      const editable = screen.getByRole('combobox');
+      editable.focus();
+
+      typeAtEnd(editable, '/');
+      await waitFor(() => {
+        expect(editable).toHaveAttribute('aria-expanded', 'true');
+      });
+      fireEvent.keyDown(editable, {key: 'Escape'});
+      await waitFor(() => {
+        expect(editable).toHaveAttribute('aria-expanded', 'false');
+      });
+
+      fireEvent.click(screen.getByRole('button', {name: /send/i}));
+      expect(onSubmit).toHaveBeenCalledWith('/');
+      await waitFor(() => {
+        expect(editable.textContent).toBe('');
+      });
+
+      typeAtEnd(editable, '/s');
+      await waitFor(() => {
+        expect(editable).toHaveAttribute('aria-expanded', 'true');
+      });
+    });
+
     it('lets Escape reach the consumer while an unmatched multi-word query hides the menu', async () => {
       const onKeyDown = vi.fn();
       render(

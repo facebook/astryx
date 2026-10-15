@@ -176,6 +176,18 @@ const styles = stylex.create({
 // Helpers
 // =============================================================================
 
+/** The text node holding a collapsed caret inside `editable`, if any. */
+function getCaretTextNode(editable: HTMLDivElement): Node | null {
+  const selection = window.getSelection();
+  if (!selection || selection.rangeCount === 0) {
+    return null;
+  }
+  const node = selection.getRangeAt(0).startContainer;
+  return node.nodeType === Node.TEXT_NODE && editable.contains(node)
+    ? node
+    : null;
+}
+
 function getTextBeforeCursor(editable: HTMLDivElement): string | null {
   const selection = window.getSelection();
   if (!selection || selection.rangeCount === 0) {
@@ -217,6 +229,18 @@ function isUnmatchedMultiWordQuery(
   );
 }
 
+function isTriggerBoundary(char: string | null): boolean {
+  return char === null || char === ' ' || char === '\t' || char === '\n';
+}
+
+/**
+ * Finds the trigger query the caret is in (component:ChatComposerInput FR10,
+ * FR11). A trigger character activates at the start of the text or after a
+ * space, tab, or line break. A single-token query ends at whitespace. A
+ * multi-word query ends at a line break, past the length bound, or where the
+ * same trigger's character starts a new query; another trigger's character
+ * inside it is ordinary text.
+ */
 function findActiveTrigger(
   textBeforeCursor: string,
   triggers: ChatComposerTrigger[],
@@ -225,51 +249,50 @@ function findActiveTrigger(
   query: string;
   triggerStart: number;
 } | null {
-  const anyHasMultiWord = triggers.some(t => t.hasMultiWordQuery);
+  let active: {trigger: ChatComposerTrigger; triggerStart: number} | null =
+    null;
 
-  for (let i = textBeforeCursor.length - 1; i >= 0; i--) {
+  for (let i = 0; i < textBeforeCursor.length; i++) {
     const char = textBeforeCursor[i];
 
     if (char === '\n') {
-      return null;
+      active = null;
+      continue;
     }
-
-    if (!anyHasMultiWord && (char === ' ' || char === '\t')) {
-      return null;
-    }
-
-    for (const trigger of triggers) {
-      if (char === trigger.character) {
-        const prevChar = i > 0 ? textBeforeCursor[i - 1] : null;
-        if (
-          prevChar === null ||
-          prevChar === ' ' ||
-          prevChar === '\n' ||
-          prevChar === '\t'
-        ) {
-          const query = textBeforeCursor.slice(i + 1);
-
-          if (trigger.hasMultiWordQuery) {
-            if (query.length > MAX_MULTI_WORD_QUERY_LENGTH) {
-              return null;
-            }
-            return {trigger, query, triggerStart: i};
-          } else {
-            if (
-              query.includes(' ') ||
-              query.includes('\t') ||
-              query.includes('\n')
-            ) {
-              return null;
-            }
-            return {trigger, query, triggerStart: i};
-          }
-        }
+    if (active && !active.trigger.hasMultiWordQuery) {
+      if (char === ' ' || char === '\t') {
+        active = null;
       }
+      continue;
     }
+    if (active && i - active.triggerStart > MAX_MULTI_WORD_QUERY_LENGTH) {
+      active = null;
+    }
+
+    if (!isTriggerBoundary(i > 0 ? textBeforeCursor[i - 1] : null)) {
+      continue;
+    }
+    const trigger = triggers.find(t => t.character === char);
+    if (!trigger) {
+      continue;
+    }
+    if (active && trigger.character !== active.trigger.character) {
+      continue;
+    }
+    active = {trigger, triggerStart: i};
   }
 
-  return null;
+  if (!active) {
+    return null;
+  }
+  const query = textBeforeCursor.slice(active.triggerStart + 1);
+  if (
+    active.trigger.hasMultiWordQuery &&
+    query.length > MAX_MULTI_WORD_QUERY_LENGTH
+  ) {
+    return null;
+  }
+  return {trigger: active.trigger, query, triggerStart: active.triggerStart};
 }
 
 function deleteTriggerText(
@@ -336,6 +359,10 @@ export function useTriggerMenu(
     character: string;
     triggerStart: number;
     dismissedQuery: string;
+    // The text the Escape dismissed. Replacing the draft from outside typing
+    // (a send button, a cleared value) replaces this node, which ends the
+    // dismissal without any extra bookkeeping.
+    textNode: Node | null;
   } | null>(null);
   const anchorSpanRef = useRef<HTMLSpanElement | null>(null);
   // True while the popover is closed only because the query is unmatched; the
@@ -641,12 +668,16 @@ export function useTriggerMenu(
     const {trigger, query, triggerStart} = found;
 
     // After Escape, keep the menu hidden while that same query keeps growing
+    const dismissed = dismissedRef.current;
     if (
-      dismissedRef.current &&
-      dismissedRef.current.character === trigger.character &&
-      dismissedRef.current.triggerStart === triggerStart
+      dismissed &&
+      dismissed.character === trigger.character &&
+      dismissed.triggerStart === triggerStart &&
+      dismissed.textNode !== null &&
+      dismissed.textNode.isConnected &&
+      dismissed.textNode === getCaretTextNode(editable)
     ) {
-      if (query.startsWith(dismissedRef.current.dismissedQuery)) {
+      if (query.startsWith(dismissed.dismissedQuery)) {
         return;
       }
       dismissedRef.current = null;
@@ -705,11 +736,13 @@ export function useTriggerMenu(
 
       if (e.key === 'Escape') {
         e.preventDefault();
+        const editable = editableRef.current;
         const dismissed = state.activeTrigger
           ? {
               character: state.activeTrigger.character,
               triggerStart: triggerStartRef.current,
               dismissedQuery: state.query,
+              textNode: editable ? getCaretTextNode(editable) : null,
             }
           : null;
         reset();
@@ -719,20 +752,16 @@ export function useTriggerMenu(
         return true;
       }
 
-      // While results for the current query are pending, every row on screen
-      // belongs to an earlier query and none of them can be picked. Enter and
-      // Tab keep their editor meaning, so Enter sends the message as typed;
-      // the arrows stay with the menu but move nothing until rows arrive.
-      if (state.isLoading) {
-        if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
-          e.preventDefault();
-          return true;
-        }
-        return false;
+      // A visible menu keeps the arrows even when it has nothing to pick (rows
+      // still loading, or the empty message), so they never recall history
+      // under an open panel. Enter and Tab pick only a settled row; otherwise
+      // they keep their editor meaning, so Enter sends the message as typed.
+      const hasPickableRows = !state.isLoading && state.items.length > 0;
+      if (!hasPickableRows && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) {
+        e.preventDefault();
+        return true;
       }
-
-      // Settled with no rows (the empty message): keys keep their editor meaning.
-      if (state.items.length === 0) {
+      if (!hasPickableRows) {
         return false;
       }
 
@@ -777,6 +806,7 @@ export function useTriggerMenu(
     },
     [
       isMenuVisible,
+      editableRef,
       state.activeTrigger,
       state.query,
       state.isLoading,
