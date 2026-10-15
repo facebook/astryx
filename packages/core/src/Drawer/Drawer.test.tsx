@@ -11,7 +11,8 @@
 
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import {render, screen, fireEvent, act} from '@testing-library/react';
-import {useState} from 'react';
+import {createRef, useState} from 'react';
+import * as stylex from '@stylexjs/stylex';
 import {Drawer} from './Drawer';
 import {DrawerHeader} from './DrawerHeader';
 
@@ -277,6 +278,173 @@ describe('Drawer', () => {
         </Drawer>,
       );
       fireEvent.keyDown(screen.getByRole('dialog'), {key: 'Escape'});
+      expect(handleOpenChange).not.toHaveBeenCalled();
+    });
+
+    it('hands a consumer onKeyDown the Escape press ahead of the shared stack', () => {
+      // The consumer handler sits on the dialog; the stack's one listener sits
+      // on the document. The press must reach the consumer first so its
+      // preventDefault (above) can still stand the stack down.
+      const callOrder: string[] = [];
+      render(
+        <Drawer
+          isOpen
+          onOpenChange={() => callOrder.push('dismiss')}
+          label="Details"
+          onKeyDown={event => callOrder.push(`consumer:${event.key}`)}>
+          Content
+        </Drawer>,
+      );
+      fireEvent.keyDown(screen.getByRole('dialog'), {key: 'Escape'});
+      expect(callOrder).toEqual(['consumer:Escape', 'dismiss']);
+    });
+  });
+
+  describe('API surface', () => {
+    // FR11: the root filters `open`, merges `xstyle`/`className`/`style`,
+    // forwards remaining unclaimed props, reaches the <dialog> through both
+    // ref forms, and composes the consumer onClick with scrim dismissal.
+    it('does not forward a native open prop to the dialog element', () => {
+      render(
+        <Drawer
+          isOpen={false}
+          onOpenChange={() => {}}
+          label="Details"
+          {...({open: true} as Record<string, unknown>)}>
+          Content
+        </Drawer>,
+      );
+      // isOpen controls the native state; a caller-passed `open` must not put
+      // the closed dialog into the open state behind the presence hook's back.
+      const dialog = screen.getByRole('dialog', {hidden: true});
+      expect(dialog).not.toHaveAttribute('open');
+    });
+
+    it('merges a consumer className with the theme target and StyleX classes', () => {
+      render(
+        <Drawer
+          isOpen
+          onOpenChange={() => {}}
+          label="Details"
+          className="inspector-panel">
+          Content
+        </Drawer>,
+      );
+      const dialog = screen.getByRole('dialog');
+      const classes = dialog.className.split(' ');
+      expect(classes).toContain('astryx-drawer');
+      expect(classes).toContain('inspector-panel');
+      // Drawer's own StyleX styling survives the merge.
+      expect(getComputedStyle(dialog).position).toBe('fixed');
+    });
+
+    it('merges a consumer xstyle after Drawer styles so the override wins', () => {
+      const overrides = stylex.create({narrow: {maxWidth: '240px'}});
+      render(
+        <Drawer
+          isOpen
+          onOpenChange={() => {}}
+          label="Details"
+          xstyle={overrides.narrow}>
+          Content
+        </Drawer>,
+      );
+      const dialog = screen.getByRole('dialog');
+      expect(getComputedStyle(dialog).maxWidth).toBe('240px');
+      expect(getComputedStyle(dialog).position).toBe('fixed');
+      expect(dialog.className).toContain('astryx-drawer');
+    });
+
+    it('merges a consumer style with Drawer inline styles, consumer last', () => {
+      render(
+        <Drawer
+          isOpen
+          onOpenChange={() => {}}
+          label="Details"
+          style={{zIndex: 30}}>
+          Content
+        </Drawer>,
+      );
+      const dialog = screen.getByRole('dialog');
+      expect(dialog.style.zIndex).toBe('30');
+      // The width budget travels as a StyleX dynamic inline variable and must
+      // survive the merge rather than be replaced by the consumer style.
+      expect(dialog.getAttribute('style')).toContain('400px');
+    });
+
+    it('forwards a data attribute and an ARIA attribute to the root dialog', () => {
+      render(
+        <Drawer
+          isOpen
+          onOpenChange={() => {}}
+          label="Details"
+          data-tracking-id="inspector"
+          aria-describedby="drawer-hint">
+          Content
+        </Drawer>,
+      );
+      const dialog = screen.getByRole('dialog');
+      expect(dialog).toHaveAttribute('data-tracking-id', 'inspector');
+      expect(dialog).toHaveAttribute('aria-describedby', 'drawer-hint');
+    });
+
+    it('reaches the dialog element through an object ref', () => {
+      const ref = createRef<HTMLDialogElement>();
+      render(
+        <Drawer isOpen onOpenChange={() => {}} label="Details" ref={ref}>
+          Content
+        </Drawer>,
+      );
+      expect(ref.current).toBe(screen.getByRole('dialog'));
+    });
+
+    it('reaches the dialog element through a callback ref', () => {
+      let current: HTMLDialogElement | null = null;
+      render(
+        <Drawer
+          isOpen
+          onOpenChange={() => {}}
+          label="Details"
+          ref={node => {
+            current = node;
+          }}>
+          Content
+        </Drawer>,
+      );
+      expect(current).toBe(screen.getByRole('dialog'));
+    });
+
+    it('runs a consumer onClick before scrim dismissal on a backdrop click', () => {
+      const callOrder: string[] = [];
+      const handleClick = vi.fn(() => callOrder.push('consumer'));
+      const handleOpenChange = vi.fn(() => callOrder.push('dismiss'));
+      render(
+        <Drawer
+          isOpen
+          onOpenChange={handleOpenChange}
+          label="Details"
+          onClick={handleClick}>
+          Content
+        </Drawer>,
+      );
+      fireEvent.click(screen.getByRole('dialog'));
+      expect(handleClick).toHaveBeenCalledTimes(1);
+      expect(handleOpenChange).toHaveBeenCalledWith(false);
+      expect(callOrder).toEqual(['consumer', 'dismiss']);
+    });
+
+    it('lets a consumer onClick preventDefault cancel the scrim dismissal', () => {
+      const handleOpenChange = vi.fn();
+      render(
+        <Drawer
+          isOpen
+          onOpenChange={handleOpenChange}
+          label="Details"
+          onClick={event => event.preventDefault()}>
+          Content
+        </Drawer>,
+      );
+      fireEvent.click(screen.getByRole('dialog'));
       expect(handleOpenChange).not.toHaveBeenCalled();
     });
   });
