@@ -72,7 +72,15 @@ test('Chromium keeps every selector the reset writes', async ({page}) => {
   // A forgiving list drops an invalid entry instead of the whole rule, so a
   // dropped pseudo-element shows up as a shorter serialized selector.
   const parsed = await page.evaluate(() => {
-    const layer = document.styleSheets[0].cssRules[0] as CSSLayerBlockRule;
+    // The sheet opens with the `@layer` order statement; the rules live in
+    // the `reset` layer block after it.
+    const layer = [...document.styleSheets[0].cssRules].find(
+      (rule): rule is CSSLayerBlockRule =>
+        rule instanceof CSSLayerBlockRule && rule.name === 'reset',
+    );
+    if (layer == null) {
+      throw new Error('reset.css has no @layer reset block');
+    }
     return [...layer.cssRules].map(rule => (rule as CSSStyleRule).selectorText);
   });
   expect(parsed.map(normalize)).toEqual(

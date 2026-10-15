@@ -1,0 +1,326 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
+import {describe, it, expect, vi} from 'vitest';
+import {render, screen, within} from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import {createRef} from 'react';
+import {DiffViewer} from './DiffViewer';
+import {parseUnifiedDiff} from './parseUnifiedDiff';
+import type {DiffViewerLineRef} from './diffTypes';
+
+const PATCH = `diff --git a/src/greet.ts b/src/greet.ts
+--- a/src/greet.ts
++++ b/src/greet.ts
+@@ -1,4 +1,5 @@
+ export function greet(name: string) {
+-  return 'Hello ' + name;
++  const greeting = 'Hello';
++  return \`\${greeting}, \${name}\`;
+ }
+ 
+`;
+
+const [FILE] = parseUnifiedDiff(PATCH);
+
+function codeRows(container: HTMLElement) {
+  return Array.from(container.querySelectorAll('tbody tr'));
+}
+
+describe('DiffViewer', () => {
+  it('renders the path, the change counts, and every line', () => {
+    render(<DiffViewer file={FILE} />);
+    expect(screen.getByText('src/greet.ts')).toBeInTheDocument();
+    expect(screen.getByText('+2')).toBeInTheDocument();
+    expect(screen.getByText('−1')).toBeInTheDocument();
+    expect(
+      screen.getByText('2 lines added, 1 line removed'),
+    ).toBeInTheDocument();
+    expect(screen.getByText('@@ -1,4 +1,5 @@')).toBeInTheDocument();
+    expect(screen.getByText('const')).toBeInTheDocument();
+  });
+
+  it('keeps code text intact through syntax highlighting', () => {
+    const {container} = render(<DiffViewer file={FILE} />);
+    const removed = container.querySelector('td[data-diff="removed"]');
+    expect(removed?.textContent).toBe("  return 'Hello ' + name;");
+    // ts inferred from the extension: tokens are painted with span classes.
+    expect(container.querySelector('.astryx-token-keyword')).not.toBeNull();
+  });
+
+  it('marks changed lines for assistive technology', () => {
+    const {container} = render(<DiffViewer file={FILE} />);
+    const addedCells = container.querySelectorAll('td[data-diff="added"]');
+    expect(addedCells).toHaveLength(2);
+    expect(screen.getAllByText('Added')).toHaveLength(2);
+    expect(screen.getAllByText('Removed')).toHaveLength(1);
+  });
+
+  it('renders one row per line plus the hunk header in unified view', () => {
+    const {container} = render(<DiffViewer file={FILE} />);
+    // 1 hunk header + 6 lines.
+    expect(codeRows(container)).toHaveLength(7);
+  });
+
+  it('pairs removed and added lines side by side in split view', () => {
+    const {container} = render(<DiffViewer file={FILE} viewMode="split" />);
+    // 1 hunk header + context + 2 paired change rows + 2 context.
+    const rows = codeRows(container);
+    expect(rows).toHaveLength(6);
+    const firstChange = rows[2];
+    expect(firstChange.querySelector('td[data-diff="removed"]')).not.toBeNull();
+    expect(firstChange.querySelector('td[data-diff="added"]')).not.toBeNull();
+    // The second added line has no removed counterpart.
+    expect(rows[3].querySelector('td[data-diff="removed"]')).toBeNull();
+    expect(rows[3].querySelector('td[data-diff="added"]')).not.toBeNull();
+  });
+
+  it('hides the line-number gutters when hasLineNumbers is false', () => {
+    const {container} = render(
+      <DiffViewer file={FILE} hasLineNumbers={false} />,
+    );
+    const firstLine = codeRows(container)[1];
+    expect(firstLine.querySelectorAll('td')).toHaveLength(2);
+  });
+
+  it('collapses and expands from the header', async () => {
+    const user = userEvent.setup();
+    const onCollapsedChange = vi.fn();
+    const {container} = render(
+      <DiffViewer file={FILE} onCollapsedChange={onCollapsedChange} />,
+    );
+    const toggle = screen.getByRole('button', {name: 'src/greet.ts'});
+    expect(toggle).toHaveAttribute('aria-expanded', 'true');
+    const regionId = toggle.getAttribute('aria-controls');
+    expect(regionId).toBeTruthy();
+    expect(container.querySelector(`[id="${regionId}"]`)).not.toBeNull();
+
+    await user.click(toggle);
+    expect(onCollapsedChange).toHaveBeenLastCalledWith(true);
+    expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    expect(container.querySelector('table')).toBeNull();
+
+    await user.click(toggle);
+    expect(onCollapsedChange).toHaveBeenLastCalledWith(false);
+    expect(container.querySelector('table')).not.toBeNull();
+  });
+
+  it('follows a controlled collapsed state', async () => {
+    const user = userEvent.setup();
+    const onCollapsedChange = vi.fn();
+    const {container} = render(
+      <DiffViewer
+        file={FILE}
+        isCollapsed
+        onCollapsedChange={onCollapsedChange}
+      />,
+    );
+    await user.click(screen.getByRole('button', {name: 'src/greet.ts'}));
+    expect(onCollapsedChange).toHaveBeenCalledWith(false);
+    // Still collapsed: the caller owns the state.
+    expect(container.querySelector('table')).toBeNull();
+  });
+
+  it('renders the path as plain text when not collapsible', () => {
+    render(<DiffViewer file={FILE} isCollapsible={false} />);
+    expect(
+      screen.queryByRole('button', {name: 'src/greet.ts'}),
+    ).not.toBeInTheDocument();
+    expect(screen.getByText('src/greet.ts')).toBeInTheDocument();
+  });
+
+  it('renders annotation rows under the lines they belong to', () => {
+    const seen: DiffViewerLineRef[] = [];
+    const {container} = render(
+      <DiffViewer
+        file={FILE}
+        renderLineAnnotation={ref => {
+          seen.push(ref);
+          return ref.side === 'new' && ref.lineNumber === 2 ? (
+            <p>Nice rename</p>
+          ) : null;
+        }}
+      />,
+    );
+    expect(screen.getByText('Nice rename')).toBeInTheDocument();
+    // Called for every line, with the canonical side (deduped: a render may
+    // repeat).
+    expect([
+      ...new Set(seen.map(ref => `${ref.side}${ref.lineNumber}`)),
+    ]).toEqual(['new1', 'old2', 'new2', 'new3', 'new4', 'new5']);
+    const rows = codeRows(container);
+    const noteRow = rows.findIndex(row => row.textContent === 'Nice rename');
+    expect(
+      rows[noteRow - 1].querySelector('td[data-diff="added"]')?.textContent,
+    ).toBe("  const greeting = 'Hello';");
+  });
+
+  it('draws no annotation row when the callback returns false', () => {
+    for (const viewMode of ['unified', 'split'] as const) {
+      const {container, unmount} = render(
+        <DiffViewer
+          file={FILE}
+          viewMode={viewMode}
+          renderLineAnnotation={ref =>
+            ref.side === 'new' && ref.lineNumber === 2 && <p>Only note</p>
+          }
+        />,
+      );
+      expect(screen.getByText('Only note')).toBeInTheDocument();
+      // One annotation row on top of the line rows of each view.
+      expect(container.querySelectorAll('tbody tr')).toHaveLength(
+        viewMode === 'unified' ? 8 : 7,
+      );
+      unmount();
+    }
+  });
+
+  it('places split-view annotations on their own side', () => {
+    const {container} = render(
+      <DiffViewer
+        file={FILE}
+        viewMode="split"
+        renderLineAnnotation={ref =>
+          ref.side === 'old' && ref.lineNumber === 2 ? <p>Old note</p> : null
+        }
+      />,
+    );
+    const note = screen.getByText('Old note');
+    const row = note.closest('tr');
+    expect(row?.children).toHaveLength(2);
+    expect(row?.children[0]).toContainElement(note);
+    expect(container.querySelectorAll('tbody tr')).toHaveLength(7);
+  });
+
+  it('makes line numbers buttons that report their line', async () => {
+    const user = userEvent.setup();
+    const onLineNumberClick = vi.fn();
+    render(<DiffViewer file={FILE} onLineNumberClick={onLineNumberClick} />);
+    await user.click(screen.getByRole('button', {name: 'Changed line 3'}));
+    expect(onLineNumberClick).toHaveBeenCalledTimes(1);
+    const [ref] = onLineNumberClick.mock.calls[0] as [DiffViewerLineRef];
+    expect(ref).toMatchObject({side: 'new', lineNumber: 3, hunkIndex: 0});
+    expect(ref.line.kind).toBe('added');
+
+    await user.click(screen.getByRole('button', {name: 'Original line 2'}));
+    expect(onLineNumberClick.mock.calls[1][0]).toMatchObject({
+      side: 'old',
+      lineNumber: 2,
+    });
+  });
+
+  it('makes only the anchor side of each line a button, labelled with the line it reports', async () => {
+    const user = userEvent.setup();
+    for (const viewMode of ['unified', 'split'] as const) {
+      const onLineNumberClick = vi.fn();
+      const {unmount} = render(
+        <DiffViewer
+          file={FILE}
+          viewMode={viewMode}
+          onLineNumberClick={onLineNumberClick}
+        />,
+      );
+      const buttons = screen
+        .getAllByRole('button')
+        .filter(b => b.hasAttribute('data-diff-line-button'));
+      // One per line: 4 context (new side), 1 removed (old), 2 added (new).
+      expect(buttons).toHaveLength(6);
+      for (const button of buttons) {
+        await user.click(button);
+        const [ref] = onLineNumberClick.mock.lastCall as [DiffViewerLineRef];
+        const side = ref.side === 'old' ? 'Original' : 'Changed';
+        expect(button).toHaveAccessibleName(`${side} line ${ref.lineNumber}`);
+      }
+      // A context line's old number is plain text, not a second button.
+      expect(
+        screen.queryByRole('button', {name: 'Original line 1'}),
+      ).not.toBeInTheDocument();
+      unmount();
+    }
+  });
+
+  it('names every column for assistive technology', () => {
+    const {unmount} = render(<DiffViewer file={FILE} />);
+    expect(
+      screen.getAllByRole('columnheader').map(th => th.textContent),
+    ).toEqual([
+      'Original line number',
+      'Changed line number',
+      'Change',
+      'Code',
+    ]);
+    unmount();
+
+    render(<DiffViewer file={FILE} viewMode="split" hasLineNumbers={false} />);
+    expect(
+      screen.getAllByRole('columnheader').map(th => th.textContent),
+    ).toEqual(['Change', 'Original code', 'Change', 'Changed code']);
+  });
+
+  it('keeps every line-number button in the Tab order with no arrow-key movement', async () => {
+    const user = userEvent.setup();
+    render(<DiffViewer file={FILE} onLineNumberClick={() => {}} />);
+    const buttons = screen
+      .getAllByRole('button')
+      .filter(b => b.hasAttribute('data-diff-line-button'));
+    expect(buttons.length).toBeGreaterThan(2);
+    expect(buttons.every(b => b.tabIndex === 0)).toBe(true);
+
+    buttons[0].focus();
+    await user.keyboard('{ArrowDown}');
+    expect(document.activeElement).toBe(buttons[0]);
+    await user.tab();
+    expect(document.activeElement).toBe(buttons[1]);
+  });
+
+  it('shows the file status and the rename path', () => {
+    const [renamed] = parseUnifiedDiff(
+      'diff --git a/a.ts b/b.ts\nrename from a.ts\nrename to b.ts\n',
+    );
+    render(<DiffViewer file={renamed} />);
+    expect(screen.getByText('Renamed')).toBeInTheDocument();
+    expect(screen.getByText('a.ts → b.ts')).toBeInTheDocument();
+    expect(screen.getByText('No content changes')).toBeInTheDocument();
+  });
+
+  it('shows a message for binary files', () => {
+    const [binary] = parseUnifiedDiff(
+      'diff --git a/x.png b/x.png\nBinary files a/x.png and b/x.png differ\n',
+    );
+    render(<DiffViewer file={binary} />);
+    expect(screen.getByText('Binary file not shown')).toBeInTheDocument();
+  });
+
+  it('renders the headerEnd slot', () => {
+    render(
+      <DiffViewer
+        file={FILE}
+        headerEnd={<button type="button">Viewed</button>}
+      />,
+    );
+    const header = screen
+      .getByText('src/greet.ts')
+      .closest('.astryx-diff-viewer-header');
+    expect(header).not.toBeNull();
+    expect(
+      within(header as HTMLElement).getByRole('button', {name: 'Viewed'}),
+    ).toBeInTheDocument();
+  });
+
+  it('forwards ref, className, and DOM props to the root', () => {
+    const ref = createRef<HTMLDivElement>();
+    render(
+      <DiffViewer
+        ref={ref}
+        file={FILE}
+        className="custom"
+        data-testid="viewer"
+        viewMode="split"
+      />,
+    );
+    const root = screen.getByTestId('viewer');
+    expect(ref.current).toBe(root);
+    expect(root).toHaveClass('custom');
+    expect(root).toHaveClass('astryx-diff-viewer');
+    expect(root).toHaveAttribute('data-view-mode', 'split');
+  });
+});

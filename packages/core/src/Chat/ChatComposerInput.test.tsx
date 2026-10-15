@@ -1556,6 +1556,10 @@ describe('ChatComposerInput', () => {
       await waitFor(() => {
         expect(editable).toHaveAttribute('aria-expanded', 'false');
       });
+      // The hidden menu's results commit outside act, so the popover's Escape
+      // registration is released by a passive effect that can still be pending
+      // when the attribute changes. Flush it before pressing Escape.
+      await act(async () => {});
 
       // Nothing cancels the key: the closed menu holds no Escape handling,
       // so a surrounding dialog or drawer still receives it.

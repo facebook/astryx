@@ -557,6 +557,11 @@
       "aliases": []
     },
     {
+      "name": "component-lab-diff-viewer",
+      "path": "components/lab/diff-viewer",
+      "aliases": []
+    },
+    {
       "name": "component-lab-drawer",
       "path": "components/lab/drawer",
       "aliases": []
@@ -4253,6 +4258,11 @@
     {
       "name": "showcase-dialog-default",
       "path": "showcases/dialog/default",
+      "aliases": []
+    },
+    {
+      "name": "showcase-diff-viewer-unified-diff-from-a-patch",
+      "path": "showcases/diff-viewer/unified-diff-from-a-patch",
       "aliases": []
     },
     {
