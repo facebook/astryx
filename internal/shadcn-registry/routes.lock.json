@@ -3816,6 +3816,11 @@
       "aliases": []
     },
     {
+      "name": "hook-use-multi-combobox",
+      "path": "hooks/use-multi-combobox",
+      "aliases": []
+    },
+    {
       "name": "hook-use-overflow",
       "path": "hooks/use-overflow",
       "aliases": []
