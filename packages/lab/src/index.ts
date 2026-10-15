@@ -40,17 +40,31 @@ export {
   type CommentPinProps,
 } from './CommentPin';
 
-// CommentComposer — controlled composer for new comments, replies, and edits
+// CommentThread and CommentComposer — standalone comment conversation surfaces
 export {
+  CommentThread,
+  type CommentThreadProps,
   CommentComposer,
   type CommentComposerProps,
+  DEFAULT_COMMENT_REACTIONS,
+  COMMENT_ICON_KEYS,
   type CommentAgentCommand,
   type CommentAnchor,
   type CommentComposerContext,
   type CommentComposerRenderProps,
+  type CommentData,
+  type CommentStatus,
   type CommentHighlightColor,
   type CommentImageUploader,
+  type CommentMode,
+  type CommentProgress,
+  type CommentReaction,
+  type CommentReactionOption,
+  type CommentThreadData,
+  type CommentThreadSharedProps,
   type CommentUploadedImage,
+  type CommentUser,
+  type CommentVersion,
 } from './Comments';
 
 // TransferList — controlled dual-panel collection input

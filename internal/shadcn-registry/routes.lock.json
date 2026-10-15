@@ -567,6 +567,11 @@
       "aliases": []
     },
     {
+      "name": "component-lab-comment-thread",
+      "path": "components/lab/comment-thread",
+      "aliases": []
+    },
+    {
       "name": "component-lab-diff-viewer",
       "path": "components/lab/diff-viewer",
       "aliases": []
@@ -4263,6 +4268,11 @@
     {
       "name": "showcase-comment-pin-avatar-first-annotations",
       "path": "showcases/comment-pin/avatar-first-annotations",
+      "aliases": []
+    },
+    {
+      "name": "showcase-comment-thread-margin-comment",
+      "path": "showcases/comment-thread/margin-comment",
       "aliases": []
     },
     {

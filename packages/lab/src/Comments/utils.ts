@@ -2,14 +2,44 @@
 
 /**
  * @file utils.ts
- * @input Uploaded-image records and controlled draft strings
- * @output Exports CommentComposer's Markdown serialization and draft helpers
- * @position Internal pure helpers for the Lab CommentComposer
+ * @input Comment data types
+ * @output Exports the comment family's pure helpers: element ids, Markdown
+ *   serialization of images, draft appends, and focus bookkeeping
+ * @position Internal helpers shared by CommentThread and CommentComposer; not
+ *   exported from the package
  */
 
-import type {CommentUploadedImage} from './types';
+import type {
+  CommentData,
+  CommentThreadData,
+  CommentUploadedImage,
+} from './types';
 
-/** Alt text that cannot break out of Markdown's image brackets. */
+/** A thread's first comment or one of its replies. */
+export type AnyComment = CommentData | CommentThreadData;
+
+/** The element id a comment's permalink points at. */
+export function commentAnchorId(commentId: string): string {
+  return `comment-${encodeURIComponent(commentId)}`;
+}
+
+/** The element id of a thread's reply composer. */
+export function replyComposerId(parentId: string): string {
+  return `${commentAnchorId(parentId)}-reply-composer`;
+}
+
+/** Whether focus is inside `region`, or already lost to <body>. */
+export function shouldRestoreFocusFrom(region: Element | null): boolean {
+  const active = document.activeElement;
+  return (
+    active == null ||
+    active === document.body ||
+    (region != null && region.contains(active))
+  );
+}
+
+/** Alt text that cannot break out of Markdown's image brackets; `fallback`
+ *  (already localized) stands in for an image with none. */
 export function safeImageAlt(alt: string, fallback: string): string {
   return alt.replace(/[[\]\r\n]+/g, ' ').trim() || fallback;
 }
@@ -27,7 +57,8 @@ export function safeMarkdownImageUrl(url: string): string {
     );
 }
 
-/** Uploaded images as Markdown, one paragraph each. */
+/** Uploaded images as Markdown, one paragraph each. `fallbackAlt` (already
+ *  localized) names an image uploaded without alt text. */
 export function imagesToMarkdown(
   images: readonly CommentUploadedImage[],
   fallbackAlt: string,
@@ -52,4 +83,17 @@ export function appendDraftInline(value: string, content: string): string {
     return `${value}${content}`;
   }
   return `${value} ${content}`;
+}
+
+/**
+ * A pointer press opens a thread into its reply composer; a key press keeps
+ * focus where it is, so the same key can close the thread again.
+ */
+export type ActivationSource = 'pointer' | 'keyboard';
+
+/** Keyboard and assistive-technology clicks carry no click count. */
+export function activationSourceOf(event?: {
+  detail?: number;
+}): ActivationSource {
+  return (event?.detail ?? 1) > 0 ? 'pointer' : 'keyboard';
 }
