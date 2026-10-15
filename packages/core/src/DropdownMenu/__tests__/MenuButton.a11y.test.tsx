@@ -111,10 +111,9 @@ describe('menu-button binding inventory', () => {
     expect(new Set(stories).size).toBe(stories.length);
   });
 
-  it('keeps menu-surface, press-model and bottom-sheet ownership explicit', () => {
+  it('keeps menu-surface and bottom-sheet ownership explicit', () => {
     expect(MENU_BUTTON_EXCLUSIONS.map(row => row.id)).toEqual([
       'menu-surface-semantics',
-      'press-model-pointer-cancellation',
       'bottom-sheet-presentation',
     ]);
     for (const exclusion of MENU_BUTTON_EXCLUSIONS) {

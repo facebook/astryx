@@ -95,7 +95,6 @@ const facts = (
   focusable: true,
   controls: true,
   arrowKeysOpen: true,
-  opensOnPress: false,
   ...overrides,
 });
 

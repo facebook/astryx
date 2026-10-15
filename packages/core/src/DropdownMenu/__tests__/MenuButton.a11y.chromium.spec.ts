@@ -36,7 +36,6 @@ import {
 import {MENU_BUTTON_KNOWN_FAILURES} from './MenuButton.a11y.known-failures';
 import {
   MENU_BUTTON_BINDING_STATES,
-  PRESS_MODEL_EXCLUDED_EXPECTATIONS,
   type MenuButtonBindingState,
 } from './MenuButton.a11y.states';
 
@@ -115,13 +114,7 @@ test('every menu-button expectation is exercised by a DropdownMenu or MoreMenu s
   for (const state of MENU_BUTTON_BINDING_STATES) {
     results.push(await runState(page, cdp, state));
   }
-  // The aborted-press check never applies to a press-model trigger; the
-  // binding's exclusion names its owner.
-  expect(
-    neverExercised(results).filter(
-      id => !PRESS_MODEL_EXCLUDED_EXPECTATIONS.includes(id),
-    ),
-  ).toEqual([]);
+  expect(neverExercised(results)).toEqual([]);
   expect(unmatchedKnownFailures(MENU_BUTTON_KNOWN_FAILURES, results)).toEqual(
     [],
   );

@@ -44,7 +44,6 @@ function facts(
     focusable: true,
     controls: true,
     arrowKeysOpen: true,
-    opensOnPress: true,
     ...overrides,
   };
 }
@@ -127,24 +126,9 @@ export const MENU_BUTTON_EXCLUSIONS = [
       'Item roles, arrow navigation inside the open menu, typeahead, Escape, selection, and focus return on close are the menu surface contract. This binding proves only how the trigger exposes itself and where focus lands when it opens the menu.',
   },
   {
-    id: 'press-model-pointer-cancellation',
-    owner:
-      'module:DropdownMenu/useMenuPress and MenuPress.a11y.chromium.spec.ts',
-    reason:
-      "The anchored trigger opens on pointer press-down and the row under the release acts; what a release away from the trigger does is the press model's own contract, proven by its module evidence, so the generic aborted-press check does not apply here (opensOnPress).",
-  },
-  {
     id: 'bottom-sheet-presentation',
     owner: 'component:DropdownMenu FR13 and the modal-dialog pattern',
     reason:
       'On a compact touch display the trigger opens a bottom sheet and says aria-haspopup="dialog"; that presentation is a dialog, not a menu button, and is outside this binding by the records\' own scope (DropdownMenu AR4, MoreMenu AR1).',
   },
 ] as const;
-
-/**
- * Expectations no binding state can exercise because every anchored trigger
- * opens on press-down (see the `press-model-pointer-cancellation` exclusion).
- */
-export const PRESS_MODEL_EXCLUDED_EXPECTATIONS: ReadonlyArray<string> = [
-  'menu-button.control.survives-an-aborted-press',
-];

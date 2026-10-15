@@ -9,18 +9,46 @@
 
 import type {KnownFailure} from '@astryxdesign/a11y-spec';
 
+const ABORTED_PRESS_STANDARD =
+  'WCAG 2.2 2.5.2 Pointer Cancellation — a single-pointer function does not complete on the down-event unless the up-event reverses it or it can be aborted';
+const ABORTED_PRESS_REASON =
+  "The anchored trigger opens on press-down by module:DropdownMenu/useMenuPress FR8 and DEC-4, which are still proposed (that record's OQ1). This test-only binding records the shipped behavior; the press model's owner decision either makes it conformant or brings the fix.";
+
 export const MENU_BUTTON_KNOWN_FAILURES: ReadonlyArray<KnownFailure> = [
   {
-    expectation: 'menu-button.control.unavailable-stays-closed',
+    expectation: 'menu-button.control.survives-an-aborted-press',
     binding: 'DropdownMenu.trigger',
-    state: 'more-menu-disabled',
+    state: 'dropdown-button-closed',
     evidenceLayer: 'real-browser',
-    failureEquals: 'an unavailable control opened its menu on ArrowDown',
-    standardsReference:
-      'WCAG 2.2 4.1.2 Name, Role, Value; APG Menu Button — a control that says aria-disabled must not open its menu; Astryx spec:AST-021 FR4',
+    failureEquals:
+      'releasing the press away from the control left aria-expanded true instead of false',
+    standardsReference: ABORTED_PRESS_STANDARD,
     userImpact:
-      'A keyboard user on a disabled MoreMenu hears it is unavailable, yet ArrowDown (and ArrowUp) opens the menu: Button suppresses Enter and Space for an aria-disabled control but lets the arrow keys through to the DropdownMenu open handler.',
-    reason:
-      'This test-only binding records the gap; the fix is a DropdownMenu change that ships as its own spec-backed patch.',
+      'A mouse user who presses the Actions button and slides off before releasing, to cancel, still gets the menu: it opens on press-down and stays open.',
+    reason: ABORTED_PRESS_REASON,
+  },
+  {
+    expectation: 'menu-button.control.survives-an-aborted-press',
+    binding: 'DropdownMenu.trigger',
+    state: 'dropdown-render-trigger-closed',
+    evidenceLayer: 'real-browser',
+    failureEquals:
+      'releasing the press away from the control left aria-expanded true instead of false',
+    standardsReference: ABORTED_PRESS_STANDARD,
+    userImpact:
+      'A mouse user who presses a caller-rendered trigger and slides off before releasing, to cancel, still gets the menu: it opens on press-down and stays open.',
+    reason: ABORTED_PRESS_REASON,
+  },
+  {
+    expectation: 'menu-button.control.survives-an-aborted-press',
+    binding: 'DropdownMenu.trigger',
+    state: 'more-menu-closed',
+    evidenceLayer: 'real-browser',
+    failureEquals:
+      'releasing the press away from the control left aria-expanded true instead of false',
+    standardsReference: ABORTED_PRESS_STANDARD,
+    userImpact:
+      'A mouse user who presses the MoreMenu button and slides off before releasing, to cancel, still gets the menu: it opens on press-down and stays open.',
+    reason: ABORTED_PRESS_REASON,
   },
 ];

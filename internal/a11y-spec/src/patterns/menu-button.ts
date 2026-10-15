@@ -10,6 +10,7 @@
 import {
   definePattern,
   type ApgRequirement,
+  type AstryxRecord,
   type PatternContract,
   type WcagCriterion,
 } from '../contract';
@@ -102,6 +103,20 @@ const APG_UP: ApgRequirement = {
 };
 
 /**
+ * The current Astryx adoption of the pattern's required parts: a control that
+ * already plays the menu button role takes its role, name, state and
+ * relationship properties, and Enter/Space activation.
+ */
+const AST_020_FR15: AstryxRecord = {
+  standard: 'astryx',
+  id: 'spec:AST-020',
+  clause: 'FR15',
+  url: 'https://github.com/facebook/astryx/blob/878fad9d7ac23cd3f4c5def64595abd770bb01a3/docs/specs/AST-020/spec.md#L83-L92',
+  requirement:
+    "Where a component part already plays an APG pattern's role, Astryx adopts that pattern's required parts for it: the role, the accessible name, the state and relationship properties, and activation by Tab plus Enter or Space.",
+};
+
+/**
  * What a binding knows about one menu button. The subject is the control that
  * opens the menu; `menu` is the element with role menu it controls, and
  * `first-item` and `last-item` are that menu's first and last enabled items.
@@ -120,13 +135,6 @@ export interface MenuButtonStateFacts {
    * item), the APG-optional keys Astryx ships for anchored menus.
    */
   readonly arrowKeysOpen: boolean;
-  /**
-   * Whether the binding opens the menu on pointer press-down (a press model
-   * where the row under the release acts) rather than on click. A press-model
-   * control cannot be judged by the aborted-press check: the press itself is
-   * the open, and its module owns what a release elsewhere does.
-   */
-  readonly opensOnPress: boolean;
 }
 
 const ALWAYS = {
@@ -239,7 +247,7 @@ export const MENU_BUTTON_PATTERN: PatternContract<MenuButtonStateFacts> =
         id: 'menu-button.control.haspopup-menu',
         outcome:
           'The control says it opens a menu, so a user knows a press reveals choices rather than acting at once.',
-        sources: [WCAG_4_1_2, APG_HASPOPUP],
+        sources: [WCAG_4_1_2, APG_HASPOPUP, AST_020_FR15],
         covers: ['4.1.2-name-role-value', 'apg-interaction'],
         appliesWhen: ALWAYS,
         evidenceLayer: 'dom',
@@ -257,7 +265,7 @@ export const MENU_BUTTON_PATTERN: PatternContract<MenuButtonStateFacts> =
         id: 'menu-button.control.expanded-state',
         outcome:
           'The control reports whether its menu is displayed, in both states.',
-        sources: [WCAG_4_1_2, APG_EXPANDED],
+        sources: [WCAG_4_1_2, APG_EXPANDED, AST_020_FR15],
         covers: ['4.1.2-name-role-value', 'apg-interaction'],
         appliesWhen: ALWAYS,
         evidenceLayer: 'dom',
@@ -275,7 +283,7 @@ export const MENU_BUTTON_PATTERN: PatternContract<MenuButtonStateFacts> =
         id: 'menu-button.control.controls-menu',
         outcome:
           'The declared control relationship identifies the menu element.',
-        sources: [WCAG_1_3_1, APG_CONTROLS],
+        sources: [WCAG_1_3_1, APG_CONTROLS, AST_020_FR15],
         covers: ['1.3.1-info-and-relationships', 'apg-interaction'],
         appliesWhen: {
           condition:
@@ -317,7 +325,7 @@ export const MENU_BUTTON_PATTERN: PatternContract<MenuButtonStateFacts> =
         id: 'menu-button.open.enter-focuses-first-item',
         outcome:
           'With focus on the control, Enter opens the menu and places focus on its first enabled item.',
-        sources: [WCAG_2_1_1, APG_ENTER],
+        sources: [WCAG_2_1_1, APG_ENTER, AST_020_FR15],
         covers: ['2.1.1-keyboard', '2.4.3-focus-order', 'apg-interaction'],
         appliesWhen: {
           condition:
@@ -335,7 +343,7 @@ export const MENU_BUTTON_PATTERN: PatternContract<MenuButtonStateFacts> =
         id: 'menu-button.open.space-focuses-first-item',
         outcome:
           'With focus on the control, Space opens the menu and places focus on its first enabled item.',
-        sources: [WCAG_2_1_1, APG_SPACE],
+        sources: [WCAG_2_1_1, APG_SPACE, AST_020_FR15],
         covers: ['2.1.1-keyboard', '2.4.3-focus-order', 'apg-interaction'],
         appliesWhen: {
           condition:
@@ -469,9 +477,8 @@ export const MENU_BUTTON_PATTERN: PatternContract<MenuButtonStateFacts> =
         sources: [WCAG_2_5_2],
         covers: ['2.5.2-pointer-cancellation'],
         appliesWhen: {
-          condition:
-            'the menu starts hidden, the control can be operated, and it opens on click rather than on press-down',
-          test: facts => !facts.open && facts.operable && !facts.opensOnPress,
+          condition: 'the menu starts hidden and the control can be operated',
+          test: facts => !facts.open && facts.operable,
         },
         evidenceLayer: 'real-browser',
         alsoNeeds: ['dom'],
