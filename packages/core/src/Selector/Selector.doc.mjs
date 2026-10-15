@@ -247,7 +247,7 @@ export const docs = {
       name: 'variant',
       type: "'input' | 'secondary' | 'ghost'",
       description:
-        'Visual trigger style. input is the bordered input treatment for forms; secondary is borderless and neutral-filled, matching secondary buttons for navs and toolbars; ghost is borderless and transparent, matching ghost buttons for toolbar usage.',
+        'Visual trigger style. input is the bordered input treatment for forms; secondary matches the secondary buttons of the active theme (borderless and neutral-filled by default) for navs and toolbars; ghost is borderless and transparent, matching ghost buttons for toolbar usage.',
       default: "'input'",
     },
     {
@@ -440,7 +440,7 @@ export const docs = {
       {
         guidance: true,
         description:
-          'Use variant="secondary" when a selector sits in a nav or toolbar beside secondary buttons or a segmented control, so it shares their neutral fill instead of reading as a form field. Use variant="ghost" when a selector sits in a toolbar with ghost buttons. If validation status is needed there, prefer statusVariant="tooltip" so the toolbar height stays compact.',
+          'Use variant="secondary" when a selector sits in a nav or toolbar beside secondary buttons or a segmented control, so it shares their treatment instead of reading as a form field. Use variant="ghost" when a selector sits in a toolbar with ghost buttons. If validation status is needed there, prefer statusVariant="tooltip" so the toolbar height stays compact.',
       },
       {
         guidance: true,

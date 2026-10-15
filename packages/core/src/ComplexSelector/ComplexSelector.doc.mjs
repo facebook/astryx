@@ -160,7 +160,7 @@ export const docs = {
           name: 'variant',
           type: "'input' | 'secondary' | 'ghost'",
           description:
-            'Visual trigger style. Input is the bordered form treatment; secondary is borderless and neutral-filled to match secondary buttons; ghost is borderless and transparent to match ghost buttons.',
+            'Visual trigger style. Input is the bordered form treatment; secondary matches the secondary buttons of the active theme (borderless and neutral-filled by default); ghost is borderless and transparent to match ghost buttons.',
           default: "'input'",
         },
         {

@@ -39,6 +39,15 @@
     }
   },
   {
+    "component": "CommandPaletteInput",
+    "storyId": "core-commandpaletteinput--standalone",
+    "dims": ["D2"],
+    "selectors": {
+      "prev": ".astryx-command-palette-input > span:first-child",
+      "next": "[data-testid=\"input-end-content\"]"
+    }
+  },
+  {
     "component": "Center",
     "storyId": "core-center--padding-per-edge",
     "dims": ["D8"],

@@ -39,9 +39,9 @@ reflows no line; only editing affordances appear or disappear.
   The one exception is the character reference decoder that DEC-5 shares.
 - Collaboration, persistence, document hosting, and plugin adapters between
   Markdown plugins and the editor.
-- Which editor engine serves document editing, and the stored value an editor
-  reads and writes. This record governs how the surfaces render the same
-  document, not which surface a product chooses to edit documents with.
+- Which editor engine a product chooses for editing whole documents, and the
+  value that product stores. This record governs how the surfaces render the
+  same document; RichText's own role and value are DEC-7.
 - RichText's release channel. RichText stays canary-only.
 - Equivalent internal implementations remain valid when they satisfy this
   contract, except the character reference decoder, which DEC-5 makes one
@@ -125,6 +125,10 @@ constructs they render, and their default editor theme follows FR2 and FR3.
 import with.
 `Markdown` draws disc and decimal markers at every depth, and RichText draws
 the second bulleted level as a disc; both adopt the DEC-6 marker cycle.
+RichText adopts DEC-8: its package entry stops exporting `sharedEditorTheme`,
+`URL_MATCHER`, `EMAIL_MATCHER`, and `Transformer`; `RichTextEditorToolbar`
+gains `BaseProps` and renames `linkOpensInNewTab` to `hasNewTabLinks`; and its
+Lexical peer ranges move to the Lexical 0.52 minor.
 
 ## Verification
 
@@ -223,6 +227,42 @@ lower-roman — is written in decimal, as the CSS counter styles fall back; the
 start value and the items stay as written. Task list items show checkboxes
 instead of markers. Markers are presentation: the
 list keeps its list semantics, and the source does not change.
+
+### DEC-7 — RichText is a form-field editor whose value is Lexical editor state
+
+**Reference:** `spec:AST-061/DEC-7`
+**Decider:** cixzhang, 2026-10-14
+
+`RichTextEditor` is a public form-field editor: a labelled field in which a
+person writes formatted text. Its value is serialized Lexical `EditorState`
+JSON: `defaultValue` takes it, `onChange` reports the editor state that
+serializes to it, and `RichTextView` renders it. Markdown is an import and
+export format, not the value: `markdownToEditorStateJSON` and
+`editorStateJSONToMarkdown` convert between the two, and `spec:AST-062` owns
+what that conversion returns. RichText is not a document editor; collaboration,
+persistence, and document hosting stay outside it, and a product that edits
+whole documents chooses its own engine and stored value. This record stays
+the one visual contract that RichText and `Markdown` share.
+
+### DEC-8 — RichText's public surface is Lexical's, kept small
+
+**Reference:** `spec:AST-061/DEC-8`
+**Decider:** cixzhang, 2026-10-14
+
+RichText is built on Lexical and says so: `nodes` and `transformers` take
+Lexical types, `plugins` takes Lexical React plugins, and `onChange(editorState,
+editor)` and the editor ref's `getEditorState()` report Lexical types, so a
+caller extends the editor with Lexical directly.
+The package supports one Lexical minor and declares it in its Lexical peer
+ranges; `spec:AST-017` classifies a change to that minor. The package exports
+only what a caller builds with: the generated editor theme classes, the
+autolink regular expressions, and a re-export of Lexical's `Transformer` type
+are internal, and `Transformer` comes from `@lexical/markdown`. `RichTextEditorToolbar` takes
+`BaseProps` for its root element, and its option for links that open in a new
+tab is `hasNewTabLinks`. `RichTextEditorAutoLinkPlugin` renders no element of
+its own, so it takes no `BaseProps`.
+Rejected: Astryx document, node, and plugin types over Lexical's, because they
+would duplicate Lexical's extension model with no gain for a caller.
 
 ## Open questions
 

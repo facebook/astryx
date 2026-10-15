@@ -9,7 +9,7 @@
  *   `linkUtils`.
  * @output Exports `RichTextEditorAutoLinkPlugin` and its props type, plus the
  *   default `DEFAULT_LINK_MATCHERS`.
- * @position Experimental (lab). Drop into RichTextEditor's `plugins` slot to
+ * @position Experimental (richtext). Drop into RichTextEditor's `plugins` slot to
  *   auto-linkify URLs and emails as they are typed or pasted. Requires
  *   `AutoLinkNode` to be registered (it is, by default).
  *
