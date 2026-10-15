@@ -335,6 +335,17 @@ const editorTheme = stylex.create({
     textAlign: 'start',
     verticalAlign: 'middle',
     overflowWrap: 'break-word',
+    // A line on every cell edge, as core Markdown's table draws with
+    // `dividers="grid"` and as XDS's table draws in WWW. The row lines come
+    // from `tableRow`; this is the column half. The last column has none, so
+    // the grid does not close the table's outer edge — the same rule core
+    // `TableCell` follows (`:last-child` → 0).
+    borderInlineEndWidth: {
+      default: borderVars['--border-width'],
+      ':last-child': 0,
+    },
+    borderInlineEndStyle: 'solid',
+    borderInlineEndColor: colorVars['--color-border'],
   },
   tableCellHeader: {
     fontWeight: fontWeightVars['--font-weight-semibold'],

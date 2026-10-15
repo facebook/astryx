@@ -1905,7 +1905,7 @@ function renderBlock(
             ),
           )}
           {...lineStamps}>
-          <Table dividers="rows" textOverflow="wrap">
+          <Table dividers="grid" textOverflow="wrap">
             <TableHeader>
               <TableRow>
                 {header?.children.map((h, i) => (
