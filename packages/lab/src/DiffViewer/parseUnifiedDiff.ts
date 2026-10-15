@@ -23,6 +23,7 @@ import type {
 
 const HUNK_HEADER = /^@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@/;
 const GIT_HEADER_PREFIX = 'diff --git ';
+const BINARY_FILES = /^Binary files (.+) and (.+) differ$/;
 
 const C_ESCAPES: Record<string, number> = {
   a: 0x07,
@@ -314,8 +315,9 @@ export function parseUnifiedDiff(patch: string): DiffViewerFile[] {
       (lines[i + 1]?.startsWith('+++ ') ?? false)
     ) {
       // A `---`/`+++` pair opens a new file unless it belongs to a
-      // `diff --git` header whose hunks have not started yet.
-      if (file == null || file.hunks.length > 0) {
+      // `diff --git` header whose hunks have not started yet. A binary entry
+      // never takes a pair: in `diff -r` output it was a file of its own.
+      if (file == null || file.hunks.length > 0 || file.isBinary) {
         flush();
         file = emptyFile();
       }
@@ -353,6 +355,23 @@ export function parseUnifiedDiff(patch: string): DiffViewerFile[] {
       // A zero-length side's start names the line *before* the hunk.
       oldLine = oldLines === 0 ? oldStart + 1 : oldStart;
       newLine = newLines === 0 ? newStart + 1 : newStart;
+      continue;
+    }
+
+    // GNU `diff -r` reports a binary file with this one line and no header,
+    // so unless it belongs to a `diff --git` header still being read (no
+    // hunks yet, not already binary), it is a file of its own.
+    const binary = BINARY_FILES.exec(line);
+    if (
+      binary != null &&
+      (file == null || file.hunks.length > 0 || file.isBinary)
+    ) {
+      flush();
+      const own = emptyFile();
+      own.oldPath = cleanPath(binary[1], 'a/');
+      own.newPath = cleanPath(binary[2], 'b/');
+      own.isBinary = true;
+      file = own;
       continue;
     }
 
