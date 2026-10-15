@@ -131,14 +131,15 @@ const LONG_LINE_FILE =
 /**
  * A right-to-left page with lines wider than the viewer: the hunk area stays
  * left-to-right like a code editor, so every line opens at its start, while
- * the file header and the annotation row follow the page.
+ * the file header and the annotation content follow the page and the note
+ * opens in view.
  */
 export const RightToLeft: Story = {
   args: {
     file: LONG_LINE_FILE,
     viewMode: 'split',
     renderLineAnnotation: (ref: DiffViewerLineRef) =>
-      ref.side === 'new' && ref.lineNumber === 2 ? (
+      ref.side === 'old' && ref.lineNumber === 2 ? (
         <Text type="body">تحقق من تاريخ انتهاء الخصم قبل الدمج.</Text>
       ) : null,
   },

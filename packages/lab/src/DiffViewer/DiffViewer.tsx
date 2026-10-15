@@ -30,9 +30,11 @@
 
 import {
   Fragment,
+  useCallback,
   useId,
   useInsertionEffect,
   useMemo,
+  useRef,
   useState,
   type CSSProperties,
   type MouseEvent,
@@ -69,6 +71,7 @@ import {
 import {
   focusOutlineProps,
   mergeProps,
+  observeResize,
   rtlStyles,
   themeProps,
 } from '@astryxdesign/core/utils';
@@ -99,7 +102,7 @@ export interface DiffViewerProps extends BaseProps<HTMLDivElement> {
    * `split` shows the old file on the left and the new file on the right,
    * pairing each removed line with the added line that replaced it. The hunk
    * area reads left-to-right in every page direction, like a code editor;
-   * the file header and annotation rows follow the page.
+   * the file header and annotation content follow the page.
    * @default 'unified'
    */
   viewMode?: DiffViewerViewMode;
@@ -368,6 +371,9 @@ function buildSpans(text: string, tokens: SyntaxToken[]): ReactNode {
 // Styles
 // ---------------------------------------------------------------------------
 
+/** Custom property holding the hunk viewport's visible width, set from a ResizeObserver. */
+const VISIBLE_INLINE_SIZE = '--diff-viewer-visible-inline-size';
+
 const styles = stylex.create({
   root: {
     display: 'flex',
@@ -591,11 +597,9 @@ const styles = stylex.create({
   markerCol: {
     width: `calc(1ch + ${spacingVars['--spacing-1']} + ${spacingVars['--spacing-2']})`,
   },
-  // Annotation rows hold the caller's content (review comments), which reads
-  // in the page's direction even inside the left-to-right hunk area.
+  // Annotation cells stay left-to-right like the rest of the hunk area, so
+  // they start at its visible left edge and the split divider stays put.
   annotation: {
-    direction: {default: 'ltr', ':is([dir="rtl"] *)': 'rtl'},
-    textAlign: 'start',
     paddingBlock: spacingVars['--spacing-2'],
     paddingInline: spacingVars['--spacing-3'],
     verticalAlign: 'top',
@@ -608,6 +612,16 @@ const styles = stylex.create({
     borderBlockWidth: borderVars['--border-width'],
     borderBlockStyle: 'solid',
     borderBlockColor: colorVars['--color-border'],
+  },
+});
+
+// The caller's content (review comments) reads in the page's direction, and
+// is no wider than the visible hunk area, so on a wide table it opens in view
+// rather than at a far end only horizontal scrolling reaches.
+const annotationStyles = stylex.create({
+  content: {
+    direction: {default: null, ':is([dir="rtl"] *)': 'rtl'},
+    maxInlineSize: `calc(var(${VISIBLE_INLINE_SIZE}, 100%) - 2 * ${spacingVars['--spacing-3']})`,
   },
 });
 
@@ -718,6 +732,23 @@ export function DiffViewer({
     }
   }
   const digits = String(maxLineNumber).length;
+
+  // Annotation content is capped at the viewport's visible width. The width
+  // is written straight to the viewport's style from the shared
+  // ResizeObserver, so a resize re-renders nothing.
+  const stopObservingViewport = useRef<(() => void) | null>(null);
+  const observeViewportWidth = useCallback((viewport: HTMLElement | null) => {
+    stopObservingViewport.current?.();
+    stopObservingViewport.current = null;
+    if (viewport != null) {
+      stopObservingViewport.current = observeResize(viewport, () => {
+        viewport.style.setProperty(
+          VISIBLE_INLINE_SIZE,
+          `${viewport.clientWidth}px`,
+        );
+      });
+    }
+  }, []);
 
   const {getViewportProps, getContentProps} = useScrollableArea({
     axis: 'both',
@@ -922,12 +953,20 @@ export function DiffViewer({
                     <td
                       colSpan={sideColumns}
                       {...stylex.props(styles.annotation, styles.codeOldSide)}>
-                      {oldNote}
+                      {oldNote != null && (
+                        <div {...stylex.props(annotationStyles.content)}>
+                          {oldNote}
+                        </div>
+                      )}
                     </td>
                     <td
                       colSpan={sideColumns}
                       {...stylex.props(styles.annotation)}>
-                      {newNote}
+                      {newNote != null && (
+                        <div {...stylex.props(annotationStyles.content)}>
+                          {newNote}
+                        </div>
+                      )}
                     </td>
                   </tr>
                 )}
@@ -985,7 +1024,9 @@ export function DiffViewer({
                     <td
                       colSpan={unifiedColumns}
                       {...stylex.props(styles.annotation)}>
-                      {note}
+                      <div {...stylex.props(annotationStyles.content)}>
+                        {note}
+                      </div>
                     </td>
                   </tr>
                 )}
@@ -1016,6 +1057,7 @@ export function DiffViewer({
         {...getViewportProps<HTMLDivElement>({
           ...stylex.props(styles.viewport),
           style: scrollStyle,
+          ref: renderLineAnnotation != null ? observeViewportWidth : undefined,
         })}>
         <div {...getContentProps<HTMLDivElement>({})}>{table}</div>
       </div>
