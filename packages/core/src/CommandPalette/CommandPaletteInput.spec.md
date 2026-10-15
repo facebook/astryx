@@ -99,7 +99,7 @@ Consumer migration instructions belong in consumer docs and release notes.
 | ID  | Candidate invariant                                                                                                                                                                                                                                            | Basis                                                              | Draft review state                                         |
 | --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ | ---------------------------------------------------------- |
 | FR1 | Explicit `value` and `onValueChange` take precedence; otherwise CommandPalette context supplies search state; native uncontrolled state remains when neither exists.                                                                                           | Released source, docs, and tests                                   | Verified current behavior                                  |
-| FR2 | Consumer `onKeyDown` runs before contextual navigation; preventing the event prevents contextual delegation.                                                                                                                                                   | Released source and tests                                          | Verified current behavior                                  |
+| FR2 | Consumer `onKeyDown` runs before contextual navigation; preventing the event, or an active IME composition, prevents contextual delegation.                                                                                                                    | Released source and tests                                          | Verified current behavior                                  |
 | FR3 | `ref` and native passthrough attributes reach the native query field; standalone caller-owned popup semantics persist, while CommandPalette context owns its popup role and relationships; `xstyle`, `className`, and `style` customize the surrounding Input. | Released source and docs; `architecture:public-component-api/INV5` | Verified current routing                                   |
 | FR4 | Pending state and renderable `endContent` share one trailing-content group; booleans, empty strings, null, and undefined do not create empty trailing chrome.                                                                                                  | React rendering semantics and current utility contract             | Verified current behavior                                  |
 | FR5 | Auto-focus is enabled by default and suppressed inside an inline Dialog; `hasAutoFocus={false}` suppresses both focus work and the autofocus marker.                                                                                                           | Released source, docs, and tests                                   | Verified current behavior; browser timing evidence remains |
@@ -118,6 +118,7 @@ Consumer migration instructions belong in consumer docs and release notes.
 | Standalone, no popup     | Named searchbox with no popup-only ARIA state.                    | Explicit value and change handler.   |
 | Standalone, caller popup | Caller role, state, relationships, and active descendant persist. | Caller-owned popup model.            |
 | Contextual, closed       | Named combobox references the list and reports collapsed state.   | Query value and trailing content.    |
+| Contextual, no results   | Named combobox reports collapsed state and references no list.    | Empty or pending message.            |
 | Contextual, open         | Named combobox references the list and reports expanded state.    | Highlighted option and result count. |
 | Contextual, highlighted  | Active descendant names the context-owned highlighted option.     | Highlighted index.                   |
 | Pending or trailing      | Supporting content remains at the logical trailing edge.          | Spinner, caller content, or both.    |
@@ -127,8 +128,8 @@ Consumer migration instructions belong in consumer docs and release notes.
 
 - **ORD1 — Search state.** Explicit props → CommandPalette context → native
   uncontrolled state.
-- **ORD2 — Keyboard handling.** Consumer handler → default-prevented check →
-  CommandPalette context handler.
+- **ORD2 — Keyboard handling.** Consumer handler → default-prevented or
+  IME-composition check → CommandPalette context handler.
 - **ORD3 — Accessible name.** Native `aria-label` → `label` → the translated
   default "Search commands" (DEC-1). Placeholder text is never the name.
 
@@ -147,7 +148,9 @@ Consumer migration instructions belong in consumer docs and release notes.
   own popup relationships retain those semantics. CommandPalette context exposes
   a `combobox` with context-owned expanded state, list relationship, autocomplete
   mode, and active descendant, following `spec:AST-020/FR1,FR2` and the WAI-ARIA
-  combobox pattern.
+  combobox pattern. While the palette holds no selectable result, the field
+  reports collapsed state and has no list relationship or active descendant, and
+  an active descendant always names an existing option.
 - **AR3 — Semantic ownership.** With CommandPalette context, the field owns
   `role`, `aria-expanded`, `aria-autocomplete`, `aria-controls`, and
   `aria-activedescendant`, and these replace the same native passthrough props;

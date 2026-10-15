@@ -254,10 +254,10 @@ Lexical types, `plugins` takes Lexical React plugins, and `onChange(editorState,
 editor)` and the editor ref's `getEditorState()` report Lexical types, so a
 caller extends the editor with Lexical directly.
 The package supports one Lexical minor and declares it in its Lexical peer
-ranges; `spec:AST-017` classifies a change to that minor. The package exports only what a
-caller builds with: the generated editor theme classes, the autolink regular
-expressions, and a re-export of Lexical's `Transformer` type are internal, and
-`Transformer` comes from `@lexical/markdown`. `RichTextEditorToolbar` takes
+ranges; `spec:AST-017` classifies a change to that minor. The package exports
+only what a caller builds with: the generated editor theme classes, the
+autolink regular expressions, and a re-export of Lexical's `Transformer` type
+are internal, and `Transformer` comes from `@lexical/markdown`. `RichTextEditorToolbar` takes
 `BaseProps` for its root element, and its option for links that open in a new
 tab is `hasNewTabLinks`. `RichTextEditorAutoLinkPlugin` renders no element of
 its own, so it takes no `BaseProps`.

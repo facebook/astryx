@@ -27,7 +27,7 @@ function makeContext(
     highlightedIndex: -1,
     setHighlightedIndex: vi.fn(),
     getItemId: (i: number) => `item-${i}`,
-    selectableItems: [],
+    selectableItems: [{value: 'open', label: 'Open'}],
     searchResults: [],
     selectItem: vi.fn(),
     onKeyDown: vi.fn(),
@@ -42,6 +42,18 @@ describe('CommandPaletteInput', () => {
   it('renders with default placeholder', () => {
     render(<CommandPaletteInput />);
     expect(screen.getByPlaceholderText('Search…')).toBeInTheDocument();
+  });
+
+  it('renders the local input target and delegated search icon', () => {
+    const {container} = render(<CommandPaletteInput />);
+
+    expect(container.firstElementChild).toHaveClass(
+      'astryx-command-palette-input',
+    );
+    expect(container.querySelector('.astryx-icon')).toHaveAttribute(
+      'aria-hidden',
+      'true',
+    );
   });
 
   it('renders with custom placeholder', () => {
@@ -340,7 +352,11 @@ describe('CommandPaletteInput popup context', () => {
 
   it('exposes the highlighted option as the active descendant', () => {
     render(
-      <CommandPaletteContext value={makeContext({highlightedIndex: 2})}>
+      <CommandPaletteContext
+        value={makeContext({
+          highlightedIndex: 2,
+          selectableItems: [{value: 'a'}, {value: 'b'}, {value: 'c'}],
+        })}>
         <CommandPaletteInput />
       </CommandPaletteContext>,
     );
@@ -391,6 +407,51 @@ describe('CommandPaletteInput popup context', () => {
     );
 
     fireEvent.keyDown(screen.getByRole('combobox'), {key: 'ArrowDown'});
+    expect(onKeyDown).not.toHaveBeenCalled();
+  });
+
+  it('omits popup ARIA while the result surface has no listbox', () => {
+    render(
+      <CommandPaletteContext value={makeContext({selectableItems: []})}>
+        <CommandPaletteInput />
+      </CommandPaletteContext>,
+    );
+
+    const input = screen.getByRole('combobox');
+    expect(input).toHaveAttribute('aria-expanded', 'false');
+    expect(input).not.toHaveAttribute('aria-controls');
+    expect(input).not.toHaveAttribute('aria-activedescendant');
+  });
+
+  it('omits an active descendant whose highlighted index has no option', () => {
+    render(
+      <CommandPaletteContext
+        value={makeContext({
+          highlightedIndex: 1,
+          selectableItems: [{value: 'home'}],
+        })}>
+        <CommandPaletteInput />
+      </CommandPaletteContext>,
+    );
+
+    expect(screen.getByRole('combobox')).not.toHaveAttribute(
+      'aria-activedescendant',
+    );
+  });
+
+  it('does not route IME composition keys to palette commands', () => {
+    const onKeyDown = vi.fn();
+    render(
+      <CommandPaletteContext value={makeContext({onKeyDown})}>
+        <CommandPaletteInput />
+      </CommandPaletteContext>,
+    );
+
+    fireEvent.keyDown(screen.getByRole('combobox'), {
+      key: 'Enter',
+      isComposing: true,
+    });
+
     expect(onKeyDown).not.toHaveBeenCalled();
   });
 

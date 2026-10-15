@@ -17,7 +17,7 @@ import {useCallback, useEffect, useRef, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {Icon} from '../Icon';
 import {Spinner} from '../Spinner';
-import {isRenderable, mergeProps} from '../utils';
+import {isImeKeyEvent, isRenderable, mergeProps} from '../utils';
 import {
   colorVars,
   typeScaleVars,
@@ -179,6 +179,9 @@ export function CommandPaletteInput({
   const placeholder =
     placeholderFromProps ?? t('@astryx.commandPalette.input.placeholder');
   const ctx = useCommandPaletteContext();
+  // Inside CommandPalette the results surface is a listbox only while it holds
+  // selectable results; empty and pending states expose no popup.
+  const hasListbox = ctx ? ctx.selectableItems.length > 0 : true;
   const dialogContext = useDialogContext();
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -230,7 +233,10 @@ export function CommandPaletteInput({
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLInputElement>) => {
       onKeyDown?.(e);
-      if (e.defaultPrevented) {
+      if (e.defaultPrevented || isImeKeyEvent(e.nativeEvent)) {
+        // An in-progress IME composition owns Enter, Escape, and arrows. Let
+        // the input method finish or cancel composition without selecting or
+        // dismissing palette content.
         return;
       }
       // Delegate to useCombobox's keyboard handler from context
@@ -258,7 +264,7 @@ export function CommandPaletteInput({
         role={ctx ? 'combobox' : standaloneRole}
         aria-expanded={
           ctx
-            ? ctx.isOpen
+            ? ctx.isOpen && hasListbox
             : callerSets('aria-expanded')
               ? props['aria-expanded']
               : callerOwnsPopup || undefined
@@ -272,10 +278,14 @@ export function CommandPaletteInput({
                 ? 'list'
                 : undefined
         }
-        aria-controls={ctx ? ctx.listId : props['aria-controls']}
+        aria-controls={
+          ctx ? (hasListbox ? ctx.listId : undefined) : props['aria-controls']
+        }
         aria-activedescendant={
           ctx
-            ? ctx.highlightedIndex >= 0
+            ? hasListbox &&
+              ctx.highlightedIndex >= 0 &&
+              ctx.highlightedIndex < ctx.selectableItems.length
               ? ctx.getItemId(ctx.highlightedIndex)
               : undefined
             : props['aria-activedescendant']
