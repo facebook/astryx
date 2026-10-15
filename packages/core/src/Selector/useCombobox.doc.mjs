@@ -50,7 +50,8 @@ export const docs = {
     {
       name: 'options.onClose',
       type: '() => void',
-      description: 'Called when the hook hides the list; the hook resets the highlight first. When the caller closes the list itself (an outside press, say), it should also call `setHighlightedIndex(-1)`.',
+      description:
+        'Called when the hook hides the list; the hook resets the highlight first. When the caller closes the list itself (an outside press, say), it should also call `setHighlightedIndex(-1)`.',
       required: true,
     },
     {
@@ -103,7 +104,7 @@ export const docs = {
       name: 'highlightedIndex',
       type: 'number',
       description:
-        'Index of the active option, or -1 when none is active. With `hasSearch`, opening by a press or Enter does not set one, so it stays -1 after the hook's own closes; ArrowDown and ArrowUp still open on the first or last option. Render it as the active option and name it in `aria-activedescendant` only while it points at a rendered option.',
+        'Index of the active option, or -1 when none is active. With `hasSearch`, opening by a press or Enter does not set one, so it stays -1 after the hook itself closes the list; ArrowDown and ArrowUp still open on the first or last option. Render it as the active option and name it in `aria-activedescendant` only while it points at a rendered option.',
     },
     {
       name: 'setHighlightedIndex',
@@ -183,7 +184,8 @@ export const docsDense = {
     'options.isOpen': 'list shown; caller owns state.',
     'options.onOpen':
       'show list; return false to refuse (highlight untouched).',
-    'options.onClose': 'hook hides list; resets highlight first. caller closing itself (outside press): also setHighlightedIndex(-1).',
+    'options.onClose':
+      'hook hides list; resets highlight first. caller closing itself (outside press): also setHighlightedIndex(-1).',
     'options.listboxId': 'listbox id; option ids derive from it (getItemId).',
     'options.value':
       'selected value; w/o search, press / Enter / Space opening highlights it (else first); ArrowDown/Up open on first / last.',
