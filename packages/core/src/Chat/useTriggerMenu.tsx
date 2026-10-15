@@ -714,14 +714,11 @@ export function useTriggerMenu(
       }
 
       // While results for the current query are pending, every row on screen
-      // belongs to an earlier query. Enter does nothing until they settle: it
-      // neither picks a stale row nor sends the half-typed text.
+      // belongs to an earlier query and none of them can be picked. Enter and
+      // Tab keep their editor meaning, so Enter sends the message as typed;
+      // the arrows stay with the menu but move nothing until rows arrive.
       if (state.isLoading) {
-        if (
-          (e.key === 'Enter' && !e.shiftKey) ||
-          e.key === 'ArrowDown' ||
-          e.key === 'ArrowUp'
-        ) {
+        if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
           e.preventDefault();
           return true;
         }

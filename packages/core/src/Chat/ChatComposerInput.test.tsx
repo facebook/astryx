@@ -1383,7 +1383,7 @@ describe('ChatComposerInput', () => {
       fireEvent.input(editable);
     }
 
-    it('Enter while a newer trigger search is pending neither submits nor picks a row', async () => {
+    it('Enter while a newer trigger search is pending sends the typed text, picks no row, and no menu reopens after the send', async () => {
       const onSubmit = vi.fn();
       let resolveSlow: (items: SearchableItem[]) => void = () => {};
       const source: SearchSource = {
@@ -1414,18 +1414,20 @@ describe('ChatComposerInput', () => {
         expect(editable.getAttribute('aria-activedescendant')).toBeTruthy();
       });
 
+      // A newer search is pending: Enter sends the draft exactly as typed.
       typeAtEnd(editable, '@ci');
       fireEvent.keyDown(editable, {key: 'Enter'});
-      expect(onSubmit).not.toHaveBeenCalled();
+      expect(onSubmit).toHaveBeenCalledWith('@ci');
       expect(editable.querySelector('[data-astryx-token]')).toBeNull();
-      expect(editable.textContent).toBe('@ci');
+      expect(editable.textContent).toBe('');
 
+      // The late result for the sent query must not reopen the menu.
       await act(async () => {
         resolveSlow([{id: 'cindy', label: 'Cindy Zhang'}]);
       });
-      fireEvent.keyDown(editable, {key: 'Enter'});
-      expect(editable.querySelector('[data-astryx-token]')).not.toBeNull();
-      expect(onSubmit).not.toHaveBeenCalled();
+      expect(editable).toHaveAttribute('aria-expanded', 'false');
+      expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+      expect(screen.queryByRole('option')).not.toBeInTheDocument();
     });
 
     it('lets Escape reach the consumer while an unmatched multi-word query hides the menu', async () => {

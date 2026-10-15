@@ -632,10 +632,10 @@ describe('useTriggerMenu', () => {
       consumed = result.current.handleKeyDown(enterEvent);
     });
 
-    // Enter does nothing while the newer search is pending: it is consumed
-    // (so the composer does not submit) and it picks no row.
-    expect(consumed).toBe(true);
-    expect(enterEvent.preventDefault).toHaveBeenCalled();
+    // Enter picks no row from the earlier query and passes through, so the
+    // composer sends the message as typed (component:ChatComposerInput FR13).
+    expect(consumed).toBe(false);
+    expect(enterEvent.preventDefault).not.toHaveBeenCalled();
     expect(asyncTrigger.onSelect).not.toHaveBeenCalled();
 
     // Now resolve search 2
@@ -774,7 +774,7 @@ describe('useTriggerMenu', () => {
   }
 
   // 21. Pending-search Enter applies to triggers that never opted in.
-  it('21. Enter does nothing while a single-token trigger search is pending', async () => {
+  it('21. Enter passes through and picks no row while a single-token trigger search is pending', async () => {
     const {source, resolve} = deferredSource();
     const onSelect = vi.fn((item: SearchableItem) => `/${item.id} `);
     const trigger = createCommandTrigger({searchSource: source, onSelect});
@@ -799,9 +799,17 @@ describe('useTriggerMenu', () => {
     act(() => {
       consumed = result.current.handleKeyDown(enter);
     });
-    expect(consumed).toBe(true);
-    expect(enter.preventDefault).toHaveBeenCalled();
+    expect(consumed).toBe(false);
+    expect(enter.preventDefault).not.toHaveBeenCalled();
     expect(onSelect).not.toHaveBeenCalled();
+
+    // Arrows stay with the menu but cannot build a selection on stale rows.
+    const down = keyEvent('ArrowDown');
+    act(() => {
+      consumed = result.current.handleKeyDown(down);
+    });
+    expect(consumed).toBe(true);
+    expect(result.current.state.highlightedIndex).toBe(0);
 
     // Shift+Enter keeps its editor meaning (a line break ends the query).
     const shiftEnter = keyEvent('Enter', {shiftKey: true});
