@@ -22,7 +22,7 @@ export type ListMarkerStyle = 'none' | 'disc' | 'decimal' | 'circle';
  * Where each row's content and its lines and backgrounds sit relative to the
  * list's edges and the padding of the container around the list.
  */
-export type ListEdge = 'inset' | 'flush' | 'outset' | 'bleed';
+export type ListEdge = 'padded' | 'flush' | 'outset' | 'bleed';
 
 /**
  * Every marker ListItem draws: the public styles, and the square, letter,

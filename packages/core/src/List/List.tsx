@@ -64,23 +64,28 @@ export interface ListProps extends BaseProps<
   hasDividers?: boolean;
 
   /**
-   * Where each row's text, dividers, and hover and selection backgrounds sit
-   * relative to the list's edges and the padding of the container around it
-   * (Card, Section, Dialog).
-   * - 'inset': text sits inside each row's own padding, so backgrounds have
-   *   room around it and text starts a little in from a heading above
-   * - 'flush': rows drop their side padding, so text, dividers, and
-   *   backgrounds start and end at the list's edges, on the heading's line.
-   *   Needs no container. Suits static rows
-   * - 'outset': rows reach into the container's padding by their own padding,
-   *   so text lands on the heading's line while backgrounds keep room around
-   *   it. Suits interactive rows in a container
-   * - 'bleed': rows reach the container's edges, like Table rows in a Card,
-   *   with square corners; text lands on the container's padding line, or
-   *   keeps the row's own padding when the container's is smaller
-   * Without a padded container, 'outset' and 'bleed' place text as 'inset'
-   * does.
-   * @default 'inset'
+   * Where each row's text, dividers, and hover and selection backgrounds sit,
+   * relative to the list's edges and the container around it.
+   * - 'padded': text sits inside each row's padding, so it starts a little in
+   *   from a heading above the list and backgrounds have room around it
+   * - 'flush': rows drop their side padding, so text starts on the heading's
+   *   line and dividers and backgrounds stop at the row's content, with no
+   *   room beyond it on either side. Works anywhere. Suits static rows
+   * - 'outset': text sits on the heading's line, and dividers and backgrounds
+   *   reach a little past it into the container's padding. Suits interactive
+   *   rows in a container
+   * - 'bleed': text sits on the heading's line, and dividers and backgrounds
+   *   reach the container's edges with square corners, like Table rows in a
+   *   Card
+   *
+   * A row's first content is what lines up with the heading: its marker,
+   * icon, or avatar when it has one, otherwise its label. 'outset' and
+   * 'bleed' reach into the padding of a surrounding Card, Section, Dialog, or
+   * BottomSheet. Elsewhere, including in a Popover or inside padding from
+   * Stack, Center, or your own styles, they look like 'padded'. In a container
+   * with less padding than the rows' own, text starts a little after the
+   * heading's line.
+   * @default 'padded'
    */
   edge?: ListEdge;
 
@@ -178,7 +183,7 @@ const dynamicStyles = stylex.create({
  * dividers, marker styles, and an optional header.
  *
  * Set `edge` to choose where row text, dividers, and backgrounds sit: inside
- * each row's padding (`inset`, the default), at the list's edges (`flush`),
+ * each row's padding (`padded`, the default), at the list's edges (`flush`),
  * on a heading's line with backgrounds reaching into the container's padding
  * (`outset`), or reaching the container's edges like Table rows (`bleed`).
  *
@@ -222,7 +227,7 @@ export function List({
     edgeCompensation !== undefined,
   );
   const edge: ListEdge =
-    edgeProp ?? (edgeCompensation === 'inline' ? 'outset' : 'inset');
+    edgeProp ?? (edgeCompensation === 'inline' ? 'outset' : 'padded');
   const reachesContainerPadding = edge === 'outset' || edge === 'bleed';
 
   const contextValue = useMemo(

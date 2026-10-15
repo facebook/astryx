@@ -35,7 +35,7 @@ system_specs:
 
 | Area                    | Contract                                                                                                                                                                                              |
 | ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Public contract         | Optional `edge?: 'inset' \| 'flush' \| 'outset' \| 'bleed'`, default `'inset'`. Deprecated `edgeCompensation?: 'inline'` resolves to `'outset'`.                                                      |
+| Public contract         | Optional `edge?: 'padded' \| 'flush' \| 'outset' \| 'bleed'`, default `'padded'`. Deprecated `edgeCompensation?: 'inline'` resolves to `'outset'`.                                                    |
 | Behavior                | One edge treatment applies to every ListItem row and decides where row content and row paint sit relative to the list's edges and the host's padding.                                                 |
 | End-user impact         | Row text can share the line of the list header and a heading above, with row paint stopping at the text, reaching into the host padding, or reaching the host edges.                                  |
 | Builder impact          | One choice per list. `flush` works anywhere; `outset` and `bleed` act only inside a host that publishes container padding.                                                                            |
@@ -86,21 +86,21 @@ Consumer migration instructions belong in consumer docs and release notes.
 
 ## Public concepts
 
-| Concept                        | Closed values or states             | Meaning                                                                                 | Availability by variant/orientation/state                                                | Default | Owner            | Stability  | Invalid-value behavior                       |
-| ------------------------------ | ----------------------------------- | --------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- | ------- | ---------------- | ---------- | -------------------------------------------- |
-| Edge treatment                 | `inset`, `flush`, `outset`, `bleed` | Where row content and row paint sit relative to the list's edges and the host's padding | Every density, marker style, and divider setting; `outset` and `bleed` read host padding | `inset` | `component:List` | accepted   | Other values are rejected by the public type |
-| Edge compensation (deprecated) | omitted, `inline`                   | Same as `edge="outset"`                                                                 | As `outset`                                                                              | omitted | `component:List` | deprecated | Other values are rejected by the public type |
+| Concept                        | Closed values or states              | Meaning                                                                                 | Availability by variant/orientation/state                                                | Default  | Owner            | Stability  | Invalid-value behavior                       |
+| ------------------------------ | ------------------------------------ | --------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- | -------- | ---------------- | ---------- | -------------------------------------------- |
+| Edge treatment                 | `padded`, `flush`, `outset`, `bleed` | Where row content and row paint sit relative to the list's edges and the host's padding | Every density, marker style, and divider setting; `outset` and `bleed` read host padding | `padded` | `component:List` | accepted   | Other values are rejected by the public type |
+| Edge compensation (deprecated) | omitted, `inline`                    | Same as `edge="outset"`                                                                 | As `outset`                                                                              | omitted  | `component:List` | deprecated | Other values are rejected by the public type |
 
 ## Behavioral and layout contract
 
 | ID  | Invariant                                                                                                                                                                                                                                                                                   | Basis                                                               | Status                                                |
 | --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- | ----------------------------------------------------- |
 | FR1 | List MUST own `edge` and apply one treatment to every ListItem row, interactive or not; ListItem MUST NOT expose a parallel public prop. `edge` MUST win over `edgeCompensation`, and `edgeCompensation="inline"` alone MUST resolve to `outset`.                                           | `component:List/DEC-1`, `component:List/DEC-3`                      | Accepted contract                                     |
-| FR2 | `inset` MUST preserve current header, list, and row geometry. No treatment MAY move the header or change row block padding, gap, markers, start and end content, semantics, or hit target relative to the row box.                                                                          | Owner direction                                                     | Accepted contract                                     |
+| FR2 | `padded` MUST preserve current header, list, and row geometry. No treatment MAY move the header or change row block padding, gap, markers, start and end content, semantics, or hit target relative to the row box.                                                                         | Owner direction                                                     | Accepted contract                                     |
 | FR3 | `flush` MUST resolve each row's inline inset to zero through the private source that supplies Item's applied inline padding, so row content and row paint share the list's inline edges. It reads no host padding.                                                                          | `component:List/DEC-3`                                              | Accepted contract                                     |
 | FR4 | `outset` MUST place each row so it reaches past the host content line by the smaller of its own inline inset and the matching host inset, per logical edge, keeping its inset inside. Content reaches the host line when the host inset is at least the row inset.                          | `architecture:container-padding/INV9–INV10`; `component:List/DEC-2` | Accepted contract                                     |
 | FR5 | `bleed` MUST place each row so it reaches the host's padding edge on each logical edge, with square corners. Row content sits on the host content line, or at the row's own inset from its edge when the host inset is smaller.                                                             | `architecture:container-padding/INV3`; `component:List/DEC-4`       | Accepted contract                                     |
-| FR6 | Missing or reset host inset MUST resolve to zero, so `outset` and `bleed` place content as `inset` does outside a padded host. No row paint MAY reach past the host's padding edge.                                                                                                         | `architecture:container-padding/INV6`, `INV9`                       | Accepted contract                                     |
+| FR6 | Missing or reset host inset MUST resolve to zero, so `outset` and `bleed` place content as `padded` does outside a padded host. No row paint MAY reach past the host's padding edge.                                                                                                        | `architecture:container-padding/INV6`, `INV9`                       | Accepted contract                                     |
 | FR7 | Each row's retained inset MUST come from the same private density- and theme-derived source as Item's applied inline padding. A consumer override of row padding through `xstyle`, `className`, or `style` is outside the alignment guarantee.                                              | Shared two-owner geometry contract                                  | Accepted contract                                     |
 | FR8 | `outset` and `bleed` are valid only under a host state whose published inline inset matches its applied padding and whose relevant boundary is visually neutral. Automatic LayoutContent/LayoutPanel states with a known publication mismatch are not eligible until that gap is fixed.     | `architecture:container-padding/INV8–INV11`                         | Accepted contract                                     |
 | FR9 | The list element containing the rows MUST clip in the inline axis with `overflow-inline: clip`, never `hidden`. Under `outset` and `bleed` its inline edges MUST reach the host's padding edge, so the clip never cuts resting row paint and a swiped row paints no further than that edge. | `spec:AST-057/FR9`                                                  | Verified by `List.test.tsx` and real-browser geometry |
@@ -119,18 +119,18 @@ Consumer migration instructions belong in consumer docs and release notes.
 
 | State                                                  | Required invariant                                                                     | Allowed variation                   |
 | ------------------------------------------------------ | -------------------------------------------------------------------------------------- | ----------------------------------- |
-| `inset` (default)                                      | Header and every row keep current geometry.                                            | Any content, density, or host.      |
+| `padded` (default)                                     | Header and every row keep current geometry.                                            | Any content, density, or host.      |
 | `flush`                                                | Row content and paint share the list's inline edges with the header and divider ends.  | Any host, including none.           |
 | `outset`, host inset at least row inset                | Row content reaches the host content line; row paint reaches past it by the row inset. | Uniform or asymmetric host padding. |
 | `bleed`, host inset at least row inset                 | Row paint reaches the host's padding edge; row content sits on the host content line.  | Uniform or asymmetric host padding. |
 | `outset` or `bleed`, host inset smaller than row inset | Row paint stops at the host's padding edge; content keeps the row inset.               | Either logical edge independently.  |
-| `outset` or `bleed`, no host inset                     | Content placed as `inset`; `bleed` rows are square.                                    | Standalone lists and overlays.      |
+| `outset` or `bleed`, no host inset                     | Content placed as `padded`; `bleed` rows are square.                                   | Standalone lists and overlays.      |
 | LTR or RTL                                             | Logical start/end mapping follows direction.                                           | Writing direction.                  |
 
 ### Transformation and precedence order
 
 - **ORD1 — Treatment.** Resolve `edge`, else `outset` for `edgeCompensation="inline"`,
-  else `inset`.
+  else `padded`.
 - **ORD2 — Host bound.** Read the matching published host inset for each logical
   edge, with missing values falling back to zero.
 - **ORD3 — Local inset.** Resolve Item's inline inset through the private value
@@ -154,11 +154,11 @@ Consumer migration instructions belong in consumer docs and release notes.
 
 ## Design relationships
 
-| Anatomy or state   | Design requirement                                                                                                        | Representation authority | Hierarchy role     | Component contract |
-| ------------------ | ------------------------------------------------------------------------------------------------------------------------- | ------------------------ | ------------------ | ------------------ |
-| Optional header    | Stays on the host content line for every treatment.                                                                       | `component:List/DEC-1`   | Context            | FR2                |
-| ListItem row paint | Stops at the content (`flush`), reaches past it by the row inset (`inset`, `outset`), or reaches the host edge (`bleed`). | `component:List/DEC-3`   | Supporting surface | FR3–FR6            |
-| Row content        | Sits inside the row inset (`inset`) or on the host content line when the host inset allows (`flush`, `outset`, `bleed`).  | `component:List/DEC-3`   | Prominent          | FR2–FR5            |
+| Anatomy or state   | Design requirement                                                                                                                                                                      | Representation authority | Hierarchy role     | Component contract |
+| ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------ | ------------------ | ------------------ |
+| Optional header    | Stays on the host content line for every treatment.                                                                                                                                     | `component:List/DEC-1`   | Context            | FR2                |
+| ListItem row paint | Stops at the content (`flush`), reaches past it by the row inset (`padded`, `outset`), or reaches the host edge (`bleed`).                                                              | `component:List/DEC-3`   | Supporting surface | FR3–FR6            |
+| Row content        | The row's first content (its marker, start content, or label) sits inside the row inset (`padded`) or on the host content line when the host inset allows (`flush`, `outset`, `bleed`). | `component:List/DEC-3`   | Prominent          | FR2–FR5            |
 
 ## Family and system relationships
 
@@ -216,7 +216,7 @@ name would promise outer-edge bleed that the component does not provide.
 
 **Decider:** pending owner ruling
 
-`inset`, `flush`, `outset`, and `bleed` are mutually exclusive answers to one
+`padded`, `flush`, `outset`, and `bleed` are mutually exclusive answers to one
 question, so one closed-value prop carries them and no combination can
 contradict. `outset` is the bounded compensation of DEC-2; `edgeCompensation`
 remains its deprecated alias.

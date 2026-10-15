@@ -52,10 +52,10 @@ export const docs = {
     },
     {
       name: 'edge',
-      type: "'inset' | 'flush' | 'outset' | 'bleed'",
+      type: "'padded' | 'flush' | 'outset' | 'bleed'",
       description:
-        "Where each row's text, dividers, and hover and selection backgrounds sit relative to the list's edges and the padding of the container around it (Card, Section, Dialog). 'inset' keeps text inside each row's own padding, so backgrounds have room around it and text starts a little in from a heading above. 'flush' drops the rows' side padding, so text, dividers, and backgrounds start and end at the list's edges, on the heading's line; it needs no container and suits static rows. 'outset' reaches rows into the container's padding by their own padding, so text lands on the heading's line while backgrounds keep room around it; it suits interactive rows in a container. 'bleed' reaches rows to the container's edges with square corners, like Table rows in a Card; text lands on the container's padding line, or keeps the row's own padding when the container's is smaller. Without a padded container, 'outset' and 'bleed' place text as 'inset' does.",
-      default: "'inset'",
+        "Where each row's text, dividers, and hover and selection backgrounds sit, relative to the list's edges and the container around it. 'padded' keeps text inside each row's padding, so it starts a little in from a heading above the list and backgrounds have room around it. 'flush' drops the rows' side padding: text starts on the heading's line, and dividers and backgrounds stop at the row's content, with no room beyond it on either side. It works anywhere and suits static rows. 'outset' puts text on the heading's line and reaches dividers and backgrounds a little past it into the container's padding; it suits interactive rows in a container. 'bleed' puts text on the heading's line and reaches dividers and backgrounds to the container's edges with square corners, like Table rows in a Card. A row's first content is what lines up with the heading: its marker, icon, or avatar when it has one, otherwise its label. 'outset' and 'bleed' reach into the padding of a surrounding Card, Section, Dialog, or BottomSheet. Elsewhere, including in a Popover or inside padding from Stack, Center, or your own styles, they look like 'padded'. In a container with less padding than the rows' own, text starts a little after the heading's line.",
+      default: "'padded'",
     },
     {
       name: 'edgeCompensation',
@@ -117,7 +117,12 @@ export const docs = {
       {
         guidance: true,
         description:
-          'Set edge to line row text up with a heading above the list: flush for static rows, outset or bleed for rows in a Card or Section.',
+          'Set edge to line row text up with a heading above the list: flush for static rows, outset or bleed for rows in a Card, Section, or Dialog.',
+      },
+      {
+        guidance: true,
+        description:
+          'To line text up with a heading and keep room around the highlight where there is no Card, such as a sidebar, put the heading and the list in a Section with variant="transparent" and set edge="outset".',
       },
       {
         guidance: false,
@@ -178,7 +183,12 @@ export const docsZh = {
       {
         guidance: true,
         description:
-          'Set edge to line row text up with a heading above the list: flush for static rows, outset or bleed for rows in a Card or Section.',
+          'Set edge to line row text up with a heading above the list: flush for static rows, outset or bleed for rows in a Card, Section, or Dialog.',
+      },
+      {
+        guidance: true,
+        description:
+          'To line text up with a heading and keep room around the highlight where there is no Card, such as a sidebar, put the heading and the list in a Section with variant="transparent" and set edge="outset".',
       },
       {
         guidance: false,
@@ -242,7 +252,12 @@ export const docsDense = {
       {
         guidance: true,
         description:
-          'Set edge to line row text up with a heading above the list: flush for static rows, outset or bleed for rows in a Card or Section.',
+          'Set edge to line row text up with a heading above the list: flush for static rows, outset or bleed for rows in a Card, Section, or Dialog.',
+      },
+      {
+        guidance: true,
+        description:
+          'To line text up with a heading and keep room around the highlight where there is no Card, such as a sidebar, put the heading and the list in a Section with variant="transparent" and set edge="outset".',
       },
       {
         guidance: false,

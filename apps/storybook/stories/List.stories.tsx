@@ -44,7 +44,7 @@ const meta: Meta<typeof List> = {
     },
     edge: {
       control: 'select',
-      options: ['inset', 'flush', 'outset', 'bleed'],
+      options: ['padded', 'flush', 'outset', 'bleed'],
       description:
         "Where row text, dividers, and backgrounds sit relative to the list's " +
         "edges and the container's padding",
@@ -163,7 +163,7 @@ export const Flush: Story = {
   },
 };
 
-const EDGES = ['inset', 'flush', 'outset', 'bleed'] as const;
+const EDGES = ['padded', 'flush', 'outset', 'bleed'] as const;
 
 /**
  * The four edge treatments inside a Card, for a static list with dividers
@@ -202,7 +202,7 @@ export const EdgeInCard: Story = {
     docs: {
       description: {
         story:
-          "inset keeps text inside each row's padding. flush puts text, " +
+          "padded keeps text inside each row's padding. flush puts text, " +
           "dividers, and backgrounds on the heading's line. outset puts text " +
           "on the heading's line and reaches backgrounds into the card's " +
           "padding by the rows' own padding. bleed reaches rows to the card's " +

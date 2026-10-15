@@ -304,7 +304,7 @@ describe('List', () => {
     };
   }
 
-  it('keeps the inset and leaves the list and rows in place by default', () => {
+  it('keeps the row padding and leaves the list and rows in place by default', () => {
     const {ul, items} = renderEdge({});
     for (const item of items) {
       expect(item.className).not.toMatch(/edge(Flush|Outset|Bleed)/);
@@ -312,14 +312,14 @@ describe('List', () => {
       expect(insetDeclarations(item)[0]).not.toMatch(ZERO_INSET);
     }
     expect(ul.className).not.toContain('reachesContainerPadding');
-    expect(edgeContext(ul)).toBe('inset');
+    expect(edgeContext(ul)).toBe('padded');
   });
 
   /** The edge each row resolved, read from the row's own edge class. */
   function edgeContext(ul: Element): string {
     const edges = [...ul.querySelectorAll('li')].map(li => {
       const match = /edge(Flush|Outset|Bleed)/.exec(li.className);
-      return match ? match[1].toLowerCase() : 'inset';
+      return match ? match[1].toLowerCase() : 'padded';
     });
     expect(new Set(edges).size).toBe(1);
     return edges[0];
@@ -387,7 +387,7 @@ describe('List', () => {
   });
 
   it('keeps the inline clip on the list for every treatment', () => {
-    for (const edge of ['inset', 'flush', 'outset', 'bleed'] as const) {
+    for (const edge of ['padded', 'flush', 'outset', 'bleed'] as const) {
       const {ul} = renderEdge({edge});
       expect(declarationsFor(ul)).toContain('overflow-x:clip');
       cleanup();

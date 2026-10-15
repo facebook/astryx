@@ -1,6 +1,6 @@
 # List edge naming vibe test
 
-**Status:** ad-hoc · rounds 1 and 2 complete · recommendation awaiting the owner's decision
+**Status:** ad-hoc · rounds 1 and 2 complete · recommendation applied in the PR, pending the List owner's approval
 **Related:** [`../README.md`](../README.md) (Checker Protocol), [API Arbitration](https://github.com/facebook/astryx/wiki/API-Arbitration), [Designing Vibe Tests](https://github.com/facebook/astryx/wiki/Designing-Vibe-Tests), [PR #7592](https://github.com/facebook/astryx/pull/7592)
 
 ---
@@ -18,8 +18,8 @@ and a surrounding `Card`, `Section`, or `Dialog`. There are four looks:
 | 3           | on a heading's line                       | a little beyond the text, short of the container's borders |
 | 4           | on a heading's line                       | reach the container's borders, like table rows             |
 
-**What should the prop and its four values be called?** The PR ships `edge` with
-`inset · flush · outset · bleed`.
+**What should the prop and its four values be called?** When the test ran, the PR
+shipped `edge` with `inset · flush · outset · bleed`.
 
 ## 2. Design
 
@@ -169,7 +169,9 @@ unrelated `align`.
 ## 4. Recommendation
 
 **Keep `edge` and one prop with four values. Rename look 1 from `inset` to `padded`. Keep
-`flush`, `outset`, and `bleed`.** The decision belongs to the component's owner.
+`flush`, `outset`, and `bleed`.** Applied in [PR #7592](https://github.com/facebook/astryx/pull/7592),
+with the List docs covering §3.5 and the three gaps in §3.7. The List owner approves it
+with the PR.
 
 - One prop with four values, because recall produced it 6/6 and the looks exclude each
   other (§3.2).

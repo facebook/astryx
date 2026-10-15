@@ -321,7 +321,7 @@ export function ListItem({
   const ctx = use(ListContext);
   const density = ctx?.density ?? 'balanced';
   const hasDividers = ctx?.hasDividers ?? false;
-  const edge = ctx?.edge ?? 'inset';
+  const edge = ctx?.edge ?? 'padded';
   const listStyle = ctx?.listStyle ?? 'none';
   const hasMarkers = listStyle !== 'none';
   // ListMarkerScope may name another marker for this item.
