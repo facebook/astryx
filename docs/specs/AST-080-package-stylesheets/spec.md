@@ -68,8 +68,10 @@ first.
   package's stylesheet with `astryx.css` and a theme stylesheet MUST style every
   element the package renders, in every state, color scheme, and text direction
   the package supports, with no StyleX compiler in the product's build. A non-Core
-  stylesheet relies on `astryx.css` only for the Core definitions its modules
-  read, such as variable groups and keyframes, and does not repeat them.
+  stylesheet relies on `astryx.css` for the Core definitions it declares, such
+  as variable groups and keyframes, and does not repeat a definition
+  `astryx.css` declares. A Core group that `astryx.css` omits under
+  `spec:AST-066` FR3 is carried by the package stylesheet whose modules read it.
 
 - **FR3 — One layer and one layer order in every package stylesheet.** Every rule
   in every package stylesheet, and in Core's `reset.css`, MUST sit inside its one
@@ -123,8 +125,9 @@ first.
 ## Current-state impact
 
 - Core, Lab, Rich Text, and Charts already export one stylesheet each with every
-  rule inside `@layer astryx-base`; non-Core stylesheets already omit the Core
-  variable groups they read.
+  rule inside `@layer astryx-base`. Non-Core stylesheets omit the Core variable
+  groups `astryx.css` declares; Lab's keeps Core's data-token group, which
+  `astryx.css` omits under `spec:AST-066` FR3.
 - No package stylesheet and not `reset.css` carries the FR3 order registration
   today. The order holds only when the product writes the registration line
   itself; a product that loads `reset.css` after a package stylesheet without it
@@ -133,22 +136,23 @@ first.
   their stylesheets (FR4). Core already covers `**/*.css`.
 - The styling overview's "StyleX from source" path tells a product to omit
   `astryx.css` and compile component styles from source, and the getting-started
-  examples list a setup that imports Astryx from source. Both conflict with FR5;
+  examples list two setups that compile Astryx source and load no `astryx.css`
+  (`Next.js Source` and `Vite`). These conflict with FR5;
   the setup becomes "load `astryx.css`; compile only your own code."
-- Lab and Rich Text document their stylesheet only in their READMEs; the styling
-  overview's import table lists only Core (FR6).
+- Lab, Rich Text, and Charts document their stylesheet only in their READMEs;
+  the styling overview's import table lists only Core (FR6).
 - The `styling-overview`, `getting-started`, and `migration-setup` consumer docs
   change. Package stylesheet rules and class names are otherwise unchanged.
 
 ## Verification
 
-| Contract | Verification                                         | Representative states                                                                                                                  | Mutation or failure expectation                                                                                      |
-| -------- | ---------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| FR1      | package manifest and stylesheet build tests          | every published package with styled modules; a module's rules in its package stylesheet                                                | a styled published package has no `.css` export; a rule a module uses is missing                                     |
-| FR2      | real-browser computed styles with no StyleX compiler | a representative component from each package; default, hover, focus, disabled, dark, and right-to-left                                 | removing the package stylesheet changes a computed style; a non-Core stylesheet repeats a Core group                 |
-| FR3      | stylesheet structure tests and real-browser cascade  | each package stylesheet and `reset.css`; theme first and last; package stylesheets in either order; `reset.css` last; a theme override | an unlayered rule or another layer; a missing or reordered registration; the theme override loses in any load order  |
-| FR4      | packed-package and bundler fixtures                  | each package's stylesheet import in a production bundle                                                                                | the subpath does not resolve from the packed package; the bundle drops the stylesheet                                |
-| FR5–FR6  | consumer-doc checks                                  | every setup snippet in the styling overview, getting started, and migration setup; each package README                                 | a setup omits `astryx.css` or a used package stylesheet; a setup compiles Astryx source; a package import is missing |
+| Contract | Verification                                         | Representative states                                                                                                                  | Mutation or failure expectation                                                                                       |
+| -------- | ---------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| FR1      | package manifest and stylesheet build tests          | every published package with styled modules; a module's rules in its package stylesheet                                                | a styled published package has no `.css` export; a rule a module uses is missing                                      |
+| FR2      | real-browser computed styles with no StyleX compiler | a representative component from each package; default, hover, focus, disabled, dark, and right-to-left                                 | removing the package stylesheet changes a computed style; a non-Core stylesheet repeats a group `astryx.css` declares |
+| FR3      | stylesheet structure tests and real-browser cascade  | each package stylesheet and `reset.css`; theme first and last; package stylesheets in either order; `reset.css` last; a theme override | an unlayered rule or another layer; a missing or reordered registration; the theme override loses in any load order   |
+| FR4      | packed-package and bundler fixtures                  | each package's stylesheet import in a production bundle                                                                                | the subpath does not resolve from the packed package; the bundle drops the stylesheet                                 |
+| FR5–FR6  | consumer-doc checks                                  | every setup snippet in the styling overview, getting started, and migration setup; each package README                                 | a setup omits `astryx.css` or a used package stylesheet; a setup compiles Astryx source; a package import is missing  |
 
 The real-browser cascade check uses a component whose theme changes its base
 colors, such as a theme that restyles the destructive Button, and asserts the
