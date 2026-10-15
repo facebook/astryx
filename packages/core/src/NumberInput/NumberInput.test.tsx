@@ -1099,6 +1099,30 @@ describe('NumberInput', () => {
       expect(screen.getByRole('alert')).toHaveTextContent('Invalid number');
     });
 
+    it('resolves the invalid-number announcement from the i18n catalog', async () => {
+      const user = userEvent.setup();
+      render(
+        <InternationalizationProvider
+          locale="ar-SA"
+          overrides={{
+            'ar-SA': {'@astryx.numberInput.invalidNumber': 'رقم غير صالح'},
+          }}>
+          <NumberInput
+            label="Count"
+            value={null}
+            onChange={() => {}}
+            isIntegerOnly
+          />
+        </InternationalizationProvider>,
+      );
+
+      const input = screen.getByRole('spinbutton');
+      await user.click(input);
+      await user.type(input, '3.5');
+
+      expect(screen.getByRole('alert')).toHaveTextContent('رقم غير صالح');
+    });
+
     it('does not announce an alert message when input is valid', async () => {
       const user = userEvent.setup();
       render(<NumberInput label="Count" value={null} onChange={() => {}} />);

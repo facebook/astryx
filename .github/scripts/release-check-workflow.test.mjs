@@ -19,6 +19,9 @@ const workflow = yaml.parse(
 );
 const jobs = workflow.jobs;
 const step = (job, name) => jobs[job].steps.find(item => item.name === name);
+const packageJson = JSON.parse(
+  fs.readFileSync(new URL('../../package.json', import.meta.url), 'utf8'),
+);
 const releaseJobs = [
   'check-scope',
   'check-components',
@@ -664,6 +667,31 @@ describe('full release scope without PR metadata or maintenance writes', () => {
     expect(result.stdout).not.toContain('AUDIT MUST NOT RUN');
   });
 
+  it('clones full history only where the release-branch validator reads it', () => {
+    const checkout = jobs['check-scope'].steps.find(step =>
+      step.uses?.startsWith('actions/checkout@'),
+    );
+    const expression = String(checkout.with['fetch-depth']).replace(
+      /^\$\{\{\s*|\s*\}\}$/g,
+      '',
+    );
+    const depth = (event, branch, baseRef = '') =>
+      Function(
+        'github',
+        'inputs',
+        'startsWith',
+        `return ${expression.replaceAll('==', '===').replaceAll('!===', '!==')};`,
+      )(
+        {event_name: event, base_ref: baseRef},
+        {'release-branch': branch},
+        (value, prefix) => String(value).startsWith(prefix),
+      );
+    expect(depth('workflow_dispatch', releaseBranch)).toBe('0');
+    expect(depth('pull_request', '', 'release/v0.6.5')).toBe('0');
+    expect(depth('workflow_dispatch', 'main')).toBe('50');
+    expect(depth('pull_request', '', 'main')).toBe('50');
+  });
+
   it('keeps exhaustive a11y contracts and their artifacts release-only', () => {
     for (const [job, name] of [
       ['a11y-contracts-shard', 'Run accessibility spec-test contracts'],
@@ -685,10 +713,25 @@ describe('full release scope without PR metadata or maintenance writes', () => {
       'a11y-contracts-shard',
       'Run accessibility spec-test contracts',
     );
-    expect(contracts.run).toBe(
-      'pnpm test:a11y-contract --shard=${{ matrix.shard }}/${{ strategy.job-total }}',
+    expect(contracts.run).toContain(
+      'a11y-contract-shard.mjs --shard "${{ matrix.shard }}/${{ strategy.job-total }}"',
     );
+    // File filters must precede `--project`, which is variadic.
+    expect(contracts.run).toContain(
+      'pnpm exec playwright test "${FILES[@]}" --config playwright.config.ts --project chromium',
+    );
+    expect(packageJson.scripts['test:a11y-contract']).toBe(
+      'playwright test --config playwright.config.ts --project chromium',
+    );
+    expect(contracts.run).toContain('set -euo pipefail');
     expect(contracts.env.A11Y_CONTRACT_WORKERS).toBe(4);
+    // Shard legs that run four pages or workers get four cores.
+    for (const job of ['visual-scout', 'pr-a11y-shard']) {
+      expect(jobs[job]['runs-on'], job).toBe('4-core-ubuntu');
+    }
+    expect(
+      step('visual-scout', 'Scout this shard of the release plan').run,
+    ).toContain('--concurrency 4');
     // Four workers need four cores; on two the CPU-bound specs time out.
     expect(jobs['a11y-contracts-shard']['runs-on']).toBe('4-core-ubuntu');
     expect(contracts['continue-on-error']).toBeUndefined();
