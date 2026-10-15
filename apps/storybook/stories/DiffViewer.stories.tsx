@@ -152,6 +152,32 @@ export const RightToLeft: Story = {
   ],
 };
 
+/**
+ * Right-to-left split view with a comment on each side: each opens in view,
+ * the new side's capped to the part of the viewer that side occupies.
+ */
+export const RightToLeftSplitComments: Story = {
+  args: {
+    viewMode: 'split',
+    renderLineAnnotation: (ref: DiffViewerLineRef) => {
+      if (ref.side === 'old' && ref.lineNumber === 6) {
+        return <Text type="body">كان هذا السطر يحسب الإجمالي بدون الخصم.</Text>;
+      }
+      if (ref.side === 'new' && ref.lineNumber === 13) {
+        return <Text type="body">هذا السطر الجديد يحتاج إلى اختبار.</Text>;
+      }
+      return null;
+    },
+  },
+  decorators: [
+    Story => (
+      <div dir="rtl">
+        <Story />
+      </div>
+    ),
+  ],
+};
+
 /** A whole patch: one DiffViewer per file, incl. added, renamed, and binary files. */
 export const MultiFilePatch: Story = {
   render: args => (

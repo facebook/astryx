@@ -373,6 +373,22 @@ function buildSpans(text: string, tokens: SyntaxToken[]): ReactNode {
 
 /** Custom property holding the hunk viewport's visible width, set from a ResizeObserver. */
 const VISIBLE_INLINE_SIZE = '--diff-viewer-visible-inline-size';
+/**
+ * Custom property holding how much of the visible width the new side of a
+ * split view occupies at the start of the scroll: the visible width minus
+ * where the new side starts, or the whole visible width when it starts past
+ * (or too close to) the viewer's edge.
+ */
+const NEW_SIDE_VISIBLE_INLINE_SIZE =
+  '--diff-viewer-new-side-visible-inline-size';
+/** Marks the first column header of a split view's new side, for measuring. */
+const NEW_SIDE_ATTRIBUTE = 'data-diff-new-side';
+/**
+ * A visible slice of the new side narrower than this cannot hold a word, so
+ * the new side counts as starting past the edge (its note then needs a scroll,
+ * like its code).
+ */
+const MIN_NEW_SIDE_VISIBLE_PX = 48;
 
 const styles = stylex.create({
   root: {
@@ -616,12 +632,17 @@ const styles = stylex.create({
 });
 
 // The caller's content (review comments) reads in the page's direction, and
-// is no wider than the visible hunk area, so on a wide table it opens in view
-// rather than at a far end only horizontal scrolling reaches.
+// is no wider than the part of the visible hunk area its cell occupies, so on
+// a wide table it opens in view rather than at a far end only horizontal
+// scrolling reaches.
 const annotationStyles = stylex.create({
   content: {
     direction: {default: null, ':is([dir="rtl"] *)': 'rtl'},
+    overflowWrap: 'anywhere',
     maxInlineSize: `calc(var(${VISIBLE_INLINE_SIZE}, 100%) - 2 * ${spacingVars['--spacing-3']})`,
+  },
+  newSide: {
+    maxInlineSize: `calc(var(${NEW_SIDE_VISIBLE_INLINE_SIZE}, 100%) - 2 * ${spacingVars['--spacing-3']})`,
   },
 });
 
@@ -733,21 +754,48 @@ export function DiffViewer({
   }
   const digits = String(maxLineNumber).length;
 
-  // Annotation content is capped at the viewport's visible width. The width
-  // is written straight to the viewport's style from the shared
-  // ResizeObserver, so a resize re-renders nothing.
+  // Annotation content is capped at the part of the viewport's visible width
+  // its cell occupies. The widths are written straight to the viewport's
+  // style from the shared ResizeObserver, so a resize re-renders nothing. The
+  // content box is observed too: it resizes when the columns do, which moves
+  // where a split view's new side starts.
   const stopObservingViewport = useRef<(() => void) | null>(null);
   const observeViewportWidth = useCallback((viewport: HTMLElement | null) => {
     stopObservingViewport.current?.();
     stopObservingViewport.current = null;
-    if (viewport != null) {
-      stopObservingViewport.current = observeResize(viewport, () => {
-        viewport.style.setProperty(
-          VISIBLE_INLINE_SIZE,
-          `${viewport.clientWidth}px`,
-        );
-      });
+    if (viewport == null) {
+      return;
     }
+    const measure = () => {
+      const visible = viewport.clientWidth;
+      viewport.style.setProperty(VISIBLE_INLINE_SIZE, `${visible}px`);
+      const newSide = viewport.querySelector(`[${NEW_SIDE_ATTRIBUTE}]`);
+      const table = newSide?.closest('table');
+      if (newSide == null || table == null) {
+        viewport.style.removeProperty(NEW_SIDE_VISIBLE_INLINE_SIZE);
+        return;
+      }
+      // Both boxes move together when scrolled, so this is the offset from
+      // the start of the scroll.
+      const start =
+        newSide.getBoundingClientRect().left -
+        table.getBoundingClientRect().left;
+      const newSideVisible = visible - start;
+      viewport.style.setProperty(
+        NEW_SIDE_VISIBLE_INLINE_SIZE,
+        `${newSideVisible >= MIN_NEW_SIDE_VISIBLE_PX ? newSideVisible : visible}px`,
+      );
+    };
+    const content = viewport.firstElementChild;
+    const stops = [observeResize(viewport, measure)];
+    if (content != null) {
+      stops.push(observeResize(content, measure));
+    }
+    stopObservingViewport.current = () => {
+      for (const stop of stops) {
+        stop();
+      }
+    };
   }, []);
 
   const {getViewportProps, getContentProps} = useScrollableArea({
@@ -889,8 +937,12 @@ export function DiffViewer({
   );
   // Name every column so a screen reader moving across a row hears which
   // number is which and which side of a split row it is on.
-  const columnHeader = (key: string, label: string) => (
-    <th key={key} scope="col" {...stylex.props(styles.columnHeader)}>
+  const columnHeader = (key: string, label: string, isNewSideStart = false) => (
+    <th
+      key={key}
+      scope="col"
+      {...(isNewSideStart ? {[NEW_SIDE_ATTRIBUTE]: ''} : null)}
+      {...stylex.props(styles.columnHeader)}>
       <VisuallyHidden>{label}</VisuallyHidden>
     </th>
   );
@@ -918,8 +970,12 @@ export function DiffViewer({
             {columnHeader('om', t('@astryx.diffViewer.columnChange'))}
             {columnHeader('oc', t('@astryx.diffViewer.columnOldCode'))}
             {hasLineNumbers &&
-              columnHeader('ng', t('@astryx.diffViewer.columnNewLine'))}
-            {columnHeader('nm', t('@astryx.diffViewer.columnChange'))}
+              columnHeader('ng', t('@astryx.diffViewer.columnNewLine'), true)}
+            {columnHeader(
+              'nm',
+              t('@astryx.diffViewer.columnChange'),
+              !hasLineNumbers,
+            )}
             {columnHeader('nc', t('@astryx.diffViewer.columnNewCode'))}
           </tr>
         </thead>
@@ -963,7 +1019,11 @@ export function DiffViewer({
                       colSpan={sideColumns}
                       {...stylex.props(styles.annotation)}>
                       {newNote != null && (
-                        <div {...stylex.props(annotationStyles.content)}>
+                        <div
+                          {...stylex.props(
+                            annotationStyles.content,
+                            annotationStyles.newSide,
+                          )}>
                           {newNote}
                         </div>
                       )}
