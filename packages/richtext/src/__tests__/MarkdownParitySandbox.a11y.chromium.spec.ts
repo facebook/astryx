@@ -746,11 +746,12 @@ for (const viewport of [PHONE, DESKTOP, {width: 2200, height: 900}] as const) {
         keys: ['code-fence', 'code-plain', 'code-unknown', 'code-long'],
       },
     );
-    // Above phone width a long line wraps into the same number of lines on
-    // both surfaces (DEC-9): at 1440px `code-long` wraps to two lines on each,
-    // so the block is as tall in read as in edit mode. At phone width the
-    // editor's field inset leaves its frame 18px narrower, so a long line
-    // there may take one more line in the editor (FR9's edit-mode inset).
+    // The editor's frame is 18px narrower than the reader's at every width
+    // (the field inset). Above phone width `code-long` still wraps to the same
+    // number of lines on both surfaces (two at 1440px), so the block is as
+    // tall in read as in edit mode (DEC-9). At phone width it takes one more
+    // line in the editor: the known editor-frame gap that AST-061's
+    // Current-state impact records, so the check skips that width.
     if (viewport.width !== PHONE.width) {
       for (const key of ['code-fence', 'code-long']) {
         const block = (geometry: SurfaceGeometry) =>

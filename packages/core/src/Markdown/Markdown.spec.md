@@ -73,8 +73,9 @@ other parsing, rendering, styling, and streaming behavior is the released one.
 ## Compatibility and migration
 
 - Released default preserved: `yes`, except the default Code block path for `diff` fences (FR29, below) and its long-line wrap (below)
-- Compatibility class: additive, opt-in public API, with one visible default-path
-  rendering change (FR29, below); existing parser nodes, DOM, styling, targets,
+- Compatibility class: additive, opt-in public API, with two visible
+  default-path rendering changes (the FR29 diff layer and the fenced-code wrap,
+  below); existing parser nodes, DOM, styling, targets,
   dollar-delimited text, `components`, and `inlinePlugins` remain unchanged unless
   the caller supplies `plugins`, supplies `components.math`, or passes the matching
   explicit parser option.
@@ -247,7 +248,7 @@ unions. Enabled calls return the explicit `InlineNodeWithMath` and
 | FR26 | On the default table path each column has a content-derived width floor: the larger of its own longest unbreakable token and a readable minimum derived from that column's content, bounded so a table of short columns still fits its container. The floor applies to the cell's text, not to its padded box, so it means the same amount of content at every density. A header label contributes its own readable minimum to that comparison. A table whose floors exceed the container grows and scrolls rather than dividing the container equally. |
 | FR27 | Default table header cells never truncate: no ellipsis and no width clamp. A header reads in full, on one line up to a bounded width and wrapping past it. Inline code inside a default table cell keeps its token whole rather than breaking mid-token; a supplied `inlineCode` renderer owns its own wrapping.                                                                                                                                                                                                                                        |
 | FR28 | Markdown's Table block owns spacing, sizing, and alignment. The nested Table's own Scroll region remains the sole owner of the table's horizontal overflow, its accessible name, and its conditional keyboard focusability; Markdown adds no second scroll container, name, or tab stop of its own.                                                                                                                                                                                                                                                     |
-| FR29 | On the default Code block path the fence's full first word selects CodeBlock's diff layer (`component:CodeBlock` FR9): `diff` renders the layer over plaintext, `diff-<language>` the layer over `<language>` (the language read by the same leading-word rule as any other fence); every other fence is unchanged. A supplied `code` renderer's contract is unchanged: it keeps receiving the leading word characters as `language` — `diff` for both `diff` and `diff-<language>` fences — and nothing new.                                           |
+| FR29 | On the default Code block path the fence's full first word selects CodeBlock's diff layer (`component:CodeBlock` FR9): `diff` renders the layer over plaintext, `diff-<language>` the layer over `<language>` (the language read by the same leading-word rule as any other fence); every other fence takes no diff layer. A supplied `code` renderer's contract is unchanged: it keeps receiving the leading word characters as `language` — `diff` for both `diff` and `diff-<language>` fences — and nothing new.                                    |
 
 FR23 includes CommonMark-compatible lazy paragraph continuation inside blockquotes
 and ordered, unordered, or task-list items. Omitting a repeated quote marker or
