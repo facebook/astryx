@@ -32,7 +32,7 @@ import {findCoreDir} from '../../../foundation/fs/paths.mjs';
 import {AstryxError} from '../../error.mjs';
 import {ERROR_CODES} from '../../../foundation/response/error-codes.mjs';
 import {getResultCoverage} from '../../search/coverage.mjs';
-import {loadComponents, loadPageTemplates, loadWeights} from '../_adapter.mjs';
+import {loadComponents, loadPageTemplates, loadWeights, templateSetupNotes} from '../_adapter.mjs';
 import {
   asksForNewPage,
   ideaKind,
@@ -392,6 +392,17 @@ export async function buildKit(query, options = {}) {
       return t ? [asTemplate(t)] : [];
     }),
   };
+
+  // Analyze what the start template needs that the project lacks (external
+  // packages, StyleX compiler). Only the start — alternatives are suggestions,
+  // not commitments, so reporting their needs would be noise.
+  if (start) {
+    const startTemplate = catalog.find(t => t.name === start.name);
+    if (startTemplate) {
+      const notes = templateSetupNotes(startTemplate, cwd);
+      if (notes.length > 0) start.notes = notes;
+    }
+  }
 
   // What to try when the kit comes back thin. Keyword search over a design
   // system misses in a predictable way — the reader's words and the package's

@@ -16,12 +16,14 @@ verified_by:
     packages/core/src/Dialog/DialogHeader.test.tsx,
     packages/core/src/Dialog/__tests__/Dialog.a11y.test.tsx,
     packages/core/src/Dialog/__tests__/Dialog.a11y.chromium.spec.ts,
+    packages/core/src/Dialog/__tests__/Dialog.a11y.browser.spec.ts,
   ]
 modules: [module:Dialog/DialogHeader]
 families: [family:overlay-dismissal]
 design_specs: []
 architecture:
   [
+    architecture:interaction-modality,
     architecture:layer-runtime,
     architecture:public-component-api,
     architecture:react-component-runtime,
@@ -131,6 +133,9 @@ component design and theming owners.
   Escape press affects only the topmost relevant layer.
 - `architecture:layer-runtime` owns modal layer ordering and shared lifecycle.
 - `architecture:react-component-runtime` owns node/resource replacement safety.
+- `architecture:interaction-modality` INV1 decides whether initial focus and the
+  focus returned on close show the shared focus indicator; Dialog's
+  `Dialog.a11y.browser.spec.ts` verifies both after pointer and keyboard input.
 - This component owns the destination and return outcome for Dialog's modal focus
   lifecycle.
 

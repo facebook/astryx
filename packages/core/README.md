@@ -261,7 +261,7 @@ The CLI writes this page for you, annotated and pinned to the version you have
 installed:
 
 ```bash
-npx astryx template --cdn        # writes cdn.template.html
+npx @astryxdesign/cli template --cdn   # writes cdn.template.html
 ```
 
 ```html

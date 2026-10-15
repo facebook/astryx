@@ -15,6 +15,8 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuSubMenu,
 } from '@astryxdesign/core/DropdownMenu';
+import {Button} from '@astryxdesign/core/Button';
+import {TextInput} from '@astryxdesign/core/TextInput';
 import {spacingVars} from '@astryxdesign/core/theme/tokens.stylex';
 import {
   PencilIcon,
@@ -1050,6 +1052,40 @@ export const ActionSheetPresentation: Story = {
   },
 };
 
+export const ActionSheetCustomTrigger: Story = {
+  name: 'Presentation / action sheet, custom trigger',
+  parameters: {
+    layout: 'fullscreen',
+    docs: {
+      story: {inline: false, height: '560px'},
+      description: {
+        story:
+          'A control the caller renders opens the bottom-sheet presentation. When the sheet closes, focus returns to that control, with a focus ring only after keyboard input.',
+      },
+    },
+  },
+  globals: {viewport: {value: 'mobile1', isRotated: false}},
+  render: () => (
+    <div {...stylex.props(readinessStyles.viewportStoryCanvas)}>
+      <DropdownMenu
+        presentation="bottom-sheet"
+        renderTrigger={props => (
+          <IconButton
+            icon={<EllipsisHorizontalIcon />}
+            label="Project actions"
+            variant="ghost"
+            {...props}
+          />
+        )}
+        items={PROJECT_ACTIONS.map(action => ({
+          ...action,
+          onClick: () => console.log(`${action.label} selected`),
+        }))}
+      />
+    </div>
+  ),
+};
+
 export const SectionedActionSheetPresentation: Story = {
   name: 'Presentation / sectioned action sheet',
   parameters: {
@@ -1426,4 +1462,54 @@ export const SubmenuAdaptiveFixture: Story = {
       </DropdownMenu>
     </div>
   ),
+};
+
+const LABELS = ['Bug', 'Feature', 'Documentation', 'Design', 'Performance'];
+
+/**
+ * A filter field above the rows and a "Create" button below them. Both sit in
+ * the popover beside the menu, never inside it: the menu holds only its rows,
+ * so it stays a valid menu to a screen reader, and the field and button keep
+ * their own keys and presses. Tab walks field, menu, button; Tab past the
+ * button or Shift+Tab before the field closes the menu.
+ */
+export const HeaderAndFooter: Story = {
+  render: () => {
+    const [query, setQuery] = useState('');
+    const [created, setCreated] = useState(0);
+    const visible = LABELS.filter(label =>
+      label.toLowerCase().includes(query.trim().toLowerCase()),
+    );
+    return (
+      <>
+        <DropdownMenu
+          button={{label: 'Labels'}}
+          header={
+            <TextInput
+              label="Filter labels"
+              isLabelHidden
+              placeholder="Filter labels"
+              value={query}
+              onChange={setQuery}
+            />
+          }
+          footer={
+            <Button
+              label="Create label"
+              variant="ghost"
+              onClick={() => setCreated(count => count + 1)}
+            />
+          }>
+          {visible.map(label => (
+            <DropdownMenuItem key={label} label={label} onClick={() => {}} />
+          ))}
+          <DropdownMenuSubMenu label="Move to">
+            <DropdownMenuItem label="Archive" onClick={() => {}} />
+            <DropdownMenuItem label="Backlog" onClick={() => {}} />
+          </DropdownMenuSubMenu>
+        </DropdownMenu>
+        <output data-testid="created">{created}</output>
+      </>
+    );
+  },
 };

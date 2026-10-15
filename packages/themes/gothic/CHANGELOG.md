@@ -1,5 +1,44 @@
 # @xds/theme-gothic
 
+# 0.7.0
+
+---
+
+# 0.6.8
+
+---
+
+# 0.6.7
+
+#### New Features
+
+- Each theme package now exports `/fonts.css` beside `/built` and `/theme.css`. Import it when the theme uses non-system fonts.
+
+#### Contributors
+
+Thanks to everyone who contributed to this release:
+
+- @josephfarina
+
+---
+
+# 0.6.6
+
+#### New Features
+
+- Add a shared `upload` icon, and use it for FileInput's upload affordance instead of the directional `arrowUp`
+  Themes draw `upload` through `icons.upload`, separately from `arrowUp`, so sort arrows and every other `arrowUp` use stay unchanged. Every bundled theme and theme template draws `upload` in its own icon style. FileInput keeps its icon size, placement, color, and accessibility in both modes; a theme with no `upload` artwork shows the default upload-into-tray glyph there.
+
+  A complete `IconRegistry` may still omit `upload` in this release. The next minor makes it required, so add an `upload` entry to any registry you type as `IconRegistry`.
+
+#### Contributors
+
+Thanks to everyone who contributed to this release:
+
+- @rubyycheung
+
+---
+
 # 0.6.5
 
 ---

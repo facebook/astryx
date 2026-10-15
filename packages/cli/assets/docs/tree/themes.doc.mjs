@@ -23,11 +23,11 @@ export const docs = {
   blocks: [
     {
       type: 'prose',
-      text: 'A theme contribution has editable `defineTheme` source plus a built module and production CSS. `integration add theme` scaffolds the source and declares the package exports; `theme build` writes the built outputs. An app installs the package, runs `theme add --import`, applies the theme from its generated app module, and customizes it with `extends` instead of copying source.',
+      text: 'A theme contribution has editable `defineTheme` source plus a built module and production CSS. `integration add theme` scaffolds the source and declares the package exports; `theme build` writes the built outputs. An app installs the package, runs `theme add`, applies the theme from its generated app module, and customizes it with `extends` instead of copying source.',
     },
     {
       type: 'prose',
-      text: 'These guides cover the whole path: scaffold the source, generate its palette, define and build the theme, ship fonts and assets, run `integration verify`, and document how apps add and extend it. Applying a theme, including mode and SSR, works the same for every theme; see {@link generic:theme}.',
+      text: 'These guides cover the whole path: scaffold the source, generate its palette, define and build the theme, ship fonts and assets, run `integration verify`, and document how apps add and extend it. Applying a theme, including mode and SSR, works the same for every theme; see {@link generic:use-a-theme}.',
     },
   ],
   slots: {

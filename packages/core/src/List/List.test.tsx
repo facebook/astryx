@@ -10,8 +10,9 @@
  */
 
 import {describe, it, expect, vi} from 'vitest';
-import {render, screen} from '@testing-library/react';
+import {render, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import {rulesDeclaredFor} from '../__tests__/pressState';
 import {List} from './List';
 import {ListItem} from './ListItem';
 import {ListMarkerScope} from './ListContext';
@@ -939,5 +940,44 @@ describe('List', () => {
       expect(markerShape(container)).toBeNull();
       expect(screen.getByText('Outside a list')).toBeInTheDocument();
     });
+  });
+});
+
+describe('List and swipe actions', () => {
+  it('clips the rows in the inline axis with clip, never hidden, so a row dragged aside paints no further than the list', () => {
+    render(
+      <List>
+        <ListItem label="A" />
+      </List>,
+    );
+    const rules = rulesDeclaredFor(screen.getByRole('list'));
+    // Declared as `overflow-inline`; StyleX emits the physical longhand of
+    // the same axis in horizontal writing modes.
+    expect(rules.some(r => /overflow-(inline|x): clip/.test(r))).toBe(true);
+    expect(rules.some(r => /overflow[-a-z]*: hidden/.test(r))).toBe(false);
+  });
+
+  it('passes swipeActions and swipeBehavior through to the row unchanged', async () => {
+    render(
+      <List>
+        <ListItem
+          label="A"
+          data-testid="row"
+          swipeBehavior="commit"
+          swipeActions={{trailing: [{label: 'Archive', onActivate: () => {}}]}}
+        />
+      </List>,
+    );
+    const row = screen.getByTestId('row');
+    expect(row.tagName).toBe('LI');
+    expect(row.parentElement).toBe(screen.getByRole('list'));
+    // The panel arrives with the lazily loaded swipe layer.
+    const panel = await waitFor(() => {
+      const found = row.querySelector('[data-swipe-panel="trailing"]');
+      expect(found).not.toBeNull();
+      return found;
+    });
+    // Commit: presentational.
+    expect(panel).toHaveAttribute('aria-hidden', 'true');
   });
 });

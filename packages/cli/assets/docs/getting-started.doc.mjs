@@ -31,7 +31,7 @@ export const docs = {
           type: 'code',
           lang: 'text',
           label: 'Give it a look',
-          code: 'Ask me what look and feel this app should have. Run `npx @astryxdesign/cli theme list`, install the closest theme package, and run `theme add <slug> --import`; use `--package` when owners share a slug. Import `themes` and `defaultThemeSlug` from the generated module once and pass `themes[defaultThemeSlug]` to `<Theme>`. Customize with `defineTheme({extends: importedTheme, ...})`. Use `theme eject` only when I ask for an independent source fork. Default to neutral if I have no preference, and show me the result before moving on.',
+          code: 'Ask me what look and feel this app should have. Run `npx @astryxdesign/cli theme list`, install the closest theme package, and run `theme add <slug>`; use `--package` when owners share a slug. Import `themes` and `defaultThemeSlug` from the generated module once and pass `themes[defaultThemeSlug]` to `<Theme>`. Customize with `defineTheme({extends: importedTheme, ...})`. Use `theme eject` only when I ask for an independent source fork. Default to neutral if I have no preference, and show me the result before moving on.',
         },
       ],
     },
@@ -69,7 +69,7 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'Import the reset and base styles in your global CSS. Then run `astryx theme add neutral --import`; the generated app module imports the theme’s production CSS and font CSS.',
+          text: 'Import the reset and base styles in your global CSS. Then run `astryx theme add neutral`; the generated app module imports the theme’s production CSS and font CSS.',
         },
         {
           type: 'code',
@@ -106,11 +106,11 @@ import {themes, defaultThemeSlug} from './astryx-themes';
         },
         {
           type: 'prose',
-          text: 'These stylesheets are cascade-layered: the reset loads in @layer reset and component styles in @layer astryx-base. If your project has existing global CSS, a legacy reset, or Tailwind, declare the layer order explicitly and assign every stylesheet to a layer deliberately: unlayered styles and later layers both override astryx-base regardless of specificity. Before building screens, read the two cascade layer sections of {@link generic:migration}.',
+          text: 'These stylesheets are cascade-layered: the reset loads in @layer reset and component styles in @layer astryx-base. If your project has existing global CSS, a legacy reset, or Tailwind, declare the layer order explicitly and assign every stylesheet to a layer deliberately: unlayered styles and later layers both override astryx-base regardless of specificity. Before building screens, read the two cascade layer sections of {@link generic:migration-setup}.',
         },
         {
           type: 'prose',
-          text: 'Run {@link generic:theme} for the full theming guide.',
+          text: 'Run {@link generic:use-a-theme} for the full theming guide.',
         },
       ],
     },
@@ -143,7 +143,7 @@ export default function Page() {
       content: [
         {
           type: 'prose',
-          text: 'Astryx components support various styling solutions, from plain CSS and `className` to Tailwind and CSS-in-JS. See {@link generic:styling} for the full guide. Astryx also has a deep integration with [StyleX](https://stylexjs.com/), an atomic CSS-in-JS library: create styles with `stylex.create()` and pass them to components with the `xstyle` prop.',
+          text: 'Astryx components support various styling solutions, from plain CSS and `className` to Tailwind and CSS-in-JS. See {@link namespace:styling} for the full guide. Astryx also has a deep integration with [StyleX](https://stylexjs.com/), an atomic CSS-in-JS library: create styles with `stylex.create()` and pass them to components with the `xstyle` prop.',
         },
         {
           type: 'code',

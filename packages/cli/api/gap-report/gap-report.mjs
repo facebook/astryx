@@ -595,6 +595,21 @@ function aggregateStatus(deliveries) {
  */
 export async function gapReport(component, options = {}) {
   if (options.listCategories) {
+    const ignored = [
+      component ? 'component' : null,
+      options.category ? '--category' : null,
+      options.reason ? '--reason' : null,
+      options.detail ? '--additional-context' : null,
+      options.package ? '--package' : null,
+      options.confirmPublic ? '--confirm-public' : null,
+    ].filter(Boolean);
+    if (ignored.length > 0) {
+      throw new AstryxError(
+        `\`--list-categories\` cannot be combined with ${ignored.join(', ')}: it lists categories and ignores submission options.`,
+        undefined,
+        ERROR_CODES.ERR_INVALID_ARGUMENT,
+      );
+    }
     return {
       type: 'gap-report.categories',
       data: GAP_REPORT_CATEGORIES.map(category => ({...category})),

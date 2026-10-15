@@ -369,8 +369,8 @@ describe('useTriggerMenu', () => {
     expect(result.current.state.query).toBe('john.doe');
   });
 
-  // 12. No matches: hides menu when hasMultiWordQuery matches nothing without emptySearchResultsText
-  it('12. hides menu when multi-word query matches nothing and no emptySearchResultsText is set', async () => {
+  // 12. No matches: hides menu when hasMultiWordQuery matches nothing without emptySearchText
+  it('12. hides menu when multi-word query matches nothing and no emptySearchText is set', async () => {
     const {result} = renderTriggerHook();
 
     await act(async () => {
@@ -380,15 +380,15 @@ describe('useTriggerMenu', () => {
     });
     expect(result.current.state.isActive).toBe(true);
     expect(result.current.state.items).toEqual([]);
-    // renderMenu returns null when hasMultiWordQuery matches nothing and emptySearchResultsText is not set
+    // renderMenu returns null when hasMultiWordQuery matches nothing and emptySearchText is not set
     expect(result.current.renderMenu()).toBeNull();
     expect(result.current.ariaProps['aria-expanded']).toBe(false);
   });
 
-  // 13. Callers with emptySearchResultsText still display empty panel
-  it('13. shows empty panel when caller provides emptySearchResultsText', async () => {
+  // 13. Callers with emptySearchText still display empty panel
+  it('13. shows empty panel when caller provides emptySearchText', async () => {
     const customEmptyTrigger = createMentionTrigger({
-      emptySearchResultsText: 'No matching team members',
+      emptySearchText: 'No matching team members',
     });
     const {result} = renderTriggerHook([customEmptyTrigger]);
 

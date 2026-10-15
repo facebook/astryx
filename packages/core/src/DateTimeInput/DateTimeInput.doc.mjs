@@ -209,10 +209,16 @@ export const docs = {
         'Width of the field (number = pixels, string used as-is, e.g. "100%"). Sizes the whole field (label, control, and status) so they stay aligned.',
     },
     {
-      name: 'xstyle',
+      name: 'containerXstyle',
       type: 'StyleXStyles',
       description:
-        'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value, not an inline style object like style={{}}.',
+        'StyleX styles for the Field box around the label, control, and status. containerClassName and containerStyle take a class name and inline styles for the same box. No effect (development warning) where no Field box renders: inside InputGroup (style the group) and in a horizontal-labels FormLayout.',
+    },
+    {
+      name: 'controlXstyle',
+      type: 'StyleXStyles',
+      description:
+        'StyleX styles for the visual control box: the row that holds the bordered date and time segments with their icons and end controls, never a native input. controlClassName and controlStyle take a class name and inline styles for the same box. Replaces root xstyle, className, and style, which this component does not accept.',
     },
   ],
   theming: {
@@ -240,6 +246,11 @@ export const docs = {
     description:
       'DateTimeInput combines date and time selection in one field. With presentation="adaptive-native" (the default), mouse/trackpad devices use Astryx typed fields and popovers, while coarse-pointer devices use browser/OS date and time controls in the same two-segment field. presentation="native" uses both native controls on every pointer; presentation="adaptive-bottom-sheet" keeps Astryx\'s own surfaces — pointer fields on fine pointers and the coordinated Date/Time bottom sheet on coarse pointers; "popover" and "bottom-sheet" force one Astryx surface on every pointer. The closed segments stay side by side when at least 400px is available and wrap into full-width rows below 400px, independent of viewport width. Use it for scheduling, event creation, deadline setting, or any form field that needs a specific datetime.',
     bestPractices: [
+      {
+        guidance: true,
+        description:
+          "Base props such as ref, id, data-*, aria-*, and DOM event handlers go to the date input, the element that is focused and announced. A DOM handler runs after DateTimeInput's own handler for the same event and still receives events it handled (including ones it called preventDefault on), so it cannot cancel built-in behavior.",
+      },
       {
         guidance: true,
         description:
@@ -289,6 +300,12 @@ export const docs = {
           'Text above the input describing what datetime is expected.',
       },
       {
+        name: 'Segment row',
+        required: true,
+        description:
+          'The unbordered layout row that holds the two bordered segments and wraps them when its container is narrow.',
+      },
+      {
         name: 'Date input',
         required: true,
         description:
@@ -313,10 +330,22 @@ export const docs = {
           'A real input type=time for the default minute-precision native mode, a text/combobox time field when seconds, custom increments, or preset options are requested, or a read-only segment opening accessible time wheels under presentation="adaptive-bottom-sheet" on a coarse pointer.',
       },
       {
+        name: 'Clock icon',
+        required: true,
+        description:
+          'The time glyph shown as a leading identifier on the Astryx pointer field and as the picker affordance in native and touch-sheet time segments.',
+      },
+      {
         name: 'Time options popover',
         required: false,
         description:
           "A list of preset times at the timeOptionInterval cadence. Setting the prop retains Astryx's text/combobox time field even when nativePicker otherwise selects native controls; the Astryx touch sheet uses wheels instead.",
+      },
+      {
+        name: 'Time option',
+        required: false,
+        description:
+          'One selectable preset time in the optional time-options popover.',
       },
       {
         name: 'Clear button',
@@ -340,6 +369,11 @@ export const docsZh = {
     description:
       'DateTimeInput combines date and time selection in one field. With presentation="adaptive-native" (the default), mouse/trackpad devices use Astryx typed fields and popovers, while coarse-pointer devices use browser/OS date and time controls in the same two-segment field. presentation="native" uses both native controls on every pointer; presentation="adaptive-bottom-sheet" keeps Astryx\'s own surfaces — pointer fields on fine pointers and the coordinated Date/Time bottom sheet on coarse pointers; "popover" and "bottom-sheet" force one Astryx surface on every pointer. The closed segments stay side by side when at least 400px is available and wrap into full-width rows below 400px, independent of viewport width. Use it for scheduling, event creation, deadline setting, or any form field that needs a specific datetime.',
     bestPractices: [
+      {
+        guidance: true,
+        description:
+          "Base props such as ref, id, data-*, aria-*, and DOM event handlers go to the date input, the element that is focused and announced. A DOM handler runs after DateTimeInput's own handler for the same event and still receives events it handled (including ones it called preventDefault on), so it cannot cancel built-in behavior.",
+      },
       {
         guidance: true,
         description:
@@ -547,10 +581,16 @@ export const docsZh = {
       default: "'touch'",
     },
     {
-      name: 'xstyle',
+      name: 'containerXstyle',
       type: 'StyleXStyles',
       description:
-        '用于布局自定义的 StyleX 样式。必须是 stylex.create() 的值。',
+        '作用于包含标签、控件和状态的 Field 容器的 StyleX 样式；containerClassName 与 containerStyle 以类名和内联样式作用于同一容器。没有 Field 容器时（InputGroup 内或 horizontal-labels FormLayout 中）不生效，并在开发环境发出警告。',
+    },
+    {
+      name: 'controlXstyle',
+      type: 'StyleXStyles',
+      description:
+        '作用于可见控件框（容纳带边框的日期与时间分段及其图标和末端控件的行，而非原生 input）的 StyleX 样式；controlClassName 与 controlStyle 以类名和内联样式作用于同一元素。本组件不接受根级 xstyle、className 和 style。',
     },
   ],
   theming: {
@@ -584,6 +624,11 @@ export const docsDense = {
     description:
       'DateTimeInput combines date and time selection. presentation="adaptive-native" (default) uses browser/OS date+time controls on coarse pointers and Astryx pointer fields on fine pointers; "native" uses both native controls everywhere; "adaptive-bottom-sheet" uses Astryx\'s coordinated bottom sheet on coarse pointers and pointer fields on fine pointers; "popover"/"bottom-sheet" force one Astryx surface everywhere. Closed segments stay side by side when at least 400px is available and wrap below 400px.',
     bestPractices: [
+      {
+        guidance: true,
+        description:
+          "Base props such as ref, id, data-*, aria-*, and DOM event handlers go to the date input, the element that is focused and announced. A DOM handler runs after DateTimeInput's own handler for the same event and still receives events it handled (including ones it called preventDefault on), so it cannot cancel built-in behavior.",
+      },
       {
         guidance: true,
         description:
@@ -666,6 +711,9 @@ export const docsDense = {
       "date+time surfaces: 'adaptive-native' (default) = Astryx popovers fine / browser/OS coarse w/ per-segment fallbacks (seconds/timeIncrement/timeOptionInterval); 'native' = browser/OS always, no fallback; 'adaptive-bottom-sheet' = popovers fine / coordinated sheet coarse; 'popover'/'bottom-sheet' force Astryx. every value opens pickers (no typed-only value; that is TimeInput's).",
     nativePicker:
       "deprecated, use presentation: 'touch'='adaptive-native', 'always'='native', 'never'='adaptive-bottom-sheet'. still works as released; presentation wins if both set.",
-    xstyle: 'StyleX styles for layout; must be stylex.create() value',
+    containerXstyle:
+      'Field box (label+control+status); also containerClassName/containerStyle. no effect in InputGroup or horizontal-labels FormLayout',
+    controlXstyle:
+      'visual control box = the row holding the date and time segments, never a native input; also controlClassName/controlStyle. no root xstyle/className/style',
   },
 };

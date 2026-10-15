@@ -31,7 +31,12 @@ import {
   useIsBusy,
   type BusyIndicatorLane,
 } from '../Typeahead/busyIndicatorLane';
-import type {BaseProps} from '../BaseProps';
+import {TrailingKeyDownContext} from '../Typeahead/trailingKeyDown';
+import {
+  type FieldInputBaseProps,
+  useFieldInputStyling,
+} from '../Field/fieldParts';
+import {useMergedRefs} from '../hooks/useMergedRefs';
 import type {SizeValue} from '../utils/types';
 import {BaseTypeahead} from '../Typeahead/BaseTypeahead';
 import {useSize} from '../SizeContext/SizeContext';
@@ -63,7 +68,6 @@ import type {SearchableItem, SearchSource} from '../Typeahead/types';
 import {mergeProps} from '../utils';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
-import {useRenamedProp} from '../hooks/useRenamedProp';
 
 // Re-export status types for convenience
 export type {
@@ -106,9 +110,16 @@ export interface TokenizerHandle {
 }
 
 export interface TokenizerProps<T extends SearchableItem> extends Omit<
-  BaseProps<HTMLDivElement>,
-  'onChange'
+  FieldInputBaseProps<HTMLInputElement>,
+  'onChange' | 'onFocus' | 'onBlur' | 'onKeyDown'
 > {
+  /**
+   * Key handler. Runs after the built-in key handling, so it observes every key
+   * and cannot cancel navigation, selection, or token editing. It receives keys
+   * on the combobox input and on the field's other controls (the clear button
+   * and tokens).
+   */
+  onKeyDown?: React.KeyboardEventHandler<HTMLElement>;
   /** Accessible label (required). */
   label: string;
   /** Visually hide the label. @default false */
@@ -194,18 +205,6 @@ export interface TokenizerProps<T extends SearchableItem> extends Omit<
    * @default 'No results found'
    */
   emptySearchText?: ReactNode;
-
-  /**
-   * Text shown when no results found.
-   * @default 'No results found'
-   * @deprecated `DEP-0001`. Renamed to `emptySearchText`, which takes a
-   * `ReactNode` rather than a `string` — every existing value stays valid
-   * (`spec:AST-056` FR1, FR7). Still works exactly as released;
-   * `emptySearchText` wins when both are set. Removal is `CLN-0001`, in a
-   * later minor whose frozen manifest carries both ids (`spec:AST-017`
-   * FR31).
-   */
-  emptySearchResultsText?: string;
   /** Whether the input is disabled. @default false */
   isDisabled?: boolean;
   /**
@@ -257,8 +256,8 @@ export interface TokenizerProps<T extends SearchableItem> extends Omit<
   onFocus?: (e: React.FocusEvent) => void;
   /** Fires when focus leaves the tokenizer entirely. */
   onBlur?: (e: React.FocusEvent) => void;
-  /** Ref forwarded to the root field element. */
-  ref?: React.Ref<HTMLDivElement>;
+  /** Ref forwarded to the combobox input. */
+  ref?: React.Ref<HTMLInputElement>;
   /** Imperative handle ref for focus/blur control. */
   handleRef?: React.Ref<TokenizerHandle>;
 }
@@ -565,8 +564,7 @@ export function Tokenizer<T extends SearchableItem>({
   maxMenuItems,
   menuWidth,
   minQueryLength,
-  emptySearchResultsText,
-  emptySearchText: emptySearchTextFromProps,
+  emptySearchText,
   isDisabled = false,
   htmlName,
   disabledMessage,
@@ -581,17 +579,28 @@ export function Tokenizer<T extends SearchableItem>({
   onFocus,
   onBlur,
   width,
-  xstyle,
-  className,
-  style,
-  'data-testid': testId,
+  containerXstyle,
+  containerClassName,
+  containerStyle,
+  controlXstyle,
+  controlClassName,
+  controlStyle,
   ref,
   handleRef,
-  ...rest
+  onKeyDown,
+  id: idProp,
+  'aria-describedby': ariaDescribedByProp,
+  ...restProps
 }: TokenizerProps<T>) {
+  const {rest, container} = useFieldInputStyling('Tokenizer', restProps, {
+    containerXstyle,
+    containerClassName,
+    containerStyle,
+  });
   const t = useTranslator();
   const size = useSize(sizeProp, 'md');
-  const inputId = useId();
+  const generatedInputId = useId();
+  const inputId = idProp ?? generatedInputId;
   const descriptionId = useId();
   const statusMessageId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -608,16 +617,6 @@ export function Tokenizer<T extends SearchableItem>({
     // input, so always attach focus listeners.
     focusTrigger: 'always',
     isEnabled: showsDisabledMessage,
-  });
-
-  // The replacement wins, the released name keeps working, and development
-  // says which one was read (`spec:AST-056` FR7, `spec:AST-017` FR28).
-  const emptySearchText = useRenamedProp<ReactNode>({
-    component: 'Tokenizer',
-    deprecated: 'emptySearchResultsText',
-    deprecatedValue: emptySearchResultsText,
-    replacement: 'emptySearchText',
-    value: emptySearchTextFromProps,
   });
 
   useImperativeHandle(handleRef, () => ({
@@ -730,6 +729,18 @@ export function Tokenizer<T extends SearchableItem>({
     [value],
   );
 
+  // Selected labels, lowercased, for the Create entry's duplicate check. The
+  // typed text is a label, not an id: real selections usually carry an opaque
+  // id (`usr_123` under the label "Alice"), so comparing the text against ids
+  // alone misses an already-tokenized label — and the search results cannot
+  // catch it either, because filteredSource has already removed the selected
+  // item from them. The result was a "Create Alice" entry that, when picked,
+  // added a second "Alice" token under a different id.
+  const selectedLabels = useMemo(
+    () => new Set(value.map(item => item.label.toLowerCase())),
+    [value],
+  );
+
   const filteredSource: SearchSource<T> = useMemo(
     () => ({
       search: async (query: string) => {
@@ -760,6 +771,7 @@ export function Tokenizer<T extends SearchableItem>({
       }
       const alreadyExists =
         selectedIds.has(trimmed) ||
+        selectedLabels.has(trimmed.toLowerCase()) ||
         results.some(
           item => item.label.toLowerCase() === trimmed.toLowerCase(),
         );
@@ -774,7 +786,7 @@ export function Tokenizer<T extends SearchableItem>({
         } as unknown as T,
       ];
     },
-    [hasCreate, selectedIds],
+    [hasCreate, selectedIds, selectedLabels],
   );
 
   const emptySource: SearchSource<T> = useMemo(
@@ -808,7 +820,13 @@ export function Tokenizer<T extends SearchableItem>({
         item.id.startsWith(CREATABLE_ID_PREFIX)
       ) {
         const createdValue = item.id.slice(CREATABLE_ID_PREFIX.length);
-        if (selectedIds.has(createdValue)) {
+        // Same domain fix as createEntries: the created value names itself by
+        // label, so a selection carrying an opaque id with that label is also a
+        // duplicate, not just one whose id happens to equal the text.
+        if (
+          selectedIds.has(createdValue) ||
+          selectedLabels.has(createdValue.toLowerCase())
+        ) {
           return;
         }
         const base = {id: createdValue, label: createdValue};
@@ -826,7 +844,16 @@ export function Tokenizer<T extends SearchableItem>({
       onChange(newItems, {item, type: 'add'});
       announce(t('@astryx.tokenizer.tokenAdded', {label: item.label}));
     },
-    [value, onChange, isAtMax, selectedIds, hasCreate, announce, t],
+    [
+      value,
+      onChange,
+      isAtMax,
+      selectedIds,
+      selectedLabels,
+      hasCreate,
+      announce,
+      t,
+    ],
   );
 
   // Handle removing an item. Single removal path: both Backspace on an empty
@@ -943,7 +970,14 @@ export function Tokenizer<T extends SearchableItem>({
       onClick={handleWrapperClick}
       onFocusCapture={handleFocusCapture}
       onBlurCapture={handleBlurCapture}
-      data-testid={testId}
+      // Keys on the field's other controls (clear button, tokens) reach a
+      // consumer onKeyDown here; keys on the input reach it through
+      // TrailingKeyDownContext after the built-in handling.
+      onKeyDown={event => {
+        if (event.target !== inputRef.current) {
+          onKeyDown?.(event);
+        }
+      }}
       {...mergeProps(
         themeProps('tokenizer', {
           size,
@@ -960,7 +994,10 @@ export function Tokenizer<T extends SearchableItem>({
           status && inputStatusBorderStyles[status.type],
           status && !isDisabled && inputStatusHoverShadowStyles[status.type],
           status && inputStatusFocusWithinStyles[status.type],
+          controlXstyle,
         ),
+        controlClassName,
+        controlStyle,
       )}>
       {startIcon && (
         <span {...stylex.props(value.length > 0 && styles.startIconWithTokens)}>
@@ -985,43 +1022,50 @@ export function Tokenizer<T extends SearchableItem>({
           indicator lands in the end controls below beside the clear
           button rather than as a second one inside the base. */}
       <BusyIndicatorLaneProvider value={busyLane}>
-        <BaseTypeahead
-          ref={inputRef}
-          searchSource={isAtMax ? emptySource : filteredSource}
-          value={null}
-          onChange={handleAdd}
-          renderItem={renderItem}
-          // A space keeps :placeholder-shown available as the CSS-only empty
-          // query signal without painting placeholder text beside tokens.
-          placeholder={value.length === 0 ? placeholder : ' '}
-          hasEntriesOnFocus={isAtMax ? false : hasEntriesOnFocus}
-          maxMenuItems={maxMenuItems}
-          menuWidth={menuWidth}
-          minQueryLength={minQueryLength}
-          emptySearchText={emptySearchText}
-          isDisabled={isDisabled}
-          isFocusableDisabled={showsDisabledMessage}
-          hasAutoFocus={hasAutoFocus}
-          inputId={inputId}
-          ariaDescribedBy={ariaDescribedBy}
-          onChangeQuery={onChangeQuery}
-          __queryEntries={createEntries}
-          debounceMs={debounceMs}
-          onKeyDown={handleKeyDown}
-          anchorRef={wrapperRef}
-          size={size}
-          inputXStyle={[
-            isAtMax || isTruncated
-              ? styles.inputAtMax
-              : value.length > 0
-                ? [styles.inputCompact, compactInputSizeStyles[size]]
-                : undefined,
-            // The compact-token style owns the same reserve with an empty-query
-            // exception. This standalone rule is only for an empty Tokenizer;
-            // it still resolves to zero until the lane publishes a width.
-            !(isAtMax || isTruncated || value.length > 0) && laneReserve,
-          ]}
-        />
+        <TrailingKeyDownContext value={onKeyDown}>
+          <BaseTypeahead
+            {...rest}
+            ref={useMergedRefs(inputRef, ref)}
+            searchSource={isAtMax ? emptySource : filteredSource}
+            value={null}
+            onChange={handleAdd}
+            renderItem={renderItem}
+            // A space keeps :placeholder-shown available as the CSS-only empty
+            // query signal without painting placeholder text beside tokens.
+            placeholder={value.length === 0 ? placeholder : ' '}
+            hasEntriesOnFocus={isAtMax ? false : hasEntriesOnFocus}
+            maxMenuItems={maxMenuItems}
+            menuWidth={menuWidth}
+            minQueryLength={minQueryLength}
+            emptySearchText={emptySearchText}
+            isDisabled={isDisabled}
+            isFocusableDisabled={showsDisabledMessage}
+            hasAutoFocus={hasAutoFocus}
+            inputId={inputId}
+            ariaDescribedBy={
+              [ariaDescribedByProp, ariaDescribedBy]
+                .filter(Boolean)
+                .join(' ') || undefined
+            }
+            onChangeQuery={onChangeQuery}
+            __queryEntries={createEntries}
+            debounceMs={debounceMs}
+            onKeyDown={handleKeyDown}
+            anchorRef={wrapperRef}
+            size={size}
+            inputXStyle={[
+              isAtMax || isTruncated
+                ? styles.inputAtMax
+                : value.length > 0
+                  ? [styles.inputCompact, compactInputSizeStyles[size]]
+                  : undefined,
+              // The compact-token style owns the same reserve with an empty-query
+              // exception. This standalone rule is only for an empty Tokenizer;
+              // it still resolves to zero until the lane publishes a width.
+              !(isAtMax || isTruncated || value.length > 0) && laneReserve,
+            ]}
+          />
+        </TrailingKeyDownContext>
       </BusyIndicatorLaneProvider>
       {htmlName != null &&
         value.map(item => (
@@ -1081,7 +1125,10 @@ export function Tokenizer<T extends SearchableItem>({
                 !isDisabled &&
                 inputStatusHoverShadowStyles[status.type],
               status && inputStatusFocusWithinStyles[status.type],
+              controlXstyle,
             ),
+            controlClassName,
+            controlStyle,
           )}>
           {isTruncated && (
             <>
@@ -1124,8 +1171,7 @@ export function Tokenizer<T extends SearchableItem>({
 
   return (
     <Field
-      {...rest}
-      ref={ref}
+      {...container}
       label={label}
       isLabelHidden={isLabelHidden}
       description={description}
@@ -1145,10 +1191,7 @@ export function Tokenizer<T extends SearchableItem>({
       }
       statusVariant={statusVariant}
       labelTooltip={labelTooltip}
-      width={width}
-      xstyle={xstyle}
-      className={className}
-      style={style}>
+      width={width}>
       {tokenizerContent}
       {showsDisabledMessage &&
         disabledMessageTooltip.renderTooltip(disabledMessage)}

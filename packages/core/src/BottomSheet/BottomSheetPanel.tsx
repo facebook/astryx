@@ -50,6 +50,7 @@ import {
 import {mergeProps, themeProps} from '../utils';
 import {focusOutlineStyles} from '../utils/focusOutline.stylex';
 import {layerTextReset} from '../Layer/layerTextReset.stylex';
+import {layerStructureReset} from '../Layer/layerStructureReset.stylex';
 import {LayerContentBoundary} from '../Layer/layerScopedContext';
 import {container} from '../Layout/container.stylex';
 import type {SpacingToken} from '../Layout/container.stylex';
@@ -212,7 +213,8 @@ const styles = stylex.create({
     // surface behind the pill itself, fading out across the lower half so the
     // content emerging below has no visible cut line.
     backgroundImage: `linear-gradient(to bottom, ${colorVars['--color-background-surface']} 60%, transparent)`,
-    touchAction: 'none',
+    // Drags are the handle's; a pinch still zooms the page (WCAG 1.4.4).
+    touchAction: 'pinch-zoom',
     cursor: {
       default: 'grab',
       ':is(:disabled,[aria-disabled="true"])': 'default',
@@ -228,7 +230,7 @@ const styles = stylex.create({
     flexGrow: 1,
     minHeight: 0,
     boxSizing: 'border-box',
-    touchAction: 'pan-y',
+    touchAction: 'pan-y pinch-zoom',
     outlineOffset: {
       default: 0,
       ':focus-visible': `calc(-1 * ${focusVars['--focus-outline-width']})`,
@@ -254,7 +256,6 @@ const styles = stylex.create({
     // observed box grow with async content beyond a fixed-height viewport.
     // This box is also the sheet's container: it carries the padding and
     // publishes it, so a lone Section child escapes it exactly as in Dialog.
-    // Unpadded unless the prop or the theme sets padding.
     display: 'flow-root',
     boxSizing: 'border-box',
     height: '100%',
@@ -301,7 +302,7 @@ interface BottomSheetPanelProps extends BaseProps<HTMLDivElement> {
   children: ReactNode;
   /**
    * Content padding on the spacing scale. Omitted, the content box reads the
-   * theme's bottom-sheet padding, else none (the released default).
+   * theme's bottom-sheet padding, then --spacing-4 (Dialog's default).
    */
   padding?: SpacingStep;
   snapPoints?: ReadonlyArray<BottomSheetSnapPoint>;
@@ -516,6 +517,7 @@ export function BottomSheetPanel({
     dragOffset,
     settledOffset,
     isDragging,
+    isTraveling,
     sheetHeight,
     scrollPreservationInset,
     settlingLayoutOffset,
@@ -555,7 +557,7 @@ export function BottomSheetPanel({
     isEnabled: height === 'tall',
     isFullyExpanded: settledOffset === 0,
     isPageScrollLocked,
-    isSheetTraveling: isDragging && dragOffset !== settledOffset,
+    isSheetTraveling: isTraveling,
     isOpen: isInteractive,
     isPresented,
     sheetRef: elementRef,
@@ -624,7 +626,7 @@ export function BottomSheetPanel({
   }, [motion]);
 
   // Same lowering as Dialog: with no padding prop the content box reads the
-  // theme's --astryx-bottom-sheet-padding chain (no padding when unset), else
+  // theme's --astryx-bottom-sheet-padding chain (--spacing-4 when unset), else
   // the explicit step.
   const usesThemePadding = padding == null;
   const effectivePadding = padding ?? 4;
@@ -673,9 +675,33 @@ export function BottomSheetPanel({
           .filter(Boolean)
           .join(' ')
       : gestureTransform;
+  const sheetTransform = isInteractive
+    ? gestureTransform
+    : isRetained
+      ? retainedTransform
+      : undefined;
+  const consumerTransform = style?.transform;
+  // The transform is written to the element here, not rendered through the
+  // style prop. A drag writes it straight to the element once per input
+  // sample (useSheetGestures) and renders nothing in between, so React never
+  // sees those writes; rendered through the prop, the resting value would be
+  // skipped as "unchanged" when the drag ends and the sheet would stay where
+  // the finger left it. Written after every commit instead, outside a drag,
+  // the resting value lands in the same style update as the restored
+  // transition, so a settle or a dismissal animates from the live position.
+  useLayoutEffect(() => {
+    if (isDragging || consumerTransform != null) {
+      return;
+    }
+    const element = elementRef.current;
+    if (element != null) {
+      element.style.transform = sheetTransform ?? '';
+    }
+  });
   const gestureStyle = {
-    ...contentProps.style,
-    transform: gestureTransform,
+    transition: contentProps.style.transition,
+    touchAction: contentProps.style.touchAction,
+    overscrollBehavior: contentProps.style.overscrollBehavior,
     height: resizedHeight,
   };
   return (
@@ -687,6 +713,7 @@ export function BottomSheetPanel({
         themeProps('bottom-sheet'),
         stylex.props(
           layerTextReset.reset,
+          layerStructureReset.reset,
           styles.sheet,
           overlayPaddingReset.reset,
           height === 'hug' ? styles.hugHeight : styles.budget,
@@ -700,11 +727,9 @@ export function BottomSheetPanel({
           ['--_sheet-budget' as string]: budget,
           ...(isInteractive
             ? gestureStyle
-            : isRetained
-              ? {transform: retainedTransform, height: resizedHeight}
-              : isClosing
-                ? {height: resizedHeight}
-                : {}),
+            : isRetained || isClosing
+              ? {height: resizedHeight}
+              : {}),
           ...style,
         },
       )}>

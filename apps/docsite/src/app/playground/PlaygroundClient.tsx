@@ -1176,7 +1176,7 @@ export function PlaygroundClient() {
                               isDisabled
                               value={shareUrl}
                               onChange={() => {}}
-                              xstyle={s.shareInput}
+                              controlXstyle={s.shareInput}
                             />
                             <Button
                               label={copied ? 'Copied' : 'Copy URL'}
@@ -1208,7 +1208,7 @@ export function PlaygroundClient() {
                               onChange={v =>
                                 setThemeName(v.replace(/[\s-]/g, ''))
                               }
-                              xstyle={s.shareInput}
+                              controlXstyle={s.shareInput}
                             />
                             <Button
                               label="Download theme"

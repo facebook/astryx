@@ -608,8 +608,7 @@ export function useTriggerMenu(
 
   // Multi-word queries with no matches hide the menu unless an explicit emptySearchText was provided.
   const hasEmptySearchContent =
-    state.activeTrigger?.emptySearchText !== undefined ||
-    state.activeTrigger?.emptySearchResultsText !== undefined;
+    state.activeTrigger?.emptySearchText !== undefined;
 
   const isMultiWordEmpty =
     state.activeTrigger?.hasMultiWordQuery &&
@@ -748,9 +747,7 @@ export function useTriggerMenu(
       return null;
     }
 
-    const hasEmptyContent =
-      activeTrigger.emptySearchText !== undefined ||
-      activeTrigger.emptySearchResultsText !== undefined;
+    const hasEmptyContent = activeTrigger.emptySearchText !== undefined;
 
     const shouldHideMultiWordEmpty =
       activeTrigger.hasMultiWordQuery &&
@@ -762,10 +759,7 @@ export function useTriggerMenu(
       return null;
     }
 
-    const emptyText =
-      activeTrigger.emptySearchText ??
-      activeTrigger.emptySearchResultsText ??
-      'No results';
+    const emptyText = activeTrigger.emptySearchText ?? 'No results';
     const loadingText = activeTrigger.loadingText ?? 'Searching\u2026';
 
     let listContent: ReactNode;
