@@ -114,6 +114,53 @@ const MENU_TRIGGER_OPEN_BACKGROUND = `linear-gradient(${colorVars['--color-overl
  * aria-hidden subtrees) are not reachable, judged by the popover focus trap's
  * own test so the two never disagree about where Tab can go.
  */
+/**
+ * Collapse each named radio group to the one Tab stop a browser gives it: the
+ * focused radio, else the checked one, else the first radio moving forward or
+ * the last moving backward. The stop takes the group's first position.
+ */
+function collapseRadioGroups(
+  elements: HTMLElement[],
+  active: Element | null,
+  isBackward: boolean,
+): HTMLElement[] {
+  const groups = new Map<string, HTMLInputElement[]>();
+  const groupKey = (el: HTMLElement): string | null =>
+    el instanceof HTMLInputElement &&
+    el.getAttribute('type') === 'radio' &&
+    el.name !== ''
+      ? `${el.form?.id ?? ''}\u0000${el.name}`
+      : null;
+  for (const el of elements) {
+    const key = groupKey(el);
+    if (key != null) {
+      const members = groups.get(key) ?? [];
+      members.push(el as HTMLInputElement);
+      groups.set(key, members);
+    }
+  }
+  const placed = new Set<string>();
+  const result: HTMLElement[] = [];
+  for (const el of elements) {
+    const key = groupKey(el);
+    if (key == null) {
+      result.push(el);
+      continue;
+    }
+    if (placed.has(key)) {
+      continue;
+    }
+    placed.add(key);
+    const members = groups.get(key) ?? [];
+    const stop =
+      members.find(radio => radio === active) ??
+      members.find(radio => radio.checked) ??
+      (isBackward ? members[members.length - 1] : members[0]);
+    result.push(stop);
+  }
+  return result;
+}
+
 function tabbablesIn(region: HTMLElement | null): HTMLElement[] {
   if (region == null) {
     return [];
@@ -1161,11 +1208,16 @@ function DropdownMenuPopover({
       }
       e.preventDefault();
       e.stopPropagation();
-      const cycle = [
-        ...tabbablesIn(headerRef.current),
-        menu,
-        ...tabbablesIn(footerRef.current),
-      ];
+      // A named radio group is one stop, as the browser's own Tab order has it.
+      const cycle = collapseRadioGroups(
+        [
+          ...tabbablesIn(headerRef.current),
+          menu,
+          ...tabbablesIn(footerRef.current),
+        ],
+        document.activeElement,
+        e.shiftKey,
+      );
       if (cycle.length === 1) {
         // Nothing else to reach: focus stays in the menu. From a flyout that
         // has just closed itself, that is the menu's own stop.

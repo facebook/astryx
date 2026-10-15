@@ -4020,6 +4020,68 @@ describe('DropdownMenu header and footer', () => {
     expect(dialog.getAttribute('aria-label')?.trim()).not.toBe('');
   });
 
+  describe('with a radio group in the header', () => {
+    async function openWithRadios(checked: string | null) {
+      const user = userEvent.setup();
+      render(
+        <DropdownMenu
+          button={{label: 'Labels'}}
+          header={
+            <fieldset>
+              {['Name', 'Date', 'Size'].map(option => (
+                <input
+                  key={option}
+                  type="radio"
+                  name="sort"
+                  aria-label={option}
+                  defaultChecked={option === checked}
+                />
+              ))}
+            </fieldset>
+          }
+          footer={<button type="button">Create label</button>}>
+          <DropdownMenuItem label="Bug" />
+        </DropdownMenu>,
+      );
+      await user.click(screen.getByRole('button', {name: /Labels/}));
+      const menu = screen.getByRole('menu', {name: 'Labels', hidden: true});
+      await waitFor(() => expect(menu).toHaveFocus());
+      const radio = (name: string) =>
+        screen.getByRole('radio', {name, hidden: true});
+      const create = screen.getByRole('button', {
+        name: 'Create label',
+        hidden: true,
+      });
+      return {menu, radio, create};
+    }
+
+    it('Shift+Tab from the menu lands on the checked radio, and Tab leaves the group in one step', async () => {
+      const {menu, radio} = await openWithRadios('Date');
+      fireEvent.keyDown(menu, {key: 'Tab', shiftKey: true});
+      expect(radio('Date')).toHaveFocus();
+      fireEvent.keyDown(radio('Date'), {key: 'Tab'});
+      expect(menu).toHaveFocus();
+    });
+
+    it('Tab wrapping past the footer lands on the checked radio', async () => {
+      const {radio, create} = await openWithRadios('Size');
+      act(() => create.focus());
+      fireEvent.keyDown(create, {key: 'Tab'});
+      expect(radio('Size')).toHaveFocus();
+    });
+
+    it('with none checked, the group is entered at its first radio forward and its last backward', async () => {
+      const {menu, radio, create} = await openWithRadios(null);
+      fireEvent.keyDown(menu, {key: 'Tab', shiftKey: true});
+      expect(radio('Size')).toHaveFocus();
+      act(() => create.focus());
+      fireEvent.keyDown(create, {key: 'Tab'});
+      expect(radio('Name')).toHaveFocus();
+      fireEvent.keyDown(radio('Name'), {key: 'Tab', shiftKey: true});
+      expect(create).toHaveFocus();
+    });
+  });
+
   it('without a header or footer, there is no dialog and the trigger points at the menu', async () => {
     const user = userEvent.setup();
     render(
