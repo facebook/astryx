@@ -3,11 +3,11 @@ schema_version: 3
 template_version: 7
 kind: component
 id: component:InternationalizationProvider
-authority: draft
+authority: current
 archive_reason: null
 superseded_by: null
-approved_by: null
-approved_at: null
+approved_by: nynexman4464
+approved_at: 2026-10-15
 owners: [nynexman4464, cixzhang]
 review_triggers: [public-api, behavior, accessibility]
 verified_by:
@@ -37,7 +37,7 @@ system_specs: []
 | Behavior                | Astryx strings resolve override → supplied catalog → shipped English, walking exact → parent locale. Rich and runtime catalogs resolve identically; the context always exposes the rich shape. Changing any provider prop updates the subtree. A nested provider replaces its parent's context. Without a provider: locale `en`, direction `ltr`, shipped English.                                                                              |
 | End-user impact         | People using a translated locale see Astryx interface and assistive text in that locale where a translation exists and meaningful English otherwise; a missing translation never removes an accessible name or announcement.                                                                                                                                                                                                                    |
 | Builder impact          | Optional: import `@astryxdesign/core/locales/<tag>.generated.js` for a smaller bundle; `<tag>.json` keeps working. Render the provider once, supply partial catalogs freely, and keep DOM `dir` aligned with the provider direction.                                                                                                                                                                                                            |
-| Compatibility/readiness | Released default preserved; the provider, subpath, props, hooks, and rich context shape are stable public API; runtime-catalog input is additive. Draft pending exact-head owner approval. Re-render, nested-provider, and runtime-catalog behavior is covered by focused tests.                                                                                                                                                                |
+| Compatibility/readiness | Released default preserved; the provider, subpath, props, hooks, and rich context shape are stable public API; runtime-catalog input is additive. Re-render, nested-provider, and runtime-catalog behavior is covered by focused tests.                                                                                                                                                                                                         |
 | Review checks           | Reject reordering fallback (FR1, ORD1); hiding a key missing from every applicable source, including shipped English (FR2); a nested provider that merges parent context (FR8); the provider setting DOM `lang`/`dir` (FR5) or persisting locale (FR4); non-string translator results (FR7); host-locale output without a provider (FR6); a context value that exposes string-map entries or resolves rich and runtime input differently (FR9). |
 | Governing rules         | `architecture:internationalization` INV2–INV5, INV7, INV12, INV13, INV15.                                                                                                                                                                                                                                                                                                                                                                       |
 
