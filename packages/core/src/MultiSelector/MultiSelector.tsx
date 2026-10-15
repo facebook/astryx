@@ -1755,8 +1755,8 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
     getActionCellId,
     activeDescendantId,
     onTriggerClick,
-    onKeyDown,
-    onItemMouseEnter,
+    onKeyDown: onComboboxKeyDown,
+    onItemMouseEnter: onComboboxItemMouseEnter,
   } = useMultiCombobox({
     selectableItems: sortedItems,
     isDisabled: isDisabled || isEffectivelyReadOnly,
@@ -1786,6 +1786,26 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
       [getActionCellIdForActivate],
     ),
   });
+
+  // A hover moves the highlight too, but the focus ring belongs to keyboard
+  // navigation (architecture:interaction-modality): an action cell a pointer
+  // highlighted keeps the hover treatment and no ring until a key moves the
+  // highlight again.
+  const [isHighlightFromPointer, setIsHighlightFromPointer] = useState(false);
+  const onKeyDown = useCallback(
+    (event: React.KeyboardEvent<HTMLElement>) => {
+      setIsHighlightFromPointer(false);
+      onComboboxKeyDown(event);
+    },
+    [onComboboxKeyDown],
+  );
+  const onItemMouseEnter = useCallback(
+    (...args: Parameters<typeof onComboboxItemMouseEnter>) => {
+      setIsHighlightFromPointer(true);
+      onComboboxItemMouseEnter(...args);
+    },
+    [onComboboxItemMouseEnter],
+  );
 
   // The trigger button owns its click so a consumer `onClick`, which lands on
   // the button, composes after the built-in toggle. A press elsewhere in the
@@ -2120,6 +2140,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
                   styles.actionCell,
                   isHighlighted &&
                     highlightedCell === 'action' &&
+                    !isHighlightFromPointer &&
                     styles.actionCellActive,
                 )}>
                 {isSelectAll || isCreate ? null : item.action}
@@ -2134,6 +2155,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
     [
       isGrid,
       highlightedCell,
+      isHighlightFromPointer,
       getActionCellId,
       renderOption,
       indicatorPosition,

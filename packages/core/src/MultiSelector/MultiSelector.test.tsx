@@ -4125,6 +4125,49 @@ describe('MultiSelector option actions (grid)', () => {
     }
   });
 
+  it('draws no focus ring on an action cell a pointer highlighted, until a key moves the highlight', async () => {
+    const ring = stylex.create({
+      active: {
+        outlineWidth: focusVars['--focus-outline-width'],
+        outlineStyle: focusVars['--focus-outline-style'],
+        outlineColor: focusVars['--focus-outline-color'],
+        outlineOffset: focusVars['--focus-outline-offset'],
+      },
+    });
+    const ringClasses = stylex
+      .props(ring.active)
+      .className!.split(' ')
+      .filter(token => /^x[a-z0-9]+$/.test(token));
+    expect(ringClasses).toHaveLength(4);
+
+    const user = userEvent.setup();
+    render(
+      <MultiSelector
+        label="Labels"
+        options={OPTIONS}
+        value={[]}
+        onChange={() => {}}
+      />,
+    );
+    const trigger = screen.getByRole('combobox', {name: 'Labels'});
+    await user.click(trigger);
+    const bug = screen.getByRole('row', {name: 'Bug', ...h});
+    const actionCell = bug.children[1] as HTMLElement;
+    fireEvent.mouseEnter(actionCell);
+    // The hover moved the highlight onto the action cell, without the ring.
+    expect(trigger).toHaveAttribute('aria-activedescendant', actionCell.id);
+    for (const token of ringClasses) {
+      expect(actionCell).not.toHaveClass(token);
+    }
+    // Keyboard navigation back onto the cell draws it.
+    fireEvent.keyDown(trigger, {key: 'ArrowLeft'});
+    fireEvent.keyDown(trigger, {key: 'ArrowRight'});
+    expect(trigger).toHaveAttribute('aria-activedescendant', actionCell.id);
+    for (const token of ringClasses) {
+      expect(actionCell).toHaveClass(token);
+    }
+  });
+
   it('the inline-end arrow reaches the action cell, Enter fires it, inline-start returns', async () => {
     const user = userEvent.setup();
     const onChange = vi.fn();

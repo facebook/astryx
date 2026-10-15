@@ -7,8 +7,9 @@
  * @output Real-engine proof for option actions: the action is visible at rest
  *   beside its row (`spec:AST-058` FR8), the keyboard reaches it through the
  *   inline-end arrow in both directions and fires it with Enter, the active
- *   action cell draws the standard focus ring, and the highlight follows a
- *   real mouse across rows and actions.
+ *   action cell draws the standard focus ring after keyboard navigation and
+ *   not after a hover, and the highlight follows a real mouse across rows and
+ *   actions.
  * @position Run with `pnpm test:a11y-contract`; paint, pointer paths and the
  *   active descendant as an engine exposes them are not jsdom claims.
  */
@@ -198,6 +199,44 @@ test('the active action cell draws the standard focus ring', async ({page}) => {
     .locator('[data-multi-selector-action-cell]')
     .evaluate(cell => getComputedStyle(cell).outlineStyle);
   expect(after).toBe('none');
+});
+
+test('a pointer highlight draws no ring; the keyboard path still does', async ({
+  page,
+}) => {
+  await page.goto(
+    `${storybook.origin}/iframe.html?id=core-multiselector--row-actions&viewMode=story`,
+  );
+  const search = page.getByRole('combobox');
+  await expect(search).toBeFocused();
+  const actionCell = page
+    .getByRole('row', {name: 'Bug'})
+    .locator('[data-multi-selector-action-cell]');
+  const outlineStyle = async () =>
+    actionCell.evaluate(cell => getComputedStyle(cell).outlineStyle);
+
+  // Click into the search field, then hover the action: the highlight moves,
+  // the ring does not appear, and none is left behind once the pointer leaves.
+  await search.click();
+  const cell = await box(actionCell);
+  await page.mouse.move(cell.x + cell.width / 2, cell.y + cell.height / 2, {
+    steps: 6,
+  });
+  await expect
+    .poll(async () => activeDescendant(page))
+    .toBe('gridcell:Edit Bug');
+  expect(await outlineStyle()).toBe('none');
+  await page.mouse.move(1, 1, {steps: 6});
+  expect(await outlineStyle()).toBe('none');
+
+  // Keyboard back onto the same cell: the ring is drawn.
+  await search.press('ArrowLeft');
+  await expect.poll(async () => activeDescendant(page)).toBe('row:Bug');
+  await search.press('ArrowRight');
+  await expect
+    .poll(async () => activeDescendant(page))
+    .toBe('gridcell:Edit Bug');
+  expect(await outlineStyle()).not.toBe('none');
 });
 
 test('under RTL the inline-end arrow is ArrowLeft', async ({page}) => {
