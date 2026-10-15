@@ -3,11 +3,11 @@ schema_version: 1
 template_version: 3
 kind: architecture
 id: architecture:rtl-audit-evidence
-authority: draft
+authority: current
 archive_reason: null
 superseded_by: null
-approved_by: null
-approved_at: null
+approved_by: nynexman4464
+approved_at: 2026-10-15
 owners: [nynexman4464, cixzhang, imdreamrunner]
 applies_to:
   [
@@ -68,7 +68,7 @@ deciding_specs: []
 | System behavior         | Every component in the live roster is accounted for; available in-scope stories are rendered LTR and RTL. Results distinguish measured, verified N/A, coverage gap, and behavior failure. Lint and rendered audit prove different claims.                                                                                                                                           |
 | End-user impact         | People reading RTL interfaces are protected by evidence that actually observed mirroring, ordering, placement, geometry, and behavior, rather than by a green report that measured nothing.                                                                                                                                                                                         |
 | Builder impact          | A new or changed component must either be measured by an applicable check or carry an explicit gap; behavior failures have no allowlist. Verified-N/A and pre-existing-debt admission await owner decisions (OQ1, OQ2).                                                                                                                                                             |
-| Compatibility/readiness | Draft pending exact-head owner approval. INV12–INV16 specify D1 fixture metadata and stable selection, not shipped enforcement. Component-wide N/A admission, historical debt, D7 size enforcement, and required-check rollout remain unresolved.                                                                                                                                   |
+| Compatibility/readiness | INV12–INV16 specify D1 fixture metadata and stable selection, not shipped enforcement. Component-wide N/A admission, historical debt, D7 size enforcement, and required-check rollout remain unresolved.                                                                                                                                                                            |
 | Review checks           | Reject lint standing in for rendered evidence (INV1); an allowlist that relabels a behavior failure (INV3); all-N/A credited as RTL-ready (INV4); a component dropping from the roster because its story moved (INV5); a new dimension without a red/green mutation receipt (INV9); a D1 exclusion on directional controls/cues or missing review-facing disclosure (INV12, INV16). |
 | Governing rules         | No deciding system spec; `architecture:knowledge-contracts` evidence-freshness and human-decision rules apply.                                                                                                                                                                                                                                                                      |
 
@@ -265,7 +265,7 @@ required evidence distinction; the component/composition contract owns the minim
   association with the SVGIcon owner and D1 metadata await the fixture-policy
   implementation.
 - `apps/storybook/rtl-audit/verified-not-applicable.json` — candidate verified-N/A
-  registry; its admission policy is unresolved in this draft.
+  registry; its admission policy is unresolved (OQ1).
 - Historical coverage-debt admission is unresolved. No additional debt-baseline
   file forms part of this contract; absent measurements remain visible gaps.
 - `.github/workflows/ci.yml` — affected-component PR audit, sharded per component
@@ -290,7 +290,7 @@ missing implementation contract.
 
 No current system spec settles verified-N/A or known-debt admission. The current
 knowledge architecture requires evidence freshness and explicit human decisions;
-this draft narrows the remaining decision to the options below.
+this record narrows the remaining decision to the options below.
 
 ## Verification
 
