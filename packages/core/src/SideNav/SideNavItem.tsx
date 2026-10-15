@@ -237,16 +237,24 @@ const styles = stylex.create({
   },
 });
 
-// Nesting indent, drawn inside the row: the row's own inline-start padding
-// plus one `--spacing-6` step per nesting level. The row itself stays full
-// width, so its hover and selected fill matches a top-level row's.
-// SYNC: the base padding matches navItemStyles.sm / .md / .lg.
+// Nesting indent, drawn inside the row: one `--spacing-6` step per nesting
+// level. The row itself stays full width, so its hover and selected fill
+// matches a top-level row's.
+// - `sm` / `md` — the ordinary row, where the row element is the link or
+//   button: its own inline-start padding plus the steps.
+//   SYNC: the base padding matches navItemStyles.sm / .md / .lg.
+// - `primary` — the row-wrapper path: the wrapper keeps its base padding and
+//   the steps go on the primary link or button, so the whole indent is part
+//   of the click target rather than dead space that still shows feedback.
 const indentStyles = stylex.create({
   sm: (depth: number) => ({
     paddingInlineStart: `calc(${spacingVars['--spacing-1']} + ${depth} * ${spacingVars['--spacing-6']})`,
   }),
   md: (depth: number) => ({
     paddingInlineStart: `calc(${spacingVars['--spacing-2']} + ${depth} * ${spacingVars['--spacing-6']})`,
+  }),
+  primary: (depth: number) => ({
+    paddingInlineStart: `calc(${depth} * ${spacingVars['--spacing-6']})`,
   }),
 });
 
@@ -714,10 +722,17 @@ export function SideNavItem({
     navItemStyles.item,
     interactionOverlayStyles.backgroundColor,
     navItemStyles[size],
-    depth > 0 && indentStyles[size === 'sm' ? 'sm' : 'md'](depth),
     isSelected && navItemStyles.selected,
     isDisabled && navItemStyles.disabled,
   ] as const;
+  const rowIndent =
+    depth > 0 && indentStyles[size === 'sm' ? 'sm' : 'md'](depth);
+  const primaryIndent = depth > 0 && indentStyles.primary(depth);
+
+  // The indent is a runtime value, so it reaches the element as an inline
+  // style. These props are spread after `rest`, so fold the caller's `style`
+  // back in (caller wins) rather than letting the indent replace it.
+  const callerStyle = {style: rest.style};
 
   // Three shapes of the same row appearance:
   // - `rowProps` — split-action path (toggle, no actions): presentational
@@ -734,7 +749,10 @@ export function SideNavItem({
   const focusableRowProps = {
     ...mergeProps(
       itemThemeProps,
-      focusOutlineProps.focusVisible(...itemStyleArgs),
+      mergeProps(
+        focusOutlineProps.focusVisible(...itemStyleArgs, rowIndent),
+        callerStyle,
+      ),
     ),
     ...pressable,
   };
@@ -780,11 +798,17 @@ export function SideNavItem({
           onClick={handleClick}
           {...rest}
           {...rowPrimaryAriaProps}
-          {...(hasActions
-            ? // The wrapper rings for this element; suppressing here is what
-              // keeps the UA's own ring from painting inside that one.
-              focusOutlineProps.suppressed(styles.splitAction)
-            : focusOutlineProps.focusVisible(styles.splitAction))}>
+          {...mergeProps(
+            hasActions
+              ? // The wrapper rings for this element; suppressing here is what
+                // keeps the UA's own ring from painting inside that one.
+                focusOutlineProps.suppressed(styles.splitAction, primaryIndent)
+              : focusOutlineProps.focusVisible(
+                  styles.splitAction,
+                  primaryIndent,
+                ),
+            callerStyle,
+          )}>
           {itemContent}
         </NavItemElement>
         {hasIndependentToggle && (

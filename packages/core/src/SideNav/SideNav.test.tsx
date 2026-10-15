@@ -847,18 +847,68 @@ describe('SideNavItem', () => {
       ).toEqual([]);
     }
 
-    // The indent lives inside each row instead: the row's own padding plus
-    // one step per nesting level.
+    // The indent lives inside each row instead, one step per nesting level.
+    // An ordinary row is the link itself: its own padding plus the steps.
     const top = screen.getByRole('button', {name: 'Settings'});
     const general = screen.getByRole('link', {name: 'General'});
     const advanced = screen.getByRole('link', {name: 'Advanced'});
     expect(indentOf(top)).toBeNull();
-    expect(indentOf(general.parentElement!)).toBe(
-      'calc(var(--spacing-2) + 1 * var(--spacing-6))',
-    );
     expect(indentOf(advanced)).toBe(
       'calc(var(--spacing-2) + 2 * var(--spacing-6))',
     );
+
+    // A split row (own href plus children) keeps the wrapper's base padding
+    // and puts the steps on the link, so the whole indent is clickable
+    // instead of dead space that still shows hover and press feedback.
+    expect(indentOf(general.parentElement!)).toBeNull();
+    expect(indentOf(general)).toBe('calc(1 * var(--spacing-6))');
+  });
+
+  it('puts the indent on the primary link of a nested actions row', () => {
+    render(
+      <SideNavItem label="Projects">
+        <SideNavItem
+          label="Alpha"
+          href="/projects/alpha"
+          actions={
+            <button type="button" aria-label="Alpha actions">
+              More
+            </button>
+          }
+        />
+      </SideNavItem>,
+    );
+    const alpha = screen.getByRole('link', {name: 'Alpha'});
+    expect(indentOf(alpha.parentElement!)).toBeNull();
+    expect(indentOf(alpha)).toBe('calc(1 * var(--spacing-6))');
+  });
+
+  it("composes a caller's style with the indent on a nested row", () => {
+    render(
+      <SideNavItem label="Settings">
+        <SideNavItem
+          label="General"
+          href="/settings/general"
+          style={{color: 'rebeccapurple'}}
+        />
+        <SideNavItem
+          label="Security"
+          href="/settings/security"
+          style={{color: 'rebeccapurple'}}>
+          <SideNavItem label="Keys" href="/settings/security/keys" />
+        </SideNavItem>
+      </SideNavItem>,
+    );
+    // Ordinary row: the link is the row.
+    const general = screen.getByRole('link', {name: 'General'});
+    expect(general.style.color).toBe('rebeccapurple');
+    expect(indentOf(general)).toBe(
+      'calc(var(--spacing-2) + 1 * var(--spacing-6))',
+    );
+    // Split row: the caller's style still lands on the primary link.
+    const security = screen.getByRole('link', {name: 'Security'});
+    expect(security.style.color).toBe('rebeccapurple');
+    expect(indentOf(security)).toBe('calc(1 * var(--spacing-6))');
   });
 
   it('indents a small nested row from the small row padding', () => {
@@ -887,6 +937,7 @@ describe('SideNavItem', () => {
     // The flyout lists the parent's children as its own top level.
     const general = screen.getByRole('link', {name: 'General', hidden: true});
     const advanced = screen.getByRole('link', {name: 'Advanced', hidden: true});
+    expect(indentOf(general)).toBeNull();
     expect(indentOf(general.parentElement!)).toBeNull();
     expect(indentOf(advanced)).toBe(
       'calc(var(--spacing-2) + 1 * var(--spacing-6))',
