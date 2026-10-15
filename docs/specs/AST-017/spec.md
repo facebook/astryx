@@ -48,6 +48,7 @@ affects_consumer_docs: [release-process, templates]
       "DEC-14",
       "DEC-17",
       "DEC-18",
+      "DEC-20",
       "FR3",
       "FR4",
       "FR5",
@@ -94,6 +95,7 @@ affects_consumer_docs: [release-process, templates]
       "FR49",
       "FR50",
       "FR51",
+      "FR53",
       "DEC-15",
       "DEC-16"
     ]
@@ -395,8 +397,8 @@ one removal merged ahead of the decision to allow it.
   documented markup or selectors, accessibility semantics, persistence, CLI,
   configuration, schemas, build tooling, contractual documentation operations, and
   package files MUST be additive, implementation-equivalent, a nonbreaking default
-  change under FR3, or a victim-free contract restoration under FR5; a breaking change
-  lands only in a declared minor (FR31). Documentation catalog names and routes
+  change under FR3, a victim-free contract restoration under FR5, or an accessibility
+  behavior fix under FR53; a breaking change lands only in a declared minor (FR31). Documentation catalog names and routes
   follow
   FR45. An internal label, low adoption, or lack of a source-level API change does
   not weaken this rule.
