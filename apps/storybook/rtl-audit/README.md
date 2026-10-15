@@ -24,7 +24,10 @@ independent auto passes: **D1 (icon-mirror)**, **D5 (positional-mirror)**, and
 > a missing policy, empty or unmatched path set, unresolved component list, or
 > registry/classifier/workflow mutation runs the full audit rather than accepting
 > an empty scope. CI partitions that full scope into one bounded shard per
-> canonical package, each with four browser workers; the stable `pr-rtl` context
+> canonical package, each with eight browser workers. Core, the largest, runs as
+> three parts (`--shard i/3`, every third D1 target, story and curated target)
+> that `pr-rtl-merge` joins with `--merge-shards` into the report a whole Core
+> leg would write; a missing or mismatched part fails the join. The stable `pr-rtl` context
 > succeeds only after all five scope manifests arrive and every applicable
 > package produces a report whose requested package/filter, duplicate-free exact
 > D1/D5/D6 identities, and nonzero planned/completed scans match. When trusted

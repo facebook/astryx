@@ -29,8 +29,63 @@ const y2kSyntax = defineSyntaxTheme({
     property: ['#3c6755', '#87b5a1'],
     punctuation: ['#5e5e5e', '#ababab'],
     background: ['#FFF6ED', '#190f00'],
+    // Diff rows: the muted green/red at 25% in light and 20% in dark keep
+    // every token at or above 4.5:1 on the tint. Markers: the tinted text
+    // tokens in light (7.3:1 / 7.9:1); in dark those tokens are near-black,
+    // so the string and tag colours mark the rows (5.1:1 each).
+    added: ['#C5E17A40', '#C5E17A33'],
+    removed: ['#FFC5C340', '#FFC5C333'],
+    'added-marker': ['#3a5500', '#a5af8b'],
+    'removed-marker': ['#8b1d24', '#d19f9d'],
   },
 });
+
+/**
+ * The secondary Button treatment. Selector, MultiSelector, and ComplexSelector
+ * reuse it for their `secondary` trigger so every secondary control in this
+ * theme matches (AST-079 FR2).
+ */
+const SECONDARY_BUTTON = {
+  backgroundColor: 'var(--color-background-green)',
+  borderWidth: '1px',
+  borderStyle: 'solid',
+  borderColor: 'var(--color-text-green)',
+  color: 'var(--color-text-green)',
+  ':hover': {
+    backgroundColor: 'var(--color-border-green)',
+  },
+} as const;
+
+/**
+ * The secondary Button treatment on Selector and MultiSelector triggers
+ * (AST-079 FR2). Inside an InputGroup a trigger keeps the neutral fill and the
+ * group's edges instead (FR6). The hover stays off disabled and read-only
+ * triggers, which carry `data-disabled` and `data-readonly`.
+ */
+const SECONDARY_SELECTOR = {
+  ':not(.astryx-input-group *)': {
+    backgroundColor: SECONDARY_BUTTON.backgroundColor,
+    borderWidth: SECONDARY_BUTTON.borderWidth,
+    borderStyle: SECONDARY_BUTTON.borderStyle,
+    borderColor: SECONDARY_BUTTON.borderColor,
+    color: SECONDARY_BUTTON.color,
+  },
+  ':hover:not([data-disabled], [data-readonly], .astryx-input-group *)':
+    SECONDARY_BUTTON[':hover'],
+} as const;
+
+/**
+ * The secondary Button treatment on ComplexSelector triggers (AST-079 FR2), with
+ * the hover kept off a disabled trigger, whose inner button is disabled.
+ */
+const SECONDARY_COMPLEX_SELECTOR = {
+  backgroundColor: SECONDARY_BUTTON.backgroundColor,
+  borderWidth: SECONDARY_BUTTON.borderWidth,
+  borderStyle: SECONDARY_BUTTON.borderStyle,
+  borderColor: SECONDARY_BUTTON.borderColor,
+  color: SECONDARY_BUTTON.color,
+  ':hover:not(:has(> :disabled))': SECONDARY_BUTTON[':hover'],
+} as const;
 
 export const y2kTheme = defineTheme({
   name: 'y2k',
@@ -256,16 +311,7 @@ export const y2kTheme = defineTheme({
         color: 'var(--color-background-body)',
         borderColor: 'transparent',
       },
-      'variant:secondary': {
-        backgroundColor: 'var(--color-background-green)',
-        borderWidth: '1px',
-        borderStyle: 'solid',
-        borderColor: 'var(--color-text-green)',
-        color: 'var(--color-text-green)',
-        ':hover': {
-          backgroundColor: 'var(--color-border-green)',
-        },
-      },
+      'variant:secondary': SECONDARY_BUTTON,
       'variant:ghost': {
         borderColor: 'transparent',
       },
@@ -277,6 +323,10 @@ export const y2kTheme = defineTheme({
         borderColor: 'var(--color-text-red)',
       },
     },
+    // Secondary selector triggers match the secondary Button (AST-079 FR2).
+    selector: {'variant:secondary': SECONDARY_SELECTOR},
+    'multi-selector': {'variant:secondary': SECONDARY_SELECTOR},
+    'complex-selector': {'variant:secondary': SECONDARY_COMPLEX_SELECTOR},
 
     badge: {
       base: {

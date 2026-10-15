@@ -186,16 +186,6 @@ const overrides = stylex.create({
               '[apps/example-nextjs-tailwind](https://github.com/facebook/astryx/tree/main/apps/example-nextjs-tailwind)',
             ],
             [
-              'Next.js Source',
-              'Next.js importing from source',
-              '[apps/example-nextjs-source](https://github.com/facebook/astryx/tree/main/apps/example-nextjs-source)',
-            ],
-            [
-              'Vite',
-              'Vite',
-              '[apps/example-vite](https://github.com/facebook/astryx/tree/main/apps/example-vite)',
-            ],
-            [
               'Vite + Tailwind',
               'Vite + Tailwind bridge',
               '[apps/example-vite-tailwind](https://github.com/facebook/astryx/tree/main/apps/example-vite-tailwind)',

@@ -566,6 +566,7 @@ export function Switch({
   className,
   style,
   ref,
+  'aria-describedby': ariaDescribedByProp,
   ...rest
 }: SwitchProps) {
   const t = useTranslator();
@@ -610,7 +611,12 @@ export function Switch({
   // Only include descriptionID when the element actually renders.
   // FieldLabel renders the description (with descriptionID) even when the
   // label is visually hidden — it's sr-only, so keep it linked.
+  // A consumer's own `aria-describedby` describes the control, so it comes
+  // first here rather than landing on the field wrapper via `...rest`.
   const describedByParts: string[] = [];
+  if (ariaDescribedByProp) {
+    describedByParts.push(ariaDescribedByProp);
+  }
   if (description) {
     describedByParts.push(descriptionID);
   }

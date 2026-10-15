@@ -183,10 +183,34 @@ export const docs = {
         'StyleX styles for the Field box around the label, control, and status. containerClassName and containerStyle take a class name and inline styles for the same box. No effect (development warning) where no Field box renders: inside InputGroup (style the group) and in a horizontal-labels FormLayout.',
     },
     {
+      name: 'containerClassName',
+      type: 'string',
+      description:
+        'Class name for the Field box. Same targeting as containerXstyle.',
+    },
+    {
+      name: 'containerStyle',
+      type: 'CSSProperties',
+      description:
+        'Inline styles for the Field box. Same targeting as containerXstyle.',
+    },
+    {
       name: 'controlXstyle',
       type: 'StyleXStyles',
       description:
         'StyleX styles for the visual control box: the bordered element that holds the text, icons, and end controls, never the native input. controlClassName and controlStyle take a class name and inline styles for the same box. Replaces root xstyle, className, and style, which this component does not accept.',
+    },
+    {
+      name: 'controlClassName',
+      type: 'string',
+      description:
+        'Class name for the visual control box. Same targeting as controlXstyle.',
+    },
+    {
+      name: 'controlStyle',
+      type: 'CSSProperties',
+      description:
+        'Inline styles for the visual control box. Same targeting as controlXstyle.',
     },
   ],
   theming: {
@@ -504,10 +528,30 @@ export const docsZh = {
         '作用于包含标签、控件和状态的 Field 容器的 StyleX 样式；containerClassName 与 containerStyle 以类名和内联样式作用于同一容器。没有 Field 容器时（InputGroup 内或 horizontal-labels FormLayout 中）不生效，并在开发环境发出警告。',
     },
     {
+      name: 'containerClassName',
+      type: 'string',
+      description: 'Field 容器的类名，作用目标同 containerXstyle。',
+    },
+    {
+      name: 'containerStyle',
+      type: 'CSSProperties',
+      description: 'Field 容器的内联样式，作用目标同 containerXstyle。',
+    },
+    {
       name: 'controlXstyle',
       type: 'StyleXStyles',
       description:
         '作用于可见控件框（带边框、包含文本、图标和末端控件的元素，而非原生 input）的 StyleX 样式；controlClassName 与 controlStyle 以类名和内联样式作用于同一元素。本组件不接受根级 xstyle、className 和 style。',
+    },
+    {
+      name: 'controlClassName',
+      type: 'string',
+      description: '可见控件框的类名，作用目标同 controlXstyle。',
+    },
+    {
+      name: 'controlStyle',
+      type: 'CSSProperties',
+      description: '可见控件框的内联样式，作用目标同 controlXstyle。',
     },
   ],
   theming: {
@@ -615,7 +659,15 @@ export const docsDense = {
       "deprecated, use presentation: 'touch'='adaptive-native', 'always'='native', 'never'='adaptive-bottom-sheet'. still works as released; presentation wins if both set.",
     containerXstyle:
       'Field box (label+control+status); also containerClassName/containerStyle. no effect in InputGroup or horizontal-labels FormLayout',
+    containerClassName:
+      'class name for the Field box; same target as containerXstyle',
+    containerStyle:
+      'inline styles for the Field box; same target as containerXstyle',
     controlXstyle:
       'visual control box (border/bg/icons), never the native input; also controlClassName/controlStyle. no root xstyle/className/style',
+    controlClassName:
+      'class name for the visual control box; same target as controlXstyle',
+    controlStyle:
+      'inline styles for the visual control box; same target as controlXstyle',
   },
 };

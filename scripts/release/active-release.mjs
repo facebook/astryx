@@ -843,137 +843,6 @@ function validateReleaseMergeBack({
   return errors;
 }
 
-/**
- * The published-equality window exists only while the immutable release still
- * has one exact active branch and every frozen Changeset remains on main for
- * the pending merge-back to consume.
- */
-function pendingMergeBackVersion({
-  releasedVersion,
-  activeBranches,
-  marker,
-  plan,
-  releaseHead,
-  branchHead,
-  baseChangesets,
-}) {
-  if (
-    !VERSION_RE.test(releasedVersion ?? '') ||
-    activeBranches.length !== 1 ||
-    marker?.state !== 'active' ||
-    marker.version !== releasedVersion ||
-    marker.branch !== activeBranches[0] ||
-    releaseHead !== branchHead ||
-    validateIdentity(marker, plan).length > 0 ||
-    plan.changesets.some(
-      entry => baseChangesets.get(entry.path) !== entry.sha256,
-    )
-  )
-    return null;
-  return releasedVersion;
-}
-
-/**
- * FR46/FR51 — main's fixed-group version on a pull request into main.
- *
- * Main carries a malleable plan until cut. It may move up or down, but always
- * remains one plain version strictly above the newest stable release. When the
- * base still equals that release after merge-back, the first plan may only be
- * its patch successor (default) or its owner-named minor successor.
- *
- * @param {object} input
- * @param {string[]} input.fixed  trusted fixed-group package names
- * @param {string} input.releasedVersion  newest stable vX.Y.Z tag, without v
- * @param {string|null} [input.activeCutVersion]  single active untagged/ongoing cut
- * @param {string|null} [input.pendingMergeBackVersion]  exact published version whose frozen Changesets remain on main
- * @param {Map<string, object|null>} input.baseManifests  name -> manifest at base
- * @param {Map<string, object|null>} input.headManifests  name -> manifest at head
- * @returns {string[]}
- */
-function validateMainVersions({
-  fixed,
-  releasedVersion,
-  activeCutVersion = null,
-  pendingMergeBackVersion = null,
-  baseManifests = new Map(),
-  headManifests,
-}) {
-  const errors = [];
-  if (!VERSION_RE.test(releasedVersion ?? ''))
-    errors.push('main version check needs the newest stable vX.Y.Z tag');
-  const headVersions = new Set();
-  const baseVersions = new Set();
-  for (const name of fixed) {
-    const base = baseManifests.get(name);
-    if (
-      base &&
-      isStableReleasePackage(base) &&
-      VERSION_RE.test(base.version ?? '')
-    )
-      baseVersions.add(base.version);
-    const head = headManifests.get(name);
-    if (!head || !isStableReleasePackage(head)) continue;
-    if (!VERSION_RE.test(head.version ?? '')) {
-      errors.push(`${name} is ${head.version}; main declares an X.Y.Z version`);
-      continue;
-    }
-    headVersions.add(head.version);
-  }
-  if (headVersions.size !== 1) {
-    errors.push(
-      `the fixed group must declare one version on main; found ${[...headVersions].sort().join(', ') || 'none'}`,
-    );
-    return errors;
-  }
-  const [declaredVersion] = headVersions;
-  const order = VERSION_RE.test(releasedVersion ?? '')
-    ? compareVersions(declaredVersion, releasedVersion)
-    : null;
-  const publishedEqualityIsPending =
-    order === 0 && pendingMergeBackVersion === releasedVersion;
-  if (
-    order === null ||
-    order < 0 ||
-    (order === 0 && !publishedEqualityIsPending)
-  )
-    errors.push(
-      `main declares ${declaredVersion}; it must stay strictly above newest stable v${releasedVersion}`,
-    );
-  if (
-    activeCutVersion !== null &&
-    compareVersions(declaredVersion, activeCutVersion) < 0
-  )
-    errors.push(
-      `main declares ${declaredVersion}; it must not fall below active cut v${activeCutVersion}`,
-    );
-  if (
-    order > 0 &&
-    baseVersions.size === 1 &&
-    [...baseVersions][0] === releasedVersion &&
-    nextPlannedVersion(releasedVersion, declaredVersion) === null
-  )
-    errors.push(
-      `main's first plan after v${releasedVersion} must be patch successor ${patchSuccessor(releasedVersion)} by default or owner-named minor ${minorSuccessor(releasedVersion)}; found ${declaredVersion}`,
-    );
-  const fixedNames = new Set(fixed);
-  for (const manifest of headManifests.values()) {
-    if (!manifest) continue;
-    for (const field of VERSION_DEPENDENCY_FIELDS) {
-      for (const [name, spec] of Object.entries(manifest[field] ?? {})) {
-        if (
-          fixedNames.has(name) &&
-          EXACT_SPEC_RE.test(spec) &&
-          spec !== declaredVersion
-        )
-          errors.push(
-            `${manifest.name} ${field}.${name} pins ${spec}; main declares ${declaredVersion}`,
-          );
-      }
-    }
-  }
-  return errors;
-}
-
 function canaryEligibility({fixed, releasedVersion, manifests}) {
   const versions = new Set(
     [...manifests.values()]
@@ -1251,72 +1120,6 @@ async function main() {
     );
     return;
   }
-  if (command === 'validate-main-version') {
-    const base = required(values, 'base');
-    const config = jsonAtRef(root, base, '.changeset/config.json');
-    if (!config)
-      throw new Error(`cannot read trusted fixed group from ${base}`);
-    const releasedVersion = latestStableVersion(root);
-    const activeBranches = listActiveBranches(root);
-    const activeCutVersion =
-      activeBranches.length === 1
-        ? markerAtRef(root, `origin/${activeBranches[0]}`).version
-        : null;
-    let pendingMergeBack = null;
-    if (
-      releasedVersion &&
-      activeBranches.length === 1 &&
-      activeCutVersion === releasedVersion
-    ) {
-      const releaseTag = `v${releasedVersion}`;
-      const branch = activeBranches[0];
-      const marker = markerAtRef(root, releaseTag);
-      const plan = JSON.parse(
-        git(root, ['show', `${releaseTag}:${RELEASE_DIR}/${PLAN_FILE}`]),
-      );
-      pendingMergeBack = pendingMergeBackVersion({
-        releasedVersion,
-        activeBranches,
-        marker,
-        plan,
-        releaseHead: git(root, ['rev-parse', releaseTag]),
-        branchHead: git(root, ['rev-parse', `origin/${branch}`]),
-        baseChangesets: changesetMapAtRef(root, base),
-      });
-    }
-    const errors = [];
-    if (activeBranches.length > 1)
-      errors.push(
-        `main version check requires at most one active cut; found ${activeBranches.join(', ')}`,
-      );
-    errors.push(
-      ...validateMainVersions({
-        fixed: (config.fixed ?? []).flat(),
-        releasedVersion,
-        activeCutVersion,
-        pendingMergeBackVersion: pendingMergeBack,
-        baseManifests: packageManifestsByName(
-          file => jsonAtRef(root, base, file),
-          root,
-        ),
-        headManifests: packageManifestsByName(file => {
-          const absolute = path.join(root, file);
-          return fs.existsSync(absolute) ? readJson(absolute) : null;
-        }, root),
-      }),
-    );
-    if (errors.length) throw new Error(errors.join('\n'));
-    console.log(
-      JSON.stringify({
-        base,
-        releasedVersion,
-        activeCutVersion,
-        pendingMergeBackVersion: pendingMergeBack,
-        valid: true,
-      }),
-    );
-    return;
-  }
   if (command === 'validate-merge-back') {
     const base = required(values, 'base');
     const releaseRef = required(values, 'release-ref');
@@ -1427,7 +1230,7 @@ async function main() {
   }
   if (command !== 'validate')
     throw new Error(
-      'command must be create, refresh, list-active, inspect-ref, validate-diff, next-plan-version, canary-eligibility, validate-main-version, validate-merge-back, or validate',
+      'command must be create, refresh, list-active, inspect-ref, validate-diff, next-plan-version, canary-eligibility, validate-merge-back, or validate',
     );
 
   const marker = readJson(path.join(root, RELEASE_DIR, MARKER_FILE));
@@ -1486,12 +1289,10 @@ export {
   computePlanDigest,
   declaredVersionAtRef,
   nextPlannedVersion,
-  pendingMergeBackVersion,
   isStableReleasePackage,
   latestStableVersion,
   listActiveBranches,
   validateIdentity,
-  validateMainVersions,
   validateRefMarker,
   validateReleaseDiff,
   validateReleaseState,

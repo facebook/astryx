@@ -9,7 +9,7 @@
  * SYNC: When Dialog.tsx changes, update tests to match new behavior
  */
 
-import {useState} from 'react';
+import {useState, type SyntheticEvent} from 'react';
 import {readFileSync} from 'node:fs';
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import type {MockInstance} from 'vitest';
@@ -1028,6 +1028,32 @@ describe('Dialog', () => {
       </Dialog>,
     );
     expect(screen.getByTestId('custom-dialog')).toBeInTheDocument();
+  });
+
+  it('runs backdrop dismissal before a consumer onClick', () => {
+    const callOrder: string[] = [];
+    const onClick = vi.fn((event: SyntheticEvent) => {
+      event.preventDefault();
+      callOrder.push('consumer');
+    });
+    const onOpenChange = vi.fn(() => {
+      callOrder.push('dialog');
+    });
+    render(
+      <Dialog
+        isOpen={true}
+        onOpenChange={onOpenChange}
+        onClick={onClick}
+        data-testid="click-dialog">
+        Content
+      </Dialog>,
+    );
+
+    fireEvent.click(screen.getByTestId('click-dialog'));
+
+    expect(onClick).toHaveBeenCalledTimes(1);
+    expect(onOpenChange).toHaveBeenCalledWith(false);
+    expect(callOrder).toEqual(['dialog', 'consumer']);
   });
 
   it('does not forward native open prop to dialog element', () => {

@@ -85,6 +85,12 @@ describe.each(Object.entries(WORKFLOWS))(
   (file, {lanes, scopeConditional}) => {
     const workflow = load(file);
 
+    it('gives the Node suite more than one Vitest worker', () => {
+      // Vitest uses one worker per CPU beyond the first: on two cores the
+      // suite would run one file at a time.
+      expect(workflow.jobs['test-node']['runs-on']).toBe('4-core-ubuntu');
+    });
+
     it('runs every declared Vitest project in some lane', () => {
       const projects = declaredProjects();
       expect(projects.length).toBeGreaterThan(0);
@@ -235,7 +241,7 @@ describe('ci.yml RTL package sharding', () => {
       'build-storybook',
       'pr-a11y-shard',
       'pr-a11y',
-      'a11y-contracts',
+      'a11y-contracts-shard',
       'pr-rtl-shard',
     ]) {
       const checkout = workflow.jobs[name].steps.find(candidate =>
@@ -281,7 +287,18 @@ describe('ci.yml RTL package sharding', () => {
   });
 
   it('runs one bounded shard for every canonical component package', () => {
-    expect(shard.strategy.matrix.package).toEqual([...COMPONENT_PACKAGE_NAMES]);
+    const legs = shard.strategy.matrix.include;
+    expect([...new Set(legs.map(leg => leg.package))]).toEqual([
+      ...COMPONENT_PACKAGE_NAMES,
+    ]);
+    // Each package's parts are numbered 1..parts exactly once.
+    for (const name of COMPONENT_PACKAGE_NAMES) {
+      const parts = legs.filter(leg => leg.package === name);
+      expect(parts.map(leg => leg.part)).toEqual(
+        Array.from({length: parts[0].parts}, (_, index) => index + 1),
+      );
+      expect(new Set(parts.map(leg => leg.parts)).size).toBe(1);
+    }
     expect(shard['runs-on']).toBe('4-core-ubuntu');
     expect(shard['timeout-minutes']).toBeLessThanOrEqual(30);
     expect(shard['continue-on-error']).not.toBe(true);
@@ -336,14 +353,57 @@ describe('ci.yml RTL package sharding', () => {
   });
 
   it('publishes a distinct scope manifest and optional report for each shard', () => {
-    const upload = shard.steps.find(step =>
-      step.uses?.startsWith('actions/upload-artifact@'),
+    const upload = shard.steps.find(
+      step => step.name === 'Upload RTL shard evidence',
     );
-    expect(upload.if).toBe('always()');
+    expect(upload.if).toBe('always() && matrix.parts == 1');
     expect(upload.with.name).toBe('rtl-audit-report-${{ matrix.package }}');
     expect(upload.with.path).toContain('rtl-shard-scope.json');
     expect(upload.with.path).toContain('rtl-audit-report.json');
     expect(upload.with['if-no-files-found']).toBe('error');
+    const part = shard.steps.find(step => step.name === 'Upload RTL part');
+    expect(part.if).toBe('always() && matrix.parts > 1');
+    expect(part.with.name).toBe(
+      'rtl-audit-part-${{ matrix.package }}-${{ matrix.part }}',
+    );
+    expect(part.with['if-no-files-found']).toBe('error');
+  });
+
+  it('joins split packages into the report a whole leg would upload', () => {
+    const merge = workflow.jobs['pr-rtl-merge'];
+    expect(merge.needs).toContain('pr-rtl-shard');
+    expect(merge.if).toContain('always()');
+    const commands = runLines(merge);
+    expect(commands).toContain('--merge-shards rtl-parts');
+    expect(commands).toContain('.github/scripts/rtl-report-completion.mjs');
+    expect(commands).toContain(
+      'case "$code" in 0|1) ;; *) exit "$code" ;; esac',
+    );
+    const upload = merge.steps.find(
+      step => step.name === 'Upload RTL shard evidence',
+    );
+    expect(upload.with.name).toBe('rtl-audit-report-core');
+    expect(upload.with['if-no-files-found']).toBe('error');
+    expect(join.needs).toContain('pr-rtl-merge');
+    // The join's --shards value: the shared result when the parts and the
+    // merge agree (success, or both skipped on an out-of-scope PR), and both
+    // results otherwise, which rtl-join.mjs rejects.
+    const expression = /--shards "\$\{\{(.*?)\}\}"/.exec(runLines(join))[1];
+    const render = (shards, merge) =>
+      new Function(
+        'S',
+        'M',
+        `return ${expression
+          .replaceAll('needs.pr-rtl-shard.result', 'S')
+          .replaceAll('needs.pr-rtl-merge.result', 'M')
+          .replaceAll('==', '===')
+          .replace("format('{0}/{1}', S, M)", '`${S}/${M}`')};`,
+      )(shards, merge);
+    expect(render('success', 'success')).toBe('success');
+    expect(render('skipped', 'skipped')).toBe('skipped');
+    expect(render('success', 'failure')).toBe('success/failure');
+    expect(render('failure', 'skipped')).toBe('failure/skipped');
+    expect(render('failure', 'failure')).toBe('failure');
   });
 });
 
