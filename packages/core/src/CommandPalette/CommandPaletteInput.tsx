@@ -178,6 +178,9 @@ export function CommandPaletteInput({
     placeholderFromProps ?? t('@astryx.commandPalette.input.placeholder');
   const accessibleLabel = label ?? t('@astryx.commandPalette.input.label');
   const ctx = useCommandPaletteContext();
+  // Inside CommandPalette the results surface is a listbox only while it holds
+  // selectable results; empty and pending states expose no popup.
+  const hasListbox = ctx ? ctx.selectableItems.length > 0 : true;
   const dialogContext = useDialogContext();
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -229,12 +232,12 @@ export function CommandPaletteInput({
         ref={useMergedRefs(ref, inputRef)}
         type="text"
         role="combobox"
-        aria-expanded={ctx ? ctx.isOpen && ctx.hasListbox : true}
+        aria-expanded={ctx ? ctx.isOpen && hasListbox : true}
         aria-autocomplete="list"
-        aria-controls={ctx?.hasListbox ? ctx.listId : undefined}
+        aria-controls={ctx && hasListbox ? ctx.listId : undefined}
         aria-activedescendant={
           ctx &&
-          ctx.hasListbox &&
+          hasListbox &&
           ctx.highlightedIndex >= 0 &&
           ctx.highlightedIndex < ctx.selectableItems.length
             ? ctx.getItemId(ctx.highlightedIndex)

@@ -33,7 +33,7 @@ const anatomy = [
     name: 'List',
     required: true,
     description:
-      'Scrollable listbox containing the current results or Empty state.',
+      'Scrollable results container: a listbox while selectable results exist, otherwise the Empty state as plain content.',
   },
   {
     name: 'Item',

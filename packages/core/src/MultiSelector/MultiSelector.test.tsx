@@ -33,6 +33,8 @@ import {__resetInteractionModalityForTest} from '../utils/interactionModality';
 import {defineTheme} from '../theme/defineTheme';
 import {generateThemeCSS} from '../theme/generateThemeRules';
 import {selectorPresentationStyles} from '../Selector/selectorPresentation.stylex';
+import {groupStyles} from '../InputGroup/groupStyles';
+import {InputGroup, InputGroupText} from '../InputGroup';
 
 function generateThemeTestCSS(theme: Parameters<typeof generateThemeCSS>[0]) {
   const {prose, component} = generateThemeCSS(theme);
@@ -217,6 +219,54 @@ describe('MultiSelector', () => {
       />,
     );
     expect(screen.getByLabelText('Fruit')).toBeInTheDocument();
+  });
+
+  it('applies distinct trigger chrome to the secondary variant', () => {
+    // data-testid reaches the native control; the variant is on the trigger root.
+    const triggerRoot = () =>
+      screen
+        .getByTestId('selector')
+        .closest('.astryx-multi-selector') as HTMLElement;
+    const {rerender} = render(
+      <MultiSelector
+        label="Fruit"
+        options={defaultOptions}
+        value={[]}
+        onChange={() => {}}
+        variant="input"
+        data-testid="selector"
+      />,
+    );
+    const inputClasses = triggerRoot().className;
+
+    rerender(
+      <MultiSelector
+        label="Fruit"
+        options={defaultOptions}
+        value={[]}
+        onChange={() => {}}
+        variant="secondary"
+        data-testid="selector"
+      />,
+    );
+    const secondary = triggerRoot();
+    const secondaryClasses = secondary.className;
+    expect(secondary).toHaveAttribute('data-variant', 'secondary');
+
+    rerender(
+      <MultiSelector
+        label="Fruit"
+        options={defaultOptions}
+        value={[]}
+        onChange={() => {}}
+        variant="ghost"
+        data-testid="selector"
+      />,
+    );
+    const ghostClasses = triggerRoot().className;
+
+    expect(secondaryClasses).not.toBe(inputClasses);
+    expect(secondaryClasses).not.toBe(ghostClasses);
   });
 
   it('renders custom option content with renderOption', async () => {
@@ -2445,26 +2495,29 @@ describe('MultiSelector statusVariant forwarding', () => {
     ).not.toBeNull();
   });
 
-  it('detaches attached status by default for the ghost variant', () => {
-    const {container} = render(
-      <MultiSelector
-        label="Fruit"
-        options={['Apple', 'Banana']}
-        value={[]}
-        onChange={() => {}}
-        variant="ghost"
-        status={{type: 'error', message: 'Required'}}
-      />,
-    );
-    expect(container.querySelector('.astryx-multi-selector')).toHaveAttribute(
-      'data-variant',
-      'ghost',
-    );
-    expect(container.querySelector('.astryx-field-status')).toHaveAttribute(
-      'data-variant',
-      'detached',
-    );
-  });
+  it.each(['secondary', 'ghost'] as const)(
+    'detaches attached status by default for the %s variant',
+    variant => {
+      const {container} = render(
+        <MultiSelector
+          label="Fruit"
+          options={['Apple', 'Banana']}
+          value={[]}
+          onChange={() => {}}
+          variant={variant}
+          status={{type: 'error', message: 'Required'}}
+        />,
+      );
+      expect(container.querySelector('.astryx-multi-selector')).toHaveAttribute(
+        'data-variant',
+        variant,
+      );
+      expect(container.querySelector('.astryx-field-status')).toHaveAttribute(
+        'data-variant',
+        'detached',
+      );
+    },
+  );
 
   it('uses a status tooltip for ghost multi-selectors when requested', () => {
     const {container} = render(
@@ -4253,5 +4306,70 @@ describe('MultiSelector create row inside a grid', () => {
       type: 'create',
       query: 'Urgent',
     });
+  });
+});
+
+describe('MultiSelector in an InputGroup', () => {
+  const groupClasses = () =>
+    stylex.props(groupStyles.inGroup).className!.split(' ');
+  const triggerBox = (name: RegExp) =>
+    screen
+      .getByRole('combobox', {name})
+      .closest('.astryx-multi-selector') as HTMLElement;
+
+  it.each(['input', 'secondary'] as const)(
+    'gives a grouped %s trigger the connected group geometry in every position',
+    variant => {
+      const selector = (label: string) => (
+        <MultiSelector
+          label={label}
+          isLabelHidden
+          variant={variant}
+          options={['Apple', 'Banana', 'Cherry']}
+          value={EMPTY_VALUE}
+          onChange={() => {}}
+        />
+      );
+      render(
+        <>
+          <InputGroup label="First">
+            {selector('Fruit first')}
+            <InputGroupText>kg</InputGroupText>
+          </InputGroup>
+          <InputGroup label="Middle">
+            <InputGroupText>#</InputGroupText>
+            {selector('Fruit middle')}
+            <InputGroupText>kg</InputGroupText>
+          </InputGroup>
+          <InputGroup label="Last">
+            <InputGroupText>#</InputGroupText>
+            {selector('Fruit last')}
+          </InputGroup>
+        </>,
+      );
+
+      // Row height, seam radii, and focus stacking come from these classes;
+      // a secondary trigger keeps its fill but not its standalone edges.
+      for (const position of ['first', 'middle', 'last']) {
+        const classes = new Set(
+          triggerBox(new RegExp(`Fruit ${position}`)).className.split(' '),
+        );
+        expect(groupClasses().every(c => classes.has(c))).toBe(true);
+      }
+    },
+  );
+
+  it('keeps a standalone secondary trigger out of the group geometry', () => {
+    render(
+      <MultiSelector
+        label="Fruit"
+        variant="secondary"
+        options={['Apple', 'Banana', 'Cherry']}
+        value={EMPTY_VALUE}
+        onChange={() => {}}
+      />,
+    );
+    const classes = new Set(triggerBox(/Fruit/).className.split(' '));
+    expect(groupClasses().some(c => classes.has(c))).toBe(false);
   });
 });

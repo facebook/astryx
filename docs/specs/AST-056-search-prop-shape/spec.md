@@ -252,10 +252,9 @@ copying.
   person on screen is not reading.
 - **AR2 — The query input has an accessible name that is not its placeholder.**
   A placeholder is placeholder text and MUST NOT be the input's only
-  accessible name. The component supplies the name — `Selector` and
-  `MultiSelector` use a localized "Search options" today — and a component
-  that falls back to the placeholder, as `CommandPaletteInput` does and its own
-  comment flags, MUST gain a real name as part of adopting this record.
+  accessible name. The component supplies the name: a localized "Search
+  options" in `Selector` and `MultiSelector`, and a localized "Search commands"
+  in `CommandPaletteInput`.
 
 ### Platform support
 

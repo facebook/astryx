@@ -86,13 +86,15 @@ export function CommandPaletteList({
   const t = useTranslator();
   const label = labelFromProps ?? t('@astryx.commandPalette.list.label');
   const ctx = useCommandPaletteContext();
-  const hasListbox = ctx?.hasListbox ?? true;
+  // Inside CommandPalette the list is a listbox only while it holds selectable
+  // results; standalone composition is always a listbox.
+  const hasListbox = ctx ? ctx.selectableItems.length > 0 : true;
 
   return (
     <div
       ref={ref}
       {...props}
-      id={ctx?.listId}
+      id={ctx?.listId ?? props.id}
       role={hasListbox ? 'listbox' : undefined}
       aria-label={hasListbox ? label : undefined}
       {...mergeProps(

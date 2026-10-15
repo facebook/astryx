@@ -50,7 +50,6 @@ function makeContext(
     value: '',
     setValue: vi.fn(),
     listId: 'command-list',
-    hasListbox: true,
     highlightedIndex: -1,
     setHighlightedIndex: vi.fn(),
     getItemId: index => `command-item-${index}`,

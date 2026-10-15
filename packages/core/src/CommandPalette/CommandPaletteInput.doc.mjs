@@ -20,7 +20,7 @@ export const docs = {
       name: 'label',
       type: 'string',
       description:
-        'Accessible label for the combobox input, announced by screen readers. Falls back to the placeholder text when omitted.',
+        'Accessible label for the combobox input, announced by screen readers. Defaults to the translated "Search commands"; the placeholder is never used as the name.',
     },
     {
       name: 'hasAutoFocus',
@@ -85,7 +85,7 @@ export const docsZh = {
     '搜索输入插槽。挂载时自动聚焦。在 CommandPalette 内使用时连接到上下文。',
   propDescriptions: {
     placeholder: '输入框的占位文本。',
-    label: '组合框输入的无障碍标签，供屏幕阅读器朗读。省略时回退到占位文本。',
+    label: '组合框输入的无障碍标签，供屏幕阅读器朗读。默认为翻译后的 "Search commands"；占位文本不会用作名称。',
     hasAutoFocus: '挂载时自动聚焦输入框。内联命令面板中自动禁用。',
     endContent: '渲染在输入框末尾的内容，位于加载指示器之后。',
     value: '搜索值。在 CommandPalette 内省略时从上下文读取。',
@@ -102,7 +102,7 @@ export const docsDense = {
     'search input; auto-focus on mount; wires to context inside CommandPalette',
   propDescriptions: {
     placeholder: 'input placeholder text',
-    label: 'accessible label for the combobox; falls back to placeholder',
+    label: 'accessible label for the combobox; default "Search commands", never the placeholder',
     hasAutoFocus: 'auto-focus on mount; auto-disabled in inline mode',
     endContent: 'trailing content after spinner',
     value: 'search value; reads context when omitted inside palette',

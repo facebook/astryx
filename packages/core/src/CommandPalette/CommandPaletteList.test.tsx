@@ -11,7 +11,34 @@ import {createRef} from 'react';
 import {render, screen} from '@testing-library/react';
 import {createStaticSource} from '@astryxdesign/core/Typeahead';
 import {CommandPalette} from './CommandPalette';
+import {
+  CommandPaletteContext,
+  type CommandPaletteContextValue,
+} from './CommandPaletteContext';
 import {CommandPaletteList} from './CommandPaletteList';
+
+function makeContext(
+  overrides: Partial<CommandPaletteContextValue> = {},
+): CommandPaletteContextValue {
+  return {
+    search: '',
+    setSearch: () => {},
+    value: '',
+    setValue: () => {},
+    listId: 'command-list',
+    highlightedIndex: -1,
+    setHighlightedIndex: () => {},
+    getItemId: index => `command-item-${index}`,
+    selectableItems: [],
+    searchResults: [],
+    selectItem: () => {},
+    onKeyDown: () => {},
+    onClose: () => {},
+    isOpen: true,
+    isBusy: false,
+    ...overrides,
+  };
+}
 
 describe('CommandPaletteList', () => {
   it('renders children', () => {
@@ -42,6 +69,48 @@ describe('CommandPaletteList', () => {
     );
     expect(screen.getByRole('listbox')).toHaveClass(
       'astryx-command-palette-list',
+    );
+  });
+
+  it('preserves the consumer id when used standalone', () => {
+    render(
+      <CommandPaletteList id="custom-commands">
+        <div>Item</div>
+      </CommandPaletteList>,
+    );
+
+    expect(screen.getByRole('listbox')).toHaveAttribute(
+      'id',
+      'custom-commands',
+    );
+  });
+
+  it('inside a palette, is a listbox only while it holds selectable results', () => {
+    const {rerender} = render(
+      <CommandPaletteContext value={makeContext()}>
+        <CommandPaletteList>
+          <div>No results</div>
+        </CommandPaletteList>
+      </CommandPaletteContext>,
+    );
+    expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+    expect(screen.getByText('No results').parentElement).not.toHaveAttribute(
+      'aria-label',
+    );
+
+    rerender(
+      <CommandPaletteContext
+        value={makeContext({
+          selectableItems: [{value: 'open', label: 'Open'}],
+        })}>
+        <CommandPaletteList>
+          <div>Open</div>
+        </CommandPaletteList>
+      </CommandPaletteContext>,
+    );
+    expect(screen.getByRole('listbox', {name: 'Commands'})).toHaveAttribute(
+      'id',
+      'command-list',
     );
   });
 

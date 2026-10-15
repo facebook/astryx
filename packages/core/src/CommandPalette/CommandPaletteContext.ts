@@ -22,8 +22,6 @@ export interface CommandPaletteContextValue {
   setValue: (value: string) => void;
   /** Unique ID prefix for ARIA (listbox id). */
   listId: string;
-  /** Whether the current result surface is an expanded listbox. */
-  hasListbox: boolean;
   /** Index-based highlight from useCombobox. -1 = none. */
   highlightedIndex: number;
   /** Update highlighted index. */

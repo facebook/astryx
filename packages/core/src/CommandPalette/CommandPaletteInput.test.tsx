@@ -120,11 +120,10 @@ describe('CommandPaletteInput dialog context', () => {
       value: '',
       setValue: vi.fn(),
       listId: 'list-1',
-      hasListbox: true,
       highlightedIndex: -1,
       setHighlightedIndex: vi.fn(),
       getItemId: (i: number) => `item-${i}`,
-      selectableItems: [],
+      selectableItems: [{value: 'open', label: 'Open'}],
       searchResults: [],
       selectItem: vi.fn(),
       onKeyDown: vi.fn(),
@@ -149,7 +148,7 @@ describe('CommandPaletteInput dialog context', () => {
 
   it('omits popup ARIA while the result surface has no listbox', () => {
     render(
-      <CommandPaletteContext value={makeContext({hasListbox: false})}>
+      <CommandPaletteContext value={makeContext({selectableItems: []})}>
         <CommandPaletteInput />
       </CommandPaletteContext>,
     );
