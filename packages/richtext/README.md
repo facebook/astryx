@@ -68,9 +68,11 @@ you must request that tag explicitly. There is no `latest` version to install.
 
 ```bash
 npm install @astryxdesign/richtext@canary @astryxdesign/core@canary
-# plus the optional lexical peers you use:
-npm install lexical @lexical/react @lexical/markdown @lexical/rich-text
 ```
+
+Then install every `lexical` and `@lexical/*` package listed in richtext's
+`peerDependencies`, at the range shown there (`npm view
+@astryxdesign/richtext@canary peerDependencies` prints them).
 
 > Canary builds track the latest commit on `main` (`0.x.y-canary.<sha>`). They
 > can break between any two versions — pin an exact version if you need
