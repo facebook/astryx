@@ -619,6 +619,9 @@ export function Slider({ref, ...props}: SliderProps) {
     return currentValues.map(currentValue => clamp(currentValue, min, max));
   }, [value, min, max]);
 
+  // The latest values: the rendered prop, or a value this drag emitted that the
+  // owner has not rendered yet, so a release in the same batch as the last
+  // move still reports the value the user chose.
   const valuesRef = useRef(values);
   valuesRef.current = values;
 
@@ -703,8 +706,10 @@ export function Slider({ref, ...props}: SliderProps) {
         currentValues[0] = clamp(currentValues[0], min, max);
         currentValues[1] = clamp(currentValues[1], min, max);
 
+        valuesRef.current = currentValues;
         (onChange as SliderRangeProps['onChange'])?.(currentValues);
       } else {
+        valuesRef.current = [clamped];
         (onChange as SliderSingleProps['onChange'])?.(clamped);
       }
     },

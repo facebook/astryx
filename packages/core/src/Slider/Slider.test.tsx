@@ -660,6 +660,54 @@ describe('Slider', () => {
     expect(handleChangeEnd).toHaveBeenCalledTimes(1);
   });
 
+  it('reports the last dragged value when the release comes before a re-render', () => {
+    const handleChange = vi.fn();
+    const handleChangeEnd = vi.fn();
+    function Controlled() {
+      const [value, setValue] = useState(60);
+      return (
+        <Slider
+          label="Volume"
+          value={value}
+          min={0}
+          max={100}
+          valueDisplay="none"
+          onChange={next => {
+            handleChange(next);
+            setValue(next);
+          }}
+          onChangeEnd={handleChangeEnd}
+        />
+      );
+    }
+    render(<Controlled />);
+    const track = screen.getByRole('slider').parentElement!;
+    track.getBoundingClientRect = () => ({
+      left: 0,
+      top: 0,
+      right: 200,
+      bottom: 20,
+      width: 200,
+      height: 20,
+      x: 0,
+      y: 0,
+      toJSON: () => {},
+    });
+
+    fireEvent.pointerDown(track, {clientX: 120, clientY: 10, pointerId: 1});
+    // The last move and the release land in one batch, before the owner's
+    // state update re-renders the slider.
+    act(() => {
+      fireEvent.pointerMove(track, {clientX: 180, clientY: 10, pointerId: 1});
+      fireEvent.pointerUp(track, {clientX: 180, clientY: 10, pointerId: 1});
+    });
+
+    const lastDragged = handleChange.mock.lastCall?.[0];
+    expect(lastDragged).toBeGreaterThan(80);
+    expect(handleChangeEnd).toHaveBeenCalledTimes(1);
+    expect(handleChangeEnd).toHaveBeenCalledWith(lastDragged);
+  });
+
   it('focuses closest thumb on track click', () => {
     render(
       <Slider label="Volume" value={50} min={0} max={100} onChange={vi.fn()} />,
