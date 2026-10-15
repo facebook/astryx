@@ -42,8 +42,9 @@ reflows no line; only editing affordances appear or disappear.
 - Which editor engine a product chooses for editing whole documents, and the
   value that product stores. This record governs how the surfaces render the
   same document; RichText's own role and value are DEC-7.
-- RichText's release channel. The release policy and the package's
-  Changesets decide it, not this record.
+- RichText's release channel. Package release-channel metadata decides it
+  (spec:AST-033 FR4), and promotion follows spec:AST-017 FR23; this record
+  does not.
 - Equivalent internal implementations remain valid when they satisfy this
   contract, except the character reference decoder, which DEC-5 makes one
   shared public function.
