@@ -36,7 +36,7 @@ import {
 } from '@astryxdesign/a11y-spec/storybook';
 
 const STORYBOOK_DIR = process.env.ASTRYX_STORYBOOK_DIR ?? DEFAULT_STORYBOOK_DIR;
-const STORY = 'lab-richtexteditor--playground';
+const STORY = 'richtext-richtexteditor--playground';
 const EDITOR = '[data-playground-editor] [role="textbox"]';
 const CELLS = `${EDITOR} table th, ${EDITOR} table td`;
 
