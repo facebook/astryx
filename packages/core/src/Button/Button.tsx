@@ -4,7 +4,7 @@
 
 /**
  * @file Button.tsx
- * @input Uses React, ButtonHTMLAttributes, ReactNode, i18n (useTranslator)
+ * @input Uses React, ButtonHTMLAttributes, ReactNode, i18n (useTranslator), group contexts
  * @output Exports Button component, ButtonProps, ButtonVariant types
  * @position Core implementation; consumed by index.ts, tested by Button.test.tsx
  *
@@ -44,6 +44,8 @@ import {iconBoxSizeStyles, type IconSize} from '../Icon/IconSize.stylex';
 import {EDGE_COMP_ATTR} from '../Layout/edgeCompensation.stylex';
 import {useSize} from '../SizeContext/SizeContext';
 import {useButtonGroup} from '../ButtonGroup/ButtonGroupContext';
+import {useInputGroup} from '../InputGroup/InputGroupContext';
+import {groupStyles as inputGroupStyles} from '../InputGroup/groupStyles';
 import {mergeProps} from '../utils';
 import {useMergedRefs} from '../hooks/useMergedRefs';
 import {useLinkComponent} from '../Link/useLinkComponent';
@@ -576,6 +578,7 @@ export function Button({
   const t = useTranslator();
   const size = useSize(sizeProp, 'md');
   const buttonGroup = useButtonGroup();
+  const inputGroup = useInputGroup();
 
   const [isPending, startTransition] = useTransition();
   // clickAction is normally fire-once (submit/save/pay), so a same-tick
@@ -674,6 +677,7 @@ export function Button({
       (buttonGroup.orientation === 'horizontal'
         ? groupStyles.horizontal
         : groupStyles.vertical),
+    inputGroup != null && buttonGroup == null && inputGroupStyles.buttonAddon,
     buttonGroup &&
       (variant === 'primary' || variant === 'destructive') &&
       (buttonGroup.orientation === 'horizontal'

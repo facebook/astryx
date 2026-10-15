@@ -44,6 +44,7 @@ import type {
   TableColumn,
   BodyRowRenderProps,
   BodyCellRenderProps,
+  HeaderCellRenderProps,
 } from '../../types';
 
 // =============================================================================
@@ -116,12 +117,16 @@ export interface UseTableRowExpansionConfig<T extends Record<string, unknown>> {
  * The chevron column's width, in pixels.
  *
  * A column width is a number the layout does arithmetic on, not a CSS value,
- * so this cannot be a token reference — but it is the pixel value of
- * `--spacing-10`, and the panel's indent (which has to line up with the first
- * real column) spells it as the token. The unit test pins the two together so
- * a change to the scale cannot silently unalign them.
+ * so this stays a fixed pixel width at every root font size. The panel's
+ * indent, which has to line up with the first real column, spells the same
+ * pixels rather than a spacing token: spacing is rem and grows with the root
+ * font size, which would push the panel past the column it lines up with. The
+ * unit test pins the two together so neither can move without the other.
  */
 const EXPANSION_COLUMN_WIDTH_PX = 40;
+const EXPANSION_COLUMN_KEY = '__expansion';
+/** The chevron button: the spacing step, never wider than its column. */
+const CHEVRON_SIZE = `min(${spacingVars['--spacing-6']}, ${EXPANSION_COLUMN_WIDTH_PX}px)`;
 const EXPANSION_COLUMN_WIDTH = {
   type: 'pixel' as const,
   value: EXPANSION_COLUMN_WIDTH_PX,
@@ -132,8 +137,8 @@ const expansionStyles = stylex.create({
     display: 'inline-flex',
     alignItems: 'center',
     justifyContent: 'center',
-    width: spacingVars['--spacing-6'],
-    height: spacingVars['--spacing-6'],
+    width: CHEVRON_SIZE,
+    height: CHEVRON_SIZE,
     backgroundColor: 'transparent',
     borderWidth: 0,
     borderStyle: 'none',
@@ -234,17 +239,56 @@ const dividerStyles = stylex.create({
  * gives its own content.
  *
  * Written as a logical property so RTL mirrors it, and kept in `calc` so the
- * padding half still tracks the spacing scale.
+ * padding half still tracks the spacing scale, as the cell's own padding does.
  */
 const panelIndentStyles = stylex.create({
   compact: {
-    paddingInlineStart: `calc(${spacingVars['--spacing-10']} + ${spacingVars['--spacing-2']})`,
+    paddingInlineStart: `calc(${EXPANSION_COLUMN_WIDTH_PX}px + ${spacingVars['--spacing-2']})`,
   },
   balanced: {
-    paddingInlineStart: `calc(${spacingVars['--spacing-10']} + ${spacingVars['--spacing-3']})`,
+    paddingInlineStart: `calc(${EXPANSION_COLUMN_WIDTH_PX}px + ${spacingVars['--spacing-3']})`,
   },
   spacious: {
-    paddingInlineStart: `calc(${spacingVars['--spacing-10']} + ${spacingVars['--spacing-4']})`,
+    paddingInlineStart: `calc(${EXPANSION_COLUMN_WIDTH_PX}px + ${spacingVars['--spacing-4']})`,
+  },
+});
+
+/**
+ * The chevron sits centered in its column, as the selection checkbox does.
+ *
+ * The column is a fixed pixel width, but its cells' insets follow the spacing
+ * scale: the first column's edge inset, plus the density padding a body cell
+ * moves onto its right-click trigger. Laid out after both, the button ran past
+ * the column's edge, which clips its hover chip and, under a larger spacing
+ * scale or root font size, pushes the glyph out of view; and the header cell's
+ * insets alone outgrow 40px at a large root, widening the column. So the
+ * header cell, which holds only a visually hidden label, drops its inline
+ * insets, the body cell drops its inline-start inset, and the button cancels
+ * the trigger's padding (the same density step the panel indent uses) and
+ * centers itself.
+ */
+const chevronHeaderCellStyles = stylex.create({
+  cell: {
+    paddingInlineStart: 0,
+    paddingInlineEnd: 0,
+  },
+});
+
+const chevronCellStyles = stylex.create({
+  cell: {
+    paddingInlineStart: 0,
+  },
+});
+
+const chevronOffsetStyles = stylex.create({
+  compact: {
+    marginInlineStart: `calc((${EXPANSION_COLUMN_WIDTH_PX}px - ${CHEVRON_SIZE}) / 2 - ${spacingVars['--spacing-2']})`,
+  },
+  balanced: {
+    marginInlineStart: `calc((${EXPANSION_COLUMN_WIDTH_PX}px - ${CHEVRON_SIZE}) / 2 - ${spacingVars['--spacing-3']})`,
+  },
+  spacious: {
+    marginInlineStart: `calc((${EXPANSION_COLUMN_WIDTH_PX}px - ${CHEVRON_SIZE}) / 2 - ${spacingVars['--spacing-4']})`,
   },
 });
 
@@ -260,10 +304,14 @@ function ExpansionChevron({
   onToggle: () => void;
 }) {
   const t = useTranslator();
+  const ctx = useTableContext();
   return (
     <button
       type="button"
-      {...stylex.props(expansionStyles.chevronButton)}
+      {...stylex.props(
+        expansionStyles.chevronButton,
+        chevronOffsetStyles[ctx?.density ?? 'balanced'],
+      )}
       onClick={e => {
         e.stopPropagation();
         onToggle();
@@ -369,7 +417,7 @@ export function useTableRowExpansion<T extends Record<string, unknown>>(
 
   const expansionColumn = useMemo(
     (): TableColumn<T> => ({
-      key: '__expansion',
+      key: EXPANSION_COLUMN_KEY,
       // A `<th>` with no discernible text is announced as an unlabelled
       // column; the label is hidden because the column shows only chevrons.
       header: (
@@ -406,9 +454,19 @@ export function useTableRowExpansion<T extends Record<string, unknown>>(
         return withExpansion;
       },
 
+      transformHeaderCell(
+        props: HeaderCellRenderProps,
+        column: TableColumn<T>,
+      ): HeaderCellRenderProps {
+        // Keep the chevron column at its fixed width (chevronCellStyles).
+        return column.key === EXPANSION_COLUMN_KEY
+          ? {...props, xstyle: [...props.xstyle, chevronHeaderCellStyles.cell]}
+          : props;
+      },
+
       transformBodyCell(
         props: BodyCellRenderProps,
-        _column: TableColumn<T>,
+        column: TableColumn<T>,
         item: T,
       ): BodyCellRenderProps {
         // Contribute the expand/collapse action on every cell; BaseTable
@@ -423,11 +481,16 @@ export function useTableRowExpansion<T extends Record<string, unknown>>(
         const isExpanded = expandedKeys.has(key);
         return {
           ...props,
-          // Hand the row divider to the panel below, so the line closes the
-          // row-plus-panel pair instead of splitting it.
-          xstyle: isExpanded
-            ? [...props.xstyle, dividerStyles.expandedRowCell]
-            : props.xstyle,
+          xstyle: [
+            ...props.xstyle,
+            // The chevron centers itself in its column (chevronCellStyles).
+            ...(column.key === EXPANSION_COLUMN_KEY
+              ? [chevronCellStyles.cell]
+              : []),
+            // Hand the row divider to the panel below, so the line closes the
+            // row-plus-panel pair instead of splitting it.
+            ...(isExpanded ? [dividerStyles.expandedRowCell] : []),
+          ],
           contextMenuActions: () => [
             ...resolveContextActions(props.contextMenuActions),
             {

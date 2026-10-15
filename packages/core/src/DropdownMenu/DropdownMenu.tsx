@@ -68,7 +68,10 @@ import {useMenuPress} from '../hooks/useMenuPress';
 import type {MenuPressPointerType} from '../hooks/menuPressGesture';
 import {useTypeahead} from '../hooks/useTypeahead';
 import {useFocusReturnVisibility} from '../hooks/useFocusReturnVisibility';
+import {focusForLastInput} from '../utils/focusReturn';
 import {useMenuOverflow} from './useMenuOverflow';
+import {MenuRegionsContext} from './menuRegionsContext';
+import {getFocusableElements} from '../hooks/useFocusTrap';
 import {useDevWarning} from '../hooks/useDevWarning';
 import {useMenuDrillIn} from './useMenuDrillIn';
 import {resolveMenuWidth} from './menuWidth';
@@ -88,10 +91,13 @@ import {
   durationVars,
   easeVars,
 } from '../theme/tokens.stylex';
-import {mergeProps, rtlStyles} from '../utils';
+import {isRenderable, mergeProps, rtlStyles} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
-import {useInteractionModalityTracking} from '../utils/interactionModality';
+import {
+  getInteractionModality,
+  useInteractionModalityTracking,
+} from '../utils/interactionModality';
 import {useTranslator} from '../i18n';
 import {focusOutlineStyles} from '../utils/focusOutline.stylex';
 
@@ -101,6 +107,54 @@ const MENU_BLOCK_CAP = '300px';
 const MENU_MAX_BLOCK_SIZE = `min(${MENU_BLOCK_CAP}, ${layerViewportInset.maxBlockSize})`;
 const MENU_MAX_BLOCK_SIZE_FALLBACK = `min(${MENU_BLOCK_CAP}, ${layerViewportInset.maxBlockSizeFallback})`;
 const MENU_TRIGGER_OPEN_BACKGROUND = `linear-gradient(${colorVars['--color-overlay-pressed']}, ${colorVars['--color-overlay-pressed']})`;
+
+/**
+ * The elements Tab reaches inside a header or footer region, in order. Hidden
+ * controls (`hidden`, `display: none`, `visibility: hidden`, inert or
+ * aria-hidden subtrees) are not reachable, judged by the popover focus trap's
+ * own test so the two never disagree about where Tab can go.
+ */
+function tabbablesIn(region: HTMLElement | null): HTMLElement[] {
+  if (region == null) {
+    return [];
+  }
+  return getFocusableElements(region).filter(
+    element => element.tabIndex >= 0 && !isInsideHiddenWrapper(element, region),
+  );
+}
+
+/**
+ * Whether a `display: none` ancestor between the element and its region hides
+ * it — a control in a wrapper hidden at some widths, say. The trap's test reads
+ * only the element's own display.
+ */
+function isInsideHiddenWrapper(
+  element: HTMLElement,
+  region: HTMLElement,
+): boolean {
+  if (typeof window === 'undefined' || !window.getComputedStyle) {
+    return false;
+  }
+  for (
+    let node = element.parentElement;
+    node != null && node !== region.parentElement;
+    node = node.parentElement
+  ) {
+    if (window.getComputedStyle(node).display === 'none') {
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * Move focus to a region control. Reports whether focus actually arrived, so a
+ * caller can close the menu instead of stranding focus on the page.
+ */
+function focusRegionControl(element: HTMLElement): boolean {
+  element.focus();
+  return element.ownerDocument.activeElement === element;
+}
 
 const styles = stylex.create({
   triggerOpen: {
@@ -147,6 +201,27 @@ const styles = stylex.create({
     overflowY: 'auto',
     overflowX: 'hidden',
     overscrollBehavior: 'contain',
+  },
+  // With a header or footer, the regions and the menu share one column under
+  // the menu's block cap: the regions keep their height and the menu shrinks
+  // and scrolls between them.
+  regionsFrame: {
+    boxSizing: 'border-box',
+    display: 'flex',
+    flexDirection: 'column',
+    maxHeight: stylex.firstThatWorks(
+      MENU_MAX_BLOCK_SIZE,
+      MENU_MAX_BLOCK_SIZE_FALLBACK,
+    ),
+  },
+  menuInFrame: {
+    flexGrow: 1,
+    flexShrink: 1,
+    minBlockSize: 0,
+  },
+  region: {
+    flexShrink: 0,
+    padding: spacingVars['--spacing-1'],
   },
   // Scroll ownership by the browser's own signal. A menu whose rows fit keeps
   // every one-finger move: a slide over its rows stays a slide. One that
@@ -215,6 +290,12 @@ const bottomSheetStyles = stylex.create({
   },
   viewHeading: {
     outline: 'none',
+  },
+  // Caller content above or below the action list, inset to the list's
+  // content edge.
+  region: {
+    paddingInline: spacingVars['--spacing-3'],
+    paddingBlock: spacingVars['--spacing-2'],
   },
 });
 
@@ -371,6 +452,17 @@ interface DropdownMenuBaseProps extends BaseProps {
    * @default 'start'
    */
   alignment?: LayerAlignment;
+  /**
+   * Content above the menu's rows and outside the menu itself — a filter
+   * field, a toggle. The menu holds only its rows, so a control that is not
+   * a row goes here or in `footer`, never among the rows.
+   */
+  header?: ReactNode;
+  /**
+   * Content below the menu's rows and outside the menu itself — a "Create"
+   * button. See `header`.
+   */
+  footer?: ReactNode;
 
   'data-testid'?: string;
 }
@@ -508,6 +600,8 @@ function DropdownMenuBottomSheet({
   menuMaxHeight: _menuMaxHeight,
   placement: _placement,
   alignment: _alignment,
+  header,
+  footer,
   className,
   style,
   xstyle,
@@ -622,7 +716,15 @@ function DropdownMenuBottomSheet({
       openModalityRef.current = 'keyboard';
     }
   };
-  const handleSheetTriggerClick = () => {
+  const handleSheetTriggerClick = (event: React.MouseEvent<HTMLElement>) => {
+    // A caller-rendered trigger that is natively or aria-disabled must not
+    // open the sheet; the default Button already refuses its own click.
+    // The DOM check covers the built-in Button too (it renders aria-disabled
+    // when focusable-disabled); a caller's own enabled control wins over a
+    // `button.isDisabled` left on the props.
+    if (event.currentTarget.matches(':disabled, [aria-disabled="true"]')) {
+      return;
+    }
     onClick?.();
     setOpen(!isOpen);
   };
@@ -718,11 +820,17 @@ function DropdownMenuBottomSheet({
               {currentTitle}
             </Heading>
           </div>
+          {isRenderable(header) && (
+            <div {...stylex.props(bottomSheetStyles.region)}>{header}</div>
+          )}
           <MenuBottomSheetActionList
             items={currentItems}
             onSelect={handleSelect}
             onOpenSubmenu={item => setSubmenuPath(path => [...path, item])}
           />
+          {isRenderable(footer) && (
+            <div {...stylex.props(bottomSheetStyles.region)}>{footer}</div>
+          )}
         </div>
       </MenuBottomSheet>
     </>
@@ -741,6 +849,8 @@ function DropdownMenuPopover({
   placement = 'below',
   alignment = 'start',
   presentation: _presentation,
+  header,
+  footer,
   className,
   style,
   xstyle,
@@ -786,6 +896,16 @@ function DropdownMenuPopover({
     resetFocusReturn,
   } = useFocusReturnVisibility();
   const contentRef = useRef<HTMLDivElement | null>(null);
+  const headerRef = useRef<HTMLDivElement | null>(null);
+  const footerRef = useRef<HTMLDivElement | null>(null);
+  const hasRegions = useMemo(
+    () => isRenderable(header) || isRenderable(footer),
+    [header, footer],
+  );
+  // Whether the menu element itself took focus from the keyboard. A pointer
+  // open focuses it programmatically, and pointer history must not paint the
+  // keyboard ring (architecture:interaction-modality INV1).
+  const [isMenuKeyboardFocused, setIsMenuKeyboardFocused] = useState(false);
   // The press model is mounted below (it needs the popover); the hide path
   // above it ends the gesture in flight through this ref.
   const cancelMenuPressRef = useRef<() => void>(() => {});
@@ -821,7 +941,12 @@ function DropdownMenuPopover({
       return;
     }
     prepareFocusReturn();
-    trigger.focus({preventScroll: true});
+    // After pointer input the trigger takes focus without the focus-visible
+    // ring (`component:DropdownMenu/DEC-1`). The style the helper above adds
+    // reaches only the design system's own Button; the browser's focus option
+    // also reaches a control the caller renders, which the browser would
+    // otherwise ring (Chromium after a mouse pick, WebKit after a touch).
+    focusForLastInput(trigger, {preventScroll: true});
   }, [isControlled, onOpenChange, prepareFocusReturn]);
 
   // Defer item focus until the layer has committed open, so focus restore
@@ -966,6 +1091,23 @@ function DropdownMenuPopover({
       // A submenu flyout renders inline inside this menu; its key events bubble
       // up here. Let that level own them — only handle events from this level.
       if (!ownsEvent(e)) {
+        // Except Tab with a header or footer: each open flyout has closed
+        // itself as the key bubbled up, and the root moves focus on as Tab
+        // from one of its own rows would.
+        if (e.key === 'Tab' && hasRegions) {
+          const region = e.shiftKey ? headerRef.current : footerRef.current;
+          const tabbables = tabbablesIn(region);
+          e.stopPropagation();
+          const target = e.shiftKey
+            ? tabbables[tabbables.length - 1]
+            : tabbables[0];
+          if (target != null) {
+            e.preventDefault();
+          }
+          if (target == null || !focusRegionControl(target)) {
+            closeMenu();
+          }
+        }
         return;
       }
       if (e.key === 'Enter' || e.key === ' ') {
@@ -991,7 +1133,27 @@ function DropdownMenuPopover({
       // otherwise leak into the page while the menu stayed open (menus-5).
       // Do NOT preventDefault — closing restores focus to the trigger, and the
       // browser's default Tab then continues from there to the next element.
+      // A header or footer with something Tab can reach in that direction
+      // takes the Tab instead, and the menu stays open.
       if (e.key === 'Tab') {
+        const region = e.shiftKey ? headerRef.current : footerRef.current;
+        const tabbables = tabbablesIn(region);
+        if (tabbables.length > 0) {
+          // From a row, the browser's Shift+Tab would stop on the menu element
+          // itself — the row's ancestor and a Tab stop — before reaching the
+          // header. The menu is one stop, so go straight to the header.
+          if (e.shiftKey && e.target !== listRef.current) {
+            e.preventDefault();
+            // The popover's focus trap listens on the document and would read
+            // this same Shift+Tab against the field just focused — the trap's
+            // first element — and wrap to the footer. This key is handled.
+            e.stopPropagation();
+            if (!focusRegionControl(tabbables[tabbables.length - 1])) {
+              closeMenu();
+            }
+          }
+          return;
+        }
         closeMenu();
         return;
       }
@@ -1002,7 +1164,33 @@ function DropdownMenuPopover({
       }
       listNavKeyDown(e);
     },
-    [listNavKeyDown, closeMenu, typeahead, ownsEvent],
+    [listNavKeyDown, closeMenu, typeahead, ownsEvent, listRef, hasRegions],
+  );
+
+  // Tab past the last control of the footer, or Shift+Tab before the first
+  // control of the header, leaves the menu as Tab from its rows does: the
+  // menu closes, focus returns to the trigger, and the browser's own Tab
+  // continues from there. Between the regions, Tab moves through the menu
+  // as one stop.
+  const handleRegionKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLDivElement>) => {
+      if (e.key !== 'Tab') {
+        return;
+      }
+      const tabbables = tabbablesIn(e.currentTarget);
+      const isHeader = e.currentTarget === headerRef.current;
+      const exit = isHeader
+        ? e.shiftKey
+          ? tabbables[0]
+          : undefined
+        : e.shiftKey
+          ? undefined
+          : tabbables[tabbables.length - 1];
+      if (exit != null && exit === document.activeElement) {
+        closeMenu();
+      }
+    },
+    [closeMenu],
   );
 
   const openAndFocus = useCallback(
@@ -1010,6 +1198,15 @@ function DropdownMenuPopover({
       modality: 'keyboard' | 'pointer' = 'keyboard',
       notifyClick = false,
     ): boolean => {
+      // An unavailable trigger never opens the menu. Button keeps an
+      // aria-disabled trigger focusable for its tooltip and swallows only
+      // Enter and Space, so the arrow keys, a press and a click would still
+      // arrive here; a custom trigger may be natively disabled instead.
+      if (
+        buttonRef.current?.matches(':disabled, [aria-disabled="true"]') === true
+      ) {
+        return false;
+      }
       acceptedOpenRef.current = false;
       notifyClickOnShowRef.current = notifyClick;
       pendingControlledOpenRef.current = isControlled;
@@ -1148,7 +1345,11 @@ function DropdownMenuPopover({
             return;
           }
           focusLastOnOpenRef.current = e.key === 'ArrowUp';
-          openAndFocus();
+          if (!openAndFocus()) {
+            // A refused open (disabled trigger) must not leave ArrowUp's
+            // "land on the last row" armed for a later open.
+            focusLastOnOpenRef.current = false;
+          }
         }
         return;
       }
@@ -1215,6 +1416,38 @@ function DropdownMenuPopover({
   );
   const hasOverflow = useMenuOverflow(listRef, menuContent, popover.isOpen);
 
+  // The header and footer sit beside the menu inside the popover, never inside
+  // the role="menu" element: a menu holds only its rows.
+  const renderWithRegions = (menu: ReactNode): ReactNode =>
+    hasRegions ? (
+      <div
+        {...stylex.props(
+          styles.regionsFrame,
+          resolvedMaxHeight != null &&
+            dynamicStyles.menuMaxHeight(resolvedMaxHeight),
+        )}>
+        {isRenderable(header) && (
+          <div
+            ref={headerRef}
+            onKeyDown={handleRegionKeyDown}
+            {...stylex.props(styles.region)}>
+            {header}
+          </div>
+        )}
+        {menu}
+        {isRenderable(footer) && (
+          <div
+            ref={footerRef}
+            onKeyDown={handleRegionKeyDown}
+            {...stylex.props(styles.region)}>
+            {footer}
+          </div>
+        )}
+      </div>
+    ) : (
+      menu
+    );
+
   const triggerProps: DropdownMenuTriggerProps = {
     ref: el => {
       buttonRef.current = el;
@@ -1226,8 +1459,9 @@ function DropdownMenuPopover({
     onPointerDown: menuPress.triggerProps.onPointerDown,
     onContextMenu: menuPress.triggerProps.onContextMenu,
     onKeyDown: handleButtonKeyDown,
-    // The popover's focus-return hook is a separate change; until it lands
-    // the control's focus needs no bookkeeping here.
+    // The caller's control paints its own ring, and the menu's focus return
+    // keeps the browser from drawing one after pointer input (see
+    // handleLayerHide), so its focus needs no bookkeeping here.
     onFocus: () => {},
     'aria-haspopup': 'menu',
     'aria-expanded': isOpen,
@@ -1286,52 +1520,75 @@ function DropdownMenuPopover({
         />
       )}
       {popover.render(
-        <div
-          {...rest}
-          ref={el => {
-            listRef.current = el;
-            contentRef.current =
-              el?.closest<HTMLDivElement>('[popover]') ?? null;
-          }}
-          id={menuId}
-          role="menu"
-          // Pointer opens focus the container so arrows, typeahead, Escape and
-          // Tab remain owned by the menu without pre-highlighting an item.
-          // An overflowing menu joins the Tab order so its scrollable region is
-          // keyboard-accessible; Tab still dismisses through listKeyDown.
-          tabIndex={hasOverflow ? 0 : -1}
-          // Give the menu an accessible name from its trigger's label, so
-          // screen readers announce e.g. "Actions menu" rather than an unnamed
-          // menu (menus-13). A custom trigger names it by reference.
-          aria-label={
-            renderTrigger != null
-              ? (rest['aria-label'] as string | undefined)
-              : button.label
-          }
-          aria-labelledby={
-            renderTrigger != null && rest['aria-label'] == null
-              ? triggerId
-              : (rest['aria-labelledby'] as string | undefined)
-          }
-          onKeyDown={listKeyDown}
-          {...menuPress.menuProps}
-          {...mergeProps(
-            themeProps('dropdown-menu'),
-            stylex.props(
-              styles.dropdown,
-              resolvedMaxHeight != null &&
-                dynamicStyles.menuMaxHeight(resolvedMaxHeight),
-              hasOverflow ? styles.touchPanYPinchZoom : styles.touchPinchZoom,
-              hasOverflow && styles.scrollable,
-              xstyle,
-            ),
-            className,
-            style,
-          )}>
-          <DropdownMenuContext value={contextValue}>
-            {menuContent}
-          </DropdownMenuContext>
-        </div>,
+        renderWithRegions(
+          <div
+            {...rest}
+            ref={el => {
+              listRef.current = el;
+              contentRef.current =
+                el?.closest<HTMLDivElement>('[popover]') ?? null;
+            }}
+            id={menuId}
+            role="menu"
+            // Pointer opens focus the container so arrows, typeahead, Escape and
+            // Tab remain owned by the menu without pre-highlighting an item.
+            // An overflowing menu joins the Tab order so its scrollable region is
+            // keyboard-accessible; Tab still dismisses through listKeyDown. With
+            // a header or footer the menu is one Tab stop between them.
+            tabIndex={hasOverflow || hasRegions ? 0 : -1}
+            // Give the menu an accessible name from its trigger's label, so
+            // screen readers announce e.g. "Actions menu" rather than an unnamed
+            // menu (menus-13). A custom trigger names it by reference.
+            aria-label={
+              renderTrigger != null
+                ? (rest['aria-label'] as string | undefined)
+                : button.label
+            }
+            aria-labelledby={
+              renderTrigger != null && rest['aria-label'] == null
+                ? triggerId
+                : (rest['aria-labelledby'] as string | undefined)
+            }
+            onKeyDown={listKeyDown}
+            onFocus={event => {
+              (
+                rest.onFocus as
+                  React.FocusEventHandler<HTMLDivElement> | undefined
+              )?.(event);
+              if (event.target === event.currentTarget) {
+                setIsMenuKeyboardFocused(
+                  getInteractionModality() === 'keyboard',
+                );
+              }
+            }}
+            {...menuPress.menuProps}
+            {...mergeProps(
+              themeProps('dropdown-menu'),
+              stylex.props(
+                styles.dropdown,
+                resolvedMaxHeight != null &&
+                  dynamicStyles.menuMaxHeight(resolvedMaxHeight),
+                hasOverflow ? styles.touchPanYPinchZoom : styles.touchPinchZoom,
+                hasOverflow && styles.scrollable,
+                hasRegions && styles.menuInFrame,
+                // Between a header and a footer the menu is a Tab stop, so
+                // keyboard focus on it must be visible (the base style removes
+                // the ring for the pointer-open focus target).
+                hasRegions &&
+                  isMenuKeyboardFocused &&
+                  focusOutlineStyles.focusVisible,
+                xstyle,
+              ),
+              className,
+              style,
+            )}>
+            <MenuRegionsContext value={hasRegions}>
+              <DropdownMenuContext value={contextValue}>
+                {menuContent}
+              </DropdownMenuContext>
+            </MenuRegionsContext>
+          </div>,
+        ),
         {
           placement,
           alignment,

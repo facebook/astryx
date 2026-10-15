@@ -2084,7 +2084,8 @@ function FilterOverflow({
           isOpen={isOpen}
           onOpenChange={setIsOpen}
           label={label}
-          height="hug">
+          height="hug"
+          padding={0}>
           {body}
         </BottomSheet>
       </>
@@ -3249,7 +3250,7 @@ export default function TableFilterTemplate() {
         renderValue={option =>
           `${field.label} ${field.operatorLabel} ${option.label ?? option.value}`
         }
-        xstyle={active ? styles.filterFill : undefined}
+        controlXstyle={active ? styles.filterFill : undefined}
         onChange={next =>
           setFieldFilter(
             field.key,
@@ -3318,7 +3319,7 @@ export default function TableFilterTemplate() {
         }
         options={[...field.options]}
         value={multiValues[field.key]}
-        xstyle={
+        controlXstyle={
           multiValues[field.key].length > 0 ? styles.filterFill : undefined
         }
         onChange={next => setMultiValues(field.key, next)}
@@ -3341,7 +3342,7 @@ export default function TableFilterTemplate() {
       value={quoteDraft}
       onChange={commitQuote}
       contentXstyle={styles.quotePopover}
-      xstyle={hasQuoteFilter ? styles.filterFill : undefined}>
+      controlXstyle={hasQuoteFilter ? styles.filterFill : undefined}>
       {(range, onChange, close) => (
         <VStack gap={4}>
           <VStack gap={0}>
@@ -4087,7 +4088,10 @@ export default function TableFilterTemplate() {
       isOpen={isCompactSurface && isViewOpen}
       onOpenChange={setIsViewOpen}
       label="View options"
-      height="tall">
+      height="tall"
+      // The tab strip compensates against a container inset, so the sheet
+      // publishes none and the wrapper below owns the top band.
+      padding={0}>
       {/* The inset is the wrapper's, so the strip's own box starts at the tab
           row and its scroll arrow lands on the tabs rather than above them. */}
       <VStack gap={0} paddingBlockStart={SHEET_TOP_INSET}>
@@ -4313,7 +4317,8 @@ export default function TableFilterTemplate() {
       isOpen={isCompactSurface && activeJob != null}
       onOpenChange={open => !open && setActiveJobId(null)}
       label="Job details"
-      height="tall">
+      height="tall"
+      padding={0}>
       {detailBody}
     </BottomSheet>
   );

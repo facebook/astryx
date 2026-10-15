@@ -57,8 +57,8 @@ Consumer migration instructions belong in consumer docs and release notes.
 
 **Owns**
 
-- Search orchestration and the current Input, List, Item, Group, Group heading,
-  Empty, and Footer parts and targets.
+- Search orchestration and composition of the current Input, List, Item, Group,
+  Group heading, Empty, and Footer parts and targets.
 - The native Query field rendered inside the default Input.
 
 **Does not own / non-goals**
@@ -67,10 +67,14 @@ Consumer migration instructions belong in consumer docs and release notes.
   badges — owned by their respective components.
 - Caller-provided replacement Input, Footer, item content, or trailing input
   content — owned by the product callsite.
+- The Item option's passthrough, pointer, disabled, selected, highlighted, and
+  standalone-scroll semantics — owned by `component:CommandPaletteItem`.
 - A `command-palette` root target — no such current target exists, and this
   factual backfill does not invent one.
 - Shared layer hosting, positioning, or lifecycle rules beyond the current
   records linked below.
+- The List root's accessible name, list-id application, native passthrough, and
+  overflow scrolling — owned by `component:CommandPaletteList`.
 
 ## Public concepts
 

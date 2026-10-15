@@ -5,7 +5,7 @@
 /**
  * @file Dialog.tsx
  * @input Uses React, DialogHTMLAttributes, ReactNode, container (Layout), DialogContext, layerTextReset,
- *   layerStructureReset, modalOutlet, interactionModality
+ *   layerStructureReset, modalOutlet, interactionModality, chainEventHandlers
  * @output Exports Dialog component, DialogProps, DialogVariant, DialogPurpose types
  * @position Core implementation; consumed by index.ts, tested by Dialog.test.tsx
  *
@@ -65,43 +65,16 @@ import {
 } from '../Layout/padding.stylex';
 import type {SpacingStep} from '../utils/types';
 import {mergeProps} from '../utils';
+import {chainEventHandlers} from '../utils/chainEventHandlers';
 import {devWarn} from '../utils/devWarning';
 import {DialogContext} from './DialogContext';
 import {themeProps} from '../utils/themeProps';
 import type {DialogVariantMap} from './index';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
-import {
-  getInteractionModality,
-  useInteractionModalityTracking,
-} from '../utils/interactionModality';
+import {useInteractionModalityTracking} from '../utils/interactionModality';
+import {focusForLastInput} from '../utils/focusReturn';
 
 import {useMergedRefs} from '../hooks/useMergedRefs';
-/**
- * Move focus programmatically so its ring follows the last input. Dialog does
- * not render the element that opened it or the consumer's autofocus target, so
- * the browser's focus option is the one way to reach them.
- */
-function focusForLastInput(element: HTMLElement): void {
-  // A text-entry field paints its own focus treatment to show where typing
-  // goes, and an extra blur there can run validation or mark it touched.
-  const isTextEntry =
-    element instanceof HTMLInputElement ||
-    element instanceof HTMLTextAreaElement ||
-    element instanceof HTMLSelectElement ||
-    element.isContentEditable;
-  if (isTextEntry || getInteractionModality() !== 'pointer') {
-    element.focus();
-    return;
-  }
-  // Focusing the element that already has focus does nothing, so a ring the
-  // browser already drew would stay. WebKit draws one when showModal() or its
-  // native close moves focus itself, so clear that focus first.
-  if (element.matches(':focus-visible')) {
-    element.blur();
-  }
-  element.focus({focusVisible: false});
-}
-
 /**
  * Calculate a directional translate offset for dialog entry animation.
  * Returns a normalized vector from the trigger element toward the viewport
@@ -707,9 +680,19 @@ export function Dialog({
     </div>
   );
 
-  // Filter out native open to prevent InvalidStateError when accidentally passed
+  // Filter out native open to prevent InvalidStateError when accidentally passed.
+  // Keep the consumer click handler separate so the modal path can compose it
+  // with Dialog-owned behavior without changing the inline preview path.
   const hasPosition = position != null && !isFullscreen;
-  const {open: _open, ...safeProps} = props as Record<string, unknown>;
+  const {onClick: onClickProp, ...propsWithoutClick} = props;
+  const {open: _open, ...safeProps} = propsWithoutClick as Record<
+    string,
+    unknown
+  >;
+  const inlineSafeProps: Record<string, unknown> = {
+    ...safeProps,
+    onClick: onClickProp,
+  };
 
   // --- Inline rendering path (for documentation previews) ---
   if (isInline) {
@@ -719,7 +702,7 @@ export function Dialog({
 
     return (
       <div
-        {...safeProps}
+        {...inlineSafeProps}
         {...mergeProps(
           themeProps('dialog', {variant}),
           stylex.props(
@@ -788,7 +771,7 @@ export function Dialog({
         className,
         style,
       )}
-      onClick={handleClick}
+      onClick={chainEventHandlers(handleClick, onClickProp)}
       onCancel={handleCancel}
       aria-modal="true"
       // The default aria-labelledby (from a DialogHeader title) is set

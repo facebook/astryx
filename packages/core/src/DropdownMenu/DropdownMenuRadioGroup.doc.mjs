@@ -78,7 +78,8 @@ export const docsZh = {
   propDescriptions: {
     value: '组中当前选中的值。尚无选中项时传 undefined。',
     onChange: '所选值变化时触发的回调。',
-    label: '组的无障碍名称，作为 aria-label 应用，以便屏幕阅读器将单选项作为命名集合朗读，例如“Sort by”。必需。当名称已作为可见元素存在时，可改用 aria-labelledby（通过基础属性）。',
+    label:
+      '组的无障碍名称，作为 aria-label 应用，以便屏幕阅读器将单选项作为命名集合朗读，例如“Sort by”。必需。当名称已作为可见元素存在时，可改用 aria-labelledby（通过基础属性）。',
     hasCloseOnSelect: '选择某值是否关闭菜单。默认关闭。',
     children: '组成该组的 DropdownMenuRadioItem。',
   },

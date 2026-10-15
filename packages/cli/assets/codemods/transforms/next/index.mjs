@@ -7,22 +7,4 @@
  * this file into the resolved version folder.
  */
 
-import migrateDeprecatedThemeSurface, {
-  meta as migrateDeprecatedThemeSurfaceMeta,
-} from './migrate-deprecated-theme-surface.mjs';
-import validateDataTokenOwnership, {
-  meta as validateDataTokenOwnershipMeta,
-} from './validate-data-token-ownership.mjs';
-
-export default [
-  {
-    name: 'migrate-deprecated-theme-surface',
-    transform: migrateDeprecatedThemeSurface,
-    meta: migrateDeprecatedThemeSurfaceMeta,
-  },
-  {
-    name: 'validate-data-token-ownership',
-    transform: validateDataTokenOwnership,
-    meta: validateDataTokenOwnershipMeta,
-  },
-];
+export default [];

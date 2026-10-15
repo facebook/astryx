@@ -1,5 +1,19 @@
 # @astryxdesign/build
 
+# 0.7.0
+
+#### Fixes
+
+- Preserve native `light-dark()` token values in Vite source builds by defaulting Lightning CSS to Astryx's supported browser floor. (#7330)
+
+#### Contributors
+
+Thanks to everyone who contributed to this release:
+
+- @cixzhang
+
+---
+
 # 0.6.8
 
 ---

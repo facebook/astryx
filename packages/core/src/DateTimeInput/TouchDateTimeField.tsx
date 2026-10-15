@@ -590,15 +590,25 @@ export function TouchDateTimeField({
   );
   const weekStartsOn = normalizeDayOfWeek(weekStartsOnProp);
 
-  useEffect(() => {
+  // The draft follows the controlled time, and an external clear resets it.
+  // Adjusted during render when the value changes, so no commit paints the
+  // previous draft.
+  const [draftSource, setDraftSource] = useState({
+    time: normalizedValueTime,
+    value: optimisticValue,
+  });
+  // Object.is, matching the dependency comparison of the effect this replaces.
+  if (
+    !Object.is(draftSource.time, normalizedValueTime) ||
+    !Object.is(draftSource.value, optimisticValue)
+  ) {
+    setDraftSource({time: normalizedValueTime, value: optimisticValue});
     if (normalizedValueTime !== undefined) {
-      // eslint-disable-next-line @eslint-react/set-state-in-effect -- mirrors an externally controlled time into the sheet-local draft
       setDraftTime(normalizedValueTime);
     } else if (optimisticValue === undefined) {
-      // eslint-disable-next-line @eslint-react/set-state-in-effect -- external clear resets the sheet-local draft too
       setDraftTime(undefined);
     }
-  }, [normalizedValueTime, optimisticValue]);
+  }
 
   const [anchorMonthIndex] = useState(() =>
     monthIndexOf(selectedDate ?? plainDateToday()),
@@ -614,18 +624,22 @@ export function TouchDateTimeField({
   const [monthIndex, setMonthIndex] = useState(() =>
     clampIndex(anchorMonthIndex, minMonthIndex, maxMonthIndex),
   );
+  // min/max can narrow underneath the mounted sheet. Keep the visible month in
+  // range during render, so no commit shows an out-of-range month; the month
+  // scroller is keyed on the range and remounts at the clamped month.
+  const clampedMonthIndex = clampIndex(
+    monthIndex,
+    minMonthIndex,
+    maxMonthIndex,
+  );
+  // Object.is, matching the dependency comparison of the effect this replaces
+  // (a NaN index would otherwise never compare equal and re-render forever).
+  if (!Object.is(clampedMonthIndex, monthIndex)) {
+    setMonthIndex(clampedMonthIndex);
+  }
   const {year, month} = fromMonthIndex(monthIndex);
   const canStepBack = monthIndex > minMonthIndex;
   const canStepForward = monthIndex < maxMonthIndex;
-
-  useEffect(() => {
-    const clamped = clampIndex(monthIndex, minMonthIndex, maxMonthIndex);
-    if (clamped !== monthIndex) {
-      // eslint-disable-next-line @eslint-react/set-state-in-effect -- min/max can change underneath the mounted sheet; keep the visible month in range
-      setMonthIndex(clamped);
-      scrollerHandleRef.current?.scrollToMonth(clamped, 'auto');
-    }
-  }, [monthIndex, minMonthIndex, maxMonthIndex]);
 
   const dayNames = useMemo(
     () =>
@@ -1464,7 +1478,10 @@ export function TouchDateTimeField({
           isOpen={isSheetOpen}
           onOpenChange={handleSheetOpenChange}
           label={t('@astryx.dateTimeInput.dialogLabel')}
-          height="hug">
+          height="hug"
+          // touchSheetBody owns the inset, including the band under the grab
+          // handle.
+          padding={0}>
           <div {...stylex.props(styles.touchSheetBody)}>{surface}</div>
         </BottomSheet>
         {showsDisabledMessage &&
