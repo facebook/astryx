@@ -258,9 +258,12 @@ export {
   type LogStreamLevel,
 } from './LogStream';
 
-// DiffViewer — the structured diff model and the unified-diff parser
+// DiffViewer — read-only file diff (unified/split) for code review surfaces
 export {
+  DiffViewer,
   parseUnifiedDiff,
+  type DiffViewerProps,
+  type DiffViewerViewMode,
   type DiffViewerFile,
   type DiffViewerFileStatus,
   type DiffViewerHunk,

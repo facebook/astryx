@@ -13,6 +13,7 @@
  *
  * SYNC: When modified, update:
  * - /packages/lab/src/DiffViewer/parseUnifiedDiff.test.ts
+ * - /packages/lab/src/DiffViewer/DiffViewer.doc.mjs (utilities section)
  */
 
 import type {

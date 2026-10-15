@@ -10,6 +10,7 @@
  *   consumed by DiffViewer
  *
  * SYNC: When modified, update:
+ * - /packages/lab/src/DiffViewer/DiffViewer.doc.mjs (types in the props table)
  * - /packages/lab/src/DiffViewer/index.ts (type exports)
  */
 

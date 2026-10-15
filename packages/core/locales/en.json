@@ -527,6 +527,82 @@
     "defaultMessage": "This {itemName} is already {boundary, select, first {first} last {last} other {}}.",
     "description": "Screen-reader-only live announcement when an arrow-key reorder attempt has no effect because the record is already at that end of the list. `{itemName}` is the consumer's singular noun for one record; `{boundary}` is always exactly \"first\" or \"last\"."
   },
+  "@astryx.diffViewer.label": {
+    "defaultMessage": "Diff",
+    "description": "Accessible name of a lab DiffViewer's scrollable code area when the file has no path to name it."
+  },
+  "@astryx.diffViewer.renamedPath": {
+    "defaultMessage": "{oldPath} → {newPath}",
+    "description": "File path shown in a lab DiffViewer header when the file was renamed. `{oldPath}` and `{newPath}` are file paths and must stay untranslated; keep the arrow pointing from the old path to the new one."
+  },
+  "@astryx.diffViewer.statusAdded": {
+    "defaultMessage": "Added",
+    "description": "Badge in a lab DiffViewer file header marking a file that the change creates."
+  },
+  "@astryx.diffViewer.statusDeleted": {
+    "defaultMessage": "Deleted",
+    "description": "Badge in a lab DiffViewer file header marking a file that the change removes."
+  },
+  "@astryx.diffViewer.statusRenamed": {
+    "defaultMessage": "Renamed",
+    "description": "Badge in a lab DiffViewer file header marking a file that the change moves to a new path."
+  },
+  "@astryx.diffViewer.addedCount": {
+    "defaultMessage": "+{count, number}",
+    "description": "Compact count of added lines shown in a lab DiffViewer file header, e.g. \"+12\". Hidden from screen readers, which hear `@astryx.diffViewer.stats` instead."
+  },
+  "@astryx.diffViewer.removedCount": {
+    "defaultMessage": "−{count, number}",
+    "description": "Compact count of removed lines shown in a lab DiffViewer file header, e.g. \"−3\" (a minus sign). Hidden from screen readers, which hear `@astryx.diffViewer.stats` instead."
+  },
+  "@astryx.diffViewer.stats": {
+    "defaultMessage": "{added, plural, one {# line added} other {# lines added}}, {removed, plural, one {# line removed} other {# lines removed}}",
+    "description": "Screen-reader text for the line counts in a lab DiffViewer file header, e.g. \"12 lines added, 3 lines removed\"."
+  },
+  "@astryx.diffViewer.added": {
+    "defaultMessage": "Added",
+    "description": "Screen-reader text marking one line of a lab DiffViewer as added by the change; sighted readers see a + sign and a tinted row."
+  },
+  "@astryx.diffViewer.removed": {
+    "defaultMessage": "Removed",
+    "description": "Screen-reader text marking one line of a lab DiffViewer as removed by the change; sighted readers see a - sign and a tinted row."
+  },
+  "@astryx.diffViewer.lineNumberButton": {
+    "defaultMessage": "{side, select, old {Original line {line, number}} other {Changed line {line, number}}}",
+    "description": "Accessible label of a clickable line number in a lab DiffViewer (callers use it, for example, to start a comment on that line). `side` is `old` for the file before the change and `new` for the file after it; `line` is the line number in that version."
+  },
+  "@astryx.diffViewer.columnOldLine": {
+    "defaultMessage": "Original line number",
+    "description": "Screen-reader-only header of a lab DiffViewer column holding line numbers in the file before the change. Pairs with `@astryx.diffViewer.lineNumberButton` (\"Original line …\")."
+  },
+  "@astryx.diffViewer.columnNewLine": {
+    "defaultMessage": "Changed line number",
+    "description": "Screen-reader-only header of a lab DiffViewer column holding line numbers in the file after the change. Pairs with `@astryx.diffViewer.lineNumberButton` (\"Changed line …\")."
+  },
+  "@astryx.diffViewer.columnChange": {
+    "defaultMessage": "Change",
+    "description": "Screen-reader-only header of a lab DiffViewer column that marks each line as added or removed (noun: the kind of change)."
+  },
+  "@astryx.diffViewer.columnCode": {
+    "defaultMessage": "Code",
+    "description": "Screen-reader-only header of the source-code column in a lab DiffViewer's single-column (unified) view."
+  },
+  "@astryx.diffViewer.columnOldCode": {
+    "defaultMessage": "Original code",
+    "description": "Screen-reader-only header of the source-code column for the file before the change, in a lab DiffViewer's side-by-side (split) view."
+  },
+  "@astryx.diffViewer.columnNewCode": {
+    "defaultMessage": "Changed code",
+    "description": "Screen-reader-only header of the source-code column for the file after the change, in a lab DiffViewer's side-by-side (split) view."
+  },
+  "@astryx.diffViewer.binary": {
+    "defaultMessage": "Binary file not shown",
+    "description": "Message in place of line changes in a lab DiffViewer when the file is binary and has no text diff."
+  },
+  "@astryx.diffViewer.noChanges": {
+    "defaultMessage": "No content changes",
+    "description": "Message in a lab DiffViewer when a file changed only its path or mode, so there are no line changes to show."
+  },
   "@astryx.markdownHeadingLinks.copied": {
     "defaultMessage": "Link copied",
     "description": "Accessible name on the Markdown heading copy button and text announced to a polite live region for ~1.5s after a successful copy. Sentence meaning \"Link copied\"; pairs with `markdownHeadingLinks.copy`."
