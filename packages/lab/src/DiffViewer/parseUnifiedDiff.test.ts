@@ -159,31 +159,43 @@ describe('parseUnifiedDiff', () => {
     ]);
   });
 
-  it('parses a long line that looks like a binary line but is not one in linear time', () => {
-    // A commit-message line in `git format-patch` output, before any diff.
-    // Unguarded, the binary-line regex backtracks quadratically on it (about
-    // 1.7 s at 96 KB, several seconds at this size).
-    const crafted = `Binary files ${'a and '.repeat(33_000)}tail`;
-    const start = performance.now();
-    const files = parseUnifiedDiff(
-      [
-        'Subject: [PATCH] update x',
-        '',
-        crafted,
-        '---',
-        'diff --git a/x.ts b/x.ts',
-        '--- a/x.ts',
-        '+++ b/x.ts',
-        '@@ -1 +1 @@',
-        '-a',
-        '+b',
-      ].join('\n'),
-    );
-    expect(performance.now() - start).toBeLessThan(500);
-    expect(files.map(file => [file.newPath, file.isBinary])).toEqual([
-      ['x.ts', false],
-    ]);
-  });
+  it.each([
+    ['no closing differ', `Binary files ${'a and '.repeat(33_000)}tail`],
+    ['a CR before differ', `Binary files ${'a and '.repeat(33_000)}\r differ`],
+    [
+      'a U+2028 before differ',
+      `Binary files ${'a and '.repeat(33_000)}\u2028 differ`,
+    ],
+  ])(
+    'parses a long crafted binary-looking line with %s in linear time',
+    (_, crafted) => {
+      // A commit-message line in `git format-patch` output, before any diff.
+      // A backtracking pattern takes seconds on lines like these.
+      const start = performance.now();
+      const files = parseUnifiedDiff(
+        [
+          'Subject: [PATCH] update x',
+          '',
+          crafted,
+          '---',
+          'diff --git a/x.ts b/x.ts',
+          '--- a/x.ts',
+          '+++ b/x.ts',
+          '@@ -1 +1 @@',
+          '-a',
+          '+b',
+        ].join('\n'),
+      );
+      expect(performance.now() - start).toBeLessThan(500);
+      // A line that ends in ` differ` has the binary-line shape, so it may
+      // read as a binary entry of its own; the real file is unaffected.
+      expect(files.at(-1)).toMatchObject({
+        newPath: 'x.ts',
+        isBinary: false,
+      });
+      expect(files.at(-1)?.hunks).toHaveLength(1);
+    },
+  );
 
   it('reads copies from their copy lines, paths with spaces included', () => {
     // An exact copy has no ---/+++ lines, so only the copy lines name it.

@@ -24,7 +24,35 @@ import type {
 
 const HUNK_HEADER = /^@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@/;
 const GIT_HEADER_PREFIX = 'diff --git ';
-const BINARY_FILES = /^Binary files (.+) and (.+) differ$/;
+const BINARY_PREFIX = 'Binary files ';
+const BINARY_SUFFIX = ' differ';
+const BINARY_SEPARATOR = ' and ';
+
+/**
+ * The two paths of a `Binary files X and Y differ` line, or null when the
+ * line is not one. Plain string matching, not a regex, so any line (however
+ * long, whatever characters it holds) is read in one pass. Like the greedy
+ * pattern it replaces, the separator is the last ` and `.
+ */
+function parseBinaryLine(
+  line: string,
+): {oldPath: string; newPath: string} | null {
+  if (!line.startsWith(BINARY_PREFIX) || !line.endsWith(BINARY_SUFFIX)) {
+    return null;
+  }
+  const middle = line.slice(
+    BINARY_PREFIX.length,
+    line.length - BINARY_SUFFIX.length,
+  );
+  const split = middle.lastIndexOf(BINARY_SEPARATOR);
+  if (split <= 0 || split + BINARY_SEPARATOR.length >= middle.length) {
+    return null;
+  }
+  return {
+    oldPath: middle.slice(0, split),
+    newPath: middle.slice(split + BINARY_SEPARATOR.length),
+  };
+}
 
 const C_ESCAPES: Record<string, number> = {
   a: 0x07,
@@ -362,21 +390,15 @@ export function parseUnifiedDiff(patch: string): DiffViewerFile[] {
     // GNU `diff -r` reports a binary file with this one line and no header,
     // so unless it belongs to a `diff --git` header still being read (no
     // hunks yet, not already binary), it is a file of its own.
-    // The shape check keeps the regex off lines it cannot match: on a long
-    // line that starts like this but does not end in ` differ`, its two
-    // greedy groups would backtrack quadratically.
-    const binary =
-      line.startsWith('Binary files ') && line.endsWith(' differ')
-        ? BINARY_FILES.exec(line)
-        : null;
+    const binary = parseBinaryLine(line);
     if (
       binary != null &&
       (file == null || file.hunks.length > 0 || file.isBinary)
     ) {
       flush();
       const own = emptyFile();
-      own.oldPath = cleanPath(binary[1], 'a/');
-      own.newPath = cleanPath(binary[2], 'b/');
+      own.oldPath = cleanPath(binary.oldPath, 'a/');
+      own.newPath = cleanPath(binary.newPath, 'b/');
       own.isBinary = true;
       file = own;
       continue;
