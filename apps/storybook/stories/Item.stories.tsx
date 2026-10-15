@@ -10,6 +10,7 @@ import {Icon} from '@astryxdesign/core/Icon';
 import {Text} from '@astryxdesign/core/Text';
 import {Stack} from '@astryxdesign/core/Layout';
 import {List, ListItem} from '@astryxdesign/core/List';
+import {CheckboxInput} from '@astryxdesign/core/CheckboxInput';
 
 const storyStyles = stylex.create({
   iconCircle: {
@@ -391,6 +392,123 @@ export const SwipeCommit: Story = {
         ))}
         {rows.length === 0 && <ListItem label="All caught up." />}
       </List>
+    );
+  },
+};
+
+/**
+ * A row that opens something: `controlProps` puts the disclosure's state and
+ * relation on the control a keyboard user focuses (the row's invisible
+ * button), where a screen reader reads them with the name. The root keeps
+ * the rest of the row's props.
+ */
+export const DisclosureRow: Story = {
+  render: () => {
+    const [isOpen, setIsOpen] = useState(false);
+    return (
+      <Stack gap={1}>
+        <Item
+          label="Changed files"
+          description={isOpen ? '3 files, shown below' : '3 files'}
+          onClick={() => setIsOpen(open => !open)}
+          endContent={<Text color="secondary">{isOpen ? 'Hide' : 'Show'}</Text>}
+          controlProps={{
+            'aria-expanded': isOpen,
+            'aria-controls': 'disclosure-row-panel',
+          }}
+        />
+        {isOpen && (
+          <div id="disclosure-row-panel">
+            <Item label="src/app.tsx" description="+12 −4" />
+            <Item label="src/row.tsx" description="+3 −1" />
+            <Item label="docs/row.md" description="+40" />
+          </div>
+        )}
+      </Stack>
+    );
+  },
+};
+
+/**
+ * Rows of a grid: `role="row"` renders the row's parts as `gridcell`s (the
+ * select cell, the label cell with its link, the end cell, each swipe panel)
+ * and keeps the row's own control, where the grid's roving focus lands
+ * through `controlProps`. Arrow keys move between rows; Space on a row's
+ * checkbox selects it; a touch swipe toward the inline start uncovers
+ * Archive. Selection is the row's `aria-selected`.
+ */
+export const GridRows: Story = {
+  render: () => {
+    const [rows, setRows] = useState(() =>
+      Array.from({length: 5}, (_, index) => ({
+        id: `m-${index + 1}`,
+        label: `Message ${index + 1}`,
+        selected: index === 1,
+      })),
+    );
+    const [focusedIndex, setFocusedIndex] = useState(0);
+    const remove = (id: string) =>
+      setRows(current => current.filter(row => row.id !== id));
+    const toggle = (id: string) =>
+      setRows(current =>
+        current.map(row =>
+          row.id === id ? {...row, selected: !row.selected} : row,
+        ),
+      );
+    const focusRow = (index: number) => {
+      const next = Math.max(0, Math.min(rows.length - 1, index));
+      setFocusedIndex(next);
+      document
+        .querySelector<HTMLElement>(`[data-nav-id="${rows[next]?.id}"]`)
+        ?.focus();
+    };
+    return (
+      <div role="grid" aria-label="Inbox" aria-rowcount={rows.length}>
+        {rows.map((row, index) => (
+          <Item
+            key={row.id}
+            role="row"
+            aria-rowindex={index + 1}
+            label={row.label}
+            description="A short snippet of the message"
+            href={`#${row.id}`}
+            isSelected={row.selected}
+            startContent={
+              <CheckboxInput
+                label={`Select ${row.label}`}
+                isLabelHidden
+                value={row.selected}
+                onChange={() => toggle(row.id)}
+              />
+            }
+            endContent={<Text color="secondary">2h</Text>}
+            controlProps={{
+              'data-nav-id': row.id,
+              tabIndex: index === focusedIndex ? 0 : -1,
+              onKeyDown: event => {
+                if (event.key === 'ArrowDown') {
+                  event.preventDefault();
+                  focusRow(index + 1);
+                } else if (event.key === 'ArrowUp') {
+                  event.preventDefault();
+                  focusRow(index - 1);
+                }
+              },
+            }}
+            swipeActions={{
+              trailing: [
+                {
+                  label: 'Archive',
+                  icon: <Icon icon={ArchiveBoxIcon} size="sm" />,
+                  onActivate: () => remove(row.id),
+                  variant: 'neutral',
+                  hasRemoval: true,
+                },
+              ],
+            }}
+          />
+        ))}
+      </div>
     );
   },
 };
