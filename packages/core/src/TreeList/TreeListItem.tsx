@@ -99,11 +99,13 @@ const styles = stylex.create({
     position: 'relative',
     boxSizing: 'border-box',
     textAlign: 'start',
-    // Guide lines draw above the rows (TreeListBranches) so a row's fill never
-    // breaks them. Lift the row whose focus ring is showing above the guides
-    // too, so no guide cuts through the ring: when focus is inside the row,
-    // or when its own treeitem publishes focus (`--_tree-focus-z` on
-    // `wrapper`).
+    // Guide lines draw above the rows (TreeListBranches) so a row's fill does
+    // not break them. Lift the row whose focus ring is showing above the
+    // guides too, so no guide cuts through the ring: when focus is inside the
+    // row, or when its own treeitem publishes focus (`--_tree-focus-z` on
+    // `wrapper`). The ring is this element's outline, so it cannot be lifted
+    // on its own: a focused row that is also filled (selected or hovered)
+    // covers the guides at that row. That is the accepted trade-off.
     zIndex: {
       default: 'var(--_tree-focus-z, auto)',
       ':has(:focus-visible)': 2,
