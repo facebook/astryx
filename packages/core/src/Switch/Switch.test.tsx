@@ -834,6 +834,34 @@ describe('Switch', () => {
       expect(root).toHaveAttribute('id', 'switch-1');
       expect(root).toHaveAttribute('aria-label', 'Toggle notifications');
     });
+
+    it('composes a caller aria-describedby onto the switch control', () => {
+      const {container} = render(
+        <>
+          <p id="external-hint">Applies to every repository</p>
+          <Switch
+            label="Notifications"
+            description="Sends a daily digest"
+            value={false}
+            onChange={() => {}}
+            data-testid="my-switch"
+            aria-describedby="external-hint"
+          />
+        </>,
+      );
+      const control = screen.getByRole('switch');
+      const description = screen.getByText('Sends a daily digest');
+      expect(control.getAttribute('aria-describedby')?.split(' ')).toEqual([
+        'external-hint',
+        description.id,
+      ]);
+      expect(control).toHaveAccessibleDescription(
+        'Applies to every repository Sends a daily digest',
+      );
+      // The id reference lives on the control only, not on the field wrapper.
+      const root = container.querySelector('[data-testid="my-switch"]');
+      expect(root).not.toHaveAttribute('aria-describedby');
+    });
   });
 
   describe('pressed state', () => {

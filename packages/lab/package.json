@@ -27,9 +27,12 @@
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
-  "sideEffects": false,
+  "sideEffects": [
+    "**/*.css"
+  ],
   "files": [
     "astryx.integration.mjs",
+    "blocks",
     "dist",
     "src",
     "README.md",
