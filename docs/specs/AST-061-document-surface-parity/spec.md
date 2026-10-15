@@ -125,6 +125,10 @@ constructs they render, and their default editor theme follows FR2 and FR3.
 import with.
 `Markdown` draws disc and decimal markers at every depth, and RichText draws
 the second bulleted level as a disc; both adopt the DEC-6 marker cycle.
+RichText adopts DEC-8: its package entry stops exporting `sharedEditorTheme`,
+`URL_MATCHER`, `EMAIL_MATCHER`, and `Transformer`; `RichTextEditorToolbar`
+gains `BaseProps` and renames `linkOpensInNewTab` to `hasNewTabLinks`; and its
+Lexical peer ranges move to the Lexical 0.52 minor.
 
 ## Verification
 
@@ -239,6 +243,26 @@ what that conversion returns. RichText is not a document editor; collaboration,
 persistence, and document hosting stay outside it, and a product that edits
 whole documents chooses its own engine and stored value. This record stays
 the one visual contract that RichText and `Markdown` share.
+
+### DEC-8 — RichText's public surface is Lexical's, kept small
+
+**Reference:** `spec:AST-061/DEC-8`
+**Decider:** cixzhang, 2026-10-14
+
+RichText is built on Lexical and says so: `nodes`, `plugins`, `transformers`,
+`onChange(editorState, editor)`, and the editor ref's `getEditorState()` take
+and return Lexical types, so a caller extends the editor with Lexical directly.
+The package supports one Lexical minor and declares it in its Lexical peer
+ranges; changing that minor changes RichText's public contract and follows the
+compatibility policy for a breaking change. The package exports only what a
+caller builds with: the generated editor theme classes, the autolink regular
+expressions, and a re-export of Lexical's `Transformer` type are internal, and
+`Transformer` comes from `@lexical/markdown`. `RichTextEditorToolbar` takes
+`BaseProps` for its root element, and its option for links that open in a new
+tab is `hasNewTabLinks`. `RichTextEditorAutoLinkPlugin` renders no element of
+its own, so it takes no `BaseProps`.
+Rejected: Astryx document, node, and plugin types over Lexical's, because they
+would duplicate Lexical's extension model with no gain for a caller.
 
 ## Open questions
 
