@@ -24,7 +24,10 @@ import * as path from 'node:path';
 import {execFileSync} from 'node:child_process';
 import {createRequire} from 'node:module';
 import {fileURLToPath, pathToFileURL} from 'node:url';
-import {resolveContentRoot} from './resolve-content-root.mjs';
+import {
+  admittedStableIntegration,
+  resolveContentRoot,
+} from './resolve-content-root.mjs';
 import {
   GUIDE_NAMESPACE_PAGES,
   GUIDE_PAGE_NAMESPACES,
@@ -38,7 +41,10 @@ import {
   template as queryTemplates,
 } from '@astryxdesign/cli/api';
 import docsiteConfig from '../astryx.config.mjs';
-import {integrationContentEnabled} from '../src/lib/integrationTargets.mjs';
+import {
+  integrationContentEnabled,
+  integrationPackagesForTarget,
+} from '../src/lib/integrationTargets.mjs';
 import {expandWorkspaceDirs} from '../../../scripts/lib/workspace-globs.mjs';
 import {projectThemingDoc} from './lib/theming-doc.mjs';
 import {collectBlogImages} from './lib/blog-images.mjs';
@@ -98,15 +104,33 @@ function writeRegistry(filename, content) {
 }
 
 /**
- * Ask the CLI for the component packages configured by this docsite. The
- * integration list is canary-only: stable production content comes from the
- * published package snapshot and never loads workspace integrations.
+ * The integration packages this build documents. Canary documents every
+ * configured integration and asks the CLI to confirm each one is installed.
+ * `latest` documents only the configured integrations that are stable
+ * releases present in the published content snapshot
+ * (src/lib/integrationTargets.mjs); their component docs are read from the
+ * snapshot like Core's, so no workspace discovery runs.
+ *
+ * The admitted list is written to src/generated/integrationPackages.json so
+ * generate-scope.mjs and generate-playground-types.mjs document the same
+ * packages without resolving the content snapshot again.
  */
 function discoverConfiguredComponentPackages() {
-  // Same gate as generate-scope.mjs (src/lib/integrationTargets.mjs): only the
-  // canary target ever loads workspace integration packages.
-  if (!integrationContentEnabled(DOCSITE_TARGET)) {
+  const admitted = integrationPackagesForTarget(
+    DOCSITE_TARGET,
+    docsiteConfig,
+    admittedStableIntegration(CONTENT_ROOT),
+  );
+  fs.writeFileSync(
+    path.join(OUT_DIR, 'integrationPackages.json'),
+    JSON.stringify({target: DOCSITE_TARGET, packages: admitted}, null, 2) +
+      '\n',
+  );
+  if (admitted.length === 0) {
     return new Set();
+  }
+  if (!integrationContentEnabled(DOCSITE_TARGET)) {
+    return new Set(admitted);
   }
 
   const output = execFileSync(
@@ -1495,7 +1519,10 @@ async function generateBlockRegistry() {
     });
   }
 
-  if (integrationContentEnabled(DOCSITE_TARGET)) {
+  // Showcase blocks are executable content: like Core's CLI templates they are
+  // live-rendered from the workspace install (see resolve-content-root.mjs),
+  // filtered to the integration packages this build documents.
+  if (CONFIGURED_COMPONENT_PACKAGES.size > 0) {
     const templateList = await queryTemplates(undefined, {
       list: true,
       type: 'block',

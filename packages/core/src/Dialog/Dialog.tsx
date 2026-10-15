@@ -5,7 +5,7 @@
 /**
  * @file Dialog.tsx
  * @input Uses React, DialogHTMLAttributes, ReactNode, container (Layout), DialogContext, layerTextReset,
- *   layerStructureReset, modalOutlet, interactionModality
+ *   layerStructureReset, modalOutlet, interactionModality, chainEventHandlers
  * @output Exports Dialog component, DialogProps, DialogVariant, DialogPurpose types
  * @position Core implementation; consumed by index.ts, tested by Dialog.test.tsx
  *
@@ -65,6 +65,7 @@ import {
 } from '../Layout/padding.stylex';
 import type {SpacingStep} from '../utils/types';
 import {mergeProps} from '../utils';
+import {chainEventHandlers} from '../utils/chainEventHandlers';
 import {devWarn} from '../utils/devWarning';
 import {DialogContext} from './DialogContext';
 import {themeProps} from '../utils/themeProps';
@@ -679,9 +680,19 @@ export function Dialog({
     </div>
   );
 
-  // Filter out native open to prevent InvalidStateError when accidentally passed
+  // Filter out native open to prevent InvalidStateError when accidentally passed.
+  // Keep the consumer click handler separate so the modal path can compose it
+  // with Dialog-owned behavior without changing the inline preview path.
   const hasPosition = position != null && !isFullscreen;
-  const {open: _open, ...safeProps} = props as Record<string, unknown>;
+  const {onClick: onClickProp, ...propsWithoutClick} = props;
+  const {open: _open, ...safeProps} = propsWithoutClick as Record<
+    string,
+    unknown
+  >;
+  const inlineSafeProps: Record<string, unknown> = {
+    ...safeProps,
+    onClick: onClickProp,
+  };
 
   // --- Inline rendering path (for documentation previews) ---
   if (isInline) {
@@ -691,7 +702,7 @@ export function Dialog({
 
     return (
       <div
-        {...safeProps}
+        {...inlineSafeProps}
         {...mergeProps(
           themeProps('dialog', {variant}),
           stylex.props(
@@ -760,7 +771,7 @@ export function Dialog({
         className,
         style,
       )}
-      onClick={handleClick}
+      onClick={chainEventHandlers(handleClick, onClickProp)}
       onCancel={handleCancel}
       aria-modal="true"
       // The default aria-labelledby (from a DialogHeader title) is set

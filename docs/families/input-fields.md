@@ -77,7 +77,8 @@ form value through a labeled field surface with a content lane. Members use
   models without this content/end-lane geometry. PowerSearch and ChatComposer
   are higher-level compositions that consume member behavior rather than define
   another field primitive. BaseTypeahead is a combobox engine without a field
-  surface.
+  surface. RichTextEditor is a canary package and stays outside this family
+  until a family adoption is recorded.
 
 FR10 and DEC-7 also bind CheckboxList, RadioList, and Slider. They stay
 outside this family's geometry rules, but they compose Field, and every
@@ -217,9 +218,19 @@ another implementation helper.
      `control*` to Field.
 
   Component-owned value callbacks (`onChange(value)`) are typed out of base
-  props and keep their value signature. A consumer DOM handler composes with the
-  component's own handler through the shared composition helper, component-first
-  unless the API promises cancellation. No member and no layout may vary this.
+  props and keep their value signature. Retargeting a base prop changes the
+  element a consumer DOM handler reaches, not its order or cancellation behavior:
+  a component keeps the order and cancellation it released and states any order
+  that differs from component-first composition in its docs and JSDoc. A handler
+  a component forwards for the first time composes component-first through the
+  shared composition helper. No component and no layout may vary the prop
+  targets.
+
+- **FR11 — The clear control's tooltip names the action, not the field.**
+  Every member's clear control MUST show the localized generic tooltip "Clear"
+  on hover and keyboard focus, whatever the field's label or the scope of the
+  clear. Its accessible name stays contextual and member-owned, such as "Clear
+  Search" or "Clear all Countries", and contains the visible word.
 
 ## Allowed component variation
 
@@ -392,6 +403,7 @@ The exhaustive coverage obligation follows the membership and adoption tables.
 | FR8      | Representative member tests plus real-browser overlap/opacity/height checks                                                                                                                                                                   | eligible single-line direct controls; wrapped, custom, tall, and translucent controls; all three placements                       | Attached is missing where supported, appears where unsafe, or tooltip reaches direct FieldStatus                                                                                                                         |
 | FR9      | `inputFontFloor.test.ts`, focused computed-style checks, and real iOS Safari focus evidence                                                                                                                                                   | iOS touch, non-iOS coarse pointer, and desktop fine pointer                                                                       | iOS renders below 16 CSS px or focus zooms, or a non-iOS coarse pointer receives the iOS-only floor                                                                                                                      |
 | FR10     | A type test over every Field-composed component's props that fails if one accepts root `xstyle`, `className`, or `style`; per-component render tests for every base prop, `container*`, and `control*` prop and for both development warnings | every Field-composed component standalone, in horizontal-label FormLayout, and inside InputGroup where admitted                   | A component type-checks with root styling, a base prop lands off the primary semantic control, `container*` lands off the Field box or on the control box, `control*` lands off the control box, or a warning is missing |
+| FR11     | `InputClearButton.test.tsx` tooltip and accessible-name assertions, plus real-Chromium hover captures                                                                                                                                         | a long field label; a locale override; light and dark                                                                             | The tooltip repeats the field label, or the accessible name loses the field label                                                                                                                                        |
 
 ## Decision links
 
@@ -501,6 +513,34 @@ member and layout; where its element does not render, the part has no effect
 rather than moving to another element.
 
 Rejected: keeping root `xstyle` and routing it to Field; spreads and wrappers would move styling silently.
+
+### DEC-8 — Prop retargeting keeps each component's handler order
+
+**Decider:** `cixzhang`, `2026-10-11`
+
+When a consumer handler runs relative to the component's own, and whether it can
+cancel built-in behavior, are released interaction behavior that
+`architecture:public-component-api` INV9 keeps stable. Moving base props to the
+semantic control changes which element a consumer handler reaches, not that
+behavior, so a component keeps the order and cancellation it released and
+documents any order that differs from component-first composition.
+Component-first cancelling composition applies only to handlers a component
+forwards for the first time.
+
+Rejected: composing every retargeted handler component-first; a consumer that
+cancels built-in behavior, or that observes events the component cancels, would
+change behavior with no API change to signal it.
+
+### DEC-9 — The clear tooltip names only the action
+
+**Decider:** `cixzhang`, `2026-10-13`
+
+The field's label already sits beside the clear glyph, so a sighted person
+needs only the action. Repeating the label makes long or noun-phrase labels
+read as awkward copy. A screen-reader user does not see the field around the
+button, so the accessible name keeps the label.
+
+Rejected: a tooltip that repeats the accessible name; it doubles the label on screen.
 
 ## Open questions
 

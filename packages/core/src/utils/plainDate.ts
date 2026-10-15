@@ -45,7 +45,11 @@ export function plainDateToISO(pd: PlainDate): ISODateString {
 }
 
 export function plainDateToDate(pd: PlainDate): Date {
-  return new Date(pd.year, pd.month - 1, pd.day);
+  // Unlike the Date constructor, setFullYear keeps years 0-99 as given
+  // instead of reading them as 1900-1999.
+  const d = new Date(0, 0, 1);
+  d.setFullYear(pd.year, pd.month - 1, pd.day);
+  return d;
 }
 
 export function plainDateFromDate(d: Date): PlainDate {
@@ -90,14 +94,32 @@ export function plainDateAddDays(pd: PlainDate, n: number): PlainDate {
 }
 
 /**
+ * `Date.UTC` with years 0-99 kept as given; `Date.UTC` itself reads them as
+ * 1900-1999.
+ */
+function utcTime(
+  year: number,
+  monthIndex: number,
+  day: number,
+  hour = 0,
+  minute = 0,
+  second = 0,
+): number {
+  const d = new Date(0);
+  d.setUTCFullYear(year, monthIndex, day);
+  d.setUTCHours(hour, minute, second);
+  return d.getTime();
+}
+
+/**
  * Whole calendar days from `a` to `b`, ignoring time of day. Positive when
  * `b` is after `a`, negative when before. Uses UTC midnight so DST shifts
  * never add or drop a day.
  */
 export function plainDateDiffDays(a: PlainDate, b: PlainDate): number {
   const msPerDay = 24 * 60 * 60 * 1000;
-  const aUTC = Date.UTC(a.year, a.month - 1, a.day);
-  const bUTC = Date.UTC(b.year, b.month - 1, b.day);
+  const aUTC = utcTime(a.year, a.month - 1, a.day);
+  const bUTC = utcTime(b.year, b.month - 1, b.day);
   return Math.round((bUTC - aUTC) / msPerDay);
 }
 
@@ -152,7 +174,7 @@ export function getTimeZoneParts(
 function getTimezoneOffsetMS(timezoneID: string, instant: number): number {
   const parts = getTimeZoneParts(instant, timezoneID);
   return (
-    Date.UTC(
+    utcTime(
       parts.year,
       parts.month - 1,
       parts.day,
@@ -163,17 +185,35 @@ function getTimezoneOffsetMS(timezoneID: string, instant: number): number {
   );
 }
 
+const DAY_MS = 24 * 60 * 60 * 1000;
+
 export function plainDateToInstant(
   date: PlainDate,
   timezoneID: string,
   hour = 0,
   minute = 0,
 ): number {
-  const utcGuess = Date.UTC(date.year, date.month - 1, date.day, hour, minute);
-  const firstOffset = getTimezoneOffsetMS(timezoneID, utcGuess);
-  const firstInstant = utcGuess - firstOffset;
-  const secondOffset = getTimezoneOffsetMS(timezoneID, firstInstant);
-  return utcGuess - secondOffset;
+  // The wall time read as if it were UTC; subtracting an offset gives a
+  // candidate instant.
+  const wallTime = utcTime(date.year, date.month - 1, date.day, hour, minute);
+  // The offsets in effect a day either side cover any transition that can make
+  // this wall time skipped or repeated.
+  const offsetBefore = getTimezoneOffsetMS(timezoneID, wallTime - DAY_MS);
+  const offsetAfter = getTimezoneOffsetMS(timezoneID, wallTime + DAY_MS);
+  // AST-067 (Temporal's "compatible" disambiguation): a wall time that happens
+  // twice resolves to its earlier occurrence, and one that never happens is
+  // read in the offset before the transition, which moves it forward by the
+  // length of the gap.
+  const candidates = [offsetBefore, offsetAfter]
+    .map(offset => wallTime - offset)
+    .filter(
+      (instant, index) =>
+        getTimezoneOffsetMS(timezoneID, instant) ===
+        (index === 0 ? offsetBefore : offsetAfter),
+    );
+  return candidates.length > 0
+    ? Math.min(...candidates)
+    : wallTime - offsetBefore;
 }
 
 export function plainDateFromInstant(
@@ -245,7 +285,7 @@ export function plainDateGetWeekNumber(pd: PlainDate): number {
   const d = plainDateToDate(pd);
   const dayNum = d.getDay() || 7;
   d.setDate(d.getDate() + 4 - dayNum);
-  const yearStart = new Date(d.getFullYear(), 0, 1);
+  const yearStart = plainDateToDate({year: d.getFullYear(), month: 1, day: 1});
   return Math.ceil(((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
 }
 
@@ -328,6 +368,31 @@ export function plainDateFormat(
     ...options,
     calendar: options.calendar ?? 'gregory',
   }).format(plainDateToDate(pd));
+}
+
+/**
+ * The locale's name for the "week of year" date field ("week", "Woche", "週"),
+ * from CLDR through `Intl.DisplayNames`. Calendar names its week-number
+ * column header with it, so no catalog string is needed for a word the
+ * platform already carries in every locale.
+ *
+ * `Intl.DisplayNames` with `type: 'dateTimeField'` is inside the Baseline − 2
+ * support tier (Chrome 106, Safari 15.4, Firefox 110). Should a host lack it
+ * or return nothing, the field's English CLDR name stands in rather than an
+ * empty header.
+ */
+export function plainDateWeekFieldName(locale: Locale = 'en'): string {
+  try {
+    const name = new Intl.DisplayNames(locale, {type: 'dateTimeField'}).of(
+      'weekOfYear',
+    );
+    if (name != null && name !== '') {
+      return name;
+    }
+  } catch {
+    // Fall through to the English CLDR value.
+  }
+  return 'week';
 }
 
 // =============================================================================

@@ -39,9 +39,9 @@ reflows no line; only editing affordances appear or disappear.
   The one exception is the character reference decoder that DEC-5 shares.
 - Collaboration, persistence, document hosting, and plugin adapters between
   Markdown plugins and the editor.
-- Which editor engine serves document editing, and the stored value an editor
-  reads and writes. This record governs how the surfaces render the same
-  document, not which surface a product chooses to edit documents with.
+- Which editor engine a product chooses for editing whole documents, and the
+  value that product stores. This record governs how the surfaces render the
+  same document; RichText's own role and value are DEC-7.
 - RichText's release channel. RichText stays canary-only.
 - Equivalent internal implementations remain valid when they satisfy this
   contract, except the character reference decoder, which DEC-5 makes one
@@ -223,6 +223,22 @@ lower-roman — is written in decimal, as the CSS counter styles fall back; the
 start value and the items stay as written. Task list items show checkboxes
 instead of markers. Markers are presentation: the
 list keeps its list semantics, and the source does not change.
+
+### DEC-7 — RichText is a form-field editor whose value is Lexical editor state
+
+**Reference:** `spec:AST-061/DEC-7`
+**Decider:** cixzhang, 2026-10-14
+
+`RichTextEditor` is a public form-field editor: a labelled field in which a
+person writes formatted text. Its value is serialized Lexical `EditorState`
+JSON: `defaultValue` takes it, `onChange` reports the editor state that
+serializes to it, and `RichTextView` renders it. Markdown is an import and
+export format, not the value: `markdownToEditorStateJSON` and
+`editorStateJSONToMarkdown` convert between the two, and `spec:AST-062` owns
+what that conversion returns. RichText is not a document editor; collaboration,
+persistence, and document hosting stay outside it, and a product that edits
+whole documents chooses its own engine and stored value. This record stays
+the one visual contract that RichText and `Markdown` share.
 
 ## Open questions
 
