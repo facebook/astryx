@@ -351,6 +351,13 @@ const editorTheme = stylex.create({
   // `outline` takes no space, so the document's geometry is untouched
   // (spec:AST-061 FR9), and the inset offset keeps each ring inside its own
   // cell instead of bleeding over the neighbour it is not marking.
+  //
+  // `RichTextView` and a read-only editor ring a dragged cell selection too:
+  // Lexical's table pointer handler does not ask whether the surface is
+  // editable, and a person selects cells in a read surface to copy them, so
+  // seeing the selection is as right there. Both surfaces draw the same ring
+  // and neither moves a block, so they still render the same document the
+  // same way.
   tableCellSelected: {
     outlineWidth: focusVars['--focus-outline-width'],
     outlineStyle: focusVars['--focus-outline-style'],

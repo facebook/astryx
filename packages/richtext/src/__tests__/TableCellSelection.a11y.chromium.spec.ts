@@ -332,3 +332,48 @@ test('the mark goes when the selection goes', async ({page}) => {
     .toBe(0);
   expect(errors).toEqual([]);
 });
+
+test('a read surface marks a dragged selection the same way', async ({
+  page,
+}) => {
+  // Lexical's table pointer handler does not ask whether the surface is
+  // editable, so a read surface makes cell selections too — and a person
+  // selecting cells there is about to copy them, so the mark belongs. Held
+  // because the two surfaces must render the same document the same way:
+  // marking only one of them would be the drift this spec exists to catch.
+  const errors = await openWithTable(page);
+  await page.getByRole('tab', {name: 'RichTextView'}).click();
+
+  const VIEW =
+    '[data-playground-output="view"] table th, [data-playground-output="view"] table td';
+  await expect(page.locator(VIEW)).toHaveCount(9);
+  const outlines = () =>
+    page.$$eval(VIEW, cells =>
+      cells.map(cell => {
+        const style = getComputedStyle(cell);
+        return `${style.outlineStyle} ${style.outlineWidth}`;
+      }),
+    );
+  const before = await outlines();
+  expect(new Set(before).size, 'nothing is marked before a drag').toBe(1);
+
+  const start = await page.locator(VIEW).nth(0).boundingBox();
+  const end = await page.locator(VIEW).nth(4).boundingBox();
+  if (start == null || end == null) {
+    throw new Error('a cell has no box');
+  }
+  await page.mouse.move(start.x + 10, start.y + start.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(start.x + 30, start.y + start.height / 2, {steps: 4});
+  await page.mouse.move(end.x + end.width / 2, end.y + end.height / 2, {
+    steps: 20,
+  });
+  await page.mouse.up();
+
+  await expect
+    .poll(
+      async () => (await outlines()).filter((o, i) => o !== before[i]).length,
+    )
+    .toBeGreaterThan(0);
+  expect(errors).toEqual([]);
+});
