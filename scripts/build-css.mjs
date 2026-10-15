@@ -12,7 +12,8 @@
  * This script:
  * 1. Runs Babel with the StyleX plugin over the target package's source files
  * 2. Collects all StyleX rules
- * 3. Outputs a combined stylesheet with all rules in @layer astryx-base
+ * 3. Outputs a combined stylesheet that registers the Astryx layer order and
+ *    places all rules in @layer astryx-base
  *
  * Dist consumers import the full stylesheet, e.g.:
  *   import '@astryxdesign/core/astryx.css';
@@ -302,6 +303,26 @@ export async function collectStyleXCSS(target) {
   return allRules;
 }
 
+/**
+ * The cascade-layer order every Astryx stylesheet registers before its own
+ * rules (spec:AST-080 FR3), the same line theme output carries
+ * (spec:AST-066 FR7). Registering it in each file keeps
+ * `reset < astryx-base < astryx-theme` whichever Astryx stylesheet loads first.
+ */
+export const ASTRYX_LAYER_ORDER = '@layer reset, astryx-base, astryx-theme;';
+
+/**
+ * Wrap a package's compiled StyleX rules as its prebuilt stylesheet: a banner,
+ * the layer-order registration, then every rule inside `@layer astryx-base`.
+ */
+export function composePackageStylesheet(banner, css) {
+  const body = css
+    .split('\n')
+    .map(line => '  ' + line)
+    .join('\n');
+  return `/* ${banner} */\n/* Auto-generated. Do not edit manually. */\n\n${ASTRYX_LAYER_ORDER}\n\n@layer astryx-base {\n${body}\n}\n`;
+}
+
 async function main() {
   const target = parseTarget();
   const allRules = await collectStyleXCSS(target);
@@ -316,11 +337,11 @@ async function main() {
   const combinedCSS = stylexBabelPlugin.processStylexRules(allRules, false);
 
   const outPath = path.resolve(target.dist, target.outFile);
-  const combinedFileContents = `/* ${target.banner} */\n/* Auto-generated. Do not edit manually. */\n\n@layer astryx-base {\n${combinedCSS
-    .split('\n')
-    .map(line => '  ' + line)
-    .join('\n')}\n}\n`;
-  await fs.writeFile(outPath, combinedFileContents, 'utf8');
+  await fs.writeFile(
+    outPath,
+    composePackageStylesheet(target.banner, combinedCSS),
+    'utf8',
+  );
   console.log(
     `${target.outFile}: ${(combinedCSS.length / 1024).toFixed(1)} KB`,
   );

@@ -99,7 +99,8 @@ export interface DiffViewerProps extends BaseProps<HTMLDivElement> {
    * `split` shows the old file on the left and the new file on the right,
    * pairing each removed line with the added line that replaced it. The hunk
    * area reads left-to-right in every page direction, like a code editor;
-   * the file header and annotation rows follow the page.
+   * the file header and annotation content follow the page, and annotation
+   * rows scroll with the code.
    * @default 'unified'
    */
   viewMode?: DiffViewerViewMode;
@@ -591,11 +592,9 @@ const styles = stylex.create({
   markerCol: {
     width: `calc(1ch + ${spacingVars['--spacing-1']} + ${spacingVars['--spacing-2']})`,
   },
-  // Annotation rows hold the caller's content (review comments), which reads
-  // in the page's direction even inside the left-to-right hunk area.
+  // Annotation cells stay left-to-right like the rest of the hunk area, so
+  // they start at its visible left edge and the split divider stays put.
   annotation: {
-    direction: {default: 'ltr', ':is([dir="rtl"] *)': 'rtl'},
-    textAlign: 'start',
     paddingBlock: spacingVars['--spacing-2'],
     paddingInline: spacingVars['--spacing-3'],
     verticalAlign: 'top',
@@ -608,6 +607,19 @@ const styles = stylex.create({
     borderBlockWidth: borderVars['--border-width'],
     borderBlockStyle: 'solid',
     borderBlockColor: colorVars['--color-border'],
+  },
+});
+
+// The caller's content (review comments) reads in the page's direction. Its
+// row stays in the left-to-right hunk area and scrolls with the code, as in a
+// code editor. Inline-size containment keeps the content out of the table's
+// max-content width, so a long comment wraps within the width the code sets
+// instead of widening the table; long unbroken words wrap too.
+const annotationStyles = stylex.create({
+  content: {
+    direction: {default: null, ':is([dir="rtl"] *)': 'rtl'},
+    overflowWrap: 'anywhere',
+    contain: 'inline-size',
   },
 });
 
@@ -922,12 +934,20 @@ export function DiffViewer({
                     <td
                       colSpan={sideColumns}
                       {...stylex.props(styles.annotation, styles.codeOldSide)}>
-                      {oldNote}
+                      {oldNote != null && (
+                        <div {...stylex.props(annotationStyles.content)}>
+                          {oldNote}
+                        </div>
+                      )}
                     </td>
                     <td
                       colSpan={sideColumns}
                       {...stylex.props(styles.annotation)}>
-                      {newNote}
+                      {newNote != null && (
+                        <div {...stylex.props(annotationStyles.content)}>
+                          {newNote}
+                        </div>
+                      )}
                     </td>
                   </tr>
                 )}
@@ -985,7 +1005,9 @@ export function DiffViewer({
                     <td
                       colSpan={unifiedColumns}
                       {...stylex.props(styles.annotation)}>
-                      {note}
+                      <div {...stylex.props(annotationStyles.content)}>
+                        {note}
+                      </div>
                     </td>
                   </tr>
                 )}
