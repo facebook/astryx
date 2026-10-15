@@ -72,15 +72,15 @@ the released one.
 ## Compatibility and migration
 
 - Released default preserved: `yes`, except the default Code block path for `diff` fences (FR29, below)
-- Compatibility class: additive, opt-in public API, with one breaking default-path
+- Compatibility class: additive, opt-in public API, with one visible default-path
   rendering change (FR29, below); existing parser nodes, DOM, styling, targets,
   dollar-delimited text, `components`, and `inlinePlugins` remain unchanged unless
   the caller supplies `plugins`, supplies `components.math`, or passes the matching
   explicit parser option.
 - Controlled/uncontrolled behavior: not applicable
 - Migration decision: none
-- Default-path rendering change for diff fences (FR29), breaking, shipped in a
-  minor: a `diff` fence that rendered as plain text renders as CodeBlock's diff
+- Default-path rendering change for diff fences (FR29), a visible default change
+  and not a breaking one: a `diff` fence that rendered as plain text renders as CodeBlock's diff
   layer over plaintext with a `diff` label, and a `diff-<language>` fence —
   which rendered as plain text with a `diff` label and viewport name, its
   leading word being all Markdown read — as the layer over that language with
