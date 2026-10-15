@@ -84,7 +84,8 @@ export interface ListProps extends BaseProps<
    * BottomSheet. Elsewhere, including in a Popover or inside padding from
    * Stack, Center, or your own styles, they look like 'padded'. In a container
    * with less padding than the rows' own, text starts a little after the
-   * heading's line.
+   * heading's line. A theme's inline padding on `item` replaces the row
+   * padding of every value, including the zero padding of 'flush'.
    * @default 'padded'
    */
   edge?: ListEdge;
