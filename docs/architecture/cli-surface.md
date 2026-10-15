@@ -126,6 +126,21 @@ and remains available through explicit Core package selection.
 - **INV10 — Every write is confined.** Output paths pass `assertWithin`, which
   canonicalises symlinks and rejects a NUL byte; an escape is
   `ERR_PATH_TRAVERSAL`. Bounded inputs are capped rather than trusted.
+- **INV10a — Refusing a write outside its confined root is a compatible fix.**
+  When a current record already confines the writes of a CLI operation (a
+  command or its programmatic API) to a root, a change that makes the operation
+  refuse a write outside that root, before writing anything, is a compatible
+  `[fix]` and patch-eligible under the `spec:AST-017` release process. This
+  holds for every route the write takes (a traversal segment, an absolute path,
+  a symlink, or a default location derived from an input outside the root), and
+  even when the latest stable release accepted the input and its documentation
+  did not forbid the write: a write outside the confined root is not a supported
+  workflow, so a caller that relied on it is not a released victim. The
+  Changeset cites the confinement rule the released behavior violated, names
+  each input that is now refused and how it fails, and gives the migration.
+  Inputs whose writes stay inside the root keep working. Refusing one of them,
+  moving outputs instead of refusing, or confining an operation that no current
+  record confines is classified like any other change.
 - **INV11 — A broken integration degrades a command run, it does not fail
   it.** The `Project` seam loads each integration independently and records
   the failure, and the command's own work proceeds without that integration's
@@ -383,6 +398,25 @@ and `doctor` exists to say what is wrong. Rejected: `doctor` warns and exits 0
 on a broken integration (a read or a build stops for a problem it can work
 around); counting only the integrations that happened to load (a package set
 aside or replaced by the package being authored would vanish from the count).
+
+### DEC-3 — Refusing a write outside its confined root is a fix
+
+**Decider:** `josephfarina`, `2026-10-15`
+
+A write outside the confined root lands wherever its path points, with the
+caller's file permissions, and can replace a file the caller never named as an
+output: source, configuration, or another project's files. Agents run the CLI
+unattended and pass generated paths, so one wrong path loses work with nothing
+to undo. Holding the refusal for a minor, or warning while the write still
+happens, keeps that exposure open to protect a use the confinement already
+forbids, so the refusal ships as a `[fix]` (INV10a). The boundary is narrow:
+the confinement is already current, the refusal comes before any write, the
+Changeset names each refused input and its migration, and writes inside the
+root keep working.
+
+Rejected: a patch warning with the refusal held for a minor (the warning prints
+after the file is replaced); and letting every current invariant outrank
+released documentation (any correction could then claim the patch tier).
 
 ## Verification
 
