@@ -68,15 +68,25 @@ interface RunMetrics {
   heapBytes: number | null;
 }
 
-interface ScrollMetrics {
+/** The view a reading was taken on, kept with it so later switches don't relabel it. */
+interface ViewContext {
+  viewMode: DiffViewerViewMode;
+  syntax: Syntax;
+}
+
+interface ScrollMetrics extends ViewContext {
   fps: number;
   droppedFrames: number;
   longTasks: number | null;
 }
 
-interface Interaction {
+interface Interaction extends ViewContext {
   label: string;
   ms: number;
+}
+
+function describeView({viewMode, syntax}: ViewContext): string {
+  return `${viewMode}, ${syntax === 'on' ? 'highlighted' : 'plain'}`;
 }
 
 const EMPTY_RUN: RunMetrics = {
@@ -313,44 +323,65 @@ export default function DiffViewerPerfPage() {
     });
   }, [workload, viewMode, syntax]);
 
-  const timeInteraction = useCallback((label: string, update: () => void) => {
+  // `view` is what the timed update leaves on screen, which a switch changes.
+  const timeInteraction = (
+    label: string,
+    view: ViewContext,
+    update: () => void,
+  ) => {
     const start = performance.now();
     update();
-    afterNextPaint(start, ms => setInteraction({label, ms}));
-  }, []);
+    afterNextPaint(start, ms => setInteraction({label, ms, ...view}));
+  };
 
-  const toggleFile = useCallback((path: string, isCollapsed: boolean) => {
-    const start = performance.now();
-    setCollapsed(current => {
-      const next = new Set(current);
-      if (isCollapsed) {
-        next.add(path);
-      } else {
-        next.delete(path);
-      }
-      return next;
-    });
-    afterNextPaint(start, ms =>
-      setInteraction({
-        label: isCollapsed ? 'Collapse one file' : 'Expand one file',
-        ms,
-      }),
-    );
-  }, []);
+  const toggleFile = useCallback(
+    (path: string, isCollapsed: boolean) => {
+      const start = performance.now();
+      setCollapsed(current => {
+        const next = new Set(current);
+        if (isCollapsed) {
+          next.add(path);
+        } else {
+          next.delete(path);
+        }
+        return next;
+      });
+      afterNextPaint(start, ms =>
+        setInteraction({
+          label: isCollapsed ? 'Collapse one file' : 'Expand one file',
+          ms,
+          viewMode,
+          syntax,
+        }),
+      );
+      // A view or syntax switch re-renders every file anyway, so a new callback
+      // then costs nothing extra.
+    },
+    [viewMode, syntax],
+  );
 
+  const currentView: ViewContext = {viewMode, syntax};
   const collapseAll = () =>
-    timeInteraction('Collapse all', () =>
+    timeInteraction('Collapse all', currentView, () =>
       setCollapsed(new Set(files.map(f => f.newPath ?? f.oldPath ?? ''))),
     );
   const expandAll = () =>
-    timeInteraction('Expand all', () => setCollapsed(new Set()));
+    timeInteraction('Expand all', currentView, () => setCollapsed(new Set()));
 
-  const changeViewMode = (next: string) =>
-    timeInteraction(`Switch to ${next}`, () =>
-      setViewMode(next as DiffViewerViewMode),
+  const changeViewMode = (next: string) => {
+    const nextMode = next as DiffViewerViewMode;
+    timeInteraction(`Switch to ${next}`, {viewMode: nextMode, syntax}, () =>
+      setViewMode(nextMode),
     );
-  const changeSyntax = (next: string) =>
-    timeInteraction(`Syntax ${next}`, () => setSyntax(next as Syntax));
+  };
+  const changeSyntax = (next: string) => {
+    const nextSyntax = next as Syntax;
+    timeInteraction(
+      `Syntax ${nextSyntax === 'on' ? 'highlighted' : 'plain'}`,
+      {viewMode, syntax: nextSyntax},
+      () => setSyntax(nextSyntax),
+    );
+  };
 
   const runScrollTest = () => {
     const viewport = surfaceRef.current;
@@ -359,6 +390,7 @@ export default function DiffViewerPerfPage() {
     }
     viewport.scrollTop = 0;
     setIsScrolling(true);
+    const view = currentView;
     const stopLongTasks = watchLongTasks();
     const distance = viewport.scrollHeight - viewport.clientHeight;
     const start = performance.now();
@@ -379,6 +411,7 @@ export default function DiffViewerPerfPage() {
       }
       const elapsed = now - start;
       setScroll({
+        ...view,
         fps: Math.round((frames / elapsed) * 1000),
         droppedFrames: dropped,
         longTasks: stopLongTasks()?.count ?? null,
@@ -534,7 +567,11 @@ export default function DiffViewerPerfPage() {
                   value={formatMegabytes(run.heapBytes)}
                 />
                 <Metric
-                  label="Scroll (fps / dropped / long tasks)"
+                  label={
+                    scroll == null
+                      ? 'Scroll (fps / dropped / long tasks)'
+                      : `Scroll (fps / dropped / long tasks), ${describeView(scroll)}`
+                  }
                   value={
                     scroll == null
                       ? '—'
@@ -542,7 +579,11 @@ export default function DiffViewerPerfPage() {
                   }
                 />
                 <Metric
-                  label={interaction?.label ?? 'Last interaction'}
+                  label={
+                    interaction == null
+                      ? 'Last interaction'
+                      : `${interaction.label}, ${describeView(interaction)}`
+                  }
                   value={formatDuration(interaction?.ms ?? null)}
                 />
               </Grid>
@@ -573,7 +614,8 @@ export default function DiffViewerPerfPage() {
                 over 50 ms; a dropped frame is a gap over 20 ms. A reading the
                 browser cannot give (long tasks without the Long Tasks API, a
                 heap reading that does not move) shows as a dash. Badges name
-                the workload the numbers were measured on. The scroll test moves
+                the workload the run was measured on; the scroll and interaction
+                readings name the view they were taken in. The scroll test moves
                 the list from top to bottom over four seconds.
               </Text>
             </VStack>
