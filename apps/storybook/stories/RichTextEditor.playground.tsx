@@ -57,13 +57,13 @@ import {
   type RichTextEditorSize,
   type RichTextEditorStatusType,
   type RichTextMarkdownExtension,
-  type Transformer,
 } from '@astryxdesign/richtext';
 import {
   BOLD_STAR,
   INLINE_CODE,
   ITALIC_UNDERSCORE,
   UNORDERED_LIST,
+  type Transformer,
 } from '@lexical/markdown';
 import {useLexicalComposerContext} from '@lexical/react/LexicalComposerContext';
 import {useLexicalEditable} from '@lexical/react/useLexicalEditable';
