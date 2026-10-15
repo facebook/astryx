@@ -361,7 +361,13 @@ export function parseUnifiedDiff(patch: string): DiffViewerFile[] {
     // GNU `diff -r` reports a binary file with this one line and no header,
     // so unless it belongs to a `diff --git` header still being read (no
     // hunks yet, not already binary), it is a file of its own.
-    const binary = BINARY_FILES.exec(line);
+    // The shape check keeps the regex off lines it cannot match: on a long
+    // line that starts like this but does not end in ` differ`, its two
+    // greedy groups would backtrack quadratically.
+    const binary =
+      line.startsWith('Binary files ') && line.endsWith(' differ')
+        ? BINARY_FILES.exec(line)
+        : null;
     if (
       binary != null &&
       (file == null || file.hunks.length > 0 || file.isBinary)
