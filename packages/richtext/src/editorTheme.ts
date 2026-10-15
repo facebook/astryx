@@ -333,7 +333,10 @@ const editorTheme = stylex.create({
     fontWeight: fontWeightVars['--font-weight-semibold'],
     color: colorVars['--color-text-secondary'],
   },
-  // Thematic breaks, drawn like core Markdown's rule.
+  // Thematic breaks, drawn like core Markdown's rule. A rule is a decorator,
+  // and Lexical puts a zero-size caret boundary element beside a decorator at
+  // either edge of the document, so a rule there is not literally the first
+  // or last child; it still takes no outer margin.
   hr: {
     borderWidth: 0,
     borderTopWidth: borderVars['--border-width'],
@@ -342,10 +345,14 @@ const editorTheme = stylex.create({
     marginBlockStart: {
       default: RULE_SPACE,
       ':first-child': spacingVars['--spacing-0'],
+      ':is([data-lexical-decorator-boundary]:first-child + *)':
+        spacingVars['--spacing-0'],
     },
     marginBlockEnd: {
       default: RULE_SPACE,
       ':last-child': spacingVars['--spacing-0'],
+      ':has(+ [data-lexical-decorator-boundary]:last-child)':
+        spacingVars['--spacing-0'],
     },
   },
   // A selected rule (click, or arrow onto it) or Markdown plugin node (click)

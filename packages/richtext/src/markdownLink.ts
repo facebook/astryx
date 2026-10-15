@@ -4,10 +4,12 @@
  * @file markdownLink.ts
  * @input Uses @lexical/link and @lexical/markdown (LINK).
  * @output Exports LINK_KEEPING_DESTINATIONS, Lexical's link transformer with
- *   two changes: it reads an angle-bracket destination (`<https://e.com/a b>`)
- *   as core Markdown does, without its brackets, and it writes a destination
- *   so it reads back: one holding a space in angle brackets, and one whose
- *   parentheses do not balance with each parenthesis escaped.
+ *   one change: it writes a destination so it reads back, one holding a space
+ *   in angle brackets and one whose parentheses do not balance with each
+ *   parenthesis escaped, while a balanced destination is written as it is.
+ *   Import is Lexical's own, which reads every CommonMark destination and
+ *   title shape, an angle-bracket destination (`<https://e.com/a b>`)
+ *   included.
  * @position Replaces Lexical's LINK in DEFAULT_TRANSFORMERS and in table
  *   cells (markdownTable.ts). Import reads balanced parentheses in a
  *   destination and backslash escapes (markdownCharacterReferences.ts), so a
@@ -49,31 +51,10 @@ export function markdownDestination(url: string): string {
   return url.replace(isBalanced(url) ? /\\/g : /[\\()]/g, '\\$&');
 }
 
-/**
- * Lexical's link pattern, with a destination in angle brackets too: any
- * characters but brackets and line endings, spaces included. A destination
- * that opens with `<` is an angle-bracket one or no destination at all
- * (CommonMark §6.3), so `[a](<b>c>)` stays text, as core reads it.
- */
-const LINK_WITH_ANGLE_DESTINATION =
-  /(?:\[(.+?)\])(?:\((?:(<[^<>\n]*>|[^()\s<][^()\s]*)(?:\s"((?:[^"]*\\")*[^"]*)"\s*)?)\))/;
-
 export const LINK_KEEPING_DESTINATIONS: TextMatchTransformer = {
+  // Lexical's own import reads every CommonMark destination and title shape,
+  // an angle-bracket destination included.
   ...LINK,
-  importRegExp: LINK_WITH_ANGLE_DESTINATION,
-  replace: (textNode, match) => {
-    const destination = match[2];
-    if (destination == null || !destination.startsWith('<')) {
-      return LINK.replace?.(textNode, match);
-    }
-    // The link's address is what the angle brackets hold.
-    const withoutBrackets = Object.assign([...match], {
-      index: match.index,
-      input: match.input,
-    }) as RegExpMatchArray;
-    withoutBrackets[2] = destination.slice(1, -1);
-    return LINK.replace?.(textNode, withoutBrackets);
-  },
   export: (node, exportChildren, exportFormat) => {
     if (!$isLinkNode(node) || $isAutoLinkNode(node)) {
       return null;
