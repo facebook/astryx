@@ -25,7 +25,8 @@ export const doc = {
     'component that replaces a Core component is what that Core name copies; ' +
     "options.package '@astryxdesign/core' copies the original. The list names Core " +
     'components, including one an integration component replaces. Core component ' +
-    'directories include nested source files; integration source directories retain ' +
+    'directories include nested source files, except test-only __tests__ and ' +
+    '__snapshots__ directories; integration source directories retain ' +
     'their flat copy behavior. Destination symlinks and paths already taken by the wrong ' +
     'kind of entry (a file where a directory must go, or a directory where a file must go) ' +
     'are rejected before any writes.',

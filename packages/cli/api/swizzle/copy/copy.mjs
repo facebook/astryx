@@ -4,7 +4,8 @@
  * @file swizzle.copy leaf — copy a component's source into the consumer project
  * for customization, rewriting escaping relative imports to the OWNER package's
  * subpaths. The copy walks core component directories recursively, so nested
- * source subdirectories (e.g. Table/plugins/*) are preserved in the output;
+ * source subdirectories (e.g. Table/plugins/*) are preserved in the output,
+ * while test-only `__tests__/` and `__snapshots__/` directories are skipped;
  * the overwrite pre-flight and the reported file list share the same
  * recursive file set. Every destination segment is checked before any
  * directory or file is written, even when overwrite is enabled: no symlinks,
@@ -204,14 +205,22 @@ function isExcludedFromCopy(file) {
 }
 
 /**
+ * Test-only directories the recursive walk never enters, at any depth.
+ * @type {ReadonlySet<string>}
+ */
+const TEST_ONLY_DIRS = new Set(['__tests__', '__snapshots__']);
+
+/**
  * Recursively collect a component's copyable source files as POSIX-style paths
  * relative to `dir`, preserving nested directory structure (e.g. Table's
- * `plugins/selection/index.ts`). Only files are filtered
- * (isExcludedFromCopy, applied to the basename); directories are always
- * descended into. A directory whose files are all excluded (e.g. `__tests__/`,
- * `__snapshots__/` — every file matches `.test.`) contributes nothing, and the
- * copy loop creates directories on demand per file, so it never appears in the
- * output.
+ * `plugins/selection/index.ts`). Test-only directories (TEST_ONLY_DIRS) are
+ * skipped whole: their files are not all named `.test.` (e.g.
+ * `__tests__/Button.a11y.harnesses.tsx`, `*.a11y.chromium.spec.ts`) and import
+ * dev-only packages such as the unpublished `@astryxdesign/a11y-spec`, so the
+ * basename filter alone would copy files a consumer cannot resolve. Every
+ * other directory is descended into, and files are filtered by basename
+ * (isExcludedFromCopy). The copy loop creates directories on demand per file,
+ * so a directory with no copyable files never appears in the output.
  * @param {string} dir Absolute directory to walk.
  * @param {string} [prefix] Relative path of `dir` below the component root.
  * @returns {string[]} Sorted relative file paths.
@@ -222,6 +231,7 @@ function collectSourceFiles(dir, prefix = '') {
   for (const entry of fs.readdirSync(dir, {withFileTypes: true})) {
     const rel = prefix ? `${prefix}/${entry.name}` : entry.name;
     if (entry.isDirectory()) {
+      if (TEST_ONLY_DIRS.has(entry.name)) continue;
       files.push(...collectSourceFiles(path.join(dir, entry.name), rel));
     } else if (entry.isFile() && !isExcludedFromCopy(entry.name)) {
       files.push(rel);

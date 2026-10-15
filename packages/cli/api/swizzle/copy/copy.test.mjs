@@ -2,9 +2,9 @@
 
 /**
  * @file Colocated tests for the swizzle.copy leaf — path-safety + overwrite +
- * recursive nested-source copy (#3506). The copy leaf writes files, so the
- * output base AND the component name (which becomes a path segment) must both
- * be confined to cwd. Every destination segment, including dangling symlinks
+ * recursive nested-source copy (#3506), which skips test-only directories. The
+ * copy leaf writes files, so the output base AND the component name (which
+ * becomes a path segment) must both be confined to cwd. Every destination segment, including dangling symlinks
  * and wrong-kind entries (a file where a directory goes, or the reverse), is
  * checked before any output is written.
  */
@@ -285,12 +285,52 @@ describe('swizzle.copy — nested component source (#3506)', () => {
     expect(r.data.files).toContain('plugins/selection/index.ts');
   }, SLOW);
 
-  it('never materializes directories whose files are all excluded', async () => {
-    // FormLayout's only subdirectory is __snapshots__/ (test snapshots, all
-    // matching the .test. exclusion) — the copy must not emit an empty dir.
-    const r = await swizzle('FormLayout', {cwd: REPO, output: './' + OUT});
-    expect(fs.existsSync(path.join(REPO, OUT, 'FormLayout'))).toBe(true);
-    expect(fs.existsSync(path.join(REPO, OUT, 'FormLayout', '__snapshots__'))).toBe(false);
-    expect(r.data.files.every(f => !f.startsWith('__snapshots__'))).toBe(true);
+  it.each([
+    // Button's a11y harnesses (*.a11y.harnesses.tsx, *.spec.ts, ...) do not
+    // match `.test.` and import the unpublished @astryxdesign/a11y-spec.
+    ['Button', '__tests__'],
+    ['Table', '__tests__'],
+    ['FormLayout', '__snapshots__'],
+  ])('copies and reports nothing under %s/%s/', async (component, testDir) => {
+    const sourceDir = path.join(REPO, 'packages/core/src', component, testDir);
+    expect(fs.readdirSync(sourceDir).length).toBeGreaterThan(0);
+    const r = await swizzle(component, {cwd: REPO, output: './' + OUT});
+    const outDir = path.join(REPO, OUT, component);
+    expect(fs.existsSync(outDir)).toBe(true);
+    for (const dir of ['__tests__', '__snapshots__']) {
+      expect(r.data.files.filter(f => f.split('/').includes(dir))).toEqual([]);
+      expect(fs.existsSync(path.join(outDir, dir))).toBe(false);
+    }
   }, SLOW);
+});
+
+describe('swizzle.copy — test-only directories', () => {
+  let fixture;
+  afterEach(() => {
+    if (fixture) fs.rmSync(fixture, {recursive: true, force: true});
+  });
+
+  it('skips __tests__/ and __snapshots__/ at any depth, keeping other nested source', async () => {
+    fixture = fs.mkdtempSync(path.join(os.tmpdir(), 'astryx-swizzle-testdirs-'));
+    const source = path.join(fixture, 'node_modules/@astryxdesign/core/src/Table');
+    for (const file of [
+      'Table.tsx',
+      '__tests__/Table.a11y.harnesses.tsx',
+      '__snapshots__/Table.snap',
+      'plugins/nested.ts',
+      'plugins/__tests__/nested.a11y.spec.ts',
+      'plugins/__snapshots__/nested.snap',
+    ]) {
+      fs.mkdirSync(path.dirname(path.join(source, file)), {recursive: true});
+      fs.writeFileSync(path.join(source, file), 'export const x = 1;');
+    }
+    fs.writeFileSync(path.join(fixture, 'package.json'), '{"name":"consumer"}');
+
+    const r = await swizzle('Table', {cwd: fixture, output: './out'});
+    expect(r.data.files).toEqual(['Table.tsx', 'plugins/nested.ts']);
+    expect(r.data.filesCopied).toBe(2);
+    const outDir = path.join(fixture, 'out/Table');
+    expect(fs.readdirSync(outDir).sort()).toEqual(['Table.tsx', 'plugins']);
+    expect(fs.readdirSync(path.join(outDir, 'plugins'))).toEqual(['nested.ts']);
+  });
 });
