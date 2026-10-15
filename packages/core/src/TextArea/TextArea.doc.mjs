@@ -262,12 +262,6 @@ export const docs = {
         'The native autocomplete attribute, forwarded to the textarea unchanged. Does not affect the controlled value.',
     },
     {
-      name: 'xstyle',
-      type: 'StyleXStyles',
-      description:
-        'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value, not an inline style object like style={{}}.',
-    },
-    {
       name: 'containerXstyle',
       type: 'StyleXStyles',
       description:
@@ -542,12 +536,6 @@ export const docsZh = {
       description: '原生 autocomplete 属性，原样转发给文本域。不影响受控的值。',
     },
     {
-      name: 'xstyle',
-      type: 'StyleXStyles',
-      description:
-        'StyleX 样式，用于布局自定义（边距、定位、尺寸）。必须是 stylex.create() 的值，而非内联样式对象。',
-    },
-    {
       name: 'containerXstyle',
       type: 'StyleXStyles',
       description:
@@ -745,7 +733,5 @@ export const docsDense = {
     onBlur: 'Callback on blur.',
     autoComplete:
       'Native autocomplete attr, forwarded unchanged. Does not affect the controlled value.',
-    xstyle:
-      'StyleX styles for layout customization. Must be stylex.create() value, not inline style.',
   },
 };

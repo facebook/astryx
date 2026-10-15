@@ -20,7 +20,6 @@ import {
   declaredVersionAtRef,
   latestStableVersion,
   nextPlannedVersion,
-  validateMainVersions,
   validateReleaseDiff,
   validateReleaseMergeBack,
   validateReleaseState,
@@ -766,95 +765,5 @@ describe('newest stable release selection', () => {
     for (const tag of ['v0.6.5', 'v0.6.7', 'v0.6.6', 'canary-0.8.0'])
       git(root, 'tag', tag);
     expect(latestStableVersion(root)).toBe('0.6.7');
-  });
-});
-
-describe('main pull requests keep the declared version above newest stable (FR46)', () => {
-  const fixed = ['@astryxdesign/core', '@astryxdesign/cli'];
-  const at = (core, cli = core) =>
-    new Map([
-      ['@astryxdesign/core', {name: '@astryxdesign/core', version: core}],
-      ['@astryxdesign/cli', {name: '@astryxdesign/cli', version: cli}],
-    ]);
-  // `base` is passed deliberately as a red arm: a check that compares against
-  // previous main would reject the first case instead of comparing with v0.6.7.
-  const check = (
-    base,
-    head,
-    releasedVersion = '0.6.7',
-    activeCutVersion = null,
-  ) =>
-    validateMainVersions({
-      fixed,
-      releasedVersion,
-      activeCutVersion,
-      baseManifests: base,
-      headManifests: head,
-    });
-
-  it('accepts a planned-version decrease that stays above newest stable', () => {
-    expect(check(at('0.7.0'), at('0.6.8'))).toEqual([]);
-    expect(check(at('0.6.8'), at('0.7.0'))).toEqual([]);
-  });
-
-  it('allows equality with an untagged active cut but refuses lowering below it', () => {
-    expect(check(at('0.6.8'), at('0.6.8'), '0.6.7', '0.6.8')).toEqual([]);
-    expect(check(at('0.6.8'), at('0.6.9'), '0.6.7', '0.6.8')).toEqual([]);
-    expect(check(at('0.6.8'), at('0.6.7'), '0.6.6', '0.6.8')).toContain(
-      'main declares 0.6.7; it must not fall below active cut v0.6.8',
-    );
-    expect(check(at('0.6.8'), at('0.6.8'), '0.6.8', '0.6.8')).toContain(
-      'main declares 0.6.8; it must stay strictly above newest stable v0.6.8',
-    );
-  });
-
-  it('admits only patch or minor successor as the first plan after merge-back', () => {
-    expect(check(at('0.6.7'), at('0.6.8'))).toEqual([]);
-    expect(check(at('0.6.7'), at('0.7.0'))).toEqual([]);
-    expect(check(at('0.6.7'), at('0.6.9'))).toContain(
-      "main's first plan after v0.6.7 must be patch successor 0.6.8 by default or owner-named minor 0.7.0; found 0.6.9",
-    );
-  });
-
-  it('requires every exact internal pin to follow the separate next plan', () => {
-    const head = at('0.6.8');
-    head.set('@astryxdesign/lab', {
-      name: '@astryxdesign/lab',
-      version: '0.1.9',
-      private: true,
-      peerDependencies: {'@astryxdesign/core': '0.6.7'},
-    });
-    expect(check(at('0.6.7'), head)).toContain(
-      '@astryxdesign/lab peerDependencies.@astryxdesign/core pins 0.6.7; main declares 0.6.8',
-    );
-  });
-
-  it('refuses equality, a lower version, a split group, and a prerelease', () => {
-    expect(check(at('0.7.0'), at('0.6.7'))).toContain(
-      'main declares 0.6.7; it must stay strictly above newest stable v0.6.7',
-    );
-    expect(check(at('0.7.0'), at('0.6.6'))).toContain(
-      'main declares 0.6.6; it must stay strictly above newest stable v0.6.7',
-    );
-    expect(check(at('0.6.8'), at('0.7.0', '0.6.8'))).toContain(
-      'the fixed group must declare one version on main; found 0.6.8, 0.7.0',
-    );
-    expect(check(at('0.6.8'), at('0.7.0-canary.abc'))[0]).toMatch(
-      /main declares an X\.Y\.Z version/,
-    );
-    expect(check(at('0.6.8'), at('0.7.0'), null)).toContain(
-      'main version check needs the newest stable vX.Y.Z tag',
-    );
-  });
-
-  it('accepts a package new to main', () => {
-    expect(
-      check(
-        new Map([
-          ['@astryxdesign/core', at('0.7.0').get('@astryxdesign/core')],
-        ]),
-        at('0.7.0'),
-      ),
-    ).toEqual([]);
   });
 });

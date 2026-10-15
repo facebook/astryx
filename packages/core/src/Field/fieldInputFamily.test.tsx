@@ -15,26 +15,9 @@ const SRC = join(__dirname, '..');
 // Directories that render <Field> without being a Field-composed input.
 const NOT_FIELD_INPUTS = new Set(['Field', 'InputGroup', 'FormLayout']);
 
-// Field-composed inputs not yet converted to FR10. Each batch removes its own
-// group; keep the comment lines between groups so removals merge cleanly.
-const PENDING_FR10 = new Set([
-  // text batch
-  // date/time batch
-  'DateInput',
-  'DateRangeInput',
-  'DateTimeInput',
-  'TimeInput',
-  // selector batch
-  'Selector',
-  'MultiSelector',
-  'ComplexSelector',
-  // field-root batch
-  'Typeahead',
-  'Tokenizer',
-  'CheckboxList',
-  'RadioList',
-  'Slider',
-]);
+// Field-composed inputs not yet converted to FR10. Every member is converted;
+// typed explicitly so the empty set still accepts string lookups.
+const PENDING_FR10: ReadonlySet<string> = new Set<string>();
 
 function fieldComposedComponents(): string[] {
   return readdirSync(SRC)

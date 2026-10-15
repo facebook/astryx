@@ -521,6 +521,11 @@
     }
   },
   {
+    "component": "CommandPaletteItem",
+    "storyId": "core-commandpaletteitem--states",
+    "dims": []
+  },
+  {
     "component": "CommandPaletteFooter",
     "storyId": "core-commandpalettefooter--default",
     "dims": ["D2"],

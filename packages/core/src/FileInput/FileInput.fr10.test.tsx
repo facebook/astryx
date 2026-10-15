@@ -17,4 +17,5 @@ describeFieldInputParts('FileInput', {
   ),
   getControl: () => document.querySelector<HTMLElement>('input[type="file"]')!,
   inGroup: false,
+  controlReferencesDescription: false,
 });

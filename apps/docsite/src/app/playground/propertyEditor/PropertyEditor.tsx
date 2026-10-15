@@ -206,7 +206,7 @@ function PropRow({prop, instance, code, onCodeChange}: PropRowProps) {
         value={value}
         options={control.options}
         onChange={next => commit('enum', coerceEnumOption(control, next))}
-        xstyle={s.inputControl}
+        controlXstyle={s.inputControl}
       />
     );
   } else if (control.kind === 'string') {

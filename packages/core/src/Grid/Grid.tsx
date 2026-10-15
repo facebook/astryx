@@ -31,7 +31,13 @@ export type GridAlignment = 'start' | 'center' | 'end' | 'stretch';
 /**
  * Column configuration for Grid.
  *
- * - `number` — fixed equal-width columns (e.g. `columns={3}`)
+ * A number means exactly N equal columns at every width; it never reflows, so
+ * `columns={4}` on a phone renders four narrow tracks. For columns that reflow
+ * on small screens, use the object form: `{minWidth: 240, max: 4}` renders at
+ * most four columns, each at least 240px, and fewer when the container is
+ * narrower.
+ *
+ * - `number` — exactly N equal-width columns (e.g. `columns={3}`); never reflows
  * - `object` — responsive columns based on minimum child width:
  *   - `minWidth` — minimum width (px) for each column track
  *   - `repeat` — `'fill'` (default) preserves empty tracks for consistent widths;
@@ -53,9 +59,12 @@ export interface GridProps extends BaseProps<HTMLDivElement> {
   /** Ref forwarded to the root element */
   ref?: React.Ref<HTMLDivElement>;
   /**
-   * Column configuration.
-   * - `number` — fixed equal-width columns
-   * - `{minWidth, max?, repeat?}` — responsive columns
+   * Column configuration. A number is exactly N equal columns and never
+   * reflows; for columns that reflow on small screens, use
+   * `{minWidth, max}`.
+   * - `number` — exactly N equal-width columns at every width
+   * - `{minWidth, max?, repeat?}` — responsive columns with a px floor and an
+   *   optional cap
    *
    * @see GridColumns
    */

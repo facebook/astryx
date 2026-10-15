@@ -225,6 +225,12 @@ another implementation helper.
   member did not previously forward composes component-first through the shared
   composition helper. No member and no layout may vary the prop targets.
 
+- **FR11 — The clear control's tooltip names the action, not the field.**
+  Every member's clear control MUST show the localized generic tooltip "Clear"
+  on hover and keyboard focus, whatever the field's label or the scope of the
+  clear. Its accessible name stays contextual and member-owned, such as "Clear
+  Search" or "Clear all Countries", and contains the visible word.
+
 ## Allowed component variation
 
 - **AV1 — Native versus composed control.** Text fields may use native inputs;
@@ -396,6 +402,7 @@ The exhaustive coverage obligation follows the membership and adoption tables.
 | FR8      | Representative member tests plus real-browser overlap/opacity/height checks                                                                                                                                                                   | eligible single-line direct controls; wrapped, custom, tall, and translucent controls; all three placements                       | Attached is missing where supported, appears where unsafe, or tooltip reaches direct FieldStatus                                                                                                                         |
 | FR9      | `inputFontFloor.test.ts`, focused computed-style checks, and real iOS Safari focus evidence                                                                                                                                                   | iOS touch, non-iOS coarse pointer, and desktop fine pointer                                                                       | iOS renders below 16 CSS px or focus zooms, or a non-iOS coarse pointer receives the iOS-only floor                                                                                                                      |
 | FR10     | A type test over every Field-composed component's props that fails if one accepts root `xstyle`, `className`, or `style`; per-component render tests for every base prop, `container*`, and `control*` prop and for both development warnings | every Field-composed component standalone, in horizontal-label FormLayout, and inside InputGroup where admitted                   | A component type-checks with root styling, a base prop lands off the primary semantic control, `container*` lands off the Field box or on the control box, `control*` lands off the control box, or a warning is missing |
+| FR11     | `InputClearButton.test.tsx` tooltip and accessible-name assertions, plus real-Chromium hover captures                                                                                                                                         | a long field label; a locale override; light and dark                                                                             | The tooltip repeats the field label, or the accessible name loses the field label                                                                                                                                        |
 
 ## Decision links
 
@@ -522,6 +529,17 @@ time.
 Rejected: composing every retargeted handler component-first (a consumer that
 cancelled, or that observed a cancelled event, would silently change behavior
 in a release billed as a rename).
+
+### DEC-9 — The clear tooltip names only the action
+
+**Decider:** `cixzhang`, `2026-10-13`
+
+The field's label already sits beside the clear glyph, so a sighted person
+needs only the action. Repeating the label makes long or noun-phrase labels
+read as awkward copy. A screen-reader user does not see the field around the
+button, so the accessible name keeps the label.
+
+Rejected: a tooltip that repeats the accessible name; it doubles the label on screen.
 
 ## Open questions
 

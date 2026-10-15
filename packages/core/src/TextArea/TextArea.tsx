@@ -412,6 +412,7 @@ export function TextArea({
   controlStyle,
   ref,
   id: idProp,
+  'aria-describedby': ariaDescribedByProp,
   ...restProps
 }: TextAreaProps) {
   const {rest, container} = useFieldInputStyling('TextArea', restProps, {
@@ -627,7 +628,10 @@ export function TextArea({
           spellCheck={hasSpellCheck}
           autoFocus={hasAutoFocus}
           data-autofocus={hasAutoFocus || undefined}
-          aria-describedby={ariaDescribedBy}
+          aria-describedby={
+            [ariaDescribedByProp, ariaDescribedBy].filter(Boolean).join(' ') ||
+            undefined
+          }
           aria-required={isEffectivelyRequired ? 'true' : undefined}
           aria-invalid={
             status?.type === 'error' ||

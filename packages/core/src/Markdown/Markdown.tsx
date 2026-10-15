@@ -27,6 +27,7 @@ import {
 } from '../theme/tokens.stylex';
 import type {TextDisplay} from '../theme/types';
 import {CodeBlock, Code} from '../CodeBlock';
+import {parseFenceLanguage} from '../CodeBlock/tokenizer';
 import {CheckboxList} from '../CheckboxList/CheckboxList';
 import {CheckboxListItem} from '../CheckboxList/CheckboxListItem';
 import {Blockquote} from '../Blockquote/Blockquote';
@@ -1475,7 +1476,20 @@ function renderBlock(
     case 'code': {
       // Track codeblock content in cursor for accurate character counting
       cursor.offset += node.value.length;
-      const language = getMarkdownAstLegacyCodeLanguage(node) ?? 'plaintext';
+      // `diff-<lang>` fences are the diff layer over <lang>; `diff` is the
+      // layer over plaintext. The legacy language is the info
+      // string's leading word characters, which stops at the hyphen, so the
+      // diff mapping reads the whole first word and then applies the same
+      // word rule to the language it names.
+      const legacyLanguage =
+        getMarkdownAstLegacyCodeLanguage(node) ?? 'plaintext';
+      const fence = parseFenceLanguage(node.lang ?? legacyLanguage);
+      const isDiff = fence.isDiff;
+      // The language under the diff layer; the default CodeBlock renders it.
+      const diffLanguage = isDiff
+        ? fence.language.match(/^\w*/)?.[0] || 'plaintext'
+        : undefined;
+      const language = diffLanguage ?? legacyLanguage;
       // A semantic-fence proposal claims its fence before the host's code
       // renderer (spec:AST-036 FR17). The host renderer, or the default Code
       // block without one, draws every unclaimed fence and is the fallback
@@ -1485,7 +1499,10 @@ function renderBlock(
         <CodeBlockComp
           key={index}
           code={node.value}
-          language={language}
+          // A supplied renderer's contract is unchanged: it keeps receiving
+          // the leading word characters (`diff` for a `diff-tsx` fence, as
+          // today) and nothing new; only the default path maps the layer.
+          language={legacyLanguage}
           {...lineProp}
         />
       ) : (
@@ -1504,6 +1521,7 @@ function renderBlock(
           <CodeBlock
             code={node.value}
             language={language}
+            isDiff={isDiff}
             isCollapsible
             xstyle={[
               contentWidthValue != null
@@ -1662,7 +1680,7 @@ function renderBlock(
               label={t('@astryx.markdown.taskList')}
               isLabelHidden
               value={checkedValues}
-              xstyle={styles.blockIndent}
+              containerXstyle={styles.blockIndent}
               isReadOnly
               density="compact">
               {node.children.map((item, i) => {

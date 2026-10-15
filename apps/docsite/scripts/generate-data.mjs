@@ -24,7 +24,10 @@ import * as path from 'node:path';
 import {execFileSync} from 'node:child_process';
 import {createRequire} from 'node:module';
 import {fileURLToPath, pathToFileURL} from 'node:url';
-import {resolveContentRoot} from './resolve-content-root.mjs';
+import {
+  admittedStableIntegration,
+  resolveContentRoot,
+} from './resolve-content-root.mjs';
 import {
   GUIDE_NAMESPACE_PAGES,
   GUIDE_PAGE_NAMESPACES,
@@ -38,8 +41,13 @@ import {
   template as queryTemplates,
 } from '@astryxdesign/cli/api';
 import docsiteConfig from '../astryx.config.mjs';
-import {integrationContentEnabled} from '../src/lib/integrationTargets.mjs';
+import {
+  integrationContentEnabled,
+  integrationPackagesForTarget,
+} from '../src/lib/integrationTargets.mjs';
 import {expandWorkspaceDirs} from '../../../scripts/lib/workspace-globs.mjs';
+import {projectThemingDoc} from './lib/theming-doc.mjs';
+import {collectBlogImages} from './lib/blog-images.mjs';
 import {
   buildTypeDefinitionIndex,
   collectPropTypeRefs,
@@ -96,15 +104,33 @@ function writeRegistry(filename, content) {
 }
 
 /**
- * Ask the CLI for the component packages configured by this docsite. The
- * integration list is canary-only: stable production content comes from the
- * published package snapshot and never loads workspace integrations.
+ * The integration packages this build documents. Canary documents every
+ * configured integration and asks the CLI to confirm each one is installed.
+ * `latest` documents only the configured integrations that are stable
+ * releases present in the published content snapshot
+ * (src/lib/integrationTargets.mjs); their component docs are read from the
+ * snapshot like Core's, so no workspace discovery runs.
+ *
+ * The admitted list is written to src/generated/integrationPackages.json so
+ * generate-scope.mjs and generate-playground-types.mjs document the same
+ * packages without resolving the content snapshot again.
  */
 function discoverConfiguredComponentPackages() {
-  // Same gate as generate-scope.mjs (src/lib/integrationTargets.mjs): only the
-  // canary target ever loads workspace integration packages.
-  if (!integrationContentEnabled(DOCSITE_TARGET)) {
+  const admitted = integrationPackagesForTarget(
+    DOCSITE_TARGET,
+    docsiteConfig,
+    admittedStableIntegration(CONTENT_ROOT),
+  );
+  fs.writeFileSync(
+    path.join(OUT_DIR, 'integrationPackages.json'),
+    JSON.stringify({target: DOCSITE_TARGET, packages: admitted}, null, 2) +
+      '\n',
+  );
+  if (admitted.length === 0) {
     return new Set();
+  }
+  if (!integrationContentEnabled(DOCSITE_TARGET)) {
+    return new Set(admitted);
   }
 
   const output = execFileSync(
@@ -595,7 +621,9 @@ async function generateComponentRegistry() {
               isHiddenFromOverview: d.isHiddenFromOverview ?? false,
               topDescription: d.usage?.description || d.description || '',
               usage: d.usage ? sanitizeForJson(d.usage) : null,
-              theming: d.theming ? sanitizeForJson(d.theming) : null,
+              theming: d.theming
+                ? projectThemingDoc(sanitizeForJson(d.theming))
+                : null,
               playground: d.playground ? sanitizeForJson(d.playground) : null,
             };
             break;
@@ -627,7 +655,9 @@ async function generateComponentRegistry() {
         const hidden = doc.hidden ?? false;
         const topDescription = doc.usage?.description || doc.description || '';
         const usage = doc.usage ? sanitizeForJson(doc.usage) : null;
-        const theming = doc.theming ? sanitizeForJson(doc.theming) : null;
+        const theming = doc.theming
+          ? projectThemingDoc(sanitizeForJson(doc.theming))
+          : null;
         const registry = doc.registry ? sanitizeForJson(doc.registry) : null;
         const playground = doc.playground
           ? sanitizeForJson(doc.playground)
@@ -682,7 +712,7 @@ async function generateComponentRegistry() {
               theming: isHookEntry
                 ? null
                 : doc.theming
-                  ? sanitizeForJson(doc.theming)
+                  ? projectThemingDoc(sanitizeForJson(doc.theming))
                   : (parentMeta.theming ?? null),
               params: isHookEntry
                 ? Array.isArray(doc.params)
@@ -1489,7 +1519,10 @@ async function generateBlockRegistry() {
     });
   }
 
-  if (integrationContentEnabled(DOCSITE_TARGET)) {
+  // Showcase blocks are executable content: like Core's CLI templates they are
+  // live-rendered from the workspace install (see resolve-content-root.mjs),
+  // filtered to the integration packages this build documents.
+  if (CONFIGURED_COMPONENT_PACKAGES.size > 0) {
     const templateList = await queryTemplates(undefined, {
       list: true,
       type: 'block',
@@ -2323,26 +2356,14 @@ async function generateBlogRegistry() {
   const types = collectTypes(posts);
   const tags = collectTags(posts);
 
-  // Definitive set of dark-mode image variants. We scan public/blog/** for
-  // files named "<name>.dark.<ext>" at build time so ThemedImage can decide,
-  // deterministically and with no runtime probe, whether a body image has a
-  // dark counterpart. Paths are stored as site-absolute URLs ("/blog/...").
-  const publicBlogDir = path.join(DOCSITE_ROOT, 'public', 'blog');
-  const darkImages = [];
-  const walkDark = dir => {
-    if (!fs.existsSync(dir)) return;
-    for (const entry of fs.readdirSync(dir, {withFileTypes: true})) {
-      const full = path.join(dir, entry.name);
-      if (entry.isDirectory()) {
-        walkDark(full);
-      } else if (/\.dark\.[a-zA-Z0-9]+$/.test(entry.name)) {
-        const rel = path.relative(path.join(DOCSITE_ROOT, 'public'), full);
-        darkImages.push('/' + rel.split(path.sep).join('/'));
-      }
-    }
-  };
-  walkDark(publicBlogDir);
-  darkImages.sort();
+  // Definitive facts about body images, scanned from public/blog/** at build
+  // time so ThemedImage never probes at runtime: which images have a
+  // "<name>.dark.<ext>" counterpart, and the natural size of every "@2x"
+  // image, which renders at half its pixel width. Paths are site-absolute
+  // URLs ("/blog/...").
+  const {darkImages, imageSizes} = collectBlogImages(
+    path.join(DOCSITE_ROOT, 'public'),
+  );
 
   const content = `// Auto-generated by scripts/generate-data.mjs — do not edit
 import type {BlogPost, BlogPostType} from '../lib/blog/schema';
@@ -2362,6 +2383,15 @@ export const blogPostCount = ${posts.length};
  * build-time list rather than a runtime existence probe.
  */
 export const blogDarkImages: string[] = ${JSON.stringify(darkImages, null, 2)};
+
+/**
+ * Natural pixel size of every body image whose file name ends in "@2x"
+ * (before the extension and the optional ".dark" marker). ThemedImage renders
+ * such an image at half its pixel width, so a Retina screenshot shows the
+ * component at the size it really is on screen.
+ */
+export const blogImageSizes: Record<string, {width: number; height: number}> =
+  ${JSON.stringify(imageSizes, null, 2)};
 `;
   writeRegistry('blogRegistry.ts', content);
   return {blogPostCount: posts.length, blogTypeCount: types.length};

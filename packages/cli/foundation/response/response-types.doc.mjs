@@ -196,7 +196,7 @@ export const doc = {
     {
       value: 'template.copy',
       description:
-        "A scaffold receipt: template id, output directory, written file name, file count, demoMediaReplaced (how many Astryx demo media references were replaced with placeholders), notes (setup notes naming what the template needs that the project lacks — missing packages, missing StyleX compiler; empty when satisfied), missingPackages (external package names the template imports that are not in the project), and installCommand (a ready-to-run install command with the detected package manager and workspace version ranges; null when nothing is missing). The envelope's package names the npm package that owns the template.",
+        "A scaffold receipt: template id, output directory, written file name, file count, demoMediaReplaced (how many Astryx demo media references were replaced with placeholders), notes (setup notes naming what the template needs that the project lacks — missing packages, missing StyleX compiler; empty when satisfied), missingPackages (external package names the template imports that are not in the project), and installCommand (a ready-to-run install command with the detected package manager and workspace version ranges; null when nothing is missing, or when several lockfiles leave the package manager undetermined). The envelope's package names the npm package that owns the template.",
     },
 
     {
@@ -349,6 +349,5 @@ export const doc = {
       description:
         'validated (false when no integration manifest was found, so nothing was inspected), the integration identity, structural issues, and Core doc overlaps. Each finding includes `severity` (`info` | `error`) and `relationship` (`replaces` | `extends` | `accidental`).',
     },
-
   ],
 };

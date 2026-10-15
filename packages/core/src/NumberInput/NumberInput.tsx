@@ -573,6 +573,7 @@ export function NumberInput({
   controlStyle,
   ref,
   id: idProp,
+  'aria-describedby': ariaDescribedByProp,
   ...restProps
 }: NumberInputProps) {
   const {rest, container} = useFieldInputStyling('NumberInput', restProps, {
@@ -943,7 +944,10 @@ export function NumberInput({
         aria-valuetext={
           value == null || !formatValue ? undefined : formattedValue
         }
-        aria-describedby={ariaDescribedBy}
+        aria-describedby={
+          [ariaDescribedByProp, ariaDescribedBy].filter(Boolean).join(' ') ||
+          undefined
+        }
         aria-required={isEffectivelyRequired ? 'true' : undefined}
         aria-invalid={
           status?.type === 'error' || !isInputValid ? 'true' : undefined
@@ -973,7 +977,7 @@ export function NumberInput({
         user would get no feedback that their entry was rejected (WCAG 3.3.1).
       */}
       <VisuallyHidden as="div" role="alert" aria-live="assertive">
-        {!isInputValid ? 'Invalid number' : ''}
+        {!isInputValid ? t('@astryx.numberInput.invalidNumber') : ''}
       </VisuallyHidden>
       {hasClear && value != null && !isDisabled && !isReadOnly && (
         <InputClearButton
