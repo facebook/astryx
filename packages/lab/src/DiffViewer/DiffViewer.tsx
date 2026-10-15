@@ -144,8 +144,9 @@ export interface DiffViewerProps extends BaseProps<HTMLDivElement> {
    * Wrap long lines instead of scrolling them horizontally. Unwrapped, line
    * numbers and change indicators stay pinned while the code scrolls; in
    * split view each side is its own scroller, the split stays fixed at half
-   * and half, and the two sides scroll sideways in lockstep. Sideways
-   * overscroll (elastic bounce, swipe navigation) is off either way.
+   * and half, and the two sides scroll sideways in lockstep. While code
+   * overflows sideways, sideways overscroll (elastic bounce, swipe
+   * navigation) is off.
    * @default false
    */
   isWrapped?: boolean;
@@ -566,6 +567,9 @@ const styles = stylex.create({
     flexDirection: 'column',
     minWidth: 0,
     overflow: 'hidden',
+    // The pinned cells' z-index stacks inside the DiffViewer, never against
+    // the host page (a sticky page header stays on top).
+    isolation: 'isolate',
     borderRadius: radiusVars['--radius-element'],
     borderWidth: borderVars['--border-width'],
     borderStyle: 'solid',
@@ -959,16 +963,21 @@ interface DiffViewerPaneProps {
 }
 
 /**
- * Sideways overscroll is turned off on every DiffViewer scroller: no elastic
- * bounce past a line's start or end, and no browser back/forward swipe while
- * reading code. Vertical overscroll keeps the hook's policy so the page still
- * scrolls on past the diff. Applied over the hook's own (inline)
- * overscroll style, which only knows `auto` and `contain`.
+ * Sideways overscroll is turned off on a DiffViewer scroller while its code
+ * overflows sideways: no elastic bounce past a line's start or end, and no
+ * browser back/forward swipe while reading code. A scroller with nothing to
+ * scroll sideways (wrapped lines, or split view's block-only viewport) keeps
+ * the hook's policy so sideways gestures reach the page. Vertical overscroll
+ * always keeps the hook's policy so the page still scrolls on past the diff.
+ * Applied over the hook's own (inline) overscroll style, which only knows
+ * `auto` and `contain`.
  */
 function withoutInlineOverscroll(
   props: ScrollableElementProps<HTMLDivElement>,
 ): ScrollableElementProps<HTMLDivElement> {
-  return {...props, style: {...props.style, overscrollBehaviorX: 'none'}};
+  return props['data-scrollable-inline'] === 'true'
+    ? {...props, style: {...props.style, overscrollBehaviorX: 'none'}}
+    : props;
 }
 
 /**

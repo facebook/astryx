@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import {describe, it, expect, vi} from 'vitest';
-import {fireEvent, render, screen, within} from '@testing-library/react';
+import {act, fireEvent, render, screen, within} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {createRef} from 'react';
 import {DiffViewer} from './DiffViewer';
@@ -372,17 +372,79 @@ describe('DiffViewer', () => {
     expect(container.querySelector('[data-diff-sizer]')).toBeNull();
   });
 
-  it('turns off sideways overscroll (bounce and swipe navigation)', () => {
-    const {container, rerender} = render(<DiffViewer file={FILE} />);
-    const viewport = container.querySelector<HTMLElement>(
-      '[data-scroll-axis="both"]',
+  it('turns off sideways overscroll only while code overflows sideways', () => {
+    const frames: FrameRequestCallback[] = [];
+    vi.stubGlobal(
+      'requestAnimationFrame',
+      vi.fn((callback: FrameRequestCallback) => frames.push(callback)),
     );
-    expect(viewport?.style.overscrollBehaviorX).toBe('none');
-    rerender(<DiffViewer file={FILE} viewMode="split" />);
-    for (const pane of container.querySelectorAll<HTMLElement>(
-      '[data-diff-pane]',
-    )) {
-      expect(pane.style.overscrollBehaviorX).toBe('none');
+    vi.stubGlobal('cancelAnimationFrame', vi.fn());
+    // jsdom does not resolve the hook's overflow custom properties: report
+    // every scroller as scroll-capable so its geometry alone decides.
+    const nativeGetComputedStyle = window.getComputedStyle.bind(window);
+    vi.spyOn(window, 'getComputedStyle').mockImplementation(element => {
+      const computed = nativeGetComputedStyle(element);
+      return new Proxy(computed, {
+        get(target, property) {
+          if (property === 'overflowX' || property === 'overflowY') {
+            return 'auto';
+          }
+          return Reflect.get(target, property, target);
+        },
+      });
+    });
+    // jsdom lays nothing out: give a scroller its geometry, then let the
+    // scrollable-area hook remeasure it.
+    function measure(element: HTMLElement, scrollWidth: number) {
+      for (const [key, value] of Object.entries({
+        clientWidth: 100,
+        clientHeight: 100,
+        scrollWidth,
+        scrollHeight: 100,
+        scrollLeft: 0,
+        scrollTop: 0,
+      })) {
+        Object.defineProperty(element, key, {configurable: true, value});
+      }
+      act(() => {
+        element.dispatchEvent(new Event('scroll'));
+        frames.splice(0).forEach(callback => callback(performance.now()));
+      });
+    }
+    try {
+      const {container, rerender} = render(<DiffViewer file={FILE} />);
+      const viewport = container.querySelector<HTMLElement>(
+        '[data-scroll-axis="both"]',
+      );
+      if (viewport == null) {
+        throw new Error('missing viewport');
+      }
+      // Fits: sideways gestures reach the page.
+      measure(viewport, 100);
+      expect(viewport.style.overscrollBehaviorX).not.toBe('none');
+      // Overflows sideways: no bounce, no swipe navigation.
+      measure(viewport, 180);
+      expect(viewport.style.overscrollBehaviorX).toBe('none');
+
+      rerender(<DiffViewer file={FILE} viewMode="split" maxHeight={100} />);
+      // Split view's shared viewport only scrolls vertically.
+      const blockViewport = container.querySelector<HTMLElement>(
+        '[data-scroll-axis="block"]',
+      );
+      if (blockViewport == null) {
+        throw new Error('missing split viewport');
+      }
+      measure(blockViewport, 180);
+      expect(blockViewport.style.overscrollBehaviorX).not.toBe('none');
+      for (const pane of container.querySelectorAll<HTMLElement>(
+        '[data-diff-pane]',
+      )) {
+        measure(pane, 180);
+        expect(pane.style.overscrollBehaviorX).toBe('none');
+      }
+    } finally {
+      vi.restoreAllMocks();
+      vi.unstubAllGlobals();
     }
   });
 
