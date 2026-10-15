@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import {describe, it, expect, vi} from 'vitest';
-import {render, screen, within} from '@testing-library/react';
+import {fireEvent, render, screen, within} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {createRef} from 'react';
 import {DiffViewer} from './DiffViewer';
@@ -29,7 +29,9 @@ function codeRows(container: HTMLElement) {
 /** A split-view pane's rows, after its column-header row. */
 function paneRows(container: HTMLElement, side: 'old' | 'new') {
   return Array.from(
-    container.querySelectorAll(`[data-diff-pane="${side}"] [role="row"]`),
+    container.querySelectorAll(
+      `[data-diff-pane="${side}"] [role="row"]:not([data-diff-sizer])`,
+    ),
   ).slice(1);
 }
 
@@ -319,6 +321,56 @@ describe('DiffViewer', () => {
     expect(document.activeElement).toBe(buttons[0]);
     await user.tab();
     expect(document.activeElement).toBe(buttons[1]);
+  });
+
+  it('scrolls the split panes sideways in lockstep when unwrapped', () => {
+    const {container} = render(<DiffViewer file={FILE} viewMode="split" />);
+    const oldPane = container.querySelector<HTMLElement>(
+      '[data-diff-pane="old"]',
+    )!;
+    const newPane = container.querySelector<HTMLElement>(
+      '[data-diff-pane="new"]',
+    )!;
+    oldPane.scrollLeft = 120;
+    fireEvent.scroll(oldPane);
+    expect(newPane.scrollLeft).toBe(120);
+    // The echo on the other pane is not mirrored back.
+    fireEvent.scroll(newPane);
+    expect(oldPane.scrollLeft).toBe(120);
+
+    newPane.scrollLeft = 40;
+    fireEvent.scroll(newPane);
+    expect(oldPane.scrollLeft).toBe(40);
+  });
+
+  it('sizes both split panes to the widest line of either side', () => {
+    const {container, rerender} = render(
+      <DiffViewer file={FILE} viewMode="split" />,
+    );
+    const widest = 'export function greet(name: string) {';
+    for (const side of ['old', 'new']) {
+      const sizer = container.querySelector(
+        `[data-diff-pane="${side}"] [data-diff-sizer]`,
+      );
+      expect(sizer?.textContent).toBe(widest);
+    }
+    // Wrapped panes never scroll sideways: no sizer row.
+    rerender(<DiffViewer file={FILE} viewMode="split" isWrapped />);
+    expect(container.querySelector('[data-diff-sizer]')).toBeNull();
+  });
+
+  it('turns off sideways overscroll (bounce and swipe navigation)', () => {
+    const {container, rerender} = render(<DiffViewer file={FILE} />);
+    const viewport = container.querySelector<HTMLElement>(
+      '[data-scroll-axis="both"]',
+    );
+    expect(viewport?.style.overscrollBehaviorX).toBe('none');
+    rerender(<DiffViewer file={FILE} viewMode="split" />);
+    for (const pane of container.querySelectorAll<HTMLElement>(
+      '[data-diff-pane]',
+    )) {
+      expect(pane.style.overscrollBehaviorX).toBe('none');
+    }
   });
 
   it('highlights the changed words of a paired line', () => {

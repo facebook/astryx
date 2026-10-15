@@ -118,9 +118,9 @@ const LONG_LINE_FILE =
 `)[0];
 
 /**
- * Unwrapped split view with lines wider than their side: each side scrolls
- * sideways on its own while the split stays fixed, and line numbers and
- * change bars stay pinned.
+ * Unwrapped split view with lines wider than their side: the split stays
+ * fixed, both sides scroll sideways together, and line numbers and change
+ * bars stay pinned.
  */
 export const SplitIndependentScroll: Story = {
   args: {

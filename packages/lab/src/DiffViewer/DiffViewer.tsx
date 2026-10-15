@@ -40,11 +40,13 @@ import {
   useId,
   useInsertionEffect,
   useMemo,
+  useRef,
   useState,
   type CSSProperties,
   type MouseEvent,
   type ReactNode,
   type Ref,
+  type UIEvent,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
 
@@ -55,7 +57,10 @@ import {
   type SyntaxToken,
   type TokenLine,
 } from '@astryxdesign/core/CodeBlock';
-import {useScrollableArea} from '@astryxdesign/core/hooks';
+import {
+  useScrollableArea,
+  type ScrollableElementProps,
+} from '@astryxdesign/core/hooks';
 import {useTranslator} from '@astryxdesign/core/i18n';
 import {Icon} from '@astryxdesign/core/Icon';
 import {
@@ -138,8 +143,9 @@ export interface DiffViewerProps extends BaseProps<HTMLDivElement> {
   /**
    * Wrap long lines instead of scrolling them horizontally. Unwrapped, line
    * numbers and change indicators stay pinned while the code scrolls; in
-   * split view each side scrolls on its own and the split stays fixed at
-   * half and half.
+   * split view each side is its own scroller, the split stays fixed at half
+   * and half, and the two sides scroll sideways in lockstep. Sideways
+   * overscroll (elastic bounce, swipe navigation) is off either way.
    * @default false
    */
   isWrapped?: boolean;
@@ -541,6 +547,8 @@ function buildSpans(
 // Styles
 // ---------------------------------------------------------------------------
 
+const TAB_SIZE = 2;
+
 // Column widths, also used to place pinned cells and size split panes.
 const MARKER_WIDTH: Record<DiffViewerChangeIndicator, string> = {
   classic: `calc(1ch + ${spacingVars['--spacing-1']} + ${spacingVars['--spacing-2']})`,
@@ -661,7 +669,7 @@ const styles = stylex.create({
     fontSize: typeScaleVars['--text-code-size'],
     lineHeight: typeScaleVars['--text-code-leading'],
     color: 'var(--color-syntax-variable)',
-    tabSize: 2,
+    tabSize: TAB_SIZE,
   },
   tableScroll: {
     width: 'max-content',
@@ -860,6 +868,15 @@ const styles = stylex.create({
   paneSpan: {
     gridColumn: '1 / -1',
   },
+  // Unwrapped split view: a zero-height, invisible row in both panes holding
+  // the widest line of either side, so both code columns (and so both
+  // scroll widths) match and the panes can scroll in lockstep.
+  sizer: {
+    gridColumn: '-2 / -1',
+    height: 0,
+    visibility: 'hidden',
+    pointerEvents: 'none',
+  },
   // Column headers exist for assistive technology only: their text is
   // visually hidden, so the header row takes no height.
   columnHeader: {
@@ -933,7 +950,22 @@ interface DiffViewerPaneProps {
   /** The pane's `grid-template-columns`. */
   columns: string;
   isWrapped: boolean;
+  viewportRef?: Ref<HTMLDivElement>;
+  onScroll?: (event: UIEvent<HTMLDivElement>) => void;
   children: ReactNode;
+}
+
+/**
+ * Sideways overscroll is turned off on every DiffViewer scroller: no elastic
+ * bounce past a line's start or end, and no browser back/forward swipe while
+ * reading code. Vertical overscroll keeps the hook's policy so the page still
+ * scrolls on past the diff. Applied over the hook's own (inline)
+ * overscroll style, which only knows `auto` and `contain`.
+ */
+function withoutInlineOverscroll(
+  props: ScrollableElementProps<HTMLDivElement>,
+): ScrollableElementProps<HTMLDivElement> {
+  return {...props, style: {...props.style, overscrollBehaviorX: 'none'}};
 }
 
 /**
@@ -945,6 +977,8 @@ function DiffViewerPane({
   label,
   columns,
   isWrapped,
+  viewportRef,
+  onScroll,
   children,
 }: DiffViewerPaneProps) {
   const {getViewportProps, getContentProps} = useScrollableArea({
@@ -954,11 +988,15 @@ function DiffViewerPane({
   return (
     <div
       data-diff-pane={side}
-      {...getViewportProps<HTMLDivElement>(
-        stylex.props(
-          styles.pane,
-          side === 'old' ? styles.paneOld : styles.paneNew,
-        ),
+      {...withoutInlineOverscroll(
+        getViewportProps<HTMLDivElement>({
+          ...stylex.props(
+            styles.pane,
+            side === 'old' ? styles.paneOld : styles.paneNew,
+          ),
+          ref: viewportRef,
+          onScroll,
+        }),
       )}>
       <div
         role="table"
@@ -974,6 +1012,27 @@ function DiffViewerPane({
       </div>
     </div>
   );
+}
+
+/**
+ * The line of `lines` likely to render widest, by its length with tabs
+ * expanded and wide (East Asian, emoji) characters counted twice.
+ */
+function widestLine(lines: Iterable<string>): string {
+  let widest = '';
+  let widestWidth = -1;
+  for (const line of lines) {
+    let width = 0;
+    for (const char of line) {
+      const code = char.codePointAt(0) ?? 0;
+      width += char === '\t' ? TAB_SIZE : code >= 0x1100 ? 2 : 1;
+    }
+    if (width > widestWidth) {
+      widest = line;
+      widestWidth = width;
+    }
+  }
+  return widest;
 }
 
 /**
@@ -1334,6 +1393,49 @@ export function DiffViewer({
 
   // --- split panes ---------------------------------------------------------
 
+  // Unwrapped, the two panes scroll sideways in lockstep. Setting the other
+  // pane's scrollLeft fires a scroll event there too; the expected value it
+  // lands on marks that event as our own echo, so it is not mirrored back
+  // (which would fight momentum scrolling on the side the reader drives).
+  const paneRefs = useRef<Record<DiffViewerSide, HTMLDivElement | null>>({
+    old: null,
+    new: null,
+  });
+  // Stable per side: a new callback ref every render would re-attach the
+  // pane's scroll measurement each time.
+  const paneRefCallbacks = useMemo(
+    () => ({
+      old: (node: HTMLDivElement | null) => {
+        paneRefs.current.old = node;
+      },
+      new: (node: HTMLDivElement | null) => {
+        paneRefs.current.new = node;
+      },
+    }),
+    [],
+  );
+  const scrollEcho = useRef<{side: DiffViewerSide; left: number} | null>(null);
+  const syncPaneScroll = (
+    side: DiffViewerSide,
+    event: UIEvent<HTMLDivElement>,
+  ) => {
+    const left = event.currentTarget.scrollLeft;
+    const echo = scrollEcho.current;
+    if (echo != null && echo.side === side) {
+      scrollEcho.current = null;
+      if (Math.abs(echo.left - left) < 1) {
+        return;
+      }
+    }
+    const otherSide = side === 'old' ? 'new' : 'old';
+    const other = paneRefs.current[otherSide];
+    if (other == null || Math.abs(other.scrollLeft - left) < 1) {
+      return;
+    }
+    other.scrollLeft = left;
+    scrollEcho.current = {side: otherSide, left: other.scrollLeft};
+  };
+
   const renderSplit = () => {
     const items = splitRows.map(row =>
       row.type === 'hunk'
@@ -1347,8 +1449,15 @@ export function DiffViewer({
             newNote: annotationFor(row.new),
           },
     );
+    const hasSizer = !isWrapped;
+    const sizerText = hasSizer
+      ? widestLine(
+          cells.flatMap(hunkCells => hunkCells.map(cell => cell.line.content)),
+        )
+      : '';
     const rowCount =
       1 +
+      (hasSizer ? 1 : 0) +
       items.reduce(
         (count, item) =>
           count + 1 + (item.oldNote != null || item.newNote != null ? 1 : 0),
@@ -1441,6 +1550,19 @@ export function DiffViewer({
           );
         }
       }
+      if (hasSizer) {
+        rows.push(
+          <div
+            key="sizer"
+            data-diff-sizer=""
+            aria-hidden="true"
+            {...stylex.props(styles.paneRow)}>
+            <div {...stylex.props(styles.code, styles.ltr, styles.sizer)}>
+              {sizerText}
+            </div>
+          </div>,
+        );
+      }
       return (
         <DiffViewerPane
           key={side}
@@ -1451,7 +1573,11 @@ export function DiffViewer({
               : '@astryx.diffViewer.columnNewCode',
           )}
           columns={columns}
-          isWrapped={isWrapped}>
+          isWrapped={isWrapped}
+          viewportRef={paneRefCallbacks[side]}
+          onScroll={
+            hasSizer ? event => syncPaneScroll(side, event) : undefined
+          }>
           {rows}
         </DiffViewerPane>
       );
@@ -1485,10 +1611,12 @@ export function DiffViewer({
   } else {
     body = (
       <div
-        {...getViewportProps<HTMLDivElement>({
-          ...stylex.props(styles.viewport),
-          style: scrollStyle,
-        })}>
+        {...withoutInlineOverscroll(
+          getViewportProps<HTMLDivElement>({
+            ...stylex.props(styles.viewport),
+            style: scrollStyle,
+          }),
+        )}>
         <div {...getContentProps<HTMLDivElement>({})}>{table}</div>
       </div>
     );
