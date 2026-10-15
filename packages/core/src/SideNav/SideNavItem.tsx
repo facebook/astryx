@@ -129,10 +129,29 @@ const styles = stylex.create({
     gridTemplateRows: '0fr',
   },
   // No inline padding: nested rows fill the full width of the nav list, and
-  // each row carries its own indent (`indent` below).
+  // each row carries its own indent (`indentStyles` below).
+  //
+  // The clip exists only for the 0fr collapse animation. Nested rows sit flush
+  // with this box, so a permanent clip would cut off the focus ring, which
+  // paints outside the row. The expanded group therefore stops clipping once
+  // it has finished opening: `overflow` is discrete, and `allow-discrete` with
+  // a delay equal to the open duration holds `hidden` until the row height
+  // has settled. Collapsing flips back to `hidden` at once (no delay on the
+  // collapsed state), so nothing spills while the group closes.
   childrenInner: {
-    overflow: 'hidden',
     minHeight: 0,
+    overflow: 'visible',
+    transitionProperty: 'overflow',
+    transitionBehavior: 'allow-discrete',
+    transitionDuration: '0s',
+    transitionDelay: {
+      default: durationVars['--duration-medium'],
+      '@media (prefers-reduced-motion: reduce)': '0s',
+    },
+  },
+  childrenInnerCollapsed: {
+    overflow: 'hidden',
+    transitionDelay: '0s',
   },
   expandChevron: {
     display: 'inline-flex',
@@ -883,7 +902,11 @@ export function SideNavItem({
             styles.childrenCollapsible,
             isItemCollapsed && styles.childrenCollapsed,
           )}>
-          <div {...stylex.props(styles.childrenInner)}>
+          <div
+            {...stylex.props(
+              styles.childrenInner,
+              isItemCollapsed && styles.childrenInnerCollapsed,
+            )}>
             <span id={`${id}-label`} hidden>
               {label}
             </span>

@@ -864,6 +864,23 @@ describe('SideNavItem', () => {
     expect(indentOf(general)).toBe('calc(1 * var(--spacing-6))');
   });
 
+  it('clips the children group only while it is collapsed', async () => {
+    // Nested rows sit flush with the group, so a permanent clip would cut off
+    // their focus ring. The group clips for the collapse animation only.
+    const user = userEvent.setup();
+    render(
+      <SideNavItem label="Settings" collapsible>
+        <SideNavItem label="General" href="/settings/general" />
+      </SideNavItem>,
+    );
+    const inner = () =>
+      screen.getByRole('group', {hidden: true}).firstElementChild!;
+    expect(declaredOn(inner(), 'overflow')).toEqual(['visible']);
+
+    await user.click(screen.getByRole('button', {name: 'Settings'}));
+    expect(declaredOn(inner(), 'overflow')).toContain('hidden');
+  });
+
   it('puts the indent on the primary link of a nested actions row', () => {
     render(
       <SideNavItem label="Projects">
