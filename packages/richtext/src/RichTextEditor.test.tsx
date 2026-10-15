@@ -33,7 +33,11 @@ import {
 } from 'lexical';
 import {HeadingNode} from '@lexical/rich-text';
 import {TRANSFORMERS, $convertFromMarkdownString} from '@lexical/markdown';
-import {RichTextEditor, type RichTextEditorRef} from './RichTextEditor';
+import {
+  RichTextEditor,
+  type RichTextEditorProps,
+  type RichTextEditorRef,
+} from './RichTextEditor';
 import {RichTextView} from './RichTextView';
 import {
   markdownToEditorStateJSON,
@@ -42,6 +46,7 @@ import {
 import {RichTextEditorToolbar} from './RichTextEditorToolbar';
 import {registerIcons, resetIcons} from '@astryxdesign/core/Icon';
 import {EDGE_COMP_ATTR} from '@astryxdesign/core/Layout';
+import type {BaseProps} from '@astryxdesign/core';
 import {Theme, defineTheme} from '@astryxdesign/core/theme';
 import {rtlStyles} from '@astryxdesign/core/utils';
 import {InternationalizationProvider} from '@astryxdesign/core/i18n';
@@ -289,6 +294,52 @@ const HELLO_STATE = JSON.stringify({
 });
 
 describe('RichTextEditor', () => {
+  it('documents every prop the editor declares', () => {
+    // The doc file is what `astryx component RichTextEditor` and the docsite
+    // read, so a prop missing from it is invisible to builders. The compile-time
+    // check below fails when RichTextEditorProps gains a prop this list lacks;
+    // the runtime check fails when the doc file lacks a listed prop.
+    const ownProps = [
+      'label',
+      'isLabelHidden',
+      'description',
+      'isOptional',
+      'isRequired',
+      'defaultValue',
+      'onChange',
+      'placeholder',
+      'isReadOnly',
+      'isDisabled',
+      'status',
+      'statusVariant',
+      'size',
+      'nodes',
+      'toolbar',
+      'plugins',
+      'hasMarkdownShortcuts',
+      'markdownExtensions',
+      'transformers',
+      'hasAutoFocus',
+      'tabEscapeHint',
+      'maxLength',
+      'width',
+      'minHeight',
+      'labelTooltip',
+      'namespace',
+    ] as const satisfies ReadonlyArray<keyof RichTextEditorProps>;
+    type Unlisted = Exclude<
+      keyof RichTextEditorProps,
+      keyof BaseProps | 'ref' | (typeof ownProps)[number]
+    >;
+    const everyPropListed: [Unlisted] extends [never] ? true : Unlisted = true;
+    expect(everyPropListed).toBe(true);
+
+    const docProps =
+      'props' in richTextEditorDoc ? richTextEditorDoc.props : [];
+    const documented = new Set(docProps.map(({name}) => name));
+    expect(ownProps.filter(name => !documented.has(name))).toEqual([]);
+  });
+
   it('declares exactly the visual props its theme target reflects', () => {
     // The core theming guards walk packages/core/src (and Lab) only, so
     // nothing else compares this package's doc metadata with its
