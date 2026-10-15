@@ -129,7 +129,7 @@ import with.
 the second bulleted level as a disc; both adopt the DEC-6 marker cycle.
 RichText adopts DEC-8: its package entry stops exporting `sharedEditorTheme`,
 `URL_MATCHER`, `EMAIL_MATCHER`, and `Transformer`; `RichTextEditorToolbar`
-gains `BaseProps` and renames `linkOpensInNewTab` to `hasNewTabLinks`; and its
+gains `BaseProps` and a `ref` and renames `linkOpensInNewTab` to `hasNewTabLinks`; and its
 Lexical peer ranges move to the Lexical 0.52 minor.
 `Markdown` renders fenced code unwrapped, scrolling sideways, and adopts the
 FR5 wrap; RichText already wraps fenced code.
@@ -262,9 +262,11 @@ The package supports one Lexical minor and declares it in its Lexical peer
 ranges; `spec:AST-017` classifies a change to that minor. The package exports
 only what a caller builds with: the generated editor theme classes, the
 autolink regular expressions, and a re-export of Lexical's `Transformer` type
-are internal, and `Transformer` comes from `@lexical/markdown`. `RichTextEditorToolbar` takes
-`BaseProps` for its root element, and its option for links that open in a new
-tab is `hasNewTabLinks`. `RichTextEditorAutoLinkPlugin` renders no element of
+are internal, and `Transformer` comes from `@lexical/markdown`.
+`RichTextEditorToolbar` takes `BaseProps` and a `ref` and passes them to the
+core `Toolbar` it renders, which places them as it places its own: the `ref`
+and styling on its root, and other base props on its `role="toolbar"`
+element. Its option for links that open in a new tab is `hasNewTabLinks`. `RichTextEditorAutoLinkPlugin` renders no element of
 its own, so it takes no `BaseProps`.
 Rejected: Astryx document, node, and plugin types over Lexical's, because they
 would duplicate Lexical's extension model with no gain for a caller.
