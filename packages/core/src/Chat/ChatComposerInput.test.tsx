@@ -1430,6 +1430,36 @@ describe('ChatComposerInput', () => {
       expect(screen.queryByRole('option')).not.toBeInTheDocument();
     });
 
+    it('forgets an Escape-dismissed mention when the message is sent, so the next message can mention', async () => {
+      const onSubmit = vi.fn();
+      render(
+        <ChatComposerInput
+          triggers={[createMentionTrigger()]}
+          onSubmit={onSubmit}
+        />,
+      );
+      const editable = screen.getByRole('combobox');
+      editable.focus();
+
+      typeAtEnd(editable, '@');
+      await waitFor(() => {
+        expect(editable).toHaveAttribute('aria-expanded', 'true');
+      });
+      fireEvent.keyDown(editable, {key: 'Escape'});
+      await waitFor(() => {
+        expect(editable).toHaveAttribute('aria-expanded', 'false');
+      });
+
+      fireEvent.keyDown(editable, {key: 'Enter'});
+      expect(onSubmit).toHaveBeenCalledWith('@');
+
+      typeAtEnd(editable, '@ci');
+      await waitFor(() => {
+        expect(editable).toHaveAttribute('aria-expanded', 'true');
+      });
+      expect(editable.getAttribute('aria-activedescendant')).toBeTruthy();
+    });
+
     it('lets Escape reach the consumer while an unmatched multi-word query hides the menu', async () => {
       const onKeyDown = vi.fn();
       render(

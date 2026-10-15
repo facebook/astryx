@@ -399,6 +399,9 @@ export function useTriggerMenu(
     }
     removeAnchorSpan();
     isMenuSuppressedRef.current = false;
+    // Ending the query also forgets an Escape on it; a send or clear must not
+    // leave the next message's mention at the same offset suppressed.
+    dismissedRef.current = null;
     popover.hide();
     triggerStartRef.current = -1;
     setState(prev => ({
@@ -702,14 +705,17 @@ export function useTriggerMenu(
 
       if (e.key === 'Escape') {
         e.preventDefault();
-        if (state.activeTrigger) {
-          dismissedRef.current = {
-            character: state.activeTrigger.character,
-            triggerStart: triggerStartRef.current,
-            dismissedQuery: state.query,
-          };
-        }
+        const dismissed = state.activeTrigger
+          ? {
+              character: state.activeTrigger.character,
+              triggerStart: triggerStartRef.current,
+              dismissedQuery: state.query,
+            }
+          : null;
         reset();
+        // Remembered after reset, which clears it: the menu stays hidden while
+        // this same query keeps growing.
+        dismissedRef.current = dismissed;
         return true;
       }
 

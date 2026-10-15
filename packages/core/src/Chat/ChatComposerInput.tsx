@@ -692,11 +692,10 @@ export function ChatComposerInput(props: ChatComposerInputProps) {
           currentDraftRef.current = '';
         }
 
-        // Submitting ends any trigger query; its menu must not stay open
-        // over the cleared editor.
-        if (triggerMenu.state.isActive) {
-          triggerMenu.reset();
-        }
+        // Submitting ends any trigger query, including one dismissed with
+        // Escape: no menu stays open, and no dismissal carries into the next
+        // message.
+        triggerMenu.reset();
         onSubmit?.(text);
         editableRef.current.textContent = '';
         setIsEmpty(true);
