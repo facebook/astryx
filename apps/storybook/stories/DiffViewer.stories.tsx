@@ -296,6 +296,40 @@ export const ReviewComments: Story = {
   },
 };
 
+const ADDED_FILE =
+  parseUnifiedDiff(`diff --git a/src/cart/receipt.ts b/src/cart/receipt.ts
+new file mode 100644
+--- /dev/null
++++ b/src/cart/receipt.ts
+@@ -0,0 +1,16 @@
++export interface Receipt {
++  id: string;
++  total: number;
++  currency: string;
++}
++
++export const RECEIPT_FOOTER = 'Prices include all applicable taxes; discounts apply once to the subtotal and are rounded to the nearest cent before the total is shown.';
++
++export function receiptTitle(receipt: Receipt): string {
++  return \`Receipt \${receipt.id}\`;
++}
++
++export function receiptTotal(receipt: Receipt): string {
++  return \`\${receipt.total.toFixed(2)} \${receipt.currency}\`;
++}
++
+`)[0];
+
+/**
+ * Review comments on a newly added file with a long line: switch to split
+ * view and the new-side comment stays in view (its cap is measured again when
+ * the columns change, not only on resize).
+ */
+export const ReviewCommentsOnAddedFile: Story = {
+  ...ReviewComments,
+  args: {file: ADDED_FILE},
+};
+
 /** Without line numbers, capped height. */
 export const Compact: Story = {
   args: {hasLineNumbers: false, maxHeight: 240},

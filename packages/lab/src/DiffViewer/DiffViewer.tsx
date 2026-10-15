@@ -389,7 +389,7 @@ const NEW_SIDE_ATTRIBUTE = 'data-diff-new-side';
  * the edge: its note keeps the whole visible width and is reached by
  * scrolling, like its code.
  */
-const MIN_NEW_SIDE_VISIBLE_PX = 240;
+const MIN_NEW_SIDE_VISIBLE_PX = 320;
 
 const styles = stylex.create({
   root: {
@@ -643,7 +643,7 @@ const annotationStyles = stylex.create({
     maxInlineSize: `calc(var(${VISIBLE_INLINE_SIZE}, 100%) - 2 * ${spacingVars['--spacing-3']})`,
   },
   newSide: {
-    maxInlineSize: `calc(var(${NEW_SIDE_VISIBLE_INLINE_SIZE}, 100%) - 2 * ${spacingVars['--spacing-3']})`,
+    maxInlineSize: `calc(var(${NEW_SIDE_VISIBLE_INLINE_SIZE}, var(${VISIBLE_INLINE_SIZE}, 100%)) - 2 * ${spacingVars['--spacing-3']})`,
   },
 });
 
@@ -758,44 +758,54 @@ export function DiffViewer({
   // Annotation content is capped at the part of the viewport's visible width
   // its cell occupies. The widths are written straight to the viewport's
   // style from the shared ResizeObserver, so a resize re-renders nothing. The
-  // content box is observed too: it resizes when the columns do, which moves
-  // where a split view's new side starts.
+  // content box and the table are observed too, since column changes move
+  // where a split view's new side starts; and the ref re-attaches (measuring
+  // again) whenever the props that rebuild the columns change, because a
+  // column change need not resize any observed box.
   const stopObservingViewport = useRef<(() => void) | null>(null);
-  const observeViewportWidth = useCallback((viewport: HTMLElement | null) => {
-    stopObservingViewport.current?.();
-    stopObservingViewport.current = null;
-    if (viewport == null) {
-      return;
-    }
-    const measure = () => {
-      const visible = viewport.clientWidth;
-      viewport.style.setProperty(VISIBLE_INLINE_SIZE, `${visible}px`);
-      const newSide = viewport.querySelector(`[${NEW_SIDE_ATTRIBUTE}]`);
-      if (!(newSide instanceof HTMLElement)) {
-        viewport.style.removeProperty(NEW_SIDE_VISIBLE_INLINE_SIZE);
+  const observeViewportWidth = useCallback(
+    (viewport: HTMLElement | null) => {
+      stopObservingViewport.current?.();
+      stopObservingViewport.current = null;
+      if (viewport == null) {
         return;
       }
-      // Layout pixels, like clientWidth: unaffected by scrolling and by
-      // ancestor transforms (a dialog's opening scale). The header cell's
-      // offset parent is the table, or a positioned box the table starts at.
-      const start = newSide.offsetLeft;
-      const newSideVisible = visible - start;
-      viewport.style.setProperty(
-        NEW_SIDE_VISIBLE_INLINE_SIZE,
-        `${newSideVisible >= MIN_NEW_SIDE_VISIBLE_PX ? newSideVisible : visible}px`,
-      );
-    };
-    const content = viewport.firstElementChild;
-    const stops = [observeResize(viewport, measure)];
-    if (content != null) {
-      stops.push(observeResize(content, measure));
-    }
-    stopObservingViewport.current = () => {
-      for (const stop of stops) {
-        stop();
+      const measure = () => {
+        const visible = viewport.clientWidth;
+        viewport.style.setProperty(VISIBLE_INLINE_SIZE, `${visible}px`);
+        const newSide = viewport.querySelector(`[${NEW_SIDE_ATTRIBUTE}]`);
+        if (!(newSide instanceof HTMLElement)) {
+          viewport.style.removeProperty(NEW_SIDE_VISIBLE_INLINE_SIZE);
+          return;
+        }
+        // Layout pixels, like clientWidth: unaffected by scrolling and by
+        // ancestor transforms (a dialog's opening scale). The header cell's
+        // offset parent is the table, or a positioned box the table starts at.
+        const start = newSide.offsetLeft;
+        const newSideVisible = visible - start;
+        viewport.style.setProperty(
+          NEW_SIDE_VISIBLE_INLINE_SIZE,
+          `${newSideVisible >= MIN_NEW_SIDE_VISIBLE_PX ? newSideVisible : visible}px`,
+        );
+      };
+      const stops = [observeResize(viewport, measure)];
+      for (const box of [
+        viewport.firstElementChild,
+        viewport.querySelector('table'),
+      ]) {
+        if (box != null) {
+          stops.push(observeResize(box, measure));
+        }
       }
-    };
-  }, []);
+      stopObservingViewport.current = () => {
+        for (const stop of stops) {
+          stop();
+        }
+      };
+      // These props rebuild the table's columns; a new callback re-attaches.
+    },
+    [viewMode, hasLineNumbers, isWrapped, file],
+  );
 
   const {getViewportProps, getContentProps} = useScrollableArea({
     axis: 'both',
