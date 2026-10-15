@@ -138,7 +138,7 @@ export interface DiffViewerProps extends BaseProps<HTMLDivElement> {
   headerEnd?: ReactNode;
   /**
    * Render content in a full-width row under a line, e.g. review comments.
-   * Return `null` for lines with nothing to show. Called once per line with
+   * Return `null` (or `false`) for lines with nothing to show. Called once per line with
    * its {@link DiffViewerLineRef}; in split view the row sits under the
    * line's own side.
    */
@@ -823,10 +823,15 @@ export function DiffViewer({
     );
   };
 
-  const annotationFor = (cell: LineCell | null): ReactNode =>
-    cell == null || renderLineAnnotation == null
-      ? null
-      : renderLineAnnotation(cell.ref);
+  // `null`, `undefined` and booleans render nothing in React, so they draw no
+  // row either; that keeps `hasThread && <Thread />` from adding empty rows.
+  const annotationFor = (cell: LineCell | null): ReactNode => {
+    if (cell == null || renderLineAnnotation == null) {
+      return null;
+    }
+    const note = renderLineAnnotation(cell.ref);
+    return typeof note === 'boolean' ? null : note;
+  };
 
   // --- tables --------------------------------------------------------------
 
