@@ -791,6 +791,7 @@ export const LabCheckboxItems: Story = {
   render: function LabCheckboxItemsStory() {
     const [showArchived, setShowArchived] = useState(false);
     const [showDrafts, setShowDrafts] = useState(true);
+    const [syncFolders, setSyncFolders] = useState(true);
     return (
       <DropdownMenu button={{label: 'View'}}>
         <DropdownMenuCheckboxItem
@@ -803,6 +804,18 @@ export const LabCheckboxItems: Story = {
           description="Include unpublished items"
           value={showDrafts}
           onChange={setShowDrafts}
+        />
+        <DropdownMenuCheckboxItem
+          label="Sync folders"
+          icon={ArchiveBoxIcon}
+          endContent={<Badge label="Beta" />}
+          value={syncFolders}
+          onChange={setSyncFolders}
+        />
+        <DropdownMenuCheckboxItem
+          label="Managed by your organization"
+          value={true}
+          isDisabled
         />
       </DropdownMenu>
     );

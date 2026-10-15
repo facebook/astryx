@@ -26,7 +26,12 @@
  * mobile.
  */
 
-import {useCallback, type PointerEvent, type ReactNode} from 'react';
+import {
+  useCallback,
+  type MouseEvent,
+  type PointerEvent,
+  type ReactNode,
+} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {renderIconSlot, type IconType} from '../Icon';
 import {useIndicator} from '../Indicator';
@@ -34,7 +39,7 @@ import {Item} from '../Item';
 import {useDropdownMenuContext} from './DropdownMenuContext';
 import {focusMenuItemOnHover} from './menuItemHover';
 import {colorVars, spacingVars} from '../theme/tokens.stylex';
-import {mergeProps, themeProps} from '../utils';
+import {composeEventHandlers, mergeProps, themeProps} from '../utils';
 import type {BaseProps} from '../BaseProps';
 
 const styles = stylex.create({
@@ -105,9 +110,9 @@ export interface DropdownMenuCheckboxItemProps extends Omit<
    */
   onChange?: (checked: boolean) => void;
   /**
-   * Whether the item is disabled. Disabled items stay focusable (via
-   * `aria-disabled`) so they remain discoverable by keyboard and assistive
-   * technology, but activation is blocked.
+   * Whether the item is disabled. Disabled items expose `aria-disabled` and
+   * block activation. The current DropdownMenu navigation path skips disabled
+   * rows; see the component contract's OQ1.
    * @default false
    */
   isDisabled?: boolean;
@@ -132,6 +137,9 @@ export interface DropdownMenuCheckboxItemProps extends Omit<
  *
  * Must be used inside a DropdownMenu. Toggles an independent boolean; for a
  * one-of-N choice use DropdownMenuRadioGroup + DropdownMenuRadioItem instead.
+ * Consumer click and pointer-move handlers compose after the row's own
+ * activation and hover-focus behavior; disabled activation stops before the
+ * consumer click handler.
  *
  * @example
  * ```
@@ -157,6 +165,8 @@ export function DropdownMenuCheckboxItem({
   xstyle,
   className,
   style,
+  onClick,
+  onPointerMove,
   ...rest
 }: DropdownMenuCheckboxItemProps) {
   const ctx = useDropdownMenuContext();
@@ -164,15 +174,20 @@ export function DropdownMenuCheckboxItem({
   const controlSize = menuSize === 'sm' ? 'sm' : 'md';
   const CheckboxControl = useIndicator('checkbox');
 
-  const handleClick = useCallback(() => {
-    if (isDisabled) {
-      return;
-    }
-    onChange?.(!value);
-    if (hasCloseOnSelect) {
-      ctx?.closeMenu();
-    }
-  }, [isDisabled, onChange, value, hasCloseOnSelect, ctx]);
+  const handleClick = useCallback(
+    (event: MouseEvent) => {
+      if (isDisabled) {
+        event.preventDefault();
+        return;
+      }
+      onChange?.(!value);
+      if (hasCloseOnSelect) {
+        ctx?.closeMenu();
+      }
+      onClick?.(event as MouseEvent<HTMLElement>);
+    },
+    [isDisabled, onChange, value, hasCloseOnSelect, ctx, onClick],
+  );
 
   const handlePointerMove = useCallback(
     (e: PointerEvent<HTMLElement>) => focusMenuItemOnHover(e, isDisabled),
@@ -185,7 +200,7 @@ export function DropdownMenuCheckboxItem({
       role="menuitemcheckbox"
       aria-checked={value}
       tabIndex={isDisabled ? undefined : -1}
-      onPointerMove={handlePointerMove}
+      onPointerMove={composeEventHandlers(handlePointerMove, onPointerMove)}
       marker={
         // No wrapper, and no menu-specific theme target: the shared
         // `astryx-checkbox-indicator` target is already on this element (main

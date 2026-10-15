@@ -10,7 +10,7 @@
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render, screen} from '@testing-library/react';
+import {render, screen, fireEvent} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {DropdownMenu} from './DropdownMenu';
 import {DropdownMenuCheckboxItem} from './DropdownMenuCheckboxItem';
@@ -63,6 +63,121 @@ describe('DropdownMenuCheckboxItem', () => {
       }),
     );
     expect(onChangeSpy).toHaveBeenCalledWith(true);
+    expect(HTMLElement.prototype.hidePopover).not.toHaveBeenCalled();
+  });
+
+  it('composes the caller click handler with the checked-state change', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    const onClick = vi.fn();
+    render(
+      <DropdownMenu button={{label: 'View'}}>
+        <DropdownMenuCheckboxItem
+          label="Show archived"
+          value={false}
+          onChange={onChange}
+          onClick={onClick}
+        />
+      </DropdownMenu>,
+    );
+    await user.click(screen.getByRole('button', {name: /View/}));
+    await user.click(
+      screen.getByRole('menuitemcheckbox', {
+        name: /Show archived/,
+        hidden: true,
+      }),
+    );
+    expect(onChange).toHaveBeenCalledWith(true);
+    expect(onClick).toHaveBeenCalledOnce();
+  });
+
+  it('composes the caller pointer-move handler with menu hover focus', async () => {
+    const user = userEvent.setup();
+    const onPointerMove = vi.fn();
+    render(
+      <DropdownMenu button={{label: 'View'}}>
+        <DropdownMenuCheckboxItem
+          label="Show archived"
+          value={false}
+          onPointerMove={onPointerMove}
+        />
+      </DropdownMenu>,
+    );
+    await user.click(screen.getByRole('button', {name: /View/}));
+    const item = screen.getByRole('menuitemcheckbox', {
+      name: /Show archived/,
+      hidden: true,
+    });
+    fireEvent.pointerMove(item, {pointerType: 'mouse'});
+    expect(item).toHaveFocus();
+    expect(onPointerMove).toHaveBeenCalledOnce();
+  });
+
+  it('does not call consumer activation handlers when disabled', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    const onClick = vi.fn();
+    render(
+      <DropdownMenu button={{label: 'View'}}>
+        <DropdownMenuCheckboxItem
+          label="Show archived"
+          value={false}
+          onChange={onChange}
+          onClick={onClick}
+          isDisabled
+        />
+      </DropdownMenu>,
+    );
+    await user.click(screen.getByRole('button', {name: /View/}));
+    await user.click(
+      screen.getByRole('menuitemcheckbox', {
+        name: /Show archived/,
+        hidden: true,
+      }),
+    );
+    expect(onChange).not.toHaveBeenCalled();
+    expect(onClick).not.toHaveBeenCalled();
+  });
+
+  it('closes after a successful toggle only when requested', async () => {
+    const user = userEvent.setup();
+    render(
+      <DropdownMenu button={{label: 'View'}}>
+        <DropdownMenuCheckboxItem
+          label="Show archived"
+          value={false}
+          onChange={() => {}}
+          hasCloseOnSelect
+        />
+      </DropdownMenu>,
+    );
+    await user.click(screen.getByRole('button', {name: /View/}));
+    await user.click(
+      screen.getByRole('menuitemcheckbox', {
+        name: /Show archived/,
+        hidden: true,
+      }),
+    );
+    expect(HTMLElement.prototype.hidePopover).toHaveBeenCalledOnce();
+  });
+
+  it('maps a small menu to the small shared checkbox marker', async () => {
+    const user = userEvent.setup();
+    render(
+      <DropdownMenu button={{label: 'View', size: 'sm'}}>
+        <DropdownMenuCheckboxItem label="Show archived" value={true} />
+      </DropdownMenu>,
+    );
+    await user.click(screen.getByRole('button', {name: /View/}));
+    const row = screen.getByRole('menuitemcheckbox', {
+      name: /Show archived/,
+      hidden: true,
+    });
+    expect(row).toHaveAttribute('aria-checked', 'true');
+    expect(row.querySelector('.astryx-checkbox-indicator')).toHaveAttribute(
+      'data-size',
+      'sm',
+    );
   });
 
   it('keeps the checkbox indicator decorative (row is the only announced control)', async () => {
