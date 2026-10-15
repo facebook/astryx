@@ -615,6 +615,55 @@ test('a dropped image lands where it was dropped, not at the caret', async ({
   expect(errors).toEqual([]);
 });
 
+test('a file dropped onto a decorator lands beside it, not at the top', async ({
+  page,
+}) => {
+  const errors = await openStory(page);
+  // An image to drop onto, with the caret left near it rather than at the top
+  // of the document, so "landed at the top" cannot pass by accident.
+  await insertSampleImage(page);
+  const existing = page.locator(IMAGE);
+  await existing.scrollIntoViewIfNeeded();
+  const box = await existing.boundingBox();
+
+  // A point inside a decorator resolves to no Lexical position, and a fresh
+  // range selection then sits at the root's offset 0 — the top of the
+  // document, nowhere near the drop.
+  await page.evaluate(
+    async ({x, y}: {x: number; y: number}) => {
+      const pixel =
+        'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+      const blob = await (await fetch(pixel)).blob();
+      const transfer = new DataTransfer();
+      transfer.items.add(new File([blob], 'beside.png', {type: 'image/png'}));
+      document
+        .querySelector('[data-playground-editor] [role="textbox"]')
+        ?.dispatchEvent(
+          new DragEvent('drop', {
+            bubbles: true,
+            cancelable: true,
+            clientX: x,
+            clientY: y,
+            dataTransfer: transfer,
+          }),
+        );
+    },
+    {x: box!.x + box!.width / 2, y: box!.y + box!.height / 2},
+  );
+
+  await expect(page.locator(IMAGE)).toHaveCount(2);
+  const dropped = page.locator(`${EDITOR} img[alt="beside.png"]`);
+  await expect(dropped).toHaveCount(1);
+  // Beside the image it was dropped on, not above the document's heading.
+  const landed = await dropped.boundingBox();
+  const heading = await page.locator(`${EDITOR} h1`).boundingBox();
+  expect(
+    landed!.y - heading!.y,
+    'the file landed beside the decorator, not at the top',
+  ).toBeGreaterThan(200);
+  expect(errors).toEqual([]);
+});
+
 test('the RichTextView readout survives the image node arriving under it', async ({
   page,
 }) => {

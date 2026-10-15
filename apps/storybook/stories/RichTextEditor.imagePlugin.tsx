@@ -66,9 +66,11 @@ import {useLexicalNodeSelection} from '@lexical/react/useLexicalNodeSelection';
 import {
   $createParagraphNode,
   $createRangeSelection,
+  $getNearestNodeFromDOMNode,
   $getNodeByKey,
   $getSelection,
   $insertNodes,
+  $isDecoratorNode,
   $isNodeSelection,
   $isRootOrShadowRoot,
   $setSelection,
@@ -743,6 +745,17 @@ function insertFiles(
     const range = point ? rangeFromPoint(point.x, point.y) : null;
     if (range !== null) {
       editor.update(() => {
+        // A point inside a decorator — the image already in the document, a
+        // Markdown plugin node — resolves to no Lexical position at all, and
+        // `applyDOMRange` then leaves the fresh selection at the root's
+        // offset 0, dropping the file at the top of the document. Land
+        // beside the decorator instead, as Lexical's own drop handler does.
+        const nearest = $getNearestNodeFromDOMNode(range.startContainer);
+        if ($isDecoratorNode(nearest)) {
+          const after = nearest.getIndexWithinParent() + 1;
+          nearest.getParentOrThrow().select(after, after);
+          return;
+        }
         const selection = $createRangeSelection();
         selection.applyDOMRange(range);
         $setSelection(selection);
