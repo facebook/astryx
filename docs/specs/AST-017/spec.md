@@ -751,9 +751,8 @@ than restating them:
   incompatible Changeset puts every published package in a minor release.
   `check-changesets.mjs` validates Changeset format on every pull request, and the
   release-branch tooling under [`scripts/release/`](../../../scripts/release/)
-  implements FR47–FR52 admission, versioning, merge-back, next-plan validation, and
-  codemod-promotion evidence; none of these files may narrow or widen the rule it
-  implements.
+  implements FR47–FR51 admission, versioning, merge-back, and next-plan validation;
+  none of these files may narrow or widen the rule it implements.
 
 The direct current owner decides the intended product contract. This spec decides how
 that contract may change in a stable release. The public Release Process decides how
