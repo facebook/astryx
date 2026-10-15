@@ -343,6 +343,19 @@ describe('DiffViewer', () => {
     expect(oldPane.scrollLeft).toBe(40);
   });
 
+  it('lays out the hunk header with the same width on both split sides', () => {
+    const {container} = render(<DiffViewer file={FILE} viewMode="split" />);
+    const [oldHeader, newHeader] = (['old', 'new'] as const).map(
+      side => paneRows(container, side)[0],
+    );
+    expect(oldHeader.textContent).toBe('@@ -1,4 +1,5 @@');
+    // The new side holds an invisible copy for width plus one for screen
+    // readers.
+    expect(newHeader.querySelector('[aria-hidden="true"]')?.textContent).toBe(
+      '@@ -1,4 +1,5 @@',
+    );
+  });
+
   it('sizes both split panes to the widest line of either side', () => {
     const {container, rerender} = render(
       <DiffViewer file={FILE} viewMode="split" />,

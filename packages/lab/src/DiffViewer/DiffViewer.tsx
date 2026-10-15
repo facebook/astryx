@@ -868,6 +868,9 @@ const styles = stylex.create({
   paneSpan: {
     gridColumn: '1 / -1',
   },
+  invisible: {
+    visibility: 'hidden',
+  },
   // Unwrapped split view: a zero-height, invisible row in both panes holding
   // the widest line of either side, so both code columns (and so both
   // scroll widths) match and the panes can scroll in lockstep.
@@ -1511,7 +1514,17 @@ export function DiffViewer({
                 {isOld ? (
                   renderHunkText(row.header)
                 ) : (
-                  <VisuallyHidden>{row.header}</VisuallyHidden>
+                  <>
+                    {/* Takes the same width as the old side's header, so a
+                        header wider than the code widens both panes alike
+                        and they still scroll in lockstep. */}
+                    <span
+                      aria-hidden="true"
+                      {...stylex.props(styles.ltr, styles.invisible)}>
+                      {row.header}
+                    </span>
+                    <VisuallyHidden>{row.header}</VisuallyHidden>
+                  </>
                 )}
               </div>
             </div>,
