@@ -89,7 +89,7 @@ export const docs = {
       name: 'options.onSearchSeed',
       type: '(char: string) => void',
       description:
-        'With `hasSearch`, receives each printable character except Space typed on the closed control (opening the list first), so type-to-find needs no separate open step.',
+        'With `hasSearch`, receives each printable character except Space typed while the control has focus, opening the list first when it is closed, so type-to-find needs no separate open step.',
     },
     {
       name: 'options.isDisabled',
@@ -103,7 +103,7 @@ export const docs = {
       name: 'highlightedIndex',
       type: 'number',
       description:
-        'Index of the active option, or -1 when none is active (with `hasSearch` the list opens with none). Render it as the active option and name it in `aria-activedescendant` only while it is 0 or more.',
+        'Index of the active option, or -1 when none is active (with `hasSearch`, opening by a press or Enter leaves none active; ArrowDown and ArrowUp still open on the first or last option). Render it as the active option and name it in `aria-activedescendant` only while it points at a rendered option.',
     },
     {
       name: 'setHighlightedIndex',
@@ -115,7 +115,7 @@ export const docs = {
       name: 'getItemId',
       type: '(index: number) => string',
       description:
-        "The id to render on the option at `index`. Set the control's `aria-activedescendant` to `isOpen && highlightedIndex >= 0 ? getItemId(highlightedIndex) : undefined`, so it never names an option that does not exist.",
+        "The id to render on the option at `index`. Set the control's `aria-activedescendant` to `isOpen && highlightedIndex >= 0 && highlightedIndex < selectableItems.length ? getItemId(highlightedIndex) : undefined`, so it never names an option that does not exist, including in an empty list.",
     },
     {
       name: 'onTriggerClick',
@@ -147,7 +147,7 @@ export const docs = {
       {
         guidance: true,
         description:
-          "Render each option with `id={getItemId(index)}` and set the control's `aria-activedescendant` to `isOpen && highlightedIndex >= 0 ? getItemId(highlightedIndex) : undefined`, as Selector and CommandPalette do.",
+          "Render each option with `id={getItemId(index)}` and set the control's `aria-activedescendant` only while `isOpen` and `highlightedIndex` points at a rendered option, as CommandPalette does.",
       },
       {
         guidance: true,
@@ -193,15 +193,15 @@ export const docsDense = {
     'options.hasSearch':
       'list has own search field: Space types, press / Enter opening does not pre-highlight (ArrowDown/Up still first / last), printable keys on closed control -> onSearchSeed.',
     'options.onSearchSeed':
-      'w/ hasSearch, each printable char except Space typed on closed control (opens first).',
+      'w/ hasSearch, each printable char except Space typed while control focused (opens first if closed).',
     'options.isDisabled': 'ignore clicks + keys.',
   },
   returnDescriptions: {
     highlightedIndex:
-      'active option index, -1 = none (hasSearch opens w/ none); name in aria-activedescendant only when >= 0.',
+      'active option index, -1 = none (hasSearch: press / Enter opening leaves none; ArrowDown/Up still first / last); name in aria-activedescendant only when it points at a rendered option.',
     setHighlightedIndex: 'set active option (e.g. after filtering).',
     getItemId:
-      'id for option at index; aria-activedescendant = isOpen && highlightedIndex >= 0 ? getItemId(highlightedIndex) : undefined.',
+      'id for option at index; aria-activedescendant = isOpen && 0 <= highlightedIndex < selectableItems.length ? getItemId(highlightedIndex) : undefined (empty list safe).',
     onTriggerClick: 'toggle list from a press on control.',
     onKeyDown:
       'control keydown: ArrowDown/Up open or move; Enter (Space w/o search) picks or opens; Escape / Tab close; Home / End / PageUp / PageDown jump. editable control keeping Home / End for caret: do not pass them.',
@@ -215,7 +215,7 @@ export const docsDense = {
       {
         guidance: true,
         description:
-          'Option id = getItemId(index); aria-activedescendant = isOpen && highlightedIndex >= 0 ? getItemId(highlightedIndex) : undefined.',
+          'Option id = getItemId(index); aria-activedescendant only while open and highlightedIndex points at a rendered option.',
       },
       {
         guidance: true,
