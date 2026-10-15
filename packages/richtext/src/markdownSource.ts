@@ -67,6 +67,7 @@ import {
 import {$isRichTextExtensionNode} from './markdownExtensionNode';
 import {$convertToMarkdownKeepingTimeLinear} from './markdownSpaceRuns';
 import type {MarkdownPluginEntry} from '@astryxdesign/core/Markdown/plugins';
+import {nodeView} from './nodeViews';
 
 /** The whitespace and content one chunk of Markdown source was split into. */
 export interface MarkdownChunk {
@@ -754,7 +755,7 @@ function markedView(
       return node;
     }
     if (token == null) {
-      return Object.create(node) as typeof node;
+      return nodeView(node);
     }
     let text = node
       .getTextContent()
@@ -770,7 +771,7 @@ function markedView(
         text = before + token + text.slice(before.length);
       }
     }
-    const view = Object.create(node) as typeof node;
+    const view = nodeView(node);
     view.getTextContent = () => text;
     return view;
   }
@@ -791,7 +792,7 @@ function markedView(
           (children[index + 1] ?? null) as T | null;
       }
     });
-    const view = Object.create(node) as typeof node;
+    const view = nodeView(node);
     view.getChildren = <T extends LexicalNode>() => children as Array<T>;
     return view;
   }

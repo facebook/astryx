@@ -21,6 +21,7 @@ import {$isCodeNode} from '@lexical/code';
 import {$convertToMarkdownString} from '@lexical/markdown';
 import {$isElementNode, $isTextNode} from 'lexical';
 import {absentCharacters} from './markdownCharacterReferences';
+import {nodeView} from './nodeViews';
 
 /**
  * A run of spaces with other characters on both sides, long enough for
@@ -89,7 +90,7 @@ export function $convertToMarkdownKeepingTimeLinear(
   }
   const placed = {count: 0};
   const children = viewsOf(root.getChildren(), standIns, placed);
-  const view = Object.create(root) as typeof root;
+  const view = nodeView(root);
   view.getChildren = <T extends LexicalNode>() => children as Array<T>;
   let markdown = $convertToMarkdownString(transformers, view);
   // Every stand-in in the output must be one this export placed; otherwise
@@ -146,7 +147,7 @@ function viewOf(
     if (stood === text) {
       return node;
     }
-    const view = Object.create(node) as typeof node;
+    const view = nodeView(node);
     view.getTextContent = () => stood;
     return view;
   }
@@ -156,7 +157,7 @@ function viewOf(
     if (children.every((child, index) => child === original[index])) {
       return node;
     }
-    const view = Object.create(node) as typeof node;
+    const view = nodeView(node);
     view.getChildren = <T extends LexicalNode>() => children as Array<T>;
     return view;
   }
