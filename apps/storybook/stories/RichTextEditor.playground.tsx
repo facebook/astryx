@@ -488,7 +488,7 @@ export function RichTextEditorPlayground() {
   const [hasToolbar, setHasToolbar] = useState(true);
   const [hasInsertControls, setHasInsertControls] = useState(true);
   const [hasLink, setHasLink] = useState(true);
-  const [linkOpensInNewTab, setLinkOpensInNewTab] = useState(true);
+  const [hasNewTabLinks, setHasNewTabLinks] = useState(true);
   const [hasAutoLink, setHasAutoLink] = useState(true);
   const [hasMarkdownShortcuts, setHasMarkdownShortcuts] = useState(true);
   const [hasMarkdownPlugins, setHasMarkdownPlugins] = useState(true);
@@ -673,7 +673,7 @@ export function RichTextEditorPlayground() {
                   <RichTextEditorToolbar
                     size={toolbarSize}
                     hasLink={hasLink}
-                    linkOpensInNewTab={linkOpensInNewTab}
+                    hasNewTabLinks={hasNewTabLinks}
                     endContent={hasInsertControls ? <InsertControls /> : null}
                   />
                 ) : undefined
@@ -799,8 +799,8 @@ export function RichTextEditorPlayground() {
             <Switch
               size="sm"
               label="Links open in a new tab"
-              value={linkOpensInNewTab}
-              onChange={setLinkOpensInNewTab}
+              value={hasNewTabLinks}
+              onChange={setHasNewTabLinks}
               isDisabled={!hasToolbar || !hasLink}
               disabledMessage="Turn the toolbar's link button on first."
             />
