@@ -249,12 +249,12 @@ the one visual contract that RichText and `Markdown` share.
 **Reference:** `spec:AST-061/DEC-8`
 **Decider:** cixzhang, 2026-10-14
 
-RichText is built on Lexical and says so: `nodes`, `plugins`, `transformers`,
-`onChange(editorState, editor)`, and the editor ref's `getEditorState()` take
-and return Lexical types, so a caller extends the editor with Lexical directly.
+RichText is built on Lexical and says so: `nodes` and `transformers` take
+Lexical types, `plugins` takes Lexical React plugins, and `onChange(editorState,
+editor)` and the editor ref's `getEditorState()` report Lexical types, so a
+caller extends the editor with Lexical directly.
 The package supports one Lexical minor and declares it in its Lexical peer
-ranges; changing that minor changes RichText's public contract and follows the
-compatibility policy for a breaking change. The package exports only what a
+ranges; `spec:AST-017` classifies a change to that minor. The package exports only what a
 caller builds with: the generated editor theme classes, the autolink regular
 expressions, and a re-export of Lexical's `Transformer` type are internal, and
 `Transformer` comes from `@lexical/markdown`. `RichTextEditorToolbar` takes
