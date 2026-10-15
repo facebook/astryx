@@ -9,7 +9,7 @@
  * @output `RichTextEditorPlayground`: ONE editor with every RichText feature
  *   switchable around it, and the live Markdown, HTML, editor-state, node-tree
  *   and RichTextView readouts of that same editor beside it.
- * @position Storybook-only sandbox for the Lab/RichTextEditor Playground story
+ * @position Storybook-only sandbox for the RichText/RichTextEditor Playground story
  *   — the Astryx counterpart of playground.lexical.dev. Every other story
  *   mounts its own editor to show one feature; this one exists so features can
  *   be combined on a single document and watched for interactions (a toolbar

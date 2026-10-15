@@ -2,7 +2,7 @@
 
 /**
  * @file Playground.a11y.chromium.spec.ts
- * @input The built Storybook's Lab/RichTextEditor "Playground" story.
+ * @input The built Storybook's RichText/RichTextEditor "Playground" story.
  * @output Real-browser proof that the playground is ONE editor carrying every
  *   feature at once: the seeded document brings every block type, each
  *   readout reports that same editor, switching a feature on or off leaves a
@@ -27,7 +27,7 @@ import {
 } from '@astryxdesign/a11y-spec/storybook';
 
 const STORYBOOK_DIR = process.env.ASTRYX_STORYBOOK_DIR ?? DEFAULT_STORYBOOK_DIR;
-const STORY = 'lab-richtexteditor--playground';
+const STORY = 'richtext-richtexteditor--playground';
 
 /** The one editable surface the whole page is about. */
 const EDITOR = '[data-playground-editor] [role="textbox"]';
