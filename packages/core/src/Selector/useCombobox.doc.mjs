@@ -103,7 +103,7 @@ export const docs = {
       name: 'highlightedIndex',
       type: 'number',
       description:
-        'Index of the active option, or -1 when none is active. Render it as the active option and name it in `aria-activedescendant`.',
+        'Index of the active option, or -1 when none is active (with `hasSearch` the list opens with none). Render it as the active option and name it in `aria-activedescendant` only while it is 0 or more.',
     },
     {
       name: 'setHighlightedIndex',
@@ -115,7 +115,7 @@ export const docs = {
       name: 'getItemId',
       type: '(index: number) => string',
       description:
-        "The id to render on the option at `index`; pass `getItemId(highlightedIndex)` as the control's `aria-activedescendant` while the list is open.",
+        "The id to render on the option at `index`. Set the control's `aria-activedescendant` to `isOpen && highlightedIndex >= 0 ? getItemId(highlightedIndex) : undefined`, so it never names an option that does not exist.",
     },
     {
       name: 'onTriggerClick',
@@ -126,7 +126,7 @@ export const docs = {
       name: 'onKeyDown',
       type: '(e: React.KeyboardEvent) => void',
       description:
-        'Key handler for the control that keeps focus. ArrowDown and ArrowUp open the list or move the active option; Enter (and Space without search) picks it or opens the list; Escape and Tab close it; Home, End, PageUp and PageDown jump to the first or last option.',
+        'Key handler for the control that keeps focus. ArrowDown and ArrowUp open the list or move the active option; Enter (and Space without search) picks it or opens the list; Escape and Tab close it; Home, End, PageUp and PageDown jump to the first or last option. An editable control that keeps Home and End for the caret does not pass them to this handler, as CommandPalette does.',
     },
     {
       name: 'onItemSelect',
@@ -147,7 +147,7 @@ export const docs = {
       {
         guidance: true,
         description:
-          "Render each option with `id={getItemId(index)}` and set the control's `aria-activedescendant` to `getItemId(highlightedIndex)` while the list is open.",
+          "Render each option with `id={getItemId(index)}` and set the control's `aria-activedescendant` to `isOpen && highlightedIndex >= 0 ? getItemId(highlightedIndex) : undefined`, as Selector and CommandPalette do.",
       },
       {
         guidance: true,
@@ -198,13 +198,13 @@ export const docsDense = {
   },
   returnDescriptions: {
     highlightedIndex:
-      'active option index, -1 = none; name it in aria-activedescendant.',
+      'active option index, -1 = none (hasSearch opens w/ none); name in aria-activedescendant only when >= 0.',
     setHighlightedIndex: 'set active option (e.g. after filtering).',
     getItemId:
-      'id for option at index; aria-activedescendant = getItemId(highlightedIndex) while open.',
+      'id for option at index; aria-activedescendant = isOpen && highlightedIndex >= 0 ? getItemId(highlightedIndex) : undefined.',
     onTriggerClick: 'toggle list from a press on control.',
     onKeyDown:
-      'control keydown: ArrowDown/Up open or move; Enter (Space w/o search) picks or opens; Escape / Tab close; Home / End / PageUp / PageDown jump.',
+      'control keydown: ArrowDown/Up open or move; Enter (Space w/o search) picks or opens; Escape / Tab close; Home / End / PageUp / PageDown jump. editable control keeping Home / End for caret: do not pass them.',
     onItemSelect: 'pick from a press, then close.',
     onItemMouseEnter: 'hover makes option active; no scroll, no focus move.',
   },
@@ -215,7 +215,7 @@ export const docsDense = {
       {
         guidance: true,
         description:
-          'Option id = getItemId(index); control aria-activedescendant = getItemId(highlightedIndex) while open.',
+          'Option id = getItemId(index); aria-activedescendant = isOpen && highlightedIndex >= 0 ? getItemId(highlightedIndex) : undefined.',
       },
       {
         guidance: true,
