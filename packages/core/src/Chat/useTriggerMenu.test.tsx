@@ -414,6 +414,22 @@ describe('useTriggerMenu', () => {
     expect(result.current.ariaProps['aria-expanded']).toBe(true);
   });
 
+  // 13b. `emptySearchText: null` is "not given", so the menu still hides.
+  it('13b. hides the menu for an unmatched multi-word query when emptySearchText is null', async () => {
+    const {result} = renderTriggerHook([
+      createMentionTrigger({emptySearchText: null}),
+    ]);
+
+    await act(async () => {
+      setCursor('@NonExistentUser');
+      result.current.handleInput();
+      await Promise.resolve();
+    });
+    expect(result.current.state.isActive).toBe(true);
+    expect(result.current.renderMenu()).toBeNull();
+    expect(result.current.ariaProps['aria-expanded']).toBe(false);
+  });
+
   // 14. Enter with no matching row does not consume event
   it('14. does not consume Enter when there is no matching row', async () => {
     const {result} = renderTriggerHook();

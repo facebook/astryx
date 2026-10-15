@@ -223,7 +223,8 @@ function isUnmatchedMultiWordQuery(
 ): boolean {
   return (
     trigger?.hasMultiWordQuery === true &&
-    trigger.emptySearchText === undefined &&
+    // `null` means "not given", exactly as `undefined` does.
+    trigger.emptySearchText == null &&
     items.length === 0 &&
     !isLoading
   );
