@@ -14,12 +14,15 @@ import {buildOutline} from '../components/docs/docOutline';
  * Every topic page the site had before the CLI's docs were split into
  * docs-tree namespaces, with its sidebar group. A split changes how agents
  * read a topic, never where a reader finds it: each slug keeps one page in the
- * same group. Guides under the `cli` namespace keep their own pages and are
- * not listed here.
+ * same group. The CLI's integration guides were split earlier, from the CLI
+ * Integrations and Writing docs pages; those two pages are back too.
  */
 const PAGES_BEFORE_THE_SPLITS: Record<string, 'guide' | 'foundations'> = {
   authoring: 'guide',
   'browser-support': 'guide',
+  'cli-component-lookups': 'guide',
+  'cli-integrations': 'guide',
+  'cli-writing-docs': 'guide',
   color: 'foundations',
   elevation: 'foundations',
   'getting-started': 'guide',
@@ -83,6 +86,48 @@ describe('route resolution', () => {
     ]) {
       expect(titles).toContain(title);
     }
+  });
+
+  it('lists the guides the sidebar listed before the splits, plus new topics only', () => {
+    // The Guide section as it was before the CLI integration guide and the
+    // other topics were split into short guides. `styling-overview` is a
+    // topic added since.
+    const sidebarGuides = docTopics
+      .filter(d => d.category === 'guide' && d.topic !== 'getting-started')
+      .map(d => d.topic)
+      .sort();
+    expect(sidebarGuides).toEqual(
+      [
+        'authoring',
+        'browser-support',
+        'cli-component-lookups',
+        'cli-integrations',
+        'cli-writing-docs',
+        'internationalization',
+        'layout',
+        'migration',
+        'principles',
+        'styling',
+        'styling-libraries',
+        'styling-overview',
+        'theme',
+        'working-with-ai',
+      ].sort(),
+    );
+  });
+
+  it('opens every CLI integration guide at its section on a full page', () => {
+    for (const route of docsTreeRoutes) {
+      if (!route.startsWith('cli/integrations/')) continue;
+      const slug = route.replaceAll('/', '-');
+      expect(pageBySlug.has(slug), slug).toBe(false);
+      expect(docRedirects[slug], slug).toMatch(
+        /^\/docs\/cli-(integrations|writing-docs)(#|$)/,
+      );
+    }
+    expect(docRedirects['cli-integrations-overview']).toBe(
+      '/docs/cli-integrations',
+    );
   });
 
   it('keeps /docs/cli the CLI package page', () => {

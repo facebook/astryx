@@ -17,12 +17,42 @@
  */
 
 /**
- * Root namespaces that keep one page per guide instead of one full page.
- * `cli` is the CLI's own reference: /docs/cli is the @astryxdesign/cli package
- * page, and each integration guide under it already has its own page and
- * sidebar entry.
+ * Root namespaces that have no page of their own at their slug: /docs/cli is
+ * the @astryxdesign/cli package page. Their pages are listed in
+ * GUIDE_NAMESPACE_PAGES; a guide below them that no such page holds keeps a
+ * page of its own.
  */
 export const GUIDE_PAGE_NAMESPACES = new Set(['cli']);
+
+/**
+ * The pages a root namespace in GUIDE_PAGE_NAMESPACES shows, as the docsite
+ * listed them before the CLI's integration guide was split into short guides:
+ * "CLI Integrations" and "Writing docs". Each is one full page of the
+ * namespace at `route` (minus the routes in `except`, which another page
+ * holds), at `slug`, so every guide slug below it redirects to its section
+ * there. `aliases` are older slugs that redirect to the page.
+ * @type {Map<string, Array<{route: string, slug: string, title: string, except?: string[], aliases?: string[]}>>}
+ */
+export const GUIDE_NAMESPACE_PAGES = new Map([
+  [
+    'cli',
+    [
+      {
+        route: 'cli/integrations',
+        slug: 'cli-integrations',
+        title: 'CLI Integrations',
+        except: ['cli/integrations/building-blocks/docs'],
+        aliases: ['cli-integrations-overview'],
+      },
+      {
+        route: 'cli/integrations/building-blocks/docs',
+        slug: 'cli-writing-docs',
+        title: 'Writing docs',
+        aliases: ['cli-integrations-docs-add-a-topic'],
+      },
+    ],
+  ],
+]);
 
 /**
  * Flat topics whose full text the site shows on another topic's page. The
@@ -106,7 +136,7 @@ export function namespaceCategory(own, guideCategories) {
 }
 
 /**
- * One full page for a root namespace: every guide under it, compiled in tree
+ * One full page for a namespace: every guide under it, compiled in tree
  * order, as `astryx docs <route> --depth all --detail full` reads it. Each
  * guide and nested namespace keeps its slug as a redirect to where its text
  * starts on the page. Typed docs (commands, API docs) open only in
@@ -116,9 +146,15 @@ export function namespaceCategory(own, guideCategories) {
  * whose children are flat topics with pages of their own) has no page.
  * @param {(topic?: string, section?: string, options?: object) => Promise<any>} readDocs
  * @param {string} route
+ * @param {{slug?: string, title?: string, except?: string[], aliases?: string[]}} [options]
+ *   the page's slug and title when they are not the route's, routes below it
+ *   that another page holds, and older slugs that redirect to it
  * @returns {Promise<{page: object, redirects: Record<string, string>} | null>}
  */
-export async function namespacePage(readDocs, route) {
+export async function namespacePage(readDocs, route, options = {}) {
+  const {slug = route, title, except = [], aliases = []} = options;
+  const excluded = child =>
+    except.some(skip => child === skip || child.startsWith(`${skip}/`));
   const read = await readDocs(route, undefined, {depth: 'all', detail: 'full'});
   if (read?.type !== 'docs.node' || read.data.kind !== 'namespace') return null;
   const node = read.data;
@@ -133,6 +169,7 @@ export async function namespacePage(readDocs, route) {
     for (const slot of slots ?? []) {
       for (const child of slot.children) {
         if (!child.route.startsWith(`${route}/`)) continue;
+        if (excluded(child.route)) continue;
         if (child.kind === 'generic') {
           const detail = await readDocs(child.route);
           guideCategories.push(detail?.data?.category ?? null);
@@ -152,16 +189,19 @@ export async function namespacePage(readDocs, route) {
   if (guideCategories.length === 0) return null;
 
   const anchors = sectionAnchors(sections);
-  const href = `/docs/${route}`;
+  const href = `/docs/${slug}`;
   const redirects = {};
-  for (const [slug, index] of starts) {
-    redirects[slug] =
+  for (const [guideSlug, index] of starts) {
+    redirects[guideSlug] =
       index < sections.length ? `${href}#${anchors[index]}` : href;
+  }
+  for (const alias of [routeSlug(route), ...aliases]) {
+    if (alias !== slug) redirects[alias] = href;
   }
   return {
     page: {
-      topic: route,
-      title: node.title || route,
+      topic: slug,
+      title: title || node.title || route,
       description: node.summary || '',
       category: namespaceCategory(node.category, guideCategories),
       sections,

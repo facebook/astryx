@@ -79,6 +79,7 @@
  * queries they have nothing to do with.
  */
 
+import {withListingCache} from '../../foundation/fs/listing-cache.mjs';
 import {readDocView} from '../../foundation/doc-compiler/read.mjs';
 import {findCoreDir} from '../../foundation/fs/paths.mjs';
 import {
@@ -494,8 +495,9 @@ const STRONG_TOKEN_SCORE = 70;
  * {@link STRONG_TOKEN_SCORE} or above, or when it matches every word.
  *
  * A doc has priority when the reader asked for that doc:
- * - 2: the whole query spells the topic's name or its last route segment
- *   (`font setup` is typography/font-setup, `motion` is the motion guide);
+ * - 2: the whole query is the topic's name, its last route segment, or its
+ *   own title, as words and whatever the plural (`font setup` is
+ *   typography/font-setup, `side panel` is "Side panels");
  * - 1: a word of the query is the topic's name (`illustration` in a longer
  *   question is the illustrations guide);
  * - 1: the query holds one of the doc's titles whole (`resizable side panels`
@@ -525,13 +527,15 @@ export function domainPriority(term, tokens, candidate, hit) {
   const words = [term, ...tokens];
   if (candidate.domain === 'doc') {
     const topic = String(candidate._topic ?? candidate.name).toLowerCase();
-    const asWords = (/** @type {string} */ n) =>
-      n.replace(/[-_\s]+/g, ' ').trim();
-    const spelled = asWords(term);
-    if (
-      asWords(topic) === spelled ||
-      asWords(topic.slice(topic.lastIndexOf('/') + 1)) === spelled
-    ) {
+    // The whole query, read as words, is the topic's route, its last
+    // segment, or its own title, whatever the plural: `side panel` is
+    // layout/side-panels, and `header and footer` is "Headers and footers".
+    // A section's title is a heading inside a topic, not the topic's name.
+    const named = [topic, topic.slice(topic.lastIndexOf('/') + 1)];
+    if (candidate._section == null && candidate.titles?.[0]) {
+      named.push(candidate.titles[0]);
+    }
+    if (named.some(n => samePhrase(term, n))) {
       return 2;
     }
     if (
@@ -599,6 +603,24 @@ function samePhraseWord(a, b) {
     `${b}s` === a ||
     `${a}es` === b ||
     `${b}es` === a
+  );
+}
+
+/**
+ * Whether two phrases are the same words, in order, ignoring case,
+ * punctuation, and a plural on any word: `side panel` is "Side panels", and
+ * `headers and footers` is `header-and-footer`.
+ * @param {string} a
+ * @param {string} b
+ * @returns {boolean}
+ */
+function samePhrase(a, b) {
+  const x = phraseWords(a);
+  const y = phraseWords(b);
+  return (
+    x.length > 0 &&
+    x.length === y.length &&
+    x.every((w, k) => samePhraseWord(w, y[k]) || sameWord(w, y[k]))
   );
 }
 
@@ -1728,7 +1750,7 @@ function toResult(c, score, reason, matchedTerms, queryTerms) {
       result = {
         ...base,
         displayName: c._displayName,
-        command: `astryx theme add --import ${c.name}`,
+        command: `astryx theme add ${c.name}`,
       };
       break;
     default:
@@ -1748,6 +1770,17 @@ function toResult(c, score, reason, matchedTerms, queryTerms) {
  * @returns {Promise<import('./search.type.mjs').SearchResponse>}
  */
 export async function search(query, options = {}) {
+  // Every candidate resolves its source and docs by walking the same tree;
+  // read each directory once for this call.
+  return withListingCache(() => searchOnce(query, options));
+}
+
+/**
+ * @param {string} query
+ * @param {NonNullable<Parameters<typeof search>[1]>} options
+ * @returns {ReturnType<typeof search>}
+ */
+async function searchOnce(query, options) {
   const {cwd = process.cwd(), type, limit = 20} = options;
 
   if (!query || !String(query).trim()) {

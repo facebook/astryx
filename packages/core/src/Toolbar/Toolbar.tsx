@@ -6,7 +6,8 @@
  * @file Toolbar.tsx
  * @input Uses Section, SizeContext, useListFocus, useKeyboardHint, StyleX, spacingVars, sizeVars
  * @output Exports Toolbar component and ToolbarProps
- * @position Core implementation; consumed by index.ts
+ * @position Core implementation; consumed by index.ts. Owns toolbar focus and
+ *   keyboard navigation, excluding nested toolbars and popover contents.
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Toolbar/Toolbar.doc.mjs
@@ -248,6 +249,7 @@ export function Toolbar({
 
   const {listRef, handleKeyDown, handleFocus} = useListFocus<HTMLDivElement>({
     itemSelector: 'button, input, [tabindex]',
+    boundarySelector: '[role="toolbar"], [popover]',
     orientation,
     hasRovingTabIndex: true,
     hasCaretGuard: true,

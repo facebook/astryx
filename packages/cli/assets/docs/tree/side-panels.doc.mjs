@@ -22,7 +22,6 @@ export const docs = {
     'ResizeHandle',
     'useResizable',
     'EmptyState',
-    'hasDivider',
     'isScrollable',
     'detail panel',
     'split view',

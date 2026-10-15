@@ -51,7 +51,24 @@ const COMPONENT_REGISTRY_SOURCE = fs.readFileSync(
   COMPONENT_REGISTRY_PATH,
   'utf-8',
 );
-const CONFIGURED_CANARY_PACKAGES = new Set(docsiteConfig.integrations);
+const CONFIGURED_INTEGRATION_PACKAGES = new Set(docsiteConfig.integrations);
+
+/** The workspace manifest of a configured integration package. */
+function integrationManifest(name: string): {
+  private?: boolean;
+  astryx?: {canaryOnly?: boolean};
+} {
+  const entry = packages.find(pkg => pkg.name === name);
+  if (!entry) {
+    throw new Error(`${name} is missing from packageRegistry`);
+  }
+  return JSON.parse(
+    fs.readFileSync(
+      path.join(REPO_ROOT, entry.packagePath, 'package.json'),
+      'utf-8',
+    ),
+  );
+}
 
 function findFiles(dir: string, predicate: (filePath: string) => boolean) {
   const files: string[] = [];
@@ -132,8 +149,12 @@ describe('packageRegistry', () => {
     expect(names).not.toContain('@astryxdesign/theme-chocolate');
     expect(names).not.toContain('@astryxdesign/theme-daily');
     expect(names).not.toContain('@astryxdesign/build');
+    // Every canary-only package is a configured integration; a configured
+    // integration that is a stable release (no `astryx.canaryOnly`) is not.
     expect(packages.filter(pkg => pkg.canaryOnly).map(pkg => pkg.name)).toEqual(
-      [...CONFIGURED_CANARY_PACKAGES].sort(),
+      [...CONFIGURED_INTEGRATION_PACKAGES]
+        .filter(name => integrationManifest(name).astryx?.canaryOnly === true)
+        .sort(),
     );
     expect(packages.length).toBeGreaterThanOrEqual(9);
   });
@@ -263,14 +284,18 @@ describe('componentRegistry', () => {
       'VegaChart',
     ]);
 
+    // Components of a canary-only integration are not ready; components of a
+    // configured integration that is a stable release are, like Core's.
     for (const packageName of [
       '@astryxdesign/lab',
       '@astryxdesign/charts',
       '@astryxdesign/richtext',
       '@astryxdesign/vega',
     ]) {
+      const isReady =
+        integrationManifest(packageName).astryx?.canaryOnly !== true;
       expect(
-        components[packageName].every(comp => !comp.isReady),
+        components[packageName].every(comp => comp.isReady === isReady),
         packageName,
       ).toBe(true);
     }

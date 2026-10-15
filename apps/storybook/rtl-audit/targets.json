@@ -39,6 +39,15 @@
     }
   },
   {
+    "component": "CommandPaletteInput",
+    "storyId": "core-commandpaletteinput--standalone",
+    "dims": ["D2"],
+    "selectors": {
+      "prev": ".astryx-command-palette-input > span:first-child",
+      "next": "[data-testid=\"input-end-content\"]"
+    }
+  },
+  {
     "component": "Center",
     "storyId": "core-center--padding-per-edge",
     "dims": ["D8"],
@@ -130,6 +139,15 @@
     }
   },
   {
+    "component": "DateInput",
+    "storyId": "core-dateinput--clearable",
+    "dims": ["D2"],
+    "selectors": {
+      "prev": "button[aria-label=\"Open calendar\"]",
+      "next": "button[aria-label=\"Clear Event date\"]"
+    }
+  },
+  {
     "component": "Carousel",
     "storyId": "core-carousel--default",
     "dims": ["D3"],
@@ -183,6 +201,15 @@
     "component": "ChatSendButton",
     "storyId": "core-chatcomposer--with-streaming",
     "dims": []
+  },
+  {
+    "component": "ContextMenuItem",
+    "storyId": "core-contextmenuitem--states",
+    "dims": ["D2"],
+    "selectors": {
+      "prev": ".astryx-dropdown-menu-item .astryx-icon",
+      "next": "[data-testid=\"context-menu-item-end-content\"]"
+    }
   },
   {
     "component": "DropdownMenu",
@@ -501,6 +528,11 @@
       "prev": ".astryx-avatar-group > .astryx-avatar:first-child",
       "next": ".astryx-avatar-group-overflow"
     }
+  },
+  {
+    "component": "CommandPaletteItem",
+    "storyId": "core-commandpaletteitem--states",
+    "dims": []
   },
   {
     "component": "CommandPaletteFooter",

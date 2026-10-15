@@ -133,6 +133,75 @@ describe('a flat topic split into a docs-tree namespace', () => {
   });
 });
 
+describe('a page for part of a namespace', () => {
+  const nested = async (
+    route?: string,
+    _section?: string,
+    options: {depth?: number | 'all'} = {},
+  ) => {
+    const guideNode = (r: string, title: string) => ({
+      route: r,
+      kind: 'generic',
+      title,
+      sections: [section(title)],
+    });
+    if (route === 'kit/guides' && options.depth === 'all') {
+      return {
+        type: 'docs.node',
+        data: {
+          route: 'kit/guides',
+          kind: 'namespace',
+          title: 'Guides',
+          summary: 'Kit guides.',
+          content: [],
+          slots: [
+            {
+              name: 'guides',
+              children: [
+                guideNode('kit/guides/start', 'Start'),
+                {
+                  route: 'kit/guides/docs',
+                  kind: 'namespace',
+                  title: 'Docs',
+                  content: [],
+                  slots: [
+                    {
+                      name: 'guides',
+                      children: [guideNode('kit/guides/docs/write', 'Write')],
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+      };
+    }
+    return {type: 'docs.detail', data: {category: 'guide', sections: []}};
+  };
+
+  it('takes its own slug and title, leaves out what another page holds, and redirects older slugs', async () => {
+    const result = await namespacePage(nested, 'kit/guides', {
+      slug: 'kit-guide',
+      title: 'Kit Guide',
+      except: ['kit/guides/docs'],
+      aliases: ['kit-overview'],
+    });
+    expect(result?.page).toMatchObject({
+      topic: 'kit-guide',
+      title: 'Kit Guide',
+      category: 'guide',
+    });
+    const page = result?.page as {sections: Array<{title: string}>};
+    expect(page.sections.map(s => s.title)).toEqual(['Start']);
+    expect(result?.redirects).toEqual({
+      'kit-guides-start': '/docs/kit-guide#start',
+      'kit-guides': '/docs/kit-guide',
+      'kit-overview': '/docs/kit-guide',
+    });
+  });
+});
+
 describe('namespaceCategory', () => {
   it('prefers the namespace, then foundations only when every guide is', () => {
     expect(namespaceCategory('guide', ['foundations'])).toBe('guide');

@@ -6,6 +6,7 @@
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import {listDir, listDirEntries, pathExists} from '../fs/listing-cache.mjs';
 import {existsCaseExact} from '../fs/paths.mjs';
 import {CORE_PROVIDER_ID} from '../identity/providers.mjs';
 import {loadComponentDoc} from './component-loader.mjs';
@@ -52,8 +53,8 @@ function isComponentSourceFile(fileName, dirPath) {
   if (BARE_COMPONENT_FILE_RE.test(fileName)) {
     const base = fileName.replace(/\.tsx$/, '');
     return (
-      fs.existsSync(path.join(dirPath, `${base}.doc.mjs`)) ||
-      fs.existsSync(path.join(dirPath, `XDS${base}.doc.mjs`))
+      pathExists(path.join(dirPath, `${base}.doc.mjs`)) ||
+      pathExists(path.join(dirPath, `XDS${base}.doc.mjs`))
     );
   }
   return false;
@@ -132,8 +133,8 @@ export function discoverComponents(coreDir) {
   function collectXDSFiles(dirPath) {
     /** @type {string[]} */
     const results = [];
-    if (!fs.existsSync(dirPath)) return results;
-    const entries = fs.readdirSync(dirPath, {withFileTypes: true});
+    if (!pathExists(dirPath)) return results;
+    const entries = listDirEntries(dirPath);
     for (const entry of entries) {
       if (entry.isDirectory()) {
         results.push(...collectXDSFiles(path.join(dirPath, entry.name)));
@@ -144,7 +145,7 @@ export function discoverComponents(coreDir) {
     return results;
   }
 
-  const topEntries = fs.readdirSync(srcDir, {withFileTypes: true});
+  const topEntries = listDirEntries(srcDir);
   for (const entry of topEntries) {
     if (!entry.isDirectory() || SKIP_DIRS.has(entry.name)) continue;
 
@@ -154,10 +155,10 @@ export function discoverComponents(coreDir) {
     // Read the group from the directory's .doc.mjs file (if it exists)
     // Check both {Name}.doc.mjs and Astryx{Name}.doc.mjs naming conventions
     let docFile = path.join(dirPath, `${entry.name}.doc.mjs`);
-    if (!fs.existsSync(docFile)) {
+    if (!pathExists(docFile)) {
       docFile = path.join(dirPath, `XDS${entry.name}.doc.mjs`);
     }
-    const {group, hiddenComponents, hidden} = fs.existsSync(docFile)
+    const {group, hiddenComponents, hidden} = pathExists(docFile)
       ? readDocMeta(docFile)
       : {group: null, hiddenComponents: new Set(), hidden: false};
 
@@ -171,10 +172,10 @@ export function discoverComponents(coreDir) {
       // Check for a per-component doc file that overrides the directory group
       let compGroup = group;
       let compDoc = path.join(dirPath, `${componentName}.doc.mjs`);
-      if (!fs.existsSync(compDoc)) {
+      if (!pathExists(compDoc)) {
         compDoc = path.join(dirPath, `XDS${componentName}.doc.mjs`);
       }
-      const hasComponentDoc = fs.existsSync(compDoc);
+      const hasComponentDoc = pathExists(compDoc);
       if (hasComponentDoc) {
         const compMeta = readDocMeta(compDoc);
         if (compMeta.group) compGroup = compMeta.group;
@@ -183,7 +184,7 @@ export function discoverComponents(coreDir) {
       // Skip components without any .doc.mjs file (directory-level or
       // component-level). They can't be documented, so surfacing them in
       // the component list leads to broken docs-site links.
-      if (!fs.existsSync(docFile) && !hasComponentDoc) continue;
+      if (!pathExists(docFile) && !hasComponentDoc) continue;
 
       if (!componentGroups.has(componentName)) {
         componentGroups.set(componentName, compGroup);
@@ -251,7 +252,7 @@ export function findComponentReadme(coreDir, name) {
   if (existsCaseExact(directXds, srcDir)) return directXds;
 
   // Nested match: src/*/{name}/{Name}.doc.mjs or src/*/{name}/Astryx{Name}.doc.mjs
-  const entries = fs.readdirSync(srcDir, {withFileTypes: true});
+  const entries = listDirEntries(srcDir);
   for (const entry of entries) {
     if (!entry.isDirectory()) continue;
     const nested = path.join(srcDir, entry.name, name, exactDoc);
@@ -275,7 +276,7 @@ export function findComponentReadme(coreDir, name) {
   if (sourcePath) {
     let dir = path.dirname(sourcePath);
     while (dir.startsWith(srcDir)) {
-      const dirEntries = fs.readdirSync(dir);
+      const dirEntries = listDir(dir);
       for (const f of dirEntries) {
         if (f.endsWith('.doc.mjs')) return path.join(dir, f);
       }
@@ -318,8 +319,8 @@ export function findComponentSource(coreDir, name) {
    * @returns {string | null}
    */
   function searchDir(dirPath) {
-    if (!fs.existsSync(dirPath)) return null;
-    const entries = fs.readdirSync(dirPath, {withFileTypes: true});
+    if (!pathExists(dirPath)) return null;
+    const entries = listDirEntries(dirPath);
 
     // Check for an exact match (prefixed or bare) first
     for (const candidate of candidateFiles) {
@@ -345,7 +346,7 @@ export function findComponentSource(coreDir, name) {
   }
 
   // Search nested (component might be under a parent dir)
-  const entries = fs.readdirSync(srcDir, {withFileTypes: true});
+  const entries = listDirEntries(srcDir);
   for (const entry of entries) {
     if (!entry.isDirectory()) continue;
     const nestedDir = path.join(srcDir, entry.name, name);
@@ -369,7 +370,7 @@ export function findComponentSource(coreDir, name) {
 export function resolveImportPath(coreDir, componentName) {
   const srcDir = path.join(coreDir, 'src');
   const pkgPath = path.join(coreDir, 'package.json');
-  const pkg = fs.existsSync(pkgPath)
+  const pkg = pathExists(pkgPath)
     ? JSON.parse(fs.readFileSync(pkgPath, 'utf-8'))
     : null;
 
@@ -522,14 +523,14 @@ function readPackageExports(packageDir) {
  * @returns {Record<string, string[]>}
  */
 export function discoverExternalComponentsGrouped(docsDir) {
-  if (!fs.existsSync(docsDir)) return {};
+  if (!pathExists(docsDir)) return {};
 
   /** @type {Map<string, string|null>} componentName → group */
   const componentGroups = new Map();
 
   /** @param {string} dirPath */
   function scanDir(dirPath) {
-    const entries = fs.readdirSync(dirPath, {withFileTypes: true});
+    const entries = listDirEntries(dirPath);
     for (const entry of entries) {
       if (entry.name === 'node_modules' || entry.name === '__tests__') continue;
       const fullPath = path.join(dirPath, entry.name);
@@ -593,7 +594,7 @@ export function discoverExternalComponentsGrouped(docsDir) {
  * @returns {string | null}
  */
 export function findExternalComponentDoc(docsDir, name) {
-  if (!fs.existsSync(docsDir)) return null;
+  if (!pathExists(docsDir)) return null;
   const target = `${name}.doc.mjs`;
 
   /**
@@ -601,7 +602,7 @@ export function findExternalComponentDoc(docsDir, name) {
    * @returns {string | null}
    */
   function scanDir(dirPath) {
-    const entries = fs.readdirSync(dirPath, {withFileTypes: true});
+    const entries = listDirEntries(dirPath);
     for (const entry of entries) {
       if (entry.name === 'node_modules' || entry.name === '__tests__') continue;
       const fullPath = path.join(dirPath, entry.name);
@@ -642,7 +643,7 @@ function integrationSourceForDoc(docPath) {
   const dir = path.dirname(docPath);
   const base = path.basename(docPath).replace(/\.doc\.(ts|mjs|js)$/, '');
   const candidate = path.join(dir, `${base}.tsx`);
-  return fs.existsSync(candidate) ? candidate : null;
+  return pathExists(candidate) ? candidate : null;
 }
 
 /**
@@ -656,14 +657,14 @@ function integrationSourceForDoc(docPath) {
  */
 export function discoverIntegrationComponents(integration) {
   const componentsDir = integration?.components;
-  if (!componentsDir || !fs.existsSync(componentsDir)) return [];
+  if (!componentsDir || !pathExists(componentsDir)) return [];
 
   /** @type {Map<string, {name: string, package: string, docPath: string, sourcePath: string|null, issuesUrl: string|undefined, group: string|null}>} */
   const byName = new Map();
 
   /** @param {string} dirPath */
   function scanDir(dirPath) {
-    const entries = fs.readdirSync(dirPath, {withFileTypes: true});
+    const entries = listDirEntries(dirPath);
     for (const entry of entries) {
       if (entry.name === 'node_modules' || entry.name === '__tests__') continue;
       const fullPath = path.join(dirPath, entry.name);
@@ -757,18 +758,18 @@ export async function discoverValidIntegrationComponents(integration) {
  */
 export function findIntegrationComponentDoc(integration, name) {
   const componentsDir = integration?.components;
-  if (!componentsDir || !fs.existsSync(componentsDir)) return null;
+  if (!componentsDir || !pathExists(componentsDir)) return null;
 
   /**
    * @param {string} dirPath
    * @returns {string | null}
    */
   function scanDir(dirPath) {
-    const entries = fs.readdirSync(dirPath, {withFileTypes: true});
+    const entries = listDirEntries(dirPath);
     // Exact same-stem match (precedence order) first in this dir.
     for (const suffix of INTEGRATION_DOC_SUFFIXES) {
       const candidate = path.join(dirPath, `${name}${suffix}`);
-      if (fs.existsSync(candidate)) return candidate;
+      if (pathExists(candidate)) return candidate;
     }
     for (const entry of entries) {
       if (entry.name === 'node_modules' || entry.name === '__tests__') continue;

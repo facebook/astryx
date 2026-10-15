@@ -145,6 +145,76 @@ function evidenceIn(dir) {
  */
 
 /**
+ * What one directory's own files say about its package manager, by the rules
+ * {@link explainPackageManager} applies within a directory (declared field,
+ * then a single lockfile, then committed config when lockfiles tie). Returns
+ * null when the directory has neither a declaration nor a lockfile, so a caller
+ * walking up keeps looking. An ambiguous directory reports `ambiguous: true`
+ * with the lockfiles that disagree, so a caller can name them.
+ * @param {string} dir
+ * @returns {(Omit<PackageManagerResolution, 'dir'> & {lockfiles: FoundLockfile[]}) | null}
+ */
+export function decidePackageManagerIn(dir) {
+  const locks = lockfilesIn(dir);
+  const candidates = locks.map(lock => lock.pm);
+  const declared = declaredPackageManager(dir);
+
+  // The project declared one. Nothing on the filesystem outranks that.
+  if (declared) {
+    return {
+      pm: declared,
+      ambiguous: false,
+      candidates,
+      declared,
+      source: 'declared',
+      lockfiles: locks,
+      strayLockfiles: locks.filter(lock => lock.pm !== declared),
+    };
+  }
+
+  // One lockfile is unambiguous.
+  if (locks.length === 1) {
+    return {
+      pm: locks[0].pm,
+      ambiguous: false,
+      candidates,
+      declared: null,
+      source: 'lockfile',
+      lockfiles: locks,
+      strayLockfiles: [],
+    };
+  }
+
+  // Several lockfiles and no declaration: the filesystem cannot say. Only a
+  // file the project committed on purpose can.
+  if (locks.length > 1) {
+    const evidence = evidenceIn(dir).filter(pm => candidates.includes(pm));
+    if (evidence.length === 1) {
+      return {
+        pm: evidence[0],
+        ambiguous: false,
+        candidates,
+        declared: null,
+        source: 'evidence',
+        lockfiles: locks,
+        strayLockfiles: [],
+      };
+    }
+    return {
+      pm: 'npx',
+      ambiguous: true,
+      candidates,
+      declared: null,
+      source: 'none',
+      lockfiles: locks,
+      strayLockfiles: [],
+    };
+  }
+
+  return null;
+}
+
+/**
  * Detect the project's package manager, with the reasoning attached.
  * Walks up from targetDir, taking the first directory that answers.
  *
@@ -182,59 +252,16 @@ export function explainPackageManager(targetDir = process.cwd()) {
   const root = path.parse(dir).root;
 
   while (dir !== root) {
-    const locks = lockfilesIn(dir);
-    const candidates = locks.map(lock => lock.pm);
-    const declared = declaredPackageManager(dir);
-
-    // 1. The project declared one. Nothing on the filesystem outranks that.
-    if (declared) {
+    const decision = decidePackageManagerIn(dir);
+    if (decision) {
       return {
-        pm: declared,
-        ambiguous: false,
+        pm: decision.pm,
+        ambiguous: decision.ambiguous,
         dir,
-        candidates,
-        declared,
-        source: 'declared',
-        strayLockfiles: locks.filter(lock => lock.pm !== declared),
-      };
-    }
-
-    // 2. One lockfile is unambiguous.
-    if (locks.length === 1) {
-      return {
-        pm: locks[0].pm,
-        ambiguous: false,
-        dir,
-        candidates,
-        declared: null,
-        source: 'lockfile',
-        strayLockfiles: [],
-      };
-    }
-
-    // 3. Several lockfiles and no declaration: the filesystem cannot say.
-    //    Only a file the project committed on purpose can.
-    if (locks.length > 1) {
-      const evidence = evidenceIn(dir).filter(pm => candidates.includes(pm));
-      if (evidence.length === 1) {
-        return {
-          pm: evidence[0],
-          ambiguous: false,
-          dir,
-          candidates,
-          declared: null,
-          source: 'evidence',
-          strayLockfiles: [],
-        };
-      }
-      return {
-        pm: 'npx',
-        ambiguous: true,
-        dir,
-        candidates,
-        declared: null,
-        source: 'none',
-        strayLockfiles: [],
+        candidates: decision.candidates,
+        declared: decision.declared,
+        source: decision.source,
+        strayLockfiles: decision.strayLockfiles,
       };
     }
 
@@ -279,11 +306,15 @@ export function detectPackageManager(targetDir = process.cwd()) {
 export function getRunPrefix(targetDir) {
   const pm = detectPackageManager(targetDir);
   switch (pm) {
-    case 'yarn': return 'yarn';
-    case 'pnpm': return 'pnpm exec';
-    case 'bun': return 'bunx';
+    case 'yarn':
+      return 'yarn';
+    case 'pnpm':
+      return 'pnpm exec';
+    case 'bun':
+      return 'bunx';
     case 'npm':
-    default: return 'npx';
+    default:
+      return 'npx';
   }
 }
 
@@ -310,11 +341,15 @@ export const CLI_BIN = 'astryx';
 export function getDlxPrefix(targetDir) {
   const resolution = explainPackageManager(targetDir);
   switch (resolution.pm) {
-    case 'yarn': return isYarnClassic(resolution) ? 'npx' : 'yarn dlx';
-    case 'pnpm': return 'pnpm dlx';
-    case 'bun': return 'bunx';
+    case 'yarn':
+      return isYarnClassic(resolution) ? 'npx' : 'yarn dlx';
+    case 'pnpm':
+      return 'pnpm dlx';
+    case 'bun':
+      return 'bunx';
     case 'npm':
-    default: return 'npx';
+    default:
+      return 'npx';
   }
 }
 
@@ -343,7 +378,9 @@ function isYarnClassic({dir}) {
     if (fs.existsSync(path.join(dir, '.yarnrc.yml'))) return false;
     if (fs.existsSync(path.join(dir, '.yarnrc'))) return true;
   }
-  const agent = /^yarn\/(\d+)\./.exec(String(process.env.npm_config_user_agent ?? ''));
+  const agent = /^yarn\/(\d+)\./.exec(
+    String(process.env.npm_config_user_agent ?? ''),
+  );
   return agent ? agent[1] === '1' : false;
 }
 
@@ -354,8 +391,12 @@ function isYarnClassic({dir}) {
  */
 function declaredYarnMajor(dir) {
   try {
-    const pkg = JSON.parse(fs.readFileSync(path.join(dir, 'package.json'), 'utf-8'));
-    const match = /^yarn@(\d+)(?:[.+]|$)/.exec(String(pkg.packageManager ?? ''));
+    const pkg = JSON.parse(
+      fs.readFileSync(path.join(dir, 'package.json'), 'utf-8'),
+    );
+    const match = /^yarn@(\d+)(?:[.+]|$)/.exec(
+      String(pkg.packageManager ?? ''),
+    );
     return match ? Number(match[1]) : null;
   } catch {
     // Best-effort: no package.json, or an unreadable one.
@@ -465,7 +506,9 @@ export function getCliInvocation(targetDir) {
  * @returns {string}
  */
 export function formatCliCommand(command, targetDir) {
-  const sub = String(command).replace(/^\s*astryx\b\s*/, '').trim();
+  const sub = String(command)
+    .replace(/^\s*astryx\b\s*/, '')
+    .trim();
   const stem = getCliInvocation(targetDir);
   return sub ? `${stem} ${sub}` : stem;
 }

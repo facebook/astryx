@@ -16,6 +16,7 @@ applies_to:
     packages/core/src/Dialog/,
     packages/core/src/Drawer/,
     packages/core/src/DropdownMenu/,
+    packages/core/src/ContextMenu/,
     packages/core/src/Tooltip/,
     packages/core/src/HoverCard/,
     packages/core/src/Toast/,
@@ -34,11 +35,14 @@ verified_by:
     packages/core/src/Layer/layerDismissalInvariants.test.tsx,
     packages/core/src/Popover/Popover.test.tsx,
     packages/core/src/DropdownMenu/DropdownMenu.test.tsx,
+    packages/core/src/ContextMenu/ContextMenu.test.tsx,
     packages/core/src/DropdownMenu/DropdownMenuSubMenu.test.tsx,
     packages/core/src/BottomSheet/BottomSheetSwitcher.test.tsx,
+    packages/core/src/CommandPalette/CommandPalette.test.tsx,
     packages/core/src/hooks/useFocusTrap.test.tsx,
     packages/core/src/hooks/useMenuHover.test.tsx,
     packages/core/src/Toast/ToastViewport.test.tsx,
+    packages/core/src/Toast/ToastViewport.modalHost.test.tsx,
   ]
 deciding_specs: [spec:AST-038, spec:AST-059]
 ---
@@ -237,13 +241,14 @@ contract. The current shared stack registers present layers with `close` or
 active-cycle registration sequence. `useFocusTrap` adapts an active trap with `onEscape` into
 that stack.
 
-Tooltip, HoverCard, Dialog, Drawer, Popover, DropdownMenu, Lightbox,
-MobileNav, and BottomSheetSwitcher all register with the shared stack. Tooltip
-and HoverCard report current DOM presence; Popover and DropdownMenu register
-through `useFocusTrap`; Dialog, Lightbox, MobileNav, BottomSheetSwitcher, and
-Drawer additionally ask `shouldDismissOnCloseRequest()` before acting on
-native platform close requests. Other family members still use local Escape
-handling as listed in `family:overlay-dismissal`.
+Tooltip, HoverCard, Dialog, Drawer, Popover, DropdownMenu, ContextMenu,
+Lightbox, MobileNav, BottomSheet, and BottomSheetSwitcher all register with the shared
+stack. Tooltip and HoverCard report current DOM presence; Popover and
+DropdownMenu register through `useFocusTrap`; Dialog, Lightbox, MobileNav,
+BottomSheet, BottomSheetSwitcher, and Drawer additionally ask
+`shouldDismissOnCloseRequest()` before acting on native platform close
+requests. Other family members still use local Escape handling as listed in
+`family:overlay-dismissal`.
 
 Outside interaction is not coordinated by the shared stack. Current paths are
 independent:
@@ -264,9 +269,9 @@ current `main`.
 ### Layer content boundary — AST-038 implementation projection
 
 [AST-038](../specs/AST-038-layer-text-boundary/spec.md) owns the reading baseline
-and surface/group boundary. This implementation resets layer-root text and whole
-React contexts carrying surface/group membership; structural CSS isolation is
-incomplete.
+and surface/group boundary. This implementation resets layer-root text, whole
+React contexts carrying surface/group membership, and named structural custom
+properties; structural CSS isolation covers only the channels it names.
 
 The shared private text baseline is applied in both `useLayer` renderers and the
 Dialog, Lightbox, MobileNav, BottomSheetPanel, and ToastViewport content roots.
@@ -293,10 +298,14 @@ private content boundary, so whole-context isolation for Drawer is not
 implemented. This is a remaining gap, not a claim of complete provider
 isolation.
 
-Structural custom-property channels remain outside this implementation. A layer
-opened from supported `Step.children` content can contain an inner Stepper that
-still inherits the outer `--step-connector-gap`. React membership ends, but this
-connector-layout inheritance remains a structural isolation gap.
+The private structural reset sits beside the text baseline on the same content
+roots and stops each structural custom property it names by setting it to
+`initial`. It names `--step-connector-gap`, so an inner Stepper in a layer opened
+from `Step.children` content starts from the connector's 0px fallback; a value
+set on that Stepper, through its `stepper` target, or by a caller style on the
+layer root still applies. It never resets by prefix, so theme tokens and writing
+context keep inheriting. A structural channel it does not name still inherits
+into layer content.
 
 Existing component behavior checks cover membership exit, explicit inner owners,
 unrelated context continuity, and state/focus retention. Browser evidence covers
@@ -309,14 +318,21 @@ general portal host for all layers. Without a provider, `useToast` creates a
 separate React root under `document.body` and mirrors root theme attributes onto
 it.
 
-ToastViewport uses `popover="manual"` for top-layer promotion and documents an
-above-dialog intent. A body-level manual popover remains behind an active native
-modal, so the current root/fallback host does not fulfill that intent. Toast
-state also lives inside the viewport.
+ToastViewport uses `popover="manual"` for top-layer promotion. Each open modal
+Dialog supplies its `<dialog>` as an outlet through the private
+`Layer/modalOutlet.ts` registry. A top-layer viewport renders into a host element
+it owns, moves that host into the latest open outlet, returns it to the
+viewport's tree position when no Dialog is open, and enters the top layer again
+after each move. Toasts therefore paint above the Dialog and stay operable inside
+it. Moving the host does not remount the rows, so entries, timers, and focus
+handoff survive. Toast state lives inside the viewport. A viewport rendered with
+`isTopLayer={false}` stays in place.
 
 CommandPalette composes native Dialog. Its normal launcher presentation therefore
-uses `showModal()`; its documentation/showcase `isInline` path does not. It
-currently handles Escape on its own element as well as composing Dialog.
+uses `showModal()`; its documentation/showcase `isInline` path does not. The
+modal path delegates Escape to Dialog's shared dismissal registration. Only the
+inline preview closes from CommandPalette's local key handler because it is not a
+registered layer.
 
 Banner and FieldStatus are in-flow. `useAnnounce` is nonvisual. AlertDialog,
 imperative Dialog, Lightbox, and ordinary Popover-family surfaces are
@@ -382,8 +398,8 @@ Current gaps are observable facts, not current target behavior:
   nested child branch through shared infrastructure.
 - Backdrop, manual outside, touch, and swipe paths do not share the existing
   gesture claim or one association model.
-- Toast's root and fallback hosts remain behind active native modals.
-- CommandPalette's local Escape handler bypasses shared owner selection.
+- Toast's root and fallback hosts remain behind the other native modals:
+  Lightbox, MobileNav, and a scrim BottomSheet or BottomSheetSwitcher.
 - The reduced browser fallback is not documented as non-equivalent.
 - Existing tests simulate Popover `toggle` and DOM nesting; they do not prove
   native pointer light dismissal, top-layer/modal ordering, real anchor geometry,
@@ -425,6 +441,9 @@ be updated only as that work ships.
   anchor/fixed/custom rendering, trigger source, and current same-gesture memory.
 - `Layer/layerHost.ts` owns safe inline versus nearest corrective portal placement.
 - `Layer/anchorName.ts` owns composition of anchor names on one trigger.
+- `Layer/layerTextReset.stylex.ts` owns the text baseline and
+  `Layer/layerStructureReset.stylex.ts` owns the named structural custom-property
+  reset applied on layer content roots.
 - `Layer/layerViewportInset.stylex.ts` owns the gutter and the viewport caps;
   `Layer/layerSlideRules.ts` owns the slide options' `@position-try` rules;
   `LayerProvider` publishes the declared inset through `LayerContext`, and
@@ -484,7 +503,7 @@ this current architecture record.
 | INV6, INV7 | `useLayer.test.tsx`, `Popover.test.tsx`, `DropdownMenu.test.tsx`, and `useMenuHover.test.tsx`                                                               | Duplicate close callback or the same press/re-hover reopens a surface                                                                                                                                         |
 | INV8       | `useLayerDismissal.test.tsx`, `layerDismissalInvariants.test.tsx`, and `useFocusTrap.test.tsx`                                                              | Current top registered layer is skipped, two layers close, or a blocker leaks through                                                                                                                         |
 | INV9       | Representative Dialog, ContextMenu, Tooltip/HoverCard, and BottomSheet source/tests                                                                         | A current local channel silently changes ownership or policy                                                                                                                                                  |
-| INV10      | `LayerProvider.tsx`, `LayerProvider.test.tsx`, `useToast.tsx`, and `ToastViewport.test.tsx`                                                                 | Provider begins relocating ordinary layers, Toast fallback loses its current lifecycle, or a default provider renders differently from no provider                                                            |
+| INV10      | `LayerProvider.tsx`, `LayerProvider.test.tsx`, `useToast.tsx`, `ToastViewport.test.tsx`, and `ToastViewport.modalHost.test.tsx`                             | Provider begins relocating ordinary layers, Toast fallback loses its current lifecycle, or a default provider renders differently from no provider                                                            |
 
 Current unit coverage proves emitted styles, reducers, state transitions, and DOM
 placement. Native Popover, `<dialog>`, focus, top-layer ordering, and rendered

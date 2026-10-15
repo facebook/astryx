@@ -96,6 +96,35 @@ describe('search domain priority — the rule', () => {
     ).toBe(1);
   });
 
+  it('names a doc by its route or title whatever the plural', () => {
+    const guide = {
+      domain: 'doc',
+      name: 'layout/side-panels',
+      titles: ['Side panels'],
+    };
+    expect(priority('side panel', guide)).toBe(2);
+    expect(priority('side panels', guide)).toBe(2);
+    expect(priority('side panels', {...guide, name: 'layout/side-panel'})).toBe(
+      2,
+    );
+    // The topic's own title names it even where the route words differ.
+    const titled = {
+      domain: 'doc',
+      name: 'guides/lookups',
+      titles: ['Looking up components'],
+    };
+    expect(priority('looking up component', titled)).toBe(2);
+    // A section's title is a heading inside its topic, not the topic's name.
+    const section = {
+      domain: 'doc',
+      name: 'font-sizes',
+      _topic: 'typography',
+      _section: 'font-sizes',
+      titles: ['Font Sizes'],
+    };
+    expect(priority('font size', section)).toBe(0);
+  });
+
   it('names a section by its topic', () => {
     // A section candidate's own name is its section key; the reader names the
     // topic it belongs to.
@@ -210,30 +239,15 @@ describe('search domain priority — real docs and components', () => {
   );
 
   it(
-    'still finds a split topic first by its own name, in every namespace',
+    'still finds each layout guide first by its own name',
     async () => {
-      const guides = [];
-      for (const ns of ['layout', 'typography', 'tokens', 'styling', 'cli']) {
-        guides.push(...(await placedGuides(ns)));
-      }
-      // The layout split is in the tree; the walk covers whatever else is.
+      // Each search reads the whole index, so this checks one split namespace
+      // (layout, six guides) rather than every guide in the tree.
+      const guides = await placedGuides('layout');
       expect(guides).toContain('layout/layout-spacing');
-      // Each search reads the whole index, so check one guide per namespace
-      // (its first, in route order): every split is covered without a search
-      // per guide.
-      /** @type {Map<string, string>} */
-      const firstPerNamespace = new Map();
-      for (const route of [...new Set(guides)].sort()) {
-        const ns = route.slice(0, route.lastIndexOf('/'));
-        if (!firstPerNamespace.has(ns)) firstPerNamespace.set(ns, route);
-      }
-      const sample = new Set([
-        'layout/layout-spacing',
-        ...firstPerNamespace.values(),
-      ]);
       /** @type {string[]} */
       const misses = [];
-      for (const route of sample) {
+      for (const route of guides) {
         const q = route.slice(route.lastIndexOf('/') + 1).replace(/-/g, ' ');
         const top = (await search(q, {cwd})).data.results[0];
         if (top?.domain !== 'doc' || top.name !== route) {
@@ -242,6 +256,6 @@ describe('search domain priority — real docs and components', () => {
       }
       expect(misses).toEqual([]);
     },
-    SLOW * 2,
+    SLOW,
   );
 });

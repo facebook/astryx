@@ -50,6 +50,7 @@ import {
 import {mergeProps, themeProps} from '../utils';
 import {focusOutlineStyles} from '../utils/focusOutline.stylex';
 import {layerTextReset} from '../Layer/layerTextReset.stylex';
+import {layerStructureReset} from '../Layer/layerStructureReset.stylex';
 import {LayerContentBoundary} from '../Layer/layerScopedContext';
 import {container} from '../Layout/container.stylex';
 import type {SpacingToken} from '../Layout/container.stylex';
@@ -255,7 +256,6 @@ const styles = stylex.create({
     // observed box grow with async content beyond a fixed-height viewport.
     // This box is also the sheet's container: it carries the padding and
     // publishes it, so a lone Section child escapes it exactly as in Dialog.
-    // Unpadded unless the prop or the theme sets padding.
     display: 'flow-root',
     boxSizing: 'border-box',
     height: '100%',
@@ -302,7 +302,7 @@ interface BottomSheetPanelProps extends BaseProps<HTMLDivElement> {
   children: ReactNode;
   /**
    * Content padding on the spacing scale. Omitted, the content box reads the
-   * theme's bottom-sheet padding, else none (the released default).
+   * theme's bottom-sheet padding, then --spacing-4 (Dialog's default).
    */
   padding?: SpacingStep;
   snapPoints?: ReadonlyArray<BottomSheetSnapPoint>;
@@ -626,7 +626,7 @@ export function BottomSheetPanel({
   }, [motion]);
 
   // Same lowering as Dialog: with no padding prop the content box reads the
-  // theme's --astryx-bottom-sheet-padding chain (no padding when unset), else
+  // theme's --astryx-bottom-sheet-padding chain (--spacing-4 when unset), else
   // the explicit step.
   const usesThemePadding = padding == null;
   const effectivePadding = padding ?? 4;
@@ -713,6 +713,7 @@ export function BottomSheetPanel({
         themeProps('bottom-sheet'),
         stylex.props(
           layerTextReset.reset,
+          layerStructureReset.reset,
           styles.sheet,
           overlayPaddingReset.reset,
           height === 'hug' ? styles.hugHeight : styles.budget,

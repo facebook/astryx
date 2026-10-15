@@ -41,7 +41,7 @@ export default {
       content: [
         {
           type: 'prose',
-          text: 'Install @acme/astryx-widgets, then run astryx theme add ocean --import --package @acme/astryx-widgets and apply it from the generated app theme module.',
+          text: 'Install @acme/astryx-widgets, then run astryx theme add ocean --package @acme/astryx-widgets and apply it from the generated app theme module.',
         },
       ],
     },
@@ -50,7 +50,7 @@ export default {
         },
         {
           type: 'prose',
-          text: 'Keep the section short: how to install the package, run `theme add --import`, apply the generated module ({@link generic:use-a-theme-in-an-app}), and customize with `extends`. When the theme uses a custom font, name the families and the optional exported font stylesheet that `theme add --import` imports ({@link generic:fonts-and-assets}). Extend `theme` rather than a topic another package replaces, or an app that lists that package first drops your section.',
+          text: 'Keep the section short: how to install the package, run `theme add`, apply the generated module ({@link generic:use-a-theme-in-an-app}), and customize with `extends`. When the theme uses a custom font, name the families and the optional exported font stylesheet that `theme add` imports ({@link generic:fonts-and-assets}). Extend `theme` rather than a topic another package replaces, or an app that lists that package first drops your section.',
         },
       ],
     },

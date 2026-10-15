@@ -87,6 +87,46 @@ export const Default: Story = {
   ),
 };
 
+export const PointerPresentation: Story = {
+  name: 'Presentation / pointer menu',
+  tags: ['visual-theme-matrix'],
+  render: () => (
+    <ContextMenu
+      data-testid="pointer-context-menu"
+      label="Document actions"
+      items={[
+        {label: 'Edit', icon: PencilIcon, onClick: () => {}},
+        {
+          label: 'Duplicate',
+          icon: DocumentDuplicateIcon,
+          onClick: () => {},
+        },
+        {type: 'divider'},
+        {
+          label: 'Delete',
+          icon: TrashIcon,
+          variant: 'destructive',
+          onClick: () => {},
+        },
+      ]}>
+      <div {...stylex.props(triggerStyles.area)}>
+        Right-click for document actions
+      </div>
+    </ContextMenu>
+  ),
+  play: async ({canvasElement}) => {
+    canvasElement
+      .querySelector('[data-testid="pointer-context-menu"]')
+      ?.dispatchEvent(
+        new MouseEvent('contextmenu', {
+          bubbles: true,
+          clientX: 40,
+          clientY: 40,
+        }),
+      );
+  },
+};
+
 export const WithIcons: Story = {
   render: () => (
     <ContextMenu
@@ -513,5 +553,37 @@ export const InlineTrigger: Story = {
       </ContextMenu>{' '}
       the same afternoon.
     </p>
+  ),
+};
+
+export const InScrollContainer: Story = {
+  name: 'Inside a scroll container',
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'The trigger scrolls inside a box. The menu opens at the pointer, and the browser hides it while the box scrolls the pointer position out of view.',
+      },
+    },
+  },
+  render: () => (
+    <div
+      data-testid="context-menu-scroller"
+      // The box scrolls but holds nothing focusable, so it needs a tab stop
+      // and a name for keyboard scrolling (axe: scrollable-region-focusable).
+      tabIndex={0}
+      role="region"
+      aria-label="Scrolling content"
+      style={{width: 320, height: 160, overflowY: 'auto'}}>
+      <p style={{height: 240, margin: 0}}>Scroll down to the area.</p>
+      <ContextMenu
+        items={[
+          {label: 'Cut', onClick: () => {}},
+          {label: 'Copy', onClick: () => {}},
+          {label: 'Paste', onClick: () => {}},
+        ]}>
+        <div {...stylex.props(triggerStyles.area)}>Right-click this area</div>
+      </ContextMenu>
+    </div>
   ),
 };

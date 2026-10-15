@@ -23,7 +23,7 @@ export default function TokenizerShowcase() {
       searchSource={source}
       value={value}
       onChange={setValue}
-      style={{width: 400}}
+      containerStyle={{width: 400}}
     />
   );
 }

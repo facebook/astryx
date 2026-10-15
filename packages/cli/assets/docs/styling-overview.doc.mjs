@@ -112,7 +112,7 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: 'For Tailwind v3, see the layer workaround in {@link generic:migration}.',
+          text: 'For Tailwind v3, see the layer workaround in {@link generic:migration-setup}.',
         },
       ],
     },
@@ -155,7 +155,7 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: 'If a swizzled component renders with no styles and no error, a missing compiler is almost always why. See the StyleX Build Setup section of {@link generic:styling} for bundler config examples.',
+          text: 'If a swizzled component renders with no styles and no error, a missing compiler is almost always why. See the StyleX Build Setup section of {@link generic:tokens-and-setup} for bundler config examples.',
         },
       ],
     },
@@ -199,10 +199,10 @@ export const docs = {
           type: 'list',
           style: 'unordered',
           items: [
-            '{@link generic:styling} \u2014 xstyle, className, data-attribute selectors, design tokens in code.',
-            '{@link generic:styling-libraries} \u2014 Tailwind bridge details, Panda, Chakra, MUI, CSS Modules, and non-CSS token resolution.',
+            '{@link namespace:styling} \u2014 xstyle, className, data-attribute selectors, design tokens in code.',
+            '{@link namespace:styling-libraries} \u2014 Tailwind bridge details, Panda, Chakra, MUI, CSS Modules, and non-CSS token resolution.',
             '{@link generic:use-a-theme} \u2014 applying themes, dark mode, nested themes. {@link generic:author-a-theme} \u2014 defineTheme, overrides, production builds.',
-            '{@link generic:migration} \u2014 cascade layer audit, Tailwind v3 coexistence, and foundation smoke test.',
+            '{@link namespace:migration} \u2014 cascade layer audit, Tailwind v3 coexistence, and foundation smoke test.',
           ],
         },
       ],
