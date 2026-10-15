@@ -276,6 +276,26 @@ export const ReviewComments: Story = {
   },
 };
 
+/**
+ * A multi-sentence comment wraps within the width the code sets; it never
+ * widens the table.
+ */
+export const LongComment: Story = {
+  args: {
+    renderLineAnnotation: (ref: DiffViewerLineRef) =>
+      ref.side === 'new' && ref.lineNumber === 13 ? (
+        <Text type="body">
+          Rounding once after the subtotal fixes the drift we saw on large
+          carts, but it changes totals for carts that relied on per-item
+          rounding. Before this lands, check the receipt snapshots, confirm the
+          discount still applies to gift cards, and add a test with a 33%
+          discount on three items so the rounding rule is pinned. If any partner
+          integrations read the per-item totals, they need a heads-up as well.
+        </Text>
+      ) : null,
+  },
+};
+
 /** Without line numbers, capped height. */
 export const Compact: Story = {
   args: {hasLineNumbers: false, maxHeight: 240},

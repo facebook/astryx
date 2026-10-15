@@ -612,11 +612,14 @@ const styles = stylex.create({
 
 // The caller's content (review comments) reads in the page's direction. Its
 // row stays in the left-to-right hunk area and scrolls with the code, as in a
-// code editor; long unbroken words wrap instead of widening the table.
+// code editor. Inline-size containment keeps the content out of the table's
+// max-content width, so a long comment wraps within the width the code sets
+// instead of widening the table; long unbroken words wrap too.
 const annotationStyles = stylex.create({
   content: {
     direction: {default: null, ':is([dir="rtl"] *)': 'rtl'},
     overflowWrap: 'anywhere',
+    contain: 'inline-size',
   },
 });
 
