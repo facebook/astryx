@@ -40,6 +40,22 @@ const y2kSyntax = defineSyntaxTheme({
   },
 });
 
+/**
+ * The secondary Button treatment. Selector, MultiSelector, and ComplexSelector
+ * reuse it for their `secondary` trigger so every secondary control in this
+ * theme matches (AST-079 FR2).
+ */
+const SECONDARY_BUTTON = {
+  backgroundColor: 'var(--color-background-green)',
+  borderWidth: '1px',
+  borderStyle: 'solid',
+  borderColor: 'var(--color-text-green)',
+  color: 'var(--color-text-green)',
+  ':hover': {
+    backgroundColor: 'var(--color-border-green)',
+  },
+} as const;
+
 export const y2kTheme = defineTheme({
   name: 'y2k',
 
@@ -264,16 +280,7 @@ export const y2kTheme = defineTheme({
         color: 'var(--color-background-body)',
         borderColor: 'transparent',
       },
-      'variant:secondary': {
-        backgroundColor: 'var(--color-background-green)',
-        borderWidth: '1px',
-        borderStyle: 'solid',
-        borderColor: 'var(--color-text-green)',
-        color: 'var(--color-text-green)',
-        ':hover': {
-          backgroundColor: 'var(--color-border-green)',
-        },
-      },
+      'variant:secondary': SECONDARY_BUTTON,
       'variant:ghost': {
         borderColor: 'transparent',
       },
@@ -285,6 +292,10 @@ export const y2kTheme = defineTheme({
         borderColor: 'var(--color-text-red)',
       },
     },
+    // Secondary selector triggers match the secondary Button (AST-079 FR2).
+    selector: {'variant:secondary': SECONDARY_BUTTON},
+    'multi-selector': {'variant:secondary': SECONDARY_BUTTON},
+    'complex-selector': {'variant:secondary': SECONDARY_BUTTON},
 
     badge: {
       base: {
