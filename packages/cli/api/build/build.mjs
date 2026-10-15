@@ -17,6 +17,7 @@ import {AstryxError} from '../error.mjs';
 import {ERROR_CODES} from '../../foundation/response/error-codes.mjs';
 import {buildHelp} from './help/help.mjs';
 import {buildKit} from './kit/kit.mjs';
+import {withListingCache} from './_adapter.mjs';
 
 // Barrel: surface the leaves alongside the dispatcher for the fractal shape.
 export {buildHelp, buildKit};
@@ -40,5 +41,7 @@ export async function build(query, options = {}) {
       ERROR_CODES.ERR_INVALID_ARGUMENT,
     );
   }
-  return buildKit(query, options);
+  // The kit resolves every candidate's source and docs by walking the same
+  // tree; read each directory once for this call.
+  return withListingCache(() => buildKit(query, options));
 }

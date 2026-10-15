@@ -85,6 +85,11 @@ const KEYS: Record<Key, string> = {
   ArrowRight: 'ArrowRight',
   ArrowUp: 'ArrowUp',
   ArrowDown: 'ArrowDown',
+  Home: 'Home',
+  End: 'End',
+  PageUp: 'PageUp',
+  PageDown: 'PageDown',
+  Escape: 'Escape',
 };
 
 interface AxValue {
@@ -656,6 +661,7 @@ export function createChromiumHarness(
       locator.evaluate(node =>
         (node.textContent ?? '').replace(/\s+/g, ' ').trim(),
       ),
+    descendantCount: selector => locator.locator(selector).count(),
     currentExists: async () => (await locator.count()) > 0,
     isConnected: async () => {
       const element = await capturedElement();
@@ -966,6 +972,7 @@ export function createChromiumHarness(
         related.evaluate(node =>
           (node.textContent ?? '').replace(/\s+/g, ' ').trim(),
         ),
+      descendantCount: selector => related.locator(selector).count(),
       currentExists: async () => (await related.count()) > 0,
       isConnected: () => related.evaluate(node => node.isConnected),
       computed: () => computedNode(cdp, related),
@@ -1089,6 +1096,42 @@ export function createChromiumHarness(
         }
         throw error;
       }
+    },
+    clickBeside: async targetSubject => {
+      const target = pointerTargets.get(targetSubject);
+      if (target == null) {
+        throw new Error(
+          'the Chromium harness was asked to click beside a subject it did not create',
+        );
+      }
+      const box = await target.boundingBox();
+      if (box == null) {
+        throw new Error('the subject has no box to click beside');
+      }
+      const viewport = page.viewportSize() ?? {width: 1280, height: 720};
+      // A point outside the box but inside the viewport: above-left when
+      // there is room, else below-right.
+      const x =
+        box.x >= 8
+          ? box.x - 4
+          : Math.min(viewport.width - 2, box.x + box.width + 4);
+      const y =
+        box.y >= 8
+          ? box.y - 4
+          : Math.min(viewport.height - 2, box.y + box.height + 4);
+      const inside =
+        x >= box.x &&
+        x <= box.x + box.width &&
+        y >= box.y &&
+        y <= box.y + box.height;
+      if (inside) {
+        // A subject that fills the viewport leaves no point beside it; a
+        // click on the subject itself would prove nothing about dismissal.
+        throw new Error(
+          'the subject fills the viewport, so there is no point beside it to click',
+        );
+      }
+      await page.mouse.click(x, y);
     },
     abortedPress: async () => {
       const box = await pointerLocator.boundingBox();

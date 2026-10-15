@@ -79,6 +79,7 @@
  * queries they have nothing to do with.
  */
 
+import {withListingCache} from '../../foundation/fs/listing-cache.mjs';
 import {readDocView} from '../../foundation/doc-compiler/read.mjs';
 import {findCoreDir} from '../../foundation/fs/paths.mjs';
 import {
@@ -1769,6 +1770,17 @@ function toResult(c, score, reason, matchedTerms, queryTerms) {
  * @returns {Promise<import('./search.type.mjs').SearchResponse>}
  */
 export async function search(query, options = {}) {
+  // Every candidate resolves its source and docs by walking the same tree;
+  // read each directory once for this call.
+  return withListingCache(() => searchOnce(query, options));
+}
+
+/**
+ * @param {string} query
+ * @param {NonNullable<Parameters<typeof search>[1]>} options
+ * @returns {ReturnType<typeof search>}
+ */
+async function searchOnce(query, options) {
   const {cwd = process.cwd(), type, limit = 20} = options;
 
   if (!query || !String(query).trim()) {

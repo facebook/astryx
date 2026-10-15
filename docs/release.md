@@ -42,11 +42,12 @@ stable package is built from an immutable release tag and published with provena
    exact internal pins, and lockfile. The released version's patch successor is the
    default. A minor successor is used only when the owner explicitly names it.
 
-While an untagged cut is active, main may keep the cut version or move higher but
-cannot be lowered below it. After the tag exists, ordinary main PRs must stay
-strictly above the newest stable tag. Trusted merge-back is the only equality
-exception. The canary workflow succeeds without publishing from equality; the
-separate next-plan PR exits that state immediately after merge-back.
+After a cut, main's declaration remains its future plan and may change independently
+of the frozen release branch. Required pull-request lint does not compare it with the
+cut or newest stable tag. Canary publication owns that ordering boundary: it publishes
+only from one plain declaration above stable, skips equality, and fails below-stable or
+split declarations. Trusted merge-back preserves main's declaration; the separate
+next-plan PR advances it after the release.
 
 ## Changesets and codemods
 

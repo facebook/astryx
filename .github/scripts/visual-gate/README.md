@@ -33,7 +33,7 @@ PR accessibility is intentionally smaller: explicit changed-component axe scope
 story-play guards. Empty/shared scope never falls back to all stories, and
 missing or approximate analysis fails rather than granting an empty scope.
 The full axe roster, whole-repository accessibility spec-test contracts and their
-pixel/evidence uploads, and Probe reach sweep run only during `release-check`.
+pixel/evidence uploads run only during `release-check`.
 
 Release callers must bind the CI run/attempt and all three job outcomes to its
 exact main SHA, and confirm that SHA remains an ancestor of current main before
@@ -79,9 +79,6 @@ a baseline, or create another visual status.
 
 Deployment previews, `a11y-weekly.yml`, `rtl-weekly.yml`, and
 `vibe-screenshots.yml` remain separate because they do not run visual regression.
-The baseline-free `gate.mjs reach` diagnostic lives with the existing `pr-a11y`
-browser checks; it tests whether Probe overrides reach their targets, not whether
-screenshots match a golden image.
 
 ## Explicit baseline maintenance
 
