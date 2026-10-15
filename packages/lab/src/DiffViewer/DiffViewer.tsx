@@ -30,11 +30,9 @@
 
 import {
   Fragment,
-  useCallback,
   useId,
   useInsertionEffect,
   useMemo,
-  useRef,
   useState,
   type CSSProperties,
   type MouseEvent,
@@ -71,7 +69,6 @@ import {
 import {
   focusOutlineProps,
   mergeProps,
-  observeResize,
   rtlStyles,
   themeProps,
 } from '@astryxdesign/core/utils';
@@ -102,7 +99,8 @@ export interface DiffViewerProps extends BaseProps<HTMLDivElement> {
    * `split` shows the old file on the left and the new file on the right,
    * pairing each removed line with the added line that replaced it. The hunk
    * area reads left-to-right in every page direction, like a code editor;
-   * the file header and annotation content follow the page.
+   * the file header and annotation content follow the page, and annotation
+   * rows scroll with the code.
    * @default 'unified'
    */
   viewMode?: DiffViewerViewMode;
@@ -371,26 +369,6 @@ function buildSpans(text: string, tokens: SyntaxToken[]): ReactNode {
 // Styles
 // ---------------------------------------------------------------------------
 
-/** Custom property holding the hunk viewport's visible width, set from a ResizeObserver. */
-const VISIBLE_INLINE_SIZE = '--diff-viewer-visible-inline-size';
-/**
- * Custom property holding how much of the visible width the new side of a
- * split view occupies at the start of the scroll: the visible width minus
- * where the new side starts, or the whole visible width when it starts past
- * (or too close to) the viewer's edge.
- */
-const NEW_SIDE_VISIBLE_INLINE_SIZE =
-  '--diff-viewer-new-side-visible-inline-size';
-/** Marks the first column header of a split view's new side, for measuring. */
-const NEW_SIDE_ATTRIBUTE = 'data-diff-new-side';
-/**
- * A visible slice of the new side narrower than this cannot hold a usable
- * comment (text plus its actions), so the new side counts as starting past
- * the edge: its note keeps the whole visible width and is reached by
- * scrolling, like its code.
- */
-const MIN_NEW_SIDE_VISIBLE_PX = 320;
-
 const styles = stylex.create({
   root: {
     display: 'flex',
@@ -632,18 +610,13 @@ const styles = stylex.create({
   },
 });
 
-// The caller's content (review comments) reads in the page's direction, and
-// is no wider than the part of the visible hunk area its cell occupies, so on
-// a wide table it opens in view rather than at a far end only horizontal
-// scrolling reaches.
+// The caller's content (review comments) reads in the page's direction. Its
+// row stays in the left-to-right hunk area and scrolls with the code, as in a
+// code editor; long unbroken words wrap instead of widening the table.
 const annotationStyles = stylex.create({
   content: {
     direction: {default: null, ':is([dir="rtl"] *)': 'rtl'},
     overflowWrap: 'anywhere',
-    maxInlineSize: `calc(var(${VISIBLE_INLINE_SIZE}, 100%) - 2 * ${spacingVars['--spacing-3']})`,
-  },
-  newSide: {
-    maxInlineSize: `calc(var(${NEW_SIDE_VISIBLE_INLINE_SIZE}, var(${VISIBLE_INLINE_SIZE}, 100%)) - 2 * ${spacingVars['--spacing-3']})`,
   },
 });
 
@@ -754,58 +727,6 @@ export function DiffViewer({
     }
   }
   const digits = String(maxLineNumber).length;
-
-  // Annotation content is capped at the part of the viewport's visible width
-  // its cell occupies. The widths are written straight to the viewport's
-  // style from the shared ResizeObserver, so a resize re-renders nothing. The
-  // content box and the table are observed too, since column changes move
-  // where a split view's new side starts; and the ref re-attaches (measuring
-  // again) whenever the props that rebuild the columns change, because a
-  // column change need not resize any observed box.
-  const stopObservingViewport = useRef<(() => void) | null>(null);
-  const observeViewportWidth = useCallback(
-    (viewport: HTMLElement | null) => {
-      stopObservingViewport.current?.();
-      stopObservingViewport.current = null;
-      if (viewport == null) {
-        return;
-      }
-      const measure = () => {
-        const visible = viewport.clientWidth;
-        viewport.style.setProperty(VISIBLE_INLINE_SIZE, `${visible}px`);
-        const newSide = viewport.querySelector(`[${NEW_SIDE_ATTRIBUTE}]`);
-        if (!(newSide instanceof HTMLElement)) {
-          viewport.style.removeProperty(NEW_SIDE_VISIBLE_INLINE_SIZE);
-          return;
-        }
-        // Layout pixels, like clientWidth: unaffected by scrolling and by
-        // ancestor transforms (a dialog's opening scale). The header cell's
-        // offset parent is the table, or a positioned box the table starts at.
-        const start = newSide.offsetLeft;
-        const newSideVisible = visible - start;
-        viewport.style.setProperty(
-          NEW_SIDE_VISIBLE_INLINE_SIZE,
-          `${newSideVisible >= MIN_NEW_SIDE_VISIBLE_PX ? newSideVisible : visible}px`,
-        );
-      };
-      const stops = [observeResize(viewport, measure)];
-      for (const box of [
-        viewport.firstElementChild,
-        viewport.querySelector('table'),
-      ]) {
-        if (box != null) {
-          stops.push(observeResize(box, measure));
-        }
-      }
-      stopObservingViewport.current = () => {
-        for (const stop of stops) {
-          stop();
-        }
-      };
-      // These props rebuild the table's columns; a new callback re-attaches.
-    },
-    [viewMode, hasLineNumbers, isWrapped, file],
-  );
 
   const {getViewportProps, getContentProps} = useScrollableArea({
     axis: 'both',
@@ -946,12 +867,8 @@ export function DiffViewer({
   );
   // Name every column so a screen reader moving across a row hears which
   // number is which and which side of a split row it is on.
-  const columnHeader = (key: string, label: string, isNewSideStart = false) => (
-    <th
-      key={key}
-      scope="col"
-      {...(isNewSideStart ? {[NEW_SIDE_ATTRIBUTE]: ''} : null)}
-      {...stylex.props(styles.columnHeader)}>
+  const columnHeader = (key: string, label: string) => (
+    <th key={key} scope="col" {...stylex.props(styles.columnHeader)}>
       <VisuallyHidden>{label}</VisuallyHidden>
     </th>
   );
@@ -979,12 +896,8 @@ export function DiffViewer({
             {columnHeader('om', t('@astryx.diffViewer.columnChange'))}
             {columnHeader('oc', t('@astryx.diffViewer.columnOldCode'))}
             {hasLineNumbers &&
-              columnHeader('ng', t('@astryx.diffViewer.columnNewLine'), true)}
-            {columnHeader(
-              'nm',
-              t('@astryx.diffViewer.columnChange'),
-              !hasLineNumbers,
-            )}
+              columnHeader('ng', t('@astryx.diffViewer.columnNewLine'))}
+            {columnHeader('nm', t('@astryx.diffViewer.columnChange'))}
             {columnHeader('nc', t('@astryx.diffViewer.columnNewCode'))}
           </tr>
         </thead>
@@ -1028,11 +941,7 @@ export function DiffViewer({
                       colSpan={sideColumns}
                       {...stylex.props(styles.annotation)}>
                       {newNote != null && (
-                        <div
-                          {...stylex.props(
-                            annotationStyles.content,
-                            annotationStyles.newSide,
-                          )}>
+                        <div {...stylex.props(annotationStyles.content)}>
                           {newNote}
                         </div>
                       )}
@@ -1126,7 +1035,6 @@ export function DiffViewer({
         {...getViewportProps<HTMLDivElement>({
           ...stylex.props(styles.viewport),
           style: scrollStyle,
-          ref: renderLineAnnotation != null ? observeViewportWidth : undefined,
         })}>
         <div {...getContentProps<HTMLDivElement>({})}>{table}</div>
       </div>

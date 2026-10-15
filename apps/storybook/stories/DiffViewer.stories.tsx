@@ -129,49 +129,29 @@ const LONG_LINE_FILE =
 `)[0];
 
 /**
- * A right-to-left page with lines wider than the viewer: the hunk area stays
- * left-to-right like a code editor, so every line opens at its start, while
- * the file header and the annotation content follow the page and the note
- * opens in view.
+ * A right-to-left page with lines wider than the viewer. The hunk area stays
+ * left-to-right like a code editor, so every line opens at its start. The file
+ * header and comment text follow the page. Comment rows belong to the code
+ * layout: each comment reads from its side's right edge and, like the code
+ * beside it, may need a horizontal scroll to bring into view.
  */
 export const RightToLeft: Story = {
   args: {
     file: LONG_LINE_FILE,
     viewMode: 'split',
-    renderLineAnnotation: (ref: DiffViewerLineRef) =>
-      ref.side === 'old' && ref.lineNumber === 2 ? (
-        <Text type="body">تحقق من تاريخ انتهاء الخصم قبل الدمج.</Text>
-      ) : null,
-  },
-  decorators: [
-    Story => (
-      <div dir="rtl" style={{maxWidth: 960}}>
-        <Story />
-      </div>
-    ),
-  ],
-};
-
-/**
- * Right-to-left split view with a comment on each side: each opens in view,
- * the new side's capped to the part of the viewer that side occupies.
- */
-export const RightToLeftSplitComments: Story = {
-  args: {
-    viewMode: 'split',
     renderLineAnnotation: (ref: DiffViewerLineRef) => {
-      if (ref.side === 'old' && ref.lineNumber === 6) {
-        return <Text type="body">كان هذا السطر يحسب الإجمالي بدون الخصم.</Text>;
+      if (ref.side === 'old' && ref.lineNumber === 2) {
+        return <Text type="body">كان الخصم لا يتحقق من تاريخ الانتهاء.</Text>;
       }
-      if (ref.side === 'new' && ref.lineNumber === 13) {
-        return <Text type="body">هذا السطر الجديد يحتاج إلى اختبار.</Text>;
+      if (ref.side === 'new' && ref.lineNumber === 2) {
+        return <Text type="body">تحقق من تاريخ انتهاء الخصم قبل الدمج.</Text>;
       }
       return null;
     },
   },
   decorators: [
     Story => (
-      <div dir="rtl">
+      <div dir="rtl" style={{maxWidth: 960}}>
         <Story />
       </div>
     ),
@@ -294,40 +274,6 @@ export const ReviewComments: Story = {
       </VStack>
     );
   },
-};
-
-const ADDED_FILE =
-  parseUnifiedDiff(`diff --git a/src/cart/receipt.ts b/src/cart/receipt.ts
-new file mode 100644
---- /dev/null
-+++ b/src/cart/receipt.ts
-@@ -0,0 +1,16 @@
-+export interface Receipt {
-+  id: string;
-+  total: number;
-+  currency: string;
-+}
-+
-+export const RECEIPT_FOOTER = 'Prices include all applicable taxes; discounts apply once to the subtotal and are rounded to the nearest cent before the total is shown.';
-+
-+export function receiptTitle(receipt: Receipt): string {
-+  return \`Receipt \${receipt.id}\`;
-+}
-+
-+export function receiptTotal(receipt: Receipt): string {
-+  return \`\${receipt.total.toFixed(2)} \${receipt.currency}\`;
-+}
-+
-`)[0];
-
-/**
- * Review comments on a newly added file with a long line: switch to split
- * view and the new-side comment stays in view (its cap is measured again when
- * the columns change, not only on resize).
- */
-export const ReviewCommentsOnAddedFile: Story = {
-  ...ReviewComments,
-  args: {file: ADDED_FILE},
 };
 
 /** Without line numbers, capped height. */
