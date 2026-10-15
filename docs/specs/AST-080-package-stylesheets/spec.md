@@ -3,12 +3,12 @@ schema_version: 4
 template_version: 2
 kind: system-spec
 id: spec:AST-080
-authority: draft
+authority: current
 archive_reason: null
 superseded_by: null
-approved_by: null
-approved_at: null
-phase: proposed
+approved_by: cixzhang
+approved_at: 2026-10-15
+phase: accepted
 owners: [cixzhang]
 affects_architecture: []
 affects_families: []
@@ -159,7 +159,7 @@ theme's colors in every load order.
 ### DEC-1 — Products load prebuilt stylesheets and never compile Astryx source
 
 **Reference:** `spec:AST-080/DEC-1`
-**Decider:** pending owner review (`cixzhang`)
+**Decider:** `cixzhang`, `2026-10-15`
 
 A second compile of Astryx package source emits a second copy of the same rules,
 with an order and layer that depend on the product's compiler setup. Beside the
@@ -173,7 +173,7 @@ cascade varies with each product's build.
 ### DEC-2 — Every package shares one layer and one order registration
 
 **Reference:** `spec:AST-080/DEC-2`
-**Decider:** pending owner review (`cixzhang`)
+**Decider:** `cixzhang`, `2026-10-15`
 
 A theme override targets a component, not the package that ships it, so every
 package's base rules sit in `astryx-base`. Each stylesheet registers the order
@@ -185,7 +185,7 @@ which packages a product loads.
 ### DEC-3 — Each package ships one whole stylesheet
 
 **Reference:** `spec:AST-080/DEC-3`
-**Decider:** pending owner review (`cixzhang`)
+**Decider:** `cixzhang`, `2026-10-15`
 
 One file per package keeps setup to one import per package and works in every
 framework.
