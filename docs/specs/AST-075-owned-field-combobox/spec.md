@@ -12,9 +12,10 @@ phase: proposed
 owners: [vjeux]
 affects_architecture:
   [architecture:interaction-modality, architecture:public-component-api]
-affects_families: [family:input-fields]
+affects_families: [family:input-fields, family:overlay-dismissal]
 affects_contributing: []
-affects_consumer_docs: [BaseTypeahead, Typeahead, ChatComposerInput]
+affects_consumer_docs:
+  [BaseTypeahead, Typeahead, ChatComposerInput, useCombobox, useMultiCombobox]
 ---
 
 # Combobox over a caller-rendered field system spec
@@ -37,8 +38,9 @@ the behavior from hooks; every such field behaves and announces the same way.
   caller.
 - Finding the query inside the field's text, such as text after a trigger
   character in a composer, stays with the caller.
-- Comboboxes hosted on a button or in a modal keep their own records; this spec
-  does not set one interaction model for every combobox.
+- Comboboxes whose focus sits on a button (`Selector`, `MultiSelector`) or that
+  live in a modal command surface (`CommandPalette`) keep their own records; this
+  spec does not set one interaction model for every combobox.
 - Equivalent internal implementations remain valid when they satisfy this
   contract.
 
@@ -52,17 +54,22 @@ the behavior from hooks; every such field behaves and announces the same way.
   MUST expose `aria-expanded="true"` and an `aria-controls` that names the
   listbox. While it is not shown, the field MUST expose `aria-expanded="false"`
   and MUST NOT reference an element that is not rendered.
-- **FR3 — Roles.** The field MUST expose `role="combobox"` whether it is an
-  `input`, a `textarea`, or a contenteditable element. The list MUST be a named
+- **FR3 — Roles.** The field MUST expose `role="combobox"` and an accessible
+  name whether it is an `input`, a `textarea`, or a contenteditable element. The
+  list MUST be a named
   `listbox` whose rows are `option`s, with `aria-selected="true"` on the active
   one. The listbox MAY render anywhere in the document, including the page's
   flow. Controls that are not options MUST render outside the listbox.
-- **FR4 — Keys.** ArrowDown and ArrowUp MUST move the active option. Enter on an
-  active option MUST pick it and only then stop the field's own Enter. Escape
-  MUST hide the list without dismissing an enclosing layer in the same press.
-  Every other key MUST reach the field unchanged.
-- **FR5 — Input method.** A key MUST NOT activate a combobox command while an
-  input-method composition is active.
+- **FR4 — Keys.** While the list is shown, ArrowDown and ArrowUp MUST move the
+  active option, Enter on an active option MUST pick it and only then stop the
+  field's own Enter, and Escape MUST hide the list without dismissing an
+  enclosing layer in the same press (`family:overlay-dismissal`). While the list
+  is hidden, every key MUST reach the field and its surroundings unchanged. Home
+  and End are outside this requirement until OQ2 is ruled; every other key MUST
+  reach the field unchanged.
+- **FR5 — Input method.** A key MUST NOT activate a combobox command, including
+  Escape's dismissal (`family:overlay-dismissal`), while an input-method
+  composition is active.
 - **FR6 — Pointer.** Moving the pointer over an option MUST make it active
   without moving DOM focus. Pressing an option MUST pick it, and the field MUST
   keep focus through the press.
@@ -138,8 +145,10 @@ and the keys, generalized from Selector's option type to any option list and to
 a field the caller renders; the input-method guard `useTypeahead` already
 applies; and `useAnnounce` for the result count. Astryx's own comboboxes compose
 the same hooks, so one tested implementation backs every surface this spec
-covers, and each hook is documented as a hook (FR8). A component stays the
-convenient path for the common case; the hooks are the path for every other
+covers, and each hook is documented as a hook (FR8). Generalizing
+`useCombobox` keeps its released options and return fields working unchanged
+for existing callers; the new inputs are optional additions. A component stays
+the convenient path for the common case; the hooks are the path for every other
 field.
 
 Rejected: a new component, or `BaseTypeahead` accepting a caller's field, which
