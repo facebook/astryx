@@ -824,6 +824,13 @@ export const LabCheckboxItems: Story = {
       </DropdownMenu>
     );
   },
+  tags: ['visual-theme-matrix'],
+  play: async ({canvasElement}) => {
+    const trigger = canvasElement.querySelector('button');
+    if (trigger instanceof HTMLElement) {
+      trigger.click();
+    }
+  },
   parameters: {
     docs: {
       description: {

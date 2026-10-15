@@ -10,7 +10,7 @@
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render, screen, fireEvent} from '@testing-library/react';
+import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {DropdownMenu} from './DropdownMenu';
 import {DropdownMenuCheckboxItem} from './DropdownMenuCheckboxItem';
@@ -93,9 +93,36 @@ describe('DropdownMenuCheckboxItem', () => {
     expect(calls).toEqual(['change', 'click']);
   });
 
+  it('composes the caller click handler on keyboard activation', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    const onClick = vi.fn();
+    render(
+      <DropdownMenu button={{label: 'View'}}>
+        <DropdownMenuCheckboxItem
+          label="Show archived"
+          value={false}
+          onChange={onChange}
+          onClick={onClick}
+        />
+      </DropdownMenu>,
+    );
+    const trigger = screen.getByRole('button', {name: /View/});
+    trigger.focus();
+    await user.keyboard('{Enter}');
+    const item = screen.getByRole('menuitemcheckbox', {
+      name: /Show archived/,
+      hidden: true,
+    });
+    await waitFor(() => expect(item).toHaveFocus());
+    await user.keyboard('{Enter}');
+    expect(onChange).toHaveBeenCalledWith(true);
+    expect(onClick).toHaveBeenCalledOnce();
+  });
+
   it('composes the caller pointer-move handler with menu hover focus', async () => {
     const user = userEvent.setup();
-    const onPointerMove = vi.fn();
+    const onPointerMove = vi.fn(() => document.activeElement);
     render(
       <DropdownMenu button={{label: 'View'}}>
         <DropdownMenuCheckboxItem
@@ -113,6 +140,7 @@ describe('DropdownMenuCheckboxItem', () => {
     fireEvent.pointerMove(item, {pointerType: 'mouse'});
     expect(item).toHaveFocus();
     expect(onPointerMove).toHaveBeenCalledOnce();
+    expect(onPointerMove).toHaveReturnedWith(item);
   });
 
   it('does not call consumer activation handlers when disabled', async () => {

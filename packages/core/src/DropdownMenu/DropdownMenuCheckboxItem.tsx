@@ -110,9 +110,8 @@ export interface DropdownMenuCheckboxItemProps extends Omit<
    */
   onChange?: (checked: boolean) => void;
   /**
-   * Whether the item is disabled. Disabled items expose `aria-disabled` and
-   * block activation. The current DropdownMenu navigation path skips disabled
-   * rows; see the component contract's OQ1.
+   * Whether the item is disabled. Disabled items expose `aria-disabled`, block
+   * activation, and are currently skipped by DropdownMenu arrow-key navigation.
    * @default false
    */
   isDisabled?: boolean;

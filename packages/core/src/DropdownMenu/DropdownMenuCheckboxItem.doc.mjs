@@ -70,7 +70,7 @@ export const docs = {
       type: 'boolean',
       default: 'false',
       description:
-        'Whether the item is disabled. Disabled items expose aria-disabled and block activation. Current DropdownMenu keyboard navigation skips disabled rows; see the component contract open question.',
+        'Whether the item is disabled. Disabled items expose aria-disabled, block activation, and are currently skipped by DropdownMenu arrow-key navigation.',
     },
     {
       name: 'hasCloseOnSelect',
