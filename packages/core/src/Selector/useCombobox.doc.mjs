@@ -31,7 +31,7 @@ export const docs = {
       name: 'options.selectableItems',
       type: 'SelectorOptionData[]',
       description:
-        'The options in the same order as they render. Options with `disabled` are skipped by the arrow, Home, End, PageUp and PageDown keys and cannot be picked.',
+        'The options in the same order as they render. Options with `disabled` cannot be picked and are skipped while moving through the open list; ArrowDown or ArrowUp that opens the list still lands on the first or last option.',
       required: true,
     },
     {
@@ -64,7 +64,7 @@ export const docs = {
       name: 'options.value',
       type: 'string',
       description:
-        'The selected value. Opening without search highlights it, or the first option when nothing is selected.',
+        'The selected value. Without search, opening by a press, Enter or Space highlights it, or the first option when nothing is selected; ArrowDown and ArrowUp open on the first and last option.',
     },
     {
       name: 'options.onSelect',
@@ -82,14 +82,14 @@ export const docs = {
       name: 'options.hasSearch',
       type: 'boolean',
       description:
-        'Whether the list has its own search field. Space then types instead of picking, opening does not pre-highlight, and printable keys on the closed control go to `onSearchSeed`.',
+        'Whether the list has its own search field. Space then types instead of picking, opening by a press or Enter does not pre-highlight (ArrowDown and ArrowUp still open on the first and last option), and printable keys on the closed control go to `onSearchSeed`.',
       default: 'false',
     },
     {
       name: 'options.onSearchSeed',
       type: '(char: string) => void',
       description:
-        'With `hasSearch`, receives each printable character typed on the closed control (opening the list first), so type-to-find needs no separate open step.',
+        'With `hasSearch`, receives each printable character except Space typed on the closed control (opening the list first), so type-to-find needs no separate open step.',
     },
     {
       name: 'options.isDisabled',
@@ -179,21 +179,21 @@ export const docsDense = {
   paramDescriptions: {
     options: 'config.',
     'options.selectableItems':
-      'options in render order; disabled ones skipped by nav keys, not pickable.',
+      'options in render order; disabled ones not pickable, skipped while moving in open list (ArrowDown/Up opening still lands first / last).',
     'options.isOpen': 'list shown; caller owns state.',
     'options.onOpen':
       'show list; return false to refuse (highlight untouched).',
     'options.onClose': 'hide list; highlight resets first.',
     'options.listboxId': 'listbox id; option ids derive from it (getItemId).',
     'options.value':
-      'selected value; opening w/o search highlights it (else first).',
+      'selected value; w/o search, press / Enter / Space opening highlights it (else first); ArrowDown/Up open on first / last.',
     'options.onSelect': 'called w/ picked value; picking closes.',
     'options.onClear':
       'clears value; Delete / Backspace on closed control. ignored when open or hasSearch.',
     'options.hasSearch':
-      'list has own search field: Space types, no pre-highlight, printable keys on closed control -> onSearchSeed.',
+      'list has own search field: Space types, press / Enter opening does not pre-highlight (ArrowDown/Up still first / last), printable keys on closed control -> onSearchSeed.',
     'options.onSearchSeed':
-      'w/ hasSearch, each printable char typed on closed control (opens first).',
+      'w/ hasSearch, each printable char except Space typed on closed control (opens first).',
     'options.isDisabled': 'ignore clicks + keys.',
   },
   returnDescriptions: {
