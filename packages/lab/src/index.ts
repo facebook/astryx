@@ -258,6 +258,18 @@ export {
   type LogStreamLevel,
 } from './LogStream';
 
+// DiffViewer — the structured diff model and the unified-diff parser
+export {
+  parseUnifiedDiff,
+  type DiffViewerFile,
+  type DiffViewerFileStatus,
+  type DiffViewerHunk,
+  type DiffViewerLine,
+  type DiffViewerLineKind,
+  type DiffViewerLineRef,
+  type DiffViewerSide,
+} from './DiffViewer';
+
 // MobileTokenizer — Lab prototype (stack layer 1) of the touch Tokenizer
 // flow: summary trigger + stacked manage/add BottomSheets. Graduates to
 // Core Tokenizer presentation="bottom-sheet" (stack layer 2).
@@ -267,7 +279,6 @@ export {
   type MobileTokenizerChange,
 } from './MobileTokenizer';
 
-// RichTextEditor (RFC facebook/astryx#3899) has graduated out of @astryxdesign/lab
-// into its own canary-only package, @astryxdesign/richtext, so it can be canaried
-// independently by an adopting application. Import it from there:
+// RichTextEditor (RFC facebook/astryx#3899) moved out of @astryxdesign/lab into
+// its own package, @astryxdesign/richtext. Import it from there:
 //   import {RichTextEditor, RichTextView} from '@astryxdesign/richtext';

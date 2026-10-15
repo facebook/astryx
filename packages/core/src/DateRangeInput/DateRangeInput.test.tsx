@@ -320,6 +320,55 @@ describe('DateRangeInput', () => {
       ).toHaveLength(0);
     });
 
+    it('returns focus to the trigger when the clear button is activated by keyboard', async () => {
+      const user = userEvent.setup();
+      function ControlledDateRangeInput() {
+        const [controlledValue, setControlledValue] =
+          useState<DateRange | null>({
+            start: '2026-01-01',
+            end: '2026-01-03',
+          });
+        return (
+          <DateRangeInput
+            label="Range"
+            value={controlledValue}
+            onChange={setControlledValue}
+          />
+        );
+      }
+      render(<ControlledDateRangeInput />);
+
+      getButton('Clear Range').focus();
+      await user.keyboard('{Enter}');
+
+      expect(queryButton('Clear Range')).not.toBeInTheDocument();
+      expect(getButton(/^Range:/)).toHaveFocus();
+    });
+
+    it('does not move focus to the trigger when the clear button is clicked', async () => {
+      const user = userEvent.setup();
+      function ControlledDateRangeInput() {
+        const [controlledValue, setControlledValue] =
+          useState<DateRange | null>({
+            start: '2026-01-01',
+            end: '2026-01-03',
+          });
+        return (
+          <DateRangeInput
+            label="Range"
+            value={controlledValue}
+            onChange={setControlledValue}
+          />
+        );
+      }
+      render(<ControlledDateRangeInput />);
+
+      await user.click(getButton('Clear Range'));
+
+      expect(queryButton('Clear Range')).not.toBeInTheDocument();
+      expect(getButton(/^Range:/)).not.toHaveFocus();
+    });
+
     it('shows clear button when hasClear is true and value exists', () => {
       const range: DateRange = {
         start: '2026-03-15',

@@ -697,8 +697,8 @@ Changeset it adds or edits names that package:
   dependency or peer ranges.
 
 Stories, the sandbox, tests, fixtures, snapshots, spec records, generated
-CHANGELOGs, private and canary-only packages (`lab`, `charts`, `richtext`,
-`vega`), the docsite app, CI, and repository tooling never reach a consumer and
+CHANGELOGs, private and canary-only packages (`lab`, `charts`, `vega`), the
+docsite app, CI, and repository tooling never reach a consumer and
 need no Changeset. The failure names the package and the command to run, for
 example `pnpm changeset:new --packages @astryxdesign/cli --category docs`. Run
 the check locally with
