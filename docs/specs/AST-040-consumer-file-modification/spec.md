@@ -126,12 +126,14 @@ CLI too old to finish the migration.
   `@xds/*` one. A folder's workspace root is the one `spec:AST-048` FR15 finds
   from it, and the workspace lists the folder when a pattern in the root
   `package.json` `workspaces` field or in `pnpm-workspace.yaml` `packages`
-  matches the folder and no exclusion pattern removes it. The search MUST NOT
-  continue past a folder that holds version-control metadata, and MUST end at
-  the home folder without counting it as a project or as a workspace root. The
-  project root is the operation root (FR2): the upgrade reads the project's
-  configuration, agent docs, and protection sources (FR3, FR4) there. When no
-  folder qualifies, the folder the command runs in is the operation root.
+  matches the folder and no exclusion pattern removes it. A folder that installs
+  Core but qualifies neither way is not a project: an upgrade run there works on
+  the project above it, if any. The search MUST NOT continue past a folder that
+  holds version-control metadata, and MUST end at the home folder without
+  counting it as a project or as a workspace root. The project root is the
+  operation root (FR2): the upgrade reads the project's configuration, agent
+  docs, and protection sources (FR3, FR4) there. When no folder qualifies, the
+  folder the command runs in is the operation root.
 - **FR10 — A named source folder is read where the command runs.** By default,
   an upgrade MUST scan the `src` folder of the operation root. A source folder
   the caller names MUST be resolved from the folder the command runs in, and
@@ -149,11 +151,12 @@ CLI too old to finish the migration.
   upgrade fails with `ERR_VERSION_DETECT` before any write.
 - **FR12 — The result names files from where the command runs.** The
   machine-readable result of an upgrade MUST name its modified, protected, and
-  declined files (FR7), the files its errors name, and its agent-doc files by
-  paths relative to the folder the command runs in, so each resolves from there.
-  A copied-composition summary names its files relative to the source folder the
-  upgrade scanned. When the operation root is another folder, the human-readable
-  output MUST name it.
+  declined files (FR7), the files its errors name, its agent-doc files, and the
+  files of its copied-composition summary by paths relative to the folder the
+  command runs in, so each resolves from there. When the command runs at the
+  operation root, the copied-composition summary instead names its files
+  relative to the source folder the upgrade scanned. When the operation root is
+  another folder, the human-readable output MUST name it.
 - **FR13 — A CLI older than the installed Core reports an incomplete upgrade.**
   When the installed `@astryxdesign/core` is newer than both the running CLI and
   the version the upgrade starts from, the upgrade MUST run the codemods the
@@ -207,7 +210,7 @@ and needs no Changeset.
 | FR9      | Upgrade runs from folders inside and around projects       | a subfolder; a listed and an unlisted workspace member; a folder whose `package.json` declares no Astryx package; a folder with no `package.json` inside a home folder that installs Astryx; a nested checkout; no qualifying folder | The upgrade operates on another project, the home folder, or a folder past version-control metadata                              |
 | FR10     | Upgrade runs with a named source folder                    | the default from a subfolder; one folder named from a subfolder in each spelling; a folder outside the operation root                                                                                                                | A named folder read from another folder than the one the command runs in, or a folder outside the operation root that is scanned |
 | FR11     | Upgrade target detection                                   | a member whose workspace forces Core, or that declares another range or only a peer range; an unlisted project below an installed Core; a Core in a parent folder; an install without `node_modules`; no qualifying folder           | A member that misses the Core its workspace installs, or a Core above an unlisted project that counts                            |
-| FR12     | Result snapshots from a subfolder and from the root        | modified, protected, declined, error, and agent-doc paths                                                                                                                                                                            | A path in the result that does not resolve from the folder the command runs in                                                   |
+| FR12     | Result snapshots from a subfolder and from the root        | modified, protected, declined, error, agent-doc, and copied-composition paths                                                                                                                                                        | A path that does not resolve from the folder the command runs in, or a root run whose copied-composition paths change            |
 | FR13     | Upgrade runs with a CLI older than the installed Core      | no codemods left; part of the range covered; each option; the printed command run inside the project, above it, and in an unrelated folder; a folder name with shell metacharacters in each targeted shell                           | An up-to-date or complete report, a dropped option, a command that misses the project elsewhere, or an unnamed non-POSIX shell   |
 
 ## Decision log
