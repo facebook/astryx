@@ -334,16 +334,28 @@ const editorTheme = stylex.create({
     color: colorVars['--color-text-secondary'],
   },
   // Cells in a table selection — dragging across cells, Shift+arrow between
-  // them, or selecting a row or column — carry the wash a selected row
-  // carries elsewhere in the system, for the reason `hrSelected` gives: a
-  // person has to see what the next keystroke will replace. Lexical names
-  // this class on every highlighted cell and takes it off when the selection
-  // goes; left unnamed, a cell inside the selection is painted exactly like
-  // one outside it. A selection is what edit mode may show (spec:AST-061
-  // FR9), and a read-only surface never makes one, so the read and edit
-  // surfaces still render the same document the same way.
+  // them, or selecting a row or column — are ringed, for the reason
+  // `hrSelected` gives: a person has to see what the next keystroke will
+  // replace. Lexical names this class on every highlighted cell and takes it
+  // off when the selection goes; left unnamed, a cell inside the selection is
+  // painted exactly like one outside it.
+  //
+  // A ring, not a background wash. A wash sits behind the cell's text and
+  // eats into its contrast, and no one token stays clear of the field in
+  // every theme: `--color-accent-muted` resolves to the field's own colour
+  // under Neutral dark, so the selection would be invisible there, and a
+  // 10% accent tint drops Neutral dark's header text from 5.65:1 to 4.25:1.
+  // The focus ring is drawn for exactly this job — it clears the field by
+  // 5.24:1 at worst across every shipped theme and mode — and sits beside
+  // the text rather than behind it, so no cell's contrast moves at all.
+  // `outline` takes no space, so the document's geometry is untouched
+  // (spec:AST-061 FR9), and the inset offset keeps each ring inside its own
+  // cell instead of bleeding over the neighbour it is not marking.
   tableCellSelected: {
-    backgroundColor: colorVars['--color-accent-muted'],
+    outlineWidth: focusVars['--focus-outline-width'],
+    outlineStyle: focusVars['--focus-outline-style'],
+    outlineColor: focusVars['--focus-outline-color'],
+    outlineOffset: `calc(-1 * ${focusVars['--focus-outline-width']})`,
   },
   // Thematic breaks, drawn like core Markdown's rule.
   hr: {

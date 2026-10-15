@@ -3,11 +3,12 @@
 /**
  * @file TableCellSelection.a11y.chromium.spec.ts
  * @input The built Storybook's Lab/RichTextEditor "Playground" story, whose
- *   seeded document holds a GFM table in an editable surface.
+ *   editor takes a table from the toolbar's insert control.
  * @output Real-browser proof that a table selection is visible: the cells a
- *   drag covers are painted differently from the cells it does not, the paint
- *   marks exactly the cells the next keystroke replaces, and it goes when the
- *   selection goes.
+ *   drag covers are marked and the cells it does not are not, the mark clears
+ *   the surface it is drawn on in every shipped theme and mode, it costs the
+ *   cell's own text no contrast, it marks exactly the cells the next keystroke
+ *   replaces, and it goes when the selection goes.
  *
  * A table selection is made of DOM the engine owns and a class name the theme
  * supplies. Nothing in a unit test can see whether that class was ever named:
@@ -15,6 +16,12 @@
  * no-op when the slot is undefined, which is how cells in a selection came to
  * be painted exactly like cells outside one. Only a real engine, dragging
  * across real cells, can tell the two apart.
+ *
+ * The theme sweep is not ceremony. A mark is only visible against the surface
+ * it lands on, and a token that clears the surface under one theme can equal
+ * it under another: `--color-accent-muted` resolves to the editor field's own
+ * colour under Neutral dark, where a background wash would be invisible while
+ * every computed-value assertion still passed.
  *
  * Run after building Storybook:
  *   pnpm storybook:build
@@ -33,6 +40,24 @@ const STORY = 'lab-richtexteditor--playground';
 const EDITOR = '[data-playground-editor] [role="textbox"]';
 const CELLS = `${EDITOR} table th, ${EDITOR} table td`;
 
+/** Every shipped theme, in both modes: a mark has to land on all of them. */
+const THEMES = [
+  'neutral',
+  'stone',
+  'butter',
+  'chocolate',
+  'gothic',
+  'matcha',
+  'y2k',
+] as const;
+const MODES = ['light', 'dark'] as const;
+
+/**
+ * WCAG 1.4.11's bar for a non-text indicator. The mark has to clear the
+ * surface it is drawn on by at least this much to be a mark at all.
+ */
+const NON_TEXT_CONTRAST = 3;
+
 let storybook: StaticServer;
 
 test.beforeAll(async () => {
@@ -43,8 +68,24 @@ test.afterAll(async () => {
   await storybook?.close();
 });
 
-/** Opens the story and puts a 3×3 table with known content in the editor. */
-async function openWithTable(page: Page): Promise<string[]> {
+/**
+ * How a cell is marked, and what its text has to read against: enough to say
+ * whether two cells look different, without naming the treatment. A future
+ * mark that is a wash rather than a ring is described here just as well.
+ */
+interface CellPaint {
+  readonly outline: string;
+  readonly background: string;
+  /** Contrast of the cell's own text against its own background. */
+  readonly textContrast: number;
+}
+
+/** Opens the story under one theme and mode, with a filled 3×3 table. */
+async function openWithTable(
+  page: Page,
+  theme: string = 'neutral',
+  mode: string = 'light',
+): Promise<string[]> {
   const errors: string[] = [];
   page.on('pageerror', error => errors.push(String(error)));
   page.on('console', message => {
@@ -54,7 +95,7 @@ async function openWithTable(page: Page): Promise<string[]> {
   });
   await page.setViewportSize({width: 1440, height: 900});
   await page.goto(
-    `${storybook.origin}/iframe.html?id=${STORY}&viewMode=story&globals=astryxTheme:neutral;colorMode:light;direction:ltr`,
+    `${storybook.origin}/iframe.html?id=${STORY}&viewMode=story&globals=astryxTheme:${theme};colorMode:${mode};direction:ltr`,
     {waitUntil: 'load'},
   );
   await expect(page.locator(EDITOR)).toBeVisible();
@@ -77,11 +118,94 @@ async function openWithTable(page: Page): Promise<string[]> {
   return errors;
 }
 
-/** Each cell's background colour, in document order. */
-const backgrounds = (page: Page): Promise<string[]> =>
-  page.$$eval(CELLS, cells =>
-    cells.map(cell => getComputedStyle(cell).backgroundColor),
-  );
+/**
+ * Reads each cell's mark and its text contrast, compositing translucent
+ * colours over the first opaque surface behind the table so a measurement is
+ * of what a person actually sees, not of a token's nominal value.
+ */
+const paints = (page: Page): Promise<CellPaint[]> =>
+  page.$$eval(CELLS, cells => {
+    const parse = (value: string): number[] => {
+      const parts = (value.match(/[\d.]+/g) ?? []).map(Number);
+      return parts.length === 3 ? [...parts, 1] : parts;
+    };
+    const over = (fg: number[], bg: number[]): number[] =>
+      [0, 1, 2].map(i => fg[i] * fg[3] + bg[i] * (1 - fg[3]));
+    const channel = (c: number): number => {
+      const v = c / 255;
+      return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
+    };
+    const luminance = (c: number[]): number =>
+      0.2126 * channel(c[0]) + 0.7152 * channel(c[1]) + 0.0722 * channel(c[2]);
+    const contrast = (a: number[], b: number[]): number => {
+      const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x);
+      return (hi + 0.05) / (lo + 0.05);
+    };
+    /** The first opaque background behind an element. */
+    const backdrop = (el: Element): number[] => {
+      let node: Element | null = el.parentElement;
+      while (node != null) {
+        const parsed = parse(getComputedStyle(node).backgroundColor);
+        if (parsed[3] === 1) {
+          return parsed;
+        }
+        node = node.parentElement;
+      }
+      return [255, 255, 255, 1];
+    };
+    return cells.map(cell => {
+      const style = getComputedStyle(cell);
+      const behind = backdrop(cell);
+      const own = over(parse(style.backgroundColor), behind);
+      return {
+        outline: `${style.outlineStyle} ${style.outlineWidth} ${style.outlineColor}`,
+        background: style.backgroundColor,
+        textContrast: contrast(parse(style.color), own),
+      };
+    });
+  });
+
+/** The mark's own contrast against the surface the table sits on. */
+const markContrast = (page: Page): Promise<number> =>
+  page.$$eval(CELLS, cells => {
+    const parse = (value: string): number[] => {
+      const parts = (value.match(/[\d.]+/g) ?? []).map(Number);
+      return parts.length === 3 ? [...parts, 1] : parts;
+    };
+    const over = (fg: number[], bg: number[]): number[] =>
+      [0, 1, 2].map(i => fg[i] * fg[3] + bg[i] * (1 - fg[3]));
+    const channel = (c: number): number => {
+      const v = c / 255;
+      return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
+    };
+    const luminance = (c: number[]): number =>
+      0.2126 * channel(c[0]) + 0.7152 * channel(c[1]) + 0.0722 * channel(c[2]);
+    const contrast = (a: number[], b: number[]): number => {
+      const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x);
+      return (hi + 0.05) / (lo + 0.05);
+    };
+    const backdrop = (el: Element): number[] => {
+      let node: Element | null = el.parentElement;
+      while (node != null) {
+        const parsed = parse(getComputedStyle(node).backgroundColor);
+        if (parsed[3] === 1) {
+          return parsed;
+        }
+        node = node.parentElement;
+      }
+      return [255, 255, 255, 1];
+    };
+    const selected = cells[0];
+    const style = getComputedStyle(selected);
+    const behind = backdrop(selected);
+    // Whichever way the cell is marked, measure that mark against the
+    // surface: the ring if it is ringed, the background if it is washed.
+    const mark =
+      style.outlineStyle !== 'none' && parseFloat(style.outlineWidth) > 0
+        ? parse(style.outlineColor)
+        : parse(style.backgroundColor);
+    return contrast(over(mark, behind), behind);
+  });
 
 const texts = (page: Page): Promise<string[]> =>
   page.$$eval(CELLS, cells =>
@@ -106,76 +230,105 @@ async function dragAcross(page: Page, from: number, to: number) {
   await page.mouse.up();
 }
 
-test('the cells a selection covers are painted, and the rest are not', async ({
+/** Did the selection change how this cell looks? */
+const looksDifferent = (before: CellPaint, after: CellPaint): boolean =>
+  before.outline !== after.outline || before.background !== after.background;
+
+test('the cells a selection covers are marked, and the rest are not', async ({
   page,
 }) => {
   const errors = await openWithTable(page);
-
-  const before = await backgrounds(page);
-  expect(new Set(before).size, 'no cell is painted before a selection').toBe(1);
+  const before = await paints(page);
 
   // The top-left 2×2 block of a 3-column table: cells 0, 1, 3 and 4.
   await dragAcross(page, 0, 4);
-  const after = await backgrounds(page);
+  const after = await paints(page);
 
-  const selected = [0, 1, 3, 4];
-  const unselected = [2, 5, 6, 7, 8];
-  const paint = after[0];
-  expect(paint, 'the selection paints the cells it covers').not.toBe(before[0]);
-  for (const index of selected) {
-    expect(after[index], `cell ${index} is in the selection`).toBe(paint);
-  }
-  for (const index of unselected) {
-    expect(after[index], `cell ${index} is outside the selection`).toBe(
-      before[index],
-    );
-  }
+  const marked = after
+    .map((paint, index) => (looksDifferent(before[index], paint) ? index : -1))
+    .filter(index => index !== -1);
+  expect(marked, 'the selection marks the 2×2 block it covers').toEqual([
+    0, 1, 3, 4,
+  ]);
   expect(errors).toEqual([]);
 });
 
-test('the paint marks exactly the cells the next keystroke replaces', async ({
+test('the mark is visible against the surface in every theme and mode', async ({
+  page,
+}) => {
+  const failures: string[] = [];
+  for (const theme of THEMES) {
+    for (const mode of MODES) {
+      await openWithTable(page, theme, mode);
+      const before = await paints(page);
+      await dragAcross(page, 0, 4);
+      const after = await paints(page);
+
+      // Seen, not merely computed: a mark whose colour equals the surface
+      // behind it is a different computed value and no mark at all.
+      if (!looksDifferent(before[0], after[0])) {
+        failures.push(`${theme}/${mode}: a selected cell looks unchanged`);
+        continue;
+      }
+      const contrast = await markContrast(page);
+      if (contrast < NON_TEXT_CONTRAST) {
+        failures.push(
+          `${theme}/${mode}: the mark clears the surface by only ${contrast.toFixed(2)}:1`,
+        );
+      }
+      // And the mark costs the cell's own text nothing: a wash drawn behind
+      // the text would show up here as a drop.
+      if (after[0].textContrast < before[0].textContrast - 0.01) {
+        failures.push(
+          `${theme}/${mode}: selecting drops header text from ${before[0].textContrast.toFixed(2)}:1 to ${after[0].textContrast.toFixed(2)}:1`,
+        );
+      }
+    }
+  }
+  expect(failures).toEqual([]);
+});
+
+test('the mark marks exactly the cells the next keystroke replaces', async ({
   page,
 }) => {
   const errors = await openWithTable(page);
-  const before = await backgrounds(page);
+  const before = await paints(page);
   const filled = (await texts(page))
     .map((text, index) => (text === '' ? -1 : index))
     .filter(index => index !== -1);
 
   await dragAcross(page, 0, 4);
-
-  // Painted = the cells whose background the selection actually changed, so
-  // an unpainted selection yields an empty set rather than every cell.
-  const after = await backgrounds(page);
-  const painted = after
-    .map((background, index) => (background === before[index] ? -1 : index))
+  const marked = (await paints(page))
+    .map((paint, index) => (looksDifferent(before[index], paint) ? index : -1))
     .filter(index => index !== -1);
-  expect(painted, 'the selection paints the 2×2 block it covers').toEqual([
-    0, 1, 3, 4,
-  ]);
 
   await page.keyboard.press('Backspace');
   const emptied = (await texts(page))
     .map((text, index) => (text === '' ? index : -1))
     .filter(index => index !== -1 && filled.includes(index));
 
-  // Every cell the keystroke emptied was painted first, and nothing else was.
-  expect(emptied, 'the keystroke emptied the cells that were painted').toEqual(
-    painted.filter(index => filled.includes(index)),
+  expect(emptied, 'the keystroke emptied the cells that were marked').toEqual(
+    marked.filter(index => filled.includes(index)),
   );
+  expect(emptied.length, 'the keystroke emptied something').toBeGreaterThan(0);
   expect(errors).toEqual([]);
 });
 
-test('the paint goes when the selection goes', async ({page}) => {
+test('the mark goes when the selection goes', async ({page}) => {
   const errors = await openWithTable(page);
-  const before = await backgrounds(page);
+  const before = await paints(page);
 
   await dragAcross(page, 0, 4);
-  expect(new Set(await backgrounds(page)).size).toBeGreaterThan(1);
+  expect(looksDifferent(before[0], (await paints(page))[0])).toBe(true);
 
   // A caret in one cell is not a cell selection.
   await page.locator(CELLS).nth(8).click();
-  await expect.poll(async () => new Set(await backgrounds(page)).size).toBe(1);
-  expect(await backgrounds(page)).toEqual(before);
+  await expect
+    .poll(async () => {
+      const now = await paints(page);
+      return now.filter((paint, index) => looksDifferent(before[index], paint))
+        .length;
+    })
+    .toBe(0);
   expect(errors).toEqual([]);
 });
