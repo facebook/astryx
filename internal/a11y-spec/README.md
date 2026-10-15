@@ -59,6 +59,7 @@ src/
     ├── slider.*             a thumb's role, name, values, text, orientation, and arrow/Page/Home/End keys (RTL-mirrored arrows)
     ├── accordion.*          a group's header role and name, panel state, single-expansion collapse, page Tab order
     ├── breadcrumb.*         landmark, list-trail, current-page, and separator semantics
+    ├── combobox.*           control identity, state, popup, and active-descendant semantics
     ├── landmark.*           one component-owned landmark region's role, name, and content boundary
     └── link.*               one available link's role, name, current state, focus, and activation
 ```
@@ -81,6 +82,7 @@ src/
 | `disclosure`     | [APG Disclosure](https://www.w3.org/WAI/ARIA/apg/patterns/disclosure/)                                                    | Standalone Collapsible triggers and their controlled content                                                                                                                                                                                                                                             |
 | `accordion`      | [APG Accordion](https://www.w3.org/WAI/ARIA/apg/patterns/accordion/) required parts                                       | CollapsibleGroup headers: button role and name, expanded state, controlled panel, Enter/Space, single-expansion sibling collapse, page Tab order, no arrow-key movement (single-expansion collapse, grouped Tab order, no arrow movement are advisory until `component:CollapsibleGroup` AR4 is current) |
 | `breadcrumb`     | WCAG 2.2 semantics; [APG Breadcrumb](https://www.w3.org/WAI/ARIA/apg/patterns/breadcrumb/) as context                     | Breadcrumbs landmarks, list trails, current-page state, and separators                                                                                                                                                                                                                                   |
+| `combobox`       | WCAG 2.2 + [WAI-ARIA 1.2 Combobox](https://www.w3.org/TR/wai-aria-1.2/#combobox); APG as context                          | Selector trigger identity, state, popup, and active-descendant relationships                                                                                                                                                                                                                             |
 | `landmark`       | WCAG 2.2 semantics; [APG Landmark Regions](https://www.w3.org/WAI/ARIA/apg/patterns/landmarks/) as context                | LayoutHeader, LayoutContent, LayoutFooter, and LayoutPanel caller-declared landmarks                                                                                                                                                                                                                     |
 | `slider`         | [APG Slider](https://www.w3.org/WAI/ARIA/apg/patterns/slider/) role, values, name, orientation and keys                   | Slider thumbs: role, name, now/min/max, value text, orientation, arrows (RTL-mirrored), Page, Home/End, disabled keeps value                                                                                                                                                                             |
 | `treeview`       | [APG Tree View](https://www.w3.org/WAI/ARIA/apg/patterns/treeview/) structure and keyboard model                          | TreeList rows: tree/treeitem/group, aria-expanded, level/position, one Tab stop, Up/Down, Right/Left (RTL-mirrored), Home/End, Enter or Space, typeahead                                                                                                                                                 |
@@ -121,6 +123,17 @@ custom landmark label, RTL/supporting presentation, and an intentional
 no-current-page opt-out. Link, action-button, and sibling-menu semantics stay
 with their own patterns; the APG Breadcrumb page remains context because no
 current Astryx record adopts it as an additional required gate.
+
+The combobox contract owns the named control, expanded/busy/read-only state,
+its relationship to a rendered popup, and a declared active descendant. Its
+first Selector binding covers closed, open, read-only, busy, and bottom-sheet
+trigger states plus the search input with an active option. While a binding's
+own modal dialog popup makes the combobox inert, the browser correctly leaves it
+out of the accessibility tree, so the identity expectation does not apply there.
+Popup contents keep the existing listbox contract. `spec:AST-020/FR15` adopts
+the APG Combobox required parts, including Tab plus Enter or Space activation,
+wherever a part plays the combobox role; each adopter's record names them and its
+interaction suites verify the keyboard and selection parts.
 
 The landmark contract owns one component-owned landmark region: the role the
 binding declares, the label it declares, and the content the region bounds. It
