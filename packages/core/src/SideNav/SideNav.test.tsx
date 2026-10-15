@@ -828,6 +828,71 @@ describe('SideNavItem', () => {
     expect(screen.getByText('Security')).toBeInTheDocument();
   });
 
+  it('keeps nested rows full width and indents their content inside the row', () => {
+    render(
+      <SideNavItem label="Settings">
+        <SideNavItem label="General" href="/settings/general">
+          <SideNavItem label="Advanced" href="/settings/general/advanced" />
+        </SideNavItem>
+      </SideNavItem>,
+    );
+
+    // The children group adds no inset of its own, so a nested row's hover
+    // and selected fill spans the nav list like a top-level row's.
+    const groups = screen.getAllByRole('group', {hidden: true});
+    for (const group of groups) {
+      expect(declaredOn(group, 'padding-inline-start')).toEqual([]);
+      expect(
+        declaredOn(group.firstElementChild!, 'padding-inline-start'),
+      ).toEqual([]);
+    }
+
+    // The indent lives inside each row instead: the row's own padding plus
+    // one step per nesting level.
+    const top = screen.getByRole('button', {name: 'Settings'});
+    const general = screen.getByRole('link', {name: 'General'});
+    const advanced = screen.getByRole('link', {name: 'Advanced'});
+    expect(indentOf(top)).toBeNull();
+    expect(indentOf(general.parentElement!)).toBe(
+      'calc(var(--spacing-2) + 1 * var(--spacing-6))',
+    );
+    expect(indentOf(advanced)).toBe(
+      'calc(var(--spacing-2) + 2 * var(--spacing-6))',
+    );
+  });
+
+  it('indents a small nested row from the small row padding', () => {
+    render(
+      <SideNavItem label="Settings">
+        <SideNavItem label="General" href="/settings/general" size="sm" />
+      </SideNavItem>,
+    );
+    expect(indentOf(screen.getByRole('link', {name: 'General'}))).toBe(
+      'calc(var(--spacing-1) + 1 * var(--spacing-6))',
+    );
+  });
+
+  it('does not indent the first level of a collapsed rail flyout', async () => {
+    const user = userEvent.setup();
+    renderCollapsed(
+      <SideNavItem label="Settings" icon={StubIcon}>
+        <SideNavItem label="General" href="/settings/general">
+          <SideNavItem label="Advanced" href="/settings/general/advanced" />
+        </SideNavItem>
+      </SideNavItem>,
+    );
+    await user.click(screen.getByRole('button', {name: 'Settings'}));
+
+    // jsdom leaves the native popover `display: none`, hence `hidden: true`.
+    // The flyout lists the parent's children as its own top level.
+    const general = screen.getByRole('link', {name: 'General', hidden: true});
+    const advanced = screen.getByRole('link', {name: 'Advanced', hidden: true});
+    expect(indentOf(general.parentElement!)).toBeNull();
+    expect(indentOf(advanced)).toBe(
+      'calc(var(--spacing-2) + 1 * var(--spacing-6))',
+    );
+  });
+
   it('passes data-testid', () => {
     render(<SideNavItem label="Dashboard" data-testid="nav-item" />);
     expect(screen.getByTestId('nav-item')).toBeInTheDocument();
@@ -2455,6 +2520,22 @@ function declaredOn(el: Element, prop: string): string[] {
     })
     .map(rule => declaredValue(rule, prop))
     .filter(value => value != null);
+}
+
+/**
+ * The nesting indent a row carries, or null for none. The indent is a
+ * runtime StyleX value, so it rides the row's inline style as a custom
+ * property; read the value rather than the generated property name.
+ */
+function indentOf(el: HTMLElement): string | null {
+  const {style} = el;
+  for (let i = 0; i < style.length; i++) {
+    const value = style.getPropertyValue(style[i]).trim();
+    if (value.includes('var(--spacing-6)')) {
+      return value;
+    }
+  }
+  return null;
 }
 
 /**

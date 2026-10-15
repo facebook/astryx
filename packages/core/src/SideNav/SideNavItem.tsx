@@ -17,6 +17,11 @@
  * `TopNavMenu` use). Hover is a progressive enhancement over the popover's
  * click behavior and is inert on coarse pointers.
  *
+ * Nested rows span the full width of the nav list, like top-level rows, so
+ * their hover and selected fill lines up with the rows above them. The
+ * nesting indent sits inside the row as extra inline-start padding, one step
+ * per level, tracked through a private depth context.
+ *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/SideNav/SideNav.doc.mjs
  * - /packages/core/src/SideNav/SideNav.test.tsx
@@ -26,6 +31,8 @@
  */
 
 import {
+  createContext,
+  use,
   useCallback,
   useId,
   useMemo,
@@ -108,9 +115,6 @@ const styles = stylex.create({
     gap: spacingVars['--spacing-1'],
     pointerEvents: 'auto',
   },
-  children: {
-    paddingInlineStart: spacingVars['--spacing-6'],
-  },
   childrenCollapsible: {
     display: 'grid',
     gridTemplateRows: '1fr',
@@ -124,10 +128,11 @@ const styles = stylex.create({
   childrenCollapsed: {
     gridTemplateRows: '0fr',
   },
+  // No inline padding: nested rows fill the full width of the nav list, and
+  // each row carries its own indent (`indent` below).
   childrenInner: {
     overflow: 'hidden',
     minHeight: 0,
-    paddingInlineStart: spacingVars['--spacing-6'],
   },
   expandChevron: {
     display: 'inline-flex',
@@ -231,6 +236,27 @@ const styles = stylex.create({
     lineHeight: typeScaleVars['--text-supporting-leading'],
   },
 });
+
+// Nesting indent, drawn inside the row: the row's own inline-start padding
+// plus one `--spacing-6` step per nesting level. The row itself stays full
+// width, so its hover and selected fill matches a top-level row's.
+// SYNC: the base padding matches navItemStyles.sm / .md / .lg.
+const indentStyles = stylex.create({
+  sm: (depth: number) => ({
+    paddingInlineStart: `calc(${spacingVars['--spacing-1']} + ${depth} * ${spacingVars['--spacing-6']})`,
+  }),
+  md: (depth: number) => ({
+    paddingInlineStart: `calc(${spacingVars['--spacing-2']} + ${depth} * ${spacingVars['--spacing-6']})`,
+  }),
+});
+
+/**
+ * How many SideNavItems deep the current item sits: 0 at the top level,
+ * 1 inside one parent, and so on. A collapsed rail's flyout resets it to 0,
+ * since the flyout lists a parent's children as its own top level.
+ */
+const SideNavItemDepthContext = createContext(0);
+SideNavItemDepthContext.displayName = 'SideNavItemDepthContext';
 
 /**
  * Cascaded to the `actions` slot through `SizeContext` so a consumer's row
@@ -363,7 +389,9 @@ export interface SideNavItemProps extends BaseProps<HTMLElement> {
    */
   actions?: ReactNode;
   /**
-   * Sub-items for nesting.
+   * Sub-items for nesting. Nested items span the full width of the nav
+   * list, like top-level items; their content is indented one step per
+   * nesting level.
    */
   children?: ReactNode;
   /**
@@ -455,6 +483,7 @@ export function SideNavItem({
   const id = useId();
   const hasChildren = !!children;
   const itemRef = useRef<HTMLDivElement>(null);
+  const depth = use(SideNavItemDepthContext);
 
   // Popover for collapsed items with children
   const popover = usePopover({
@@ -608,7 +637,9 @@ export function SideNavItem({
               onClick={() => popover.hide()}>
               <div {...stylex.props(styles.popoverHeader)}>{label}</div>
               <SideNavCollapseContext value={EXPANDED_COLLAPSE_STATE}>
-                {children}
+                <SideNavItemDepthContext value={0}>
+                  {children}
+                </SideNavItemDepthContext>
               </SideNavCollapseContext>
             </div>,
             {placement: 'end', alignment: 'start', xstyle: styles.popoverGap},
@@ -683,6 +714,7 @@ export function SideNavItem({
     navItemStyles.item,
     interactionOverlayStyles.backgroundColor,
     navItemStyles[size],
+    depth > 0 && indentStyles[size === 'sm' ? 'sm' : 'md'](depth),
     isSelected && navItemStyles.selected,
     isDisabled && navItemStyles.disabled,
   ] as const;
@@ -831,7 +863,9 @@ export function SideNavItem({
             <span id={`${id}-label`} hidden>
               {label}
             </span>
-            {children}
+            <SideNavItemDepthContext value={depth + 1}>
+              {children}
+            </SideNavItemDepthContext>
           </div>
         </div>
       )}
