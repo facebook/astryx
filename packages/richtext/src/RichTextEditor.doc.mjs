@@ -184,7 +184,7 @@ export const docs = {
       {
         guidance: true,
         description:
-          'Install lexical and @lexical/react (optional peers) before importing from @astryxdesign/richtext.',
+          'RichText is built on Lexical and exposes it: nodes and transformers take Lexical types, plugins takes Lexical React plugins, and onChange and getEditorState() report Lexical types. Install the lexical and @lexical/* peers (optional peers) at the Lexical minor named in the package peer ranges before importing from @astryxdesign/richtext.',
       },
       {
         guidance: true,

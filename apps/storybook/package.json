@@ -33,9 +33,11 @@
   "devDependencies": {
     "@astryxdesign/build": "*",
     "@heroicons/react": "^2.2.0",
+    "@lexical/extension": "^0.46.0",
     "@lexical/headless": "^0.46.0",
     "@lexical/markdown": "^0.46.0",
     "@lexical/react": "^0.46.0",
+    "@lexical/table": "^0.46.0",
     "@storybook/addon-docs": "^10.4.6",
     "@storybook/addon-links": "^10.4.6",
     "@storybook/react": "^10.4.6",

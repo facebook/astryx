@@ -48,6 +48,7 @@ affects_consumer_docs: [release-process, templates]
       "DEC-14",
       "DEC-17",
       "DEC-18",
+      "DEC-19",
       "DEC-20",
       "FR3",
       "FR4",
@@ -95,6 +96,7 @@ affects_consumer_docs: [release-process, templates]
       "FR49",
       "FR50",
       "FR51",
+      "FR52",
       "FR53",
       "DEC-15",
       "DEC-16"
@@ -660,6 +662,17 @@ one removal merged ahead of the decision to allow it.
   until the declaration is strictly above stable. If main already carries a newer
   owner plan, FR50 preserves it and no duplicate bump is required. The plan remains
   malleable under FR46 until the next cut.
+- **FR52 — Repository evidence follows codemods through promotion.** A codemod staged
+  for an unreleased change may move from `transforms/next/` into the immutable
+  `transforms/v<declared-version>/` folder during release generation. A checked-in test,
+  validator, documentation generator, or other repository evidence that reads that
+  transform's source MUST identify the transform independently of its lifecycle folder
+  and resolve its staged or promoted location as appropriate. It MUST fail when the
+  transform is missing, when multiple candidates make the identity ambiguous, or when
+  the promoted source no longer exposes the same transform identity and declared entry
+  set. It MUST NOT keep a duplicate transform solely to preserve the staged path.
+  Promotion remains one generated release output under FR47 and FR50; this requirement
+  changes no consumer migration contract.
 - **FR53 — Accessibility behavior fixes are not breaking.** A change whose purpose is
   to make a released component conform to its accessibility target — a WCAG 2.2 Level
   A or AA success criterion, the required parts of an APG pattern the component adopts
@@ -776,6 +789,10 @@ post-cut consumption, or plan changes. A separate owner change declares the next
 patch successor by default, minor only when Cindy names it—without holding unrelated
 main work.
 
+Codemod promotion relocates staged transform source into the immutable release folder.
+Repository evidence that reads a transform follows that lifecycle location and treats a
+missing or ambiguous identity as a failure rather than preserving a duplicate source.
+
 These requirements alter no published package by themselves and need no Changeset.
 Authoring helpers, validators, metadata projections, compatibility snapshots, release
 workflows, and contributor guidance implement the contract. Until each projection
@@ -806,6 +823,7 @@ lands, maintainers apply its requirement in review and release approval.
 | FR49      | Malformed and inconsistent declaration fixtures                                                                                                                                                                                                                                                                                                                 | disagreeing group versions, canary identifier, release version unlike the cut manifest, already-released version, skipped version, no stable tag                                                                        | An untrustworthy or mismatched declaration is released                                                                                                                                                                                                                |
 | FR50      | Three-way squash merge-back fixtures bound to the immutable tag, branch head, and plan digest                                                                                                                                                                                                                                                                   | exact branch outputs, frozen deletion, branch-only marker exclusion, post-cut Changeset/manifest edit, newer main declaration, merge conflict, regenerated output                                                       | Merge-back differs from release bytes, lands lifecycle files, consumes post-cut work, overwrites a newer main declaration or unrelated field, or chooses a version                                                                                                    |
 | FR51      | Separate next-plan manifest/pin/lockfile/compatibility-asset fixtures plus canary routing assertions                                                                                                                                                                                                                                                            | default patch successor, explicitly named minor, pre-advanced main plan, unrelated main work during equality                                                                                                            | Equality publishes a canary, the default skips a patch, pending Changesets choose a minor, exact pins or compatibility assets split, or merge-back requires a duplicate bump for an existing newer plan                                                               |
+| FR52      | Promotion fixtures plus every checked-in source consumer run before and after codemod promotion                                                                                                                                                                                                                                                                 | staged transform, promoted transform, missing source, ambiguous candidates, changed entry identity                                                                                                                      | Evidence hardcodes only `next/`, keeps a duplicate source, silently chooses among candidates, or passes when the promoted transform no longer exposes the same identity and entries                                                                                   |
 | FR53      | Changeset classification review against the governing component record's accessibility evidence                                                                                                                                                                                                                                                                 | a fix that replaces documented keyboard or focus behavior to meet an adopted APG pattern's required parts; a fix that changes a role, state, or accessible name to meet WCAG 2.2 A/AA; a fix that adds an optional prop | An accessibility fix is held for a minor, given a coexistence path, or classified `[breaking]`; or a change that needs an app-layer code edit, or that removes, renames, or narrows public surface, ships as an accessibility `[fix]`                                 |
 
 ## Decision log
@@ -1168,6 +1186,20 @@ Rejected: a lifecycle record and frozen manifest that every removal had to appea
 before merging, which duplicated the Changeset and made bookkeeping the blocker; a
 per-record transition requirement and waiver, which the patch rule already expresses;
 and dropping the manifest, which would lose the minor's migration inventory.
+
+### DEC-19 — Promotion moves codemod source without invalidating its evidence
+
+**Reference:** `spec:AST-017/DEC-19`
+**Decider:** `cixzhang`, 2026-10-14
+
+A staged codemod and its promoted release copy are one transform at two lifecycle
+locations. Checked-in evidence identifies the transform and resolves whichever location
+the repository state owns; promotion cannot turn a valid source-level guard red merely
+by moving the source, and it cannot make that guard silently stop running. Missing,
+ambiguous, or identity-changing promotion fails.
+
+Rejected: retaining a duplicate under `next/` after promotion; hardcoding only the
+staged path or one release folder; and copying transform declarations into a test.
 
 ### DEC-20 — Accessibility behavior fixes are not breaking
 

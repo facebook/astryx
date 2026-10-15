@@ -39,9 +39,9 @@ reflows no line; only editing affordances appear or disappear.
   The one exception is the character reference decoder that DEC-5 shares.
 - Collaboration, persistence, document hosting, and plugin adapters between
   Markdown plugins and the editor.
-- Which editor engine serves document editing, and the stored value an editor
-  reads and writes. This record governs how the surfaces render the same
-  document, not which surface a product chooses to edit documents with.
+- Which editor engine a product chooses for editing whole documents, and the
+  value that product stores. This record governs how the surfaces render the
+  same document; RichText's own role and value are DEC-7.
 - RichText's release channel. RichText stays canary-only.
 - Equivalent internal implementations remain valid when they satisfy this
   contract, except the character reference decoder, which DEC-5 makes one
@@ -76,6 +76,8 @@ reflows no line; only editing affordances appear or disappear.
   one marker per item with the marker style of its depth (DEC-6), and indent
   each level by the same amount. Task-list items, fenced code, tables, and
   thematic breaks render as those structures, never as their literal source.
+  Fenced code wraps long lines on every surface; a code line never scrolls or
+  clips sideways (DEC-9).
 - **FR6 — Same direction.** Content blocks lay out in the direction of the
   surrounding Internationalization provider on every surface. A surface does
   not choose a block's direction from its text; text that runs against the
@@ -125,19 +127,26 @@ constructs they render, and their default editor theme follows FR2 and FR3.
 import with.
 `Markdown` draws disc and decimal markers at every depth, and RichText draws
 the second bulleted level as a disc; both adopt the DEC-6 marker cycle.
+RichText adopts DEC-8: its package entry stops exporting `sharedEditorTheme`,
+`URL_MATCHER`, `EMAIL_MATCHER`, and `Transformer`; `RichTextEditorToolbar`
+gains `BaseProps` and a `ref` and renames `linkOpensInNewTab` to `hasNewTabLinks`; and its
+Lexical peer ranges move to the Lexical 0.52 minor.
+`Markdown` renders fenced code unwrapped, scrolling sideways, and adopts the
+FR5 wrap; RichText already wraps fenced code.
 
 ## Verification
 
-| Contract   | Verification                                                                                    | Representative states                                                                                                                                            | Mutation or failure expectation                                                                                     |
-| ---------- | ----------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| FR2–FR4    | Real-browser computed style and block geometry of the parity fixture on `Markdown` and RichText | 390px and 1440px; light and dark; default density                                                                                                                | Restoring a hard-coded heading size or a different block margin moves a block past 2 px and fails                   |
-| FR5        | Real-browser structure and line counts of the parity fixture                                    | Nested lists at 2- and 3-space indentation; soft breaks; blockquote continuation                                                                                 | Flattening a nested list or turning a soft break into a line break fails                                            |
-| FR6        | Real-browser computed direction per block                                                       | Right-to-left provider with left-to-right text, and the reverse                                                                                                  | Per-block automatic direction fails                                                                                 |
-| FR7        | Semantic DOM of inline marks, links, and character references on every surface                  | Titled link, bare link, strong, emphasis, strikethrough; `&amp;`, `&copy;`, `&#169;` in text and in code                                                         | A title inside a destination, a styled span in place of a semantic element, or an undecoded reference in text fails |
-| FR7, DEC-5 | Shared conformance cases through `Markdown` rendering and RichText import                       | Named, decimal, and hexadecimal references; an unknown name; a missing semicolon; an invalid code point                                                          | A second reference table, or a decoder that changes an unknown name or an unterminated reference, fails             |
-| FR5, DEC-6 | Real-browser marker style per depth on both surfaces                                            | Bulleted and numbered lists nested 0–8 deep and of mixed types; starts of 0, −1, 26, 27, 3999, and 4000 at alpha and roman depths; right-to-left; light and dark | A level that draws another level's marker, or one surface differing from the other, fails                           |
-| FR8        | Real-browser code block header geometry in both modes                                           | Fenced code with an info string                                                                                                                                  | A header missing from one mode moves the code and fails                                                             |
-| FR9–FR10   | Real-browser read/edit switch of the parity fixture and a long document                         | Short document at the top; long document halfway down                                                                                                            | A per-block shift beyond the constant offset, or an anchor block leaving the top of the view, fails                 |
+| Contract   | Verification                                                                                                | Representative states                                                                                                                                            | Mutation or failure expectation                                                                                           |
+| ---------- | ----------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| FR2–FR4    | Real-browser computed style and block geometry of the parity fixture on `Markdown` and RichText             | 390px and 1440px; light and dark; default density                                                                                                                | Restoring a hard-coded heading size or a different block margin moves a block past 2 px and fails                         |
+| FR5        | Real-browser structure and line counts of the parity fixture                                                | Nested lists at 2- and 3-space indentation; soft breaks; blockquote continuation                                                                                 | Flattening a nested list or turning a soft break into a line break fails                                                  |
+| FR6        | Real-browser computed direction per block                                                                   | Right-to-left provider with left-to-right text, and the reverse                                                                                                  | Per-block automatic direction fails                                                                                       |
+| FR7        | Semantic DOM of inline marks, links, and character references on every surface                              | Titled link, bare link, strong, emphasis, strikethrough; `&amp;`, `&copy;`, `&#169;` in text and in code                                                         | A title inside a destination, a styled span in place of a semantic element, or an undecoded reference in text fails       |
+| FR7, DEC-5 | Shared conformance cases through `Markdown` rendering and RichText import                                   | Named, decimal, and hexadecimal references; an unknown name; a missing semicolon; an invalid code point                                                          | A second reference table, or a decoder that changes an unknown name or an unterminated reference, fails                   |
+| FR5, DEC-9 | Real-browser line boxes and horizontal overflow of a long-line code fixture on both surfaces, read and edit | 390px and 1440px; light and dark; left-to-right and right-to-left                                                                                                | A code block whose scroll width exceeds its client width, or a long line that is taller in one mode than the other, fails |
+| FR5, DEC-6 | Real-browser marker style per depth on both surfaces                                                        | Bulleted and numbered lists nested 0–8 deep and of mixed types; starts of 0, −1, 26, 27, 3999, and 4000 at alpha and roman depths; right-to-left; light and dark | A level that draws another level's marker, or one surface differing from the other, fails                                 |
+| FR8        | Real-browser code block header geometry in both modes                                                       | Fenced code with an info string                                                                                                                                  | A header missing from one mode moves the code and fails                                                                   |
+| FR9–FR10   | Real-browser read/edit switch of the parity fixture and a long document                                     | Short document at the top; long document halfway down                                                                                                            | A per-block shift beyond the constant offset, or an anchor block leaving the top of the view, fails                       |
 
 ## Decision log
 
@@ -223,6 +232,56 @@ lower-roman — is written in decimal, as the CSS counter styles fall back; the
 start value and the items stay as written. Task list items show checkboxes
 instead of markers. Markers are presentation: the
 list keeps its list semantics, and the source does not change.
+
+### DEC-7 — RichText is a form-field editor whose value is Lexical editor state
+
+**Reference:** `spec:AST-061/DEC-7`
+**Decider:** cixzhang, 2026-10-14
+
+`RichTextEditor` is a public form-field editor: a labelled field in which a
+person writes formatted text. Its value is serialized Lexical `EditorState`
+JSON: `defaultValue` takes it, `onChange` reports the editor state that
+serializes to it, and `RichTextView` renders it. Markdown is an import and
+export format, not the value: `markdownToEditorStateJSON` and
+`editorStateJSONToMarkdown` convert between the two, and `spec:AST-062` owns
+what that conversion returns. RichText is not a document editor; collaboration,
+persistence, and document hosting stay outside it, and a product that edits
+whole documents chooses its own engine and stored value. This record stays
+the one visual contract that RichText and `Markdown` share.
+
+### DEC-8 — RichText's public surface is Lexical's, kept small
+
+**Reference:** `spec:AST-061/DEC-8`
+**Decider:** cixzhang, 2026-10-14
+
+RichText is built on Lexical and says so: `nodes` and `transformers` take
+Lexical types, `plugins` takes Lexical React plugins, and `onChange(editorState,
+editor)` and the editor ref's `getEditorState()` report Lexical types, so a
+caller extends the editor with Lexical directly.
+The package supports one Lexical minor and declares it in its Lexical peer
+ranges; `spec:AST-017` classifies a change to that minor. The package exports
+only what a caller builds with: the generated editor theme classes, the
+autolink regular expressions, and a re-export of Lexical's `Transformer` type
+are internal, and `Transformer` comes from `@lexical/markdown`.
+`RichTextEditorToolbar` takes `BaseProps` and a `ref` and passes them to the
+core `Toolbar` it renders, which places them as it places its own: the `ref`
+and styling on its root, and other base props on its `role="toolbar"`
+element. Its option for links that open in a new tab is `hasNewTabLinks`. `RichTextEditorAutoLinkPlugin` renders no element of
+its own, so it takes no `BaseProps`.
+Rejected: Astryx document, node, and plugin types over Lexical's, because they
+would duplicate Lexical's extension model with no gain for a caller.
+
+### DEC-9 — Fenced code wraps
+
+**Reference:** `spec:AST-061/DEC-9`
+**Decider:** cixzhang, 2026-10-14
+
+A reader on a narrow screen sees a whole code line without scrolling it
+sideways, and a long line takes the same height in read and edit mode, so the
+switch does not move the blocks below it (FR9). Wrapping is presentation: the
+code's text, its line numbers, and what copy returns do not change.
+Rejected: both surfaces scrolling sideways, because editing inside a
+sideways-scrolling region hides the caret's context.
 
 ## Open questions
 
