@@ -177,7 +177,7 @@ test("the endContent controls disable with the editor, like the toolbar's own", 
 }) => {
   const errors = await openStory(page);
   const editor = page.locator(EDITOR);
-  const inserts = ['Table', 'Rule', 'Mention'].map(name =>
+  const inserts = ['Table', 'Rule', 'Mention', 'Image'].map(name =>
     page.getByRole('button', {name, exact: true}),
   );
   const bold = page.getByRole('button', {name: 'Bold', exact: true});
@@ -283,8 +283,204 @@ const AXE_DISABLED_RULES = [
   'region',
 ];
 
+/* ------------------------------------------------------------------ *
+ * The image plugin
+ * ------------------------------------------------------------------ */
+
+/** The image the editor holds, as the plugin draws it. */
+const IMAGE = '[data-playground-editor] [data-playground-image] img';
+
+/** Inserts the dialog's default sample image into the one editor. */
+async function insertSampleImage(page: Page): Promise<void> {
+  await page.locator(EDITOR).click();
+  await page.keyboard.press('ControlOrMeta+End');
+  await page.getByRole('button', {name: 'Image', exact: true}).click();
+  // The dialog opens on its sample source, so this is one click away.
+  await expect(page.getByRole('heading', {name: 'Insert image'})).toBeVisible();
+  await page.getByRole('button', {name: 'Insert image', exact: true}).click();
+  await expect(page.locator(IMAGE)).toHaveCount(1);
+}
+
+/** The image's rendered width, which is what a resize moves. */
+async function imageWidth(page: Page): Promise<number> {
+  const box = await page.locator(IMAGE).boundingBox();
+  return box?.width ?? 0;
+}
+
+test('the image plugin inserts an image through the editor nodes prop', async ({
+  page,
+}) => {
+  const errors = await openStory(page);
+  await insertSampleImage(page);
+
+  // The alt text the sample carries reaches the DOM, so the picture is not
+  // silent to a screen reader.
+  await expect(page.locator(IMAGE)).toHaveAttribute(
+    'alt',
+    /illustration of layered hills/,
+  );
+  // One editor still, with the image inside the editable surface.
+  await expect(
+    page.locator('[role="textbox"][data-lexical-editor]'),
+  ).toHaveCount(1);
+  await expect(page.locator('[data-playground-stats]')).toContainText(
+    '1 image',
+  );
+  expect(errors).toEqual([]);
+});
+
+test('a selected image resizes by its handle and by its controls, and removes itself', async ({
+  page,
+}) => {
+  const errors = await openStory(page);
+  await insertSampleImage(page);
+  const image = page.locator(IMAGE);
+  // The width the image draws at before anything resizes it, which is what
+  // "Reset size" must restore.
+  const natural = await imageWidth(page);
+
+  // Nothing is offered until the image is selected: the controls and the
+  // resize handle belong to a selected image, like Lexical's own.
+  await expect(page.locator('[data-playground-image-actions]')).toHaveCount(0);
+  await image.click();
+  await expect(page.locator('[data-playground-image-actions]')).toHaveCount(1);
+
+  const started = await imageWidth(page);
+  await page.getByRole('button', {name: 'Larger', exact: true}).click();
+  await expect
+    .poll(() => imageWidth(page), {message: 'Larger widens the image'})
+    .toBeGreaterThan(started + 1);
+
+  const widened = await imageWidth(page);
+  await page.getByRole('button', {name: 'Smaller', exact: true}).click();
+  await expect
+    .poll(() => imageWidth(page), {message: 'Smaller narrows the image'})
+    .toBeLessThan(widened - 1);
+
+  // Dragging the handle resizes too, and commits the width to the node: the
+  // editor state carries it after the pointer is lifted.
+  const handle = page.locator('[data-playground-image-handle]');
+  const box = await handle.boundingBox();
+  const before = await imageWidth(page);
+  await page.mouse.move(box!.x + box!.width / 2, box!.y + box!.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(box!.x + box!.width / 2 + 80, box!.y, {steps: 8});
+  await page.mouse.up();
+  await expect
+    .poll(() => imageWidth(page), {message: 'the handle widens the image'})
+    .toBeGreaterThan(before + 40);
+
+  await page.getByRole('tab', {name: 'Editor state'}).click();
+  await expect(page.locator('[data-playground-output]')).toContainText(
+    /"width":\s*\d+/,
+  );
+
+  // Reset size puts the image back to the width it drew at when it arrived.
+  await page.getByRole('button', {name: 'Reset size', exact: true}).click();
+  await expect
+    .poll(() => imageWidth(page), {message: 'Reset size restores the image'})
+    .toBeCloseTo(natural, 0);
+
+  await page.getByRole('button', {name: 'Remove image', exact: true}).click();
+  await expect(page.locator(IMAGE)).toHaveCount(0);
+  expect(errors).toEqual([]);
+});
+
+test("Enter opens a selected image's controls, and Escape leaves them", async ({
+  page,
+}) => {
+  const errors = await openStory(page);
+  await insertSampleImage(page);
+  await page.locator(IMAGE).click();
+
+  // Tab indents inside the editor, so Enter is the keyboard route into the
+  // controls of the selected image — without it they are mouse-only.
+  await page.keyboard.press('Enter');
+  await expect(
+    page.getByRole('button', {name: 'Smaller', exact: true}),
+  ).toBeFocused();
+
+  await page.keyboard.press('Escape');
+  await expect(page.locator(EDITOR)).toBeFocused();
+  expect(errors).toEqual([]);
+});
+
+test('an image reaches the state, the HTML and RichTextView, and says why it is not in the Markdown', async ({
+  page,
+}) => {
+  const errors = await openStory(page);
+  await insertSampleImage(page);
+  const output = page.locator('[data-playground-output]');
+
+  await page.getByRole('tab', {name: 'Editor state'}).click();
+  await expect(output).toContainText('"playground-image"');
+
+  await page.getByRole('tab', {name: 'Node tree'}).click();
+  await expect(output).toContainText('playground-image alt=');
+
+  await page.getByRole('tab', {name: 'HTML'}).click();
+  await expect(output).toContainText('<img');
+
+  await page.getByRole('tab', {name: 'RichTextView'}).click();
+  await expect(output.locator('img')).toHaveCount(1);
+
+  // The Markdown readout does NOT carry the image, because RichText's default
+  // transformer array is internal and `transformers` replaces it whole. A
+  // readout that silently dropped content would read as a bug, so the
+  // playground says so where the content is missing.
+  await page.getByRole('tab', {name: 'Markdown'}).click();
+  await expect(output).not.toContainText('![');
+  await expect(output).toContainText('missing from this Markdown');
+  expect(errors).toEqual([]);
+});
+
+test('turning the image node off takes the document back through Markdown', async ({
+  page,
+}) => {
+  const errors = await openStory(page);
+  await insertSampleImage(page);
+  await expect(page.locator(IMAGE)).toHaveCount(1);
+
+  // `nodes` is read at construction, so the switch rebuilds the editor. State
+  // holding an image cannot be parsed without the node registered, so the
+  // document round-trips through Markdown — and the image does not survive.
+  await toggle(page, 'Images').click();
+  await expect(page.locator(EDITOR)).toBeVisible();
+  await expect(page.locator(IMAGE)).toHaveCount(0);
+  await expect(
+    page.getByRole('button', {name: 'Image', exact: true}),
+  ).toHaveCount(0);
+  // The document itself is still here.
+  await expect(page.locator(`${EDITOR} table`)).toHaveCount(1);
+
+  await toggle(page, 'Images').click();
+  await expect(
+    page.getByRole('button', {name: 'Image', exact: true}),
+  ).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
 test('the story has no axe violations', async ({page}) => {
   const errors = await openStory(page);
+  const results = await new AxeBuilder({page})
+    .disableRules(AXE_DISABLED_RULES)
+    .analyze();
+  expect(
+    results.violations.map(violation => [
+      violation.id,
+      violation.nodes.map(node => node.target.join(' ')),
+    ]),
+  ).toEqual([]);
+  expect(errors).toEqual([]);
+});
+
+test('the story has no axe violations with a selected image in it', async ({
+  page,
+}) => {
+  const errors = await openStory(page);
+  await insertSampleImage(page);
+  await page.locator(IMAGE).click();
+  await expect(page.locator('[data-playground-image-actions]')).toHaveCount(1);
   const results = await new AxeBuilder({page})
     .disableRules(AXE_DISABLED_RULES)
     .analyze();
