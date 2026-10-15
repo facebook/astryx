@@ -3,7 +3,7 @@
 /**
  * @file useTriggerMenu.test.tsx
  * @input Uses vitest, @testing-library/react, useTriggerMenu hook
- * @output Unit tests for trigger detection, multi-word queries, IME guard, stale results, and Escape dismissal
+ * @output Unit tests for trigger detection, multi-word queries, IME guard, pending-search Enter, stale and late results, and Escape dismissal
  * @position Testing; validates useTriggerMenu.tsx implementation
  *
  * SYNC: When useTriggerMenu.tsx changes, update tests to match new behavior
@@ -632,9 +632,10 @@ describe('useTriggerMenu', () => {
       consumed = result.current.handleKeyDown(enterEvent);
     });
 
-    // Enter must NOT be consumed or pick the old item
-    expect(consumed).toBe(false);
-    expect(enterEvent.preventDefault).not.toHaveBeenCalled();
+    // Enter does nothing while the newer search is pending: it is consumed
+    // (so the composer does not submit) and it picks no row.
+    expect(consumed).toBe(true);
+    expect(enterEvent.preventDefault).toHaveBeenCalled();
     expect(asyncTrigger.onSelect).not.toHaveBeenCalled();
 
     // Now resolve search 2
@@ -744,5 +745,117 @@ describe('useTriggerMenu', () => {
     expect(result.current.state.isActive).toBe(false);
     expect(result.current.state.items).toEqual([]);
     expect(result.current.state.isLoading).toBe(false);
+  });
+
+  function keyEvent(key: string, extra?: Partial<React.KeyboardEvent>) {
+    return {
+      key,
+      shiftKey: false,
+      preventDefault: vi.fn(),
+      nativeEvent: {} as KeyboardEvent,
+      ...extra,
+    } as unknown as React.KeyboardEvent;
+  }
+
+  function deferredSource() {
+    const pending = new Map<string, (items: SearchableItem[]) => void>();
+    const source: SearchSource = {
+      async search(query: string) {
+        return new Promise<SearchableItem[]>(resolve => {
+          pending.set(query, resolve);
+        });
+      },
+      bootstrap: async () => [],
+    };
+    return {
+      source,
+      resolve: (q: string, items: SearchableItem[]) => pending.get(q)?.(items),
+    };
+  }
+
+  // 21. Pending-search Enter applies to triggers that never opted in.
+  it('21. Enter does nothing while a single-token trigger search is pending', async () => {
+    const {source, resolve} = deferredSource();
+    const onSelect = vi.fn((item: SearchableItem) => `/${item.id} `);
+    const trigger = createCommandTrigger({searchSource: source, onSelect});
+    const {result} = renderTriggerHook([trigger]);
+
+    await act(async () => {
+      setCursor('/s');
+      result.current.handleInput();
+    });
+    await act(async () => {
+      resolve('s', [{id: 'summarize', label: 'summarize'}]);
+      await Promise.resolve();
+    });
+    await act(async () => {
+      setCursor('/su');
+      result.current.handleInput();
+    });
+    expect(result.current.state.isLoading).toBe(true);
+
+    const enter = keyEvent('Enter');
+    let consumed = false;
+    act(() => {
+      consumed = result.current.handleKeyDown(enter);
+    });
+    expect(consumed).toBe(true);
+    expect(enter.preventDefault).toHaveBeenCalled();
+    expect(onSelect).not.toHaveBeenCalled();
+
+    // Shift+Enter keeps its editor meaning (a line break ends the query).
+    const shiftEnter = keyEvent('Enter', {shiftKey: true});
+    act(() => {
+      consumed = result.current.handleKeyDown(shiftEnter);
+    });
+    expect(consumed).toBe(false);
+  });
+
+  // 22. A hidden menu does not swallow Escape.
+  it('22. does not consume Escape while an unmatched multi-word query hides the menu', async () => {
+    const {result} = renderTriggerHook();
+
+    await act(async () => {
+      setCursor('@team please review');
+      result.current.handleInput();
+      await Promise.resolve();
+    });
+    expect(result.current.state.isActive).toBe(true);
+    expect(result.current.renderMenu()).toBeNull();
+
+    const escape = keyEvent('Escape');
+    let consumed = true;
+    act(() => {
+      consumed = result.current.handleKeyDown(escape);
+    });
+    expect(consumed).toBe(false);
+    expect(escape.preventDefault).not.toHaveBeenCalled();
+  });
+
+  // 23. A result arriving after its query ended does not reopen the menu.
+  it('23. discards a result that arrives after the editor no longer holds the query', async () => {
+    const {source, resolve} = deferredSource();
+    const {result} = renderTriggerHook([
+      createMentionTrigger({searchSource: source}),
+    ]);
+
+    await act(async () => {
+      setCursor('@jor');
+      result.current.handleInput();
+    });
+    expect(result.current.state.isActive).toBe(true);
+
+    // The composer clears the editor on submit without an input event.
+    act(() => {
+      editable.textContent = '';
+    });
+    await act(async () => {
+      resolve('jor', [{id: 'jordan', label: 'Jordan Lee'}]);
+      await Promise.resolve();
+    });
+
+    expect(result.current.state.isActive).toBe(false);
+    expect(result.current.state.items).toEqual([]);
+    expect(result.current.renderMenu()).toBeNull();
   });
 });

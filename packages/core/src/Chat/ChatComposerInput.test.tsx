@@ -11,7 +11,7 @@ import type {
   ChatComposerInputHandle,
 } from './ChatComposerInput';
 import {createStaticSource} from '../Typeahead/createStaticSource';
-import type {SearchableItem} from '../Typeahead/types';
+import type {SearchableItem, SearchSource} from '../Typeahead/types';
 
 // =============================================================================
 // Helpers
@@ -1367,6 +1367,87 @@ describe('ChatComposerInput', () => {
       expect(
         container.querySelector('.astryx-chat-composer-input'),
       ).toBeInTheDocument();
+    });
+  });
+
+  describe('trigger query (component:ChatComposerInput FR13, AR5)', () => {
+    function typeAtEnd(editable: HTMLElement, text: string) {
+      editable.textContent = text;
+      const node = editable.firstChild!;
+      const range = document.createRange();
+      range.setStart(node, text.length);
+      range.collapse(true);
+      const sel = window.getSelection()!;
+      sel.removeAllRanges();
+      sel.addRange(range);
+      fireEvent.input(editable);
+    }
+
+    it('Enter while a newer trigger search is pending neither submits nor picks a row', async () => {
+      const onSubmit = vi.fn();
+      let resolveSlow: (items: SearchableItem[]) => void = () => {};
+      const source: SearchSource = {
+        bootstrap: async () => [],
+        async search(query: string) {
+          if (query === 'ci') {
+            return new Promise(resolve => {
+              resolveSlow = resolve;
+            });
+          }
+          return Promise.resolve(
+            USERS.filter(u => u.label.toLowerCase().includes(query)),
+          );
+        },
+      };
+      render(
+        <ChatComposerInput
+          triggers={[createMentionTrigger({searchSource: source})]}
+          debounceMs={0}
+          onSubmit={onSubmit}
+        />,
+      );
+      const editable = screen.getByRole('combobox');
+      editable.focus();
+
+      typeAtEnd(editable, '@c');
+      await waitFor(() => {
+        expect(editable.getAttribute('aria-activedescendant')).toBeTruthy();
+      });
+
+      typeAtEnd(editable, '@ci');
+      fireEvent.keyDown(editable, {key: 'Enter'});
+      expect(onSubmit).not.toHaveBeenCalled();
+      expect(editable.querySelector('[data-astryx-token]')).toBeNull();
+      expect(editable.textContent).toBe('@ci');
+
+      await act(async () => {
+        resolveSlow([{id: 'cindy', label: 'Cindy Zhang'}]);
+      });
+      fireEvent.keyDown(editable, {key: 'Enter'});
+      expect(editable.querySelector('[data-astryx-token]')).not.toBeNull();
+      expect(onSubmit).not.toHaveBeenCalled();
+    });
+
+    it('lets Escape reach the consumer while an unmatched multi-word query hides the menu', async () => {
+      const onKeyDown = vi.fn();
+      render(
+        <ChatComposerInput
+          triggers={[createMentionTrigger({hasMultiWordQuery: true})]}
+          onKeyDown={onKeyDown}
+        />,
+      );
+      const editable = screen.getByRole('combobox');
+      editable.focus();
+
+      typeAtEnd(editable, '@team please');
+      await waitFor(() => {
+        expect(editable).toHaveAttribute('aria-expanded', 'false');
+      });
+
+      fireEvent.keyDown(editable, {key: 'Escape'});
+      expect(onKeyDown).toHaveBeenCalledWith(
+        expect.objectContaining({key: 'Escape'}),
+      );
     });
   });
 

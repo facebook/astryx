@@ -10,7 +10,9 @@
  *
  * Detects trigger characters (@ / etc.) typed inside a contentEditable,
  * opens a popover at the cursor position with filtered items, handles
- * keyboard navigation, and inserts tokens or text on selection.
+ * keyboard navigation, and inserts tokens or text on selection. Triggers
+ * opt into multi-word queries with hasMultiWordQuery; results apply only
+ * while their query is current (component:ChatComposerInput FR10–FR16).
  *
  * Reuses SearchSource from Typeahead for async/sync search with
  * cancel() support and debounce.
@@ -192,6 +194,23 @@ function getTextBeforeCursor(editable: HTMLDivElement): string | null {
 }
 
 const MAX_MULTI_WORD_QUERY_LENGTH = 64;
+
+/**
+ * An unmatched multi-word query hides the menu instead of covering prose with
+ * an empty panel, unless the trigger supplies its own empty message.
+ */
+function isUnmatchedMultiWordQuery(
+  trigger: ChatComposerTrigger | null,
+  items: SearchableItem[],
+  isLoading: boolean,
+): boolean {
+  return (
+    trigger?.hasMultiWordQuery === true &&
+    trigger.emptySearchText === undefined &&
+    items.length === 0 &&
+    !isLoading
+  );
+}
 
 function findActiveTrigger(
   textBeforeCursor: string,
@@ -441,6 +460,28 @@ export function useTriggerMenu(
       }
 
       const requestId = ++searchRequestIdRef.current;
+      // A result applies only while its request is the latest one and the
+      // caret is still inside the same trigger query. Submitting or clearing
+      // the editor ends the query without an input event, so check the DOM.
+      const isCurrent = () => {
+        if (requestId !== searchRequestIdRef.current) {
+          return false;
+        }
+        const editable = editableRef.current;
+        const textBefore = editable ? getTextBeforeCursor(editable) : null;
+        const found =
+          textBefore === null || !triggers
+            ? null
+            : findActiveTrigger(textBefore, triggers);
+        if (
+          found?.trigger.character !== trigger.character ||
+          found.triggerStart !== triggerStartRef.current
+        ) {
+          reset();
+          return false;
+        }
+        return true;
+      };
 
       const doSearch = () => {
         if (trigger.searchSource) {
@@ -450,7 +491,7 @@ export function useTriggerMenu(
           const result = trigger.searchSource.search(query);
           Promise.resolve(result).then(
             items => {
-              if (requestId !== searchRequestIdRef.current) {
+              if (!isCurrent()) {
                 return;
               }
               setState(prev => ({
@@ -461,7 +502,7 @@ export function useTriggerMenu(
               }));
             },
             () => {
-              if (requestId !== searchRequestIdRef.current) {
+              if (!isCurrent()) {
                 return;
               }
               setState(prev => ({
@@ -488,7 +529,7 @@ export function useTriggerMenu(
         }
       }
     },
-    [debounceMs],
+    [debounceMs, editableRef, triggers, reset],
   );
 
   const selectItem = useCallback(
@@ -577,7 +618,8 @@ export function useTriggerMenu(
 
     if (
       !state.isActive ||
-      state.activeTrigger?.character !== trigger.character
+      state.activeTrigger?.character !== trigger.character ||
+      triggerStartRef.current !== triggerStart
     ) {
       triggerStartRef.current = triggerStart;
       setState(prev => ({
@@ -606,19 +648,13 @@ export function useTriggerMenu(
     popover,
   ]);
 
-  // Multi-word queries with no matches hide the menu unless an explicit emptySearchText was provided.
-  const hasEmptySearchContent =
-    state.activeTrigger?.emptySearchText !== undefined;
-
-  const isMultiWordEmpty =
-    state.activeTrigger?.hasMultiWordQuery &&
-    state.items.length === 0 &&
-    !state.isLoading &&
-    !hasEmptySearchContent;
-
-  const isMenuVisible = state.isActive && !isMultiWordEmpty;
-  const isNavigable =
-    isMenuVisible && !state.isLoading && state.items.length > 0;
+  const isMenuVisible =
+    state.isActive &&
+    !isUnmatchedMultiWordQuery(
+      state.activeTrigger,
+      state.items,
+      state.isLoading,
+    );
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent): boolean => {
@@ -627,7 +663,9 @@ export function useTriggerMenu(
         return false;
       }
 
-      if (!state.isActive) {
+      // A hidden menu consumes nothing: arrows move the caret, Enter submits,
+      // and Escape reaches the surrounding surface.
+      if (!isMenuVisible) {
         return false;
       }
 
@@ -644,9 +682,23 @@ export function useTriggerMenu(
         return true;
       }
 
-      // If the menu is not visible, still loading a newer query, or has no settled rows,
-      // do not swallow navigation or selection keys (allows caret movement and normal typing).
-      if (!isNavigable) {
+      // While results for the current query are pending, every row on screen
+      // belongs to an earlier query. Enter does nothing until they settle: it
+      // neither picks a stale row nor sends the half-typed text.
+      if (state.isLoading) {
+        if (
+          (e.key === 'Enter' && !e.shiftKey) ||
+          e.key === 'ArrowDown' ||
+          e.key === 'ArrowUp'
+        ) {
+          e.preventDefault();
+          return true;
+        }
+        return false;
+      }
+
+      // Settled with no rows (the empty message): keys keep their editor meaning.
+      if (state.items.length === 0) {
         return false;
       }
 
@@ -690,12 +742,12 @@ export function useTriggerMenu(
       }
     },
     [
-      state.isActive,
+      isMenuVisible,
       state.activeTrigger,
       state.query,
+      state.isLoading,
       state.highlightedIndex,
       state.items,
-      isNavigable,
       selectItem,
       reset,
     ],
@@ -716,11 +768,15 @@ export function useTriggerMenu(
     getOptionId: getItemId,
   });
 
-  // ARIA props for the editable element. Combobox attributes
-  // (aria-expanded/haspopup/controls/activedescendant) are only valid on
-  // role="combobox", so we only switch to that role — and only emit those
-  // attributes — when triggers are actually configured. With no triggers the
-  // element stays a plain role="textbox".
+  // ARIA props for the editable element. Of the attributes the trigger menu
+  // needs, only aria-expanded forces the role: aria-controls and
+  // aria-haspopup are global, and aria-activedescendant is allowed on
+  // textbox too. So the element becomes a combobox exactly when triggers are
+  // configured and there is an expanded state to report; with no triggers it
+  // stays a plain textbox. aria-multiline runs the other way — ARIA 1.2
+  // supports it on textbox but not on combobox — so it rides the textbox
+  // branch. Emitting it on the combobox branch is a critical
+  // aria-allowed-attr violation (#4681).
   const hasTriggers = (triggers?.length ?? 0) > 0;
   const ariaProps: UseTriggerMenuReturn['ariaProps'] = !hasTriggers
     ? {role: 'textbox', 'aria-multiline': 'true'}
@@ -747,15 +803,9 @@ export function useTriggerMenu(
       return null;
     }
 
-    const hasEmptyContent = activeTrigger.emptySearchText !== undefined;
-
-    const shouldHideMultiWordEmpty =
-      activeTrigger.hasMultiWordQuery &&
-      state.items.length === 0 &&
-      !state.isLoading &&
-      !hasEmptyContent;
-
-    if (shouldHideMultiWordEmpty) {
+    if (
+      isUnmatchedMultiWordQuery(activeTrigger, state.items, state.isLoading)
+    ) {
       return null;
     }
 
