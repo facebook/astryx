@@ -156,27 +156,54 @@ describe('CommandPaletteInput', () => {
     expect(input).not.toHaveAttribute('aria-autocomplete');
   });
 
-  it('has an accessible name by default', () => {
+  it('is named "Search commands" by default, not by its placeholder', () => {
     render(<CommandPaletteInput />);
-    expect(screen.getByRole('searchbox')).toHaveAttribute(
-      'aria-label',
-      'Search…',
-    );
-  });
-
-  it('uses the label prop as the accessible name', () => {
-    render(<CommandPaletteInput label="Search commands" />);
-    const input = screen.getByRole('searchbox');
-    expect(input).toHaveAttribute('aria-label', 'Search commands');
+    const input = screen.getByRole('searchbox', {name: 'Search commands'});
     expect(input).toHaveAttribute('placeholder', 'Search…');
   });
 
-  it('falls back to a custom placeholder for the accessible name', () => {
+  it('uses the label prop as the accessible name', () => {
+    render(<CommandPaletteInput label="Find files" />);
+    const input = screen.getByRole('searchbox', {name: 'Find files'});
+    expect(input).toHaveAttribute('placeholder', 'Search…');
+  });
+
+  it('never takes its name from a custom placeholder', () => {
     render(<CommandPaletteInput placeholder="Type a command..." />);
-    expect(screen.getByRole('searchbox')).toHaveAttribute(
-      'aria-label',
-      'Type a command...',
+    expect(
+      screen.getByRole('searchbox', {name: 'Search commands'}),
+    ).toHaveAttribute('placeholder', 'Type a command...');
+  });
+
+  it('owns role and popup state inside CommandPalette context, passing other ARIA through', () => {
+    render(
+      <CommandPaletteContext value={makeContext()}>
+        <CommandPaletteInput
+          role="searchbox"
+          aria-expanded={false}
+          aria-controls="caller-list"
+          aria-haspopup="dialog"
+          aria-owns="caller-owned"
+        />
+      </CommandPaletteContext>,
     );
+    const input = screen.getByRole('combobox');
+    expect(input).toHaveAttribute('aria-expanded', 'true');
+    expect(input).toHaveAttribute('aria-controls', 'list-1');
+    expect(input).toHaveAttribute('aria-autocomplete', 'list');
+    expect(input).toHaveAttribute('aria-haspopup', 'dialog');
+    expect(input).toHaveAttribute('aria-owns', 'caller-owned');
+  });
+
+  it('keeps the default name inside CommandPalette context', () => {
+    render(
+      <CommandPaletteContext value={makeContext()}>
+        <CommandPaletteInput placeholder="Jump to…" />
+      </CommandPaletteContext>,
+    );
+    expect(
+      screen.getByRole('combobox', {name: 'Search commands'}),
+    ).toBeInTheDocument();
   });
 
   it('lets a consumer-passed aria-label override the default', () => {

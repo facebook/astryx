@@ -3,11 +3,11 @@ schema_version: 3
 template_version: 7
 kind: component
 id: component:CommandPaletteInput
-authority: draft
+authority: current
 archive_reason: null
 superseded_by: null
-approved_by: null
-approved_at: null
+approved_by: cixzhang
+approved_at: 2026-10-14
 owners: [cixzhang]
 review_triggers: [public-api, behavior, layout, theming, accessibility]
 verified_by:
@@ -36,15 +36,15 @@ system_specs: [spec:AST-017, spec:AST-020, spec:AST-056]
 
 ## Contract at a glance
 
-| Area                    | Contract                                                                                                                                                                                                |
-| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Public contract         | A query field with context-backed search state, optional trailing content, and a split wrapper/field attribute boundary.                                                                                |
-| Behavior                | Standalone use without popup attributes is a searchbox; caller popup attributes or CommandPalette context supply combobox state and relationships.                                                      |
-| End-user impact         | Screen-reader users receive role and popup state that match whether a controlled result popup exists.                                                                                                   |
-| Builder impact          | Context-owned popup semantics cannot be replaced through native passthrough props; standalone caller-owned popup semantics remain supported.                                                            |
-| Compatibility/readiness | A victim-free `[fix]` restores no-popup semantics while preserving released caller-owned popup associations; primary callback naming and the incompatible accessible-name correction remain unresolved. |
-| Review checks           | Reject unassociated standalone combobox state, clobberable owned popup semantics, empty trailing chrome, or changed input ref routing.                                                                  |
-| Governing rules         | `architecture:public-component-api/INV2,INV5`; `spec:AST-017/FR1,FR3,FR5`; `spec:AST-020/FR1,FR2`; `spec:AST-056/AR2`; WCAG 2.2 4.1.2.                                                                  |
+| Area                    | Contract                                                                                                                                                                                                           |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Public contract         | A query field with context-backed search state, optional trailing content, and a split wrapper/field attribute boundary.                                                                                           |
+| Behavior                | Standalone use without popup attributes is a searchbox; caller popup attributes or CommandPalette context supply combobox state and relationships.                                                                 |
+| End-user impact         | Screen-reader users receive role and popup state that match whether a controlled result popup exists.                                                                                                              |
+| Builder impact          | Context-owned popup semantics cannot be replaced through native passthrough props; standalone caller-owned popup semantics remain supported.                                                                       |
+| Compatibility/readiness | A `[fix]` restores no-popup semantics while preserving released caller-owned popup associations, and names the field "Search commands" by default instead of its placeholder; primary callback naming remains OQ1. |
+| Review checks           | Reject unassociated standalone combobox state, clobberable owned popup semantics, empty trailing chrome, or changed input ref routing.                                                                             |
+| Governing rules         | `architecture:public-component-api/INV2,INV5`; `spec:AST-017/FR1,FR3,FR5,FR53`; `spec:AST-020/FR1,FR2`; `spec:AST-056/AR2`; WCAG 2.2 4.1.2.                                                                        |
 
 This table is a review projection; the body below is authoritative.
 
@@ -56,14 +56,17 @@ field when no result-popup context is present.
 
 ## Compatibility and migration
 
-- Released default preserved: `no` for no-popup standalone semantic output;
-  caller-owned popup associations and all CommandPalette output remain equivalent
-- Compatibility class: victim-free contract restoration under
-  `spec:AST-017/FR1,FR3,FR5`; no-popup standalone use has no released popup
-  association to preserve
+- Released default preserved: `no` for no-popup standalone semantic output and
+  for the default accessible name; caller-owned popup associations and all other
+  CommandPalette output remain equivalent
+- Compatibility class: contract restoration under `spec:AST-017/FR1,FR3,FR5` for
+  standalone semantics, since no-popup standalone use has no released popup
+  association to preserve; accessibility behavior fix under `spec:AST-017/FR53`
+  for the default name
 - Controlled/uncontrolled behavior: unchanged
-- Migration decision: no migration for this correction; the primary callback
-  naming question remains OQ1
+- Migration decision: `role="combobox"` keeps the earlier standalone semantics,
+  and `label` or `aria-label` keeps a specific name; the primary callback naming
+  question remains OQ1
 
 Consumer migration instructions belong in consumer docs and release notes.
 
@@ -92,9 +95,6 @@ Consumer migration instructions belong in consumer docs and release notes.
 | Trailing content | busy indicator; `endContent`; both; absent                                           | Supporting status or caller content after query. | All uses                                  | absent               | `component:CommandPaletteInput` | Released  | Boolean, empty-string, null, and undefined values are absent |
 
 ## Behavioral and layout contract
-
-Draft requirements identify their basis so observed code is not mistaken for an
-intentional decision.
 
 | ID  | Candidate invariant                                                                                                                                                                                                                                            | Basis                                                              | Draft review state                                         |
 | --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ | ---------------------------------------------------------- |
@@ -129,10 +129,8 @@ intentional decision.
   uncontrolled state.
 - **ORD2 — Keyboard handling.** Consumer handler → default-prevented check →
   CommandPalette context handler.
-- **ORD3 — Accessible name.** Native `aria-label` → `label` → visible
-  placeholder text. The released placeholder fallback is a known gap against
-  `spec:AST-056/AR2`; correcting it needs the incompatible-fix lifecycle because
-  latest-stable consumers may rely on the documented name.
+- **ORD3 — Accessible name.** Native `aria-label` → `label` → the translated
+  default "Search commands" (DEC-1). Placeholder text is never the name.
 
 ### Performance and resources
 
@@ -141,19 +139,20 @@ intentional decision.
 
 ## Accessibility contract
 
-- **AR1 — Name.** The native query field has an explicit accessible name from
-  ORD3, supporting WCAG 2.2 4.1.2. Its released placeholder fallback remains a
-  BLOCK against `spec:AST-056/AR2` until an approved `spec:AST-017/FR32`
-  correction replaces it.
+- **AR1 — Name.** The native query field always has an explicit accessible name
+  from ORD3 and never takes its name from placeholder text, satisfying
+  `spec:AST-056/AR2` and WCAG 2.2 4.1.2.
 - **AR2 — Role and popup state.** Standalone use without popup attributes exposes
   a `searchbox` without popup-only state. Standalone callers that provide their
   own popup relationships retain those semantics. CommandPalette context exposes
   a `combobox` with context-owned expanded state, list relationship, autocomplete
   mode, and active descendant, following `spec:AST-020/FR1,FR2` and the WAI-ARIA
   combobox pattern.
-- **AR3 — Semantic ownership.** CommandPalette context overrides conflicting
-  native passthrough semantics; standalone caller-owned roles and relationships
-  remain intact.
+- **AR3 — Semantic ownership.** With CommandPalette context, the field owns
+  `role`, `aria-expanded`, `aria-autocomplete`, `aria-controls`, and
+  `aria-activedescendant`, and these replace the same native passthrough props;
+  other ARIA props, including `aria-haspopup` and `aria-owns`, pass through.
+  Standalone caller-owned roles and relationships remain intact.
 
 ## Design relationships
 
@@ -174,7 +173,7 @@ intentional decision.
   caller-popup and no-popup cases.
 - `spec:AST-020` supplies the WCAG 2.2 and adopted-pattern evidence boundaries.
 - `spec:AST-056/AR2` requires a query-field name distinct from placeholder text;
-  the released fallback does not yet satisfy it.
+  ORD3 and AR1 satisfy it.
 
 ## Verification map
 
@@ -183,12 +182,23 @@ intentional decision.
 | FR1–FR3     | `CommandPaletteInput.test.tsx`                            | explicit, context, prevented key, native, caller popup | Reversing state precedence, rerouting the ref, dropping standalone popup relationships, or allowing context semantics to be clobbered fails focused DOM tests. | `audit:CommandPaletteInput/testing`  |
 | FR4         | `CommandPaletteInput.test.tsx`                            | numeric, empty, busy, caller content                   | Truthiness routing creates empty chrome or moves numeric content away from the trailing edge.                                                                  | `audit:CommandPaletteInput/behavior` |
 | FR5         | focused unit tests plus exact-head browser evidence       | enabled, disabled, inline                              | Eligible focus is lost, disabled focus is scheduled, or inline mode steals focus.                                                                              | `audit:CommandPaletteInput/behavior` |
-| AR1–AR3     | unit tests, exact-head axe/browser run, and source review | standalone, open, closed, highlighted                  | Wrong role/state or consumer clobbering fails semantics assertions; the placeholder-name fallback remains a known AR1 BLOCK.                                   | `audit:CommandPaletteInput/a11y`     |
+| AR1–AR3     | unit tests, exact-head axe/browser run, and source review | standalone, open, closed, highlighted                  | Wrong role/state, consumer clobbering of an owned attribute, or a placeholder-derived name fails semantics and name assertions.                                | `audit:CommandPaletteInput/a11y`     |
 | Theming/RTL | target inventory, Storybook fixture, and RTL D2 audit     | standalone trailing content, contextual                | Target loss or physical ordering fails the owned fixture.                                                                                                      | `audit:CommandPaletteInput/theming`  |
 
 ## Decision log
 
-No component-local decision is settled in this draft.
+### DEC-1 — The query field's default name is "Search commands"
+
+**Reference:** `component:CommandPaletteInput/DEC-1`
+**Decider:** `cixzhang`, 2026-10-14
+
+A screen-reader user reaching the field hears what it does, whatever the
+placeholder says or whether one is set. The default is a fixed, localizable
+"Search commands"; `label` and `aria-label` replace it, and placeholder text is
+never the name.
+
+Rejected: falling back to the placeholder, which a caller writes as a visual
+hint and AST-056 AR2 does not accept as a name.
 
 ## Open questions
 

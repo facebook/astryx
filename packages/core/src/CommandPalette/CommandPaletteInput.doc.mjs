@@ -16,7 +16,7 @@ export const docs = {
       {
         guidance: true,
         description:
-          'Always provide a concise label that identifies what can be searched; the released placeholder fallback is not a substitute for a purpose-specific accessible name.',
+          'Pass a concise label that identifies what can be searched when "Search commands" does not describe it; the placeholder is never the field\'s name.',
       },
       {
         guidance: true,
@@ -75,7 +75,7 @@ export const docs = {
       name: 'label',
       type: 'string',
       description:
-        'Accessible label for the query field, announced by screen readers. The released behavior falls back to placeholder text; provide a purpose-specific label.',
+        'Accessible label for the query field, announced by screen readers. Defaults to the translated "Search commands"; the placeholder is never used as the name.',
     },
     {
       name: 'hasAutoFocus',
@@ -141,7 +141,7 @@ export const docsZh = {
   propDescriptions: {
     placeholder: '输入框的占位文本。',
     label:
-      '查询字段的无障碍标签，供屏幕阅读器朗读。当前版本省略时回退到占位文本；请提供能够说明搜索内容的标签。',
+      '查询字段的无障碍标签，供屏幕阅读器朗读。默认为翻译后的 "Search commands"；占位文本不会用作名称。',
     hasAutoFocus: '挂载时自动聚焦输入框。内联命令面板中自动禁用。',
     endContent: '渲染在输入框末尾的内容，位于加载指示器之后。',
     value: '搜索值。在 CommandPalette 内省略时从上下文读取。',
@@ -159,7 +159,7 @@ export const docsDense = {
   propDescriptions: {
     placeholder: 'input placeholder text',
     label:
-      'accessible label for the query field; released fallback is placeholder text, so provide a purpose-specific label',
+      'accessible label for the query field; default "Search commands", never the placeholder',
     hasAutoFocus: 'auto-focus on mount; auto-disabled in inline mode',
     endContent: 'trailing content after spinner',
     value: 'search value; reads context when omitted inside palette',
