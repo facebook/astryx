@@ -28,7 +28,7 @@ export const docs = {
 
   usage: {
     description:
-      'Read-only, syntax-highlighted diff of one file for code review surfaces. Renders a file header (path, Added/Deleted/Renamed token, +/− line counts, a headerEnd slot, and an optional disclosure) over the file\'s hunks in unified or split (side-by-side) view. Rows use the same syntax-theme diff slots as CodeBlock with isDiff, so one syntax theme styles both. renderLineAnnotation adds a full-width row under any line (for review comments) and onLineNumberClick turns line numbers into buttons. Build the file model with parseUnifiedDiff(patch), which returns one file per file in a git or diff -u patch. Each changed line carries a visually hidden "Added"/"Removed" label, so the change reads without colour. Rows are plain DOM with no virtualization: collapse or window very large files.',
+      'Read-only, syntax-highlighted diff of one file for code review surfaces. Renders a file header (path, Added/Deleted/Renamed token, +/− line counts, a headerEnd slot, and an optional disclosure) over the file\'s hunks in unified or split (side-by-side) view. Rows use the same syntax-theme diff slots as CodeBlock with isDiff, so one syntax theme styles both. renderLineAnnotation adds a full-width row under any line (for review comments) and onLineNumberClick turns line numbers into buttons. Build the file model with parseUnifiedDiff(patch), which returns one file per file in a git or diff -u patch, or with createDiffFile({oldValue, newValue}) when you hold two versions of a text. Each changed line carries a visually hidden "Added"/"Removed" label, so the change reads without colour. Rows are plain DOM with no virtualization: collapse or window very large files.',
     bestPractices: [
       {
         guidance: true,
@@ -65,6 +65,12 @@ export const docs = {
       code: '<DiffViewer file={file} viewMode="split" />',
     },
     {
+      label: 'Diff two versions of a text',
+      code: `const file = createDiffFile({oldValue: before, newValue: after, path: 'src/app.ts'});
+
+<DiffViewer file={file} />`,
+    },
+    {
       label: 'Review comments',
       code: `<DiffViewer
   file={file}
@@ -82,7 +88,7 @@ export const docs = {
       name: 'file',
       type: 'DiffViewerFile',
       description:
-        'The file to render: paths, status, binary flag, and hunks of numbered lines. Build it with parseUnifiedDiff.',
+        'The file to render: paths, status, binary flag, and hunks of numbered lines. Build it with parseUnifiedDiff or createDiffFile.',
       required: true,
     },
     {

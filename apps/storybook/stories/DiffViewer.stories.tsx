@@ -4,6 +4,7 @@ import type {Meta, StoryObj} from '@storybook/react';
 import {useState} from 'react';
 import {
   DiffViewer,
+  createDiffFile,
   parseUnifiedDiff,
   type DiffViewerLineRef,
 } from '@astryxdesign/lab';
@@ -125,6 +126,32 @@ export const MultiFilePatch: Story = {
       ))}
     </VStack>
   ),
+};
+
+/** Diff two versions of a text with createDiffFile. */
+export const FromTwoTexts: Story = {
+  args: {
+    file: createDiffFile({
+      path: 'config/flags.yaml',
+      oldValue: [
+        'flags:',
+        '  checkout_v2: false',
+        '  dark_mode: true',
+        '  search_suggestions: false',
+        '  # owner: payments',
+        '  retries: 3',
+      ].join('\n'),
+      newValue: [
+        'flags:',
+        '  checkout_v2: true',
+        '  dark_mode: true',
+        '  search_suggestions: false',
+        '  # owner: payments',
+        '  retries: 5',
+        '  timeout_ms: 2000',
+      ].join('\n'),
+    }),
+  },
 };
 
 /** File header actions: a "Viewed" checkbox that also folds the file away. */

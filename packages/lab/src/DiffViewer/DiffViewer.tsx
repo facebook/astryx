@@ -91,7 +91,7 @@ export interface DiffViewerProps extends BaseProps<HTMLDivElement> {
   ref?: Ref<HTMLDivElement>;
   /**
    * The file to render. Build one with `parseUnifiedDiff(patch)` (one per
-   * file in the patch).
+   * file in the patch) or `createDiffFile({oldValue, newValue})`.
    */
   file: DiffViewerFile;
   /**

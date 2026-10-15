@@ -262,8 +262,10 @@ export {
 export {
   DiffViewer,
   parseUnifiedDiff,
+  createDiffFile,
   type DiffViewerProps,
   type DiffViewerViewMode,
+  type CreateDiffFileOptions,
   type DiffViewerFile,
   type DiffViewerFileStatus,
   type DiffViewerHunk,
