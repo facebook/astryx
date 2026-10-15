@@ -12,7 +12,12 @@
  */
 
 export {DiffViewer} from './DiffViewer';
-export type {DiffViewerProps, DiffViewerViewMode} from './DiffViewer';
+export type {
+  DiffViewerChangeIndicator,
+  DiffViewerInlineHighlight,
+  DiffViewerProps,
+  DiffViewerViewMode,
+} from './DiffViewer';
 export {parseUnifiedDiff} from './parseUnifiedDiff';
 export {createDiffFile} from './createDiffFile';
 export type {CreateDiffFileOptions} from './createDiffFile';

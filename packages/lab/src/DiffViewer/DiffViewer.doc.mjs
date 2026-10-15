@@ -16,6 +16,8 @@ export const docs = {
     'unified',
     'side by side',
     'compare',
+    'word diff',
+    'inline highlight',
   ],
 
   theming: {
@@ -28,7 +30,7 @@ export const docs = {
 
   usage: {
     description:
-      'Read-only, syntax-highlighted diff of one file for code review surfaces. Renders a file header (path, Added/Deleted/Renamed token, +/− line counts, a headerEnd slot, and an optional disclosure) over the file\'s hunks in unified or split (side-by-side) view. Rows use the same syntax-theme diff slots as CodeBlock with isDiff, so one syntax theme styles both. renderLineAnnotation adds a full-width row under any line (for review comments) and onLineNumberClick turns line numbers into buttons. Build the file model with parseUnifiedDiff(patch), which returns one file per file in a git or diff -u patch, or with createDiffFile({oldValue, newValue}) when you hold two versions of a text. Each changed line carries a visually hidden "Added"/"Removed" label, so the change reads without colour. In right-to-left pages the hunk area stays left-to-right, like a code editor: annotation content reads in the page direction, and annotation rows scroll with the code. Rows are plain DOM with no virtualization: collapse or window very large files.',
+      'Read-only, syntax-highlighted diff of one file for code review surfaces. Renders a file header (path, Added/Deleted/Renamed token, +/− line counts, a headerEnd slot, and an optional disclosure) over the file\'s hunks in unified or split (side-by-side) view. Rows use the same syntax-theme diff slots as CodeBlock with isDiff, so one syntax theme styles both. renderLineAnnotation adds a full-width row under any line (for review comments) and onLineNumberClick turns line numbers into buttons. Build the file model with parseUnifiedDiff(patch), which returns one file per file in a git or diff -u patch, or with createDiffFile({oldValue, newValue}) when you hold two versions of a text. Display options cover how a change is marked (classic +/− glyphs, bars, or none), whether changed rows are tinted, and word- or character-level highlighting of what changed inside each removed/added line pair. Each changed line carries a visually hidden "Added"/"Removed" label, so the change reads without colour in every mode. Unwrapped, line numbers and change indicators stay pinned while the code scrolls; in split view each side scrolls sideways on its own, so the split stays fixed at half and half, and a row is as tall as its taller side. In right-to-left pages the hunk area stays left-to-right, like a code editor: annotation content reads in the page direction, and annotation rows scroll with the code. Rows are plain DOM with no virtualization: collapse or window very large files.',
     bestPractices: [
       {
         guidance: true,
@@ -69,6 +71,16 @@ export const docs = {
       code: `const file = createDiffFile({oldValue: before, newValue: after, path: 'src/app.ts'});
 
 <DiffViewer file={file} />`,
+    },
+    {
+      label: 'Bars, character highlighting, no row tint',
+      code: `<DiffViewer
+  file={file}
+  viewMode="split"
+  changeIndicator="bars"
+  inlineHighlight="char"
+  hasChangeBackground={false}
+/>`,
     },
     {
       label: 'Review comments',
@@ -113,8 +125,30 @@ export const docs = {
     {
       name: 'isWrapped',
       type: 'boolean',
-      description: 'Wrap long lines instead of scrolling them horizontally.',
+      description:
+        'Wrap long lines instead of scrolling them horizontally. Unwrapped, line numbers and change indicators stay pinned while the code scrolls; in split view each side scrolls on its own and the split stays fixed at half and half.',
       default: 'false',
+    },
+    {
+      name: 'changeIndicator',
+      type: "'classic' | 'bars' | 'none'",
+      description:
+        "How changed lines are marked beside their code: 'classic' +/− glyphs, 'bars' (a solid bar for added lines, a dashed bar for removed lines), or 'none'. Screen readers hear \"Added\"/\"Removed\" in every mode.",
+      default: "'classic'",
+    },
+    {
+      name: 'inlineHighlight',
+      type: "'word' | 'char' | 'none'",
+      description:
+        'Highlight the changed words (or characters) inside each removed line and the added line that replaced it, paired as in split view. Lines that share nothing but whitespace get no inline highlight.',
+      default: "'word'",
+    },
+    {
+      name: 'hasChangeBackground',
+      type: 'boolean',
+      description:
+        'Tint the rows of added and removed lines. Without it only the change indicator, the line numbers, and the inline highlight mark a change.',
+      default: 'true',
     },
     {
       name: 'isCollapsible',

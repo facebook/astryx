@@ -105,18 +105,6 @@ export const Split: Story = {
   args: {viewMode: 'split'},
 };
 
-/** Long lines wrap instead of scrolling. */
-export const Wrapped: Story = {
-  args: {viewMode: 'split', isWrapped: true},
-  decorators: [
-    Story => (
-      <div style={{maxWidth: 720}}>
-        <Story />
-      </div>
-    ),
-  ],
-};
-
 const LONG_LINE_FILE =
   parseUnifiedDiff(`diff --git a/src/cart/discounts.ts b/src/cart/discounts.ts
 --- a/src/cart/discounts.ts
@@ -128,6 +116,75 @@ const LONG_LINE_FILE =
  
  export const NO_DISCOUNT = 0;
 `)[0];
+
+/**
+ * Unwrapped split view with lines wider than their side: each side scrolls
+ * sideways on its own while the split stays fixed, and line numbers and
+ * change bars stay pinned.
+ */
+export const SplitIndependentScroll: Story = {
+  args: {
+    file: LONG_LINE_FILE,
+    viewMode: 'split',
+    changeIndicator: 'bars',
+  },
+  decorators: [
+    Story => (
+      <div style={{maxWidth: 960}}>
+        <Story />
+      </div>
+    ),
+  ],
+};
+
+/**
+ * Every display option, as on diffs.com: how changes are marked, whether rows
+ * are tinted, how finely changed text is highlighted, wrapping, and line
+ * numbers.
+ */
+export const DisplayOptions: Story = {
+  args: {
+    viewMode: 'split',
+    changeIndicator: 'bars',
+    inlineHighlight: 'word',
+    hasChangeBackground: true,
+    isWrapped: false,
+    hasLineNumbers: true,
+  },
+  argTypes: {
+    viewMode: {control: 'inline-radio', options: ['unified', 'split']},
+    changeIndicator: {
+      control: 'inline-radio',
+      options: ['classic', 'bars', 'none'],
+    },
+    inlineHighlight: {
+      control: 'inline-radio',
+      options: ['word', 'char', 'none'],
+    },
+  },
+};
+
+/** Bars and word highlighting on plain rows: no change tint. */
+export const NoBackground: Story = {
+  args: {changeIndicator: 'bars', hasChangeBackground: false},
+};
+
+/** Character-level highlighting with classic +/− glyphs. */
+export const CharacterHighlight: Story = {
+  args: {inlineHighlight: 'char'},
+};
+
+/** Long lines wrap instead of scrolling. */
+export const Wrapped: Story = {
+  args: {viewMode: 'split', isWrapped: true},
+  decorators: [
+    Story => (
+      <div style={{maxWidth: 720}}>
+        <Story />
+      </div>
+    ),
+  ],
+};
 
 /**
  * A right-to-left page with lines wider than the viewer. The hunk area stays

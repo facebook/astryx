@@ -26,6 +26,29 @@ function codeRows(container: HTMLElement) {
   return Array.from(container.querySelectorAll('tbody tr'));
 }
 
+/** A split-view pane's rows, after its column-header row. */
+function paneRows(container: HTMLElement, side: 'old' | 'new') {
+  return Array.from(
+    container.querySelectorAll(`[data-diff-pane="${side}"] [role="row"]`),
+  ).slice(1);
+}
+
+function patchOf(removed: string, added: string) {
+  return `diff --git a/a.ts b/a.ts
+--- a/a.ts
++++ b/a.ts
+@@ -1 +1 @@
+-${removed}
++${added}
+`;
+}
+
+function changedText(container: HTMLElement, kind: 'added' | 'removed') {
+  return Array.from(
+    container.querySelectorAll(`[data-diff="${kind}"] [data-diff-change]`),
+  ).map(span => span.textContent);
+}
+
 describe('DiffViewer', () => {
   it('renders the path, the change counts, and every line', () => {
     render(<DiffViewer file={FILE} />);
@@ -63,15 +86,31 @@ describe('DiffViewer', () => {
 
   it('pairs removed and added lines side by side in split view', () => {
     const {container} = render(<DiffViewer file={FILE} viewMode="split" />);
-    // 1 hunk header + context + 2 paired change rows + 2 context.
-    const rows = codeRows(container);
-    expect(rows).toHaveLength(6);
-    const firstChange = rows[2];
-    expect(firstChange.querySelector('td[data-diff="removed"]')).not.toBeNull();
-    expect(firstChange.querySelector('td[data-diff="added"]')).not.toBeNull();
-    // The second added line has no removed counterpart.
-    expect(rows[3].querySelector('td[data-diff="removed"]')).toBeNull();
-    expect(rows[3].querySelector('td[data-diff="added"]')).not.toBeNull();
+    // Each pane: 1 hunk header + context + 2 paired change rows + 2 context.
+    const oldRows = paneRows(container, 'old');
+    const newRows = paneRows(container, 'new');
+    expect(oldRows).toHaveLength(6);
+    expect(newRows).toHaveLength(6);
+    expect(oldRows[2].querySelector('[data-diff="removed"]')).not.toBeNull();
+    expect(newRows[2].querySelector('[data-diff="added"]')).not.toBeNull();
+    // The second added line has no removed counterpart: the old pane's row
+    // is spacing, hidden from assistive technology.
+    expect(oldRows[3].querySelector('[data-diff]')).toBeNull();
+    expect(oldRows[3]).toHaveAttribute('aria-hidden', 'true');
+    expect(newRows[3].querySelector('[data-diff="added"]')).not.toBeNull();
+  });
+
+  it('gives each split-view side its own labelled, sideways-scrolling table', () => {
+    const {container} = render(<DiffViewer file={FILE} viewMode="split" />);
+    const oldPane = screen.getByRole('group', {name: 'Original code'});
+    const newPane = screen.getByRole('group', {name: 'Changed code'});
+    expect(within(oldPane).getByRole('table')).toBeInTheDocument();
+    expect(within(newPane).getByRole('table')).toBeInTheDocument();
+    expect(oldPane).toHaveAttribute('data-scroll-axis', 'inline');
+    // The shared viewport only scrolls vertically in split view.
+    expect(
+      container.querySelector('[data-scroll-axis="block"]'),
+    ).toContainElement(oldPane);
   });
 
   it('hides the line-number gutters when hasLineNumbers is false', () => {
@@ -167,9 +206,12 @@ describe('DiffViewer', () => {
       );
       expect(screen.getByText('Only note')).toBeInTheDocument();
       // One annotation row on top of the line rows of each view.
-      expect(container.querySelectorAll('tbody tr')).toHaveLength(
-        viewMode === 'unified' ? 8 : 7,
-      );
+      if (viewMode === 'unified') {
+        expect(codeRows(container)).toHaveLength(8);
+      } else {
+        expect(paneRows(container, 'old')).toHaveLength(7);
+        expect(paneRows(container, 'new')).toHaveLength(7);
+      }
       unmount();
     }
   });
@@ -185,10 +227,17 @@ describe('DiffViewer', () => {
       />,
     );
     const note = screen.getByText('Old note');
-    const row = note.closest('tr');
-    expect(row?.children).toHaveLength(2);
-    expect(row?.children[0]).toContainElement(note);
-    expect(container.querySelectorAll('tbody tr')).toHaveLength(7);
+    const oldRows = paneRows(container, 'old');
+    const newRows = paneRows(container, 'new');
+    const noteRow = oldRows.findIndex(row => row.contains(note));
+    // Right under the removed line, with an empty, hidden row facing it.
+    expect(
+      oldRows[noteRow - 1].querySelector('[data-diff="removed"]'),
+    ).not.toBeNull();
+    expect(newRows[noteRow]).toHaveAttribute('aria-hidden', 'true');
+    expect(newRows[noteRow].textContent).toBe('');
+    expect(oldRows).toHaveLength(7);
+    expect(newRows).toHaveLength(7);
   });
 
   it('makes line numbers buttons that report their line', async () => {
@@ -270,6 +319,79 @@ describe('DiffViewer', () => {
     expect(document.activeElement).toBe(buttons[0]);
     await user.tab();
     expect(document.activeElement).toBe(buttons[1]);
+  });
+
+  it('highlights the changed words of a paired line', () => {
+    const [file] = parseUnifiedDiff(
+      patchOf('const total = price * qty;', 'const total = price * quantity;'),
+    );
+    const {container} = render(<DiffViewer file={file} />);
+    expect(changedText(container, 'removed')).toEqual(['qty']);
+    expect(changedText(container, 'added')).toEqual(['quantity']);
+    // Highlighting keeps the line's text and its syntax paint intact.
+    expect(container.querySelector('[data-diff="added"]')?.textContent).toBe(
+      'const total = price * quantity;',
+    );
+    expect(container.querySelector('.astryx-token-keyword')).not.toBeNull();
+  });
+
+  it('joins changed words separated only by whitespace', () => {
+    const [file] = parseUnifiedDiff(
+      patchOf('call(alpha beta, x, y, z)', 'call(gamma delta, x, y, z)'),
+    );
+    const {container} = render(<DiffViewer file={file} />);
+    expect(changedText(container, 'removed')).toEqual(['alpha beta']);
+    expect(changedText(container, 'added')).toEqual(['gamma delta']);
+  });
+
+  it('highlights changed characters with inlineHighlight="char"', () => {
+    const [file] = parseUnifiedDiff(
+      patchOf('let qty = 1;', 'let quantity = 1;'),
+    );
+    const {container} = render(
+      <DiffViewer file={file} inlineHighlight="char" viewMode="split" />,
+    );
+    expect(changedText(container, 'removed')).toEqual([]);
+    expect(changedText(container, 'added').join('')).toHaveLength(5);
+  });
+
+  it('skips the inline highlight for unrelated lines and when turned off', () => {
+    const [unrelated] = parseUnifiedDiff(patchOf('foo()', 'return 42;'));
+    const {container, unmount} = render(<DiffViewer file={unrelated} />);
+    expect(container.querySelector('[data-diff-change]')).toBeNull();
+    unmount();
+
+    const [file] = parseUnifiedDiff(patchOf('let a = 1;', 'let a = 2;'));
+    const view = render(<DiffViewer file={file} inlineHighlight="none" />);
+    expect(view.container.querySelector('[data-diff-change]')).toBeNull();
+  });
+
+  it('marks changed lines with bars or no indicator, still named for assistive technology', () => {
+    for (const changeIndicator of ['bars', 'none'] as const) {
+      const {container, unmount} = render(
+        <DiffViewer file={FILE} changeIndicator={changeIndicator} />,
+      );
+      const glyphs = Array.from(
+        container.querySelectorAll('span[aria-hidden="true"]'),
+      ).filter(span => span.textContent === '+' || span.textContent === '-');
+      expect(glyphs).toHaveLength(0);
+      expect(container.querySelectorAll('[data-diff-bar]')).toHaveLength(
+        changeIndicator === 'bars' ? 3 : 0,
+      );
+      expect(screen.getAllByText('Added')).toHaveLength(2);
+      expect(screen.getAllByText('Removed')).toHaveLength(1);
+      unmount();
+    }
+  });
+
+  it('drops the row tint when hasChangeBackground is false', () => {
+    const {container, rerender} = render(<DiffViewer file={FILE} />);
+    const tinted = container.querySelector('[data-diff="added"]')?.className;
+    rerender(<DiffViewer file={FILE} hasChangeBackground={false} />);
+    const plain = container.querySelector('[data-diff="added"]')?.className;
+    expect(plain).not.toBe(tinted);
+    // The change is still marked in text.
+    expect(screen.getAllByText('Added')).toHaveLength(2);
   });
 
   it('shows the file status and the rename path', () => {
