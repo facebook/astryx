@@ -457,6 +457,44 @@ describe('plainDateToInstant / plainDateFromInstant', () => {
     ).toBe(Date.UTC(2026, 10, 1, 4, 30));
   });
 
+  it.each([
+    // Berlin falls back at 3:00 AM CEST on October 25, 2026: 2:00–3:00 AM
+    // happens twice, first at +2, then at +1.
+    [
+      'Europe/Berlin',
+      {year: 2026, month: 10, day: 25},
+      2,
+      30,
+      Date.UTC(2026, 9, 25, 0, 30),
+    ],
+    // Sydney falls back at 3:00 AM AEDT on April 5, 2026: first at +11.
+    [
+      'Australia/Sydney',
+      {year: 2026, month: 4, day: 5},
+      2,
+      30,
+      Date.UTC(2026, 3, 4, 15, 30),
+    ],
+  ] as const)(
+    'keeps the earlier instant of a repeated wall time in a positive-offset zone (%s)',
+    (timezoneID, date, hour, minute, earlier) => {
+      expect(plainDateToInstant(date, timezoneID, hour, minute)).toBe(earlier);
+    },
+  );
+
+  it('moves a wall time in a 30-minute gap forward by 30 minutes', () => {
+    // Lord Howe Island jumps from 2:00 to 2:30 AM on October 4, 2026, from
+    // +10:30 to +11: 2:15 AM does not happen and reads as 2:45 AM.
+    expect(
+      plainDateToInstant(
+        {year: 2026, month: 10, day: 4},
+        'Australia/Lord_Howe',
+        2,
+        15,
+      ),
+    ).toBe(Date.UTC(2026, 9, 3, 15, 45));
+  });
+
   it('keeps years 1-99 instead of mapping them to 1900-1999', () => {
     const date: PlainDate = {year: 1, month: 1, day: 15};
     // 0001-01-01T00:00:00Z is -62135596800000

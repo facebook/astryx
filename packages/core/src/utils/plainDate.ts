@@ -185,27 +185,35 @@ function getTimezoneOffsetMS(timezoneID: string, instant: number): number {
   );
 }
 
+const DAY_MS = 24 * 60 * 60 * 1000;
+
 export function plainDateToInstant(
   date: PlainDate,
   timezoneID: string,
   hour = 0,
   minute = 0,
 ): number {
-  const utcGuess = utcTime(date.year, date.month - 1, date.day, hour, minute);
-  const firstOffset = getTimezoneOffsetMS(timezoneID, utcGuess);
-  const secondOffset = getTimezoneOffsetMS(timezoneID, utcGuess - firstOffset);
-  const instant = utcGuess - secondOffset;
-  if (
-    firstOffset === secondOffset ||
-    getTimezoneOffsetMS(timezoneID, instant) === secondOffset
-  ) {
-    return instant;
-  }
-  // The wall time falls in a daylight-saving gap and never happens. Resolve it
-  // forward, as Temporal's "compatible" disambiguation does, by reading it in
-  // the offset in effect before the transition: the start of a day whose
-  // midnight is skipped is that day's first instant, not an hour before it.
-  return utcGuess - Math.min(firstOffset, secondOffset);
+  // The wall time read as if it were UTC; subtracting an offset gives a
+  // candidate instant.
+  const wallTime = utcTime(date.year, date.month - 1, date.day, hour, minute);
+  // The offsets in effect a day either side cover any transition that can make
+  // this wall time skipped or repeated.
+  const offsetBefore = getTimezoneOffsetMS(timezoneID, wallTime - DAY_MS);
+  const offsetAfter = getTimezoneOffsetMS(timezoneID, wallTime + DAY_MS);
+  // AST-067 (Temporal's "compatible" disambiguation): a wall time that happens
+  // twice resolves to its earlier occurrence, and one that never happens is
+  // read in the offset before the transition, which moves it forward by the
+  // length of the gap.
+  const candidates = [offsetBefore, offsetAfter]
+    .map(offset => wallTime - offset)
+    .filter(
+      (instant, index) =>
+        getTimezoneOffsetMS(timezoneID, instant) ===
+        (index === 0 ? offsetBefore : offsetAfter),
+    );
+  return candidates.length > 0
+    ? Math.min(...candidates)
+    : wallTime - offsetBefore;
 }
 
 export function plainDateFromInstant(
