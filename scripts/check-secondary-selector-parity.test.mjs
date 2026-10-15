@@ -8,7 +8,9 @@
  * Button. Themes restyle the Button through `components.button`, and that rule
  * reaches only Buttons, so a theme that restyles its secondary Button must give
  * the three selector targets the same `variant:secondary` treatment. A theme
- * that leaves the Button at its default leaves the selectors at theirs.
+ * that leaves the Button at its default leaves the selectors at theirs. The
+ * selector copy keeps its border off triggers inside an InputGroup (FR6) and
+ * its hover off disabled and read-only triggers.
  *
  * @input The seven first-party theme objects.
  * @output Fails when a selector target's `variant:secondary` differs from the
@@ -36,15 +38,64 @@ const THEMES = {
 };
 
 const SELECTOR_TARGETS = ['selector', 'multi-selector', 'complex-selector'];
+/**
+ * Selector and MultiSelector triggers inside an InputGroup keep the neutral
+ * fill and the group's edges (FR6), so their treatment applies outside one.
+ */
+const OUTSIDE_INPUT_GROUP = ':not(.astryx-input-group *)';
+/** Hover scopes that keep the Button's hover off disabled and read-only triggers. */
+const HOVER_SCOPES = {
+  selector:
+    ':hover:not([data-disabled], [data-readonly], .astryx-input-group *)',
+  'multi-selector':
+    ':hover:not([data-disabled], [data-readonly], .astryx-input-group *)',
+  'complex-selector': ':hover:not(:has(> :disabled))',
+};
+const GROUPED_TARGETS = new Set(['selector', 'multi-selector']);
+
+/** Split a style entry into resting declarations and its `:hover` block. */
+function splitButton(entry = {}) {
+  const resting = {};
+  let hover;
+  for (const [key, value] of Object.entries(entry)) {
+    if (key === ':hover') hover = value;
+    else resting[key] = value;
+  }
+  return {resting, hover};
+}
+
+/**
+ * Read a selector entry back as the treatment a standalone, enabled, editable
+ * trigger gets: its resting declarations and its hover.
+ */
+function readSelector(entry = {}, target) {
+  const resting = {};
+  let hover;
+  for (const [key, value] of Object.entries(entry)) {
+    if (key === HOVER_SCOPES[target]) hover = value;
+    else if (GROUPED_TARGETS.has(target) && key === OUTSIDE_INPUT_GROUP) {
+      Object.assign(resting, value);
+    } else if (key.startsWith(':') || GROUPED_TARGETS.has(target)) {
+      // A grouped target may only style outside an InputGroup.
+      throw new Error(`${target}: unexpected key ${key}`);
+    } else resting[key] = value;
+  }
+  return {resting, hover};
+}
 
 describe('secondary selector triggers match the secondary Button', () => {
   for (const [name, theme] of Object.entries(THEMES)) {
-    const secondaryButton = theme.components?.button?.['variant:secondary'];
+    const button = theme.components?.button?.['variant:secondary'];
     for (const target of SELECTOR_TARGETS) {
       it(`${name}: ${target}`, () => {
-        expect(theme.components?.[target]?.['variant:secondary']).toEqual(
-          secondaryButton,
-        );
+        const entry = theme.components?.[target]?.['variant:secondary'];
+        if (button === undefined) {
+          // A theme that leaves the Button at its default leaves the selectors
+          // at theirs.
+          expect(entry).toBeUndefined();
+          return;
+        }
+        expect(readSelector(entry, target)).toEqual(splitButton(button));
       });
     }
   }

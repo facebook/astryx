@@ -61,6 +61,37 @@ const SECONDARY_BUTTON = {
   },
 } as const;
 
+/**
+ * The secondary Button treatment on Selector and MultiSelector triggers
+ * (AST-079 FR2). Inside an InputGroup a trigger keeps the neutral fill and the
+ * group's edges instead (FR6). The hover stays off disabled and read-only
+ * triggers, which carry `data-disabled` and `data-readonly`.
+ */
+const SECONDARY_SELECTOR = {
+  ':not(.astryx-input-group *)': {
+    backgroundColor: SECONDARY_BUTTON.backgroundColor,
+    borderWidth: SECONDARY_BUTTON.borderWidth,
+    borderStyle: SECONDARY_BUTTON.borderStyle,
+    borderColor: SECONDARY_BUTTON.borderColor,
+    color: SECONDARY_BUTTON.color,
+  },
+  ':hover:not([data-disabled], [data-readonly], .astryx-input-group *)':
+    SECONDARY_BUTTON[':hover'],
+} as const;
+
+/**
+ * The secondary Button treatment on ComplexSelector triggers (AST-079 FR2), with
+ * the hover kept off a disabled trigger, whose inner button is disabled.
+ */
+const SECONDARY_COMPLEX_SELECTOR = {
+  backgroundColor: SECONDARY_BUTTON.backgroundColor,
+  borderWidth: SECONDARY_BUTTON.borderWidth,
+  borderStyle: SECONDARY_BUTTON.borderStyle,
+  borderColor: SECONDARY_BUTTON.borderColor,
+  color: SECONDARY_BUTTON.color,
+  ':hover:not(:has(> :disabled))': SECONDARY_BUTTON[':hover'],
+} as const;
+
 export const butterTheme = defineTheme({
   name: 'butter',
 
@@ -542,7 +573,7 @@ export const butterTheme = defineTheme({
       'status:success': {'--color-success': '#91D143'},
       'status:warning': {'--color-warning': '#ffc502'},
       'status:error': {'--color-error': '#fc473b'},
-      'variant:secondary': SECONDARY_BUTTON,
+      'variant:secondary': SECONDARY_SELECTOR,
     },
     'multi-selector': {
       base: {
@@ -553,9 +584,9 @@ export const butterTheme = defineTheme({
       'status:success': {'--color-success': '#91D143'},
       'status:warning': {'--color-warning': '#ffc502'},
       'status:error': {'--color-error': '#fc473b'},
-      'variant:secondary': SECONDARY_BUTTON,
+      'variant:secondary': SECONDARY_SELECTOR,
     },
-    'complex-selector': {'variant:secondary': SECONDARY_BUTTON},
+    'complex-selector': {'variant:secondary': SECONDARY_COMPLEX_SELECTOR},
     typeahead: {
       base: {
         paddingBlock: 'var(--spacing-2)',

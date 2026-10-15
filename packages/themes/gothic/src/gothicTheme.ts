@@ -68,6 +68,20 @@ const SECONDARY_BUTTON = {
   borderWidth: '0',
 } as const;
 
+/**
+ * The secondary Button treatment on Selector and MultiSelector triggers
+ * (AST-079 FR2). Inside an InputGroup a trigger keeps the neutral fill and the
+ * group's edges instead (FR6).
+ */
+const SECONDARY_SELECTOR = {
+  ':not(.astryx-input-group *)': {
+    backgroundColor: SECONDARY_BUTTON.backgroundColor,
+    color: SECONDARY_BUTTON.color,
+    borderColor: SECONDARY_BUTTON.borderColor,
+    borderWidth: SECONDARY_BUTTON.borderWidth,
+  },
+} as const;
+
 export const gothicTheme = defineTheme({
   name: 'gothic',
 
@@ -266,8 +280,8 @@ export const gothicTheme = defineTheme({
       },
     },
     // Secondary selector triggers match the secondary Button (AST-079 FR2).
-    selector: {'variant:secondary': SECONDARY_BUTTON},
-    'multi-selector': {'variant:secondary': SECONDARY_BUTTON},
+    selector: {'variant:secondary': SECONDARY_SELECTOR},
+    'multi-selector': {'variant:secondary': SECONDARY_SELECTOR},
     'complex-selector': {'variant:secondary': SECONDARY_BUTTON},
 
     badge: {
