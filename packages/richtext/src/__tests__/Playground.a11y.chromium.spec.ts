@@ -460,6 +460,53 @@ test('turning the image node off takes the document back through Markdown', asyn
   expect(errors).toEqual([]);
 });
 
+test('an image file dropped or pasted into the editor becomes an image', async ({
+  page,
+}) => {
+  const errors = await openStory(page);
+  await page.locator(EDITOR).click();
+  await page.keyboard.press('ControlOrMeta+End');
+
+  // A real drop and a real paste cannot be driven from the test runner, so the
+  // events are built with the same shapes a browser delivers: a DragEvent and
+  // a ClipboardEvent, each carrying one image file.
+  const deliverFile = (type: 'drop' | 'paste') =>
+    page.evaluate(async (eventType: string) => {
+      const pixel =
+        'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+      const blob = await (await fetch(pixel)).blob();
+      const transfer = new DataTransfer();
+      transfer.items.add(
+        new File([blob], `${eventType}ped.png`, {type: 'image/png'}),
+      );
+      const target = document.querySelector(
+        '[data-playground-editor] [role="textbox"]',
+      );
+      target?.dispatchEvent(
+        eventType === 'drop'
+          ? new DragEvent('drop', {
+              bubbles: true,
+              cancelable: true,
+              dataTransfer: transfer,
+            })
+          : new ClipboardEvent('paste', {
+              bubbles: true,
+              cancelable: true,
+              clipboardData: transfer,
+            }),
+      );
+    }, type);
+
+  await deliverFile('drop');
+  await expect(page.locator(IMAGE)).toHaveCount(1);
+  // The file's name is the alt text until someone says better.
+  await expect(page.locator(IMAGE)).toHaveAttribute('alt', 'dropped.png');
+
+  await deliverFile('paste');
+  await expect(page.locator(IMAGE)).toHaveCount(2);
+  expect(errors).toEqual([]);
+});
+
 test('the story has no axe violations', async ({page}) => {
   const errors = await openStory(page);
   const results = await new AxeBuilder({page})
