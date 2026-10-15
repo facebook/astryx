@@ -1194,7 +1194,7 @@ caller observes the old behavior, which delays every conformance fix to a minor.
 ### DEC-21 — The cut prepares but does not authorize the successor plan
 
 **Reference:** `spec:AST-017/DEC-21`
-**Decider:** pending owner review
+**Decider:** `cixzhang`, 2026-10-14
 
 The cut knows the default successor and every file that must move together, so it
 prepares the separate plan change immediately. That change cannot merge until an
