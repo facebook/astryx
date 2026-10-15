@@ -24,7 +24,7 @@ import {MarkdownPluginsSandbox} from './RichTextEditor.markdownPlugins';
 import {RichTextEditorPlayground} from './RichTextEditor.playground';
 
 const meta: Meta<typeof RichTextEditor> = {
-  title: 'Lab/RichTextEditor',
+  title: 'RichText/RichTextEditor',
   component: RichTextEditor,
   tags: ['autodocs'],
   argTypes: {
