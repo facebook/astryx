@@ -48,7 +48,10 @@ import {ItemDescriptionContext} from './ItemDescriptionContext';
 import {useMergedRefs} from '../hooks/useMergedRefs';
 import {computeTargetAndRel} from '../Link/computeTargetAndRel';
 import {useLinkComponent} from '../Link/useLinkComponent';
-import {useClickableContainer} from '../hooks/useClickableContainer';
+import {
+  hasInteractiveAncestor,
+  useClickableContainer,
+} from '../hooks/useClickableContainer';
 import {useDevWarning} from '../hooks/useDevWarning';
 import {themeProps} from '../utils/themeProps';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
@@ -701,8 +704,14 @@ export function Item({
     if (isDisabled) {
       return;
     }
-    const target = e.target as HTMLElement;
-    if (target.closest('button, a, input, select, textarea')) {
+    // The shared rule, not a tag list: a role-based control (a menu row, a
+    // switch) counts too, and so does one portaled out of the row whose click
+    // React still bubbles through the row's tree.
+    if (
+      e.target instanceof Element &&
+      e.target !== e.currentTarget &&
+      hasInteractiveAncestor(e.target, e.currentTarget)
+    ) {
       return;
     }
     onClick?.(e);

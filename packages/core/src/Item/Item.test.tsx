@@ -10,6 +10,7 @@
  */
 
 import {use, useRef} from 'react';
+import {createPortal} from 'react-dom';
 import {
   afterEach,
   beforeAll,
@@ -30,6 +31,7 @@ import {
 import {rulesDeclaredFor} from '../__tests__/pressState';
 import userEvent from '@testing-library/user-event';
 import {Item} from './Item';
+import {DropdownMenu, DropdownMenuItem} from '../DropdownMenu';
 import {ItemDescriptionContext} from './ItemDescriptionContext';
 
 /**
@@ -224,6 +226,54 @@ describe('Item', () => {
     );
     await user.click(screen.getByText('Action'));
     expect(buttonClick).toHaveBeenCalledTimes(1);
+    expect(itemClick).not.toHaveBeenCalled();
+  });
+
+  it('does not fire item onClick when a row from its endContent DropdownMenu is picked', async () => {
+    const user = userEvent.setup();
+    const itemClick = vi.fn();
+    const rename = vi.fn();
+    render(
+      <Item
+        label="Item"
+        onClick={itemClick}
+        endContent={
+          <DropdownMenu button={{label: 'More'}}>
+            <DropdownMenuItem label="Rename" onClick={rename} />
+          </DropdownMenu>
+        }
+      />,
+    );
+    await user.click(screen.getByRole('button', {name: 'More'}));
+    await user.click(
+      await screen.findByRole('menuitem', {name: 'Rename', hidden: true}),
+    );
+    expect(rename).toHaveBeenCalledTimes(1);
+    expect(itemClick).not.toHaveBeenCalled();
+  });
+
+  it('does not fire item onClick for a click inside content portaled out of the row', async () => {
+    const user = userEvent.setup();
+    const itemClick = vi.fn();
+    const rowClick = vi.fn();
+    render(
+      <Item
+        label="Item"
+        onClick={itemClick}
+        endContent={createPortal(
+          <div role="menu" aria-label="Row actions">
+            <div role="menuitem" tabIndex={-1} onClick={rowClick}>
+              Rename
+            </div>
+          </div>,
+          document.body,
+        )}
+      />,
+    );
+    // React bubbles the click from the portal through the row's tree even
+    // though the menu row is not inside the row's DOM.
+    await user.click(screen.getByRole('menuitem', {name: 'Rename'}));
+    expect(rowClick).toHaveBeenCalledTimes(1);
     expect(itemClick).not.toHaveBeenCalled();
   });
 
