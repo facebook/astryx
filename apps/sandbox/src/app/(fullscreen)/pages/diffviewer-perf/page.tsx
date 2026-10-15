@@ -167,7 +167,8 @@ function toDiffFile(file: DiffBenchmarkFile): DiffViewerFile {
   });
 }
 
-function renderedLineCount(files: ReadonlyArray<DiffViewerFile>): number {
+/** Lines across every hunk: a removed and an added line count separately. */
+function diffLineCount(files: ReadonlyArray<DiffViewerFile>): number {
   let lines = 0;
   for (const file of files) {
     for (const hunk of file.hunks) {
@@ -239,7 +240,7 @@ export default function DiffViewerPerfPage() {
   }, [scenario, fileCount, lineCount, change]);
 
   const language = syntax === 'on' ? undefined : 'plaintext';
-  const diffLines = useMemo(() => renderedLineCount(files), [files]);
+  const diffLines = useMemo(() => diffLineCount(files), [files]);
 
   const runBenchmark = useCallback(() => {
     const subject: RunSubject = {
@@ -532,9 +533,7 @@ export default function DiffViewerPerfPage() {
                 <Badge
                   label={`${shown.totalLines.toLocaleString()} file lines`}
                 />
-                <Badge
-                  label={`${diffLines.toLocaleString()} diff rows rendered`}
-                />
+                <Badge label={`${diffLines.toLocaleString()} diff lines`} />
                 <Badge label={shown.viewMode} />
                 <Badge
                   label={shown.syntax === 'on' ? 'highlighted' : 'plain'}
