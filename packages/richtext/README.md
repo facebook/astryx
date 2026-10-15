@@ -53,10 +53,19 @@ same version; install matching versions. `lexical` and the `@lexical/*` packages
 are optional peer dependencies, so a project that only uses the headless
 Markdown serializers installs just those.
 
+RichText ships prebuilt CSS and JS, like `@astryxdesign/core`: import its
+stylesheet beside Core's and your theme's, with no StyleX or Babel setup. Never
+compile richtext's source.
+
 ```tsx
 import '@astryxdesign/core/astryx.css';
+import '@astryxdesign/theme-neutral/theme.css'; // or your theme's CSS
 import '@astryxdesign/richtext/richtext.css';
 ```
+
+`richtext.css` emits into `@layer astryx-base`, the layer `astryx.css` opens,
+so your theme's token overrides (`@layer astryx-theme`) win over it whatever
+the import order, as long as `astryx.css` comes first.
 
 ## Examples
 
