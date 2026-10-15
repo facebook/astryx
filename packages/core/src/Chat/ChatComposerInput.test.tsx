@@ -1444,7 +1444,10 @@ describe('ChatComposerInput', () => {
         expect(editable).toHaveAttribute('aria-expanded', 'false');
       });
 
-      fireEvent.keyDown(editable, {key: 'Escape'});
+      // Nothing cancels the key: the closed menu holds no Escape handling,
+      // so a surrounding dialog or drawer still receives it.
+      const notCancelled = fireEvent.keyDown(editable, {key: 'Escape'});
+      expect(notCancelled).toBe(true);
       expect(onKeyDown).toHaveBeenCalledWith(
         expect.objectContaining({key: 'Escape'}),
       );

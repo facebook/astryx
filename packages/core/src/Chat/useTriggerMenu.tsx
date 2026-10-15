@@ -57,6 +57,11 @@ export interface TriggerMenuState {
   items: SearchableItem[];
   highlightedIndex: number;
   isLoading: boolean;
+  /**
+   * The last settled results were an unmatched multi-word query, so the menu
+   * is closed. It stays closed while a newer search for the same query runs.
+   */
+  isHidden: boolean;
 }
 
 export interface UseTriggerMenuOptions {
@@ -321,6 +326,7 @@ export function useTriggerMenu(
     items: [],
     highlightedIndex: 0,
     isLoading: false,
+    isHidden: false,
   });
 
   const triggerStartRef = useRef<number>(-1);
@@ -332,6 +338,9 @@ export function useTriggerMenu(
     dismissedQuery: string;
   } | null>(null);
   const anchorSpanRef = useRef<HTMLSpanElement | null>(null);
+  // True while the popover is closed only because the query is unmatched; the
+  // trigger query itself is still active.
+  const isMenuSuppressedRef = useRef(false);
 
   const removeAnchorSpan = useCallback(() => {
     if (anchorSpanRef.current) {
@@ -342,6 +351,9 @@ export function useTriggerMenu(
 
   const popover = usePopover({
     onHide: useCallback(() => {
+      if (isMenuSuppressedRef.current) {
+        return;
+      }
       searchRequestIdRef.current++;
       removeAnchorSpan();
       setState(prev => ({
@@ -352,6 +364,7 @@ export function useTriggerMenu(
         items: [],
         highlightedIndex: 0,
         isLoading: false,
+        isHidden: false,
       }));
     }, [removeAnchorSpan]),
     hasLightDismiss: true,
@@ -361,6 +374,7 @@ export function useTriggerMenu(
     // the contenteditable composer, so a modal dialog wrapper is incorrect.
     role: 'none',
   });
+  const {show: showPopover, hide: hidePopover} = popover;
 
   // Cleanup on unmount
   useEffect(() => {
@@ -384,6 +398,7 @@ export function useTriggerMenu(
       trigger.searchSource.cancel?.();
     }
     removeAnchorSpan();
+    isMenuSuppressedRef.current = false;
     popover.hide();
     triggerStartRef.current = -1;
     setState(prev => ({
@@ -394,6 +409,7 @@ export function useTriggerMenu(
       items: [],
       highlightedIndex: 0,
       isLoading: false,
+      isHidden: false,
     }));
   }, [popover, state.activeTrigger, removeAnchorSpan]);
 
@@ -483,6 +499,27 @@ export function useTriggerMenu(
         return true;
       };
 
+      const applyResults = (items: SearchableItem[]) => {
+        const isHidden = isUnmatchedMultiWordQuery(trigger, items, false);
+        setState(prev => ({
+          ...prev,
+          items,
+          highlightedIndex: items.length > 0 ? 0 : -1,
+          isLoading: false,
+          isHidden,
+        }));
+        // A hidden menu closes its popover, which also releases the popover's
+        // Escape and light-dismiss handling; matches reopen it at the caret.
+        if (isHidden && !isMenuSuppressedRef.current) {
+          isMenuSuppressedRef.current = true;
+          hidePopover();
+        } else if (!isHidden && isMenuSuppressedRef.current) {
+          isMenuSuppressedRef.current = false;
+          setAnchor();
+          showPopover();
+        }
+      };
+
       const doSearch = () => {
         if (trigger.searchSource) {
           // Use SearchSource — cancel previous, then search
@@ -494,23 +531,13 @@ export function useTriggerMenu(
               if (!isCurrent()) {
                 return;
               }
-              setState(prev => ({
-                ...prev,
-                items,
-                highlightedIndex: items.length > 0 ? 0 : -1,
-                isLoading: false,
-              }));
+              applyResults(items);
             },
             () => {
               if (!isCurrent()) {
                 return;
               }
-              setState(prev => ({
-                ...prev,
-                items: [],
-                highlightedIndex: -1,
-                isLoading: false,
-              }));
+              applyResults([]);
             },
           );
         }
@@ -529,7 +556,15 @@ export function useTriggerMenu(
         }
       }
     },
-    [debounceMs, editableRef, triggers, reset],
+    [
+      debounceMs,
+      editableRef,
+      triggers,
+      reset,
+      setAnchor,
+      hidePopover,
+      showPopover,
+    ],
   );
 
   const selectItem = useCallback(
@@ -622,12 +657,14 @@ export function useTriggerMenu(
       triggerStartRef.current !== triggerStart
     ) {
       triggerStartRef.current = triggerStart;
+      isMenuSuppressedRef.current = false;
       setState(prev => ({
         ...prev,
         isActive: true,
         activeTrigger: trigger,
         query,
         highlightedIndex: 0,
+        isHidden: false,
       }));
       setAnchor();
       searchItems(trigger, query);
@@ -648,13 +685,7 @@ export function useTriggerMenu(
     popover,
   ]);
 
-  const isMenuVisible =
-    state.isActive &&
-    !isUnmatchedMultiWordQuery(
-      state.activeTrigger,
-      state.items,
-      state.isLoading,
-    );
+  const isMenuVisible = state.isActive && !state.isHidden;
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent): boolean => {
@@ -803,9 +834,7 @@ export function useTriggerMenu(
       return null;
     }
 
-    if (
-      isUnmatchedMultiWordQuery(activeTrigger, state.items, state.isLoading)
-    ) {
+    if (state.isHidden) {
       return null;
     }
 
