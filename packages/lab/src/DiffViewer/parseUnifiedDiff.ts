@@ -190,13 +190,10 @@ function finalize(file: MutableFile): DiffViewerFile {
       status = 'added';
     } else if (file.newPath == null && file.oldPath != null) {
       status = 'deleted';
-    } else if (
-      file.oldPath != null &&
-      file.newPath != null &&
-      file.oldPath !== file.newPath
-    ) {
-      status = 'renamed';
     } else {
+      // Only git's rename lines say a file moved. Two different paths
+      // without them (`diff -u a.orig a`, `diff -ruN old new`, a copy) are an
+      // edit between two files, so both paths are kept.
       status = 'modified';
     }
   }
@@ -222,8 +219,8 @@ function hasContent(file: MutableFile): boolean {
 /**
  * Parse a unified diff into one {@link DiffViewerFile} per file.
  *
- * Accepts `git diff` output (with `diff --git`, mode, rename, and binary
- * lines), classic `diff -u` output (`---`/`+++` pairs), several files in one
+ * Accepts `git diff` output (with `diff --git`, mode, rename, copy, and
+ * binary lines), classic `diff -u` output (`---`/`+++` pairs), several files in one
  * patch, and a bare `@@` hunk with no file header (returned as one file with
  * null paths). Input it cannot read yields `[]`; it never throws.
  *
@@ -373,6 +370,12 @@ export function parseUnifiedDiff(patch: string): DiffViewerFile[] {
     } else if (line.startsWith('rename to ')) {
       current.newPath = unquotePath(line.slice('rename to '.length));
       current.status = 'renamed';
+    } else if (line.startsWith('copy from ')) {
+      // A copy keeps its source, so it reads as an edit from the source path
+      // to the new one; these lines also fix paths the header split wrongly.
+      current.oldPath = unquotePath(line.slice('copy from '.length));
+    } else if (line.startsWith('copy to ')) {
+      current.newPath = unquotePath(line.slice('copy to '.length));
     } else if (
       line.startsWith('Binary files ') ||
       line === 'GIT binary patch'

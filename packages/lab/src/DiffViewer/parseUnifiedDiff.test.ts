@@ -121,7 +121,63 @@ describe('parseUnifiedDiff', () => {
     expect(files[0]).toMatchObject({
       oldPath: 'a.txt',
       newPath: 'b.txt',
-      status: 'renamed',
+      status: 'modified',
+    });
+  });
+
+  it('marks a file renamed only from git rename lines', () => {
+    const files = parseUnifiedDiff(
+      [
+        // diff -ruN between two trees: an edit and an -N creation.
+        'diff -ruN old/app.ini new/app.ini',
+        '--- old/app.ini\t2024-01-01 00:00:00.000000000 +0000',
+        '+++ new/app.ini\t2024-01-02 00:00:00.000000000 +0000',
+        '@@ -1 +1 @@',
+        '-debug=false',
+        '+debug=true',
+        'diff -ruN old/extra.ini new/extra.ini',
+        '--- old/extra.ini\t1970-01-01 00:00:00.000000000 +0000',
+        '+++ new/extra.ini\t2024-01-02 00:00:00.000000000 +0000',
+        '@@ -0,0 +1 @@',
+        '+level=2',
+        // git diff --no-index between two unrelated files.
+        'diff --git a/before.txt b/after.txt',
+        'index 1111111..2222222 100644',
+        '--- a/before.txt',
+        '+++ b/after.txt',
+        '@@ -1 +1 @@',
+        '-x',
+        '+y',
+      ].join('\n'),
+    );
+    expect(
+      files.map(file => [file.oldPath, file.newPath, file.status]),
+    ).toEqual([
+      ['old/app.ini', 'new/app.ini', 'modified'],
+      ['old/extra.ini', 'new/extra.ini', 'modified'],
+      ['before.txt', 'after.txt', 'modified'],
+    ]);
+  });
+
+  it('reads copies from their copy lines, paths with spaces included', () => {
+    const [file] = parseUnifiedDiff(
+      [
+        'diff --git a/my file.ts b/my copy.ts',
+        'similarity index 90%',
+        'copy from my file.ts',
+        'copy to my copy.ts',
+        'index 1111111..2222222 100644',
+        '--- a/my file.ts',
+        '+++ b/my copy.ts',
+        '@@ -1 +1 @@',
+        '-export const a = 1;',
+        '+export const b = 1;',
+      ].join('\n'),
+    );
+    expect(file).toMatchObject({
+      oldPath: 'my file.ts',
+      newPath: 'my copy.ts',
+      status: 'modified',
     });
   });
 
