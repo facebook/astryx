@@ -815,6 +815,14 @@ describe('useTriggerMenu', () => {
     expect(enter.preventDefault).not.toHaveBeenCalled();
     expect(onSelect).not.toHaveBeenCalled();
 
+    // Tab has nothing current to pick either.
+    const tab = keyEvent('Tab');
+    act(() => {
+      consumed = result.current.handleKeyDown(tab);
+    });
+    expect(consumed).toBe(false);
+    expect(onSelect).not.toHaveBeenCalled();
+
     // Arrows stay with the menu but cannot build a selection on stale rows.
     const down = keyEvent('ArrowDown');
     act(() => {
