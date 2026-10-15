@@ -26,8 +26,8 @@ product renders itself: a chat composer's textarea, a search field above an
 emoji grid, a settings search whose results replace a page section, an "add
 people" field whose matches list inline in a dialog. Astryx gives that field the
 combobox semantics and keyboard model it gives its own typeahead input. The
-product supplies the field, the rows, and where the list renders; every such
-field behaves and announces the same way.
+product supplies the field, the rows, and where the list renders, and composes
+the behavior from hooks; every such field behaves and announces the same way.
 
 ## Non-goals
 
@@ -69,6 +69,11 @@ field behaves and announces the same way.
 - **FR7 — Result count.** When the options change for a new query, the number of
   options, or that there are none, MUST be announced politely through the shared
   announcer rather than a live region per field.
+- **FR8 — The hooks are discoverable as hooks.** Each public hook that
+  implements this contract MUST be returned by `astryx hook <name>` and
+  `astryx search` with its parameters, its return fields, and the requirements
+  above it satisfies, so a product finds it without first finding a component
+  that uses it.
 
 ### Platform support
 
@@ -85,17 +90,27 @@ field behaves and announces the same way.
 - `component:BaseTypeahead` meets AR1–AR5 for the input it renders; this
   contract carries the same obligations to a field the caller renders.
 - `component:ChatComposerInput` exposes combobox semantics for its trigger menu
-  inside its own contenteditable field only.
-- Consumer docs gain one entry for the public surface that answers OQ1.
+  inside its own contenteditable field only, through an internal hook.
+- `useCombobox` (exported from `@astryxdesign/core/Selector`) already tracks the
+  active option, opens and closes, and handles the keys for Selector and
+  CommandPalette; `useMultiCombobox` (exported from
+  `@astryxdesign/core/MultiSelector`) does the same for MultiSelector. Both take
+  their own component's option type, leave the ARIA wiring to the caller, and do
+  not yet guard keys during an input-method composition (FR5).
+- `useTypeahead` already ignores keys during an input-method composition, and
+  `useAnnounce` is the shared announcer FR7 names.
+- Neither combobox hook ships a hook doc, so `astryx hook` and `astryx search`
+  do not return them (FR8).
 
 ## Verification
 
-| Contract | Verification                                                         | Representative states                                         | Mutation or failure expectation                                                       |
-| -------- | -------------------------------------------------------------------- | ------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
-| FR1–FR3  | Chromium accessibility-tree binding under `spec:AST-021`; unit tests | input, textarea, contenteditable; list in a layer and in flow | focus leaves the field, or a stale `aria-activedescendant` or `aria-controls` remains |
-| FR4, FR6 | real keyboard and pointer input in Chromium                          | arrows, Enter, Escape inside a dialog, hover and press        | a key or press picks, dismisses, or blurs the field at the wrong time                 |
-| FR5      | composition event tests                                              | candidate selection confirmed with Enter                      | Enter during composition picks an option                                              |
-| FR7      | shared announcer tests                                               | results, none, a new query                                    | no announcement, or an announcement from a per-field live region                      |
+| Contract | Verification                                                         | Representative states                                                           | Mutation or failure expectation                                                          |
+| -------- | -------------------------------------------------------------------- | ------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| FR1–FR3  | Chromium accessibility-tree binding under `spec:AST-021`; unit tests | input, textarea, contenteditable; list in a layer and in flow                   | focus leaves the field, or a stale `aria-activedescendant` or `aria-controls` remains    |
+| FR4, FR6 | real keyboard and pointer input in Chromium                          | arrows, Enter, Escape inside a dialog, hover and press                          | a key or press picks, dismisses, or blurs the field at the wrong time                    |
+| FR5      | composition event tests                                              | candidate selection confirmed with Enter                                        | Enter during composition picks an option                                                 |
+| FR7      | shared announcer tests                                               | results, none, a new query                                                      | no announcement, or an announcement from a per-field live region                         |
+| FR8      | CLI hook discovery tests over core's exported hooks                  | each public hook named in DEC-2; a hook exported from a component's entry point | a combobox hook is exported without a hook doc, or `astryx hook <name>` denies it exists |
 
 ## Decision log
 
@@ -112,12 +127,26 @@ semantics owned by Astryx, every such surface meets one tested contract.
 
 Rejected: requiring the product's field to be the typeahead's own input — a textarea or contenteditable composer cannot be one, and an in-flow list is not a layer.
 
+### DEC-2 — The contract ships as composable hooks, built on `useCombobox`
+
+**Reference:** `spec:AST-075/DEC-2`
+**Decider:** `cixzhang`, `2026-10-15`
+
+A product builds a combobox over its own field by composing hooks, the same way
+Astryx builds its own: `useCombobox` for the active option, the expanded state
+and the keys, generalized from Selector's option type to any option list and to
+a field the caller renders; the input-method guard `useTypeahead` already
+applies; and `useAnnounce` for the result count. Astryx's own comboboxes compose
+the same hooks, so one tested implementation backs every surface this spec
+covers, and each hook is documented as a hook (FR8). A component stays the
+convenient path for the common case; the hooks are the path for every other
+field.
+
+Rejected: a new component, or `BaseTypeahead` accepting a caller's field, which
+keeps the behavior locked inside one component's markup.
+
 ## Open questions
 
-- **OQ1 — The public shape** (`human-api`): a headless hook that returns props
-  for the field, the listbox, and each option; `BaseTypeahead` accepting a
-  caller's field and an in-flow list; or the composer's trigger menu extended to
-  an `input` and a `textarea`.
 - **OQ2 — Home and End** (`human-design`): in a field the caller renders, they
   either keep moving the caret or move to the first and last option, as
   `component:BaseTypeahead` FR5 does for its own input.
