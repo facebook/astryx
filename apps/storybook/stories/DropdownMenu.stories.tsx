@@ -791,6 +791,7 @@ export const LabCheckboxItems: Story = {
   render: function LabCheckboxItemsStory() {
     const [showArchived, setShowArchived] = useState(false);
     const [showDrafts, setShowDrafts] = useState(true);
+    const [syncFolders, setSyncFolders] = useState(true);
     return (
       <DropdownMenu button={{label: 'View'}}>
         <DropdownMenuCheckboxItem
@@ -804,8 +805,31 @@ export const LabCheckboxItems: Story = {
           value={showDrafts}
           onChange={setShowDrafts}
         />
+        <DropdownMenuCheckboxItem
+          label="Sync folders"
+          icon={ArchiveBoxIcon}
+          endContent={
+            <span data-testid="dropdown-menu-checkbox-item-end-content">
+              <Badge label="Beta" />
+            </span>
+          }
+          value={syncFolders}
+          onChange={setSyncFolders}
+        />
+        <DropdownMenuCheckboxItem
+          label="Managed by your organization"
+          value={true}
+          isDisabled
+        />
       </DropdownMenu>
     );
+  },
+  tags: ['visual-theme-matrix'],
+  play: async ({canvasElement}) => {
+    const trigger = canvasElement.querySelector('button');
+    if (trigger instanceof HTMLElement) {
+      trigger.click();
+    }
   },
   parameters: {
     docs: {

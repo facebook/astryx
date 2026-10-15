@@ -9,7 +9,7 @@
  * @output `RichTextEditorPlayground`: ONE editor with every RichText feature
  *   switchable around it, and the live Markdown, HTML, editor-state, node-tree
  *   and RichTextView readouts of that same editor beside it.
- * @position Storybook-only sandbox for the Lab/RichTextEditor Playground story
+ * @position Storybook-only sandbox for the RichText/RichTextEditor Playground story
  *   — the Astryx counterpart of playground.lexical.dev. Every other story
  *   mounts its own editor to show one feature; this one exists so features can
  *   be combined on a single document and watched for interactions (a toolbar
@@ -488,7 +488,7 @@ export function RichTextEditorPlayground() {
   const [hasToolbar, setHasToolbar] = useState(true);
   const [hasInsertControls, setHasInsertControls] = useState(true);
   const [hasLink, setHasLink] = useState(true);
-  const [linkOpensInNewTab, setLinkOpensInNewTab] = useState(true);
+  const [hasNewTabLinks, setHasNewTabLinks] = useState(true);
   const [hasAutoLink, setHasAutoLink] = useState(true);
   const [hasMarkdownShortcuts, setHasMarkdownShortcuts] = useState(true);
   const [hasMarkdownPlugins, setHasMarkdownPlugins] = useState(true);
@@ -673,7 +673,7 @@ export function RichTextEditorPlayground() {
                   <RichTextEditorToolbar
                     size={toolbarSize}
                     hasLink={hasLink}
-                    linkOpensInNewTab={linkOpensInNewTab}
+                    hasNewTabLinks={hasNewTabLinks}
                     endContent={hasInsertControls ? <InsertControls /> : null}
                   />
                 ) : undefined
@@ -799,8 +799,8 @@ export function RichTextEditorPlayground() {
             <Switch
               size="sm"
               label="Links open in a new tab"
-              value={linkOpensInNewTab}
-              onChange={setLinkOpensInNewTab}
+              value={hasNewTabLinks}
+              onChange={setHasNewTabLinks}
               isDisabled={!hasToolbar || !hasLink}
               disabledMessage="Turn the toolbar's link button on first."
             />
