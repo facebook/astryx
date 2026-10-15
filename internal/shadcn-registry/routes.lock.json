@@ -572,6 +572,11 @@
       "aliases": []
     },
     {
+      "name": "component-lab-emoji-picker",
+      "path": "components/lab/emoji-picker",
+      "aliases": []
+    },
+    {
       "name": "component-lab-info-tip",
       "path": "components/lab/info-tip",
       "aliases": []
@@ -2068,6 +2073,11 @@
     {
       "name": "example-dropdown-menu-submenu",
       "path": "examples/dropdown-menu/submenu",
+      "aliases": []
+    },
+    {
+      "name": "example-emoji-picker-in-a-popover",
+      "path": "examples/emoji-picker/in-a-popover",
       "aliases": []
     },
     {
@@ -4298,6 +4308,11 @@
     {
       "name": "showcase-dropdown-menu-default",
       "path": "showcases/dropdown-menu/default",
+      "aliases": []
+    },
+    {
+      "name": "showcase-emoji-picker-inline-picker",
+      "path": "showcases/emoji-picker/inline-picker",
       "aliases": []
     },
     {
