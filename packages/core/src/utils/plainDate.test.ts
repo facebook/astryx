@@ -482,6 +482,22 @@ describe('plainDateToInstant / plainDateFromInstant', () => {
     },
   );
 
+  it('starts a date the zone skips at the first instant after the gap', () => {
+    // Samoa moved across the date line after December 29, 2011: December 30
+    // never happened in Pacific/Apia, so it resolves to 00:00 on December 31
+    // (+14), the next date.
+    const instant = plainDateToInstant(
+      {year: 2011, month: 12, day: 30},
+      'Pacific/Apia',
+    );
+    expect(instant).toBe(Date.UTC(2011, 11, 30, 10));
+    expect(plainDateFromInstant(instant, 'Pacific/Apia')).toEqual({
+      year: 2011,
+      month: 12,
+      day: 31,
+    });
+  });
+
   it('moves a wall time in a 30-minute gap forward by 30 minutes', () => {
     // Lord Howe Island jumps from 2:00 to 2:30 AM on October 4, 2026, from
     // +10:30 to +11: 2:15 AM does not happen and reads as 2:45 AM.

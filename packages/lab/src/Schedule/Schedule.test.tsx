@@ -695,6 +695,40 @@ describe('Schedule across a midnight that daylight saving skips', () => {
       expect(dayGroups()).toEqual([week[0]]);
     },
   );
+
+  it('keeps seven days in the week and one in the day view that end at the skipped midnight', () => {
+    // Santiago's week of Sunday, August 30, 2026 ends on Saturday, September 5;
+    // its end is the start of September 6, a midnight that never happens.
+    const timezoneID = 'America/Santiago';
+    const date = Date.UTC(2026, 8, 5, 15);
+    const {unmount} = render(
+      <Schedule
+        view={createScheduleWeeklyView({renderPopover})}
+        events={[]}
+        date={date}
+        timezoneID={timezoneID}
+      />,
+    );
+    expect(dayGroups()).toEqual([
+      'Sunday, August 30, 2026',
+      'Monday, August 31, 2026',
+      'Tuesday, September 1, 2026',
+      'Wednesday, September 2, 2026',
+      'Thursday, September 3, 2026',
+      'Friday, September 4, 2026',
+      'Saturday, September 5, 2026',
+    ]);
+    unmount();
+    render(
+      <Schedule
+        view={createScheduleDayView({renderPopover})}
+        events={[]}
+        date={date}
+        timezoneID={timezoneID}
+      />,
+    );
+    expect(dayGroups()).toEqual(['Saturday, September 5, 2026']);
+  });
 });
 
 describe('sortEvents', () => {

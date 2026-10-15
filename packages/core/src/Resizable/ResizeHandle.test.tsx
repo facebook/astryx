@@ -592,6 +592,142 @@ describe('ResizeHandle', () => {
     }
   });
 
+  it('with snap points, an arrow moves to the adjacent point in its direction and Shift moves two, clamped to the ends', () => {
+    render(
+      <Harness
+        config={{
+          defaultSize: 200,
+          minSize: 100,
+          maxSize: 400,
+          snaps: [100, 200, 300, 400],
+        }}
+      />,
+    );
+    const separator = getSeparator();
+    act(() => separator.focus());
+    // A 10px step would snap straight back to 200; the arrow reaches the
+    // next point instead.
+    fireEvent.keyDown(separator, {key: 'ArrowRight'});
+    expect(separator).toHaveAttribute('aria-valuenow', '300');
+    fireEvent.keyDown(separator, {key: 'ArrowLeft'});
+    expect(separator).toHaveAttribute('aria-valuenow', '200');
+    fireEvent.keyDown(separator, {key: 'ArrowRight', shiftKey: true});
+    expect(separator).toHaveAttribute('aria-valuenow', '400');
+    // Already at the last point: the grow arrow changes nothing.
+    fireEvent.keyDown(separator, {key: 'ArrowRight'});
+    expect(separator).toHaveAttribute('aria-valuenow', '400');
+    // Shift past the first point clamps to it.
+    fireEvent.keyDown(separator, {key: 'ArrowLeft', shiftKey: true});
+    expect(separator).toHaveAttribute('aria-valuenow', '200');
+    fireEvent.keyDown(separator, {key: 'ArrowLeft', shiftKey: true});
+    expect(separator).toHaveAttribute('aria-valuenow', '100');
+    fireEvent.keyDown(separator, {key: 'ArrowLeft'});
+    expect(separator).toHaveAttribute('aria-valuenow', '100');
+  });
+
+  it('with snap points past the bounds, a point beyond maxSize or minSize counts as that bound', () => {
+    render(
+      <Harness
+        config={{
+          defaultSize: 200,
+          minSize: 100,
+          maxSize: 400,
+          snaps: [50, 100, 200, 300, 450],
+        }}
+      />,
+    );
+    const separator = getSeparator();
+    act(() => separator.focus());
+    fireEvent.keyDown(separator, {key: 'End'});
+    expect(separator).toHaveAttribute('aria-valuenow', '400');
+    fireEvent.keyDown(separator, {key: 'ArrowLeft'});
+    expect(separator).toHaveAttribute('aria-valuenow', '300');
+    // The 450 point counts as the 400 bound.
+    fireEvent.keyDown(separator, {key: 'ArrowRight'});
+    expect(separator).toHaveAttribute('aria-valuenow', '400');
+    fireEvent.keyDown(separator, {key: 'Home'});
+    expect(separator).toHaveAttribute('aria-valuenow', '100');
+    // The 50 point counts as the 100 bound: nothing below it.
+    fireEvent.keyDown(separator, {key: 'ArrowLeft'});
+    expect(separator).toHaveAttribute('aria-valuenow', '100');
+  });
+
+  it('with snap points, the arrows follow the reversed layout and the reading direction', () => {
+    const rtl = vi
+      .spyOn(window, 'getComputedStyle')
+      .mockImplementation(
+        () => ({direction: 'rtl'}) as unknown as CSSStyleDeclaration,
+      );
+    try {
+      // Reversed under RTL: the two inversions cancel, so ArrowRight grows.
+      render(
+        <Harness
+          config={{
+            defaultSize: 200,
+            minSize: 100,
+            maxSize: 400,
+            snaps: [100, 200, 300, 400],
+          }}
+          handleProps={{isReversed: true}}
+        />,
+      );
+      const separator = getSeparator();
+      act(() => separator.focus());
+      fireEvent.keyDown(separator, {key: 'ArrowRight'});
+      expect(separator).toHaveAttribute('aria-valuenow', '300');
+      fireEvent.keyDown(separator, {key: 'ArrowLeft'});
+      expect(separator).toHaveAttribute('aria-valuenow', '200');
+    } finally {
+      rtl.mockRestore();
+    }
+  });
+
+  it('with snap points in a reversed layout, ArrowLeft moves to the next point and ArrowRight to the previous', () => {
+    render(
+      <Harness
+        config={{
+          defaultSize: 200,
+          minSize: 100,
+          maxSize: 400,
+          snaps: [100, 200, 300, 400],
+        }}
+        handleProps={{isReversed: true}}
+      />,
+    );
+    const separator = getSeparator();
+    act(() => separator.focus());
+    fireEvent.keyDown(separator, {key: 'ArrowLeft'});
+    expect(separator).toHaveAttribute('aria-valuenow', '300');
+    fireEvent.keyDown(separator, {key: 'ArrowRight'});
+    expect(separator).toHaveAttribute('aria-valuenow', '200');
+  });
+
+  it('with snap points, the grow arrow opens a collapsed pane at the snap point nearest one step above its minimum', () => {
+    render(
+      <Harness
+        config={{
+          defaultSize: 200,
+          minSize: 100,
+          maxSize: 400,
+          collapsible: true,
+          snaps: [100, 200, 300, 400],
+        }}
+      />,
+    );
+    const separator = getSeparator();
+    act(() => separator.focus());
+    fireEvent.keyDown(separator, {key: 'Enter'});
+    expect(separator).toHaveAttribute('aria-valuetext', 'Collapsed');
+    // min + step is 110; the region can rest only on a point, so it opens
+    // on the nearest one (100).
+    fireEvent.keyDown(separator, {key: 'ArrowRight'});
+    expect(separator).not.toHaveAttribute('aria-valuetext');
+    expect(separator).toHaveAttribute('aria-valuenow', '100');
+    // From there the arrows move between points.
+    fireEvent.keyDown(separator, {key: 'ArrowRight'});
+    expect(separator).toHaveAttribute('aria-valuenow', '200');
+  });
+
   it('a grow arrow opens a hand-built collapsed region one step above its minimum', () => {
     const props: ResizableProps = {
       ...makeResizable(),

@@ -145,11 +145,12 @@ export const RESIZE_HANDLE_BINDING_STATES = [
   {
     id: 'bare-snapped',
     summary:
-      'a bare ResizeHandle whose region sets snap points [100, 200, 300, 400]: it can rest only on a snap point',
+      'a bare ResizeHandle whose region sets snap points [100, 200, 300, 400]: an arrow moves to the adjacent point',
     storyId: story('bare-snapped'),
     component: 'ResizeHandle',
     label: 'Resize details pane',
-    facts: facts(),
+    // One arrow moves to the adjacent point: 100px apart here.
+    facts: facts({step: 100}),
     snaps: [100, 200, 300, 400],
   },
   {

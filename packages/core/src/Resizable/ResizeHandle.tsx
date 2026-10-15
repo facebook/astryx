@@ -365,6 +365,35 @@ export interface ResizeHandleProps extends Omit<
 }
 
 /**
+ * The snap point `count` points away from the region's current size in
+ * `direction` (+1 grows, -1 shrinks). A point beyond `minSize` or `maxSize`
+ * counts as that bound; the nearest end point serves when fewer remain, and
+ * the current size when it is already there.
+ */
+function adjacentSnapPoint(
+  resizable: ResizableProps,
+  direction: 1 | -1,
+  count: number,
+): number {
+  const points = [
+    ...new Set(
+      resizable._snaps.map(p =>
+        Math.min(resizable._maxSizePx, Math.max(resizable._minSizePx, p)),
+      ),
+    ),
+  ].sort((a, b) => a - b);
+  const size = resizable._size;
+  const ahead =
+    direction > 0
+      ? points.filter(p => p > size)
+      : points.filter(p => p < size).reverse();
+  if (ahead.length === 0) {
+    return size;
+  }
+  return ahead[Math.min(count, ahead.length) - 1];
+}
+
+/**
  * Collapse an open pane, or restore a collapsed one to the size it had before
  * it collapsed (APG window splitter: Enter "restores the splitter to its
  * previous position"). The hook's own collapse/expand do exactly that; a
@@ -592,6 +621,22 @@ export function ResizeHandle({
               );
               resizable._onResizeEnd();
             }
+            break;
+          }
+          if (resizable._snaps.length > 0) {
+            // With snap points the region can rest only on a point, so a
+            // pixel step would snap straight back; the arrow moves to the
+            // adjacent point in its direction instead (Shift, two points),
+            // staying within the bounds.
+            resizable._onResizeStart();
+            resizable._onResizeMove(
+              adjacentSnapPoint(
+                resizable,
+                grows(e.key) ? 1 : -1,
+                e.shiftKey ? 2 : 1,
+              ) - resizable._size,
+            );
+            resizable._onResizeEnd();
             break;
           }
           const direction =

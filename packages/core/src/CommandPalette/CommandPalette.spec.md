@@ -59,7 +59,7 @@ Consumer migration instructions belong in consumer docs and release notes.
 
 - Search orchestration and composition of the current Input, List, Item, Group,
   Group heading, Empty, and Footer parts and targets.
-- The native Query field rendered inside the default Input.
+- Composition of the native Query field rendered inside the default Input; the field's semantics and native passthrough are owned by `component:CommandPaletteInput`.
 
 **Does not own / non-goals**
 
