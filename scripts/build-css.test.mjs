@@ -8,6 +8,8 @@
  * prefers-reduced-motion rules, and that the touch press's release ships as a
  * real fade: the press strength is a registered `<number>` the fading arm
  * animates on the machine's own clock (utils/interactionOverlay.stylex.ts).
+ * Also reads astryx.css back through its subset index: every module returns
+ * the stylesheet byte for byte, and one component's subset keeps its rules.
  */
 
 import {describe, it, expect, beforeAll} from 'vitest';
@@ -15,6 +17,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {ensureCoreBuilt} from '../packages/cli/clients/cli/commands/ensure-core-built.mjs';
+import {subsetStylesheet} from '../packages/core/src/stylesheet.ts';
 
 /**
  * The release clock, read off its one source: `pressConsts.releaseMs` in
@@ -323,5 +326,40 @@ describe('build-css astryx.css', () => {
         false,
       );
     });
+  });
+});
+
+describe('build-css astryx.css subsets', () => {
+  const sheet = path.join(CORE_DIST, 'astryx.css');
+  let astryxCss;
+  let index;
+
+  beforeAll(async () => {
+    // Core is built once by the node project's globalSetup; see above.
+    ensureCoreBuilt();
+    astryxCss = await fs.readFile(sheet, 'utf8');
+    index = JSON.parse(await fs.readFile(`${sheet}.json`, 'utf8'));
+  }, 180_000);
+
+  it('returns astryx.css byte for byte for every module', () => {
+    const modules = Object.keys(index.modules).map(module =>
+      path.join(CORE_DIST, module),
+    );
+
+    expect(subsetStylesheet(sheet, modules)).toBe(astryxCss);
+  });
+
+  it("keeps Button's rules and the token groups it reads, in stylesheet order", () => {
+    const subset = subsetStylesheet(sheet, [
+      path.join(CORE_DIST, 'Button/Button.js'),
+    ]);
+    const lines = subset.split('\n');
+
+    expect(lines).toEqual(
+      astryxCss.split('\n').filter(line => lines.includes(line)),
+    );
+    expect(subset.length).toBeLessThan(astryxCss.length / 2);
+    expect(subset).toMatch(/:root, \.[a-z0-9]+\{--spacing-0:/);
+    expect(subset).toMatch(/:root, \.[a-z0-9]+\{--color-accent:/);
   });
 });

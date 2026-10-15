@@ -13,14 +13,21 @@
  * 1. Runs Babel with the StyleX plugin over the target package's source files
  * 2. Collects all StyleX rules
  * 3. Outputs a combined stylesheet with all rules in @layer astryx-base
+ * 4. Writes `<stylesheet>.json` beside it: the stylesheet's digest and the
+ *    rules each module renders with, by line
  *
  * Dist consumers import the full stylesheet, e.g.:
  *   import '@astryxdesign/core/astryx.css';
  *   import '@astryxdesign/lab/lab.css';
+ * or, at build time, the subset for the modules their build ships, through
+ * `subsetStylesheet` from `@astryxdesign/core/stylesheet`.
+ *
+ * SYNC: packages/core/src/stylesheet.ts (reads the `.json` index)
  */
 
 import {transformAsync} from '@babel/core';
 import stylexBabelPlugin from '@stylexjs/babel-plugin';
+import {createHash} from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
@@ -194,6 +201,10 @@ const STYLEX_MODULE = /\.stylex\.[cm]?[jt]sx?$/;
  * only when a reachable file imports it, so a public defineVars module stays
  * absent from packages that never consume it. Modules in `provided` are left
  * to the stylesheet that already emits them.
+ *
+ * Each reachable file maps to its source and the `.stylex` modules it
+ * imports, so the stylesheet index can credit a module with the definitions
+ * it reads.
  */
 async function reachableSourceFiles(target, provided = new Set()) {
   const files = await glob('**/*.{ts,tsx}', {
@@ -212,7 +223,8 @@ async function reachableSourceFiles(target, provided = new Set()) {
     }
 
     const code = await fs.readFile(file, 'utf8');
-    reachable.set(file, code);
+    const imports = [];
+    reachable.set(file, {code, imports});
     for (const specifier of staticStyleXImports(code)) {
       const dependency = await resolveStyleXImport(
         specifier,
@@ -225,6 +237,7 @@ async function reachableSourceFiles(target, provided = new Set()) {
         );
       }
       if (!provided.has(dependency)) {
+        imports.push(dependency);
         queue.push(dependency);
       }
     }
@@ -247,14 +260,23 @@ async function providedStyleXModules(provider) {
   );
 }
 
-export async function collectStyleXCSS(target) {
+/**
+ * Compiles every reachable file and keeps each one's StyleX rules. `rules`
+ * is the whole package in walk order, which fixes the stylesheet's bytes;
+ * `modules` maps each file to its own rules and the `.stylex` modules it
+ * imports.
+ */
+export async function collectStyleXModules(target) {
   const provided = await providedStyleXModules(target.provider);
   const reachable = await reachableSourceFiles(target, provided);
-  const allRules = [];
+  const rules = [];
+  const modules = new Map();
 
   console.log(`Processing ${reachable.size} reachable source files...`);
 
-  for (const [file, code] of reachable) {
+  for (const [file, {code, imports}] of reachable) {
+    const own = [];
+    modules.set(file, {rules: own, imports});
     if (!code.includes('@stylexjs/stylex')) {
       continue;
     }
@@ -286,7 +308,8 @@ export async function collectStyleXCSS(target) {
       });
 
       if (result?.metadata?.stylex?.length) {
-        allRules.push(...result.metadata.stylex);
+        own.push(...result.metadata.stylex);
+        rules.push(...result.metadata.stylex);
       }
     } catch (err) {
       throw new Error(
@@ -297,32 +320,169 @@ export async function collectStyleXCSS(target) {
   }
 
   console.log(
-    `Collected ${allRules.length} StyleX rules from ${reachable.size} reachable files`,
+    `Collected ${rules.length} StyleX rules from ${reachable.size} reachable files`,
   );
-  return allRules;
+  return {rules, modules};
+}
+
+export async function collectStyleXCSS(target) {
+  return (await collectStyleXModules(target)).rules;
+}
+
+/** The stylesheet text for a package's compiled rules. */
+export function renderStylesheet(target, rules) {
+  const css = stylexBabelPlugin.processStylexRules(rules, false);
+  return `${stylesheetPrelude(target)}${css
+    .split('\n')
+    .map(line => '  ' + line)
+    .join('\n')}\n}\n`;
+}
+
+function stylesheetPrelude(target) {
+  return `/* ${target.banner} */\n/* Auto-generated. Do not edit manually. */\n\n@layer astryx-base {\n`;
+}
+
+// A selector no Astryx module can produce. One probe rule per priority level
+// keeps a module's rules at the level positions they hold in the whole sheet.
+const PROBE = '__astryx_stylesheet_index_probe';
+
+/**
+ * Maps every module to the stylesheet rules it renders with: its own rules
+ * plus those of the `.stylex` modules it imports, transitively, so a module
+ * keeps every variable group, keyframes and constant it reads. A module's
+ * rules are compiled the way the whole sheet compiles them, with the same
+ * constants and priority levels, so each one comes out as the exact line the
+ * sheet holds. The index then names lines by number.
+ *
+ * Throws when a module's rule is not a line of the sheet, or a line of the
+ * sheet belongs to no module: either would make a subset drop or misplace a
+ * rule, so the build fails instead.
+ */
+export function indexStylesheet(target, stylesheet, modules) {
+  const prelude = stylesheetPrelude(target);
+  const start = prelude.split('\n').length - 1;
+  const lines = stylesheet.split('\n');
+  const end = lines.lastIndexOf('}');
+  const sheetLines = lines.slice(start, end).map(line => line.slice(2));
+
+  const lineNumbers = new Map();
+  sheetLines.forEach((line, number) => {
+    if (line.split('{').length !== line.split('}').length) {
+      throw new Error(
+        `${target.outFile} line ${start + number + 1} is not a whole rule, so the stylesheet cannot be indexed: ${line}`,
+      );
+    }
+    lineNumbers.set(line, [...(lineNumbers.get(line) ?? []), number]);
+  });
+
+  const allRules = [...modules.values()].flatMap(module => module.rules);
+  const isConstant = ([, rule]) =>
+    rule?.constKey != null && rule?.constVal != null;
+  const constants = allRules.filter(isConstant);
+  const probes = [
+    ...new Set(
+      allRules
+        .filter(rule => !isConstant(rule))
+        .map(([, , priority]) => Math.floor(priority / 1000)),
+    ),
+  ].map(level => [
+    `${PROBE}${level}`,
+    {ltr: `.${PROBE}${level}{--${PROBE}:${level}}`, rtl: null},
+    level * 1000,
+  ]);
+
+  const rulesOf = file => {
+    const seen = new Set([file]);
+    const queue = [file];
+    const rules = [];
+    while (queue.length > 0) {
+      const module = modules.get(queue.shift());
+      rules.push(...module.rules);
+      for (const dependency of module.imports) {
+        if (!seen.has(dependency)) {
+          seen.add(dependency);
+          queue.push(dependency);
+        }
+      }
+    }
+    return rules;
+  };
+
+  const index = {};
+  const covered = new Set();
+  for (const file of [...modules.keys()].sort()) {
+    if (!file.startsWith(target.src + path.sep)) {
+      continue;
+    }
+    const rules = rulesOf(file);
+    if (rules.length === 0) {
+      continue;
+    }
+    const css = stylexBabelPlugin.processStylexRules(
+      [...constants, ...probes, ...rules],
+      false,
+    );
+    const numbers = new Set();
+    for (const line of css.split('\n')) {
+      if (line.includes(PROBE)) {
+        continue;
+      }
+      const found = lineNumbers.get(line);
+      if (found == null) {
+        throw new Error(
+          `${path.relative(ROOT, file)} compiles a rule that ${target.outFile} does not hold: ${line}`,
+        );
+      }
+      for (const number of found) {
+        numbers.add(number);
+        covered.add(number);
+      }
+    }
+    if (numbers.size > 0) {
+      const module = path
+        .relative(target.src, file)
+        .split(path.sep)
+        .join('/')
+        .replace(/\.tsx?$/, '.js');
+      index[module] = [...numbers].sort((a, b) => a - b);
+    }
+  }
+
+  if (covered.size !== sheetLines.length) {
+    const orphan = sheetLines.find((_, number) => !covered.has(number));
+    throw new Error(
+      `${target.outFile} holds a rule no module renders with: ${orphan}`,
+    );
+  }
+
+  return {
+    stylesheet: target.outFile,
+    sha256: createHash('sha256').update(stylesheet).digest('hex'),
+    rules: {start, count: sheetLines.length},
+    modules: index,
+  };
 }
 
 async function main() {
   const target = parseTarget();
-  const allRules = await collectStyleXCSS(target);
+  const {rules, modules} = await collectStyleXModules(target);
 
-  if (allRules.length === 0) {
+  if (rules.length === 0) {
     console.error('No StyleX rules found!');
     process.exit(1);
   }
 
   await fs.mkdir(target.dist, {recursive: true});
 
-  const combinedCSS = stylexBabelPlugin.processStylexRules(allRules, false);
-
+  // Index before writing, so a stylesheet never ships without its index.
+  const stylesheet = renderStylesheet(target, rules);
+  const index = indexStylesheet(target, stylesheet, modules);
   const outPath = path.resolve(target.dist, target.outFile);
-  const combinedFileContents = `/* ${target.banner} */\n/* Auto-generated. Do not edit manually. */\n\n@layer astryx-base {\n${combinedCSS
-    .split('\n')
-    .map(line => '  ' + line)
-    .join('\n')}\n}\n`;
-  await fs.writeFile(outPath, combinedFileContents, 'utf8');
+  await fs.writeFile(outPath, stylesheet, 'utf8');
+  await fs.writeFile(`${outPath}.json`, `${JSON.stringify(index)}\n`, 'utf8');
+  console.log(`${target.outFile}: ${(stylesheet.length / 1024).toFixed(1)} KB`);
   console.log(
-    `${target.outFile}: ${(combinedCSS.length / 1024).toFixed(1)} KB`,
+    `${target.outFile}.json: ${Object.keys(index.modules).length} modules`,
   );
 }
 
