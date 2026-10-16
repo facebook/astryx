@@ -96,20 +96,20 @@ The protocol has four layers:
 
 ### Current and admitted publishers and consumers
 
-| Role                       | Participants                                           | Contract responsibility                                                                                                                                                  |
-| -------------------------- | ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Container publisher        | Card, Section, Dialog, BottomSheet, ScrollableArea     | Resolve component padding or publish explicit content-box padding as logical-edge and Layout inset variables                                                             |
-| Region publisher           | LayoutHeader, LayoutContent, LayoutFooter, LayoutPanel | Publish baseline or explicit-padding geometry; automatic outer-edge publication has the conformance gap below                                                            |
-| Bleed consumer             | Section, ScrollableArea, Layout, Divider, Table, List  | Subtract inherited inset on the edges each component is designed to escape; ScrollableArea does so only with `isFullBleed`, List only with `edge="bleed"`                |
-| Edge-compensation consumer | TabList; List/ListItem rows with `edge="outset"`       | Move visible content toward the container content line while retaining component-owned interaction padding; exact alignment depends on each component's bounded geometry |
-| Alignment consumer         | Toolbar and edge-compensating child components         | Read the current inline inset to align visible content rather than stacked touch-target padding                                                                          |
-| Boundary owner             | Layer surfaces and dialog-based overlay roots          | Apply `overlayPaddingReset` before descendants read inherited page geometry                                                                                              |
+| Role                       | Participants                                                   | Contract responsibility                                                                                                                                                  |
+| -------------------------- | -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Container publisher        | Card, Section, Dialog, BottomSheet, ScrollableArea             | Resolve component padding or publish explicit content-box padding as logical-edge and Layout inset variables                                                             |
+| Region publisher           | LayoutHeader, LayoutContent, LayoutFooter, LayoutPanel         | Publish baseline or explicit-padding geometry; automatic outer-edge publication has the conformance gap below                                                            |
+| Bleed consumer             | Section, ScrollableArea, Layout, Divider, Table, TabList, List | Subtract inherited inset on the edges each component is designed to escape; ScrollableArea does so only with `isFullBleed`, TabList and List only with `edge="bleed"`    |
+| Edge-compensation consumer | List/ListItem rows with `edge="outset"`                        | Move visible content toward the container content line while retaining component-owned interaction padding; exact alignment depends on each component's bounded geometry |
+| Alignment consumer         | Toolbar and edge-compensating child components                 | Read the current inline inset to align visible content rather than stacked touch-target padding                                                                          |
+| Boundary owner             | Layer surfaces and dialog-based overlay roots                  | Apply `overlayPaddingReset` before descendants read inherited page geometry                                                                                              |
 
 The participant list is the shared container system, not a Layout-owned family:
 Section and ScrollableArea publish content inset, Section and opt-in full-bleed
 ScrollableArea instances consume inherited inset, Layout redistributes inset,
-Table and Divider consume bleed geometry, TabList consumes current edge-
-compensation geometry, List consumes edge-compensation geometry with
+Table and Divider consume bleed geometry, TabList consumes bleed geometry with
+`edge="bleed"`, List consumes edge-compensation geometry with
 `edge="outset"` and bleed geometry with `edge="bleed"`, and Toolbar consumes
 alignment geometry. Participation here does not by itself make any of those
 components a member of `family:layout-regions`.
@@ -181,34 +181,37 @@ edge with no content line of its own to keep: Divider's line, and ScrollableArea
 viewport, whose content padding is its own prop. `bleed` makes the same promise
 for paint and adds that content stays on the host content line. A new full-bleed
 projection that keeps a content line uses `edge="bleed"`. TabList's
-`isFullBleed` behaves as `bleed`; its rename belongs to
-`component:TabList`. `edgeCompensation` is the released name of `outset`: List's
+`isFullBleed` behaves as `bleed`, so `component:TabList` spells that mode
+`edge="bleed"` and keeps `isFullBleed` as its deprecated alias.
+`edgeCompensation` is the released name of `outset`: List's
 `edgeCompensation="inline"` is a deprecated alias of `edge="outset"` through its
 compatibility window.
 
 A component with a documented anatomy container that applies edge treatment MAY
 expose an anatomy-targeted `<anatomy>Edge` prop with the same values, applied to
 that container's documented edges. It keeps the amount component-owned and the
-component's documented omission behavior. DialogHeader's released
-`endContentEdgeCompensation` is outside this form: its `inline`, `block`, and
-`all` values choose the axes of the end slot's compensation rather than a
-treatment.
-It stays supported as released until `component:Dialog` maps it onto
-`endContentEdge` and deprecates it through its own compatibility window.
+component's documented omission behavior. DialogHeader's and DrawerHeader's
+released `endContentEdgeCompensation` props are outside this form: their
+`inline`, `block`, and `all` values choose the axes of the end slot's
+compensation rather than a treatment. Both stay supported as released. How
+those axis values map onto `endContentEdge` treatment values is an open
+question owned by `module:Dialog/DialogHeader` and `component:Drawer`; each
+deprecates its old prop through its own compatibility window once that mapping
+is decided.
 
 ### Edge-compensation ledger
 
-| Participant                       | Source requirement                                                                                                                                                                                      | Canonical owner                  | Why it belongs                                                                                                                                                             | Done criteria                                                                                                                                                                                           | Status                                                |
-| --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------- |
-| Container and region publishers   | The host owns the actual padding available at each logical edge                                                                                                                                         | `architecture:container-padding` | A consumer cannot compensate safely without a per-edge upper bound from the host                                                                                           | Eligible states publish values matching applied padding, nesting, and overlay reset; missing values resolve to zero; known mismatch states remain excluded                                              | current where conformant                              |
-| TabList / Tab                     | The strip moves its first and last visible tab content toward the host lines while retaining tab interaction padding, focus-ring room, overflow controls, its divider rail, and its selection indicator | `component:TabList`              | The shipped behavior is `bleed` under the released name `isFullBleed`                                                                                                      | Preserve bounded content movement, full host-inset consumption, divider span, overflow, clipping, scroll controls, indicator geometry, logical direction, compatibility, and defaults                   | current behavior; rename to `edge` deferred           |
-| List / ListItem, using Item inset | An optional List header is not horizontally inset, while every row keeps Item's density- and theme-aware inline padding                                                                                 | `component:List`                 | The caller knows whether the List sits in a neutral container beside content that should share its logical content line, and whether its rows need room around their paint | `padded` unchanged by default; `outset` respects each row's own inset and the available host padding; `bleed` reaches the host's padding edge; header stays in place; required geometry evidence passes | current through `edge`; `edgeCompensation` deprecated |
-| Button                            | An uncontained ghost Button may need its icon or label aligned while retaining its interaction inset                                                                                                    | No current component projection  | Its transparent interaction padding can create the same alignment need                                                                                                     | Exclude filled and bordered presentations; prove composition, focus/hover paint, logical direction, and unchanged defaults; obtain owner approval                                                       | candidate only                                        |
+| Participant                       | Source requirement                                                                                                                                                                                      | Canonical owner                  | Why it belongs                                                                                                                                                             | Done criteria                                                                                                                                                                                           | Status                                                    |
+| --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
+| Container and region publishers   | The host owns the actual padding available at each logical edge                                                                                                                                         | `architecture:container-padding` | A consumer cannot compensate safely without a per-edge upper bound from the host                                                                                           | Eligible states publish values matching applied padding, nesting, and overlay reset; missing values resolve to zero; known mismatch states remain excluded                                              | current where conformant                                  |
+| TabList / Tab                     | The strip moves its first and last visible tab content toward the host lines while retaining tab interaction padding, focus-ring room, overflow controls, its divider rail, and its selection indicator | `component:TabList`              | The shipped behavior is `bleed` under the released name `isFullBleed`                                                                                                      | Preserve bounded content movement, full host-inset consumption, divider span, overflow, clipping, scroll controls, indicator geometry, logical direction, compatibility, and defaults                   | current behavior; `edge="bleed"` canonical, alias pending |
+| List / ListItem, using Item inset | An optional List header is not horizontally inset, while every row keeps Item's density- and theme-aware inline padding                                                                                 | `component:List`                 | The caller knows whether the List sits in a neutral container beside content that should share its logical content line, and whether its rows need room around their paint | `padded` unchanged by default; `outset` respects each row's own inset and the available host padding; `bleed` reaches the host's padding edge; header stays in place; required geometry evidence passes | current through `edge`; `edgeCompensation` deprecated     |
+| Button                            | An uncontained ghost Button may need its icon or label aligned while retaining its interaction inset                                                                                                    | No current component projection  | Its transparent interaction padding can create the same alignment need                                                                                                     | Exclude filled and bordered presentations; prove composition, focus/hover paint, logical direction, and unchanged defaults; obtain owner approval                                                       | candidate only                                            |
 
 `component:List` owns the only new API projection admitted by this revision,
 its `edge` prop.
-`component:TabList` owns its existing behavior and the separately scoped public
-rename and deprecation path. Button remains a candidate and cannot authorize
+`component:TabList` owns its existing behavior and its `edge="bleed"` rename and
+deprecation path. Button remains a candidate and cannot authorize
 implementation; a future projection requires a component contract, evidence, and
 the named owner's explicit approval.
 
@@ -268,8 +271,10 @@ without dropping the active theme's Section default.
   the values it admits. Omission means `padded`, except that an anatomy
   container keeps its documented omission behavior. `isFullBleed` remains for a
   surface whose public promise is to consume the full host inset without a
-  content line of its own. `edgeCompensation` survives only as List's deprecated
-  alias of `edge="outset"`.
+  content line of its own. `edgeCompensation` survives as List's deprecated
+  alias of `edge="outset"` and in the released `endContentEdgeCompensation` of
+  DialogHeader and DrawerHeader until their `endContentEdge` mapping is
+  decided.
 - **INV11 — Participation and host eligibility are explicit.** A new
   self-compensating row or surface requires a component contract and defaults to
   visually neutral host states. A component-specific contract may admit a bounded
