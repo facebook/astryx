@@ -81,6 +81,7 @@ import {
 } from '../utils/interactionModality';
 import {useAnnounce} from '../hooks/useAnnounce';
 import {FOCUSABLE_SELECTOR} from '../hooks/focusableSelector';
+import {getFocusableElements} from '../hooks/useFocusTrap';
 import {useAnnounceRenderedText} from '../hooks/useAnnounceRenderedText';
 import {useResolvedRequired} from '../hooks/useResolvedRequired';
 import {
@@ -318,6 +319,10 @@ const styles = stylex.create({
   },
   listbox: {
     outline: 'none',
+  },
+  // Caller content under the list; the divider above it separates it.
+  footer: {
+    padding: spacingVars['--spacing-1'],
   },
 
   // Popover container (for anchor positioning)
@@ -858,6 +863,21 @@ export interface MultiSelectorProps<
   emptySearchText?: ReactNode;
 
   /**
+   * Content at the foot of the panel, under the list: a door to where the
+   * options are managed, say. It sits outside the listbox, so its controls
+   * are never options, and stays in view while the list scrolls; both
+   * presentations render it. With a footer the popover is a modal dialog
+   * named by `label` (the bottom sheet already is one): the trigger says
+   * `aria-haspopup="dialog"`, focus moves into the panel as it opens (to the
+   * search field, or else to the list), and Tab and Shift+Tab cycle through
+   * the search field, its clear button, the list when it takes focus, and the
+   * footer's controls, wrapping at either end. Escape or a press outside
+   * closes the panel. A press inside the footer is not a light dismiss: close
+   * the panel through `handleRef` when a control should.
+   */
+  footer?: ReactNode;
+
+  /**
    * With `hasSearch`, offer a `Create "<query>"` row first in the list when the
    * trimmed query equals no option's label under the search's own matching
    * (case-insensitive). Picking it, or Enter with nothing highlighted, calls
@@ -1010,6 +1030,27 @@ function hasDeclaredAction(options: MultiSelectorOptionType[]): boolean {
 // Case-insensitive substring match for a single option. The one predicate used
 // by both the flat filter (count + keyboard nav) and the grouped renderer, so
 // what is shown while searching stays in lockstep with the announced count.
+/**
+ * Whether a `display: none` ancestor between the element and its container
+ * hides it: a footer control in a wrapper hidden at some widths, say. The
+ * focus trap's own test reads only the element's display.
+ */
+function isHiddenWithin(element: HTMLElement, container: HTMLElement): boolean {
+  if (typeof window === 'undefined' || !window.getComputedStyle) {
+    return false;
+  }
+  for (
+    let node = element.parentElement;
+    node != null && node !== container;
+    node = node.parentElement
+  ) {
+    if (window.getComputedStyle(node).display === 'none') {
+      return true;
+    }
+  }
+  return false;
+}
+
 function normalizeLabel(label: string): string {
   return label.toLowerCase();
 }
@@ -1093,6 +1134,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
   searchPlaceholder: searchPlaceholderFromProps,
   emptyText: emptyTextFromProps,
   emptySearchText: emptySearchTextFromProps,
+  footer,
   hasCreate = false,
   triggerDisplay = 'count',
   formatValue,
@@ -1171,7 +1213,11 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
   const triggerButtonRef = useMergedRefs<HTMLElement>(triggerRef, ref);
   const searchRef = useRef<HTMLInputElement>(null);
   const listboxRef = useRef<HTMLDivElement>(null);
+  const footerRef = useRef<HTMLDivElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
   const inputGroup = useInputGroup();
+  // `false` from a `condition && <Door />` expression is no footer.
+  const hasFooter = footer != null && typeof footer !== 'boolean';
 
   const [searchQuery, setSearchQuery] = useState('');
   // A typed query shows the search row's clear (✕) button, which becomes
@@ -1402,16 +1448,17 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
         openFocusFrameRef.current = null;
         searchRef.current?.focus();
       });
-    } else if (hasExternalTrigger) {
+    } else if (hasExternalTrigger || hasFooter) {
       // The caller's anchor may not take focus (a glyph in a link row), so
-      // the listbox owns the keyboard while the panel is open.
+      // the listbox owns the keyboard while the panel is open. With a footer
+      // the panel is a modal dialog, and focus moves into it the same way.
       openFocusFrameRef.current = requestAnimationFrame(() => {
         openFocusFrameRef.current = null;
         listboxRef.current?.focus();
       });
     }
     onOpenChange?.(true);
-  }, [hasSearch, hasExternalTrigger, optimisticValue, onOpenChange]);
+  }, [hasSearch, hasExternalTrigger, hasFooter, optimisticValue, onOpenChange]);
 
   const surface = useSelectorPresentation({
     presentation,
@@ -1422,9 +1469,14 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
       hasLightDismiss: true,
       hasCloseButton: false,
       hasAutoFocus: false,
-      // The popup's own role="listbox" is the exposed semantics; the trigger
-      // keeps DOM focus, so wrapping it in a modal dialog would misrepresent it.
-      role: 'none',
+      // Without a footer the popup's own role="listbox" (or grid) is the
+      // exposed semantics: the trigger or the search field keeps DOM focus,
+      // so wrapping it in a modal dialog would misrepresent it. A footer holds
+      // controls that are not options, so with one the popover is a modal
+      // dialog named by the field's label, holding the search row, the list
+      // and the footer.
+      role: hasFooter ? 'dialog' : 'none',
+      dialogLabel: hasFooter ? label : undefined,
       // The theme target belongs on the SURFACE that paints the popup, which
       // `usePopover` owns — not on the scrolling list inside it.
       surfaceTarget: 'multi-selector-popup',
@@ -1832,6 +1884,65 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
     },
     [],
   );
+  // With a footer the panel is a dialog, so Tab and Shift+Tab cycle through
+  // its stops and wrap at either end: the search field, its clear button, the
+  // listbox when it takes a stop, then the footer's controls. Options are
+  // never stops. The key is handled here in full, so the popover's focus
+  // trap, which listens on the document, never reads it a second time.
+  const moveDialogTab = useCallback((event: React.KeyboardEvent) => {
+    const panel = panelRef.current;
+    if (panel == null) {
+      return;
+    }
+    event.preventDefault();
+    event.stopPropagation();
+    const listbox = listboxRef.current;
+    const stops = getFocusableElements(panel).filter(
+      element =>
+        element.tabIndex >= 0 &&
+        (element === listbox || listbox?.contains(element) !== true) &&
+        !isHiddenWithin(element, panel),
+    );
+    if (stops.length === 0) {
+      return;
+    }
+    const active = document.activeElement;
+    const index = stops.findIndex(
+      element => element === active || element.contains(active),
+    );
+    const step = event.shiftKey ? -1 : 1;
+    const next =
+      index < 0
+        ? stops[event.shiftKey ? stops.length - 1 : 0]
+        : stops[(index + step + stops.length) % stops.length];
+    next.focus();
+  }, []);
+  // Every keyboard path into the panel's key model runs through here: the
+  // trigger, the search field's Tab, and the listbox when it owns the keys.
+  const handleKeyDown = useCallback(
+    (event: React.KeyboardEvent<HTMLElement>) => {
+      if (event.key === 'Tab' && hasFooter && surface.isOpen) {
+        moveDialogTab(event);
+        return;
+      }
+      onKeyDown(event);
+    },
+    [onKeyDown, hasFooter, surface.isOpen, moveDialogTab],
+  );
+  // Escape closes the panel from the footer as from anywhere else in it, and
+  // Tab moves on through the dialog's stops.
+  const handleFooterKeyDown = useCallback(
+    (event: React.KeyboardEvent<HTMLDivElement>) => {
+      if (event.key === 'Escape') {
+        onKeyDown(event);
+        return;
+      }
+      if (event.key === 'Tab') {
+        moveDialogTab(event);
+      }
+    },
+    [onKeyDown, moveDialogTab],
+  );
 
   // Highlight scrolling (and its hover/keyboard split) lives in useMultiCombobox.
 
@@ -1938,13 +2049,15 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
           // The clear (✕) button lives inside the row, after the input in DOM
           // order. When it is focused and the user tabs forward there is
           // nothing else in the popup, so dismiss it (Shift+Tab returns to the
-          // input natively). Key events originating on the input are handled on
-          // the input below; ignore them here so we don't double-dismiss.
+          // input natively). With a footer the panel is a dialog and every Tab
+          // moves on through its stops instead. Key events originating on the
+          // input are handled on the input below; ignore them here so we don't
+          // double-dismiss.
           if (e.target === searchRef.current) {
             return;
           }
-          if (e.key === 'Tab' && !e.shiftKey) {
-            onKeyDown(e);
+          if (e.key === 'Tab' && (hasFooter || !e.shiftKey)) {
+            handleKeyDown(e);
           }
         }}
         onKeyDown={e => {
@@ -1997,8 +2110,10 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
           // Tab: when a query is showing the clear (✕) button, forward-tab
           // moves focus to it (keeping the popup open) so the affordance is
           // keyboard-reachable. Every other Tab dismisses the popup as usual.
-          if (e.key === 'Tab' && (e.shiftKey || !hasQuery)) {
-            onKeyDown(e);
+          // With a footer the panel is a dialog and every Tab moves on through
+          // its stops, the clear button among them.
+          if (e.key === 'Tab' && (hasFooter || e.shiftKey || !hasQuery)) {
+            handleKeyDown(e);
           }
         }}
         placeholder={searchPlaceholder}
@@ -2013,6 +2128,8 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
     searchPlaceholder,
     handleSearchChange,
     onKeyDown,
+    handleKeyDown,
+    hasFooter,
     surface.isOpen,
     highlightedIndex,
     activeDescendantId,
@@ -2342,11 +2459,19 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
     ? {'aria-label': label}
     : {'aria-labelledby': triggerId};
   // In a bottom sheet, or hung off a caller's anchor that may not take focus,
-  // the listbox itself owns the keyboard.
+  // the listbox itself owns the keyboard. So it does in a popover with a
+  // footer and no search field: the popover is then a modal dialog, focus
+  // moves into it, and the trigger no longer owns the arrow keys.
   const listboxOwnsKeyboard =
-    surface.activePresentation === 'bottom-sheet' || hasExternalTrigger;
+    surface.activePresentation === 'bottom-sheet' ||
+    hasExternalTrigger ||
+    (hasFooter && !hasSearch);
+  // A popover with a footer is a modal dialog (the bottom sheet already is
+  // one): the trigger says so and names the popover that holds it.
+  const isFooterDialog =
+    hasFooter && surface.activePresentation !== 'bottom-sheet';
 
-  const panelContent = hasSearch ? (
+  const listContent = hasSearch ? (
     <div>
       {renderSearch()}
       <Divider />
@@ -2379,11 +2504,28 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
           : listboxLabelProps)}
         aria-activedescendant={activeDescendantId}
         tabIndex={listboxOwnsKeyboard ? 0 : undefined}
-        onKeyDown={listboxOwnsKeyboard ? onKeyDown : undefined}
+        onKeyDown={listboxOwnsKeyboard ? handleKeyDown : undefined}
         {...stylex.props(styles.listbox)}>
         {renderOptions()}
       </div>
     </div>
+  );
+
+  // The footer follows the list, outside both the listbox and the list's
+  // scroll container, so its controls are never options and stay in view.
+  const panelContent = hasFooter ? (
+    <div ref={panelRef}>
+      {listContent}
+      <Divider />
+      <div
+        ref={footerRef}
+        onKeyDown={handleFooterKeyDown}
+        {...stylex.props(styles.footer)}>
+        {footer}
+      </div>
+    </div>
+  ) : (
+    listContent
   );
 
   let selectionSurface: ReactNode = null;
@@ -2423,7 +2565,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
     // Newly forwarded handlers compose component first: the built-in toggle
     // and keyboard model always run. `onFocus` keeps its existing caller-first
     // order.
-    onKeyDown: composeEventHandlers(onKeyDown, onKeyDownProp),
+    onKeyDown: composeEventHandlers(handleKeyDown, onKeyDownProp),
     onFocus: event => {
       onFocus?.(event);
       surface.onTriggerFocus(event);
@@ -2465,7 +2607,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
         : composeEventHandlers(onTriggerClick, onClick),
       onKeyDown: isEffectivelyReadOnly
         ? onKeyDownProp
-        : composeEventHandlers(onKeyDown, onKeyDownProp),
+        : composeEventHandlers(handleKeyDown, onKeyDownProp),
       onFocus: event => {
         onFocus?.(event);
         surface.onTriggerFocus(event);
@@ -2478,13 +2620,17 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
       // already respects this; the anchor-only path must not regress it.
       'aria-haspopup': isEffectivelyReadOnly
         ? undefined
-        : surface.activePresentation === 'bottom-sheet'
+        : surface.activePresentation === 'bottom-sheet' || isFooterDialog
           ? 'dialog'
           : isGrid
             ? 'grid'
             : 'listbox',
       'aria-expanded': isEffectivelyReadOnly ? false : surface.isOpen,
-      'aria-controls': isEffectivelyReadOnly ? undefined : listboxId,
+      'aria-controls': isEffectivelyReadOnly
+        ? undefined
+        : isFooterDialog
+          ? popover.id
+          : listboxId,
       'aria-busy': isBusy || undefined,
       // Withholding the disclosure attributes stops the control lying about
       // a panel, but leaves it silent about WHY it does not open. The field
@@ -2584,17 +2730,25 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
           aria-haspopup={
             isEffectivelyReadOnly
               ? undefined
-              : surface.activePresentation === 'bottom-sheet'
+              : surface.activePresentation === 'bottom-sheet' || isFooterDialog
                 ? 'dialog'
                 : isGrid
                   ? 'grid'
                   : 'listbox'
           }
           aria-expanded={isEffectivelyReadOnly ? false : surface.isOpen}
-          aria-controls={isEffectivelyReadOnly ? undefined : listboxId}
+          aria-controls={
+            isEffectivelyReadOnly
+              ? undefined
+              : isFooterDialog
+                ? popover.id
+                : listboxId
+          }
           aria-readonly={isEffectivelyReadOnly || undefined}
+          // With a footer focus moves into the dialog and the listbox there
+          // reports the highlighted option, so the trigger does not.
           aria-activedescendant={
-            !isEffectivelyReadOnly && !hasSearch
+            !isEffectivelyReadOnly && !hasSearch && !isFooterDialog
               ? activeDescendantId
               : undefined
           }
