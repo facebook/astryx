@@ -157,11 +157,13 @@ first.
   their stylesheets (FR4). Core already covers `**/*.css`.
 - The styling overview documents only the prebuilt path. A source build through
   `@astryxdesign/build` is not yet documented there (FR5).
-- `@astryxdesign/build` conflicts with FR7 in three ways: it processes Astryx
+- `@astryxdesign/build` conflicts with FR7 in four ways: it processes Astryx
   rules into nested priority layers inside `astryx-base`; it compiles Astryx
   modules with an `astryx` class-name prefix where the prebuilt stylesheets use
-  StyleX's default `x`; and its development builds compile in StyleX's
-  development mode, which the prebuilt stylesheets do not. Its Next.js
+  StyleX's default `x`; its Vite build's Lightning CSS pass adds `-webkit-`
+  declarations the prebuilt stylesheets lack; and nothing makes a Core source
+  build carry the Core definitions that prebuilt `lab.css` relies on. Conforming
+  changes the class names and layers it emits for its current users. Its Next.js
   integration runs only under webpack.
 
 - Lab, Rich Text, and Charts document their stylesheet only in their READMEs;
@@ -192,7 +194,7 @@ theme's colors in every load order.
 **Decider:** `cixzhang`, `2026-10-15`
 
 Most products need no compiler for Astryx, so the prebuilt stylesheets stay the
-default and every documented setup works without one. A product that wants
+default and every default setup works without one. A product that wants
 only the CSS of the modules it ships can compile Astryx source through
 `@astryxdesign/build`. A second compile breaks theme overrides when it adds a
 second copy of the rules beside the prebuilt stylesheet, or compiles them with
