@@ -39,6 +39,12 @@ const port = Number(getArg('port') || 6010);
 // whole cost of promoting its play function into required CI.
 const TARGETS = [
   {
+    component: 'Item',
+    story: 'core-item--align-first-line',
+    guards:
+      'under align="first-line" every start and end slot centers on the label\'s first line (wrapped, clamped, dense, spacious, avatar, interactive, RTL, ListItem, RadioListItem) and never rises into the row padding',
+  },
+  {
     component: 'Selector',
     story: 'core-selector--size-variants',
     guards:
@@ -48,6 +54,18 @@ const TARGETS = [
     component: 'MultiSelector',
     story: 'core-multiselector--sizes',
     guards: 'compact trigger variants match their size tokens',
+  },
+  {
+    component: 'MultiSelector',
+    story: 'core-multiselector--secondary-variant',
+    guards:
+      'the secondary trigger keeps its explicit 180px inline size while selected labels change',
+  },
+  {
+    component: 'ComplexSelector',
+    story: 'core-complexselector--secondary-variant',
+    guards:
+      'the secondary trigger keeps its explicit 190px inline size while the selected value changes',
   },
   {
     component: 'Code',

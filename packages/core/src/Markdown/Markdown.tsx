@@ -405,6 +405,16 @@ const markdownTableCellStyles = stylex.create({
   code: {
     wordBreak: 'normal',
   },
+  // The grid's outer edge. `dividers="grid"` draws the lines *between* cells
+  // and stops at the table's rim, so without this the top, bottom, and sides
+  // stay open and the grid reads as unfinished. On the table element, not the
+  // wrapper, so `border-collapse: collapse` merges it with the cell lines
+  // into one 1px rule rather than doubling up at the edge.
+  tableOuterEdge: {
+    borderWidth: borderVars['--border-width'],
+    borderStyle: 'solid',
+    borderColor: colorVars['--color-border'],
+  },
 });
 
 /**
@@ -1523,6 +1533,10 @@ function renderBlock(
             language={language}
             isDiff={isDiff}
             isCollapsible
+            // Long lines wrap rather than scroll sideways, as they do in
+            // RichText, so a reader sees whole lines and the read/edit switch
+            // moves no block (spec:AST-061 FR5, DEC-9).
+            isWrapped
             xstyle={[
               contentWidthValue != null
                 ? dynamicStyles.blockWidth(contentWidthValue)
@@ -1901,7 +1915,10 @@ function renderBlock(
             ),
           )}
           {...lineStamps}>
-          <Table dividers="rows" textOverflow="wrap">
+          <Table
+            dividers="grid"
+            textOverflow="wrap"
+            xstyle={markdownTableCellStyles.tableOuterEdge}>
             <TableHeader>
               <TableRow>
                 {header?.children.map((h, i) => (

@@ -1,5 +1,9 @@
 # @astryxdesign/build
 
+# 0.7.1
+
+---
+
 # 0.7.0
 
 #### Fixes

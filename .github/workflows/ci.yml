@@ -1580,6 +1580,106 @@ jobs:
           retention-days: 30
           if-no-files-found: warn
 
+      # The menu-button contract's control role and name, the focus landing on
+      # Enter, Space, ArrowDown, and ArrowUp opens, and the pointer round trip
+      # are accessibility-tree and real-browser facts that jsdom cannot observe.
+      # Run the contract's own fixture proof and the DropdownMenu/MoreMenu
+      # binding whenever either component's source, the binding's stories, or
+      # the contract changes. Its own --output directory; the JSON report is
+      # the head-bound record, uploaded next.
+      - name: Run Menu Button accessibility contract
+        id: menu-button-contract
+        if: ${{ !cancelled() && github.event_name == 'pull_request' }}
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PLAYWRIGHT_JSON_OUTPUT_FILE: menu-button-contract/report.json
+        run: |
+          should_run=false
+          # DropdownMenu, MoreMenu, and the contract are matched by file name.
+          # The helper comes from the base, since an older PR head lacks it.
+          # Exit 1 means out of scope; 0 in scope; 2 unknown, so run.
+          scope=2
+          helper="$(mktemp)"
+          if git fetch --quiet --no-tags --depth=1 origin "$BASE_SHA" \
+            && git show "$BASE_SHA:.github/scripts/pr-scope-touches.sh" > "$helper"; then
+            scope=0
+            bash "$helper" "$BASE_SHA" \
+              '^(internal/a11y-spec/src/patterns/menu-button|packages/core/src/DropdownMenu/|packages/core/src/MoreMenu/|apps/storybook/stories/MenuButtonA11y)' || scope=$?
+          fi
+          if [ "$scope" != 1 ]; then
+            should_run=true
+          fi
+          echo "should_run=${should_run}" >> "$GITHUB_OUTPUT"
+          if [ "$should_run" != true ]; then
+            echo "DropdownMenu, MoreMenu, and the menu-button contract are not in PR scope; skipping menu-button evidence."
+            exit 0
+          fi
+          pnpm exec playwright test \
+            internal/a11y-spec/src/patterns/menu-button.chromium.spec.ts \
+            packages/core/src/DropdownMenu/__tests__/MenuButton.a11y.chromium.spec.ts \
+            --project chromium \
+            --reporter list,json \
+            --output menu-button-contract-output
+
+      - name: Upload Menu Button accessibility contract evidence
+        if: ${{ !cancelled() && steps.menu-button-contract.outputs.should_run == 'true' }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: menu-button-contract-evidence-${{ needs.build-storybook.outputs.short_hash }}
+          path: menu-button-contract/
+          retention-days: 30
+          if-no-files-found: warn
+
+      # The menu contract's role and name, item roles, and the arrow, Home/End,
+      # typeahead, Enter, Escape and Tab transitions are accessibility-tree and
+      # real-browser facts that jsdom cannot observe. Run the contract's own
+      # fixture proof and the DropdownMenu pointer-menu binding whenever
+      # DropdownMenu source, the binding's stories, or the contract changes.
+      # Its own --output directory; the JSON report is the head-bound record,
+      # uploaded next.
+      - name: Run Menu accessibility contract
+        id: menu-contract
+        if: ${{ !cancelled() && github.event_name == 'pull_request' }}
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PLAYWRIGHT_JSON_OUTPUT_FILE: menu-contract/report.json
+        run: |
+          should_run=false
+          # DropdownMenu and the contract are matched by file name.
+          # The helper comes from the base, since an older PR head lacks it.
+          # Exit 1 means out of scope; 0 in scope; 2 unknown, so run.
+          scope=2
+          helper="$(mktemp)"
+          if git fetch --quiet --no-tags --depth=1 origin "$BASE_SHA" \
+            && git show "$BASE_SHA:.github/scripts/pr-scope-touches.sh" > "$helper"; then
+            scope=0
+            bash "$helper" "$BASE_SHA" \
+              '^(internal/a11y-spec/src/patterns/menu\.|packages/core/src/DropdownMenu/|apps/storybook/stories/MenuA11y)' || scope=$?
+          fi
+          if [ "$scope" != 1 ]; then
+            should_run=true
+          fi
+          echo "should_run=${should_run}" >> "$GITHUB_OUTPUT"
+          if [ "$should_run" != true ]; then
+            echo "DropdownMenu and the menu contract are not in PR scope; skipping menu evidence."
+            exit 0
+          fi
+          pnpm exec playwright test \
+            internal/a11y-spec/src/patterns/menu.chromium.spec.ts \
+            packages/core/src/DropdownMenu/__tests__/Menu.a11y.chromium.spec.ts \
+            --project chromium \
+            --reporter list,json \
+            --output menu-contract-output
+
+      - name: Upload Menu accessibility contract evidence
+        if: ${{ !cancelled() && steps.menu-contract.outputs.should_run == 'true' }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: menu-contract-evidence-${{ needs.build-storybook.outputs.short_hash }}
+          path: menu-contract/
+          retention-days: 30
+          if-no-files-found: warn
+
       # The accordion contract's header role and name, the page Tab step between
       # headers, the absence of arrow-key focus movement, and the single-expansion
       # sibling collapse are accessibility-tree and real-browser facts that jsdom
@@ -2011,6 +2111,60 @@ jobs:
           retention-days: 30
           if-no-files-found: warn
 
+      # The combobox contract's accessible name and its popup and
+      # active-descendant relationships are accessibility-tree facts that jsdom
+      # cannot observe. Run the contract's own fixture proof and the Selector
+      # binding whenever the PR scope names Selector, or the contract or its
+      # audit story changes. Its own --output directory; the JSON report is the
+      # head-bound record, uploaded next.
+      - name: Run Combobox accessibility contract
+        id: combobox-contract
+        if: ${{ !cancelled() && github.event_name == 'pull_request' }}
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PLAYWRIGHT_JSON_OUTPUT_FILE: combobox-contract/report.json
+        run: |
+          should_run=false
+          COMPONENTS=$(node .github/scripts/a11y-pr-scope.mjs analysis.json)
+          case ",${COMPONENTS}," in
+            *,core/Selector,*) should_run=true ;;
+          esac
+          # The contract belongs to no package, so compare the file names the
+          # PR changes since its merge base.
+          # The helper comes from the base, since an older PR head lacks it.
+          # Exit 1 means out of scope; 0 in scope; 2 unknown, so run.
+          scope=2
+          helper="$(mktemp)"
+          if git fetch --quiet --no-tags --depth=1 origin "$BASE_SHA" \
+            && git show "$BASE_SHA:.github/scripts/pr-scope-touches.sh" > "$helper"; then
+            scope=0
+            bash "$helper" "$BASE_SHA" \
+              '^(internal/a11y-spec/src/patterns/combobox|apps/storybook/stories/ComboboxA11y)' || scope=$?
+          fi
+          if [ "$scope" != 1 ]; then
+            should_run=true
+          fi
+          echo "should_run=${should_run}" >> "$GITHUB_OUTPUT"
+          if [ "$should_run" != true ]; then
+            echo "Selector and the combobox contract are not in PR scope; skipping combobox evidence."
+            exit 0
+          fi
+          pnpm exec playwright test \
+            internal/a11y-spec/src/patterns/combobox.chromium.spec.ts \
+            packages/core/src/Selector/__tests__/Selector.combobox.a11y.chromium.spec.ts \
+            --project chromium \
+            --reporter list,json \
+            --output combobox-contract-output
+
+      - name: Upload Combobox accessibility contract evidence
+        if: ${{ !cancelled() && steps.combobox-contract.outputs.should_run == 'true' }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: combobox-contract-evidence-${{ needs.build-storybook.outputs.short_hash }}
+          path: combobox-contract/
+          retention-days: 30
+          if-no-files-found: warn
+
       # The Schedule time grid owns scroll geometry — pinned header and gutter
       # alignment under classic scrollbars, inline scroll ownership, keyboard
       # reach and its focus ring — none of which exists in jsdom. Every
@@ -2190,6 +2344,35 @@ jobs:
           retention-days: 30
           if-no-files-found: error
 
+      # CommandPalette's interactive stories previously rendered only closed
+      # triggers. Its owned matrix keeps grouped, empty, and pending anatomy
+      # reachable for semantic, contrast, direction, and viewport receipts.
+      - name: Run CommandPalette audit browser evidence
+        if: github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, '[Component Audit] CommandPalette:')
+        env:
+          ASTRYX_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          node .github/scripts/accessibility-audit.js \
+            --storybook-dir apps/storybook/dist \
+            --output command-palette-a11y-report.json \
+            --components CommandPalette \
+            --baseline .github/a11y-baseline.json \
+            --fail-on-new
+          pnpm exec playwright test \
+            packages/core/src/CommandPalette/__tests__/CommandPalette.a11y.chromium.spec.ts \
+            --project chromium
+
+      - name: Upload CommandPalette audit evidence
+        if: always() && github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, '[Component Audit] CommandPalette:')
+        uses: actions/upload-artifact@v7
+        with:
+          name: command-palette-audit-evidence-${{ needs.build-storybook.outputs.short_hash }}
+          path: |
+            command-palette-a11y-report.json
+            test-results/command-palette-audit-evidence/
+          retention-days: 30
+          if-no-files-found: error
+
       # Component-owned metadata fixtures retain exact-head browser receipts on
       # audit PRs, including failed pre-fix cases for before/after comparison.
       - name: Run ChatMessageMetadata audit browser evidence
@@ -2328,6 +2511,68 @@ jobs:
         with:
           name: context-menu-item-audit-evidence-${{ needs.build-storybook.outputs.short_hash }}
           path: context-menu-item-a11y-report.json
+          retention-days: 30
+          if-no-files-found: error
+
+      # Drawer audit evidence covers modal/non-modal, both logical sides,
+      # root-owned RTL, purpose, narrow widths, custom theming, padding, and
+      # sibling stacking. Axe and the sensor matrix both run even if one fails.
+      - name: Run Drawer audit browser evidence
+        if: ${{ !cancelled() && github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, '[Component Audit] Drawer:') }}
+        env:
+          ASTRYX_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          status=0
+          node .github/scripts/accessibility-audit.js \
+            --storybook-dir apps/storybook/dist \
+            --output drawer-a11y-report.json \
+            --components Drawer \
+            --baseline .github/a11y-baseline.json \
+            --fail-on-new || status=1
+          pnpm exec playwright test \
+            packages/core/src/Drawer/__tests__/DrawerAudit.a11y.chromium.spec.ts \
+            --project chromium || status=1
+          exit "$status"
+
+      - name: Upload Drawer audit evidence
+        if: always() && github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, '[Component Audit] Drawer:')
+        uses: actions/upload-artifact@v7
+        with:
+          name: drawer-audit-evidence-${{ needs.build-storybook.outputs.short_hash }}
+          path: |
+            drawer-a11y-report.json
+            test-results/drawer-audit-evidence/
+          retention-days: 30
+          if-no-files-found: error
+
+      # DrawerHeader audit evidence proves its title row, numeric ReactNode slot
+      # values, close action, direction, theme, focus, and narrow reflow on the
+      # exact PR head. Axe and the sensor matrix both run if either one fails.
+      - name: Run DrawerHeader audit browser evidence
+        if: ${{ !cancelled() && github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, '[Component Audit] DrawerHeader:') }}
+        env:
+          ASTRYX_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          status=0
+          node .github/scripts/accessibility-audit.js \
+            --storybook-dir apps/storybook/dist \
+            --output drawer-header-a11y-report.json \
+            --components DrawerHeader \
+            --baseline .github/a11y-baseline.json \
+            --fail-on-new || status=1
+          pnpm exec playwright test \
+            packages/core/src/Drawer/__tests__/DrawerHeaderAudit.a11y.chromium.spec.ts \
+            --project chromium || status=1
+          exit "$status"
+
+      - name: Upload DrawerHeader audit evidence
+        if: always() && github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, '[Component Audit] DrawerHeader:')
+        uses: actions/upload-artifact@v7
+        with:
+          name: drawer-header-audit-evidence-${{ needs.build-storybook.outputs.short_hash }}
+          path: |
+            drawer-header-a11y-report.json
+            test-results/drawer-header-audit-evidence/
           retention-days: 30
           if-no-files-found: error
 

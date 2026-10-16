@@ -68,8 +68,12 @@ function formatPropsTable(props) {
   for (const p of props) {
     const def = p.default ? `\`${mdCell(p.default)}\`` : '-';
     const req = p.required ? ' **(required)**' : '';
+    // The text projection of the prop doc's `stability` field: an
+    // experimental prop is outside the stable compatibility promise.
+    const stability =
+      p.stability === 'experimental' ? ' **(experimental)**' : '';
     lines.push(
-      `| \`${mdCell(p.name)}\` | \`${mdCell(p.type)}\` | ${def} | ${mdCell(p.description)}${req} |`,
+      `| \`${mdCell(p.name)}\` | \`${mdCell(p.type)}\` | ${def} | ${mdCell(p.description)}${req}${stability} |`,
     );
   }
   return lines.join('\n');

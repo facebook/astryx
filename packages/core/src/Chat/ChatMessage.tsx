@@ -16,6 +16,7 @@
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Chat/index.ts (exports)
  * - /apps/storybook/stories/Chat.stories.tsx
+ * - /apps/storybook/stories/ChatMessage.stories.tsx
  * - /packages/cli/assets/templates/blocks/components/ChatMessage/ (block examples)
  */
 
@@ -33,7 +34,7 @@ import {
   type ChatMessageSender,
   type ChatDensity,
 } from './ChatContext';
-import {mergeProps} from '../utils';
+import {isRenderable, mergeProps} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
@@ -49,9 +50,17 @@ export interface ChatMessageProps extends BaseProps<HTMLElement> {
    * should span the full message column.
    */
   children: ReactNode;
+  /**
+   * Avatar content rendered beside a non-system message.
+   * `null`, booleans, and empty strings create no slot; any other content that
+   * renders nothing collapses its slot.
+   */
   avatar?: ReactNode;
   /**
    * Sender name rendered above the message body.
+   * `null`, booleans, and empty strings create no slot, and the message is
+   * labelled by the translated sender fallback; any other content that renders
+   * nothing collapses its slot and falls back to the same label.
    * Use when the first child is raw content (not a bubble).
    * If the first child is a ChatMessageBubble, put the name on the
    * bubble's `name` prop instead — it aligns with the bubble's padding.
@@ -59,6 +68,8 @@ export interface ChatMessageProps extends BaseProps<HTMLElement> {
   name?: ReactNode;
   /**
    * Metadata rendered below the message body.
+   * `null`, booleans, and empty strings create no slot; any other content that
+   * renders nothing collapses its slot.
    * Use when the last child is raw content (not a bubble).
    * If the last child is a ChatMessageBubble, put metadata on the
    * bubble's `metadata` prop instead — it aligns with the bubble's padding.
@@ -94,7 +105,11 @@ const styles = stylex.create({
     flexDirection: 'row',
     justifyContent: 'center',
   },
+  // Slot wrappers collapse when the caller's content renders nothing, so an
+  // empty Fragment or a component that returns null leaves no gap. Content is
+  // never inspected to decide this.
   avatarWrap: {
+    display: {default: null, ':empty': 'none'},
     flexShrink: 0,
     ':has(~ * [data-chat-name])': {
       marginBlockStart: spacingVars['--spacing-5'],
@@ -117,11 +132,15 @@ const styles = stylex.create({
     alignItems: 'flex-end',
   },
   name: {
+    display: {default: null, ':empty': 'none'},
     fontSize: typeScaleVars['--text-supporting-size'],
     fontWeight: fontWeightVars['--font-weight-semibold'],
     color: colorVars['--color-text-secondary'],
     lineHeight: typeScaleVars['--text-supporting-leading'],
     marginBlockEnd: spacingVars['--spacing-1'],
+  },
+  metadata: {
+    display: {default: null, ':empty': 'none'},
   },
   childrenWrap: {
     display: 'flex',
@@ -219,8 +238,9 @@ export function ChatMessage({
         : styles.childrenAssistant;
 
   const isSystem = sender === 'system';
-  const hasAvatar = avatar != null && !isSystem;
-  const hasName = name != null && !isSystem;
+  const hasAvatar = !isSystem && isRenderable(avatar);
+  const hasName = !isSystem && isRenderable(name);
+  const hasMetadata = !isSystem && isRenderable(metadata);
   const nameId = useId();
 
   return (
@@ -229,9 +249,10 @@ export function ChatMessage({
         {...rest}
         ref={ref}
         data-testid={testId}
-        aria-label={
-          !hasName ? t('@astryx.chatMessage.messageFrom', {sender}) : undefined
-        }
+        // The visible name labels the article. When it renders no text, the
+        // label reference resolves to nothing and the accessible name falls
+        // back to aria-label (accessible name computation 1.2, step 2B).
+        aria-label={t('@astryx.chatMessage.messageFrom', {sender})}
         aria-labelledby={hasName ? nameId : undefined}
         {...mergeProps(
           themeProps('chat-message', {sender, density}),
@@ -262,7 +283,9 @@ export function ChatMessage({
             {children}
           </div>
 
-          {metadata != null && !isSystem && <div>{metadata}</div>}
+          {hasMetadata && (
+            <div {...stylex.props(styles.metadata)}>{metadata}</div>
+          )}
         </div>
       </article>
     </ChatMessageContext>

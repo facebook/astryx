@@ -147,6 +147,19 @@ describe('useTooltip — show delay', () => {
 
     expect(onShow).not.toHaveBeenCalled();
   });
+
+  it('drops a pending show when isEnabled turns false before the delay elapses', () => {
+    const onShow = vi.fn();
+    const {rerender} = render(<Harness onShow={onShow} />);
+
+    fireEvent.mouseEnter(trigger());
+    tick(100);
+    rerender(<Harness isEnabled={false} onShow={onShow} />);
+    tick(1000);
+
+    expect(onShow).not.toHaveBeenCalled();
+    expect(tooltipElement().matches(':popover-open')).toBe(false);
+  });
 });
 
 describe('useTooltip — touch suppression', () => {

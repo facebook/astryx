@@ -69,6 +69,9 @@ const styles = stylex.create({
   dots: {
     display: 'inline-flex',
     alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+    width: 'var(--astryx-chat-typing-indicator-dots-column-width, auto)',
     gap: spacingVars['--spacing-0-5'],
   },
   dot: {

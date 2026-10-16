@@ -109,6 +109,64 @@ describe('useHoverCard identity', () => {
   });
 });
 
+// A card closed while the pointer rests on it unmounts without a mouseleave,
+// so the hook must not keep believing the pointer is over the card: if it
+// does, the next open of the same trigger never closes on leave.
+describe('useHoverCard closing while the pointer is on the card', () => {
+  function Harness() {
+    const card = useHoverCard({delay: 0, hideDelay: 0});
+    return (
+      <div>
+        <span ref={card.ref}>Trigger</span>
+        <output data-testid="state">{card.isOpen ? 'open' : 'closed'}</output>
+        {card.renderHoverCard(
+          <button type="button" onClick={card.hide}>
+            Pick
+          </button>,
+        )}
+      </div>
+    );
+  }
+
+  async function openThenRestOnCard() {
+    const state = screen.getByTestId('state');
+    fireEvent.mouseEnter(screen.getByText('Trigger'));
+    await waitFor(() => expect(state).toHaveTextContent('open'));
+    const pick = screen.getByRole('button', {name: 'Pick', hidden: true});
+    fireEvent.mouseLeave(screen.getByText('Trigger'));
+    fireEvent.mouseEnter(pick.parentElement!);
+    return {state, pick};
+  }
+
+  async function expectNextOpenClosesOnLeave(state: HTMLElement) {
+    const trigger = screen.getByText('Trigger');
+    fireEvent.mouseEnter(trigger);
+    await waitFor(() => expect(state).toHaveTextContent('open'));
+    fireEvent.mouseLeave(trigger);
+    await waitFor(() => expect(state).toHaveTextContent('closed'));
+  }
+
+  it('closes the next open on leave after hide() from inside the card', async () => {
+    render(<Harness />);
+    const {state, pick} = await openThenRestOnCard();
+
+    fireEvent.click(pick);
+    await waitFor(() => expect(state).toHaveTextContent('closed'));
+
+    await expectNextOpenClosesOnLeave(state);
+  });
+
+  it('closes the next open on leave after Escape dismisses the card', async () => {
+    render(<Harness />);
+    const {state} = await openThenRestOnCard();
+
+    fireEvent.keyDown(document.body, {key: 'Escape'});
+    await waitFor(() => expect(state).toHaveTextContent('closed'));
+
+    await expectNextOpenClosesOnLeave(state);
+  });
+});
+
 describe('HoverCard', () => {
   it('renders trigger element', () => {
     render(

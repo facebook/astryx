@@ -135,6 +135,12 @@ export {
 } from './patterns/breadcrumb';
 
 export {
+  COMBOBOX_PATTERN,
+  type ComboboxPopupRole,
+  type ComboboxStateFacts,
+} from './patterns/combobox';
+
+export {
   LANDMARK_PATTERN,
   type LandmarkRole,
   type LandmarkStateFacts,
@@ -156,6 +162,11 @@ export {
   WINDOW_SPLITTER_PATTERN,
   type WindowSplitterStateFacts,
 } from './patterns/window-splitter';
+export {
+  MENU_BUTTON_PATTERN,
+  type MenuButtonStateFacts,
+} from './patterns/menu-button';
+export {MENU_PATTERN, type MenuStateFacts} from './patterns/menu';
 export {
   LINK_PATTERN,
   type LinkCurrentToken,

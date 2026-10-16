@@ -2,7 +2,7 @@
 
 /**
  * @file MarkdownPlugins.a11y.chromium.spec.ts
- * @input The built Storybook's Lab/RichTextEditor "Markdown plugins" story.
+ * @input The built Storybook's RichText/RichTextEditor "Markdown plugins" story.
  * @output Real-browser proof for spec:AST-064 FR7 and FR8: a plugin node
  *   renders the same DOM and accessibility in core Markdown, RichTextView, and
  *   RichTextEditor, and the editor moves over, selects, deletes, restores,
@@ -22,7 +22,7 @@ import {
 } from '@astryxdesign/a11y-spec/storybook';
 
 const STORYBOOK_DIR = process.env.ASTRYX_STORYBOOK_DIR ?? DEFAULT_STORYBOOK_DIR;
-const STORY = 'lab-richtexteditor--markdown-plugins';
+const STORY = 'richtext-richtexteditor--markdown-plugins';
 
 let storybook: StaticServer;
 

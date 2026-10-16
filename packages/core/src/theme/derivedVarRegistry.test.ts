@@ -224,9 +224,6 @@ const DIR_TO_REGISTRY_KEY: Record<string, string> = {
   Chat: 'chat',
   ContextMenu: 'context-menu',
   Dialog: 'dialog',
-  // The Drawer doc file lives in packages/lab/src/Drawer, outside this
-  // package's scan; the mapping keeps the registry orphan check honest and
-  // defineTheme.test.ts pins the expansion.
   Drawer: 'drawer',
   DropdownMenu: 'dropdown-menu',
   Field: 'field',
@@ -264,6 +261,9 @@ const CROSS_COMPONENT_VARS: Record<string, string[]> = {
   // The destructive item variant recolors the Item it renders; Item owns,
   // documents and reads both slots.
   DropdownMenu: ['--_item-label-color', '--_item-description-color'],
+  // List's edge="flush" zeroes the inline inset of the Item each ListItem
+  // renders; Item owns, documents and reads it.
+  List: ['--_item-inset-inline'],
   // A layer content root stops an outer Stepper's connector gap; Stepper owns,
   // documents and reads it.
   Layer: ['--step-connector-gap'],
