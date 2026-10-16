@@ -766,6 +766,56 @@ describe('TreeList', () => {
       );
     });
 
+    it('follows the link when a link row is clicked outside its label', () => {
+      // The indent is part of the row now, so a click there must do what the
+      // row does. A link row has no click handler of its own; the click is
+      // forwarded to its anchor (as Enter is), modifier keys included.
+      const items = [
+        {
+          id: 'docs',
+          label: 'Docs',
+          isExpanded: true,
+          children: [{id: 'report', label: 'Report', href: '/report'}],
+        },
+      ];
+      render(<TreeList items={items} />);
+      const link = screen.getByRole('link', {name: 'Report'});
+      const clicks: MouseEvent[] = [];
+      link.addEventListener('click', e => {
+        clicks.push(e);
+        e.preventDefault();
+      });
+      const row = link.closest<HTMLElement>('.astryx-tree-list-item')!;
+
+      fireEvent.click(row.firstElementChild!, {metaKey: true});
+      expect(clicks).toHaveLength(1);
+      expect(clicks[0].metaKey).toBe(true);
+
+      // Clicking the label itself reaches the anchor once, not twice.
+      fireEvent.click(link);
+      expect(clicks).toHaveLength(2);
+    });
+
+    it('does not follow a disabled link row', () => {
+      const items = [
+        {
+          id: 'docs',
+          label: 'Docs',
+          isExpanded: true,
+          children: [
+            {id: 'report', label: 'Report', href: '/report', isDisabled: true},
+          ],
+        },
+      ];
+      render(<TreeList items={items} />);
+      const link = screen.getByRole('link', {name: 'Report', hidden: true});
+      const onLinkClick = vi.fn((e: Event) => e.preventDefault());
+      link.addEventListener('click', onLinkClick);
+      const row = link.closest<HTMLElement>('.astryx-tree-list-item')!;
+      fireEvent.click(row.firstElementChild!);
+      expect(onLinkClick).not.toHaveBeenCalled();
+    });
+
     it('draws guides above full-width rows without taking pointer input', () => {
       // Guide columns now sit inside deeper rows' boxes. They paint above the
       // rows so a row fill never breaks the line, and let clicks fall through

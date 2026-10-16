@@ -14,7 +14,7 @@
  * - /packages/cli/assets/templates/blocks/components/TreeList/ (showcase blocks)
  */
 
-import {useId, useMemo, type ReactNode} from 'react';
+import {useId, useMemo, useRef, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
   colorVars,
@@ -401,6 +401,7 @@ export function TreeListItem({
   const labelId = useId();
   const descriptionId = useId();
   const LinkComponent = useLinkComponent();
+  const linkRef = useRef<HTMLAnchorElement>(null);
   const isInteractive = onClick != null || href != null;
 
   const handleToggle = useMemo(
@@ -415,7 +416,7 @@ export function TreeListItem({
   );
 
   const handleClick = useMemo(() => {
-    if (onClick != null || (hasChildren && onToggle != null)) {
+    if (onClick != null || (hasChildren && onToggle != null) || href != null) {
       return (e: React.MouseEvent) => {
         if (isDisabled) {
           return;
@@ -428,11 +429,28 @@ export function TreeListItem({
           onClick(e);
         } else if (hasChildren && onToggle != null) {
           onToggle(id);
+        } else if (linkRef.current != null) {
+          // A link row: a click anywhere else in the row (its indent, the
+          // reserved chevron column, the padding) follows the row's link, as
+          // Enter already does, keeping the modifier keys so a Cmd/Ctrl-click
+          // still opens a new tab. Dispatched on the anchor so a router link
+          // component's own click handling still runs.
+          linkRef.current.dispatchEvent(
+            new MouseEvent('click', {
+              bubbles: true,
+              cancelable: true,
+              button: e.button,
+              ctrlKey: e.ctrlKey,
+              metaKey: e.metaKey,
+              shiftKey: e.shiftKey,
+              altKey: e.altKey,
+            }),
+          );
         }
       };
     }
     return undefined;
-  }, [onClick, hasChildren, onToggle, id, isDisabled]);
+  }, [onClick, hasChildren, onToggle, href, id, isDisabled]);
 
   // Per-level indent distance. The per-level step is the public, themeable
   // `--tree-list-indent` lever (default `--spacing-4`, set on the tree-list
@@ -553,6 +571,7 @@ export function TreeListItem({
       )}
       {href != null ? (
         <LinkComponent
+          ref={linkRef}
           href={href}
           target={target}
           aria-disabled={isDisabled || undefined}
