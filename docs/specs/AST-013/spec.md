@@ -14,7 +14,8 @@ affects_architecture:
   [architecture:layer-runtime, architecture:public-component-api]
 affects_families: [family:overlay-dismissal]
 affects_contributing: [contributing:api-conventions]
-affects_consumer_docs: [browser-support, useLayer, Popover, Toast, Dialog]
+affects_consumer_docs:
+  [browser-support, useLayer, Popover, Toast, Dialog, useEntryAnimation]
 ---
 
 # Browser and platform support system spec
@@ -34,7 +35,9 @@ affects_consumer_docs: [browser-support, useLayer, Popover, Toast, Dialog]
       "FR8",
       "FR9",
       "FR10",
-      "FR12"
+      "FR12",
+      "FR13",
+      "FR14"
     ]
   }
 }
@@ -103,11 +106,15 @@ requirements. Assistive-technology evidence remains separately owned.
   or `NaN` geometry, hide essential content, make controls unreachable, orphan or
   trap focus, block the surrounding page, corrupt controlled state, remain stuck
   pending, or flash a false open, closed, loading, positioned, or styled state.
-- **FR9 — SSR and hydration are consistent.** SSR-capable components do not read
-  browser capability, geometry, input modality, or user-agent state during server
-  render. The first client render matches the server contract. Post-hydration
-  enhancement begins from a usable state and introduces no mismatch, broken
-  intermediate state, or visible false state.
+- **FR9 — SSR and hydration are consistent.** A Core component is SSR-capable
+  unless its component spec records an FR12 exception. A client directive does
+  not exempt a component, because frameworks render client components on the
+  server. SSR-capable components do not read browser capability, geometry, input
+  modality, paint timing, or user-agent state during server render or during the
+  client render that hydrates server markup. The hydrating render produces the
+  same markup as the server. Post-hydration enhancement begins from a usable
+  state and introduces no mismatch, broken intermediate state, or visible false
+  state.
 - **FR10 — Browser-owned behavior needs real-browser evidence.** Source, unit, and
   jsdom tests may prove guards and deterministic state. Changes to layout, paint,
   focus, native Popover or Dialog behavior, top-layer order, browser event timing,
@@ -134,6 +141,17 @@ requirements. Assistive-technology evidence remains separately owned.
   `spec:AST-013` and record only stricter requirements or explicit exceptions. An
   exception names the affected capability, observable reduction, preserved
   FR7–FR9 obligations, evidence, owner, and review condition.
+- **FR13 — Entry animation starts after hydration.** An element present in
+  server markup hydrates in its settled state and never plays its entry
+  animation, during or after hydration. An entry animation plays only for an
+  element the client mounts after hydration, or in a client-only root after the
+  first paint. Reduced-motion behavior is unchanged.
+- **FR14 — Hydration state has one Core owner.** Core components and hooks that
+  behave differently while hydrating read that fact from one shared internal Core
+  utility. They do not derive it from first-paint flags, timers, animation
+  frames, or mount Effects. The utility is not a public export; one owner keeps
+  the FR9 and FR13 behavior identical across adopters and verifiable in one
+  place.
 
 ### Platform support
 
@@ -155,15 +173,23 @@ support. Routine changes may land with evidence appropriate to their claims.
 Defects reproduced in an explicitly supported browser remain actionable whether
 or not an automated lane exists.
 
+`useEntryAnimation`, and FieldStatus through it, decides whether to animate from a
+first-paint flag captured on its first render. Markup that hydrates after the
+page paints therefore gains entry-animation classes the server did not send, and
+the hook's consumer documentation says it does not support server rendering.
+Core has no shared hydration-state owner. Other render-time browser reads in Core
+are audited against FR9 as separate implementation gaps.
+
 ## Verification
 
-| Contract  | Required evidence                                                                                                                               | Failure signal                                                                                                                                                 |
-| --------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| FR1–FR5   | Generated-row check plus guide/package/support/test reconciliation                                                                              | A handwritten/build version becomes a support claim, explicit support rows disappear, or supported behavior is reduced                                         |
-| FR6–FR8   | Feature-present/absent tests and active fallback fixtures                                                                                       | Browser sniffing selects ordinary behavior, or fallback is unusable, inaccessible, unstable, or visibly broken                                                 |
-| FR9       | Server render, hydration, and post-hydration browser fixture                                                                                    | Markup diverges, browser state is read on the server, or a false/broken state flashes                                                                          |
-| FR10      | Real-browser evidence for browser-owned behavior; the actual named browser for specific claims, browser-only defects, and compatibility changes | Browser-owned behavior is credited to jsdom, another engine stands in for a named-browser claim, or a supported-browser defect is dismissed for lack of a lane |
-| FR11–FR12 | Release review and knowledge-record checks                                                                                                      | A floor/fallback disappears without compatibility treatment, or a component silently overrides the baseline                                                    |
+| Contract  | Required evidence                                                                                                                                                                                        | Failure signal                                                                                                                                                 |
+| --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| FR1–FR5   | Generated-row check plus guide/package/support/test reconciliation                                                                                                                                       | A handwritten/build version becomes a support claim, explicit support rows disappear, or supported behavior is reduced                                         |
+| FR6–FR8   | Feature-present/absent tests and active fallback fixtures                                                                                                                                                | Browser sniffing selects ordinary behavior, or fallback is unusable, inaccessible, unstable, or visibly broken                                                 |
+| FR9, FR13 | Server render then hydrate: no hydration warning or recoverable error, hydrated attributes equal the server markup, a client mount after hydration still animates, plus a real-browser hydration fixture | Markup diverges, browser state is read on the server or while hydrating, a server-rendered element animates, or a false/broken state flashes                   |
+| FR10      | Real-browser evidence for browser-owned behavior; the actual named browser for specific claims, browser-only defects, and compatibility changes                                                          | Browser-owned behavior is credited to jsdom, another engine stands in for a named-browser claim, or a supported-browser defect is dismissed for lack of a lane |
+| FR11–FR12 | Release review and knowledge-record checks                                                                                                                                                               | A floor/fallback disappears without compatibility treatment, or a component silently overrides the baseline                                                    |
+| FR14      | Source review and the FR9/FR13 tests run against every adopter                                                                                                                                           | A component or hook derives hydration from a first-paint flag, timer, animation frame, or mount Effect, or the owner becomes a public export                   |
 
 ## Decision log
 
@@ -190,6 +216,19 @@ before landing. Actual-browser evidence is required when the change makes a
 browser-specific claim, fixes a defect reproduced only there, or changes
 compatibility. Missing automation neither narrows support nor justifies dismissing
 a reproduced defect.
+
+### DEC-3 — Core hydrates to the server markup; entry animation starts after it
+
+**Reference:** `spec:AST-013/DEC-3`
+**Decider:** `cixzhang`, `2026-10-15`
+
+Core components render the same markup on the server and in the hydrating client
+render, and a server-rendered element stays settled rather than playing its entry
+animation. One internal Core utility owns the hydration fact; components adopt
+FR9 and FR13 by reading it. Rejected: consumer-doc "does not support SSR"
+exceptions, because FR12 records exceptions only in component specs. Rejected: a
+"has painted" snapshot that turns true after hydration, because it animates
+elements present on page load.
 
 ## Open questions
 
