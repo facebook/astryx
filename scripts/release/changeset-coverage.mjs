@@ -11,7 +11,9 @@
  *    `files`, root README, or consumer-facing package.json fields) needs a
  *    Changeset, added or edited by the same change, naming that package. Tests,
  *    stories, spec records, generated CHANGELOGs, unpacked files, private and
- *    canary-only packages, and everything outside a package need none.
+ *    canary-only packages, and everything outside a package need none. Translated
+ *    catalogs and translator-description-only edits are exempt; English
+ *    message/key changes still need coverage.
  * 2. Released CLI JSON ids: a response `type`, response field, golden field, or
  *    doctor check id from the latest stable release that is missing at head
  *    breaks scripts (spec:AST-017 FR3, FR13). The change that removes it, or
@@ -28,7 +30,7 @@
 import {execFileSync} from 'node:child_process';
 import path from 'node:path';
 import {createRequire} from 'node:module';
-import {parseArgs} from 'node:util';
+import {isDeepStrictEqual, parseArgs} from 'node:util';
 import {fileURLToPath} from 'node:url';
 import {parseFrontmatter} from '../check-changesets.mjs';
 import {parseWorkspaceGlobs} from '../lib/workspace-globs.mjs';
@@ -351,6 +353,50 @@ function changedChangesets(changes, head) {
 }
 
 /**
+ * Translated catalogs need no release note, including added/removed languages.
+ * English message/key changes still need coverage; descriptions do not.
+ * The catalog gate, not this dependency-free release check, validates ICU.
+ */
+function localeCoverageExemption(file, base, head) {
+  const locale = /^packages\/core\/locales\/([^/]+)\.json$/.exec(file)?.[1];
+  if (!locale || locale === 'pseudo') return null;
+  if (locale !== 'en') return 'translated locale catalog';
+
+  const messages = catalog => {
+    if (!catalog || typeof catalog !== 'object' || Array.isArray(catalog))
+      return null;
+    const entries = Object.entries(catalog);
+    if (
+      entries.length === 0 ||
+      entries.some(
+        ([, entry]) =>
+          !entry ||
+          typeof entry !== 'object' ||
+          Array.isArray(entry) ||
+          typeof entry.defaultMessage !== 'string' ||
+          (Object.hasOwn(entry, 'description') &&
+            typeof entry.description !== 'string') ||
+          Object.keys(entry).some(
+            key => key !== 'defaultMessage' && key !== 'description',
+          ),
+      )
+    )
+      return null;
+    return Object.fromEntries(
+      entries.map(([key, entry]) => [key, entry.defaultMessage]),
+    );
+  };
+
+  const before = messages(readJson(base, file));
+  const after = messages(readJson(head, file));
+  // Both sides must exist and have the known rich-catalog shape.
+  if (before === null || after === null) return null;
+  return isDeepStrictEqual(before, after)
+    ? 'translator descriptions or formatting only'
+    : null;
+}
+
+/**
  * Rule 1 for one change (a pull request, or one commit of a release range).
  *
  * @param {object} input
@@ -414,6 +460,11 @@ export function checkCoverage({
       results[0] ?? {ships: false, reason: 'absent on both sides'};
     if (!result.ships) {
       exempt.push({file, reason: result.reason});
+      continue;
+    }
+    const localeExemption = localeCoverageExemption(file, base, head);
+    if (localeExemption) {
+      exempt.push({file, reason: localeExemption});
       continue;
     }
     if (result.surface === 'manifest') {
