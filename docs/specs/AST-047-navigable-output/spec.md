@@ -67,9 +67,8 @@ This record owns the moves a read offers and how they appear in text and JSON.
   and the command that opens the level above it.
 - **FR7 — Moves are commands, and JSON carries them.** In text, each move MUST
   be a whole command that starts with the command name `spec:AST-081` FR5
-  sets, the project's run prefix when the project's own CLI answers. In JSON,
-  a read MUST carry its moves as data: `links`, with `up`, `previous` and
-  `next` where FR4 applies, and
+  picks. In JSON, a read MUST carry its moves as data: `links`, with `up`,
+  `previous` and `next` where FR4 applies, and
   `related` where FR5 applies to a typed doc, each an `astryx ...` command; a search hit carries `command` and
   `parent`. `links` MUST be present on every read but the topic list, as a field
   added to each existing response, and the published types MUST type each move
@@ -124,7 +123,7 @@ This record owns the moves a read offers and how they appear in text and JSON.
 ### Platform support
 
 The moves are plain commands that start with the command name `spec:AST-081`
-FR5 sets, so they run in any shell the CLI runs in. JSON carries them without
+FR5 picks, so they run in any shell the CLI runs in. JSON carries them without
 that name.
 
 ## Current-state impact
