@@ -1,6 +1,14 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+/**
+ * @input Page content and site-wide metadata
+ * @output Server-rendered document with an isolated optional client prompt
+ * @position Docsite root; page content stays outside the URL-aware boundary
+ */
+
 import type {Metadata} from 'next';
+import {Suspense} from 'react';
+import {InternalDocsPrompt} from '../components/InternalDocsPrompt';
 import {Analytics} from '@vercel/analytics/next';
 import {SpeedInsights} from '@vercel/speed-insights/next';
 import './globals.css';
@@ -26,8 +34,7 @@ import {
 // Default social card image: the launch banner that the announcement blog post
 // uses for its cover. Reusing the same branded banner keeps the shared-link
 // preview consistent with the launch creative across the site and the post.
-const OG_IMAGE =
-  '/images/Astryx-Banner.png';
+const OG_IMAGE = '/images/Astryx-Banner.png';
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -94,7 +101,13 @@ export default function RootLayout({children}: {children: React.ReactNode}) {
       <body>
         <Analytics />
         <SpeedInsights />
-        <Providers>{children}</Providers>
+        <Providers>
+          {/* Keep URL-aware prompt state in a client leaf, not the page shell. */}
+          <Suspense fallback={null}>
+            <InternalDocsPrompt />
+          </Suspense>
+          {children}
+        </Providers>
       </body>
     </html>
   );
