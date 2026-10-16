@@ -12,9 +12,11 @@
  *
  * Built on the shared `transformProp` helper, so it does not follow
  * variables, helpers, wrappers, or types. Where a List writes
- * `edgeCompensation` but the codemod cannot prove the result, it leaves a
- * TODO instead of guessing: on a dynamic value, and on a spread beside the
- * old prop, which may carry it too. A spread onto a List that never writes
+ * `edgeCompensation` but the codemod cannot prove the result, it keeps the
+ * old prop and leaves a TODO instead of guessing: on a dynamic value, and
+ * wherever the List also spreads props. A spread before the old prop may
+ * carry an `edge` that wins today and that a new `edge` would override; one
+ * after it may override either prop. A spread onto a List that never writes
  * `edgeCompensation` is not evidence of use, so it stays unchanged
  * (`spec:AST-040` FR1): the deprecated prop keeps working through it, and
  * its `@deprecated` type reports a typed use where the props are written.
@@ -28,10 +30,10 @@ export const meta = {
   title: 'Migrate List edgeCompensation to edge',
   description:
     'Renames `edgeCompensation="inline"` to `edge="outset"` on List, and ' +
-    'drops `edgeCompensation` beside an `edge` string. Leaves a TODO where ' +
-    '`edge` is computed or a later spread may override it, on a dynamic ' +
-    '`edgeCompensation` value, and on a spread beside it; the deprecated ' +
-    'prop still works there.',
+    'drops `edgeCompensation` beside an `edge` string. Keeps the old prop ' +
+    'with a TODO where `edge` is computed or a later spread may override ' +
+    'it, on a dynamic value, and where the List also spreads props; the ' +
+    'deprecated prop still works there.',
 };
 
 const OLD_NAME = 'edgeCompensation';
@@ -50,9 +52,10 @@ const BOTH_SET_COMMENT =
   'Make edge default to "outset" where edgeCompensation is "inline", then ' +
   'remove edgeCompensation. ';
 const SPREAD_COMMENT =
-  ' TODO(astryx upgrade): edgeCompensation is deprecated. This List also ' +
-  'spreads props that may carry it; where they are built, replace ' +
-  'edgeCompensation="inline" with edge="outset". ';
+  ' TODO(astryx upgrade): edgeCompensation is deprecated, but this List ' +
+  'also spreads props that may set edge, so it was left unchanged. Replace ' +
+  'edgeCompensation="inline" with edge="outset" by hand, after checking ' +
+  'which edge the spread passes. ';
 
 const TYPE_WRAPPERS = new Set([
   'TSAsExpression',
@@ -172,18 +175,20 @@ export default function transformer(file, api) {
         }
         return;
       }
-      const value = attributeValue(prop);
-      if (isInlineLiteral(value)) {
+      // With a spread on the element the rename cannot be proven: a spread
+      // before the old prop may carry an `edge` that wins today and that a
+      // new `edge` would override, and one after it may override either
+      // prop. The old prop keeps working, so it stays, with a TODO.
+      if (firstSpread(attributes)) {
+        hasChanges = addComment(j, prop, SPREAD_COMMENT) || hasChanges;
+        return;
+      }
+      if (isInlineLiteral(attributeValue(prop))) {
         prop.name.name = NEW_NAME;
         prop.value = j.stringLiteral('outset');
         hasChanges = true;
       } else {
         hasChanges = addComment(j, prop, DYNAMIC_COMMENT) || hasChanges;
-      }
-      // A spread beside the old prop may carry it, or override the new one.
-      const spread = firstSpread(attributes);
-      if (spread) {
-        hasChanges = addComment(j, spread, SPREAD_COMMENT) || hasChanges;
       }
     },
   );

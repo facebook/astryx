@@ -71,21 +71,26 @@ const b = <List edgeCompensation={flag ? 'inline' : undefined} />;`);
     expect(output).toContain("edgeCompensation={flag ? 'inline' : undefined}");
   });
 
-  it('leaves a TODO on a spread beside edgeCompensation, and only there', async () => {
+  it('keeps edgeCompensation with a TODO when the List also spreads props', async () => {
     const output =
       await applyTransform(`import {List} from '@astryxdesign/core/List';
 const a = <List {...rest} edgeCompensation="inline" />;
-const b = <List {...rest} edgeCompensation={mode} />;
-const c = <List {...props} />;
-const d = <List {...rest} edge="padded" />;`);
+const b = <List edgeCompensation="inline" {...rest} />;
+const c = <List {...rest} edgeCompensation={mode} />;
+const d = <List {...props} />;
+const e = <List {...rest} edge="padded" />;`);
 
-    // a: migrated, but the spread may carry the old prop too. b: dynamic
-    // value and spread. c: no evidence of the old prop, so unchanged; its
+    // a: an edge in the spread wins today, and a new edge would override
+    // it. b: the spread may override either prop. c: dynamic value and a
+    // spread, one TODO. d: no evidence of the old prop, so unchanged; its
     // @deprecated type reports a typed use where the props are written.
-    // d: edge is set, so edge wins either way.
+    // e: no old prop.
     expect(output.match(/TODO\(astryx upgrade\)/g)).toHaveLength(3);
-    expect(output).toContain("edge='outset'");
-    expect(output).toContain('const c = <List {...props} />;');
+    const code = output.replace(/\/\*[\s\S]*?\*\//g, '');
+    expect(code).not.toContain("edge='outset'");
+    expect(code.match(/edgeCompensation="inline"/g)).toHaveLength(2);
+    expect(output).toContain('edgeCompensation={mode}');
+    expect(output).toContain('const d = <List {...props} />;');
     expect(output).toContain('edge="padded"');
   });
 
