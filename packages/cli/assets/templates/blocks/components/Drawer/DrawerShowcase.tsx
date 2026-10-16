@@ -4,7 +4,7 @@
 
 /**
  * @input Controlled open state for a modal Drawer
- * @output A single-trigger drawer with a scrim and the built-in close button
+ * @output A single-trigger drawer with a scrim and a DrawerHeader close button
  * @position Drawer's docsite showcase and copyable CLI block
  */
 

@@ -2010,6 +2010,11 @@
       "aliases": []
     },
     {
+      "name": "example-drawer-edit-form-with-footer-actions",
+      "path": "examples/drawer/edit-form-with-footer-actions",
+      "aliases": []
+    },
+    {
       "name": "example-drawer-mobile-the-56px-page-reveal-default",
       "path": "examples/drawer/mobile-the-56px-page-reveal-default",
       "aliases": []

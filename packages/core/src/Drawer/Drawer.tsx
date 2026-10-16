@@ -18,7 +18,8 @@
  *
  * Sizing is viewport-aware: `width` is the desktop budget, and below
  * the mobile breakpoint it preserves a 56px reveal of the page behind, capped
- * by the requested width (or fills the viewport with `isFullWidthOnMobile`).
+ * by the requested width (or fills the viewport with the experimental
+ * `experimental.isFullWidthOnMobile` option).
  *
  * Uses the native `<dialog>` element (same precedent as Dialog/MobileNav):
  * - `showModal()` when `hasScrim` (default) — top-layer rendering, focus
@@ -303,19 +304,27 @@ export interface DrawerProps extends BaseProps<HTMLDialogElement> {
    * Desktop width budget. A number is pixels; a string is any CSS length
    * (`'50%'`, `'32rem'`). Below the mobile breakpoint (640px), this
    * remains the maximum while the drawer preserves a 56px reveal of the page
-   * behind — see `isFullWidthOnMobile`.
+   * behind — see `experimental.isFullWidthOnMobile`.
    * @default 400
    */
   width?: number | string;
 
   /**
-   * Whether the drawer covers the full viewport width on mobile
-   * (below 640px) instead of preserving the default 56px reveal of the page
-   * behind. The reveal makes the drawer read as an overlay rather than a
-   * navigation.
-   * @default false
+   * Experimental options, outside the stable compatibility promise: anything
+   * in this object may change or be removed in a patch release. Omit it for
+   * the stable behavior.
+   * @experimental
    */
-  isFullWidthOnMobile?: boolean;
+  experimental?: {
+    /**
+     * Cover the full viewport width on mobile (below 640px) instead of
+     * preserving the default 56px reveal of the page behind. The reveal makes
+     * the drawer read as an overlay rather than a navigation.
+     * @experimental
+     * @default false
+     */
+    isFullWidthOnMobile?: boolean;
+  };
 
   /**
    * Accessible label for the drawer (required — the drawer has no
@@ -380,7 +389,7 @@ export interface DrawerProps extends BaseProps<HTMLDialogElement> {
  * non-modal overlay with `hasScrim={false}` that leaves the page behind
  * interactive. `width` is the desktop budget; below 640px the panel preserves
  * a 56px page reveal without exceeding that budget (or fills the viewport
- * with `isFullWidthOnMobile`). Escape
+ * with the experimental `experimental.isFullWidthOnMobile`). Escape
  * closes the top-most open drawer; focus returns to the element that
  * opened it.
  *
@@ -413,7 +422,7 @@ export function Drawer({
   onOpenChange,
   side = 'end',
   width = 400,
-  isFullWidthOnMobile = false,
+  experimental,
   label,
   hasScrim = true,
   purpose = 'info',
@@ -505,6 +514,7 @@ export function Drawer({
   );
 
   const widthValue = typeof width === 'number' ? `${width}px` : width;
+  const isFullWidthOnMobile = experimental?.isFullWidthOnMobile ?? false;
   const mobileWidth = isFullWidthOnMobile
     ? MOBILE_WIDTH_FULL
     : `min(${widthValue}, calc(100dvw - ${MOBILE_PAGE_REVEAL}px))`;

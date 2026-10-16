@@ -41,7 +41,7 @@ system_specs: [spec:AST-027/DEC-3]
 
 | Area                    | Contract                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Current Core surface    | `@astryxdesign/core` exports `Drawer`, `DrawerProps`, `DrawerHeader`, and `DrawerHeaderProps` from the package root and the `./Drawer` subpath (DEC-3); `@astryxdesign/lab` does not export them. `DrawerProps` extends `BaseProps<HTMLDialogElement>`, separately declares `ref`, requires `isOpen`, `onOpenChange`, `label`, and `children`, accepts `purpose` (`required`, `form`, or `info`; default `info`) and an optional `padding` spacing step (FR16), and has no `hasCloseButton`. Stable API admission and compatibility belong to `architecture:public-component-api`.                                                                                                                             |
+| Current Core surface    | `@astryxdesign/core` exports `Drawer`, `DrawerProps`, `DrawerHeader`, and `DrawerHeaderProps` from the package root and the `./Drawer` subpath (DEC-3); `@astryxdesign/lab` does not export them. `DrawerProps` extends `BaseProps<HTMLDialogElement>`, separately declares `ref`, requires `isOpen`, `onOpenChange`, `label`, and `children`, accepts `purpose` (`required`, `form`, or `info`; default `info`), an optional `padding` spacing step (FR16), and an optional `experimental` object (DEC-4), and has no `hasCloseButton`. Stable API admission and compatibility belong to `architecture:public-component-api`.                                                                                 |
 | Behavior                | Drawer-owned visibility is controlled by the caller for a viewport-relative, full-height logical-side overlay. `hasScrim` at native open selects `showModal()` or a manual Popover API host; changing it while open is unsupported. The shared layer dismissal stack gates Escape and platform close for the full rendered lifetime, and `purpose` decides, as in Dialog, whether Escape, platform close, and scrim click request close. Drawer renders no close control of its own; `DrawerHeader` renders one only when given `onOpenChange`. The browser top layer owns paint order in both presentations, exit renders current children, and completed close returns focus to the element focused at open. |
 | End-user impact         | A drawer paints no close control of its own; a close button appears in a `DrawerHeader` title row where the caller composes one. `form` drawers ignore scrim clicks, and `required` drawers ignore Escape, platform close, and scrim clicks; a modal `required` drawer is announced as an alert dialog. Shared topmost/IME Escape routing, top-layer paint order, one dismissal per request, and focus return apply in both presentations.                                                                                                                                                                                                                                                                     |
 | Builder impact          | Import from `@astryxdesign/core/Drawer` or the Core root. For a visible close action, compose `<DrawerHeader title onOpenChange>` in a `Layout` header slot, as `DialogHeader` is composed in Dialog. The Content area is inset by `--spacing-4` by default; `padding={0}` gives a full-bleed Content area. Set `purpose` where Dialog would. State and content remain caller-owned; Drawer renders the caller's current children during exit. Sibling composition is current consumer guidance, and a consumer `onKeyDown` that prevents default cancels Escape dismissal.                                                                                                                                    |
@@ -73,6 +73,10 @@ does not revive a regional, pane-scoped, or container-targeted Drawer model.
   `drawer` insets the Content area through container tokens. With neither set
   the inset is `--spacing-4`, as in Dialog; `padding={0}` keeps a full-bleed
   Content area. The block-end safe-area inset applies in every mode.
+- Experimental surface (DEC-4): full-viewport mobile coverage is the
+  `isFullWidthOnMobile` option inside the optional `experimental` prop object,
+  outside the stable compatibility promise (`spec:AST-017/FR21`). Omitting
+  `experimental` keeps the 56px page reveal.
 - Controlled/uncontrolled behavior: unchanged for Drawer-owned paths; callers
   provide `isOpen`, while direct native mutation through the public dialog ref is
   outside that guarantee.
@@ -125,7 +129,7 @@ Consumer prop syntax and examples remain in `Drawer.doc.mjs`.
 | logical edge        | inline start, inline end                             | viewport edge from which the panel enters and exits                                                                                                   | open and exiting                                                | inline end                             | `component:Drawer` | draft Core contract                             | closed type rejects other values                      |
 | presentation        | modal with scrim, non-modal without scrim            | native host mode and associated document semantics                                                                                                    | chosen when the native host opens; live changes are unsupported | modal with scrim                       | `component:Drawer` | draft Core contract                             | one current boolean selects the initial mode          |
 | inline-size budget  | pixel number or valid CSS length                     | desktop inline size and reveal-mode mobile cap                                                                                                        | desktop and mobile page-reveal mode                             | `400px`                                | `component:Drawer` | draft Core contract                             | invalid CSS lengths are unsupported                   |
-| mobile coverage     | page reveal, full viewport                           | whether narrow viewports retain a visible page strip                                                                                                  | viewports at or below the mobile boundary                       | 56px page reveal                       | `component:Drawer` | draft Core contract                             | closed boolean                                        |
+| mobile coverage     | page reveal, full viewport                           | whether narrow viewports retain a visible page strip                                                                                                  | viewports at or below the mobile boundary                       | 56px page reveal                       | `component:Drawer` | experimental (DEC-4)                            | closed boolean                                        |
 | dismissal purpose   | info, form, required                                 | which implicit requests close: `info` allows Escape, platform close, and scrim click; `form` allows Escape and platform close; `required` allows none | all presentations; scrim click applies to modal only            | info                                   | `component:Drawer` | draft Core contract matching `component:Dialog` | closed type rejects other values                      |
 | header close action | rendered, absent                                     | whether `DrawerHeader` renders its close button                                                                                                       | wherever `DrawerHeader` is composed                             | absent unless `onOpenChange` is passed | `component:Drawer` | draft Core contract                             | an omitted callback renders no button                 |
 | content inset       | spacing step, theme `drawer` padding, or the default | container padding of the scrolling Content area, published to descendants per `architecture:container-padding`                                        | all presentations                                               | `--spacing-4`, as in Dialog            | `component:Drawer` | draft Core contract matching `component:Dialog` | closed numeric type rejects other values              |
@@ -211,9 +215,9 @@ Consumer prop syntax and examples remain in `Drawer.doc.mjs`.
 - **PR2 — Presentation cleanup.** Native presentation and any active body scroll
   lock exist only for their active states and are released on controlled close,
   unmount, or hidden Activity cleanup.
-- **PR3 — Viewport-relative sizing.** Drawer derives sizing from `width`,
-  `isFullWidthOnMobile`, and the viewport; callers do not supply a regional
-  measurement target.
+- **PR3 — Viewport-relative sizing.** Drawer derives sizing from `width`, the
+  experimental `experimental.isFullWidthOnMobile` option (DEC-4), and the
+  viewport; callers do not supply a regional measurement target.
 
 ## Accessibility contract
 
@@ -323,6 +327,13 @@ decide future target qualification.
   `Drawer`, `DrawerHeader`, and their prop types ship from
   `@astryxdesign/core/Drawer` and the Core root, and their docsite demos are
   Core blocks. `@astryxdesign/lab` does not export them.
+
+- **DEC-4 — Full-viewport mobile coverage is experimental** (owner decision,
+  2026-10-15). `isFullWidthOnMobile` lives inside the optional `experimental`
+  prop object, marked `@experimental` in declarations and
+  `stability: 'experimental'` in authored docs, so it may change or be removed in
+  a patch release (`spec:AST-017/FR21`). Omitting `experimental` keeps the 56px
+  page reveal. Rejected: a top-level stable `isFullWidthOnMobile` prop.
 
 ## Open questions
 

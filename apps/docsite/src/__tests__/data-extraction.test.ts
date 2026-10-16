@@ -1235,10 +1235,10 @@ describe('exampleRegistry', () => {
     expect(exampleRegistry['Dialog']).toBeDefined();
   });
 
-  it('projects Drawer docs into a live showcase and five example blocks', () => {
+  it('projects Drawer docs into a live showcase and runnable example blocks', () => {
     const drawerBlocks = blocks.filter(block => block.exampleFor === 'Drawer');
     const labels = drawerDocs.examples!.map(example => example.label);
-    expect(drawerBlocks).toHaveLength(6);
+    expect(drawerBlocks).toHaveLength(labels.length);
     expect(drawerBlocks.map(block => block.name).sort()).toEqual(
       [...labels].sort(),
     );
@@ -1248,9 +1248,15 @@ describe('exampleRegistry', () => {
     const showcase = drawerBlocks.filter(block => block.isShowcase);
     expect(showcase.map(block => block.name)).toEqual([labels[0]]);
     expect(showcaseRegistry.Drawer).toBeTypeOf('function');
-    expect(exampleRegistry.Drawer.map(example => example.name).sort()).toEqual(
-      labels.slice(1).sort(),
+    // The page lists the examples in the doc's priority order, not by name:
+    // everyday patterns first, the mobile edge cases last.
+    expect(exampleRegistry.Drawer.map(example => example.name)).toEqual(
+      labels.slice(1),
     );
+    expect(labels.slice(-2)).toEqual([
+      'Mobile: the 56px page reveal (default)',
+      'Wide desktop panel, full-width on mobile',
+    ]);
   });
 
   it('gives DrawerHeader a visible showcase and projects its docs into example blocks', () => {

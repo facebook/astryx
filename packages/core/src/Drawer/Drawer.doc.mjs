@@ -141,11 +141,11 @@ export const docs = {
       default: '400',
     },
     {
-      name: 'isFullWidthOnMobile',
-      type: 'boolean',
+      name: 'experimental',
+      type: '{isFullWidthOnMobile?: boolean}',
+      stability: 'experimental',
       description:
-        'Cover the full viewport width below the 640px mobile breakpoint instead of preserving the default 56px reveal of the page behind. The reveal makes the drawer read as an overlay, not a navigation.',
-      default: 'false',
+        'Experimental options: anything in this object may change or be removed in a patch release, and omitting it keeps the stable behavior. isFullWidthOnMobile (default false) covers the full viewport width below the 640px mobile breakpoint instead of preserving the default 56px reveal of the page behind, which makes the drawer read as an overlay, not a navigation.',
     },
     {
       name: 'hasScrim',
@@ -252,6 +252,55 @@ export const docs = {
 // the trigger.`,
     },
     {
+      label: 'Modal or non-modal (hasScrim)',
+      code: `const [openModal, setOpenModal] = useState(false);
+const [openPanel, setOpenPanel] = useState(false);
+<>
+  {/* Modal (default): the scrim dims the page, focus is trapped, and a
+      scrim click closes. */}
+  <Drawer isOpen={openModal} onOpenChange={setOpenModal} label="Edit details">
+    <EditForm />
+  </Drawer>
+  {/* Non-modal: no scrim, no focus trap; the page behind stays interactive.
+      With no scrim to click, the header's close button is the visible exit. */}
+  <Drawer
+    isOpen={openPanel}
+    onOpenChange={setOpenPanel}
+    label="Details"
+    hasScrim={false}>
+    <Layout
+      header={<DrawerHeader title="Details" onOpenChange={setOpenPanel} />}
+      content={<LayoutContent><DetailsPanel /></LayoutContent>}
+    />
+  </Drawer>
+</>`,
+    },
+    {
+      label: 'Edit form with footer actions',
+      code: `const [isOpen, setIsOpen] = useState(false);
+<Drawer
+  isOpen={isOpen}
+  onOpenChange={setIsOpen}
+  label="Edit host"
+  purpose="form">
+  <Layout
+    header={<DrawerHeader title="Edit host" onOpenChange={setIsOpen} />}
+    content={<LayoutContent><HostFields /></LayoutContent>}
+    footer={
+      <LayoutFooter hasDivider>
+        <HStack gap={2} hAlign="end">
+          <Button label="Cancel" variant="secondary" onClick={() => setIsOpen(false)} />
+          <Button label="Save" variant="primary" onClick={save} />
+        </HStack>
+      </LayoutFooter>
+    }
+  />
+</Drawer>
+// purpose="form" keeps Escape but ignores scrim clicks, so a stray click
+// outside does not discard edits. The footer stays pinned while the fields
+// scroll.`,
+    },
+    {
       label: 'Slide in from the start edge',
       code: `const [isOpen, setIsOpen] = useState(false);
 <Drawer
@@ -298,33 +347,11 @@ export const docs = {
   onOpenChange={setIsOpen}
   label="Filters"
   width={560}
-  isFullWidthOnMobile>
+  experimental={{isFullWidthOnMobile: true}}>
   <FilterControls />
-</Drawer>`,
-    },
-    {
-      label: 'Modal or non-modal (hasScrim)',
-      code: `const [openModal, setOpenModal] = useState(false);
-const [openPanel, setOpenPanel] = useState(false);
-<>
-  {/* Modal (default): the scrim dims the page, focus is trapped, and a
-      scrim click closes. */}
-  <Drawer isOpen={openModal} onOpenChange={setOpenModal} label="Edit details">
-    <EditForm />
-  </Drawer>
-  {/* Non-modal: no scrim, no focus trap; the page behind stays interactive.
-      With no scrim to click, the header's close button is the visible exit. */}
-  <Drawer
-    isOpen={openPanel}
-    onOpenChange={setOpenPanel}
-    label="Details"
-    hasScrim={false}>
-    <Layout
-      header={<DrawerHeader title="Details" onOpenChange={setOpenPanel} />}
-      content={<LayoutContent><DetailsPanel /></LayoutContent>}
-    />
-  </Drawer>
-</>`,
+</Drawer>
+// isFullWidthOnMobile is experimental: it may change or be removed in a patch
+// release.`,
     },
   ],
 };
@@ -421,7 +448,7 @@ export const docsDense = {
   usage: {
     anatomy,
     description:
-      "Overlay side panel for inspectors and detail views; floats over content, never reflows it. width = desktop budget; 56px page reveal below 640px, capped by width (isFullWidthOnMobile for all of it). Escape closes topmost (not when purpose=required); focus restores to the opener. Siblings stack last-opened on top; never nest. Slide animation respects prefers-reduced-motion. Dialog-like container: content area inset = --spacing-4 (16px) by default, or the padding prop / a theme's drawer padding (padding={0} = full bleed). Compose like Dialog: Layout with DrawerHeader in the header slot (close button only when given onOpenChange), LayoutContent, LayoutFooter; Layout redistributes the inset so regions line up and the header is not inset twice; a lone Section escapes the inset. No built-in close button, so every drawer needs a visible exit; data-autofocus picks the focus target. purpose matches Dialog: info = Escape + scrim click, form = Escape only, required = neither (modal → alertdialog). Choose: Dialog for centered decisions/short forms, Drawer for full-height side detail, BottomSheet for block-axis sheets, docked layout column to reflow instead of float. Theming: single target astryx-drawer (data-side); scrim is its ::backdrop; DrawerHeader has astryx-drawer-header targets.",
+      "Overlay side panel for inspectors and detail views; floats over content, never reflows it. width = desktop budget; 56px page reveal below 640px, capped by width (experimental={{isFullWidthOnMobile: true}} for all of it; experimental, may change in a patch release). Escape closes topmost (not when purpose=required); focus restores to the opener. Siblings stack last-opened on top; never nest. Slide animation respects prefers-reduced-motion. Dialog-like container: content area inset = --spacing-4 (16px) by default, or the padding prop / a theme's drawer padding (padding={0} = full bleed). Compose like Dialog: Layout with DrawerHeader in the header slot (close button only when given onOpenChange), LayoutContent, LayoutFooter; Layout redistributes the inset so regions line up and the header is not inset twice; a lone Section escapes the inset. No built-in close button, so every drawer needs a visible exit; data-autofocus picks the focus target. purpose matches Dialog: info = Escape + scrim click, form = Escape only, required = neither (modal → alertdialog). Choose: Dialog for centered decisions/short forms, Drawer for full-height side detail, BottomSheet for block-axis sheets, docked layout column to reflow instead of float. Theming: single target astryx-drawer (data-side); scrim is its ::backdrop; DrawerHeader has astryx-drawer-header targets.",
     bestPractices: [
       {
         guidance: true,

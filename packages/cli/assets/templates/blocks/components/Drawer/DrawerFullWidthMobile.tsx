@@ -3,7 +3,7 @@
 'use client';
 
 /**
- * @input A wide desktop budget and isFullWidthOnMobile
+ * @input A wide desktop budget and the experimental isFullWidthOnMobile option
  * @output A Drawer that fills the viewport on mobile
  * @position Copyable Drawer example
  */
@@ -25,7 +25,7 @@ export default function DrawerFullWidthMobile() {
         onOpenChange={setIsOpen}
         label="Wide panel"
         width={560}
-        isFullWidthOnMobile>
+        experimental={{isFullWidthOnMobile: true}}>
         <Layout
           header={<DrawerHeader title="Wide panel" onOpenChange={setIsOpen} />}
           content={

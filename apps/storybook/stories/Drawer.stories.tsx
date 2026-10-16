@@ -30,8 +30,8 @@ const meta: Meta<typeof Drawer> = {
           '  LTR); block-axis sheets are `BottomSheet`.',
           '- Works on **desktop and touch**: `width` is the desktop budget',
           '  budget, and below 640px the panel preserves a 56px reveal',
-          '  without exceeding that budget (`isFullWidthOnMobile` makes it',
-          '  edge to edge).',
+          '  without exceeding that budget (the experimental',
+          '  `experimental={{isFullWidthOnMobile: true}}` makes it edge to edge).',
           '- **Scrim optional**: modal with a scrim by default, or',
           '  `hasScrim={false}` for a non-modal overlay that leaves the page',
           '  behind interactive.',
@@ -255,8 +255,8 @@ export const Widths: Story = {
 
 /**
  * On touch viewports (below 640px) the drawer preserves a 56px reveal of the
- * page behind without exceeding its width budget; `isFullWidthOnMobile` makes
- * it edge to edge. Resize the preview below 640px to compare.
+ * page behind without exceeding its width budget; the experimental
+ * `experimental={{isFullWidthOnMobile: true}}` makes it edge to edge. Resize the preview below 640px to compare.
  */
 export const MobileWidth: Story = {
   render: () => {
@@ -322,7 +322,7 @@ export const MobileWidth: Story = {
           isOpen={openFull}
           onOpenChange={setOpenFull}
           label="Region filters (full width)"
-          isFullWidthOnMobile>
+          experimental={{isFullWidthOnMobile: true}}>
           {filters}
         </Drawer>
       </>

@@ -781,19 +781,36 @@ describe('Drawer', () => {
       expect(style).toContain('min(400px, calc(100dvw - 56px))');
     });
 
-    it('covers the full viewport on mobile with isFullWidthOnMobile', () => {
+    it('covers the full viewport on mobile with experimental.isFullWidthOnMobile', () => {
       render(
         <Drawer
           isOpen
           onOpenChange={() => {}}
           label="Details"
-          isFullWidthOnMobile>
+          experimental={{isFullWidthOnMobile: true}}>
+          Content
+        </Drawer>,
+      );
+      const dialog = screen.getByRole('dialog');
+      const style = dialog.getAttribute('style') ?? '';
+      expect(style).toContain('100dvw');
+      expect(style).not.toContain('100dvw - 56px');
+      // The experimental object is a prop namespace, never a DOM attribute.
+      expect(dialog).not.toHaveAttribute('experimental');
+    });
+
+    it('keeps the 56px page reveal when experimental omits the option', () => {
+      render(
+        <Drawer
+          isOpen
+          onOpenChange={() => {}}
+          label="Details"
+          experimental={{}}>
           Content
         </Drawer>,
       );
       const style = screen.getByRole('dialog').getAttribute('style') ?? '';
-      expect(style).toContain('100dvw');
-      expect(style).not.toContain('100dvw - 56px');
+      expect(style).toContain('min(400px, calc(100dvw - 56px))');
     });
   });
 
