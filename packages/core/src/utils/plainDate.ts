@@ -294,12 +294,12 @@ function utcDate(year: number, month: number, day: number): Date {
 
 /**
  * ISO 8601 week number. A `PlainDate` carries no timezone, so this does all
- * arithmetic in UTC rather than through `plainDateToDate`'s local `Date` —
- * a local Date's millisecond distance across a DST boundary is not an exact
- * multiple of 24h, which corrupted the day-count division below in any zone
- * that observes DST (e.g. Sydney/Auckland/Santiago, where DST ends after New
- * Year: every Thursday from a Friday-starting year reports one week high;
- * see #6364).
+ * arithmetic in UTC rather than through `plainDateToDate`'s local `Date`: a
+ * local Date's millisecond distance across a DST boundary is not an exact
+ * multiple of 24h, which corrupted the day-count division below. In a zone
+ * whose DST ends in the southern autumn (Sydney, Auckland, Santiago), a year
+ * starting on a Friday reported one week high from the DST end until DST
+ * resumed (Sydney 2021: 2021-04-05 through 2021-10-03); see #6364.
  */
 export function plainDateGetWeekNumber(pd: PlainDate): number {
   const d = utcDate(pd.year, pd.month, pd.day);
