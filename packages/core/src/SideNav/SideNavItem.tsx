@@ -123,6 +123,11 @@ const styles = stylex.create({
   // duration, holding `hidden` until the rows' height has settled. Collapsing
   // flips back to `hidden` at once (no delay on the collapsed state), so
   // nothing spills while the group closes.
+  //
+  // Reduced fallback: a browser without `transition-behavior: allow-discrete`
+  // (the tier below current Baseline) cannot delay the switch, so the group
+  // stops clipping as soon as it starts opening and the opening rows briefly
+  // overlap the row below. The group still opens and the ring still shows.
   childrenCollapsible: {
     display: 'grid',
     gridTemplateRows: '1fr',
