@@ -171,6 +171,78 @@ describe('TreeList', () => {
   });
 
   // ===========================================================================
+  // Row accessible name and description (APG tree view: named by the label)
+  // ===========================================================================
+
+  it('names a parent row by its label alone, not the chevron toggle', () => {
+    const items: TreeListItemData[] = [
+      {id: 'docs', label: 'Documents', children: [{id: 'a', label: 'Annual'}]},
+    ];
+    render(<TreeList items={items} />);
+    const row = screen.getByText('Documents').closest('li')!;
+    expect(row).toHaveAccessibleName('Documents');
+  });
+
+  it('names a plain row by its label and describes it with its description', () => {
+    const items: TreeListItemData[] = [
+      {id: 'a', label: 'Budget', description: 'Updated yesterday'},
+    ];
+    render(<TreeList items={items} />);
+    const row = screen.getByText('Budget').closest('li')!;
+    expect(row).toHaveAccessibleName('Budget');
+    expect(row).toHaveAccessibleDescription('Updated yesterday');
+  });
+
+  it('names and describes link and action rows themselves, not only their inner control', () => {
+    const items: TreeListItemData[] = [
+      {id: 'l', label: 'Report', description: 'Opens the report', href: '#'},
+      {
+        id: 'b',
+        label: 'Export',
+        description: 'Downloads a file',
+        onClick: () => {},
+      },
+    ];
+    render(<TreeList items={items} />);
+    const link = screen.getByText('Report').closest('li')!;
+    expect(link).toHaveAccessibleName('Report');
+    expect(link).toHaveAccessibleDescription('Opens the report');
+    const action = screen.getByText('Export').closest('li')!;
+    expect(action).toHaveAccessibleName('Export');
+    expect(action).toHaveAccessibleDescription('Downloads a file');
+  });
+
+  it('keeps start and end content, including controls, out of the row name', () => {
+    const items: TreeListItemData[] = [
+      {
+        id: 'a',
+        label: 'Invoices',
+        startContent: <span>12</span>,
+        endContent: <button type="button">Pin folder</button>,
+      },
+    ];
+    render(<TreeList items={items} />);
+    const row = screen.getByText('Invoices').closest('li')!;
+    expect(row).toHaveAccessibleName('Invoices');
+  });
+
+  it('typeahead matches the label, not the description or start content', async () => {
+    const user = userEvent.setup();
+    const items: TreeListItemData[] = [
+      {id: 'a', label: 'Apple', description: 'Cherry-red fruit'},
+      {id: 'b', label: 'Banana', startContent: <span>Curved</span>},
+      {id: 'c', label: 'Cherry'},
+    ];
+    render(<TreeList items={items} />);
+    const apple = screen.getByText('Apple').closest('li')!;
+    apple.focus();
+    await user.keyboard('c');
+    expect(document.activeElement).toBe(
+      screen.getByText('Cherry').closest('li'),
+    );
+  });
+
+  // ===========================================================================
   // Semantic HTML
   // ===========================================================================
 

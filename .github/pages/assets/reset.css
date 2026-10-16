@@ -25,7 +25,8 @@
  *    import '@astryxdesign/core/astryx.css';        // @layer astryx-base — component styles
  *    import '@astryxdesign/theme-neutral/theme.css'; // @layer astryx-theme — theme overrides
  *
- * Layer order: reset → astryx-base → astryx-theme
+ * Layer order: reset → astryx-base → astryx-theme. This file registers that
+ * order itself, like every Astryx stylesheet, so it holds in any load order.
  * Consumer styles (unlayered) always override all Astryx layers.
  * The reset has the lowest priority and can be overridden by any other layer.
  *
@@ -35,6 +36,8 @@
  * - Bootstrap Reboot
  * - modern-normalize
  */
+
+@layer reset, astryx-base, astryx-theme;
 
 @layer reset {
 
@@ -354,9 +357,11 @@
   }
 
   /*
-   * Ensure hidden elements are actually hidden.
+   * Ensure hidden elements are actually hidden. `hidden="until-found"` keeps
+   * the browser's own rendering, `content-visibility: hidden`, so find in page
+   * and text fragment links can still find its content and reveal it.
    */
-  :where([hidden]) {
+  :where([hidden]:not([hidden='until-found' i])) {
     display: none;
   }
 

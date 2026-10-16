@@ -650,6 +650,13 @@ This wrapper:
 3. **Captures the contributor(s)** — defaults to your `gh`/git identity, so credit is recorded at authoring time (not reconstructed from the release bot's commit).
 4. **Derives the semver bump from the category** — a `[breaking]` change bumps the minor; `[experimental]` and every other category bump the patch (see below).
 
+Choose `[breaking]` only when a valid consumer of the latest stable release must
+change source or configuration to keep a supported functional contract working,
+or loses a stable public surface. A change only to existing content's appearance,
+spacing, typography, layout styling, or visual default uses `[fix]` or `[feat]`
+even when its pixels change. Its release note names the old and new appearance
+and how to keep the old look when a supported escape exists.
+
 It writes a normal `.changeset/<id>.md` — commit it with your PR. The body looks like:
 
 ```md
@@ -690,8 +697,8 @@ Changeset it adds or edits names that package:
   dependency or peer ranges.
 
 Stories, the sandbox, tests, fixtures, snapshots, spec records, generated
-CHANGELOGs, private and canary-only packages (`lab`, `charts`, `richtext`,
-`vega`), the docsite app, CI, and repository tooling never reach a consumer and
+CHANGELOGs, private and canary-only packages (`lab`, `charts`, `vega`), the
+docsite app, CI, and repository tooling never reach a consumer and
 need no Changeset. The failure names the package and the command to run, for
 example `pnpm changeset:new --packages @astryxdesign/cli --category docs`. Run
 the check locally with

@@ -48,6 +48,9 @@ affects_consumer_docs: [release-process, templates]
       "DEC-14",
       "DEC-17",
       "DEC-18",
+      "DEC-19",
+      "DEC-20",
+      "DEC-21",
       "FR3",
       "FR4",
       "FR5",
@@ -94,8 +97,12 @@ affects_consumer_docs: [release-process, templates]
       "FR49",
       "FR50",
       "FR51",
+      "FR52",
+      "FR53",
+      "FR54",
       "DEC-15",
-      "DEC-16"
+      "DEC-16",
+      "DEC-22"
     ]
   }
 }
@@ -115,6 +122,10 @@ rewrite can remain compatible when released usage is preserved. A real bug can a
 be incompatible when consumers validly rely on its released behavior; that case is a
 `[breaking]` change that names the authority the released behavior violated and lands
 in a declared minor (FR31–FR34).
+
+Components take their compatibility rules from this spec. Every other published
+surface, such as the CLI, takes its compatibility contract from its own current record
+(FR54). Every surface goes through the one release process this spec defines.
 
 For CLI controls, keep every supported behavior discoverable and put each control on
 the narrowest surface that owns it. Global controls require evidence that their value
@@ -138,27 +149,35 @@ one removal merged ahead of the decision to allow it.
 
 ## Requirements
 
-- **FR1 — Breaking changes need a released victim.** A change is breaking only
+- **FR1 — Breaking changes require caller adaptation.** A change is breaking only
   when a valid consumer scenario supported by the latest stable release of a
-  published package no longer works unchanged, or produces an incompatible
-  result under a documented stable contract. The review names that scenario and
-  the released surface it uses.
+  published package must change source or configuration to keep its code,
+  interaction, data, semantic output, or supported workflow working, or loses a
+  stable public surface. The review names that scenario and the released surface
+  it uses. For a surface other than a component, FR54 decides which scenarios are
+  valid and supported.
 - **FR2 — Classify against the latest stable release.** A surface added and then
   renamed, removed, or reworked before any stable release has no installed
   consumer and is not breaking. Private or ignored packages are outside the
   published compatibility promise. Promotion from a private package into a
   published package is additive from the published side.
-- **FR3 — Released contracts include behavior, not only types.** Compatibility
-  covers public exports and import paths; requiredness, accepted values, defaults,
-  return types, callbacks, and error behavior; documented interaction and
+- **FR3 — Released contracts include function and semantics, not exact appearance.**
+  Compatibility covers public exports and import paths; requiredness, accepted values,
+  defaults, return types, callbacks, and error behavior; documented interaction and
   accessibility behavior; stable CLI command names, options, exit behavior, and
-  machine-readable schemas; and other explicitly documented public extension
-  points. Internal implementation, undocumented markup, and source layout are not
-  stable merely because a consumer can observe them. A default change is judged by
-  one test (DEC-17): it is breaking when a caller who never set the prop sees their
-  shipped UI or output change, or when a documented contract promised the old default;
-  otherwise it is nonbreaking. Either way the Changeset names the old and new default
-  and the prop or option that restores the old default, which is the migration.
+  machine-readable schemas; and other explicitly documented public extension points.
+  Internal implementation, undocumented markup, source layout, and exact appearance are
+  not stable merely because a consumer can observe them. A change only to existing
+  content's appearance, spacing, typography, layout styling, or visual default is
+  nonbreaking when public API, accepted inputs, interaction, accessibility semantics,
+  data, and machine-readable output keep working. It uses `[fix]` when it restores
+  current visual authority and `[feat]` when it intentionally changes visual direction.
+  Its Changeset names the old and new appearance and how to keep the old look when a
+  supported escape exists. A default that changes a functional or semantic contract is
+  judged under FR1 instead. Its Changeset names the old and new default and the prop or
+  option that restores the old default, which is the migration. A change to documented
+  interaction or accessibility behavior made for accessibility conformance is
+  classified under FR53.
 - **FR4 — Preserved old usage is nonbreaking.** A rename or replacement is
   nonbreaking when the old released call, import, option, identifier, or input
   continues to work with equivalent meaning through a compatibility alias or
@@ -171,7 +190,8 @@ one removal merged ahead of the decision to allow it.
   released faulty behavior must change. When a supported consumer relies on that
   behavior and the correction breaks the consumer, FR32–FR35 classify it as an
   incompatible fix even though the implementation violated authority. A proposal
-  that intentionally replaces the documented contract is not a fix.
+  that intentionally replaces the documented contract is not a fix, except an
+  accessibility behavior fix under FR53.
 - **FR6 — Risk does not override compatibility.** Low adoption, low likelihood,
   engineering approval, or confidence that affected callers are uncommon does not
   make an incompatible released contract nonbreaking. Conversely, implementation
@@ -387,8 +407,8 @@ one removal merged ahead of the decision to allow it.
   documented markup or selectors, accessibility semantics, persistence, CLI,
   configuration, schemas, build tooling, contractual documentation operations, and
   package files MUST be additive, implementation-equivalent, a nonbreaking default
-  change under FR3, or a victim-free contract restoration under FR5; a breaking change
-  lands only in a declared minor (FR31). Documentation catalog names and routes
+  change under FR3, a victim-free contract restoration under FR5, or an accessibility
+  behavior fix under FR53; a breaking change lands only in a declared minor (FR31). Documentation catalog names and routes
   follow
   FR45. An internal label, low adoption, or lack of a source-level API change does
   not weaken this rule.
@@ -485,11 +505,17 @@ one removal merged ahead of the decision to allow it.
   the correction breaks code, interaction, persisted data, output, or a supported
   workflow, the correction is `[breaking]` and follows FR31 for the declared tier,
   stating the corrected contract and the migration. A visible correction with no valid
-  released victim remains `[fix]` under FR5.
+  released victim remains `[fix]` under FR5. An accessibility behavior fix is not a
+  breaking correction: FR53 classifies it. For a surface other than a component, the
+  surface's compatibility contract decides whether a caller is a released victim
+  (FR54).
 - **FR33 — A correction's authority and victim are named.** The `[breaking]`
   Changeset or its pull request names the pre-existing authority the released behavior
   violated, a latest-stable reproducer, and the migration. Without pre-existing
   authority, the proposal is a new contract decision for the direct owner, not a fix.
+  For an accessibility behavior fix, the authority is the conformance target FR53
+  names, and the owner records any behavior decision the fix needs in the component's
+  record.
 - **FR34 — A correction follows the same tier rule.** In a declared minor a breaking
   correction merges on its `[breaking]` Changeset. When `main` declares a patch, the
   patch ships the corrected opt-in or adapter beside the old behavior (FR28) and the
@@ -636,16 +662,67 @@ one removal merged ahead of the decision to allow it.
   or lowers the next plan. Merge-back preserves main's current declaration. When it
   equals or falls below the released version, FR46's canary publication check emits no
   prerelease at equality and fails below it.
-- **FR51 — The next plan is an owner change separate from merge-back.** After FR50
-  lands, a separate pull request changes every fixed-group package version, every
-  generated exact internal pin, the lockfile, and version-stamped compatibility assets
-  to the next planned version. The default is the patch successor of the released
-  version. The minor successor is used only when Cindy explicitly names that minor as
-  the next plan; pending `[breaking]` Changesets are not that decision. Other main work
-  need not wait for this bookkeeping change, but FR46 suppresses canary publication
-  until the declaration is strictly above stable. If main already carries a newer
-  owner plan, FR50 preserves it and no duplicate bump is required. The plan remains
+- **FR51 — The next plan is prepared at the cut and remains separate from merge-back.**
+  When a release cut succeeds, release tooling prepares one pull request from current
+  main that changes every fixed-group package version, every generated exact internal
+  pin, the lockfile, and version-stamped compatibility asset to the successor plan. The
+  default is the cut version's patch successor. The minor successor is used only when
+  Cindy explicitly names that minor as the next plan; pending `[breaking]` Changesets
+  are not that decision. The plan MUST NOT merge before an immutable tag or stable
+  package publication makes the cut version non-reusable. After that point it may land
+  through normal gates before or after FR50; merge-back preserves an already-landed
+  newer plan. A terminal cut with neither an immutable tag nor stable package
+  publication closes its prepared plan unmerged. If main already carries a newer owner plan, the prepared change closes or
+  refreshes instead of duplicating or lowering it. Other main work need not wait, and
+  FR46 remains the independent canary-publication safety boundary. The plan remains
   malleable under FR46 until the next cut.
+- **FR52 — Repository evidence follows codemods through promotion.** A codemod staged
+  for an unreleased change may move from `transforms/next/` into the immutable
+  `transforms/v<declared-version>/` folder during release generation. A checked-in test,
+  validator, documentation generator, or other repository evidence that reads that
+  transform's source MUST identify the transform independently of its lifecycle folder
+  and resolve its staged or promoted location as appropriate. It MUST fail when the
+  transform is missing, when multiple candidates make the identity ambiguous, or when
+  the promoted source no longer exposes the same transform identity and declared entry
+  set. It MUST NOT keep a duplicate transform solely to preserve the staged path.
+  Promotion remains one generated release output under FR47 and FR50; this requirement
+  changes no consumer migration contract.
+- **FR53 — Accessibility behavior fixes are not breaking.** A change whose purpose is
+  to make a released component conform to its accessibility target — a WCAG 2.2 Level
+  A or AA success criterion, the required parts of an APG pattern the component adopts
+  under `spec:AST-020/FR15`, or a current accessibility requirement in its record — is
+  `[fix]` and patch-eligible, even when it replaces documented interaction or
+  accessibility behavior: roles, accessible names, states and properties, focus
+  movement, and keyboard behavior. No deprecation precedes it and no coexistence path
+  is required. An accessibility behavior fix requires no app-layer code change:
+  existing public props, types, exports, tokens and documented usage keep working
+  unchanged. It may add optional public surface (for example a new optional prop),
+  which is not breaking and is admitted under the existing rules for public additions;
+  it never removes, renames, or narrows existing surface. It ships as a patch `[fix]`,
+  with a release-note line when documented behavior changes; its Changeset names the
+  old and new behavior and the accessibility target it serves. A change that would
+  require apps to edit code must be redesigned so the component absorbs it, or it is
+  classified under FR1.
+- **FR54 — A surface other than a component defines its own compatibility contract.**
+  Each published surface other than a component takes its compatibility contract from
+  its own current record. For the CLI, that record is `architecture:cli-surface`. The
+  contract states which consumer scenarios are valid and supported, what counts as a
+  released victim, and which corrections to the surface are `[fix]` and which are
+  `[breaking]`. The surface record's owners decide that contract through the record's
+  normal approval, and this record does not restate it. Where the surface record
+  states a rule for a case, that rule decides the classification of that case. Where
+  it is silent, FR1–FR6 and this record's rules for that surface apply. A surface rule
+  turns on the change and its contract, never on risk or adoption (FR6), and covers
+  only released, published surfaces (FR2). The release process in this record applies
+  to the result unchanged: Changeset categories and bump tiers (FR7, FR22), migration
+  evidence (FR8), experimental isolation (FR21–FR27), the patch, minor, and emergency
+  paths (FR28, FR31, FR34, FR35, FR48), deprecation and coexistence (FR29–FR30), and
+  the release gates (FR37–FR44). A surface record defines only whether a change is
+  breaking; it never changes how a change ships. A change any surface record classifies
+  as `[breaking]` lands only in a declared minor (FR31) or through the emergency path
+  (FR35), never in a patch release, and no surface record can make it patch-eligible by
+  redefining a release rule. Components keep the rules in this record, including FR3 and
+  FR53.
 
 ### Platform support
 
@@ -659,9 +736,11 @@ one removal merged ahead of the decision to allow it.
 
 ## Authority relationships
 
-This spec owns compatibility classification, lifecycle state, release-pair delta
-classes, and the evidence that admits them. It delegates narrower questions rather
-than restating them:
+This spec owns compatibility classification for components, and the release process
+every surface's classification goes through: lifecycle state, release-pair delta
+classes, and the evidence that admits them. A surface other than a component defines
+its own compatibility contract in its current record (FR54). It delegates narrower
+questions rather than restating them:
 
 - [`spec:AST-002` — Public API admission and operation shape](../AST-002/spec.md)
   owns whether a public API concept should exist and its semantic shape.
@@ -669,8 +748,9 @@ than restating them:
   owns the stable component contract; this spec owns how it evolves.
 - [`architecture:cli-surface` — CLI surface architecture](../../architecture/cli-surface.md)
   and [`spec:AST-042` — CLI command admission and programmatic parity system spec](../AST-042-cli-command-admission/spec.md)
-  own CLI structure, admission, and parity; this spec owns compatibility and
-  release transition.
+  own CLI structure, admission, and parity. `architecture:cli-surface` also owns the
+  CLI's compatibility contract under FR54; this spec owns the release process that
+  applies it.
 - [`architecture:theme-tokens` — Theme token architecture](../../architecture/theme-tokens.md)
   owns token semantics; this spec owns compatibility and experimental isolation.
 - [`spec:AST-013` — Browser and platform support system spec](../AST-013/spec.md)
@@ -711,9 +791,10 @@ than restating them:
   implements FR47–FR51 admission, versioning, merge-back, and next-plan validation;
   none of these files may narrow or widen the rule it implements.
 
-The direct current owner decides the intended product contract. This spec decides how
-that contract may change in a stable release. The public Release Process decides how
-an eligible release is operated. A direct spec cannot waive compatibility silently;
+The direct current owner decides the intended product contract. For a surface other
+than a component, its record also decides what counts as breaking (FR54). This spec
+decides the release process every change goes through. The public Release Process
+decides how an eligible release is operated. A direct spec cannot waive compatibility silently;
 an incompatible change to its surface lands in a declared minor under FR31.
 
 ## Current-state impact
@@ -732,8 +813,10 @@ Public lifecycle classification remains in force with these operational effects:
 - contributor declarations are the Changeset tag and body, with no parallel
   lifecycle metadata and no migration of existing Changesets;
 - documentation catalog display names and routes remain mutable data while the stable
-  `docs` command and machine-readable schemas stay contractual; and
-- exact-main release comparison rejects unclassified deltas.
+  `docs` command and machine-readable schemas stay contractual;
+- exact-main release comparison rejects unclassified deltas; and
+- a surface other than a component is classified by its own record's compatibility
+  contract, and the release process here applies to the result.
 
 Main declares the next planned version, and Changeset admission uses that declaration
 to refuse `[breaking]` work on a patch plan. Pull-request lint does not compare the
@@ -742,9 +825,15 @@ time: strictly above stable publishes, equality skips, and lower or split declar
 fail closed. A release branch releases the cut's declaration unchanged and admits
 incompatible work only when it is a minor; the Changeset cannot choose that version
 itself. Published branch bytes squash back into current main without regeneration,
-post-cut consumption, or plan changes. A separate owner change declares the next plan—
-patch successor by default, minor only when Cindy names it—without holding unrelated
-main work.
+post-cut consumption, or plan changes. Release tooling prepares the separate successor
+plan at cut time—patch by default, minor only when Cindy names it—and holds it until the
+cut version becomes non-reusable. It may then land before or after merge-back without
+holding unrelated main work; a terminal cut with neither an immutable tag nor stable
+package publication closes it unmerged.
+
+Codemod promotion relocates staged transform source into the immutable release folder.
+Repository evidence that reads a transform follows that lifecycle location and treats a
+missing or ambiguous identity as a failure rather than preserving a duplicate source.
 
 These requirements alter no published package by themselves and need no Changeset.
 Authoring helpers, validators, metadata projections, compatibility snapshots, release
@@ -753,29 +842,32 @@ lands, maintainers apply its requirement in review and release approval.
 
 ## Verification
 
-| Contract  | Verification                                                                                                                                                                                                                                                                                                                                                    | Representative states                                                                                                                                                                         | Mutation or failure expectation                                                                                                                                                                                                                                       |
-| --------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| FR1–FR3   | PR compatibility statement plus latest stable package inspection                                                                                                                                                                                                                                                                                                | released export, behavior, CLI command; unreleased and private surface; a default change with and without a restoring prop                                                                    | A change is labeled from diff size or possibility alone, a released contract change is missed, or a default-only change is tagged `[breaking]` without a named victim                                                                                                 |
-| FR4–FR6   | Old-usage type/runtime/CLI regression test                                                                                                                                                                                                                                                                                                                      | alias retained, deprecation warning, broad rewrite, low-adoption caller                                                                                                                       | Contractual old usage fails despite a nonbreaking label, or risk is substituted for compatibility                                                                                                                                                                     |
-| FR7–FR8   | `pnpm check:changesets` (tag, bump, contributors, declared tier) plus FR8 migration review of `[breaking]` text                                                                                                                                                                                                                                                 | existing `[fix]`, `[feat]`, `[breaking]`, and `[experimental]` tags paired with compatible, deprecation, planned-removal, or incompatible-fix metadata                                        | A new lifecycle replaces an established tag, tag/metadata/bump diverge, an incompatible correction uses bare `[fix]`, or migration is unusable                                                                                                                        |
-| FR9–FR13  | CLI contract tests, response-schema/type snapshots, text projections, generated consumer docs, and template catalog/output tests                                                                                                                                                                                                                                | slug rename, metadata edit, source rebuild, optional field addition, command or schema change                                                                                                 | Catalog data is frozen as API, a command/schema incompatibility is mislabeled as catalog-only, or a response field lacks a complete projection                                                                                                                        |
-| FR12      | Minimum and representative supported-version tests plus manifest and release-note review                                                                                                                                                                                                                                                                        | retained range, narrowed range, adapter, coordinated upgrade                                                                                                                                  | An in-range combination breaks under a nonbreaking label, or release coordination hides the affected package or migration                                                                                                                                             |
-| FR14      | Help/manifest snapshots, public API and consumer docs, and focused contract tests                                                                                                                                                                                                                                                                               | command, option, API/config, private rollout/test hook                                                                                                                                        | Supported behavior is hidden, an environment variable changes behavior, or automation lacks a documented API                                                                                                                                                          |
-| FR15      | Full manifest-derived command matrix, supported-consumer evidence, and scope-specific contract tests                                                                                                                                                                                                                                                            | global invariant, scoped command group, single command, programmatic API                                                                                                                      | A global control is a no-op for any command, has different meanings, or replaces a narrower owning surface                                                                                                                                                            |
-| FR16–FR18 | Boundary inventory, hostile side-effect probes, response snapshots, and concurrent API tests                                                                                                                                                                                                                                                                    | known and new extension, partial result, text/JSON/API parity, independent concurrent calls                                                                                                   | A route bypasses the guarantee, omitted work looks complete, or one invocation changes another                                                                                                                                                                        |
-| FR19–FR20 | Proposal evidence with a regression fixture for the detection failure, plus composition and provenance tests                                                                                                                                                                                                                                                    | convention covers the case, detection fails, app plus two integrations, refusal, failing contribution, repeated load                                                                          | A key ships without a reproduced detection failure, a contribution displaces the app or applies twice, a part of the effective value has no inspectable source, or a failure silently weakens protection                                                              |
-| FR21–FR24 | Published-surface comparison, declaration/doc metadata checks, import-boundary checks, and Changeset classification review                                                                                                                                                                                                                                      | experimental prop object, experimental subpath, patch evolution, promotion, unpublished adjacent field, stable warning behavior, integration theme                                            | A prose-only marker excludes a stable API, adjacency falsely publishes a new field, an experimental export leaks through a stable path, a patch changes stable behavior, or a promoted API remains unprotected                                                        |
-| FR25–FR27 | Stable-surface inventory and experimental-boundary matrix                                                                                                                                                                                                                                                                                                       | package/API, CSS/token, CLI/config, persistence, build tooling, docs, whole Lab component                                                                                                     | An unmarked experiment changes stable defaults or a stable surface bypasses compatibility review                                                                                                                                                                      |
-| FR28–FR31 | Declared-tier check: on a minor, the `[breaking]` Changeset describes the change (old usage, replacement, migration); on a patch, a breaking Changeset is refused and the deprecation ships instead; declaration/doc/build/CLI warning projections; old/new fixtures; dry-run/idempotence/migration tests; maintained-source and latest-stable upgrade evidence | whole component, prop/value, theme field/helper/token/target/source, CLI command, CLI option; old-only, new-only, both, static/dynamic/uncertain migration, text/JSON, development/production | A warning has no usable modernization route, production runtime changes for deprecation, maintained guidance teaches the old surface, a migration guesses, old behavior degrades early, cadence invents a wait, or one cleanup id covers multiple incompatible deltas |
-| FR32–FR35 | Latest-stable victim fixture, pre-existing authority named in the Changeset or pull request, owner review, declared-tier check, and emergency attestation                                                                                                                                                                                                       | victim-free `[fix]`, `[fix]` plus incompatible-fix metadata, coexistence, cleanup transition, critical-harm emergency                                                                         | A released victim uses bare `[fix]`, a new Changeset tag replaces metadata, a correction record disagrees with its public-surface state, or urgency bypasses migration                                                                                                |
-| FR36–FR40 | Owner-declared target, locked final-patch receipt, three-way delta classification against the merged `[breaking]` Changesets, and separated release notes                                                                                                                                                                                                       | ordinary cadence, immediate pair, cleanup, release metadata, pre/post-lock compatible fix                                                                                                     | Cadence becomes eligibility, the final patch is recut for bookkeeping, a feature or incompatible fix enters the incidental-fix lane, or release notes merge cleanup with fixes                                                                                        |
-| FR41–FR44 | Schema validation, PR declaration, semantic stable/base/head comparisons, exact-main gate, and immutable publish/rollback receipt                                                                                                                                                                                                                               | duplicate ids, missing evidence, route/schema removal, old-client metadata, partial publish, safe rollback                                                                                    | A label passes without semantics, a delta maps zero or multiple times, fixed-group membership drifts, or a release rebuilds under one identity                                                                                                                        |
-| FR45      | Docs route inventory, repository-reference checks, and Changeset review                                                                                                                                                                                                                                                                                         | catalog entry rename, former-route miss, stable command and JSON schema                                                                                                                       | Catalog routing is frozen as API, or a rename silently changes the contractual command or response schema                                                                                                                                                             |
-| FR46–FR47 | Declared-tier Changeset admission, canary publication ordering, and release-versioning fixtures                                                                                                                                                                                                                                                                 | owner increase/decrease, above/equal/below stable, split group, `[breaking]` on patch and minor plans                                                                                         | Pending Changesets derive the plan, `[breaking]` passes on a patch or fails on a minor, equality publishes a canary, or a lower/split declaration publishes instead of failing                                                                                        |
-| FR48      | Category and classification admission under each declared tier                                                                                                                                                                                                                                                                                                  | patch release with `[breaking]`, patch release with a deprecation, minor release with `[breaking]`                                                                                            | Incompatible work passes in a patch release, or a deprecation is refused in one                                                                                                                                                                                       |
-| FR49      | Malformed and inconsistent declaration fixtures                                                                                                                                                                                                                                                                                                                 | disagreeing group versions, canary identifier, release version unlike the cut manifest, already-released version, skipped version, no stable tag                                              | An untrustworthy or mismatched declaration is released                                                                                                                                                                                                                |
-| FR50      | Three-way squash merge-back fixtures bound to the immutable tag, branch head, and plan digest                                                                                                                                                                                                                                                                   | exact branch outputs, frozen deletion, branch-only marker exclusion, post-cut Changeset/manifest edit, newer main declaration, merge conflict, regenerated output                             | Merge-back differs from release bytes, lands lifecycle files, consumes post-cut work, overwrites a newer main declaration or unrelated field, or chooses a version                                                                                                    |
-| FR51      | Separate next-plan manifest/pin/lockfile/compatibility-asset fixtures plus canary routing assertions                                                                                                                                                                                                                                                            | default patch successor, explicitly named minor, pre-advanced main plan, unrelated main work during equality                                                                                  | Equality publishes a canary, the default skips a patch, pending Changesets choose a minor, exact pins or compatibility assets split, or merge-back requires a duplicate bump for an existing newer plan                                                               |
+| Contract  | Verification                                                                                                                                                                                                                                                                                                                                                    | Representative states                                                                                                                                                                                                   | Mutation or failure expectation                                                                                                                                                                                                                                                                            |
+| --------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| FR1–FR3   | PR compatibility statement plus latest stable package inspection                                                                                                                                                                                                                                                                                                | released export, narrowed type, changed interaction default; unreleased and private surface; visual-only spacing, typography, layout styling, or default appearance                                                     | A change is labeled from diff size or possibility alone, a functional contract loss is hidden as visual-only, or a pixel-only change is tagged `[breaking]` even though callers need no source or configuration change                                                                                     |
+| FR4–FR6   | Old-usage type/runtime/CLI regression test                                                                                                                                                                                                                                                                                                                      | alias retained, deprecation warning, broad rewrite, low-adoption caller                                                                                                                                                 | Contractual old usage fails despite a nonbreaking label, or risk is substituted for compatibility                                                                                                                                                                                                          |
+| FR7–FR8   | `pnpm check:changesets` (tag, bump, contributors, declared tier) plus FR8 migration review of `[breaking]` text                                                                                                                                                                                                                                                 | existing `[fix]`, `[feat]`, `[breaking]`, and `[experimental]` tags paired with compatible, deprecation, planned-removal, or incompatible-fix metadata                                                                  | A new lifecycle replaces an established tag, tag/metadata/bump diverge, an incompatible correction uses bare `[fix]`, or migration is unusable                                                                                                                                                             |
+| FR9–FR13  | CLI contract tests, response-schema/type snapshots, text projections, generated consumer docs, and template catalog/output tests                                                                                                                                                                                                                                | slug rename, metadata edit, source rebuild, optional field addition, command or schema change                                                                                                                           | Catalog data is frozen as API, a command/schema incompatibility is mislabeled as catalog-only, or a response field lacks a complete projection                                                                                                                                                             |
+| FR12      | Minimum and representative supported-version tests plus manifest and release-note review                                                                                                                                                                                                                                                                        | retained range, narrowed range, adapter, coordinated upgrade                                                                                                                                                            | An in-range combination breaks under a nonbreaking label, or release coordination hides the affected package or migration                                                                                                                                                                                  |
+| FR14      | Help/manifest snapshots, public API and consumer docs, and focused contract tests                                                                                                                                                                                                                                                                               | command, option, API/config, private rollout/test hook                                                                                                                                                                  | Supported behavior is hidden, an environment variable changes behavior, or automation lacks a documented API                                                                                                                                                                                               |
+| FR15      | Full manifest-derived command matrix, supported-consumer evidence, and scope-specific contract tests                                                                                                                                                                                                                                                            | global invariant, scoped command group, single command, programmatic API                                                                                                                                                | A global control is a no-op for any command, has different meanings, or replaces a narrower owning surface                                                                                                                                                                                                 |
+| FR16–FR18 | Boundary inventory, hostile side-effect probes, response snapshots, and concurrent API tests                                                                                                                                                                                                                                                                    | known and new extension, partial result, text/JSON/API parity, independent concurrent calls                                                                                                                             | A route bypasses the guarantee, omitted work looks complete, or one invocation changes another                                                                                                                                                                                                             |
+| FR19–FR20 | Proposal evidence with a regression fixture for the detection failure, plus composition and provenance tests                                                                                                                                                                                                                                                    | convention covers the case, detection fails, app plus two integrations, refusal, failing contribution, repeated load                                                                                                    | A key ships without a reproduced detection failure, a contribution displaces the app or applies twice, a part of the effective value has no inspectable source, or a failure silently weakens protection                                                                                                   |
+| FR21–FR24 | Published-surface comparison, declaration/doc metadata checks, import-boundary checks, and Changeset classification review                                                                                                                                                                                                                                      | experimental prop object, experimental subpath, patch evolution, promotion, unpublished adjacent field, stable warning behavior, integration theme                                                                      | A prose-only marker excludes a stable API, adjacency falsely publishes a new field, an experimental export leaks through a stable path, a patch changes stable behavior, or a promoted API remains unprotected                                                                                             |
+| FR25–FR27 | Stable-surface inventory and experimental-boundary matrix                                                                                                                                                                                                                                                                                                       | package/API, CSS/token, CLI/config, persistence, build tooling, docs, whole Lab component                                                                                                                               | An unmarked experiment changes stable defaults or a stable surface bypasses compatibility review                                                                                                                                                                                                           |
+| FR28–FR31 | Declared-tier check: on a minor, the `[breaking]` Changeset describes the change (old usage, replacement, migration); on a patch, a breaking Changeset is refused and the deprecation ships instead; declaration/doc/build/CLI warning projections; old/new fixtures; dry-run/idempotence/migration tests; maintained-source and latest-stable upgrade evidence | whole component, prop/value, theme field/helper/token/target/source, CLI command, CLI option; old-only, new-only, both, static/dynamic/uncertain migration, text/JSON, development/production                           | A warning has no usable modernization route, production runtime changes for deprecation, maintained guidance teaches the old surface, a migration guesses, old behavior degrades early, cadence invents a wait, or one cleanup id covers multiple incompatible deltas                                      |
+| FR32–FR35 | Latest-stable victim fixture, pre-existing authority named in the Changeset or pull request, owner review, declared-tier check, and emergency attestation                                                                                                                                                                                                       | victim-free `[fix]`, `[fix]` plus incompatible-fix metadata, coexistence, cleanup transition, critical-harm emergency                                                                                                   | A released victim uses bare `[fix]`, a new Changeset tag replaces metadata, a correction record disagrees with its public-surface state, or urgency bypasses migration                                                                                                                                     |
+| FR36–FR40 | Owner-declared target, locked final-patch receipt, three-way delta classification against the merged `[breaking]` Changesets, and separated release notes                                                                                                                                                                                                       | ordinary cadence, immediate pair, cleanup, release metadata, pre/post-lock compatible fix                                                                                                                               | Cadence becomes eligibility, the final patch is recut for bookkeeping, a feature or incompatible fix enters the incidental-fix lane, or release notes merge cleanup with fixes                                                                                                                             |
+| FR41–FR44 | Schema validation, PR declaration, semantic stable/base/head comparisons, exact-main gate, and immutable publish/rollback receipt                                                                                                                                                                                                                               | duplicate ids, missing evidence, route/schema removal, old-client metadata, partial publish, safe rollback                                                                                                              | A label passes without semantics, a delta maps zero or multiple times, fixed-group membership drifts, or a release rebuilds under one identity                                                                                                                                                             |
+| FR45      | Docs route inventory, repository-reference checks, and Changeset review                                                                                                                                                                                                                                                                                         | catalog entry rename, former-route miss, stable command and JSON schema                                                                                                                                                 | Catalog routing is frozen as API, or a rename silently changes the contractual command or response schema                                                                                                                                                                                                  |
+| FR46–FR47 | Declared-tier Changeset admission, canary publication ordering, and release-versioning fixtures                                                                                                                                                                                                                                                                 | owner increase/decrease, above/equal/below stable, split group, `[breaking]` on patch and minor plans                                                                                                                   | Pending Changesets derive the plan, `[breaking]` passes on a patch or fails on a minor, equality publishes a canary, or a lower/split declaration publishes instead of failing                                                                                                                             |
+| FR48      | Category and classification admission under each declared tier                                                                                                                                                                                                                                                                                                  | patch release with `[breaking]`, patch release with a deprecation, minor release with `[breaking]`                                                                                                                      | Incompatible work passes in a patch release, or a deprecation is refused in one                                                                                                                                                                                                                            |
+| FR49      | Malformed and inconsistent declaration fixtures                                                                                                                                                                                                                                                                                                                 | disagreeing group versions, canary identifier, release version unlike the cut manifest, already-released version, skipped version, no stable tag                                                                        | An untrustworthy or mismatched declaration is released                                                                                                                                                                                                                                                     |
+| FR50      | Three-way squash merge-back fixtures bound to the immutable tag, branch head, and plan digest                                                                                                                                                                                                                                                                   | exact branch outputs, frozen deletion, branch-only marker exclusion, post-cut Changeset/manifest edit, newer main declaration, merge conflict, regenerated output                                                       | Merge-back differs from release bytes, lands lifecycle files, consumes post-cut work, overwrites a newer main declaration or unrelated field, or chooses a version                                                                                                                                         |
+| FR51      | Cut-time successor-plan preparation plus manifest/pin/lockfile/compatibility-asset and lifecycle fixtures                                                                                                                                                                                                                                                       | default patch successor, explicitly named minor, abort before any tag or publication, immutable tag before merge-back, pre-advanced main plan, unrelated main work during equality                                      | The plan merges before the cut version is non-reusable, survives a terminal cut with neither an immutable tag nor stable publication, skips the default patch, derives a minor from pending Changesets, splits pins/assets, or the prepared plan or merge-back lowers or duplicates an existing newer plan |
+| FR52      | Promotion fixtures plus every checked-in source consumer run before and after codemod promotion                                                                                                                                                                                                                                                                 | staged transform, promoted transform, missing source, ambiguous candidates, changed entry identity                                                                                                                      | Evidence hardcodes only `next/`, keeps a duplicate source, silently chooses among candidates, or passes when the promoted transform no longer exposes the same identity and entries                                                                                                                        |
+| FR53      | Changeset classification review against the governing component record's accessibility evidence                                                                                                                                                                                                                                                                 | a fix that replaces documented keyboard or focus behavior to meet an adopted APG pattern's required parts; a fix that changes a role, state, or accessible name to meet WCAG 2.2 A/AA; a fix that adds an optional prop | An accessibility fix is held for a minor, given a coexistence path, or classified `[breaking]`; or a change that needs an app-layer code edit, or that removes, renames, or narrows public surface, ships as an accessibility `[fix]`                                                                      |
+| FR54      | Changeset classification review against the surface's current record, then the same tier admission every Changeset receives                                                                                                                                                                                                                                     | a CLI correction the CLI record classifies as `[fix]`; a CLI change the CLI record leaves undecided; a CLI change the CLI record classifies as `[breaking]` on a patch plan; a component change                         | A non-component change is classified by a rule this record restates instead of its surface record, a surface rule turns on risk or adoption, a surface-classified `[breaking]` change ships in a patch or a surface rule makes it patch-eligible, or a component change is classified by a surface record  |
 
 ## Decision log
 
@@ -1095,24 +1187,26 @@ Rejected: a runtime compatibility flag or branch used only to acknowledge deprec
 a warning without an available modernization path, copyable guidance that keeps
 teaching the old surface, and a migration that guesses at uncertain consumer intent.
 
-### DEC-17 — A default change is breaking when an untouched caller sees it
+### DEC-17 — Visual-only changes are compatible even when pixels change
 
 **Reference:** `spec:AST-017/DEC-17`
-**Decider:** `cixzhang`, `2026-10-11`
+**Decider:** `cixzhang`, `2026-10-12`
 
-A default change is not breaking by itself and not compatible by itself; it is judged
-by a caller who never set the prop. If that caller's UI or output visibly changes —
-content gains padding, a grid lays out differently, a popover becomes a sheet on
-touch — the change is breaking and ships as `[breaking]` in a declared minor. If that
-caller sees nothing different, it is a `[feat]` or `[fix]`. In both cases the
-Changeset names the old and new default and the prop or option that restores the old
-default; that restoring prop is the migration, so a default change needs no
-deprecation path beyond it.
+Compatibility asks whether a valid latest-stable caller must edit source or
+configuration to keep a supported functional contract working. Removing or renaming a
+public surface, narrowing an accepted type, or changing interaction, accessibility
+semantics, data, machine-readable output, or another behavior contract can therefore be
+breaking. A functional default change's Changeset names the old and new default and the
+prop or option that restores the old default; that restoring input is its migration.
+Changing only the appearance, spacing, typography, layout styling, or visual default of
+existing content is not: it ships as `[feat]` or `[fix]` under FR3 even when an untouched
+caller sees different pixels. Its release note names the old and new
+appearance and how to keep the old look when a supported escape exists; that escape is
+guidance, not a required compatibility migration.
 
-Rejected: classifying every default change as breaking, which routes invisible
-changes through the minor for nothing; and classifying every default change as
-compatible, which lets a visible change reach callers in a patch without the minor's
-announcement.
+Rejected: treating any pixel difference as a released victim; and calling an
+interaction, semantic, data, or machine-output change visual-only because its UI also
+looks different.
 
 ### DEC-18 — Two rules and one gate
 
@@ -1135,6 +1229,70 @@ Rejected: a lifecycle record and frozen manifest that every removal had to appea
 before merging, which duplicated the Changeset and made bookkeeping the blocker; a
 per-record transition requirement and waiver, which the patch rule already expresses;
 and dropping the manifest, which would lose the minor's migration inventory.
+
+### DEC-19 — Promotion moves codemod source without invalidating its evidence
+
+**Reference:** `spec:AST-017/DEC-19`
+**Decider:** `cixzhang`, 2026-10-14
+
+A staged codemod and its promoted release copy are one transform at two lifecycle
+locations. Checked-in evidence identifies the transform and resolves whichever location
+the repository state owns; promotion cannot turn a valid source-level guard red merely
+by moving the source, and it cannot make that guard silently stop running. Missing,
+ambiguous, or identity-changing promotion fails.
+
+Rejected: retaining a duplicate under `next/` after promotion; hardcoding only the
+staged path or one release folder; and copying transform declarations into a test.
+
+### DEC-20 — Accessibility behavior fixes are not breaking
+
+**Reference:** `spec:AST-017/DEC-20`
+**Decider:** `cixzhang`, `2026-10-14`
+
+Every user of a component that misses its accessibility target is harmed until the
+fix ships, and the people harmed most are the ones least able to work around it.
+Holding such a fix for a planned minor, or shipping it behind an opt-in beside the
+inaccessible behavior, keeps that harm in place to protect callers who depended on
+behavior that excluded someone. So a change made for accessibility conformance is a
+`[fix]` in the patch line even when it replaces documented roles, names, states, focus
+or keyboard behavior. The boundary is the public surface: the fix needs no app-layer code change, may add optional surface, and never removes, renames, or narrows existing surface; a change that would make apps edit code is redesigned so the component absorbs it, or classified as any other change.
+
+Rejected: classifying accessibility corrections as breaking whenever a released
+caller observes the old behavior, which delays every conformance fix to a minor.
+
+### DEC-21 — The cut prepares but does not authorize the successor plan
+
+**Reference:** `spec:AST-017/DEC-21`
+**Decider:** `cixzhang`, 2026-10-14
+
+The cut knows the default successor and every file that must move together, so it
+prepares the separate plan change immediately. That change cannot merge until an
+immutable tag or stable package publication makes the cut version non-reusable. It may
+then land before or after merge-back because FR50 preserves a newer main declaration.
+A terminal cut with neither an immutable tag nor stable package publication closes the
+prepared change unmerged.
+
+Rejected: merging the successor before the cut version becomes non-reusable, which
+strands a terminal cut with neither a tag nor a publication on a skipped plan; and waiting until merge-back to
+prepare information already fixed at the cut.
+
+### DEC-22 — Each surface defines what breaks; this record owns the release process
+
+**Reference:** `spec:AST-017/DEC-22`
+**Decider:** `cixzhang`, 2026-10-15
+
+The owners of a surface know which of its behaviors callers may rely on and which of
+its corrections leave a real victim. A surface other than a component therefore
+defines its compatibility contract in its own current record, decided by that record's
+owners: the CLI's lives in `architecture:cli-surface`. This record applies the result
+through one release process, so every surface uses the same categories, tiers, paths,
+gates, and coexistence rules. Components keep their rules here, because the component
+contract and its accessibility fixes (DEC-20) are defined across all components in
+this record. Where a surface record is silent, this record's rules for that surface
+still apply, so no surface is left without a classification.
+
+Rejected: keeping every surface's breaking rules in this record, which makes this
+record's owners decide contracts for surfaces they do not own.
 
 ## Open questions
 

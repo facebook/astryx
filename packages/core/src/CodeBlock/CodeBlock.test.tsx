@@ -121,6 +121,84 @@ describe('CodeBlock', () => {
     expect(screen.getByRole('group')).toHaveStyle({maxHeight: '0px'});
   });
 
+  describe('diff layer', () => {
+    const diff =
+      '@@ -1,2 +1,2 @@\n-  const a = 1;\n+  const a = 2;\n   const b = 3;';
+
+    it('marks added, removed and header rows and leaves context unmarked', () => {
+      const {container} = render(
+        <CodeBlock code={diff} language="typescript" isDiff />,
+      );
+      const rows = container.querySelectorAll('[data-line]');
+      expect(rows).toHaveLength(4);
+      expect(rows[0].getAttribute('data-diff')).toBe('header');
+      expect(rows[1].getAttribute('data-diff')).toBe('removed');
+      expect(rows[2].getAttribute('data-diff')).toBe('added');
+      expect(rows[3].getAttribute('data-diff')).toBeNull();
+    });
+
+    it('puts the glyph in its own marker column and keeps base-language tokens past it', () => {
+      const {container} = render(
+        <CodeBlock code={diff} language="typescript" isDiff />,
+      );
+      const rows = container.querySelectorAll('[data-line]');
+      const marker = (row: Element) =>
+        row.querySelector('[data-diff-marker]')?.textContent;
+      expect(marker(rows[1])).toBe('-');
+      expect(marker(rows[2])).toBe('+');
+      // The glyph is the source's own text, so assistive technology reads it.
+      expect(rows[1].querySelector('[data-diff-marker]')).not.toHaveAttribute(
+        'aria-hidden',
+      );
+      expect(marker(rows[3])).toBe(' ');
+      // The code column starts after the glyph on every line: the removed and
+      // context lines' content keeps its own two-space indentation.
+      const content = (row: Element) =>
+        row.querySelectorAll('span')[1]?.textContent;
+      expect(content(rows[1])).toBe('  const a = 1;');
+      expect(content(rows[3])).toBe('  const b = 3;');
+      // `const` is a keyword on changed and context lines alike.
+      expect(rows[1].querySelector('.astryx-token-keyword')).not.toBeNull();
+      expect(rows[3].querySelector('.astryx-token-keyword')).not.toBeNull();
+    });
+
+    it('keeps the header and names the viewport diff / tsx diff', () => {
+      const {rerender} = render(<CodeBlock code={diff} isDiff />);
+      expect(screen.getByRole('group', {name: 'diff'})).toBeInTheDocument();
+      expect(screen.getByText('diff')).toBeInTheDocument();
+      rerender(<CodeBlock code={diff} language="tsx" isDiff />);
+      expect(screen.getByRole('group', {name: 'tsx diff'})).toBeInTheDocument();
+      expect(screen.getByText('tsx diff')).toBeInTheDocument();
+    });
+
+    it('copies the exact source, glyphs included', () => {
+      render(<CodeBlock code={diff} language="typescript" isDiff />);
+      fireEvent.click(screen.getByRole('button', {name: 'Copy code'}));
+      expect(navigator.clipboard.writeText).toHaveBeenCalledWith(diff);
+    });
+
+    it('composes with highlightLines and does nothing without isDiff', () => {
+      const {container, rerender} = render(
+        <CodeBlock
+          code={diff}
+          language="typescript"
+          isDiff
+          highlightLines={[2]}
+        />,
+      );
+      expect(
+        container
+          .querySelector('[data-diff="removed"]')
+          ?.getAttribute('data-line'),
+      ).toBe('2');
+      rerender(<CodeBlock code={diff} language="typescript" />);
+      expect(container.querySelector('[data-diff]')).toBeNull();
+      expect(
+        container.querySelector('[data-line] [aria-hidden="true"]'),
+      ).toBeNull();
+    });
+  });
+
   it('copies code when the copy button is clicked', () => {
     render(<CodeBlock code="const x = 1;" language="javascript" />);
     const copyButton = screen.getByRole('button', {name: 'Copy code'});
