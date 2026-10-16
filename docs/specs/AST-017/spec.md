@@ -213,6 +213,10 @@ one removal merged ahead of the decision to allow it.
   tier its change requires; it never sets the release version, which is the version
   main declares under FR46.
   Documentation-only, test-only, and private-package-only changes need no Changeset.
+  Translation-catalog updates and newly added languages need no Changeset, nor
+  English-catalog description or formatting edits that preserve every message key
+  and default message. This exemption never covers removal of a released locale
+  import path, which follows FR3–FR4 and FR31.
   Existing Changesets keep their current tag and validated bump semantics and MUST NOT
   be mass-migrated. `pnpm changeset:new` remains the authoring path, and
   `pnpm check:changesets` validates tag, bump, contributors, and the declared tier;

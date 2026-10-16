@@ -11,9 +11,9 @@
  *    `files`, root README, or consumer-facing package.json fields) needs a
  *    Changeset, added or edited by the same change, naming that package. Tests,
  *    stories, spec records, generated CHANGELOGs, unpacked files, private and
- *    canary-only packages, and everything outside a package need none. Translated
- *    catalogs and translator-description-only edits are exempt; English
- *    message/key changes still need coverage.
+ *    canary-only packages, and everything outside a package need none. Translation
+ *    updates/additions and translator-description-only edits are exempt; removed
+ *    locale paths and English message/key changes still need coverage.
  * 2. Released CLI JSON ids: a response `type`, response field, golden field, or
  *    doctor check id from the latest stable release that is missing at head
  *    breaks scripts (spec:AST-017 FR3, FR13). The change that removes it, or
@@ -353,14 +353,15 @@ function changedChangesets(changes, head) {
 }
 
 /**
- * Translated catalogs need no release note, including added/removed languages.
+ * Translation updates and additions need no release note; removed paths do.
  * English message/key changes still need coverage; descriptions do not.
  * The catalog gate, not this dependency-free release check, validates ICU.
  */
 function localeCoverageExemption(file, base, head) {
   const locale = /^packages\/core\/locales\/([^/]+)\.json$/.exec(file)?.[1];
   if (!locale || locale === 'pseudo') return null;
-  if (locale !== 'en') return 'translated locale catalog';
+  if (locale !== 'en')
+    return head.read(file) === null ? null : 'translated locale catalog';
 
   const messages = catalog => {
     if (!catalog || typeof catalog !== 'object' || Array.isArray(catalog))

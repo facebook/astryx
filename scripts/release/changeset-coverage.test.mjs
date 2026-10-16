@@ -429,7 +429,6 @@ describe('rule 1 — locale updates', () => {
       'packages/core/locales/es-ES.json',
       JSON.stringify(catalog),
     ],
-    ['removed language', french, null],
     ['empty catalog', french, '{}'],
     ['malformed JSON', french, '{'],
     ['non-catalog JSON', french, '[]'],
@@ -448,15 +447,17 @@ describe('rule 1 — locale updates', () => {
     },
   );
 
-  it('needs no Changeset when a translated locale is renamed', () => {
+  it('requires a Changeset when a translated locale is renamed without keeping its old path', () => {
     const head = {...base, 'packages/core/locales/fr.json': base[french]};
     delete head[french];
     const result = change(base, head);
-    expect(result.problems).toEqual([]);
-    expect(result.coverage.exempt).toHaveLength(2);
+    expect(result.problems).toHaveLength(1);
+    expect(result.problems[0]).toContain('fr-FR.json');
+    expect(result.coverage.exempt).toHaveLength(1);
   });
 
   it.each([
+    ['removed language', french, null],
     [
       'committed pseudo-locale',
       'packages/core/locales/pseudo.json',
