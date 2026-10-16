@@ -10,7 +10,9 @@
  *
  * Auto-detected and preset files were never checked at all, so a `CLAUDE.md`
  * or `.claude/` symlinked out of the project had the block written through
- * it. Every case now throws PathSafetyError before any file is touched.
+ * it. Every case now throws PathSafetyError before any file is touched. A file
+ * only the current layout writes (GEMINI.md) that links outside is skipped and
+ * reported instead, and the rest is written, so init keeps 0.7.0's exit code.
  *
  * `removeAgentDocs` (`init --remove-agents`) stripped or deleted a block
  * through the same kind of link and reported success. It now refuses with
@@ -107,6 +109,47 @@ describe('installAgentDocs never writes through a symlink out of the project', (
       /outside the project root/,
     );
     expect(fs.readFileSync(shared, 'utf-8')).toBe('# Shared\n');
+    expect(fs.readdirSync(project)).toEqual(['CLAUDE.md']);
+  });
+
+  it('skips a GEMINI.md that links outside, reports it, and writes the rest', () => {
+    const {project, outside} = layout();
+    const shared = path.join(outside, 'GEMINI.md');
+    fs.writeFileSync(shared, '# Shared\n');
+    fs.symlinkSync(shared, path.join(project, 'GEMINI.md'));
+    /** @type {Array<[string, string]>} */
+    const skipped = [];
+
+    expect(
+      installAgentDocs(project, {
+        renderedBlock: BLOCK,
+        onSkipped: (rel, reason) => skipped.push([rel, reason]),
+      }),
+    ).toEqual(['AGENTS.md']);
+    expect(skipped).toEqual([['GEMINI.md', expect.stringMatching(/outside the project root/)]]);
+    expect(fs.readFileSync(shared, 'utf-8')).toBe('# Shared\n');
+  });
+
+  it('leaves a .claude folder that links outside alone when root CLAUDE.md holds the copy', () => {
+    const {project, outside} = layout();
+    fs.writeFileSync(path.join(project, 'CLAUDE.md'), '# Claude\n');
+    fs.symlinkSync(outside, path.join(project, '.claude'));
+
+    expect(installAgentDocs(project, {renderedBlock: BLOCK})).toEqual([
+      'AGENTS.md',
+      'CLAUDE.md',
+      'GEMINI.md',
+    ]);
+    expect(fs.readdirSync(outside)).toEqual([]);
+
+    // A CLAUDE.md in the linked folder with no block is not written either.
+    fs.writeFileSync(path.join(outside, 'CLAUDE.md'), '# Shared\n');
+    expect(installAgentDocs(project, {renderedBlock: BLOCK})).toEqual([
+      'AGENTS.md',
+      'CLAUDE.md',
+      'GEMINI.md',
+    ]);
+    expect(fs.readFileSync(path.join(outside, 'CLAUDE.md'), 'utf-8')).toBe('# Shared\n');
   });
 
   it('refuses a preset file reached through a symlinked directory', () => {
@@ -197,9 +240,10 @@ describe('installAgentDocs never writes through a symlink out of the project', (
     fs.writeFileSync(path.join(project, 'AGENTS.md'), '# Agents\n');
     fs.symlinkSync('AGENTS.md', path.join(project, 'CLAUDE.md'));
 
+    // CLAUDE.md is AGENTS.md under another name, so it already has the block.
     expect(installAgentDocs(project, {renderedBlock: BLOCK})).toEqual([
       'AGENTS.md',
-      'CLAUDE.md',
+      'GEMINI.md',
     ]);
     const content = fs.readFileSync(path.join(project, 'AGENTS.md'), 'utf-8');
     expect(content.split('<!-- ASTRYX:START -->')).toHaveLength(2);
@@ -225,6 +269,32 @@ describe('init --features agents with an agent doc linked outside the project', 
 
     const text = await runCli(['init', '--features', 'agents'], project);
     expect(text.status).toBe(1);
+
+    expect(fs.readFileSync(shared, 'utf-8')).toBe('# Shared\n');
+  }, 30_000);
+
+  it('a GEMINI.md linked outside is skipped and reported, and init exits 0', async () => {
+    const project = path.join(tmpDir, 'project');
+    const outside = path.join(tmpDir, 'outside');
+    fs.mkdirSync(project, {recursive: true});
+    fs.mkdirSync(outside, {recursive: true});
+    fs.writeFileSync(path.join(project, 'package.json'), '{"name":"app"}\n');
+    const shared = path.join(outside, 'GEMINI.md');
+    fs.writeFileSync(shared, '# Shared\n');
+    fs.symlinkSync(shared, path.join(project, 'GEMINI.md'));
+
+    const json = await runCli(['init', '--features', 'agents', '--json'], project);
+    expect(json.status).toBe(0);
+    const env = JSON.parse(json.stdout);
+    expect(env.data.docsWritten).toEqual(['AGENTS.md']);
+    expect(env.data.docsError).toEqual({
+      kind: 'install-failed',
+      message: expect.stringMatching(/^GEMINI\.md was not written: .*outside the project root/),
+    });
+
+    const text = await runCli(['init', '--features', 'agents'], project);
+    expect(text.status).toBe(0);
+    expect(text.stderr).toMatch(/GEMINI\.md was not written/);
 
     expect(fs.readFileSync(shared, 'utf-8')).toBe('# Shared\n');
   }, 30_000);

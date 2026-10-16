@@ -246,6 +246,31 @@ describe('upgrade() — receipts', () => {
     expect(content).not.toMatch(/Astryx v0\.0\.1 ·/);
   });
 
+  it('refreshes the agent docs of a project in an agent worktree inside a home settings folder', async () => {
+    const saved = {HOME: process.env.HOME, USERPROFILE: process.env.USERPROFILE};
+    process.env.HOME = tmpDir;
+    process.env.USERPROFILE = tmpDir;
+    try {
+      const project = path.join(tmpDir, '.codex', 'worktrees', 'a1b2c3', 'web');
+      fs.mkdirSync(project, {recursive: true});
+      writePkg(project, {'@astryxdesign/core': '0.0.15'});
+      writeInstalledCore(project, '0.0.15');
+      writeAgentBlock(project, 'AGENTS.md', '0.0.1');
+
+      const res = await upgrade({from: '0.0.15', apply: true}, {cwd: project});
+
+      expect(res.data.agentDocs.action).toBe('refreshed');
+      expect(fs.readFileSync(path.join(project, 'AGENTS.md'), 'utf-8')).toMatch(
+        /Astryx v0\.0\.15 ·/,
+      );
+    } finally {
+      for (const [key, value] of Object.entries(saved)) {
+        if (value === undefined) delete process.env[key];
+        else process.env[key] = value;
+      }
+    }
+  });
+
   it('reports would-refresh on a dry run without writing (honors cwd)', async () => {
     writePkg(tmpDir);
     writeInstalledCore(tmpDir, '0.0.15');

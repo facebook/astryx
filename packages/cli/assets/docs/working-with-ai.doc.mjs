@@ -44,7 +44,7 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: 'By default this creates `AGENTS.md` (the tool-agnostic standard most agents read). To target a specific tool\'s file instead:',
+          text: 'By default this writes the instructions to `AGENTS.md` (the tool-agnostic standard most agents read), in the project root. Claude Code skips `AGENTS.md` when the project has a `CLAUDE.md` or `.claude/CLAUDE.md`, so init also writes them to that file (root `CLAUDE.md` when both exist), even when it imports `AGENTS.md`: Claude Code does not follow that import in a session started in a subfolder. Gemini CLI reads only `GEMINI.md`, so init adds a one-line import of `AGENTS.md` there, unless `GEMINI.md` already imports it. `upgrade` keeps the copies in sync. To target a specific tool\'s file instead:',
         },
         {
           type: 'code',
@@ -55,7 +55,11 @@ npx @astryxdesign/cli init --features agents --agent cursor    # .cursorrules if
 npx @astryxdesign/cli init --features agents --agent codex     # AGENTS.md (Copilot, Codex, etc.)
 npx @astryxdesign/cli init --features agents --agent hermes    # .hermes.md or HERMES.md if present, else AGENTS.md
 npx @astryxdesign/cli init --features agents --agent muse      # AGENTS.md (Muse)
-npx @astryxdesign/cli init --features agents --agent all       # every agent file present, else AGENTS.md and .claude/CLAUDE.md`,
+npx @astryxdesign/cli init --features agents --agent all       # every agent file present except GEMINI.md, else AGENTS.md and .claude/CLAUDE.md`,
+        },
+        {
+          type: 'prose',
+          text: 'With `--agent all`, `GEMINI.md` keeps its one-line import of `AGENTS.md`. With `--agent claude` or `--agent all`, when `CLAUDE.md` gets the instructions, `.claude/CLAUDE.md` gets none and a copy already there is removed, so Claude Code reads them once.',
         },
       ],
     },

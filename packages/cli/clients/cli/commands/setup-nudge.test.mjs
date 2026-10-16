@@ -95,6 +95,22 @@ describe('enforcement layer 3 — per-command setup nudge', () => {
     expect((await runCli(['docs', 'tokens'], tmp)).stderr).not.toMatch(NUDGE);
   });
 
+  it('is quiet in a nested package once init has written the docs at the project root', async () => {
+    // init run in functions/ writes at the root that declares Astryx.
+    write('package.json', JSON.stringify({name: 'app', dependencies: {'@astryxdesign/core': '0.7.0'}}));
+    write('AGENTS.md', MARKER);
+    write('functions/package.json', '{"name":"functions"}');
+    const r = await runCli(['docs', 'tokens'], path.join(tmp, 'functions'));
+    expect(r.stderr).not.toMatch(NUDGE);
+  });
+
+  it('nudges in a nested package while the project root has no docs', async () => {
+    write('package.json', JSON.stringify({name: 'app', dependencies: {'@astryxdesign/core': '0.7.0'}}));
+    write('functions/package.json', '{"name":"functions"}');
+    const r = await runCli(['docs', 'tokens'], path.join(tmp, 'functions'));
+    expect(r.stderr).toMatch(NUDGE);
+  });
+
   it('does not nudge for the installer command itself', async () => {
     asProject();
     expect((await runCli(['init'], tmp)).stderr).not.toMatch(NUDGE);

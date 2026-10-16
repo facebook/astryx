@@ -10,6 +10,7 @@
 
 import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
 import * as fs from 'node:fs';
+import * as os from 'node:os';
 import * as path from 'node:path';
 import {init, getNextSteps} from './init.mjs';
 import {logger} from '../logger.mjs';
@@ -21,7 +22,8 @@ const MARKER_START = '<!-- ASTRYX:START -->';
 let tmpDir;
 
 beforeEach(() => {
-  tmpDir = fs.mkdtempSync(path.join(process.cwd(), '.astryx-init-api-'));
+  // Outside any package: init writes agent docs at the nearest package.json.
+  tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'astryx-init-api-'));
 });
 
 afterEach(() => {

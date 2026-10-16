@@ -16,10 +16,17 @@ export const doc = {
   summary: 'Initialize the design system in your project',
   description:
     'Non-interactive project setup (no prompts, so it behaves the same for humans, ' +
-    'agents, and CI). By default it installs the AGENTS.md/CLAUDE.md agent-docs, ' +
-    'including guidance from configured integrations, and prints getting-started ' +
-    "steps. --features and --all print only the chosen features' guidance (no " +
-    'getting-started steps); the theme feature also writes an annotated theme template.',
+    'agents, and CI). By default it writes the agent-docs block, including guidance ' +
+    'from configured integrations, to AGENTS.md and to the Claude Code file the project ' +
+    'has (CLAUDE.md, else .claude/CLAUDE.md), and a one-line import of AGENTS.md to ' +
+    'GEMINI.md unless GEMINI.md already imports it. It then prints getting-started ' +
+    'steps. Agent docs go to the project root: the nearest folder at or above this one ' +
+    'whose package.json declares an @astryxdesign package, else the nearest with any ' +
+    'package.json, else this folder. In the home folder, or in a settings folder in it ' +
+    'such as ~/.gemini outside a project, no agent docs are written; a project inside a ' +
+    'settings folder, such as an agent worktree, works. --features and --all print only ' +
+    "the chosen features' " +
+    'guidance (no getting-started steps); the theme feature also writes an annotated theme template.',
   fn: 'init',
   options: [
     {
@@ -39,8 +46,8 @@ export const doc = {
       flag: '--remove-agents',
       param: 'options.removeAgents',
       description:
-        'Remove the managed block from AGENTS.md, CLAUDE.md, .claude/CLAUDE.md, .cursorrules, .hermes.md and HERMES.md ' +
-        "(deleting AGENTS.md or .claude/CLAUDE.md when only init's heading is left) and do nothing else. " +
+        'Remove the managed block from AGENTS.md, CLAUDE.md, .claude/CLAUDE.md, GEMINI.md, .cursorrules, .hermes.md and HERMES.md ' +
+        "(deleting AGENTS.md or .claude/CLAUDE.md when only init's heading is left, and GEMINI.md when nothing is left) and do nothing else. " +
         '--features, --all, --agent and --agent-docs-path are refused; a file written with --agent-docs-path keeps its block',
     },
     {
@@ -49,7 +56,9 @@ export const doc = {
       choices: ['claude', 'cursor', 'codex', 'hermes', 'muse', 'all'],
       description:
         'Target AI tool for agent docs: claude (CLAUDE.md or .claude/CLAUDE.md, else creates .claude/CLAUDE.md), cursor (.cursorrules if present, else AGENTS.md), ' +
-        'codex and muse (AGENTS.md), hermes (.hermes.md or HERMES.md if present, else AGENTS.md), all (every existing agent doc, else AGENTS.md and .claude/CLAUDE.md). ' +
+        'codex and muse (AGENTS.md), hermes (.hermes.md or HERMES.md if present, else AGENTS.md), all (every existing agent doc except GEMINI.md, which keeps its ' +
+        'one-line import of AGENTS.md, else AGENTS.md and .claude/CLAUDE.md). With claude and all, when CLAUDE.md gets the block, .claude/CLAUDE.md gets none and ' +
+        'a block already there is removed. ' +
         'An unknown tool exits 1 with ERR_UNKNOWN_AGENT. ' +
         'Used only when agent docs are installed (the default, --all, or --features agents); --agent-docs-path takes precedence',
     },
@@ -70,7 +79,7 @@ export const doc = {
   exitCodes: [
     {
       code: 0,
-      when: 'success, including agent docs that could not be written for a reason other than a path escape (reported as docsError)',
+      when: 'success, including agent docs that could not be written for a reason other than a path escape, such as running in the home folder or in a settings folder in it outside a project, or a GEMINI.md skipped because it resolves outside the project (reported as docsError)',
     },
     {
       code: 1,

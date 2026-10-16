@@ -26,7 +26,10 @@ import {levenshteinDistance} from '../../foundation/text/string-utils.mjs';
 import {installJsonShim} from './lib/json-shim.mjs';
 import {addDocHelp, markReportsResult} from './lib/define-command.mjs';
 import {doc as manifestDoc} from './commands/manifest.doc.mjs';
-import {isAstryxInitialized} from '../../foundation/agent-docs/agent-docs.mjs';
+import {
+  isAstryxInitialized,
+  resolveAgentDocsRoot,
+} from '../../foundation/agent-docs/agent-docs.mjs';
 import * as debug from '../../foundation/debug/index.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -548,7 +551,11 @@ export async function createProgram() {
       if (!fs.existsSync(path.join(cwd, 'package.json'))) return; // not a project
       // An integration package is not an app: `init` is not its next step.
       if (INTEGRATION_MANIFEST_FILES.some(file => fs.existsSync(path.join(cwd, file)))) return;
-      if (isAstryxInitialized(cwd)) return; // already set up — stay quiet
+      // Init writes the docs at the project root, which can sit above a
+      // nested package such as functions/, so look there too.
+      if (isAstryxInitialized(cwd) || isAstryxInitialized(resolveAgentDocsRoot(cwd) ?? cwd)) {
+        return; // already set up — stay quiet
+      }
       // Same wording as the core/cli postinstall nudges. #4151's getCliInvocation()
       // renders the correct form for THIS project — scoped `npx @astryxdesign/cli`
       // one-off, or `<pm> astryx` when installed — never the bare `npx astryx` footgun.
