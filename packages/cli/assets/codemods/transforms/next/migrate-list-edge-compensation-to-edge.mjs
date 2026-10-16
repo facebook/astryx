@@ -4,8 +4,11 @@
  * @file Codemod: migrate List edgeCompensation to edge
  *
  * `edgeCompensation="inline"` on an imported `List` becomes `edge="outset"`,
- * the value it already resolves to. When the element already sets `edge`,
- * the deprecated prop is removed, since `edge` wins whatever its value.
+ * the value it already resolves to. List resolves
+ * `edge ?? (edgeCompensation === 'inline' ? 'outset' : 'padded')`, so `edge`
+ * wins only when it has a value. The deprecated prop is removed beside an
+ * `edge` string that no later spread can override; beside a computed `edge`,
+ * which may be undefined at runtime, it gets a TODO instead.
  *
  * Built on the shared `transformProp` helper, so it does not follow
  * variables, helpers, wrappers, or types. Where a List writes
@@ -25,9 +28,10 @@ export const meta = {
   title: 'Migrate List edgeCompensation to edge',
   description:
     'Renames `edgeCompensation="inline"` to `edge="outset"` on List, and ' +
-    'drops `edgeCompensation` where `edge` is already set. Leaves a TODO on ' +
-    'a dynamic `edgeCompensation` value and on a spread beside it; the ' +
-    'deprecated prop still works there.',
+    'drops `edgeCompensation` beside an `edge` string. Leaves a TODO where ' +
+    '`edge` is computed or a later spread may override it, on a dynamic ' +
+    '`edgeCompensation` value, and on a spread beside it; the deprecated ' +
+    'prop still works there.',
 };
 
 const OLD_NAME = 'edgeCompensation';
@@ -40,6 +44,11 @@ const DYNAMIC_COMMENT =
   ' TODO(astryx upgrade): edgeCompensation is deprecated. Replace ' +
   'edgeCompensation="inline" with edge="outset" by hand; this value is ' +
   'computed. ';
+const BOTH_SET_COMMENT =
+  ' TODO(astryx upgrade): edgeCompensation is deprecated. edge is also set ' +
+  'here, but it may be undefined, and then edgeCompensation still applies. ' +
+  'Make edge default to "outset" where edgeCompensation is "inline", then ' +
+  'remove edgeCompensation. ';
 const SPREAD_COMMENT =
   ' TODO(astryx upgrade): edgeCompensation is deprecated. This List also ' +
   'spreads props that may carry it; where they are built, replace ' +
@@ -61,6 +70,27 @@ function unwrap(node) {
     current = current.expression;
   }
   return current;
+}
+
+/** @param {any} node */
+function isStringLiteral(node) {
+  const value = unwrap(node);
+  return (
+    value != null &&
+    (value.type === 'StringLiteral' || value.type === 'Literal') &&
+    typeof value.value === 'string'
+  );
+}
+
+/**
+ * The value of a JSX attribute: the string of `edge="flush"`, or the
+ * expression inside `edge={...}`.
+ * @param {any} attribute
+ */
+function attributeValue(attribute) {
+  return attribute.value?.type === 'JSXExpressionContainer'
+    ? attribute.value.expression
+    : attribute.value;
 }
 
 /** @param {any} node */
@@ -114,24 +144,35 @@ export default function transformer(file, api) {
       const opening = propPath.parent?.node;
       const attributes = opening?.attributes ?? [];
       const prop = propPath.node;
-      const hasEdge = attributes.some(
+      const edgeIndex = attributes.findIndex(
         (/** @type {any} */ attribute) =>
           attribute.type === 'JSXAttribute' &&
           attribute.name?.name === NEW_NAME,
       );
-      if (hasEdge) {
-        // `edge` wins at runtime whatever either value is, so the old prop
-        // is inert here and removing it changes nothing.
-        opening.attributes = attributes.filter(
-          (/** @type {any} */ attribute) => attribute !== prop,
-        );
-        hasChanges = true;
+      if (edgeIndex !== -1) {
+        // `edge` wins only when it has a value. A string that no later
+        // spread can override always does, so the old prop is inert and
+        // removing it changes nothing. A computed `edge` may be undefined,
+        // and then the old prop still decides.
+        const isProven =
+          isStringLiteral(attributeValue(attributes[edgeIndex])) &&
+          !attributes
+            .slice(edgeIndex + 1)
+            .some(
+              (/** @type {any} */ attribute) =>
+                attribute.type === 'JSXSpreadAttribute',
+            );
+        if (isProven) {
+          opening.attributes = attributes.filter(
+            (/** @type {any} */ attribute) => attribute !== prop,
+          );
+          hasChanges = true;
+        } else {
+          hasChanges = addComment(j, prop, BOTH_SET_COMMENT) || hasChanges;
+        }
         return;
       }
-      const value =
-        prop.value?.type === 'JSXExpressionContainer'
-          ? prop.value.expression
-          : prop.value;
+      const value = attributeValue(prop);
       if (isInlineLiteral(value)) {
         prop.name.name = NEW_NAME;
         prop.value = j.stringLiteral('outset');

@@ -369,8 +369,9 @@ evidence, not part of this documentation stack.
 | INV9, INV10      | `List.test.tsx` plus real-browser geometry evidence                            | The header moves; a row reads the wrong logical edge, diverges from themed/density padding, applies the wrong bounded movement, or loses paint inset |
 | INV10, INV11     | `TabList.test.tsx` plus real-browser overflow, divider, and indicator evidence | Full host-inset consumption, bounded content movement, divider span, interaction, focus, overflow, scroll controls, or indicator geometry regresses  |
 
-The List evidence must cover each `edge` value in its neutral root with the
-optional header, interactive and static rows, all densities, a theme
+The List evidence must cover each `edge` value in its neutral root and in each
+bounded host List admits (Card, Section, Dialog, BottomSheet), with the optional
+header, interactive and static rows, all densities, a theme
 `item.paddingInline` override, LTR and RTL, host inset smaller than/equal
 to/larger than Item inset, uniform/asymmetric/zero/missing container padding,
 hover/selection paint geometry, and a swiped row under `outset` and `bleed`. TabList uses its separately scoped evidence; Buttons, menu rows, and

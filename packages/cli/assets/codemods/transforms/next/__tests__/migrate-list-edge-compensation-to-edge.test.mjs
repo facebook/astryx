@@ -30,16 +30,34 @@ const a = <Rows edgeCompensation="inline" />;`);
     expect(output).toContain("<Rows edge='outset' />");
   });
 
-  it('drops edgeCompensation when edge is already set, whatever its value', async () => {
+  it('drops edgeCompensation beside an edge string, whatever its value', async () => {
     const output =
       await applyTransform(`import {List} from '@astryxdesign/core/List';
 const a = <List edge="bleed" edgeCompensation="inline" />;
-const b = <List edge="flush" edgeCompensation={mode} />;`);
+const b = <List edge={'flush'} edgeCompensation={mode} />;
+const c = <List {...rest} edge="padded" edgeCompensation="inline" />;`);
 
+    // c: the spread comes before edge, so it cannot override it.
     expect(output).toContain('edge="bleed"');
-    expect(output).toContain('edge="flush"');
+    expect(output).toContain("edge={'flush'}");
+    expect(output).toContain('edge="padded"');
     expect(output).not.toContain('edgeCompensation');
     expect(output).not.toContain('TODO');
+  });
+
+  it('leaves a TODO where edge may be undefined at runtime', async () => {
+    const output =
+      await applyTransform(`import {List} from '@astryxdesign/core/List';
+const a = <List edge={edge} edgeCompensation="inline" />;
+const b = <List edge="flush" {...rest} edgeCompensation="inline" />;
+const c = <List edge={props.edge} edgeCompensation={mode} />;`);
+
+    // a and c: a computed edge falls back to the old prop when undefined.
+    // b: the spread after edge may set it to undefined.
+    expect(output.match(/TODO\(astryx upgrade\)/g)).toHaveLength(3);
+    expect(output.match(/edgeCompensation=/g)).toHaveLength(3);
+    expect(output).toContain('edge={edge}');
+    expect(output).toContain('edge={props.edge}');
   });
 
   it('leaves a TODO on a dynamic value and keeps it working', async () => {
@@ -87,10 +105,11 @@ const c = <div {...props} />;`;
 const a = <List edgeCompensation="inline" />;
 const b = <List edgeCompensation={mode} />;
 const c = <List {...props} edgeCompensation="inline" />;
-const d = <List edge="flush" edgeCompensation="inline" />;`);
+const d = <List edge="flush" edgeCompensation="inline" />;
+const e = <List edge={edge} edgeCompensation="inline" />;`);
     const twice = await applyTransform(once);
 
     expect(twice).toBe(once);
-    expect(twice.match(/TODO\(astryx upgrade\)/g)).toHaveLength(2);
+    expect(twice.match(/TODO\(astryx upgrade\)/g)).toHaveLength(3);
   });
 });
