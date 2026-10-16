@@ -221,6 +221,39 @@ export const Sides: Story = {
   },
 };
 
+export const SelfDirectedRtl: Story = {
+  name: 'Self-applied RTL audit',
+  parameters: {docs: {disable: true}},
+  render: () => {
+    const [isOpen, setIsOpen] = useState(false);
+    return (
+      <>
+        <Button
+          label="Open self-directed RTL drawer"
+          onClick={() => setIsOpen(true)}
+        />
+        <Drawer
+          isOpen={isOpen}
+          onOpenChange={setIsOpen}
+          label="Self-directed RTL details"
+          side="end"
+          dir="rtl">
+          <Layout
+            header={
+              <DrawerHeader title="تفاصيل النشر" onOpenChange={setIsOpen} />
+            }
+            content={
+              <LayoutContent>
+                <Text type="body">The Drawer root owns this RTL region.</Text>
+              </LayoutContent>
+            }
+          />
+        </Drawer>
+      </>
+    );
+  },
+};
+
 /**
  * `width` is the desktop budget: a number of pixels or any CSS length.
  * Narrow the browser below 640px: each width remains an upper bound while

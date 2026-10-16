@@ -2464,6 +2464,37 @@ jobs:
           retention-days: 30
           if-no-files-found: error
 
+      # Drawer audit evidence covers modal/non-modal, both logical sides,
+      # root-owned RTL, purpose, narrow widths, custom theming, padding, and
+      # sibling stacking. Axe and the sensor matrix both run even if one fails.
+      - name: Run Drawer audit browser evidence
+        if: ${{ !cancelled() && github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, '[Component Audit] Drawer:') }}
+        env:
+          ASTRYX_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          status=0
+          node .github/scripts/accessibility-audit.js \
+            --storybook-dir apps/storybook/dist \
+            --output drawer-a11y-report.json \
+            --components Drawer \
+            --baseline .github/a11y-baseline.json \
+            --fail-on-new || status=1
+          pnpm exec playwright test \
+            packages/core/src/Drawer/__tests__/DrawerAudit.a11y.chromium.spec.ts \
+            --project chromium || status=1
+          exit "$status"
+
+      - name: Upload Drawer audit evidence
+        if: always() && github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, '[Component Audit] Drawer:')
+        uses: actions/upload-artifact@v7
+        with:
+          name: drawer-audit-evidence-${{ needs.build-storybook.outputs.short_hash }}
+          path: |
+            drawer-a11y-report.json
+            test-results/drawer-audit-evidence/
+          retention-days: 30
+          if-no-files-found: error
+
       # DateInput's open-state audit story uses a play function to open the
       # popover. Restricting this focused pass to that story lets the selector
       # wait bind axe to the Calendar dialog without making every DateInput story

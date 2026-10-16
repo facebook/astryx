@@ -163,7 +163,7 @@ const styles = stylex.create({
     borderInlineStartColor: colorVars['--color-border'],
     transform: {
       default: 'translateX(100%)',
-      ':is([dir="rtl"] *)': 'translateX(-100%)',
+      ':is([dir="rtl"], [dir="rtl"] *)': 'translateX(-100%)',
     },
   },
   endOpen: {
@@ -171,7 +171,7 @@ const styles = stylex.create({
       default: 'translateX(0)',
       '@starting-style': {
         default: 'translateX(100%)',
-        ':is([dir="rtl"] *)': 'translateX(-100%)',
+        ':is([dir="rtl"], [dir="rtl"] *)': 'translateX(-100%)',
       },
     },
   },
@@ -183,7 +183,7 @@ const styles = stylex.create({
     borderInlineEndColor: colorVars['--color-border'],
     transform: {
       default: 'translateX(-100%)',
-      ':is([dir="rtl"] *)': 'translateX(100%)',
+      ':is([dir="rtl"], [dir="rtl"] *)': 'translateX(100%)',
     },
   },
   startOpen: {
@@ -191,7 +191,7 @@ const styles = stylex.create({
       default: 'translateX(0)',
       '@starting-style': {
         default: 'translateX(-100%)',
-        ':is([dir="rtl"] *)': 'translateX(100%)',
+        ':is([dir="rtl"], [dir="rtl"] *)': 'translateX(100%)',
       },
     },
   },

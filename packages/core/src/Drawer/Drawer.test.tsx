@@ -733,6 +733,22 @@ describe('Drawer', () => {
         expect(screen.getByRole('dialog')).toHaveAttribute('data-side', side);
       },
     );
+
+    it('uses a self-applied RTL direction when placing the closed panel offscreen', () => {
+      render(
+        <Drawer
+          isOpen={false}
+          onOpenChange={() => {}}
+          label="Details"
+          side="end"
+          dir="rtl">
+          Content
+        </Drawer>,
+      );
+      expect(
+        getComputedStyle(screen.getByRole('dialog', {hidden: true})).transform,
+      ).toBe('translateX(-100%)');
+    });
   });
 
   describe('width', () => {
