@@ -75,6 +75,10 @@ import {
 import {useMultiCombobox} from './hooks';
 import {getInputARIA, isImeKeyEvent, mergeProps} from '../utils';
 import {devWarn, warnOnce} from '../utils/devWarning';
+import {
+  getInteractionModality,
+  useInteractionModalityTracking,
+} from '../utils/interactionModality';
 import {useAnnounce} from '../hooks/useAnnounce';
 import {FOCUSABLE_SELECTOR} from '../hooks/focusableSelector';
 import {useAnnounceRenderedText} from '../hooks/useAnnounceRenderedText';
@@ -1787,22 +1791,25 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
     ),
   });
 
-  // A hover moves the highlight too, but the focus ring belongs to keyboard
-  // navigation (architecture:interaction-modality): an action cell a pointer
-  // highlighted keeps the hover treatment and no ring until a key moves the
-  // highlight again.
-  const [isHighlightFromPointer, setIsHighlightFromPointer] = useState(false);
+  // A hover moves the highlight too, but the focus ring follows the shared
+  // interaction modality (architecture:interaction-modality INV1): it is read
+  // whenever a key or the pointer moves the highlight, so an action cell
+  // highlighted after pointer input keeps the hover treatment and no ring.
+  useInteractionModalityTracking();
+  const [isKeyboardHighlight, setIsKeyboardHighlight] = useState(
+    () => getInteractionModality() === 'keyboard',
+  );
   const onKeyDown = useCallback(
     (event: React.KeyboardEvent<HTMLElement>) => {
-      setIsHighlightFromPointer(false);
       onComboboxKeyDown(event);
+      setIsKeyboardHighlight(getInteractionModality() === 'keyboard');
     },
     [onComboboxKeyDown],
   );
   const onItemMouseEnter = useCallback(
     (...args: Parameters<typeof onComboboxItemMouseEnter>) => {
-      setIsHighlightFromPointer(true);
       onComboboxItemMouseEnter(...args);
+      setIsKeyboardHighlight(getInteractionModality() === 'keyboard');
     },
     [onComboboxItemMouseEnter],
   );
@@ -2140,7 +2147,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
                   styles.actionCell,
                   isHighlighted &&
                     highlightedCell === 'action' &&
-                    !isHighlightFromPointer &&
+                    isKeyboardHighlight &&
                     styles.actionCellActive,
                 )}>
                 {isSelectAll || isCreate ? null : item.action}
@@ -2155,7 +2162,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
     [
       isGrid,
       highlightedCell,
-      isHighlightFromPointer,
+      isKeyboardHighlight,
       getActionCellId,
       renderOption,
       indicatorPosition,

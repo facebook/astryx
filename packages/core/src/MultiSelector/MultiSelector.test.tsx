@@ -4125,7 +4125,7 @@ describe('MultiSelector option actions (grid)', () => {
     }
   });
 
-  it('draws no focus ring on an action cell a pointer highlighted, until a key moves the highlight', async () => {
+  it('draws no focus ring on an action cell highlighted after pointer input, until a key moves the highlight', async () => {
     const ring = stylex.create({
       active: {
         outlineWidth: focusVars['--focus-outline-width'],
@@ -4166,6 +4166,80 @@ describe('MultiSelector option actions (grid)', () => {
     for (const token of ringClasses) {
       expect(actionCell).toHaveClass(token);
     }
+  });
+
+  describe('ring under mixed input', () => {
+    const ringClasses = () => {
+      const ring = stylex.create({
+        active: {
+          outlineWidth: focusVars['--focus-outline-width'],
+          outlineStyle: focusVars['--focus-outline-style'],
+          outlineColor: focusVars['--focus-outline-color'],
+          outlineOffset: focusVars['--focus-outline-offset'],
+        },
+      });
+      return stylex
+        .props(ring.active)
+        .className!.split(' ')
+        .filter(token => /^x[a-z0-9]+$/.test(token));
+    };
+    const hasRing = (cell: HTMLElement) =>
+      ringClasses().every(token => cell.classList.contains(token));
+
+    async function openWithKeyboardOnBugAction() {
+      const user = userEvent.setup();
+      render(
+        <MultiSelector
+          label="Labels"
+          options={OPTIONS}
+          value={[]}
+          onChange={() => {}}
+        />,
+      );
+      const trigger = screen.getByRole('combobox', {name: 'Labels'});
+      await user.click(trigger);
+      const row = (name: string) => screen.getByRole('row', {name, ...h});
+      fireEvent.keyDown(trigger, {key: 'ArrowRight'});
+      const bugAction = row('Bug').children[1] as HTMLElement;
+      expect(trigger).toHaveAttribute('aria-activedescendant', bugAction.id);
+      expect(hasRing(bugAction)).toBe(true);
+      return {trigger, row, bugAction};
+    }
+
+    it('keeps the ring when the pointer crosses a disabled option the highlight ignores', async () => {
+      const {trigger, row, bugAction} = await openWithKeyboardOnBugAction();
+      fireEvent.mouseEnter(row('Docs').children[0]);
+      expect(trigger).toHaveAttribute('aria-activedescendant', bugAction.id);
+      expect(hasRing(bugAction)).toBe(true);
+    });
+
+    it('follows the keyboard modality when a hover moves the highlight to another action', async () => {
+      const {trigger, row} = await openWithKeyboardOnBugAction();
+      const docsAction = row('Docs').children[1] as HTMLElement;
+      fireEvent.mouseEnter(docsAction);
+      expect(trigger).toHaveAttribute('aria-activedescendant', docsAction.id);
+      expect(hasRing(docsAction)).toBe(true);
+    });
+
+    it('draws no ring for a modifier chord after pointer input', async () => {
+      const user = userEvent.setup();
+      render(
+        <MultiSelector
+          label="Labels"
+          options={OPTIONS}
+          value={[]}
+          onChange={() => {}}
+        />,
+      );
+      const trigger = screen.getByRole('combobox', {name: 'Labels'});
+      await user.click(trigger);
+      const bugAction = screen.getByRole('row', {name: 'Bug', ...h})
+        .children[1] as HTMLElement;
+      fireEvent.mouseEnter(bugAction);
+      expect(hasRing(bugAction)).toBe(false);
+      fireEvent.keyDown(trigger, {key: 'ArrowRight', ctrlKey: true});
+      expect(hasRing(bugAction)).toBe(false);
+    });
   });
 
   it('the inline-end arrow reaches the action cell, Enter fires it, inline-start returns', async () => {
