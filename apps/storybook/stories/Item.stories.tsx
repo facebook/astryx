@@ -1,8 +1,9 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import {useState} from 'react';
+import {useState, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {Meta, StoryObj} from '@storybook/react';
+import {expect} from 'storybook/test';
 import {Item} from '@astryxdesign/core/Item';
 import {Avatar} from '@astryxdesign/core/Avatar';
 import {Badge} from '@astryxdesign/core/Badge';
@@ -10,6 +11,8 @@ import {Icon} from '@astryxdesign/core/Icon';
 import {Text} from '@astryxdesign/core/Text';
 import {Stack} from '@astryxdesign/core/Layout';
 import {List, ListItem} from '@astryxdesign/core/List';
+import {RadioList, RadioListItem} from '@astryxdesign/core/RadioList';
+import {StatusDot} from '@astryxdesign/core/StatusDot';
 
 const storyStyles = stylex.create({
   iconCircle: {
@@ -40,7 +43,7 @@ const meta: Meta<typeof Item> = {
   component: Item,
   tags: ['autodocs'],
   argTypes: {
-    align: {control: 'select', options: ['center', 'start']},
+    align: {control: 'select', options: ['center', 'start', 'first-line']},
     density: {control: 'select', options: ['compact', 'balanced', 'spacious']},
   },
 };
@@ -277,6 +280,182 @@ export const AlignStart: Story = {
       endContent={<Text color="secondary">Just now</Text>}
     />
   ),
+};
+
+const WRAPPING_TITLE =
+  'Investigate why the session list jumps when a long title wraps onto a second line';
+
+function FirstLineCase({
+  name,
+  dir,
+  children,
+}: {
+  name: string;
+  dir?: 'rtl';
+  children: ReactNode;
+}) {
+  return (
+    <div data-first-line-case={name} dir={dir} style={{inlineSize: 320}}>
+      {children}
+    </div>
+  );
+}
+
+/**
+ * `align="first-line"` centers each start and end slot on the label's first
+ * line: a status dot and an age stay level with the first line of a wrapped
+ * title, a taller slot (an avatar beside a description) moves the text down
+ * instead of leaving the row, and a one-line row looks the same as `center`.
+ * The play function measures every case in a real browser.
+ */
+export const AlignFirstLine: Story = {
+  render: () => {
+    const dot = <StatusDot variant="success" label="Active" />;
+    const age = (
+      <Text type="supporting" color="secondary">
+        12m
+      </Text>
+    );
+    return (
+      <Stack gap={4}>
+        <FirstLineCase name="wrapped">
+          <Item
+            align="first-line"
+            startContent={dot}
+            label={<span>{WRAPPING_TITLE}</span>}
+            endContent={age}
+          />
+        </FirstLineCase>
+        <FirstLineCase name="wrapped-description">
+          <Item
+            align="first-line"
+            startContent={dot}
+            label={<span>{WRAPPING_TITLE}</span>}
+            description="astryx · 3 files changed"
+            endContent={age}
+          />
+        </FirstLineCase>
+        <FirstLineCase name="clamped">
+          <Item
+            align="first-line"
+            startContent={dot}
+            label={WRAPPING_TITLE}
+            labelLines={2}
+            endContent={age}
+          />
+        </FirstLineCase>
+        <FirstLineCase name="compact">
+          <Item
+            align="first-line"
+            density="compact"
+            startContent={dot}
+            label={<span>{WRAPPING_TITLE}</span>}
+            endContent={age}
+          />
+        </FirstLineCase>
+        <FirstLineCase name="spacious">
+          <Item
+            align="first-line"
+            density="spacious"
+            startContent={dot}
+            label={<span>{WRAPPING_TITLE}</span>}
+            endContent={age}
+          />
+        </FirstLineCase>
+        <FirstLineCase name="avatar-description">
+          <Item
+            align="first-line"
+            startContent={<Avatar name="Ada Lovelace" size="lg" />}
+            label="Ada Lovelace"
+            description="Design systems"
+            endContent={age}
+          />
+        </FirstLineCase>
+        <FirstLineCase name="interactive">
+          <Item
+            align="first-line"
+            onClick={() => {}}
+            startContent={dot}
+            label={<span>{WRAPPING_TITLE}</span>}
+            endContent={age}
+          />
+        </FirstLineCase>
+        <FirstLineCase name="rtl" dir="rtl">
+          <Item
+            align="first-line"
+            startContent={dot}
+            label={
+              <span>
+                تحقق من سبب قفز قائمة الجلسات عندما يلتف عنوان طويل إلى سطر ثان
+              </span>
+            }
+            endContent={age}
+          />
+        </FirstLineCase>
+        <FirstLineCase name="list-item">
+          <List>
+            <ListItem
+              align="first-line"
+              startContent={dot}
+              label={<span>{WRAPPING_TITLE}</span>}
+              endContent={age}
+            />
+          </List>
+        </FirstLineCase>
+        <FirstLineCase name="radio-list-item">
+          <RadioList label="Plan" value="team" onChange={() => {}}>
+            <RadioListItem
+              value="team"
+              align="first-line"
+              label={<span>{WRAPPING_TITLE}</span>}
+            />
+          </RadioList>
+        </FirstLineCase>
+      </Stack>
+    );
+  },
+  play: async ({canvasElement}) => {
+    const cases = canvasElement.querySelectorAll<HTMLElement>(
+      '[data-first-line-case]',
+    );
+    expect(cases).toHaveLength(10);
+    for (const testCase of cases) {
+      const row = testCase.querySelector<HTMLElement>('.astryx-item');
+      expect(row?.dataset.align).toBe('first-line');
+      if (row == null) {
+        continue;
+      }
+      const children = [...row.children] as HTMLElement[];
+      const content = children.find(
+        child => getComputedStyle(child).flexGrow === '1',
+      );
+      const label = content?.firstElementChild as HTMLElement | null;
+      expect(label).toBeTruthy();
+      if (content == null || label == null) {
+        continue;
+      }
+      const lineHeight = parseFloat(getComputedStyle(label).lineHeight);
+      const firstLineCenter =
+        label.getBoundingClientRect().top + lineHeight / 2;
+      const rowBox = row.getBoundingClientRect();
+      const contentTop =
+        rowBox.top + parseFloat(getComputedStyle(row).paddingBlockStart);
+      const slots = children.filter(child => child !== content);
+      expect(slots.length).toBeGreaterThan(0);
+      for (const slot of slots) {
+        const mark = (slot.firstElementChild as HTMLElement | null) ?? slot;
+        const box = mark.getBoundingClientRect();
+        // Each slot's center sits on the first line's center...
+        expect(
+          Math.abs(box.top + box.height / 2 - firstLineCenter),
+        ).toBeLessThanOrEqual(0.5);
+        // ...and never rises into the row's padding.
+        expect(slot.getBoundingClientRect().top).toBeGreaterThanOrEqual(
+          contentTop - 0.5,
+        );
+      }
+    }
+  },
 };
 
 /**

@@ -89,6 +89,13 @@ export const docs = {
         'Link relationship tokens. noopener noreferrer are merged automatically for target="_blank".',
     },
     {
+      name: 'align',
+      type: "'center' | 'start' | 'first-line'",
+      description:
+        'Vertical alignment of the start and end content against the label, passed through to Item unchanged. `first-line` keeps a small mark (a status dot, an icon) level with the first line of a wrapped label. See Item.align.',
+      default: "'center'",
+    },
+    {
       name: 'isDisabled',
       type: 'boolean',
       description: 'Disabled state; sets aria-disabled on the item.',
@@ -174,6 +181,13 @@ export const docsZh = {
         '链接关系标记。target="_blank" 会自动合并 noopener noreferrer。',
     },
     {
+      name: 'align',
+      type: "'center' | 'start' | 'first-line'",
+      description:
+        '起始和结束内容相对于标签的垂直对齐方式，原样传递给 Item。`first-line` 让小标记（状态点、图标）与换行标签的第一行保持水平。参见 Item.align。',
+      default: "'center'",
+    },
+    {
       name: 'isDisabled',
       type: 'boolean',
       description: '禁用状态；在项目上设置 aria-disabled。',
@@ -207,6 +221,8 @@ export const docsDense = {
   description:
     'List item w/ label, description, start/end content slots, interactive patterns.',
   propDescriptions: {
+    align:
+      "Start/end content alignment, passed to Item: 'center' (default), 'start', or 'first-line' (centered on the label's first line).",
     label:
       'Primary content. String auto-truncates; ReactNode renders as given.',
     description: 'Secondary text below label.',

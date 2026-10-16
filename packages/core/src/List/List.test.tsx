@@ -18,6 +18,25 @@ import {ListItem} from './ListItem';
 import {ListMarkerScope} from './ListContext';
 
 describe('List', () => {
+  it('forwards ListItem align to its Item row unchanged', () => {
+    render(
+      <List>
+        <ListItem label="Default" data-testid="default" />
+        <ListItem label="Start" align="start" data-testid="start" />
+        <ListItem label="First" align="first-line" data-testid="first" />
+      </List>,
+    );
+    expect(screen.getByTestId('default')).toHaveAttribute(
+      'data-align',
+      'center',
+    );
+    expect(screen.getByTestId('start')).toHaveAttribute('data-align', 'start');
+    expect(screen.getByTestId('first')).toHaveAttribute(
+      'data-align',
+      'first-line',
+    );
+  });
+
   // ===========================================================================
   // Basic rendering
   // ===========================================================================
