@@ -85,7 +85,7 @@ Consumer migration instructions belong in consumer docs and release notes.
 **Does not own / non-goals**
 
 - The `marker` slot's alignment — owned by whoever renders the marker; ListItem
-  markers already sit on the first line.
+  positions its own markers against the first line.
 - Typography of caller content inside `label` — owned by the caller.
 - A theme-wide default alignment — themes style values; they do not choose a
   component's prop default (`architecture:component-theming-surface`).
