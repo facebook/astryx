@@ -342,7 +342,7 @@ export function CheckboxInput({
   // scope marker, the way the indicator's hover tint does.
   const pressable = usePressFeedback();
   const generatedId = useId();
-  const id = idProp ?? generatedId;
+  const id = idProp || generatedId;
   const descriptionID = useId();
   const statusMessageID = useId();
   // Announce the effective required state (form default included) while the

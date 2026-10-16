@@ -228,6 +228,21 @@ describe('CheckboxInput', () => {
     expect(screen.getByLabelText('Accept terms')).toBe(checkbox);
   });
 
+  it('generates an id the label resolves when the caller passes an empty id', () => {
+    render(
+      <CheckboxInput
+        id=""
+        label="Accept terms"
+        value={false}
+        onChange={() => {}}
+      />,
+    );
+
+    const checkbox = screen.getByRole('checkbox');
+    expect(checkbox.id).not.toBe('');
+    expect(screen.getByLabelText('Accept terms')).toBe(checkbox);
+  });
+
   it('forwards arbitrary data-* attributes to the input', () => {
     render(
       <CheckboxInput
