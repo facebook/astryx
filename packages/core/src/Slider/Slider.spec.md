@@ -34,7 +34,8 @@ an additive target for the interactive control surface.
 
 ## Compatibility and migration
 
-- Released default preserved: `yes`
+- Released default preserved: `no` — FR5 changes the released `onChangeEnd`
+  payload; every other released default is unchanged
 - Compatibility class: additive target and state reflection; default styling,
   DOM semantics, and public props remain unchanged, and the one keyboard change
   AR1 names — the horizontal arrows follow the track's direction under RTL —
