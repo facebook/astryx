@@ -8,7 +8,7 @@ export const doc = {
   namespace: 'cli/commands',
   summary: 'Add one working contribution to an integration package',
   description:
-    'Writes the files one contribution needs, creates the integration manifest on first use, and declares a root only after a contribution the CLI can read exists behind it. A component or template import also needs an `exports` entry: add writes one only when package.json already has an `exports` map, so start a new package with `"exports": {}`. See {@link generic:quick-start}.',
+    'Writes the files one contribution needs, creates the integration manifest on first use, and declares a root only after a contribution the CLI can read exists behind it. A component or template import also needs an `exports` entry: add writes one only when package.json already has an `exports` map, so start a new package with `"exports": {}`. The first component, template, or theme add also writes `"@astryxdesign/core": "^<installed>"` as a peer dependency when no Core peer exists yet; doc, codemod, and agent-doc adds do not. A `peerDependencies` field that is not an object is never rewritten: theme and doc --parent adds refuse it, and component and template adds leave it and write no Core peer. See {@link generic:quick-start}.',
   fn: 'integrationAdd',
   args: [
     {

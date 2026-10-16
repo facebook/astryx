@@ -98,6 +98,7 @@ export const JSON_SUPPORTED = new Set([
   'theme targets',
   'theme palette generate',
   'integration add',
+  'integration init',
   'integration verify',
   'integration pack',
   'upgrade',

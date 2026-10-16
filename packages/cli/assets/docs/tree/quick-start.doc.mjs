@@ -34,20 +34,20 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: 'An integration starts as a normal npm package. Make a folder for it, create a package.json inside that folder, give the package a name, then install the Astryx CLI and Core for development.',
+          text: 'An integration starts as a normal npm package. Make a folder, then run `integration init` inside it to set up the package.json and install the CLI and Core.',
         },
         {
           type: 'code',
           lang: 'bash',
-          code: "mkdir acme-widgets && cd acme-widgets\nnpm init -y\nnpm pkg set name=@acme/astryx-widgets\nnpm pkg set 'exports={}' --json\nnpm install -D @astryxdesign/cli @astryxdesign/core",
+          code: "mkdir acme-widgets && cd acme-widgets\nnpx @astryxdesign/cli integration init @acme/astryx-widgets",
         },
         {
           type: 'list',
           style: 'unordered',
           items: [
+            '`integration init` sets up the package.json and installs the CLI and Core; {@link command:integration init} lists what it writes.',
             'Start with `"exports": {}`: each component and template you add then writes the public import that `integration verify` resolves.',
             'Run the CLI as `npx astryx`, which runs the `@astryxdesign/cli` you installed as a devDependency.',
-            'Component commands read Core, so they need `@astryxdesign/core` installed.',
           ],
         },
         {

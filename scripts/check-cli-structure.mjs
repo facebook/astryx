@@ -447,6 +447,7 @@ const INV21_KNOWN_GAPS = new Map([
   ['integration/add-helpers.mjs', new Set(['fs'])],
   ['integration/add-theme.mjs', new Set(['fs', 'discovery'])],
   ['integration/authoring-checks.mjs', new Set(['discovery'])],
+  ['integration/init.mjs', new Set(['fs', 'child_process'])],
   ['integration/pack-check.mjs', new Set(['fs', 'child_process', 'discovery'])],
   ['integration/validate-integration.mjs', new Set(['fs', 'discovery'])],
   // remove with the layout command

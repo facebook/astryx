@@ -981,4 +981,288 @@ describe('dry-run receipts match the real write', () => {
       });
     }
   }
+
+describe('malformed peerDependencies with no peer write succeeds', () => {
+  for (const badPeers of ['react', ['react'], 42]) {
+    const label = Array.isArray(badPeers) ? 'array' : typeof badPeers;
+
+    it(`component: malformed peerDependencies (${label}) succeeds unchanged`, async () => {
+      setup({exports: {}});
+      const pkgFile = path.join(tmpDir, 'package.json');
+      const pkg = JSON.parse(fs.readFileSync(pkgFile, 'utf-8'));
+      pkg.peerDependencies = badPeers;
+      fs.writeFileSync(pkgFile, JSON.stringify(pkg, null, 2) + '\n');
+
+      // Core installed, but withCorePeer skips silently on bad shape
+      const coreDir = path.join(tmpDir, 'node_modules', '@astryxdesign', 'core');
+      fs.mkdirSync(coreDir, {recursive: true});
+      fs.writeFileSync(path.join(coreDir, 'package.json'), '{"name":"@astryxdesign/core","version":"0.6.6"}');
+
+      const receipt = await integrationAddComponent('TestWidget', {cwd: tmpDir});
+
+      expect(receipt.data.kind).toBe('component');
+      // peerDependencies untouched
+      const after = JSON.parse(fs.readFileSync(pkgFile, 'utf-8'));
+      expect(after.peerDependencies).toEqual(badPeers);
+      // Files written
+      expect(fs.existsSync(path.join(tmpDir, 'components', 'TestWidget.tsx'))).toBe(true);
+    });
+
+    it(`template: malformed peerDependencies (${label}) succeeds unchanged`, async () => {
+      setup({exports: {}});
+      const pkgFile = path.join(tmpDir, 'package.json');
+      const pkg = JSON.parse(fs.readFileSync(pkgFile, 'utf-8'));
+      pkg.peerDependencies = badPeers;
+      fs.writeFileSync(pkgFile, JSON.stringify(pkg, null, 2) + '\n');
+
+      const coreDir = path.join(tmpDir, 'node_modules', '@astryxdesign', 'core');
+      fs.mkdirSync(coreDir, {recursive: true});
+      fs.writeFileSync(path.join(coreDir, 'package.json'), '{"name":"@astryxdesign/core","version":"0.6.6"}');
+
+      const receipt = await integrationAddTemplate('test-tpl', {cwd: tmpDir});
+
+      expect(receipt.data.kind).toMatch(/template|block/);
+      const after = JSON.parse(fs.readFileSync(pkgFile, 'utf-8'));
+      expect(after.peerDependencies).toEqual(badPeers);
+      expect(fs.existsSync(path.join(tmpDir, 'templates', 'test-tpl.doc.mjs'))).toBe(true);
+    });
+  }
 });
+
+describe('withCliPeer peerDependencies guard (doc --parent)', () => {
+  for (const badPeers of ['react', ['react'], 42]) {
+    const label = Array.isArray(badPeers) ? 'array' : typeof badPeers;
+
+    it(`refuses non-object peerDependencies (${label})`, async () => {
+      setup({exports: {}});
+      const pkgFile = path.join(tmpDir, 'package.json');
+      const pkg = JSON.parse(fs.readFileSync(pkgFile, 'utf-8'));
+      pkg.peerDependencies = badPeers;
+      fs.writeFileSync(pkgFile, JSON.stringify(pkg, null, 2) + '\n');
+      const before = fs.readFileSync(pkgFile);
+
+      await expect(
+        integrationAddDoc('my-guide', {cwd: tmpDir, parent: 'acme'}),
+      ).rejects.toMatchObject({code: 'ERR_INVALID_ARGUMENT'});
+
+      // package.json byte-identical
+      expect(fs.readFileSync(pkgFile).equals(before)).toBe(true);
+      // No doc files written
+      expect(fs.existsSync(path.join(tmpDir, 'docs', 'my-guide.doc.mjs'))).toBe(false);
+    });
+  }
+});
+
+
+
+describe('withCorePeer Core peer write on first add', () => {
+  function installCore(dir) {
+    const coreDir = path.join(dir, 'node_modules', '@astryxdesign', 'core');
+    fs.mkdirSync(coreDir, {recursive: true});
+    fs.writeFileSync(
+      path.join(coreDir, 'package.json'),
+      '{"name":"@astryxdesign/core","version":"0.6.6"}',
+    );
+  }
+
+  it('add component writes Core peer ^0.6.6 when none exists', async () => {
+    setup({exports: {}});
+    installCore(tmpDir);
+
+    await integrationAddComponent('PeerWidget', {cwd: tmpDir});
+
+    const pkg = JSON.parse(fs.readFileSync(path.join(tmpDir, 'package.json'), 'utf-8'));
+    expect(pkg.peerDependencies?.['@astryxdesign/core']).toBe('^0.6.6');
+  });
+
+  it('add template writes Core peer ^0.6.6 when none exists', async () => {
+    setup({exports: {}});
+    installCore(tmpDir);
+
+    await integrationAddTemplate('peer-tpl', {cwd: tmpDir});
+
+    const pkg = JSON.parse(fs.readFileSync(path.join(tmpDir, 'package.json'), 'utf-8'));
+    expect(pkg.peerDependencies?.['@astryxdesign/core']).toBe('^0.6.6');
+  });
+
+  it('preserves an existing author Core peer range', async () => {
+    setup({exports: {}});
+    installCore(tmpDir);
+    const pkgFile = path.join(tmpDir, 'package.json');
+    const pkg = JSON.parse(fs.readFileSync(pkgFile, 'utf-8'));
+    pkg.peerDependencies = {'@astryxdesign/core': '>=0.5'};
+    fs.writeFileSync(pkgFile, JSON.stringify(pkg, null, 2) + '\n');
+
+    await integrationAddComponent('KeepRange', {cwd: tmpDir});
+
+    const after = JSON.parse(fs.readFileSync(pkgFile, 'utf-8'));
+    expect(after.peerDependencies['@astryxdesign/core']).toBe('>=0.5');
+  });
+
+  it('writes no Core peer when Core is not installed', async () => {
+    setup({exports: {}});
+    // No installCore call
+
+    await integrationAddComponent('NoCoreWidget', {cwd: tmpDir});
+
+    const pkg = JSON.parse(fs.readFileSync(path.join(tmpDir, 'package.json'), 'utf-8'));
+    expect(pkg.peerDependencies?.['@astryxdesign/core']).toBeUndefined();
+  });
+
+  it('add doc writes no Core peer', async () => {
+    setup({exports: {}});
+    installCore(tmpDir);
+
+    await integrationAddDoc('no-core-guide', {cwd: tmpDir});
+
+    const pkg = JSON.parse(fs.readFileSync(path.join(tmpDir, 'package.json'), 'utf-8'));
+    expect(pkg.peerDependencies?.['@astryxdesign/core']).toBeUndefined();
+  });
+
+  it('second add component does not overwrite the existing Core peer', async () => {
+    setup({exports: {}});
+    installCore(tmpDir);
+
+    await integrationAddComponent('First', {cwd: tmpDir});
+
+    const pkg1 = JSON.parse(fs.readFileSync(path.join(tmpDir, 'package.json'), 'utf-8'));
+    expect(pkg1.peerDependencies['@astryxdesign/core']).toBe('^0.6.6');
+
+    // Bump installed Core to 0.6.7 between the two adds
+    fs.writeFileSync(
+      path.join(tmpDir, 'node_modules', '@astryxdesign', 'core', 'package.json'),
+      '{"name":"@astryxdesign/core","version":"0.6.7"}',
+    );
+
+    await integrationAddComponent('Second', {cwd: tmpDir});
+
+    const pkg2 = JSON.parse(fs.readFileSync(path.join(tmpDir, 'package.json'), 'utf-8'));
+    expect(pkg2.peerDependencies['@astryxdesign/core']).toBe('^0.6.6');
+  });
+});
+
+describe('withCorePeer: existing peers, hoisted Core, and kinds that write none', () => {
+  /**
+   * @param {string} dir
+   * @param {string} version
+   * @param {object} [extra] more package.json fields
+   */
+  function installCoreAt(dir, version, extra = {}) {
+    const coreDir = path.join(dir, 'node_modules', '@astryxdesign', 'core');
+    fs.mkdirSync(coreDir, {recursive: true});
+    fs.writeFileSync(
+      path.join(coreDir, 'package.json'),
+      JSON.stringify({name: '@astryxdesign/core', version, ...extra}),
+    );
+  }
+
+  /** @param {Record<string, unknown>} fields */
+  function patchPkg(fields) {
+    const pkgFile = path.join(tmpDir, 'package.json');
+    const pkg = JSON.parse(fs.readFileSync(pkgFile, 'utf-8'));
+    fs.writeFileSync(pkgFile, JSON.stringify({...pkg, ...fields}, null, 2) + '\n');
+  }
+
+  function readPkg(dir = tmpDir) {
+    return JSON.parse(fs.readFileSync(path.join(dir, 'package.json'), 'utf-8'));
+  }
+
+  it('an existing empty-string Core peer is not overwritten', async () => {
+    setup({exports: {}});
+    installCoreAt(tmpDir, '0.6.6');
+    patchPkg({peerDependencies: {'@astryxdesign/core': ''}});
+
+    await integrationAddComponent('EmptyRange', {cwd: tmpDir});
+
+    expect(readPkg().peerDependencies).toEqual({'@astryxdesign/core': ''});
+  });
+
+  it('template: preserves an existing author Core peer range', async () => {
+    setup({exports: {}});
+    installCoreAt(tmpDir, '0.6.6');
+    patchPkg({peerDependencies: {'@astryxdesign/core': '>=0.5'}});
+
+    await integrationAddTemplate('keep-range', {cwd: tmpDir});
+
+    expect(readPkg().peerDependencies['@astryxdesign/core']).toBe('>=0.5');
+  });
+
+  it('second add template does not overwrite the Core peer the first wrote', async () => {
+    setup({exports: {}});
+    installCoreAt(tmpDir, '0.6.6');
+
+    await integrationAddTemplate('first-tpl', {cwd: tmpDir});
+    expect(readPkg().peerDependencies['@astryxdesign/core']).toBe('^0.6.6');
+
+    installCoreAt(tmpDir, '0.6.7');
+    await integrationAddTemplate('second-tpl', {cwd: tmpDir});
+
+    expect(readPkg().peerDependencies['@astryxdesign/core']).toBe('^0.6.6');
+  });
+
+  it('doc --parent writes the CLI peer but no Core peer', async () => {
+    setup({exports: {}});
+    installCoreAt(tmpDir, '0.6.6');
+
+    await integrationAddDoc('placed-guide', {cwd: tmpDir, parent: 'acme'});
+
+    const pkg = readPkg();
+    expect(pkg.peerDependencies).toEqual({'@astryxdesign/cli': `>=${NAMESPACE_DOCS_CLI}`});
+    expect(pkg.peerDependencies).not.toHaveProperty(['@astryxdesign/core']);
+  });
+
+  it('reads a Core a workspace hoisted to an ancestor (symlinked node_modules)', async () => {
+    // tmpDir is the workspace root; its node_modules/@astryxdesign is a
+    // symlink into a store. The package has no node_modules of its own, and
+    // Core's exports map hides ./package.json, as the real one does.
+    const store = path.join(tmpDir, 'store');
+    installCoreAt(store, '0.6.9', {exports: {'.': './index.js'}});
+    fs.mkdirSync(path.join(tmpDir, 'node_modules'), {recursive: true});
+    fs.symlinkSync(
+      path.join(store, 'node_modules', '@astryxdesign'),
+      path.join(tmpDir, 'node_modules', '@astryxdesign'),
+      'dir',
+    );
+    const pkgDir = path.join(tmpDir, 'packages', 'widgets');
+    fs.mkdirSync(pkgDir, {recursive: true});
+    fs.writeFileSync(
+      path.join(pkgDir, 'package.json'),
+      JSON.stringify({name: '@acme/widgets', version: '1.0.0', files: ['dist'], exports: {}}, null, 2) + '\n',
+    );
+    fs.writeFileSync(path.join(pkgDir, 'astryx.integration.mjs'), 'export default {};\n');
+    expect(fs.existsSync(path.join(pkgDir, 'node_modules'))).toBe(false);
+
+    await integrationAddComponent('HoistedWidget', {cwd: pkgDir});
+
+    expect(readPkg(pkgDir).peerDependencies).toEqual({'@astryxdesign/core': '^0.6.9'});
+  });
+});
+
+});
+describe('peerDependenciesMeta guard (doc --parent)', () => {
+  for (const badMeta of ['x', ['x'], 42, true]) {
+    const label = Array.isArray(badMeta) ? 'array' : typeof badMeta;
+
+    it(`refuses non-object peerDependenciesMeta (${label})`, async () => {
+      setup({exports: {}});
+      const pkgFile = path.join(tmpDir, 'package.json');
+      const pkg = JSON.parse(fs.readFileSync(pkgFile, 'utf-8'));
+      pkg.peerDependenciesMeta = badMeta;
+      fs.writeFileSync(pkgFile, JSON.stringify(pkg, null, 2) + '\n');
+      const before = fs.readFileSync(pkgFile);
+      const filesBefore = fs.readdirSync(tmpDir, {recursive: true}).map(String).sort();
+
+      await expect(
+        integrationAddDoc('my-guide', {cwd: tmpDir, parent: 'acme'}),
+      ).rejects.toMatchObject({
+        code: 'ERR_INVALID_ARGUMENT',
+        message: expect.stringContaining('peerDependenciesMeta must be an object'),
+      });
+
+      expect(fs.readFileSync(pkgFile).equals(before)).toBe(true);
+      // No stray files: the refusal happens before anything is written.
+      expect(fs.readdirSync(tmpDir, {recursive: true}).map(String).sort()).toEqual(filesBefore);
+    });
+  }
+});
+

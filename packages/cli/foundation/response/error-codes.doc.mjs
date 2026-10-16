@@ -132,6 +132,11 @@ export const doc = {
         'A package export already maps a generated contribution subpath to a different target.',
     },
     {
+      value: 'ERR_INSTALL_FAILED',
+      description:
+        'A package-manager install could not be started, exited non-zero, or timed out.',
+    },
+    {
       value: 'ERR_UNKNOWN_PACKAGE',
       description: 'No package matched the requested name.',
     },

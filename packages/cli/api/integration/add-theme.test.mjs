@@ -673,4 +673,116 @@ describe('integrationAddTheme --from', () => {
       '@astryxdesign/cli': {optional: true},
     });
   });
+
+describe('withCorePeer peerDependencies guard (theme)', () => {
+  for (const badPeers of ['react', ['react'], 42]) {
+    const label = Array.isArray(badPeers) ? 'array' : typeof badPeers;
+
+    it(`refuses non-object peerDependencies (${label})`, async () => {
+      setup();
+      const pkgFile = path.join(tmpDir, 'package.json');
+      const pkg = JSON.parse(fs.readFileSync(pkgFile, 'utf-8'));
+      pkg.peerDependencies = badPeers;
+      fs.writeFileSync(pkgFile, JSON.stringify(pkg, null, 2) + '\n');
+      const before = fs.readFileSync(pkgFile);
+
+      const coreDir = path.join(tmpDir, 'node_modules', '@astryxdesign', 'core');
+      fs.mkdirSync(coreDir, {recursive: true});
+      fs.writeFileSync(path.join(coreDir, 'package.json'), '{"name":"@astryxdesign/core","version":"0.6.6"}');
+
+      await expect(
+        integrationAddTheme('ocean', {cwd: tmpDir}),
+      ).rejects.toMatchObject({code: 'ERR_INVALID_ARGUMENT'});
+
+      // package.json byte-identical
+      expect(fs.readFileSync(pkgFile).equals(before)).toBe(true);
+      // No theme files and no manifest change
+      expect(fs.existsSync(path.join(tmpDir, 'themes'))).toBe(false);
+      expect(
+        fs.readFileSync(path.join(tmpDir, 'astryx.integration.mjs'), 'utf-8'),
+      ).toBe('export default {};\n');
+    });
+  }
 });
+
+describe('withCorePeer Core peer write on first theme add', () => {
+  function installCore(dir) {
+    const coreDir = path.join(dir, 'node_modules', '@astryxdesign', 'core');
+    fs.mkdirSync(coreDir, {recursive: true});
+    fs.writeFileSync(
+      path.join(coreDir, 'package.json'),
+      '{"name":"@astryxdesign/core","version":"0.6.6"}',
+    );
+  }
+
+  it('add theme writes Core peer ^0.6.6 when none exists', async () => {
+    setup();
+    installCore(tmpDir);
+
+    await integrationAddTheme('ocean', {cwd: tmpDir});
+
+    const pkg = JSON.parse(fs.readFileSync(path.join(tmpDir, 'package.json'), 'utf-8'));
+    expect(pkg.peerDependencies?.['@astryxdesign/core']).toBe('^0.6.6');
+  });
+
+  it('preserves an existing author Core peer range', async () => {
+    setup();
+    installCore(tmpDir);
+    const pkgFile = path.join(tmpDir, 'package.json');
+    const pkg = JSON.parse(fs.readFileSync(pkgFile, 'utf-8'));
+    pkg.peerDependencies = {'@astryxdesign/core': '>=0.5'};
+    fs.writeFileSync(pkgFile, JSON.stringify(pkg, null, 2) + '\n');
+
+    await integrationAddTheme('ocean', {cwd: tmpDir});
+
+    const after = JSON.parse(fs.readFileSync(pkgFile, 'utf-8'));
+    expect(after.peerDependencies['@astryxdesign/core']).toBe('>=0.5');
+  });
+
+  it('second add theme does not overwrite the Core peer the first wrote', async () => {
+    setup();
+    installCore(tmpDir);
+    const pkgFile = path.join(tmpDir, 'package.json');
+
+    await integrationAddTheme('ocean', {cwd: tmpDir});
+    expect(JSON.parse(fs.readFileSync(pkgFile, 'utf-8')).peerDependencies['@astryxdesign/core']).toBe('^0.6.6');
+
+    fs.writeFileSync(
+      path.join(tmpDir, 'node_modules', '@astryxdesign', 'core', 'package.json'),
+      '{"name":"@astryxdesign/core","version":"0.6.7"}',
+    );
+    await integrationAddTheme('forest', {cwd: tmpDir});
+
+    expect(JSON.parse(fs.readFileSync(pkgFile, 'utf-8')).peerDependencies['@astryxdesign/core']).toBe('^0.6.6');
+  });
+});
+
+
+});
+describe('peerDependenciesMeta guard (theme)', () => {
+  for (const badMeta of ['x', ['x'], 42, true]) {
+    const label = Array.isArray(badMeta) ? 'array' : typeof badMeta;
+
+    it(`refuses non-object peerDependenciesMeta (${label})`, async () => {
+      setup();
+      const pkgFile = path.join(tmpDir, 'package.json');
+      const pkg = JSON.parse(fs.readFileSync(pkgFile, 'utf-8'));
+      pkg.peerDependenciesMeta = badMeta;
+      fs.writeFileSync(pkgFile, JSON.stringify(pkg, null, 2) + '\n');
+      const before = fs.readFileSync(pkgFile);
+      const filesBefore = fs.readdirSync(tmpDir, {recursive: true}).map(String).sort();
+
+      await expect(
+        integrationAddTheme('ocean', {cwd: tmpDir}),
+      ).rejects.toMatchObject({
+        code: 'ERR_INVALID_ARGUMENT',
+        message: expect.stringContaining('peerDependenciesMeta must be an object'),
+      });
+
+      expect(fs.readFileSync(pkgFile).equals(before)).toBe(true);
+      // No stray files: the refusal happens before anything is written.
+      expect(fs.readdirSync(tmpDir, {recursive: true}).map(String).sort()).toEqual(filesBefore);
+    });
+  }
+});
+
