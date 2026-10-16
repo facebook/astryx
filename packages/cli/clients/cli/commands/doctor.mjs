@@ -174,6 +174,50 @@ function printTemplateConflicts(data) {
 }
 
 /**
+ * The documented-props comparison: a visible line when it was skipped, the
+ * findings (all warnings), the components it could not read, or an [ok]
+ * (never after a failed check).
+ * @param {import('../../../api/integration/authoring-checks.type.mjs').PropDriftReport | undefined} report
+ * @param {boolean} failed
+ */
+function propDriftBlocks(report, failed) {
+  if (!report) return [];
+  if (report.status === 'skipped') {
+    return [text(`[skip] Props not compared: ${report.reason}`)];
+  }
+  const blocks = [];
+  if (report.findings.length > 0) {
+    const components = new Set(report.findings.map(f => f.component)).size;
+    blocks.push(
+      records(report.findings, {
+        fields: ['severity', 'component', 'prop', 'kind', 'message', 'doc'],
+        format: {severity: statusToken},
+      }),
+      text(
+        `${report.findings.length} documented prop(s) differ from the code in ${components} component(s). ` +
+          'These are warnings: update the doc, or the code if the doc is right.',
+      ),
+    );
+  }
+  if (report.unchecked.length > 0) {
+    blocks.push(
+      text(
+        `[info] Props not compared for ${report.unchecked.length} documented component(s):`,
+      ),
+      records(report.unchecked, {fields: ['component', 'doc', 'reason']}),
+    );
+  }
+  if (report.findings.length === 0 && !failed && report.components > 0) {
+    blocks.push(
+      text(
+        `[ok] Documented prop names and required flags match the code in ${report.components} component(s) (TypeScript ${report.typescript}).`,
+      ),
+    );
+  }
+  return blocks;
+}
+
+/**
  * @param {import('../../../api/integration/authoring-checks.type.mjs').IntegrationComponentConflictResponse['data']} data
  */
 function printComponentConflicts(data) {
@@ -186,7 +230,8 @@ function printComponentConflicts(data) {
   // An [ok] after a failed check reads as a pass: say nothing it could not check.
   const failed = data.issues.some(issue => issue.severity === 'error');
   if (data.conflicts.length === 0) {
-    if (!failed) output.push(text('[ok] No component names conflict with Core.'));
+    if (!failed)
+      output.push(text('[ok] No component names conflict with Core.'));
   } else {
     output.push(
       records(data.conflicts, {
@@ -205,6 +250,7 @@ function printComponentConflicts(data) {
       ),
     );
   }
+  output.push(...propDriftBlocks(data.propDrift, failed));
   emit(...output);
 }
 
