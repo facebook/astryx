@@ -42,10 +42,11 @@ an additive target for the interactive control surface.
 - `onChangeEnd` payload (FR5): a new contract decision (`spec:AST-017/FR33`),
   not a correction. Released victim: an owner that moves `value` only from
   `onChangeEnd`, with no `onChange`, moves by keyboard today and does not under
-  FR5, so the change ships as `[breaking]` in a declared minor
-  (`spec:AST-017/FR32`). Migration: move the value from `onChange`.
+  FR5, so the change is breaking (`spec:AST-017/FR1`) and ships as
+  `[breaking]` in a declared minor (`spec:AST-017/FR31`).
 - Controlled/uncontrolled behavior: unchanged; Slider remains controlled
-- Migration decision: none
+- Migration decision: an owner that moves `value` only from `onChangeEnd`
+  moves it from `onChange` instead (FR5)
 
 Consumer migration instructions belong in consumer docs and release notes.
 
