@@ -1630,6 +1630,56 @@ jobs:
           retention-days: 30
           if-no-files-found: warn
 
+      # The menu contract's role and name, item roles, and the arrow, Home/End,
+      # typeahead, Enter, Escape and Tab transitions are accessibility-tree and
+      # real-browser facts that jsdom cannot observe. Run the contract's own
+      # fixture proof and the DropdownMenu pointer-menu binding whenever
+      # DropdownMenu source, the binding's stories, or the contract changes.
+      # Its own --output directory; the JSON report is the head-bound record,
+      # uploaded next.
+      - name: Run Menu accessibility contract
+        id: menu-contract
+        if: ${{ !cancelled() && github.event_name == 'pull_request' }}
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PLAYWRIGHT_JSON_OUTPUT_FILE: menu-contract/report.json
+        run: |
+          should_run=false
+          # DropdownMenu and the contract are matched by file name.
+          # The helper comes from the base, since an older PR head lacks it.
+          # Exit 1 means out of scope; 0 in scope; 2 unknown, so run.
+          scope=2
+          helper="$(mktemp)"
+          if git fetch --quiet --no-tags --depth=1 origin "$BASE_SHA" \
+            && git show "$BASE_SHA:.github/scripts/pr-scope-touches.sh" > "$helper"; then
+            scope=0
+            bash "$helper" "$BASE_SHA" \
+              '^(internal/a11y-spec/src/patterns/menu\.|packages/core/src/DropdownMenu/|apps/storybook/stories/MenuA11y)' || scope=$?
+          fi
+          if [ "$scope" != 1 ]; then
+            should_run=true
+          fi
+          echo "should_run=${should_run}" >> "$GITHUB_OUTPUT"
+          if [ "$should_run" != true ]; then
+            echo "DropdownMenu and the menu contract are not in PR scope; skipping menu evidence."
+            exit 0
+          fi
+          pnpm exec playwright test \
+            internal/a11y-spec/src/patterns/menu.chromium.spec.ts \
+            packages/core/src/DropdownMenu/__tests__/Menu.a11y.chromium.spec.ts \
+            --project chromium \
+            --reporter list,json \
+            --output menu-contract-output
+
+      - name: Upload Menu accessibility contract evidence
+        if: ${{ !cancelled() && steps.menu-contract.outputs.should_run == 'true' }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: menu-contract-evidence-${{ needs.build-storybook.outputs.short_hash }}
+          path: menu-contract/
+          retention-days: 30
+          if-no-files-found: warn
+
       # The accordion contract's header role and name, the page Tab step between
       # headers, the absence of arrow-key focus movement, and the single-expansion
       # sibling collapse are accessibility-tree and real-browser facts that jsdom

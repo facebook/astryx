@@ -166,6 +166,7 @@ export {
   MENU_BUTTON_PATTERN,
   type MenuButtonStateFacts,
 } from './patterns/menu-button';
+export {MENU_PATTERN, type MenuStateFacts} from './patterns/menu';
 export {
   LINK_PATTERN,
   type LinkCurrentToken,
