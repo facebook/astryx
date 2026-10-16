@@ -571,8 +571,18 @@
       "aliases": []
     },
     {
+      "name": "component-lab-comment-pin",
+      "path": "components/lab/comment-pin",
+      "aliases": []
+    },
+    {
       "name": "component-lab-diff-viewer",
       "path": "components/lab/diff-viewer",
+      "aliases": []
+    },
+    {
+      "name": "component-lab-emoji-picker",
+      "path": "components/lab/emoji-picker",
       "aliases": []
     },
     {
@@ -1885,6 +1895,11 @@
       "aliases": []
     },
     {
+      "name": "example-comment-pin-host-owned-placement",
+      "path": "examples/comment-pin/host-owned-placement",
+      "aliases": []
+    },
+    {
       "name": "example-complex-selector-deadline-picker",
       "path": "examples/complex-selector/deadline-picker",
       "aliases": []
@@ -2077,6 +2092,11 @@
     {
       "name": "example-dropdown-menu-submenu",
       "path": "examples/dropdown-menu/submenu",
+      "aliases": []
+    },
+    {
+      "name": "example-emoji-picker-in-a-popover",
+      "path": "examples/emoji-picker/in-a-popover",
       "aliases": []
     },
     {
@@ -3715,6 +3735,11 @@
       "aliases": []
     },
     {
+      "name": "hook-use-combobox",
+      "path": "hooks/use-combobox",
+      "aliases": []
+    },
+    {
       "name": "hook-use-container-reveal",
       "path": "hooks/use-container-reveal",
       "aliases": []
@@ -3822,6 +3847,11 @@
     {
       "name": "hook-use-merged-refs",
       "path": "hooks/use-merged-refs",
+      "aliases": []
+    },
+    {
+      "name": "hook-use-multi-combobox",
+      "path": "hooks/use-multi-combobox",
       "aliases": []
     },
     {
@@ -4230,6 +4260,11 @@
       "aliases": []
     },
     {
+      "name": "showcase-comment-pin-avatar-first-annotations",
+      "path": "showcases/comment-pin/avatar-first-annotations",
+      "aliases": []
+    },
+    {
       "name": "showcase-complex-selector-default",
       "path": "showcases/complex-selector/default",
       "aliases": []
@@ -4302,6 +4337,11 @@
     {
       "name": "showcase-dropdown-menu-default",
       "path": "showcases/dropdown-menu/default",
+      "aliases": []
+    },
+    {
+      "name": "showcase-emoji-picker-inline-picker",
+      "path": "showcases/emoji-picker/inline-picker",
       "aliases": []
     },
     {

@@ -1718,5 +1718,69 @@
   "@astryx.transferListSelector.triggerLabel": {
     "defaultMessage": "{count, number} selected",
     "description": "Default summary on the closed trigger of a lab TransferListSelector, stating how many options are currently chosen. Consumers usually override this with a domain phrase (e.g. \"7 columns\")."
+  },
+  "@astryx.emojiPicker.label": {
+    "defaultMessage": "Emoji",
+    "description": "Default accessible name of the scrolling list of emoji in a lab EmojiPicker, and the footer text when no emoji is hovered or focused."
+  },
+  "@astryx.emojiPicker.searchLabel": {
+    "defaultMessage": "Search emoji",
+    "description": "Default placeholder and hidden label of the search field of a lab EmojiPicker."
+  },
+  "@astryx.emojiPicker.frequentlyUsed": {
+    "defaultMessage": "Frequently used",
+    "description": "Heading of the first group in a lab EmojiPicker, the host's frequent or recent emoji."
+  },
+  "@astryx.emojiPicker.searchResults": {
+    "defaultMessage": "Search results",
+    "description": "Heading of the single group a lab EmojiPicker shows while its search field has text."
+  },
+  "@astryx.emojiPicker.noResults": {
+    "defaultMessage": "No emoji match “{query}”",
+    "description": "Shown in a lab EmojiPicker when no emoji name or keyword matches the search. `query` is the search text."
+  },
+  "@astryx.emojiPicker.loading": {
+    "defaultMessage": "Loading emoji",
+    "description": "Accessible name of the spinner a lab EmojiPicker shows while its bundled emoji set loads."
+  },
+  "@astryx.emojiPicker.loadFailed": {
+    "defaultMessage": "More emoji couldn't be loaded.",
+    "description": "Shown in a lab EmojiPicker when its bundled emoji set failed to load; the frequent emoji still show."
+  },
+  "@astryx.emojiPicker.groupSmileysEmotion": {
+    "defaultMessage": "Smileys & emotion",
+    "description": "Heading of the Unicode CLDR emoji group of faces and emotions in a lab EmojiPicker."
+  },
+  "@astryx.emojiPicker.groupPeopleBody": {
+    "defaultMessage": "People & body",
+    "description": "Heading of the Unicode CLDR emoji group of people, gestures, and body parts in a lab EmojiPicker."
+  },
+  "@astryx.emojiPicker.groupAnimalsNature": {
+    "defaultMessage": "Animals & nature",
+    "description": "Heading of the Unicode CLDR emoji group of animals and plants in a lab EmojiPicker."
+  },
+  "@astryx.emojiPicker.groupFoodDrink": {
+    "defaultMessage": "Food & drink",
+    "description": "Heading of the Unicode CLDR emoji group of food and drink in a lab EmojiPicker."
+  },
+  "@astryx.emojiPicker.groupTravelPlaces": {
+    "defaultMessage": "Travel & places",
+    "description": "Heading of the Unicode CLDR emoji group of places, vehicles, and weather in a lab EmojiPicker."
+  },
+  "@astryx.emojiPicker.groupActivities": {
+    "defaultMessage": "Activities",
+    "description": "Heading of the Unicode CLDR emoji group of sports, games, and events in a lab EmojiPicker."
+  },
+  "@astryx.emojiPicker.groupObjects": {
+    "defaultMessage": "Objects",
+    "description": "Heading of the Unicode CLDR emoji group of everyday objects in a lab EmojiPicker."
+  },
+  "@astryx.emojiPicker.groupSymbols": {
+    "defaultMessage": "Symbols",
+    "description": "Heading of the Unicode CLDR emoji group of signs and symbols in a lab EmojiPicker."
+  },
+  "@astryx.emojiPicker.groupFlags": {
+    "defaultMessage": "Flags",
+    "description": "Heading of the Unicode CLDR emoji group of flags in a lab EmojiPicker."
   }
 }

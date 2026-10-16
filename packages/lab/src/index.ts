@@ -24,6 +24,22 @@ export {
 // InfoTip — accessible info-icon help affordance (RFC facebook/astryx#3349)
 export {InfoTip, type InfoTipProps, type InfoTipSize} from './InfoTip';
 
+// EmojiPicker — standalone searchable emoji panel
+export {
+  EmojiPicker,
+  DEFAULT_FREQUENT_EMOJIS,
+  type EmojiPickerProps,
+  type EmojiOption,
+  type EmojiCategory,
+} from './EmojiPicker';
+
+// CommentPin — avatar-first anchor for one or grouped annotation threads
+export {
+  CommentPin,
+  type CommentPinParticipant,
+  type CommentPinProps,
+} from './CommentPin';
+
 // TransferList — controlled dual-panel collection input
 export {
   TransferList,
@@ -254,8 +270,12 @@ export {
 export {
   DiffViewer,
   parseUnifiedDiff,
+  createDiffFile,
   type DiffViewerProps,
   type DiffViewerViewMode,
+  type CreateDiffFileOptions,
+  type DiffViewerChangeIndicator,
+  type DiffViewerInlineHighlight,
   type DiffViewerFile,
   type DiffViewerFileStatus,
   type DiffViewerHunk,

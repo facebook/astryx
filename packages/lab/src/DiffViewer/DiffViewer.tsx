@@ -5,16 +5,22 @@
  * @input Uses React, StyleX, theme tokens, the shared CodeBlock tokenizer and
  *   syntax-theme slots (incl. the diff row slots), useScrollableArea,
  *   Token, Icon, VisuallyHidden, and the i18n translator
- * @output Exports DiffViewer component, DiffViewerProps, DiffViewerViewMode
+ * @output Exports DiffViewer component, DiffViewerProps, DiffViewerViewMode,
+ *   DiffViewerChangeIndicator, DiffViewerInlineHighlight
  * @position Lab implementation; read-only, syntax-highlighted file diff for
  *   code review surfaces
  *
  * Renders one DiffViewerFile: a file header (path, status, +/- counts, a
- * caller slot, optional disclosure) over a table of hunks in unified or split
- * view. Rows take their tint, gutter, and header paint from the same
+ * caller slot, optional disclosure) over its hunks in unified or split view.
+ * Unified view is one table. Split view is two side-by-side panes (each an
+ * ARIA table) whose rows share one grid's row tracks through `subgrid`, so a
+ * row is as tall as its taller side while each pane scrolls sideways on its
+ * own. Rows take their tint, gutter, and header paint from the same
  * syntax-theme slots CodeBlock's diff layer uses, so a syntax theme styles
- * both. Callers can render annotation rows under any line (review comments)
- * and make the line numbers actionable.
+ * both. Changed lines can show +/- glyphs or bars, and paired removed/added
+ * lines highlight the words (or characters) that changed. Callers can render
+ * annotation rows under any line (review comments) and make the line numbers
+ * actionable.
  *
  * Known limit: rows are plain DOM — there is NO virtualization. Very large
  * files should be windowed or collapsed by the caller.
@@ -23,6 +29,7 @@
  * - /packages/lab/src/DiffViewer/DiffViewer.doc.mjs (props table, notes)
  * - /packages/lab/src/DiffViewer/DiffViewer.test.tsx (behavior tests)
  * - /packages/lab/src/DiffViewer/index.ts (exports if types change)
+ * - /packages/lab/src/DiffViewer/inlineDiff.ts (inline highlight ranges)
  * - /apps/storybook/stories/DiffViewer.stories.tsx (examples and visual coverage)
  */
 
@@ -33,11 +40,13 @@ import {
   useId,
   useInsertionEffect,
   useMemo,
+  useRef,
   useState,
   type CSSProperties,
   type MouseEvent,
   type ReactNode,
   type Ref,
+  type UIEvent,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
 
@@ -48,7 +57,10 @@ import {
   type SyntaxToken,
   type TokenLine,
 } from '@astryxdesign/core/CodeBlock';
-import {useScrollableArea} from '@astryxdesign/core/hooks';
+import {
+  useScrollableArea,
+  type ScrollableElementProps,
+} from '@astryxdesign/core/hooks';
 import {useTranslator} from '@astryxdesign/core/i18n';
 import {Icon} from '@astryxdesign/core/Icon';
 import {
@@ -82,16 +94,30 @@ import type {
   DiffViewerLineRef,
   DiffViewerSide,
 } from './diffTypes';
+import {diffInlineRanges, type InlineRange} from './inlineDiff';
 
 /** How hunks are laid out: one column, or old and new side by side. */
 export type DiffViewerViewMode = 'unified' | 'split';
+
+/**
+ * How a changed line is marked beside its code: `classic` `+`/`-` glyphs,
+ * `bars` (a solid bar for added lines and a dashed one for removed lines), or
+ * `none`. Screen readers hear "Added"/"Removed" in every mode.
+ */
+export type DiffViewerChangeIndicator = 'classic' | 'bars' | 'none';
+
+/**
+ * How finely to highlight what changed inside a removed line and the added
+ * line that replaced it: by `word`, by `char`acter, or `none`.
+ */
+export type DiffViewerInlineHighlight = 'word' | 'char' | 'none';
 
 export interface DiffViewerProps extends BaseProps<HTMLDivElement> {
   /** Ref forwarded to the root element. */
   ref?: Ref<HTMLDivElement>;
   /**
    * The file to render. Build one with `parseUnifiedDiff(patch)` (one per
-   * file in the patch).
+   * file in the patch) or `createDiffFile({oldValue, newValue})`.
    */
   file: DiffViewerFile;
   /**
@@ -115,10 +141,33 @@ export interface DiffViewerProps extends BaseProps<HTMLDivElement> {
    */
   hasLineNumbers?: boolean;
   /**
-   * Wrap long lines instead of scrolling them horizontally.
+   * Wrap long lines instead of scrolling them horizontally. Unwrapped, line
+   * numbers and change indicators stay pinned while the code scrolls; in
+   * split view each side is its own scroller, the split stays fixed at half
+   * and half, and the two sides scroll sideways in lockstep. While code
+   * overflows sideways, sideways overscroll (elastic bounce, swipe
+   * navigation) is off.
    * @default false
    */
   isWrapped?: boolean;
+  /**
+   * How changed lines are marked beside their code.
+   * @default 'classic'
+   */
+  changeIndicator?: DiffViewerChangeIndicator;
+  /**
+   * Highlight the changed words (or characters) inside each removed line and
+   * the added line that replaced it. Lines that share nothing but whitespace
+   * get no inline highlight; the row tint already marks them.
+   * @default 'word'
+   */
+  inlineHighlight?: DiffViewerInlineHighlight;
+  /**
+   * Tint the rows of added and removed lines. Without it only the change
+   * indicator, the line numbers, and the inline highlight mark a change.
+   * @default true
+   */
+  hasChangeBackground?: boolean;
   /**
    * Make the file header a disclosure that hides and shows the hunks. Needs a
    * file path to name the control.
@@ -219,6 +268,8 @@ interface LineCell {
   line: DiffViewerLine;
   ref: DiffViewerLineRef;
   tokens: TokenLine;
+  /** Changed character ranges to highlight inside the line. */
+  emphasis: readonly InlineRange[];
 }
 
 type UnifiedRow =
@@ -244,11 +295,51 @@ function lineRef(
 }
 
 /**
+ * Pair each run of removed lines with the run of added lines after it, line
+ * by line (the same pairing split view shows), and mark what changed inside
+ * each pair.
+ */
+function addInlineEmphasis(
+  cells: LineCell[],
+  granularity: 'word' | 'char',
+): void {
+  let i = 0;
+  while (i < cells.length) {
+    if (cells[i].line.kind !== 'removed') {
+      i++;
+      continue;
+    }
+    const removed: LineCell[] = [];
+    const added: LineCell[] = [];
+    while (i < cells.length && cells[i].line.kind === 'removed') {
+      removed.push(cells[i++]);
+    }
+    while (i < cells.length && cells[i].line.kind === 'added') {
+      added.push(cells[i++]);
+    }
+    const pairs = Math.min(removed.length, added.length);
+    for (let r = 0; r < pairs; r++) {
+      const ranges = diffInlineRanges(
+        removed[r].line.content,
+        added[r].line.content,
+        granularity,
+      );
+      removed[r].emphasis = ranges.old;
+      added[r].emphasis = ranges.new;
+    }
+  }
+}
+
+/**
  * Tokenize each hunk's old and new side as continuous text, so constructs
  * that span lines (block comments, template strings) keep their paint within
  * the hunk, then hand each line the tokens of the side it renders from.
  */
-function buildCells(file: DiffViewerFile, language: string): LineCell[][] {
+function buildCells(
+  file: DiffViewerFile,
+  language: string,
+  inlineHighlight: DiffViewerInlineHighlight,
+): LineCell[][] {
   return file.hunks.map((hunk, hunkIndex) => {
     const oldLines = hunk.lines.filter(line => line.kind !== 'added');
     const newLines = hunk.lines.filter(line => line.kind !== 'removed');
@@ -274,8 +365,11 @@ function buildCells(file: DiffViewerFile, language: string): LineCell[][] {
       }
       const ref = lineRef(line, hunkIndex);
       if (ref != null) {
-        cells.push({line, ref, tokens});
+        cells.push({line, ref, tokens, emphasis: []});
       }
+    }
+    if (inlineHighlight !== 'none') {
+      addInlineEmphasis(cells, inlineHighlight);
     }
     return cells;
   });
@@ -334,33 +428,118 @@ function buildSplitRows(file: DiffViewerFile, cells: LineCell[][]): SplitRow[] {
   return rows;
 }
 
-function buildSpans(text: string, tokens: SyntaxToken[]): ReactNode {
-  if (text === '') {
-    return '\u200b';
-  }
-  if (tokens.length === 0) {
-    return text;
-  }
-  const parts: ReactNode[] = [];
+interface Piece {
+  start: number;
+  end: number;
+  type: string | null;
+  isChanged: boolean;
+}
+
+/**
+ * Cut a line into pieces at every syntax-token and inline-highlight boundary,
+ * so each piece carries one token type and one changed/unchanged state.
+ */
+function buildPieces(
+  text: string,
+  tokens: SyntaxToken[],
+  emphasis: readonly InlineRange[],
+): Piece[] {
+  const segments: Array<{start: number; end: number; type: string | null}> = [];
   let cursor = 0;
   for (const token of tokens) {
-    if (token.start > cursor) {
-      parts.push(text.slice(cursor, token.start));
-    }
+    const start = Math.max(token.start, cursor);
     const end = Math.min(token.end, text.length);
-    if (end > token.start) {
-      parts.push(
-        <span
-          key={`${token.start}-${token.type}`}
-          className={`astryx-token-${token.type}`}>
-          {text.slice(token.start, end)}
-        </span>,
-      );
+    if (start > cursor) {
+      segments.push({start: cursor, end: start, type: null});
+    }
+    if (end > start) {
+      segments.push({start, end, type: token.type});
     }
     cursor = Math.max(cursor, end);
   }
   if (cursor < text.length) {
-    parts.push(text.slice(cursor));
+    segments.push({start: cursor, end: text.length, type: null});
+  }
+
+  const cuts = new Set<number>();
+  for (const [start, end] of emphasis) {
+    cuts.add(start);
+    cuts.add(end);
+  }
+  const isChanged = (offset: number) =>
+    emphasis.some(([start, end]) => offset >= start && offset < end);
+
+  const pieces: Piece[] = [];
+  for (const segment of segments) {
+    let start = segment.start;
+    for (let offset = segment.start + 1; offset < segment.end; offset++) {
+      if (cuts.has(offset)) {
+        pieces.push({
+          start,
+          end: offset,
+          type: segment.type,
+          isChanged: isChanged(start),
+        });
+        start = offset;
+      }
+    }
+    pieces.push({
+      start,
+      end: segment.end,
+      type: segment.type,
+      isChanged: isChanged(start),
+    });
+  }
+  return pieces;
+}
+
+function renderPiece(text: string, piece: Piece): ReactNode {
+  const slice = text.slice(piece.start, piece.end);
+  return piece.type == null ? (
+    <Fragment key={piece.start}>{slice}</Fragment>
+  ) : (
+    <span key={piece.start} className={`astryx-token-${piece.type}`}>
+      {slice}
+    </span>
+  );
+}
+
+function buildSpans(
+  text: string,
+  tokens: SyntaxToken[],
+  emphasis: readonly InlineRange[],
+  changeXstyle: stylex.StyleXStyles,
+): ReactNode {
+  if (text === '') {
+    return '\u200b';
+  }
+  if (tokens.length === 0 && emphasis.length === 0) {
+    return text;
+  }
+  const pieces = buildPieces(text, tokens, emphasis);
+  const parts: ReactNode[] = [];
+  let i = 0;
+  while (i < pieces.length) {
+    if (!pieces[i].isChanged) {
+      parts.push(renderPiece(text, pieces[i]));
+      i++;
+      continue;
+    }
+    // One highlight per changed range, holding its syntax-token spans.
+    const run: ReactNode[] = [];
+    const first = pieces[i].start;
+    while (i < pieces.length && pieces[i].isChanged) {
+      run.push(renderPiece(text, pieces[i]));
+      i++;
+    }
+    parts.push(
+      <span
+        key={`c${first}`}
+        data-diff-change=""
+        {...stylex.props(changeXstyle)}>
+        {run}
+      </span>,
+    );
   }
   return parts;
 }
@@ -369,12 +548,28 @@ function buildSpans(text: string, tokens: SyntaxToken[]): ReactNode {
 // Styles
 // ---------------------------------------------------------------------------
 
+const TAB_SIZE = 2;
+
+// Column widths, also used to place pinned cells and size split panes.
+const MARKER_WIDTH: Record<DiffViewerChangeIndicator, string> = {
+  classic: `calc(1ch + ${spacingVars['--spacing-1']} + ${spacingVars['--spacing-2']})`,
+  bars: spacingVars['--spacing-3'],
+  none: spacingVars['--spacing-2'],
+};
+
+function gutterWidth(digits: number): string {
+  return `calc(${digits}ch + 2 * ${spacingVars['--spacing-2']})`;
+}
+
 const styles = stylex.create({
   root: {
     display: 'flex',
     flexDirection: 'column',
     minWidth: 0,
     overflow: 'hidden',
+    // The pinned cells' z-index stacks inside the DiffViewer, never against
+    // the host page (a sticky page header stays on top).
+    isolation: 'isolate',
     borderRadius: radiusVars['--radius-element'],
     borderWidth: borderVars['--border-width'],
     borderStyle: 'solid',
@@ -478,7 +673,7 @@ const styles = stylex.create({
     fontSize: typeScaleVars['--text-code-size'],
     lineHeight: typeScaleVars['--text-code-leading'],
     color: 'var(--color-syntax-variable)',
-    tabSize: 2,
+    tabSize: TAB_SIZE,
   },
   tableScroll: {
     width: 'max-content',
@@ -523,6 +718,7 @@ const styles = stylex.create({
     },
   },
   marker: {
+    position: 'relative',
     paddingBlock: 0,
     paddingInlineStart: spacingVars['--spacing-1'],
     paddingInlineEnd: spacingVars['--spacing-2'],
@@ -530,6 +726,34 @@ const styles = stylex.create({
     whiteSpace: 'pre',
     userSelect: 'none',
     color: colorVars['--color-text-secondary'],
+  },
+  // Bars and no indicator: the column is only a gap before the code (and
+  // holds the bar).
+  markerSlim: {
+    paddingInline: 0,
+  },
+  // The bar sits at the start of the indicator column, beside the code.
+  // Added lines get a solid bar, removed lines a dashed one, so the two read
+  // apart without relying on colour.
+  bar: {
+    position: 'absolute',
+    insetBlock: 0,
+    insetInlineStart: 0,
+    width: `calc(3 * ${borderVars['--border-width']})`,
+  },
+  barAdded: {
+    backgroundColor: 'var(--color-syntax-added-marker)',
+  },
+  barRemoved: {
+    backgroundImage: `repeating-linear-gradient(to bottom, var(--color-syntax-removed-marker) 0 calc(2 * ${borderVars['--border-width']}), transparent calc(2 * ${borderVars['--border-width']}) calc(4 * ${borderVars['--border-width']}))`,
+  },
+  // Line numbers and change indicators stay put while unwrapped code scrolls
+  // sideways. They paint the syntax background under their tint so scrolled
+  // code does not show through.
+  sticky: {
+    position: 'sticky',
+    zIndex: 1,
+    backgroundColor: 'var(--color-syntax-background)',
   },
   markerAdded: {
     color: 'var(--color-syntax-added-marker)',
@@ -557,17 +781,32 @@ const styles = stylex.create({
     wordBreak: 'normal',
     overflowWrap: 'anywhere',
   },
-  // Split view: the old side's code cell carries the divider between sides.
-  codeOldSide: {
-    borderInlineEndWidth: borderVars['--border-width'],
-    borderInlineEndStyle: 'solid',
-    borderInlineEndColor: colorVars['--color-border'],
-  },
+  // Row tints are a background-image layer so a pinned (sticky) cell can lay
+  // them over an opaque syntax background.
   added: {
-    backgroundColor: 'var(--color-syntax-added)',
+    backgroundImage:
+      'linear-gradient(var(--color-syntax-added), var(--color-syntax-added))',
   },
   removed: {
+    backgroundImage:
+      'linear-gradient(var(--color-syntax-removed), var(--color-syntax-removed))',
+  },
+  // The changed words of a paired line: two more layers of the row tint, so
+  // a syntax theme's tint styles both and the words stand out with or
+  // without the row tint under them.
+  change: {
+    borderRadius: radiusVars['--radius-inner'],
+    boxDecorationBreak: 'clone',
+  },
+  changeAdded: {
+    backgroundColor: 'var(--color-syntax-added)',
+    backgroundImage:
+      'linear-gradient(var(--color-syntax-added), var(--color-syntax-added))',
+  },
+  changeRemoved: {
     backgroundColor: 'var(--color-syntax-removed)',
+    backgroundImage:
+      'linear-gradient(var(--color-syntax-removed), var(--color-syntax-removed))',
   },
   // The empty half of a split row whose other side has no counterpart.
   filler: {
@@ -576,6 +815,7 @@ const styles = stylex.create({
   hunk: {
     paddingBlock: spacingVars['--spacing-1'],
     paddingInline: spacingVars['--spacing-3'],
+    textAlign: 'start',
     backgroundColor: 'var(--color-syntax-diff-header)',
     color: 'var(--color-syntax-punctuation)',
     whiteSpace: 'pre',
@@ -583,15 +823,74 @@ const styles = stylex.create({
     borderBlockStyle: 'solid',
     borderBlockColor: colorVars['--color-border'],
   },
+  // Unwrapped, the header text stays at the visible start while the code
+  // scrolls.
+  hunkTextSticky: {
+    position: 'sticky',
+    insetInlineStart: spacingVars['--spacing-3'],
+  },
+  // Split view: two panes in one grid. Each pane spans every row track and
+  // shares them through `subgrid`, so a row is as tall as its taller side
+  // (wrapped code, an annotation) while each pane scrolls sideways alone.
+  split: {
+    display: 'grid',
+    gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)',
+  },
+  pane: {
+    display: 'grid',
+    gridRow: '1 / -1',
+    gridTemplateRows: 'subgrid',
+    gridTemplateColumns: 'minmax(0, 1fr)',
+    minWidth: 0,
+  },
+  paneOld: {
+    gridColumn: 1,
+    borderInlineEndWidth: borderVars['--border-width'],
+    borderInlineEndStyle: 'solid',
+    borderInlineEndColor: colorVars['--color-border'],
+  },
+  paneNew: {
+    gridColumn: 2,
+  },
+  paneTable: {
+    display: 'grid',
+    gridRow: '1 / -1',
+    gridTemplateRows: 'subgrid',
+  },
+  paneTableScroll: {
+    width: 'max-content',
+    minWidth: '100%',
+  },
+  paneTableWrapped: {
+    width: '100%',
+  },
+  paneRow: {
+    display: 'grid',
+    gridColumn: '1 / -1',
+    gridTemplateColumns: 'subgrid',
+  },
+  paneSpan: {
+    gridColumn: '1 / -1',
+  },
+  invisible: {
+    visibility: 'hidden',
+  },
+  // Unwrapped split view: a zero-height, invisible row in both panes holding
+  // the widest line of either side, so both code columns (and so both
+  // scroll widths) match and the panes can scroll in lockstep.
+  sizer: {
+    gridColumn: '-2 / -1',
+    height: 0,
+    visibility: 'hidden',
+    pointerEvents: 'none',
+  },
   // Column headers exist for assistive technology only: their text is
   // visually hidden, so the header row takes no height.
   columnHeader: {
     padding: 0,
     borderWidth: 0,
   },
-  markerCol: {
-    width: `calc(1ch + ${spacingVars['--spacing-1']} + ${spacingVars['--spacing-2']})`,
-  },
+
   // Annotation cells stay left-to-right like the rest of the hunk area, so
   // they start at its visible left edge and the split divider stays put.
   annotation: {
@@ -624,8 +923,17 @@ const annotationStyles = stylex.create({
 });
 
 const dynamicStyles = stylex.create({
-  gutterWidth: (digits: number) => ({
-    width: `calc(${digits}ch + 2 * ${spacingVars['--spacing-2']})`,
+  columnWidth: (width: string) => ({
+    width,
+  }),
+  stickyAt: (offset: string) => ({
+    insetInlineStart: offset,
+  }),
+  splitRows: (count: number) => ({
+    gridTemplateRows: `repeat(${count}, auto)`,
+  }),
+  paneColumns: (columns: string) => ({
+    gridTemplateColumns: columns,
   }),
 });
 
@@ -640,6 +948,104 @@ const STATUS_COLORS: Partial<Record<DiffViewerFileStatus, TokenColor>> = {
   deleted: 'red',
   renamed: 'blue',
 };
+
+type CellTag = 'td' | 'div';
+
+interface DiffViewerPaneProps {
+  side: DiffViewerSide;
+  label: string;
+  /** The pane's `grid-template-columns`. */
+  columns: string;
+  isWrapped: boolean;
+  viewportRef?: Ref<HTMLDivElement>;
+  onScroll?: (event: UIEvent<HTMLDivElement>) => void;
+  children: ReactNode;
+}
+
+/**
+ * Sideways overscroll is turned off on a DiffViewer scroller while its code
+ * overflows sideways: no elastic bounce past a line's start or end, and no
+ * browser back/forward swipe while reading code. A scroller with nothing to
+ * scroll sideways (wrapped lines, or split view's block-only viewport) keeps
+ * the hook's policy so sideways gestures reach the page. Vertical overscroll
+ * always keeps the hook's policy so the page still scrolls on past the diff.
+ * Applied over the hook's own (inline) overscroll style, which only knows
+ * `auto` and `contain`.
+ */
+function withoutInlineOverscroll(
+  props: ScrollableElementProps<HTMLDivElement>,
+): ScrollableElementProps<HTMLDivElement> {
+  return props['data-scrollable-inline'] === 'true'
+    ? {...props, style: {...props.style, overscrollBehaviorX: 'none'}}
+    : props;
+}
+
+/**
+ * One side of split view: a sideways scroller (keyboard-reachable once it
+ * overflows) around that side's ARIA table.
+ */
+function DiffViewerPane({
+  side,
+  label,
+  columns,
+  isWrapped,
+  viewportRef,
+  onScroll,
+  children,
+}: DiffViewerPaneProps) {
+  const {getViewportProps, getContentProps} = useScrollableArea({
+    axis: 'inline',
+    keyboardAccess: {owner: 'viewport', role: 'group', label},
+  });
+  return (
+    <div
+      data-diff-pane={side}
+      {...withoutInlineOverscroll(
+        getViewportProps<HTMLDivElement>({
+          ...stylex.props(
+            styles.pane,
+            side === 'old' ? styles.paneOld : styles.paneNew,
+          ),
+          ref: viewportRef,
+          onScroll,
+        }),
+      )}>
+      <div
+        role="table"
+        {...getContentProps<HTMLDivElement>(
+          stylex.props(
+            styles.table,
+            styles.paneTable,
+            isWrapped ? styles.paneTableWrapped : styles.paneTableScroll,
+            dynamicStyles.paneColumns(columns),
+          ),
+        )}>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * The line of `lines` likely to render widest, by its length with tabs
+ * expanded and wide (East Asian, emoji) characters counted twice.
+ */
+function widestLine(lines: Iterable<string>): string {
+  let widest = '';
+  let widestWidth = -1;
+  for (const line of lines) {
+    let width = 0;
+    for (const char of line) {
+      const code = char.codePointAt(0) ?? 0;
+      width += char === '\t' ? TAB_SIZE : code >= 0x1100 ? 2 : 1;
+    }
+    if (width > widestWidth) {
+      widest = line;
+      widestWidth = width;
+    }
+  }
+  return widest;
+}
 
 /**
  * Read-only, syntax-highlighted diff of one file, in unified or split view,
@@ -659,6 +1065,9 @@ export function DiffViewer({
   language: languageProp,
   hasLineNumbers = true,
   isWrapped = false,
+  changeIndicator = 'classic',
+  inlineHighlight = 'word',
+  hasChangeBackground = true,
   isCollapsible = true,
   isCollapsed: isCollapsedProp,
   defaultIsCollapsed = false,
@@ -702,7 +1111,10 @@ export function DiffViewer({
     onCollapsedChange?.(next);
   };
 
-  const cells = useMemo(() => buildCells(file, language), [file, language]);
+  const cells = useMemo(
+    () => buildCells(file, language, inlineHighlight),
+    [file, language, inlineHighlight],
+  );
   const unifiedRows = useMemo(
     () => (viewMode === 'unified' ? buildUnifiedRows(file, cells) : []),
     [viewMode, file, cells],
@@ -731,8 +1143,10 @@ export function DiffViewer({
   }
   const digits = String(maxLineNumber).length;
 
+  // Split view's panes scroll sideways on their own, so the shared viewport
+  // only scrolls vertically there.
   const {getViewportProps, getContentProps} = useScrollableArea({
-    axis: 'both',
+    axis: viewMode === 'split' ? 'block' : 'both',
     keyboardAccess: {
       owner: 'viewport',
       role: 'group',
@@ -749,14 +1163,33 @@ export function DiffViewer({
 
   // --- cells ---------------------------------------------------------------
 
+  // Unwrapped, the line numbers and the change indicator are pinned at the
+  // start of their scroller; these are their offsets from its edge.
+  const isPinned = !isWrapped;
+  const gutter = gutterWidth(digits);
+  const markerWidth = MARKER_WIDTH[changeIndicator];
+  const isSlimMarker = changeIndicator !== 'classic';
+  const pinAt = (offset: string | null) =>
+    isPinned &&
+    offset != null && [styles.sticky, dynamicStyles.stickyAt(offset)];
+
+  const tint = (kind: DiffViewerLine['kind'] | undefined) =>
+    hasChangeBackground &&
+    (kind === 'added' ? styles.added : kind === 'removed' && styles.removed);
+
+  const cellRole = (tag: CellTag) => (tag === 'div' ? {role: 'cell'} : {});
+
   const renderGutter = (
+    tag: CellTag,
     cell: LineCell | null,
     side: DiffViewerSide,
     key: string,
+    pinOffset: string,
   ) => {
     if (!hasLineNumbers) {
       return null;
     }
+    const Cell = tag;
     const number =
       cell == null
         ? null
@@ -772,12 +1205,15 @@ export function DiffViewer({
         ? cell.ref
         : null;
     return (
-      <td
+      <Cell
         key={key}
+        {...cellRole(tag)}
         {...stylex.props(
           styles.gutter,
-          kind === 'added' && [styles.added, styles.gutterAdded],
-          kind === 'removed' && [styles.removed, styles.gutterRemoved],
+          pinAt(pinOffset),
+          tint(kind),
+          kind === 'added' && styles.gutterAdded,
+          kind === 'removed' && styles.gutterRemoved,
           cell == null && styles.filler,
         )}>
         {actionRef != null && onLineNumberClick != null ? (
@@ -795,56 +1231,85 @@ export function DiffViewer({
         ) : (
           number
         )}
-      </td>
+      </Cell>
     );
   };
 
-  const renderMarker = (cell: LineCell | null, key: string) => {
+  const renderMarker = (
+    tag: CellTag,
+    cell: LineCell | null,
+    key: string,
+    pinOffset: string,
+  ) => {
+    const Cell = tag;
     const kind = cell?.line.kind;
+    const isChange = kind === 'added' || kind === 'removed';
     return (
-      <td
+      <Cell
         key={key}
+        {...cellRole(tag)}
         {...stylex.props(
           styles.marker,
-          kind === 'added' && [styles.added, styles.markerAdded],
-          kind === 'removed' && [styles.removed, styles.markerRemoved],
+          isSlimMarker && styles.markerSlim,
+          pinAt(pinOffset),
+          tint(kind),
+          kind === 'added' && styles.markerAdded,
+          kind === 'removed' && styles.markerRemoved,
           cell == null && styles.filler,
         )}>
-        {kind === 'added' && (
-          <>
-            <span aria-hidden="true">+</span>
-            <VisuallyHidden>{t('@astryx.diffViewer.added')}</VisuallyHidden>
-          </>
+        {isChange && changeIndicator === 'classic' && (
+          <span aria-hidden="true">{kind === 'added' ? '+' : '-'}</span>
         )}
-        {kind === 'removed' && (
-          <>
-            <span aria-hidden="true">-</span>
-            <VisuallyHidden>{t('@astryx.diffViewer.removed')}</VisuallyHidden>
-          </>
+        {isChange && changeIndicator === 'bars' && (
+          <span
+            aria-hidden="true"
+            data-diff-bar=""
+            {...stylex.props(
+              styles.bar,
+              kind === 'added' ? styles.barAdded : styles.barRemoved,
+            )}
+          />
         )}
-      </td>
+        {isChange && (
+          <VisuallyHidden>
+            {kind === 'added'
+              ? t('@astryx.diffViewer.added')
+              : t('@astryx.diffViewer.removed')}
+          </VisuallyHidden>
+        )}
+      </Cell>
     );
   };
 
-  const renderCode = (cell: LineCell | null, key: string, isOld = false) => {
+  const renderCode = (tag: CellTag, cell: LineCell | null, key: string) => {
+    const Cell = tag;
     const kind = cell?.line.kind;
     return (
-      <td
+      <Cell
         key={key}
+        {...cellRole(tag)}
         data-diff={kind != null && kind !== 'context' ? kind : undefined}
         {...stylex.props(
           styles.code,
           styles.ltr,
           isWrapped && styles.codeWrapped,
-          isOld && styles.codeOldSide,
-          kind === 'added' && styles.added,
-          kind === 'removed' && styles.removed,
+          tint(kind),
           cell == null && styles.filler,
         )}>
-        {cell != null && buildSpans(cell.line.content, cell.tokens)}
-      </td>
+        {cell != null &&
+          buildSpans(cell.line.content, cell.tokens, cell.emphasis, [
+            styles.change,
+            kind === 'added' ? styles.changeAdded : styles.changeRemoved,
+          ])}
+      </Cell>
     );
   };
+
+  const renderHunkText = (header: string) => (
+    <span {...stylex.props(styles.ltr, isPinned && styles.hunkTextSticky)}>
+      {header}
+    </span>
+  );
 
   // `null`, `undefined` and booleans render nothing in React, so they draw no
   // row either; that keeps `hasThread && <Thread />` from adding empty rows.
@@ -856,128 +1321,49 @@ export function DiffViewer({
     return typeof note === 'boolean' ? null : note;
   };
 
-  // --- tables --------------------------------------------------------------
-
-  const gutterCols = hasLineNumbers ? 2 : 0;
-  const unifiedColumns = gutterCols + 2;
-  const sideColumns = (hasLineNumbers ? 1 : 0) + 2;
-
-  const gutterCol = (key: string) => (
-    <col key={key} {...stylex.props(dynamicStyles.gutterWidth(digits))} />
-  );
-  const markerCol = (key: string) => (
-    <col key={key} {...stylex.props(styles.markerCol)} />
-  );
   // Name every column so a screen reader moving across a row hears which
-  // number is which and which side of a split row it is on.
-  const columnHeader = (key: string, label: string) => (
-    <th key={key} scope="col" {...stylex.props(styles.columnHeader)}>
-      <VisuallyHidden>{label}</VisuallyHidden>
-    </th>
-  );
-
-  let table: ReactNode;
-  if (viewMode === 'split') {
-    table = (
-      <table
-        {...stylex.props(
-          styles.table,
-          isWrapped ? styles.tableWrapped : styles.tableScroll,
-        )}>
-        <colgroup>
-          {hasLineNumbers && gutterCol('og')}
-          {markerCol('om')}
-          <col />
-          {hasLineNumbers && gutterCol('ng')}
-          {markerCol('nm')}
-          <col />
-        </colgroup>
-        <thead>
-          <tr>
-            {hasLineNumbers &&
-              columnHeader('og', t('@astryx.diffViewer.columnOldLine'))}
-            {columnHeader('om', t('@astryx.diffViewer.columnChange'))}
-            {columnHeader('oc', t('@astryx.diffViewer.columnOldCode'))}
-            {hasLineNumbers &&
-              columnHeader('ng', t('@astryx.diffViewer.columnNewLine'))}
-            {columnHeader('nm', t('@astryx.diffViewer.columnChange'))}
-            {columnHeader('nc', t('@astryx.diffViewer.columnNewCode'))}
-          </tr>
-        </thead>
-        <tbody>
-          {splitRows.map(row => {
-            if (row.type === 'hunk') {
-              return (
-                <tr key={row.key}>
-                  <td colSpan={sideColumns * 2} {...stylex.props(styles.hunk)}>
-                    <span {...stylex.props(styles.ltr)}>{row.header}</span>
-                  </td>
-                </tr>
-              );
-            }
-            const isContext = row.old?.line.kind === 'context';
-            const oldNote = isContext ? null : annotationFor(row.old);
-            const newNote = annotationFor(row.new);
-            const hasNote = oldNote != null || newNote != null;
-            return (
-              <Fragment key={row.key}>
-                <tr>
-                  {renderGutter(row.old, 'old', 'og')}
-                  {renderMarker(row.old, 'om')}
-                  {renderCode(row.old, 'oc', true)}
-                  {renderGutter(row.new, 'new', 'ng')}
-                  {renderMarker(row.new, 'nm')}
-                  {renderCode(row.new, 'nc')}
-                </tr>
-                {hasNote && (
-                  <tr>
-                    <td
-                      colSpan={sideColumns}
-                      {...stylex.props(styles.annotation, styles.codeOldSide)}>
-                      {oldNote != null && (
-                        <div {...stylex.props(annotationStyles.content)}>
-                          {oldNote}
-                        </div>
-                      )}
-                    </td>
-                    <td
-                      colSpan={sideColumns}
-                      {...stylex.props(styles.annotation)}>
-                      {newNote != null && (
-                        <div {...stylex.props(annotationStyles.content)}>
-                          {newNote}
-                        </div>
-                      )}
-                    </td>
-                  </tr>
-                )}
-              </Fragment>
-            );
-          })}
-        </tbody>
-      </table>
+  // number is which (and, in split view, which side's code it is in).
+  const columnHeader = (tag: 'th' | 'div', key: string, label: string) => {
+    const Header = tag;
+    return (
+      <Header
+        key={key}
+        {...(tag === 'th' ? {scope: 'col'} : {role: 'columnheader'})}
+        {...stylex.props(styles.columnHeader)}>
+        <VisuallyHidden>{label}</VisuallyHidden>
+      </Header>
     );
-  } else {
-    table = (
+  };
+
+  // --- unified table -------------------------------------------------------
+
+  const renderUnified = () => {
+    const columns = (hasLineNumbers ? 2 : 0) + 2;
+    const markerPin = hasLineNumbers ? `calc(2 * ${gutter})` : '0px';
+    return (
       <table
         {...stylex.props(
           styles.table,
           isWrapped ? styles.tableWrapped : styles.tableScroll,
         )}>
         <colgroup>
-          {hasLineNumbers && gutterCol('og')}
-          {hasLineNumbers && gutterCol('ng')}
-          {markerCol('m')}
+          {hasLineNumbers && (
+            <col {...stylex.props(dynamicStyles.columnWidth(gutter))} />
+          )}
+          {hasLineNumbers && (
+            <col {...stylex.props(dynamicStyles.columnWidth(gutter))} />
+          )}
+          <col {...stylex.props(dynamicStyles.columnWidth(markerWidth))} />
           <col />
         </colgroup>
         <thead>
           <tr>
             {hasLineNumbers &&
-              columnHeader('og', t('@astryx.diffViewer.columnOldLine'))}
+              columnHeader('th', 'og', t('@astryx.diffViewer.columnOldLine'))}
             {hasLineNumbers &&
-              columnHeader('ng', t('@astryx.diffViewer.columnNewLine'))}
-            {columnHeader('m', t('@astryx.diffViewer.columnChange'))}
-            {columnHeader('c', t('@astryx.diffViewer.columnCode'))}
+              columnHeader('th', 'ng', t('@astryx.diffViewer.columnNewLine'))}
+            {columnHeader('th', 'm', t('@astryx.diffViewer.columnChange'))}
+            {columnHeader('th', 'c', t('@astryx.diffViewer.columnCode'))}
           </tr>
         </thead>
         <tbody>
@@ -985,8 +1371,8 @@ export function DiffViewer({
             if (row.type === 'hunk') {
               return (
                 <tr key={row.key}>
-                  <td colSpan={unifiedColumns} {...stylex.props(styles.hunk)}>
-                    <span {...stylex.props(styles.ltr)}>{row.header}</span>
+                  <td colSpan={columns} {...stylex.props(styles.hunk)}>
+                    {renderHunkText(row.header)}
                   </td>
                 </tr>
               );
@@ -995,16 +1381,14 @@ export function DiffViewer({
             return (
               <Fragment key={row.key}>
                 <tr>
-                  {renderGutter(row.cell, 'old', 'og')}
-                  {renderGutter(row.cell, 'new', 'ng')}
-                  {renderMarker(row.cell, 'm')}
-                  {renderCode(row.cell, 'c')}
+                  {renderGutter('td', row.cell, 'old', 'og', '0px')}
+                  {renderGutter('td', row.cell, 'new', 'ng', gutter)}
+                  {renderMarker('td', row.cell, 'm', markerPin)}
+                  {renderCode('td', row.cell, 'c')}
                 </tr>
                 {note != null && (
                   <tr>
-                    <td
-                      colSpan={unifiedColumns}
-                      {...stylex.props(styles.annotation)}>
+                    <td colSpan={columns} {...stylex.props(styles.annotation)}>
                       <div {...stylex.props(annotationStyles.content)}>
                         {note}
                       </div>
@@ -1017,7 +1401,221 @@ export function DiffViewer({
         </tbody>
       </table>
     );
-  }
+  };
+
+  // --- split panes ---------------------------------------------------------
+
+  // Unwrapped, the two panes scroll sideways in lockstep. Setting the other
+  // pane's scrollLeft fires a scroll event there too; the expected value it
+  // lands on marks that event as our own echo, so it is not mirrored back
+  // (which would fight momentum scrolling on the side the reader drives).
+  const paneRefs = useRef<Record<DiffViewerSide, HTMLDivElement | null>>({
+    old: null,
+    new: null,
+  });
+  // Stable per side: a new callback ref every render would re-attach the
+  // pane's scroll measurement each time.
+  const paneRefCallbacks = useMemo(
+    () => ({
+      old: (node: HTMLDivElement | null) => {
+        paneRefs.current.old = node;
+      },
+      new: (node: HTMLDivElement | null) => {
+        paneRefs.current.new = node;
+      },
+    }),
+    [],
+  );
+  const scrollEcho = useRef<{side: DiffViewerSide; left: number} | null>(null);
+  const syncPaneScroll = (
+    side: DiffViewerSide,
+    event: UIEvent<HTMLDivElement>,
+  ) => {
+    const left = event.currentTarget.scrollLeft;
+    const echo = scrollEcho.current;
+    if (echo != null && echo.side === side) {
+      scrollEcho.current = null;
+      if (Math.abs(echo.left - left) < 1) {
+        return;
+      }
+    }
+    const otherSide = side === 'old' ? 'new' : 'old';
+    const other = paneRefs.current[otherSide];
+    if (other == null || Math.abs(other.scrollLeft - left) < 1) {
+      return;
+    }
+    other.scrollLeft = left;
+    scrollEcho.current = {side: otherSide, left: other.scrollLeft};
+  };
+
+  const renderSplit = () => {
+    const items = splitRows.map(row =>
+      row.type === 'hunk'
+        ? {row, oldNote: null, newNote: null}
+        : {
+            row,
+            // A context line anchors to its new side, so only that side
+            // carries its annotation.
+            oldNote:
+              row.old?.line.kind === 'context' ? null : annotationFor(row.old),
+            newNote: annotationFor(row.new),
+          },
+    );
+    const hasSizer = !isWrapped;
+    const sizerText = hasSizer
+      ? widestLine(
+          cells.flatMap(hunkCells => hunkCells.map(cell => cell.line.content)),
+        )
+      : '';
+    const rowCount =
+      1 +
+      (hasSizer ? 1 : 0) +
+      items.reduce(
+        (count, item) =>
+          count + 1 + (item.oldNote != null || item.newNote != null ? 1 : 0),
+        0,
+      );
+    const columns = `${hasLineNumbers ? `${gutter} ` : ''}${markerWidth} ${
+      isWrapped ? 'minmax(0, 1fr)' : '1fr'
+    }`;
+    const markerPin = hasLineNumbers ? gutter : '0px';
+
+    const renderSide = (side: DiffViewerSide) => {
+      const isOld = side === 'old';
+      const rows: ReactNode[] = [
+        <div key="head" role="row" {...stylex.props(styles.paneRow)}>
+          {hasLineNumbers &&
+            columnHeader(
+              'div',
+              'g',
+              t(
+                isOld
+                  ? '@astryx.diffViewer.columnOldLine'
+                  : '@astryx.diffViewer.columnNewLine',
+              ),
+            )}
+          {columnHeader('div', 'm', t('@astryx.diffViewer.columnChange'))}
+          {columnHeader(
+            'div',
+            'c',
+            t(
+              isOld
+                ? '@astryx.diffViewer.columnOldCode'
+                : '@astryx.diffViewer.columnNewCode',
+            ),
+          )}
+        </div>,
+      ];
+      for (const {row, oldNote, newNote} of items) {
+        if (row.type === 'hunk') {
+          // The new side repeats the header for its own table's readers but
+          // shows only the band.
+          rows.push(
+            <div key={row.key} role="row" {...stylex.props(styles.paneRow)}>
+              <div
+                role="cell"
+                {...stylex.props(
+                  styles.hunk,
+                  styles.paneSpan,
+                  // A side is half as wide as the unified header's row.
+                  isWrapped && styles.codeWrapped,
+                )}>
+                {isOld ? (
+                  renderHunkText(row.header)
+                ) : (
+                  <>
+                    {/* Takes the same width as the old side's header, so a
+                        header wider than the code widens both panes alike
+                        and they still scroll in lockstep. */}
+                    <span
+                      aria-hidden="true"
+                      {...stylex.props(styles.ltr, styles.invisible)}>
+                      {row.header}
+                    </span>
+                    <VisuallyHidden>{row.header}</VisuallyHidden>
+                  </>
+                )}
+              </div>
+            </div>,
+          );
+          continue;
+        }
+        const cell = isOld ? row.old : row.new;
+        rows.push(
+          <div
+            key={row.key}
+            role="row"
+            // The empty half of an unpaired change is spacing, not a line.
+            aria-hidden={cell == null ? true : undefined}
+            {...stylex.props(styles.paneRow)}>
+            {renderGutter('div', cell, side, 'g', '0px')}
+            {renderMarker('div', cell, 'm', markerPin)}
+            {renderCode('div', cell, 'c')}
+          </div>,
+        );
+        if (oldNote != null || newNote != null) {
+          const note = isOld ? oldNote : newNote;
+          rows.push(
+            <div
+              key={`${row.key}n`}
+              role="row"
+              aria-hidden={note == null ? true : undefined}
+              {...stylex.props(styles.paneRow)}>
+              <div
+                role="cell"
+                {...stylex.props(styles.annotation, styles.paneSpan)}>
+                {note != null && (
+                  <div {...stylex.props(annotationStyles.content)}>{note}</div>
+                )}
+              </div>
+            </div>,
+          );
+        }
+      }
+      if (hasSizer) {
+        rows.push(
+          <div
+            key="sizer"
+            data-diff-sizer=""
+            aria-hidden="true"
+            {...stylex.props(styles.paneRow)}>
+            <div {...stylex.props(styles.code, styles.ltr, styles.sizer)}>
+              {sizerText}
+            </div>
+          </div>,
+        );
+      }
+      return (
+        <DiffViewerPane
+          key={side}
+          side={side}
+          label={t(
+            isOld
+              ? '@astryx.diffViewer.columnOldCode'
+              : '@astryx.diffViewer.columnNewCode',
+          )}
+          columns={columns}
+          isWrapped={isWrapped}
+          viewportRef={paneRefCallbacks[side]}
+          onScroll={
+            hasSizer ? event => syncPaneScroll(side, event) : undefined
+          }>
+          {rows}
+        </DiffViewerPane>
+      );
+    };
+
+    return (
+      <div
+        data-diff-split=""
+        {...stylex.props(styles.split, dynamicStyles.splitRows(rowCount))}>
+        {renderSide('old')}
+        {renderSide('new')}
+      </div>
+    );
+  };
+
+  const table = viewMode === 'split' ? renderSplit() : renderUnified();
 
   let body: ReactNode;
   if (file.isBinary) {
@@ -1035,10 +1633,12 @@ export function DiffViewer({
   } else {
     body = (
       <div
-        {...getViewportProps<HTMLDivElement>({
-          ...stylex.props(styles.viewport),
-          style: scrollStyle,
-        })}>
+        {...withoutInlineOverscroll(
+          getViewportProps<HTMLDivElement>({
+            ...stylex.props(styles.viewport),
+            style: scrollStyle,
+          }),
+        )}>
         <div {...getContentProps<HTMLDivElement>({})}>{table}</div>
       </div>
     );
