@@ -35,6 +35,7 @@ deciding_specs:
     spec:AST-006/DEC-4,
     spec:AST-012/DEC-3,
     spec:AST-012/DEC-4,
+    spec:AST-082/DEC-2,
   ]
 ---
 
@@ -127,7 +128,9 @@ Platform-specific details stay inside that compiler.
   may use native style objects.
 - **INV10 — Shared intent keeps the same meaning.** A token or supported component
   override means the same thing across outputs. Platform-only features have an
-  explicit support boundary.
+  explicit support boundary. The experimental native theme section
+  (`spec:AST-082`) is one: the web compiler never reads it and emits nothing for
+  it.
 - **INV11 — Theme-local names remain exact and prefix-independent.** For an enrolled
   theme, the compiler emits the normalized `localTokens` map beside portable
   declarations without rewriting names or values. A prefix neither grants nor
