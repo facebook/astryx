@@ -18,14 +18,21 @@ affects_consumer_docs: [styling-overview, getting-started, migration-setup]
 
 # Package stylesheet distribution system spec
 
-<!-- Describe the system, not the project: present tense, what it does. No proposals, history, pull requests, or research in the record; see docs/contributing/spec-writing.md and report its rubric results in the pull request. -->
+<!-- Describe the system, not the project: present tense, what it does. No
+proposals, history, pull requests, or research in the record; see
+docs/contributing/spec-writing.md and report its rubric results in the pull
+request. -->
 
 ## Intent
 
-A product that uses Astryx loads prebuilt stylesheets: `@astryxdesign/core/astryx.css`,
+A product that uses Astryx loads prebuilt stylesheets:
+`@astryxdesign/core/astryx.css`,
 the stylesheet of each other Astryx package it uses, and a theme stylesheet.
-Those files are the whole of Astryx's component CSS. The product never compiles
-Astryx package source to get it.
+Those files are the whole of Astryx's component CSS, and loading them is the
+default setup. A product can instead compile Astryx package source with
+`@astryxdesign/build`, for every module of a package or only the ones it ships;
+that build compiles the source the way the prebuilt stylesheets are compiled, so
+the product gets the same rules in the same layer.
 
 Every package stylesheet places its rules in the same cascade layer under the
 same layer order. A theme override therefore wins over the base styles of every
@@ -40,8 +47,8 @@ first.
   `spec:AST-066` FR3.
 - How a product compiles its own code, including any StyleX settings it uses for
   its own styles or for components it ejects with `astryx swizzle`.
-- Loading part of a package stylesheet.
-- The source-build composition that the `@astryxdesign/build` package provides.
+- How `@astryxdesign/build` plugs into each bundler, and how a source build
+  chooses which modules to compile.
 - Minifying or compressing stylesheets.
 - Equivalent internal implementations remain valid when they satisfy this
   contract.
@@ -54,12 +61,19 @@ first.
   holds every rule its modules use. A package ships its stylesheet with its
   first published release that carries styles. The package stylesheets are:
 
-  | Package                  | Stylesheet                                                          |
-  | ------------------------ | ------------------------------------------------------------------- |
-  | `@astryxdesign/core`     | `@astryxdesign/core/astryx.css`                                     |
-  | `@astryxdesign/lab`      | `@astryxdesign/lab/lab.css`                                         |
-  | `@astryxdesign/richtext` | `@astryxdesign/richtext/richtext.css`                               |
-  | `@astryxdesign/charts`   | `@astryxdesign/charts/charts.css`, from its first published release |
+  | Package | Stylesheet
+  |
+
+  | ------------------------ |
+  | ------------------------ |
+  | `@astryxdesign/core`     | `@astryxdesign/core/astryx.css`                   |
+  |                          |
+  | `@astryxdesign/lab`      | `@astryxdesign/lab/lab.css`                       |
+  |                          |
+  | `@astryxdesign/richtext` | `@astryxdesign/richtext/richtext.css`             |
+  |                          |
+  | `@astryxdesign/charts`   | `@astryxdesign/charts/charts.css`, from its first |
+  | published release        |
 
   Theme packages are outside this requirement; their stylesheets follow the theme
   records named in Non-goals.
@@ -93,13 +107,12 @@ first.
   declaration MUST cover that file, so a bundler keeps the product's
   `import '@astryxdesign/<package>/<name>.css'`.
 
-- **FR5 — Every documented setup loads prebuilt stylesheets.** Each consumer
-  setup path in the documentation (plain CSS, Tailwind, and a product that
-  compiles its own StyleX, including ejected components) MUST load the prebuilt
-  stylesheet of every Astryx package the product uses, plus a theme stylesheet.
-  No documented setup omits a package stylesheet, adds Astryx package source to
-  a compiler's inputs, or presents compiling Astryx package source as a way to
-  get component styles. A documented setup looks like:
+- **FR5 — Documented setups load prebuilt stylesheets by default.** Each
+  consumer setup path in the documentation (plain CSS, Tailwind, and a product
+  that compiles its own StyleX, including ejected components) MUST load the
+  prebuilt stylesheet of every Astryx package the product uses, plus a theme
+  stylesheet, and the documentation MUST present that as the default. A
+  documented setup looks like:
 
   ```css
   @layer reset, astryx-base, astryx-theme;
@@ -110,17 +123,34 @@ first.
   @import '@astryxdesign/theme-neutral/theme.css';
   ```
 
+  The documentation MAY also present a source build: a package's source
+  compiled through `@astryxdesign/build` under FR7, in place of that package's
+  prebuilt stylesheet. No documented setup loads a package's prebuilt
+  stylesheet and also compiles that package's source, or compiles Astryx source
+  any other way, such as adding Astryx package source to the product's own
+  StyleX compiler inputs.
+
 - **FR6 — Every package documents its import.** Each package's README and the
   styling overview MUST name the package's stylesheet and show the import beside
   `astryx.css`.
+
+- **FR7 — A source build compiles Astryx the way its prebuilt stylesheet is
+  compiled.** A source build MUST compile the Astryx modules it includes with
+  the same compile the prebuilt stylesheets use: the same StyleX options and
+  rule processing, every Astryx rule inside one `@layer astryx-base` with no
+  nested layer, after the FR3 order registration. Product rules MUST stay
+  outside `astryx-base`. Compiling every module of a package produces the same
+  rules, in the same order, as that package's prebuilt stylesheet; compiling a
+  subset of its modules produces the rules those modules use, by the same
+  compile. A source build needs no data beyond the package's own source.
 
 ### Platform support
 
 - Supported feature/engine floor: unchanged; cascade layers are already required
   by the theme and reset stylesheets.
 - Unsupported behavior: none added.
-- Browser evidence: real-browser computed styles for FR2 and FR3. FR1, FR4, FR5,
-  and FR6 are proven at the package, bundler, and documentation layer.
+- Browser evidence: real-browser computed styles for FR2, FR3, and FR7. FR1, FR4,
+  FR5, and FR6 are proven at the package, bundler, and documentation layer.
 
 ## Current-state impact
 
@@ -134,11 +164,12 @@ first.
   places `reset` above `astryx-base`.
 - Lab, Rich Text, and Charts declare `sideEffects: false`, which does not cover
   their stylesheets (FR4). Core already covers `**/*.css`.
-- The styling overview's "StyleX from source" path tells a product to omit
-  `astryx.css` and compile component styles from source, and the getting-started
-  examples list two setups that compile Astryx source and load no `astryx.css`
-  (`Next.js Source` and `Vite`). These conflict with FR5;
-  the setup becomes "load `astryx.css`; compile only your own code."
+- The styling overview documents only the prebuilt path. A source build through
+  `@astryxdesign/build` is not yet documented there (FR5).
+- `@astryxdesign/build` places Astryx rules in `astryx-base` but processes them
+  into nested priority layers inside it, unlike the prebuilt stylesheets, which
+  conflicts with FR7. Its Next.js integration runs only under webpack.
+
 - Lab, Rich Text, and Charts document their stylesheet only in their READMEs;
   the styling overview's import table lists only Core (FR6).
 - The `styling-overview`, `getting-started`, and `migration-setup` consumer docs
@@ -146,13 +177,14 @@ first.
 
 ## Verification
 
-| Contract | Verification                                         | Representative states                                                                                                                  | Mutation or failure expectation                                                                                       |
-| -------- | ---------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
-| FR1      | package manifest and stylesheet build tests          | every published package with styled modules; a module's rules in its package stylesheet                                                | a styled published package has no `.css` export; a rule a module uses is missing                                      |
-| FR2      | real-browser computed styles with no StyleX compiler | a representative component from each package; default, hover, focus, disabled, dark, and right-to-left                                 | removing the package stylesheet changes a computed style; a non-Core stylesheet repeats a group `astryx.css` declares |
-| FR3      | stylesheet structure tests and real-browser cascade  | each package stylesheet and `reset.css`; theme first and last; package stylesheets in either order; `reset.css` last; a theme override | an unlayered rule or another layer; a missing or reordered registration; the theme override loses in any load order   |
-| FR4      | packed-package and bundler fixtures                  | each package's stylesheet import in a production bundle                                                                                | the subpath does not resolve from the packed package; the bundle drops the stylesheet                                 |
-| FR5–FR6  | consumer-doc checks                                  | every setup snippet in the styling overview, getting started, and migration setup; each package README                                 | a setup omits `astryx.css` or a used package stylesheet; a setup compiles Astryx source; a package import is missing  |
+| Contract | Verification                                         | Representative states                                                                                                                  | Mutation or failure expectation                                                                                                                                          |
+| -------- | ---------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| FR1      | package manifest and stylesheet build tests          | every published package with styled modules; a module's rules in its package stylesheet                                                | a styled published package has no `.css` export; a rule a module uses is missing                                                                                         |
+| FR2      | real-browser computed styles with no StyleX compiler | a representative component from each package; default, hover, focus, disabled, dark, and right-to-left                                 | removing the package stylesheet changes a computed style; a non-Core stylesheet repeats a group `astryx.css` declares                                                    |
+| FR3      | stylesheet structure tests and real-browser cascade  | each package stylesheet and `reset.css`; theme first and last; package stylesheets in either order; `reset.css` last; a theme override | an unlayered rule or another layer; a missing or reordered registration; the theme override loses in any load order                                                      |
+| FR4      | packed-package and bundler fixtures                  | each package's stylesheet import in a production bundle                                                                                | the subpath does not resolve from the packed package; the bundle drops the stylesheet                                                                                    |
+| FR5–FR6  | consumer-doc checks                                  | every setup snippet in the styling overview, getting started, and migration setup; each package README                                 | a default setup omits `astryx.css` or a used package stylesheet; a setup loads a prebuilt stylesheet and compiles the same package's source; a package import is missing |
+| FR7      | build-package compile tests and real-browser cascade | every Core module compiled through the build package; a subset of modules; a source-built component under a theme override             | the every-module compile differs from the prebuilt rules or order; an Astryx rule sits in a nested or other layer; the theme override loses                              |
 
 The real-browser cascade check uses a component whose theme changes its base
 colors, such as a theme that restyles the destructive Button, and asserts the
@@ -160,19 +192,26 @@ theme's colors in every load order.
 
 ## Decision log
 
-### DEC-1 — Products load prebuilt stylesheets and never compile Astryx source
+### DEC-1 — Prebuilt stylesheets are the default; a source build compiles the
+
+same way
 
 **Reference:** `spec:AST-080/DEC-1`
 **Decider:** `cixzhang`, `2026-10-15`
 
-A second compile of Astryx package source emits a second copy of the same rules,
-with an order and layer that depend on the product's compiler setup. Beside the
-prebuilt stylesheet that copy outranks theme overrides, so a themed component
-shows its base colors. One prebuilt file per package gives every product the
-cascade the package ships and tests.
+Most products need no compiler for Astryx, so the prebuilt stylesheets stay the
+default and every documented setup works without one. A product that wants
+only the CSS of the modules it ships can compile Astryx source through
+`@astryxdesign/build`. A second compile breaks theme overrides when it adds a
+second copy of the rules beside the prebuilt stylesheet, or compiles them with
+other settings or into another layer. A source build replaces the package's
+stylesheet and compiles it the way the prebuilt stylesheet is compiled, into the
+same single layer, so the cascade the package ships and tests holds.
 
-Rejected: documenting a source compile as an equal setup path, because its
-cascade varies with each product's build.
+Rejected: forbidding a source build, which leaves a product no way to load only
+the CSS it uses; and removing rules from a prebuilt stylesheet with data shipped
+beside it, which adds a format to maintain and a second way to build the same
+rules.
 
 ### DEC-2 — Every package shares one layer and one order registration
 
