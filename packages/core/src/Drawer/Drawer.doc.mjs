@@ -287,7 +287,7 @@ const [openPanel, setOpenPanel] = useState(false);
     header={<DrawerHeader title="Edit host" onOpenChange={setIsOpen} />}
     content={<LayoutContent><HostFields /></LayoutContent>}
     footer={
-      <LayoutFooter hasDivider>
+      <LayoutFooter>
         <HStack gap={2} hAlign="end">
           <Button label="Cancel" variant="secondary" onClick={() => setIsOpen(false)} />
           <Button label="Save" variant="primary" onClick={save} />

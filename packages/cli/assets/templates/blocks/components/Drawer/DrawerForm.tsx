@@ -40,7 +40,7 @@ export default function DrawerForm() {
             </LayoutContent>
           }
           footer={
-            <LayoutFooter hasDivider>
+            <LayoutFooter>
               <HStack gap={2} hAlign="end">
                 <Button
                   label="Cancel"
