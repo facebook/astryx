@@ -251,6 +251,12 @@ List docs name as an anti-pattern (§3.7).
   anti-pattern". A run with natural-language prompts instead of geometric ones would
   answer a different question: whether agents reach for the prop when not told the
   geometry.
+- **The main-baseline doc is the test template, not the released List docs.** It swaps
+  in the released prop but keeps the template's anti-pattern section ("Don't shift rows
+  with your own styles … Use `edgeCompensation` instead.") and omits the released
+  `xstyle`, `listStyle`, and `start` props. The natural-reach doc has no anti-pattern
+  section, so main's 0/7 custom styles against natural reach's 5/7 partly reflects that
+  warning, not only the prop.
 - **One author** wrote the battery and the candidates.
 
 ## 6. Folder layout
@@ -266,6 +272,14 @@ internal/vibe-tests/list-edge-naming-test/
 └── results/         # (gitignored) tasks, the agents' replies, check.md, judge
 ```
 
-To rerun: `node gen-docs.mjs`, then `node build-tasks.mjs` (round 1),
-`node build-tasks.mjs --round=2`, and `node build-tasks.mjs --round=3`. Run one fresh agent
-per task file, save each reply to `results/out/<task id>.md`, then run `node check.mjs`.
+To rerun:
+
+1. Run `node gen-docs.mjs`, then `node build-tasks.mjs` (round 1),
+   `node build-tasks.mjs --round=2`, and `node build-tasks.mjs --round=3`. Each writes
+   `results/tasks[-rN]/<task id>.md` and a `manifest.json` that maps each task id to a
+   random file name.
+2. Copy each task file to its manifest name in a directory agents can open files in but
+   cannot list (for example, files `chmod 0444` in a directory `chmod 0311`).
+3. Start one fresh agent per task. Give it only the exact path of its own file, with the
+   instruction to read that file and use no other tool.
+4. Save each reply verbatim to `results/out/<task id>.md`, then run `node check.mjs`.

@@ -43,15 +43,19 @@ const ITEM_PROPS = new Set([
 ]);
 const STYLE_PROPS = /\b(style|xstyle|className)=/;
 
-/** Props written on each opening tag of `name`, from the reply's code. */
-function tagProps(code, name) {
+/**
+ * Each opening tag of `name` in the reply's code, as its attributes:
+ * `{name, value}`, where `value` is the raw source of a quoted or braced
+ * value, or null for a bare boolean attribute. Values are skipped with a
+ * quote- and brace-aware walk, so JSX inside an earlier attribute
+ * (`header={<Heading level={2}>…</Heading>}`) cannot end the tag early.
+ */
+function tagAttributes(code, name) {
   const found = [];
   const opener = new RegExp(`<${name}\\b`, 'g');
   let match;
   while ((match = opener.exec(code)) != null) {
-    // Read attribute names only, skipping quoted values and braced
-    // expressions (an icon in startContent has props of its own).
-    const props = [];
+    const attributes = [];
     let i = match.index + name.length + 1;
     while (i < code.length) {
       const char = code[i];
@@ -61,12 +65,16 @@ function tagProps(code, name) {
         i++;
         continue;
       }
-      props.push(attr[0]);
       i += attr[0].length;
-      if (code[i] !== '=') continue;
+      if (code[i] !== '=') {
+        attributes.push({name: attr[0], value: null});
+        continue;
+      }
       i++;
+      const start = i;
       if (code[i] === '"' || code[i] === "'") {
-        i = code.indexOf(code[i], i + 1) + 1;
+        const close = code.indexOf(code[i], i + 1);
+        i = close === -1 ? code.length : close + 1;
       } else if (code[i] === '{') {
         for (let depth = 0; i < code.length; i++) {
           if (code[i] === '{') depth++;
@@ -76,19 +84,38 @@ function tagProps(code, name) {
           }
         }
       }
+      attributes.push({name: attr[0], value: code.slice(start, i)});
     }
-    found.push(props);
+    found.push(attributes);
   }
   return found;
 }
 
-/** The value of `prop` on <List>, or null when the list leaves it unset. */
+/** Props written on each opening tag of `name`, from the reply's code. */
+function tagProps(code, name) {
+  return tagAttributes(code, name).map(attributes =>
+    attributes.map(attribute => attribute.name),
+  );
+}
+
+/**
+ * The value of `prop` on the first <List> that sets it: a string literal's
+ * text, `?<source>` for any other value (so a computed value is reported, not
+ * read as unset), or null when no <List> sets it.
+ */
 function edgeValue(code, prop) {
   if (prop == null) return null;
-  const m = code.match(
-    new RegExp(`<List\\b[^>]*\\b${prop}=(?:"([^"]+)"|\\{['"]([^'"]+)['"]\\})`),
-  );
-  return m ? (m[1] ?? m[2]) : null;
+  for (const attributes of tagAttributes(code, 'List')) {
+    const attribute = attributes.find(a => a.name === prop);
+    if (attribute == null) continue;
+    const literal =
+      /^(?:"([^"]*)"|'([^']*)'|\{\s*(?:"([^"]*)"|'([^']*)')\s*\})$/.exec(
+        attribute.value ?? '',
+      );
+    if (literal) return literal[1] ?? literal[2] ?? literal[3] ?? literal[4];
+    return `?${attribute.value ?? 'true'}`;
+  }
+  return null;
 }
 
 const rows = [];
@@ -104,21 +131,28 @@ for (const prompt of spec.generation.prompts) {
     const reply = read(`gen-${prompt.id}-${arm}`);
     if (reply == null) continue;
     const code = (reply.match(/```tsx\n([\s\S]*?)```/) ?? [, ''])[1];
+    const edge = edgeValue(code, prop);
     const deprecatedValue =
       deprecated == null ? null : edgeValue(code, deprecated.prop);
     if (deprecatedValue != null)
       deprecatedUse[arm] = (deprecatedUse[arm] ?? 0) + 1;
     const value =
-      edgeValue(code, prop) ??
+      edge ??
       (deprecatedValue != null
         ? `${deprecated.prop}=${deprecatedValue}`
         : null);
-    const canonical =
-      value == null
-        ? 'unset'
-        : deprecatedValue != null && edgeValue(code, prop) == null
+    // A defined `edge` wins over the deprecated prop, as List resolves them.
+    let canonical = 'unset';
+    if (edge != null) {
+      canonical =
+        Object.keys(values).find(k => values[k] === edge) ??
+        `?${edge.replace(/^\?/, '')}`;
+    } else if (deprecatedValue != null) {
+      canonical =
+        deprecatedValue === deprecated.value
           ? deprecated.look
-          : (Object.keys(values).find(k => values[k] === value) ?? `?${value}`);
+          : `?${deprecatedValue.replace(/^\?/, '')}`;
+    }
     // Whether the arm's API can produce the prompt's look at all (the main
     // baseline has no flush or bleed; the natural-reach arm has no values).
     const canReach =
