@@ -704,13 +704,8 @@ example `pnpm changeset:new --packages @astryxdesign/cli --category docs`. Run
 the check locally with
 `node scripts/release/changeset-coverage.mjs pr --base origin/main --explain`.
 
-Translated catalogs under `packages/core/locales/` need no Changeset,
-including added or removed languages and automated Crowdin syncs. Translator
-`description`-only changes to `en.json` are also exempt; English source
-message or key changes still require a Changeset naming `@astryxdesign/core`.
-Catalog validation still checks translated content and ICU contracts, even
-when no Changeset is required. Any other shipped changes in the same PR
-still require package coverage.
+Translation-only changes need no Changeset; changes to English source
+messages or keys still do.
 
 The same check compares the CLI's machine-readable ids with the latest
 release: response `type` values, response fields, golden JSON fields, and
