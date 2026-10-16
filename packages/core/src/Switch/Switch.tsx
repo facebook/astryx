@@ -567,6 +567,7 @@ export function Switch({
   style,
   ref,
   'aria-describedby': ariaDescribedByProp,
+  'aria-labelledby': ariaLabelledByProp,
   ...rest
 }: SwitchProps) {
   const t = useTranslator();
@@ -664,6 +665,10 @@ export function Switch({
         }}
         onFocus={onFocus}
         onBlur={onBlur}
+        // A caller's `aria-labelledby` names the control (a visible title
+        // elsewhere in the row, for example), so it reaches the input rather
+        // than the field wrapper via `...rest`.
+        aria-labelledby={ariaLabelledByProp}
         aria-describedby={ariaDescribedBy}
         aria-invalid={status?.type === 'error' ? true : undefined}
         aria-busy={isBusy || undefined}

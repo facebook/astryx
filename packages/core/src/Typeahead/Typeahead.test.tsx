@@ -17,10 +17,20 @@ import {
   beforeAll,
   afterAll,
   beforeEach,
+  afterEach,
 } from 'vitest';
 import {render, screen, fireEvent, waitFor, act} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import {createRef, Profiler, type ProfilerOnRenderCallback} from 'react';
+import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
+import {
+  createRef,
+  Profiler,
+  startTransition,
+  StrictMode,
+  Suspense,
+  useState,
+  type ProfilerOnRenderCallback,
+} from 'react';
 import {Typeahead} from './Typeahead';
 import {readFile} from 'node:fs/promises';
 import {resolve} from 'node:path';
@@ -68,6 +78,10 @@ beforeAll(() => {
 afterAll(() => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   (HTMLElement.prototype as any).matches = originalMatches;
+});
+
+afterEach(() => {
+  __resetLiveRegionsForTest();
 });
 
 // Test data
@@ -964,6 +978,193 @@ describe('BaseTypeahead hasEntriesOnFocus', () => {
     ).not.toBeInTheDocument();
   });
 
+  it('clears the loading state when the search source is replaced during an in-flight load', async () => {
+    let settle: (items: SearchableItem[]) => void = () => {};
+    const bootstrap = vi.fn(
+      async () =>
+        new Promise<SearchableItem[]>(resolve => {
+          settle = resolve;
+        }),
+    );
+    const initialSource: SearchSource = {search: () => [], bootstrap};
+    const replacementSource: SearchSource = {
+      search: () => [],
+      bootstrap: () => [],
+    };
+
+    const {rerender} = render(
+      <BaseTypeahead
+        searchSource={initialSource}
+        value={null}
+        onChange={() => {}}
+        hasEntriesOnFocus
+      />,
+    );
+    const input = screen.getByRole('combobox');
+
+    fireEvent.focus(input);
+    await waitFor(() => {
+      expect(screen.getByRole('status', {name: 'Loading'})).toBeInTheDocument();
+    });
+
+    rerender(
+      <BaseTypeahead
+        searchSource={replacementSource}
+        value={null}
+        onChange={() => {}}
+        hasEntriesOnFocus
+      />,
+    );
+
+    await waitFor(() => {
+      expect(
+        screen.queryByRole('status', {name: 'Loading'}),
+      ).not.toBeInTheDocument();
+    });
+
+    await act(async () => {
+      settle([]);
+      await Promise.resolve();
+    });
+    expect(
+      screen.queryByRole('status', {name: 'Loading'}),
+    ).not.toBeInTheDocument();
+  });
+
+  it('keeps the loading state under StrictMode for a pending autofocus bootstrap', async () => {
+    let settle: (items: SearchableItem[]) => void = () => {};
+    const bootstrap = vi.fn(
+      async () =>
+        new Promise<SearchableItem[]>(resolve => {
+          settle = resolve;
+        }),
+    );
+    render(
+      <StrictMode>
+        <Typeahead
+          label="Test"
+          searchSource={{search: () => [], bootstrap}}
+          value={null}
+          onChange={() => {}}
+          hasAutoFocus
+          hasEntriesOnFocus
+        />
+      </StrictMode>,
+    );
+
+    expect(screen.getByRole('status', {name: 'Loading'})).toBeInTheDocument();
+
+    await act(async () => {
+      settle([]);
+      await Promise.resolve();
+    });
+    expect(
+      screen.queryByRole('status', {name: 'Loading'}),
+    ).not.toBeInTheDocument();
+  });
+
+  let settlePendingTransitionA: (items: SearchableItem[]) => void = () => {};
+  const stableTransitionSourceA: SearchSource = {
+    search: vi.fn(
+      async () =>
+        new Promise<SearchableItem[]>(resolve => {
+          settlePendingTransitionA = resolve;
+        }),
+    ),
+    bootstrap: () => [],
+  };
+  const stableTransitionSourceB: SearchSource = {
+    search: vi.fn(async () => []),
+    bootstrap: () => [],
+  };
+
+  it('clears loading and aria-busy when source is replaced in a transition that suspends and retries', async () => {
+    let isSuspended = false;
+    let resolveSuspension: () => void = () => {};
+    let pendingSuspension: Promise<void> | null = null;
+
+    function SuspendingSibling({shouldSuspend}: {shouldSuspend: boolean}) {
+      if (shouldSuspend && isSuspended && pendingSuspension) {
+        // eslint-disable-next-line @typescript-eslint/only-throw-error
+        throw pendingSuspension;
+      }
+      return null;
+    }
+
+    let updateState!: (source: SearchSource, shouldSuspend: boolean) => void;
+
+    function TransitionContainer() {
+      const [source, setSource] = useState<SearchSource>(
+        stableTransitionSourceA,
+      );
+      const [shouldSuspend, setShouldSuspend] = useState(false);
+      updateState = (newSource, suspend) => {
+        setSource(newSource);
+        setShouldSuspend(suspend);
+      };
+
+      return (
+        <Suspense fallback={<div>Suspended...</div>}>
+          <Typeahead
+            label="Test"
+            searchSource={source}
+            value={null}
+            onChange={() => {}}
+            debounceMs={0}
+          />
+          <SuspendingSibling shouldSuspend={shouldSuspend} />
+        </Suspense>
+      );
+    }
+
+    render(<TransitionContainer />);
+    const input = screen.getByRole('combobox');
+
+    // Trigger a load so aria-busy="true" is set on the combobox
+    fireEvent.change(input, {target: {value: 'query'}});
+    await waitFor(() => {
+      expect(input).toHaveAttribute('aria-busy', 'true');
+    });
+    expect(screen.getByRole('status', {name: 'Loading'})).toBeInTheDocument();
+
+    // Create the pending promise for suspension
+    isSuspended = true;
+    pendingSuspension = new Promise<void>(resolve => {
+      resolveSuspension = () => {
+        isSuspended = false;
+        resolve();
+      };
+    });
+
+    // Inside startTransition, switch from source A to source B while sibling suspends
+    act(() => {
+      startTransition(() => {
+        updateState(stableTransitionSourceB, true);
+      });
+    });
+
+    // The render suspended, so the previous committed state remains
+    expect(input).toHaveAttribute('aria-busy', 'true');
+
+    // Resolve the pending promise and let the transition commit
+    await act(async () => {
+      resolveSuspension();
+      await pendingSuspension;
+    });
+
+    // Settle the abandoned load
+    await act(async () => {
+      settlePendingTransitionA([]);
+      await Promise.resolve();
+    });
+
+    // The combobox must not keep aria-busy and the spinner must be gone
+    expect(input).not.toHaveAttribute('aria-busy');
+    expect(
+      screen.queryByRole('status', {name: 'Loading'}),
+    ).not.toBeInTheDocument();
+  });
+
   it('shows bootstrap results on mouse click', async () => {
     render(
       <BaseTypeahead
@@ -1321,6 +1522,63 @@ describe('BaseTypeahead hasSearched reset', () => {
     fireEvent.change(input, {target: {value: ''}});
 
     // "No results found" should disappear since hasSearched is reset
+    expect(screen.queryByText('No results found')).not.toBeInTheDocument();
+  });
+
+  it('resets hasSearched and does not announce "No results found" when search source is replaced during a pending search', async () => {
+    let settle: (items: SearchableItem[]) => void = () => {};
+    const initialSource: SearchSource = {
+      search: vi.fn(
+        async () =>
+          new Promise<SearchableItem[]>(resolve => {
+            settle = resolve;
+          }),
+      ),
+      bootstrap: () => [],
+    };
+    const replacementSource: SearchSource = {
+      search: vi.fn(async () => []),
+      bootstrap: () => [],
+    };
+
+    const {rerender} = render(
+      <BaseTypeahead
+        searchSource={initialSource}
+        value={null}
+        onChange={() => {}}
+        debounceMs={0}
+      />,
+    );
+    const input = screen.getByRole('combobox');
+
+    // Type a query that starts an asynchronous search
+    fireEvent.change(input, {target: {value: 'abc'}});
+    expect(initialSource.search).toHaveBeenCalledWith('abc');
+
+    // Replace the search source while the search is still pending
+    rerender(
+      <BaseTypeahead
+        searchSource={replacementSource}
+        value={null}
+        onChange={() => {}}
+        debounceMs={0}
+      />,
+    );
+
+    // Settle the abandoned search
+    await act(async () => {
+      settle([]);
+      await Promise.resolve();
+    });
+
+    await act(
+      async () =>
+        new Promise<void>(resolve => requestAnimationFrame(() => resolve())),
+    );
+    expect(
+      document.querySelector('[data-astryx-live-region="polite"]')
+        ?.textContent ?? '',
+    ).not.toContain('No results found');
     expect(screen.queryByText('No results found')).not.toBeInTheDocument();
   });
 });
@@ -2313,7 +2571,7 @@ describe('Typeahead consumer key handler order', () => {
       currentTarget = event.currentTarget;
       event.preventDefault();
     });
-    const {container} = render(
+    render(
       <Typeahead
         label="Fruit"
         searchSource={fruitSource}

@@ -35,6 +35,7 @@ import {generateThemeCSS} from '../theme/generateThemeRules';
 import {selectorPresentationStyles} from '../Selector/selectorPresentation.stylex';
 import {groupStyles} from '../InputGroup/groupStyles';
 import {InputGroup, InputGroupText} from '../InputGroup';
+import {focusVars} from '../theme/tokens.stylex';
 
 function generateThemeTestCSS(theme: Parameters<typeof generateThemeCSS>[0]) {
   const {prose, component} = generateThemeCSS(theme);
@@ -4081,6 +4082,164 @@ describe('MultiSelector option actions (grid)', () => {
     await user.click(screen.getByRole('button', {name: 'Edit Docs', ...h}));
     expect(edit).toHaveBeenCalledWith('docs');
     expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it('draws the standard focus ring on the active action cell, from the focus tokens', async () => {
+    // jsdom resolves no custom property, so the ring is read from StyleX
+    // classes: a class name hashes one property and its value, and the same
+    // declaration yields the same class wherever it is written.
+    const ring = stylex.create({
+      active: {
+        outlineWidth: focusVars['--focus-outline-width'],
+        outlineStyle: focusVars['--focus-outline-style'],
+        outlineColor: focusVars['--focus-outline-color'],
+        outlineOffset: focusVars['--focus-outline-offset'],
+      },
+    });
+    const ringClasses = stylex
+      .props(ring.active)
+      .className!.split(' ')
+      .filter(token => /^x[a-z0-9]+$/.test(token));
+    expect(ringClasses).toHaveLength(4);
+
+    const user = userEvent.setup();
+    render(
+      <MultiSelector
+        label="Labels"
+        options={OPTIONS}
+        value={[]}
+        onChange={() => {}}
+      />,
+    );
+    const trigger = screen.getByRole('combobox', {name: 'Labels'});
+    await user.click(trigger);
+    const bug = screen.getByRole('row', {name: 'Bug', ...h});
+    const actionCell = bug.children[1] as HTMLElement;
+    for (const token of ringClasses) {
+      expect(actionCell).not.toHaveClass(token);
+    }
+    fireEvent.keyDown(trigger, {key: 'ArrowRight'});
+    expect(trigger).toHaveAttribute('aria-activedescendant', actionCell.id);
+    for (const token of ringClasses) {
+      expect(actionCell).toHaveClass(token);
+    }
+  });
+
+  it('draws no focus ring on an action cell highlighted after pointer input, until a key moves the highlight', async () => {
+    const ring = stylex.create({
+      active: {
+        outlineWidth: focusVars['--focus-outline-width'],
+        outlineStyle: focusVars['--focus-outline-style'],
+        outlineColor: focusVars['--focus-outline-color'],
+        outlineOffset: focusVars['--focus-outline-offset'],
+      },
+    });
+    const ringClasses = stylex
+      .props(ring.active)
+      .className!.split(' ')
+      .filter(token => /^x[a-z0-9]+$/.test(token));
+    expect(ringClasses).toHaveLength(4);
+
+    const user = userEvent.setup();
+    render(
+      <MultiSelector
+        label="Labels"
+        options={OPTIONS}
+        value={[]}
+        onChange={() => {}}
+      />,
+    );
+    const trigger = screen.getByRole('combobox', {name: 'Labels'});
+    await user.click(trigger);
+    const bug = screen.getByRole('row', {name: 'Bug', ...h});
+    const actionCell = bug.children[1] as HTMLElement;
+    fireEvent.mouseEnter(actionCell);
+    // The hover moved the highlight onto the action cell, without the ring.
+    expect(trigger).toHaveAttribute('aria-activedescendant', actionCell.id);
+    for (const token of ringClasses) {
+      expect(actionCell).not.toHaveClass(token);
+    }
+    // Keyboard navigation back onto the cell draws it.
+    fireEvent.keyDown(trigger, {key: 'ArrowLeft'});
+    fireEvent.keyDown(trigger, {key: 'ArrowRight'});
+    expect(trigger).toHaveAttribute('aria-activedescendant', actionCell.id);
+    for (const token of ringClasses) {
+      expect(actionCell).toHaveClass(token);
+    }
+  });
+
+  describe('ring under mixed input', () => {
+    const ringClasses = () => {
+      const ring = stylex.create({
+        active: {
+          outlineWidth: focusVars['--focus-outline-width'],
+          outlineStyle: focusVars['--focus-outline-style'],
+          outlineColor: focusVars['--focus-outline-color'],
+          outlineOffset: focusVars['--focus-outline-offset'],
+        },
+      });
+      return stylex
+        .props(ring.active)
+        .className!.split(' ')
+        .filter(token => /^x[a-z0-9]+$/.test(token));
+    };
+    const hasRing = (cell: HTMLElement) =>
+      ringClasses().every(token => cell.classList.contains(token));
+
+    async function openWithKeyboardOnBugAction() {
+      const user = userEvent.setup();
+      render(
+        <MultiSelector
+          label="Labels"
+          options={OPTIONS}
+          value={[]}
+          onChange={() => {}}
+        />,
+      );
+      const trigger = screen.getByRole('combobox', {name: 'Labels'});
+      await user.click(trigger);
+      const row = (name: string) => screen.getByRole('row', {name, ...h});
+      fireEvent.keyDown(trigger, {key: 'ArrowRight'});
+      const bugAction = row('Bug').children[1] as HTMLElement;
+      expect(trigger).toHaveAttribute('aria-activedescendant', bugAction.id);
+      expect(hasRing(bugAction)).toBe(true);
+      return {trigger, row, bugAction};
+    }
+
+    it('keeps the ring when the pointer crosses a disabled option the highlight ignores', async () => {
+      const {trigger, row, bugAction} = await openWithKeyboardOnBugAction();
+      fireEvent.mouseEnter(row('Docs').children[0]);
+      expect(trigger).toHaveAttribute('aria-activedescendant', bugAction.id);
+      expect(hasRing(bugAction)).toBe(true);
+    });
+
+    it('follows the keyboard modality when a hover moves the highlight to another action', async () => {
+      const {trigger, row} = await openWithKeyboardOnBugAction();
+      const docsAction = row('Docs').children[1] as HTMLElement;
+      fireEvent.mouseEnter(docsAction);
+      expect(trigger).toHaveAttribute('aria-activedescendant', docsAction.id);
+      expect(hasRing(docsAction)).toBe(true);
+    });
+
+    it('draws no ring for a modifier chord after pointer input', async () => {
+      const user = userEvent.setup();
+      render(
+        <MultiSelector
+          label="Labels"
+          options={OPTIONS}
+          value={[]}
+          onChange={() => {}}
+        />,
+      );
+      const trigger = screen.getByRole('combobox', {name: 'Labels'});
+      await user.click(trigger);
+      const bugAction = screen.getByRole('row', {name: 'Bug', ...h})
+        .children[1] as HTMLElement;
+      fireEvent.mouseEnter(bugAction);
+      expect(hasRing(bugAction)).toBe(false);
+      fireEvent.keyDown(trigger, {key: 'ArrowRight', ctrlKey: true});
+      expect(hasRing(bugAction)).toBe(false);
+    });
   });
 
   it('the inline-end arrow reaches the action cell, Enter fires it, inline-start returns', async () => {

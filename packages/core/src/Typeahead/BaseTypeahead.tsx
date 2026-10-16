@@ -624,6 +624,32 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
     sourceGenRef.current = ++searchGenRef.current;
   }
 
+  // The previous source is remembered in state, not a ref, so a render React
+  // discards cannot consume the comparison without its state updates.
+  const [sourceOfState, setSourceOfState] = useState(searchSource);
+  if (sourceOfState !== searchSource) {
+    setSourceOfState(searchSource);
+    if (isLoading) {
+      setIsLoading(false);
+      setHasSearched(false);
+    }
+    loadingRef.current = false;
+  }
+
+  // When the search source is replaced, any in-flight load from the previous
+  // source is abandoned (generation bumped above). Notify the wrapper's busy lane
+  // in an effect so external store listeners run safely after commit.
+  const isInitialMountRef = useRef(true);
+  useEffect(() => {
+    if (isInitialMountRef.current) {
+      isInitialMountRef.current = false;
+      return;
+    }
+    if (!loadingRef.current) {
+      onLoadingChangeRef.current?.(false);
+    }
+  }, [searchSource]);
+
   // Layer for dropdown
   const handleLayerShow = useCallback(() => {
     onOpenChange?.(true);

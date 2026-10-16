@@ -22,6 +22,7 @@ const GUTTER_OWNERS = new Set([
   'Dialog/Dialog.tsx',
   'Toast/ToastViewport.tsx',
   'BottomSheet/BottomSheetPanel.tsx',
+  'Drawer/Drawer.tsx',
   'Stepper/Step.tsx',
   'Tokenizer/useEndLaneReserve.ts',
 ]);

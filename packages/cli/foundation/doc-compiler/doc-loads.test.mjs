@@ -251,7 +251,7 @@ const RUNNERS = {
     sites: ['importDocModule'],
   },
   'foundation/discovery/template-adapter.mjs': {
-    runs: '@babel/parser, to find the fixture references in template source; and a template doc that does not validate, to read the replacement it declares',
+    runs: '@babel/parser, to find the fixture references and page-local bindings in template source; and a template doc that does not validate, to read the replacement it declares',
     sites: ['importDocModule', 'require(@babel/parser)'],
   },
   'foundation/discovery/theme-discovery.mjs': {
