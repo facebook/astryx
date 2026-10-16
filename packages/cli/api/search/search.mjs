@@ -1080,14 +1080,14 @@ async function gatherCoreComponents(coreDir) {
     /** @type {string[]} */
     let guidance = [];
     if (readme && readme.endsWith('.doc.mjs')) {
-      const doc = await loadModuleDoc(readme);
+      const loaded = await loadModuleDoc(readme);
+      // A member documented in its family's doc (VStack in Stack's doc) is
+      // indexed from its own entry: the family's keywords and guidance
+      // describe the family, not the member.
+      const doc = familyMember(loaded, comp) ?? loaded;
       if (doc) {
         keywords = Array.isArray(doc.keywords) ? doc.keywords : [];
-        description =
-          familyMember(doc, comp)?.description ||
-          doc.usage?.description ||
-          doc.description ||
-          '';
+        description = doc.usage?.description || doc.description || '';
         guidance = guidanceFrom(doc);
       }
     }
@@ -1230,11 +1230,11 @@ export async function componentKeywords(coreDir, cwd) {
     .flat()
     .map(async name => {
       const readme = findComponentReadme(coreDir, name);
-      const doc =
+      const loaded =
         readme && readme.endsWith('.doc.mjs')
           ? await loadModuleDoc(readme)
           : null;
-      return {name, keywords: keywordsOf(doc)};
+      return {name, keywords: keywordsOf(familyMember(loaded, name) ?? loaded)};
     });
   const loadedIntegrations = await loadIntegrationsSafely(cwd);
   const replacements = await loadComponentReplacements(
