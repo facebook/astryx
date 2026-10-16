@@ -4,7 +4,7 @@
 
 /**
  * @file useLayer.tsx
- * @input Uses React hooks, Popover API, CSS anchor positioning, shared text/provider boundaries
+ * @input Uses React hooks, Popover API, CSS anchors, owned DOM boundaries, shared text/provider boundaries
  * @output Exports the public useLayer hook plus internal trigger helpers.
  * @position Core layer utility; used by useHoverCard, useTooltip, etc.
  *
@@ -30,7 +30,7 @@ import {createPortal} from 'react-dom';
 import {LayerContentBoundary} from './layerScopedContext';
 import {addAnchorName, removeAnchorName} from './anchorName';
 import {currentGesture, currentGestureHasClicked} from './gestureCounter';
-import {resolveLayerPortalTarget} from './layerHost';
+import {layerPortalRootProps, resolveLayerPortalTarget} from './layerHost';
 import {layerTextReset} from './layerTextReset.stylex';
 import {layerStructureReset} from './layerStructureReset.stylex';
 import {layerViewportInset} from './layerViewportInset.stylex';
@@ -1224,6 +1224,7 @@ function useLayerImplementation(
       // cascade; unsafe positions use the nearest corrective portal target.
       const layer = (
         <Container
+          {...layerPortalRootProps}
           ref={popoverRefCallback}
           id={id}
           role={role}
@@ -1296,6 +1297,7 @@ function useLayerImplementation(
 
       return (
         <div
+          {...layerPortalRootProps}
           ref={popoverRefCallback}
           id={id}
           popover={lightDismiss ? 'auto' : 'manual'}

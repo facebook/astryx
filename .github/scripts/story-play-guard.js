@@ -39,6 +39,28 @@ const port = Number(getArg('port') || 6010);
 // whole cost of promoting its play function into required CI.
 const TARGETS = [
   {
+    component: 'Tooltip',
+    story: 'core-tooltip--decorator-unmount',
+    guards:
+      'decorator tooltip survives reconciliation and cleans up on deselection',
+  },
+  {
+    component: 'Tooltip',
+    story: 'core-tooltip--decorator-read-only-unmount',
+    guards:
+      'read-only decorator tooltip survives reconciliation and editor unmount',
+  },
+  {
+    component: 'Layer',
+    story: 'core-layer--boundary-nested-focus-guard',
+    guards: 'nested decorator popup remains inside its parent focus owner',
+  },
+  {
+    component: 'Layer',
+    story: 'core-layer--boundary-live-direction-guard',
+    guards: 'editor overlay direction follows live prop changes',
+  },
+  {
     component: 'Selector',
     story: 'core-selector--size-variants',
     guards:
