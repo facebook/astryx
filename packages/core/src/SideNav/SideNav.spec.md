@@ -42,15 +42,15 @@ its source, tests, and consumer docs until a record claims it.
 
 ## Contract at a glance
 
-| Area                    | Contract                                                                                                                                                                                                    |
-| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Public contract         | None. No prop, value, default, or theme target changes.                                                                                                                                                     |
-| Behavior                | Every SideNavItem row spans the full width of its nav list at any depth. Depth shows as inline-start indent inside the row: one `--spacing-6` step per level, added to the row's own padding.               |
-| End-user impact         | A person scanning a nested nav sees hover, pressed, selected, and focus fills that line up with the top-level rows, and can click anywhere in a nested row, including its indent, to activate it.           |
-| Builder impact          | None. Icons and labels keep their per-depth position. Content placed directly inside a SideNavItem that is not itself a SideNavItem sits at the nav list edge, because the nested group adds no inset.      |
-| Compatibility/readiness | Nonbreaking change of visual direction (`spec:AST-017/FR3`). The collapsed rail and top-level rows are unchanged. Authority is current; implementation may be staged.                                       |
-| Review checks           | Reject a nested row narrower than a top-level row, an indent drawn outside the row, an indent area that shows feedback but does not activate, a clipped focus ring, or an indent in the flyout's top level. |
-| Governing rules         | DD1 and FR3–FR5 below; `family:navigation-destinations` for destinations; `architecture:internationalization` for logical direction.                                                                        |
+| Area                    | Contract                                                                                                                                                                                                                                                |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Public contract         | None. No prop, value, default, or theme target changes.                                                                                                                                                                                                 |
+| Behavior                | Every SideNavItem row spans the full width of its nav list at any depth. Depth shows as inline-start indent inside the row: one `--spacing-6` step per level, added to the row's own padding.                                                           |
+| End-user impact         | A person scanning a nested nav sees hover, pressed, selected, and focus fills that line up with the top-level rows, and can click anywhere in a nested row, including its indent, to activate it.                                                       |
+| Builder impact          | No new choice or prop. Icons and labels keep their per-depth position. Content placed directly inside a SideNavItem that is not itself a SideNavItem sits at the nav list edge, because the nested group adds no inset; no supported setting insets it. |
+| Compatibility/readiness | Nonbreaking change of visual direction (`spec:AST-017/FR3`). The collapsed rail and top-level rows are unchanged. Authority is current; implementation may be staged.                                                                                   |
+| Review checks           | Reject a nested row narrower than a top-level row, an indent drawn outside the row, an indent area that shows feedback but does not activate, a clipped focus ring, or an indent in the flyout's top level.                                             |
+| Governing rules         | DD1 and FR3–FR5 below; `family:navigation-destinations` for destinations; `architecture:internationalization` for logical direction.                                                                                                                    |
 
 This table is a review projection; the body below is authoritative.
 
@@ -100,7 +100,7 @@ Consumer migration instructions belong in consumer docs and release notes.
 
 | Concept       | Closed values or states                        | Meaning                                                                                                     | Availability by variant/orientation/state | Default | Owner               | Stability | Invalid-value behavior |
 | ------------- | ---------------------------------------------- | ----------------------------------------------------------------------------------------------------------- | ----------------------------------------- | ------- | ------------------- | --------- | ---------------------- |
-| Nesting depth | `0`, `1`, `2`, … (derived, not a prop)         | The number of SideNavItem ancestors of a row within the same list. A collapsed rail's flyout restarts at 0. | Expanded rail; the flyout's own list      | `0`     | `component:SideNav` | stable    | Not caller-settable    |
+| Nesting depth | `0`, `1`, `2`, … (derived, not a prop)         | The number of SideNavItem ancestors of a row within the same list. A collapsed rail's flyout restarts at 0. | Expanded rail; mobile drawer; flyout      | `0`     | `component:SideNav` | stable    | Not caller-settable    |
 | Row size      | `sm`, `md`, `lg` (existing SideNavItem `size`) | Sets the row's height and base inline padding; the indent adds to that padding.                             | Every row                                 | `md`    | `component:SideNav` | stable    | Rejected by the type   |
 
 ## Behavioral and layout contract
@@ -109,7 +109,7 @@ Consumer migration instructions belong in consumer docs and release notes.
 | --- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- | -------------------------------------------- |
 | FR1 | SideNav renders its navigation children in a scrollable list, which may be grouped by SideNavSection. A SideNavItem with children renders them, after its own row, in a group labelled by the parent's label; unless `collapsible` is `false`, the group expands and collapses and is hidden from assistive technology and inert while collapsed.                                        | Current source, docs, and tests                             | Current behavior                             |
 | FR2 | In a collapsed rail, a SideNavItem without an icon is not rendered; a leaf item renders icon-only, named by a non-blank caller `aria-label` or else its label; an item with children renders an icon-only trigger that opens a flyout listing its children as the flyout's top level.                                                                                                    | Current source, docs, and tests                             | Current behavior                             |
-| FR3 | In an expanded rail and in a flyout, every SideNavItem row MUST span the full inline size of its list at any depth. A row at depth `n` MUST start its content `n` × `--spacing-6` beyond the row's own inline-start padding for its size, inside the row; the nested group MUST add no inset. A flyout's top level is depth 0.                                                           | `component:SideNav/DEC-1`                                   | Settled intent; implementation may be staged |
+| FR3 | In an expanded rail, in a flyout, and in the mobile navigation drawer, every SideNavItem row MUST span the full inline size of its list at any depth. A row at depth `n` MUST start its content `n` × `--spacing-6` beyond the row's own inline-start padding for its size, inside the row; the nested group MUST add no inset. A flyout's top level is depth 0.                         | `component:SideNav/DEC-1`                                   | Settled intent; implementation may be staged |
 | FR4 | The indent area MUST be part of the row's target: a click there, including a modified or middle click on a link row, does what the same click on the row's primary element does. When the row also carries an independent expand toggle or `actions`, the indent belongs to the primary link or button, and the toggle and actions keep their own activation at the row's trailing edge. | `component:SideNav/DEC-1`; `family:navigation-destinations` | Settled intent; implementation may be staged |
 | FR5 | An expanded nested group MUST NOT clip its rows once it has finished opening, so a nested row's focus ring paints in full. The group MAY clip while collapsed and while it opens or closes.                                                                                                                                                                                              | `component:SideNav/DEC-1`                                   | Settled intent; implementation may be staged |
 
@@ -124,15 +124,15 @@ Consumer migration instructions belong in consumer docs and release notes.
 
 ### Representative states
 
-| State                                 | Required invariant                                                                             | Allowed variation               |
-| ------------------------------------- | ---------------------------------------------------------------------------------------------- | ------------------------------- |
-| Depth 1–3, `md`                       | Row width equals a top-level row's; content starts one step further in per level.              | Labels, icons, selection.       |
-| `sm` and `lg` nested rows             | Indent adds to that size's base padding.                                                       | Row height by size.             |
-| Nested row with own link and children | Full-width row; indent is part of the link; the expand toggle stays at the trailing edge.      | Collapsed or expanded children. |
-| Nested row with `actions`             | Full-width row; indent is part of the primary element; actions stay at the trailing edge.      | Action content.                 |
-| Keyboard focus on a nested row        | The focus ring paints in full around the row.                                                  | Ring style by theme.            |
-| Right-to-left                         | Indent sits at the inline start (right); same widths.                                          | Writing direction.              |
-| Collapsed rail                        | Unchanged: icon-only items; the flyout's top level has no indent; deeper flyout levels indent. | Flyout content.                 |
+| State                                 | Required invariant                                                                        | Allowed variation               |
+| ------------------------------------- | ----------------------------------------------------------------------------------------- | ------------------------------- |
+| Depth 1–3, `md`                       | Row width equals a top-level row's; content starts one step further in per level.         | Labels, icons, selection.       |
+| `sm` and `lg` nested rows             | Indent adds to that size's base padding.                                                  | Row height by size.             |
+| Nested row with own link and children | Full-width row; indent is part of the link; the expand toggle stays at the trailing edge. | Collapsed or expanded children. |
+| Nested row with `actions`             | Full-width row; indent is part of the primary element; actions stay at the trailing edge. | Action content.                 |
+| Keyboard focus on a nested row        | The focus ring paints in full around the row.                                             | Ring style by theme.            |
+| Right-to-left                         | Indent sits at the inline start (right); same widths.                                     | Writing direction.              |
+| Collapsed rail                        | Icon-only items; the flyout's top level has no indent; deeper flyout levels indent.       | Flyout content.                 |
 
 ### Transformation and precedence order
 
@@ -188,7 +188,7 @@ Consumer migration instructions belong in consumer docs and release notes.
 | --------- | ------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------ |
 | FR1, FR2  | `SideNav.test.tsx` nesting, collapsible, and collapsed-rail suites                    | Nested, collapsible, collapsed rail, flyout                                                   | Removing the labelled group, its collapsed inert state, or the collapsed icon-only and flyout paths fails.                                          | `audit:SideNav/anatomy`  |
 | FR3, ORD1 | Focused `SideNav.test.tsx` indent coverage, required with implementation              | Depth 1 and 2; `sm` and `md`; split and actions rows; caller `style`; flyout                  | A group inset, a missing or wrong indent, a dropped caller `style`, or an indented flyout top level fails.                                          | `audit:SideNav/layout`   |
-| FR3, DD1  | Real-browser geometry over the SideNav nested stories                                 | Depths 1–3; `sm`, `md`, `lg`; light and dark; right-to-left                                   | A nested row's box narrower than a top-level row's, or a label moved from its per-depth position, fails.                                            | `audit:SideNav/layout`   |
+| FR3, DD1  | Real-browser geometry over the SideNav nested stories                                 | Depths 1–3; `sm`, `md`, `lg`; light and dark; right-to-left; mobile drawer                    | A nested row's box narrower than a top-level row's, or a label moved from its per-depth position, fails.                                            | `audit:SideNav/layout`   |
 | FR4       | Real-browser click in the indent area of plain, split, and actions rows               | Link and button rows; plain, modified, and middle clicks; nested rows with toggle and actions | A click in the indent that does nothing or differs from the same click on the primary element, or a toggle or action that activates the row, fails. | `audit:SideNav/behavior` |
 | FR5, AR2  | `SideNav.test.tsx` group clipping case and real-browser keyboard focus on nested rows | Only-child and last nested rows; after opening; collapsed                                     | A focus ring cut at any edge of an expanded group, or an expanded group that still clips, fails.                                                    | `audit:SideNav/a11y`     |
 | FR2, FR3  | Real-browser collapsed rail and flyout                                                | Collapsed rail with nested children                                                           | Any change to the collapsed rail, or an indent on the flyout's top level, fails.                                                                    | `audit:SideNav/layout`   |
@@ -204,9 +204,9 @@ Consumer migration instructions belong in consumer docs and release notes.
 **Decider:** cixzhang, 2026-10-16
 
 A nested row that starts at its indent paints its fills from a different edge
-than the rows above it, so it reads as a different, narrower component. Keeping
-every row full width and moving the indent inside the row lines up every fill
-and keeps every label where it was. The indent is part of the row, so the area
+than the rows above it, so it reads as a different, narrower component. A row that
+spans the full width with its indent inside lines up every fill and keeps each
+label at its per-depth position. The indent is part of the row, so the area
 that lights up is the area that acts. Full-width rows reach the nested group's
 edges, so an open group must not clip them, or their focus ring is cut off.
 
