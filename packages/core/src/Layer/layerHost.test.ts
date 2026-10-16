@@ -102,6 +102,27 @@ describe('resolveLayerPortalTarget', () => {
     expect(target).toBe(root.querySelector('#dialog'));
   });
 
+  it.each(['true', 'false', 'plaintext-only', ''])(
+    'keeps a corrective portal outside a contenteditable=%s editor',
+    contentEditable => {
+      const root = mount(
+        `<section id="host"><div contenteditable="${contentEditable}"><p><span id="inline"><template></template></span></p></div></section>`,
+      );
+      expect(resolveLayerPortalTarget(root.querySelector('#inline'))).toBe(
+        root.querySelector('#host'),
+      );
+    },
+  );
+
+  it('keeps an editor portal inside its nearest dialog', () => {
+    const root = mount(
+      '<dialog id="dialog"><div contenteditable="true"><p><span id="inline"><template></template></span></p></div></dialog>',
+    );
+    expect(resolveLayerPortalTarget(root.querySelector('#inline'))).toBe(
+      root.querySelector('#dialog'),
+    );
+  });
+
   it('stops at the nearest safe ancestor rather than the body', () => {
     const root = mount(
       '<section id="outer"><li id="host"><p><span id="t">t</span></p></li></section>',

@@ -2,7 +2,7 @@
 
 /**
  * @file layerHost.ts
- * @input Uses the layer's intended inline parent element
+ * @input Uses the layer's intended inline parent element and editing boundaries
  * @output Exports resolveLayerPortalTarget, the corrective portal target
  * @position Layer utility; used by useLayer to place the popover in the DOM
  *
@@ -138,7 +138,9 @@ export function resolveLayerPortalTarget(
     if (tagName === 'dialog') {
       break;
     }
-    if (UNSAFE_HOSTS.has(tagName)) {
+    // Editors reconcile their own DOM, including while read-only. A portal
+    // into that tree can be removed before React gets to unmount it.
+    if (UNSAFE_HOSTS.has(tagName) || node.hasAttribute('contenteditable')) {
       outermostUnsafe = node;
     }
     node = node.parentElement;

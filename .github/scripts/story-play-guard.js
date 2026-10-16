@@ -4,7 +4,7 @@
 /**
  * @description Runs listed stories' play functions in real Chromium and fails when one throws
  * @input --storybook-dir <path> [--port <n>]
- * @output One line per story; exit 1 if a play function threw, the story errored, or it never finished
+ * @output One line per story, including editor-owned tooltip lifecycle; exit 1 if a play function threw, the story errored, or it never finished
  *
  * A story's play function is the only place a geometry assertion can live —
  * getBoundingClientRect needs a real layout engine — but on its own it is
@@ -38,6 +38,17 @@ const port = Number(getArg('port') || 6010);
 // Stories whose play assertions are load-bearing. Adding a story here is the
 // whole cost of promoting its play function into required CI.
 const TARGETS = [
+  {
+    component: 'Tooltip',
+    story: 'core-tooltip--decorator-unmount',
+    guards:
+      'a Lexical decorator retains its tooltip until the controls unmount',
+  },
+  {
+    component: 'Tooltip',
+    story: 'core-tooltip--decorator-read-only-unmount',
+    guards: 'a read-only Lexical editor retains and cleans up its tooltip',
+  },
   {
     component: 'Selector',
     story: 'core-selector--size-variants',
