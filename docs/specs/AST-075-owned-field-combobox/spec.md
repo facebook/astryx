@@ -3,12 +3,12 @@ schema_version: 4
 template_version: 2
 kind: system-spec
 id: spec:AST-075
-authority: draft
+authority: current
 archive_reason: null
 superseded_by: null
-approved_by: null
-approved_at: null
-phase: proposed
+approved_by: cixzhang
+approved_at: 2026-10-15
+phase: accepted
 owners: [vjeux]
 affects_architecture:
   [architecture:interaction-modality, architecture:public-component-api]
@@ -130,7 +130,7 @@ the behavior from hooks; every such field behaves and announces the same way.
 ### DEC-1 — The caller renders the field and the list; Astryx owns the semantics and the keys
 
 **Reference:** `spec:AST-075/DEC-1`
-**Decider:** pending owner review
+**Decider:** `cixzhang`, `2026-10-15`
 
 A product that already renders a composer, a search field, or a dialog field
 cannot adopt the typeahead without replacing that field and moving its list into
