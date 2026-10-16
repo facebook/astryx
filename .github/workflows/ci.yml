@@ -2495,6 +2495,37 @@ jobs:
           retention-days: 30
           if-no-files-found: error
 
+      # DrawerHeader audit evidence proves its title row, numeric ReactNode slot
+      # values, close action, direction, theme, focus, and narrow reflow on the
+      # exact PR head. Axe and the sensor matrix both run if either one fails.
+      - name: Run DrawerHeader audit browser evidence
+        if: ${{ !cancelled() && github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, '[Component Audit] DrawerHeader:') }}
+        env:
+          ASTRYX_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          status=0
+          node .github/scripts/accessibility-audit.js \
+            --storybook-dir apps/storybook/dist \
+            --output drawer-header-a11y-report.json \
+            --components DrawerHeader \
+            --baseline .github/a11y-baseline.json \
+            --fail-on-new || status=1
+          pnpm exec playwright test \
+            packages/core/src/Drawer/__tests__/DrawerHeaderAudit.a11y.chromium.spec.ts \
+            --project chromium || status=1
+          exit "$status"
+
+      - name: Upload DrawerHeader audit evidence
+        if: always() && github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, '[Component Audit] DrawerHeader:')
+        uses: actions/upload-artifact@v7
+        with:
+          name: drawer-header-audit-evidence-${{ needs.build-storybook.outputs.short_hash }}
+          path: |
+            drawer-header-a11y-report.json
+            test-results/drawer-header-audit-evidence/
+          retention-days: 30
+          if-no-files-found: error
+
       # DateInput's open-state audit story uses a play function to open the
       # popover. Restricting this focused pass to that story lets the selector
       # wait bind axe to the Calendar dialog without making every DateInput story
