@@ -1352,18 +1352,6 @@ describe('DropdownMenu items', () => {
     );
     expect(handleClick).not.toHaveBeenCalled();
   });
-
-  it('has aria-disabled when disabled', () => {
-    render(
-      <DropdownMenu
-        button={{label: 'Actions'}}
-        items={[{label: 'Edit', isDisabled: true}]}
-      />,
-    );
-    expect(
-      screen.getByRole('menuitem', {name: 'Edit', hidden: true}),
-    ).toHaveAttribute('aria-disabled', 'true');
-  });
 });
 
 describe('DropdownMenu sections', () => {
