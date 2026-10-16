@@ -15,7 +15,8 @@
  * needs it: `Project` assembles templates from it. While this sat in api/, that
  * made a cycle across the layer boundary — Project reached up for discovery and
  * this module imported Project back. Nothing here depends on api/; every import
- * is node:*, jiti, foundation/*, or authoring/*.
+ * is node:*, jiti, foundation/*, or authoring/*, plus a lazily required
+ * @babel/parser for extractComponents' local-declaration scan.
  *
  * @position packages/cli/foundation/discovery — shared template discovery/IO;
  *   consumed by Project and by the api/template leaves.
@@ -1267,7 +1268,8 @@ export async function discoverIntegrationTemplatesForOne(integration) {
         template: id,
         message: `Template "${id}" is missing a "type" of "page" or "block". Stamp the default export with type: 'page' or type: 'block'.`,
       });
-      const declared = doc?.replaces ?? (await declaredReplacement(docPath, id));
+      const declared =
+        doc?.replaces ?? (await declaredReplacement(docPath, id));
       if (declared != null) {
         errors.push({
           code: 'invalid_template_replacement',
@@ -1423,6 +1425,55 @@ const UBIQUITOUS = new Set([
   'Icon',
 ]);
 
+/** @type {typeof import('@babel/parser') | undefined} */
+let babelParser;
+
+/**
+ * Names bound by top-level `function`, `class`, `const`, `let` or `var`
+ * declarations (exported or not). Returns an empty set when the source does
+ * not parse, so a parse failure never drops a real component.
+ *
+ * @param {string} src
+ * @returns {Set<string>}
+ */
+function topLevelBindingNames(src) {
+  /** @type {Set<string>} */
+  const names = new Set();
+  let program;
+  try {
+    babelParser ??= require('@babel/parser');
+    program = babelParser.parse(src, {
+      sourceType: 'module',
+      plugins: ['jsx', 'typescript'],
+      errorRecovery: true,
+    }).program;
+  } catch {
+    return names;
+  }
+  for (const statement of program.body) {
+    const node =
+      statement.type === 'ExportNamedDeclaration' ||
+      statement.type === 'ExportDefaultDeclaration'
+        ? statement.declaration
+        : statement;
+    if (node == null) continue;
+    if (
+      (node.type === 'FunctionDeclaration' ||
+        node.type === 'ClassDeclaration') &&
+      node.id
+    ) {
+      names.add(node.id.name);
+    } else if (node.type === 'VariableDeclaration') {
+      for (const declarator of node.declarations) {
+        if (declarator.id.type === 'Identifier') {
+          names.add(declarator.id.name);
+        }
+      }
+    }
+  }
+  return names;
+}
+
 /**
  * @param {string} pagePath
  * @returns {string[]}
@@ -1450,17 +1501,11 @@ export function extractComponents(pagePath) {
     matches.push(m[2]);
   }
 
-  // Exclude names that correspond to a local declaration (function/const/class)
-  // in the same file, as they are page-local helpers, not importable components.
-  const localDeclRegex = /(?:function|class)\s+([A-Z]\w+)\b|(?:const|let)\s+([A-Z]\w+)\s*=/g;
-  const localDeclNames = new Set();
-  let declMatch;
-  while ((declMatch = localDeclRegex.exec(src)) !== null) {
-    const name = declMatch[1] || declMatch[2];
-    if (name) {
-      localDeclNames.add(name);
-    }
-  }
+  // Exclude names bound by a top-level declaration in the same file: those are
+  // page-local helpers (e.g. `function TimelineSection()`), not components a
+  // builder can import. Read real bindings from the syntax tree so comments,
+  // strings and type annotations cannot add or hide a name.
+  const localDeclNames = topLevelBindingNames(src);
 
   return [
     ...new Set(
