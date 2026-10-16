@@ -30,6 +30,8 @@ import {
   recordEnvelope,
   recordHelp,
   resetRecorder,
+  CAPTURE_GUARD,
+  CAPTURE_WINDOW,
   MAX_CAPTURED_OUTPUT,
 } from './recorder.mjs';
 import {parseDebugEvent} from '../../authoring/debug/parse.mjs';
@@ -512,6 +514,239 @@ describe('captured output — what the CLI answered', () => {
     expect(output.stdoutBytes).toBeGreaterThan(MAX_CAPTURED_OUTPUT);
     expect(output.stdout).toContain('truncated');
     expect(output.stdout.length).toBeLessThan(MAX_CAPTURED_OUTPUT + 200);
+    // A marker on its own is not a truncated answer, it is a lost one.
+    expect(output.stdout.length).toBeGreaterThan(MAX_CAPTURED_OUTPUT - 200);
+  });
+
+  it('keeps the prefix of a single write larger than the cap', () => {
+    const seen = collect();
+    begin({argv: ['template', '--list']});
+    // One write, not many: this is how a rendered list or a JSON envelope
+    // arrives, and it used to be discarded whole rather than truncated.
+    process.stdout.write('A'.repeat(MAX_CAPTURED_OUTPUT + 5000));
+    finish({exitCode: 0});
+
+    const {output} = seen[0];
+    expect(output.stdoutBytes).toBe(MAX_CAPTURED_OUTPUT + 5000);
+    expect(output.truncated).toBe(true);
+    expect(output.stdout.startsWith('A'.repeat(1000))).toBe(true);
+    expect(
+      output.stdout.slice(0, MAX_CAPTURED_OUTPUT).split('A').length - 1,
+    ).toBe(MAX_CAPTURED_OUTPUT);
+  });
+
+  it('keeps the prefix of a single write larger than the whole window', () => {
+    const seen = collect();
+    begin({argv: []});
+    process.stdout.write('A'.repeat(CAPTURE_WINDOW + 5000));
+    finish({exitCode: 0});
+
+    const {output} = seen[0];
+    expect(output.stdoutBytes).toBe(CAPTURE_WINDOW + 5000);
+    expect(output.stdout.split('\n')[0]).toBe('A'.repeat(MAX_CAPTURED_OUTPUT));
+  });
+
+  it('fills the cap exactly when one write straddles it', () => {
+    const seen = collect();
+    begin({argv: []});
+    process.stdout.write('a'.repeat(MAX_CAPTURED_OUTPUT - 10));
+    process.stdout.write('b'.repeat(1000));
+    finish({exitCode: 0});
+
+    const {output} = seen[0];
+    expect(output.stdoutBytes).toBe(MAX_CAPTURED_OUTPUT + 990);
+    // The tail of the second write is dropped; its first 10 bytes are not.
+    // Count in the prefix only — the truncation marker contains a 'b' too.
+    const prefix = output.stdout.split('\n')[0];
+    expect(prefix.split('b').length - 1).toBe(10);
+    expect(Buffer.byteLength(prefix)).toBe(MAX_CAPTURED_OUTPUT);
+  });
+
+  it('never splits a character when cutting at the cap', () => {
+    const seen = collect();
+    begin({argv: []});
+    // 'é' is two bytes, so the budget runs out mid-character.
+    process.stdout.write('e'.repeat(MAX_CAPTURED_OUTPUT - 1) + 'é'.repeat(10));
+    finish({exitCode: 0});
+
+    const kept = seen[0].output.stdout.split('\n')[0];
+    expect(kept).not.toContain('\uFFFD');
+    expect(kept).toBe('e'.repeat(MAX_CAPTURED_OUTPUT - 1));
+  });
+
+  it('keeps nothing written after a cut, so the capture stays a prefix', () => {
+    const seen = collect();
+    begin({argv: []});
+    // The cut backs off one byte before the 'é', leaving one byte of room.
+    process.stdout.write('e'.repeat(MAX_CAPTURED_OUTPUT - 1) + 'é');
+    process.stdout.write('z');
+    finish({exitCode: 0});
+
+    const {output} = seen[0];
+    expect(output.stdoutBytes).toBe(MAX_CAPTURED_OUTPUT + 2);
+    expect(output.stdout.split('\n')[0]).toBe(
+      'e'.repeat(MAX_CAPTURED_OUTPUT - 1),
+    );
+  });
+
+  it('backs off over every byte of a 3- or 4-byte character at the cut', () => {
+    for (const {char, size} of [
+      {char: '€', size: 3},
+      {char: '😀', size: 4},
+    ]) {
+      for (let into = 1; into < size; into += 1) {
+        resetRecorder();
+        const seen = collect();
+        begin({argv: []});
+        process.stdout.write(
+          'e'.repeat(MAX_CAPTURED_OUTPUT - into) + char.repeat(3),
+        );
+        finish({exitCode: 0});
+        expect(seen[0].output.stdout.split('\n')[0]).toBe(
+          'e'.repeat(MAX_CAPTURED_OUTPUT - into),
+        );
+      }
+    }
+  });
+
+  it('keeps output of exactly the cap whole, with no marker', () => {
+    const seen = collect();
+    begin({argv: []});
+    process.stdout.write('x'.repeat(MAX_CAPTURED_OUTPUT));
+    finish({exitCode: 0});
+
+    const {output} = seen[0];
+    expect(output.stdout).toBe('x'.repeat(MAX_CAPTURED_OUTPUT));
+    expect(output.truncated).toBe(false);
+  });
+
+  it('caps each stream at 32 KiB', () => {
+    expect(MAX_CAPTURED_OUTPUT).toBe(32 * 1024);
+  });
+
+  it('scrubs a token that the cut would split', () => {
+    const seen = collect();
+    begin({argv: []});
+    // Only `ghp_` and 12 more characters fit under the cap: too few for the
+    // token pattern to recognize the fragment on its own.
+    process.stdout.write(
+      `${'a'.repeat(MAX_CAPTURED_OUTPUT - 17)} ghp_${'B'.repeat(36)} tail`,
+    );
+    finish({exitCode: 0});
+
+    const kept = seen[0].output.stdout;
+    expect(kept.startsWith('a'.repeat(1000))).toBe(true);
+    expect(kept).not.toContain('ghp_');
+    // Nothing past the token was left out, so the last word is kept.
+    expect(kept.split('\n')[0].endsWith(' tail')).toBe(true);
+  });
+
+  it('scrubs a token that continues into a later write', () => {
+    const seen = collect();
+    begin({argv: []});
+    // The first write crosses the cap partway through the token. The token's
+    // other 32 characters come in the next write.
+    process.stdout.write(
+      `${'a'.repeat(MAX_CAPTURED_OUTPUT - 6)} ghp_${'B'.repeat(4)}`,
+    );
+    process.stdout.write(`${'B'.repeat(32)} tail`);
+    finish({exitCode: 0});
+
+    const kept = seen[0].output.stdout;
+    expect(kept.startsWith('a'.repeat(1000))).toBe(true);
+    expect(kept).not.toContain('ghp_');
+  });
+
+  it('scrubs a token whose first part exactly fills the cap', () => {
+    const seen = collect();
+    begin({argv: []});
+    process.stdout.write(`${'a'.repeat(MAX_CAPTURED_OUTPUT - 9)} ghp_BBBB`);
+    process.stdout.write(`${'B'.repeat(32)} tail`);
+    finish({exitCode: 0});
+
+    const kept = seen[0].output.stdout;
+    expect(kept.startsWith('a'.repeat(1000))).toBe(true);
+    expect(kept).not.toContain('ghp_');
+  });
+
+  it('keeps nothing near the window edge when output ran past it', () => {
+    // Redaction shrinks the held window to 8 bytes over the cap, and the
+    // window's raw edge falls 16 characters into a token, too few for the
+    // token pattern to match. Cutting at the cap alone would keep 8 of them.
+    const shrink = CAPTURE_WINDOW - (MAX_CAPTURED_OUTPUT + 8);
+    const count = Math.floor((shrink - 10) / 90);
+    const rest = shrink - count * 90;
+    const head =
+      `ghp_${'A'.repeat(96)} `.repeat(count) + `ghp_${'A'.repeat(rest + 6)} `;
+    const edge = `ghp_${'B'.repeat(12)}`;
+    const pad = ' '.repeat(CAPTURE_WINDOW - head.length - edge.length);
+    const seen = collect();
+    begin({argv: []});
+    process.stdout.write(`${head}${pad}${edge}${'B'.repeat(24)} tail`);
+    finish({exitCode: 0});
+
+    const kept = seen[0].output.stdout;
+    expect(kept).toContain('[redacted]');
+    expect(kept).not.toContain('ghp_B');
+  });
+
+  it('keeps nothing when redaction shrinks the window inside the guard', () => {
+    const token = `ghp_${'A'.repeat(96)} `;
+    const count = Math.floor((CAPTURE_WINDOW - 8) / token.length);
+    const pad = ' '.repeat(CAPTURE_WINDOW - 8 - count * token.length);
+    const seen = collect();
+    begin({argv: []});
+    process.stdout.write(
+      `${token.repeat(count)}${pad}ghp_${'B'.repeat(36)} tail`,
+    );
+    finish({exitCode: 0});
+
+    const {output} = seen[0];
+    expect(output.truncated).toBe(true);
+    expect(output.stdout.startsWith('\n…[truncated')).toBe(true);
+  });
+
+  it('holds nothing written after the window fills', () => {
+    const token = `ghp_${'A'.repeat(96)} `;
+    const seen = collect();
+    begin({argv: []});
+    process.stdout.write(
+      token.repeat(Math.ceil(CAPTURE_WINDOW / token.length)),
+    );
+    process.stdout.write(` ${'Z'.repeat(CAPTURE_GUARD + 4000)} tail`);
+    finish({exitCode: 0});
+    expect(seen[0].output.stdout).not.toContain('Z');
+  });
+
+  it('scrubs a token that an earlier write started', () => {
+    const seen = collect();
+    begin({argv: []});
+    // The first write fits whole and ends 8 characters into the token. The
+    // second is cut 7 bytes in, before the token ends.
+    process.stdout.write(
+      `${'a'.repeat(MAX_CAPTURED_OUTPUT - 20)} ghp_${'B'.repeat(8)}`,
+    );
+    process.stdout.write(`${'B'.repeat(28)} tail`);
+    finish({exitCode: 0});
+    expect(seen[0].output.stdout).not.toContain('ghp_');
+  });
+
+  it('scrubs a private key whose END line falls past the cut', () => {
+    const label = ['RSA PRIV', 'ATE KEY'].join('');
+    const key = [
+      `-----BEGIN ${label}-----`,
+      ...Array.from({length: 20}, () => `MIIE${'A'.repeat(60)}`),
+      `-----END ${label}-----`,
+    ].join('\n');
+    const seen = collect();
+    begin({argv: []});
+    process.stdout.write(`${'a'.repeat(MAX_CAPTURED_OUTPUT - 500)}\n${key}\n`);
+    finish({exitCode: 0});
+
+    const kept = seen[0].output.stdout;
+    expect(kept.startsWith('a'.repeat(1000))).toBe(true);
+    expect(kept).not.toContain('BEGIN');
+    expect(kept).not.toContain('MIIE');
   });
 
   it('scrubs captured output like every other value', () => {
@@ -520,6 +755,15 @@ describe('captured output — what the CLI answered', () => {
     say('wrote ghp_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA to disk');
     finish({exitCode: 0});
     expect(seen[0].output.stdout).not.toContain('ghp_AAAA');
+  });
+
+  it('scrubs captured output once', () => {
+    const seen = collect();
+    begin({argv: []});
+    // A second pass over `token=[redacted] ok` would close the bracket twice.
+    say('token=hunter2 ok');
+    finish({exitCode: 0});
+    expect(seen[0].output.stdout).toBe('token=[redacted] ok\n');
   });
 
   it('keeps a long answer intact below the cap, unlike other fields', () => {
