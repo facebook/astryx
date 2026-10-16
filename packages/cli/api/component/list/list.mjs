@@ -29,7 +29,6 @@ import {
   loadComponentDoc,
   loadComponentReplacements,
   loadIntegrationsSafely,
-  scopeSubComponent,
   withOwnership,
 } from '../_adapter.mjs';
 
@@ -67,6 +66,33 @@ async function legacyImport(ext, name, coreDir, docOpts) {
  * @param {any} doc
  */
 const coreEntry = doc => ({name: doc.name, package: CORE_PACKAGE, ...doc});
+
+/**
+ * The full-level entry for a component documented as a member of its family's
+ * doc (VStack in Stack's doc): a component doc built from the member's own
+ * entry, under its own name, display name and import, shaped like every other
+ * full entry. Null when the doc is the component's own.
+ * @param {any} docs
+ * @param {string} name
+ * @param {string} coreDir
+ * @returns {any}
+ */
+function memberEntry(docs, name, coreDir) {
+  const member = familyMember(docs, name);
+  if (!member) return null;
+  return {
+    name,
+    package: CORE_PACKAGE,
+    displayName: member.displayName ?? name,
+    ...(docs.group ? {group: docs.group} : {}),
+    ...(docs.category ? {category: docs.category} : {}),
+    usage: member.usage ?? {description: member.description ?? ''},
+    props: member.props ?? [],
+    ...(member.examples ? {examples: member.examples} : {}),
+    ...(docs.theming ? {theming: docs.theming} : {}),
+    import: resolveImportPath(coreDir, name),
+  };
+}
 
 /**
  * The entry for a Core slot an integration component replaces
@@ -222,7 +248,7 @@ export async function componentList(
         if (readme && readme.endsWith('.doc.mjs')) {
           try {
             const docs = await loadComponentDoc(readme, {zh, lang, dense});
-            entries.push(coreEntry(scopeSubComponent(docs, comp, coreDir)?.scoped ?? docs));
+            entries.push(memberEntry(docs, comp, coreDir) ?? coreEntry(docs));
           } catch {
             entries.push({name: `XDS${comp}`, package: CORE_PACKAGE, description: ''});
           }
@@ -322,7 +348,7 @@ export async function componentList(
         if (readme && readme.endsWith('.doc.mjs')) {
           try {
             const docs = await loadComponentDoc(readme, {zh, lang, dense});
-            result[cat].push(coreEntry(scopeSubComponent(docs, comp, coreDir)?.scoped ?? docs));
+            result[cat].push(memberEntry(docs, comp, coreDir) ?? coreEntry(docs));
           } catch {
             result[cat].push({name: `XDS${comp}`, package: CORE_PACKAGE, description: ''});
           }

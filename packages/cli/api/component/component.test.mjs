@@ -88,9 +88,18 @@ describe('component list — components whose docs live in a family folder', () 
     const entry = Object.values(full.data.components)
       .flat()
       .find(e => e.name === 'VStack');
-    expect(entry).toMatchObject({
-      parentDoc: 'Stack',
-      description: vstackMember.description,
+    // Shaped like every other full entry (a component doc plus its package):
+    // the member's own name, display name and summary, and no scoping field
+    // the full-entry type does not describe.
+    expect(entry).toEqual({
+      name: 'VStack',
+      package: '@astryxdesign/core',
+      displayName: vstackMember.displayName,
+      group: stackDoc.group,
+      category: stackDoc.category,
+      usage: {description: vstackMember.description},
+      props: vstackMember.props,
+      theming: stackDoc.theming,
       import: '@astryxdesign/core/VStack',
     });
   }, SLOW);
