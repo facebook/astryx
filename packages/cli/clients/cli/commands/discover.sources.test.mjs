@@ -148,6 +148,7 @@ describe('astryx discover with a discover source', () => {
     expect(meta.available).toEqual([
       {
         name: '@test/charts',
+        package: '@test/charts',
         components: ['Chart'],
         version: '2.0.0',
         templates: ['pages/Report'],
@@ -155,6 +156,7 @@ describe('astryx discover with a discover source', () => {
       },
       {
         name: '@test/boards',
+        package: '@test/boards',
         components: [],
         version: '1.0.0',
         templates: ['pages/DialBoard'],

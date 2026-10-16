@@ -27,7 +27,11 @@ import {ERROR_CODES} from '../../../../foundation/response/error-codes.mjs';
  * @returns {Promise<import('../../discover.type.mjs').DiscoverDetailDocResponse>}
  */
 export async function docFromResult(result, opts) {
-  return {type: 'discover.detail.doc', data: await loadValidatedDoc(result, opts)};
+  return {
+    type: 'discover.detail.doc',
+    package: result.pkg.name,
+    data: await loadValidatedDoc(result, opts),
+  };
 }
 
 /**
