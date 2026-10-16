@@ -143,7 +143,11 @@ describe('--json contract: supported commands emit valid envelopes', () => {
     const parsed = parseJson(stdout);
     expect(parsed.type).toBe('discover.list');
     expect(parsed.data).toEqual([]);
-    expect(parsed.meta).toEqual({configured: false});
+    expect(parsed.meta.configured).toBe(false);
+    // The official list the CLI carries is always a source.
+    expect(parsed.meta.sources).toEqual([
+      expect.objectContaining({name: 'Astryx', status: 'fresh'}),
+    ]);
   });
 
   it('astryx template --json emits a typed envelope', async () => {

@@ -112,7 +112,7 @@ export const doc = {
     {
       value: 'discover.list',
       description:
-        'The integrations the project loads (name, category, components, version, a list per other kind they add, and latest when a source knows it); with a discover source, meta.available lists what the project could add and meta.sources reports each source; when empty it carries meta.configured to tell "nothing configured" from "nothing discovered".',
+        'What the project has, the integrations it loads and the official packages it declares, official packages first (name, category, components, version, a list per other kind they add, and latest when a source knows it); meta.available lists what the project could add, the official packages first, each with the command that adds it, and meta.sources reports each source, the official list last; when it lists no integration it carries meta.configured to tell "nothing configured" from "nothing discovered".',
     },
     {
       value: 'discover.detail',

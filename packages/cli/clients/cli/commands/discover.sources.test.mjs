@@ -145,13 +145,20 @@ describe('astryx discover with a discover source', () => {
         latest: '3.2.0',
       }),
     ]);
-    expect(meta.available).toEqual([
+    // The official packages come first, then what the project's source adds.
+    const official = meta.available.filter(entry => entry.source === 'Astryx');
+    expect(official.length).toBeGreaterThan(0);
+    expect(meta.available.slice(0, official.length)).toEqual(official);
+    // Each entry carries the command that adds it; a source's entry is not
+    // pinned, as on its package page.
+    expect(meta.available.slice(official.length)).toEqual([
       {
         name: '@test/charts',
         components: ['Chart'],
         version: '2.0.0',
         templates: ['pages/Report'],
         source: 'Test catalog',
+        install: expect.stringMatching(/ @test\/charts$/),
       },
       {
         name: '@test/boards',
@@ -159,14 +166,26 @@ describe('astryx discover with a discover source', () => {
         version: '1.0.0',
         templates: ['pages/DialBoard'],
         source: 'Test catalog',
+        install: expect.stringMatching(/ @test\/boards$/),
       },
     ]);
+    for (const entry of official) {
+      expect(entry.install).toMatch(
+        new RegExp(` ${entry.name}@${entry.version.replaceAll('.', '\\.')}$`),
+      );
+    }
     expect(meta.sources).toEqual([
       expect.objectContaining({
         name: 'Test catalog',
         from: 'astryx.config',
         status: 'fresh',
       }),
+      {
+        name: 'Astryx',
+        from: '@astryxdesign/cli',
+        status: 'fresh',
+        complete: true,
+      },
     ]);
   });
 
