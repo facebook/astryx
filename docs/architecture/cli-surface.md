@@ -19,6 +19,9 @@ verified_by:
     clients/cli/error-envelope-code.test.mjs,
     foundation/response/error-codes.test.mjs,
     foundation/agent-docs/agent-docs.test.mjs,
+    foundation/agent-docs/agent-docs.path-safety.test.mjs,
+    clients/cli/commands/init.behavior.test.mjs,
+    api/init/remove/remove.test.mjs,
     foundation/integrations/autolink.test.mjs,
     foundation/integrations/manifest-writer.test.mjs,
     foundation/integrations/contribution-inventory.test.mjs,
@@ -149,6 +152,46 @@ and remains available through explicit Core package selection.
   render configured integration `agentDocs` through the existing `Project`
   seam. Upgrade compares complete block bytes even when Core is unchanged and,
   when codemods or hooks run, writes the prepared block only after they succeed.
+- **INV31 — Agent docs reach every agent from the project's own files.** By
+  default, init writes the agent-docs block so that every agent CLI reads at
+  least one copy, whether it starts at the project root or in a folder below
+  it, from files the project commits (DEC-2). `--agent` and `--agent-docs-path`
+  name the files instead; an `--agent` preset still never leaves a copy in both
+  Claude Code files.
+  - `AGENTS.md` at the project root holds the block. Init creates it when it is
+    missing.
+  - The project's Claude Code file holds a full copy: root `CLAUDE.md`, else
+    `.claude/CLAUDE.md`. It holds the copy even when it imports `AGENTS.md`,
+    because Claude Code does not follow an import of a file above the folder it
+    starts in. While root `CLAUDE.md` holds a copy, `.claude/CLAUDE.md` holds
+    none. Init creates no Claude Code file, and a Claude Code file that is
+    `AGENTS.md` under another name holds no second copy.
+  - `GEMINI.md` holds a one-line managed import of `AGENTS.md`. Init creates
+    it when it is missing, and adds no import to a `GEMINI.md` that already
+    imports `AGENTS.md` the way Gemini CLI reads imports. Settings that point
+    Gemini CLI at `AGENTS.md` do not replace the import, because Gemini CLI
+    reads a project's settings only when it starts at the project root.
+  - Every other agent file the project has holds a full copy, unless it imports
+    `AGENTS.md`. When an agent file imports an agent file other than
+    `AGENTS.md`, or two agent files are one file, the project keeps its own
+    layout: every agent file that imports no other agent file holds a copy.
+  - A managed import counts as a copy only while `AGENTS.md` holds the block.
+    Doctor fails when it does not.
+  - Init writes at the project root: the nearest folder at or above the
+    working folder whose `package.json` declares an `@astryxdesign` package,
+    else the nearest folder with a `package.json`, else the working folder.
+    The search stops at a repository root and never counts the home folder. A
+    path given with `--agent-docs-path` stays relative to the working folder.
+  - No mode writes agent docs into the home folder, or into a settings folder
+    in it, a folder of the home folder whose name starts with a dot, outside a
+    project. A folder inside a settings folder belongs to a project when it,
+    or a folder above it below the settings folder, has a `package.json`; the
+    settings folder itself never does. Init reports the folder it refused and
+    still succeeds, and removing a block there stays allowed.
+  - Upgrade refreshes every copy where it is and moves none.
+  - `--remove-agents` removes the block at the project root and in the working
+    folder. Every file it would change resolves inside its own folder, or it
+    changes nothing.
 - **INV14 — An installed integration is discoverable without configuration, and
   autolinking it can only add.** A dependency the project DECLARES in
   package.json, and that ships a root `astryx.integration.*` manifest, is
@@ -322,7 +365,9 @@ updated in the same pull request when it moves an invariant:
 - changing what `integration verify` executes, resolves, or proves about
   the tarball;
 - changing local, configured, or autolinked integration precedence;
-- changing an integration item descriptor, the theme directory boundary, or the consumer copy contract.
+- changing an integration item descriptor, the theme directory boundary, or the consumer copy contract;
+- changing which files hold the agent-docs block, how init finds the project
+  root, where it refuses to write agent docs, or where it removes them (INV31).
 
 `pnpm check:cli-structure` enforces the layout. The contract tests listed in
 `verified_by` enforce the envelope, the exit codes, the error codes, and the
@@ -351,7 +396,8 @@ non-interactive guarantee.
 - `foundation/discovery/theme-discovery.mjs` and `api/theme` — typed integration
   theme descriptor discovery, package-aware selection, source copy, and build.
 - `foundation/agent-docs` — the shared expected-block renderer and managed-file
-  writer used by init and upgrade.
+  writer used by init and upgrade, and the layout that decides which files hold
+  the block (INV31).
 - `api/index.mjs` — the public programmatic API, `@astryxdesign/cli/api`, which
   re-exports every subject's functions.
 - `api/<subject>/…` — the scriptable functions the commands wrap, laid out as
@@ -384,6 +430,19 @@ on a broken integration (a read or a build stops for a problem it can work
 around); counting only the integrations that happened to load (a package set
 aside or replaced by the package being authored would vanish from the count).
 
+### DEC-2 — Every agent gets the agent docs, and an extra copy beats none
+
+**Decider:** `josephfarina`, `2026-10-14`
+
+Agent CLIs read different files. Codex CLI reads only `AGENTS.md`; Claude Code
+reads its own files, and `AGENTS.md` only when the project has none; Gemini CLI
+reads `GEMINI.md`; Copilot CLI reads `AGENTS.md`, `CLAUDE.md` and `GEMINI.md`
+together. No placement gives every agent exactly one copy in every project, so
+the agent docs give each agent at least one, from files the project commits,
+and accept extra copies where agents share files (INV31). Rejected: keeping
+the Claude Code copy only in `.claude/CLAUDE.md`, which many projects keep out
+of version control, so that a fresh clone has none.
+
 ## Verification
 
 | Invariant | Evidence                                                                                                                                                   | Failure signal                                                                                                                                  |
@@ -408,6 +467,7 @@ aside or replaced by the package being authored would vanish from the count).
 | INV25     | `foundation/discovery/cli-self-docs.test.mjs`, `api/doctor/doctor.test.mjs`                                                                                | A CLI doc with no namespace, a namespace no topic reads, or no section in its topic passes doctor.                                              |
 | INV28     | `test/inv28-package-provenance.test.mjs`, `clients/cli/commands/text-json-parity.test.mjs`, `cli-api-types-verify`                                         | A result about one artifact has no envelope `package`, a listed artifact has no `package`, or text omits the package the envelope names.        |
 | INV29     | `api/doctor/doctor.test.mjs` (configured-integrations: not installed, no manifest, manifest throws; self-named authored package, direct and through a symlinked `node_modules` or `cwd`; provider-conflict set-aside; an astryx.config that imports but cannot load the project → failed `config` check)| A configured integration that cannot load leaves `doctor` at exit 0, or an installed-but-unnamed one fails it                                   |
+| INV31     | `foundation/agent-docs/agent-docs.test.mjs`, `foundation/agent-docs/agent-docs.path-safety.test.mjs`, `clients/cli/commands/init.behavior.test.mjs`, `api/init/remove/remove.test.mjs`, `clients/cli/commands/doctor.test.mjs` | A layout test finds the block missing from a file INV31 names or present in a file it excludes, a managed import of a block-less `AGENTS.md` passes doctor, agent docs land in the home folder or in a settings folder outside a project, or `--remove-agents` leaves a block at the project root or in the working folder. |
 
 ## Open questions
 
