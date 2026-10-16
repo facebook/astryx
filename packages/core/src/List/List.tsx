@@ -81,11 +81,12 @@ export interface ListProps extends BaseProps<
    * A row's first content is what lines up with the heading: its marker,
    * icon, or avatar when it has one, otherwise its label. 'outset' and
    * 'bleed' reach into the padding of the nearest container that shares its
-   * padding: a Card, Section, Dialog, Drawer, or BottomSheet, a Layout region,
-   * or a padded ScrollableArea. Place the List directly in that container's
-   * padding: padding that Stack, Center, or your own styles add in between is
-   * not counted, and LayoutContent's and LayoutPanel's automatic padding isn't
-   * supported yet. With no such container, including in a Popover, they look
+   * padding: a Card, Section, Dialog, or BottomSheet, or a transparent
+   * container such as a Layout region with explicit padding or a padded
+   * ScrollableArea. Place the List directly in that container's padding:
+   * padding that Stack, Center, or your own styles add in between is not
+   * counted. Drawers and the automatic padding of LayoutContent and
+   * LayoutPanel aren't supported yet. With no such container, including in a Popover, they look
    * like 'padded'. In a container with less padding than the rows' own, text
    * starts a little after the heading's line. A theme's inline padding on `item` replaces the row
    * padding of every value, including the zero padding of 'flush'.
