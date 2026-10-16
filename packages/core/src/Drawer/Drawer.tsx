@@ -153,9 +153,9 @@ const styles = stylex.create({
   rendered: {
     display: 'flex',
   },
-  // start/end transforms follow the element's computed direction, so a local
-  // override and an inherited or CSS-authored direction all agree with the
-  // logical edge the panel is anchored to.
+  // DOM directionality comes from the nearest effective `dir` attribute. A
+  // local override and an inherited region therefore agree with the logical
+  // edge the panel is anchored to.
   end: {
     insetInlineEnd: 0,
     insetInlineStart: 'auto',

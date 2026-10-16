@@ -240,9 +240,12 @@ Consumer prop syntax and examples remain in `Drawer.doc.mjs`.
   rendered, the `DrawerHeader` close action keeps its translated accessible name
   and Button-owned keyboard/focus behavior in both presentations.
 - **AR6 — Direction and motion.** Logical inset placement and slide-direction
-  mirroring follow the root's computed direction, including an explicit local
-  override, an inherited direction, or CSS-authored direction. Motion reduces
-  under `prefers-reduced-motion` without changing the final state.
+  mirroring follow DOM directionality from the nearest effective `dir` attribute,
+  including an explicit local override or an inherited direction. As required by
+  `design:bidirectionality`, a region whose direction differs from its ancestor
+  describes that direction in DOM `dir`; a CSS-only `direction` declaration is
+  not a supported substitute. Motion reduces under `prefers-reduced-motion`
+  without changing the final state.
 
 ## Design relationships
 
@@ -298,7 +301,7 @@ decide future target qualification.
 | FR15            | `Drawer.test.tsx` purpose suite                                                                                           | `info`, `form`, `required`; modal and non-modal; a sibling behind a required drawer                                     | A `form` drawer closes on a scrim click, a `required` drawer closes or lets Escape reach the drawer behind it, or its role semantics drift.                                                        | `audit:Drawer/behavior`      |
 | FR12            | source, `Drawer.doc.mjs`, `DrawerHeader.doc.mjs`, the `DrawerHeader` target test, and current target discovery            | start/end root Panel and inherited container context                                                                    | Current root target/axis or padding reset changes, or the record claims an unreachable child target or decides future admission.                                                                   | `audit:Drawer/theming`       |
 | FR16            | `Drawer.test.tsx` container padding suites; `defineTheme.test.ts` drawer mapping; browser evidence                        | default, `padding` prop, theme `padding`, lone padded Section child, Layout composition                                 | The published inset differs from the applied padding, the default drawer changes geometry, or the block-end safe area is lost or double-subtracted.                                                | `audit:Drawer/theming`       |
-| AR6             | `DrawerDirection.test.tsx` computed-direction and closed/entry parity suites plus exact-head Storybook RTL evidence       | start/end; self-applied, inherited, CSS-authored, and nested opposite directions; closed and opening transforms         | Any direction source or local override moves the panel from a different edge than its logical placement, or closed and opening transforms diverge.                                                 | `audit:Drawer/accessibility` |
+| AR6             | `DrawerDirection.test.tsx` DOM-direction and closed/entry parity suites plus exact-head Storybook RTL evidence            | start/end; self-applied, inherited, and nested opposite `dir`; closed and opening transforms                            | Any effective DOM direction or local override moves the panel from a different edge than its logical placement, or closed and opening transforms diverge.                                          | `audit:Drawer/accessibility` |
 
 ## Decision log
 

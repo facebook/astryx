@@ -3,7 +3,7 @@
 /**
  * @file DrawerDirection.test.tsx
  * @input Drawer closed transforms and the matching @starting-style declarations
- * @output Regression coverage for computed LTR/RTL motion on both logical sides
+ * @output Regression coverage for resolved DOM LTR/RTL motion on both logical sides
  * @position Focused direction contract; complements Drawer.test.tsx behavior coverage
  */
 

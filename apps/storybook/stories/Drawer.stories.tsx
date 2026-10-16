@@ -262,47 +262,43 @@ function selfDirectedRtlStory(side: 'start' | 'end'): Story {
 export const SelfDirectedRtlStart = selfDirectedRtlStory('start');
 export const SelfDirectedRtlEnd = selfDirectedRtlStory('end');
 
-function cssDirectedRtlStory(side: 'start' | 'end'): Story {
-  return {
-    name: `CSS-inherited RTL ${side} audit`,
-    parameters: {docs: {disable: true}},
-    render: () => {
-      const [isOpen, setIsOpen] = useState(false);
-      return (
-        <div style={{direction: 'rtl'}}>
-          <Button
-            label={`Open CSS-directed RTL ${side} drawer`}
-            onClick={() => setIsOpen(true)}
+export const NestedLtrOverride: Story = {
+  name: 'Nested LTR override audit',
+  parameters: {docs: {disable: true}},
+  render: () => {
+    const [isOpen, setIsOpen] = useState(false);
+    return (
+      <>
+        <Button
+          label="Open nested LTR drawer"
+          onClick={() => setIsOpen(true)}
+        />
+        <Drawer
+          isOpen={isOpen}
+          onOpenChange={setIsOpen}
+          label="Deployment details"
+          side="end"
+          dir="ltr">
+          <Layout
+            header={
+              <DrawerHeader
+                title="Deployment details"
+                onOpenChange={setIsOpen}
+              />
+            }
+            content={
+              <LayoutContent>
+                <Text type="body">
+                  This local LTR region overrides the ambient RTL page.
+                </Text>
+              </LayoutContent>
+            }
           />
-          <Drawer
-            isOpen={isOpen}
-            onOpenChange={setIsOpen}
-            label="Deployment details"
-            side={side}>
-            <Layout
-              header={
-                <DrawerHeader
-                  title="Deployment details"
-                  onOpenChange={setIsOpen}
-                />
-              }
-              content={
-                <LayoutContent>
-                  <Text type="body">
-                    Direction is inherited from authored CSS.
-                  </Text>
-                </LayoutContent>
-              }
-            />
-          </Drawer>
-        </div>
-      );
-    },
-  };
-}
-
-export const CssDirectedRtlStart = cssDirectedRtlStory('start');
-export const CssDirectedRtlEnd = cssDirectedRtlStory('end');
+        </Drawer>
+      </>
+    );
+  },
+};
 
 /**
  * `width` is the desktop budget: a number of pixels or any CSS length.

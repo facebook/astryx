@@ -41,7 +41,7 @@ type Case = {
     modal?: boolean;
     role?: 'dialog' | 'alertdialog';
     narrowCoverage?: 'reveal' | 'full';
-    rtlMotion?: boolean;
+    motionDirection?: Direction;
     paddingPx?: number;
   };
 };
@@ -94,32 +94,32 @@ addPair(
   'end-ambient-rtl',
   'sides',
   ['Open from end'],
-  {side: 'end', modal: true, role: 'dialog'},
+  {
+    side: 'end',
+    modal: true,
+    role: 'dialog',
+    motionDirection: 'rtl',
+  },
   {direction: 'rtl'},
 );
 addPair(
   'start-self-rtl',
   'self-directed-rtl-start',
   ['Open self-directed RTL start drawer'],
-  {side: 'start', modal: true, role: 'dialog', rtlMotion: true},
+  {side: 'start', modal: true, role: 'dialog', motionDirection: 'rtl'},
 );
 addPair(
   'end-self-rtl',
   'self-directed-rtl-end',
   ['Open self-directed RTL end drawer'],
-  {side: 'end', modal: true, role: 'dialog', rtlMotion: true},
+  {side: 'end', modal: true, role: 'dialog', motionDirection: 'rtl'},
 );
 addPair(
-  'start-css-rtl',
-  'css-directed-rtl-start',
-  ['Open CSS-directed RTL start drawer'],
-  {side: 'start', modal: true, role: 'dialog', rtlMotion: true},
-);
-addPair(
-  'end-css-rtl',
-  'css-directed-rtl-end',
-  ['Open CSS-directed RTL end drawer'],
-  {side: 'end', modal: true, role: 'dialog', rtlMotion: true},
+  'nested-ltr-override',
+  'nested-ltr-override',
+  ['Open nested LTR drawer'],
+  {side: 'end', modal: true, role: 'dialog', motionDirection: 'ltr'},
+  {direction: 'rtl'},
 );
 addPair(
   'mobile-reveal',
@@ -236,14 +236,15 @@ for (const item of cases) {
     await page.locator('#storybook-root').waitFor();
     await settle(page);
 
-    const closedTranslateX = item.expected.rtlMotion
+    const closedTranslateX = item.expected.motionDirection
       ? await readClosedTranslateX(page)
       : null;
-    if (item.expected.rtlMotion) {
-      const expectedSign = item.expected.side === 'start' ? 1 : -1;
+    if (item.expected.motionDirection) {
+      const ltrSign = item.expected.side === 'start' ? -1 : 1;
+      const directionSign = item.expected.motionDirection === 'rtl' ? -1 : 1;
       expect(
-        (closedTranslateX ?? 0) * expectedSign,
-        'closed self-directed drawer moves toward its logical edge',
+        (closedTranslateX ?? 0) * ltrSign * directionSign,
+        'closed drawer moves toward its resolved logical edge',
       ).toBeGreaterThan(0);
     }
 
@@ -305,13 +306,15 @@ for (const item of cases) {
     expect(observed.transform).toBe('matrix(1, 0, 0, 1, 0, 0)');
     expect(observed.contentOverflowY).toBe('auto');
 
-    if (item.direction === 'rtl' || item.expected.rtlMotion) {
-      expect(observed.direction).toBe('rtl');
-    } else {
-      expect(observed.direction).toBe('ltr');
-    }
+    const expectedDirection = item.expected.motionDirection ?? item.direction;
+    expect(observed.direction).toBe(expectedDirection);
     if (item.expected.side === 'start' && observed.direction === 'ltr') {
       expect(box.x).toBeLessThanOrEqual(0.5);
+    }
+    if (item.expected.side === 'start' && observed.direction === 'rtl') {
+      expect(box.x + box.width).toBeGreaterThanOrEqual(
+        item.viewport.width - 0.5,
+      );
     }
     if (item.expected.side === 'end' && observed.direction === 'ltr') {
       expect(box.x + box.width).toBeGreaterThanOrEqual(
