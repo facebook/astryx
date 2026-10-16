@@ -140,7 +140,7 @@ requirements. Assistive-technology evidence remains separately owned.
   `spec:AST-013` and record only stricter requirements or explicit exceptions. An
   exception names the affected capability, observable reduction, preserved
   FR7–FR9 obligations, evidence, owner, and review condition.
-- **FR13 — Mount animation starts after hydration.** An element present in
+- **FR13 — Server-rendered elements skip their mount animation.** An element present in
   server markup hydrates in its settled state and does not play the animation it
   plays when it mounts (its entry animation). That mount animation plays only for
   an element the client mounts after hydration, or in a client-only root after
@@ -172,6 +172,12 @@ first-paint flag captured on its first render. When markup hydrates after the
 page paints, the hydrating render produces entry-animation classes the server did
 not send, and the hook's consumer documentation says it does not support server
 rendering.
+
+Other known FR9 and FR13 gaps: a Dialog rendered open in server markup plays its
+entry animation on page load; CodeBlock's collapse chevron plays its reveal
+animation on page load; and CodeBlock chooses between token-span and Highlight
+API markup from browser capability and user-agent checks during render, so the
+hydrating render can differ from the server's markup.
 
 ## Verification
 
@@ -209,7 +215,7 @@ browser-specific claim, fixes a defect reproduced only there, or changes
 compatibility. Missing automation neither narrows support nor justifies dismissing
 a reproduced defect.
 
-### DEC-3 — Core hydrates to the server markup; mount animation starts after it
+### DEC-3 — Core hydrates to the server markup; server-rendered elements skip their mount animation
 
 **Reference:** `spec:AST-013/DEC-3`
 **Decider:** `cixzhang`, `2026-10-15`
