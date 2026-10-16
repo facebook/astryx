@@ -25,6 +25,8 @@ interface Behavior {
   readonly typeahead?: boolean;
   /** Enter: close and return focus, stay open, or close and drop focus. */
   readonly enter?: 'return' | 'stay' | 'drop';
+  /** Whether Enter runs the item's action (counted on `window.__menuActivations`). */
+  readonly activate?: boolean;
   /** Escape: close and return focus, do nothing, or close and drop focus. */
   readonly escape?: 'return' | 'ignore' | 'drop';
   /** Tab: close (focus moves on from the opener) or leave the menu open. */
@@ -33,9 +35,10 @@ interface Behavior {
 
 /**
  * The smallest menu behavior: roving focus over enabled items, optional wrap,
- * Home/End and typeahead, Enter and Escape closing back to the opener, Tab
- * closing and letting the browser move focus on from the opener. jsdom does
- * not run it; the jsdom lane reads DOM attributes only.
+ * Home/End and typeahead, Enter running the item's action (counted on
+ * `window.__menuActivations`) and closing back to the opener, Escape closing
+ * back to the opener, Tab closing and letting the browser move focus on from
+ * the opener. jsdom does not run it; the jsdom lane reads DOM attributes only.
  */
 const SCRIPT = `<script>(() => {
   const menu = document.getElementById('menu');
@@ -70,6 +73,7 @@ const SCRIPT = `<script>(() => {
         return;
       case 'Enter':
         event.preventDefault();
+        if (d.activate === 'true') window.__menuActivations = (window.__menuActivations || 0) + 1;
         if (d.enter !== 'stay') close(d.enter === 'return');
         return;
       case 'Escape':
@@ -125,11 +129,12 @@ function menuHtml({
     homeEnd: true,
     typeahead: true,
     enter: 'return',
+    activate: true,
     escape: 'return',
     tab: 'close',
     ...behavior,
   };
-  const data = `data-down-step="${b.downStep}" data-up="${b.up}" data-wrap="${b.wrap}" data-home-end="${b.homeEnd}" data-typeahead="${b.typeahead}" data-enter="${b.enter}" data-escape="${b.escape}" data-tab="${b.tab}"`;
+  const data = `data-down-step="${b.downStep}" data-up="${b.up}" data-wrap="${b.wrap}" data-home-end="${b.homeEnd}" data-typeahead="${b.typeahead}" data-enter="${b.enter}" data-activate="${b.activate}" data-escape="${b.escape}" data-tab="${b.tab}"`;
   const body = items
     .map(entry =>
       'group' in entry
@@ -169,6 +174,7 @@ const ACTION_RELATIONS = {
 const actionFacts = (
   overrides: Partial<MenuStateFacts> = {},
 ): MenuStateFacts => ({
+  enterTarget: 'first-item',
   wraps: true,
   homeEnd: true,
   disabledItem: true,
@@ -239,6 +245,7 @@ const SELECTABLE_RELATIONS = {
 } as const;
 
 const selectableFacts: MenuStateFacts = {
+  enterTarget: 'first-item',
   wraps: true,
   homeEnd: true,
   disabledItem: false,
@@ -358,6 +365,11 @@ export const MENU_FIXTURES: readonly MenuFixture[] = [
     {behavior: {enter: 'stay'}},
   ),
   actions(
+    'violating-enter-closes-without-activating',
+    "Enter closes the menu and returns focus but never runs the item's action",
+    {behavior: {activate: false}},
+  ),
+  actions(
     'violating-enter-drops-focus',
     'Enter closes the menu and leaves focus on the page body',
     {behavior: {enter: 'drop'}},
@@ -413,6 +425,7 @@ export const MENU_MUTATIONS: Readonly<Record<string, readonly string[]>> = {
   'menu.keys.typeahead': ['violating-typeahead-ignored'],
   'menu.keys.enter-activates-and-closes': [
     'violating-enter-keeps-menu-open',
+    'violating-enter-closes-without-activating',
     'violating-enter-drops-focus',
   ],
   'menu.keys.escape-closes-and-returns-focus': [

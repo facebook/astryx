@@ -24,6 +24,10 @@ import {
   type MenuFixture,
 } from './menu.fixtures';
 
+interface ActivationWindow extends Window {
+  __menuActivations?: number;
+}
+
 function fixturePage(html: string): string {
   return `<!doctype html><html lang="en"><body>${html}<button type="button" id="after">After menu</button></body></html>`;
 }
@@ -43,6 +47,9 @@ async function results(
     mount: async () => {
       await page.setContent(fixturePage(target.html));
       await holdMotionStill(page);
+      await page.evaluate(() => {
+        (window as ActivationWindow).__menuActivations = 0;
+      });
       return createChromiumHarness({
         page,
         cdp,
@@ -55,6 +62,10 @@ async function results(
         ),
       });
     },
+    // An item's action leaves no trace on the menu, so the fixture script
+    // counts Enter activations on the window and the contract asks for them.
+    activations: () =>
+      page.evaluate(() => (window as ActivationWindow).__menuActivations ?? 0),
   });
   return run.results;
 }

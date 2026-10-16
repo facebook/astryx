@@ -4,7 +4,7 @@
  * @file menu.ts
  * @input WCAG 2.2 A/AA success criteria and the APG Menu and Menubar pattern's menu role, item roles, states, and keyboard requirements
  * @output MENU_PATTERN — the reusable contract a displayed menu binds to: its role and name, its items' roles, names, checked and disabled states, and the keys that move, activate, and leave it
- * @position Pattern contract; bound by the DropdownMenu pointer menu (`spec:AST-020/FR15`: a menu is one composite control, so it adopts the arrow, Home/End, and typeahead movement it ships)
+ * @position Pattern contract; bound by the DropdownMenu pointer menu (`spec:AST-020/FR15`: a menu is one composite control, so it adopts the arrow and Home/End movement it ships; typeahead stays advisory until a current component record names it)
  */
 
 import {
@@ -145,8 +145,9 @@ const APG_TAB: ApgRequirement = {
 /**
  * The current Astryx adoption rule. A menu already plays the menu role and is
  * one composite control, so it takes the pattern's required parts and the
- * keyboard movement it ships between its items (arrows with their wrap,
- * Home/End, typeahead).
+ * arrow and Home/End movement it ships between its items. Typeahead is an
+ * extra the rule does not name, so it is advisory until the owning component
+ * record names it (AST-020 FR9).
  */
 const AST_020_FR15: AstryxRecord = {
   standard: 'astryx',
@@ -163,9 +164,12 @@ const AST_020_FR15: AstryxRecord = {
  * `first-item`, `second-item` and `last-item` (the first, second and last
  * enabled items, in the order the arrow keys visit them), `disabled-item`
  * when `disabledItem`, `typeahead-target` when `typeaheadCharacter`, and one
- * relation per key of `checked`.
+ * relation per key of `checked`. The binding also supplies `activations`, the
+ * number of times an item's action has run.
  */
 export interface MenuStateFacts {
+  /** The item relation Enter is pressed on: `first-item` or another item relation, such as a checkable row. */
+  readonly enterTarget: string;
   /** Whether ArrowDown on the last item wraps to the first, and ArrowUp on the first to the last. */
   readonly wraps: boolean;
   /** Whether Home and End move to the first and last items. */
@@ -226,17 +230,24 @@ async function expectStillOpen(menu: Subject, after: string): Promise<void> {
 }
 
 /**
- * Presses one key on the focused first item and checks the menu closed and
- * focus went back to the control that opened it.
+ * Presses one key on a focused item and checks the menu closed and focus went
+ * back to the control that opened it. `activate` also requires the item's
+ * action to have run exactly once.
  */
 async function closesAndReturnsFocus(
   harness: Harness,
   menu: Subject,
   key: 'Enter' | 'Escape',
+  target: string,
+  activations?: () => Promise<number>,
 ): Promise<void> {
   const opener = await harness.related('opener');
-  await focusOrFail(await harness.related('first-item'), 'first item');
+  await focusOrFail(await harness.related(target), target);
+  const before = activations == null ? 0 : await activations();
   await harness.press(key);
+  if (activations != null && (await activations()) !== before + 1) {
+    throw new Error(`${key} on the ${target} did not run its action once`);
+  }
   if (await menu.isVisible()) {
     throw new Error(`${key} on an item left the menu displayed`);
   }
@@ -252,7 +263,7 @@ export const MENU_PATTERN: PatternContract<MenuStateFacts> =
     pattern: 'menu',
     url: APG_URL,
     scope:
-      "A displayed menu's role and name; its items' roles, names, checked and disabled states; ArrowDown/ArrowUp movement (and its wrap), Home/End and typeahead where the binding ships them; Enter activating and closing; Escape closing; Tab leaving and closing; focus returning to the opener.",
+      "A displayed menu's role and name; its items' roles, names, checked and disabled states; ArrowDown/ArrowUp movement (and its wrap) and Home/End where the binding ships them, typeahead as advisory; Enter running the item's action and closing; Escape closing; Tab leaving and closing; focus returning to the opener.",
     expectations: [
       {
         id: 'menu.container.role-and-name',
@@ -458,15 +469,19 @@ export const MENU_PATTERN: PatternContract<MenuStateFacts> =
         id: 'menu.keys.typeahead',
         outcome:
           'With focus in the menu, typing a character moves focus to the next item whose label starts with it.',
-        sources: [WCAG_2_1_1, APG_TYPEAHEAD, AST_020_FR15],
-        covers: ['2.1.1-keyboard', 'apg-interaction'],
+        sources: [APG_TYPEAHEAD],
+        wcagOutcome:
+          'Supports WCAG 2.2 2.1.1 by keeping the shipped typeahead keyboard-operable; arrow keys already reach every item, so this row is advisory until the binding record adopts typeahead as current.',
+        covers: ['apg-interaction'],
         appliesWhen: {
           condition: 'the binding names a typeahead character and its target',
           test: facts => facts.typeaheadCharacter != null,
         },
         evidenceLayer: 'real-browser',
         alsoNeeds: ['dom'],
-        enforcement: 'required',
+        enforcement: 'advisory',
+        advisoryBecause:
+          "Typeahead is optional in the APG and is not one of the composite-control extras AST-020 FR15 names; it becomes required once the binding's component record names it as an adopted exception and that record is current (AST-020 FR9).",
         run: async ({harness, subject, facts}) => {
           const character = facts.typeaheadCharacter ?? '';
           await harness.typeText(subject, character);
@@ -481,15 +496,21 @@ export const MENU_PATTERN: PatternContract<MenuStateFacts> =
       {
         id: 'menu.keys.enter-activates-and-closes',
         outcome:
-          'Enter on an item activates it, closes the menu, and returns focus to the control that opened it, so the user is not stranded on the page.',
+          'Enter on an item runs its action once, closes the menu, and returns focus to the control that opened it, so the user is not stranded on the page.',
         sources: [WCAG_2_1_1, APG_ENTER, WCAG_2_4_3, AST_020_FR15],
         covers: ['2.1.1-keyboard', '2.4.3-focus-order', 'apg-interaction'],
         appliesWhen: ALWAYS,
         evidenceLayer: 'real-browser',
         alsoNeeds: ['dom'],
         enforcement: 'required',
-        run: async ({harness, subject}) => {
-          await closesAndReturnsFocus(harness, subject, 'Enter');
+        run: async ({harness, subject, facts, activations}) => {
+          await closesAndReturnsFocus(
+            harness,
+            subject,
+            'Enter',
+            facts.enterTarget,
+            activations,
+          );
         },
       },
       {
@@ -503,7 +524,7 @@ export const MENU_PATTERN: PatternContract<MenuStateFacts> =
         alsoNeeds: ['dom'],
         enforcement: 'required',
         run: async ({harness, subject}) => {
-          await closesAndReturnsFocus(harness, subject, 'Escape');
+          await closesAndReturnsFocus(harness, subject, 'Escape', 'first-item');
         },
       },
       {
@@ -582,7 +603,7 @@ export const MENU_PATTERN: PatternContract<MenuStateFacts> =
         verifiedBy:
           "the binding's submenu, PageUp/PageDown and Space activation tests (DropdownMenu.test.tsx and DropdownMenuSubMenu.test.tsx keyboard suites)",
         reason:
-          'This contract encodes ArrowDown/ArrowUp, Home/End, typeahead, Enter, Escape and Tab. Submenu opening and closing, PageUp/PageDown, and Space (optional in the APG) remain with the binding until a submenu contract adopts them.',
+          'This contract encodes ArrowDown/ArrowUp, Home/End, Enter, Escape and Tab, and reports typeahead as advisory. Submenu opening and closing, PageUp/PageDown, and Space (optional in the APG) remain with the binding until a submenu contract adopts them.',
         coversRemainderOnly: true,
       },
       '2.1.2-no-keyboard-trap': {

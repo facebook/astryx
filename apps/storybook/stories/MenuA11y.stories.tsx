@@ -30,3 +30,6 @@ function storyFor(id: (typeof MENU_BINDING_STATES)[number]['id']): Story {
 
 export const DropdownActions = storyFor('dropdown-actions');
 export const DropdownSelectable = storyFor('dropdown-selectable');
+export const DropdownSelectableCheckboxRow = storyFor(
+  'dropdown-selectable-checkbox-row',
+);

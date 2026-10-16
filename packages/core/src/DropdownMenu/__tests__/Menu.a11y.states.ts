@@ -47,6 +47,7 @@ export const MENU_BINDING_STATES = [
       'typeahead-target': ['menuitem', 'Duplicate'],
     },
     facts: {
+      enterTarget: 'first-item',
       wraps: true,
       homeEnd: true,
       disabledItem: true,
@@ -71,6 +72,36 @@ export const MENU_BINDING_STATES = [
       'typeahead-target': ['menuitemradio', 'Oldest'],
     },
     facts: {
+      enterTarget: 'first-item',
+      wraps: true,
+      homeEnd: true,
+      disabledItem: false,
+      checked: {
+        'checkbox-item': true,
+        'radio-item': true,
+        'unchecked-radio-item': false,
+      },
+      typeaheadCharacter: 'o',
+    },
+  },
+  {
+    id: 'dropdown-selectable-checkbox-row',
+    summary:
+      'the same selectable menu with Enter pressed on its checkbox row, which keeps the menu open (DropdownMenuCheckboxItem hasCloseOnSelect defaults to false)',
+    storyId: story('dropdown-selectable-checkbox-row'),
+    content: 'selectable',
+    label: 'View',
+    items: {
+      'first-item': ['menuitem', 'Edit'],
+      'second-item': ['menuitemcheckbox', 'Show archived'],
+      'last-item': ['menuitemradio', 'Oldest'],
+      'checkbox-item': ['menuitemcheckbox', 'Show archived'],
+      'radio-item': ['menuitemradio', 'Newest'],
+      'unchecked-radio-item': ['menuitemradio', 'Oldest'],
+      'typeahead-target': ['menuitemradio', 'Oldest'],
+    },
+    facts: {
+      enterTarget: 'checkbox-item',
       wraps: true,
       homeEnd: true,
       disabledItem: false,

@@ -87,6 +87,19 @@ async function mountState(
   return {subject: page.locator(`[id="${id}"]`), related};
 }
 
+/**
+ * How many item actions the story's handlers have run. The story renders the
+ * count as an attribute, so this reads a fact the page shows rather than
+ * instrumenting it from the test.
+ */
+async function activationsOn(page: Page): Promise<number> {
+  const raw = await page
+    .locator('[data-a11y-activations]')
+    .first()
+    .getAttribute('data-a11y-activations');
+  return Number(raw ?? '0');
+}
+
 async function runState(
   page: Page,
   cdp: CDPSession,
@@ -102,6 +115,7 @@ async function runState(
       const {subject, related} = await mountState(page, state);
       return createChromiumHarness({page, cdp, subject, related});
     },
+    activations: async () => activationsOn(page),
   });
 }
 
@@ -122,7 +136,8 @@ for (const state of MENU_BINDING_STATES) {
     const cdp = await page.context().newCDPSession(page);
     const result = await runState(page, cdp, state);
     const report = summarize(MENU_PATTERN, [result]);
-    // Required rows block (AST-020 FR9); exact known failures report.
+    // Required rows block (AST-020 FR9); advisory rows and exact known
+    // failures report.
     expect(formatFailures(blockingResults([result]))).toBe('');
     expect(report.unrunLayers).toEqual([]);
     expect(report.counts.unexpectedPass).toBe(0);
