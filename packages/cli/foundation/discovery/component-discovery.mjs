@@ -5,11 +5,14 @@
  */
 
 import * as fs from 'node:fs';
+import {createRequire} from 'node:module';
 import * as path from 'node:path';
 import {listDir, listDirEntries, pathExists} from '../fs/listing-cache.mjs';
 import {existsCaseExact} from '../fs/paths.mjs';
 import {CORE_PROVIDER_ID} from '../identity/providers.mjs';
 import {loadComponentDoc} from './component-loader.mjs';
+
+const require = createRequire(import.meta.url);
 
 const SKIP_DIRS = new Set(['hooks', 'utils', '__tests__', 'node_modules']);
 
@@ -109,8 +112,193 @@ function readDocMeta(docPath) {
   }
 }
 
+/** @type {typeof import('@babel/parser') | undefined} */
+let babelParser;
+
+/**
+ * A property of an object literal, by its plain key.
+ * @param {any} object - an ObjectExpression node
+ * @param {string} key
+ * @returns {any}
+ */
+function propertyValue(object, key) {
+  for (const property of object.properties) {
+    if (property.type !== 'ObjectProperty' || property.computed) continue;
+    const name =
+      property.key.type === 'Identifier'
+        ? property.key.name
+        : property.key.type === 'StringLiteral'
+          ? property.key.value
+          : null;
+    if (name === key) return property.value;
+  }
+  return null;
+}
+
+/**
+ * The names a component doc lists as `components` members, read from its
+ * source without running it. Only a static `{name: '<Name>'}` entry in the doc
+ * object the loader reads (the `default` export, else `docs`) counts: a name in
+ * prose, an example, or `relatedComponents` is not a member.
+ * @param {string} source - the doc file's text
+ * @returns {string[]}
+ */
+function docMemberNames(source) {
+  /** @type {any} */
+  let ast;
+  try {
+    babelParser ??= require('@babel/parser');
+    ast = /** @type {typeof import('@babel/parser')} */ (babelParser).parse(source, {
+      sourceType: 'module',
+    });
+  } catch {
+    return [];
+  }
+  /** @type {Map<string, any>} */
+  const constants = new Map();
+  let defaultExport = null;
+  let docsExport = null;
+  for (const node of ast.program.body) {
+    const declaration =
+      node.type === 'ExportNamedDeclaration' ? node.declaration : node;
+    if (declaration?.type === 'VariableDeclaration') {
+      for (const declarator of declaration.declarations) {
+        if (declarator.id.type !== 'Identifier' || !declarator.init) continue;
+        constants.set(declarator.id.name, declarator.init);
+        if (node.type === 'ExportNamedDeclaration' && declarator.id.name === 'docs') {
+          docsExport = declarator.init;
+        }
+      }
+    }
+    if (node.type === 'ExportDefaultDeclaration') defaultExport = node.declaration;
+  }
+  let doc = defaultExport ?? docsExport;
+  if (doc?.type === 'Identifier') doc = constants.get(doc.name);
+  if (doc?.type !== 'ObjectExpression') return [];
+  const members = propertyValue(doc, 'components');
+  if (members?.type !== 'ArrayExpression') return [];
+  return members.elements.flatMap((/** @type {any} */ element) => {
+    if (element?.type !== 'ObjectExpression') return [];
+    const name = propertyValue(element, 'name');
+    return name?.type === 'StringLiteral' ? [name.value] : [];
+  });
+}
+
+/**
+ * Whether `name` has its own component folder in Core: `src/<Name>/<Name>.tsx`
+ * (or the `XDS`-prefixed form).
+ * @param {string} srcDir
+ * @param {string} name
+ * @returns {boolean}
+ */
+function hasOwnFolder(srcDir, name) {
+  return [`${name}.tsx`, `XDS${name}.tsx`].some(file =>
+    existsCaseExact(path.join(srcDir, name, file), srcDir),
+  );
+}
+
+/**
+ * Member names read in this process, by doc path, reused while the file keeps
+ * its size and mtime.
+ * @type {Map<string, {size: number, mtimeMs: number, members: string[]}>}
+ */
+const memberReads = new Map();
+
+/**
+ * The names a doc lists as `components` members (see docMemberNames).
+ * @param {string} docPath
+ * @returns {string[]}
+ */
+function readDocMembers(docPath) {
+  let stat;
+  try {
+    stat = fs.statSync(docPath);
+  } catch {
+    return [];
+  }
+  const cached = memberReads.get(docPath);
+  if (cached && cached.size === stat.size && cached.mtimeMs === stat.mtimeMs) {
+    return cached.members;
+  }
+  /** @type {string[]} */
+  let members;
+  try {
+    members = docMemberNames(fs.readFileSync(docPath, 'utf-8'));
+  } catch {
+    members = [];
+  }
+  memberReads.set(docPath, {size: stat.size, mtimeMs: stat.mtimeMs, members});
+  return members;
+}
+
+// A sibling component folder named by a relative import or re-export.
+const SIBLING_IMPORT_RE =
+  /(?:\bfrom|\bimport\s*\()\s*['"]\.\.\/([A-Za-z0-9_-]+)(?:\/[^'"]*)?['"]/g;
+
+/**
+ * The Core doc that documents `name` as one of its `components` members: the
+ * doc of a component it builds on. HStack and VStack import Stack, and Stack's
+ * doc lists them, so each has its own folder and import path but no doc of its
+ * own. Only the folders the component's own source imports from are read.
+ * @param {string} srcDir
+ * @param {string} name
+ * @returns {string | null}
+ */
+function findFamilyDoc(srcDir, name) {
+  const sourcePath = [`${name}.tsx`, `XDS${name}.tsx`]
+    .map(file => path.join(srcDir, name, file))
+    .find(file => existsCaseExact(file, srcDir));
+  if (!sourcePath) return null;
+  let source;
+  try {
+    source = fs.readFileSync(sourcePath, 'utf-8');
+  } catch {
+    return null;
+  }
+  const families = [
+    ...new Set([...source.matchAll(SIBLING_IMPORT_RE)].map(match => match[1])),
+  ]
+    .filter(dir => dir !== name && !SKIP_DIRS.has(dir))
+    .sort();
+  for (const dir of families) {
+    const dirPath = path.join(srcDir, dir);
+    if (!existsCaseExact(dirPath, srcDir)) continue;
+    for (const file of [...listDir(dirPath)].sort()) {
+      if (!file.endsWith('.doc.mjs')) continue;
+      const docPath = path.join(dirPath, file);
+      const members = readDocMembers(docPath);
+      if (members.includes(name) || members.includes(`XDS${name}`)) {
+        return docPath;
+      }
+    }
+  }
+  return null;
+}
+
+/**
+ * The entry a family doc gives `name` in its `components`, when the doc is not
+ * the component's own (Stack's doc for VStack); null otherwise.
+ * @param {any} docs - a loaded component doc
+ * @param {string} name - bare component name
+ * @returns {any}
+ */
+export function familyMember(docs, name) {
+  if (!docs || docs.name === name || docs.name === `XDS${name}`) return null;
+  const members = Array.isArray(docs.components) ? docs.components : [];
+  return (
+    members.find(
+      (/** @type {any} */ member) =>
+        member?.name === name || member?.name === `XDS${name}`,
+    ) ?? null
+  );
+}
+
 /**
  * Auto-discover components by scanning for Astryx*.tsx files in core/src/.
+ * A component is listed when a doc documents it: a doc in its folder, or, for a
+ * component folder with no doc of its own, the doc `findComponentReadme` finds
+ * elsewhere (Heading's doc in the Text folder; HStack and VStack as members of
+ * Stack's doc).
  *
  * Returns an ordered Record where:
  * - Grouped components use the group name as key: `'Buttons': ['Button', 'IconButton']`
@@ -190,6 +378,25 @@ export function discoverComponents(coreDir) {
         componentGroups.set(componentName, compGroup);
       }
     }
+  }
+
+  // A component folder with no doc in it is still listed when a doc elsewhere
+  // documents it, the doc `component <Name>` opens: its own same-stem doc in a
+  // family folder (Text/Heading.doc.mjs), or a member entry in the family's doc
+  // (HStack and VStack in Stack's doc).
+  for (const entry of topEntries) {
+    if (!entry.isDirectory() || SKIP_DIRS.has(entry.name)) continue;
+    const name = entry.name;
+    if (componentGroups.has(name) || name.endsWith('Context')) continue;
+    if (listDir(path.join(srcDir, name)).some(file => file.endsWith('.doc.mjs'))) {
+      continue;
+    }
+    if (!hasOwnFolder(srcDir, name)) continue;
+    const docPath = findComponentReadme(coreDir, name);
+    if (!docPath?.endsWith('.doc.mjs')) continue;
+    const meta = readDocMeta(docPath);
+    if (meta.hidden || meta.hiddenComponents.has(name)) continue;
+    componentGroups.set(name, meta.group);
   }
 
   // Build the result: group name → sorted members, or component name → [self]
@@ -283,6 +490,10 @@ export function findComponentReadme(coreDir, name) {
       dir = path.dirname(dir);
     }
   }
+
+  // A component with its own folder, documented as a member of its family's
+  // doc (HStack and VStack in Stack's doc).
+  if (hasOwnFolder(srcDir, name)) return findFamilyDoc(srcDir, name);
 
   return null;
 }

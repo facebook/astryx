@@ -246,6 +246,10 @@ const RUNNERS = {
     runs: 'astryx.config, through the config parser',
     sites: ['loadModuleWithParser(..., parseConfig)'],
   },
+  'foundation/discovery/component-discovery.mjs': {
+    runs: '@babel/parser, on first use, to read the members a family doc lists in its components without running the doc',
+    sites: ['require(@babel/parser)'],
+  },
   'foundation/discovery/docs-discovery.mjs': {
     runs: 'a contributed topic, for its catalog fields: name, title, description, category, and relationships',
     sites: ['importDocModule'],

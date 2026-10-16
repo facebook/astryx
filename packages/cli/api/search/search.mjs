@@ -85,6 +85,7 @@ import {findCoreDir} from '../../foundation/fs/paths.mjs';
 import {
   discoverComponents,
   discoverValidIntegrationComponents,
+  familyMember,
   findComponentReadme,
   resolveImportPath,
   resolveIntegrationImportPath,
@@ -1082,7 +1083,11 @@ async function gatherCoreComponents(coreDir) {
       const doc = await loadModuleDoc(readme);
       if (doc) {
         keywords = Array.isArray(doc.keywords) ? doc.keywords : [];
-        description = doc.usage?.description || doc.description || '';
+        description =
+          familyMember(doc, comp)?.description ||
+          doc.usage?.description ||
+          doc.description ||
+          '';
         guidance = guidanceFrom(doc);
       }
     }

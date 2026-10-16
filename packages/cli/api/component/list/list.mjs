@@ -16,6 +16,7 @@ import {
   discoverComponents,
   discoverExternalComponentsGrouped,
   discoverValidIntegrationComponents,
+  familyMember,
   findComponentReadme,
   findExternalComponentDoc,
   resolveImportPath,
@@ -28,6 +29,7 @@ import {
   loadComponentDoc,
   loadComponentReplacements,
   loadIntegrationsSafely,
+  scopeSubComponent,
   withOwnership,
 } from '../_adapter.mjs';
 
@@ -177,7 +179,11 @@ export async function componentList(
             entries.push({
               name: comp,
               package: CORE_PACKAGE,
-              description: docs.usage?.description || docs.description || '',
+              description:
+                familyMember(docs, comp)?.description ||
+                docs.usage?.description ||
+                docs.description ||
+                '',
               import: resolveImportPath(coreDir, comp),
             });
           } catch {
@@ -215,7 +221,8 @@ export async function componentList(
         const readme = findComponentReadme(coreDir, comp);
         if (readme && readme.endsWith('.doc.mjs')) {
           try {
-            entries.push(coreEntry(await loadComponentDoc(readme, {zh, lang, dense})));
+            const docs = await loadComponentDoc(readme, {zh, lang, dense});
+            entries.push(coreEntry(scopeSubComponent(docs, comp, coreDir)?.scoped ?? docs));
           } catch {
             entries.push({name: `XDS${comp}`, package: CORE_PACKAGE, description: ''});
           }
@@ -269,7 +276,11 @@ export async function componentList(
             result[cat].push({
               name: comp,
               package: CORE_PACKAGE,
-              description: docs.usage?.description || docs.description || '',
+              description:
+                familyMember(docs, comp)?.description ||
+                docs.usage?.description ||
+                docs.description ||
+                '',
               import: resolveImportPath(coreDir, comp),
             });
           } catch {
@@ -310,7 +321,8 @@ export async function componentList(
         const readme = findComponentReadme(coreDir, comp);
         if (readme && readme.endsWith('.doc.mjs')) {
           try {
-            result[cat].push(coreEntry(await loadComponentDoc(readme, {zh, lang, dense})));
+            const docs = await loadComponentDoc(readme, {zh, lang, dense});
+            result[cat].push(coreEntry(scopeSubComponent(docs, comp, coreDir)?.scoped ?? docs));
           } catch {
             result[cat].push({name: `XDS${comp}`, package: CORE_PACKAGE, description: ''});
           }

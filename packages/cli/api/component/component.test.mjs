@@ -13,6 +13,7 @@ import {describe, it, expect} from 'vitest';
 import * as path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {component} from './component.mjs';
+import {search} from '../search/search.mjs';
 import {AstryxError} from '../error.mjs';
 import {runCli} from '../../test-utils/run-cli.mjs';
 
@@ -58,6 +59,76 @@ describe('component dispatcher — detail levels on list', () => {
     const r = await component(undefined, {cwd, list: true, detail: 'full'});
     expect(r.type).toBe('component.list');
     expect(r.data.detail).toBe('full');
+  }, SLOW);
+});
+
+describe('component list — components whose docs live in a family folder', () => {
+  it('lists HStack, VStack and Heading at every detail level, each with its own import', async () => {
+    const {docs: stackDoc} = await import(
+      path.join(REPO, 'packages', 'core', 'src', 'Stack', 'Stack.doc.mjs')
+    );
+    const vstackMember = stackDoc.components.find(c => c.name === 'VStack');
+
+    const names = await component(undefined, {cwd, list: true});
+    const listed = Object.values(names.data.components).flat();
+    for (const name of ['HStack', 'VStack', 'Heading']) {
+      expect(listed).toContainEqual({name, package: '@astryxdesign/core'});
+    }
+
+    const compact = await component(undefined, {cwd, list: true, detail: 'compact'});
+    const brief = Object.values(compact.data.components).flat();
+    expect(brief.find(e => e.name === 'VStack')).toEqual({
+      name: 'VStack',
+      package: '@astryxdesign/core',
+      description: vstackMember.description,
+      import: '@astryxdesign/core/VStack',
+    });
+
+    const full = await component(undefined, {cwd, list: true, detail: 'full'});
+    const entry = Object.values(full.data.components)
+      .flat()
+      .find(e => e.name === 'VStack');
+    expect(entry).toMatchObject({
+      parentDoc: 'Stack',
+      description: vstackMember.description,
+      import: '@astryxdesign/core/VStack',
+    });
+  }, SLOW);
+
+  it('prints each one\'s own import path in the list, the detail, and search', async () => {
+    // The path `component <Name>` prints is the one docs and examples teach:
+    // the component's own entry point, never its family's (/Stack, /Text) or
+    // a re-export (/Layout).
+    const compact = Object.values(
+      (await component(undefined, {cwd, list: true, detail: 'compact'})).data.components,
+    ).flat();
+    const full = Object.values(
+      (await component(undefined, {cwd, list: true, detail: 'full'})).data.components,
+    ).flat();
+    const textList = (await runCli(['component', '--list'], cwd)).stdout;
+    const textCompact = (
+      await runCli(['component', '--list', '--detail', 'compact'], cwd)
+    ).stdout;
+    /** The `import:` line of a text record, found by its `name:` line. */
+    const textImport = (text, name) =>
+      new RegExp(`^name:\\s+${name}\\n(?:(?!name:).*\\n)*?import:\\s+(\\S+)`, 'm').exec(
+        text,
+      )?.[1];
+    for (const name of ['VStack', 'HStack', 'Heading']) {
+      const expected = `@astryxdesign/core/${name}`;
+      expect(compact.find(e => e.name === name)?.import).toBe(expected);
+      expect((await component(name, {cwd})).data.import).toBe(expected);
+      const hits = (await search(name, {cwd, type: 'component'})).data.results;
+      expect(hits.find(r => r.name === name)?.import).toBe(expected);
+      expect(textImport(textList, name)).toBe(expected);
+      expect(textImport(textCompact, name)).toBe(expected);
+    }
+    // The full level spreads a component's own doc, which states no import
+    // (Button's entry has none either); a member's entry is scoped to the
+    // member and states its own.
+    for (const name of ['VStack', 'HStack']) {
+      expect(full.find(e => e.name === name)?.import).toBe(`@astryxdesign/core/${name}`);
+    }
   }, SLOW);
 });
 

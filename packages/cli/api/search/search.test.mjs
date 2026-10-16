@@ -616,6 +616,19 @@ describe('search leaf — a theme is found by its names; its description is pros
   );
 });
 
+describe('search leaf — components whose docs live in a family folder', () => {
+  it('ranks VStack, HStack and Heading first for their own names, with their own import', async () => {
+    for (const name of ['VStack', 'HStack', 'Heading']) {
+      const r = await search(name.toLowerCase(), {cwd, type: 'component'});
+      expect(r.data.results[0]).toMatchObject({
+        domain: 'component',
+        name,
+        import: `@astryxdesign/core/${name}`,
+      });
+    }
+  }, SLOW);
+});
+
 describe('search leaf — integration components', () => {
   /**
    * A minimal consumer project: a stub `@astryxdesign/core` (so `findCoreDir`
