@@ -47,6 +47,7 @@ import {discoverIntegrationTemplatesForOne} from '../discovery/template-adapter.
 import * as componentDiscovery from '../discovery/component-discovery.mjs';
 import {discoverIntegrationDocs} from '../discovery/docs-discovery.mjs';
 import {discoverIntegrationThemes} from '../discovery/theme-discovery.mjs';
+import {checkCliPeerVersion} from './cli-peer-version.mjs';
 
 /**
  * @typedef {import('./issue').AstryxIntegrationIssue} Issue
@@ -447,6 +448,8 @@ export async function validateLoadedIntegration(loaded) {
     return [issueError('integration_error', loaded.__loadError)];
   }
   checkUnknownKeys(loaded, issues);
+  const peerWarning = checkCliPeerVersion(loaded);
+  if (peerWarning) issues.push(peerWarning);
   if (loaded.__agentDocsError) {
     issues.push(issueError(INVALID_AGENT_DOCS, loaded.__agentDocsError));
   }
