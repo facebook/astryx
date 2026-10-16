@@ -119,7 +119,7 @@ import {themes, defaultThemeSlug} from './astryx-themes';
       content: [
         {
           type: 'prose',
-          text: 'Components are imported from per-category subpath entrypoints. This keeps bundles small and makes intent clear.',
+          text: 'Import each component from its own entry, the path `astryx component <Name>` prints. This keeps bundles small and makes intent clear.',
         },
         {
           type: 'code',
