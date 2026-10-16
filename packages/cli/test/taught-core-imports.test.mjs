@@ -145,9 +145,7 @@ describe('taught @astryxdesign/core imports', () => {
           Math.max(previous, index - 400),
           lineEnd === -1 ? source.length : lineEnd,
         );
-        expect(nearby, `${file} at offset ${index}`).toMatch(
-          /\{\s*Theme\s*\}\s+from\s+'@astryxdesign\/core'/,
-        );
+        expect(nearby, `${file} at offset ${index}`).toMatch(THEME_IMPORT);
       });
     },
   );

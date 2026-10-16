@@ -86,7 +86,7 @@ export const docs = {
           type: 'code',
           lang: 'tsx',
           label: 'App root',
-          code: `import {Theme} from '@astryxdesign/core';
+          code: `import {Theme} from '@astryxdesign/core/theme';
 import {themes, defaultThemeSlug} from './astryx-themes';
 
 <Theme theme={themes[defaultThemeSlug]}><App /></Theme>`,
@@ -126,7 +126,7 @@ import {themes, defaultThemeSlug} from './astryx-themes';
           lang: 'tsx',
           label: 'app/page.tsx',
           code: `import {Button} from '@astryxdesign/core/Button';
-import {VStack} from '@astryxdesign/core/Layout';
+import {VStack} from '@astryxdesign/core/VStack';
 
 export default function Page() {
   return (
