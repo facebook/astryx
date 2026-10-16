@@ -2,6 +2,6 @@
 '@astryxdesign/core': patch
 ---
 
-[fix] `DrawerHeader` now keeps numeric zero values inside its start and end content slots, so slot layout and theme targets apply consistently.
+[fix] `DrawerHeader` now renders numeric zero `startContent` inside its start slot and preserves numeric zero `endContent` when no close button is present.
 
 @cixzhang

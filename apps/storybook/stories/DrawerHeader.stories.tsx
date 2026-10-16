@@ -45,3 +45,33 @@ export const Audit: Story = {
     );
   },
 };
+
+export const AuditWithoutClose: Story = {
+  args: {
+    title: 'Deployment health for web-prod-04',
+    subtitle: 'us-east-1, deployed 12 minutes ago',
+    startContent: 0,
+    endContent: 0,
+    hasDivider: true,
+  },
+  render: args => {
+    const [isOpen, setIsOpen] = useState(true);
+    return (
+      <Drawer
+        isOpen={isOpen}
+        onOpenChange={setIsOpen}
+        label="Deployment details">
+        <Layout
+          header={<DrawerHeader {...args} />}
+          content={
+            <LayoutContent>
+              <Text type="body">
+                All six instances are passing readiness checks.
+              </Text>
+            </LayoutContent>
+          }
+        />
+      </Drawer>
+    );
+  },
+};

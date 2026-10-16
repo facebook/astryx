@@ -30,6 +30,8 @@ type State = 'rest' | 'focus';
 
 type Case = {
   key: string;
+  story: 'audit' | 'audit-without-close';
+  hasClose: boolean;
   mode: Mode;
   direction: Direction;
   theme: Theme;
@@ -45,6 +47,8 @@ function addPair(
   for (const mode of ['light', 'dark'] as const) {
     cases.push({
       key: `${key}-${mode}`,
+      story: options.story ?? 'audit',
+      hasClose: options.hasClose ?? true,
       mode,
       direction: options.direction ?? 'ltr',
       theme: options.theme ?? 'neutral',
@@ -55,6 +59,10 @@ function addPair(
 }
 
 addPair('rest');
+addPair('rest-without-close', {
+  story: 'audit-without-close',
+  hasClose: false,
+});
 addPair('rest-custom-theme', {theme: 'butter'});
 addPair('rest-rtl', {direction: 'rtl'});
 addPair('rest-narrow', {viewport: NARROW});
@@ -66,7 +74,7 @@ let checkoutSha: string;
 let storybookSha: string;
 
 function storyUrl(item: Case) {
-  return `${server.origin}/iframe.html?id=core-drawerheader--audit&viewMode=story&globals=colorMode:${item.mode};astryxTheme:${item.theme};direction:${item.direction}`;
+  return `${server.origin}/iframe.html?id=core-drawerheader--${item.story}&viewMode=story&globals=colorMode:${item.mode};astryxTheme:${item.theme};direction:${item.direction}`;
 }
 
 async function settle(page: Page) {
@@ -124,7 +132,11 @@ for (const item of cases) {
     await settle(page);
 
     const close = page.getByRole('button', {name: 'Close', exact: true});
-    await expect(close).toBeVisible();
+    if (item.hasClose) {
+      await expect(close).toBeVisible();
+    } else {
+      await expect(close).toHaveCount(0);
+    }
     if (item.state === 'focus') {
       await close.focus();
       await page.keyboard.press('Tab');
@@ -160,7 +172,7 @@ for (const item of cases) {
         startSlot.boundingBox(),
         titleBlock.boundingBox(),
         endSlot.boundingBox(),
-        close.boundingBox(),
+        item.hasClose ? close.boundingBox() : Promise.resolve(null),
       ],
     );
     if (
@@ -168,7 +180,7 @@ for (const item of cases) {
       startBox == null ||
       titleBox == null ||
       endBox == null ||
-      closeBox == null
+      (item.hasClose && closeBox == null)
     ) {
       throw new Error(
         `${item.key}: a visible DrawerHeader part has no geometry`,
@@ -197,8 +209,10 @@ for (const item of cases) {
     expect(observed.horizontalOverflow).toBe(false);
     expect(observed.fonts).toBe('loaded');
     expect(headerBox.width).toBeGreaterThan(0);
-    expect(closeBox.width).toBeGreaterThanOrEqual(24);
-    expect(closeBox.height).toBeGreaterThanOrEqual(24);
+    if (closeBox != null) {
+      expect(closeBox.width).toBeGreaterThanOrEqual(24);
+      expect(closeBox.height).toBeGreaterThanOrEqual(24);
+    }
     if (item.direction === 'ltr') {
       expect(startBox.x).toBeLessThan(titleBox.x);
       expect(titleBox.x).toBeLessThan(endBox.x);
@@ -214,7 +228,7 @@ for (const item of cases) {
       schemaVersion: 1,
       expected: {
         build: checkoutSha,
-        storyId: 'core-drawerheader--audit',
+        storyId: `core-drawerheader--${item.story}`,
         mode: item.mode,
         direction: item.direction,
         theme: item.theme,
@@ -224,7 +238,7 @@ for (const item of cases) {
         endContent: '0',
         titleRole: 'heading',
         titleLevel: 2,
-        closeName: 'Close',
+        closeName: item.hasClose ? 'Close' : null,
       },
       observed: {
         build: storybookSha,
@@ -236,12 +250,12 @@ for (const item of cases) {
           endSlot: endBox,
           close: closeBox,
         },
-        closeFocused: await close.evaluate(
-          element => element === document.activeElement,
-        ),
-        closeFocusVisible: await close.evaluate(element =>
-          element.matches(':focus-visible'),
-        ),
+        closeFocused: item.hasClose
+          ? await close.evaluate(element => element === document.activeElement)
+          : false,
+        closeFocusVisible: item.hasClose
+          ? await close.evaluate(element => element.matches(':focus-visible'))
+          : false,
         pageErrors,
       },
       image: {
