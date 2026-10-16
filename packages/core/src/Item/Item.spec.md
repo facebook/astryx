@@ -20,7 +20,7 @@ verified_by:
     scripts/check-knowledge.mjs,
   ]
 modules: []
-families: []
+families: [family:navigation-destinations]
 design_specs: []
 architecture:
   [
@@ -29,7 +29,7 @@ architecture:
     architecture:internationalization,
   ]
 contributing: [contributing:api-conventions]
-system_specs: [spec:AST-017/FR3]
+system_specs: [spec:AST-017/FR3, spec:AST-057]
 ---
 
 # Item component contract
@@ -37,8 +37,10 @@ system_specs: [spec:AST-017/FR3]
 <!-- Describe the system, not the project: present tense, what it does. No proposals, history, pull requests, or research in the record; see docs/contributing/spec-writing.md and report its rubric results in the pull request. -->
 
 This record governs how Item aligns its start and end content against the
-label. Other Item behavior remains described by its source, tests, and
-`Item.doc.mjs` until a record claims it.
+label. Item's swipe actions are governed by `spec:AST-057`, and its link and
+navigation semantics by `family:navigation-destinations`; other Item behavior
+remains described by its source, tests, and `Item.doc.mjs` until a record
+claims it.
 
 ## Contract at a glance
 
@@ -162,6 +164,10 @@ Consumer migration instructions belong in consumer docs and release notes.
 
 ## Family and system relationships
 
+- `spec:AST-057` owns Item's swipe actions and their panels; alignment does
+  not change them, because the panels sit outside the row's flow.
+- `family:navigation-destinations` owns Item's link and navigation semantics;
+  alignment does not change them.
 - `architecture:component-theming-surface` owns how visual axes reach theme
   targets; this record adds one value to Item's existing `align` axis.
 - `architecture:public-component-api` owns prop admission; FR8 types an existing
