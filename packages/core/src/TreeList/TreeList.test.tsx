@@ -798,9 +798,13 @@ describe('TreeList', () => {
         expect(clicks).toHaveLength(1);
         expect(clicks[0].metaKey).toBe(true);
 
+        // The row box's own padding follows the link too.
+        fireEvent.click(rowSurfaceOf(link).parentElement!);
+        expect(clicks).toHaveLength(2);
+
         // Clicking the label itself reaches the anchor once, not twice.
         fireEvent.click(link);
-        expect(clicks).toHaveLength(2);
+        expect(clicks).toHaveLength(3);
       });
 
       it('reports one click to ancestors per press', () => {
@@ -884,9 +888,12 @@ describe('TreeList', () => {
       const underRoot = (children: TreeListItemData[]): TreeListItemData[] => [
         {id: 'root', label: 'Root', isExpanded: true, children},
       ];
+      // The row box itself (its own padding) and the indented content inside
+      // it: FR7 covers clicks on both.
+      const rowOf = (label: string) =>
+        screen.getByText(label).closest<HTMLElement>('.astryx-tree-list-item')!;
       const rowSurfaceOf = (label: string) =>
-        screen.getByText(label).closest<HTMLElement>('.astryx-tree-list-item')!
-          .firstElementChild as HTMLElement;
+        rowOf(label).firstElementChild as HTMLElement;
       const folder: TreeListItemData = {
         id: 'folder',
         label: 'Folder',
@@ -900,10 +907,12 @@ describe('TreeList', () => {
         );
         fireEvent.click(rowSurfaceOf('Run'));
         expect(onClick).toHaveBeenCalledTimes(1);
+        fireEvent.click(rowOf('Run'));
+        expect(onClick).toHaveBeenCalledTimes(2);
 
         // The label's own button still runs it once per press, not twice.
         fireEvent.click(screen.getByRole('button', {name: 'Run'}));
-        expect(onClick).toHaveBeenCalledTimes(2);
+        expect(onClick).toHaveBeenCalledTimes(3);
       });
 
       it('toggles a parent row', () => {
@@ -911,7 +920,7 @@ describe('TreeList', () => {
         expect(screen.queryByText('File')).not.toBeInTheDocument();
         fireEvent.click(rowSurfaceOf('Folder'));
         expect(screen.getByText('File')).toBeInTheDocument();
-        fireEvent.click(rowSurfaceOf('Folder'));
+        fireEvent.click(rowOf('Folder'));
         expect(screen.queryByText('File')).not.toBeInTheDocument();
       });
 
@@ -926,12 +935,14 @@ describe('TreeList', () => {
           />,
         );
         fireEvent.click(rowSurfaceOf('Run'));
+        fireEvent.click(rowOf('Run'));
         expect(onClick).not.toHaveBeenCalled();
         fireEvent.click(rowSurfaceOf('Folder'));
+        fireEvent.click(rowOf('Folder'));
         expect(screen.queryByText('File')).not.toBeInTheDocument();
       });
 
-      it('leaves a role-based control in an action or parent row to itself', () => {
+      it('leaves a role-based control in start or end content to itself', () => {
         // Native and role-based controls alike keep their own activation,
         // the same rule link rows get from the shared enlarged-surface hook.
         const onClick = vi.fn();
@@ -949,14 +960,30 @@ describe('TreeList', () => {
         render(
           <TreeList
             items={underRoot([
-              {id: 'run', label: 'Run', onClick, endContent: pin('Pin run')},
-              {...folder, endContent: pin('Pin folder')},
+              {
+                id: 'run',
+                label: 'Run',
+                onClick,
+                startContent: pin('Pin run start'),
+                endContent: pin('Pin run end'),
+              },
+              {
+                ...folder,
+                startContent: pin('Pin folder start'),
+                endContent: pin('Pin folder end'),
+              },
             ])}
           />,
         );
-        fireEvent.click(screen.getByRole('switch', {name: 'Pin run'}));
-        fireEvent.click(screen.getByRole('switch', {name: 'Pin folder'}));
-        expect(onSwitch).toHaveBeenCalledTimes(2);
+        for (const name of [
+          'Pin run start',
+          'Pin run end',
+          'Pin folder start',
+          'Pin folder end',
+        ]) {
+          fireEvent.click(screen.getByRole('switch', {name}));
+        }
+        expect(onSwitch).toHaveBeenCalledTimes(4);
         expect(onClick).not.toHaveBeenCalled();
         expect(screen.queryByText('File')).not.toBeInTheDocument();
       });
@@ -977,6 +1004,32 @@ describe('TreeList', () => {
       const treeRoot = screen.getByRole('tree').parentElement!;
       expect(treeRoot.className).toContain('astryx-tree-list');
       expect(getComputedStyle(treeRoot).isolation).toBe('isolate');
+    });
+
+    it('lifts only rows that draw a focus ring above the guides', () => {
+      // A plain row (no onClick, href or children) draws no focus ring, so it
+      // stays under the guides: a focused selected plain row must not hide
+      // them with its fill (DD3). Rows that draw the ring take the lift.
+      render(
+        <TreeList
+          items={[
+            {
+              id: 'root',
+              label: 'Root',
+              isExpanded: true,
+              children: [
+                {id: 'plain', label: 'Plain', isSelected: true},
+                {id: 'run', label: 'Run', onClick: () => {}},
+              ],
+            },
+          ]}
+        />,
+      );
+      const rowOf = (label: string) =>
+        screen.getByText(label).closest<HTMLElement>('.astryx-tree-list-item')!;
+      expect(rowOf('Plain').className).not.toContain('focusLift');
+      expect(rowOf('Run').className).toContain('focusLift');
+      expect(rowOf('Root').className).toContain('focusLift');
     });
 
     it('lifts the focused row above the guides so they never cut its ring', () => {
