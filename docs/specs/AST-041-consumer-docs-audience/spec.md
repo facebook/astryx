@@ -73,10 +73,11 @@ consumer surfaces, including docs that integrations contribute.
   reference MUST state this rule.
 - **FR7 — The shared caller rubric has one owner.** The shipped `is-my-code-good`
   guide MUST own the shared criteria for whether caller-created product code uses
-  Astryx well. Specialized rubrics MAY add weights and artifact-specific checks,
-  but MUST link to the shared criteria instead of redefining them. A caller rubric
-  MUST use public inputs and MUST report missing evidence as uninspected, not as a
-  pass.
+  Astryx well. Specialized rubrics MUST link to the shared criteria instead of
+  presenting their own wording as the shared rubric. They MAY retain versioned
+  scoring wording, weights, and artifact-specific checks when needed to keep
+  results comparable. A caller rubric MUST use public inputs and MUST report
+  missing evidence as uninspected, not as a pass.
 
 ### Platform support
 
@@ -100,13 +101,13 @@ and needs no Changeset.
 
 ## Verification
 
-| Contract | Verification                                        | Representative states                                                                 | Mutation or failure expectation                                                                 |
-| -------- | --------------------------------------------------- | ------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
-| FR1–FR3  | Review of every shipped doc the compiler enumerates | component, hook, template, topic, agent guidance; caller fact phrased for maintainers | A section addresses maintainers, or a caller guarantee is removed instead of rewritten          |
-| FR4      | Compiled public and internal bundle tests           | public doc, internal doc, maintainer material marked internal                         | Maintainer material appears in any bundle                                                       |
-| FR5      | Check fixtures and a run over the shipped corpus    | clean corpus, real violation, caller instruction with a flagged term, exemption       | The corpus fails, the violation passes, the caller instruction fails, or an exemption is silent |
-| FR6      | Integration doc fixtures                            | contributed topic that addresses maintainers                                          | A contributed doc bypasses the boundary                                                         |
-| FR7      | Docs graph and rubric review                        | shared code rubric, specialized template scoring, missing rendered evidence           | Shared criteria have two owners, a specialization does not link, or missing evidence passes     |
+| Contract | Verification                                        | Representative states                                                                                                         | Mutation or failure expectation                                                                                                                   |
+| -------- | --------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| FR1–FR3  | Review of every shipped doc the compiler enumerates | component, hook, template, topic, agent guidance; caller fact phrased for maintainers                                         | A section addresses maintainers, or a caller guarantee is removed instead of rewritten                                                            |
+| FR4      | Compiled public and internal bundle tests           | public doc, internal doc, maintainer material marked internal                                                                 | Maintainer material appears in any bundle                                                                                                         |
+| FR5      | Check fixtures and a run over the shipped corpus    | clean corpus, real violation, caller instruction with a flagged term, exemption                                               | The corpus fails, the violation passes, the caller instruction fails, or an exemption is silent                                                   |
+| FR6      | Integration doc fixtures                            | contributed topic that addresses maintainers                                                                                  | A contributed doc bypasses the boundary                                                                                                           |
+| FR7      | Docs graph and rubric review                        | shared code rubric, specialized template scoring, a versioned rubric that keeps its scored wording, missing rendered evidence | Shared criteria have two owners, a specialization does not link, retained wording is presented as the shared criteria, or missing evidence passes |
 
 ## Decision log
 
@@ -142,11 +143,13 @@ place for maintainer material.
 
 A person or agent building with Astryx can act on public criteria that evaluate
 its own product code. The `is-my-code-good` guide owns the shared criteria;
-artifact-specific guides link to it and add only their own checks or scoring.
+artifact-specific guides link to it and add their own checks or scoring. A
+versioned rubric keeps the scoring wording its recorded results depend on, so
+its scores stay comparable across versions.
 Missing evidence remains visible instead of becoming a pass.
 
-Rejected: treating every quality rubric as maintainer process, and copying the
-shared criteria into each artifact-specific guide.
+Rejected: treating every quality rubric as maintainer process, and presenting
+an artifact-specific guide's wording as the shared criteria.
 
 ## Open questions
 
