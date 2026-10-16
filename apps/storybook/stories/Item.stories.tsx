@@ -440,7 +440,14 @@ export const AlignFirstLine: Story = {
       const rowBox = row.getBoundingClientRect();
       const contentTop =
         rowBox.top + parseFloat(getComputedStyle(row).paddingBlockStart);
-      const slots = children.filter(child => child !== content);
+      // The start and end slots: in-flow children other than the text.
+      // Out-of-flow children (a slot's own popover, such as Avatar's
+      // tooltip) are not slots.
+      const slots = children.filter(
+        child =>
+          child !== content &&
+          !['absolute', 'fixed'].includes(getComputedStyle(child).position),
+      );
       expect(slots.length).toBeGreaterThan(0);
       for (const slot of slots) {
         const mark = (slot.firstElementChild as HTMLElement | null) ?? slot;
@@ -448,6 +455,7 @@ export const AlignFirstLine: Story = {
         // Each slot's center sits on the first line's center...
         expect(
           Math.abs(box.top + box.height / 2 - firstLineCenter),
+          `${testCase.dataset.firstLineCase}: slot center off the first line`,
         ).toBeLessThanOrEqual(0.5);
         // ...and never rises into the row's padding.
         expect(slot.getBoundingClientRect().top).toBeGreaterThanOrEqual(
