@@ -24,7 +24,8 @@
  *         the geometry/behavior dims that genuinely need hand-written selectors.
  *     (C) APPLICABILITY: every component is measured, explicitly verified N/A,
  *         or reported as a coverage gap. An all-N/A result is never called clean.
- * @input --storybook-dir <path> --output <file> [--targets <path>]
+ * @input Resolved Storybook `rtlAudit` parameters plus --storybook-dir <path>
+ *   --output <file> [--targets <path>]
  *   [--verified-not-applicable <path>] [--filter <csv>] [--packages <csv>]
  *   [--auto-only] [--curated-only]
  *   [--shard <i>/<n> --shard-output <file>] audit every n-th planned item and
@@ -57,6 +58,7 @@ import {
   AUDITED_STORY_PREFIXES,
   buildAuditedComponentRoster,
   buildComponentCoverage,
+  buildD1Target,
   buildStoryComponentRoutes,
   classifyLogicalGroupedCorners,
   classifyLogicalInlinePair,
@@ -64,6 +66,9 @@ import {
   componentFromTarget,
   evaluateDirectionalDecorations,
   filterStoryRoutesByPackages,
+  orderD1StoryCandidates,
+  validateStoryRtlAuditParameters,
+  withD1CompletionIdentity,
 } from './rtl-audit-coverage.mjs';
 import {
   createCuratedPages,
@@ -209,6 +214,26 @@ async function settle(page) {
     })
     .catch(() => {});
   await page.waitForTimeout(200);
+}
+
+async function readStoryRtlAuditParameters(page, storyId) {
+  const marker = page.locator('[data-astryx-rtl-audit]').first();
+  await marker
+    .waitFor({state: 'attached', timeout: 5000})
+    .catch(() => {
+      throw new Error(`${storyId} rtlAudit metadata was not rendered`);
+    });
+  const raw = await marker.getAttribute('data-astryx-rtl-audit');
+  if (raw == null) {
+    throw new Error(`${storyId} rtlAudit metadata was not rendered`);
+  }
+  let parsed;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    throw new Error(`${storyId} rtlAudit metadata is not valid JSON`);
+  }
+  return validateStoryRtlAuditParameters(parsed, storyId);
 }
 
 async function doSetup(page, t) {
@@ -680,10 +705,12 @@ async function autoPositionalAndDecorations(page, port, storyId, component) {
 }
 
 // Auto-discovery D1 for one story: compare LTR vs RTL directional-icon flip.
-async function autoD1(page, port, storyId, component) {
+async function autoD1(page, port, storyId, component, {ltrReady = false} = {}) {
   const card = {component, storyId, dim: 'D1', verdict: 'N-A', notes: [], icons: 0};
-  await page.goto(storyUrl(port, storyId, false), {waitUntil: 'domcontentloaded'});
-  await settle(page);
+  if (!ltrReady) {
+    await page.goto(storyUrl(port, storyId, false), {waitUntil: 'domcontentloaded'});
+    await settle(page);
+  }
   const revealedL = await revealInteractionGated(page);
   const ltr = await detectDirectionalIcons(page);
   await page.goto(storyUrl(port, storyId, true), {waitUntil: 'domcontentloaded'});
@@ -757,6 +784,43 @@ async function autoD1(page, port, storyId, component) {
   card._ltr = ltr;
   card._rtl = rtl;
   return card;
+}
+
+async function autoD1ForComponent(page, port, candidates, component) {
+  const skippedStories = [];
+  for (const candidate of orderD1StoryCandidates(candidates)) {
+    await page.goto(storyUrl(port, candidate.id, false), {
+      waitUntil: 'domcontentloaded',
+    });
+    await settle(page);
+    const parameters = await readStoryRtlAuditParameters(page, candidate.id);
+    if (parameters.D1?.applicable === false) {
+      skippedStories.push({
+        storyId: candidate.id,
+        reason: parameters.D1.reason,
+      });
+      continue;
+    }
+    const card = await autoD1(page, port, candidate.id, component, {
+      ltrReady: true,
+    });
+    card.skippedStories = skippedStories;
+    if (skippedStories.length > 0) {
+      card.notes.unshift(
+        `skipped ${skippedStories.length} fixture(s) explicitly not applicable to D1`,
+      );
+    }
+    return card;
+  }
+  return {
+    component,
+    storyId: null,
+    dim: 'D1',
+    verdict: 'N-A',
+    notes: ['every candidate story is explicitly not applicable to D1'],
+    icons: 0,
+    skippedStories,
+  };
 }
 
 // ===========================================================================
@@ -1034,6 +1098,38 @@ async function scoreCurated(pages, port, t) {
 }
 
 // ---------------------------------------------------------------------------
+const STORY_SOURCE_ROOT = path.resolve(PROJECT_ROOT, 'apps/storybook');
+const storySourceCache = new Map();
+
+function storySourceOrder(entry) {
+  const importPath = entry?.importPath ?? '';
+  const exportName = entry?.exportName ?? '';
+  const sourcePath = path.resolve(
+    STORY_SOURCE_ROOT,
+    importPath.replace(/^\.\//, ''),
+  );
+  if (
+    !sourcePath.startsWith(`${STORY_SOURCE_ROOT}${path.sep}`) ||
+    !exportName
+  ) {
+    return Number.MAX_SAFE_INTEGER;
+  }
+  let source = storySourceCache.get(sourcePath);
+  if (source == null) {
+    try {
+      source = fs.readFileSync(sourcePath, 'utf8');
+    } catch {
+      source = '';
+    }
+    storySourceCache.set(sourcePath, source);
+  }
+  const escaped = exportName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return (
+    new RegExp(`export\\s+(?:const|function)\\s+${escaped}\\b`).exec(source)
+      ?.index ?? Number.MAX_SAFE_INTEGER
+  );
+}
+
 function matchesFilter(component) {
   const normalized = component.toLowerCase();
   const name = normalized.split('/').at(-1) ?? normalized;
@@ -1124,17 +1220,24 @@ async function cleanupRuntime() {
     filters: FILTER,
   });
 
-  // The audit's plan: D1 runs one representative story per component (extra
-  // stories add little D1 signal); D5 (positional-mirror) and D6 run over
-  // EVERY story — a positioned bug can be story-specific (only a `withStatus`
-  // variant mounts the offending element), so they do not collapse to one per
-  // component; curated targets add the behaviour and geometry dims.
+  // The audit's plan: D1 uses one deterministic representative story per
+  // component. Repository story-file/export order preserves the existing
+  // representative while remaining independent of index.json object order.
+  // Fixtures may opt out with typed rtlAudit metadata. D5 (positional-mirror)
+  // and D6 still run over EVERY story because those bugs can be story-specific;
+  // curated targets add the behaviour and geometry dims.
   const perComponent = new Map();
   for (const {component, id} of scopedStoryRoutes) {
-    if (!perComponent.has(component)) perComponent.set(component, id);
+    if (!perComponent.has(component)) perComponent.set(component, []);
+    perComponent.get(component).push({
+      id,
+      importPath: entries[id]?.importPath ?? '',
+      sourceOrder: storySourceOrder(entries[id]),
+    });
   }
-  const d1Targets = [...perComponent]
-    .map(([component, id]) => ({comp: component, id}));
+  const d1Targets = [...perComponent].map(([component, candidates]) =>
+    buildD1Target(component, candidates),
+  );
   const storyTargets = scopedStoryRoutes.map(({id, component}) => ({id, comp: component}));
   const curatedTargets = [];
   for (const t of targets) {
@@ -1217,12 +1320,17 @@ async function cleanupRuntime() {
     if (!CURATED_ONLY) {
       const d1Positions = mine(d1Targets);
       const d1Cards = await mapPool(d1Positions.map(position => d1Targets[position]), pool, {
-        scan: async ({comp, id}, workerPage) => {
-          const card = await autoD1(workerPage, port, id, comp);
+        scan: async ({comp, id, candidates}, workerPage) => {
+          const card = await autoD1ForComponent(
+            workerPage,
+            port,
+            candidates,
+            comp,
+          );
           if (card.verdict !== 'N-A') {
             console.error(`AUTO ${card.verdict.toUpperCase().padEnd(4)} ${comp.padEnd(24)} icons=${card.icons}`);
           }
-          return card;
+          return withD1CompletionIdentity(card, id);
         },
         onError: ({comp, id}, e) => {
           console.error(`AUTO ERROR ${comp}: ${String(e).slice(0, 120)}`);
