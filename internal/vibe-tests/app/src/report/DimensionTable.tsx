@@ -8,8 +8,9 @@ import type {TableColumn} from '@astryxdesign/core/Table';
 import type {UniversalScore} from './types';
 import {
   ALL_DIMENSIONS,
-  DIMENSION_LABELS,
+  a11yCoverage,
   computeOverall,
+  dimensionLabel,
   formatScore,
   scoreToStatusVariant,
 } from './utils';
@@ -44,6 +45,7 @@ function ScoreCell({score}: {score: number}) {
 }
 
 export function DimensionTable({byPrompt}: DimensionTableProps) {
+  const coverage = a11yCoverage(byPrompt);
   const data: RowData[] = Object.entries(byPrompt).map(([promptId, score]) => ({
     id: promptId,
     promptId,
@@ -62,13 +64,11 @@ export function DimensionTable({byPrompt}: DimensionTableProps) {
       header: 'Prompt',
       renderCell: row => <Text type="body">{row.promptId}</Text>,
     },
-    ...ALL_DIMENSIONS.map(
-      (dim): TableColumn<RowData> => ({
-        key: dim,
-        header: DIMENSION_LABELS[dim],
-        renderCell: row => <ScoreCell score={row[dim] as number} />,
-      }),
-    ),
+    ...ALL_DIMENSIONS.map((dim): TableColumn<RowData> => ({
+      key: dim,
+      header: dimensionLabel(dim, coverage),
+      renderCell: row => <ScoreCell score={row[dim] as number} />,
+    })),
     {
       key: 'overall',
       header: 'Overall',

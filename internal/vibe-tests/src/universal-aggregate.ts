@@ -14,6 +14,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import type {
+  A11yCoverage,
   ExecutionProvenanceFilter,
   PromptCostMetrics,
   UniversalDimension,
@@ -22,7 +23,12 @@ import type {
   UniversalAggregate,
 } from './types.js';
 import {getResultsDir, writeJson, ensureTsxFiles} from './utils.js';
-import {evaluate, getDimensionNames} from './universal-eval.js';
+import {
+  evaluate,
+  getDimensionNames,
+  getA11yCoverage,
+  getA11yDimensionLabel,
+} from './universal-eval.js';
 import {provenanceFilename} from './provenance.js';
 // @ts-expect-error -- public-artifact.mjs intentionally has no declaration output.
 import {
@@ -44,6 +50,13 @@ const DIMENSION_LABELS: Partial<Record<UniversalDimension, string>> = {
   efficiency: 'Efficiency',
   maintainability: 'Maintainability',
   design: 'Design',
+};
+
+/** Short accessibility row label per runtime basis (issue #4145) */
+const A11Y_TABLE_LABELS: Record<A11yCoverage['basis'], string> = {
+  static: 'A11y Hygiene',
+  mixed: 'A11y (mixed)',
+  runtime: 'Accessibility',
 };
 
 function runtimePrivateValues(): string[] {
@@ -449,6 +462,19 @@ async function main() {
     return;
   }
 
+  // A11y scoring basis (issue #4145): without runtime axe data the
+  // accessibility score only measures raw-HTML footgun avoidance.
+  const a11yCoverage = getA11yCoverage(Object.values(byPrompt));
+  const a11yMetrics = Object.values(byPrompt).map(s => s.accessibility.metrics);
+  const a11yEligibleSites = a11yMetrics.reduce(
+    (s, m) => s + (m?.eligibleSites ?? 0),
+    0,
+  );
+  const axeViolationRules = a11yMetrics.reduce(
+    (s, m) => s + (m?.axeViolationCount ?? 0),
+    0,
+  );
+
   // Print formatted table
   console.log(
     `\n📊 Universal Evaluation — Iteration ${reportContext.iteration}`,
@@ -459,7 +485,11 @@ async function main() {
   console.log('│ Dimension           │ Score │');
   console.log('├─────────────────────┼───────┤');
   for (const dim of dimensions) {
-    const label = (DIMENSION_LABELS[dim] || dim).padEnd(19);
+    const rawLabel =
+      dim === 'accessibility'
+        ? A11Y_TABLE_LABELS[a11yCoverage.basis]
+        : DIMENSION_LABELS[dim] || dim;
+    const label = rawLabel.padEnd(19);
     const score = String(averages[dim]).padStart(3);
     console.log(`│ ${label} │  ${score}  │`);
   }
@@ -476,6 +506,22 @@ async function main() {
   console.log('└─────────────────────┴───────┘');
 
   console.log(`\n🌙 Dark Mode: ${darkModeRate}%`);
+
+  console.log(`\n♿ A11y basis: ${getA11yDimensionLabel(a11yCoverage)}`);
+  if (a11yCoverage.basis !== 'static') {
+    console.log(
+      `   Runtime axe: ${a11yCoverage.runtime}/${a11yCoverage.total} prompt(s) scanned, ${axeViolationRules} violation rule(s)`,
+    );
+  } else {
+    console.log(
+      '   No axe-results.json — run axe-previews for runtime checks (focus, ARIA, contrast)',
+    );
+  }
+  console.log(
+    `   Static-scan eligible sites: ${a11yEligibleSites}${
+      a11yEligibleSites === 0 ? ' (hygiene score is 100 by construction)' : ''
+    }`,
+  );
 
   // Efficiency metrics summary
   const allEfficiency = Object.values(byPrompt)
