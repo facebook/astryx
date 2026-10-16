@@ -21,7 +21,9 @@
 #                         visual signals only — NOT docs and NOT "a new dir
 #                         appeared" (styleless modules don't count). NOT
 #                         area-gated — a theme/template edit is where design
-#                         lives. Requests review from DESIGNOWNERS. Skipped when
+#                         lives. Requests review from DESIGNOWNERS once the PR
+#                         is ready for review (a draft keeps the label but the
+#                         request waits, like CODEOWNERS). Skipped when
 #                         the author is a DESIGNOWNER (design self-serves design).
 #                         Besides the path signals, the DIFF CONTENT is scored
 #                         by .github/scripts/lib/classify-visual.js (#3667) —
@@ -523,6 +525,8 @@ jobs:
             // requests the codeowners on every PR regardless of branch
             // protection). We only add DESIGN owners, and only when a design
             // gate actually fires — so design owners aren't pinged on every PR.
+            // Like CODEOWNERS, a draft waits: the ready_for_review run requests
+            // them, recomputing the gate over the whole PR.
             async function requestReviewers(handles) {
               const reviewers = [...new Set(handles)].filter((h) => h !== author);
               if (!reviewers.length) return;
@@ -534,7 +538,7 @@ jobs:
                 core.warning(`requestReviewers(${reviewers.join(',')}) failed: ${e.message}`);
               }
             }
-            if (designGated) await requestReviewers(designOwners);
+            if (designGated && !pr.draft) await requestReviewers(designOwners);
 
             // --- Only the CODE gate blocks. Design review is advisory:
             //     it labels + requests design owners (above) but does NOT

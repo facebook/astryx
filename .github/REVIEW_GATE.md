@@ -17,7 +17,8 @@ neutral yellow "waiting" signal, not a red failure).
 - **Code review is the only hard gate.** It shows up as the `review-required`
   status: `pending` (🟡, blocks the merge) or `success` (🟢).
 - **Design review is advisory** — it labels the PR and requests design owners,
-  but does not block the merge.
+  but does not block the merge. On a draft the label applies right away and the
+  request waits until the PR is ready for review, as for CODEOWNERS.
 - An entitled owner's **approval clears the gate automatically** (no manual step).
 
 ## Spec records
@@ -151,7 +152,7 @@ internal contributors' PRs. Owners still self-serve their own domain.
      read reviews → codeApproved / designApproved
      effective gate = detected/contributor gate AND NOT owner AND NOT approved
        → labels: needs:code-review · needs:design-review (advisory) · community
-       → request reviewers: CODEOWNERS (code) · DESIGNOWNERS (design)
+       → request reviewers: CODEOWNERS (code) · DESIGNOWNERS (design, once ready for review)
        → if code-gated: disable auto-merge
        → set commit status "review-required": pending 🟡 (blocks) | success 🟢
        → neutralize any stale action_required "review-required" check run

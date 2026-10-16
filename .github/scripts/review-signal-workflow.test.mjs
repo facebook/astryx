@@ -33,9 +33,12 @@ async function runSignal({
   backfill = false,
   helperMissing = false,
   reviews = [],
+  draft = false,
+  files = [{filename: 'README.md', status: 'modified'}],
 } = {}) {
   const pr = {
     number: 42,
+    draft,
     user: {login: 'contributor', type: 'User'},
     base: {sha: baseSha, ref: 'main'},
     head: {sha: HEAD, ref: 'feature'},
@@ -78,9 +81,7 @@ async function runSignal({
       pulls: {
         get: vi.fn(async () => ({data: pr})),
         list: vi.fn(async () => ({data: [pr]})),
-        listFiles: vi.fn(async () => ({
-          data: [{filename: 'README.md', status: 'modified'}],
-        })),
+        listFiles: vi.fn(async () => ({data: files})),
         listReviews: async () => ({data: reviews}),
         requestReviewers: mutations.requestReviewers,
       },
@@ -230,6 +231,42 @@ describe('review-signal trusted helper ref', () => {
       expect(h.mutations.createCommitStatus).toHaveBeenCalledWith(
         expect.objectContaining({sha: HEAD, state}),
       );
+    },
+  );
+});
+
+describe('review-signal design-owner requests', () => {
+  const themeChange = [
+    {filename: 'packages/themes/neutral/src/tokens.ts', status: 'modified'},
+  ];
+
+  it.each([
+    ['draft', true, false],
+    ['ready for review', false, true],
+  ])(
+    'labels a design change on a %s PR and requests design owners only once it is ready',
+    async (_name, draft, requested) => {
+      const h = await runSignal({
+        eventName: 'pull_request_target',
+        draft,
+        files: themeChange,
+      });
+      expect(h.core.setFailed).not.toHaveBeenCalled();
+      expect(h.mutations.addLabels).toHaveBeenCalledWith(
+        expect.objectContaining({
+          labels: expect.arrayContaining(['needs:design-review']),
+        }),
+      );
+      if (requested) {
+        expect(h.mutations.requestReviewers).toHaveBeenCalledExactlyOnceWith({
+          owner: 'facebook',
+          repo: 'astryx',
+          pull_number: 42,
+          reviewers: ['designer'],
+        });
+      } else {
+        expect(h.mutations.requestReviewers).not.toHaveBeenCalled();
+      }
     },
   );
 });
