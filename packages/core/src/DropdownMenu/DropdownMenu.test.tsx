@@ -2508,6 +2508,27 @@ describe('DropdownMenu data/compound parity', () => {
     expect(fromCompound).toHaveClass('astryx-dropdown-menu-divider');
   });
 
+  it('forwards host attributes to a compound divider while keeping its role', () => {
+    render(
+      <DropdownMenu button={{label: 'Actions'}}>
+        <DropdownMenuItem label="Edit" />
+        <DropdownMenuDivider
+          id="menu-sep"
+          data-testid="menu-separator"
+          aria-label="Danger zone"
+          // @ts-expect-error role is component-owned
+          role="presentation"
+        />
+        <DropdownMenuItem label="Delete" />
+      </DropdownMenu>,
+    );
+    const separator = screen.getByTestId('menu-separator');
+    expect(separator).toHaveAttribute('id', 'menu-sep');
+    expect(separator).toHaveAttribute('aria-label', 'Danger zone');
+    expect(separator).toHaveAttribute('role', 'separator');
+    expect(separator).toHaveClass('astryx-dropdown-menu-divider');
+  });
+
   it('skips a compound divider in the arrow-key order', async () => {
     const user = userEvent.setup();
     render(
