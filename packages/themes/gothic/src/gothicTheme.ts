@@ -52,6 +52,36 @@ const gothicSyntax = defineSyntaxTheme({
   },
 });
 
+/**
+ * The secondary Button treatment. Selector, MultiSelector, and ComplexSelector
+ * reuse it for their `secondary` trigger so every secondary control in this
+ * theme matches (AST-079 FR2).
+ *
+ * Primary inherits default — light pill with dark text via
+ * --color-accent / --color-on-accent (matches the cream badge).
+ * Secondary uses the dark-slate "neutral" badge treatment.
+ */
+const SECONDARY_BUTTON = {
+  backgroundColor: 'var(--color-background-gray)',
+  color: 'var(--color-text-gray)',
+  borderColor: 'transparent',
+  borderWidth: '0',
+} as const;
+
+/**
+ * The secondary Button treatment on Selector and MultiSelector triggers
+ * (AST-079 FR2). Inside an InputGroup a trigger keeps the neutral fill and the
+ * group's edges instead (FR6).
+ */
+const SECONDARY_SELECTOR = {
+  ':not(.astryx-input-group *)': {
+    backgroundColor: SECONDARY_BUTTON.backgroundColor,
+    color: SECONDARY_BUTTON.color,
+    borderColor: SECONDARY_BUTTON.borderColor,
+    borderWidth: SECONDARY_BUTTON.borderWidth,
+  },
+} as const;
+
 export const gothicTheme = defineTheme({
   name: 'gothic',
 
@@ -236,15 +266,7 @@ export const gothicTheme = defineTheme({
 
   components: {
     button: {
-      // Primary inherits default — light pill with dark text via
-      // --color-accent / --color-on-accent (matches the cream badge).
-      // Secondary uses the dark-slate "neutral" badge treatment.
-      'variant:secondary': {
-        backgroundColor: 'var(--color-background-gray)',
-        color: 'var(--color-text-gray)',
-        borderColor: 'transparent',
-        borderWidth: '0',
-      },
+      'variant:secondary': SECONDARY_BUTTON,
       'variant:ghost': {
         ':hover': {
           backgroundColor: 'var(--color-overlay-hover)',
@@ -257,6 +279,10 @@ export const gothicTheme = defineTheme({
         color: 'var(--color-text-red)',
       },
     },
+    // Secondary selector triggers match the secondary Button (AST-079 FR2).
+    selector: {'variant:secondary': SECONDARY_SELECTOR},
+    'multi-selector': {'variant:secondary': SECONDARY_SELECTOR},
+    'complex-selector': {'variant:secondary': SECONDARY_BUTTON},
 
     badge: {
       base: {

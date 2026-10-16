@@ -409,7 +409,7 @@
   },
   "@astryx.commandPalette.noResultsFor": {
     "defaultMessage": "No results for {query}",
-    "description": "Screen-reader-only announcement when a CommandPalette query matches nothing. `{query}` is the user's verbatim search text; keep it last if your language allows so truncation-by-AT still conveys the outcome."
+    "description": "Not read by any component: CommandPalette announces its rendered empty-search message (`emptySearchText`) instead. Formerly the screen-reader-only announcement when a query matched nothing; `{query}` was the user's verbatim search text."
   },
   "@astryx.commandPalette.loading": {
     "defaultMessage": "Loading",
@@ -526,6 +526,82 @@
   "@astryx.listInput.announceAlreadyAtBoundary": {
     "defaultMessage": "This {itemName} is already {boundary, select, first {first} last {last} other {}}.",
     "description": "Screen-reader-only live announcement when an arrow-key reorder attempt has no effect because the record is already at that end of the list. `{itemName}` is the consumer's singular noun for one record; `{boundary}` is always exactly \"first\" or \"last\"."
+  },
+  "@astryx.diffViewer.label": {
+    "defaultMessage": "Diff",
+    "description": "Accessible name of a lab DiffViewer's scrollable code area when the file has no path to name it."
+  },
+  "@astryx.diffViewer.renamedPath": {
+    "defaultMessage": "{oldPath} → {newPath}",
+    "description": "File path shown in a lab DiffViewer header when the file was renamed. `{oldPath}` and `{newPath}` are file paths and must stay untranslated; keep the arrow pointing from the old path to the new one."
+  },
+  "@astryx.diffViewer.statusAdded": {
+    "defaultMessage": "Added",
+    "description": "Badge in a lab DiffViewer file header marking a file that the change creates."
+  },
+  "@astryx.diffViewer.statusDeleted": {
+    "defaultMessage": "Deleted",
+    "description": "Badge in a lab DiffViewer file header marking a file that the change removes."
+  },
+  "@astryx.diffViewer.statusRenamed": {
+    "defaultMessage": "Renamed",
+    "description": "Badge in a lab DiffViewer file header marking a file that the change moves to a new path."
+  },
+  "@astryx.diffViewer.addedCount": {
+    "defaultMessage": "+{count, number}",
+    "description": "Compact count of added lines shown in a lab DiffViewer file header, e.g. \"+12\". Hidden from screen readers, which hear `@astryx.diffViewer.stats` instead."
+  },
+  "@astryx.diffViewer.removedCount": {
+    "defaultMessage": "−{count, number}",
+    "description": "Compact count of removed lines shown in a lab DiffViewer file header, e.g. \"−3\" (a minus sign). Hidden from screen readers, which hear `@astryx.diffViewer.stats` instead."
+  },
+  "@astryx.diffViewer.stats": {
+    "defaultMessage": "{added, plural, one {# line added} other {# lines added}}, {removed, plural, one {# line removed} other {# lines removed}}",
+    "description": "Screen-reader text for the line counts in a lab DiffViewer file header, e.g. \"12 lines added, 3 lines removed\"."
+  },
+  "@astryx.diffViewer.added": {
+    "defaultMessage": "Added",
+    "description": "Screen-reader text marking one line of a lab DiffViewer as added by the change; sighted readers see a + sign and a tinted row."
+  },
+  "@astryx.diffViewer.removed": {
+    "defaultMessage": "Removed",
+    "description": "Screen-reader text marking one line of a lab DiffViewer as removed by the change; sighted readers see a - sign and a tinted row."
+  },
+  "@astryx.diffViewer.lineNumberButton": {
+    "defaultMessage": "{side, select, old {Original line {line, number}} other {Changed line {line, number}}}",
+    "description": "Accessible label of a clickable line number in a lab DiffViewer (callers use it, for example, to start a comment on that line). `side` is `old` for the file before the change and `new` for the file after it; `line` is the line number in that version."
+  },
+  "@astryx.diffViewer.columnOldLine": {
+    "defaultMessage": "Original line number",
+    "description": "Screen-reader-only header of a lab DiffViewer column holding line numbers in the file before the change. Pairs with `@astryx.diffViewer.lineNumberButton` (\"Original line …\")."
+  },
+  "@astryx.diffViewer.columnNewLine": {
+    "defaultMessage": "Changed line number",
+    "description": "Screen-reader-only header of a lab DiffViewer column holding line numbers in the file after the change. Pairs with `@astryx.diffViewer.lineNumberButton` (\"Changed line …\")."
+  },
+  "@astryx.diffViewer.columnChange": {
+    "defaultMessage": "Change",
+    "description": "Screen-reader-only header of a lab DiffViewer column that marks each line as added or removed (noun: the kind of change)."
+  },
+  "@astryx.diffViewer.columnCode": {
+    "defaultMessage": "Code",
+    "description": "Screen-reader-only header of the source-code column in a lab DiffViewer's single-column (unified) view."
+  },
+  "@astryx.diffViewer.columnOldCode": {
+    "defaultMessage": "Original code",
+    "description": "Screen-reader-only header of the source-code column for the file before the change, in a lab DiffViewer's side-by-side (split) view."
+  },
+  "@astryx.diffViewer.columnNewCode": {
+    "defaultMessage": "Changed code",
+    "description": "Screen-reader-only header of the source-code column for the file after the change, in a lab DiffViewer's side-by-side (split) view."
+  },
+  "@astryx.diffViewer.binary": {
+    "defaultMessage": "Binary file not shown",
+    "description": "Message in place of line changes in a lab DiffViewer when the file is binary and has no text diff."
+  },
+  "@astryx.diffViewer.noChanges": {
+    "defaultMessage": "No content changes",
+    "description": "Message in a lab DiffViewer when a file changed only its path or mode, so there are no line changes to show."
   },
   "@astryx.markdownHeadingLinks.copied": {
     "defaultMessage": "Link copied",
@@ -862,6 +938,10 @@
   "@astryx.commandPalette.input.placeholder": {
     "defaultMessage": "Search…",
     "description": "Grey placeholder inside the CommandPalette's search input. Imperative verb; trailing `…` is one character."
+  },
+  "@astryx.commandPalette.input.label": {
+    "defaultMessage": "Search commands",
+    "description": "Screen-reader-only accessible name for the CommandPalette query input. Distinguish it from the visible placeholder; verb followed by the app actions being searched."
   },
   "@astryx.commandPalette.list.label": {
     "defaultMessage": "Commands",
@@ -1638,5 +1718,373 @@
   "@astryx.transferListSelector.triggerLabel": {
     "defaultMessage": "{count, number} selected",
     "description": "Default summary on the closed trigger of a lab TransferListSelector, stating how many options are currently chosen. Consumers usually override this with a domain phrase (e.g. \"7 columns\")."
+  },
+  "@astryx.emojiPicker.label": {
+    "defaultMessage": "Emoji",
+    "description": "Default accessible name of the scrolling list of emoji in a lab EmojiPicker, and the footer text when no emoji is hovered or focused."
+  },
+  "@astryx.emojiPicker.searchLabel": {
+    "defaultMessage": "Search emoji",
+    "description": "Default placeholder and hidden label of the search field of a lab EmojiPicker."
+  },
+  "@astryx.emojiPicker.frequentlyUsed": {
+    "defaultMessage": "Frequently used",
+    "description": "Heading of the first group in a lab EmojiPicker, the host's frequent or recent emoji."
+  },
+  "@astryx.emojiPicker.searchResults": {
+    "defaultMessage": "Search results",
+    "description": "Heading of the single group a lab EmojiPicker shows while its search field has text."
+  },
+  "@astryx.emojiPicker.noResults": {
+    "defaultMessage": "No emoji match “{query}”",
+    "description": "Shown in a lab EmojiPicker when no emoji name or keyword matches the search. `query` is the search text."
+  },
+  "@astryx.emojiPicker.loading": {
+    "defaultMessage": "Loading emoji",
+    "description": "Accessible name of the spinner a lab EmojiPicker shows while its bundled emoji set loads."
+  },
+  "@astryx.emojiPicker.loadFailed": {
+    "defaultMessage": "More emoji couldn't be loaded.",
+    "description": "Shown in a lab EmojiPicker when its bundled emoji set failed to load; the frequent emoji still show."
+  },
+  "@astryx.emojiPicker.groupSmileysEmotion": {
+    "defaultMessage": "Smileys & emotion",
+    "description": "Heading of the Unicode CLDR emoji group of faces and emotions in a lab EmojiPicker."
+  },
+  "@astryx.emojiPicker.groupPeopleBody": {
+    "defaultMessage": "People & body",
+    "description": "Heading of the Unicode CLDR emoji group of people, gestures, and body parts in a lab EmojiPicker."
+  },
+  "@astryx.emojiPicker.groupAnimalsNature": {
+    "defaultMessage": "Animals & nature",
+    "description": "Heading of the Unicode CLDR emoji group of animals and plants in a lab EmojiPicker."
+  },
+  "@astryx.emojiPicker.groupFoodDrink": {
+    "defaultMessage": "Food & drink",
+    "description": "Heading of the Unicode CLDR emoji group of food and drink in a lab EmojiPicker."
+  },
+  "@astryx.emojiPicker.groupTravelPlaces": {
+    "defaultMessage": "Travel & places",
+    "description": "Heading of the Unicode CLDR emoji group of places, vehicles, and weather in a lab EmojiPicker."
+  },
+  "@astryx.emojiPicker.groupActivities": {
+    "defaultMessage": "Activities",
+    "description": "Heading of the Unicode CLDR emoji group of sports, games, and events in a lab EmojiPicker."
+  },
+  "@astryx.emojiPicker.groupObjects": {
+    "defaultMessage": "Objects",
+    "description": "Heading of the Unicode CLDR emoji group of everyday objects in a lab EmojiPicker."
+  },
+  "@astryx.emojiPicker.groupSymbols": {
+    "defaultMessage": "Symbols",
+    "description": "Heading of the Unicode CLDR emoji group of signs and symbols in a lab EmojiPicker."
+  },
+  "@astryx.emojiPicker.groupFlags": {
+    "defaultMessage": "Flags",
+    "description": "Heading of the Unicode CLDR emoji group of flags in a lab EmojiPicker."
+  },
+  "@astryx.comments.retry": {
+    "defaultMessage": "Retry",
+    "description": "Action on an error Banner in a lab Comments panel or comment composer that repeats the action that failed."
+  },
+  "@astryx.commentComposer.placeholder": {
+    "defaultMessage": "Write a comment…",
+    "description": "Default placeholder of a lab CommentComposer, the input for a new comment in a discussion."
+  },
+  "@astryx.commentComposer.noAgents": {
+    "defaultMessage": "No agents",
+    "description": "Shown in a lab CommentComposer's slash-command menu when no AI agent matches what was typed after `/`."
+  },
+  "@astryx.commentComposer.agents": {
+    "defaultMessage": "Agents",
+    "description": "Accessible name of a lab CommentComposer's slash-command menu, which lists the AI agents a comment can address."
+  },
+  "@astryx.commentComposer.uploadFailed": {
+    "defaultMessage": "Images couldn't be added",
+    "description": "Error Banner title in a lab CommentComposer when uploading attached images failed; a Retry action follows."
+  },
+  "@astryx.commentComposer.imagesOnly": {
+    "defaultMessage": "Only image files can be added",
+    "description": "Error Banner title in a lab CommentComposer when a non-image file was attached, pasted, or dropped."
+  },
+  "@astryx.commentComposer.chooseImages": {
+    "defaultMessage": "Choose images",
+    "description": "Action on a lab CommentComposer's error Banner that opens the file chooser for images."
+  },
+  "@astryx.commentComposer.imageAlt": {
+    "defaultMessage": "Image attachment",
+    "description": "Alt text a lab CommentComposer writes into the comment for an uploaded image that came with none."
+  },
+  "@astryx.commentComposer.removeQuote": {
+    "defaultMessage": "Remove quoted text",
+    "description": "Button beside the quoted passage in a lab CommentComposer that drops the quote from the new inline comment."
+  },
+  "@astryx.commentComposer.attachImages": {
+    "defaultMessage": "Attach images",
+    "description": "Button in a lab CommentComposer that opens the file chooser to add images to the comment."
+  },
+  "@astryx.commentComposer.addEmoji": {
+    "defaultMessage": "Add emoji",
+    "description": "Button in a lab CommentComposer that opens the emoji picker, and the accessible name of that picker's popover."
+  },
+  "@astryx.commentComposer.cancel": {
+    "defaultMessage": "Cancel",
+    "description": "Text button beside the label of a lab CommentComposer that is editing an existing comment; it discards the edit."
+  },
+  "@astryx.comments.actionsLabel": {
+    "defaultMessage": "Actions for {name}'s comment",
+    "description": "Accessible name of a comment's actions menu button in a lab Comments panel. `name` is the comment author's name."
+  },
+  "@astryx.comments.addReaction": {
+    "defaultMessage": "Add reaction",
+    "description": "Button on a comment in a lab Comments panel that opens the set of reactions to choose from."
+  },
+  "@astryx.comments.agentBadge": {
+    "defaultMessage": "Agent",
+    "description": "Badge beside the name of a comment author in a lab Comments panel that is an AI agent rather than a person."
+  },
+  "@astryx.comments.agentLogo": {
+    "defaultMessage": "{name} logo",
+    "description": "Alt text of an AI agent's logo used as its avatar in a lab Comments panel. `name` is the agent's name."
+  },
+  "@astryx.comments.chooseReaction": {
+    "defaultMessage": "Choose a reaction",
+    "description": "Accessible name of the popover listing the reactions a comment can take in a lab Comments panel."
+  },
+  "@astryx.comments.copyLink": {
+    "defaultMessage": "Copy comment link",
+    "description": "Button on a comment in a lab Comments panel that copies a link to the comment."
+  },
+  "@astryx.comments.currentVersion": {
+    "defaultMessage": "Current version",
+    "description": "Marks the version shown now in the edit history dialog of a lab Comments panel."
+  },
+  "@astryx.comments.delete": {
+    "defaultMessage": "Delete",
+    "description": "Item in a comment's actions menu, and the confirming action of the delete dialog, in a lab Comments panel."
+  },
+  "@astryx.comments.deleteDescription": {
+    "defaultMessage": "Delete {name}'s comment? This action cannot be undone.",
+    "description": "Body of the dialog that confirms deleting a comment in a lab Comments panel. `name` is the comment's author."
+  },
+  "@astryx.comments.deleteFailed": {
+    "defaultMessage": "This comment couldn't be deleted.",
+    "description": "Error shown on a comment in a lab Comments panel when deleting it failed."
+  },
+  "@astryx.comments.deleteFailedRetry": {
+    "defaultMessage": "This comment couldn't be deleted. Try again.",
+    "description": "Text the delete confirmation dialog of a lab Comments panel shows, and announces, after deleting failed."
+  },
+  "@astryx.comments.deleteTitle": {
+    "defaultMessage": "Delete comment?",
+    "description": "Title of the dialog that confirms deleting a comment in a lab Comments panel."
+  },
+  "@astryx.comments.edit": {
+    "defaultMessage": "Edit",
+    "description": "Item in a comment's actions menu in a lab Comments panel that edits the viewer's own comment."
+  },
+  "@astryx.comments.editFailed": {
+    "defaultMessage": "Your edit couldn't be saved.",
+    "description": "Error shown on a comment in a lab Comments panel when saving an edit failed; a Retry action follows."
+  },
+  "@astryx.comments.editPlaceholder": {
+    "defaultMessage": "Edit comment",
+    "description": "Placeholder of the composer that edits an existing comment in a lab Comments panel."
+  },
+  "@astryx.comments.edited": {
+    "defaultMessage": "Edited",
+    "description": "Text beside a comment's time in a lab Comments panel marking that it was changed after posting; it opens the edit history when one exists."
+  },
+  "@astryx.comments.editingContext": {
+    "defaultMessage": "Editing comment",
+    "description": "Label above the composer that edits an existing comment in a lab Comments panel; a Cancel action follows it."
+  },
+  "@astryx.comments.hideReplies": {
+    "defaultMessage": "Hide replies",
+    "description": "Text button under an open comment thread in a lab Comments panel that collapses its replies."
+  },
+  "@astryx.comments.historyEmptyDescription": {
+    "defaultMessage": "This comment has no earlier versions.",
+    "description": "Empty-state description of the edit history dialog of a lab Comments panel."
+  },
+  "@astryx.comments.historyEmptyTitle": {
+    "defaultMessage": "No edit history",
+    "description": "Empty-state title of the edit history dialog of a lab Comments panel for a comment with no earlier versions."
+  },
+  "@astryx.comments.historyFailed": {
+    "defaultMessage": "Edit history couldn't load",
+    "description": "Error Banner title in the edit history dialog of a lab Comments panel."
+  },
+  "@astryx.comments.historyLoadFailed": {
+    "defaultMessage": "The comment's edit history couldn't be loaded. Try again.",
+    "description": "Error description in the edit history dialog of a lab Comments panel when loading the versions failed."
+  },
+  "@astryx.comments.historyLoading": {
+    "defaultMessage": "Loading edit history",
+    "description": "Accessible name of the spinner shown while a comment's earlier versions load in a lab Comments panel."
+  },
+  "@astryx.comments.historySubtitle": {
+    "defaultMessage": "Comment by {name}",
+    "description": "Subtitle of the edit history dialog in a lab Comments panel. `name` is the comment's author."
+  },
+  "@astryx.comments.historyTitle": {
+    "defaultMessage": "Edit history",
+    "description": "Title of the dialog listing a comment's earlier versions in a lab Comments panel."
+  },
+  "@astryx.comments.linkCopied": {
+    "defaultMessage": "Comment link copied",
+    "description": "Label the Copy comment link button takes for two seconds after copying, in a lab Comments panel."
+  },
+  "@astryx.comments.otherReactors": {
+    "defaultMessage": "{count, plural, one {# other} other {# others}}",
+    "description": "Last item of the list of people who reacted to a comment in a lab Comments panel, for those not named. `count` is how many."
+  },
+  "@astryx.comments.outdated": {
+    "defaultMessage": "Outdated",
+    "description": "Badge beside the quoted passage of an inline comment in a lab Comments panel when that passage was edited away."
+  },
+  "@astryx.comments.reactionCelebrate": {
+    "defaultMessage": "Celebrate",
+    "description": "Name of the party-popper reaction offered by default on comments in a lab Comments panel."
+  },
+  "@astryx.comments.reactionCount": {
+    "defaultMessage": "{reaction}: {count, number}",
+    "description": "Accessible name of a reaction toggle on a comment in a lab Comments panel. `reaction` is the reaction's name, e.g. \"Like\"; `count` is how many people reacted."
+  },
+  "@astryx.comments.reactionFailed": {
+    "defaultMessage": "Your reaction couldn't be saved.",
+    "description": "Error shown on a comment in a lab Comments panel when adding or removing a reaction failed."
+  },
+  "@astryx.comments.reactionLaugh": {
+    "defaultMessage": "Haha",
+    "description": "Name of the laughing reaction offered by default on comments in a lab Comments panel."
+  },
+  "@astryx.comments.reactionLike": {
+    "defaultMessage": "Like",
+    "description": "Name of the thumbs-up reaction offered by default on comments in a lab Comments panel."
+  },
+  "@astryx.comments.reactionLove": {
+    "defaultMessage": "Love",
+    "description": "Name of the red-heart reaction offered by default on comments in a lab Comments panel."
+  },
+  "@astryx.comments.reactionSad": {
+    "defaultMessage": "Sad",
+    "description": "Name of the crying reaction offered by default on comments in a lab Comments panel."
+  },
+  "@astryx.comments.reactionWow": {
+    "defaultMessage": "Wow",
+    "description": "Name of the surprised reaction offered by default on comments in a lab Comments panel."
+  },
+  "@astryx.comments.reopen": {
+    "defaultMessage": "Reopen",
+    "description": "Button on a resolved comment thread in a lab Comments panel that reopens it."
+  },
+  "@astryx.comments.reopenFailed": {
+    "defaultMessage": "This thread couldn't be reopened.",
+    "description": "Error shown on a comment thread in a lab Comments panel when reopening it failed."
+  },
+  "@astryx.comments.reply": {
+    "defaultMessage": "Reply",
+    "description": "Button on a comment in a lab Comments panel that opens a reply to it."
+  },
+  "@astryx.comments.replyFailed": {
+    "defaultMessage": "Your reply couldn't be posted.",
+    "description": "Error shown above a reply composer in a lab Comments panel when posting failed; the draft is kept."
+  },
+  "@astryx.comments.replyPlaceholder": {
+    "defaultMessage": "Reply to {name}…",
+    "description": "Placeholder of the reply composer in a lab Comments panel comment thread. `name` is the author of the comment being answered."
+  },
+  "@astryx.comments.replyingContext": {
+    "defaultMessage": "Replying to {name}",
+    "description": "Accessible context for the reply composer in a lab Comments panel comment thread. `name` is the author of the comment being answered."
+  },
+  "@astryx.comments.resolve": {
+    "defaultMessage": "Mark as resolved",
+    "description": "Button on a comment thread in a lab Comments panel that marks the thread resolved."
+  },
+  "@astryx.comments.resolveFailed": {
+    "defaultMessage": "This thread couldn't be resolved.",
+    "description": "Error shown on a comment thread in a lab Comments panel when marking it resolved failed."
+  },
+  "@astryx.comments.resolved": {
+    "defaultMessage": "Resolved",
+    "description": "Text beside a comment thread's time in a lab Comments panel marking the thread resolved."
+  },
+  "@astryx.comments.resolvedBy": {
+    "defaultMessage": "Resolved by {name}",
+    "description": "Tooltip of the Resolved text on a comment thread in a lab Comments panel. `name` is the person who resolved it."
+  },
+  "@astryx.comments.retryFailed": {
+    "defaultMessage": "Retrying didn't work.",
+    "description": "Error shown on a comment in a lab Comments panel that failed to post when retrying it failed too."
+  },
+  "@astryx.comments.sendFailed": {
+    "defaultMessage": "Couldn't send this comment.",
+    "description": "Error Banner title on a comment in a lab Comments panel that failed to post, when the host gave no message of its own."
+  },
+  "@astryx.comments.threadLabel": {
+    "defaultMessage": "Thread by {name}",
+    "description": "Accessible name of the toggle that opens or closes a comment thread in a lab Comments panel. `name` is the author of the thread's first comment."
+  },
+  "@astryx.comments.unread": {
+    "defaultMessage": "New",
+    "description": "Badge on a comment in a lab Comments panel the viewer hasn't read yet."
+  },
+  "@astryx.comments.unsavedDraft": {
+    "defaultMessage": "Unsaved draft. Dismiss again to discard it.",
+    "description": "Announced to screen readers when a lab CommentThread refuses its first dismissal because a reply or edit holds unsaved text; a second press outside the thread or a second Escape discards the draft."
+  },
+  "@astryx.comments.versionAuthor": {
+    "defaultMessage": "by {name}",
+    "description": "Byline beside the time of one version in the edit history dialog of a lab Comments panel. `name` is who saved that version."
+  },
+  "@astryx.comments.viewHistory": {
+    "defaultMessage": "View edit history",
+    "description": "Accessible name of the Edited text button on a comment in a lab Comments panel, which opens the comment's earlier versions."
+  },
+  "@astryx.comments.viewReplies": {
+    "defaultMessage": "View {count, plural, one {# reply} other {# replies}}",
+    "description": "Text button under a collapsed comment thread in a lab Comments panel that opens it. `count` is the number of replies."
+  },
+  "@astryx.comments.commentsLabel": {
+    "defaultMessage": "Threads in {label}",
+    "description": "Accessible name of the scrolling list of comment threads in a lab Comments panel. `label` is the panel's own accessible name, e.g. \"Comments\" or \"Launch plan\"."
+  },
+  "@astryx.comments.emptyDescription": {
+    "defaultMessage": "Start the discussion with a comment.",
+    "description": "Description under the empty-state title of a lab Comments panel when the viewer can comment."
+  },
+  "@astryx.comments.emptyReadOnlyDescription": {
+    "defaultMessage": "There is no discussion on this item.",
+    "description": "Description under the empty-state title of a lab Comments panel the viewer can only read."
+  },
+  "@astryx.comments.emptyTitle": {
+    "defaultMessage": "No comments yet",
+    "description": "Title of the empty state of a lab Comments panel with no comments or activity."
+  },
+  "@astryx.comments.label": {
+    "defaultMessage": "Comments",
+    "description": "Default accessible name of the lab Comments region, which holds the comment threads about one item. Hosts usually override it with the item's own noun."
+  },
+  "@astryx.comments.loadFailed": {
+    "defaultMessage": "Comments couldn't load",
+    "description": "Error Banner title in a lab Comments panel when its comments failed to load."
+  },
+  "@astryx.comments.loadOlder": {
+    "defaultMessage": "Load earlier comments",
+    "description": "Button above the threads of a lab Comments panel that loads the previous page of comments."
+  },
+  "@astryx.comments.loading": {
+    "defaultMessage": "Loading comments",
+    "description": "Visually hidden text read by screen readers while a lab Comments panel shows comment-shaped loading placeholders."
+  },
+  "@astryx.comments.olderFailed": {
+    "defaultMessage": "Earlier comments couldn't load",
+    "description": "Error Banner title in a lab Comments panel when the page of earlier comments failed to load; a Retry action follows."
+  },
+  "@astryx.comments.postFailed": {
+    "defaultMessage": "Your comment couldn't be posted.",
+    "description": "Error shown above the new-comment composer of a lab Comments panel when posting failed; the draft is kept and a Retry action follows."
   }
 }

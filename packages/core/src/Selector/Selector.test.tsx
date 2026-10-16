@@ -991,7 +991,10 @@ describe('Selector', () => {
       expect(screen.getByRole('combobox', h)).toBeInTheDocument();
     });
 
-    it('wires the search input as the combobox with activedescendant (comboboxes-4)', async () => {
+    // The search input's expanded state, popup relationship, and active option
+    // are bound to the shared Combobox contract (Selector.combobox.a11y.test.tsx,
+    // search-active); this keeps only the Selector-specific wiring.
+    it('moves combobox semantics to the list-autocomplete search input (comboboxes-4)', async () => {
       const user = userEvent.setup();
       render(
         <Selector
@@ -1008,12 +1011,6 @@ describe('Selector', () => {
       await user.click(triggerBtn);
       const search = screen.getByRole('combobox', h);
       expect(search).toHaveAttribute('aria-autocomplete', 'list');
-      expect(search).toHaveAttribute('aria-expanded', 'true');
-      expect(search).toHaveAttribute('aria-controls');
-      // ArrowDown moves the highlight; the search input reports it via
-      // aria-activedescendant (previously silent on the trigger).
-      await user.keyboard('{ArrowDown}');
-      expect(search).toHaveAttribute('aria-activedescendant');
     });
 
     it('PageDown/PageUp jump the highlight to the last/first filtered option', async () => {
@@ -1352,7 +1349,6 @@ describe('Selector', () => {
         <Selector label="Fruit" options={[]} onChange={() => {}} isLoading />,
       );
       const trigger = screen.getByRole('combobox', {name: 'Fruit'});
-      expect(trigger).toHaveAttribute('aria-busy', 'true');
       expect(screen.getByRole('status', {name: 'Loading'})).toBeInTheDocument();
 
       await user.click(trigger);

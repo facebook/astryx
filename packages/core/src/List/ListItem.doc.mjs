@@ -12,8 +12,9 @@ export const docs = {
   props: [
     {
       name: 'label',
-      type: 'string',
-      description: 'Primary text.',
+      type: 'ReactNode',
+      description:
+        'Primary content. A plain string gets single-line truncation automatically; a ReactNode renders as given, so child components control their own text behavior.',
       required: true,
     },
     {
@@ -123,8 +124,9 @@ export const docsZh = {
   props: [
     {
       name: 'label',
-      type: 'string',
-      description: '主要文本。',
+      type: 'ReactNode',
+      description:
+        '主要内容。纯字符串会自动应用单行截断；ReactNode 按原样渲染，由子组件自行控制文本行为。',
       required: true,
     },
     {
@@ -205,7 +207,8 @@ export const docsDense = {
   description:
     'List item w/ label, description, start/end content slots, interactive patterns.',
   propDescriptions: {
-    label: 'Primary text.',
+    label:
+      'Primary content. String auto-truncates; ReactNode renders as given.',
     description: 'Secondary text below label.',
     startContent: 'Content before label area (e.g. icon, avatar).',
     endContent: 'Content after label area (e.g. badge, chevron).',

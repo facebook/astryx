@@ -686,9 +686,9 @@ interface SelectorPropsBase<
   /**
    * Visual style of the selector trigger.
    * - 'input': bordered input-style trigger for forms
-   * - 'secondary': borderless, neutral-filled trigger matching secondary
-   *   buttons, for navs and toolbars where the selector sits beside
-   *   secondary actions
+   * - 'secondary': matches the theme's secondary buttons (borderless and
+   *   neutral-filled by default), for navs and toolbars where the selector
+   *   sits beside secondary actions
    * - 'ghost': borderless trigger matching ghost buttons, for toolbars
    * @default 'input'
    */

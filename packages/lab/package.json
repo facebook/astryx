@@ -27,7 +27,9 @@
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
-  "sideEffects": false,
+  "sideEffects": [
+    "**/*.css"
+  ],
   "files": [
     "astryx.integration.mjs",
     "blocks",
@@ -56,11 +58,12 @@
     "test:watch": "vitest --root ../..",
     "lint": "eslint src",
     "typecheck:docs": "tsc --project tsconfig.docs.json",
-    "typecheck": "tsc --project tsconfig.json --noEmit"
+    "typecheck": "tsc --project tsconfig.json --noEmit",
+    "generate:emoji-data": "node scripts/generate-emoji-data.mjs"
   },
   "peerDependencies": {
     "@stylexjs/stylex": ">=0.10.0",
-    "@astryxdesign/core": "0.7.1",
+    "@astryxdesign/core": "0.7.2",
     "react": ">=19.0.0",
     "react-dom": ">=19.0.0"
   },
@@ -80,6 +83,7 @@
     "@testing-library/react": "catalog:",
     "@types/d3-array": "^3.2.2",
     "@types/d3-scale": "^4.0.9",
-    "@types/d3-shape": "^3.1.8"
+    "@types/d3-shape": "^3.1.8",
+    "emojibase-data": "17.0.0"
   }
 }

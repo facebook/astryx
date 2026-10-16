@@ -37,6 +37,10 @@
  * general compatibility scheme for every export an arbitrary older core might
  * lack.
  *
+ * Core is imported on first use, never when this module loads: the CLI loads
+ * this module for every command, and Core's root entry pulls in all of Core
+ * and React.
+ *
  * With `{check: true}`, it compiles the same outputs in memory but writes
  * nothing: it compares each generated file against what is on disk (ignoring
  * only the volatile `@generated` `Command:` line) and returns a
@@ -91,6 +95,8 @@ import {resolveIconImports} from './icon-imports.mjs';
 // action). A built, resolvable `@astryxdesign/core` is a hard requirement.
 // A built, resolvable `@astryxdesign/core` is a hard requirement. These are
 // populated from a dynamic import (a runtime boundary), so `any` is intentional.
+// That import runs the first time a build needs Core (see `loadCliCore`), not
+// when this module loads.
 //
 // The CLI and core are independently versioned optional peers, so this import
 // can succeed against a core OLDER than the CLI. Only the exports every theme
@@ -120,27 +126,6 @@ import {resolveIconImports} from './icon-imports.mjs';
  */
 /** @type {any} */ let _coreRootModule = null;
 /** @type {any} */ let _coreImportError = null;
-try {
-  const coreTheme = await import('@astryxdesign/core/theme');
-  _coreThemeModule = coreTheme;
-  _defineTheme = coreTheme.defineTheme;
-  _generateThemeRulesSplit = coreTheme.generateThemeRulesSplit;
-  _generateOnMediaCSS = coreTheme.generateOnMediaCSS;
-  _generateAdaptationCSS = coreTheme.generateAdaptationCSS;
-  try {
-    _coreRootModule = await import('@astryxdesign/core');
-  } catch {
-    // A core without a usable root entry still builds themes; interception
-    // falls back to the theme namespace for the root specifier.
-  }
-} catch (e) {
-  // Capture the reason so the theme action can surface a precise, actionable
-  // error. We don't throw here: this module is imported eagerly by the CLI
-  // entrypoint for every command, and a throw at load time would break
-  // unrelated commands (the entry wraps loads in try/catch and degrades the
-  // command to a stub). The hard failure happens when `theme build` runs.
-  _coreImportError = e;
-}
 
 /**
  * The bindings one Core provides: the namespaces interception spreads, the
@@ -157,19 +142,65 @@ try {
  */
 
 /**
- * The bindings exactly as the CLI's own import left them, kept so each build
- * can choose between them and the project's installed Core.
- * @type {CoreBindings}
+ * Import the CLI's own Core: the `@astryxdesign/core` this module resolves.
+ * Never throws. A failed import is kept as `importError`, so the build can
+ * surface a precise, actionable error when it runs.
+ * @returns {Promise<CoreBindings>}
  */
-const _cliCore = {
-  themeModule: _coreThemeModule,
-  rootModule: _coreRootModule,
-  importError: _coreImportError,
-  defineTheme: _defineTheme,
-  generateThemeRulesSplit: _generateThemeRulesSplit,
-  generateOnMediaCSS: _generateOnMediaCSS,
-  generateAdaptationCSS: _generateAdaptationCSS,
-};
+async function importCliCore() {
+  /** @type {CoreBindings} */
+  const core = {
+    themeModule: null,
+    rootModule: null,
+    importError: null,
+    defineTheme: null,
+    generateThemeRulesSplit: null,
+    generateOnMediaCSS: null,
+    generateAdaptationCSS: null,
+  };
+  try {
+    const coreTheme = await import('@astryxdesign/core/theme');
+    core.themeModule = coreTheme;
+    core.defineTheme = coreTheme.defineTheme;
+    core.generateThemeRulesSplit = coreTheme.generateThemeRulesSplit;
+    core.generateOnMediaCSS = coreTheme.generateOnMediaCSS;
+    core.generateAdaptationCSS = coreTheme.generateAdaptationCSS;
+    try {
+      core.rootModule = await import('@astryxdesign/core');
+    } catch {
+      // A core without a usable root entry still builds themes; interception
+      // falls back to the theme namespace for the root specifier.
+    }
+  } catch (e) {
+    // Capture the reason so the theme action can surface a precise, actionable
+    // error. The hard failure happens when `theme build` runs.
+    core.importError = e;
+  }
+  return core;
+}
+
+/**
+ * The CLI's own Core, imported once, the first time a build needs it. The CLI
+ * loads this module for every command, and Core's root entry loads all of Core
+ * and React, so an import at module load would make every command
+ * (`--version` included) pay for that whenever a Core resolves.
+ * @type {Promise<CoreBindings> | null}
+ */
+let _cliCorePromise = null;
+
+/**
+ * The CLI's own Core, kept so each build can choose between it and the
+ * project's installed Core. The first call also points the build at it, so a
+ * step that runs before any build has chosen a Core reads the CLI's own.
+ * @returns {Promise<CoreBindings>}
+ */
+function loadCliCore() {
+  _cliCorePromise ??= importCliCore().then(core => {
+    setCore(core);
+    return core;
+  });
+  return _cliCorePromise;
+}
 
 /**
  * Point the build at one Core: the module-level bindings every step reads.
@@ -248,13 +279,14 @@ function realOrSelf(file) {
  * repository, a bare directory), the same Core, or one that does not load.
  *
  * @param {string} cwd
+ * @param {CoreBindings} cliCore - The CLI's own Core, from {@link loadCliCore}.
  * @returns {Promise<CoreBindings | null>}
  */
-async function loadProjectCore(cwd) {
+async function loadProjectCore(cwd, cliCore) {
   const dir = findInstalledPackage(cwd, '@astryxdesign/core');
   const themeFile = dir ? importTarget(dir, './theme') : null;
   if (!dir || !themeFile) return null;
-  if (_cliCore.themeModule) {
+  if (cliCore.themeModule) {
     try {
       const own = fileURLToPath(
         import.meta.resolve('@astryxdesign/core/theme'),
@@ -301,9 +333,10 @@ const _projectCores = new Map();
  * @param {string} cwd
  */
 async function selectCore(cwd) {
+  const cliCore = await loadCliCore();
   if (!_projectCores.has(cwd))
-    _projectCores.set(cwd, await loadProjectCore(cwd));
-  setCore(_projectCores.get(cwd) ?? _cliCore);
+    _projectCores.set(cwd, await loadProjectCore(cwd, cliCore));
+  setCore(_projectCores.get(cwd) ?? cliCore);
 }
 
 /**
@@ -1694,6 +1727,8 @@ export async function validateThemePrivateInputs(
     );
   }
 
+  // The CLI's own Core, unless a build in this process already chose one.
+  await loadCliCore();
   const interception = interceptCore(_coreThemeModule, _coreRootModule);
   let theme;
   try {
