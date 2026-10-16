@@ -20,16 +20,23 @@ const read = id => {
   return existsSync(path) ? readFileSync(path, 'utf8') : null;
 };
 
-const LIST_PROPS = new Set([
+// List props every arm's doc documents. Each arm adds its own edge prop and,
+// for the both-names arm, the deprecated one, so a prop only another arm
+// documents is reported as undocumented.
+const SHARED_LIST_PROPS = [
   'children',
   'header',
   'density',
   'hasDividers',
-  'edge',
-  'rowAlignment',
-  'edgeCompensation',
   'key',
-]);
+];
+
+/** The List props an arm's doc documents. */
+function listPropsFor({prop, deprecated}) {
+  return new Set(
+    [...SHARED_LIST_PROPS, prop, deprecated?.prop].filter(p => p != null),
+  );
+}
 const ITEM_PROPS = new Set([
   'label',
   'description',
@@ -127,7 +134,9 @@ const reachable = Object.fromEntries(
 );
 const deprecatedUse = {};
 for (const prompt of spec.generation.prompts) {
-  for (const [arm, {values, prop, deprecated}] of Object.entries(spec.arms)) {
+  for (const [arm, armSpec] of Object.entries(spec.arms)) {
+    const {values, prop, deprecated} = armSpec;
+    const listProps = listPropsFor(armSpec);
     const reply = read(`gen-${prompt.id}-${arm}`);
     if (reply == null) continue;
     const code = (reply.match(/```tsx\n([\s\S]*?)```/) ?? [, ''])[1];
@@ -162,7 +171,7 @@ for (const prompt of spec.generation.prompts) {
     const invented = [
       ...tagProps(code, 'List')
         .flat()
-        .filter(p => !LIST_PROPS.has(p)),
+        .filter(p => !listProps.has(p)),
       ...tagProps(code, 'ListItem')
         .flat()
         .filter(p => !ITEM_PROPS.has(p)),
