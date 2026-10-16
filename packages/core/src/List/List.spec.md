@@ -65,8 +65,10 @@ from its rows, and the choice must hold for the whole collection.
 - Controlled/uncontrolled behavior: not applicable.
 - Migration decision: `component:List/DEC-3`; an `astryx upgrade` codemod renames
   static `edgeCompensation="inline"` to `edge="outset"`, removes
-  `edgeCompensation` where `edge` is set, and leaves a TODO on dynamic values and
-  spreads it cannot prove (`spec:AST-017` FR29c–FR29d).
+  `edgeCompensation` where `edge` is set, and leaves a TODO on a dynamic value and
+  on a spread beside the old prop (`spec:AST-017` FR29c–FR29d). A spread onto a
+  List that never writes `edgeCompensation` stays unchanged (`spec:AST-040` FR1);
+  the `@deprecated` type reports a typed use where the props are written.
 
 Consumer migration instructions belong in consumer docs and release notes.
 
