@@ -7,7 +7,7 @@ authority: current
 archive_reason: null
 superseded_by: null
 approved_by: cixzhang
-approved_at: 2026-10-15
+approved_at: 2026-10-16
 phase: accepted
 owners: [cixzhang]
 affects_architecture: []
