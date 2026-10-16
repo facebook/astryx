@@ -112,10 +112,11 @@ first.
   ```
 
   The documentation MAY also present a source build as an alternative to a default
-  setup: a package's source compiled through `@astryxdesign/build` under FR7, in
-  place of that package's prebuilt stylesheet, while the product keeps loading the
-  prebuilt stylesheets of the other packages it uses. No documented setup loads a
-  package's prebuilt stylesheet and also compiles that package's source, or
+  setup: the source of one or more packages compiled through `@astryxdesign/build`
+  under FR7, each in place of that package's prebuilt stylesheet, while the
+  product keeps loading Core's `reset.css`, a theme stylesheet, and the prebuilt
+  stylesheet of every package it does not source-build. No documented setup loads
+  a package's prebuilt stylesheet and also compiles that package's source, or
   compiles Astryx source any other way, such as adding Astryx package source to
   the product's own StyleX compiler inputs.
 
@@ -123,11 +124,12 @@ first.
   styling overview MUST name the package's stylesheet and show the import beside
   `astryx.css`.
 
-- **FR7 — A source build produces what the prebuilt stylesheet holds.** A
-  source build of a package MUST produce, for the modules it compiles, the same
-  rules with the same selectors in the same order as that package's prebuilt
-  stylesheet, every one inside one `@layer astryx-base` with no nested layer,
-  after the FR3 order registration. Compiling every module of a package
+- **FR7 — A source build produces what the prebuilt stylesheet holds.** A source
+  build of a package MUST produce, for the modules it compiles, the same rules
+  with the same selectors in the same order as that package's prebuilt stylesheet,
+  every one inside one `@layer astryx-base` with no nested layer. A source build
+  emits no layer-order registration of its own; Core's `reset.css` and the theme
+  stylesheet the product loads carry it (FR3). Compiling every module of a package
   reproduces its prebuilt stylesheet's rules; compiling a subset produces the
   rules those modules use. A source build of Core always includes the Core
   definitions other packages' prebuilt stylesheets rely on under FR2, such as
@@ -157,12 +159,13 @@ first.
   their stylesheets (FR4). Core already covers `**/*.css`.
 - The styling overview documents only the prebuilt path. A source build through
   `@astryxdesign/build` is not yet documented there (FR5).
-- `@astryxdesign/build` conflicts with FR7: it processes Astryx rules into
-  nested priority layers inside `astryx-base`; it compiles Astryx modules with
-  an `astryx` class-name prefix where the prebuilt stylesheets use StyleX's
-  default `x`; its Vite build's Lightning CSS pass and its PostCSS helper's
-  Autoprefixer pass add `-webkit-` declarations the prebuilt stylesheets lack;
-  and nothing makes a Core source build carry the Core definitions that
+- `@astryxdesign/build` conflicts with FR7: it processes Astryx rules into nested
+  priority layers inside `astryx-base`; it compiles Astryx modules with an
+  `astryx` class-name prefix where the prebuilt stylesheets use StyleX's default
+  `x`; its Vite build's Lightning CSS pass and its PostCSS helper's Autoprefixer
+  pass add `-webkit-` declarations the prebuilt stylesheets lack; its Vite plugin
+  injects its own layer-order registration, with a `product` layer, into each
+  page; and nothing makes a Core source build carry the Core definitions that
   prebuilt `lab.css` relies on. Conforming changes the class names and layers it
   emits for its current users. Its Next.js integration runs only under webpack.
 
