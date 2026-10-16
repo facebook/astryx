@@ -157,14 +157,14 @@ first.
   their stylesheets (FR4). Core already covers `**/*.css`.
 - The styling overview documents only the prebuilt path. A source build through
   `@astryxdesign/build` is not yet documented there (FR5).
-- `@astryxdesign/build` conflicts with FR7 in four ways: it processes Astryx
-  rules into nested priority layers inside `astryx-base`; it compiles Astryx
-  modules with an `astryx` class-name prefix where the prebuilt stylesheets use
-  StyleX's default `x`; its Vite build's Lightning CSS pass adds `-webkit-`
-  declarations the prebuilt stylesheets lack; and nothing makes a Core source
-  build carry the Core definitions that prebuilt `lab.css` relies on. Conforming
-  changes the class names and layers it emits for its current users. Its Next.js
-  integration runs only under webpack.
+- `@astryxdesign/build` conflicts with FR7: it processes Astryx rules into
+  nested priority layers inside `astryx-base`; it compiles Astryx modules with
+  an `astryx` class-name prefix where the prebuilt stylesheets use StyleX's
+  default `x`; its Vite build's Lightning CSS pass and its PostCSS helper's
+  Autoprefixer pass add `-webkit-` declarations the prebuilt stylesheets lack;
+  and nothing makes a Core source build carry the Core definitions that
+  prebuilt `lab.css` relies on. Conforming changes the class names and layers it
+  emits for its current users. Its Next.js integration runs only under webpack.
 
 - Lab, Rich Text, and Charts document their stylesheet only in their READMEs;
   the styling overview's import table lists only Core (FR6).
