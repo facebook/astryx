@@ -641,6 +641,7 @@ async function generateComponentRegistry() {
           const mod = await import(pathToFileURL(docFile).href);
           doc = mod.docs;
           if (!doc) continue;
+          recordDocExampleOrder(doc);
         } catch (err) {
           console.warn(
             `  warn: failed to import ${docFileName}: ${err.message}`,
@@ -997,6 +998,8 @@ export interface PropDoc {
   default?: string;
   required?: boolean;
   slotElements?: ElementDescriptor[];
+  /** \`'experimental'\` for a prop outside the stable compatibility promise. */
+  stability?: 'experimental';
   /** Names of package-exported types referenced by \`type\`, resolvable
    *  against the owning entry's \`typeDefs\`. */
   typeRefs?: string[];
@@ -2237,6 +2240,38 @@ ${itemPathLines}
 
 // ── Main
 
+// Example labels in authored order, per documented component or sub-component.
+// A component page lists the example blocks named after those labels in the
+// same order as its doc's `examples`, so the snippet list and the runnable
+// demos read as one set; any other example blocks follow in name order.
+const DOC_EXAMPLE_ORDER = new Map();
+
+function recordDocExampleOrder(doc) {
+  const entries = [
+    doc,
+    ...(Array.isArray(doc.components) ? doc.components : []),
+  ];
+  for (const entry of entries) {
+    const name = (entry?.name || '').replace(/^XDS/, '');
+    if (!name || !Array.isArray(entry.examples)) continue;
+    const labels = entry.examples
+      .map(example => example?.label)
+      .filter(label => typeof label === 'string');
+    if (labels.length > 0) DOC_EXAMPLE_ORDER.set(name, labels);
+  }
+}
+
+/** Sorts one component's examples by its doc's example order (stable). */
+function orderExamplesByDoc(component, examples) {
+  const labels = DOC_EXAMPLE_ORDER.get(component);
+  if (!labels) return examples;
+  const rank = name => {
+    const index = labels.indexOf(name);
+    return index === -1 ? labels.length : index;
+  };
+  return [...examples].sort((a, b) => rank(a.name) - rank(b.name));
+}
+
 function generateExampleRegistry(blocks, availableRegistryPaths) {
   console.log('Generating example registry...');
 
@@ -2304,7 +2339,7 @@ function generateExampleRegistry(blocks, availableRegistryPaths) {
 
   const componentLines = Object.entries(grouped)
     .map(([component, examples]) => {
-      const exampleLines = examples
+      const exampleLines = orderExamplesByDoc(component, examples)
         .map(
           entry =>
             `    {name: ${JSON.stringify(entry.name)}, description: ${JSON.stringify(entry.description)}, registryItemPath: ${JSON.stringify(entry.registryItemPath)}, source: ${JSON.stringify(entry.source)}, load: () => import('./examples/${entry.basename}')},`,

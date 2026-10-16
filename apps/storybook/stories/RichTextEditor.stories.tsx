@@ -199,7 +199,7 @@ export const CustomTransformers: Story = {
   args: {
     label: 'Comment',
     description:
-      'Restricted markdown: only `*bold*`, `_italic_` and `- ` unordered lists (no headings, quotes or code).',
+      'Restricted markdown: only `**bold**`, `*italic*` and `- ` unordered lists (no headings, quotes or code).',
     placeholder: 'Try typing "# " — it will not become a heading…',
     transformers: [BOLD_STAR, ITALIC_STAR, UNORDERED_LIST],
   },
