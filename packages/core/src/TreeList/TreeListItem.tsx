@@ -27,7 +27,10 @@ import {
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
 import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
 import {usePressFeedback} from '../hooks/usePressFeedback';
-import {useClickableContainer} from '../hooks/useClickableContainer';
+import {
+  hasInteractiveAncestor,
+  useClickableContainer,
+} from '../hooks/useClickableContainer';
 import {Icon} from '../Icon';
 import {mergeProps} from '../utils';
 import {useLinkComponent} from '../Link/useLinkComponent';
@@ -422,8 +425,10 @@ export function TreeListItem({
         if (isDisabled) {
           return;
         }
-        const el = e.target as HTMLElement;
-        if (el.closest('button, a, input, select, textarea')) {
+        // Controls inside the row, native or role-based, keep their own
+        // activation (FR7): the same rule link rows get from the shared
+        // enlarged-surface hook below.
+        if (hasInteractiveAncestor(e.target as Element, e.currentTarget)) {
           return;
         }
         if (onClick != null) {

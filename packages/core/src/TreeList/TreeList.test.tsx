@@ -877,6 +877,91 @@ describe('TreeList', () => {
       expect(onLinkClick).not.toHaveBeenCalled();
     });
 
+    describe('row clicks outside the label (FR7)', () => {
+      // Each row sits under an expanded root, so it has an indent; the click
+      // lands on the row surface (indent, reserved chevron column, padding),
+      // not on the label.
+      const underRoot = (children: TreeListItemData[]): TreeListItemData[] => [
+        {id: 'root', label: 'Root', isExpanded: true, children},
+      ];
+      const rowSurfaceOf = (label: string) =>
+        screen.getByText(label).closest<HTMLElement>('.astryx-tree-list-item')!
+          .firstElementChild as HTMLElement;
+      const folder: TreeListItemData = {
+        id: 'folder',
+        label: 'Folder',
+        children: [{id: 'file', label: 'File'}],
+      };
+
+      it("runs an action row's onClick once", () => {
+        const onClick = vi.fn();
+        render(
+          <TreeList items={underRoot([{id: 'run', label: 'Run', onClick}])} />,
+        );
+        fireEvent.click(rowSurfaceOf('Run'));
+        expect(onClick).toHaveBeenCalledTimes(1);
+
+        // The label's own button still runs it once per press, not twice.
+        fireEvent.click(screen.getByRole('button', {name: 'Run'}));
+        expect(onClick).toHaveBeenCalledTimes(2);
+      });
+
+      it('toggles a parent row', () => {
+        render(<TreeList items={underRoot([folder])} />);
+        expect(screen.queryByText('File')).not.toBeInTheDocument();
+        fireEvent.click(rowSurfaceOf('Folder'));
+        expect(screen.getByText('File')).toBeInTheDocument();
+        fireEvent.click(rowSurfaceOf('Folder'));
+        expect(screen.queryByText('File')).not.toBeInTheDocument();
+      });
+
+      it('does nothing on a disabled action or parent row', () => {
+        const onClick = vi.fn();
+        render(
+          <TreeList
+            items={underRoot([
+              {id: 'run', label: 'Run', onClick, isDisabled: true},
+              {...folder, isDisabled: true},
+            ])}
+          />,
+        );
+        fireEvent.click(rowSurfaceOf('Run'));
+        expect(onClick).not.toHaveBeenCalled();
+        fireEvent.click(rowSurfaceOf('Folder'));
+        expect(screen.queryByText('File')).not.toBeInTheDocument();
+      });
+
+      it('leaves a role-based control in an action or parent row to itself', () => {
+        // Native and role-based controls alike keep their own activation,
+        // the same rule link rows get from the shared enlarged-surface hook.
+        const onClick = vi.fn();
+        const onSwitch = vi.fn();
+        const pin = (name: string) => (
+          <span
+            role="switch"
+            aria-checked="false"
+            aria-label={name}
+            tabIndex={0}
+            onClick={onSwitch}>
+            {name}
+          </span>
+        );
+        render(
+          <TreeList
+            items={underRoot([
+              {id: 'run', label: 'Run', onClick, endContent: pin('Pin run')},
+              {...folder, endContent: pin('Pin folder')},
+            ])}
+          />,
+        );
+        fireEvent.click(screen.getByRole('switch', {name: 'Pin run'}));
+        fireEvent.click(screen.getByRole('switch', {name: 'Pin folder'}));
+        expect(onSwitch).toHaveBeenCalledTimes(2);
+        expect(onClick).not.toHaveBeenCalled();
+        expect(screen.queryByText('File')).not.toBeInTheDocument();
+      });
+    });
+
     it('draws guides above full-width rows without taking pointer input', () => {
       // Guide columns now sit inside deeper rows' boxes. They paint above the
       // rows so a row fill never breaks the line, and let clicks fall through
