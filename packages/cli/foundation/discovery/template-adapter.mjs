@@ -513,6 +513,19 @@ function expressionUse(source, open, close) {
   return null;
 }
 
+/** @type {typeof import('@babel/parser') | undefined} */
+let babelParser;
+
+/**
+ * The template source parser, loaded on first use so listing templates
+ * never pays for it.
+ * @returns {typeof import('@babel/parser')}
+ */
+function templateSourceParser() {
+  babelParser ??= require('@babel/parser');
+  return /** @type {typeof import('@babel/parser')} */ (babelParser);
+}
+
 /**
  * The [start, end) range of every comment in `source`, or none when it does
  * not parse as TSX.
@@ -521,8 +534,7 @@ function expressionUse(source, open, close) {
  */
 function commentRanges(source) {
   try {
-    const {parse} = require('@babel/parser');
-    const {comments} = parse(source, {
+    const {comments} = templateSourceParser().parse(source, {
       sourceType: 'module',
       plugins: ['jsx', 'typescript'],
     });
@@ -1425,9 +1437,6 @@ const UBIQUITOUS = new Set([
   'Icon',
 ]);
 
-/** @type {typeof import('@babel/parser') | undefined} */
-let babelParser;
-
 /**
  * Names bound by top-level `function`, `class`, `const`, `let` or `var`
  * declarations (exported or not). Returns an empty set when the source does
@@ -1441,8 +1450,7 @@ function topLevelBindingNames(src) {
   const names = new Set();
   let program;
   try {
-    babelParser ??= require('@babel/parser');
-    program = babelParser.parse(src, {
+    program = templateSourceParser().parse(src, {
       sourceType: 'module',
       plugins: ['jsx', 'typescript'],
       errorRecovery: true,
@@ -1515,7 +1523,9 @@ export function extractComponents(pagePath) {
         .filter(n => !UBIQUITOUS.has(n))
         .map(n =>
           n.replace(
-            /(Item|Section|Header|Content|Footer|Panel|Heading|CollapseButton|Column|Sortable|Selection|Group|Source)$/,
+            // Strip only when a stem remains, so a bare `<Section>` keeps its
+            // own name instead of emptying out.
+            /(?<=.)(Item|Section|Header|Content|Footer|Panel|Heading|CollapseButton|Column|Sortable|Selection|Group|Source)$/,
             '',
           ),
         )

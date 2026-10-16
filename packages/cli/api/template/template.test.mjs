@@ -191,4 +191,32 @@ export default function Page() {
       fs.rmSync(tmpDir, {recursive: true, force: true});
     }
   });
+
+  it('keeps a bare imported component whose name is itself a stripped suffix', () => {
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'astryx-test-'));
+    const pagePath = path.join(tmpDir, 'page.tsx');
+    fs.writeFileSync(
+      pagePath,
+      `
+import {Section} from '@astryxdesign/core/Section';
+
+function SectionHeading() {
+  return <div />;
+}
+
+export default function Page() {
+  return (
+    <Section>
+      <SectionHeading />
+    </Section>
+  );
+}
+`,
+    );
+    try {
+      expect(extractComponents(pagePath)).toContain('Section');
+    } finally {
+      fs.rmSync(tmpDir, {recursive: true, force: true});
+    }
+  });
 });
