@@ -59,10 +59,14 @@ from its rows, and the choice must hold for the whole collection.
 
 - Released default preserved: `yes`; omission keeps current List and ListItem geometry.
 - Compatibility class: additive optional prop; `edgeCompensation` is a deprecated
-  alias with the same meaning as `edge="outset"`.
+  alias with the same meaning as `edge="outset"`. Its `@deprecated` type reports
+  plain use; development warns only when both props are set, naming
+  `astryx upgrade` (`spec:AST-017` FR29–FR29b).
 - Controlled/uncontrolled behavior: not applicable.
 - Migration decision: `component:List/DEC-3`; an `astryx upgrade` codemod renames
-  static `edgeCompensation="inline"` to `edge="outset"`.
+  static `edgeCompensation="inline"` to `edge="outset"`, removes
+  `edgeCompensation` where `edge` is set, and leaves a TODO on dynamic values and
+  spreads it cannot prove (`spec:AST-017` FR29c–FR29d).
 
 Consumer migration instructions belong in consumer docs and release notes.
 
@@ -163,8 +167,8 @@ Consumer migration instructions belong in consumer docs and release notes.
 ## Family and system relationships
 
 - `architecture:container-padding` owns host publication, eligibility,
-  logical-edge semantics, and overlay reset. `outset` is List's edge-compensation
-  projection and `bleed` its bleed projection.
+  logical-edge semantics, overlay reset, and the shared `edge` vocabulary. List's
+  `edge` projects all four values onto both inline edges of every row.
 - `architecture:public-component-api`, `spec:AST-002`, and `spec:AST-017` own
   public API admission and the deprecation lifecycle.
 - Item remains the implementation owner of row padding and interaction paint;
@@ -214,12 +218,13 @@ name would promise outer-edge bleed that the component does not provide.
 
 **Reference:** `component:List/DEC-3`
 
-**Decider:** pending owner ruling
+**Decider:** cixzhang, 2026-10-15
 
 `padded`, `flush`, `outset`, and `bleed` are mutually exclusive answers to one
 question, so one closed-value prop carries them and no combination can
-contradict. `outset` is the bounded compensation of DEC-2; `edgeCompensation`
-remains its deprecated alias.
+contradict. The names are the shared edge vocabulary of
+`architecture:container-padding`. `outset` is the bounded compensation of DEC-2;
+`edgeCompensation` remains its deprecated alias.
 
 Rejected: separate boolean props beside `edgeCompensation`, because they could
 request two treatments at once.
@@ -228,7 +233,7 @@ request two treatments at once.
 
 **Reference:** `component:List/DEC-4`
 
-**Decider:** pending owner ruling
+**Decider:** cixzhang, 2026-10-15
 
 `bleed` matches Table rows in a padded host: row paint reaches the host's padding
 edge with square corners, and content sits on the host content line, never closer

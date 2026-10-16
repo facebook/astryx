@@ -30,22 +30,63 @@ const a = <Rows edgeCompensation="inline" />;`);
     expect(output).toContain("<Rows edge='outset' />");
   });
 
-  it('drops edgeCompensation when edge is already set', async () => {
+  it('drops edgeCompensation when edge is already set, whatever its value', async () => {
     const output =
       await applyTransform(`import {List} from '@astryxdesign/core/List';
-const a = <List edge="bleed" edgeCompensation="inline" />;`);
+const a = <List edge="bleed" edgeCompensation="inline" />;
+const b = <List edge="flush" edgeCompensation={mode} />;`);
 
     expect(output).toContain('edge="bleed"');
+    expect(output).toContain('edge="flush"');
     expect(output).not.toContain('edgeCompensation');
+    expect(output).not.toContain('TODO');
   });
 
-  it('leaves dynamic values, other components, and other packages unchanged', async () => {
+  it('leaves a TODO on a dynamic value and keeps it working', async () => {
+    const output =
+      await applyTransform(`import {List} from '@astryxdesign/core/List';
+const a = <List edgeCompensation={mode} />;
+const b = <List edgeCompensation={flag ? 'inline' : undefined} />;`);
+
+    expect(output.match(/TODO\(astryx upgrade\)/g)).toHaveLength(2);
+    expect(output).toContain('edgeCompensation={mode}');
+    expect(output).toContain("edgeCompensation={flag ? 'inline' : undefined}");
+  });
+
+  it('leaves a TODO on every spread onto a List that does not set edge', async () => {
+    const output =
+      await applyTransform(`import {List} from '@astryxdesign/core/List';
+const a = <List {...props} />;
+const b = <List {...rest} edgeCompensation="inline" />;
+const c = <List {...rest} edge="padded" />;`);
+
+    // a: the spread may carry the old prop. b: migrated, but the spread
+    // could still carry it. c: edge is set, so edge wins either way.
+    expect(output.match(/TODO\(astryx upgrade\)/g)).toHaveLength(2);
+    expect(output).toContain("edge='outset'");
+    expect(output).toContain('edge="padded"');
+  });
+
+  it('leaves other components, other packages, and unrelated spreads alone', async () => {
     const source = `import {List} from '@astryxdesign/core/List';
 import {TabList} from '@astryxdesign/core/TabList';
 import {List as Other} from 'some-other-package';
-const a = <List edgeCompensation={mode} />;
-const b = <TabList edgeCompensation="inline" />;
-const c = <Other edgeCompensation="inline" />;`;
+const a = <TabList edgeCompensation="inline" {...props} />;
+const b = <Other edgeCompensation="inline" {...props} />;
+const c = <div {...props} />;`;
     expect(await applyTransform(source)).toBe(source);
+  });
+
+  it('changes nothing on a second run', async () => {
+    const once =
+      await applyTransform(`import {List} from '@astryxdesign/core/List';
+const a = <List edgeCompensation="inline" />;
+const b = <List edgeCompensation={mode} />;
+const c = <List {...props} />;
+const d = <List edge="flush" edgeCompensation="inline" />;`);
+    const twice = await applyTransform(once);
+
+    expect(twice).toBe(once);
+    expect(twice.match(/TODO\(astryx upgrade\)/g)).toHaveLength(2);
   });
 });

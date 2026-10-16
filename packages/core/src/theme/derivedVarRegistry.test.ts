@@ -264,8 +264,8 @@ const CROSS_COMPONENT_VARS: Record<string, string[]> = {
   // The destructive item variant recolors the Item it renders; Item owns,
   // documents and reads both slots.
   DropdownMenu: ['--_item-label-color', '--_item-description-color'],
-  // List's isFlush zeroes the inline inset of the Item each ListItem renders;
-  // Item owns, documents and reads it.
+  // List's edge="flush" zeroes the inline inset of the Item each ListItem
+  // renders; Item owns, documents and reads it.
   List: ['--_item-inset-inline'],
   // A layer content root stops an outer Stepper's connector gap; Stepper owns,
   // documents and reads it.

@@ -80,11 +80,12 @@ export interface ListProps extends BaseProps<
    *
    * A row's first content is what lines up with the heading: its marker,
    * icon, or avatar when it has one, otherwise its label. 'outset' and
-   * 'bleed' reach into the padding of a surrounding Card, Section, Dialog, or
-   * BottomSheet. Elsewhere, including in a Popover or inside padding from
-   * Stack, Center, or your own styles, they look like 'padded'. In a container
-   * with less padding than the rows' own, text starts a little after the
-   * heading's line. A theme's inline padding on `item` replaces the row
+   * 'bleed' reach into the padding of the nearest surrounding Card, Section,
+   * Dialog, or BottomSheet, so place the List directly in that container's
+   * padding: padding that Stack, Center, or your own styles add in between is
+   * not counted. With no such container, including in a Popover, they look
+   * like 'padded'. In a container with less padding than the rows' own, text
+   * starts a little after the heading's line. A theme's inline padding on `item` replaces the row
    * padding of every value, including the zero padding of 'flush'.
    * @default 'padded'
    */
@@ -92,7 +93,7 @@ export interface ListProps extends BaseProps<
 
   /**
    * @deprecated Use `edge="outset"`, which this sets. Still works; `edge`
-   * wins when both are set.
+   * wins when both are set. `astryx upgrade` rewrites existing usage.
    */
   edgeCompensation?: 'inline';
 
@@ -222,10 +223,13 @@ export function List({
   const headerId = useId();
   const isOrdered = listStyle === 'decimal';
   const Tag = isOrdered ? 'ol' : 'ul';
+  // Plain use of the deprecated prop is reported by its @deprecated type;
+  // development warns only when the two names conflict (spec:AST-017 FR29).
   useDevWarning(
     'List',
-    '`edgeCompensation` is deprecated; use `edge="outset"` instead. `edge` wins when both are set.',
-    edgeCompensation !== undefined,
+    '`edge` and the deprecated `edgeCompensation` are both set; `edge` wins. ' +
+      'Remove `edgeCompensation`. `astryx upgrade` rewrites existing usage.',
+    edgeProp != null && edgeCompensation != null,
   );
   const edge: ListEdge =
     edgeProp ?? (edgeCompensation === 'inline' ? 'outset' : 'padded');

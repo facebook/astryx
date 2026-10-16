@@ -394,22 +394,26 @@ describe('List', () => {
     }
   });
 
-  it('treats the deprecated edgeCompensation="inline" as edge="outset" and warns', () => {
+  it('treats the deprecated edgeCompensation="inline" as edge="outset" without a runtime warning', () => {
+    // Plain use is reported statically by the @deprecated type; rendering
+    // never warns merely because the old name is used (spec:AST-017 FR29a).
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const {ul} = renderEdge({edgeCompensation: 'inline'});
     expect(edgeContext(ul)).toBe('outset');
     expect(ul.className).toContain('reachesContainerPadding');
-    expect(warn).toHaveBeenCalledWith(
-      expect.stringContaining('`edgeCompensation` is deprecated'),
-    );
+    expect(warn).not.toHaveBeenCalled();
     warn.mockRestore();
   });
 
-  it('lets edge win over the deprecated edgeCompensation', () => {
+  it('lets edge win over the deprecated edgeCompensation and warns about the conflict', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const {ul} = renderEdge({edge: 'flush', edgeCompensation: 'inline'});
     expect(edgeContext(ul)).toBe('flush');
     expect(ul.className).not.toContain('reachesContainerPadding');
+    expect(warn).toHaveBeenCalledTimes(1);
+    const message = String(warn.mock.calls[0][0]);
+    expect(message).toContain('`edge` wins');
+    expect(message).toContain('astryx upgrade');
     warn.mockRestore();
   });
 
