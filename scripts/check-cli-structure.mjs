@@ -38,6 +38,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {fileURLToPath} from 'node:url';
+import {runtimeStarExports} from './lib/api-index-star-exports.mjs';
 
 const REPO_ROOT = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -273,7 +274,7 @@ function checkEnvironmentImports(label, files, baseDir, knownGaps) {
   let checked = 0;
   for (const filePath of files) {
     checked++;
-    const rel = path.relative(baseDir, filePath);
+    const rel = path.relative(baseDir, filePath).split(path.sep).join('/');
     const sources = importSources(filePath);
     /** @type {Set<string>} */
     const found = new Set();
@@ -320,7 +321,7 @@ const INV22_KNOWN_GAPS = new Map([
   // remove with the layout command
   ['layout.mjs', new Set(['fs'])],
   ['search.mjs', new Set(['project'])],
-  ['template.mjs', new Set(['fs', 'project'])],
+  ['template.mjs', new Set(['project'])],
 ]);
 const handlerFiles = walkScopedMjs(HANDLER_DIR);
 const inv22Count = checkEnvironmentImports(
@@ -425,7 +426,7 @@ function isApiExempt(filePath) {
   if (adapterExemptions.has(filePath)) return true;
   const bn = path.basename(filePath);
   if (bn.endsWith('.type.mjs')) return true;
-  const rel = path.relative(API, filePath);
+  const rel = path.relative(API, filePath).split(path.sep).join('/');
   return rel === 'index.mjs' || rel === 'error.mjs' || rel === 'logger.mjs';
 }
 
@@ -460,7 +461,6 @@ const INV21_KNOWN_GAPS = new Map([
   ['template/show/show.mjs', new Set(['fs', 'discovery'])],
   ['template/skeleton/skeleton.mjs', new Set(['fs', 'discovery'])],
   ['template/template.mjs', new Set(['discovery'])],
-  ['theme/add/add.mjs', new Set(['fs'])],
   ['theme/build/build.mjs', new Set(['fs', 'discovery'])],
   ['theme/palette/generate/generate.mjs', new Set(['fs'])],
   ['theme/targets/targets.mjs', new Set(['discovery'])],
@@ -471,6 +471,44 @@ const INV21_KNOWN_GAPS = new Map([
 const inv21Count = checkEnvironmentImports(
   'INV21', apiScopedFiles, API, INV21_KNOWN_GAPS,
 );
+
+// --- INV22 recorded-theme client seam ---
+//
+// Component metadata keeps the released package-field reader in its client
+// helper, but all generated-record discovery and loading belongs to the theme
+// subject. Pin that narrow seam so another adapter or foundation import cannot
+// bypass the API boundary unnoticed.
+const RESOLVE_THEME_HELPER = path.join(
+  CLI,
+  'clients/cli/lib/resolve-theme.mjs',
+);
+const RESOLVE_THEME_ALLOWED_IMPORTS = new Set([
+  'node:fs',
+  'node:module',
+  'node:path',
+  '../../../api/theme/theme.mjs',
+]);
+let clientHelperBoundaryCount = 0;
+if (!fs.existsSync(RESOLVE_THEME_HELPER)) {
+  errors.push(
+    'INV22 client helper: clients/cli/lib/resolve-theme.mjs is missing — update this boundary check if it moved',
+  );
+} else {
+  clientHelperBoundaryCount++;
+  const imports = importSources(RESOLVE_THEME_HELPER);
+  for (const spec of imports) {
+    if (!RESOLVE_THEME_ALLOWED_IMPORTS.has(spec)) {
+      errors.push(
+        `INV22 client helper: resolve-theme.mjs imports ${spec} — generated-record access must go through api/theme/theme.mjs`,
+      );
+    }
+  }
+  if (!imports.includes('../../../api/theme/theme.mjs')) {
+    errors.push(
+      'INV22 client helper: resolve-theme.mjs no longer imports api/theme/theme.mjs — keep generated-record access behind the theme subject entry',
+    );
+  }
+}
 
 // ── 3b. INV23: text-layout patterns ─────────────────────────────────
 //
@@ -534,6 +572,16 @@ for (const filePath of handlerFiles) {
 // programmatic surface.
 
 const apiIndexSrc = fs.readFileSync(path.join(API, 'index.mjs'), 'utf8');
+if (/\bresolveRecordedTheme\b/u.test(apiIndexSrc)) {
+  errors.push(
+    'theme boundary: resolveRecordedTheme is internal and must not be exported from api/index.mjs',
+  );
+}
+for (const specifier of runtimeStarExports(apiIndexSrc)) {
+  errors.push(
+    `api boundary: api/index.mjs star exports or namespace imports ${specifier} — export each runtime function by name so FR1 and FR2 check it and internal helpers such as resolveRecordedTheme stay out of the public API`,
+  );
+}
 
 /** Extract named function exports from api/index.mjs (skip type re-exports). */
 const apiExports = new Set();
@@ -550,7 +598,7 @@ for (const m of apiIndexSrc.matchAll(/export\s*\{([^}]+)\}\s*from\s*['"]([^'"]+)
 
 /** @type {Set<string>} known FR1 gaps: fn values not yet exported.
  *  Remove an entry when the function is exported; do not add entries. */
-const FR1_KNOWN_GAPS = new Set(['themeTemplate']);
+const FR1_KNOWN_GAPS = new Set();
 
 let fr1Count = 0;
 
@@ -636,7 +684,7 @@ console.log(
   [
     `✅ CLI structure is intact:`,
     `   ${doctypeCount} doc-type(s), ${apiCount} api folder(s),`,
-    `   ${inv22Count} handler(s) checked for INV22, ${inv21Count} api module(s) for INV21,`,
+    `   ${inv22Count} handler(s) checked for INV22, ${clientHelperBoundaryCount} client helper boundary, ${inv21Count} api module(s) for INV21,`,
     `   ${inv23Count} handler(s) checked for INV23,`,
     `   ${fr1Count} CommandDoc fn(s) checked for FR1, ${fr2Count} api export(s) for FR2.`,
   ].join('\n'),

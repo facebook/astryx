@@ -1991,6 +1991,85 @@ describe('knowledge validation', () => {
     );
   });
 
+  describe('repository owner eligibility', () => {
+    const records = [
+      ['architecture', 'architecture.md', 'docs/architecture/approval.md'],
+      [
+        'component',
+        'component-spec.md',
+        'packages/core/src/Button/Button.spec.md',
+      ],
+      [
+        'module',
+        'module-spec.md',
+        'packages/core/src/Button/hooks/useButtonThing.spec.md',
+      ],
+      ['family', 'family-contract.md', 'docs/families/approval.md'],
+      ['system-spec', 'system-spec.md', 'docs/specs/AST-900/spec.md'],
+      ['design', 'design-spec.md', 'docs/design/approval.md'],
+      ['theme', 'theme-spec.md', 'packages/themes/neutral/neutral.spec.md'],
+    ];
+
+    function writeApprovalRecord(root, templateName, filePath, approvedBy) {
+      const template = fs.readFileSync(
+        path.join(root, 'docs/templates/knowledge', templateName),
+        'utf8',
+      );
+      const content = template
+        .replace('authority: draft', 'authority: current')
+        .replace('approved_by: null', `approved_by: ${approvedBy}`)
+        .replace('approved_at: null', 'approved_at: 2026-10-13');
+      fs.mkdirSync(path.dirname(path.join(root, filePath)), {recursive: true});
+      fs.writeFileSync(path.join(root, filePath), content);
+    }
+
+    function approvalProblems(problems, filePath) {
+      return problems.filter(problem =>
+        problem.startsWith(`${filePath}: current records require approved_by`),
+      );
+    }
+
+    it.each(records)(
+      'accepts an ENGOWNER for %s records',
+      async (_kind, templateName, filePath) => {
+        const root = fixtureRoot();
+        writeApprovalRecord(root, templateName, filePath, 'nynexman4464');
+        expect(
+          approvalProblems(await validateKnowledgeRoot(root), filePath),
+        ).toEqual([]);
+      },
+    );
+
+    it.each(records)(
+      'does not inherit the legacy schema approver list for %s',
+      async (_kind, templateName, filePath) => {
+        const root = fixtureRoot();
+        for (const ownerFile of ['ENGOWNERS', 'DESIGNOWNERS']) {
+          const ownerPath = path.join(root, '.github', ownerFile);
+          fs.writeFileSync(
+            ownerPath,
+            fs.readFileSync(ownerPath, 'utf8').replace(/@cixzhang\b/g, ''),
+          );
+        }
+        writeApprovalRecord(root, templateName, filePath, 'cixzhang');
+        expect(
+          approvalProblems(await validateKnowledgeRoot(root), filePath),
+        ).toHaveLength(1);
+      },
+    );
+
+    it.each(records)(
+      'limits DESIGNOWNER eligibility to design/theme for %s',
+      async (kind, templateName, filePath) => {
+        const root = fixtureRoot();
+        writeApprovalRecord(root, templateName, filePath, 'rubyycheung');
+        expect(
+          approvalProblems(await validateKnowledgeRoot(root), filePath),
+        ).toHaveLength(kind === 'design' || kind === 'theme' ? 0 : 1);
+      },
+    );
+  });
+
   it('requires explicit approval for a current record', async () => {
     const root = fixtureRoot();
     const directory = path.join(root, 'packages/core/src/Button');
@@ -2055,10 +2134,10 @@ describe('knowledge validation', () => {
     fs.mkdirSync(directory);
     fs.writeFileSync(
       path.join(directory, 'Button.spec.md'),
-      componentRecord({template_version: '7'}),
+      componentRecord({template_version: '8'}),
     );
     expect((await validateKnowledgeRoot(root)).join('\n')).toMatch(
-      /template_version 7 is newer than 6/,
+      /template_version 8 is newer than 7/,
     );
   });
 

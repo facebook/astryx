@@ -989,6 +989,41 @@ describe('SideNav resizable', () => {
     ).toBeInTheDocument();
   });
 
+  it('names the nav it resizes with aria-controls (APG window splitter)', () => {
+    render(<SideNav resizable>Content</SideNav>);
+    const nav = screen.getByRole('navigation');
+    const handle = screen.getByRole('separator');
+    expect(nav.id).not.toBe('');
+    expect(handle).toHaveAttribute('aria-controls', nav.id);
+  });
+
+  it("keeps a consumer's nav id and points the handle at it", () => {
+    render(
+      <SideNav resizable id="primary-nav">
+        Content
+      </SideNav>,
+    );
+    expect(screen.getByRole('navigation')).toHaveAttribute('id', 'primary-nav');
+    expect(screen.getByRole('separator')).toHaveAttribute(
+      'aria-controls',
+      'primary-nav',
+    );
+  });
+
+  it('keeps the generated nav id when a wrapper forwards id={undefined}', () => {
+    render(
+      <SideNav resizable id={undefined}>
+        Content
+      </SideNav>,
+    );
+    const nav = screen.getByRole('navigation');
+    expect(nav.id).not.toBe('');
+    expect(screen.getByRole('separator')).toHaveAttribute(
+      'aria-controls',
+      nav.id,
+    );
+  });
+
   it('clips the overlay drag handle within the resizable nav bounds', () => {
     render(<SideNav resizable>Content</SideNav>);
     const nav = screen.getByRole('navigation');
@@ -3039,6 +3074,38 @@ describe('SideNavHeading hover/click guard', () => {
     await user.keyboard('{Escape}');
     expect(trigger).toHaveAttribute('aria-expanded', 'false');
     expect(trigger).toHaveFocus();
+  });
+
+  // jsdom has no light dismiss, so the guard tests above cannot fail for the
+  // collapsed heading. In a browser, the collapsed icon button sits outside the
+  // auto popover, and only the invoker relationship stops the press that
+  // should confirm a hover-open from dismissing it first.
+  it('makes the collapsed trigger the native invoker of its flyout', () => {
+    render(
+      <CollapsedWrapper>
+        <SideNavHeading
+          heading="My App"
+          icon={<span>🏠</span>}
+          menu={menuItems}
+        />
+      </CollapsedWrapper>,
+    );
+    const trigger = screen.getByRole('button', {name: 'My App'});
+    const panelId = trigger.getAttribute('aria-controls');
+    expect(panelId).toBeTruthy();
+    expect(trigger).toHaveAttribute('popovertarget', panelId);
+  });
+
+  // Expanded, the panel covers the heading, and the trigger is the heading
+  // root itself: an invoker there would default-prevent clicks on its links.
+  it('adds no invoker in the expanded layouts', () => {
+    const {container} = render(
+      <>
+        <SideNavHeading heading="Whole" menu={menuItems} />
+        <SideNavHeading heading="Mixed" headingHref="/home" menu={menuItems} />
+      </>,
+    );
+    expect(container.querySelector('[popovertarget]')).toBeNull();
   });
 });
 

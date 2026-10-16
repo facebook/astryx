@@ -190,7 +190,6 @@ const styles = stylex.create({
     flexDirection: 'column',
   },
   textarea: {
-    all: 'unset',
     width: '100%',
     resize: 'none' as const,
     fontSize: typeScaleVars['--text-body-size'],

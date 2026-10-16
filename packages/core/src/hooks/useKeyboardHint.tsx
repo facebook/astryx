@@ -109,7 +109,8 @@ const styles = stylex.create({
     position: 'fixed',
     inset: 'auto',
     margin: 0,
-    border: 'none',
+    borderWidth: 0,
+    borderStyle: 'none',
 
     // Surface
     backgroundColor: colorVars['--color-background-popover'],

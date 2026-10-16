@@ -46,7 +46,9 @@ describe('runCodemods — ordered dry-run state', () => {
       silent: true,
     });
 
-    expect(preview.totalFilesChanged).toBe(2);
+    // One file that two transforms changed is one file and two changes.
+    expect(preview.totalFilesChanged).toBe(1);
+    expect(preview.totalTransformsApplied).toBe(2);
     expect(preview.changedFiles).toEqual([
       path.join(srcDir, 'a.ts'),
       path.join(srcDir, 'a.ts'),

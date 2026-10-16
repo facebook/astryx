@@ -12,11 +12,7 @@
  */
 
 export {Field} from './Field';
-export type {
-  FieldProps,
-  FieldStatusInput,
-  FieldStatusType,
-} from './Field';
+export type {FieldProps, FieldStatusInput, FieldStatusType} from './Field';
 export {FieldLabel} from './FieldLabel';
 export type {FieldLabelProps} from './FieldLabel';
 export {FieldStatus} from '../FieldStatus';
@@ -28,6 +24,12 @@ export type {
 
 // Shared input types
 export type {InputStatus, InputStatusType, InputSize} from './types';
+export type {
+  FieldInputBaseProps,
+  FieldContainerStyleProps,
+  FieldControlStyleProps,
+  FieldPartStyleProps,
+} from './fieldParts';
 
 // Shared input styles
 export {

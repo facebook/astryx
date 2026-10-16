@@ -60,6 +60,7 @@ const styles = stylex.create({
       display: 'flex',
       flexDirection: 'column',
       gap: spacingVars['--spacing-4'],
+      alignItems: 'stretch',
     },
   },
 });

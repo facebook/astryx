@@ -7,7 +7,7 @@ authority: current
 archive_reason: null
 superseded_by: null
 approved_by: cixzhang
-approved_at: 2026-09-07
+approved_at: 2026-10-07
 phase: accepted
 owners: [cixzhang]
 affects_architecture: []
@@ -54,6 +54,9 @@ they are separately named.
 - Add a test-specific or build-specific lane for work already owned by an
   existing surface.
 - Apply changed-surface routing to post-merge `main` CI.
+- Define compatibility semantics or release-pair delta classes. Those belong to
+  [`spec:AST-017`](../AST-017/spec.md); this record routes their checks and owns the
+  exact-main release-check execution boundary.
 - Remove required check names, branch protection, merge-queue coverage, or
   exact-head owner approval.
 - Infer safety from file extensions, directory names, or the absence of a known
@@ -113,7 +116,9 @@ they are separately named.
   and `lint` MUST continue to report on every pull request through their existing
   jobs or join jobs. A specialized lane skips owned steps inside those jobs; it
   does not remove historical required contexts. Any owned lane failure MUST fail
-  its join.
+  its join. Required lint does not compare main's package declaration with the newest
+  stable release; AST-017 assigns prerelease ordering to the canary publisher and keeps
+  immutable release merge-back validation in required lint.
 - **FR8 — Initial tooling admissions.** `node-tooling` covers
   `scripts/score-ledger.mjs`, `scripts/score-ledger.test.mjs`,
   `internal/scripts/`, and `.github/workflows/crowdin-upload.yml`. It runs the
@@ -157,8 +162,11 @@ they are separately named.
   including scheduled, post-CI, post-merge, or manual replacement owners.
   Publication of the canonical run's reports is not another test owner: it MUST
   consume that run's artifacts without recapturing or recomparing pixels.
-  Explicit full-plan baseline capture and reviewed baseline publication MUST
-  remain in `ci.yml`; they are maintenance operations, not release gates.
+  Explicit full-plan baseline capture MUST remain in `ci.yml`; it is a maintenance
+  operation, not a release gate. A reviewed baseline update MUST consume that
+  capture, update the versioned repository baseline through a normal pull request,
+  and remain separate from automatic merge or release work. GitHub Pages MUST NOT
+  be baseline or report storage.
   Release evidence MUST come from an explicit `operation=release-check`
   `workflow_dispatch` in this same workflow, dispatched from `main` and bound to
   its exact event SHA. It MUST run the canonical `pr-visual` (**Stable visual
@@ -166,11 +174,16 @@ they are separately named.
   visual plan and unfiltered accessibility/RTL component rosters. Changed-file,
   focused, smoke, and no-op paths MUST NOT narrow release checks. PR a11y MUST
   remain scoped to changed components plus fast interaction guards; full a11y
-  sweeps, whole-repository spec-test contracts, their evidence uploads, and Probe
-  reach MUST run only for `release-check` in this workflow. Missing,
+  sweeps, whole-repository spec-test contracts, and their evidence uploads MUST
+  run only for `release-check` in this workflow. Missing,
   failed, cancelled, or skipped required work MUST block the release-check join.
-  The request and join MUST verify that the checked SHA is still current `main`;
-  release callers MUST recheck it before mutation and dispatch again after drift.
+  The request and join MUST verify that the checked SHA is the dispatch event SHA
+  and remains an ancestor of current remote `main` at the start and completion of
+  the run. Release callers MUST fetch and recheck that same ancestry immediately
+  before creating the release branch. Later fast-forward movement of `main` does
+  not invalidate that receipt: the release MUST cut from the exact checked SHA, and
+  later commits remain next-release input. A rewrite or divergence that removes
+  the checked SHA from current `main` history invalidates the receipt.
   This replaces constituent-PR-only release gating, not the canonical checks'
   existing finding policies. Release checks MUST NOT run on every push, capture
   baseline candidates, publish baselines, or use a separate daily workflow or
@@ -287,16 +300,18 @@ PR visual owners; counting internal jobs or required status projections as
 lanes; and implicit expansion under an undefined “additional specialized
 surface” exception.
 
-### DEC-5 — Release checks reuse the canonical owners on exact main
+### DEC-5 — Release checks reuse the canonical owners on an exact main commit
 
 **Reference:** `spec:AST-030/DEC-5`
-**Decider:** `cixzhang`, `2026-09-23`
+**Decider:** `cixzhang`, `2026-09-23`; clarified `2026-10-07`
 
-Run release evidence against exact current `main`, not only constituent PR heads.
-Use an explicit release-time dispatch in `ci.yml` so full visual, accessibility,
-and RTL checks do not run on every main push. Reuse existing test/build owners,
-keep their finding policies, and fail closed on incomplete scope, missing work,
-or main drift. Baseline capture and reviewed promotion remain separate operations.
+Run release evidence against an exact commit in current `main` history, not only
+constituent PR heads. Use an explicit release-time dispatch in `ci.yml` so full
+visual, accessibility, and RTL checks do not run on every main push. Reuse
+existing test/build owners, keep their finding policies, and fail closed on
+incomplete scope, missing work, or when the checked commit is no longer in
+current `main` history. Baseline capture and the reviewed pull request that
+versions an accepted candidate remain separate operations.
 
 PR accessibility remains a scoped, fast check: audit only explicitly resolved
 changed component owners and retain the fast modal-close, theme-var, and story-play
@@ -305,12 +320,13 @@ shared path changed or the component set is empty. Missing or approximate analys
 fails the scoped check rather than silently claiming no work. Multi-component
 folders expand only to their own canonical component owners or existing umbrella
 Storybook routes; an exported name without either route cannot be passed to axe. The full
-accessibility roster, whole-repository spec-test contracts and their evidence
-uploads, and Probe reach sweep run only on `release-check` in this workflow.
+accessibility roster and the whole-repository spec-test contracts and their
+evidence uploads run only on `release-check` in this workflow.
 The release path retains the complete suite and cannot substitute a scoped result.
 
 Rejected: a separate workflow, per-push full audits, and treating a maintenance
-capture, skipped check, old main SHA, or retroactive status as release evidence.
+capture, skipped check, a checked SHA no longer in current `main` history, or
+retroactive status as release evidence.
 
 ## Open questions
 

@@ -16,6 +16,7 @@ import {z} from 'zod';
 /** @typedef {import('./namespace/type.js').NamespaceDoc} NamespaceDoc */
 /** @typedef {import('./reference/type.js').ReferenceContentBlock} ReferenceContentBlock */
 /** @typedef {import('./reference/type.js').GraphContentBlock} GraphContentBlock */
+/** @typedef {import('./reference/type.js').ReferenceSection} ReferenceSection */
 /** @typedef {import('./reference/type.js').ReferenceDoc} ReferenceDoc */
 /** @typedef {import('./component/type.js').SingleComponentDoc} SingleComponentDoc */
 /** @typedef {import('./base/type.js').ComponentPropDoc} ComponentPropDoc */
@@ -179,6 +180,20 @@ export const GraphContentBlockSchema = z.discriminatedUnion('type', [
   ReferenceBlockSchema,
 ]);
 
+/**
+ * A topic section's blocks: the stable union, plus a reference block, which a
+ * read inlines as the doc it includes.
+ */
+export const SectionContentBlockSchema = z.discriminatedUnion('type', [
+  ProseBlockSchema,
+  HeadingBlockSchema,
+  CodeBlockSchema,
+  TableBlockSchema,
+  ListBlockSchema,
+  TokenReferenceBlockSchema,
+  ReferenceBlockSchema,
+]);
+
 /** Namespace content accepts both stable reference blocks and graph-only blocks. */
 export const NamespaceContentBlockSchema = z.discriminatedUnion('type', [
   ProseBlockSchema,
@@ -210,12 +225,21 @@ export const NamespaceContentBlockSchema = z.discriminatedUnion('type', [
  * >} _GraphContentBlockDriftLock
  */
 
+/**
+ * @typedef {import('../_shared/contract.js').Expect<
+ *   import('../_shared/contract.js').Equal<
+ *     z.infer<typeof SectionContentBlockSchema>,
+ *     ReferenceSection['content'][number]
+ *   >
+ * >} _SectionContentBlockDriftLock
+ */
+
 const ReferenceSectionSchema = z
   .object({
     id: nonEmptyString.optional(),
     title: nonEmptyString,
     category: z.string().optional(),
-    content: z.array(ReferenceContentBlockSchema),
+    content: z.array(SectionContentBlockSchema),
     previewType: z
       .enum([
         'swatch',
@@ -283,6 +307,7 @@ const ComponentBaseSchema = z
     theming: z.unknown().optional(),
     playground: z.unknown().optional(),
     examples: z.array(z.unknown()).optional(),
+    replaces: z.string().min(1).optional(),
   })
   .passthrough();
 
@@ -390,6 +415,9 @@ export const GenericDocKindSchema = z
     ...BaseDocFields,
     type: z.literal('generic'),
     title: nonEmptyString.optional(),
+    // Search terms the title and sections do not use; `astryx search` matches
+    // them as keywords of the whole topic (ReferenceDoc `keywords`).
+    keywords: z.array(z.string()).optional(),
     sections: z.array(ReferenceSectionSchema).min(1).optional(),
     replaces: nonEmptyString.optional(),
     extends: nonEmptyString.optional(),
@@ -706,6 +734,8 @@ const LegacyBaseDocSchema = z.object({
 const LegacyReferenceDocSchema = LegacyBaseDocSchema.extend({
   title: nonEmptyString,
   description: z.string(),
+  // As on the stamped schema: search terms for the whole topic.
+  keywords: z.array(z.string()).optional(),
   sections: z.array(ReferenceSectionSchema).min(1),
   replaces: nonEmptyString.optional(),
   extends: nonEmptyString.optional(),

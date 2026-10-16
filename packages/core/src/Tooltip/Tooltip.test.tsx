@@ -183,6 +183,37 @@ describe('Tooltip', () => {
     });
   });
 
+  describe('icon-only trigger', () => {
+    // A rendered icon is an SVGElement, and ShowPopoverOptions.source is
+    // declared as an HTMLElement. Handing the icon to showPopover throws
+    // during dictionary conversion, before the popover opens, so the hint
+    // never appeared. (#7226)
+    it('opens an icon trigger without passing an SVGElement as the source', async () => {
+      const showSpy = vi.mocked(HTMLElement.prototype.showPopover);
+      showSpy.mockClear();
+
+      render(
+        <Tooltip content="Shared memory" isDefaultOpen>
+          <svg data-testid="icon" aria-hidden="true" />
+        </Tooltip>,
+      );
+
+      await waitFor(() => {
+        expect(showSpy).toHaveBeenCalled();
+      });
+
+      const [options] = showSpy.mock.calls[0];
+      // Compared as a boolean on purpose: a plain `toBeUndefined` failure makes
+      // the diff printer walk the SVGElement, which it cannot inspect.
+      expect(options?.source === undefined).toBe(true);
+
+      // The icon is still the trigger the ARIA tooltip pattern is wired to.
+      expect(screen.getByTestId('icon').getAttribute('aria-describedby')).toBe(
+        screen.getByRole('tooltip', {hidden: true}).id,
+      );
+    });
+  });
+
   describe('WCAG 1.4.13 — content on hover or focus', () => {
     it('dismisses on Escape while visible (dismissible)', async () => {
       const onOpenChange = vi.fn();

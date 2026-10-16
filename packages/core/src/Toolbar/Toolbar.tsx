@@ -6,7 +6,8 @@
  * @file Toolbar.tsx
  * @input Uses Section, SizeContext, useListFocus, useKeyboardHint, StyleX, spacingVars, sizeVars
  * @output Exports Toolbar component and ToolbarProps
- * @position Core implementation; consumed by index.ts
+ * @position Core implementation; consumed by index.ts. Owns toolbar focus and
+ *   keyboard navigation, excluding nested toolbars and popover contents.
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Toolbar/Toolbar.doc.mjs
@@ -71,12 +72,15 @@ const styles = stylex.create({
     display: 'flex',
     alignItems: 'center',
   },
+  // `minWidth: 0` lets the `auto` track shrink below the content's width, so a
+  // wide center never widens the toolbar. The slot deliberately does not clip
+  // (`overflow`): clipping would cut off the box-shadow and focus ring of its
+  // outermost children, which paint outside their own box.
   centerSlot: {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     minWidth: 0,
-    overflow: 'hidden',
   },
   endSlot: {
     display: 'flex',
@@ -245,6 +249,7 @@ export function Toolbar({
 
   const {listRef, handleKeyDown, handleFocus} = useListFocus<HTMLDivElement>({
     itemSelector: 'button, input, [tabindex]',
+    boundarySelector: '[role="toolbar"], [popover]',
     orientation,
     hasRovingTabIndex: true,
     hasCaretGuard: true,

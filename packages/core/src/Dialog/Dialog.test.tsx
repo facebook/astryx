@@ -9,9 +9,10 @@
  * SYNC: When Dialog.tsx changes, update tests to match new behavior
  */
 
-import {useState} from 'react';
+import {useState, type SyntheticEvent} from 'react';
 import {readFileSync} from 'node:fs';
-import {describe, it, expect, vi, beforeEach} from 'vitest';
+import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
+import type {MockInstance} from 'vitest';
 import {render, screen, fireEvent} from '@testing-library/react';
 import {
   Dialog,
@@ -20,6 +21,7 @@ import {
 } from './Dialog';
 import {DialogHeader} from './DialogHeader';
 import {defineTheme, generateThemeCSS} from '../theme';
+import {__resetInteractionModalityForTest} from '../utils/interactionModality';
 
 function generateThemeTestCSS(
   theme: Parameters<typeof generateThemeCSS>[0],
@@ -470,6 +472,288 @@ describe('Dialog', () => {
     });
   });
 
+  // jsdom draws no focus ring, so these prove only which focus call Dialog
+  // makes. Dialog.a11y.browser.spec.ts proves the rendered outcome.
+  describe('last-input focus visibility', () => {
+    function LastInputExample() {
+      const [isOpen, setIsOpen] = useState(false);
+      return (
+        <>
+          <button type="button" onClick={() => setIsOpen(true)}>
+            Open dialog
+          </button>
+          <Dialog
+            isOpen={isOpen}
+            onOpenChange={setIsOpen}
+            aria-label="Review changes">
+            <button
+              type="button"
+              data-autofocus
+              onClick={() => setIsOpen(false)}>
+              Cancel
+            </button>
+          </Dialog>
+        </>
+      );
+    }
+
+    function focusCallsOn(
+      focus: MockInstance<HTMLElement['focus']>,
+      element: HTMLElement,
+    ): unknown[][] {
+      return focus.mock.calls.filter(
+        (_call, index) => focus.mock.contexts[index] === element,
+      );
+    }
+
+    beforeEach(() => {
+      __resetInteractionModalityForTest();
+    });
+
+    afterEach(() => {
+      vi.restoreAllMocks();
+    });
+
+    it('hides the ring on both focus moves after pointer input', () => {
+      render(<LastInputExample />);
+      const invoker = screen.getByRole('button', {name: 'Open dialog'});
+      invoker.focus();
+      const focus = vi.spyOn(HTMLElement.prototype, 'focus');
+
+      fireEvent.pointerDown(invoker);
+      fireEvent.click(invoker);
+      const cancel = screen.getByRole('button', {name: 'Cancel'});
+      expect(cancel).toHaveFocus();
+      expect(focusCallsOn(focus, cancel)).toEqual([[{focusVisible: false}]]);
+
+      fireEvent.pointerDown(cancel);
+      fireEvent.click(cancel);
+      expect(invoker).toHaveFocus();
+      expect(focusCallsOn(focus, invoker)).toEqual([[{focusVisible: false}]]);
+    });
+
+    it('keeps plain focus on both moves after keyboard input', () => {
+      render(<LastInputExample />);
+      const invoker = screen.getByRole('button', {name: 'Open dialog'});
+      invoker.focus();
+      const focus = vi.spyOn(HTMLElement.prototype, 'focus');
+
+      fireEvent.keyDown(invoker, {key: 'Enter'});
+      fireEvent.click(invoker);
+      const cancel = screen.getByRole('button', {name: 'Cancel'});
+      expect(focusCallsOn(focus, cancel)).toEqual([[]]);
+
+      fireEvent.keyDown(cancel, {key: 'Enter'});
+      fireEvent.click(cancel);
+      expect(invoker).toHaveFocus();
+      expect(focusCallsOn(focus, invoker)).toEqual([[]]);
+    });
+
+    it('clears a ring the browser already drew before refocusing after pointer input', () => {
+      render(<LastInputExample />);
+      const invoker = screen.getByRole('button', {name: 'Open dialog'});
+      invoker.focus();
+      fireEvent.pointerDown(invoker);
+      fireEvent.click(invoker);
+
+      // WebKit's native close restores focus to the invoker with a ring before
+      // Dialog moves focus, and focusing the focused element is a no-op.
+      HTMLDialogElement.prototype.close = vi.fn(function (
+        this: HTMLDialogElement,
+      ) {
+        this.removeAttribute('open');
+        invoker.focus();
+      });
+      const matches = HTMLElement.prototype.matches;
+      vi.spyOn(HTMLElement.prototype, 'matches').mockImplementation(function (
+        this: HTMLElement,
+        selector: string,
+      ) {
+        return selector === ':focus-visible'
+          ? this === invoker
+          : matches.call(this, selector);
+      });
+      const blur = vi.spyOn(invoker, 'blur');
+      const focus = vi.spyOn(invoker, 'focus');
+
+      const cancel = screen.getByRole('button', {name: 'Cancel'});
+      fireEvent.pointerDown(cancel);
+      fireEvent.click(cancel);
+
+      expect(blur).toHaveBeenCalledTimes(1);
+      expect(focus.mock.calls.at(-1)).toEqual([{focusVisible: false}]);
+      expect(blur.mock.invocationCallOrder[0]).toBeLessThan(
+        focus.mock.invocationCallOrder.at(-1) ?? 0,
+      );
+      expect(invoker).toHaveFocus();
+    });
+
+    // Consumer focus callbacks see at most one extra blur and focus, and only
+    // where the browser already drew a ring on a non-text target after a
+    // pointer press. The mocks stand in for WebKit: showModal() and close()
+    // move focus themselves, and every focused element matches :focus-visible.
+    describe('consumer focus callbacks', () => {
+      type Counts = {focus: number; blur: number};
+      type Kind = 'button' | 'tabindex' | 'text';
+
+      function counter(): Counts & {
+        props: {onFocus: () => void; onBlur: () => void};
+      } {
+        const counts = {
+          focus: 0,
+          blur: 0,
+          props: {
+            onFocus: () => {
+              counts.focus += 1;
+            },
+            onBlur: () => {
+              counts.blur += 1;
+            },
+          },
+        };
+        return counts;
+      }
+
+      function Focusable({
+        kind,
+        label,
+        counts,
+        ...rest
+      }: {
+        kind: Kind;
+        label: string;
+        counts: ReturnType<typeof counter>;
+        onClick?: () => void;
+        'data-autofocus'?: boolean;
+      }) {
+        if (kind === 'text') {
+          return <input aria-label={label} {...counts.props} {...rest} />;
+        }
+        return kind === 'tabindex' ? (
+          <div role="button" tabIndex={0} {...counts.props} {...rest}>
+            {label}
+          </div>
+        ) : (
+          <button type="button" {...counts.props} {...rest}>
+            {label}
+          </button>
+        );
+      }
+
+      function setup(invokerKind: Kind, targetKind: Kind) {
+        const invokerCounts = counter();
+        const targetCounts = counter();
+        function Example() {
+          const [isOpen, setIsOpen] = useState(false);
+          return (
+            <>
+              <Focusable
+                kind={invokerKind}
+                label="Invoker"
+                counts={invokerCounts}
+                onClick={() => setIsOpen(true)}
+              />
+              <Dialog
+                isOpen={isOpen}
+                onOpenChange={setIsOpen}
+                aria-label="Review changes">
+                <Focusable
+                  kind={targetKind}
+                  label="Target"
+                  counts={targetCounts}
+                  data-autofocus
+                />
+                <button type="button" onClick={() => setIsOpen(false)}>
+                  Done
+                </button>
+              </Dialog>
+            </>
+          );
+        }
+        render(<Example />);
+        const invoker = screen.getByRole(
+          invokerKind === 'text' ? 'textbox' : 'button',
+          {name: 'Invoker'},
+        );
+        invoker.focus();
+        HTMLDialogElement.prototype.showModal = vi.fn(function (
+          this: HTMLDialogElement,
+        ) {
+          this.setAttribute('open', '');
+          this.querySelector<HTMLElement>('[data-autofocus]')?.focus();
+        });
+        HTMLDialogElement.prototype.close = vi.fn(function (
+          this: HTMLDialogElement,
+        ) {
+          this.removeAttribute('open');
+          invoker.focus();
+        });
+        const matches = HTMLElement.prototype.matches;
+        vi.spyOn(HTMLElement.prototype, 'matches').mockImplementation(function (
+          this: HTMLElement,
+          selector: string,
+        ) {
+          return selector === ':focus-visible'
+            ? this === document.activeElement
+            : matches.call(this, selector);
+        });
+        const reset = () => {
+          for (const counts of [invokerCounts, targetCounts]) {
+            counts.focus = 0;
+            counts.blur = 0;
+          }
+        };
+        reset();
+        return {invoker, invokerCounts, targetCounts, reset};
+      }
+
+      function press(element: HTMLElement, modality: 'pointer' | 'keyboard') {
+        if (modality === 'pointer') {
+          fireEvent.pointerDown(element);
+        } else {
+          fireEvent.keyDown(element, {key: 'Enter'});
+        }
+        fireEvent.click(element);
+      }
+
+      function counts({focus, blur}: Counts): Counts {
+        return {focus, blur};
+      }
+
+      it.each([
+        ['button', 'pointer', {focus: 2, blur: 1}],
+        ['button', 'keyboard', {focus: 1, blur: 0}],
+        ['text', 'pointer', {focus: 1, blur: 0}],
+        ['text', 'keyboard', {focus: 1, blur: 0}],
+      ] as const)(
+        'gives a %s autofocus target on a %s open %j',
+        (targetKind, modality, expected) => {
+          const {invoker, targetCounts} = setup('button', targetKind);
+          press(invoker, modality);
+          expect(counts(targetCounts)).toEqual(expected);
+        },
+      );
+
+      it.each([
+        ['button', 'pointer', {focus: 2, blur: 1}],
+        ['button', 'keyboard', {focus: 1, blur: 0}],
+        ['tabindex', 'pointer', {focus: 2, blur: 1}],
+        ['tabindex', 'keyboard', {focus: 1, blur: 0}],
+        ['text', 'pointer', {focus: 1, blur: 0}],
+      ] as const)(
+        'gives a %s invoker on a %s close %j',
+        (invokerKind, modality, expected) => {
+          const {invoker, invokerCounts, reset} = setup(invokerKind, 'button');
+          press(invoker, 'keyboard');
+          reset();
+          press(screen.getByRole('button', {name: 'Done'}), modality);
+          expect(invoker).toHaveFocus();
+          expect(counts(invokerCounts)).toEqual(expected);
+        },
+      );
+    });
+  });
+
   describe('variant: standard', () => {
     it('renders with default variant', () => {
       render(
@@ -746,6 +1030,32 @@ describe('Dialog', () => {
     expect(screen.getByTestId('custom-dialog')).toBeInTheDocument();
   });
 
+  it('runs backdrop dismissal before a consumer onClick', () => {
+    const callOrder: string[] = [];
+    const onClick = vi.fn((event: SyntheticEvent) => {
+      event.preventDefault();
+      callOrder.push('consumer');
+    });
+    const onOpenChange = vi.fn(() => {
+      callOrder.push('dialog');
+    });
+    render(
+      <Dialog
+        isOpen={true}
+        onOpenChange={onOpenChange}
+        onClick={onClick}
+        data-testid="click-dialog">
+        Content
+      </Dialog>,
+    );
+
+    fireEvent.click(screen.getByTestId('click-dialog'));
+
+    expect(onClick).toHaveBeenCalledTimes(1);
+    expect(onOpenChange).toHaveBeenCalledWith(false);
+    expect(callOrder).toEqual(['dialog', 'consumer']);
+  });
+
   it('does not forward native open prop to dialog element', () => {
     render(
       <Dialog
@@ -803,6 +1113,24 @@ describe('Dialog', () => {
       expect(heading.id).not.toBe('');
       expect(dialog).toHaveAttribute('aria-labelledby', heading.id);
       expect(dialog).toHaveAccessibleName('Dialog title');
+    });
+
+    it('is labelled by the text content of a node title', () => {
+      render(
+        <Dialog isOpen={true} onOpenChange={() => {}}>
+          <DialogHeader
+            title={
+              <span>
+                Rich <strong>dialog</strong> title
+              </span>
+            }
+          />
+        </Dialog>,
+      );
+      const dialog = screen.getByRole('dialog');
+      const heading = screen.getByRole('heading', {level: 2});
+      expect(dialog).toHaveAttribute('aria-labelledby', heading.id);
+      expect(dialog).toHaveAccessibleName('Rich dialog title');
     });
 
     it('prefers a consumer-provided aria-label over the header title', () => {

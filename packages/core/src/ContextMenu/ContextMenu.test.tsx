@@ -8,11 +8,14 @@
  * SYNC: When ContextMenu.tsx changes, update tests to match new behavior
  */
 
+import {useRef, useState} from 'react';
+import {createPortal} from 'react-dom';
 import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen, fireEvent, act, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {readFileSync} from 'node:fs';
 import {ContextMenu} from './ContextMenu';
+import {ContextMenuGroup} from './index';
 import {
   ContextMenuItem,
   ContextMenuDivider,
@@ -22,6 +25,32 @@ import {
 } from './index';
 import {DropdownMenuItem} from '../DropdownMenu/DropdownMenuItem';
 import {Divider} from '../Divider';
+import {useLayerDismissal} from '../Layer/useLayerDismissal';
+
+function NestedDismissibleLayer({onDismiss}: {onDismiss: () => void}) {
+  const [isOpen, setIsOpen] = useState(true);
+  const containerRef = useRef<HTMLButtonElement>(null);
+
+  useLayerDismissal({
+    isActive: isOpen,
+    onDismiss: () => {
+      setIsOpen(false);
+      onDismiss();
+    },
+    getContainer: () => containerRef.current,
+  });
+
+  // Portaled outside the menu's DOM, so only the layer depth ContextMenu
+  // provides can rank it above the menu.
+  return isOpen
+    ? createPortal(
+        <button ref={containerRef} type="button">
+          Nested layer
+        </button>,
+        document.body,
+      )
+    : null;
+}
 
 beforeEach(() => {
   HTMLDialogElement.prototype.showModal = vi.fn(function (
@@ -146,6 +175,56 @@ describe('ContextMenu', () => {
 
     fireEvent.contextMenu(screen.getByText('Right-click me'));
     expect(HTMLElement.prototype.showPopover).toHaveBeenCalled();
+  });
+
+  it('composes the consumer context-menu handler with menu opening', () => {
+    const onContextMenu = vi.fn();
+    render(
+      <ContextMenu items={[{label: 'Item 1'}]} onContextMenu={onContextMenu}>
+        <div>Right-click me</div>
+      </ContextMenu>,
+    );
+
+    fireEvent.contextMenu(screen.getByText('Right-click me'));
+    expect(onContextMenu).toHaveBeenCalledOnce();
+    expect(HTMLElement.prototype.showPopover).toHaveBeenCalledOnce();
+  });
+
+  it('keeps component-owned opening when a consumer prevents default', () => {
+    render(
+      <ContextMenu
+        items={[{label: 'Item 1'}]}
+        onContextMenu={event => event.preventDefault()}>
+        <div>Right-click me</div>
+      </ContextMenu>,
+    );
+
+    fireEvent.contextMenu(screen.getByText('Right-click me'));
+    expect(HTMLElement.prototype.showPopover).toHaveBeenCalledOnce();
+  });
+
+  it('lets a nested layer consume Escape before the context menu', () => {
+    const onNestedDismiss = vi.fn();
+    render(
+      <ContextMenu
+        menuContent={<NestedDismissibleLayer onDismiss={onNestedDismiss} />}>
+        <div>Right-click me</div>
+      </ContextMenu>,
+    );
+
+    fireEvent.contextMenu(screen.getByText('Right-click me'));
+    const nestedLayer = screen.getByRole('button', {
+      name: 'Nested layer',
+      hidden: true,
+    });
+    nestedLayer.focus();
+    fireEvent.keyDown(nestedLayer, {key: 'Escape'});
+
+    expect(onNestedDismiss).toHaveBeenCalledOnce();
+    expect(HTMLElement.prototype.hidePopover).not.toHaveBeenCalled();
+
+    fireEvent.keyDown(document, {key: 'Escape'});
+    expect(HTMLElement.prototype.hidePopover).toHaveBeenCalledOnce();
   });
 
   it('opens the real menu content in a BottomSheet when requested', async () => {
@@ -387,6 +466,60 @@ describe('ContextMenu', () => {
         vi.advanceTimersByTime(500);
       });
       expect(HTMLElement.prototype.showPopover).toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('composes consumer touch handlers with long-press detection', () => {
+    vi.useFakeTimers();
+    try {
+      const onTouchStart = vi.fn();
+      render(
+        <ContextMenu
+          items={[{label: 'Item 1'}]}
+          data-testid="ctx"
+          onTouchStart={onTouchStart}>
+          <div>Long-press me</div>
+        </ContextMenu>,
+      );
+
+      fireEvent.touchStart(screen.getByTestId('ctx'), {
+        touches: [{clientX: 20, clientY: 20}],
+      });
+      expect(onTouchStart).toHaveBeenCalledOnce();
+
+      act(() => {
+        vi.advanceTimersByTime(500);
+      });
+      expect(HTMLElement.prototype.showPopover).toHaveBeenCalledOnce();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('clears a pending long-press when a consumer prevents default on touch end', () => {
+    vi.useFakeTimers();
+    try {
+      render(
+        <ContextMenu
+          items={[{label: 'Item 1'}]}
+          data-testid="ctx"
+          onTouchEnd={event => event.preventDefault()}>
+          <div>Long-press me</div>
+        </ContextMenu>,
+      );
+
+      const trigger = screen.getByTestId('ctx');
+      fireEvent.touchStart(trigger, {
+        touches: [{clientX: 20, clientY: 20}],
+      });
+      fireEvent.touchEnd(trigger);
+
+      act(() => {
+        vi.advanceTimersByTime(500);
+      });
+      expect(HTMLElement.prototype.showPopover).not.toHaveBeenCalled();
     } finally {
       vi.useRealTimers();
     }
@@ -657,7 +790,7 @@ describe('ContextMenu compound mode', () => {
   });
 
   describe('cursor anchor positioning (#3465)', () => {
-    // The menu is anchored to a zero-size element placed at the cursor point
+    // The menu is anchored to a 1px element placed at the cursor point
     // *inside the trigger*, so it is positioned relative to the trigger's
     // context (scroll-follow + auto-flip) rather than the viewport.
     function getCursorAnchor(trigger: HTMLElement): HTMLElement {
@@ -668,7 +801,7 @@ describe('ContextMenu compound mode', () => {
       return anchor;
     }
 
-    it('renders a zero-size cursor anchor inside the trigger', () => {
+    it('renders a 1px cursor anchor inside the trigger', () => {
       render(
         <ContextMenu items={[{label: 'Item 1'}]} data-testid="ctx">
           <div>Right-click me</div>
@@ -679,6 +812,9 @@ describe('ContextMenu compound mode', () => {
       // Carries an anchor-name so the menu can be anchored to it via CSS
       // anchor positioning (context mode), not fixed viewport coordinates.
       expect(anchor.style.anchorName).toMatch(/^--astryx-layer-/);
+      // Owns a box: WebKit counts an empty anchor box inside a scroll
+      // container as clipped, and `position-visibility` hides the menu.
+      expect(anchor).toHaveStyle({width: '1px', height: '1px'});
     });
 
     it('places the cursor anchor at the pointer position relative to the trigger', () => {
@@ -724,7 +860,37 @@ describe('ContextMenu compound mode', () => {
       fireEvent.contextMenu(trigger, {clientX: 0, clientY: 0, detail: 0});
       const anchor = getCursorAnchor(trigger);
       expect(anchor.style.left).toBe('0px');
-      expect(anchor.style.top).toBe('20px');
+      // The 1px anchor steps back into the trigger's last pixel row, so its
+      // bottom edge (where the menu starts) is still the trigger's bottom.
+      expect(anchor.style.top).toBe('19px');
+    });
+
+    it('keeps the anchor inside the trigger at its end edges, and nowhere else', () => {
+      render(
+        <ContextMenu items={[{label: 'Item 1'}]} data-testid="ctx">
+          <div>Right-click me</div>
+        </ContextMenu>,
+      );
+      const trigger = screen.getByTestId('ctx');
+      trigger.getBoundingClientRect = () =>
+        ({
+          left: 100,
+          top: 50,
+          right: 300,
+          bottom: 150,
+          width: 200,
+          height: 100,
+        }) as DOMRect;
+      const anchor = getCursorAnchor(trigger);
+      // A point on the trigger's end edges steps back by the anchor's pixel.
+      fireEvent.contextMenu(trigger, {clientX: 300, clientY: 150, detail: 1});
+      expect(anchor.style.left).toBe('199px');
+      expect(anchor.style.top).toBe('99px');
+      // A point past the trigger (content overflowing it) stays at the
+      // pointer, as does a point on the trigger's start edges.
+      fireEvent.contextMenu(trigger, {clientX: 320, clientY: 50, detail: 1});
+      expect(anchor.style.left).toBe('220px');
+      expect(anchor.style.top).toBe('0px');
     });
   });
 });
@@ -1030,5 +1196,124 @@ describe('ContextMenu keyboard access for menuitemradio/menuitemcheckbox (#3829)
     expect(
       screen.getByRole('menuitem', {name: 'Delete', hidden: true}),
     ).toHaveFocus();
+  });
+});
+
+describe('ContextMenu press model', () => {
+  const touch = {pointerType: 'touch', pointerId: 1};
+  const item = (name: string) =>
+    screen.getByRole('menuitem', {name, hidden: true});
+  it('acts on the row under a finger release, once, and swallows the stray click', () => {
+    const onCut = vi.fn();
+    const onPaste = vi.fn();
+    render(
+      <ContextMenu
+        items={[
+          {label: 'Cut', onClick: onCut},
+          {label: 'Copy'},
+          {label: 'Paste', onClick: onPaste},
+        ]}>
+        <div>Right-click me</div>
+      </ContextMenu>,
+    );
+    fireEvent.contextMenu(screen.getByText('Right-click me'));
+    expect(screen.getByRole('menu', {hidden: true})).toHaveAttribute(
+      'data-astryx-menu-press',
+    );
+    fireEvent.pointerDown(item('Cut'), touch);
+    fireEvent.pointerMove(item('Paste'), touch);
+    expect(item('Paste')).toHaveFocus();
+    fireEvent.pointerUp(item('Paste'), touch);
+    fireEvent.click(item('Cut'), {detail: 1});
+    expect(onPaste).toHaveBeenCalledTimes(1);
+    expect(onCut).not.toHaveBeenCalled();
+  });
+});
+
+describe('ContextMenuGroup', () => {
+  it('carries the group semantics through the alias, not just the component', async () => {
+    // Three public surfaces alias this component at once. An alias that
+    // re-exports without the semantics would pass a render test and fail a
+    // screen reader.
+    render(
+      <ContextMenu
+        menuContent={
+          <ContextMenuGroup title="Version history">
+            <DropdownMenuItem label="Restore" onClick={() => {}} />
+            <DropdownMenuItem label="Compare" onClick={() => {}} />
+          </ContextMenuGroup>
+        }>
+        <div data-testid="target">Right-click me</div>
+      </ContextMenu>,
+    );
+
+    fireEvent.contextMenu(screen.getByTestId('target'));
+    await waitFor(() =>
+      expect(
+        screen.getByRole('menuitem', {name: 'Restore', hidden: true}),
+      ).toBeInTheDocument(),
+    );
+
+    const group = screen.getByRole('group', {
+      name: 'Version history',
+      hidden: true,
+    });
+    const heading = screen.getByText('Version history');
+    expect(group).toHaveAttribute('aria-labelledby', heading.id);
+    expect(group).toContainElement(
+      screen.getByRole('menuitem', {name: 'Restore', hidden: true}),
+    );
+  });
+});
+
+describe('ContextMenu keyboard', () => {
+  const item = (name: string) =>
+    screen.getByRole('menuitem', {name, hidden: true});
+
+  it('wraps arrow navigation at the ends', () => {
+    render(
+      <ContextMenu items={[{label: 'Cut'}, {label: 'Copy'}, {label: 'Paste'}]}>
+        <div>Right-click me</div>
+      </ContextMenu>,
+    );
+    fireEvent.contextMenu(screen.getByText('Right-click me'));
+    const menu = screen.getByRole('menu', {hidden: true});
+    item('Paste').focus();
+    fireEvent.keyDown(menu, {key: 'ArrowDown'});
+    expect(item('Cut')).toHaveFocus();
+    fireEvent.keyDown(menu, {key: 'ArrowUp'});
+    expect(item('Paste')).toHaveFocus();
+  });
+});
+
+describe('ContextMenu inline trigger (triggerAs)', () => {
+  it('an inline trigger keeps its flow', () => {
+    render(
+      <p>
+        Filed under{' '}
+        <ContextMenu
+          triggerAs="span"
+          data-testid="ref"
+          items={[{label: 'Open', onClick: () => {}}]}>
+          T123
+        </ContextMenu>{' '}
+        yesterday.
+      </p>,
+    );
+    const trigger = screen.getByTestId('ref');
+    expect(trigger.tagName).toBe('SPAN');
+    expect(trigger.parentElement?.tagName).toBe('P');
+    expect(trigger).not.toHaveStyle({display: 'block'});
+    fireEvent.contextMenu(trigger, {clientX: 20, clientY: 10, detail: 1});
+    expect(HTMLElement.prototype.showPopover).toHaveBeenCalled();
+  });
+
+  it('defaults to a block trigger', () => {
+    render(
+      <ContextMenu data-testid="area" items={[{label: 'Open'}]}>
+        Area
+      </ContextMenu>,
+    );
+    expect(screen.getByTestId('area').tagName).toBe('DIV');
   });
 });

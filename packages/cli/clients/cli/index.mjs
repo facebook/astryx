@@ -24,7 +24,7 @@ import {emit, section, text, records} from './formatters/index.mjs';
 import {ERROR_CODES} from '../../foundation/response/error-codes.mjs';
 import {levenshteinDistance} from '../../foundation/text/string-utils.mjs';
 import {installJsonShim} from './lib/json-shim.mjs';
-import {addExitCodesHelp, markReportsResult} from './lib/define-command.mjs';
+import {addDocHelp, markReportsResult} from './lib/define-command.mjs';
 import {doc as manifestDoc} from './commands/manifest.doc.mjs';
 import {isAstryxInitialized} from '../../foundation/agent-docs/agent-docs.mjs';
 import * as debug from '../../foundation/debug/index.mjs';
@@ -91,10 +91,14 @@ export const JSON_SUPPORTED = new Set([
   'theme build',
   'theme list',
   'theme add',
+  'theme remove',
+  'theme use',
+  'theme eject',
   'theme template',
   'theme targets',
   'theme palette generate',
   'integration add',
+  'integration verify',
   'integration pack',
   'upgrade',
   'manifest',
@@ -103,9 +107,6 @@ export const JSON_SUPPORTED = new Set([
   'doctor integration templates',
   'doctor integration components',
   'doctor integration docs',
-  'layout expand',
-  'layout check',
-  'layout grammar',
 ]);
 
 /**
@@ -264,7 +265,6 @@ const commands = [
   {name: 'gap-report', path: './commands/gap-report.mjs', register: 'registerGapReport'},
   // agent-docs folded into init — functions still importable from agent-docs.mjs
   {name: 'template', path: './commands/template.mjs', register: 'registerTemplate'},
-  {name: 'layout', path: './commands/layout.mjs', register: 'registerLayout'},
   {name: 'upgrade', path: './commands/upgrade.mjs', register: 'registerUpgrade'},
   {name: 'theme', path: './commands/build-theme.mjs', register: 'registerTheme'},
   {name: 'integration', path: './commands/integration.mjs', register: 'registerIntegration'},
@@ -276,6 +276,12 @@ const commands = [
 ];
 
 const SETUP_NUDGE_EXEMPT = new Set(['init', 'agent-docs']);
+/** An integration package's manifest: the package is not an app to set up. */
+const INTEGRATION_MANIFEST_FILES = [
+  'astryx.integration.ts',
+  'astryx.integration.mjs',
+  'astryx.integration.js',
+];
 
 /**
  * Build a fresh, fully-wired Astryx CLI program (root options, hooks, all
@@ -336,22 +342,30 @@ export async function createProgram() {
     .name('astryx')
     .description('Design system CLI — components, themes, and tooling')
     .version(pkg.version)
-    .option('--zh', 'Output docs in Chinese Simplified')
-    .option('--dense', 'Output docs in compressed dense format (token-efficient)')
+    // These four change only the reads named in their text; every other
+    // command ignores them.
+    .option(
+      '--zh',
+      'Simplified Chinese for component reads and for docs topics that have a translation (English otherwise)',
+    )
+    .option('--dense', 'Token-efficient dense text for component <Name> and docs <topic> reads')
     .addOption(
       new Option(
         '--lang <locale>',
-        'Output docs in specified language/format (en, zh, dense)',
+        'Language or format for component and docs reads: en (default), zh (as --zh), or dense (as --dense)',
       ).choices(['en', 'zh', 'dense']),
     )
     .addOption(
-      new Option('--detail <level>', 'Output detail level (full, compact, brief)')
+      new Option(
+        '--detail <level>',
+        'Detail level for component, hook, and docs tree reads (e.g. docs cli/commands/build), and for theme build reports. Lists default to brief; theme build prints one line per built theme unless full, which adds the install example and font recipe',
+      )
         .choices(['full', 'compact', 'brief'])
         .default('full'),
     )
     .option(
       '--json',
-      'Output as typed JSON. Success envelope: { apiVersion, type, data, meta? }. Error envelope: { apiVersion, error, code, suggestions? }.',
+      'Output as typed JSON. Success envelope: { apiVersion, type, package?, data, meta? }. Error envelope: { apiVersion, error, code, suggestions? }.',
     )
     .addHelpCommand('help', 'Show all commands')
     .action((options, cmd) => {
@@ -465,6 +479,19 @@ export async function createProgram() {
     const fullName = fullCommandName(actionCommand, program);
     if (JSON_SUPPORTED.has(fullName)) return;
     process.__xdsJsonHandled = true;
+    // A group given a word it does not have reports an unknown subcommand and
+    // lists the ones it has, in JSON as in text, even when a flag follows it.
+    const extras = actionCommand.commands.length > 0 ? actionCommand.args : [];
+    const unknown = extras.find(arg => !String(arg).startsWith('-'));
+    if (unknown != null) {
+      cliError(`unknown subcommand '${fullName} ${unknown}'`, {
+        code: ERROR_CODES.ERR_UNKNOWN_SUBCOMMAND,
+        suggestions: actionCommand.commands.map(child => ({
+          name: child.name(),
+          reason: 'available subcommand',
+        })),
+      });
+    }
     debug.setOutcome('rejected', {
       exitCode: 1,
       code: ERROR_CODES.ERR_INVALID_OPTION,
@@ -519,6 +546,8 @@ export async function createProgram() {
       if (SETUP_NUDGE_EXEMPT.has(actionCommand.name())) return;
       const cwd = process.cwd();
       if (!fs.existsSync(path.join(cwd, 'package.json'))) return; // not a project
+      // An integration package is not an app: `init` is not its next step.
+      if (INTEGRATION_MANIFEST_FILES.some(file => fs.existsSync(path.join(cwd, file)))) return;
       if (isAstryxInitialized(cwd)) return; // already set up — stay quiet
       // Same wording as the core/cli postinstall nudges. #4151's getCliInvocation()
       // renders the correct form for THIS project — scoped `npx @astryxdesign/cli`
@@ -597,7 +626,7 @@ export async function createProgram() {
         text(`Run \`${getCliInvocation()} manifest --json\` for the full structured manifest.`),
       );
     });
-  addExitCodesHelp(manifestCommand, manifestDoc.exitCodes);
+  addDocHelp(manifestCommand, manifestDoc);
   markReportsResult(manifestCommand);
 
   // Hidden command used by package.json postinstall scripts

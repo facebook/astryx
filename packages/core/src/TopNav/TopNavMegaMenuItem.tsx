@@ -36,6 +36,7 @@ import {useAppShellMobile} from '../AppShell/AppShellMobileContext';
 import {themeProps} from '../utils/themeProps';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
 import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
+import {usePressFeedback} from '../hooks/usePressFeedback';
 
 // =============================================================================
 // Styles
@@ -58,7 +59,8 @@ const styles = stylex.create({
     transitionProperty: 'background-color',
     transitionDuration: durationVars['--duration-fast'],
     transitionTimingFunction: easeVars['--ease-standard'],
-    border: 'none',
+    borderWidth: 0,
+    borderStyle: 'none',
     color: 'inherit',
     fontFamily: 'inherit',
     textAlign: 'start',
@@ -189,7 +191,12 @@ export function TopNavMegaMenuItem({
   onClick,
   as,
   tabIndex,
+  xstyle,
+  className,
+  style,
+  ...restProps
 }: TopNavMegaMenuItemProps) {
+  const pressable = usePressFeedback();
   const renderMode = useTopNavRenderMode();
   const LinkComponent = useLinkComponent(as);
   const {closeMobileNav} = useAppShellMobile();
@@ -206,9 +213,12 @@ export function TopNavMegaMenuItem({
     };
     return (
       <Element
+        {...restProps}
         ref={ref}
         href={href}
+        {...pressable}
         onClick={handleDrawerClick}
+        tabIndex={tabIndex}
         {...elementProps}
         {...mergeProps(
           themeProps('top-nav-mega-menu-item', {mode: 'drawer'}),
@@ -216,7 +226,10 @@ export function TopNavMegaMenuItem({
             navItemStyles.item,
             interactionOverlayStyles.backgroundColor,
             styles.drawerItem,
+            xstyle,
           ),
+          className,
+          style,
         )}>
         {icon && <div {...stylex.props(styles.drawerItemIcon)}>{icon}</div>}
         <div {...stylex.props(styles.drawerItemContent)}>
@@ -237,8 +250,10 @@ export function TopNavMegaMenuItem({
   const Element = href ? LinkComponent : 'div';
   return (
     <Element
+      {...restProps}
       ref={ref}
       href={href}
+      {...pressable}
       onClick={onClick}
       tabIndex={tabIndex}
       {...mergeProps(
@@ -246,7 +261,10 @@ export function TopNavMegaMenuItem({
         focusOutlineProps.focusVisible(
           styles.desktop,
           interactionOverlayStyles.backgroundColor,
+          xstyle,
         ),
+        className,
+        style,
       )}>
       {icon && <div {...stylex.props(styles.desktopIcon)}>{icon}</div>}
       <div {...stylex.props(styles.desktopContent)}>

@@ -26,6 +26,7 @@ import {
 } from '../theme/tokens.stylex';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
 import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
+import {usePressFeedback} from '../hooks/usePressFeedback';
 import {Icon} from '../Icon';
 import {mergeProps} from '../utils';
 import {useLinkComponent} from '../Link/useLinkComponent';
@@ -113,7 +114,6 @@ const styles = stylex.create({
     backgroundColor: colorVars['--color-accent-muted'],
   },
   invisibleButton: {
-    all: 'unset',
     cursor: {
       default: 'inherit',
       ':is(:disabled,[aria-disabled="true"])': 'default',
@@ -129,7 +129,6 @@ const styles = stylex.create({
     outline: 'none',
   },
   invisibleAnchor: {
-    all: 'unset',
     cursor: {
       default: 'inherit',
       ':is(:disabled,[aria-disabled="true"])': 'default',
@@ -181,8 +180,9 @@ const styles = stylex.create({
       default: 'pointer',
       ':is(:disabled,[aria-disabled="true"])': 'default',
     },
-    border: 'none',
-    background: 'none',
+    borderWidth: 0,
+    borderStyle: 'none',
+    backgroundColor: 'transparent',
     padding: 0,
     color: colorVars['--color-icon-secondary'],
     borderRadius: radiusVars['--radius-inner'],
@@ -190,7 +190,6 @@ const styles = stylex.create({
     marginInlineEnd: `calc(${spacingVars['--spacing-1']} * -1)`,
   },
   chevronButton: {
-    all: 'unset',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
@@ -365,6 +364,7 @@ export function TreeListItem({
   setSize,
   isTabbable,
 }: TreeListItemInternalProps) {
+  const pressable = usePressFeedback();
   const t = useTranslator();
   const labelId = useId();
   const descriptionId = useId();
@@ -557,6 +557,11 @@ export function TreeListItem({
   return (
     <li
       role="treeitem"
+      // The row is named by its label alone and described by its description
+      // (APG tree view): without these the name would be the row's whole text,
+      // chevron button label and description included.
+      aria-labelledby={labelId}
+      aria-describedby={description != null ? descriptionId : undefined}
       aria-expanded={hasChildren ? isExpanded : undefined}
       aria-selected={isSelected || undefined}
       aria-disabled={isDisabled || undefined}
@@ -582,6 +587,9 @@ export function TreeListItem({
       )}
       <div {...stylex.props(styles.rowWrapper)}>
         <div
+          {...(isInteractive || (hasChildren && onClick == null)
+            ? pressable
+            : undefined)}
           {...mergeProps(
             themeProps('tree-list-item', {
               density,

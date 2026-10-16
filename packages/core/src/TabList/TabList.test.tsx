@@ -12,7 +12,11 @@
 import {describe, it, expect, vi, beforeAll, afterAll} from 'vitest';
 import {render, screen, fireEvent} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import {hasPressedArm} from '../__tests__/pressState';
+import {
+  hasPressedArm,
+  hasReleaseFade,
+  readsPressStrength,
+} from '../__tests__/pressState';
 import {TabList} from './TabList';
 import type {TabListProps} from './TabList';
 import {Tab} from './Tab';
@@ -776,6 +780,73 @@ describe('TabMenu', () => {
       hidden: true,
     });
     expect(reportsItem).toHaveAttribute('aria-checked', 'false');
+  });
+});
+
+describe('TabMenu host attributes', () => {
+  const menuOptions = [
+    {value: 'analytics', label: 'Analytics'},
+    {value: 'reports', label: 'Reports'},
+  ];
+
+  it('forwards host attributes to the trigger, not the popup', () => {
+    render(
+      <TabList value="home" onChange={() => {}}>
+        <Tab value="home" label="Home" />
+        <TabMenu
+          label="More"
+          options={menuOptions}
+          id="more-tabs"
+          aria-label="More views"
+          data-view="overflow"
+        />
+      </TabList>,
+    );
+
+    const trigger = screen.getByRole('button', {name: 'More views'});
+    expect(trigger).toHaveAttribute('id', 'more-tabs');
+    expect(trigger).toHaveAttribute('data-view', 'overflow');
+    const menu = screen.getByRole('menu', {name: 'More', hidden: true});
+    expect(trigger).toHaveAttribute('aria-controls', menu.id);
+  });
+
+  it('runs drag-and-drop handlers on the trigger', () => {
+    const onDragOver = vi.fn();
+    const onDrop = vi.fn();
+    render(
+      <TabList value="home" onChange={() => {}}>
+        <Tab value="home" label="Home" />
+        <TabMenu
+          label="More"
+          options={menuOptions}
+          onDragOver={onDragOver}
+          onDrop={onDrop}
+        />
+      </TabList>,
+    );
+    const trigger = screen.getByRole('button', {name: 'More'});
+    fireEvent.dragOver(trigger);
+    fireEvent.drop(trigger);
+    expect(onDragOver).toHaveBeenCalledTimes(1);
+    expect(onDrop).toHaveBeenCalledTimes(1);
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('onClick preserves the toggle', async () => {
+    const user = userEvent.setup();
+    const onClick = vi.fn((event: React.MouseEvent<HTMLButtonElement>) => {
+      event.preventDefault();
+    });
+    render(
+      <TabList value="home" onChange={() => {}}>
+        <Tab value="home" label="Home" />
+        <TabMenu label="More" options={menuOptions} onClick={onClick} />
+      </TabList>,
+    );
+    const trigger = screen.getByRole('button', {name: 'More'});
+    await user.click(trigger);
+    expect(onClick).toHaveBeenCalledTimes(1);
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
   });
 });
 
@@ -1579,5 +1650,25 @@ describe('pressed state', () => {
     expect(tab).not.toHaveAttribute('href');
     fireEvent.click(tab);
     expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it('fades the touch press out from the tab, with the surface reading its strength', () => {
+    render(
+      <TabList value="home" onChange={() => {}}>
+        <Tab value="home" label="Home" />
+        <Tab value="settings" label="Settings" />
+      </TabList>,
+    );
+    const tab = screen.getByRole('button', {name: 'Settings'});
+    const surface = tab.querySelector('span[aria-hidden="true"]');
+    if (surface == null) {
+      throw new Error('the tab has no hover surface to press');
+    }
+    // The controller writes the tab; the tab owns the strength and its
+    // release, and the surface paints the pressed token at that strength on
+    // both touch arms.
+    expect(hasReleaseFade(tab)).toBe(true);
+    expect(readsPressStrength(surface, '[data-astryx-press="on"]')).toBe(true);
+    expect(readsPressStrength(surface)).toBe(true);
   });
 });

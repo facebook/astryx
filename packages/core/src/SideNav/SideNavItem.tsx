@@ -56,6 +56,7 @@ import {navItemStyles, type NavItemSize} from '../NavItem/navItemStyles.stylex';
 import {SizeProvider} from '../SizeContext/SizeContext';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
 import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
+import {usePressFeedback} from '../hooks/usePressFeedback';
 import {
   useSideNavCollapse,
   SideNavCollapseContext,
@@ -443,6 +444,9 @@ export function SideNavItem({
   xstyle,
   ...rest
 }: SideNavItemProps) {
+  // The row (or, collapsed, the trigger/link/button) is the pressable; the
+  // expand toggle inside it is its own.
+  const pressable = usePressFeedback();
   const t = useTranslator();
   const {isCollapsed} = useSideNavCollapse();
   const renderMode = useSideNavRenderMode();
@@ -555,23 +559,26 @@ export function SideNavItem({
 
     // Shared collapsed item styles — used by trigger, link, and button.
     // All three render a focusable element, so each draws the shared ring.
-    const collapsedItemStyles = mergeProps(
-      themeProps('side-nav-item', {
-        size,
-        selected: isSelected ? 'selected' : null,
-        disabled: isDisabled ? 'disabled' : null,
-      }),
-      focusOutlineProps.focusVisible(
-        navItemStyles.item,
-        interactionOverlayStyles.backgroundColor,
-        navItemStyles[size],
-        styles.itemCollapsed,
-        size === 'sm' && styles.itemCollapsedSm,
-        size === 'lg' && styles.itemCollapsedLg,
-        isSelected && navItemStyles.selected,
-        isDisabled && navItemStyles.disabled,
+    const collapsedItemStyles = {
+      ...mergeProps(
+        themeProps('side-nav-item', {
+          size,
+          selected: isSelected ? 'selected' : null,
+          disabled: isDisabled ? 'disabled' : null,
+        }),
+        focusOutlineProps.focusVisible(
+          navItemStyles.item,
+          interactionOverlayStyles.backgroundColor,
+          navItemStyles[size],
+          styles.itemCollapsed,
+          size === 'sm' && styles.itemCollapsedSm,
+          size === 'lg' && styles.itemCollapsedLg,
+          isSelected && navItemStyles.selected,
+          isDisabled && navItemStyles.disabled,
+        ),
       ),
-    );
+      ...pressable,
+    };
 
     const collapsedAccessibleLabel =
       rest['aria-label'] != null && rest['aria-label'].trim() !== ''
@@ -688,15 +695,24 @@ export function SideNavItem({
   //   only. The wrapper is not a tab stop, so `:focus-visible` on it would
   //   never match, and matching any descendant instead would light the whole
   //   row around the chevron's or an action's own ring.
-  const rowProps = mergeProps(itemThemeProps, stylex.props(...itemStyleArgs));
-  const focusableRowProps = mergeProps(
-    itemThemeProps,
-    focusOutlineProps.focusVisible(...itemStyleArgs),
-  );
-  const actionsRowProps = mergeProps(
-    itemThemeProps,
-    focusOutlineProps.focusWithinFirstChild(...itemStyleArgs),
-  );
+  const rowProps = {
+    ...mergeProps(itemThemeProps, stylex.props(...itemStyleArgs)),
+    ...pressable,
+  };
+  const focusableRowProps = {
+    ...mergeProps(
+      itemThemeProps,
+      focusOutlineProps.focusVisible(...itemStyleArgs),
+    ),
+    ...pressable,
+  };
+  const actionsRowProps = {
+    ...mergeProps(
+      itemThemeProps,
+      focusOutlineProps.focusWithinFirstChild(...itemStyleArgs),
+    ),
+    ...pressable,
+  };
 
   // Row-wrapper path: primary element + row controls as siblings.
   //
@@ -750,6 +766,7 @@ export function SideNavItem({
             }
             aria-expanded={!isItemCollapsed}
             aria-controls={`${id}-children`}
+            {...pressable}
             {...focusOutlineProps.focusVisible(
               styles.expandToggle,
               interactionOverlayStyles.backgroundColor,

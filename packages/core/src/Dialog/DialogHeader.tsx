@@ -4,7 +4,7 @@
 
 /**
  * @file DialogHeader.tsx
- * @input Uses React, StyleX, LayoutHeader, Button, Icon, Heading, Text, DialogContext, mergeProps, themeProps
+ * @input Uses React, StyleX, LayoutHeader, Button, Icon, Heading, Text, DialogContext, isRenderable, mergeProps, themeProps
  * @output Exports DialogHeader component and DialogHeaderProps
  * @position Dialog header component; used with Dialog and Layout
  *
@@ -25,7 +25,7 @@ import {Icon} from '../Icon';
 import {Heading} from '../Heading/Heading';
 import {Text} from '../Text/Text';
 import type {BaseProps} from '../BaseProps';
-import {mergeProps} from '../utils';
+import {isRenderable, mergeProps} from '../utils';
 import {themeProps} from '../utils/themeProps';
 import {useDialogContext} from './DialogContext';
 import {useTranslator} from '../i18n';
@@ -72,16 +72,23 @@ export interface DialogHeaderProps extends BaseProps<HTMLDivElement> {
   ref?: React.Ref<HTMLDivElement>;
   /**
    * The title of the dialog.
+   * Rendered inside the dialog's focusable h2, so rich inline content (for
+   * example a styled span) keeps the heading semantics. Keep it inline,
+   * non-interactive, and non-empty: its text becomes the dialog's name.
    * This title receives focus when the dialog opens for screen reader
    * accessibility, and names the parent Dialog via aria-labelledby unless the
-   * consumer passes an explicit aria-label/aria-labelledby to the Dialog.
+   * consumer passes an explicit aria-label/aria-labelledby to the Dialog. The
+   * accessible name is the rendered title's text content.
    */
-  title: string;
+  title: ReactNode;
 
   /**
    * Optional subtitle displayed below the title in smaller, secondary text.
+   * Accepts inline content such as a Link; it renders inside a span, so
+   * avoid block elements. Nothing renders for `null`, `undefined`, booleans,
+   * or an empty string.
    */
-  subtitle?: string;
+  subtitle?: ReactNode;
 
   /**
    * Callback fired when the dialog visibility changes.
@@ -157,6 +164,9 @@ export function DialogHeader({
   const dialogContext = useDialogContext();
   const shouldAutoFocus = dialogContext?.isInline !== true;
   const titleId = dialogContext?.titleId;
+  const hasSubtitle = isRenderable(subtitle);
+  const hasStartContent = isRenderable(startContent);
+  const hasEndContent = isRenderable(endContent);
   const shouldCompensateEndBlock =
     endContentEdgeCompensation == null
       ? onOpenChange != null
@@ -192,7 +202,7 @@ export function DialogHeader({
           themeProps('dialog-header'),
           stylex.props(styles.container),
         )}>
-        {startContent && (
+        {hasStartContent && (
           <div
             {...mergeProps(
               themeProps('dialog-header-start-content'),
@@ -214,13 +224,13 @@ export function DialogHeader({
             xstyle={styles.titleFocusable}>
             {title}
           </Heading>
-          {subtitle && (
+          {hasSubtitle && (
             <Text type="body" size="sm" color="secondary">
               {subtitle}
             </Text>
           )}
         </div>
-        {(endContent || onOpenChange) && (
+        {(hasEndContent || onOpenChange != null) && (
           <div
             {...mergeProps(
               themeProps('dialog-header-end-content'),

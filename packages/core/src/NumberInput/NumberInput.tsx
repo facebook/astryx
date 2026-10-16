@@ -52,6 +52,7 @@ import {VisuallyHidden} from '../VisuallyHidden';
 import {useTooltip} from '../Tooltip';
 import {getInputARIA} from '../utils';
 import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
+import {usePressFeedback} from '../hooks/usePressFeedback';
 import {useSize} from '../SizeContext/SizeContext';
 import {useInputContainer} from '../hooks/useInputContainer';
 import {useInputStatusIcon} from '../hooks/useInputStatusIcon';
@@ -212,6 +213,10 @@ export type {
 } from '../Field';
 import {isImeKeyEvent, mergeProps, mergeRefs} from '../utils';
 import type {BaseProps} from '../BaseProps';
+import {
+  type FieldInputBaseProps,
+  useFieldInputStyling,
+} from '../Field/fieldParts';
 import type {SizeValue} from '../utils/types';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator, useLocale} from '../i18n';
@@ -219,7 +224,7 @@ import {formatEditableNumber} from './numberParser';
 import {parseNumberInput, resolveNumberInputCommit} from './numberInputCommit';
 
 interface NumberInputPropsBase extends Omit<
-  BaseProps,
+  FieldInputBaseProps,
   'onChange' | 'defaultValue'
 > {
   /** Ref forwarded to the root element */
@@ -328,7 +333,7 @@ interface NumberInputPropsBase extends Omit<
   /**
    * Width of the field. Numbers are treated as pixels, strings are used as-is
    * (e.g. `'100%'`). Sizes the whole field (label, control, and status) so they
-   * stay aligned, unlike setting width via `xstyle`/`className`/`style`.
+   * stay aligned, unlike setting width via `controlXstyle`/`controlClassName`/`controlStyle`.
    */
   width?: SizeValue;
   /**
@@ -560,17 +565,29 @@ export function NumberInput({
   onEnter,
   onKeyDown,
   width,
-  xstyle,
-  className,
-  style,
+  containerXstyle,
+  containerClassName,
+  containerStyle,
+  controlXstyle,
+  controlClassName,
+  controlStyle,
   ref,
-  ...rest
+  id: idProp,
+  'aria-describedby': ariaDescribedByProp,
+  ...restProps
 }: NumberInputProps) {
+  const {rest, container} = useFieldInputStyling('NumberInput', restProps, {
+    containerXstyle,
+    containerClassName,
+    containerStyle,
+  });
+  const pressable = usePressFeedback();
   const t = useTranslator();
   const locale = useLocale();
   const isEffectivelyRequired = useResolvedRequired({isRequired, isOptional});
   const size = useSize(sizeProp, 'md');
-  const id = useId();
+  const generatedID = useId();
+  const id = idProp ?? generatedID;
   const inputLabelID = useId();
   const descriptionID = useId();
   const statusMessageID = useId();
@@ -889,10 +906,10 @@ export function NumberInput({
           status && !isDisabled && inputStatusHoverShadowStyles[status.type],
           status && inputStatusFocusWithinStyles[status.type],
           inputGroup && groupStyles.inGroup,
-          xstyle,
+          controlXstyle,
         ),
-        className,
-        style,
+        controlClassName,
+        controlStyle,
       )}>
       {startIcon && renderIconSlot(startIcon, {size: 'sm', color: 'secondary'})}
       {inputGroup && <VisuallyHidden id={inputLabelID}>{label}</VisuallyHidden>}
@@ -927,7 +944,10 @@ export function NumberInput({
         aria-valuetext={
           value == null || !formatValue ? undefined : formattedValue
         }
-        aria-describedby={ariaDescribedBy}
+        aria-describedby={
+          [ariaDescribedByProp, ariaDescribedBy].filter(Boolean).join(' ') ||
+          undefined
+        }
         aria-required={isEffectivelyRequired ? 'true' : undefined}
         aria-invalid={
           status?.type === 'error' || !isInputValid ? 'true' : undefined
@@ -957,7 +977,7 @@ export function NumberInput({
         user would get no feedback that their entry was rejected (WCAG 3.3.1).
       */}
       <VisuallyHidden as="div" role="alert" aria-live="assertive">
-        {!isInputValid ? 'Invalid number' : ''}
+        {!isInputValid ? t('@astryx.numberInput.invalidNumber') : ''}
       </VisuallyHidden>
       {hasClear && value != null && !isDisabled && !isReadOnly && (
         <InputClearButton
@@ -971,6 +991,7 @@ export function NumberInput({
           <button
             type="button"
             tabIndex={-1}
+            {...pressable}
             disabled={isDisabled || isReadOnly || !canIncrement}
             aria-label={t('@astryx.numberInput.incrementLabel', {label})}
             onPointerDown={event => event.preventDefault()}
@@ -994,6 +1015,7 @@ export function NumberInput({
           <button
             type="button"
             tabIndex={-1}
+            {...pressable}
             disabled={isDisabled || isReadOnly || !canDecrement}
             aria-label={t('@astryx.numberInput.decrementLabel', {label})}
             onPointerDown={event => event.preventDefault()}
@@ -1027,6 +1049,7 @@ export function NumberInput({
 
   return (
     <Field
+      {...container}
       label={label}
       isLabelHidden={isLabelHidden}
       description={description}
