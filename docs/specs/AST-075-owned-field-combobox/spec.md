@@ -66,9 +66,13 @@ the behavior from hooks; every such field behaves and announces the same way.
   active option, Enter on an active option MUST pick it and only then stop the
   field's own Enter, and Escape MUST hide the list without dismissing an
   enclosing layer in the same press (`family:overlay-dismissal`). While the list
-  is hidden, every key MUST reach the field and its surroundings unchanged. While
-  the list is shown, Home and End are outside this requirement until OQ2 is
-  ruled, and every other key MUST reach the field unchanged.
+  is hidden, ArrowDown in a single-line `input` field MUST show the list when it
+  has options, as `component:BaseTypeahead` does for its own input; in a
+  multi-line field (a `textarea` or a contenteditable element) every key MUST
+  reach the field and its surroundings unchanged, so the arrows keep moving the
+  caret between lines. While the list is shown, Home and End are outside this
+  requirement until OQ2 is ruled, and every other key MUST reach the field
+  unchanged.
 - **FR5 — Input method.** A key MUST NOT activate a combobox command, including
   Escape's dismissal (`family:overlay-dismissal`), while an input-method
   composition is active.
@@ -113,13 +117,13 @@ the behavior from hooks; every such field behaves and announces the same way.
 
 ## Verification
 
-| Contract | Verification                                                         | Representative states                                                           | Mutation or failure expectation                                                                                                                            |
-| -------- | -------------------------------------------------------------------- | ------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| FR1–FR3  | Chromium accessibility-tree binding under `spec:AST-021`; unit tests | input, textarea, contenteditable; list in a layer and in flow                   | focus leaves the field, a stale `aria-activedescendant` or `aria-controls` remains, or axe reports `aria-allowed-role` or `aria-allowed-attr` on the field |
-| FR4, FR6 | real keyboard and pointer input in Chromium                          | arrows, Enter, Escape inside a dialog, hover and press                          | a key or press picks, dismisses, or blurs the field at the wrong time                                                                                      |
-| FR5      | composition event tests                                              | candidate selection confirmed with Enter                                        | Enter during composition picks an option                                                                                                                   |
-| FR7      | shared announcer tests                                               | results, none, a new query                                                      | no announcement, or an announcement from a per-field live region                                                                                           |
-| FR8      | CLI hook discovery tests over core's exported hooks                  | each public hook named in DEC-2; a hook exported from a component's entry point | a combobox hook is exported without a hook doc, or `astryx hook <name>` denies it exists                                                                   |
+| Contract | Verification                                                         | Representative states                                                                                                | Mutation or failure expectation                                                                                                                            |
+| -------- | -------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| FR1–FR3  | Chromium accessibility-tree binding under `spec:AST-021`; unit tests | input, textarea, contenteditable; list in a layer and in flow                                                        | focus leaves the field, a stale `aria-activedescendant` or `aria-controls` remains, or axe reports `aria-allowed-role` or `aria-allowed-attr` on the field |
+| FR4, FR6 | real keyboard and pointer input in Chromium                          | arrows, Enter, Escape inside a dialog, hover and press; ArrowDown on a hidden list in an `input` and in a `textarea` | a key or press picks, dismisses, or blurs the field at the wrong time                                                                                      |
+| FR5      | composition event tests                                              | candidate selection confirmed with Enter                                                                             | Enter during composition picks an option                                                                                                                   |
+| FR7      | shared announcer tests                                               | results, none, a new query                                                                                           | no announcement, or an announcement from a per-field live region                                                                                           |
+| FR8      | CLI hook discovery tests over core's exported hooks                  | each public hook named in DEC-2; a hook exported from a component's entry point                                      | a combobox hook is exported without a hook doc, or `astryx hook <name>` denies it exists                                                                   |
 
 ## Decision log
 
@@ -155,6 +159,21 @@ field.
 
 Rejected: a new component, or `BaseTypeahead` accepting a caller's field, which
 keeps the behavior locked inside one component's markup.
+
+### DEC-3 — A hidden list reopens on ArrowDown in a single-line field only
+
+**Reference:** `spec:AST-075/DEC-3`
+**Decider:** `cixzhang`, `2026-10-15`
+
+In a single-line field the arrows have no caret work to do, so ArrowDown
+reopens a hidden list, the keyboard model Astryx's own typeahead input already
+gives. In a multi-line field the arrows move the caret between lines, which a
+person writing a message needs, so they reach the field while the list is
+hidden.
+
+Rejected: leaving every key to every field while the list is hidden, which
+leaves a single-line search field with no keyboard way back to its list but
+typing.
 
 ## Open questions
 
