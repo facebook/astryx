@@ -112,8 +112,8 @@ the behavior from hooks; every such field behaves and announces the same way.
   not yet guard keys during an input-method composition (FR5).
 - `useTypeahead` already ignores keys during an input-method composition, and
   `useAnnounce` is the shared announcer FR7 names.
-- `useCombobox` ships no hook doc, so `astryx hook` and `astryx search` do not
-  return it (FR8); `useMultiCombobox` does.
+- Both combobox hooks ship hook docs that `astryx hook` and `astryx search`
+  return, but neither yet names the requirements above it satisfies (FR8).
 
 ## Verification
 
