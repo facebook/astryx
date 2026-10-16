@@ -326,33 +326,6 @@ const [openPanel, setOpenPanel] = useState(false);
 // A number is pixels (width={320}); a string is any CSS length ('32rem',
 // '50%'). The budget also caps the drawer on mobile.`,
     },
-    {
-      label: 'Mobile: the 56px page reveal (default)',
-      code: `const [isOpen, setIsOpen] = useState(false);
-<Drawer
-  isOpen={isOpen}
-  onOpenChange={setIsOpen}
-  label="Filters"
-  width={360}>
-  <FilterControls />
-</Drawer>
-// Below 640px the panel preserves a 56px reveal of the page behind (still
-// capped by width), so the drawer reads as an overlay, not a navigation.`,
-    },
-    {
-      label: 'Wide desktop panel, full-width on mobile',
-      code: `const [isOpen, setIsOpen] = useState(false);
-<Drawer
-  isOpen={isOpen}
-  onOpenChange={setIsOpen}
-  label="Filters"
-  width={560}
-  experimental={{isFullWidthOnMobile: true}}>
-  <FilterControls />
-</Drawer>
-// isFullWidthOnMobile is experimental: it may change or be removed in a patch
-// release.`,
-    },
   ],
 };
 
@@ -448,7 +421,7 @@ export const docsDense = {
   usage: {
     anatomy,
     description:
-      "Overlay side panel for inspectors and detail views; floats over content, never reflows it. width = desktop budget; 56px page reveal below 640px, capped by width (experimental={{isFullWidthOnMobile: true}} for all of it; experimental, may change in a patch release). Escape closes topmost (not when purpose=required); focus restores to the opener. Siblings stack last-opened on top; never nest. Slide animation respects prefers-reduced-motion. Dialog-like container: content area inset = --spacing-4 (16px) by default, or the padding prop / a theme's drawer padding (padding={0} = full bleed). Compose like Dialog: Layout with DrawerHeader in the header slot (close button only when given onOpenChange), LayoutContent, LayoutFooter; Layout redistributes the inset so regions line up and the header is not inset twice; a lone Section escapes the inset. No built-in close button, so every drawer needs a visible exit; data-autofocus picks the focus target. purpose matches Dialog: info = Escape + scrim click, form = Escape only, required = neither (modal → alertdialog). Choose: Dialog for centered decisions/short forms, Drawer for full-height side detail, BottomSheet for block-axis sheets, docked layout column to reflow instead of float. Theming: single target astryx-drawer (data-side); scrim is its ::backdrop; DrawerHeader has astryx-drawer-header targets.",
+      "Overlay side panel for inspectors and detail views; floats over content, never reflows it. width = desktop budget; 56px page reveal below 640px, capped by width. Escape closes topmost (not when purpose=required); focus restores to the opener. Siblings stack last-opened on top; never nest. Slide animation respects prefers-reduced-motion. Dialog-like container: content area inset = --spacing-4 (16px) by default, or the padding prop / a theme's drawer padding (padding={0} = full bleed). Compose like Dialog: Layout with DrawerHeader in the header slot (close button only when given onOpenChange), LayoutContent, LayoutFooter; Layout redistributes the inset so regions line up and the header is not inset twice; a lone Section escapes the inset. No built-in close button, so every drawer needs a visible exit; data-autofocus picks the focus target. purpose matches Dialog: info = Escape + scrim click, form = Escape only, required = neither (modal → alertdialog). Choose: Dialog for centered decisions/short forms, Drawer for full-height side detail, BottomSheet for block-axis sheets, docked layout column to reflow instead of float. Theming: single target astryx-drawer (data-side); scrim is its ::backdrop; DrawerHeader has astryx-drawer-header targets.",
     bestPractices: [
       {
         guidance: true,

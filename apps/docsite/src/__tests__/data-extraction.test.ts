@@ -1248,15 +1248,10 @@ describe('exampleRegistry', () => {
     const showcase = drawerBlocks.filter(block => block.isShowcase);
     expect(showcase.map(block => block.name)).toEqual([labels[0]]);
     expect(showcaseRegistry.Drawer).toBeTypeOf('function');
-    // The page lists the examples in the doc's priority order, not by name:
-    // everyday patterns first, the mobile edge cases last.
+    // The page lists the examples in the doc's priority order, not by name.
     expect(exampleRegistry.Drawer.map(example => example.name)).toEqual(
       labels.slice(1),
     );
-    expect(labels.slice(-2)).toEqual([
-      'Mobile: the 56px page reveal (default)',
-      'Wide desktop panel, full-width on mobile',
-    ]);
   });
 
   it('gives DrawerHeader a visible showcase and projects its docs into example blocks', () => {

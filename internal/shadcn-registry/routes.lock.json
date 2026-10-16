@@ -2030,11 +2030,6 @@
       "aliases": []
     },
     {
-      "name": "example-drawer-mobile-the-56px-page-reveal-default",
-      "path": "examples/drawer/mobile-the-56px-page-reveal-default",
-      "aliases": []
-    },
-    {
       "name": "example-drawer-modal-or-non-modal-has-scrim",
       "path": "examples/drawer/modal-or-non-modal-has-scrim",
       "aliases": []
@@ -2042,11 +2037,6 @@
     {
       "name": "example-drawer-slide-in-from-the-start-edge",
       "path": "examples/drawer/slide-in-from-the-start-edge",
-      "aliases": []
-    },
-    {
-      "name": "example-drawer-wide-desktop-panel-full-width-on-mobile",
-      "path": "examples/drawer/wide-desktop-panel-full-width-on-mobile",
       "aliases": []
     },
     {
