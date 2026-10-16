@@ -113,6 +113,12 @@ export const docs = {
         'What a swipe does, passed through to Item unchanged. See Item.swipeBehavior.',
       default: "'reveal'",
     },
+    {
+      name: 'controlProps',
+      type: 'ItemControlProps',
+      description:
+        'Attributes for the control the row renders for onClick or href, passed through to Item unchanged. See Item.controlProps.',
+    },
   ],
 };
 
@@ -196,6 +202,12 @@ export const docsZh = {
       type: "'reveal' | 'commit'",
       description: '滑动的行为，原样传递给 Item。参见 Item.swipeBehavior。',
       default: "'reveal'",
+    },
+    {
+      name: 'controlProps',
+      type: 'ItemControlProps',
+      description:
+        '行为 onClick 或 href 渲染的控件的属性，原样传递给 Item。参见 Item.controlProps。',
     },
   ],
 };
