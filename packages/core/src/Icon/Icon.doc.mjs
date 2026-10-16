@@ -2,8 +2,8 @@
 
 /**
  * @file Icon consumer documentation
- * @input Semantic/direct artwork, independent requests and active theme defaults
- * @output Public props, sizing and accessible-name guidance
+ * @input Fixed/adaptive artwork, opt-in direct adapters and independent theme requests
+ * @output Public props, safe adapter usage, sizing and accessible-name guidance
  * @position Builder-facing Icon reference; no component participation policy
  */
 
@@ -90,7 +90,7 @@ export const docs = {
   },
   usage: {
     description:
-      'Icons are small visual symbols that represent actions, objects, or concepts. They improve scannability and reinforce meaning alongside text. Supports both direct SVG components and semantic icon names that adapt to the active theme.',
+      'Icons are small visual symbols that represent actions, objects, or concepts. They improve scannability and reinforce meaning alongside text. Semantic names use active-theme artwork. Ordinary direct SVG components stay fixed; library exports adapted with createIconAdapter can receive supported theme presentation.',
     anatomy,
     bestPractices: [
       {
@@ -102,6 +102,11 @@ export const docs = {
         guidance: true,
         description:
           "Override icons through the theme, not globally: defineTheme({icons: {close: <XMarkIcon />}}) scopes the swap to the active <Theme>, and extends shallow-merges it into derived themes. registerIcons() mutates a process-wide registry and warns in dev, so keep it for app bootstrap rather than making it a library's theming seam.",
+      },
+      {
+        guidance: true,
+        description:
+          'Use createIconAdapter only for a directly imported library icon that should follow Astryx theme appearance or weight. Semantic icon names already use the theme registry, and a direct icon that should stay fixed needs no adapter. Configure the adapter once in the library export module, not at each callsite. Only adapted icons receive translated library drawing props; unsupported requests render the library default.',
       },
       {
         guidance: true,
@@ -207,12 +212,17 @@ export const docsZh = {
   },
   usage: {
     description:
-      'Icons are small visual symbols that represent actions, objects, or concepts. They improve scannability and reinforce meaning alongside text. Supports both direct SVG components and semantic icon names that adapt to the active theme.',
+      'Icons are small visual symbols that represent actions, objects, or concepts. They improve scannability and reinforce meaning alongside text. Semantic names use active-theme artwork. Ordinary direct SVG components stay fixed; library exports adapted with createIconAdapter can receive supported theme presentation.',
     bestPractices: [
       {
         guidance: true,
         description:
           'Use semantic icon names when available; they adapt to theme changes automatically.',
+      },
+      {
+        guidance: true,
+        description:
+          '仅当直接导入的图标库组件需要跟随 Astryx 主题的外观或字重时，才使用 createIconAdapter。语义图标名称已经使用主题注册表；应保持固定的直接图标不需要适配器。在图标库导出模块中配置一次，而不是在每个调用点配置。只有适配后的图标接收映射后的绘制属性；不支持的请求继续使用图标库默认值。',
       },
       {
         guidance: true,
@@ -264,7 +274,7 @@ export const docsDense = {
     'Renders icons w/ Astryx design system colors + sizes. Supports direct SVG icon components + semantic icon names that adapt to active theme.',
   usage: {
     description:
-      'Icons are small visual symbols that represent actions, objects, or concepts. They improve scannability and reinforce meaning alongside text. Supports both direct SVG components and semantic icon names that adapt to the active theme.',
+      'Icons are small visual symbols that represent actions, objects, or concepts. They improve scannability and reinforce meaning alongside text. Semantic names use active-theme artwork. Ordinary direct SVG components stay fixed; library exports adapted with createIconAdapter can receive supported theme presentation.',
     anatomy,
     bestPractices: [
       {
@@ -276,6 +286,11 @@ export const docsDense = {
         guidance: true,
         description:
           'Override icons via theme, not globally: defineTheme({icons: {close: <XMarkIcon />}}) scopes the swap to the active <Theme>; extends shallow-merges into derived themes. registerIcons() mutates a global registry and warns in dev: app bootstrap only, not a library theming seam.',
+      },
+      {
+        guidance: true,
+        description:
+          'Use createIconAdapter only for a directly imported library icon that should follow Astryx theme appearance or weight. Semantic icon names already use the theme registry, and a direct icon that should stay fixed needs no adapter. Configure the adapter once in the library export module, not at each callsite. Only adapted icons receive translated library drawing props; unsupported requests render the library default.',
       },
       {
         guidance: true,

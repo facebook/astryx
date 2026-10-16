@@ -2,8 +2,8 @@
 
 /**
  * @file Icons consumer reference
- * @input Semantic names, supplied artwork and local capability contracts
- * @output Theme-scoped fixed/adaptive icon authoring guidance
+ * @input Semantic names, supplied artwork and typed local icon-library adapters
+ * @output Theme-scoped fixed/adaptive artwork and safe direct-adapter guidance
  * @position Builder-facing icons reference; no role or component enrollment API
  */
 
@@ -177,6 +177,88 @@ export const brandTheme = defineTheme({
         {
           type: 'prose',
           text: 'Explicit sizes and standalone md use active theme dimension overrides. Implicit built-in sizes in existing components keep their released rem box; omitted overrides and built-in null clears retain rem scaling. Custom icon-size names have canonical contract dimensions and do not extend control size props. Application type augmentation does not install runtime capabilities. `getIcon`, `getExtendedIcon`, and `useIcon` still return React nodes without extra request arguments; ordinary direct SVGs do not receive appearance or weight.',
+        },
+      ],
+    },
+    {
+      title: 'Direct Library Adapters',
+      category: 'foundations',
+      content: [
+        {
+          type: 'prose',
+          text: 'Use an adapter only for a directly imported library icon that should follow Astryx theme appearance or weight. Semantic names and registered adaptive artwork already use the theme registry; a direct icon meant to stay fixed needs no adapter. Define one adapter in the library export module and import that adapted export at product callsites. The adapter narrows each request to its local contract, while propNames declares the primitive drawing props its mapper may return (appearance and weight are the defaults). If the library has no equivalent property, omit that axis and let its default render. Keep the contract, mapper, component and adapted export in an importable library module; compile it alongside the theme package. Functions stay imports, not generated function text.',
+        },
+        {
+          type: 'table',
+          headers: [
+            'Icon source',
+            'Should it follow theme appearance or weight?',
+            'Action',
+          ],
+          rows: [
+            [
+              'Semantic name or registered adaptive artwork',
+              'Yes',
+              'No adapter. The theme registry already handles it.',
+            ],
+            [
+              'Directly imported library icon',
+              'No',
+              'Pass it directly. It stays fixed and uses the library defaults.',
+            ],
+            [
+              'Directly imported library icon',
+              'Yes, and the library exposes equivalent primitive properties',
+              'Create one adapter in the library export module.',
+            ],
+            [
+              'Directly imported library icon',
+              'Yes, but the library has no equivalent property or artwork',
+              'Do not guess or modify the SVG. Leave that axis unsupported and use the library default.',
+            ],
+          ],
+        },
+        {
+          type: 'code',
+          lang: 'tsx',
+          label: 'product-icons.tsx — adapt a supplied library component',
+          code: `import {createIconAdapter, defineIconCapabilities} from '@astryxdesign/core/Icon';
+import {ProductIconImpl} from './artwork.js';
+
+export const capabilities = defineIconCapabilities({
+  appearances: ['outline', 'filled'],
+  weights: {range: {min: 100, max: 900}},
+});
+const adaptProductIcon = createIconAdapter({
+  capabilities,
+  propNames: ['glyphStyle', 'thickness'],
+  resolveProps(request) {
+    return {glyphStyle: request.appearance, thickness: request.weight};
+  },
+});
+export const ProductIcon = adaptProductIcon(ProductIconImpl);`,
+        },
+        {
+          type: 'code',
+          lang: 'tsx',
+          label: 'Use the same library contract with a theme',
+          code: `import {Icon} from '@astryxdesign/core/Icon';
+import {defineTheme, Theme} from '@astryxdesign/core/theme';
+import {capabilities, ProductIcon} from './product-icons.js';
+
+const brandTheme = defineTheme({
+  name: 'brand',
+  iconCapabilities: {
+    contract: capabilities,
+    presentation: {default: {appearance: 'filled', weight: 525.5}},
+  },
+});
+
+<Theme theme={brandTheme}><Icon icon={ProductIcon} /></Theme>;`,
+        },
+        {
+          type: 'prose',
+          text: 'ProductIconImpl must support optional primitive glyphStyle and thickness props as well as SVGProps. The .js imports refer to the compiled modules. An adapter translates supported theme intent; it does not restructure the component or edit its SVG. For example, an Astryx duotone appearance maps only when the library exposes an equivalent variant such as weight="duotone"; the library still owns how the two tones are colored. If the library instead requires primaryColor and secondaryColor props, this adapter receives no theme color axis and must not invent those values. A mapper cannot change source selection, color, accessibility, events, refs, styles or children. Unsupported explicit appearance or weight warns once in development and points to createIconAdapter guidance; unsupported theme choices silently use the library default. Invalid mapping results safely render that default. Missing size support is normal fallback, not a warning. Consumer SVG, ref, event and styling props retain their normal precedence.',
         },
       ],
     },

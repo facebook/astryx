@@ -2,8 +2,8 @@
 
 /**
  * @file index.ts
- * @input Icon rendering, actual node registry reads and pure capability constructors
- * @output Released Icon APIs, independent presentation types and local adaptive authoring
+ * @input Icon rendering, actual node registry reads and pure capability/adapter constructors
+ * @output Released Icon APIs, presentation types and local adaptive/adapter authoring
  * @position Component entry point; re-exported by /packages/core/src/index.ts
  *
  * SYNC: When modified, update this header and /packages/core/src/Icon/Icon.doc.mjs
@@ -30,6 +30,12 @@ export {
   getApplicationIconCapabilities,
 } from './iconCapabilities';
 export {defineAdaptiveIcon} from './adaptiveIcons';
+export {createIconAdapter} from './iconAdapters';
+export type {
+  IconAdapterOptions,
+  IconAdapterProps,
+  IconAdapterRequest,
+} from './iconAdapters';
 export type {
   BuiltInIconSize,
   IconCapabilities,

@@ -72,6 +72,7 @@ export type NoAdditionalRuntimeAPIs = Assert<
       | 'defineIconCapabilities'
       | 'defineAdaptiveIcon'
       | 'getApplicationIconCapabilities'
+      | 'createIconAdapter'
     >,
     never
   >
