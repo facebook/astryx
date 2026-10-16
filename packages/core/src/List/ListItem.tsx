@@ -34,7 +34,7 @@ import {ListContext, type ListMarker} from './ListContext';
 import {CheckboxInput} from '../CheckboxInput';
 import {mergeProps} from '../utils';
 import {Item} from '../Item';
-import type {ItemSwipeActions, ItemSwipeBehavior} from '../Item';
+import type {ItemAlign, ItemSwipeActions, ItemSwipeBehavior} from '../Item';
 import {themeProps} from '../utils/themeProps';
 
 // =============================================================================
@@ -44,6 +44,13 @@ import {themeProps} from '../utils/themeProps';
 export interface ListItemProps extends BaseProps<HTMLLIElement> {
   /** Ref forwarded to the root element */
   ref?: React.Ref<HTMLLIElement>;
+  /**
+   * Vertical alignment of the start and end content against the label,
+   * forwarded to Item. Use `first-line` to keep the start and end content level with the
+   * first line of a wrapped label.
+   * @default 'center'
+   */
+  align?: ItemAlign;
   /**
    * Primary text label for the item.
    *
@@ -296,6 +303,7 @@ export function ListItem({
   rel,
   isDisabled = false,
   isSelected = false,
+  align,
   xstyle,
   className,
   style,
@@ -360,6 +368,7 @@ export function ListItem({
       rel={rel}
       isDisabled={isDisabled}
       isSelected={isSelected}
+      align={align}
       density={density}
       xstyle={[
         hasMarkers && styles.withCounter,
