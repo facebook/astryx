@@ -27,6 +27,7 @@ import {
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
 import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
 import {usePressFeedback} from '../hooks/usePressFeedback';
+import {useClickableContainer} from '../hooks/useClickableContainer';
 import {Icon} from '../Icon';
 import {mergeProps} from '../utils';
 import {useLinkComponent} from '../Link/useLinkComponent';
@@ -416,7 +417,7 @@ export function TreeListItem({
   );
 
   const handleClick = useMemo(() => {
-    if (onClick != null || (hasChildren && onToggle != null) || href != null) {
+    if (onClick != null || (hasChildren && onToggle != null)) {
       return (e: React.MouseEvent) => {
         if (isDisabled) {
           return;
@@ -429,28 +430,39 @@ export function TreeListItem({
           onClick(e);
         } else if (hasChildren && onToggle != null) {
           onToggle(id);
-        } else if (linkRef.current != null) {
-          // A link row: a click anywhere else in the row (its indent, the
-          // reserved chevron column, the padding) follows the row's link, as
-          // Enter already does, keeping the modifier keys so a Cmd/Ctrl-click
-          // still opens a new tab. Dispatched on the anchor so a router link
-          // component's own click handling still runs.
-          linkRef.current.dispatchEvent(
-            new MouseEvent('click', {
-              bubbles: true,
-              cancelable: true,
-              button: e.button,
-              ctrlKey: e.ctrlKey,
-              metaKey: e.metaKey,
-              shiftKey: e.shiftKey,
-              altKey: e.altKey,
-            }),
-          );
         }
       };
     }
     return undefined;
-  }, [onClick, hasChildren, onToggle, href, id, isDisabled]);
+  }, [onClick, hasChildren, onToggle, id, isDisabled]);
+
+  // A link row (an `href` and no other row action) is an enlarged surface for
+  // its link: the indent is part of the row, so a click anywhere in it must
+  // follow the link, as Enter already does. Built on the shared
+  // enlarged-surface hook (family:navigation-destinations), which skips
+  // clicks on nested controls, native or role-based, and text selections.
+  // - Clicks are delegated: the hook re-dispatches the click on the anchor
+  //   with its modifier keys, so the link component and the browser handle
+  //   same-tab, new-tab and new-window activation, and stops the original, so
+  //   ancestors see one click per press.
+  // - Middle-click has no synthetic equivalent, so it takes the hook's href
+  //   path, which opens the destination in a new tab after the shared
+  //   navigation rule.
+  // The container ref is attached to link rows only, so every other row stays
+  // a plain element and both hook instances stay inert on it.
+  const forwardsToLink = href != null && handleClick == null;
+  const linkRowRef = useRef<HTMLDivElement>(null);
+  const {onClick: delegateToLink} = useClickableContainer({
+    containerRef: linkRowRef,
+    interactiveRef: linkRef,
+    disabled: isDisabled || !forwardsToLink,
+  });
+  const {onMouseUp: openLinkOnMiddleClick} = useClickableContainer({
+    containerRef: linkRowRef,
+    href,
+    target,
+    disabled: isDisabled || !forwardsToLink,
+  });
 
   // Per-level indent distance. The per-level step is the public, themeable
   // `--tree-list-indent` lever (default `--spacing-4`, set on the tree-list
@@ -671,7 +683,9 @@ export function TreeListItem({
             className,
             {...indentStyle, ...style},
           )}
-          onClick={handleClick}>
+          ref={forwardsToLink ? linkRowRef : undefined}
+          onClick={forwardsToLink ? delegateToLink : handleClick}
+          onMouseUp={forwardsToLink ? openLinkOnMiddleClick : undefined}>
           <div {...stylex.props(styles.indentedContent)}>{innerContent}</div>
         </div>
       </div>

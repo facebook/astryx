@@ -11,6 +11,7 @@
 
 import {describe, it, expect, vi} from 'vitest';
 import {render, screen, fireEvent} from '@testing-library/react';
+import type {ReactNode} from 'react';
 import userEvent from '@testing-library/user-event';
 import * as stylex from '@stylexjs/stylex';
 import {TreeList} from './TreeList';
@@ -766,34 +767,94 @@ describe('TreeList', () => {
       );
     });
 
-    it('follows the link when a link row is clicked outside its label', () => {
-      // The indent is part of the row now, so a click there must do what the
-      // row does. A link row has no click handler of its own; the click is
-      // forwarded to its anchor (as Enter is), modifier keys included.
-      const items = [
+    describe('link rows', () => {
+      const linkItems = (endContent?: ReactNode): TreeListItemData[] => [
         {
           id: 'docs',
           label: 'Docs',
           isExpanded: true,
-          children: [{id: 'report', label: 'Report', href: '/report'}],
+          children: [
+            {id: 'report', label: 'Report', href: '/report', endContent},
+          ],
         },
       ];
-      render(<TreeList items={items} />);
-      const link = screen.getByRole('link', {name: 'Report'});
-      const clicks: MouseEvent[] = [];
-      link.addEventListener('click', e => {
-        clicks.push(e);
-        e.preventDefault();
+      const rowSurfaceOf = (link: HTMLElement) =>
+        link.closest<HTMLElement>('.astryx-tree-list-item')!
+          .firstElementChild as HTMLElement;
+
+      it('follows the link when the row is clicked outside its label', () => {
+        // The indent is part of the row now, so a click there must do what
+        // the row does. The click is delegated to the anchor through the
+        // shared enlarged-surface hook, modifier keys included.
+        render(<TreeList items={linkItems()} />);
+        const link = screen.getByRole('link', {name: 'Report'});
+        const clicks: MouseEvent[] = [];
+        link.addEventListener('click', e => {
+          clicks.push(e);
+          e.preventDefault();
+        });
+
+        fireEvent.click(rowSurfaceOf(link), {metaKey: true});
+        expect(clicks).toHaveLength(1);
+        expect(clicks[0].metaKey).toBe(true);
+
+        // Clicking the label itself reaches the anchor once, not twice.
+        fireEvent.click(link);
+        expect(clicks).toHaveLength(2);
       });
-      const row = link.closest<HTMLElement>('.astryx-tree-list-item')!;
 
-      fireEvent.click(row.firstElementChild!, {metaKey: true});
-      expect(clicks).toHaveLength(1);
-      expect(clicks[0].metaKey).toBe(true);
+      it('reports one click to ancestors per press', () => {
+        // The delegated click bubbles from the anchor; the original stops,
+        // so a listener above the tree sees exactly one click.
+        const onTreeClick = vi.fn();
+        render(<TreeList items={linkItems()} onClick={onTreeClick} />);
+        const link = screen.getByRole('link', {name: 'Report'});
+        link.addEventListener('click', e => e.preventDefault());
 
-      // Clicking the label itself reaches the anchor once, not twice.
-      fireEvent.click(link);
-      expect(clicks).toHaveLength(2);
+        fireEvent.click(rowSurfaceOf(link));
+        expect(onTreeClick).toHaveBeenCalledTimes(1);
+        expect(onTreeClick.mock.calls[0][0].target).toBe(link);
+      });
+
+      it('leaves a role-based control in the row to itself', () => {
+        const onSwitch = vi.fn();
+        render(
+          <TreeList
+            items={linkItems(
+              <span
+                role="switch"
+                aria-checked="false"
+                aria-label="Pin"
+                tabIndex={0}
+                onClick={onSwitch}>
+                Pin
+              </span>,
+            )}
+          />,
+        );
+        const link = screen.getByRole('link', {name: 'Report'});
+        const onLinkClick = vi.fn((e: Event) => e.preventDefault());
+        link.addEventListener('click', onLinkClick);
+
+        fireEvent.click(screen.getByRole('switch', {name: 'Pin'}));
+        expect(onSwitch).toHaveBeenCalledTimes(1);
+        expect(onLinkClick).not.toHaveBeenCalled();
+      });
+
+      it('opens the link in a new tab on a middle-click in the row', () => {
+        const open = vi.spyOn(window, 'open').mockImplementation(() => null);
+        render(<TreeList items={linkItems()} />);
+        const link = screen.getByRole('link', {name: 'Report'});
+
+        fireEvent.mouseUp(rowSurfaceOf(link), {button: 1});
+        expect(open).toHaveBeenCalledWith('/report', '_blank', 'noopener');
+
+        // A middle-click on the label is the browser's own.
+        open.mockClear();
+        fireEvent.mouseUp(link, {button: 1});
+        expect(open).not.toHaveBeenCalled();
+        open.mockRestore();
+      });
     });
 
     it('does not follow a disabled link row', () => {
