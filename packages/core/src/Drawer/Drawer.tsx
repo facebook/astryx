@@ -153,8 +153,9 @@ const styles = stylex.create({
   rendered: {
     display: 'flex',
   },
-  // start/end transforms flip under RTL so the panel always slides in from
-  // the edge it is anchored to.
+  // start/end transforms follow the element's computed direction, so a local
+  // override and an inherited or CSS-authored direction all agree with the
+  // logical edge the panel is anchored to.
   end: {
     insetInlineEnd: 0,
     insetInlineStart: 'auto',
@@ -163,7 +164,7 @@ const styles = stylex.create({
     borderInlineStartColor: colorVars['--color-border'],
     transform: {
       default: 'translateX(100%)',
-      ':is([dir="rtl"], [dir="rtl"] *)': 'translateX(-100%)',
+      ':dir(rtl)': 'translateX(-100%)',
     },
   },
   endOpen: {
@@ -171,7 +172,7 @@ const styles = stylex.create({
       default: 'translateX(0)',
       '@starting-style': {
         default: 'translateX(100%)',
-        ':is([dir="rtl"], [dir="rtl"] *)': 'translateX(-100%)',
+        ':dir(rtl)': 'translateX(-100%)',
       },
     },
   },
@@ -183,7 +184,7 @@ const styles = stylex.create({
     borderInlineEndColor: colorVars['--color-border'],
     transform: {
       default: 'translateX(-100%)',
-      ':is([dir="rtl"], [dir="rtl"] *)': 'translateX(100%)',
+      ':dir(rtl)': 'translateX(100%)',
     },
   },
   startOpen: {
@@ -191,7 +192,7 @@ const styles = stylex.create({
       default: 'translateX(0)',
       '@starting-style': {
         default: 'translateX(-100%)',
-        ':is([dir="rtl"], [dir="rtl"] *)': 'translateX(100%)',
+        ':dir(rtl)': 'translateX(100%)',
       },
     },
   },

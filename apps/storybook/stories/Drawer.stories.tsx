@@ -221,38 +221,88 @@ export const Sides: Story = {
   },
 };
 
-export const SelfDirectedRtl: Story = {
-  name: 'Self-applied RTL audit',
-  parameters: {docs: {disable: true}},
-  render: () => {
-    const [isOpen, setIsOpen] = useState(false);
-    return (
-      <>
-        <Button
-          label="Open self-directed RTL drawer"
-          onClick={() => setIsOpen(true)}
-        />
-        <Drawer
-          isOpen={isOpen}
-          onOpenChange={setIsOpen}
-          label="Self-directed RTL details"
-          side="end"
-          dir="rtl">
-          <Layout
-            header={
-              <DrawerHeader title="تفاصيل النشر" onOpenChange={setIsOpen} />
-            }
-            content={
-              <LayoutContent>
-                <Text type="body">The Drawer root owns this RTL region.</Text>
-              </LayoutContent>
-            }
+function selfDirectedRtlStory(side: 'start' | 'end'): Story {
+  return {
+    name: `Self-applied RTL ${side} audit`,
+    parameters: {docs: {disable: true}},
+    render: () => {
+      const [isOpen, setIsOpen] = useState(false);
+      return (
+        <>
+          <Button
+            label={`Open self-directed RTL ${side} drawer`}
+            onClick={() => setIsOpen(true)}
           />
-        </Drawer>
-      </>
-    );
-  },
-};
+          <Drawer
+            isOpen={isOpen}
+            onOpenChange={setIsOpen}
+            label="Deployment details"
+            side={side}
+            dir="rtl">
+            <Layout
+              header={
+                <DrawerHeader
+                  title="Deployment details"
+                  onOpenChange={setIsOpen}
+                />
+              }
+              content={
+                <LayoutContent>
+                  <Text type="body">The Drawer root owns this RTL region.</Text>
+                </LayoutContent>
+              }
+            />
+          </Drawer>
+        </>
+      );
+    },
+  };
+}
+
+export const SelfDirectedRtlStart = selfDirectedRtlStory('start');
+export const SelfDirectedRtlEnd = selfDirectedRtlStory('end');
+
+function cssDirectedRtlStory(side: 'start' | 'end'): Story {
+  return {
+    name: `CSS-inherited RTL ${side} audit`,
+    parameters: {docs: {disable: true}},
+    render: () => {
+      const [isOpen, setIsOpen] = useState(false);
+      return (
+        <div style={{direction: 'rtl'}}>
+          <Button
+            label={`Open CSS-directed RTL ${side} drawer`}
+            onClick={() => setIsOpen(true)}
+          />
+          <Drawer
+            isOpen={isOpen}
+            onOpenChange={setIsOpen}
+            label="Deployment details"
+            side={side}>
+            <Layout
+              header={
+                <DrawerHeader
+                  title="Deployment details"
+                  onOpenChange={setIsOpen}
+                />
+              }
+              content={
+                <LayoutContent>
+                  <Text type="body">
+                    Direction is inherited from authored CSS.
+                  </Text>
+                </LayoutContent>
+              }
+            />
+          </Drawer>
+        </div>
+      );
+    },
+  };
+}
+
+export const CssDirectedRtlStart = cssDirectedRtlStory('start');
+export const CssDirectedRtlEnd = cssDirectedRtlStory('end');
 
 /**
  * `width` is the desktop budget: a number of pixels or any CSS length.

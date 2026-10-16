@@ -41,7 +41,7 @@ type Case = {
     modal?: boolean;
     role?: 'dialog' | 'alertdialog';
     narrowCoverage?: 'reveal' | 'full';
-    selfDirectedRtl?: boolean;
+    rtlMotion?: boolean;
     paddingPx?: number;
   };
 };
@@ -98,10 +98,28 @@ addPair(
   {direction: 'rtl'},
 );
 addPair(
+  'start-self-rtl',
+  'self-directed-rtl-start',
+  ['Open self-directed RTL start drawer'],
+  {side: 'start', modal: true, role: 'dialog', rtlMotion: true},
+);
+addPair(
   'end-self-rtl',
-  'self-directed-rtl',
-  ['Open self-directed RTL drawer'],
-  {side: 'end', modal: true, role: 'dialog', selfDirectedRtl: true},
+  'self-directed-rtl-end',
+  ['Open self-directed RTL end drawer'],
+  {side: 'end', modal: true, role: 'dialog', rtlMotion: true},
+);
+addPair(
+  'start-css-rtl',
+  'css-directed-rtl-start',
+  ['Open CSS-directed RTL start drawer'],
+  {side: 'start', modal: true, role: 'dialog', rtlMotion: true},
+);
+addPair(
+  'end-css-rtl',
+  'css-directed-rtl-end',
+  ['Open CSS-directed RTL end drawer'],
+  {side: 'end', modal: true, role: 'dialog', rtlMotion: true},
 );
 addPair(
   'mobile-reveal',
@@ -218,14 +236,15 @@ for (const item of cases) {
     await page.locator('#storybook-root').waitFor();
     await settle(page);
 
-    const closedTranslateX = item.expected.selfDirectedRtl
+    const closedTranslateX = item.expected.rtlMotion
       ? await readClosedTranslateX(page)
       : null;
-    if (item.expected.selfDirectedRtl) {
+    if (item.expected.rtlMotion) {
+      const expectedSign = item.expected.side === 'start' ? 1 : -1;
       expect(
-        closedTranslateX,
-        'closed self-directed end drawer moves inline-end',
-      ).toBeLessThan(0);
+        (closedTranslateX ?? 0) * expectedSign,
+        'closed self-directed drawer moves toward its logical edge',
+      ).toBeGreaterThan(0);
     }
 
     for (const label of item.buttons) {
@@ -286,7 +305,7 @@ for (const item of cases) {
     expect(observed.transform).toBe('matrix(1, 0, 0, 1, 0, 0)');
     expect(observed.contentOverflowY).toBe('auto');
 
-    if (item.direction === 'rtl' || item.expected.selfDirectedRtl) {
+    if (item.direction === 'rtl' || item.expected.rtlMotion) {
       expect(observed.direction).toBe('rtl');
     } else {
       expect(observed.direction).toBe('ltr');
