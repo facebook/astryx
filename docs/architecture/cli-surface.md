@@ -121,6 +121,18 @@ and remains available through explicit Core package selection.
 - **INV8 — Exit codes do not depend on the output mode.** The same condition
   exits the same way with and without `--json`, so a command works as a gate
   without parsing stdout.
+- **INV32 — Warnings fail a command only under `--strict`.** Without
+  `--strict`, a command exits 1 for an error, never for a finding it reports
+  as a warning, so a warning cannot turn a passing build red. A condition a
+  command's own mode exists to detect, such as stale outputs under
+  `theme build --check`, is an error, not a warning. A command that can gate a
+  build on its warnings offers `--strict`, which changes only how the same
+  findings end the run: it reads exactly the data the default run reports and
+  adds no check, reports each warning, and each check that did not run, as an
+  error in the command's own issue format with the finding's own code, and
+  exits 1, the same way in text and JSON (INV8). A command offers `--strict`
+  only through a record that names it; `astryx integration check`
+  (`spec:AST-039` FR14) is the one that does (DEC-4).
 - **INV9 — A command that cannot support `--json` is rejected before any side
   effect**, not part-way through the work.
 - **INV10 — Every write is confined.** Output paths pass `assertWithin`, which
@@ -336,6 +348,8 @@ updated in the same pull request when it moves an invariant:
   package.json mutation policy, or public subpath spelling;
 - changing what `integration verify` executes, resolves, or proves about
   the tarball;
+- adding `--strict`, or any other way to fail on warnings, to a command
+  (INV32);
 - changing local, configured, or autolinked integration precedence;
 - changing an integration item descriptor, the theme directory boundary, or the consumer copy contract.
 
@@ -418,6 +432,20 @@ Rejected: a patch warning with the refusal held for a minor (the warning prints
 after the file is replaced); and letting every current invariant outrank
 released documentation (any correction could then claim the patch tier).
 
+### DEC-4 — A command fails on warnings only when its caller asks, with `--strict`
+
+**Decider:** `josephfarina`, `2026-10-16`
+
+A warning that changes an exit code turns every build that runs the command
+red as soon as a release adds a check or a finding, so no command fails on a
+warning by default. A package that wants its build held to its warnings asks
+for it with `--strict`, which reports the same findings as errors in the
+format its failures already use: a strict run never knows something the
+default run does not, and reading a strict failure needs nothing new.
+Rejected: a command that fails on warnings by default (a CLI upgrade turns
+green builds red); a gate flag or command with another name for each case
+(each one a new contract to keep).
+
 ## Verification
 
 | Invariant | Evidence                                                                                                                                                   | Failure signal                                                                                                                                  |
@@ -442,6 +470,7 @@ released documentation (any correction could then claim the patch tier).
 | INV25     | `foundation/discovery/cli-self-docs.test.mjs`, `api/doctor/doctor.test.mjs`                                                                                | A CLI doc with no namespace, a namespace no topic reads, or no section in its topic passes doctor.                                              |
 | INV28     | `test/inv28-package-provenance.test.mjs`, `clients/cli/commands/text-json-parity.test.mjs`, `cli-api-types-verify`                                         | A result about one artifact has no envelope `package`, a listed artifact has no `package`, or text omits the package the envelope names.        |
 | INV29     | `api/doctor/doctor.test.mjs` (configured-integrations: not installed, no manifest, manifest throws; self-named authored package, direct and through a symlinked `node_modules` or `cwd`; provider-conflict set-aside; an astryx.config that imports but cannot load the project → failed `config` check)| A configured integration that cannot load leaves `doctor` at exit 0, or an installed-but-unnamed one fails it                                   |
+| INV32     | `test/cli-strict-guard.test.mjs` lists every command offering `--strict` and every command whose exit depends on warnings; `api/integration/integration-check.test.mjs` compares a strict run with the default run | A second command offers `--strict`, a command exits 1 on a warning alone without `--strict`, or a strict run reports a finding the default run does not or outside the command's issue format. |
 
 ## Open questions
 
