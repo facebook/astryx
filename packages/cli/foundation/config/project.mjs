@@ -40,7 +40,7 @@ import {parseConfig} from '../../authoring/config/parse.mjs';
 import {
   loadIntegrations,
   loadLocalIntegration,
-  resolvePackageDir,
+  resolveInstalledIntegrationDir,
 } from '../integrations/integrations.mjs';
 import {loadAutolinkCandidates} from '../integrations/autolink.mjs';
 import {resolveProviders} from '../integrations/provider-resolution.mjs';
@@ -55,7 +55,7 @@ import {
   discoverValidIntegrationComponents,
 } from '../discovery/component-discovery.mjs';
 import {resolveComponentReplacements} from '../discovery/component-replacement.mjs';
-import {findCoreDir} from '../fs/paths.mjs';
+import {findCoreDir, findPackageRoot} from '../fs/paths.mjs';
 import {
   applyTemplateReplacements,
   effectiveTemplateDiscovery,
@@ -126,7 +126,7 @@ async function loadConfiguredIntegrations(specs, {cwd, fresh}) {
       /** @type {string|undefined} */
       let packageDir;
       try {
-        packageDir = resolvePackageDir(spec, cwd);
+        packageDir = resolveInstalledIntegrationDir(spec, cwd);
       } catch {
         // Not a bare package name: there is no install location to record.
       }
@@ -228,22 +228,6 @@ export const CONFIG_BASENAMES = [
 /** Default issue tracker used when neither config nor integration routes one. */
 export const DEFAULT_ISSUES_URL =
   'https://github.com/facebook/astryx/issues/new';
-
-/**
- * Find the directory of the nearest package.json walking up from startDir.
- * @param {string} startDir
- * @returns {string|null}
- */
-function findPackageRoot(startDir) {
-  let dir = startDir;
-  for (let i = 0; i < 50; i++) {
-    if (fs.existsSync(path.join(dir, 'package.json'))) return dir;
-    const parent = path.dirname(dir);
-    if (parent === dir) break;
-    dir = parent;
-  }
-  return null;
-}
 
 /**
  * Whether this project accepts `debug` handlers contributed by the
@@ -396,7 +380,8 @@ export class Project {
     // The project root: the config's directory when there is one (findConfigPath
     // resolves the config as a sibling of the nearest package.json, so the two
     // agree), otherwise that package.json's directory. Dependencies are declared
-    // there, and node_modules sits there.
+    // there, and installed packages resolve from there up the node_modules
+    // chain.
     const projectDir = configPath
       ? path.dirname(configPath)
       : (findPackageRoot(cwd) ?? cwd);

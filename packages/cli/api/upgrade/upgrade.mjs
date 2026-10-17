@@ -24,6 +24,7 @@
 import {list} from './list/list.mjs';
 import {registryUpgrade} from './registry/registry.mjs';
 import {run} from './run/run.mjs';
+import {relativeToOrigin, scopeToProject} from './_adapter.mjs';
 import {isValidSemver} from '../../foundation/env/semver.mjs';
 import {getCliInvocation} from '../../foundation/env/package-manager.mjs';
 import {ERROR_CODES} from '../../foundation/response/error-codes.mjs';
@@ -87,7 +88,8 @@ export async function upgrade(options = {}, {cwd = process.cwd()} = {}) {
       logger.log('Aborted\n');
       throw new AstryxError(msg, undefined, ERROR_CODES.ERR_INVALID_ARGUMENT);
     }
-    return registryUpgrade(options, {cwd});
+    const scoped = scopeToProject(options, cwd);
+    return registryUpgrade(scoped.options, {cwd: scoped.cwd});
   }
 
   if (!options.list && !options.from) {
@@ -108,5 +110,11 @@ export async function upgrade(options = {}, {cwd = process.cwd()} = {}) {
     return list();
   }
 
-  return run(options, {cwd});
+  // A run from a subfolder upgrades the project the folder belongs to, and
+  // names files relative to the folder it ran in.
+  const scoped = scopeToProject(options, cwd);
+  return relativeToOrigin(
+    await run(scoped.options, {cwd: scoped.cwd, origin: scoped.origin}),
+    scoped,
+  );
 }

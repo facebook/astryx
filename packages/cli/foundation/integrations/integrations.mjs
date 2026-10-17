@@ -18,6 +18,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {assertWithin} from '../fs/path-safety.mjs';
+import {findNodeModulesPackage} from '../fs/paths.mjs';
 import {normalizeProviderId} from '../identity/provider-identity.mjs';
 // The key census and contribution parsers are internal to the schema module on
 // purpose: the public parser still validates the complete authored type, while
@@ -305,6 +306,25 @@ export function resolvePackageDir(packageName, cwd = process.cwd()) {
 }
 
 /**
+ * Where an integration named in astryx.config is installed: the nearest
+ * `node_modules/<name>` at or above `cwd`, found the way an autolinked
+ * dependency is, so a package a workspace hoists to its root loads in every
+ * member. When it is installed nowhere, `cwd`'s own `node_modules/<name>`,
+ * which the caller reports as not installed.
+ * @param {string} packageName
+ * @param {string} [cwd]
+ * @returns {string}
+ */
+export function resolveInstalledIntegrationDir(
+  packageName,
+  cwd = process.cwd(),
+) {
+  // Validates the name first: it throws on a spec with path segments.
+  const ownDir = resolvePackageDir(packageName, cwd);
+  return findNodeModulesPackage(cwd, packageName)?.packageDir ?? ownDir;
+}
+
+/**
  * Find the single conventional root manifest sibling of the package's
  * package.json. Multiple present is a hard error; missing is a hard error.
  * @param {string} packageDir
@@ -458,7 +478,7 @@ export async function loadIntegrations(
     if (!spec || seenSpecs.has(spec)) continue;
     seenSpecs.add(spec);
 
-    const packageDir = resolvePackageDir(spec, cwd);
+    const packageDir = resolveInstalledIntegrationDir(spec, cwd);
     const pkgPath = path.join(packageDir, 'package.json');
     let pkg;
     try {

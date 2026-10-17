@@ -21,6 +21,7 @@ export const doc = {
     'agent-docs block when Core or configured integration guidance changes. ' +
     'Dry-run by default. --apply writes codemod and receipt changes, runs hooks, then refreshes agent docs. ' +
     'Anything a post-codemod hook prints goes to stderr, so stdout carries only the result. ' +
+    'Run from a folder inside a project, it upgrades that project and names files in the result relative to the folder you ran it in. ' +
     'ShadCN-copied compositions are checked automatically during a normal upgrade, or alone with --registry.',
   fn: 'upgrade',
   options: [
@@ -67,7 +68,8 @@ export const doc = {
     {
       flag: '--path <dir>',
       param: 'options.path',
-      description: 'Source directory to scan',
+      description:
+        "Source directory to scan, relative to where you run the command, however you spell it. Without --path, the project's src folder, from any folder in the project",
       default: './src',
     },
     {

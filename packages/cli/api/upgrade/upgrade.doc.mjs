@@ -74,7 +74,8 @@ export const doc = {
     {
       name: 'options.path',
       type: 'string',
-      description: 'Source directory to scan.',
+      description:
+        'Source directory to scan. A path you name, in any spelling, is relative to `ctx.cwd`. When it is omitted, the upgrade scans `./src` at the project root.',
       default: './src',
     },
     {
@@ -100,7 +101,8 @@ export const doc = {
     {
       name: 'ctx.cwd',
       type: 'string',
-      description: 'Directory to run the upgrade in.',
+      description:
+        'Any folder in the project to upgrade. The upgrade runs at the project root: the nearest folder at or above it whose package.json declares an Astryx package, or that a workspace whose root declares one lists, found without passing a repository root or counting the home folder. With no such folder, it runs in `ctx.cwd`. File paths in the result are relative to `ctx.cwd`; copied-composition paths are relative to the scanned source directory.',
       default: 'process.cwd()',
     },
   ],
@@ -132,10 +134,13 @@ export const doc = {
       when: '`from` is missing (and neither `list` nor `registry` is set); `list` and `registry` are both set; `list` is combined with `from`, `force`, `apply`, `path` (non-default), `codemod`, `skipCodemod`, `integration` or `installDeps`; `registry` is combined with `from`, `force`, `codemod`, `skipCodemod`, `integration` or `installDeps`; an `integration` specifier is invalid or not installed; or astryx.config fails to load or validate and no pending config codemod repairs it',
     },
     {code: 'ERR_INVALID_VERSION', when: '`from` is not a valid semver string'},
-    {code: 'ERR_PATH_TRAVERSAL', when: '`path` resolves outside cwd'},
+    {
+      code: 'ERR_PATH_TRAVERSAL',
+      when: '`path` resolves outside the project root',
+    },
     {
       code: 'ERR_VERSION_DETECT',
-      when: 'neither @astryxdesign/core nor legacy @xds/core is installed in cwd; with `registry`, only when copied-composition receipts exist and @astryxdesign/core is not installed',
+      when: "the project has installed neither @astryxdesign/core nor legacy @xds/core in its own node_modules, nor, for a member its workspace lists, in a folder up to the workspace root (with no Astryx project, in `ctx.cwd`'s own node_modules); with `registry`, only when copied-composition receipts exist and @astryxdesign/core is not installed",
     },
     {
       code: 'ERR_DEP_MISSING',
