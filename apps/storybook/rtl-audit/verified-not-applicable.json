@@ -17,6 +17,10 @@
     "reason": "The Core/Field stories use block-flow labels, controls, descriptions, and status text without directional icons, side-specific placement, order, scrolling, dragging, overlays, or keyboard behavior."
   },
   {
+    "component": "core/EmptyState",
+    "reason": "EmptyState is a centered block-flow status region. Its icon, text group, and action group stack only on the block axis; all spacing uses logical padding, and text is centered. The component owns no directional glyph, contextual separator, side-specific placement or ordering, horizontal scrolling or dragging, overlay, or directional keyboard behavior. Caller-supplied icons and action controls retain their own RTL ownership."
+  },
+  {
     "component": "core/FieldStatus",
     "reason": "FieldStatus uses block-flow message layout and logical padding and corner radii. Its status glyphs are non-directional, and it has no side-specific placement, order, scrolling, dragging, overlays, or directional keyboard behavior."
   },

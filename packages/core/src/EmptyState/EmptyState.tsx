@@ -182,8 +182,6 @@ export function EmptyState({
           title,
         )}
         {isRenderable(description) && (
-          // Rendered as <div> (not <p>) so this layout part remains a stable
-          // theming target without inheriting paragraph margins.
           <div
             {...mergeProps(
               themeProps('empty-state-description', {

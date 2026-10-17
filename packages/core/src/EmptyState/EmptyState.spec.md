@@ -33,15 +33,15 @@ system_specs: [spec:AST-020/FR1, spec:AST-029/FR3]
 
 ## Contract at a glance
 
-| Area                    | Contract                                                                                                                                                                                       |
-| ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Public contract         | `EmptyState` renders a required title plus optional description, decorative icon, and caller-owned actions in one status region; callers choose heading level and compact layout.              |
-| Behavior                | Non-rendering optional values create no slot wrapper or spacing. Rendered content follows icon, text, then actions order; compact layout reduces spacing and stacks actions.                   |
-| End-user impact         | A person reaches a named empty-content message and any next action without blank slot spacing; the title fits the surrounding document outline.                                                |
-| Builder impact          | Callers supply content and actions, select heading semantics, and may compose supported root props and styling. No additional setup is required.                                               |
-| Compatibility/readiness | The released default is preserved. This draft observes current shipped behavior and current remediation; it adds no API, default, or compatibility promise.                                    |
-| Review checks           | Reject a missing heading, an informative icon hidden as decorative, a non-rendering optional slot that still changes layout, a dropped root prop/ref/style, or a theme target without anatomy. |
-| Governing rules         | `architecture:public-component-api` INV1 and INV5–INV9; `architecture:component-theming-surface` INV2–INV6; `architecture:component-test-sufficiency` INV1–INV7, INV10–INV11; WCAG 2.2.        |
+| Area                    | Contract                                                                                                                                                                                         |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Public contract         | `EmptyState` renders a required title plus optional description, decorative icon, and caller-owned actions in one status region; callers choose heading level and compact layout.                |
+| Behavior                | Null, undefined, boolean, and empty-string optional values create no slot wrapper. Rendered content follows icon, text, then actions order; compact layout reduces spacing and stacks actions.   |
+| End-user impact         | A person reaches a named empty-content message and any next action without blank gaps from shallow-empty optional values; the title fits the surrounding document outline.                       |
+| Builder impact          | Callers supply content and actions, select heading semantics, and may compose supported root props and styling. No additional setup is required.                                                 |
+| Compatibility/readiness | The released default is preserved. This draft observes shipped behavior plus the narrow scalar-slot remediation; it adds no API, default, or compatibility promise.                              |
+| Review checks           | Reject a missing heading, an informative icon hidden as decorative, a shallow-empty optional scalar that still changes layout, a dropped root prop/ref/style, or a theme target without anatomy. |
+| Governing rules         | `architecture:public-component-api` INV1 and INV5–INV9; `architecture:component-theming-surface` INV2–INV6; `architecture:component-test-sufficiency` INV1–INV7, INV10–INV11; WCAG 2.2.          |
 
 This table is a review projection; the body below is authoritative.
 
@@ -53,7 +53,7 @@ context, optional decorative visual, and optional caller-owned next actions.
 ## Compatibility and migration
 
 - Released default preserved: yes
-- Compatibility class: observational and additive documentation; runtime remediation removes wrappers that paint no content
+- Compatibility class: observational and additive documentation; runtime remediation removes wrappers for nullish, boolean, and empty-string optional values
 - Controlled/uncontrolled behavior: not applicable
 - Migration decision: none
 
@@ -75,28 +75,28 @@ Consumer migration instructions belong in consumer docs and release notes.
 
 ## Public concepts
 
-| Concept        | Closed values or states   | Meaning                                                                   | Availability by variant/orientation/state | Default  | Owner                  | Stability | Invalid-value behavior             |
-| -------------- | ------------------------- | ------------------------------------------------------------------------- | ----------------------------------------- | -------- | ---------------------- | --------- | ---------------------------------- |
-| title          | non-empty string          | The empty region's heading content.                                       | all                                       | required | `component:EmptyState` | stable    | type rejection                     |
-| description    | string or absent          | Optional supporting context below the title.                              | all                                       | absent   | `component:EmptyState` | stable    | type rejection                     |
-| icon           | renderable node or absent | Optional caller visual, exposed as decorative beside the textual message. | all                                       | absent   | product callsite       | stable    | non-rendering values omit the slot |
-| actions        | renderable node or absent | Optional caller-owned next actions below the message.                     | all                                       | absent   | product callsite       | stable    | non-rendering values omit the slot |
-| heading level  | `1` through `6`           | The title's HTML heading level in the surrounding document outline.       | all                                       | `3`      | product callsite       | stable    | type rejection                     |
-| layout variant | default, compact          | Compact reduces spacing and stacks the action slot vertically.            | all                                       | default  | `component:EmptyState` | stable    | type rejection                     |
+| Concept        | Closed values or states | Meaning                                                                   | Availability by variant/orientation/state | Default  | Owner                  | Stability | Invalid-value behavior                                  |
+| -------------- | ----------------------- | ------------------------------------------------------------------------- | ----------------------------------------- | -------- | ---------------------- | --------- | ------------------------------------------------------- |
+| title          | string                  | The empty region's heading content.                                       | all                                       | required | `component:EmptyState` | stable    | type rejection                                          |
+| description    | string or absent        | Optional supporting context below the title.                              | all                                       | absent   | `component:EmptyState` | stable    | nullish and empty-string values omit the part           |
+| icon           | React node or absent    | Optional caller visual, exposed as decorative beside the textual message. | all                                       | absent   | product callsite       | stable    | nullish, boolean, and empty-string values omit the slot |
+| actions        | React node or absent    | Optional caller-owned next actions below the message.                     | all                                       | absent   | product callsite       | stable    | nullish, boolean, and empty-string values omit the slot |
+| heading level  | `1` through `6`         | The title's HTML heading level in the surrounding document outline.       | all                                       | `3`      | product callsite       | stable    | type rejection                                          |
+| layout variant | default, compact        | Compact reduces spacing and stacks the action slot vertically.            | all                                       | default  | `component:EmptyState` | stable    | type rejection                                          |
 
 ## Behavioral and layout contract
 
 Draft requirements identify their basis so observed code is not mistaken for an
 intentional decision. A `current` contract contains no unresolved rows.
 
-| ID  | Candidate invariant                                                                                                               | Basis                                                                                                 | Draft review state |
-| --- | --------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- | ------------------ |
-| FR1 | The component MUST render one status-region root containing the icon, text group, and actions in that reading order when present. | Current implementation and consumer docs; WCAG 2.2 SC 1.3.2 and SC 4.1.3                              | verify             |
-| FR2 | The required title MUST render at the caller-selected heading level without changing the component's visual type role.            | Current implementation, tests, and consumer docs; WCAG 2.2 SC 1.3.1 and SC 2.4.6                      | verify             |
-| FR3 | A non-rendering optional value MUST NOT create a wrapper, layout gap, or assistive-technology node.                               | React render semantics; established public optional-slot interface; `component-test-sufficiency` INV4 | verify             |
-| FR4 | The decorative icon wrapper MUST be absent when the slot is absent and hidden from assistive technology when rendered.            | Current implementation and tests; WCAG 2.2 SC 1.1.1                                                   | verify             |
-| FR5 | Root DOM/data/ARIA/event props, ref, `className`, `style`, and `xstyle` MUST reach and compose on the status-region root.         | `architecture:public-component-api` INV5–INV8                                                         | verify             |
-| FR6 | Compact layout MUST reduce component spacing and stack the actions slot while preserving content order and root semantics.        | Current implementation, tests, and consumer docs                                                      | verify             |
+| ID  | Candidate invariant                                                                                                                                                                     | Basis                                                                                | Draft review state |
+| --- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ | ------------------ |
+| FR1 | The component MUST render one status-region root containing the icon, text group, and actions in that reading order when present.                                                       | Current implementation and consumer docs; WCAG 2.2 SC 1.3.2 and SC 4.1.3             | verify             |
+| FR2 | The required title MUST render at the caller-selected heading level without changing the component's visual type role.                                                                  | Current implementation, tests, and consumer docs; WCAG 2.2 SC 1.3.1 and SC 2.4.6     | verify             |
+| FR3 | Null, undefined, boolean, and empty-string optional values MUST NOT create a wrapper, layout gap, or assistive-technology node; containers that are shallowly non-empty remain wrapped. | React's direct-child rendering semantics; established public optional-slot interface | verify             |
+| FR4 | The decorative icon wrapper MUST be absent when the slot is absent and hidden from assistive technology when rendered.                                                                  | Current implementation and tests; WCAG 2.2 SC 1.1.1                                  | verify             |
+| FR5 | Root DOM/data/ARIA/event props, ref, `className`, `style`, and `xstyle` MUST reach and compose on the status-region root.                                                               | `architecture:public-component-api` INV5–INV8                                        | verify             |
+| FR6 | Compact layout MUST reduce component spacing and stack the actions slot while preserving content order and root semantics.                                                              | Current implementation, tests, and consumer docs                                     | verify             |
 
 ### Allowed variation
 
@@ -107,14 +107,14 @@ intentional decision. A `current` contract contains no unresolved rows.
 
 ### Representative states
 
-| State                       | Required invariant                                      | Allowed variation                      |
-| --------------------------- | ------------------------------------------------------- | -------------------------------------- |
-| title only                  | status root and selected heading level remain present   | message wording                        |
-| description                 | supporting text follows the title                       | text length and wrapping               |
-| decorative icon             | visual precedes text and is hidden from assistive tech  | artwork supplied by the caller         |
-| actions                     | caller controls follow the text group                   | one or more caller-owned controls      |
-| compact                     | reduced spacing and vertical actions preserve semantics | theme paint and caller content         |
-| non-rendering optional slot | no component wrapper or spacing is emitted              | which optional slot receives the value |
+| State                         | Required invariant                                        | Allowed variation                      |
+| ----------------------------- | --------------------------------------------------------- | -------------------------------------- |
+| title only                    | status root and selected heading level remain present     | message wording                        |
+| description                   | supporting text follows the title                         | text length and wrapping               |
+| decorative icon               | visual precedes text and is hidden from assistive tech    | artwork supplied by the caller         |
+| actions                       | caller controls follow the text group                     | one or more caller-owned controls      |
+| compact                       | reduced spacing and vertical actions preserve semantics   | theme paint and caller content         |
+| shallow-empty optional scalar | nullish, boolean, and empty-string values emit no wrapper | which optional slot receives the value |
 
 ### Transformation and precedence order
 
@@ -168,12 +168,19 @@ No current family record owns EmptyState-specific behavior.
 
 ## Verification map
 
-| Contract       | Verification                                                 | Representative states                     | Mutation or failure expectation                                      | Audit section             |
-| -------------- | ------------------------------------------------------------ | ----------------------------------------- | -------------------------------------------------------------------- | ------------------------- |
-| FR1–FR4, AR1–3 | `EmptyState.test.tsx` plus exact-head accessibility evidence | title only, all slots, absent/empty slots | order, heading, status, or decorative treatment regresses            | `audit:EmptyState/a11y`   |
-| FR5, ORD1      | focused root/ref/theming tests and shared API guards         | DOM/data props, ref, root target, compact | accepted input is dropped or component semantics/styles are replaced | `audit:EmptyState/api`    |
-| FR6            | focused DOM tests plus exact-head rendered evidence          | default and compact, wide and narrow      | compact spacing or action direction no longer applies                | `audit:EmptyState/layout` |
-| PR1            | source review                                                | every render path                         | a retained resource appears without a named owner                    | `audit:EmptyState/code`   |
+| Contract       | Verification                                                        | Representative states                             | Mutation or failure expectation                                      | Audit section             |
+| -------------- | ------------------------------------------------------------------- | ------------------------------------------------- | -------------------------------------------------------------------- | ------------------------- |
+| FR1–FR4, AR1–3 | focused DOM tests plus required exact-head accessibility evidence   | title only, all slots, absent/shallow-empty slots | order, heading, status, or decorative treatment regresses            | `audit:EmptyState/a11y`   |
+| FR5, ORD1      | focused root composition tests plus shared API guards               | DOM/data/event/style inputs, ref, root target     | accepted input is dropped or component semantics/styles are replaced | `audit:EmptyState/api`    |
+| FR6            | compact target/DOM tests plus required exact-head rendered evidence | default and compact, wide and narrow              | compact state, spacing, or action direction no longer applies        | `audit:EmptyState/layout` |
+| PR1            | source review                                                       | every render path                                 | a retained resource appears without a named owner                    | `audit:EmptyState/code`   |
+
+### Verification status
+
+The focused unit and contract evidence above is checked in. Rendered pixels,
+axe, and the verified RTL non-applicability receipt are exact-head audit evidence;
+they must be read from the pull request checks before this draft can receive
+owner approval.
 
 ## Decision log
 
