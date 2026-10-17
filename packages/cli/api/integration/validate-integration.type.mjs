@@ -38,7 +38,16 @@
  * "healthy" — the two are otherwise byte-identical.
  * @typedef {object} ValidateIntegrationResponse
  * @property {'integration.validate'} type
- * @property {{validated: boolean, name: string | null, version: string | null, issues: import('../../foundation/integrations/issue').AstryxIntegrationIssue[]}} data
+ * @property {{validated: boolean, name: string | null, version: string | null, issues: import('../../foundation/integrations/issue').AstryxIntegrationIssue[], docTypes?: DocTypesReport}} data
+ */
+
+/**
+ * Each doc the package ships, checked against the published authoring type
+ * for its kind. Present when the manifest loads. `status: 'skipped'`
+ * means nothing was checked (no TypeScript in the project) and `reason` says
+ * why. Every finding is a warning.
+ *
+ * @typedef {import('../../foundation/discovery/doc-types.mjs').DocTypesReport} DocTypesReport
  */
 
 export {};

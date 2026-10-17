@@ -209,6 +209,102 @@ describe('doctor integration — command', () => {
     expect(process.exitCode).toBeUndefined();
   });
 
+  it('validate warns about each doc field that does not match its authoring type, and still exits 0', async () => {
+    writeIntegration({id: 'hero', name: 'Hero', type: 'block'});
+    process.chdir(tmpDir);
+
+    await createProgram().parseAsync([
+      'node',
+      'astryx',
+      'doctor',
+      'integration',
+      'validate',
+    ]);
+
+    const output = logCalls.join('\n');
+    expect(output).toContain('[ok] No integration issues found.');
+    expect(output).toMatch(
+      /Checking docs against the authoring types \(TypeScript \d+\.\d+/,
+    );
+    expect(output).toContain('templates/hero.doc.mjs');
+    expect(output).toContain(
+      'Add `aspectRatio`: BlockTemplateDoc requires it.',
+    );
+    expect(output).toContain(
+      'Add `displayName`: BlockTemplateDoc requires it.',
+    );
+    expect(output).toContain(
+      '2 doc field(s) in 1 file(s) do not match the authoring types.',
+    );
+    expect(process.exitCode).toBeUndefined();
+  });
+
+  it('validate reports the doc type check as additive JSON', async () => {
+    writeIntegration({id: 'hero', name: 'Hero', type: 'block'});
+    process.chdir(tmpDir);
+
+    await createProgram().parseAsync([
+      'node',
+      'astryx',
+      '--json',
+      'doctor',
+      'integration',
+      'validate',
+    ]);
+
+    const parsed = JSON.parse(logCalls.join('\n'));
+    expect(parsed.data.issues).toEqual([]);
+    expect(parsed.data.docTypes).toMatchObject({
+      status: 'checked',
+      docs: 1,
+      unchecked: [],
+    });
+    expect(parsed.data.docTypes.typescript).toMatch(/^\d+\.\d+/);
+    expect(parsed.data.docTypes.findings).toEqual([
+      expect.objectContaining({
+        doc: 'templates/hero.doc.mjs',
+        export: 'default',
+        type: 'TemplateDoc',
+        field: 'aspectRatio',
+        problem: 'missing_field',
+        severity: 'warning',
+      }),
+      expect.objectContaining({field: 'displayName', problem: 'missing_field'}),
+    ]);
+    expect(process.exitCode).toBeUndefined();
+  });
+
+  it('validate says, in one visible line, that docs were not type-checked when the project has no TypeScript', async () => {
+    const outside = fs.mkdtempSync(path.join(os.tmpdir(), 'astryx-no-ts-'));
+    const inside = tmpDir;
+    try {
+      // The fixture helpers write to tmpDir; point it outside the repository,
+      // where no TypeScript resolves, and restore it for afterEach.
+      tmpDir = outside;
+      writeIntegration({id: 'hero', name: 'Hero', type: 'block'});
+      tmpDir = inside;
+      process.chdir(outside);
+
+      await createProgram().parseAsync([
+        'node',
+        'astryx',
+        'doctor',
+        'integration',
+        'validate',
+      ]);
+
+      const output = logCalls.join('\n');
+      expect(output).toContain(
+        '[skip] Docs not type-checked: TypeScript is not installed in this project',
+      );
+      expect(output).not.toContain('Checking docs against the authoring types');
+      expect(process.exitCode).toBeUndefined();
+    } finally {
+      process.chdir(previousCwd);
+      fs.rmSync(outside, {recursive: true, force: true});
+    }
+  });
+
   it('templates warns on a Core id and writes the exact --package command', async () => {
     const [core] = await discoverCoreTemplates();
     expect(core).toBeDefined();
