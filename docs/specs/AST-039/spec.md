@@ -158,10 +158,11 @@ change.
   default run reports (`architecture:cli-surface` INV32). An item a comparison
   lists as unchecked, such as a prop type it cannot read, does not fail
   `--strict`. Its exit codes and JSON shape are a compatibility contract for the
-  builds that run it: a check, or a finding that fails it under `--strict`, MAY
-  join it only in a minor release that names the addition, and a patch release
-  MUST NOT make a passing package fail. Each `doctor integration` subcommand,
-  exit code, and JSON MUST stay unchanged.
+  builds that run it: a new check, or a new failure code, MAY join it only in a
+  minor release that names the addition. A name a patch release adds to Core or
+  the CLI (a component, template, or topic) MAY raise a conflict with a
+  package's own name. Each `doctor integration` subcommand, exit code, and JSON
+  MUST stay unchanged.
 
 ### Compatibility transition
 
