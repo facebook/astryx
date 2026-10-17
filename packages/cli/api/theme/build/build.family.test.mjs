@@ -252,17 +252,29 @@ describe('themeBuildFamily()', () => {
     expect(fs.existsSync(dtsPath)).toBe(false);
   });
 
-  it('refuses family outputs outside cwd before checking or writing', async () => {
+  it('refuses to write family outputs outside cwd, and checks them read-only', async () => {
     const dir = makeDir();
     const files = writeFamily(dir).map(file => path.join(dir, file));
     const app = path.join(dir, 'app');
     fs.mkdirSync(app);
 
-    for (const check of [false, true]) {
-      await expect(
-        themeBuildFamily(files, {familyKey: FAMILY_KEY, check}, {cwd: app}),
-      ).rejects.toMatchObject({code: 'ERR_PATH_TRAVERSAL'});
-    }
+    await expect(
+      themeBuildFamily(files, {familyKey: FAMILY_KEY}, {cwd: app}),
+    ).rejects.toMatchObject({code: 'ERR_PATH_TRAVERSAL'});
+    const checked = await themeBuildFamily(
+      files,
+      {familyKey: FAMILY_KEY, check: true},
+      {cwd: app},
+    );
+    expect(checked?.type).toBe('theme.build.check');
+    expect(checked?.data.upToDate).toBe(false);
+    // The `.css.d.ts` import stub may be absent in check mode.
+    expect(checked?.data.stale).toEqual(
+      OUTPUTS.filter(file => !file.endsWith('.css.d.ts')).map(file => ({
+        path: `../themes/${file}`,
+        reason: 'missing',
+      })),
+    );
     for (const output of OUTPUTS) {
       expect(fs.existsSync(path.join(dir, 'themes', output))).toBe(false);
     }

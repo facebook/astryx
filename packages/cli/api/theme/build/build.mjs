@@ -27,8 +27,10 @@
  * files; an internal callback lets the CLI make only the process status fail.
  * Human progress is emitted through the shared `logger` (silent by default), so
  * the CLI keeps its exact output while a programmatic caller stays quiet.
- * Every output, explicit or beside the theme file, stays inside `cwd`
- * (`ERR_PATH_TRAVERSAL` otherwise), in check mode too.
+ * Every output a build writes, explicit or beside the theme file, stays inside
+ * `cwd` (`ERR_PATH_TRAVERSAL` otherwise). Check mode writes nothing, so it
+ * compares outputs outside `cwd` read-only; only a relative `out` path that
+ * escapes `cwd` is refused there too.
  *
  * The installed `@astryxdesign/core` is an independently versioned optional
  * peer, so it can be older than the CLI. A theme that uses only baseline
@@ -2859,9 +2861,13 @@ async function themeBuildInternal(
   const writeRoot = options.__writeRoot ?? cwd;
   let outPath;
   if (options.out) {
-    // Relative or absolute, the explicit output stays inside the write root.
     outPath = path.resolve(cwd, options.out);
-    confineOutput(outPath, writeRoot, OUT_REMEDY, options.out);
+    // A build keeps the explicit output inside the write root, relative or
+    // absolute. Check mode writes nothing, so it refuses only a relative path
+    // that escapes cwd.
+    if (!options.check || !path.isAbsolute(options.out)) {
+      confineOutput(outPath, writeRoot, OUT_REMEDY, options.out);
+    }
   } else {
     outPath = path.join(path.dirname(filePath), `${baseName}.css`);
   }
@@ -2957,10 +2963,12 @@ async function themeBuildInternal(
     writes.push({dest: variantDtsPath, content: variantContent});
   }
 
-  // Every output stays inside cwd, including the defaults beside the theme
-  // file. Check mode refuses the same paths, so it never passes outputs that a
-  // build would refuse to write.
-  confineOutputs(writes, writeRoot, options.out ? OUT_REMEDY : SOURCE_REMEDY);
+  // Every output a build writes stays inside cwd, including the defaults
+  // beside the theme file. Check mode writes nothing, so it compares outputs
+  // outside cwd read-only.
+  if (!options.check) {
+    confineOutputs(writes, writeRoot, options.out ? OUT_REMEDY : SOURCE_REMEDY);
+  }
 
   // Check mode: compare generated content against what's on disk instead of
   // writing. A file is "stale" if it's missing or its content differs once the
@@ -3506,8 +3514,8 @@ export async function themeBuildFamily(
     js: path.relative(cwd, jsPath),
     dts: path.relative(cwd, dtsPath),
   };
-  // The family's outputs stay inside cwd too, in check mode as well.
-  confineOutputs(writes, cwd, FAMILY_REMEDY);
+  // A family build's outputs stay inside cwd too; check mode only reads them.
+  if (!options.check) confineOutputs(writes, cwd, FAMILY_REMEDY);
   if (options.check) {
     const stale = staleBuildOutputs(writes, cwd);
     const upToDate = stale.length === 0;
