@@ -17,7 +17,13 @@
 import {Worker} from 'node:worker_threads';
 import {AstryxError} from '../error.mjs';
 import {Project} from '../../foundation/config/project.mjs';
-import {CORE_PACKAGE} from '../../foundation/discovery/component-discovery.mjs';
+import {
+  CORE_PACKAGE,
+  discoverIntegrationComponents,
+  docStem,
+  integrationRecordHold,
+  unscopedComponentOwners,
+} from '../../foundation/discovery/component-discovery.mjs';
 import {captureEnv} from '../../foundation/debug/event.mjs';
 import {ERROR_CODES} from '../../foundation/response/error-codes.mjs';
 import {parseGapReportReceipt} from '../../authoring/gap-report/parse.mjs';
@@ -178,13 +184,33 @@ async function selectTarget(project, component, packageName) {
     coreName,
   );
   if (replacement) return targetForPackage(project, replacement.package);
+  // The owner rule runs over every owner discovery finds, loadable or not
+  // (a doc recorded under another export still answers to its file's name);
+  // then only owners whose docs load route a report.
+  const wanted = bareComponent.toLowerCase();
+  const loads = new Set(records.map(r => `${r.package}\0${r.docPath}`));
   const owners = [
     ...new Set(
-      records
+      unscopedComponentOwners([
+        ...records
+          .filter(
+            r => r.package === CORE_PACKAGE && r.name.toLowerCase() === wanted,
+          )
+          .map(r => ({...r, hold: 'core'})),
+        ...project.loadedIntegrations.flatMap(integration =>
+          discoverIntegrationComponents(integration).flatMap(r =>
+            r.name.toLowerCase() === wanted
+              ? [{...r, hold: integrationRecordHold(r)}]
+              : docStem(r.docPath).toLowerCase() === wanted
+                ? [{...r, hold: 'doc'}]
+                : [],
+          ),
+        ),
+      ])
         .filter(
-          record => record.name.toLowerCase() === bareComponent.toLowerCase(),
+          r => r.hold === 'core' || loads.has(`${r.package}\0${r.docPath}`),
         )
-        .map(record => record.package),
+        .map(r => r.package),
     ),
   ];
 
