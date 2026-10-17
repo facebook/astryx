@@ -32,6 +32,27 @@ export default function TimestampTimezone() {
       </Stack>
       <Stack direction="vertical" gap={1}>
         <Text type="supporting" color="secondary">
+          A window that belongs to a place, read in that place&apos;s zone
+        </Text>
+        <Stack direction="horizontal" gap={4} vAlign="center">
+          <Timestamp
+            value={DATE}
+            format="date_time"
+            timezoneID="America/Los_Angeles"
+            isTimezoneShown
+            color="primary"
+          />
+          <Timestamp
+            value={DATE}
+            format="date_time"
+            timezoneID="Asia/Tokyo"
+            isTimezoneShown
+            color="primary"
+          />
+        </Stack>
+      </Stack>
+      <Stack direction="vertical" gap={1}>
+        <Text type="supporting" color="secondary">
           System formats stay machine-readable — never suffixed with a zone
         </Text>
         <Stack direction="horizontal" gap={4} vAlign="center">

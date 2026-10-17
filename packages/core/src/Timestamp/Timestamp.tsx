@@ -10,6 +10,7 @@
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Timestamp/formatRelativeTime.ts
+ * - /packages/core/src/Timestamp/resolveTimezoneID.ts
  * - /packages/core/src/Timestamp/Timestamp.doc.mjs
  * - /packages/core/src/Timestamp/Timestamp.test.tsx
  * - /packages/core/src/Timestamp/index.ts
@@ -29,6 +30,7 @@ import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
 import {formatInstant} from './formatInstant';
 import {formatRelativeTime} from './formatRelativeTime';
+import {resolveTimezoneID} from './resolveTimezoneID';
 import {formatTooltipLines} from './tooltipEntries';
 import type {
   TimestampTooltipEntry,
@@ -127,9 +129,52 @@ export interface TimestampProps extends BaseProps<HTMLTimeElement> {
    */
   tooltipEntries?: ReadonlyArray<TimestampTooltipEntry>;
   /**
+   * IANA time zone identifier the visible text reads in, e.g. `'UTC'`,
+   * `'America/Los_Angeles'`. Omit it — or pass `'local'` — for the viewer's
+   * own zone.
+   *
+   * Reach for it when the instant belongs to a place rather than to the
+   * reader: a maintenance window announced in the data centre's zone, a store
+   * opening in the store's. The `<time>` element's `datetime` attribute always
+   * carries the true instant, so this changes the reading and never the
+   * moment.
+   *
+   * Applies to the absolute formats, and to `'auto'` once it resolves to one.
+   * The relative formats name no wall clock, and `'unix_seconds'` counts
+   * elapsed seconds rather than reading a clock, so neither can be re-zoned.
+   *
+   * Affects the visible text only — `tooltipEntries` controls the hover
+   * card's zones, and a relative timestamp's accessible name keeps naming the
+   * viewer's own zone. Pair it with `isTimezoneShown` so a reader can see
+   * which zone they are being shown.
+   *
+   * Prefer region identifiers. Fixed-offset abbreviations such as `'EST'` are
+   * accepted by the platform but never observe daylight saving, so they read
+   * an hour wrong for half the year — `'America/New_York'` is what people
+   * usually mean by "Eastern".
+   *
+   * An identifier the platform does not recognize falls back to the viewer's
+   * zone with a console warning rather than throwing.
+   *
+   * @default undefined — the viewer's own time zone
+   * @example
+   * ```
+   * <Timestamp
+   *   value={windowStart}
+   *   format="date_time"
+   *   timezoneID="America/Los_Angeles"
+   *   isTimezoneShown
+   * />
+   * ```
+   */
+  timezoneID?: string;
+  /**
    * Whether to append the timezone abbreviation after the timestamp text.
    * Applies to the date_time and time formats. The system_* formats stay
    * machine-readable and never carry a timezone abbreviation.
+   *
+   * Names whichever zone the text is read in — the viewer's own, or the one
+   * `timezoneID` selected.
    *
    * Affects the visible text only — use `tooltipEntries` to control the
    * tooltip's time zones.
@@ -262,6 +307,7 @@ export function Timestamp({
   autoThreshold = DEFAULT_AUTO_THRESHOLD,
   hasTooltip = true,
   tooltipEntries,
+  timezoneID,
   isTimezoneShown = false,
   isLive = false,
   type = 'supporting',
@@ -298,8 +344,11 @@ export function Timestamp({
         : 'date_time'
       : format;
 
-  // Format the display text. No time zone is passed: the visible text always
-  // reads in the viewer's own zone, and only the tooltip names others.
+  // Format the display text in the zone the caller named, or — with none —
+  // in the viewer's own, which is the zone-less path formatInstant has always
+  // taken. The tooltip resolves its lines' zones separately, from
+  // `tooltipEntries`.
+  const visibleTimeZone = resolveTimezoneID(timezoneID, 'timezoneID');
   const displayText = !isValidDate
     ? ''
     : effectiveFormat === 'relative'
@@ -307,13 +356,19 @@ export function Timestamp({
       : effectiveFormat === 'relative_short'
         ? formatRelativeTime(date, now, locale, 'narrow')
         : isAbsoluteFormat(effectiveFormat)
-          ? formatInstant(date, effectiveFormat, locale, {isTimezoneShown})
+          ? formatInstant(date, effectiveFormat, locale, {
+              timeZone: visibleTimeZone,
+              isTimezoneShown,
+            })
           : '';
 
   // Full absolute text for the tooltip (visible — keeps the compact timezone
   // abbreviation) and for the AT-facing aria-label, which spells the timezone
   // out in full: abbreviations like "PST" or "GMT+2" are unexpanded
-  // abbreviations to a screen-reader user (WCAG 3.1.4).
+  // abbreviations to a screen-reader user (WCAG 3.1.4). Both describe the
+  // instant on the reader's own clock, so neither takes `timezoneID` — that
+  // prop steers the visible absolute text, and `tooltipEntries` is how a card
+  // names another zone.
   const fullAbsoluteText = isValidDate
     ? formatInstant(date, 'full', locale)
     : '';

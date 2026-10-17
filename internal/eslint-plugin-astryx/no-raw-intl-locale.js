@@ -107,11 +107,12 @@ const APPROVED_IMPLEMENTATION_FILES = [
   // Date formatting/parsing core.
   'packages/core/src/utils/plainDate.ts',
   'packages/core/src/utils/dateParser.ts',
-  // Timestamp's absolute/relative formatters and tooltip zone resolution (the
-  // latter's fixed en-US locale only probes identifier validity).
+  // Timestamp's absolute/relative formatters and its consumer-supplied zone
+  // resolution (the latter's fixed en-US locale only probes identifier
+  // validity).
   'packages/core/src/Timestamp/formatInstant.ts',
   'packages/core/src/Timestamp/formatRelativeTime.ts',
-  'packages/core/src/Timestamp/tooltipEntries.ts',
+  'packages/core/src/Timestamp/resolveTimezoneID.ts',
   'packages/core/src/PowerSearch/formatFilterValue.ts',
   // NumberInput's locale-aware read of typed and pasted text: it derives the
   // grouping/decimal separators and group sizes from Intl rather than a table.

@@ -70,7 +70,7 @@ Approved implementations:
 - `packages/core/src/utils/plainDate.ts`, `.../utils/dateParser.ts` — date
   formatting/parsing core
 - `packages/core/src/Timestamp/formatInstant.ts`,
-  `.../Timestamp/formatRelativeTime.ts`, `.../Timestamp/tooltipEntries.ts` —
+  `.../Timestamp/formatRelativeTime.ts`, `.../Timestamp/resolveTimezoneID.ts` —
   Timestamp absolute/relative formatting and its non-display time-zone validity
   probe
 - `packages/core/src/PowerSearch/formatFilterValue.ts`
