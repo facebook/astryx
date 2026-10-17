@@ -1,7 +1,8 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import {describe, expect, it} from 'vitest';
-import {generateThemeCSS} from '@astryxdesign/core/theme';
+import {generateThemeCSS, resolveThemeTokens} from '@astryxdesign/core/theme';
+import {stonePalettes} from './stonePalettes';
 import {stoneTheme} from './stoneTheme';
 
 describe('stone touch + narrow type pin', () => {
@@ -22,4 +23,67 @@ describe('stone touch + narrow type pin', () => {
       '@media (width < 1024px) and (pointer: coarse)',
     );
   });
+});
+
+const categoricalFamilies = [
+  'blue',
+  'cyan',
+  'green',
+  'orange',
+  'pink',
+  'purple',
+  'red',
+  'teal',
+  'yellow',
+] as const;
+
+describe('stone palette mapping', () => {
+  it.each(['light', 'dark'] as const)(
+    'resolves the neutral surface ladder from reviewed %s stops',
+    mode => {
+      const tokens = resolveThemeTokens(stoneTheme, {mode});
+      const ramp = stonePalettes.neutral[mode];
+
+      expect(tokens['--color-background-body']).toBe(
+        ramp[mode === 'light' ? 95 : 5],
+      );
+      expect(tokens['--color-background-surface']).toBe(
+        ramp[mode === 'light' ? 100 : 10],
+      );
+      expect(tokens['--color-background-card']).toBe(
+        ramp[mode === 'light' ? 100 : 15],
+      );
+      expect(tokens['--color-background-popover']).toBe(
+        ramp[mode === 'light' ? 100 : 20],
+      );
+      expect(tokens['--color-text-primary']).toBe(
+        ramp[mode === 'light' ? 15 : 95],
+      );
+      expect(tokens['--color-text-secondary']).toBe(
+        ramp[mode === 'light' ? 40 : 70],
+      );
+    },
+  );
+
+  it.each(['light', 'dark'] as const)(
+    'keeps every categorical %s role on the same four-stop pattern',
+    mode => {
+      const tokens = resolveThemeTokens(stoneTheme, {mode});
+      for (const family of categoricalFamilies) {
+        const ramp = stonePalettes[family][mode];
+        expect(tokens[`--color-background-${family}`]).toBe(
+          ramp[mode === 'light' ? 90 : 35],
+        );
+        expect(tokens[`--color-border-${family}`]).toBe(
+          ramp[mode === 'light' ? 85 : 25],
+        );
+        expect(tokens[`--color-icon-${family}`]).toBe(
+          ramp[mode === 'light' ? 30 : 90],
+        );
+        expect(tokens[`--color-text-${family}`]).toBe(
+          ramp[mode === 'light' ? 30 : 90],
+        );
+      }
+    },
+  );
 });
