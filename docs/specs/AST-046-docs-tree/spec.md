@@ -54,9 +54,9 @@ and references from other packages are an open question (OQ2).
 
 ## Non-goals
 
-- How a docsite page looks, and how the docsite shows flat topics. FR14 states
-  which page holds a namespace's content and where each of its addresses leads;
-  the page design is the docsite's.
+- How a docsite page looks, and how the docsite shows flat topics beyond the
+  sidebar rule FR14 states. FR14 states which page holds a namespace's content
+  and where each of its addresses leads; the page design is the docsite's.
 - A top-level browse of every provider. It is a later phase.
 - Aliases and audiences. `aliases` and `audience` stay reserved fields that a
   doc may not set.
@@ -230,9 +230,15 @@ and references from other packages are an open question (OQ2).
   address, its sidebar group, and its text. The slug of each guide and nested
   namespace below it (its route with `/` as `-`) MUST be a temporary redirect
   to where its text starts on the page. A root namespace whose slug is a
-  package's page (`cli` is the CLI package's page) keeps one page per guide,
-  at the guide's slug, and has no namespace page. A namespace page's sidebar
-  group MUST be the namespace's own `category`; without one, `foundations`
+  package's page (`cli` is the CLI package's page) has no namespace page.
+  The docsite lists the pages below it: each one is a namespace or a guide
+  below it, at its route's slug unless the list names another, read and
+  redirected the way a namespace page is, and leaves out what the other
+  listed pages hold. A guide below it that no listed page holds keeps a page
+  of its own at its slug. A listed page or a flat topic MAY show under
+  another page in the sidebar, which MUST be a top-level page: one the sidebar
+  shows directly in its group, not under another page. The page shown under it
+  keeps its own address. A namespace page's sidebar group MUST be the namespace's own `category`; without one, `foundations`
   when every guide below it is a foundations doc, and `guide` otherwise. A
   namespace with no guide below it, such as the Unorganized level (FR12), has
   no page. The docsite build MUST fail when a slug is both a page and a
@@ -267,26 +273,28 @@ Phase 1 changes these surfaces:
 - a flat topic that becomes a namespace keeps its unambiguous reads inside
   its own package, as FR13 and FR6 state;
 - the docsite reads the tree through `docs()`: each root namespace is one page
-  and its guides' slugs redirect into it (FR14); the `cli` namespace's guides
-  keep their own pages, and `/docs/cli-integrations` redirects to the first of
-  them.
+  and its guides' slugs redirect into it (FR14); the `cli` namespace has no page
+  of its own, and the docsite lists the pages below it, `/docs/cli-integrations`
+  among them: a guide's slug redirects into the listed page that holds it, and a
+  guide no listed page holds, such as `cli/component-lookups`, keeps a page of
+  its own.
 
 `architecture:cli-surface` INV25 and INV26 carry this record into the code.
 
 ## Verification
 
-| Contract      | Verification                                                                  | Representative states                                                                                                                                                 | Mutation or failure expectation                                                                                                                                                          |
-| ------------- | ----------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| FR1, FR3, FR4 | Tree builder fixture tests                                                    | three authored levels; adoption with and without `groupBy`; reversed input order; order and title sort                                                                | A route that ignores the parent, a folder that implies a parent, or a tree that depends on input order                                                                                   |
-| FR2           | Tree builder failure fixtures                                                 | no slot; unknown slot; a slot that refuses the kind; another package's parent; not a reference; two adopters; a cycle                                                 | A failed placement that falls back to adoption, or a failure without a diagnostic                                                                                                        |
-| FR5, FR6, FR7 | `docs()` dispatcher tests and CLI runs                                        | `cli`, `cli/api`, one function, the placed guide and its sections, the old name, a typo route; a section on a namespace that one guide, no guide, and two guides hold | A namespace that inlines grandchildren, a lost section read, a section read that picks one of two guides, or a wrong error code                                                          |
-| FR8           | Doctor tests                                                                  | this repo; a fixture tree with a broken placement                                                                                                                     | A broken tree or an unplaced CLI doc that passes                                                                                                                                         |
-| FR9           | Real-tree tests and the route inventory                                       | every command, function, schema, and enum doc; every exported API function                                                                                            | A CLI typed doc without its route, or a route inventory row the tree contradicts                                                                                                         |
-| FR10          | Search tests and CLI runs                                                     | a guide section; a typed doc by its own name; an error code; a topic hit; no core installed                                                                           | A section hit whose command reads the whole topic, or a docs-only search that needs core                                                                                                 |
-| FR11          | Integration tree tests                                                        | a namespace and two placed guides from a package whose provider id differs from its name; a broken link; a claim on the `cli` route                                   | A node named by the package name, a broken link that passes either doctor, or an integration that takes a CLI route                                                                      |
-| FR12          | `docs()` tests, the graph walk, and search tests                              | the level and its children in list order; a topic's Up, Previous, and Next; a flat topic hit's parent; an integration's flat topic                                    | A flat topic without a home, a topic whose name changes, or a level that lists a placed guide                                                                                            |
-| FR13          | Split tests over the topic before and after, the graph walk, and search tests | each old section key read through the namespace; a link and a token reference to the old topic; a `--dense` read; the topic list and a search for one section         | A dropped, merged, or copied section; a changed title or `id`; a reference left on the old identity; a name listed twice; a section found twice                                          |
-| FR14          | Docsite page-generation and route-resolution tests                            | a split namespace; a nested namespace; a package-page namespace; a namespace with a `category`, and one whose guides are all foundations docs; the Unorganized level  | An old address that stops resolving or lands in another sidebar group, a permanent guide redirect, a guide page on a non-package namespace, or a slug that is both a page and a redirect |
+| Contract      | Verification                                                                  | Representative states                                                                                                                                                                                                                                   | Mutation or failure expectation                                                                                                                                                                                                                                                                  |
+| ------------- | ----------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| FR1, FR3, FR4 | Tree builder fixture tests                                                    | three authored levels; adoption with and without `groupBy`; reversed input order; order and title sort                                                                                                                                                  | A route that ignores the parent, a folder that implies a parent, or a tree that depends on input order                                                                                                                                                                                           |
+| FR2           | Tree builder failure fixtures                                                 | no slot; unknown slot; a slot that refuses the kind; another package's parent; not a reference; two adopters; a cycle                                                                                                                                   | A failed placement that falls back to adoption, or a failure without a diagnostic                                                                                                                                                                                                                |
+| FR5, FR6, FR7 | `docs()` dispatcher tests and CLI runs                                        | `cli`, `cli/api`, one function, the placed guide and its sections, the old name, a typo route; a section on a namespace that one guide, no guide, and two guides hold                                                                                   | A namespace that inlines grandchildren, a lost section read, a section read that picks one of two guides, or a wrong error code                                                                                                                                                                  |
+| FR8           | Doctor tests                                                                  | this repo; a fixture tree with a broken placement                                                                                                                                                                                                       | A broken tree or an unplaced CLI doc that passes                                                                                                                                                                                                                                                 |
+| FR9           | Real-tree tests and the route inventory                                       | every command, function, schema, and enum doc; every exported API function                                                                                                                                                                              | A CLI typed doc without its route, or a route inventory row the tree contradicts                                                                                                                                                                                                                 |
+| FR10          | Search tests and CLI runs                                                     | a guide section; a typed doc by its own name; an error code; a topic hit; no core installed                                                                                                                                                             | A section hit whose command reads the whole topic, or a docs-only search that needs core                                                                                                                                                                                                         |
+| FR11          | Integration tree tests                                                        | a namespace and two placed guides from a package whose provider id differs from its name; a broken link; a claim on the `cli` route                                                                                                                     | A node named by the package name, a broken link that passes either doctor, or an integration that takes a CLI route                                                                                                                                                                              |
+| FR12          | `docs()` tests, the graph walk, and search tests                              | the level and its children in list order; a topic's Up, Previous, and Next; a flat topic hit's parent; an integration's flat topic                                                                                                                      | A flat topic without a home, a topic whose name changes, or a level that lists a placed guide                                                                                                                                                                                                    |
+| FR13          | Split tests over the topic before and after, the graph walk, and search tests | each old section key read through the namespace; a link and a token reference to the old topic; a `--dense` read; the topic list and a search for one section                                                                                           | A dropped, merged, or copied section; a changed title or `id`; a reference left on the old identity; a name listed twice; a section found twice                                                                                                                                                  |
+| FR14          | Docsite page-generation and route-resolution tests                            | a split namespace; a nested namespace; a package-page namespace; a namespace with a `category`, and one whose guides are all foundations docs; the Unorganized level; a listed page below a package-page namespace; a page shown under a top-level page | An old address that stops resolving or lands in another sidebar group, a permanent guide redirect, a guide page on a non-package namespace, a page shown under a page that is not top-level, a page shown under another that loses its own address, or a slug that is both a page and a redirect |
 
 ## Decision log
 
@@ -385,11 +393,15 @@ A person reading the docsite keeps one full page per topic, at the same address
 and in the same sidebar group, however the CLI splits it; an agent reads the
 guides one at a time. Guide addresses redirect temporarily, so a later site
 version can give guides their own pages without breaking a saved link. A
-namespace whose slug is a package's page keeps one page per guide, because that
-slug already belongs to the package.
+namespace whose slug is a package's page has no page of its own, because that
+slug already belongs to the package; the docsite lists a few full pages below
+it instead, and a listed page may show under a top-level page in the sidebar
+without changing its address.
 
 Rejected: one docsite page per guide; it moves each split topic's address and
 thins its page.
+Rejected: one page per guide below a package's namespace; the integration guide
+alone gives the sidebar dozens of entries.
 
 ## Open questions
 
