@@ -86,6 +86,13 @@ export {
   ChatReasoning,
   type ChatReasoningProps,
 } from './ChatReasoning/ChatReasoning';
+export {
+  ChatActivityGroup,
+  type ChatActivityGroupProps,
+  type ChatActivityItem,
+  type ChatActivityToolItem,
+  type ChatActivityReasoningItem,
+} from './ChatActivityGroup/ChatActivityGroup';
 export * from './Chat';
 
 // Tour — guided product-tour / NUX walkthrough (facebook/astryx#4239)
