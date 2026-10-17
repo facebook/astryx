@@ -148,21 +148,21 @@ change.
   type. Without the project's TypeScript it MUST say that the descriptors were
   not type-checked and why, and MUST NOT report a pass.
 - **FR14 — One command checks an integration, and can gate its build.** The
-  `astryx integration check` command MUST run the `validate`, `components`,
-  `templates`, and `docs` checks against one package, local or installed, report
-  each check's own result and a summary, and exit 1 exactly when one of those
-  checks would exit 1 on its own. With `--strict` it MUST also exit 1 on any
-  warning and on any check, or comparison within a check, that did not run, such
-  as a package with no integration manifest or a comparison that needs the
-  project's TypeScript, reporting each as an error from the same findings the
-  default run reports (`architecture:cli-surface` INV32). An item a comparison
-  lists as unchecked, such as a prop type it cannot read, does not fail
-  `--strict`. Its exit codes and JSON shape are a compatibility contract for the
-  builds that run it: a new check, or a new failure code, MAY join it only in a
-  minor release that names the addition. A name a patch release adds to Core or
-  the CLI (a component, template, or topic) MAY raise a conflict with a
-  package's own name. Each `doctor integration` subcommand, exit code, and JSON
-  MUST stay unchanged.
+  `astryx integration check` command, which takes no package argument, MUST run
+  the `validate`, `components`, `templates`, and `docs` checks against the
+  integration package in the current folder, report each check's own result and
+  a summary, and exit 1 exactly when one of those checks would exit 1 on its
+  own. With `--strict` it MUST also exit 1 on any warning and on any check, or
+  comparison within a check, that did not run, such as a package with no
+  integration manifest or a comparison that needs the project's TypeScript,
+  reporting each as an error from the same findings the default run reports
+  (`architecture:cli-surface` INV32). An item a comparison lists as unchecked,
+  such as a prop type it cannot read, does not fail `--strict`. Its exit codes
+  and JSON shape are a compatibility contract for the builds that run it: a new
+  check, or a new failure code, MAY join it only in a minor release that names
+  the addition. A name a patch release adds to Core or the CLI (a component,
+  template, or topic) MAY raise a conflict with a package's own name. Each
+  `doctor integration` subcommand, exit code, and JSON MUST stay unchanged.
 
 ### Compatibility transition
 
