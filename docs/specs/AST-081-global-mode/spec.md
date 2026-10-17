@@ -22,19 +22,21 @@ affects_consumer_docs: [cli]
 
 ## Intent
 
-A person or an agent installs Astryx once on a computer and runs it in any
-folder. Inside a project, every answer is the one the project's own release
-gives, because a template, a component doc, or an agent instruction from
-another release writes code the project's Core rejects, with no error to say
-so. Outside a project, the CLI still answers, the way a new project on the
-newest release would, so an agent with no project files can learn Core, its
-components, and the docs.
+A person or an agent installs Astryx once on a computer, as the CLI package
+itself or as its launcher, and runs it in any folder. Inside a project, every
+answer is the one the project's own release gives, whichever copy of the CLI
+started the run, because a template, a component doc, or an agent instruction
+from another release writes code the project's Core rejects, with no error to
+say so. Outside a project, the copy that started the run still answers, the way
+a new project on its release would, so an agent with no project files can learn
+Core, its components, and the docs.
 
 This record owns which release answers a run (FR1, FR2), what every command
 does outside a project (FR3, FR4), how a run names the release that answered
 and picks the one command name every printed command starts with (FR5), how a
 copy installed for the computer stays current (FR6), where any run may write
-(FR7), and what each release carries for use outside a project (FR8).
+(FR7), what each release carries for use outside a project (FR8), and how
+every copy of the CLI hands a project's run to the project's own CLI (FR9).
 
 ## Non-goals
 
@@ -56,23 +58,30 @@ copy installed for the computer stays current (FR6), where any run may write
 
 ## Requirements
 
-In this record, a **door** is a way to start the CLI: the `astryx` command of
-the `astryxdesign` launcher package installed for the computer (the **global
-copy**), the same launcher run once through a package runner, such as
-`npx astryxdesign`, a programmatic host through `@astryxdesign/cli/host`, and
-a project's own `@astryxdesign/cli` run through its package manager. A folder
-belongs to the project that `spec:AST-040` FR9 finds from it, and is **outside
-a project** when FR9 finds none.
+In this record, a **door** is a way to start the CLI: the `@astryxdesign/cli`
+package itself, installed in a project and run through its package manager (the
+project's own CLI), installed for the computer, such as with
+`npm i -g @astryxdesign/cli`, or run once through a package runner, such as
+`npx @astryxdesign/cli`; the `astryx` command of the `astryxdesign` launcher
+package, installed for the computer or run once through a package runner, such
+as `npx astryxdesign`; and a programmatic host through
+`@astryxdesign/cli/host`. A **copy** is the `@astryxdesign/cli` a door starts:
+the one it installed or fetched, or the one a launcher or host carries. The
+**global copy** is the CLI package or the launcher installed for the computer.
+A folder belongs to the project that `spec:AST-040` FR9 finds from it, and is
+**outside a project** when FR9 finds none.
 
 - **FR1 — One CLI behind thin doors.** All behavior lives in
-  `@astryxdesign/cli`, and a project's own CLI is that package itself. Every
-  other door carries the `@astryxdesign/core` release equal to the CLI release
-  it runs, chooses that release (FR2, FR3, FR6), and starts it through the host
-  entry `@astryxdesign/cli/host`, a supported programmatic API whose reference
-  doc states each input, its default, the result, and the errors
-  (`spec:AST-017` FR14). A door MUST NOT pass anything to the CLI through an
-  environment variable, an option, or a configuration key, and MUST NOT add a
-  command, an option, or any other behavior.
+  `@astryxdesign/cli`. A door that runs that package directly, the project's own
+  CLI or a copy installed for the computer or fetched by a package runner, runs
+  the CLI itself. A launcher or a programmatic host carries the
+  `@astryxdesign/core` release equal to the CLI release it runs, chooses that
+  release (FR2, FR3, FR6), and starts it through the host entry
+  `@astryxdesign/cli/host`, a supported programmatic API whose reference doc
+  states each input, its default, the result, and the errors (`spec:AST-017`
+  FR14). A door MUST NOT pass anything to the CLI through an environment
+  variable, an option, or a configuration key, and MUST NOT add a command, an
+  option, or any other behavior.
   - The host entry's inputs are explicit: the arguments; the working folder;
     the command name the door's callers type (FR5); the package sets the door
     may serve, in its order of preference, and the integrations it approves for
@@ -86,18 +95,19 @@ a project** when FR9 finds none.
     folder, arguments, standard streams, and exit, so a second call in the same
     process MUST fail before running anything; calls in separate processes
     share nothing (`spec:AST-017` FR18).
-  - Given the same release, folder, arguments, and inputs, a command MUST give
-    the same exit status, output, and file changes through every door, apart
-    from the command names FR5 sets and the standard-error lines FR5 and FR6
-    define.
+  - Given the same release, Core, folder, arguments, and inputs, a command
+    MUST give the same exit status, output, and file changes through every
+    door, apart from the command names FR5 sets and the standard-error lines
+    FR5, FR6, and FR9 define.
 - **FR2 — In a project, the project's own copy answers.** In a folder that
   belongs to a project, one release answers every command, reads included, and
   every template, doc, component doc, hint, and agent text comes from that
   release and the Core it pairs with:
   - When the project installs `@astryxdesign/cli`, found the way
     `spec:AST-040` FR11 finds the project's Core, that CLI answers. A run that
-    starts in another copy MUST hand the run to it before loading anything the
-    project provides: its `astryx.config`, its integrations, or its Core.
+    starts in another copy MUST hand the run to it (FR9) before loading
+    anything the project provides: its `astryx.config`, its integrations, or
+    its Core.
   - When a door finds the project's own CLI and declines to run it, it passes
     the reason (FR1). The release equal to that CLI's version then answers in
     its place when the door can run it; otherwise the run fails with
@@ -115,17 +125,17 @@ a project** when FR9 finds none.
   - When the release this requirement names is not installed and cannot be
     fetched, the run MUST fail with `ERR_VERSIONS_UNAVAILABLE` before any
     write, naming the release it needs. No other release answers in its place.
-- **FR3 — Outside a project, the newest release answers as a new project
-  would.** Outside a project, the release the door chooses (FR1) MUST answer as
-  it would in a new project that installs only that release's Core and the
-  integrations the door approves (FR1). Every command that needs Core answers
-  from the carried Core, the `@astryxdesign/core` release the door carries
-  (FR1), except `doctor`, `swizzle`, and `upgrade`, which judge or change a
-  project and MUST NOT read it. A copy that carries no Core, such as the CLI
-  package installed on its own, fails those commands with
-  `ERR_CORE_NOT_FOUND`. Output outside a project MUST NOT give advice that
-  works only inside one, such as a step that sets up, configures, or refreshes
-  a project the folder does not have.
+- **FR3 — Outside a project, the copy that started the run answers as a new
+  project would.** Outside a project, the copy that started the run answers
+  (FR6, FR9) and MUST answer as it would in a new project that installs only
+  that copy's release of Core and the integrations the door approves (FR1).
+  Every command that needs Core answers from the carried Core, the
+  `@astryxdesign/core` release the door carries (FR1), except `doctor`,
+  `swizzle`, and `upgrade`, which judge or change a project and MUST NOT read
+  it. A copy that carries no Core, such as the CLI package installed on its own,
+  fails those commands with `ERR_CORE_NOT_FOUND`. Output outside a project MUST
+  NOT give advice that works only inside one, such as a step that sets up,
+  configures, or refreshes a project the folder does not have.
 - **FR4 — Every command declares what it does outside a project.** Every
   command and subcommand MUST declare one of three values in its command doc,
   and `astryx manifest` MUST publish that value as the command's
@@ -158,7 +168,8 @@ a project** when FR9 finds none.
     without it, and no door adds it.
   - In text mode, when `copy` is not `project`, the run MUST print one line on
     standard error naming the CLI and Core versions and which copy answered. A
-    run of the project's own CLI prints no such line.
+    run started in the project's own CLI prints no such line, and a run another
+    copy hands to it prints the one line FR9 defines.
   - Every command the CLI prints or writes for its caller to run MUST start
     with the command name that one picker chooses for the folder the command
     runs in. The picker takes the first of these that applies:
@@ -170,7 +181,7 @@ a project** when FR9 finds none.
        release, such as `astryx` for a CLI installed for the computer or the
        CLI package pinned to the answering version.
   - The picked name takes the place of the command's leading `astryx` and, run
-    from that folder, MUST reach the same choice of release (FR2, FR3). A
+    from that folder, MUST reach the same choice of release (FR2, FR3, FR9). A
     printed command MUST NOT run, through a package runner, the CLI package
     without a version or a package that is neither the CLI nor its launcher.
   - An integration MAY declare in its manifest, as `cliCommand`, the command
@@ -198,10 +209,10 @@ a project** when FR9 finds none.
   - A command that finishes work with another release names that release
     (`spec:AST-040` FR13).
 - **FR6 — Global copies stay on the newest release; projects are never
-  touched.** Outside a project, the global copy answers with the release the
-  package registry tags `latest` for `@astryxdesign/cli`. It follows that tag
-  to new minor releases, and back down when the tag moves back, and never
-  follows another tag.
+  touched.** Outside a project, the global copy, the launcher or the CLI package
+  alike, answers with the release the package registry tags `latest` for
+  `@astryxdesign/cli`. It follows that tag to new minor releases, and back down
+  when the tag moves back, and never follows another tag.
   - It checks the tag at most once an hour, only during a run, and no sooner
     than an hour after its first run. A check and any install happen in the
     background, at most one at a time, and a new release answers from the next
@@ -219,10 +230,12 @@ a project** when FR9 finds none.
     Node than the computer has, the copy stays on its release and says so once,
     the same way. No line asks the caller to run an update command. A host
     that switches the release it runs prints the same line.
-  - Outside a project, a release requested by version
-    (`npx astryxdesign@<version>`) runs exactly that release, with no check
-    and no switch. Through a package runner, the package manager chooses the
-    release, and the launcher adds no update behavior.
+  - Outside a project, a release requested by version, such as
+    `npx astryxdesign@<version>` or `npx @astryxdesign/cli@<version>`, runs
+    exactly that release, with no check and no switch; inside a project, FR2
+    and FR9 decide which release answers. Through a package runner, the
+    package manager chooses the release, and a copy it fetches adds no update
+    behavior.
   - Updates have no Astryx-owned control (`spec:AST-017` FR14); the package
     manager's registry, proxy, and offline settings apply.
   - No door updates a project, installs into one, or prints an update notice
@@ -268,6 +281,34 @@ a project** when FR9 finds none.
     made it and declares the CLI, so the project's own copy answers from then
     on (FR2).
 
+- **FR9 — Every copy hands a project's run to the project's own CLI.** Every
+  copy of the CLI, whether installed for the computer, fetched by a package
+  runner, or carried by a launcher or a programmatic host, that starts a run in
+  a folder belonging to a project that installs its own CLI (FR2) MUST hand the
+  run to that CLI, whatever release the copy is and whatever version the
+  command line asked for, so the project's own release answers there whichever
+  copy started the run. Outside a project, the copy that started the run
+  answers (FR3), and a global copy answers on the release FR6 keeps it on
+  (OQ2).
+  - A copy hands the run off before it loads anything the project provides
+    (FR2). It does not hand off when it is itself the project's own CLI, when
+    the door that started it declined that CLI (FR2), or for `astryx upgrade`,
+    which FR2 sends to the release equal to the project's Core.
+  - A run is handed off at most once. The project's CLI answers a run handed
+    to it, so a run never returns to a copy it has left.
+  - The project's CLI receives what it would receive if started directly in
+    that folder: the same arguments, working folder, and standard input,
+    output, and error, with nothing added to its environment, options, or
+    configuration (FR1). The run ends with that CLI's exit status.
+  - When the project's CLI cannot be started, the run fails with
+    `ERR_VERSIONS_UNAVAILABLE`, naming that CLI, and no other copy answers in
+    its place (FR2).
+  - In text mode, a handed-off run prints exactly one line on standard error,
+    naming the version of the project's CLI that answered and the copy the run
+    started in. A machine-readable run prints no such line; its
+    `meta.answeredBy` names the project's CLI (FR5) when that release carries
+    the field.
+
 ### Platform support
 
 - Supported feature/engine floor: every operating system, shell, and package
@@ -284,21 +325,26 @@ a project** when FR9 finds none.
 
 - A CLI installed for the computer answers in every folder, inside projects
   that install their own copy too, and pairs its templates, docs, and agent
-  text with the project's Core. Outside a project, the commands that need Core
+  text with the project's Core. A package runner runs a CLI package installed
+  for the computer in place of fetching one, at whatever release it was
+  installed, and that copy never updates. A version requested on a package
+  runner's command line answers inside a project, and in a package with no
+  Astryx inside a project, a package runner fetches the newest CLI instead of
+  running the project's. Outside a project, the commands that need Core
   fail, hints name the CLI package without a version, refusals use several
   error codes, nothing names the release that answered, and no check runs a
   command outside a project. Printed command names come from the package
   manager alone; many hints, errors, `doctor` fixes, docs, and the setup
   reminder print a fixed name instead; and an integration has no way to name
-  the command its users run. Each of these departs from FR1–FR8.
-- `architecture:cli-surface`: a run hands off to the project's copy before
-  dispatch (FR2); command docs and the manifest carry `outsideProject` (FR4);
-  the error-code set gains `ERR_PROJECT_REQUIRED` (FR4); success envelopes
-  carry `meta.answeredBy` (FR5); the host entry takes the door's command name,
-  its sources, and the reason for a declined hand-off (FR1, FR2); INV22's
-  hints phrased with the run prefix take the name FR5's picker chooses; and
-  INV13's single rendered source of agent docs covers every agent text (FR8).
-  Each lands with the code that implements it.
+  the command its users run. Each of these departs from FR1–FR9.
+- `architecture:cli-surface`: every copy hands a project's run to the project's
+  own CLI before dispatch (FR2, FR9); command docs and the manifest carry
+  `outsideProject` (FR4); the error-code set gains `ERR_PROJECT_REQUIRED` (FR4);
+  success envelopes carry `meta.answeredBy` (FR5); the host entry takes the
+  door's command name, its sources, and the reason for a declined hand-off (FR1,
+  FR2); INV22's hints phrased with the run prefix take the name FR5's picker
+  chooses; and INV13's single rendered source of agent docs covers every agent
+  text (FR8). Each lands with the code that implements it.
 - No record lists the integration manifest's fields. `cliCommand` (FR5) is an
   integration-level field, which INV24 allows, and the integration authoring
   reference documents it beside the other fields: its accepted values, its
@@ -324,16 +370,17 @@ needs no Changeset.
 
 ## Verification
 
-| Contract | Verification                                                                                                                                                                                                                  | Representative states                                                                                                                                                                                                                                 | Mutation or failure expectation                                                                                                                                                                                                                                                                                                                                                                                                       |
-| -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| FR1      | Door conformance: every command example, run through each door; host entry tests                                                                                                                                              | a project on the current minor and one on the previous minor; an empty folder; text and JSON; a second call in one process; a door source beside project and integration sources                                                                      | A door's exit status, output, or file changes differ beyond FR5's command names and the FR5 and FR6 lines, a door's input reaches the CLI any way but the host entry, a second call in one process runs, or a door's source is called out of order or named as an integration's                                                                                                                                                       |
-| FR2      | Release check: every page template scaffolded through a door into a project on the previous release, then typechecked; hand-off probes                                                                                        | a project with its own CLI; a project with Core only; a project with nothing installed; an upgrade with a project CLI older than its Core; a declined project CLI, with and without its release; an unavailable release                               | A template fails where the project's own copy passes, project configuration runs in another copy, or another release answers in place of an unavailable one                                                                                                                                                                                                                                                                           |
-| FR3      | Empty-folder run of every command example                                                                                                                                                                                     | each command that needs Core; `doctor`, `swizzle`, and `upgrade`; a folder with no `package.json`; a home folder; a copy with no Core                                                                                                                 | A command that needs Core fails beside a carried Core, a project check reads it, or output gives a project step                                                                                                                                                                                                                                                                                                                       |
-| FR4      | Declaration check over every command doc, plus the empty-folder run compared with each declaration                                                                                                                            | `same`, `refuse`, and `own`; a command group; a command without a value; a released refusal code                                                                                                                                                      | A command lacks a value, a `refuse` writes or uses an unlisted code, or a command's behavior differs from its value                                                                                                                                                                                                                                                                                                                   |
-| FR5      | Printed-command check: each command the CLI prints or writes, run from the same folder through the door that printed it; a picker check over every surface that prints a command; a check of shipped text; result-field tests | each door; `project`, `matched`, and `carried`; no declaration, one integration's command, two that agree, two that disagree, and a malformed one; hints, errors, `doctor` fixes, help, docs moves, agent text, and the setup reminder; text and JSON | A printed command reaches another door or release, a surface prints a name the picker did not choose, the picker's order changes, a disagreement prints either integration's command or `doctor` stays silent, a malformed declaration withdraws its integration, shipped text writes a CLI command any way but bare, JSON carries a picked name, `meta.answeredBy` is missing or wrong, or the line prints for the project's own CLI |
-| FR6      | Update tests                                                                                                                                                                                                                  | offline; ten runs at once; JSON mode; a release that needs a newer Node; the tag moved back; a requested version; inside a project                                                                                                                    | A command waits, its output or exit status changes, the line prints in JSON mode or asks for an update, two installs run, an unverified release answers, or a project changes                                                                                                                                                                                                                                                         |
-| FR7      | File-system comparison before and after each command in the empty-folder run and in projects                                                                                                                                  | each command that writes; absolute, traversal, and symlinked paths; a home folder                                                                                                                                                                     | A file lands outside the named places, or a refusal writes first                                                                                                                                                                                                                                                                                                                                                                      |
-| FR8      | Release build, drift checks, and a starter build in CI                                                                                                                                                                        | the official list; the agent text for each door; each starter                                                                                                                                                                                         | A committed copy drifts, a global asset is fetched at run time, the computer-level text names a version, or a starter fails to scaffold, install, or build                                                                                                                                                                                                                                                                            |
+| Contract | Verification                                                                                                                                                                                                                  | Representative states                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               | Mutation or failure expectation                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| FR1      | Door conformance: every command example, run through each door; host entry tests                                                                                                                                              | a project on the current minor and one on the previous minor; an empty folder; text and JSON; a second call in one process; a door source beside project and integration sources                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | A door's exit status, output, or file changes differ beyond FR5's command names and the FR5 and FR6 lines, a door's input reaches the CLI any way but the host entry, a second call in one process runs, or a door's source is called out of order or named as an integration's                                                                                                                                                                                                                                                                                   |
+| FR2      | Release check: every page template scaffolded through a door into a project on the previous release, then typechecked; hand-off probes                                                                                        | a project with its own CLI; a project with Core only; a project with nothing installed; an upgrade with a project CLI older than its Core; a declined project CLI, with and without its release; an unavailable release                                                                                                                                                                                                                                                                                                                                                                                                                                                             | A template fails where the project's own copy passes, project configuration runs in another copy, or another release answers in place of an unavailable one                                                                                                                                                                                                                                                                                                                                                                                                       |
+| FR3      | Empty-folder run of every command example                                                                                                                                                                                     | each command that needs Core; `doctor`, `swizzle`, and `upgrade`; a folder with no `package.json`; a home folder; a copy with no Core                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               | A command that needs Core fails beside a carried Core, a project check reads it, or output gives a project step                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| FR4      | Declaration check over every command doc, plus the empty-folder run compared with each declaration                                                                                                                            | `same`, `refuse`, and `own`; a command group; a command without a value; a released refusal code                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | A command lacks a value, a `refuse` writes or uses an unlisted code, or a command's behavior differs from its value                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| FR5      | Printed-command check: each command the CLI prints or writes, run from the same folder through the door that printed it; a picker check over every surface that prints a command; a check of shipped text; result-field tests | each door; `project`, `matched`, and `carried`; no declaration, one integration's command, two that agree, two that disagree, and a malformed one; hints, errors, `doctor` fixes, help, docs moves, agent text, and the setup reminder; text and JSON                                                                                                                                                                                                                                                                                                                                                                                                                               | A printed command reaches another door or release, a surface prints a name the picker did not choose, the picker's order changes, a disagreement prints either integration's command or `doctor` stays silent, a malformed declaration withdraws its integration, shipped text writes a CLI command any way but bare, JSON carries a picked name, `meta.answeredBy` is missing or wrong, or the line prints for the project's own CLI                                                                                                                             |
+| FR6      | Update tests                                                                                                                                                                                                                  | offline; ten runs at once; JSON mode; a release that needs a newer Node; the tag moved back; a requested version; inside a project; the launcher and the CLI package each installed for the computer; a package runner that runs the CLI package installed for the computer                                                                                                                                                                                                                                                                                                                                                                                                         | A command waits, its output or exit status changes, the line prints in JSON mode or asks for an update, two installs run, an unverified release answers, or a project changes                                                                                                                                                                                                                                                                                                                                                                                     |
+| FR7      | File-system comparison before and after each command in the empty-folder run and in projects                                                                                                                                  | each command that writes; absolute, traversal, and symlinked paths; a home folder                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | A file lands outside the named places, or a refusal writes first                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| FR8      | Release build, drift checks, and a starter build in CI                                                                                                                                                                        | the official list; the agent text for each door; each starter                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | A committed copy drifts, a global asset is fetched at run time, the computer-level text names a version, or a starter fails to scaffold, install, or build                                                                                                                                                                                                                                                                                                                                                                                                        |
+| FR9      | Hand-off probes: every command example run through each copy in each folder kind, compared with the project's own CLI run directly in that folder                                                                             | the CLI package installed for the computer on an older and on a newer release than the project's CLI, run directly and run by a package runner in place of a fetch; a package runner's copy, unversioned and with a version requested inside a project, for a read and for `upgrade`; a project with Core but no CLI, through a package runner that fetches the newest release; a package with no Astryx inside a project, which the package runner takes for the project; a project CLI that predates the hand-off and one that hands off itself; a declined project CLI; a project CLI that cannot start; a non-zero exit; piped standard input; outside a project; text and JSON | A copy other than the project's CLI answers in a project that installs one, outside the upgrade and declined cases; a requested version answers inside a project; another release answers in a project with Core but no CLI; a run is handed off twice or returns to a copy it left; arguments, folder, streams, or exit status differ from a direct run of the project's CLI; outside a project, a release answers that FR3 and FR6 do not name; or the line is missing, prints twice, prints in JSON mode, or prints for a run started in the project's own CLI |
 
 ## Decision log
 
@@ -450,6 +497,24 @@ program can rely on.
 Rejected: settling a disagreement by integration order, which lets load order
 choose the command a project's users are told to run.
 
+### DEC-9 — Every copy hands off, so any install route reaches the project's release
+
+**Reference:** `spec:AST-081/DEC-9`
+**Decider:** `josephfarina (proposed)`
+
+The CLI package itself is the common install, for the computer or through a
+package runner, and a copy installed for the computer is also what a package
+runner runs in place of a fetch. If only a launcher handed a project's run to
+the project's own CLI, those routes would answer with their own release and
+bring back the mix DEC-1 rejects. A hand-off built into every copy makes the
+project's pinned release answer wherever a run starts, a typed version
+included, and leaves a run outside a project with the copy its caller chose.
+One standard-error line keeps a hand-off visible without changing
+machine-readable output.
+
+Rejected: global mode only through the launcher, which leaves the common
+install routes answering with their own release inside projects.
+
 ## Open questions
 
 - **OQ1 — Where the computer-level agent text lives** (`human-design`). One
@@ -457,3 +522,12 @@ choose the command a project's users are told to run.
   agent uses it, and two folders reach the common coding agents. Or one
   always-on instruction file per agent: loaded in every session, and fewer
   agents read those files. A blind agent test decides.
+- **OQ2 — How a CLI package installed for the computer follows `latest`**
+  (`human-design`). FR6 and FR9 have it answer outside a project with the
+  release FR6 keeps it on, which after an update is a release kept in the
+  per-user cache, not the copy the package manager installed and the run
+  started in. The alternatives: it answers with the copy the package manager
+  installed and never updates, so a stale copy keeps answering outside
+  projects and wherever a package runner runs it in place of a fetch; or it
+  replaces its own installation, which writes outside FR7's places, can need
+  administrator rights, and cannot keep the release it switched from.
