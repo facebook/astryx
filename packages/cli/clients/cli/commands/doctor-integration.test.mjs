@@ -445,7 +445,7 @@ describe('doctor integration — command', () => {
     ]);
 
     expect(logCalls.join('\n')).toMatch(
-      /\[ok\] Documented prop names and required flags match the code in 1 component\(s\) \(TypeScript \d/,
+      /\[ok\] Documented props match the code in 1 component\(s\) \(TypeScript \d/,
     );
   });
 

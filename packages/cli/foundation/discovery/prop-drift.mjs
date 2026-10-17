@@ -20,7 +20,10 @@
  *   declaration carries a `deprecated` or `internal` JSDoc tag;
  * - `required_mismatch`: `required` disagrees with whether the prop is
  *   required in every member of the props type (a prop required in only
- *   some members of a union is not compared).
+ *   some members of a union is not compared);
+ * - `type_mismatch`: for a prop declared in the package, the documented type
+ *   matches neither the type as written in the source nor the type the
+ *   compiler resolves, loosely (type-text.mjs states the rules).
  * Hook entries (`use…`) document parameters and returns, not props, and are
  * not compared.
  *
@@ -35,9 +38,11 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {loadComponentDoc} from './component-loader.mjs';
 import {resolveProjectTypeScript} from './project-typescript.mjs';
+import {aliasChainNames, docTypeMatches} from './type-match.mjs';
+import {normalizeTypeText, typeTextMatches} from './type-text.mjs';
 
 /**
- * @typedef {'not_in_code' | 'not_in_doc' | 'required_mismatch'} PropDriftKind
+ * @typedef {'not_in_code' | 'not_in_doc' | 'required_mismatch' | 'type_mismatch'} PropDriftKind
  */
 
 /**
@@ -59,7 +64,8 @@ import {resolveProjectTypeScript} from './project-typescript.mjs';
  * @typedef {object} PropDriftUnchecked
  * @property {string} component
  * @property {string} doc the doc file, relative to the package root
- * @property {string} reason why its props could not be read
+ * @property {string} reason why its props, or one prop's type, could not be
+ *   read
  */
 
 /**
@@ -198,8 +204,10 @@ function ownFileTest(root) {
  * @property {boolean} own declared in the package's own source
  * @property {boolean} skipTagged its declaration carries a deprecated or internal JSDoc tag
  * @property {string[]} declared the type as written, per own declaration
- * @property {() => string[]} renderings the compiler's renderings, computed on demand
+ * @property {() => string[][]} renderings the compiler's renderings, computed on demand
  * @property {() => any[]} types the prop's type in each member of the props type
+ * @property {any} location where names in the prop's type resolve
+ * @property {any[]} declaredNodes the type nodes of its own declarations
  */
 
 /**
@@ -343,16 +351,32 @@ function readCodeProps(
             checker.getTypeOfSymbolAtLocation(s, sourceFile),
         ),
       ),
+      location: ownDeclarations[0] ?? sourceFile,
+      declaredNodes: ownDeclarations
+        .filter(
+          /** @param {any} d */ d =>
+            d.type && !ts.isMethodSignature(d) && !ts.isMethodDeclaration(d),
+        )
+        .map(/** @param {any} d */ d => d.type),
       renderings: memo(() => {
         /** @type {string[]} */
         const printed = [];
+        /** @type {string[]} */
+        const expanded = [];
         for (const s of symbols) {
           const propType = checker.getTypeOfSymbolAtLocation(s, sourceFile);
           for (const part of propType.isUnion() ? propType.types : [propType]) {
             printed.push(checker.typeToString(part, sourceFile, flags));
+            expanded.push(
+              checker.typeToString(
+                part,
+                sourceFile,
+                flags | ts.TypeFormatFlags.InTypeAlias,
+              ),
+            );
           }
         }
-        return printed;
+        return [printed, expanded];
       }),
     });
   }
@@ -391,11 +415,81 @@ function codeTypeText(code) {
     [
       ...new Set(
         code
-          .renderings()
+          .renderings()[0]
           .filter(part => !(code.required !== true && part === 'undefined')),
       ),
     ].join(' | ');
   return text.replace(/\s+/g, ' ').trim();
+}
+
+/**
+ * Does the documented type match the code? The text fast path compares the
+ * normalized text with the type as written; otherwise the compiler matches
+ * the parsed documented type against the prop's types (type-match.mjs), and
+ * text the compiler cannot parse as a type is compared as normalized text
+ * with the type as written and as printed.
+ * @param {any} ts
+ * @param {any} checker
+ * @param {string} docType
+ * @param {CodeProp} code
+ */
+function typeMatches(ts, checker, docType, code) {
+  return docTypeVariants(docType).every(variant =>
+    oneTypeMatches(ts, checker, variant, code),
+  );
+}
+
+/**
+ * A documented type may name an alias and spell out what it stands for, as
+ * `Name = expansion` or `Name (expansion)`: both parts must match, so stale
+ * spelled-out values are reported.
+ * @param {string} docType
+ * @returns {string[]}
+ */
+function docTypeVariants(docType) {
+  const named =
+    /^\s*([A-Za-z_$][\w$.]*)\s*=(?!>)\s*([\s\S]+)$/.exec(docType) ??
+    /^\s*([A-Za-z_$][\w$.]*)\s*\(([\s\S]+)\)\s*$/.exec(docType);
+  return named ? [named[1], named[2]] : [docType];
+}
+
+/**
+ * @param {any} ts
+ * @param {any} checker
+ * @param {string} docType
+ * @param {CodeProp} code
+ */
+function oneTypeMatches(ts, checker, docType, code) {
+  const optional = code.required !== true;
+  const doc = normalizeTypeText(docType, {optional}).join('|');
+  if (
+    code.declared.length > 0 &&
+    [
+      ...new Set(
+        code.declared.flatMap(text => normalizeTypeText(text, {optional})),
+      ),
+    ]
+      .sort()
+      .join('|') === doc
+  ) {
+    return true;
+  }
+  const chainNames = new Set(
+    code.declaredNodes.flatMap(node => [...aliasChainNames(ts, checker, node)]),
+  );
+  const verdict = docTypeMatches(docType, code.types(), {
+    ts,
+    checker,
+    location: code.location,
+    optional,
+    chainNames,
+  });
+  if (verdict != null) return verdict;
+  return typeTextMatches(
+    docType,
+    [code.declared, ...code.renderings()],
+    optional,
+  );
 }
 
 /**
@@ -446,36 +540,99 @@ function documentedProps(raw) {
 }
 
 /**
- * Does a field path exist in a prop's type (through arrays, and in at least
- * one member of a union)?
+ * The types a field path reaches in a prop's type (through arrays, and in each
+ * member of a union that has it), and whether its last field is optional:
+ * null when no member has the path, `any` when a type on the way is `any` or
+ * `unknown`, which holds any field.
  * @param {any} ts
  * @param {any} checker
  * @param {CodeProp} code
  * @param {string[]} fieldPath
+ * @returns {{types: any[], optional: boolean} | 'any' | null}
  */
-function fieldExists(ts, checker, code, fieldPath) {
+function fieldTypes(ts, checker, code, fieldPath) {
   /** @type {any[]} */
   let current = code.types();
+  let optional = false;
   for (const field of fieldPath) {
     /** @type {any[]} */
     const next = [];
+    optional = false;
     for (const type of current) {
       for (const member of type.isUnion() ? type.types : [type]) {
-        if (member.flags & (ts.TypeFlags.Any | ts.TypeFlags.Unknown))
-          return true;
+        if (member.flags & (ts.TypeFlags.Any | ts.TypeFlags.Unknown)) {
+          return 'any';
+        }
         const element =
           member.symbol?.name === 'Array' ||
           member.symbol?.name === 'ReadonlyArray'
             ? checker.getTypeArguments(member)[0]
             : member;
         const prop = element && checker.getPropertyOfType(element, field);
-        if (prop) next.push(checker.getTypeOfSymbol(prop));
+        if (!prop) continue;
+        next.push(checker.getTypeOfSymbol(prop));
+        if (prop.flags & ts.SymbolFlags.Optional) optional = true;
       }
     }
-    if (next.length === 0) return false;
+    if (next.length === 0) return null;
     current = next;
   }
-  return true;
+  return {types: current, optional};
+}
+
+/**
+ * Does a documented field type (`status.type`) match the types the field
+ * path reaches? A type that does not resolve is never reported as a guess.
+ * @param {any} ts
+ * @param {any} checker
+ * @param {string} docType
+ * @param {{types: any[], optional: boolean}} reached
+ * @param {CodeProp} code
+ */
+function fieldTypeMatches(ts, checker, docType, reached, code) {
+  const parts = reached.types.flatMap(t => (t.isUnion() ? t.types : [t]));
+  if (parts.some(t => isErrorType(ts, t))) return true;
+  return docTypeVariants(docType).every(variant => {
+    const verdict = docTypeMatches(variant, reached.types, {
+      ts,
+      checker,
+      location: code.location,
+      optional: reached.optional,
+      chainNames: new Set(),
+    });
+    return (
+      verdict ??
+      typeTextMatches(
+        variant,
+        [fieldTypeText(ts, checker, reached)],
+        reached.optional,
+      )
+    );
+  });
+}
+
+/**
+ * The types a field path reaches, printed for a message.
+ * @param {any} ts
+ * @param {any} checker
+ * @param {{types: any[], optional: boolean}} reached
+ * @returns {string[]}
+ */
+function fieldTypeText(ts, checker, reached) {
+  return [
+    ...new Set(
+      reached.types
+        .flatMap(t => (t.isUnion() ? t.types : [t]))
+        .filter(t => !(reached.optional && t.flags & ts.TypeFlags.Undefined))
+        .map(t =>
+          checker.typeToString(
+            t,
+            undefined,
+            ts.TypeFormatFlags.UseSingleQuotesForStringLiteralType,
+          ),
+        ),
+    ),
+  ];
 }
 
 /**
@@ -786,7 +943,31 @@ export async function comparePropDocs(components, options) {
         if (entry.path.length > 0) {
           documented.add(propName);
           const code = read.props.get(propName);
-          if (code && fieldExists(ts, checker, code, entry.path)) continue;
+          const reached = code
+            ? fieldTypes(ts, checker, code, entry.path)
+            : null;
+          if (reached === 'any') continue;
+          if (code && reached) {
+            if (
+              code.own &&
+              typeof entry.type === 'string' &&
+              !fieldTypeMatches(ts, checker, entry.type, reached, code)
+            ) {
+              const codeType = fieldTypeText(ts, checker, reached).join(' | ');
+              findings.push({
+                component: table.name,
+                prop: entry.written,
+                kind: 'type_mismatch',
+                severity: 'warning',
+                message: `"${entry.written}" is documented as ${entry.type}, but the code declares ${codeType}.`,
+                doc: table.doc,
+                source,
+                docType: entry.type,
+                codeType,
+              });
+            }
+            continue;
+          }
           if (!code && read.accepts(propName)) continue;
           findings.push({
             component: table.name,
@@ -834,6 +1015,52 @@ export async function comparePropDocs(components, options) {
               : `"${propName}" is documented as required, but it is optional in the code.`,
             docRequired,
             codeRequired: code.required,
+          });
+        }
+        const comparesType =
+          code.own &&
+          !PROPS_NOT_DOCUMENTED.includes(propName) &&
+          typeof entry.type === 'string';
+        // A prop whose own type does not resolve is listed, never compared.
+        if (
+          comparesType &&
+          code
+            .types()
+            .some(t =>
+              (t.isUnion() ? t.types : [t]).some((/** @type {any} */ part) =>
+                isErrorType(ts, part),
+              ),
+            )
+        ) {
+          unchecked.push({
+            component: table.name,
+            doc: table.doc,
+            reason: `the type of "${propName}" does not resolve, usually an import whose package is not installed, so it was not compared`,
+          });
+        } else if (
+          comparesType &&
+          !typeMatches(ts, checker, String(entry.type), code)
+        ) {
+          const codeType = codeTypeText(code);
+          const expanded = [
+            ...new Set(
+              code
+                .renderings()[1]
+                .filter(
+                  text => !(code.required !== true && text === 'undefined'),
+                ),
+            ),
+          ].join(' | ');
+          const shown =
+            expanded && expanded !== codeType
+              ? `${codeType} (${expanded.length <= 400 ? expanded : `${expanded.slice(0, 400)}…`})`
+              : codeType;
+          findings.push({
+            ...base,
+            kind: 'type_mismatch',
+            message: `"${propName}" is documented as ${entry.type}, but the code declares ${shown}.`,
+            docType: entry.type,
+            codeType,
           });
         }
       }

@@ -200,9 +200,10 @@ function propDriftBlocks(report, failed) {
     );
   }
   if (report.unchecked.length > 0) {
+    const notCompared = new Set(report.unchecked.map(u => u.component)).size;
     blocks.push(
       text(
-        `[info] Props not compared for ${report.unchecked.length} documented component(s):`,
+        `[info] Props not compared for ${notCompared} documented component(s):`,
       ),
       records(report.unchecked, {fields: ['component', 'doc', 'reason']}),
     );
@@ -210,7 +211,7 @@ function propDriftBlocks(report, failed) {
   if (report.findings.length === 0 && !failed && report.components > 0) {
     blocks.push(
       text(
-        `[ok] Documented prop names and required flags match the code in ${report.components} component(s) (TypeScript ${report.typescript}).`,
+        `[ok] Documented props match the code in ${report.components} component(s) (TypeScript ${report.typescript}).`,
       ),
     );
   }
