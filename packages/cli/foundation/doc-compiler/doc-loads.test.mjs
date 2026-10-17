@@ -15,6 +15,9 @@
  *   out of scope; this test records what the CLI does, it does not sandbox it.
  *   It checks where code runs, not what a computed site loads: each entry
  *   says that.
+ * @input CLI module source and its exact runtime-load inventory.
+ * @output Fails on unlisted or changed load sites, including app-local tooling.
+ * @position CLI runtime-boundary audit.
  */
 
 import {describe, expect, it} from 'vitest';
@@ -81,6 +84,10 @@ const RUNNERS = {
   'api/upgrade/_adapter.mjs': {
     runs: 'the commands a codemod declares as its post-codemod hooks',
     sites: ['child_process.execFile'],
+  },
+  'assets/checks/foundation-smoke.mjs': {
+    runs: "the caller app's installed Playwright, for its explicit foundation browser check",
+    sites: ['require(playwright)'],
   },
   'assets/codemods/ensure-jscodeshift.mjs': {
     runs: 'the package manager, to install jscodeshift',

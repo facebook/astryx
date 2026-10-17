@@ -2,6 +2,11 @@
   "version": 1,
   "items": [
     {
+      "name": "block-foundation-smoke-check",
+      "path": "blocks/foundation-smoke-check",
+      "aliases": []
+    },
+    {
       "name": "component-alert-dialog",
       "path": "components/alert-dialog",
       "aliases": []

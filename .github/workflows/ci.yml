@@ -1075,6 +1075,32 @@ jobs:
           SANDBOX_TEMPLATE_ASSETS_BASE_PATH: ${{ steps.urls.outputs.template_assets_base_path }}
           NODE_OPTIONS: '--max-old-space-size=8192'
 
+      - name: Verify foundation smoke screen and failure controls
+        run: |
+          pnpm exec playwright install --with-deps chromium
+          node .github/scripts/foundation-smoke.js \
+            --base-path "${{ steps.urls.outputs.sandbox_base_path }}" \
+            --self-test --output-dir test-results/foundation-smoke
+
+      - name: Verify packed adopter foundation workflow
+        run: node .github/scripts/foundation-consumer.mjs --output-dir test-results/foundation-consumer
+
+      - name: Upload packed adopter foundation evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: foundation-consumer-${{ steps.urls.outputs.short_hash }}
+          path: test-results/foundation-consumer/
+          if-no-files-found: error
+
+      - name: Upload foundation smoke evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: foundation-smoke-${{ steps.urls.outputs.short_hash }}
+          path: test-results/foundation-smoke/
+          if-no-files-found: error
+
       - name: Remove shared assets from preview artifact
         run: rm -rf apps/sandbox/out/template-assets
 
