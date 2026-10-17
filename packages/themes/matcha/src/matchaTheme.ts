@@ -84,9 +84,22 @@ export const matchaTheme = defineTheme({
     '--color-on-dark': '#FFFFFF',
     '--color-on-light': '#3E481D',
     '--color-on-accent': ['#FFFFFF', '#3E481D'],
-    '--color-on-success': ['#FFFFFF', '#3E481D'],
-    '--color-on-error': ['#FFFFFF', '#3E481D'],
+    '--color-on-success': '#12140e',
+    '--color-on-error': '#12140e',
     '--color-on-warning': ['#3E481D', '#3E481D'],
+
+    '--color-info': 'var(--color-accent)',
+    '--color-info-muted': 'var(--color-accent-muted)',
+    '--color-on-info': 'var(--color-on-accent)',
+
+    '--color-status-foreground-info': ['#2e4a6e', '#8dbce0'],
+    '--color-status-foreground-success': ['#3d7a00', '#80d43a'],
+    '--color-status-foreground-warning': ['#7a5500', '#ffd960'],
+    '--color-status-foreground-error': ['#cc0000', '#ff7a7a'],
+    '--color-on-info-muted': ['#2e4a6e', '#8dbce0'],
+    '--color-on-success-muted': ['#3d7a00', '#80d43a'],
+    '--color-on-warning-muted': ['#7a5500', '#ffd960'],
+    '--color-on-error-muted': ['#cc0000', '#ff7a7a'],
 
     // Icon
     '--color-icon-accent': ['#3E481D', '#C0CBA9'],

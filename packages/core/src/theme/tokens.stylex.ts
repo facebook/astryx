@@ -60,12 +60,29 @@ export const colorDefaults = {
   '--color-success': 'light-dark(#0D8626, #0D8626)',
   '--color-success-muted': 'light-dark(#0B991F33, #0B991F3F)',
   '--color-on-success': 'light-dark(#FFFFFF, #FFFFFF)',
+  '--color-info': 'var(--color-accent)',
+  '--color-info-muted': 'var(--color-accent-muted)',
+  '--color-on-info': 'var(--color-on-accent)',
   '--color-error': 'light-dark(#E3193B, #F5394F)',
   '--color-error-muted': 'light-dark(#E3193B33, #F5394F3F)',
   '--color-on-error': 'light-dark(#FFFFFF, #FFFFFF)',
   '--color-warning': 'light-dark(#E9AF08, #F2C00B)',
   '--color-warning-muted': 'light-dark(#E2A40033, #E2A4003F)',
   '--color-on-warning': 'light-dark(#0A1317, #0A1317)',
+
+  // Status foregrounds — semantic text and matching icons on plain surfaces.
+  // Muted status surfaces use their dedicated --color-on-*-muted pairing.
+  '--color-status-foreground-info': 'var(--color-text-blue)',
+  '--color-status-foreground-success': 'var(--color-text-green)',
+  '--color-status-foreground-warning': 'var(--color-text-yellow)',
+  '--color-status-foreground-error': 'var(--color-text-red)',
+
+  // Content on pale semantic surfaces. These are intentionally distinct from
+  // both the plain-surface foregrounds and the content on strong fills.
+  '--color-on-info-muted': 'var(--color-text-blue)',
+  '--color-on-success-muted': 'var(--color-text-green)',
+  '--color-on-warning-muted': 'var(--color-text-yellow)',
+  '--color-on-error-muted': 'var(--color-text-red)',
 
   // Border
   '--color-border': 'light-dark(#05365919, #F2F4F619)',

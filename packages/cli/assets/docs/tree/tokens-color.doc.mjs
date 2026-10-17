@@ -170,6 +170,21 @@ export const docs = {
               "#FFFFFF"
             ],
             [
+              "--color-info",
+              "var(--color-accent)",
+              "var(--color-accent)"
+            ],
+            [
+              "--color-info-muted",
+              "var(--color-accent-muted)",
+              "var(--color-accent-muted)"
+            ],
+            [
+              "--color-on-info",
+              "var(--color-on-accent)",
+              "var(--color-on-accent)"
+            ],
+            [
               "--color-error",
               "#E3193B",
               "#F5394F"
@@ -198,6 +213,46 @@ export const docs = {
               "--color-on-warning",
               "#0A1317",
               "#0A1317"
+            ],
+            [
+              "--color-status-foreground-info",
+              "var(--color-text-blue)",
+              "var(--color-text-blue)"
+            ],
+            [
+              "--color-status-foreground-success",
+              "var(--color-text-green)",
+              "var(--color-text-green)"
+            ],
+            [
+              "--color-status-foreground-warning",
+              "var(--color-text-yellow)",
+              "var(--color-text-yellow)"
+            ],
+            [
+              "--color-status-foreground-error",
+              "var(--color-text-red)",
+              "var(--color-text-red)"
+            ],
+            [
+              "--color-on-info-muted",
+              "var(--color-text-blue)",
+              "var(--color-text-blue)"
+            ],
+            [
+              "--color-on-success-muted",
+              "var(--color-text-green)",
+              "var(--color-text-green)"
+            ],
+            [
+              "--color-on-warning-muted",
+              "var(--color-text-yellow)",
+              "var(--color-text-yellow)"
+            ],
+            [
+              "--color-on-error-muted",
+              "var(--color-text-red)",
+              "var(--color-text-red)"
             ],
             [
               "--color-border",

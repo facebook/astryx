@@ -284,13 +284,13 @@ const styles = stylex.create({
 
 const statusBorderStyles = stylex.create({
   warning: {
-    borderColor: colorVars['--color-warning'],
+    borderColor: colorVars['--color-status-foreground-warning'],
   },
   error: {
-    borderColor: colorVars['--color-error'],
+    borderColor: colorVars['--color-status-foreground-error'],
   },
   success: {
-    borderColor: colorVars['--color-success'],
+    borderColor: colorVars['--color-status-foreground-success'],
   },
 });
 

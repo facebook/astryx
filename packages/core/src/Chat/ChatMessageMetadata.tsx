@@ -70,7 +70,7 @@ const styles = stylex.create({
     gap: spacingVars['--spacing-1'],
   },
   statusError: {
-    color: colorVars['--color-error'],
+    color: colorVars['--color-status-foreground-error'],
   },
   statusPulse: {
     animationName: pulseKeyframes,

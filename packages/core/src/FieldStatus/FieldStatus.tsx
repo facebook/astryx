@@ -91,15 +91,15 @@ const styles = stylex.create({
 const colorStyles = stylex.create({
   warning: {
     backgroundColor: colorVars['--color-warning-muted'],
-    color: colorVars['--color-text-yellow'],
+    color: colorVars['--color-on-warning-muted'],
   },
   error: {
     backgroundColor: colorVars['--color-error-muted'],
-    color: colorVars['--color-text-red'],
+    color: colorVars['--color-on-error-muted'],
   },
   success: {
     backgroundColor: colorVars['--color-success-muted'],
-    color: colorVars['--color-text-green'],
+    color: colorVars['--color-on-success-muted'],
   },
 });
 

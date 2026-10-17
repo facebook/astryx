@@ -969,12 +969,21 @@ function uptimeStatus(value: number): {
   status: string;
 } {
   if (value >= 99.95) {
-    return {color: colorVars['--color-success'], status: 'Operational'};
+    return {
+      color: colorVars['--color-status-foreground-success'],
+      status: 'Operational',
+    };
   }
   if (value >= 99) {
-    return {color: colorVars['--color-warning'], status: 'Degraded'};
+    return {
+      color: colorVars['--color-status-foreground-warning'],
+      status: 'Degraded',
+    };
   }
-  return {color: colorVars['--color-error'], status: 'Outage'};
+  return {
+    color: colorVars['--color-status-foreground-error'],
+    status: 'Outage',
+  };
 }
 
 interface UptimeDay {

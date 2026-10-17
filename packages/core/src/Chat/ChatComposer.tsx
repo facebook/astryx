@@ -256,11 +256,11 @@ const styles = stylex.create({
   },
   statusError: {
     backgroundColor: colorVars['--color-error-muted'],
-    color: colorVars['--color-text-red'],
+    color: colorVars['--color-on-error-muted'],
   },
   statusWarning: {
     backgroundColor: colorVars['--color-warning-muted'],
-    color: colorVars['--color-text-yellow'],
+    color: colorVars['--color-on-warning-muted'],
   },
   compact: {
     // Override the padding var (not the `padding` property) so both the base

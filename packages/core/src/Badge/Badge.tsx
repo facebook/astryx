@@ -78,8 +78,8 @@ const variants = stylex.create({
     color: colorVars['--color-text-primary'],
   },
   info: {
-    backgroundColor: colorVars['--color-accent'],
-    color: colorVars['--color-on-accent'],
+    backgroundColor: colorVars['--color-info'],
+    color: colorVars['--color-on-info'],
   },
   success: {
     backgroundColor: colorVars['--color-success'],

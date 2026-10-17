@@ -56,7 +56,7 @@ import {colorVars} from '@astryxdesign/core/theme/tokens.stylex';
 
 const styles = stylex.create({
   trend: {
-    color: colorVars['--color-success'],
+    color: colorVars['--color-status-foreground-success'],
     minWidth: 0,
   },
 });

@@ -142,6 +142,19 @@ export const gothicTheme = defineTheme({
     '--color-on-error': '#101314',
     '--color-on-warning': '#101314',
 
+    '--color-info': 'var(--color-accent)',
+    '--color-info-muted': 'var(--color-background-blue)',
+    '--color-on-info': 'var(--color-on-accent)',
+
+    '--color-status-foreground-info': '#a3b5d6',
+    '--color-status-foreground-success': '#b3c79a',
+    '--color-status-foreground-warning': '#d3c490',
+    '--color-status-foreground-error': '#c6a6a2',
+    '--color-on-info-muted': 'var(--color-text-blue)',
+    '--color-on-success-muted': '#244023',
+    '--color-on-warning-muted': '#674c0e',
+    '--color-on-error-muted': '#4a2520',
+
     // Icon
     '--color-icon-accent': '#E8F1F6',
     '--color-icon-primary': '#E8F1F6',
@@ -236,7 +249,7 @@ export const gothicTheme = defineTheme({
     '--color-background-yellow': '#d3c490',
     '--color-border-yellow': '#b6a775',
     '--color-icon-yellow': '#876515',
-    '--color-text-yellow': '#6c5010',
+    '--color-text-yellow': '#674c0e',
 
     // =========================================================================
     // Radius — subtle rounding (original gothic)
@@ -316,28 +329,20 @@ export const gothicTheme = defineTheme({
         borderRadius: 'var(--radius-element)',
       },
       'status:info': {
-        backgroundColor: 'var(--color-background-blue)',
-        '--color-text-primary': 'var(--color-text-blue)',
-        '--color-text-secondary': 'var(--color-text-blue)',
-        '--color-accent': 'var(--color-text-blue)',
+        '--color-info-muted': 'var(--color-background-blue)',
+        '--color-on-info-muted': 'var(--color-text-blue)',
       },
       'status:success': {
-        backgroundColor: 'var(--color-background-green)',
-        '--color-text-primary': 'var(--color-text-green)',
-        '--color-text-secondary': 'var(--color-text-green)',
-        '--color-success': 'var(--color-text-green)',
+        '--color-success-muted': 'var(--color-background-green)',
+        '--color-on-success-muted': 'var(--color-text-green)',
       },
       'status:warning': {
-        backgroundColor: 'var(--color-background-yellow)',
-        '--color-text-primary': 'var(--color-text-yellow)',
-        '--color-text-secondary': 'var(--color-text-yellow)',
-        '--color-warning': 'var(--color-text-yellow)',
+        '--color-warning-muted': 'var(--color-background-yellow)',
+        '--color-on-warning-muted': 'var(--color-text-yellow)',
       },
       'status:error': {
-        backgroundColor: 'var(--color-background-red)',
-        '--color-text-primary': 'var(--color-text-red)',
-        '--color-text-secondary': 'var(--color-text-red)',
-        '--color-error': 'var(--color-text-red)',
+        '--color-error-muted': 'var(--color-background-red)',
+        '--color-on-error-muted': 'var(--color-text-red)',
       },
     },
 

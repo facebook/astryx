@@ -20,6 +20,12 @@ import {defineTheme, generateThemeCSS} from '../theme';
 import {registerIcons, resetIcons} from '../Icon';
 import {InternationalizationProvider} from '../i18n';
 
+declare module './index' {
+  interface BannerStatusMap {
+    neutral: true;
+  }
+}
+
 describe('Banner', () => {
   afterEach(() => {
     resetIcons();
@@ -101,11 +107,58 @@ describe('Banner', () => {
     expect(screen.queryByText('This is a description')).not.toBeInTheDocument();
   });
 
+  it('keeps base title and description colors for an augmented status', () => {
+    const {rerender} = render(
+      <Banner
+        status="neutral"
+        title="Neutral title"
+        description="Neutral description"
+      />,
+    );
+
+    const customTitleClass = screen.getByText('Neutral title').className;
+    const customDescriptionClass = screen.getByText(
+      'Neutral description',
+    ).className;
+
+    rerender(
+      <Banner
+        status="info"
+        title="Info title"
+        description="Info description"
+      />,
+    );
+
+    expect(screen.getByText('Info title').className).not.toBe(customTitleClass);
+    expect(screen.getByText('Info description').className).not.toBe(
+      customDescriptionClass,
+    );
+  });
+
   it('renders dismiss button when isDismissable', () => {
     render(<Banner status="info" title="Dismissable" isDismissable />);
     expect(
       screen.getByRole('button', {name: 'Dismiss Dismissable'}),
     ).toBeInTheDocument();
+  });
+
+  it('keeps built-in controls on the status surface content color', () => {
+    render(
+      <Banner status="warning" title="Warning" isDismissable>
+        Details
+      </Banner>,
+    );
+
+    const titleClasses = new Set(
+      screen.getByText('Warning').className.split(' '),
+    );
+    for (const button of screen.getAllByRole('button')) {
+      expect(
+        button.className
+          .split(' ')
+          .some(className => titleClasses.has(className)),
+      ).toBe(true);
+    }
   });
 
   it('calls onDismiss when dismiss button is clicked', async () => {
@@ -462,7 +515,7 @@ describe('Banner', () => {
     const target = container.querySelector(
       '.astryx-banner-icon[data-status="info"]',
     );
-    expect(target).toHaveAttribute('data-color', 'accent');
+    expect(target).toHaveAttribute('data-color', 'inherit');
   });
 
   it("keeps the 'banner-icon' target on the wrapper for a custom icon node", () => {

@@ -208,10 +208,10 @@ const defaultIconNames: Partial<Record<BannerStatus, IconName>> = {
 };
 
 const statusIconColor: Partial<Record<BannerStatus, IconColor>> = {
-  info: 'accent',
-  warning: 'warning',
-  error: 'error',
-  success: 'success',
+  info: 'inherit',
+  warning: 'inherit',
+  error: 'inherit',
+  success: 'inherit',
 };
 
 // =============================================================================
@@ -295,6 +295,12 @@ const styles = stylex.create({
     color: colorVars['--color-text-secondary'],
     overflowWrap: 'anywhere',
   },
+  // Status title, description, icon, and built-in controls share the header's
+  // on-muted color. The same style is passed last to ghost Buttons so their
+  // variant color cannot override the semantic content pairing.
+  statusForeground: {
+    color: 'inherit',
+  },
   iconWrapper: {
     display: 'flex',
     alignItems: 'center',
@@ -349,16 +355,36 @@ const styles = stylex.create({
 
 const statusStyles = stylex.create({
   info: {
-    backgroundColor: colorVars['--color-accent-muted'],
+    backgroundColor: colorVars['--color-info-muted'],
+    color: colorVars['--color-on-info-muted'],
+    '--color-text-primary': colorVars['--color-on-info-muted'],
+    '--color-text-secondary': colorVars['--color-on-info-muted'],
+    '--color-icon-primary': colorVars['--color-on-info-muted'],
+    '--color-icon-secondary': colorVars['--color-on-info-muted'],
   },
   warning: {
     backgroundColor: colorVars['--color-warning-muted'],
+    color: colorVars['--color-on-warning-muted'],
+    '--color-text-primary': colorVars['--color-on-warning-muted'],
+    '--color-text-secondary': colorVars['--color-on-warning-muted'],
+    '--color-icon-primary': colorVars['--color-on-warning-muted'],
+    '--color-icon-secondary': colorVars['--color-on-warning-muted'],
   },
   error: {
     backgroundColor: colorVars['--color-error-muted'],
+    color: colorVars['--color-on-error-muted'],
+    '--color-text-primary': colorVars['--color-on-error-muted'],
+    '--color-text-secondary': colorVars['--color-on-error-muted'],
+    '--color-icon-primary': colorVars['--color-on-error-muted'],
+    '--color-icon-secondary': colorVars['--color-on-error-muted'],
   },
   success: {
     backgroundColor: colorVars['--color-success-muted'],
+    color: colorVars['--color-on-success-muted'],
+    '--color-text-primary': colorVars['--color-on-success-muted'],
+    '--color-text-secondary': colorVars['--color-on-success-muted'],
+    '--color-icon-primary': colorVars['--color-on-success-muted'],
+    '--color-icon-secondary': colorVars['--color-on-success-muted'],
   },
 });
 
@@ -628,12 +654,21 @@ export function Banner({
             styles.headerContent,
             isRenderable(endContent) && styles.headerContentWithEndContent,
           )}>
-          <div {...stylex.props(styles.title)}>{title}</div>
+          <div
+            {...stylex.props(
+              styles.title,
+              hasStatusStyle(status) && styles.statusForeground,
+            )}>
+            {title}
+          </div>
           {isRenderable(description) && (
             <div
               {...mergeProps(
                 themeProps('banner-description'),
-                stylex.props(styles.description),
+                stylex.props(
+                  styles.description,
+                  hasStatusStyle(status) && styles.statusForeground,
+                ),
               )}>
               {description}
             </div>
@@ -672,6 +707,7 @@ export function Banner({
                   />
                 }
                 onClick={handleToggleExpand}
+                xstyle={styles.statusForeground}
                 aria-expanded={isExpanded}
                 aria-controls={showContent ? contentId : undefined}
                 isIconOnly
@@ -685,6 +721,7 @@ export function Banner({
                 tooltip={dismissTooltip}
                 icon={<Icon icon="close" size="sm" color="inherit" />}
                 onClick={handleDismiss}
+                xstyle={styles.statusForeground}
                 isIconOnly
               />
             )}

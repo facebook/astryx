@@ -277,13 +277,13 @@ const styles = stylex.create({
     flexShrink: 0,
   },
   statsAdditions: {
-    color: colorVars['--color-success'],
+    color: colorVars['--color-status-foreground-success'],
   },
   statsDeletions: {
-    color: colorVars['--color-error'],
+    color: colorVars['--color-status-foreground-error'],
   },
   errorText: {
-    color: colorVars['--color-error'],
+    color: colorVars['--color-status-foreground-error'],
   },
 
   // Inline result detail
@@ -336,9 +336,9 @@ const styles = stylex.create({
 
   // Status colors
   colorPending: {color: colorVars['--color-text-disabled']},
-  colorRunning: {color: colorVars['--color-accent']},
-  colorComplete: {color: colorVars['--color-success']},
-  colorError: {color: colorVars['--color-error']},
+  colorRunning: {color: colorVars['--color-status-foreground-info']},
+  colorComplete: {color: colorVars['--color-status-foreground-success']},
+  colorError: {color: colorVars['--color-status-foreground-error']},
 });
 
 // =============================================================================

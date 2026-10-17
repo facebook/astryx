@@ -181,6 +181,19 @@ export const stoneTheme = defineTheme({
     '--color-on-error': ['#58413e', '#f9dcd7'], // Red T30 / T90
     '--color-on-warning': ['#524622', '#f4e1b7'], // Yellow T30 / T90
 
+    '--color-info': 'var(--color-accent)',
+    '--color-info-muted': 'var(--color-accent-muted)',
+    '--color-on-info': 'var(--color-on-accent)',
+
+    '--color-status-foreground-info': ['#3c4856', '#d7e4f5'],
+    '--color-status-foreground-success': ['#374c36', '#d0e9ce'],
+    '--color-status-foreground-warning': ['#524622', '#f4e1b7'],
+    '--color-status-foreground-error': ['#58413e', '#f9dcd7'],
+    '--color-on-info-muted': ['#3c4856', '#d7e4f5'],
+    '--color-on-success-muted': ['#374c36', '#d0e9ce'],
+    '--color-on-warning-muted': ['#524622', '#f4e1b7'],
+    '--color-on-error-muted': ['#58413e', '#f9dcd7'],
+
     // Icon — H=291
     '--color-icon-accent': ['#25252a', '#f3f3f5'], // light: Stone Neutral T15
     '--color-icon-primary': ['#25252a', '#f3f3f5'], // light: Stone Neutral T15
@@ -344,34 +357,23 @@ export const stoneTheme = defineTheme({
       },
     },
 
-    // StyleX paints the banner surface from @layer priority4 (above
-    // @layer astryx-theme), so a direct backgroundColor override loses the
-    // cascade. Redefine the muted token instead so StyleX's var() resolves
-    // to the categorical bg in our scope.
+    // Banner status surfaces and content use the matching categorical pair.
     banner: {
       'status:info': {
-        '--color-accent-muted': 'var(--color-background-blue)',
-        '--color-text-primary': 'var(--color-text-blue)',
-        '--color-text-secondary': 'var(--color-text-blue)',
-        '--color-accent': 'var(--color-text-blue)',
+        '--color-info-muted': 'var(--color-background-blue)',
+        '--color-on-info-muted': 'var(--color-text-blue)',
       },
       'status:success': {
         '--color-success-muted': 'var(--color-background-green)',
-        '--color-text-primary': 'var(--color-text-green)',
-        '--color-text-secondary': 'var(--color-text-green)',
-        '--color-success': 'var(--color-text-green)',
+        '--color-on-success-muted': 'var(--color-text-green)',
       },
       'status:warning': {
         '--color-warning-muted': 'var(--color-background-yellow)',
-        '--color-text-primary': 'var(--color-text-yellow)',
-        '--color-text-secondary': 'var(--color-text-yellow)',
-        '--color-warning': 'var(--color-text-yellow)',
+        '--color-on-warning-muted': 'var(--color-text-yellow)',
       },
       'status:error': {
         '--color-error-muted': 'var(--color-background-red)',
-        '--color-text-primary': 'var(--color-text-red)',
-        '--color-text-secondary': 'var(--color-text-red)',
-        '--color-error': 'var(--color-text-red)',
+        '--color-on-error-muted': 'var(--color-text-red)',
       },
     },
 

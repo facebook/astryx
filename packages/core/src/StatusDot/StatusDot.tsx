@@ -99,8 +99,8 @@ const variants = stylex.create({
     color: colorVars['--color-on-error'],
   },
   accent: {
-    backgroundColor: colorVars['--color-accent'],
-    color: colorVars['--color-on-accent'],
+    backgroundColor: colorVars['--color-info'],
+    color: colorVars['--color-on-info'],
   },
   neutral: {
     backgroundColor: colorVars['--color-icon-secondary'],

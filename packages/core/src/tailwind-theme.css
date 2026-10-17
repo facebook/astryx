@@ -67,6 +67,9 @@
 
   /* --- Interactive --- */
   --color-accent-bg: var(--color-accent);
+  --color-info: var(--color-info);
+  --color-info-muted: var(--color-info-muted);
+  --color-on-info: var(--color-on-info);
   --color-accent-muted: var(--color-accent-muted);
   --color-on-accent: var(--color-on-accent);
   --color-neutral: var(--color-neutral);
@@ -84,6 +87,14 @@
   --color-warning: var(--color-warning);
   --color-warning-muted: var(--color-warning-muted);
   --color-on-warning: var(--color-on-warning);
+  --color-status-info: var(--color-status-foreground-info);
+  --color-status-success: var(--color-status-foreground-success);
+  --color-status-warning: var(--color-status-foreground-warning);
+  --color-status-error: var(--color-status-foreground-error);
+  --color-on-info-muted: var(--color-on-info-muted);
+  --color-on-success-muted: var(--color-on-success-muted);
+  --color-on-warning-muted: var(--color-on-warning-muted);
+  --color-on-error-muted: var(--color-on-error-muted);
 
   /* --- Borders --- */
   --color-border: var(--color-border);
@@ -217,7 +228,8 @@
    * The system has a richer duration/easing scale than Tailwind's defaults.
    * We map the primary durations and expose the standard easing.
    * ========================================================================= */
-  --transition-property-colors: color, background-color, border-color, text-decoration-color, fill, stroke;
+  --transition-property-colors:
+    color, background-color, border-color, text-decoration-color, fill, stroke;
   --transition-property-opacity: opacity;
   --transition-property-shadow: box-shadow;
   --transition-property-transform: transform;

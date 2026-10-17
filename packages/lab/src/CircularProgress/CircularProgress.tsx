@@ -260,13 +260,13 @@ const variantStyles = stylex.create({
     stroke: colorVars['--color-accent'],
   },
   success: {
-    stroke: colorVars['--color-success'],
+    stroke: colorVars['--color-status-foreground-success'],
   },
   warning: {
-    stroke: colorVars['--color-warning'],
+    stroke: colorVars['--color-status-foreground-warning'],
   },
   error: {
-    stroke: colorVars['--color-error'],
+    stroke: colorVars['--color-status-foreground-error'],
   },
   neutral: {
     stroke: colorVars['--color-text-disabled'],

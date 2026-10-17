@@ -163,6 +163,19 @@ export const y2kTheme = defineTheme({
     '--color-on-error': ['#8b1d24', '#5c0008'],
     '--color-on-warning': ['#614400', '#3f2600'],
 
+    '--color-info': 'var(--color-accent)',
+    '--color-info-muted': 'var(--color-background-blue)',
+    '--color-on-info': 'var(--color-on-accent)',
+
+    '--color-status-foreground-info': ['#004e74', '#B8E0FF'],
+    '--color-status-foreground-success': ['#3a5500', '#C5E17A'],
+    '--color-status-foreground-warning': ['#614400', '#FFE08A'],
+    '--color-status-foreground-error': ['#8b1d24', '#FFC5C3'],
+    '--color-on-info-muted': 'var(--color-text-blue)',
+    '--color-on-success-muted': ['#3a5500', '#1e3200'],
+    '--color-on-warning-muted': ['#614400', '#3f2600'],
+    '--color-on-error-muted': ['#8b1d24', '#5c0008'],
+
     // Icon — neutral H=75 (cream)
     '--color-icon-accent': ['#2d241b', '#EDEFFC'],
     '--color-icon-primary': ['#2d241b', '#EDEFFC'],
@@ -362,28 +375,20 @@ export const y2kTheme = defineTheme({
         borderRadius: '0px',
       },
       'status:info': {
-        backgroundColor: 'var(--color-background-blue)',
-        '--color-text-primary': 'var(--color-text-blue)',
-        '--color-text-secondary': 'var(--color-text-blue)',
-        '--color-accent': 'var(--color-text-blue)',
+        '--color-info-muted': 'var(--color-background-blue)',
+        '--color-on-info-muted': 'var(--color-text-blue)',
       },
       'status:success': {
-        backgroundColor: 'var(--color-background-green)',
-        '--color-text-primary': 'var(--color-text-green)',
-        '--color-text-secondary': 'var(--color-text-green)',
-        '--color-success': 'var(--color-text-green)',
+        '--color-success-muted': 'var(--color-background-green)',
+        '--color-on-success-muted': 'var(--color-text-green)',
       },
       'status:warning': {
-        backgroundColor: 'var(--color-background-yellow)',
-        '--color-text-primary': 'var(--color-text-yellow)',
-        '--color-text-secondary': 'var(--color-text-yellow)',
-        '--color-warning': 'var(--color-text-yellow)',
+        '--color-warning-muted': 'var(--color-background-yellow)',
+        '--color-on-warning-muted': 'var(--color-text-yellow)',
       },
       'status:error': {
-        backgroundColor: 'var(--color-background-red)',
-        '--color-text-primary': 'var(--color-text-red)',
-        '--color-text-secondary': 'var(--color-text-red)',
-        '--color-error': 'var(--color-text-red)',
+        '--color-error-muted': 'var(--color-background-red)',
+        '--color-on-error-muted': 'var(--color-text-red)',
       },
     },
 

@@ -157,6 +157,19 @@ export const butterTheme = defineTheme({
     '--color-on-error': ['#ffe3de', '#600000'],
     '--color-on-warning': ['#ffeec3', '#3b2200'],
 
+    '--color-info': 'var(--color-accent)',
+    '--color-info-muted': 'var(--color-accent-muted)',
+    '--color-on-info': 'var(--color-on-accent)',
+
+    '--color-status-foreground-info': ['#225BFF', '#FDEE8C'],
+    '--color-status-foreground-success': ['#004700', '#99d94b'],
+    '--color-status-foreground-warning': ['#543700', '#f7be00'],
+    '--color-status-foreground-error': ['#771210', '#ffb4a6'],
+    '--color-on-info-muted': ['#203a6c', '#FDEE8C'],
+    '--color-on-success-muted': ['#004800', '#99d94b'],
+    '--color-on-warning-muted': ['#413e00', '#f7be00'],
+    '--color-on-error-muted': ['#6d211c', '#ffb4a6'],
+
     // Icon
     '--color-icon-accent': ['#225BFF', '#FDEE8C'],
     '--color-icon-primary': ['#1d1c11', '#f3f2e2'],
@@ -370,33 +383,24 @@ export const butterTheme = defineTheme({
     },
 
     // Banner backgrounds match the semantic badge fills.
-    // Banner status colors — override the muted tokens locally so the
-    // header (which reads --color-*-muted via StyleX) renders vivid fills
-    // matching the badge palette. Scoped to the banner root, doesn't leak.
+    // Override each muted surface/content pair locally so the vivid banner
+    // palette stays scoped to Banner.
     banner: {
       'status:info': {
-        '--color-accent-muted': '#4883fd',
-        '--color-text-primary': '#ffffff',
-        '--color-text-secondary': '#ffffff',
-        '--color-accent': '#ffffff',
+        '--color-info-muted': '#4883fd',
+        '--color-on-info-muted': '#1d1c11',
       },
       'status:success': {
         '--color-success-muted': '#91D143',
-        '--color-text-primary': '#1d1c11',
-        '--color-text-secondary': '#1d1c11',
-        '--color-success': '#1d1c11',
+        '--color-on-success-muted': '#1d1c11',
       },
       'status:warning': {
         '--color-warning-muted': '#ffc502',
-        '--color-text-primary': '#1d1c11',
-        '--color-text-secondary': '#1d1c11',
-        '--color-warning': '#1d1c11',
+        '--color-on-warning-muted': '#1d1c11',
       },
       'status:error': {
         '--color-error-muted': '#fc473b',
-        '--color-text-primary': '#ffffff',
-        '--color-text-secondary': '#ffffff',
-        '--color-error': '#ffffff',
+        '--color-on-error-muted': '#1d1c11',
       },
     },
 

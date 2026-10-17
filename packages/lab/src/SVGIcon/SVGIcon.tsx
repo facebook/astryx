@@ -118,9 +118,9 @@ const colorStyles = stylex.create({
   secondary: {color: colorVars['--color-icon-secondary']},
   disabled: {color: colorVars['--color-icon-disabled']},
   accent: {color: colorVars['--color-accent']},
-  positive: {color: colorVars['--color-success']},
-  negative: {color: colorVars['--color-error']},
-  warning: {color: colorVars['--color-warning']},
+  positive: {color: colorVars['--color-status-foreground-success']},
+  negative: {color: colorVars['--color-status-foreground-error']},
+  warning: {color: colorVars['--color-status-foreground-warning']},
   inherit: {color: 'inherit'},
 });
 

@@ -36,7 +36,7 @@ deciding_specs: [spec:AST-006/DEC-1, spec:AST-006/DEC-5]
 {
   "scope": "global",
   "triggers": {
-    "tokens": ["INV1", "INV3", "INV4", "INV6", "INV8", "INV9"]
+    "tokens": ["INV1", "INV3", "INV4", "INV6", "INV8", "INV9", "INV10"]
   }
 }
 ```
@@ -114,6 +114,12 @@ then have contradictory winners.
   `resolveThemeToken()`, `tokenDefaults`) return the token's value with its
   unit; code that needs pixels resolves the value against the root font size
   instead of parsing a number.
+- **INV10 — Semantic status roles are surface-specific.** Each status provides a
+  strong fill (`--color-info/success/warning/error`) paired with `--color-on-*`,
+  a pale fill (`--color-*-muted`) paired with `--color-on-*-muted`, and a
+  plain-surface foreground (`--color-status-foreground-*`) for semantic text,
+  matching icons, standalone status icons, and status boundaries. Components
+  select the role from the surface instead of using one color for every job.
 
 This record does not own:
 
@@ -213,5 +219,6 @@ decision).
 | INV6                         | `packages/core/src/theme/tokens.test.ts`                                                                                                                                                                                                                                                                   | JavaScript resolution disagrees with defaults, mode selection, references, or supported color expressions                                   |
 | INV8                         | `defineTheme.test.ts`, template checks, and token-doc generation                                                                                                                                                                                                                                           | A local name enters portable helpers/docs or can conflict with a portable declaration                                                       |
 | INV9                         | `tokens.test.ts` (core defaults), `SpacingRootFontSize.a11y.chromium.spec.ts` (real-Chromium root font size), each overriding theme's `*Theme.spacing.test.ts`, `check-cli-theme-bundle.test.mjs` (bundled copies byte-equal to the packages), `theme-concentricity.test.ts` (playground ramp read in rem) | A spacing step in `px` that no theme documents as its exception: a core default, a theme override, a bundled copy, or a generated ramp step |
+| INV10                        | Core component tests for Banner, Badge, Icon, inputs, StatusDot, Stepper, and ProgressBar; first-party theme builds; Neutral contrast tests                                                                                                                                                                | A component uses a fill token as plain-surface foreground, or separates a fill from its paired content token                                |
 | Released token compatibility | Type checking plus representative package/source builds                                                                                                                                                                                                                                                    | A released CSS variable or typed token name disappears without an explicit migration decision                                               |
 | Visual defaults              | Real Chromium examples in light, dark, status, and high-contrast contexts                                                                                                                                                                                                                                  | A changed default produces unreadable or semantically inconsistent output                                                                   |
