@@ -33,6 +33,8 @@ import type {BaseProps} from '../BaseProps';
 import {useTabListContext} from './TabListContext';
 import type {TabListSize} from './TabListContext';
 import {tabScope} from './tab.markers.stylex';
+import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
+import {usePressFeedback} from '../hooks/usePressFeedback';
 import {useLinkComponent} from '../Link/useLinkComponent';
 import type {LinkComponentType} from '../Link/types';
 import {mergeProps} from '../utils';
@@ -98,6 +100,12 @@ export interface TabProps extends BaseProps<HTMLButtonElement> {
 // Styles
 // =============================================================================
 
+// The touch press's paint, declared by the shared overlay styles on the
+// element the controller writes to (`pressedAlpha`) at the press's strength,
+// 1 while on and 1 → 0 over the release, and inherited resolved by the layer
+// that paints it. See interactionOverlay.stylex.ts.
+const pressedOverlayImage = 'var(--_press-paint-image)';
+
 const styles = stylex.create({
   base: {
     position: 'relative',
@@ -136,6 +144,34 @@ const styles = stylex.create({
       default: 'transparent',
       [stylex.when.ancestor(':hover', tabScope)]: {
         '@media (hover: hover)': colorVars['--color-overlay-hover'],
+      },
+      // Pressed: the same layer steps up to the pressed overlay, read off the
+      // tab the way the hover is, so a press paints on a finger too. Repeated
+      // inside the hover-capable branch so it outranks the hover rule there
+      // (a media-nested rule carries extra generated priority; see
+      // interactionOverlay.stylex.ts).
+      [stylex.when.ancestor(':active', tabScope)]: {
+        default: colorVars['--color-overlay-pressed'],
+        '@media (hover: hover)': colorVars['--color-overlay-pressed'],
+        // Under a coarse pointer the touch press model writes `data-astryx-press`
+        // on the tab instead, and paints as an image below.
+        '@media (pointer: coarse)': 'transparent',
+      },
+    },
+    // The touch press, as an image layer over the colour: an image change is
+    // discrete, so the layer's colour transition cannot fade the onset in,
+    // and the strength the tab's `pressedAlpha` arms own (1 while on, 1 → 0
+    // over the release) is what moves. Coarse pointers only, like the colour
+    // arms above; see interactionOverlay.stylex.ts.
+    backgroundImage: {
+      default: null,
+      [stylex.when.ancestor('[data-astryx-press="on"]', tabScope)]: {
+        default: null,
+        '@media (pointer: coarse)': pressedOverlayImage,
+      },
+      [stylex.when.ancestor('[data-astryx-press="fading"]', tabScope)]: {
+        default: null,
+        '@media (pointer: coarse)': pressedOverlayImage,
       },
     },
     transitionProperty: 'background-color',
@@ -249,8 +285,10 @@ export function Tab({
   xstyle,
   className,
   style,
+  onClick,
   ...restProps
 }: TabProps) {
+  const pressable = usePressFeedback();
   const tabListCtx = useTabListContext();
   const LinkComponent = useLinkComponent(as);
 
@@ -263,9 +301,23 @@ export function Tab({
   const displayIcon = isSelected && selectedIcon ? selectedIcon : icon;
   const hasVisibleLabel = !isLabelHidden && label !== '';
 
-  const handleSelect = useCallback(() => {
-    tabListCtx.onChange(value);
-  }, [tabListCtx, value]);
+  const isDisabled =
+    restProps['aria-disabled'] === true ||
+    restProps['aria-disabled'] === 'true';
+
+  const handleSelect = useCallback(
+    (event: React.MouseEvent<HTMLButtonElement | HTMLAnchorElement>) => {
+      if (isDisabled) {
+        event.preventDefault();
+        return;
+      }
+      onClick?.(event as React.MouseEvent<HTMLButtonElement>);
+      if (!event.defaultPrevented) {
+        tabListCtx.onChange(value);
+      }
+    },
+    [isDisabled, onClick, tabListCtx, value],
+  );
 
   useDevWarning(
     'Tab',
@@ -303,6 +355,7 @@ export function Tab({
 
   const sharedProps = {
     ...restProps,
+    ...pressable,
     ...(isLabelHidden ? {'aria-label': label} : {}),
     [EDGE_COMP_ATTR]: '',
     'data-tab-value': value,
@@ -339,7 +392,10 @@ export function Tab({
         sizeStyles[size],
         isSelected && styles.selected,
         isFill && layoutStyles.fill,
-        tabScope,
+        !isDisabled && tabScope,
+        // The touch press's strength and release live on the tab the
+        // controller writes to; the hover layer inherits and paints it.
+        !isDisabled && interactionOverlayStyles.pressedAlpha,
         xstyle,
       ),
       className,
@@ -382,10 +438,14 @@ export function Tab({
   ) : null;
 
   if (isLink) {
+    // A disabled link tab must not reach a router component: some routers reject
+    // a missing destination, while others treat it as the current route. A
+    // plain anchor without href preserves the element shape but cannot navigate.
+    const LinkRoot = isDisabled ? 'a' : LinkComponent;
     return (
-      <LinkComponent
+      <LinkRoot
         ref={ref}
-        href={href}
+        href={isDisabled ? undefined : href}
         onClick={handleSelect}
         {...sharedProps}>
         {hoverBgElement}
@@ -393,7 +453,7 @@ export function Tab({
         {labelElement}
         {endContentElement}
         {indicatorElement}
-      </LinkComponent>
+      </LinkRoot>
     );
   }
 

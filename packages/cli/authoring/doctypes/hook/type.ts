@@ -5,13 +5,14 @@
  */
 
 import type {
+  AuthoredDocGraphFields,
   ComponentAccessibilityRequirement,
   ComponentBestPractice,
   HookParamDoc,
   HookReturnDoc,
   RegistryDocIdentity,
   UsageDoc,
-} from '../base/type';
+} from '../base/type.js';
 
 /**
  * Documentation for a standalone hook's .doc.mjs file.
@@ -22,12 +23,12 @@ import type {
  * Standalone hooks (e.g. useMediaQuery, useFocusTrap, useOverflow) get
  * their own {hookName}.doc.mjs file and use this type.
  *
- * Every hook .doc.mjs must export a single `docs` constant:
+ * Every new hook .doc.mjs default-exports a stamped object:
  *
  *   /\*\* @type {import('@astryxdesign/cli/authoring').HookDoc} \*\/
- *   export const docs = { ... };
+ *   export default { type: 'function', ... };
  */
-export interface HookDoc {
+export interface HookDoc extends AuthoredDocGraphFields {
   /** Doc-kind discriminant for the stamped default-export format
    *  (`export default { type: 'function', ... }`). Optional: legacy
    *  `export const docs = {...}` docs omit it. */

@@ -114,7 +114,7 @@ export const docs = {
       name: 'presets',
       type: 'Array<DateRangePreset>',
       description:
-        'Preset ranges shown as quick-select options beside the calendar.',
+        'Preset ranges shown as quick-select options beside the calendar. A preset is disabled when either endpoint violates min, max, or dateConstraints, or when its span violates minRangeSpan or maxRangeSpan.',
     },
     {
       name: 'hasClear',
@@ -171,22 +171,42 @@ export const docs = {
         'Width of the field (number = pixels, string used as-is, e.g. "100%"). Sizes the whole field (label, control, and status) so they stay aligned.',
     },
     {
-      name: 'xstyle',
+      name: 'containerXstyle',
       type: 'StyleXStyles',
-      description: 'StyleX styles for layout customization.',
+      description:
+        'StyleX styles for the Field box around the label, control, and status. containerClassName and containerStyle take a class name and inline styles for the same box. No effect (development warning) where no Field box renders: inside InputGroup (style the group) and in a horizontal-labels FormLayout.',
+    },
+    {
+      name: 'controlXstyle',
+      type: 'StyleXStyles',
+      description:
+        'StyleX styles for the visual control box: the bordered element that holds the text, icons, and end controls, never the native input. controlClassName and controlStyle take a class name and inline styles for the same box. Replaces root xstyle, className, and style, which this component does not accept.',
     },
   ],
   theming: {
     targets: [
-      {className: 'astryx-date-range-input', visualProps: ['size', 'status'], states: ['disabled']},
+      {
+        className: 'astryx-date-range-input',
+        visualProps: ['size', 'status'],
+        states: ['disabled'],
+      },
       {className: 'astryx-date-range-input-toggle-icon', states: ['state']},
-      {className: 'astryx-date-range-input-clear-icon', deprecatedFor: 'input-clear-icon'},
+      {className: 'astryx-date-range-input-presets'},
+      {
+        className: 'astryx-date-range-input-preset',
+        states: ['selected', 'disabled'],
+      },
     ],
   },
   usage: {
     description:
       'DateRangeInput lets users select a start and end date from a dual-month calendar popover. Use it for filtering data by time period, report generation, analytics dashboards, and booking flows.',
     bestPractices: [
+      {
+        guidance: true,
+        description:
+          "Base props such as ref, id, data-*, aria-*, and DOM event handlers go to the range trigger, the element that is focused and announced. A DOM handler runs after DateRangeInput's own handler for the same event and still receives events it handled (including ones it called preventDefault on), so it cannot cancel built-in behavior.",
+      },
       {
         guidance: true,
         description:
@@ -231,6 +251,12 @@ export const docs = {
           'Text above the trigger describing what date range is expected.',
       },
       {
+        name: 'Field surface',
+        required: true,
+        description:
+          'Bordered control containing the calendar toggle, range trigger, and end affordances.',
+      },
+      {
         name: 'Trigger button',
         required: true,
         description:
@@ -251,6 +277,12 @@ export const docs = {
         name: 'Preset sidebar',
         required: false,
         description: 'A list of preset range options beside the calendar.',
+      },
+      {
+        name: 'Preset button',
+        required: false,
+        description:
+          'A quick-select action for one preset range, reflecting current and disabled states.',
       },
       {
         name: 'Clear button',
@@ -274,6 +306,11 @@ export const docsDense = {
     description:
       'DateRangeInput lets users select start+end dates from a dual-month calendar. Use for filtering, reports, analytics, and booking.',
     bestPractices: [
+      {
+        guidance: true,
+        description:
+          "Base props such as ref, id, data-*, aria-*, and DOM event handlers go to the range trigger, the element that is focused and announced. A DOM handler runs after DateRangeInput's own handler for the same event and still receives events it handled (including ones it called preventDefault on), so it cannot cancel built-in behavior.",
+      },
       {
         guidance: true,
         description:
@@ -320,7 +357,8 @@ export const docsDense = {
     isDisabled: 'disable trigger+picker',
     disabledMessage:
       'reason shown in a tooltip on hover/focus when disabled; keeps trigger focusable via aria-disabled',
-    value: 'selected range {start, end} or null; import DateRange type from @astryxdesign/core/DateRangeInput (do not redeclare)',
+    value:
+      'selected range {start, end} or null; import DateRange type from @astryxdesign/core/DateRangeInput (do not redeclare)',
     onChange: 'callback on range change; null on clear',
     min: 'min selectable date: ISODateString template literal type (YYYY-MM-DD); use string literal or cast `as ISODateString`',
     max: 'max selectable date: ISODateString template literal type (YYYY-MM-DD); use string literal or cast `as ISODateString`',
@@ -329,18 +367,24 @@ export const docsDense = {
       'max days a range may span, both endpoints counted (7 = a 7-day window); caps the window from the picked start. Selection-only; does not rewrite an over-wide value',
     minRangeSpan:
       'min days a range must span, both endpoints counted (2 forbids a single-day range); repeated start click commits one day when allowed, otherwise cancels; default 1',
-    presets: 'preset ranges as quick-select options',
+    presets:
+      'preset ranges as quick-select options; disabled when an endpoint or span violates the corresponding constraints',
     hasClear: 'clear button when range is set (default true)',
     placeholder: 'placeholder when empty',
     size: 'trigger size',
     status: 'error/warning/success status',
-    statusVariant: 'How status message is placed: attached overlaps below input; detached floats below w/ spacing; tooltip hides the box and shows it on the status icon.',
+    statusVariant:
+      'How status message is placed: attached overlaps below input; detached floats below w/ spacing; tooltip hides the box and shows it on the status icon.',
     labelTooltip: 'tooltip via info icon at label end',
     numberOfMonths: 'months in calendar (default 2)',
-    weekStartsOn: 'first day of week in calendar (0=Sunday, or name e.g. "mon")',
+    weekStartsOn:
+      'first day of week in calendar (0=Sunday, or name e.g. "mon")',
     changeAction:
       'async action fired after onChange; drives optimistic UI updates via useTransition',
     isLoading: 'loading state; disables interaction + shows a spinner',
-    xstyle: 'StyleX styles for layout',
+    containerXstyle:
+      'Field box (label+control+status); also containerClassName/containerStyle. no effect in InputGroup or horizontal-labels FormLayout',
+    controlXstyle:
+      'visual control box (border/bg/icons), never the native input; also controlClassName/controlStyle. no root xstyle/className/style',
   },
 };

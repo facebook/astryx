@@ -15,6 +15,11 @@
 import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import {
+  hasPressedArm,
+  hasReleaseFade,
+  readsPressStrength,
+} from '../__tests__/pressState';
 import {RadioList} from './RadioList';
 import {RadioListItem} from './RadioListItem';
 import {getForcedColorsRules} from '../__tests__/forcedColors';
@@ -519,6 +524,28 @@ describe('RadioList', () => {
   });
 
   describe('RadioListItem rest forwarding', () => {
+    it('forwards align to its Item row unchanged', () => {
+      render(
+        <RadioList label="Preference" value="" onChange={() => {}}>
+          <RadioListItem label="Option A" value="a" data-testid="item-a" />
+          <RadioListItem
+            label="Option B"
+            value="b"
+            align="first-line"
+            data-testid="item-b"
+          />
+        </RadioList>,
+      );
+      expect(screen.getByTestId('item-a')).toHaveAttribute(
+        'data-align',
+        'center',
+      );
+      expect(screen.getByTestId('item-b')).toHaveAttribute(
+        'data-align',
+        'first-line',
+      );
+    });
+
     it('forwards data-testid, id, and aria-* to the item root element', () => {
       render(
         <RadioList label="Preference" value="" onChange={() => {}}>
@@ -854,5 +881,60 @@ describe('forced colors (WCAG 1.4.11)', () => {
     // The painted inner dot would be stripped to Canvas (invisible), making
     // checked and unchecked radios identical; CanvasText keeps it perceivable.
     expect(getForcedColorsRules()).toContain('background-color: canvastext;');
+  });
+});
+
+describe('pressed state', () => {
+  it('paints the pressed overlay over the radio indicator while the row is pressed', () => {
+    const {container} = render(
+      <RadioList label="Plan" value="a" onChange={() => {}}>
+        <RadioListItem label="Option A" value="a" />
+        <RadioListItem label="Option B" value="b" />
+      </RadioList>,
+    );
+    const circle = container.querySelector('.astryx-radio-indicator');
+    const wrapper = circle?.parentElement?.parentElement;
+    if (wrapper == null) {
+      throw new Error('the radio has no indicator wrapper to press');
+    }
+    expect(hasPressedArm(wrapper)).toBe(true);
+  });
+
+  it('does not expose a pressed arm on a disabled radio', () => {
+    const {container} = render(
+      <RadioList label="Plan" value="a" onChange={() => {}}>
+        <RadioListItem label="Unavailable" value="b" isDisabled />
+      </RadioList>,
+    );
+    const circle = container.querySelector('.astryx-radio-indicator');
+    const wrapper = circle?.parentElement?.parentElement;
+    if (wrapper == null) {
+      throw new Error('the radio has no indicator wrapper');
+    }
+    expect(hasPressedArm(wrapper)).toBe(false);
+  });
+
+  it('fades the touch press out from the row, with the overlay reading its strength', () => {
+    const {container} = render(
+      <RadioList label="Plan" value="a" onChange={() => {}}>
+        <RadioListItem label="Option A" value="a" />
+        <RadioListItem label="Option B" value="b" />
+      </RadioList>,
+    );
+    const circle = container.querySelector('.astryx-radio-indicator');
+    const wrapper = circle?.parentElement?.parentElement;
+    const row = circle?.closest('[data-astryx-pressable]');
+    if (wrapper == null || row == null) {
+      throw new Error('the radio has no pressable row or indicator wrapper');
+    }
+    // The controller writes the row; the row owns the strength and its
+    // release, and the owner-drawn layer over the circle paints the pressed
+    // token at that strength on both touch arms.
+    expect(hasReleaseFade(row)).toBe(true);
+    expect(readsPressStrength(wrapper, '[data-astryx-press="on"]')).toBe(true);
+    expect(readsPressStrength(wrapper)).toBe(true);
+    // The row itself paints nothing under a finger, as under a mouse: only
+    // the circle answers.
+    expect(readsPressStrength(row, '[data-astryx-press="on"]')).toBe(false);
   });
 });

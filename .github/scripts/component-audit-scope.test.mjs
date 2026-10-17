@@ -22,6 +22,13 @@ const FULL_AUDIT_SCOPE = {
   force_full_component_audits: true,
 };
 
+const NO_COMPONENT_AUDIT_SCOPE = {
+  has_components: false,
+  has_rtl_components: false,
+  has_rtl_harness: false,
+  force_full_component_audits: false,
+};
+
 describe('component audit scope', () => {
   it('loads the classifier and registry from the trusted base ref', () => {
     const workflow = fs.readFileSync(
@@ -39,7 +46,7 @@ describe('component audit scope', () => {
 
   it.each([
     ['packages/core/src/Button/Button.tsx', 'core'],
-    ['packages/lab/src/Drawer/Drawer.tsx', 'lab'],
+    ['packages/lab/src/Stat/Stat.tsx', 'lab'],
     ['packages/charts/src/Chart.tsx', 'charts'],
     ['packages/richtext/src/RichTextEditor.tsx', 'richtext'],
     ['packages/vega/src/VegaChart.tsx', 'vega'],
@@ -68,6 +75,60 @@ describe('component audit scope', () => {
 
     expect(
       classifyComponentAuditScope(changedPaths, prControlledPackages),
+    ).toMatchObject(FULL_AUDIT_SCOPE);
+  });
+
+  it('does not expose unrelated contributors to inherited component-audit failures', () => {
+    const paths = [
+      '.changeset/theme-family-artifacts.md',
+      'apps/sandbox/src/app/(sandbox)/pages/theme-family/page.tsx',
+      'packages/cli/api/theme/build/build.mjs',
+    ];
+    expect(classifyComponentAuditScope(paths, COMPONENT_PACKAGES)).toEqual(
+      NO_COMPONENT_AUDIT_SCOPE,
+    );
+  });
+
+  it('skips component audits for internal scripts and their upload workflow', () => {
+    expect(
+      classifyComponentAuditScope(
+        [
+          '.github/workflows/crowdin-upload.yml',
+          'internal/scripts/lib/a-future-strategy.mjs',
+        ],
+        COMPONENT_PACKAGES,
+      ),
+    ).toEqual(NO_COMPONENT_AUDIT_SCOPE);
+  });
+
+  it('keeps root scripts on full component audits', () => {
+    expect(
+      classifyComponentAuditScope(['scripts/build-css.mjs'], COMPONENT_PACKAGES),
+    ).toEqual(FULL_AUDIT_SCOPE);
+  });
+
+  it('still audits a component changed beside a known non-component surface', () => {
+    expect(
+      classifyComponentAuditScope(
+        [
+          'packages/cli/api/theme/build/build.mjs',
+          'packages/core/src/Button/Button.tsx',
+        ],
+        COMPONENT_PACKAGES,
+      ),
+    ).toMatchObject({
+      has_components: true,
+      has_rtl_components: true,
+      force_full_component_audits: false,
+    });
+  });
+
+  it('fails closed when a known non-component path is renamed from an unknown surface', () => {
+    expect(
+      classifyComponentAuditScope(
+        ['new/unclassified/path.xyz', 'packages/cli/api/theme/build/build.mjs'],
+        COMPONENT_PACKAGES,
+      ),
     ).toMatchObject(FULL_AUDIT_SCOPE);
   });
 

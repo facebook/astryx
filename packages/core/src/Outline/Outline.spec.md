@@ -12,7 +12,7 @@ owners: [cixzhang]
 review_triggers: [theming]
 verified_by:
   [packages/core/src/Outline/Outline.test.tsx, scripts/check-knowledge.mjs]
-modules: []
+modules: [module:Outline/parseOutlineFromMarkdown]
 families: []
 design_specs: []
 architecture: [architecture:component-theming-surface]

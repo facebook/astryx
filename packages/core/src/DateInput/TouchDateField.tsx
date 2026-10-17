@@ -77,8 +77,9 @@ import {Icon} from '../Icon';
 import {IconButton} from '../IconButton';
 import {useLocale, useTranslator} from '../i18n';
 import {useInputGroup} from '../InputGroup';
+import {useFieldInputStyling} from '../Field/fieldParts';
+import {joinAriaIDs} from '../utils/inputAria';
 import {groupStyles} from '../InputGroup/groupStyles';
-import {stableClassName} from '../naming';
 import {useSize} from '../SizeContext';
 import {Spinner} from '../Spinner';
 import {
@@ -110,7 +111,9 @@ import {
   DATE_FORMAT_WEEKDAY_ONLY,
   type ISODateString,
 } from '../utils';
+import {chainEventHandlers} from '../utils/chainEventHandlers';
 import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
+import {usePressFeedback} from '../hooks/usePressFeedback';
 import {normalizeDayOfWeek} from '../utils/dateTypes';
 import {MonthScroller, type MonthScrollerHandle} from './MonthScroller';
 import {MonthYearWheels} from './MonthYearWheels';
@@ -194,10 +197,14 @@ const styles = stylex.create({
     padding: 0,
     fontFamily: typographyVars['--font-family-body'],
     // Below 16px iOS zooms the page on focus. The field is focusable even
-    // though it is not typable, so it needs the same floor DateInput has.
+    // though it is not typable, so it needs the same floor DateInput has —
+    // keyed to iOS alone, since only iOS WebKit implements
+    // -webkit-touch-callout.
     fontSize: {
       default: typeScaleVars['--text-body-size'],
-      '@media (pointer: coarse)': `max(1rem, ${typeScaleVars['--text-body-size']})`,
+      '@media (pointer: coarse)': {
+        '@supports (-webkit-touch-callout: none)': `max(1rem, ${typeScaleVars['--text-body-size']})`,
+      },
     },
     lineHeight: typeScaleVars['--text-body-leading'],
     color: colorVars['--color-text-primary'],
@@ -567,12 +574,29 @@ export function TouchDateField({
   weekStartsOn: weekStartsOnProp = 0,
   format = 'date_long',
   width,
-  xstyle,
-  className,
-  style,
+  containerXstyle,
+  containerClassName,
+  containerStyle,
+  controlXstyle,
+  controlClassName,
+  controlStyle,
   ref,
-  ...rest
+  ...restProps
 }: DateInputProps) {
+  const {rest, container} = useFieldInputStyling('DateInput', restProps, {
+    containerXstyle,
+    containerClassName,
+    containerStyle,
+  });
+  const {
+    id: idProp,
+    'aria-describedby': ariaDescribedByProp,
+    'aria-labelledby': ariaLabelledByProp,
+    onClick: onClickProp,
+    onKeyDown: onKeyDownProp,
+    ...controlProps
+  } = rest;
+  const pressable = usePressFeedback();
   const t = useTranslator();
   const locale = useLocale();
   const isEffectivelyRequired = useResolvedRequired({isRequired, isOptional});
@@ -581,7 +605,9 @@ export function TouchDateField({
   const size = useSize(sizeProp, 'md');
   const weekStartsOn = normalizeDayOfWeek(weekStartsOnProp);
 
-  const id = useId();
+  const generatedID = useId();
+  const id = idProp ?? generatedID;
+  const fieldLabelID = useId();
   const inputLabelID = useId();
   const descriptionID = useId();
   const statusMessageID = useId();
@@ -622,6 +648,7 @@ export function TouchDateField({
       statusVariant !== 'tooltip' && status?.message ? statusMessageID : null,
       statusTooltipDescribedBy,
       showsDisabledMessage ? disabledMessageTooltip.describedBy : null,
+      ariaDescribedByProp,
     ],
     inputGroup,
   );
@@ -950,6 +977,7 @@ export function TouchDateField({
           // restyle the header button. Adding a target later is additive;
           // withdrawing one is not.
           data-title="month-year"
+          {...pressable}
           {...stylex.props(
             styles.title,
             interactionOverlayStyles.backgroundColor,
@@ -1174,7 +1202,6 @@ export function TouchDateField({
         // Gated internally by isEnabled, so attaching unconditionally is safe.
         disabledMessageTooltip.ref(el);
       }}
-      {...rest}
       {...mergeProps(
         themeProps('date-input', {
           size,
@@ -1192,10 +1219,10 @@ export function TouchDateField({
             inputStatusHoverShadowStyles[status.type],
           status && inputStatusFocusWithinStyles[status.type],
           inputGroup && groupStyles.inGroup,
-          xstyle,
+          controlXstyle,
         ),
-        className,
-        style,
+        controlClassName,
+        controlStyle,
       )}>
       {inputGroup && <VisuallyHidden id={inputLabelID}>{label}</VisuallyHidden>}
       <button
@@ -1219,6 +1246,7 @@ export function TouchDateField({
         />
       </button>
       <input
+        {...controlProps}
         ref={mergedInputRef}
         id={id}
         type="text"
@@ -1231,12 +1259,16 @@ export function TouchDateField({
         readOnly
         inputMode="none"
         onChange={() => {}}
-        onClick={openSheet}
-        onKeyDown={handleInputKeyDown}
+        onClick={chainEventHandlers(openSheet, onClickProp)}
+        onKeyDown={chainEventHandlers(handleInputKeyDown, onKeyDownProp)}
         placeholder={placeholder}
         disabled={isEffectivelyDisabled && !showsDisabledMessage}
         aria-disabled={showsDisabledMessage ? 'true' : undefined}
-        aria-labelledby={ariaLabelledBy}
+        aria-labelledby={
+          ariaLabelledByProp != null
+            ? joinAriaIDs(ariaLabelledBy ?? fieldLabelID, ariaLabelledByProp)
+            : ariaLabelledBy
+        }
         aria-describedby={ariaDescribedBy}
         aria-required={isEffectivelyRequired ? 'true' : undefined}
         aria-invalid={status?.type === 'error' ? 'true' : undefined}
@@ -1254,7 +1286,6 @@ export function TouchDateField({
         <InputClearButton
           label={t('@astryx.dateInput.clear', {label})}
           onClick={handleClear}
-          iconClassName={stableClassName('date-input-clear-icon')}
         />
       )}
       {isBusy && <Spinner size="sm" />}
@@ -1265,7 +1296,9 @@ export function TouchDateField({
         label={t('@astryx.dateInput.dialogLabel')}
         // The picker is a fixed height by construction, so the sheet should be
         // exactly as tall as it is rather than claiming a viewport budget.
-        height="hug">
+        height="hug"
+        // sheetBody owns the inset, including the band under the grab handle.
+        padding={0}>
         <div {...stylex.props(styles.sheetBody)}>{surface}</div>
       </BottomSheet>
       {showsDisabledMessage &&
@@ -1279,10 +1312,12 @@ export function TouchDateField({
 
   return (
     <Field
+      {...container}
       label={label}
       isLabelHidden={isLabelHidden}
       description={description}
       inputID={id}
+      labelID={ariaLabelledByProp != null ? fieldLabelID : undefined}
       descriptionID={description ? descriptionID : undefined}
       isOptional={isOptional}
       isRequired={isRequired}

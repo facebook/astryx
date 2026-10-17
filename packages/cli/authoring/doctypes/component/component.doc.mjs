@@ -53,10 +53,16 @@ export const doc = {
         'Exact public package specifier consumers use to import an integration-owned component. The packed-package gate resolves this specifier and verifies it exports the component name.',
     },
     {
+      name: 'replaces',
+      type: 'string',
+      description:
+        'Integration components only: the exact `name` of the Core ComponentDoc this component takes over for unqualified lookup, so every app that loads the integration gets it from component detail, component lists, search, `swizzle <Name>`, and issue routing; `swizzle --list` keeps listing Core names. The Core original stays reachable with `--package @astryxdesign/core`. It takes effect only when the package\'s peer range starts at the release that applies it, `"@astryxdesign/cli": ">=0.6.7"` or later; without such a range the component keeps its own name and `doctor integration components` warns. Set it only to intentionally own a Core identity; give an alternative or variant its own name instead.',
+    },
+    {
       name: 'keywords',
       type: 'string[]',
       description:
-        'Search keywords for CLI discovery: synonyms and related UI concepts from other design systems (MUI, Chakra, Radix, shadcn). Lowercase. Used by `astryx component <term>` fuzzy matching.',
+        'Search keywords for CLI discovery: synonyms and related UI concepts from other design systems (MUI, Chakra, Radix, and others). Lowercase. Used by `astryx component <term>` fuzzy matching.',
     },
     {
       name: 'hiddenComponents',
@@ -124,8 +130,7 @@ export const doc = {
       name: 'usage',
       type: 'UsageDoc',
       description:
-        'Component usage documentation: concise summary, best practices, component-specific accessibility requirements, and optional visual anatomy. (Optional on SubComponentDoc, where the sub-component description is used instead.)',
-      required: true,
+        'Component usage documentation: concise summary, best practices, component-specific accessibility requirements, and optional visual anatomy. Required on a component doc; optional on a sub-component doc (`subComponentOf`), which uses its description instead.',
       fields: [
         {
           name: 'usage.description',
@@ -176,7 +181,7 @@ export const doc = {
       name: 'props',
       type: 'ComponentPropDoc[]',
       description:
-        'SingleComponentDoc variant (required there): all public props for the one primary component. Each prop is {name, type, description, default?, required?, slotElements?}. Skip styling props like xstyle/className/style. Also present on SubComponentDoc.',
+        'SingleComponentDoc variant (required there): all public props for the one primary component. Each prop is {name, type, description, default?, required?, slotElements?, stability?}. Skip styling props like xstyle/className/style. Also present on SubComponentDoc.',
     },
     {
       name: 'components',
@@ -242,6 +247,10 @@ export const docs = {
     },
   ],
   notes: [
+    {
+      type: 'prose',
+      text: "When it loads, a stamped component doc is checked as loosely as an unstamped one, so adding `type: 'component'` to an existing doc never breaks it: `displayName` may be missing, `category` may be any string, and `usage`, `theming`, `playground` and `examples` are not checked. Each entry in a group doc's `components` must have a `name`. Write to the type anyway; it is the contract.",
+    },
     {
       type: 'prose',
       text: 'ComponentDoc is a discriminated union of three shapes that all extend ComponentBaseDoc. Pick the variant by which key you set: `props` (single), `components` (multi), or `subComponentOf` (sub).',

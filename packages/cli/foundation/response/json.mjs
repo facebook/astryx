@@ -7,7 +7,7 @@
  * The contract has four guarantees, enforced here and in index.mjs:
  *
  *   1. EVERY emission in --json mode is a single valid JSON envelope.
- *      Success: { apiVersion, type, data }
+ *      Success: { apiVersion, type, package?, data, meta? }
  *      Error:   { apiVersion, error, code, suggestions? }
  *      The `code` is a stable, machine-readable identifier (see
  *      error-codes.mjs). Consumers should branch on `code`, never on the
@@ -28,7 +28,7 @@
  * Version of the JSON envelope contract. Bump on breaking shape changes so
  * consumers can negotiate. Exposed on every envelope as `apiVersion`.
  */
-import {ERROR_CODES} from './error-codes.mjs';
+import {ERROR_CODES, isErrorCode} from './error-codes.mjs';
 import {recordEnvelope, setOutcome} from '../debug/index.mjs';
 
 export const API_VERSION = 1;
@@ -87,16 +87,20 @@ export function humanWarn(...args) {
  * Output a JSON response envelope and mark it handled.
  *
  * Structural serializer: pass a command/API result straight through as
- * `{type, data, meta?}`. There is no central response union — the correctness
- * of the `type` discriminator is guaranteed at each API function's `@returns`
- * (that's the fractal source-of-truth point), not by a map in this file.
+ * `{type, package?, data, meta?}`. There is no central response union — the
+ * correctness of the `type` discriminator is guaranteed at each API function's
+ * `@returns` (that's the fractal source-of-truth point), not by a map in this
+ * file. `package` names the npm package that owns the one thing the result is
+ * about (spec cli-surface INV28); it is written directly after `type`.
  *
- * @param {{type: string, data: unknown, meta?: Record<string, unknown>}} response
+ * @param {{type: string, package?: string, data: unknown, meta?: Record<string, unknown>}} response
  * @returns {void}
  */
 export function jsonOut(response) {
   /** @type {any} */
-  const envelope = {apiVersion: API_VERSION, type: response.type, data: response.data};
+  const envelope = {apiVersion: API_VERSION, type: response.type};
+  if (response.package !== undefined) envelope.package = response.package;
+  envelope.data = response.data;
   if (response.meta !== undefined) envelope.meta = response.meta;
   // Serialize BEFORE marking handled. If JSON.stringify throws (a circular
   // reference or a BigInt in `data` — an author bug in a command's return
@@ -118,8 +122,10 @@ export function jsonOut(response) {
  *
  * The `code` is resolved in priority order: an explicit `code` argument,
  * then a `code` property carried on a thrown Error/AstryxError, then the
- * generic `ERR_UNKNOWN` fallback. It always appears on the envelope so
- * consumers can branch on it unconditionally.
+ * generic `ERR_UNKNOWN` fallback. Only a registered code (error-codes.mjs) is
+ * taken from either source, so a Node system error's `ENOENT` never reaches
+ * the envelope. It always appears on the envelope so consumers can branch on
+ * it unconditionally.
  *
  * @param {unknown} err
  * @param {import('./base').Suggestion[]} [suggestions]
@@ -130,13 +136,9 @@ export function jsonOut(response) {
 export function toErrorEnvelope(err, suggestions, code) {
   const message =
     err instanceof Error ? err.message : typeof err === 'string' ? err : String(err);
-  const resolvedCode =
-    code ||
-    (err && typeof err === 'object' &&
-    typeof (/** @type {any} */ (err).code) === 'string'
-      ? /** @type {any} */ (err).code
-      : undefined) ||
-    ERROR_CODES.ERR_UNKNOWN;
+  const carried =
+    err && typeof err === 'object' ? /** @type {any} */ (err).code : undefined;
+  const resolvedCode = [code, carried].find(isErrorCode) ?? ERROR_CODES.ERR_UNKNOWN;
   /** @type {any} */
   const env = {apiVersion: API_VERSION, error: message, code: resolvedCode};
   if (Array.isArray(suggestions) && suggestions.length) env.suggestions = suggestions;

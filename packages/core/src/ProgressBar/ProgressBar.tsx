@@ -215,26 +215,23 @@ const styles = stylex.create({
     whiteSpace: 'nowrap',
     borderWidth: 0,
   },
-  // The `role="progressbar"` element. In determinate mode it does NOT clip its
-  // content (`overflow` stays visible) so a themed mark taller than the bar can
-  // overhang it; the determinate fill rounds its own corners via `border-radius`
-  // (see `fill`) and is always inside the track box, so dropping the clip does
-  // not change its appearance at any progress. Indeterminate mode re-adds the
-  // clip via `trackClipped` (see below) — its sliding fill travels outside the
-  // track and must be clipped, and marks are ignored while indeterminate, so
-  // there is nothing to overhang.
-  track: {
+  // The in-flow track determines this containing block's actual height.
+  // Marks share its geometry without depending on the label row's height or
+  // entering the progressbar's presentational subtree. Keep it unclipped so
+  // themed tall marks can overhang the track symmetrically.
+  trackContainer: {
     position: 'relative',
+    width: '100%',
+  },
+  // The semantic rail holds only the fill, which rounds its own corners.
+  track: {
     width: '100%',
     height: '8px',
     backgroundColor: colorVars['--color-background-muted'],
     borderRadius: radiusVars['--radius-full'],
   },
-  // Indeterminate-only clip. The indeterminate fill slides from translateX
-  // -100% to 250%, so it deliberately overshoots the track on both sides and
-  // relies on the track clipping it to the visible window. Applied only when
-  // `isIndeterminate` (marks are suppressed then, so nothing needs to overhang)
-  // so it never re-clips a themed tall mark in determinate mode.
+  // The indeterminate fill overshoots the track on both sides and must be
+  // clipped to the visible rail. Marks are suppressed in this mode.
   trackClipped: {
     overflow: 'hidden',
   },
@@ -260,11 +257,10 @@ const styles = stylex.create({
     animationTimingFunction: 'ease-in-out',
     animationIterationCount: 'infinite',
   },
-  // A mark is a vertical tick centered on the track, a child of the
-  // `role="progressbar"` element (unchanged DOM). The track no longer clips, so
-  // its height — 8px by default — may exceed the bar and overhang; the centering
-  // translate keeps any overhang symmetric. Positioned horizontally via
-  // `insetInlineStart`; the translate mirrors under RTL.
+  // A mark is a vertical tick centered on the track via their shared positioning container.
+  // It stays outside role="progressbar" so it remains independently focusable.
+  // The centering translate keeps themed overhang symmetric;
+  // insetInlineStart and the mirrored translate preserve RTL.
   //
   // The dimensions read private vars rather than being plain declarations: a
   // theme writes `width`/`height` on the `progressbar-mark` target as usual and
@@ -400,7 +396,7 @@ function defaultFormatValueLabel(value: number, max: number): string {
  * ```
  *
  * A mark's height, width, and color are directly themeable via the
- * `progressbar-mark` target. The target reflects `data-placement`
+ * `progress-bar-mark` target. The target reflects `data-placement`
  * (`"fill"` when the mark sits inside the filled area, `"track"` when it is
  * still out on the bare track) and `data-variant` (the fill's variant), so a
  * theme can style the two cases separately — e.g. a taller "goal flag" tick
@@ -411,7 +407,7 @@ function defaultFormatValueLabel(value: number, max: number): string {
  * defineTheme({
  *   name: 'campaign',
  *   components: {
- *     'progressbar-mark': {base: {height: '16px', backgroundColor: 'red'}},
+ *     'progress-bar-mark': {base: {height: '16px', backgroundColor: 'red'}},
  *   },
  * });
  * ```
@@ -479,13 +475,7 @@ export function ProgressBar({
     <div
       ref={ref}
       {...mergeProps(
-        themeProps(
-          'progress-bar',
-          {variant},
-          // `progressbar` ran the compound name together; keep it emitted so
-          // existing themes continue to work.
-          {legacyNames: ['progressbar']},
-        ),
+        themeProps('progress-bar', {variant}),
         stylex.props(styles.container, xstyle),
         className,
         style,
@@ -518,59 +508,40 @@ export function ProgressBar({
         <VisuallyHidden id={labelId}>{label}</VisuallyHidden>
       )}
 
-      {/* Progress track — the `role="progressbar"` element, holding the fill
-          and marks as its children (unchanged DOM shape). It no longer clips
-          (`overflow` is visible), so a themed taller mark can overhang it;
-          the fill preserves its rounded shape via its own `border-radius`. */}
-      <div
-        role="progressbar"
-        aria-valuenow={isIndeterminate ? undefined : clampedValue}
-        aria-valuemin={isIndeterminate ? undefined : 0}
-        aria-valuemax={isIndeterminate ? undefined : safeMax}
-        aria-labelledby={labelId}
-        aria-valuetext={isIndeterminate ? undefined : valueText}
-        {...mergeProps(
-          themeProps('progress-bar-track', undefined, {
-            legacyNames: ['progressbar-track'],
-          }),
-          stylex.props(styles.track, isIndeterminate && styles.trackClipped),
-        )}>
-        {isIndeterminate ? (
-          <div
-            {...mergeProps(
-              themeProps(
-                'progress-bar-fill',
-                {variant: fillVariant},
-                {legacyNames: ['progressbar-fill']},
-              ),
-              stylex.props(
-                styles.indeterminateFill,
-                variantStyles[fillVariant],
-              ),
-            )}
-          />
-        ) : (
-          <div
-            {...mergeProps(
-              themeProps(
-                'progress-bar-fill',
-                {variant: fillVariant},
-                {legacyNames: ['progressbar-fill']},
-              ),
-              stylex.props(styles.fill, variantStyles[fillVariant]),
-            )}
-            style={{width: `${percentage}%`}}
-          />
-        )}
-        {/* Target marks — children of the progressbar element (unchanged),
-            layered above the fill so they show whether progress is below or
-            past them. A mark's color follows what it sits on: inside the fill
-            it uses the fill variant's on-color, out on the bare track it uses
-            the emphasized divider color. Each mark is labeled, so it is a
-            focusable Tooltip trigger: the label is visible on hover/focus and
-            names the mark for assistive tech via the Tooltip's
-            aria-describedby, without adding a labeled child to the
-            progressbar's own a11y subtree. */}
+      <div {...stylex.props(styles.trackContainer)}>
+        <div
+          role="progressbar"
+          aria-valuenow={isIndeterminate ? undefined : clampedValue}
+          aria-valuemin={isIndeterminate ? undefined : 0}
+          aria-valuemax={isIndeterminate ? undefined : safeMax}
+          aria-labelledby={labelId}
+          aria-valuetext={isIndeterminate ? undefined : valueText}
+          {...mergeProps(
+            themeProps('progress-bar-track'),
+            stylex.props(styles.track, isIndeterminate && styles.trackClipped),
+          )}>
+          {isIndeterminate ? (
+            <div
+              {...mergeProps(
+                themeProps('progress-bar-fill', {variant: fillVariant}),
+                stylex.props(
+                  styles.indeterminateFill,
+                  variantStyles[fillVariant],
+                ),
+              )}
+            />
+          ) : (
+            <div
+              {...mergeProps(
+                themeProps('progress-bar-fill', {variant: fillVariant}),
+                stylex.props(styles.fill, variantStyles[fillVariant]),
+              )}
+              style={{width: `${percentage}%`}}
+            />
+          )}
+        </div>
+        {/* Marks overlay the fill but live outside the semantic progressbar.
+          Their Tooltip descriptions remain independently reachable on focus. */}
         {resolvedMarks.map(mark => {
           // The tick element. It is both the Tooltip's anchor and the Suspense
           // fallback shown while the lazy Tooltip chunk loads, so the tick is
@@ -579,20 +550,16 @@ export function ProgressBar({
           //
           // `placement` is reflected as `data-placement` (and a class) so a
           // theme can style the two cases separately on the
-          // `progressbar-mark` target; `variant` mirrors the fill's variant
+          // `progress-bar-mark` target; `variant` mirrors the fill's variant
           // for the same reason.
           const markEl = (
             <span
               tabIndex={0}
               {...mergeProps(
-                themeProps(
-                  'progress-bar-mark',
-                  {
-                    variant: fillVariant,
-                    placement: mark.isOnFill ? 'fill' : 'track',
-                  },
-                  {legacyNames: ['progressbar-mark']},
-                ),
+                themeProps('progress-bar-mark', {
+                  variant: fillVariant,
+                  placement: mark.isOnFill ? 'fill' : 'track',
+                }),
                 stylex.props(
                   focusOutlineStyles.focusVisible,
                   styles.mark,

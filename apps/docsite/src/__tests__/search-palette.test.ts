@@ -11,7 +11,7 @@ import {describe, it, expect} from 'vitest';
 import {components} from '../generated/componentRegistry';
 import {packages} from '../generated/packageRegistry';
 import {docTopics} from '../generated/docsRegistry';
-import {templates} from '../generated/templateRegistry';
+import {templateMetadata as templates} from '../generated/templateMetadataRegistry';
 import {
   flattenComponentSidebarEntries,
   getComponentSidebarData,
@@ -97,12 +97,14 @@ describe('SearchPalette data', () => {
         ?.entries.every(entry => entry.isReady),
     ).toBe(true);
 
-    expect(canaryCategories.map(category => category.displayName)).toEqual([
-      'Charts',
-      'Lab',
-      'Rich Text',
-      'Vega',
-    ]);
+    // One canary category per canary-only package with components; a
+    // configured integration that is a stable release joins the ready view.
+    expect(canaryCategories.map(category => category.displayName)).toEqual(
+      packages
+        .filter(pkg => pkg.canaryOnly && components[pkg.name]?.length)
+        .map(pkg => pkg.displayName)
+        .sort((a, b) => a.localeCompare(b)),
+    );
     const chartEntries = canaryCategories.flatMap(category =>
       category.componentItems.flatMap(item =>
         item.type === 'entry' || item.label !== 'Charts' ? [] : item.entries,

@@ -25,7 +25,9 @@
     "scripts/**/*.mjs",
     "assets/**/*.mjs",
     "assets/**/*.ts",
-    "assets/**/*.tsx"
+    "assets/**/*.tsx",
+    "test/authoring-types/**/*.mjs",
+    "test/authoring-types/**/*.ts"
   ],
   "exclude": ["**/*.test.mjs"]
 }

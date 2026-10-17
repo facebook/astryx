@@ -16,10 +16,17 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import babel from '@babel/core';
+import presetTypeScript from '@babel/preset-typescript';
 import stylexPlugin from '@stylexjs/babel-plugin';
 import ts from 'typescript';
 import {registryItemSchema, registrySchema} from 'shadcn/schema';
 import {stripCopyrightHeader} from '../../../packages/cli/foundation/text/copyright-header.mjs';
+import {
+  createShadcnPrecompiledDeclaration,
+  shadcnJavaScriptTarget,
+  shadcnPrecompiledDeclarationTarget,
+  transformShadcnJavaScriptSource,
+} from '../../../packages/cli/authoring/shadcn/source-variants.mjs';
 import {
   createRegistryReceipt,
   registryReceiptTarget,
@@ -52,6 +59,27 @@ function packageNameFromSpecifier(specifier) {
     return specifier.split('/').slice(0, 2).join('/');
   }
   return specifier.split('/')[0];
+}
+
+function packageExportsSpecifier(pkg, specifier) {
+  const packageExports = pkg.packageExports;
+  if (packageExports == null) return true;
+
+  const subpath = specifier.slice(pkg.name.length);
+  const exportKey = subpath ? `.${subpath}` : '.';
+  if (typeof packageExports === 'string' || Array.isArray(packageExports)) {
+    return exportKey === '.';
+  }
+  if (Object.hasOwn(packageExports, exportKey)) return true;
+
+  return Object.keys(packageExports).some(key => {
+    const wildcardIndex = key.indexOf('*');
+    if (wildcardIndex === -1) return false;
+    return (
+      exportKey.startsWith(key.slice(0, wildcardIndex)) &&
+      exportKey.endsWith(key.slice(wildcardIndex + 1))
+    );
+  });
 }
 
 function readImportSpecifiers(source, fileName) {
@@ -110,7 +138,10 @@ function precompileStylexSource(source, fileName) {
     filename: fileName,
     babelrc: false,
     configFile: false,
-    presets: [['@babel/preset-typescript', {allExtensions: true, isTSX: true}]],
+    // Imported, not named: Babel resolves a string preset from `cwd`, and CI
+    // runs this script from the repo root, where only a hoisted node_modules
+    // would carry docsite's own Babel presets.
+    presets: [[presetTypeScript, {allExtensions: true, isTSX: true}]],
     plugins: [
       [
         stylexPlugin,
@@ -131,8 +162,13 @@ function precompileStylexSource(source, fileName) {
   if (result.code.includes('stylex.create')) {
     throw new Error(`Uncompiled stylex.create remains in ${fileName}`);
   }
+  const precompiled = `${result.code}\n`;
   return {
-    source: `${result.code}\n`,
+    // Normalize once through the pinned client's JavaScript printer. That
+    // transform is idempotent, so tsx=true and tsx=false write identical JSX.
+    source: transformShadcnJavaScriptSource(precompiled),
+    // Babel strips the source's types while precompiling StyleX, so publish the
+    // result honestly as JSX and add a narrow declaration beside the catalog.
     extension: 'jsx',
     precompiledStylex: true,
   };
@@ -264,9 +300,30 @@ function componentItem(
   };
 }
 
+function precompiledDeclarationFile(itemName, sourceTarget) {
+  const target = shadcnPrecompiledDeclarationTarget(sourceTarget);
+  return {
+    path: `registry/${itemName}/astryx-types.d.mts`,
+    type: 'registry:file',
+    target,
+    content: createShadcnPrecompiledDeclaration(sourceTarget),
+  };
+}
+
 function withCompositionReceipt(item, identity, sourceVersion) {
-  const sourceFile = item.files[0];
+  const [sourceFile, ...supportFiles] = item.files;
   const receiptTarget = registryReceiptTarget(sourceFile.target, item.name);
+  const javascriptTarget = shadcnJavaScriptTarget(sourceFile.target);
+  const variants =
+    javascriptTarget === sourceFile.target
+      ? []
+      : [
+          {
+            format: 'javascript',
+            target: javascriptTarget,
+            content: transformShadcnJavaScriptSource(sourceFile.content),
+          },
+        ];
   const receipt = createRegistryReceipt({
     item: {
       name: item.name,
@@ -282,7 +339,15 @@ function withCompositionReceipt(item, identity, sourceVersion) {
         target: sourceFile.target,
         registryPath: sourceFile.path,
         content: sourceFile.content,
+        variants,
       },
+      ...supportFiles.map(file => ({
+        id: 'types',
+        target: file.target,
+        registryPath: file.path,
+        content: file.content,
+        variants: [],
+      })),
     ],
   });
 
@@ -290,6 +355,7 @@ function withCompositionReceipt(item, identity, sourceVersion) {
     ...item,
     files: [
       sourceFile,
+      ...supportFiles,
       {
         path: `registry/${item.name}/astryx-receipt.json`,
         type: 'registry:file',
@@ -334,6 +400,7 @@ function blockItem(
     stripCopyrightHeader(block.source),
     fileName,
   );
+  const sourceTarget = `components/astryx/${kind === 'block' ? 'blocks' : `${kind}s`}/${block.dirName}.${compiled.extension}`;
   return withCompositionReceipt(
     {
       $schema: REGISTRY_ITEM_SCHEMA,
@@ -353,9 +420,12 @@ function blockItem(
         {
           path: `registry/${itemName}/${block.dirName}.${compiled.extension}`,
           type: 'registry:block',
-          target: `components/astryx/${kind === 'block' ? 'blocks' : `${kind}s`}/${block.dirName}.${compiled.extension}`,
+          target: sourceTarget,
           content: compiled.source,
         },
+        ...(compiled.precompiledStylex
+          ? [precompiledDeclarationFile(itemName, sourceTarget)]
+          : []),
       ],
       astryx: {
         kind,
@@ -393,6 +463,7 @@ function pageItem(
     stripCopyrightHeader(template.source),
     fileName,
   );
+  const sourceTarget = `app/astryx/${template.slug}/page.${compiled.extension}`;
   return withCompositionReceipt(
     {
       $schema: REGISTRY_ITEM_SCHEMA,
@@ -414,9 +485,12 @@ function pageItem(
           // shadcn 4.19.0 silently skips files typed registry:page. The item
           // remains registry:page while its source file uses the working type.
           type: 'registry:block',
-          target: `app/astryx/${template.slug}/page.${compiled.extension}`,
+          target: sourceTarget,
           content: compiled.source,
         },
+        ...(compiled.precompiledStylex
+          ? [precompiledDeclarationFile(itemName, sourceTarget)]
+          : []),
       ],
       astryx: {
         kind: 'page',
@@ -475,6 +549,7 @@ export function buildShadcnRegistry({
   cliRoot = process.cwd(),
   dependencyTag = null,
   externalDependencySpecs = {},
+  skipBlocksWithUnavailableComponents = false,
 }) {
   const cliPackage = packages.find(pkg => pkg.name === '@astryxdesign/cli');
   const sourceVersion = dependencyTag ?? cliPackage?.version;
@@ -513,9 +588,38 @@ export function buildShadcnRegistry({
       ),
     )
     .sort((a, b) => a.name.localeCompare(b.name));
+  const availableComponentNames = new Set(
+    componentEntries
+      .filter(([packageName]) => packageDependencies.has(packageName))
+      .flatMap(([, components]) => components.map(component => component.name)),
+  );
+  const packageCatalog = new Map(packages.map(pkg => [pkg.name, pkg]));
   const blockItems = [];
   let skippedUnpublishedBlocks = 0;
   for (const block of blocks) {
+    // A released subpath can still lack a named component added after the last
+    // package release. Production blocks must satisfy both contracts: the
+    // imported subpath below and the published component snapshot here.
+    if (
+      skipBlocksWithUnavailableComponents &&
+      block.componentsUsed?.some(
+        componentName => !availableComponentNames.has(componentName),
+      )
+    ) {
+      skippedUnpublishedBlocks++;
+      continue;
+    }
+    const unpublishedComponentImport = readImportSpecifiers(
+      block.source,
+      `${block.dirName}.tsx`,
+    ).find(specifier => {
+      const pkg = packageCatalog.get(packageNameFromSpecifier(specifier));
+      return pkg != null && !packageExportsSpecifier(pkg, specifier);
+    });
+    if (unpublishedComponentImport) {
+      skippedUnpublishedBlocks++;
+      continue;
+    }
     try {
       blockItems.push(
         blockItem(
@@ -608,11 +712,15 @@ function writeJson(filePath, value) {
 }
 
 export function generateShadcnRegistryForTarget({target, outDir, ...options}) {
-  if (target !== 'canary') {
+  if (target !== 'canary' && target !== 'latest') {
     fs.rmSync(outDir, {recursive: true, force: true});
-    return null;
+    throw new Error(`Unsupported ShadCN registry target: ${String(target)}`);
   }
-  return generateShadcnRegistry({outDir, ...options});
+  return generateShadcnRegistry({
+    outDir,
+    ...options,
+    skipBlocksWithUnavailableComponents: target === 'latest',
+  });
 }
 
 export function generateShadcnRegistry({
@@ -624,6 +732,7 @@ export function generateShadcnRegistry({
   cliRoot,
   dependencyTag,
   externalDependencySpecs,
+  skipBlocksWithUnavailableComponents,
 }) {
   const result = buildShadcnRegistry({
     packages,
@@ -633,6 +742,7 @@ export function generateShadcnRegistry({
     cliRoot,
     dependencyTag,
     externalDependencySpecs,
+    skipBlocksWithUnavailableComponents,
   });
   fs.rmSync(outDir, {recursive: true, force: true});
   fs.mkdirSync(outDir, {recursive: true});

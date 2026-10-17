@@ -3,7 +3,7 @@
 /**
  * @file Programmatic API for the Astryx CLI.
  *
- * Every function returns the same { type, data } envelope that `xds --json` outputs.
+ * Every function returns the same { type, data } envelope that `astryx --json` outputs.
  * Errors throw AstryxError (with optional .suggestions).
  *
  * @example
@@ -28,8 +28,13 @@ export {template} from './template/template.mjs';
 export {
   themeBuild,
   themeAdd,
+  themeRemove,
+  themeUse,
+  themeEject,
+  themeTemplate,
   themeList,
   themeListAvailable,
+  themeListCopySources,
   themeTargets,
   themePaletteGenerate,
   generateTonalPalette,
@@ -43,7 +48,6 @@ export {gapReport} from './gap-report/gap-report.mjs';
 export {upgrade} from './upgrade/upgrade.mjs';
 export {init} from './init/init.mjs';
 export {doctor} from './doctor/doctor.mjs';
-export {layoutExpand, layoutCheck, layoutGrammar} from './layout/layout.mjs';
 export {
   integrationAdd,
   integrationAddAgentDoc,
@@ -72,10 +76,12 @@ export {logger} from './logger.mjs';
  * @typedef {import('./logger.mjs').Logger} Logger
  */
 
-// ── Types (re-exported from each command's colocated `.type.mjs`) ─────
+// ── Types (re-exported from the shared response foundation and each command's
+// colocated `.type.mjs`) ──────────────────────────────────────────────────
 // Runtime no-ops (the .type.mjs files are `export {}`); tsc carries these
 // through to the generated api/index.d.mts so the public type surface exposes
-// every command's Options + response types by name.
+// the shared receipt vocabulary and every command's Options + response types.
+export * from '../foundation/response/batch.type.mjs';
 export * from './component/component.type.mjs';
 export * from './docs/docs.type.mjs';
 export * from './blog/blog.type.mjs';
@@ -90,7 +96,6 @@ export * from './gap-report/gap-report.type.mjs';
 export * from './upgrade/upgrade.type.mjs';
 export * from './init/init.type.mjs';
 export * from './doctor/doctor.type.mjs';
-export * from './layout/layout.type.mjs';
 export * from './integration/integration-authoring.type.mjs';
 export * from './integration/pack-check.type.mjs';
 export * from './integration/validate-integration.type.mjs';

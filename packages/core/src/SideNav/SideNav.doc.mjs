@@ -25,7 +25,7 @@ export const docs = {
       {className: 'astryx-side-nav-section'},
     ],
   },
-  description: 'Container with five zones: header, topContent, children (scrollable), footer, and footerIcons. Supports collapsible mode.',
+  description: 'Container with five zones: header, topContent, children (scrollable), footer, and footerIcons. Supports collapsible and resizable modes.',
   props: [
     {
       name: 'header',

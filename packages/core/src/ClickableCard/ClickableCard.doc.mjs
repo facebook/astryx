@@ -22,9 +22,9 @@ export const docs = {
   props: [
     {name: 'label', type: 'string', description: 'Accessibility label.', required: true},
     {name: 'onClick', type: '(event: MouseEvent) => void', description: 'Click handler: fires on card surface only.'},
-    {name: 'href', type: 'string', description: 'Navigation URL.'},
+    {name: 'href', type: 'string', description: 'Navigation URL. Plain, new-tab, Cmd/Ctrl-click, and middle-click activation all follow the shared navigation rule described on the Link `href` prop.'},
     {name: 'target', type: 'string', description: 'Link target.', default: "'_self'"},
-    {name: 'isDisabled', type: 'boolean', description: 'Disables the card.', default: 'false'},
+    {name: 'isDisabled', type: 'boolean', description: 'Disables the card, removes a link destination, and leaves the card out of the tab order.', default: 'false'},
     {name: 'children', type: 'ReactNode', description: 'Card content.'},
     {name: 'padding', type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10', description: 'Inner padding.', default: '4'},
     {name: 'variant', type: "'default' | 'transparent' | 'muted' | 'blue' | 'cyan' | 'gray' | 'green' | 'orange' | 'pink' | 'purple' | 'red' | 'teal' | 'yellow'", description: 'Background color variant.', default: "'default'"},
@@ -37,6 +37,10 @@ export const docs = {
   theming: {
     container: true,
     targets: [{className: 'astryx-clickable-card', visualProps: ['variant']}],
+    vars: [
+      {name: '--_press-overlay', description: 'Fill of the ::after interaction overlay: transparent at rest, the hover overlay token on hover (hover-capable pointers), the pressed overlay token while pressed (`:active` on a mouse; `data-astryx-press="on"` written by the touch press controller under a finger) and the hover token for the release fade. Set on the card element by its own interaction arms.', default: 'transparent', private: true},
+      {name: '--_press-overlay-transition', description: 'Duration of the overlay\'s background-color transition: the fast duration token, except 0s while a believed touch press paints so it lands on the first frame.', default: 'var(--duration-fast)', private: true},
+    ],
   },
   playground: {
     defaults: {
@@ -69,9 +73,9 @@ export const docsDense = {
   propDescriptions: {
     label: 'accessibility label',
     onClick: 'click handler: fires on card surface only',
-    href: 'navigation URL',
+    href: 'navigation URL; every activation follows the shared navigation rule (see Link href)',
     target: 'link target',
-    isDisabled: 'disables card',
+    isDisabled: 'disables card, removes link destination, and leaves tab order',
     padding: 'inner padding',
     variant: 'background color variant',
     elevation: 'resting shadow depth: none|low|med|high; often raised to signal clickability',

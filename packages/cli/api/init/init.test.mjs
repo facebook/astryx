@@ -230,10 +230,37 @@ describe('init() — logger', () => {
       errSpy.mockRestore();
     }
     const text = lines.join('\n');
-    expect(text).toContain('✓ AI agent docs installed → AGENTS.md');
+    expect(text).toContain('[ok] AI agent docs installed -> AGENTS.md');
     expect(text).toContain('  Next steps:');
     // The exact next-steps block the CLI prints comes from getNextSteps().
     expect(text).toContain(getNextSteps('npx astryx')[2].slice(0, 20));
+  });
+});
+
+describe('init() — ASCII output', () => {
+  it('prints only ASCII on the default, all-features, re-run, template, and remove paths', async () => {
+    /** @type {string[]} */
+    const lines = [];
+    const logSpy = vi.spyOn(console, 'log').mockImplementation((...a) => lines.push(a.join(' ')));
+    const errSpy = vi.spyOn(console, 'error').mockImplementation((...a) => lines.push(a.join(' ')));
+    const empty = fs.mkdtempSync(path.join(process.cwd(), '.astryx-init-remove-'));
+    logger.setSilent(false);
+    try {
+      await init({}, {cwd: tmpDir});
+      await init({all: true}, {cwd: tmpDir});
+      await init({all: true}, {cwd: tmpDir});
+      await init({features: 'template', templateName: 'blank'}, {cwd: tmpDir});
+      await init({removeAgents: true}, {cwd: tmpDir});
+      await init({removeAgents: true}, {cwd: empty});
+    } finally {
+      logger.setSilent(true);
+      logSpy.mockRestore();
+      errSpy.mockRestore();
+      fs.rmSync(empty, {recursive: true, force: true});
+    }
+    expect(lines.length).toBeGreaterThan(0);
+    expect(lines.some(line => line.startsWith('[ok] Removed'))).toBe(true);
+    expect(lines.filter(line => /[\u0080-\uFFFF]/.test(line))).toEqual([]);
   });
 });
 
@@ -259,5 +286,18 @@ describe('init() — write-path safety', () => {
     await expect(
       init({features: 'template', templateName: '../../etc/evil'}, {cwd: tmpDir}),
     ).rejects.toMatchObject({code: ERROR_CODES.ERR_UNKNOWN_TEMPLATE});
+  });
+
+  it('refuses a template write that a symlinked src would carry outside cwd (ERR_PATH_TRAVERSAL)', async () => {
+    const outside = fs.mkdtempSync(path.join(process.cwd(), '.astryx-init-outside-'));
+    try {
+      fs.symlinkSync(outside, path.join(tmpDir, 'src'), 'dir');
+      await expect(
+        init({features: 'template', templateName: 'blank'}, {cwd: tmpDir}),
+      ).rejects.toMatchObject({code: ERROR_CODES.ERR_PATH_TRAVERSAL});
+      expect(fs.readdirSync(outside)).toEqual([]);
+    } finally {
+      fs.rmSync(outside, {recursive: true, force: true});
+    }
   });
 });

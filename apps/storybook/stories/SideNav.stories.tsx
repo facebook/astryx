@@ -1,6 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import type {Meta, StoryObj} from '@storybook/react';
+import {AppShell} from '@astryxdesign/core/AppShell';
 import {
   SideNav,
   SideNavHeading,
@@ -674,6 +675,88 @@ export const CollapsibleSidebar: Story = {
       </SideNavSection>
     </SideNav>
   ),
+};
+
+// =============================================================================
+// Resizable in AppShell
+// =============================================================================
+
+export const ResizableInAppShell: Story = {
+  name: 'Resizable in AppShell',
+  parameters: {
+    layout: 'fullscreen',
+  },
+  render: () => (
+    <AppShell
+      contentPadding={6}
+      sideNav={
+        <SideNav
+          resizable
+          header={
+            <SideNavHeading
+              icon={
+                <NavIcon icon={<CubeIcon style={{width: 16, height: 16}} />} />
+              }
+              heading="My App"
+            />
+          }>
+          <SideNavSection title="Main">
+            <SideNavItem
+              label="Dashboard"
+              icon={HomeIcon}
+              selectedIcon={HomeIconSolid}
+              isSelected
+            />
+            <SideNavItem label="Projects" icon={FolderIcon} />
+            <SideNavItem label="Analytics" icon={ChartBarIcon} />
+          </SideNavSection>
+        </SideNav>
+      }>
+      <Text type="body">Drag the sidebar edge to resize the navigation.</Text>
+    </AppShell>
+  ),
+  play: async ({canvasElement}) => {
+    await document.fonts.ready;
+    await new Promise<void>(resolve =>
+      requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+    );
+
+    const nav = canvasElement.querySelector<HTMLElement>('nav');
+    const panel = nav?.closest<HTMLElement>('.astryx-app-shell-sidenav');
+    const handle = canvasElement.querySelector<HTMLElement>(
+      '[data-testid="astryx-sidenav-resize-handle"]',
+    );
+
+    if (!panel || !handle) {
+      throw new Error('Resizable AppShell fixture did not render as expected');
+    }
+
+    if (panel.scrollWidth !== panel.clientWidth) {
+      throw new Error(
+        `Resizable SideNav overflowed its AppShell panel: clientWidth ${panel.clientWidth}px, scrollWidth ${panel.scrollWidth}px`,
+      );
+    }
+
+    handle.focus();
+    await new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
+
+    const focusStyle = getComputedStyle(handle);
+    const outlineWidth = Number.parseFloat(focusStyle.outlineWidth);
+    const outlineOffset = Number.parseFloat(focusStyle.outlineOffset);
+    if (
+      canvasElement.ownerDocument.activeElement !== handle ||
+      !handle.matches(':focus-visible') ||
+      focusStyle.outlineStyle === 'none' ||
+      !Number.isFinite(outlineWidth) ||
+      outlineWidth <= 0 ||
+      !Number.isFinite(outlineOffset) ||
+      outlineOffset > -outlineWidth
+    ) {
+      throw new Error(
+        `Resize handle focus ring was not visibly inset: ${outlineWidth}px ${focusStyle.outlineStyle}, offset ${outlineOffset}px`,
+      );
+    }
+  },
 };
 
 // =============================================================================

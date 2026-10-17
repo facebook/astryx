@@ -28,6 +28,17 @@ deciding_specs: []
 
 # Icon resolution and component slots
 
+<!-- review-applicability:v1 -->
+
+```json
+{
+  "scope": "global",
+  "triggers": {
+    "component-slots": ["INV1", "INV2", "INV3", "INV6", "INV7", "INV10"]
+  }
+}
+```
+
 This record defines how shared icons and component-owned icon roles fit together.
 It is the approved target architecture. Existing extension keys continue to work
 until a separate compatibility decision changes them.

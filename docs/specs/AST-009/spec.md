@@ -1,5 +1,5 @@
 ---
-schema_version: 1
+schema_version: 4
 template_version: 1
 kind: system-spec
 id: spec:AST-009
@@ -17,6 +17,33 @@ affects_consumer_docs: []
 ---
 
 # Assistive-technology verification system spec
+
+<!-- review-applicability:v1 -->
+
+```json
+{
+  "scope": "global",
+  "triggers": {
+    "accessibility": [
+      "FR1",
+      "FR2",
+      "FR3",
+      "FR4",
+      "FR5",
+      "FR6",
+      "FR7",
+      "FR9",
+      "FR10",
+      "FR11",
+      "FR12",
+      "FR13",
+      "FR14",
+      "FR15",
+      "FR16"
+    ]
+  }
+}
+```
 
 ## Intent
 
@@ -156,6 +183,22 @@ Its merge-time unit, DOM, axe, and browser evidence from the owning records can 
 All three rows block that stable release until they have passing durable receipts or are covered by a current owner-recorded exception. The iOS row covers #5373's touch path; iOS Simulator layout evidence does not prove VoiceOver or physical-device touch behavior.
 
 The [Popover contract](../../../packages/core/src/Popover/Popover.spec.md), [layer runtime](../../architecture/layer-runtime.md), and [overlay dismissal](../../families/overlay-dismissal.md) continue to own focus, runtime, and dismissal behavior. AST-009 owns only the real-AT evidence and stable-release block for the claimed outcome.
+
+### Pending release block — pull request #6950
+
+| Field            | Value                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Source change    | Pull request [#6950](https://github.com/facebook/astryx/pull/6950) changes CommandPalette's empty-result live-region content and query-state announcement timing. Bind the final receipt to the landed commit after merge.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| Affected release | The first stable release containing the landed pull request.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| Trigger          | FR4. The intended result depends on what the live region announces, when a populated result set narrows to nothing, and whether the update repeats or is skipped.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| Scenario         | Open the checked-in `CommandPalette / Audit Matrix` story. **Narrow to empty:** within the panel labeled `Grouped command palette`, focus its `Search commands` input, which lists four results. Type `s`, then `x`, one key at a time. After `s` the results narrow to Settings and Save and no empty-result message is announced. After `x` nothing matches: confirm `No results` is announced once, after the results are replaced by the message. Type `z`: the query still matches nothing and `No results` is announced once more, because each settled empty query announces once. Clear the query and confirm the four results return with no empty-result announcement. **Rendered message:** within the panel labeled `Empty command palette`, focus its `Search commands` input and paste `missing` as one edit. Confirm the rendered `No matching commands. Create a command` message is announced once, without substituting the built-in default. Clear the query and paste `missing` again; it is announced once more. |
+
+| Required pairing            | State     |
+| --------------------------- | --------- |
+| NVDA + Chrome on Windows    | `pending` |
+| VoiceOver + Safari on macOS | `pending` |
+
+Both rows block the first affected stable release until each has a passing durable receipt or a current owner-recorded exception. DOM, axe, accessibility-tree, and browser evidence continue to prove their assigned claims but do not clear this announcement gate.
 
 This accepted spec creates no runtime or process implementation.
 

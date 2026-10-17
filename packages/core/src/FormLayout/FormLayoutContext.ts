@@ -4,7 +4,7 @@
 
 /**
  * @file FormLayoutContext.ts
- * @input Uses React createContext
+ * @input Layer-scoped React context
  * @output Exports FormLayoutContext, FormLayoutDirection, and FormOptionality types
  * @position Context for form layout direction + default-optionality detection
  *
@@ -14,7 +14,7 @@
  * - /packages/core/src/FormLayout/index.ts (exports if types change)
  */
 
-import {createContext} from 'react';
+import {createLayerScopedContext as createContext} from '../Layer/layerScopedContext';
 
 /**
  * Direction of form field arrangement.

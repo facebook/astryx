@@ -7,7 +7,7 @@ authority: current
 archive_reason: null
 superseded_by: null
 approved_by: cixzhang
-approved_at: 2026-08-31
+approved_at: 2026-09-19
 owners: [cixzhang]
 review_triggers: [public-api, behavior, layout, accessibility]
 verified_by:
@@ -32,6 +32,16 @@ system_specs: [spec:AST-002/DEC-1]
 
 # Tokenizer component contract
 
+| Area                    | Contract                                                                                                                                                                                                                                          |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Public contract         | None. The existing `hasEntriesOnFocus` mode gains a defined post-selection lifecycle; no prop, type, export, or syntax changes.                                                                                                                   |
+| Behavior                | A committed empty-query bootstrap choice keeps remaining eligible loaded choices open, filters committed IDs, and advances the active option; terminal states close safely.                                                                       |
+| End-user impact         | People selecting several loaded values can continue without reopening the menu, while disabled, loading, exhausted, and dismissed states remain non-interactive.                                                                                  |
+| Builder impact          | None. Existing opt-in callers need no migration or refetch, and typed-query selection remains unchanged.                                                                                                                                          |
+| Compatibility/readiness | The default `hasEntriesOnFocus={false}` path and direct single-select BaseTypeahead remain unchanged. This decision is current and owner-approved; implementation and exact-head interaction evidence remain pending in #6360.                    |
+| Review checks           | Reject implementations that filter by label instead of ID, reorder eligible choices, lose focus or a valid active descendant, refetch unnecessarily, or let disabled, exhausted, dismissed, or stale-loading states remain interactive or reopen. |
+| Governing rules         | This canonical `component:Tokenizer` record: [FR13–FR15](#behavioral-and-layout-contract), [AR5](#accessibility-contract), and [DEC-2](#dec-2--focus-bootstrap-supports-consecutive-committed-selections).                                        |
+
 ## Intent
 
 Tokenizer lets a person build and edit a set of searchable values as removable
@@ -39,20 +49,26 @@ tokens around one stable combobox input. It owns the field surface, token/input
 layout, suggestion-menu relationship, and the package-internal identity needed to
 open a related surface from the control where the task began.
 
-This record preserves shipped Tokenizer facts and defines one package-internal
-opening-control descriptor for Core peers. The descriptor lets Layer prepare
-placement without exposing DOM refs, pointer coordinates, or width policy to
-consumers. The dependent [PowerSearch draft](https://github.com/facebook/astryx/pull/5804)
+This record preserves shipped Tokenizer facts and defines two component-owned
+contracts: one package-internal opening-control descriptor for Core peers, and the
+post-selection lifecycle of an empty-query bootstrap menu. The descriptor lets
+Layer prepare placement without exposing DOM refs, pointer coordinates, or width
+policy to consumers. The dependent [PowerSearch draft](https://github.com/facebook/astryx/pull/5804)
 remains evidence for the need, not authority for this record.
 
 ## Compatibility and migration
 
-- Released default preserved: `yes`; this pull request changes documentation only.
-- Compatibility class: additive contract with no runtime, DOM, styling, target,
-  declaration, or public API change.
-- Controlled/uncontrolled behavior: unchanged.
-- Migration decision: none. A later implementation must preserve the public
-  Tokenizer API and its existing suggestion-menu sizing behavior.
+- The public API and the default `hasEntriesOnFocus={false}` path are unchanged.
+- Compatibility class: intentional behavior correction for the existing opt-in
+  `hasEntriesOnFocus` mode. A committed selection from its current empty-query
+  bootstrap cohort keeps the remaining eligible loaded choices available instead
+  of closing the menu after every choice.
+- Controlled/uncontrolled ownership is unchanged. Retention follows committed
+  controlled values; a proposed value that the caller has not accepted remains
+  available.
+- Migration decision: none. Existing callers that omit `hasEntriesOnFocus`, typed
+  search selection, explicit dismissal, disabled state, maximum-entry state, and
+  source-loading behavior retain their prior boundaries.
 
 Consumer migration instructions belong in consumer docs and release notes.
 
@@ -62,6 +78,9 @@ Consumer migration instructions belong in consumer docs and release notes.
 
 - The token collection, stable native search input, and painted outer field/control
   surface that contains them.
+- The lifecycle of Tokenizer's own focus-bootstrapped suggestion menu after a
+  committed selection, including selected-value exclusion, next-option choice,
+  focus continuity, and terminal close states.
 - The active opening control for a task initiated within Tokenizer: the inner input
   for add/search work or the actual activated token/control for edit work.
 - The identity, usability, lifetime, and safe fallback semantics of those elements
@@ -72,6 +91,10 @@ Consumer migration instructions belong in consumer docs and release notes.
 
 **Does not own / non-goals**
 
+- General BaseTypeahead selection policy. Direct single-select BaseTypeahead and
+  Typeahead keep their select-clear-close-refocus lifecycle.
+- A new rule for typed-query selection or a requirement to refetch suggestions
+  after each Tokenizer selection.
 - General anchor positioning, top-layer hosting, viewport collision, generated
   anchor names, or prepared-placement lifecycle — owned by
   `architecture:layer-runtime`.
@@ -86,8 +109,9 @@ Consumer migration instructions belong in consumer docs and release notes.
 
 ## Public concepts
 
-No public concept is introduced. Existing consumer props and usage remain in
-`Tokenizer.doc.mjs`.
+No public API concept is introduced. Existing consumer props and usage remain in
+`Tokenizer.doc.mjs`. The existing `hasEntriesOnFocus` mode now includes the
+component-owned post-selection behavior in FR13–FR15.
 
 The descriptor is package-internal. It must be absent from exported
 `TokenizerProps`, public barrels, generated declarations, consumer docs, CLI
@@ -100,20 +124,23 @@ Each requirement identifies its basis. This current record defines the approved
 package-internal contract while implementation and focused verification remain
 pending.
 
-| ID   | Invariant                                                                                                                                                                                                                                                                                    | Basis                                                                    | Status                                   |
-| ---- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ | ---------------------------------------- |
-| FR1  | Tokenizer MUST keep one native combobox input mounted across token addition, removal, clear, ordinary wrapping, and maximum-entry states. Reaching `maxEntries` may make the input zero-width, transparent, and out of flow, but MUST NOT replace its identity.                              | Current source and tests                                                 | Verified current behavior                |
-| FR2  | Tokenizer's suggestion menu MUST remain associated with the outer field/control surface. Existing `menuWidth` behavior remains an exact preferred pixel width plus the outer field's minimum width; it is not a maximum.                                                                     | Current BaseTypeahead/Tokenizer source and docs                          | Verified current behavior; preserve      |
-| FR3  | `unfocusedInline` MAY replace direct token layout with OverflowList while blurred. `unfocusedLayer` MAY keep the real wrapper/input mounted in a context layer while an ordinary-flow placeholder represents the collapsed field.                                                            | Current source, tests, and stories                                       | Verified current behavior                |
-| FR4  | Tokenizer MUST provide Core peers one package-internal descriptor with stable identities for its outer field/control surface and active opening control. Layer consumes the descriptor; public consumers cannot observe or configure it.                                                     | Approved package-internal contract; #5804 evidence; `spec:AST-002/DEC-1` | Current contract; implementation pending |
-| FR5  | Add/search opens MUST identify the stable inner input as the opening control before the result row disappears. Selection, query clearing, result removal, refocus, or later input collapse MUST NOT substitute the transient result row or a pointer coordinate.                             | Current selection order plus approved descriptor contract                | Current contract; implementation pending |
-| FR6  | Edit opens MUST capture the actual activated token/control before state removes or replaces it. The Tokenizer-owned capture path MUST include custom `renderToken` output when activation originates from an identifiable descendant control; it MUST NOT require a new public ref contract. | Current owned wrapper plus approved capture contract                     | Current contract; implementation pending |
-| FR7  | A non-null element is usable only while connected, rendered, and geometrically meaningful for the open being prepared. A disconnected, stale, hidden-layer, zero-width, or otherwise unusable opening control MUST fall back safely to the outer field at logical start before show.         | Current max/overflow states plus approved safety rule                    | Current contract; implementation pending |
-| FR8  | The descriptor MUST remain valid across focus movement, token add/remove/clear, wrapping, and `unfocusedLayer` reparenting. It MUST clear on unmount, perform no DOM work during SSR, and never retain an element beyond the open preparation that uses it.                                  | Approved identity/lifetime contract                                      | Current contract; implementation pending |
-| FR9  | A consuming surface MUST resolve its preferred width before choosing horizontal placement. A surface at least as wide as the outer field MUST use outer-field logical-start alignment. Only a surface narrower than the outer field may use opening-control geometry.                        | Approved conditional-placement contract                                  | Current contract; implementation pending |
-| FR10 | For a narrower surface, Layer MUST compare the opening control with the outer field's physical start/end geometry, choose the nearer physical edge, map that result to logical start/end, and use logical start on a tie. Viewport collision runs last.                                      | Approved Layer-consumer contract                                         | Current contract; implementation pending |
-| FR11 | Opening placement MUST be modality-neutral and latched for one open lifetime. Pointer, keyboard, touch, and programmatic activation of the same control MUST produce the same preferred edge. Pointer movement, later focus movement, resize, or target collapse MUST NOT recompute it.      | `architecture:interaction-modality` plus approved stability contract     | Current contract; implementation pending |
-| FR12 | Placement state MUST commit while the surface is hidden, and Layer MUST show it on the next animation frame only after anchor, alignment, and width styles exist. A stale or invalid descriptor MUST never cause a visible wrong-position or first-frame flash.                              | Approved no-flash contract                                               | Current contract; implementation pending |
+| ID   | Invariant                                                                                                                                                                                                                                                                                                                                                                                                                                    | Basis                                                                    | Status                                                    |
+| ---- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ | --------------------------------------------------------- |
+| FR1  | Tokenizer MUST keep one native combobox input mounted across token addition, removal, clear, ordinary wrapping, and maximum-entry states. Reaching `maxEntries` may make the input zero-width, transparent, and out of flow, but MUST NOT replace its identity.                                                                                                                                                                              | Current source and tests                                                 | Verified current behavior                                 |
+| FR2  | Tokenizer's suggestion menu MUST remain associated with the outer field/control surface. Existing `menuWidth` behavior remains an exact preferred pixel width plus the outer field's minimum width; it is not a maximum.                                                                                                                                                                                                                     | Current BaseTypeahead/Tokenizer source and docs                          | Verified current behavior; preserve                       |
+| FR3  | `unfocusedInline` MAY replace direct token layout with OverflowList while blurred. `unfocusedLayer` MAY keep the real wrapper/input mounted in a context layer while an ordinary-flow placeholder represents the collapsed field.                                                                                                                                                                                                            | Current source, tests, and stories                                       | Verified current behavior                                 |
+| FR4  | Tokenizer MUST provide Core peers one package-internal descriptor with stable identities for its outer field/control surface and active opening control. Layer consumes the descriptor; public consumers cannot observe or configure it.                                                                                                                                                                                                     | Approved package-internal contract; #5804 evidence; `spec:AST-002/DEC-1` | Current contract; implementation pending                  |
+| FR5  | Add/search opens MUST identify the stable inner input as the opening control before the result row disappears. Selection, query clearing, result removal, refocus, or later input collapse MUST NOT substitute the transient result row or a pointer coordinate.                                                                                                                                                                             | Current selection order plus approved descriptor contract                | Current contract; implementation pending                  |
+| FR6  | Edit opens MUST capture the actual activated token/control before state removes or replaces it. The Tokenizer-owned capture path MUST include custom `renderToken` output when activation originates from an identifiable descendant control; it MUST NOT require a new public ref contract.                                                                                                                                                 | Current owned wrapper plus approved capture contract                     | Current contract; implementation pending                  |
+| FR7  | A non-null element is usable only while connected, rendered, and geometrically meaningful for the open being prepared. A disconnected, stale, hidden-layer, zero-width, or otherwise unusable opening control MUST fall back safely to the outer field at logical start before show.                                                                                                                                                         | Current max/overflow states plus approved safety rule                    | Current contract; implementation pending                  |
+| FR8  | The descriptor MUST remain valid across focus movement, token add/remove/clear, wrapping, and `unfocusedLayer` reparenting. It MUST clear on unmount, perform no DOM work during SSR, and never retain an element beyond the open preparation that uses it.                                                                                                                                                                                  | Approved identity/lifetime contract                                      | Current contract; implementation pending                  |
+| FR9  | A consuming surface MUST resolve its preferred width before choosing horizontal placement. A surface at least as wide as the outer field MUST use outer-field logical-start alignment. Only a surface narrower than the outer field may use opening-control geometry.                                                                                                                                                                        | Approved conditional-placement contract                                  | Current contract; implementation pending                  |
+| FR10 | For a narrower surface, Layer MUST compare the opening control with the outer field's physical start/end geometry, choose the nearer physical edge, map that result to logical start/end, and use logical start on a tie. Viewport collision runs last.                                                                                                                                                                                      | Approved Layer-consumer contract                                         | Current contract; implementation pending                  |
+| FR11 | Opening placement MUST be modality-neutral and latched for one open lifetime. Pointer, keyboard, touch, and programmatic activation of the same control MUST produce the same preferred edge. Pointer movement, later focus movement, resize, or target collapse MUST NOT recompute it.                                                                                                                                                      | `architecture:interaction-modality` plus approved stability contract     | Current contract; implementation pending                  |
+| FR12 | Placement state MUST commit while the surface is hidden, and Layer MUST show it on the next animation frame only after anchor, alignment, and width styles exist. A stale or invalid descriptor MUST never cause a visible wrong-position or first-frame flash.                                                                                                                                                                              | Approved no-flash contract                                               | Current contract; implementation pending                  |
+| FR13 | Tokenizer MUST exclude every choice whose `SearchableItem.id` is already present in its committed `value` from displayed bootstrap and search cohorts, including results that settle after the controlled value changes. A caller-rejected proposed value remains eligible because it was not committed. Distinct IDs remain eligible even when their labels match.                                                                          | Approved Tokenizer multi-selection contract                              | Current contract; implementation and verification pending |
+| FR14 | With `hasEntriesOnFocus` enabled, committing a choice from the current settled empty-query bootstrap cohort MUST keep the input focused and the popup open when another eligible loaded choice remains. The active option advances to the next remaining choice in displayed order; when the committed choice was last, the nearest preceding choice becomes active. `aria-activedescendant` MUST reference that rendered option.            | Approved rapid multi-select lifecycle                                    | Current contract; implementation and verification pending |
+| FR15 | The retained popup MUST close and clear its active descendant when no eligible loaded choice remains, `maxEntries` is reached, the control becomes disabled, focus leaves, or the person dismisses it. Disabled Tokenizer remains non-interactive. Pending or stale source work MUST NOT reopen a terminal popup or expose stale choices; loading has no selectable placeholder and its busy state clears when work is cancelled or settles. | Approved terminal-state safety boundary                                  | Current contract; implementation and verification pending |
 
 ### Allowed variation
 
@@ -132,21 +159,30 @@ pending.
 - **AV5 — Responsive movement.** CSS may follow outer-field movement, container
   resize, writing direction, and collision while open. JavaScript does not
   remeasure or select a new preferred edge until the next open.
+- **AV6 — Internal retention mechanism.** Tokenizer and BaseTypeahead may retain,
+  project, or otherwise coordinate the settled cohort through a package-private
+  mechanism. That mechanism must preserve FR13–FR15, must not become public API,
+  and must not change direct single-select BaseTypeahead behavior.
 
 ### Representative states
 
-| State                        | Required invariant                                                                                                                                         | Allowed variation                                         |
-| ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
-| Empty field                  | The mounted inner input is the opening control; a full-width menu stays aligned to the outer field.                                                        | Placeholder and bootstrap results may vary.               |
-| One or many tokens           | The same input remains after tokens and moves with wrapping; full-width placement does not follow that movement.                                           | Token labels, wrapping rows, and custom content may vary. |
-| At `maxEntries`              | The input identity remains mounted but its zero-width/hidden box is unusable as geometry; opening falls back to the outer field.                           | Search remains unavailable under current behavior.        |
-| Token removal or clear       | Input identity survives and current refocus behavior remains.                                                                                              | Token count and input position change.                    |
-| `unfocusedInline`            | Blurred OverflowList and focused direct-token layouts resolve the same live input identity; a collapsed input is not used as geometry.                     | Visible token count may vary with width.                  |
-| `unfocusedLayer`, focused    | The live wrapper/input may be reparented into the context layer without descriptor churn.                                                                  | Corrective portal location may vary.                      |
-| `unfocusedLayer`, unfocused  | The hidden-layer input is unusable for a new open; the ordinary-flow outer-field fallback is used.                                                         | Placeholder token count may vary.                         |
-| Default or custom token edit | The actual activated token/control is captured before edit state changes; if no usable descendant control exists, input then outer-field fallback applies. | Custom token markup may vary.                             |
-| LTR or RTL                   | Physical proximity selects an edge only for a narrower surface; logical start wins ties and full-width placement.                                          | Collision may move the final rendered surface.            |
-| SSR, hydration, or unmount   | No server geometry read occurs; first client open prepares normally; unmount clears identities and pending show work.                                      | Hydration timing may vary.                                |
+| State                                      | Required invariant                                                                                                                                         | Allowed variation                                                                        |
+| ------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| Empty field                                | The mounted inner input is the opening control; a full-width menu stays aligned to the outer field.                                                        | Placeholder and bootstrap results may vary.                                              |
+| Focus bootstrap, choices remain            | A committed selection is removed from the displayed cohort; the input and popup remain active on the next valid remaining choice.                          | Internal cohort storage and projection may vary.                                         |
+| Focus bootstrap, selected choice was last  | The nearest preceding remaining choice becomes active without changing the displayed order.                                                                | Option identity representation may vary.                                                 |
+| Focus bootstrap, no choices or max reached | The popup closes and no active descendant remains; pending work cannot reopen it.                                                                          | Source cancellation mechanism may vary.                                                  |
+| Source pending or replaced                 | Busy semantics identify pending work; stale work cannot add choices or reopen a terminal popup.                                                            | A settled current cohort may be retained internally.                                     |
+| Disabled                                   | No choice can be committed; an open popup closes and clears its active descendant while disabled-reason focusability remains available where configured.   | Native-disabled or focusable-disabled representation follows current Tokenizer behavior. |
+| One or many tokens                         | The same input remains after tokens and moves with wrapping; full-width placement does not follow that movement.                                           | Token labels, wrapping rows, and custom content may vary.                                |
+| At `maxEntries`                            | The input identity remains mounted but its zero-width/hidden box is unusable as geometry; opening falls back to the outer field.                           | Search remains unavailable under current behavior.                                       |
+| Token removal or clear                     | Input identity survives and current refocus behavior remains.                                                                                              | Token count and input position change.                                                   |
+| `unfocusedInline`                          | Blurred OverflowList and focused direct-token layouts resolve the same live input identity; a collapsed input is not used as geometry.                     | Visible token count may vary with width.                                                 |
+| `unfocusedLayer`, focused                  | The live wrapper/input may be reparented into the context layer without descriptor churn.                                                                  | Corrective portal location may vary.                                                     |
+| `unfocusedLayer`, unfocused                | The hidden-layer input is unusable for a new open; the ordinary-flow outer-field fallback is used.                                                         | Placeholder token count may vary.                                                        |
+| Default or custom token edit               | The actual activated token/control is captured before edit state changes; if no usable descendant control exists, input then outer-field fallback applies. | Custom token markup may vary.                                                            |
+| LTR or RTL                                 | Physical proximity selects an edge only for a narrower surface; logical start wins ties and full-width placement.                                          | Collision may move the final rendered surface.                                           |
+| SSR, hydration, or unmount                 | No server geometry read occurs; first client open prepares normally; unmount clears identities and pending show work.                                      | Hydration timing may vary.                                                               |
 
 ### Transformation and precedence order
 
@@ -195,17 +231,22 @@ pending.
 - **AR4 — No visible placement error.** A person MUST NOT see a surface first
   paint at an outer-start or stale position and then jump to its resolved edge.
   Invalid identity falls back before show rather than flashing or showing wrong.
+- **AR5 — Retained combobox semantics.** While a focus-bootstrapped menu remains
+  open after selection, DOM focus MUST stay on the combobox, `aria-expanded` MUST
+  remain true, and `aria-activedescendant` MUST name the rendered next valid
+  option. Closing for dismissal, disabled, maximum, or exhaustion MUST remove the
+  active descendant. Selected and disabled options are never interactive.
 
 ## Design relationships
 
-| Anatomy or state            | Design requirement                                                                                       | Representation authority               | Hierarchy role | Component contract |
-| --------------------------- | -------------------------------------------------------------------------------------------------------- | -------------------------------------- | -------------- | ------------------ |
-| Outer field/control surface | Contains tokens, input, and end controls; remains the full-width placement and safe fallback anchor.     | Current Tokenizer source               | Prominent      | FR1–FR4, FR7, FR9  |
-| Token chips                 | Present selected values and removal; an activated token/control may become the per-open opening control. | Token component or custom renderer     | Prominent      | FR6, FR8, AR2–AR3  |
-| Search input                | Remains one mounted combobox node and is the add/search opening control while geometrically usable.      | Current Tokenizer/BaseTypeahead source | Prominent      | FR1, FR5, FR7–FR8  |
-| Suggestion menu             | Retains current outer-field anchoring and exact preferred `menuWidth` plus outer minimum.                | Current BaseTypeahead source           | Prominent      | FR2, FR9           |
-| Overflow placeholder/layer  | Preserves a usable outer-field fallback while live content may reparent or collapse.                     | Current Tokenizer/Layer composition    | Supporting     | FR3, FR7–FR8       |
-| Dependent narrower surface  | Uses the descriptor only after its owning component resolves a width narrower than the field.            | Consuming component plus Layer         | Prominent      | FR9–FR12           |
+| Anatomy or state            | Design requirement                                                                                                                            | Representation authority               | Hierarchy role | Component contract  |
+| --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------- | -------------- | ------------------- |
+| Outer field/control surface | Contains tokens, input, and end controls; remains the full-width placement and safe fallback anchor.                                          | Current Tokenizer source               | Prominent      | FR1–FR4, FR7, FR9   |
+| Token chips                 | Present selected values and removal; an activated token/control may become the per-open opening control.                                      | Token component or custom renderer     | Prominent      | FR6, FR8, AR2–AR3   |
+| Search input                | Remains one mounted combobox node and is the add/search opening control while geometrically usable.                                           | Current Tokenizer/BaseTypeahead source | Prominent      | FR1, FR5, FR7–FR8   |
+| Suggestion menu             | Retains current outer-field anchoring and exact preferred `menuWidth`; focus bootstrap keeps only eligible choices and a valid active option. | Current BaseTypeahead source           | Prominent      | FR2, FR13–FR15, AR5 |
+| Overflow placeholder/layer  | Preserves a usable outer-field fallback while live content may reparent or collapse.                                                          | Current Tokenizer/Layer composition    | Supporting     | FR3, FR7–FR8        |
+| Dependent narrower surface  | Uses the descriptor only after its owning component resolves a width narrower than the field.                                                 | Consuming component plus Layer         | Prominent      | FR9–FR12            |
 
 This contract adds no target, state, or visual styling contract.
 
@@ -231,34 +272,40 @@ This contract adds no target, state, or visual styling contract.
   descriptor and owns its own editor width policy. It is dependent draft evidence,
   not authority for Tokenizer.
 
-### Required implementation and visual evidence
+### Required implementation and browser evidence
 
-This spec-only pull request intentionally changes no source, public docs, stories,
-or Changeset. When the descriptor and Layer consumer ship, that implementation
-must update the owning source/tests/docs and add screenshotable open-state stories:
+The post-selection lifecycle must update the owning source, focused tests,
+consumer docs, and Changeset together. Exact-head browser evidence must exercise:
 
-1. Tokenizer's full-width suggestion menu open with an empty field and with tokens;
-   both remain aligned to the outer field.
-2. The menu open with wrapped tokens and through `unfocusedLayer` reparenting;
-   descriptor identity and safe fallback remain stable.
-3. The menu open in RTL and a constrained viewport; logical alignment and final
-   collision remain correct.
+1. Pointer and keyboard selection from a settled focus-bootstrap cohort, with the
+   committed value removed, the popup still open, input focus preserved, and the
+   next remaining option active.
+2. The fallback when the committed option was last, plus terminal closure for no
+   remaining choice and `maxEntries`.
+3. Escape, Tab or outside focus departure, transition to native-disabled and
+   focusable-disabled states, and pending or stale source settlement without a
+   later reopen.
+4. The unchanged path when `hasEntriesOnFocus` is off and direct single-select
+   BaseTypeahead selection still closes.
 
-The visual harness must capture the surface already open, including the first
-paint. Instrumented verification must prove no first-frame flash and exactly one
-outer-plus-opening geometry read batch per open. PowerSearch's separate evidence
-owns its 400–720 editor states; those dimensions never become Tokenizer policy.
+The separate opening-control descriptor remains pending. When that descriptor and
+its Layer consumer ship, they must add screenshotable full/equal/narrow-width,
+wrapped-token, overflow-layer, LTR/RTL, collision, stale-fallback, and first-paint
+evidence. Instrumented verification must prove one geometry-read batch per open.
+PowerSearch's separate evidence owns its editor dimensions; those dimensions never
+become Tokenizer policy.
 
 ## Verification map
 
-| Contract         | Verification                                                                      | Representative states                                                                 | Mutation or failure expectation                                                                                    | Audit section                    |
-| ---------------- | --------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ | -------------------------------- |
-| FR1–FR3          | Existing Tokenizer/BaseTypeahead unit tests plus source inspection                | empty, tokens, remove, clear, max, wrapping, both overflow modes                      | Input remounts, suggestion menu changes anchor/width semantics, or overflow ownership is misstated.                | `audit:Tokenizer/current`        |
-| FR4–FR8          | Focused descriptor identity/capture tests when implemented                        | add, default/custom token edit, max, hidden layer, reparent, stale node, unmount, SSR | Descriptor leaks publicly, captures a transient result/pointer, misses custom controls, or uses unusable geometry. | `audit:Tokenizer/opening-anchor` |
-| FR9–FR12         | Layer unit tests and real-Chromium geometry checks when implemented               | full/equal/narrow surface, start/end/tie, LTR/RTL, collision, stale fallback          | Full-width follows inner input, tie is physical, collision runs early, or stale identity flashes.                  | `audit:Tokenizer/placement`      |
-| PR1–PR5          | Instrumented reads, pending-frame cleanup tests, and first-frame Chromium capture | open, close before frame, reopen opposite side, resize while open                     | Render-time/repeated reads, observer/pointer tracking, uncancelled frame, or first-frame jump occurs.              | `audit:Tokenizer/performance`    |
-| AR1–AR4          | Existing interaction suites plus focused pointer/keyboard/browser checks          | add/edit, focus/refocus, overflow, disabled, dismissal                                | Modality changes placement, semantics/focus regress, or visible placement is wrong before fallback.                | `audit:Tokenizer/accessibility`  |
-| Record structure | `scripts/check-knowledge.mjs`                                                     | Template-v3 current record and current-only frontmatter links                         | Invalid metadata, authority, or relationship references fail repository validation.                                | `audit:Tokenizer/knowledge`      |
+| Contract         | Verification                                                                       | Representative states                                                                                                                        | Mutation or failure expectation                                                                                                                                           | Audit section                    |
+| ---------------- | ---------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------- |
+| FR1–FR3          | Existing Tokenizer/BaseTypeahead unit tests plus source inspection                 | empty, tokens, remove, clear, max, wrapping, both overflow modes                                                                             | Input remounts, suggestion menu changes anchor/width semantics, or overflow ownership is misstated.                                                                       | `audit:Tokenizer/current`        |
+| FR4–FR8          | Focused descriptor identity/capture tests when implemented                         | add, default/custom token edit, max, hidden layer, reparent, stale node, unmount, SSR                                                        | Descriptor leaks publicly, captures a transient result/pointer, misses custom controls, or uses unusable geometry.                                                        | `audit:Tokenizer/opening-anchor` |
+| FR9–FR12         | Layer unit tests and real-Chromium geometry checks when implemented                | full/equal/narrow surface, start/end/tie, LTR/RTL, collision, stale fallback                                                                 | Full-width follows inner input, tie is physical, collision runs early, or stale identity flashes.                                                                         | `audit:Tokenizer/placement`      |
+| FR13–FR15, AR5   | Focused Tokenizer/BaseTypeahead tests and exact-head Chromium interaction evidence | pointer/keyboard commit, first/middle/last choice, rejected/deferred control, loading, disabled, max, exhaustion, Escape, Tab, outside focus | Selected values remain available, order changes, focus leaves the combobox, active descendant names no option, stale work reopens, or a terminal state stays interactive. | `audit:Tokenizer/multi-select`   |
+| PR1–PR5          | Instrumented reads, pending-frame cleanup tests, and first-frame Chromium capture  | open, close before frame, reopen opposite side, resize while open                                                                            | Render-time/repeated reads, observer/pointer tracking, uncancelled frame, or first-frame jump occurs.                                                                     | `audit:Tokenizer/performance`    |
+| AR1–AR5          | Existing interaction suites plus focused pointer/keyboard/browser checks           | add/edit, focus/refocus, overflow, disabled, dismissal, retained bootstrap selection                                                         | Modality changes placement, semantics/focus regress, active descendant becomes invalid, or visible placement is wrong before fallback.                                    | `audit:Tokenizer/accessibility`  |
+| Record structure | `scripts/check-knowledge.mjs`                                                      | Template-v3 current record and current-only frontmatter links                                                                                | Invalid metadata, authority, or relationship references fail repository validation.                                                                                       | `audit:Tokenizer/knowledge`      |
 
 ## Decision log
 
@@ -281,13 +328,33 @@ remains unchanged. Implementation must provide real-Chromium open-state evidence
 for full-width and narrower placement, LTR and RTL, constrained collision, stale
 fallback, and the first paint without a visible jump.
 
+### DEC-2 — Focus bootstrap supports consecutive committed selections
+
+**Reference:** `component:Tokenizer/DEC-2`
+**Decider:** `cixzhang`, `2026-09-19`
+
+When `hasEntriesOnFocus` is enabled, committing a choice from the current settled
+empty-query bootstrap cohort keeps the popup open with the remaining eligible
+loaded choices. Committed values are excluded by `SearchableItem.id`; distinct
+items with the same label remain eligible. The option after the committed choice
+in displayed order becomes active; when there is no following choice, the nearest preceding choice becomes active. Input focus and valid combobox/listbox
+ARIA relationships remain intact.
+
+The popup closes and clears its active descendant when no eligible loaded choice
+remains, `maxEntries` is reached, the control becomes disabled, focus leaves, or
+the person dismisses it. Pending or stale source work cannot reopen a terminal
+popup or make stale choices interactive. This decision adds no public API, does
+not require a refetch, and does not change typed-query selection or direct
+single-select BaseTypeahead behavior.
+
 ## Open questions
 
-None. Implementation and focused verification remain pending.
+None. The opening-control descriptor implementation remains pending; the
+post-selection lifecycle has no unresolved decision.
 
 ## Content boundary
 
 This file does not duplicate consumer prop tables, usage examples, search
 algorithms, implementation code, current audit results, PowerSearch editor sizing,
-or shared Layer mechanics. Public docs, stories, and release notes change only
-when implementation ships.
+or shared Layer mechanics. Consumer docs and release notes project only the
+approved component behavior.

@@ -12,7 +12,7 @@ export const doc = {
   type: 'command',
   name: 'manifest',
   displayName: 'astryx manifest',
-  namespace: 'cli',
+  namespace: 'cli/commands',
   summary: 'Print the full CLI capability manifest (use with --json).',
   description:
     'Emits the complete CLI surface: every command with its arguments, options, ' +
@@ -20,7 +20,7 @@ export const doc = {
     'tooling to introspect. Intended to be run with --json.',
   examples: [
     {label: 'Full manifest', cli: 'astryx manifest --json'},
-    {label: 'Shorthand', cli: 'astryx --json'},
+    {label: 'The same manifest, under data.manifest (type "help")', cli: 'astryx --json'},
   ],
   exitCodes: [
     {code: 0, when: 'success'},

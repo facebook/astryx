@@ -227,10 +227,13 @@ describe('formatFontLoadingHelp', () => {
   const help = formatFontLoadingHelp('ocean', ['Fraunces', 'JetBrains Mono']);
 
   it('names the theme and every family in the headline', () => {
-    expect(help).toContain('⚠');
-    expect(help).toContain('ocean');
+    expect(help).toContain('[note] Theme "ocean"');
     expect(help).toContain('"Fraunces"');
     expect(help).toContain('"JetBrains Mono"');
+  });
+
+  it('is plain ASCII', () => {
+    expect(help).not.toMatch(/[\u0080-\uffff]/);
   });
 
   it('includes the Google Fonts recipe: preconnect pair + the exact css2 URL', () => {

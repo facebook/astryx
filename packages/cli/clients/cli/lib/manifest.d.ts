@@ -48,6 +48,8 @@ export interface ManifestCommand {
   responseTypes?: string[];
   /** Example invocations. */
   examples?: string[];
+  /** Documented exit codes: the process exit status and when it occurs. */
+  exitCodes?: {code: number; when: string}[];
   /** Nested subcommands (e.g. `theme build` under `theme`). */
   subcommands?: ManifestCommand[];
 }

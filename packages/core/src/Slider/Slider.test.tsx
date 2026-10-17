@@ -13,6 +13,10 @@ import {useState} from 'react';
 import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen, act, fireEvent, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import {
+  declaresPressedOverlay,
+  rulesDeclaredFor,
+} from '../__tests__/pressState';
 import * as stylex from '@stylexjs/stylex';
 import {Slider} from './Slider';
 import {focusOutlineStyles} from '../utils/focusOutline.stylex';
@@ -136,6 +140,24 @@ describe('Slider', () => {
       expect(screen.getByRole('slider')).toHaveStyle({bottom: position});
     },
   );
+
+  it('reflects orientation and disabled state on the interactive control target', () => {
+    render(
+      <Slider
+        label="Volume"
+        value={50}
+        orientation="vertical"
+        valueDisplay="text"
+        isDisabled
+      />,
+    );
+    const control = screen.getByRole('slider').parentElement;
+    expect(control).not.toBeNull();
+    expect(control).toHaveClass('astryx-slider-control');
+    expect(control).toHaveAttribute('data-orientation', 'vertical');
+    expect(control).toHaveAttribute('data-disabled', 'disabled');
+    expect(control).not.toContainElement(screen.getByText('50'));
+  });
 
   it('range mode sets correct aria values on both thumbs', () => {
     render(
@@ -488,6 +510,69 @@ describe('Slider', () => {
     expect(handleChangeEnd).toHaveBeenCalledWith([0.2, 0.7]);
   });
 
+  it('End reaches an off-grid max from a non-zero min, and Home still reaches min', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    const onChangeEnd = vi.fn();
+    // From min 1 with step 3 the grid is 1, 4, …, 100; max 101 is off it.
+    render(
+      <Slider
+        label="Zoom"
+        min={1}
+        max={101}
+        step={3}
+        value={49}
+        onChange={onChange}
+        onChangeEnd={onChangeEnd}
+      />,
+    );
+    const thumb = screen.getByRole('slider');
+    thumb.focus();
+
+    await user.keyboard('{End}');
+    expect(onChange).toHaveBeenLastCalledWith(101);
+    expect(onChangeEnd).toHaveBeenLastCalledWith(101);
+
+    await user.keyboard('{Home}');
+    expect(onChange).toHaveBeenLastCalledWith(1);
+    expect(onChangeEnd).toHaveBeenLastCalledWith(1);
+  });
+
+  it('End lands on max when max is off the step grid, while arrows still snap', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    function Owner() {
+      const [value, setValue] = useState(48);
+      return (
+        <Slider
+          label="Zoom"
+          min={0}
+          max={100}
+          step={3}
+          value={value}
+          onChange={(next: number) => {
+            onChange(next);
+            setValue(next);
+          }}
+        />
+      );
+    }
+    render(<Owner />);
+    const thumb = screen.getByRole('slider');
+    thumb.focus();
+
+    await user.keyboard('{End}');
+    expect(onChange).toHaveBeenLastCalledWith(100);
+
+    // ORD1 for arrows and Page keys is unchanged: from max (100, off the
+    // grid) ArrowLeft targets 97 and snaps to 96; from 96 PageUp targets 126
+    // and clamps to 100, the bound.
+    await user.keyboard('{ArrowLeft}');
+    expect(onChange).toHaveBeenLastCalledWith(96);
+    await user.keyboard('{PageUp}');
+    expect(onChange).toHaveBeenLastCalledWith(100);
+  });
+
   it('fires onChangeEnd on keyboard Home/End with correct value', async () => {
     const user = userEvent.setup();
     const handleChangeEnd = vi.fn();
@@ -686,6 +771,77 @@ describe('Slider', () => {
     gcsSpy.mockRestore();
   });
 
+  it('follows the mirrored track under RTL: ArrowLeft increases, ArrowRight decreases, Up/Down unchanged', () => {
+    const handleChange = vi.fn();
+    render(
+      <Slider
+        label="Volume"
+        value={50}
+        min={0}
+        max={100}
+        step={1}
+        valueDisplay="none"
+        onChange={handleChange}
+      />,
+    );
+    const thumb = screen.getByRole('slider');
+    const track = thumb.parentElement!;
+    const realGetComputedStyle = window.getComputedStyle;
+    const gcsSpy = vi
+      .spyOn(window, 'getComputedStyle')
+      .mockImplementation((el: Element, pseudo?: string | null) => {
+        if (el === track) {
+          return {direction: 'rtl'} as CSSStyleDeclaration;
+        }
+        return realGetComputedStyle(el, pseudo ?? undefined);
+      });
+
+    fireEvent.keyDown(thumb, {key: 'ArrowLeft'});
+    expect(handleChange).toHaveBeenLastCalledWith(51);
+    fireEvent.keyDown(thumb, {key: 'ArrowRight'});
+    expect(handleChange).toHaveBeenLastCalledWith(49);
+    fireEvent.keyDown(thumb, {key: 'ArrowUp'});
+    expect(handleChange).toHaveBeenLastCalledWith(51);
+    fireEvent.keyDown(thumb, {key: 'ArrowDown'});
+    expect(handleChange).toHaveBeenLastCalledWith(49);
+
+    gcsSpy.mockRestore();
+  });
+
+  it('keeps ArrowLeft decreasing on a vertical track under RTL', () => {
+    const handleChange = vi.fn();
+    render(
+      <Slider
+        label="Volume"
+        value={50}
+        min={0}
+        max={100}
+        step={1}
+        orientation="vertical"
+        valueDisplay="none"
+        onChange={handleChange}
+      />,
+    );
+    const thumb = screen.getByRole('slider');
+    const track = thumb.parentElement!;
+    const realGetComputedStyle = window.getComputedStyle;
+    const gcsSpy = vi
+      .spyOn(window, 'getComputedStyle')
+      .mockImplementation((el: Element, pseudo?: string | null) => {
+        if (el === track) {
+          return {direction: 'rtl'} as CSSStyleDeclaration;
+        }
+        return realGetComputedStyle(el, pseudo ?? undefined);
+      });
+
+    fireEvent.keyDown(thumb, {key: 'ArrowLeft'});
+    expect(handleChange).toHaveBeenLastCalledWith(49);
+    fireEvent.keyDown(thumb, {key: 'ArrowRight'});
+    expect(handleChange).toHaveBeenLastCalledWith(51);
+
+    gcsSpy.mockRestore();
+  });
+
   // --- Mark label click snapping ---
 
   it('clicking a mark label snaps to that mark value, not pointer position', () => {
@@ -707,6 +863,96 @@ describe('Slider', () => {
     fireEvent.pointerDown(markLabel, {clientX: 1, clientY: 10, pointerId: 1});
 
     expect(handleChange).toHaveBeenCalledWith(100);
+  });
+
+  // --- Marks color ---
+
+  /** Whether the element has an unconditional rule painting a token. */
+  function declaresColorToken(el: Element, token: string): boolean {
+    return rulesDeclaredFor(el).some(rule => {
+      const selector = rule
+        .slice(0, rule.indexOf('{'))
+        .replaceAll(':not(#\\#)', '');
+      return !selector.includes(':') && rule.includes(`var(${token})`);
+    });
+  }
+
+  it('uses the track color for unfilled marks and the accent for filled marks', () => {
+    render(
+      <Slider
+        label="Volume"
+        value={50}
+        min={0}
+        max={100}
+        marks={[{value: 25}, {value: 75}]}
+      />,
+    );
+    const marks = screen.getAllByTestId('slider-mark');
+
+    expect(marks).toHaveLength(2);
+    expect(declaresColorToken(marks[0], '--color-track')).toBe(false);
+    expect(declaresColorToken(marks[0], '--color-accent')).toBe(true);
+    expect(declaresColorToken(marks[1], '--color-track')).toBe(true);
+    expect(declaresColorToken(marks[1], '--color-accent')).toBe(false);
+  });
+
+  function declaresFillColor(el: Element): boolean {
+    return declaresColorToken(el, '--color-accent');
+  }
+
+  it('colors marks at or behind the thumb with the fill color', () => {
+    render(
+      <Slider
+        label="Volume"
+        value={50}
+        min={0}
+        max={100}
+        marks={[
+          {value: 0},
+          {value: 25},
+          {value: 50},
+          {value: 75},
+          {value: 100},
+        ]}
+      />,
+    );
+    const marks = screen.getAllByTestId('slider-mark');
+    expect(marks).toHaveLength(5);
+    // Marks at 0, 25, and 50 sit at or behind the thumb: fill color.
+    expect(declaresFillColor(marks[0])).toBe(true);
+    expect(declaresFillColor(marks[1])).toBe(true);
+    expect(declaresFillColor(marks[2])).toBe(true);
+    // Marks at 75 and 100 sit ahead of the thumb: default mark color.
+    expect(declaresFillColor(marks[3])).toBe(false);
+    expect(declaresFillColor(marks[4])).toBe(false);
+  });
+
+  it('colors marks between the thumbs with the fill color in range mode', () => {
+    render(
+      <Slider
+        label="Price range"
+        value={[20, 80] as [number, number]}
+        min={0}
+        max={100}
+        marks={[
+          {value: 0},
+          {value: 20},
+          {value: 50},
+          {value: 80},
+          {value: 100},
+        ]}
+      />,
+    );
+    const marks = screen.getAllByTestId('slider-mark');
+    expect(marks).toHaveLength(5);
+    // The mark at 0 sits before the range: default mark color.
+    expect(declaresFillColor(marks[0])).toBe(false);
+    // Marks at 20, 50, and 80 sit between (or at) the thumbs: fill color.
+    expect(declaresFillColor(marks[1])).toBe(true);
+    expect(declaresFillColor(marks[2])).toBe(true);
+    expect(declaresFillColor(marks[3])).toBe(true);
+    // The mark at 100 sits after the range: default mark color.
+    expect(declaresFillColor(marks[4])).toBe(false);
   });
 
   // --- Boundary clamping ---
@@ -1081,5 +1327,132 @@ describe('Slider', () => {
       expect(isRinged(thumbs[1])).toBe(true);
       expect(isRinged(thumbs[0])).toBe(false);
     });
+  });
+});
+
+describe('pressed state', () => {
+  it('paints the pressed overlay on the thumb for as long as it is dragged, from wherever the press lands', () => {
+    render(
+      <Slider label="Volume" value={50} min={0} max={100} onChange={vi.fn()} />,
+    );
+    const thumb = screen.getByRole('slider');
+    const trackContainer = thumb.parentElement!;
+    trackContainer.getBoundingClientRect = () => ({
+      left: 0,
+      top: 0,
+      right: 200,
+      bottom: 20,
+      width: 200,
+      height: 20,
+      x: 0,
+      y: 0,
+      toJSON: () => {},
+    });
+
+    expect(declaresPressedOverlay(thumb)).toBe(false);
+    // A slider is a drag: the press lands on the track, not the thumb, and
+    // the thumb follows it. The pressed paint follows the drag.
+    fireEvent.pointerDown(trackContainer, {
+      clientX: 20,
+      clientY: 10,
+      pointerId: 1,
+    });
+    expect(declaresPressedOverlay(thumb)).toBe(true);
+    fireEvent.pointerMove(trackContainer, {
+      clientX: 120,
+      clientY: 10,
+      pointerId: 1,
+    });
+    expect(declaresPressedOverlay(thumb)).toBe(true);
+    fireEvent.pointerUp(trackContainer, {
+      clientX: 120,
+      clientY: 10,
+      pointerId: 1,
+    });
+    expect(declaresPressedOverlay(thumb)).toBe(false);
+  });
+
+  it('paints only the thumb being dragged in a range slider', () => {
+    render(
+      <Slider
+        label="Price"
+        value={[20, 80] as [number, number]}
+        min={0}
+        max={100}
+        onChange={vi.fn()}
+      />,
+    );
+    const [start, end] = screen.getAllByRole('slider');
+    // In range mode the control is the group; each thumb sits in its own
+    // value-tooltip wrapper.
+    const trackContainer = screen.getByRole('group');
+    trackContainer.getBoundingClientRect = () => ({
+      left: 0,
+      top: 0,
+      right: 200,
+      bottom: 20,
+      width: 200,
+      height: 20,
+      x: 0,
+      y: 0,
+      toJSON: () => {},
+    });
+    fireEvent.pointerDown(trackContainer, {
+      clientX: 170,
+      clientY: 10,
+      pointerId: 1,
+    });
+    expect(declaresPressedOverlay(end)).toBe(true);
+    expect(declaresPressedOverlay(start)).toBe(false);
+    fireEvent.pointerUp(trackContainer, {
+      clientX: 170,
+      clientY: 10,
+      pointerId: 1,
+    });
+    expect(declaresPressedOverlay(end)).toBe(false);
+  });
+
+  it('keeps a direct press on the visible upper thumb when range values coincide', () => {
+    render(
+      <Slider
+        label="Price"
+        value={[50, 50] as [number, number]}
+        min={0}
+        max={100}
+        onChange={vi.fn()}
+      />,
+    );
+    const [start, end] = screen.getAllByRole('slider');
+    const trackContainer = screen.getByRole('group');
+    trackContainer.getBoundingClientRect = () => ({
+      left: 0,
+      top: 0,
+      right: 200,
+      bottom: 20,
+      width: 200,
+      height: 20,
+      x: 0,
+      y: 0,
+      toJSON: () => {},
+    });
+
+    fireEvent.pointerDown(end, {
+      clientX: 100,
+      clientY: 10,
+      pointerId: 1,
+    });
+    expect(declaresPressedOverlay(end)).toBe(true);
+    expect(declaresPressedOverlay(start)).toBe(false);
+  });
+
+  it('does not press a disabled slider', () => {
+    render(<Slider label="Volume" value={50} isDisabled onChange={vi.fn()} />);
+    const thumb = screen.getByRole('slider');
+    fireEvent.pointerDown(thumb.parentElement!, {
+      clientX: 20,
+      clientY: 10,
+      pointerId: 1,
+    });
+    expect(declaresPressedOverlay(thumb)).toBe(false);
   });
 });

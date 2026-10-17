@@ -5,13 +5,19 @@
  */
 
 import * as fs from 'node:fs';
+import {createRequire} from 'node:module';
 import * as path from 'node:path';
+import {listDir, listDirEntries, pathExists} from '../fs/listing-cache.mjs';
 import {existsCaseExact} from '../fs/paths.mjs';
+import {CORE_PROVIDER_ID} from '../identity/providers.mjs';
+import {loadComponentDoc} from './component-loader.mjs';
+
+const require = createRequire(import.meta.url);
 
 const SKIP_DIRS = new Set(['hooks', 'utils', '__tests__', 'node_modules']);
 
 /** The owner package name for built-in (core) components. */
-export const CORE_PACKAGE = '@astryxdesign/core';
+export const CORE_PACKAGE = CORE_PROVIDER_ID;
 
 /** Conventional doc-file suffixes for integration components (same-stem). */
 const INTEGRATION_DOC_SUFFIXES = ['.doc.ts', '.doc.mjs', '.doc.js'];
@@ -50,8 +56,8 @@ function isComponentSourceFile(fileName, dirPath) {
   if (BARE_COMPONENT_FILE_RE.test(fileName)) {
     const base = fileName.replace(/\.tsx$/, '');
     return (
-      fs.existsSync(path.join(dirPath, `${base}.doc.mjs`)) ||
-      fs.existsSync(path.join(dirPath, `XDS${base}.doc.mjs`))
+      pathExists(path.join(dirPath, `${base}.doc.mjs`)) ||
+      pathExists(path.join(dirPath, `XDS${base}.doc.mjs`))
     );
   }
   return false;
@@ -106,8 +112,193 @@ function readDocMeta(docPath) {
   }
 }
 
+/** @type {typeof import('@babel/parser') | undefined} */
+let babelParser;
+
+/**
+ * A property of an object literal, by its plain key.
+ * @param {any} object - an ObjectExpression node
+ * @param {string} key
+ * @returns {any}
+ */
+function propertyValue(object, key) {
+  for (const property of object.properties) {
+    if (property.type !== 'ObjectProperty' || property.computed) continue;
+    const name =
+      property.key.type === 'Identifier'
+        ? property.key.name
+        : property.key.type === 'StringLiteral'
+          ? property.key.value
+          : null;
+    if (name === key) return property.value;
+  }
+  return null;
+}
+
+/**
+ * The names a component doc lists as `components` members, read from its
+ * source without running it. Only a static `{name: '<Name>'}` entry in the doc
+ * object the loader reads (the `default` export, else `docs`) counts: a name in
+ * prose, an example, or `relatedComponents` is not a member.
+ * @param {string} source - the doc file's text
+ * @returns {string[]}
+ */
+function docMemberNames(source) {
+  /** @type {any} */
+  let ast;
+  try {
+    babelParser ??= require('@babel/parser');
+    ast = /** @type {typeof import('@babel/parser')} */ (babelParser).parse(source, {
+      sourceType: 'module',
+    });
+  } catch {
+    return [];
+  }
+  /** @type {Map<string, any>} */
+  const constants = new Map();
+  let defaultExport = null;
+  let docsExport = null;
+  for (const node of ast.program.body) {
+    const declaration =
+      node.type === 'ExportNamedDeclaration' ? node.declaration : node;
+    if (declaration?.type === 'VariableDeclaration') {
+      for (const declarator of declaration.declarations) {
+        if (declarator.id.type !== 'Identifier' || !declarator.init) continue;
+        constants.set(declarator.id.name, declarator.init);
+        if (node.type === 'ExportNamedDeclaration' && declarator.id.name === 'docs') {
+          docsExport = declarator.init;
+        }
+      }
+    }
+    if (node.type === 'ExportDefaultDeclaration') defaultExport = node.declaration;
+  }
+  let doc = defaultExport ?? docsExport;
+  if (doc?.type === 'Identifier') doc = constants.get(doc.name);
+  if (doc?.type !== 'ObjectExpression') return [];
+  const members = propertyValue(doc, 'components');
+  if (members?.type !== 'ArrayExpression') return [];
+  return members.elements.flatMap((/** @type {any} */ element) => {
+    if (element?.type !== 'ObjectExpression') return [];
+    const name = propertyValue(element, 'name');
+    return name?.type === 'StringLiteral' ? [name.value] : [];
+  });
+}
+
+/**
+ * Whether `name` has its own component folder in Core: `src/<Name>/<Name>.tsx`
+ * (or the `XDS`-prefixed form).
+ * @param {string} srcDir
+ * @param {string} name
+ * @returns {boolean}
+ */
+function hasOwnFolder(srcDir, name) {
+  return [`${name}.tsx`, `XDS${name}.tsx`].some(file =>
+    existsCaseExact(path.join(srcDir, name, file), srcDir),
+  );
+}
+
+/**
+ * Member names read in this process, by doc path, reused while the file keeps
+ * its size and mtime.
+ * @type {Map<string, {size: number, mtimeMs: number, members: string[]}>}
+ */
+const memberReads = new Map();
+
+/**
+ * The names a doc lists as `components` members (see docMemberNames).
+ * @param {string} docPath
+ * @returns {string[]}
+ */
+function readDocMembers(docPath) {
+  let stat;
+  try {
+    stat = fs.statSync(docPath);
+  } catch {
+    return [];
+  }
+  const cached = memberReads.get(docPath);
+  if (cached && cached.size === stat.size && cached.mtimeMs === stat.mtimeMs) {
+    return cached.members;
+  }
+  /** @type {string[]} */
+  let members;
+  try {
+    members = docMemberNames(fs.readFileSync(docPath, 'utf-8'));
+  } catch {
+    members = [];
+  }
+  memberReads.set(docPath, {size: stat.size, mtimeMs: stat.mtimeMs, members});
+  return members;
+}
+
+// A sibling component folder named by a relative import or re-export.
+const SIBLING_IMPORT_RE =
+  /(?:\bfrom|\bimport\s*\()\s*['"]\.\.\/([A-Za-z0-9_-]+)(?:\/[^'"]*)?['"]/g;
+
+/**
+ * The Core doc that documents `name` as one of its `components` members: the
+ * doc of a component it builds on. HStack and VStack import Stack, and Stack's
+ * doc lists them, so each has its own folder and import path but no doc of its
+ * own. Only the folders the component's own source imports from are read.
+ * @param {string} srcDir
+ * @param {string} name
+ * @returns {string | null}
+ */
+function findFamilyDoc(srcDir, name) {
+  const sourcePath = [`${name}.tsx`, `XDS${name}.tsx`]
+    .map(file => path.join(srcDir, name, file))
+    .find(file => existsCaseExact(file, srcDir));
+  if (!sourcePath) return null;
+  let source;
+  try {
+    source = fs.readFileSync(sourcePath, 'utf-8');
+  } catch {
+    return null;
+  }
+  const families = [
+    ...new Set([...source.matchAll(SIBLING_IMPORT_RE)].map(match => match[1])),
+  ]
+    .filter(dir => dir !== name && !SKIP_DIRS.has(dir))
+    .sort();
+  for (const dir of families) {
+    const dirPath = path.join(srcDir, dir);
+    if (!existsCaseExact(dirPath, srcDir)) continue;
+    for (const file of [...listDir(dirPath)].sort()) {
+      if (!file.endsWith('.doc.mjs')) continue;
+      const docPath = path.join(dirPath, file);
+      const members = readDocMembers(docPath);
+      if (members.includes(name) || members.includes(`XDS${name}`)) {
+        return docPath;
+      }
+    }
+  }
+  return null;
+}
+
+/**
+ * The entry a family doc gives `name` in its `components`, when the doc is not
+ * the component's own (Stack's doc for VStack); null otherwise.
+ * @param {any} docs - a loaded component doc
+ * @param {string} name - bare component name
+ * @returns {any}
+ */
+export function familyMember(docs, name) {
+  if (!docs || docs.name === name || docs.name === `XDS${name}`) return null;
+  const members = Array.isArray(docs.components) ? docs.components : [];
+  return (
+    members.find(
+      (/** @type {any} */ member) =>
+        member?.name === name || member?.name === `XDS${name}`,
+    ) ?? null
+  );
+}
+
 /**
  * Auto-discover components by scanning for Astryx*.tsx files in core/src/.
+ * A component is listed when a doc documents it: a doc in its folder, or, for a
+ * component folder with no doc of its own, the doc `findComponentReadme` finds
+ * elsewhere (Heading's doc in the Text folder; HStack and VStack as members of
+ * Stack's doc).
  *
  * Returns an ordered Record where:
  * - Grouped components use the group name as key: `'Buttons': ['Button', 'IconButton']`
@@ -130,8 +321,8 @@ export function discoverComponents(coreDir) {
   function collectXDSFiles(dirPath) {
     /** @type {string[]} */
     const results = [];
-    if (!fs.existsSync(dirPath)) return results;
-    const entries = fs.readdirSync(dirPath, {withFileTypes: true});
+    if (!pathExists(dirPath)) return results;
+    const entries = listDirEntries(dirPath);
     for (const entry of entries) {
       if (entry.isDirectory()) {
         results.push(...collectXDSFiles(path.join(dirPath, entry.name)));
@@ -142,7 +333,7 @@ export function discoverComponents(coreDir) {
     return results;
   }
 
-  const topEntries = fs.readdirSync(srcDir, {withFileTypes: true});
+  const topEntries = listDirEntries(srcDir);
   for (const entry of topEntries) {
     if (!entry.isDirectory() || SKIP_DIRS.has(entry.name)) continue;
 
@@ -152,10 +343,10 @@ export function discoverComponents(coreDir) {
     // Read the group from the directory's .doc.mjs file (if it exists)
     // Check both {Name}.doc.mjs and Astryx{Name}.doc.mjs naming conventions
     let docFile = path.join(dirPath, `${entry.name}.doc.mjs`);
-    if (!fs.existsSync(docFile)) {
+    if (!pathExists(docFile)) {
       docFile = path.join(dirPath, `XDS${entry.name}.doc.mjs`);
     }
-    const {group, hiddenComponents, hidden} = fs.existsSync(docFile)
+    const {group, hiddenComponents, hidden} = pathExists(docFile)
       ? readDocMeta(docFile)
       : {group: null, hiddenComponents: new Set(), hidden: false};
 
@@ -169,10 +360,10 @@ export function discoverComponents(coreDir) {
       // Check for a per-component doc file that overrides the directory group
       let compGroup = group;
       let compDoc = path.join(dirPath, `${componentName}.doc.mjs`);
-      if (!fs.existsSync(compDoc)) {
+      if (!pathExists(compDoc)) {
         compDoc = path.join(dirPath, `XDS${componentName}.doc.mjs`);
       }
-      const hasComponentDoc = fs.existsSync(compDoc);
+      const hasComponentDoc = pathExists(compDoc);
       if (hasComponentDoc) {
         const compMeta = readDocMeta(compDoc);
         if (compMeta.group) compGroup = compMeta.group;
@@ -181,12 +372,31 @@ export function discoverComponents(coreDir) {
       // Skip components without any .doc.mjs file (directory-level or
       // component-level). They can't be documented, so surfacing them in
       // the component list leads to broken docs-site links.
-      if (!fs.existsSync(docFile) && !hasComponentDoc) continue;
+      if (!pathExists(docFile) && !hasComponentDoc) continue;
 
       if (!componentGroups.has(componentName)) {
         componentGroups.set(componentName, compGroup);
       }
     }
+  }
+
+  // A component folder with no doc in it is still listed when a doc elsewhere
+  // documents it, the doc `component <Name>` opens: its own same-stem doc in a
+  // family folder (Text/Heading.doc.mjs), or a member entry in the family's doc
+  // (HStack and VStack in Stack's doc).
+  for (const entry of topEntries) {
+    if (!entry.isDirectory() || SKIP_DIRS.has(entry.name)) continue;
+    const name = entry.name;
+    if (componentGroups.has(name) || name.endsWith('Context')) continue;
+    if (listDir(path.join(srcDir, name)).some(file => file.endsWith('.doc.mjs'))) {
+      continue;
+    }
+    if (!hasOwnFolder(srcDir, name)) continue;
+    const docPath = findComponentReadme(coreDir, name);
+    if (!docPath?.endsWith('.doc.mjs')) continue;
+    const meta = readDocMeta(docPath);
+    if (meta.hidden || meta.hiddenComponents.has(name)) continue;
+    componentGroups.set(name, meta.group);
   }
 
   // Build the result: group name → sorted members, or component name → [self]
@@ -249,7 +459,7 @@ export function findComponentReadme(coreDir, name) {
   if (existsCaseExact(directXds, srcDir)) return directXds;
 
   // Nested match: src/*/{name}/{Name}.doc.mjs or src/*/{name}/Astryx{Name}.doc.mjs
-  const entries = fs.readdirSync(srcDir, {withFileTypes: true});
+  const entries = listDirEntries(srcDir);
   for (const entry of entries) {
     if (!entry.isDirectory()) continue;
     const nested = path.join(srcDir, entry.name, name, exactDoc);
@@ -273,13 +483,17 @@ export function findComponentReadme(coreDir, name) {
   if (sourcePath) {
     let dir = path.dirname(sourcePath);
     while (dir.startsWith(srcDir)) {
-      const dirEntries = fs.readdirSync(dir);
+      const dirEntries = listDir(dir);
       for (const f of dirEntries) {
         if (f.endsWith('.doc.mjs')) return path.join(dir, f);
       }
       dir = path.dirname(dir);
     }
   }
+
+  // A component with its own folder, documented as a member of its family's
+  // doc (HStack and VStack in Stack's doc).
+  if (hasOwnFolder(srcDir, name)) return findFamilyDoc(srcDir, name);
 
   return null;
 }
@@ -316,8 +530,8 @@ export function findComponentSource(coreDir, name) {
    * @returns {string | null}
    */
   function searchDir(dirPath) {
-    if (!fs.existsSync(dirPath)) return null;
-    const entries = fs.readdirSync(dirPath, {withFileTypes: true});
+    if (!pathExists(dirPath)) return null;
+    const entries = listDirEntries(dirPath);
 
     // Check for an exact match (prefixed or bare) first
     for (const candidate of candidateFiles) {
@@ -343,7 +557,7 @@ export function findComponentSource(coreDir, name) {
   }
 
   // Search nested (component might be under a parent dir)
-  const entries = fs.readdirSync(srcDir, {withFileTypes: true});
+  const entries = listDirEntries(srcDir);
   for (const entry of entries) {
     if (!entry.isDirectory()) continue;
     const nestedDir = path.join(srcDir, entry.name, name);
@@ -367,7 +581,7 @@ export function findComponentSource(coreDir, name) {
 export function resolveImportPath(coreDir, componentName) {
   const srcDir = path.join(coreDir, 'src');
   const pkgPath = path.join(coreDir, 'package.json');
-  const pkg = fs.existsSync(pkgPath)
+  const pkg = pathExists(pkgPath)
     ? JSON.parse(fs.readFileSync(pkgPath, 'utf-8'))
     : null;
 
@@ -375,7 +589,9 @@ export function resolveImportPath(coreDir, componentName) {
 
   // Priority 1: exact subpath export matching the component name (e.g. ./Heading)
   // This allows convenience re-export directories to win over the source directory.
-  const exactMatch = exportKeys.find(k => k.toLowerCase() === `./${componentName}`.toLowerCase());
+  const exactMatch = exportKeys.find(
+    k => k.toLowerCase() === `./${componentName}`.toLowerCase(),
+  );
   if (exactMatch) {
     return `@astryxdesign/core/${exactMatch.slice(2)}`;
   }
@@ -387,7 +603,9 @@ export function resolveImportPath(coreDir, componentName) {
   const relToSrc = path.relative(srcDir, sourcePath);
   const topDir = relToSrc.split(path.sep)[0];
 
-  const topMatch = exportKeys.find(k => k.toLowerCase() === `./${topDir}`.toLowerCase());
+  const topMatch = exportKeys.find(
+    k => k.toLowerCase() === `./${topDir}`.toLowerCase(),
+  );
   if (topMatch) {
     return `@astryxdesign/core/${topMatch.slice(2)}`;
   }
@@ -434,8 +652,9 @@ function exportsPublish(exportsMap, subpath) {
 }
 
 /**
- * Resolve the specifier an integration component is imported from, against the
- * owning package's `exports` map.
+ * Resolve the specifier an integration component is imported from. An authored
+ * doc import is canonical; otherwise resolve against the owning package's
+ * `exports` map.
  *
  * A component lives in a directory that need not share its name — several
  * components can be exported from one entry point — so the specifier has to
@@ -461,13 +680,24 @@ function exportsPublish(exportsMap, subpath) {
  *
  * @param {{exportsMap?: Record<string, unknown>|null, packageDir?: string, docPath?: string|null, packageName: string}} owner
  * @param {string} componentName
+ * @param {string|null} [authoredImport]
  * @returns {string}
  */
-export function resolveIntegrationImportPath(owner, componentName) {
+export function resolveIntegrationImportPath(
+  owner,
+  componentName,
+  authoredImport,
+) {
+  if (authoredImport) return authoredImport;
   const {exportsMap, packageDir, docPath, packageName} = owner;
-  const map = exportsMap === undefined ? readPackageExports(packageDir) : exportsMap;
-  const directory = docPath ? path.basename(path.dirname(docPath)) : componentName;
-  return exportsPublish(map, `./${directory}`) ? `${packageName}/${directory}` : packageName;
+  const map =
+    exportsMap === undefined ? readPackageExports(packageDir) : exportsMap;
+  const directory = docPath
+    ? path.basename(path.dirname(docPath))
+    : componentName;
+  return exportsPublish(map, `./${directory}`)
+    ? `${packageName}/${directory}`
+    : packageName;
 }
 
 /**
@@ -504,14 +734,14 @@ function readPackageExports(packageDir) {
  * @returns {Record<string, string[]>}
  */
 export function discoverExternalComponentsGrouped(docsDir) {
-  if (!fs.existsSync(docsDir)) return {};
+  if (!pathExists(docsDir)) return {};
 
   /** @type {Map<string, string|null>} componentName → group */
   const componentGroups = new Map();
 
   /** @param {string} dirPath */
   function scanDir(dirPath) {
-    const entries = fs.readdirSync(dirPath, {withFileTypes: true});
+    const entries = listDirEntries(dirPath);
     for (const entry of entries) {
       if (entry.name === 'node_modules' || entry.name === '__tests__') continue;
       const fullPath = path.join(dirPath, entry.name);
@@ -575,7 +805,7 @@ export function discoverExternalComponentsGrouped(docsDir) {
  * @returns {string | null}
  */
 export function findExternalComponentDoc(docsDir, name) {
-  if (!fs.existsSync(docsDir)) return null;
+  if (!pathExists(docsDir)) return null;
   const target = `${name}.doc.mjs`;
 
   /**
@@ -583,7 +813,7 @@ export function findExternalComponentDoc(docsDir, name) {
    * @returns {string | null}
    */
   function scanDir(dirPath) {
-    const entries = fs.readdirSync(dirPath, {withFileTypes: true});
+    const entries = listDirEntries(dirPath);
     for (const entry of entries) {
       if (entry.name === 'node_modules' || entry.name === '__tests__') continue;
       const fullPath = path.join(dirPath, entry.name);
@@ -624,7 +854,7 @@ function integrationSourceForDoc(docPath) {
   const dir = path.dirname(docPath);
   const base = path.basename(docPath).replace(/\.doc\.(ts|mjs|js)$/, '');
   const candidate = path.join(dir, `${base}.tsx`);
-  return fs.existsSync(candidate) ? candidate : null;
+  return pathExists(candidate) ? candidate : null;
 }
 
 /**
@@ -638,14 +868,14 @@ function integrationSourceForDoc(docPath) {
  */
 export function discoverIntegrationComponents(integration) {
   const componentsDir = integration?.components;
-  if (!componentsDir || !fs.existsSync(componentsDir)) return [];
+  if (!componentsDir || !pathExists(componentsDir)) return [];
 
   /** @type {Map<string, {name: string, package: string, docPath: string, sourcePath: string|null, issuesUrl: string|undefined, group: string|null}>} */
   const byName = new Map();
 
   /** @param {string} dirPath */
   function scanDir(dirPath) {
-    const entries = fs.readdirSync(dirPath, {withFileTypes: true});
+    const entries = listDirEntries(dirPath);
     for (const entry of entries) {
       if (entry.name === 'node_modules' || entry.name === '__tests__') continue;
       const fullPath = path.join(dirPath, entry.name);
@@ -676,6 +906,59 @@ export function discoverIntegrationComponents(integration) {
 }
 
 /**
+ * Load and validate every discovered integration component independently.
+ * Invalid metadata or a missing same-stem source removes only that component;
+ * callers can report the returned errors while retaining valid siblings. A
+ * component whose doc sets `replaces` carries the value as written; the
+ * component replacement resolver decides what it means.
+ *
+ * @param {{name: string, components?: string, issuesUrl?: string}} integration
+ * @returns {Promise<{
+ *   components: Array<{name: string, package: string, docPath: string, sourcePath: string, issuesUrl: string|undefined, group: string|null, replaces?: unknown}>,
+ *   discovered: Array<{name: string, package: string, docPath: string, sourcePath: string|null, issuesUrl: string|undefined, group: string|null}>,
+ *   errors: Array<{name: string, message: string}>,
+ * }>}
+ */
+export async function discoverValidIntegrationComponents(integration) {
+  const discovered = discoverIntegrationComponents(integration);
+  /** @type {Array<{name: string, package: string, docPath: string, sourcePath: string, issuesUrl: string|undefined, group: string|null, replaces?: unknown}>} */
+  const components = [];
+  /** @type {Array<{name: string, message: string}>} */
+  const errors = [];
+
+  for (const record of discovered) {
+    if (record.sourcePath == null) {
+      errors.push({
+        name: record.name,
+        message: `Component "${record.name}" is missing its same-stem source file ${record.name}.tsx.`,
+      });
+      continue;
+    }
+    try {
+      const doc = await loadComponentDoc(record.docPath);
+      const valid =
+        /** @type {{name: string, package: string, docPath: string, sourcePath: string, issuesUrl: string|undefined, group: string|null}} */ (
+          record
+        );
+      components.push(
+        doc != null && typeof doc === 'object' && doc.replaces !== undefined
+          ? {...valid, replaces: doc.replaces}
+          : valid,
+      );
+    } catch (err) {
+      errors.push({
+        name: record.name,
+        message: `Component "${record.name}" has invalid metadata: ${
+          err instanceof Error ? err.message : String(err)
+        }`,
+      });
+    }
+  }
+
+  return {components, discovered, errors};
+}
+
+/**
  * Find an integration component's doc file by name within a loaded
  * integration's resolved `components` dir. Honors the same-stem convention
  * (`{Name}.doc.{ts,mjs,js}`), preferring `.ts` → `.mjs` → `.js`.
@@ -686,18 +969,18 @@ export function discoverIntegrationComponents(integration) {
  */
 export function findIntegrationComponentDoc(integration, name) {
   const componentsDir = integration?.components;
-  if (!componentsDir || !fs.existsSync(componentsDir)) return null;
+  if (!componentsDir || !pathExists(componentsDir)) return null;
 
   /**
    * @param {string} dirPath
    * @returns {string | null}
    */
   function scanDir(dirPath) {
-    const entries = fs.readdirSync(dirPath, {withFileTypes: true});
+    const entries = listDirEntries(dirPath);
     // Exact same-stem match (precedence order) first in this dir.
     for (const suffix of INTEGRATION_DOC_SUFFIXES) {
       const candidate = path.join(dirPath, `${name}${suffix}`);
-      if (fs.existsSync(candidate)) return candidate;
+      if (pathExists(candidate)) return candidate;
     }
     for (const entry of entries) {
       if (entry.name === 'node_modules' || entry.name === '__tests__') continue;

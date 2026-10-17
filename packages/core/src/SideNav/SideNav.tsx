@@ -11,7 +11,8 @@
  * Sidebar navigation container with five zones: header + topContent (sticky together),
  * children (scrollable), footer, and footerIcons (sticky bottom).
  *
- * Supports optional resize via drag handle at the inline-end edge.
+ * Supports optional resize via a drag handle at the inline-end edge. The
+ * resizable wrapper clips handle overflow while keeping its focus ring inside.
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/SideNav/SideNav.doc.mjs
@@ -21,11 +22,17 @@
  * - /packages/cli/assets/templates/blocks/components/SideNav/ (showcase blocks)
  */
 
-import {useCallback, useImperativeHandle, useRef, type ReactNode} from 'react';
+import {
+  useCallback,
+  useId,
+  useImperativeHandle,
+  useRef,
+  type ReactNode,
+} from 'react';
 import type {BaseProps} from '../BaseProps';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
-import {spacingVars} from '../theme/tokens.stylex';
+import {focusVars, spacingVars} from '../theme/tokens.stylex';
 import {mergeProps} from '../utils';
 import {
   SideNavCollapseContext,
@@ -241,6 +248,16 @@ const styles = stylex.create({
     display: 'flex',
     flexShrink: 0,
     height: '100%',
+    overflow: 'clip',
+  },
+  resizableHandle: {
+    // Keep the shared ring inside the clipping boundary. The wrapper cannot
+    // use overflow-clip-margin: that paint allowance also contributes the
+    // overlay's half-pixel spill to AppShell's scrollable overflow.
+    outlineOffset: {
+      default: '0',
+      ':focus-visible': `calc(0px - ${focusVars['--focus-outline-width']})`,
+    },
   },
   // Topbar mode — horizontal layout for mobile top bar
   topbar: {
@@ -429,6 +446,10 @@ export function SideNav({
   );
 
   const navRef = useRef<HTMLElement>(null);
+  // The resize handle names the pane it resizes (APG window splitter), so the
+  // nav needs an id; a consumer's own id wins.
+  const generatedNavId = useId();
+  const navId = props.id ?? generatedNavId;
   const mergedNavRef = useMergedRefs(ref, navRef);
   const collapseStateRef = useRef<SideNavCollapseState>({
     isCollapsed: false,
@@ -600,7 +621,10 @@ export function SideNav({
         className,
         resizableNavStyle,
       )}
-      {...props}>
+      {...props}
+      // After the spread: a wrapper forwarding `id={undefined}` must not erase
+      // the id the resize handle's aria-controls points at.
+      id={navId}>
       {hasStickyTop && (
         <div
           {...stylex.props(
@@ -658,8 +682,10 @@ export function SideNav({
         position="overlay"
         pillPlacement="end"
         isAlwaysVisible={false}
+        xstyle={styles.resizableHandle}
         resizable={resizableHook.props}
         label={t('@astryx.sideNav.resizeSidebar')}
+        aria-controls={navId}
       />
     </div>
   ) : (

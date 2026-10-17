@@ -540,7 +540,7 @@ function SheetWithHoverTipExample() {
         activeSheet={activeSheet}
         onActiveSheetChange={setActiveSheet}
         hasScrim={false}>
-        <BottomSheet sheetId="details" label="Details" height="hug">
+        <BottomSheet sheetId="details" label="Details" height="hug" padding={0}>
           <VStack gap={3} xstyle={sheetStyles.body}>
             <Text type="body">
               Hover the button to show the tip, then press Escape. The first

@@ -22,7 +22,10 @@ import {TreeList, type TreeListItemData} from '../TreeList';
 import {useTranslator} from '../i18n';
 import {isImeKeyEvent} from '../utils/ime';
 import {spacingVars, typeScaleVars} from '../theme/tokens.stylex';
-import {PowerSearchValueEditor} from './PowerSearchValueEditor';
+import {
+  PowerSearchValueEditor,
+  type PowerSearchValueEditorProps,
+} from './PowerSearchValueEditor';
 import {resolveOperatorLabel} from './resolveOperatorLabel';
 import type {InternalConfig} from './useInternalConfig';
 import type {
@@ -30,6 +33,7 @@ import type {
   PartialFilter,
   FilterValue,
   OperatorValue,
+  PowerSearchOperator,
 } from './types';
 
 // Below the popover layer's 400px floor (see popoverLayerStyles in
@@ -356,6 +360,7 @@ function NestedSubFilterRow({
       {operatorValue && !isEmptyType && !isNestedType && (
         <div {...stylex.props(styles.nestedRowValueEditor)}>
           <PowerSearchValueEditor
+            key={valueEditorKey(subFilter)}
             operatorValue={operatorValue}
             filterValue={subFilter.value}
             onChange={handleValueChange}
@@ -607,6 +612,42 @@ function NestedEditor({
 }
 
 // =============================================================================
+// Value editor cell
+// =============================================================================
+
+// A field switch must replace the editor, not update it in place: a reused
+// editor keeps its open menu and old results.
+function valueEditorKey(filter: {field: string; operator?: string}): string {
+  return `${filter.field}\u0000${filter.operator ?? ''}`;
+}
+
+// Keyed on field + operator, so this also mounts on a field switch, not just
+// when the popover opens; the focus handoff below runs for both.
+function ValueEditorCell(props: PowerSearchValueEditorProps) {
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => {
+      const container = ref.current;
+      if (!container) {
+        return;
+      }
+      const focusable = container.querySelector<HTMLElement>(
+        'input:not([disabled]), button:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])',
+      );
+      focusable?.focus();
+    });
+    return () => cancelAnimationFrame(frame);
+  }, []);
+
+  return (
+    <div ref={ref} {...stylex.props(styles.valueEditor)}>
+      <PowerSearchValueEditor {...props} />
+    </div>
+  );
+}
+
+// =============================================================================
 // Main popover
 // =============================================================================
 
@@ -625,22 +666,6 @@ export function PowerSearchEditPopover({
     saveButtonLabelFromProps ?? t('@astryx.powersearch.editor.apply');
   const [partialFilter, setPartialFilter] =
     useState<PartialFilter>(initialFilter);
-  const valueEditorRef = useRef<HTMLDivElement>(null);
-
-  // Focus the first focusable element inside the value editor after mount
-  useEffect(() => {
-    const frame = requestAnimationFrame(() => {
-      const container = valueEditorRef.current;
-      if (!container) {
-        return;
-      }
-      const focusable = container.querySelector<HTMLElement>(
-        'input:not([disabled]), button:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])',
-      );
-      focusable?.focus();
-    });
-    return () => cancelAnimationFrame(frame);
-  }, []);
 
   const currentOperator = partialFilter.operator
     ? config.getOperator(partialFilter.field, partialFilter.operator)
@@ -665,6 +690,26 @@ export function PowerSearchEditPopover({
     }));
   }, [config, partialFilter.field, t]);
 
+  // An "empty" operator takes no value, so choosing one completes the filter:
+  // save it from the choice itself, once, rather than reacting to the state.
+  // The save is queued as a microtask so it runs after the Selector reporting
+  // the choice has finished closing and refocusing its trigger; a parent that
+  // closes the editor on save can then move focus without the Selector taking
+  // it back onto a node that is about to unmount.
+  const saveIfEmptyOperator = useCallback(
+    (fieldKey: string, operator: PowerSearchOperator | undefined) => {
+      if (fieldKey && operator?.value.type === 'empty') {
+        const filter: PowerSearchFilter = {
+          field: fieldKey,
+          operator: operator.key,
+          value: {type: 'empty'},
+        };
+        queueMicrotask(() => onSave(filter));
+      }
+    },
+    [onSave],
+  );
+
   const handleFieldChange = useCallback(
     (fieldKey: string) => {
       const defaultOp = config.getDefaultOperator(fieldKey);
@@ -673,8 +718,16 @@ export function PowerSearchEditPopover({
         operator: defaultOp?.key,
         value: undefined,
       });
+      // Re-choosing the current field with its current operator changes
+      // nothing, so it saves nothing.
+      if (
+        fieldKey !== partialFilter.field ||
+        defaultOp?.key !== partialFilter.operator
+      ) {
+        saveIfEmptyOperator(fieldKey, defaultOp);
+      }
     },
-    [config],
+    [config, partialFilter.field, partialFilter.operator, saveIfEmptyOperator],
   );
 
   const handleOperatorChange = useCallback(
@@ -688,25 +741,31 @@ export function PowerSearchEditPopover({
         operator: operatorKey,
         value: keepValue ? prev.value : undefined,
       }));
+      // Re-choosing the current operator changes nothing, so it saves nothing.
+      if (operatorKey !== partialFilter.operator) {
+        saveIfEmptyOperator(partialFilter.field, newOp);
+      }
     },
-    [config, partialFilter.field, currentOperator],
+    [
+      config,
+      partialFilter.field,
+      partialFilter.operator,
+      currentOperator,
+      saveIfEmptyOperator,
+    ],
   );
 
   const handleValueChange = useCallback(
     (value: FilterValue, shouldSave?: boolean) => {
-      setPartialFilter(prev => {
-        const updated = {...prev, value};
-        if (shouldSave && updated.field && updated.operator && updated.value) {
-          onSave({
-            field: updated.field,
-            operator: updated.operator,
-            value: updated.value,
-          });
-        }
-        return updated;
-      });
+      setPartialFilter(prev => ({...prev, value}));
+      // Saved from the handler, not inside the state updater: React may call
+      // an updater more than once (StrictMode does), which would save twice.
+      const {field, operator} = partialFilter;
+      if (shouldSave && field && operator && value) {
+        onSave({field, operator, value});
+      }
     },
-    [onSave],
+    [partialFilter, onSave],
   );
 
   const handleSave = useCallback(() => {
@@ -734,6 +793,12 @@ export function PowerSearchEditPopover({
       if (isImeKeyEvent(e.nativeEvent)) {
         return;
       }
+      // A focused button owns its Enter: Cancel cancels, Delete deletes, and
+      // the date picker's calendar button opens the calendar. Enter in a
+      // text or number value field still saves.
+      if (e.key === 'Enter' && e.target instanceof HTMLButtonElement) {
+        return;
+      }
       if (e.key === 'Enter' && !isSaveDisabled && !e.defaultPrevented) {
         e.preventDefault();
         handleSave();
@@ -748,17 +813,6 @@ export function PowerSearchEditPopover({
   const operatorValue: OperatorValue | undefined = currentOperator?.value;
   const isEmptyType = operatorValue?.type === 'empty';
   const isNestedType = operatorValue?.type === 'nested';
-
-  // For empty type, auto-save on mount
-  useEffect(() => {
-    if (isEmptyType && partialFilter.field && partialFilter.operator) {
-      onSave({
-        field: partialFilter.field,
-        operator: partialFilter.operator,
-        value: {type: 'empty'},
-      });
-    }
-  }, [isEmptyType, partialFilter.field, partialFilter.operator, onSave]);
 
   const showOperatorSelector = operatorOptions.length > 1 || !isEmptyType;
 
@@ -854,17 +908,16 @@ export function PowerSearchEditPopover({
             </div>
           )}
           {operatorValue && !isEmptyType && (
-            <div ref={valueEditorRef} {...stylex.props(styles.valueEditor)}>
-              <PowerSearchValueEditor
-                operatorValue={operatorValue}
-                filterValue={partialFilter.value}
-                onChange={handleValueChange}
-                onEnter={handleSave}
-                config={config}
-                maxMenuItems={maxMenuItems}
-                isDisabled={isReadOnly}
-              />
-            </div>
+            <ValueEditorCell
+              key={valueEditorKey(partialFilter)}
+              operatorValue={operatorValue}
+              filterValue={partialFilter.value}
+              onChange={handleValueChange}
+              onEnter={handleSave}
+              config={config}
+              maxMenuItems={maxMenuItems}
+              isDisabled={isReadOnly}
+            />
           )}
         </HStack>
       </div>

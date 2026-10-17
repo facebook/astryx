@@ -3,7 +3,8 @@
 /**
  * @file themeAdaptations.test.ts
  * Tests AST-012's ordered, closed, CSS-first theme adaptation contract,
- * including normalization and final reachable-cascade validation.
+ * including normalization, root-dependent type-scale component writes, and final
+ * reachable-cascade validation.
  */
 
 import {describe, expect, it} from 'vitest';
@@ -378,6 +379,215 @@ describe('rule order and writes', () => {
   });
 });
 
+describe('adapted type-scale component defaults', () => {
+  const displayFamily = 'Sarina, "Brush Script MT", "Snell Roundhand", cursive';
+  const butterShapedInput: DefineThemeInput = {
+    name: 'butter-shaped',
+    typography: {
+      scale: {base: 16, ratio: 1.25},
+      body: {family: 'Outfit', fallbacks: 'sans-serif'},
+    },
+    components: {
+      text: Object.fromEntries(
+        ['display-1', 'display-2', 'display-3'].map(type => [
+          `type:${type}`,
+          {fontFamily: displayFamily},
+        ]),
+      ),
+      button: {base: {borderRadius: '12px'}},
+    },
+    adaptations: {
+      rules: [
+        {
+          when: {width: {below: 'md'}, pointer: 'coarse'},
+          value: {typography: {scale: {base: 14, ratio: 1.2}}},
+        },
+      ],
+    },
+  };
+
+  it('keeps butter-shaped display families while adapting scale tokens only', () => {
+    const theme = defineTheme(butterShapedInput);
+    const rule = theme.__adaptationRules![0];
+    const css = generateThemeCSS(theme).component;
+    const adaptiveCSS = generateAdaptationCSS(theme).component;
+
+    expect(rule.query).toBe('(width < 768px) and (pointer: coarse)');
+    expect(theme.tokens['--font-size-base']).toBe('1rem');
+    expect(rule.tokens['--font-size-base']).toBe('0.875rem');
+    expect(rule.tokens['--font-size-5xl']).not.toBe(
+      theme.tokens['--font-size-5xl'],
+    );
+    expect(adaptiveCSS).toContain('--font-size-base: 0.875rem');
+    // The root owns the var() wiring and its authored overrides. Re-emitting
+    // either would turn an unrelated scale change into a component write.
+    expect(rule.components).toBeUndefined();
+    expect(adaptiveCSS).not.toContain('.astryx-text');
+    expect(adaptiveCSS).not.toContain('.astryx-heading');
+    expect(adaptiveCSS).not.toContain('.astryx-button');
+    for (const type of ['display-1', 'display-2', 'display-3']) {
+      expect(theme.components?.text[`type:${type}`].fontFamily).toBe(
+        displayFamily,
+      );
+      expect(count(css, `.astryx-text[data-type="${type}"] {`)).toBe(1);
+    }
+    expect(count(css, `font-family: ${displayFamily};`)).toBe(3);
+    // Built modules retain root components + intent, not resolved rule layers.
+    expect(generateThemeCSS({...theme, __adaptationRules: undefined})).toEqual(
+      generateThemeCSS(theme),
+    );
+  });
+
+  it('fills only missing generated leaves when the root has no scale', () => {
+    const components = {
+      heading: {
+        'level:1': {fontFamily: 'serif', fontWeight: '900'},
+        'type:display-1': {fontSize: '5rem'},
+      },
+      text: {
+        'type:display-1': {fontFamily: displayFamily, lineHeight: '1.1'},
+        'type:body': {fontSize: '18px'},
+        'type:custom': {fontFamily: 'monospace'},
+      },
+      button: {base: {borderRadius: '12px'}},
+    };
+    const before = structuredClone(components);
+    const theme = defineTheme({
+      ...butterShapedInput,
+      typography: undefined,
+      components,
+    });
+    const generated = theme.__adaptationRules![0].components!;
+
+    expect(generated.heading['level:1']).toEqual({
+      fontSize: 'var(--text-heading-1-size)',
+      lineHeight: 'var(--text-heading-1-leading)',
+    });
+    expect(generated.heading['type:display-1']).toEqual({
+      fontFamily: 'var(--font-family-heading)',
+      lineHeight: 'var(--text-display-1-leading)',
+    });
+    expect(generated.text['type:display-1']).toEqual({
+      fontSize: 'var(--text-display-1-size)',
+    });
+    expect(generated.text['type:body']).toEqual({
+      fontFamily: 'var(--font-family-body)',
+      lineHeight: 'var(--text-body-leading)',
+    });
+    expect(generated.text['type:custom']).toBeUndefined();
+    expect(generated.button).toBeUndefined();
+    expect(components).toEqual(before);
+    expect(theme.components).toEqual(before);
+  });
+
+  it('preserves explicit rule writes, including a later root-restoring value', () => {
+    const theme = defineTheme({
+      ...butterShapedInput,
+      adaptations: {
+        rules: [
+          {
+            when: {pointer: 'coarse'},
+            value: {
+              typography: {scale: {base: 15}},
+              components: {
+                text: {'type:display-1': {fontFamily: 'monospace'}},
+                heading: {'level:1': {fontWeight: '300'}},
+              },
+            },
+          },
+          ...butterShapedInput.adaptations!.rules!,
+          {
+            when: {contrast: 'more'},
+            value: {
+              typography: {scale: {base: 14}},
+              components: {
+                text: {'type:display-1': {fontFamily: displayFamily}},
+              },
+            },
+          },
+        ],
+      },
+    });
+    const [first, scaleOnly, restore] = theme.__adaptationRules!;
+    expect(first.components).toEqual({
+      text: {'type:display-1': {fontFamily: 'monospace'}},
+      heading: {'level:1': {fontWeight: '300'}},
+    });
+    expect(scaleOnly.components).toBeUndefined();
+    expect(restore.components).toEqual({
+      text: {'type:display-1': {fontFamily: displayFamily}},
+    });
+    const css = generateAdaptationCSS(theme).component;
+    expect(css.indexOf('font-family: monospace')).toBeLessThan(
+      css.indexOf(`font-family: ${displayFamily}`),
+    );
+    // Explicit heading defaults still trigger the public weight-prop guard.
+    expect(css).toContain(
+      '.astryx-heading[data-weight="bold"] { font-weight: var(--font-weight-bold); }',
+    );
+  });
+
+  it('lets a later generated component leaf win when its root path is absent', () => {
+    const theme = defineTheme(
+      adaptationInput([
+        {
+          when: {pointer: 'coarse'},
+          value: {components: {text: {'type:body': {fontSize: '2rem'}}}},
+        },
+        {
+          when: {pointer: 'coarse'},
+          value: {typography: {scale: {base: 14, ratio: 1.2}}},
+        },
+      ]),
+    );
+    expect(theme.__axes.typography).toBeUndefined();
+    expect(theme.components).toBeUndefined();
+    const [authored, generated] = theme.__adaptationRules!;
+    expect(authored.components?.text['type:body'].fontSize).toBe('2rem');
+    expect(generated.components?.text['type:body'].fontSize).toBe(
+      'var(--text-body-size)',
+    );
+
+    // FR4/FR6: only existing root paths suppress generated defaults. Without
+    // root wiring, the later scale produces a component write, so it beats the
+    // earlier authored leaf when both conditions match (unlike the case above).
+    const css = generateAdaptationCSS(theme).component;
+    const bodyRules = [
+      ...css.matchAll(/\.astryx-text\[data-type="body"\] \{([^}]+)\}/g),
+    ].map(match => match[1]);
+    expect(bodyRules).toHaveLength(2);
+    expect(bodyRules[0]).toContain('font-size: 2rem;');
+    expect(bodyRules[1]).toContain('font-size: var(--text-body-size);');
+    expect(mediaPreludes(css)).toEqual([
+      '(pointer: coarse)',
+      '(pointer: coarse)',
+    ]);
+    expect(generateThemeCSS({...theme, __adaptationRules: undefined})).toEqual(
+      generateThemeCSS(theme),
+    );
+  });
+
+  it('uses the effective child root without mutating inherited components', () => {
+    const base = defineTheme(butterShapedInput);
+    const before = structuredClone(base.components);
+    const child = defineTheme({
+      name: 'child-display',
+      extends: base,
+      components: {
+        text: {'type:display-2': {fontFamily: 'serif'}},
+        heading: {'level:2': {fontFamily: 'monospace'}},
+      },
+    });
+    expect(child.__adaptationRules![0].components).toBeUndefined();
+    expect(child.components?.text['type:display-1'].fontFamily).toBe(
+      displayFamily,
+    );
+    expect(child.components?.text['type:display-2'].fontFamily).toBe('serif');
+    expect(child.components?.heading['level:2'].fontFamily).toBe('monospace');
+    expect(base.components).toEqual(before);
+  });
+});
+
 describe('theme-local adaptation values', () => {
   const localName = '--astryx-theme-local-root-control-height';
 
@@ -443,50 +653,24 @@ describe('theme-local adaptation values', () => {
     ).toThrow(/write it through value.localTokens/);
   });
 
-  it('rejects reserved local-token names through value.tokens even when unenrolled', () => {
-    expect(() =>
-      defineTheme({
-        name: 'reserved-rule-token',
-        adaptations: {
-          rules: [
-            {
-              when: {pointer: 'coarse'},
-              value: {
-                tokens: {
-                  '--astryx-theme-unrelated-owner-control-height': '44px',
-                },
-              },
-            },
-          ],
-        },
-      } as unknown as DefineThemeInput),
-    ).toThrow(/reserved.*value\.localTokens/i);
+  it('treats an unenrolled prefix-like adaptation token as portable', () => {
+    const name = '--astryx-theme-unrelated-owner-control-height';
+    const theme = defineTheme({
+      name: 'external-rule-token',
+      adaptations: {
+        rules: [
+          {
+            when: {pointer: 'coarse'},
+            value: {tokens: {[name]: '44px'}},
+          },
+        ],
+      },
+    } as unknown as DefineThemeInput);
+
+    expect(theme.__adaptationRules?.[0].tokens[name]).toBe('44px');
   });
 
-  it('rejects undeclared references and conditional cycles', () => {
-    expect(() =>
-      defineTheme({
-        name: 'local-root',
-        localTokens: {[localName]: '32px'},
-        adaptations: {
-          rules: [
-            {
-              when: {pointer: 'coarse'},
-              value: {
-                components: {
-                  button: {
-                    base: {
-                      minHeight: 'var(--astryx-theme-local-root-missing-name)',
-                    },
-                  },
-                },
-              },
-            },
-          ],
-        },
-      }),
-    ).toThrow(/has no declaration/);
-
+  it('rejects conditional local-token cycles', () => {
     const a = '--astryx-theme-cycle-local-a';
     const b = '--astryx-theme-cycle-local-b';
     expect(() =>

@@ -7,15 +7,24 @@
  *   - Theme name with `..` segments cannot escape the output directory.
  *   - Theme name with `/` is rejected with a clear error (vs. ENOENT).
  *   - Multi-file write is atomic: if one file fails, none are left behind.
+ *   - An `--out` escape, or an output directory that cannot be created, fails
+ *     with a registered error code.
+ *   - Every output stays inside the working directory: an absolute `--out`
+ *     path or a theme file outside it fails before anything is written, while
+ *     absolute paths inside it build, also through a symlinked spelling.
  *
  * Runs the CLI in-process (shared runCli harness) against a tiny synthetic theme file.
  */
 
-import {describe, it, expect, beforeEach, afterEach} from 'vitest';
+import {describe, it, expect, beforeAll, beforeEach, afterEach} from 'vitest';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as os from 'node:os';
+import {ensureCoreBuilt} from './ensure-core-built.mjs';
 import {runCli} from '../../../test-utils/run-cli.mjs';
+import {themeBuild} from '../../../api/theme/build/build.mjs';
+import {AstryxError} from '../../../api/error.mjs';
+import {ERROR_CODES} from '../../../foundation/response/error-codes.mjs';
 
 function writeTheme(dir, name) {
   fs.mkdirSync(dir, {recursive: true});
@@ -91,5 +100,165 @@ describe('theme build path safety', () => {
     // Neither the CSS nor any sibling JS should have been written.
     const entries = fs.readdirSync(themesDir).sort();
     expect(entries).toEqual(['theme.mjs']);
+  });
+});
+
+describe('theme build output-path failures carry registered codes', () => {
+  // These reach the output-path step, which runs after CSS generation.
+  beforeAll(() => {
+    ensureCoreBuilt();
+  }, 200_000);
+
+  const registered = new Set(Object.values(ERROR_CODES));
+
+  /** @param {string[]} args @param {string} cwd */
+  async function buildJson(args, cwd) {
+    const result = await runCli(['--json', 'theme', 'build', ...args], cwd);
+    return {result, envelope: JSON.parse(result.stdout)};
+  }
+
+  it('reports an --out path outside the project as ERR_PATH_TRAVERSAL', async () => {
+    const project = path.join(tmpDir, 'project');
+    const themeFile = writeTheme(path.join(project, 'themes'), 'ocean');
+
+    const {result, envelope} = await buildJson(
+      [path.relative(project, themeFile), '--out', '../escaped.css'],
+      project,
+    );
+
+    expect(result.code).toBe(1);
+    expect(envelope.code).toBe(ERROR_CODES.ERR_PATH_TRAVERSAL);
+    expect(registered.has(envelope.code)).toBe(true);
+    expect(fs.existsSync(path.join(tmpDir, 'escaped.css'))).toBe(false);
+  });
+
+  it('reports an absolute --out path outside the project as ERR_PATH_TRAVERSAL, with --check too', async () => {
+    const project = path.join(tmpDir, 'project');
+    const outside = path.join(tmpDir, 'outside');
+    fs.mkdirSync(outside, {recursive: true});
+    const themeFile = writeTheme(path.join(project, 'themes'), 'ocean');
+    const out = path.join(outside, 'ocean.css');
+
+    for (const extra of [[], ['--check']]) {
+      const {result, envelope} = await buildJson(
+        [path.relative(project, themeFile), '--out', out, ...extra],
+        project,
+      );
+
+      expect(result.code).toBe(1);
+      expect(envelope.code).toBe(ERROR_CODES.ERR_PATH_TRAVERSAL);
+    }
+    expect(fs.readdirSync(outside)).toEqual([]);
+  });
+
+  it('reports a theme file outside the project as ERR_PATH_TRAVERSAL, because its outputs go beside it', async () => {
+    const project = path.join(tmpDir, 'project');
+    fs.mkdirSync(project, {recursive: true});
+    const shared = path.join(tmpDir, 'shared');
+    const themeFile = writeTheme(shared, 'ocean');
+
+    for (const file of [themeFile, path.relative(project, themeFile)]) {
+      const {result, envelope} = await buildJson([file], project);
+
+      expect(result.code).toBe(1);
+      expect(envelope.code).toBe(ERROR_CODES.ERR_PATH_TRAVERSAL);
+    }
+    expect(fs.readdirSync(shared)).toEqual(['theme.mjs']);
+  });
+
+  it('builds absolute paths inside the project, also when they reach it through a symlink', async () => {
+    const project = path.join(tmpDir, 'project');
+    const themeFile = writeTheme(path.join(project, 'themes'), 'ocean');
+    const alias = path.join(tmpDir, 'alias');
+    fs.symlinkSync(project, alias, 'dir');
+
+    for (const [args, written] of [
+      [
+        [themeFile, '--out', path.join(project, 'dist', 'direct.css')],
+        path.join(project, 'dist', 'direct.css'),
+      ],
+      [
+        [themeFile, '--out', path.join(alias, 'dist', 'aliased.css')],
+        path.join(project, 'dist', 'aliased.css'),
+      ],
+      [
+        [path.join(alias, 'themes', 'theme.mjs')],
+        path.join(project, 'themes', 'ocean.css'),
+      ],
+    ]) {
+      const {result, envelope} = await buildJson(args, project);
+
+      expect(result.code).toBe(0);
+      expect(envelope.type).toBe('theme.build');
+      expect(fs.existsSync(written)).toBe(true);
+    }
+  });
+
+  it('reports an --out path that escapes through a symlink as ERR_PATH_TRAVERSAL', async () => {
+    const project = path.join(tmpDir, 'project');
+    const outside = path.join(tmpDir, 'outside');
+    fs.mkdirSync(outside, {recursive: true});
+    const themeFile = writeTheme(path.join(project, 'themes'), 'ocean');
+    fs.symlinkSync(outside, path.join(project, 'link'), 'dir');
+
+    const {result, envelope} = await buildJson(
+      [path.relative(project, themeFile), '--out', 'link/escaped.css'],
+      project,
+    );
+
+    expect(result.code).toBe(1);
+    expect(envelope.code).toBe(ERROR_CODES.ERR_PATH_TRAVERSAL);
+    expect(fs.readdirSync(outside)).toEqual([]);
+  });
+
+  it('reports an output directory that cannot be created as ERR_WRITE_FAILED', async () => {
+    const project = path.join(tmpDir, 'project');
+    const themeFile = writeTheme(path.join(project, 'themes'), 'ocean');
+    // A regular file where the output directory would have to be created.
+    fs.writeFileSync(path.join(project, 'blocker'), '');
+
+    const {result, envelope} = await buildJson(
+      [path.relative(project, themeFile), '--out', 'blocker/ocean.css'],
+      project,
+    );
+
+    expect(result.code).toBe(1);
+    expect(envelope.code).toBe(ERROR_CODES.ERR_WRITE_FAILED);
+    expect(registered.has(envelope.code)).toBe(true);
+  });
+
+  it('themeBuild() rejects an escaping out path with an AstryxError', async () => {
+    const project = path.join(tmpDir, 'project');
+    const themeFile = writeTheme(path.join(project, 'themes'), 'ocean');
+
+    const build = themeBuild(
+      path.relative(project, themeFile),
+      {out: '../escaped.css'},
+      {cwd: project},
+    );
+
+    await expect(build).rejects.toBeInstanceOf(AstryxError);
+    await expect(build).rejects.toMatchObject({
+      code: ERROR_CODES.ERR_PATH_TRAVERSAL,
+    });
+  });
+
+  it('themeBuild() rejects an output outside cwd: an absolute out path, or the default beside a theme file outside cwd', async () => {
+    const project = path.join(tmpDir, 'project');
+    const inside = writeTheme(path.join(project, 'themes'), 'ocean');
+    const shared = path.join(tmpDir, 'shared');
+    const outsideTheme = writeTheme(shared, 'ocean');
+    const outDir = path.join(tmpDir, 'out');
+
+    for (const [file, options] of [
+      [path.relative(project, inside), {out: path.join(outDir, 'ocean.css')}],
+      [outsideTheme, {}],
+    ]) {
+      await expect(
+        themeBuild(file, options, {cwd: project}),
+      ).rejects.toMatchObject({code: ERROR_CODES.ERR_PATH_TRAVERSAL});
+    }
+    expect(fs.existsSync(outDir)).toBe(false);
+    expect(fs.readdirSync(shared)).toEqual(['theme.mjs']);
   });
 });

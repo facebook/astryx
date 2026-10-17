@@ -1,5 +1,5 @@
 ---
-schema_version: 1
+schema_version: 4
 template_version: 1
 kind: system-spec
 id: spec:AST-033
@@ -7,7 +7,7 @@ authority: current
 archive_reason: null
 superseded_by: null
 approved_by: cixzhang
-approved_at: 2026-09-09
+approved_at: 2026-09-29
 phase: accepted
 owners: [cixzhang]
 affects_architecture: []
@@ -17,6 +17,32 @@ affects_consumer_docs: [docsite]
 ---
 
 # Docsite interaction and product-data contract
+
+<!-- review-applicability:v1 -->
+
+```json
+{
+  "scope": "global",
+  "triggers": {
+    "docsite": [
+      "DEC-1",
+      "DEC-2",
+      "DEC-3",
+      "DEC-5",
+      "FR3",
+      "FR8",
+      "FR13",
+      "FR16",
+      "FR17",
+      "FR18",
+      "FR19",
+      "FR20",
+      "FR21",
+      "DEC-7"
+    ]
+  }
+}
+```
 
 ## Intent
 
@@ -36,7 +62,7 @@ for each bug.
 - Defining template fixture preview and copy behavior owned by `spec:AST-028`.
 - Choosing visual design, animation, layout, or copy for an individual Docsite page.
 - Choosing a telemetry vendor, transport, retention policy, or dashboard.
-- Adding a Docsite public API, package API, theme target, or consumer runtime.
+- Adding a package API, theme target, or consumer runtime.
 - Treating one pull request, bug, or current implementation mechanism as authority.
 
 ## Requirements
@@ -158,6 +184,56 @@ for each bug.
   Cancelled, rejected, failed, ignored, closed, or superseded work MUST NOT emit a
   success event.
 
+### Playground storage and parent-page isolation
+
+- **FR16 — Production playground code is isolated from storage and the parent page.**
+  Production previews, including deployed pull-request previews, MUST execute
+  user-authored code with an opaque origin, without access to the Docsite's
+  origin-bound storage or parent-page DOM. Local storage may be blocked entirely;
+  previewed code has no persistence guarantee. The playground MUST explain these
+  restrictions to users. Local development MAY differ, but MUST NOT stand in for
+  production isolation evidence.
+
+  Reload or hostile navigation may reset preview runtime state. The playground
+  MUST recover a trusted preview with the editor's current code and active
+  theme/mode. Replacement content MUST NOT receive editor source, theme state, or
+  authority to edit the parent merely because it occupies the preview.
+
+  Changes to this boundary require real production-browser evidence for storage
+  and parent-DOM denial, trusted recovery after reload and hostile navigation,
+  and restoration of current code and theme/mode.
+
+### Published surfaces and deployment identity
+
+- **FR17 — Production has one exact-head owner.** The canonical production
+  Docsite origin MUST serve the documentation, `/storybook/`, and `/sandbox/`
+  from the same successful main-branch deployment. A build that cannot stage
+  either static application MUST fail rather than publish a partial release.
+  The Docsite MUST expose real links to both applications.
+- **FR18 — Static application routes remain addressable.** Storybook manager and
+  iframe URLs, Sandbox route directories and embeds, static assets, query
+  parameters, and fragments MUST survive direct load on their canonical paths.
+  Route normalization MAY preserve or remove a trailing slash, but MUST retain
+  the selected application state and MUST NOT fall through to unrelated Docsite
+  content.
+- **FR19 — Canonical and indexing metadata match the surface.** Production entry
+  and addressable route pages identify their `https://astryx.atmeta.com`
+  canonical URL. Pull-request previews, standalone Storybook frames, Sandbox
+  embeds, and compatibility pages MUST be `noindex`; a preview MUST NOT claim a
+  production canonical URL.
+- **FR20 — Deployment identity is exact and generated.** Every Vercel Preview
+  and Production build MUST expose its complete 40-character source commit and
+  deployment environment at `/version.json`. Missing source identity fails the
+  build. Generated identity and staged applications MUST NOT enter source
+  control.
+- **FR21 — The former Pages origin is one compatibility surface.** GitHub Pages
+  MUST serve only a small, accessible, responsive landing page and equivalent
+  deep-path recovery page. Documentation is the primary canonical destination;
+  Storybook and Sandbox are labeled secondary destinations. An old Storybook or
+  Sandbox path MAY be carried into the corresponding link with its query and
+  fragment, but the compatibility page MUST NOT automatically redirect, build
+  either application, or host CI evidence.
+
 ### Authority routing
 
 `architecture:knowledge-contracts` owns public-delta routing and change disposition.
@@ -210,19 +286,28 @@ Known conformance gaps remain implementation work:
 - existing interaction tests do not yet cover the complete primary-selection,
   Back/Forward, close, cancellation, and supersession matrix.
 
-This proposed specification changes no Docsite code, generated data, route, analytics
-event, package behavior, or public API. Change disposition remains owned by
-`architecture:knowledge-contracts`.
+Stable Storybook and Sandbox currently use a split deployment: pull-request
+previews are staged inside the Vercel Docsite, while stable main is rebuilt and
+published through a separate GitHub Pages branch. That duplicates application
+builds, leaves production ownership ambiguous, and makes the former Pages origin
+carry unrelated preview and evidence storage.
+
+The accepted target makes Vercel the one production owner for all three surfaces
+and reduces GitHub Pages to the FR21 compatibility page. It adds no package or
+consumer runtime API; `/version.json` is deployment evidence for verifying the
+exact source already serving those public surfaces.
 
 ## Verification
 
-| Contract  | Verification                                                        | Representative states                                                                                                    | Mutation or failure expectation                                                                                                                        |
-| --------- | ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| FR1–FR3   | generator/data-extraction tests plus cross-projection inventory     | package, component, template, theme; gallery, sidebar, search, direct route, preview, playground                         | a local map changes membership or a canonical item fact, or availability and visibility collapse into one projection                                   |
-| FR4–FR6   | latest/canary generation and projection tests                       | stable package, canary-only package, ready/unready item, overview-hidden item, invalid integration metadata              | latest exposes canary package docs, workspace-backed content is called release-pinned, a second readiness state appears, or projections disagree       |
-| FR7–FR9   | navigation-family checks plus real-browser navigation/history tests | direct link, modified click, new tab, deep link, primary selection, secondary tab/filter, canonicalization, Back/Forward | Docsite misclassifies a destination, canonical identity diverges, primary selections replace one another, or secondary state clutters history          |
-| FR10–FR12 | selection/transition tests plus real-browser visible-content checks | initial open, reopen, deep link, direct selection, pending previous/next, close, supersede, reject, unmount              | header/body/actions disagree, stale content paints without its owning pending state, or obsolete selection work commits after supersession             |
-| FR13–FR15 | analytics schema and interaction tests with transport spies         | navigation intent, successful/failed copy, cancel, URL restoration, render/effect, duplicate activation                  | event names/properties drift, free-form/high-cardinality data is logged, a passive lifecycle emits, success logs on failure, or one action emits twice |
+| Contract  | Verification                                                                             | Representative states                                                                                                    | Mutation or failure expectation                                                                                                                           |
+| --------- | ---------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| FR1–FR3   | generator/data-extraction tests plus cross-projection inventory                          | package, component, template, theme; gallery, sidebar, search, direct route, preview, playground                         | a local map changes membership or a canonical item fact, or availability and visibility collapse into one projection                                      |
+| FR4–FR6   | latest/canary generation and projection tests                                            | stable package, canary-only package, ready/unready item, overview-hidden item, invalid integration metadata              | latest exposes canary package docs, workspace-backed content is called release-pinned, a second readiness state appears, or projections disagree          |
+| FR7–FR9   | navigation-family checks plus real-browser navigation/history tests                      | direct link, modified click, new tab, deep link, primary selection, secondary tab/filter, canonicalization, Back/Forward | Docsite misclassifies a destination, canonical identity diverges, primary selections replace one another, or secondary state clutters history             |
+| FR10–FR12 | selection/transition tests plus real-browser visible-content checks                      | initial open, reopen, deep link, direct selection, pending previous/next, close, supersede, reject, unmount              | header/body/actions disagree, stale content paints without its owning pending state, or obsolete selection work commits after supersession                |
+| FR13–FR15 | analytics schema and interaction tests with transport spies                              | navigation intent, successful/failed copy, cancel, URL restoration, render/effect, duplicate activation                  | event names/properties drift, free-form/high-cardinality data is logged, a passive lifecycle emits, success logs on failure, or one action emits twice    |
+| FR16      | production-browser playground isolation and recovery tests                               | direct load, reload, hostile navigation, storage and parent-DOM denial                                                   | preview code reaches parent/storage or trusted recovery restores stale source/theme                                                                       |
+| FR17–FR21 | exact-head Vercel build, route/asset probes, metadata checks, and Pages landing contract | production and PR Preview; Storybook manager/frame; Sandbox route/embed; old root/deep path; desktop/mobile; light/dark  | one app is absent or stale, a direct asset/route fails, metadata claims the wrong owner, identity drifts, or Pages hosts more than the compatibility page |
 
 ## Decision log
 
@@ -288,6 +373,35 @@ treatment. Closing or superseding the transition ends that authority.
 
 Rejected: one global pending/deferred value repainting a newly opened, closed, or
 newer selection.
+
+### DEC-6 — Trying code does not require persistence or parent-page access
+
+**Reference:** `spec:AST-033/DEC-6`
+**Decider:** `cixzhang`, `2026-09-23`
+
+The playground is for trying Astryx code, not storing local data. Production
+previews have an opaque origin and no access to the Docsite's origin-bound
+storage or parent-page DOM. Previewed code has no persistence guarantee;
+restrictions are explained to users. Development may differ. Reload and hostile
+navigation recover a trusted preview with current editor code and theme/mode.
+
+Rejected: treating local persistence or parent-page DOM access as a playground
+guarantee.
+
+### DEC-7 — Vercel owns every maintained production surface
+
+**Reference:** `spec:AST-033/DEC-7`
+**Decider:** `cixzhang`, `2026-09-29`
+
+The production Docsite, Storybook, and Sandbox ship together from the exact main
+commit on the canonical Vercel origin. GitHub Pages remains only as one noindex
+compatibility landing for old bookmarks, with documentation first and direct
+Storybook and Sandbox destinations alongside it. Pull-request previews keep the
+same Vercel paths and remain non-canonical.
+
+Rejected: continuing a second stable-app build on `gh-pages`, silently dropping
+old bookmarks, automatically redirecting every old deep path without recovery
+choice, and using the compatibility origin for visual or test evidence.
 
 ## Open questions
 

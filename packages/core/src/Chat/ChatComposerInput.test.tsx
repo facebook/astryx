@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import {describe, it, expect, vi, afterEach} from 'vitest';
-import {render, screen, fireEvent, waitFor} from '@testing-library/react';
+import {render, screen, fireEvent, waitFor, act} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {ChatComposer} from './ChatComposer';
 import {useChatComposerContext} from './ChatContext';
@@ -11,7 +11,7 @@ import type {
   ChatComposerInputHandle,
 } from './ChatComposerInput';
 import {createStaticSource} from '../Typeahead/createStaticSource';
-import type {SearchableItem} from '../Typeahead/types';
+import type {SearchableItem, SearchSource} from '../Typeahead/types';
 
 // =============================================================================
 // Helpers
@@ -570,6 +570,33 @@ describe('ChatComposerInput', () => {
       });
       expect(onFiles).toHaveBeenCalledWith([file]);
     });
+
+    it('calls onFiles when files are dropped onto the editor', () => {
+      const onFiles = vi.fn();
+      render(<ChatComposerInput onFiles={onFiles} />);
+      const textbox = screen.getByRole('textbox');
+      const file = new File(['content'], 'dropped.txt', {type: 'text/plain'});
+
+      const allowed = fireEvent.drop(textbox, {
+        dataTransfer: {files: [file], types: ['Files']},
+      });
+      expect(allowed).toBe(false);
+      expect(onFiles).toHaveBeenCalledWith([file]);
+    });
+
+    it('does not emit dropped files while disabled', () => {
+      const onFiles = vi.fn();
+      render(<ChatComposerInput isDisabled onFiles={onFiles} />);
+      const textbox = screen.getByRole('textbox');
+      const file = new File(['content'], 'blocked.txt', {type: 'text/plain'});
+
+      const allowed = fireEvent.drop(textbox, {
+        dataTransfer: {files: [file], types: ['Files']},
+      });
+
+      expect(allowed).toBe(false);
+      expect(onFiles).not.toHaveBeenCalled();
+    });
   });
 
   // Paste / insert paths used to bail silently when the contenteditable
@@ -651,10 +678,13 @@ describe('ChatComposerInput', () => {
       expect(textbox.querySelector('[data-astryx-token]')).toBeInTheDocument();
     });
 
-    it('imperative insertText works after a focus() with no selection range', () => {
+    it('imperative insertText updates the observable draft after a focus() with no selection range', () => {
       let handle: ChatComposerInputHandle | null = null;
+      const onChange = vi.fn();
       render(
         <ChatComposerInput
+          placeholder="Write a message"
+          onChange={onChange}
           handleRef={h => {
             handle = h;
           }}
@@ -665,8 +695,12 @@ describe('ChatComposerInput', () => {
       textbox.focus();
       clearSelection();
 
-      handle!.insertText('hello');
+      act(() => handle!.insertText('hello'));
+
       expect(textbox.textContent).toContain('hello');
+      expect(onChange).toHaveBeenCalledTimes(1);
+      expect(onChange).toHaveBeenLastCalledWith('hello');
+      expect(screen.queryByText('Write a message')).not.toBeInTheDocument();
     });
 
     // History recall reads where the caret sits, so where a programmatic
@@ -976,6 +1010,60 @@ describe('ChatComposerInput', () => {
       });
     });
 
+    it('lets onPaste intercept long text before default token conversion', () => {
+      const onPaste = vi.fn(() => true);
+      render(<ChatComposerInput onPaste={onPaste} />);
+      const textbox = screen.getByRole('textbox');
+      textbox.focus();
+      clearSelection();
+      const long = 'c'.repeat(250);
+
+      fireEvent.paste(textbox, {
+        clipboardData: {
+          files: [],
+          getData: (type: string) => (type === 'text/plain' ? long : ''),
+        },
+      });
+
+      expect(onPaste).toHaveBeenCalledWith(expect.anything(), long);
+      expect(
+        textbox.querySelector('[data-astryx-token]'),
+      ).not.toBeInTheDocument();
+      expect(textbox.textContent).toBe('');
+    });
+
+    it('emits once when onPaste inserts through the imperative handle', () => {
+      let handle: ChatComposerInputHandle | null = null;
+      const onChange = vi.fn();
+      const onPaste = vi.fn((_event: unknown, text: string) => {
+        handle!.insertText(text);
+        return true;
+      });
+      render(
+        <ChatComposerInput
+          handleRef={next => {
+            handle = next;
+          }}
+          onChange={onChange}
+          onPaste={onPaste}
+        />,
+      );
+      const textbox = screen.getByRole('textbox');
+      textbox.focus();
+      clearSelection();
+
+      fireEvent.paste(textbox, {
+        clipboardData: {
+          files: [],
+          getData: (type: string) => (type === 'text/plain' ? 'hello' : ''),
+        },
+      });
+
+      expect(textbox.textContent).toBe('hello');
+      expect(onChange).toHaveBeenCalledTimes(1);
+      expect(onChange).toHaveBeenCalledWith('hello');
+    });
+
     it('paste falls through to plain-text path when pasteAsToken={false}', () => {
       const onChange = vi.fn();
       render(<ChatComposerInput pasteAsToken={false} onChange={onChange} />);
@@ -1048,12 +1136,56 @@ describe('ChatComposerInput', () => {
 
     it('supports configurable empty/loading text', () => {
       const trigger = createMentionTrigger({
-        emptySearchResultsText: 'Nobody found',
+        emptySearchText: 'Nobody found',
         loadingText: 'Looking up...',
         menuLabel: 'People',
       });
       const {container} = render(<ChatComposerInput triggers={[trigger]} />);
       expect(container).toBeTruthy();
+    });
+
+    // A trigger's `emptySearchResultsText` was renamed to `emptySearchText`
+    // and widened from `string` to `ReactNode` (`spec:AST-056` FR1). The
+    // overlap ended in a minor release (`CLN-0004`, `spec:AST-017` FR31).
+    it('renders an element emptySearchText when the query matched nothing', async () => {
+      const user = userEvent.setup();
+      const trigger = createMentionTrigger({
+        emptySearchText: (
+          <span>
+            Nobody by that name. <a href="/invite">Invite them</a>
+          </span>
+        ),
+      });
+      render(<ChatComposerInput triggers={[trigger]} />);
+
+      await user.click(screen.getByRole('combobox'));
+      await user.keyboard('@zzzzz');
+
+      await waitFor(() => {
+        expect(screen.getByText('Invite them')).toBeInTheDocument();
+      });
+    });
+
+    it('no longer reads the removed emptySearchResultsText key (CLN-0004)', async () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const user = userEvent.setup();
+      const trigger = createMentionTrigger({
+        // @ts-expect-error -- removed in the minor release (CLN-0004)
+        emptySearchResultsText: 'Nobody found',
+      });
+      render(<ChatComposerInput triggers={[trigger]} />);
+
+      await user.click(screen.getByRole('combobox'));
+      await user.keyboard('@zzzzz');
+
+      await waitFor(() => {
+        expect(screen.getByText('No results')).toBeInTheDocument();
+      });
+      expect(screen.queryByText('Nobody found')).not.toBeInTheDocument();
+      expect(warn).not.toHaveBeenCalledWith(
+        expect.stringContaining('is deprecated'),
+      );
+      warn.mockRestore();
     });
   });
 
@@ -1238,6 +1370,207 @@ describe('ChatComposerInput', () => {
     });
   });
 
+  describe('trigger query (component:ChatComposerInput FR13, AR5)', () => {
+    function typeAtEnd(editable: HTMLElement, text: string) {
+      editable.textContent = text;
+      const node = editable.firstChild!;
+      const range = document.createRange();
+      range.setStart(node, text.length);
+      range.collapse(true);
+      const sel = window.getSelection()!;
+      sel.removeAllRanges();
+      sel.addRange(range);
+      fireEvent.input(editable);
+    }
+
+    it('Enter while a newer trigger search is pending sends the typed text, picks no row, and no menu reopens after the send', async () => {
+      const onSubmit = vi.fn();
+      let resolveSlow: (items: SearchableItem[]) => void = () => {};
+      const source: SearchSource = {
+        bootstrap: async () => [],
+        async search(query: string) {
+          if (query === 'ci') {
+            return new Promise(resolve => {
+              resolveSlow = resolve;
+            });
+          }
+          return Promise.resolve(
+            USERS.filter(u => u.label.toLowerCase().includes(query)),
+          );
+        },
+      };
+      render(
+        <ChatComposerInput
+          triggers={[createMentionTrigger({searchSource: source})]}
+          debounceMs={0}
+          onSubmit={onSubmit}
+        />,
+      );
+      const editable = screen.getByRole('combobox');
+      editable.focus();
+
+      typeAtEnd(editable, '@c');
+      await waitFor(() => {
+        expect(editable.getAttribute('aria-activedescendant')).toBeTruthy();
+      });
+
+      // A newer search is pending: Enter sends the draft exactly as typed.
+      typeAtEnd(editable, '@ci');
+      fireEvent.keyDown(editable, {key: 'Enter'});
+      expect(onSubmit).toHaveBeenCalledWith('@ci');
+      expect(editable.querySelector('[data-astryx-token]')).toBeNull();
+      expect(editable.textContent).toBe('');
+
+      // The late result for the sent query must not reopen the menu.
+      await act(async () => {
+        resolveSlow([{id: 'cindy', label: 'Cindy Zhang'}]);
+      });
+      expect(editable).toHaveAttribute('aria-expanded', 'false');
+      expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+      expect(screen.queryByRole('option')).not.toBeInTheDocument();
+    });
+
+    it('forgets an Escape-dismissed mention when the message is sent, so the next message can mention', async () => {
+      const onSubmit = vi.fn();
+      render(
+        <ChatComposerInput
+          triggers={[createMentionTrigger()]}
+          onSubmit={onSubmit}
+        />,
+      );
+      const editable = screen.getByRole('combobox');
+      editable.focus();
+
+      typeAtEnd(editable, '@');
+      await waitFor(() => {
+        expect(editable).toHaveAttribute('aria-expanded', 'true');
+      });
+      fireEvent.keyDown(editable, {key: 'Escape'});
+      await waitFor(() => {
+        expect(editable).toHaveAttribute('aria-expanded', 'false');
+      });
+
+      fireEvent.keyDown(editable, {key: 'Enter'});
+      expect(onSubmit).toHaveBeenCalledWith('@');
+
+      typeAtEnd(editable, '@ci');
+      await waitFor(() => {
+        expect(editable).toHaveAttribute('aria-expanded', 'true');
+      });
+      expect(editable.getAttribute('aria-activedescendant')).toBeTruthy();
+    });
+
+    it('forgets an Escape-dismissed trigger when the send button sends the draft', async () => {
+      const onSubmit = vi.fn();
+      render(
+        <ChatComposer
+          onSubmit={onSubmit}
+          input={<ChatComposerInput triggers={[createCommandTrigger()]} />}
+        />,
+      );
+      const editable = screen.getByRole('combobox');
+      editable.focus();
+
+      typeAtEnd(editable, '/');
+      await waitFor(() => {
+        expect(editable).toHaveAttribute('aria-expanded', 'true');
+      });
+      fireEvent.keyDown(editable, {key: 'Escape'});
+      await waitFor(() => {
+        expect(editable).toHaveAttribute('aria-expanded', 'false');
+      });
+
+      fireEvent.click(screen.getByRole('button', {name: /send/i}));
+      expect(onSubmit).toHaveBeenCalledWith('/');
+      await waitFor(() => {
+        expect(editable.textContent).toBe('');
+      });
+
+      typeAtEnd(editable, '/s');
+      await waitFor(() => {
+        expect(editable).toHaveAttribute('aria-expanded', 'true');
+      });
+    });
+
+    it('drops a late trigger result after the send button sends the draft', async () => {
+      const onSubmit = vi.fn();
+      let resolveSlow: (items: SearchableItem[]) => void = () => {};
+      const source: SearchSource = {
+        bootstrap: async () => [],
+        async search(query: string) {
+          if (query === 'ci') {
+            return new Promise(resolve => {
+              resolveSlow = resolve;
+            });
+          }
+          return Promise.resolve(
+            USERS.filter(u => u.label.toLowerCase().includes(query)),
+          );
+        },
+      };
+      render(
+        <ChatComposer
+          onSubmit={onSubmit}
+          input={
+            <ChatComposerInput
+              triggers={[createMentionTrigger({searchSource: source})]}
+              debounceMs={0}
+            />
+          }
+        />,
+      );
+      const editable = screen.getByRole('combobox');
+      editable.focus();
+
+      typeAtEnd(editable, '@c');
+      await waitFor(() => {
+        expect(editable.getAttribute('aria-activedescendant')).toBeTruthy();
+      });
+      typeAtEnd(editable, '@ci');
+
+      fireEvent.click(screen.getByRole('button', {name: /send/i}));
+      expect(onSubmit).toHaveBeenCalledWith('@ci');
+      await waitFor(() => {
+        expect(editable.textContent).toBe('');
+      });
+
+      await act(async () => {
+        resolveSlow([{id: 'cindy', label: 'Cindy Zhang'}]);
+      });
+      expect(editable).toHaveAttribute('aria-expanded', 'false');
+      expect(screen.queryByRole('option')).not.toBeInTheDocument();
+    });
+
+    it('lets Escape reach the consumer while an unmatched multi-word query hides the menu', async () => {
+      const onKeyDown = vi.fn();
+      render(
+        <ChatComposerInput
+          triggers={[createMentionTrigger({hasMultiWordQuery: true})]}
+          onKeyDown={onKeyDown}
+        />,
+      );
+      const editable = screen.getByRole('combobox');
+      editable.focus();
+
+      typeAtEnd(editable, '@team please');
+      await waitFor(() => {
+        expect(editable).toHaveAttribute('aria-expanded', 'false');
+      });
+      // The hidden menu's results commit outside act, so the popover's Escape
+      // registration is released by a passive effect that can still be pending
+      // when the attribute changes. Flush it before pressing Escape.
+      await act(async () => {});
+
+      // Nothing cancels the key: the closed menu holds no Escape handling,
+      // so a surrounding dialog or drawer still receives it.
+      const notCancelled = fireEvent.keyDown(editable, {key: 'Escape'});
+      expect(notCancelled).toBe(true);
+      expect(onKeyDown).toHaveBeenCalledWith(
+        expect.objectContaining({key: 'Escape'}),
+      );
+    });
+  });
+
   describe('trigger menu cursor anchor', () => {
     // The trigger menu anchors its popover to the cursor position, not the
     // entire input element. In real browsers this creates a fixed-position
@@ -1393,6 +1726,28 @@ describe('ChatComposerInput', () => {
       fireEvent.input(textbox);
 
       expect(textbox.getAttribute('aria-expanded')).toBe('true');
+    });
+
+    it('emits once when a string trigger result is selected', async () => {
+      const {textbox, onChange} = setupTriggerInput([createCommandTrigger()]);
+
+      setCursorAfterText(textbox, '/');
+      fireEvent.input(textbox);
+      await waitFor(() => {
+        const menu = document.getElementById(
+          textbox.getAttribute('aria-controls')!,
+        );
+        expect(
+          menu?.querySelectorAll('[role="option"]').length ?? 0,
+        ).toBeGreaterThan(0);
+      });
+      onChange.mockClear();
+
+      fireEvent.keyDown(textbox, {key: 'Enter'});
+
+      expect(textbox.textContent).toBe('/summarize ');
+      expect(onChange).toHaveBeenCalledTimes(1);
+      expect(onChange).toHaveBeenCalledWith('/summarize ');
     });
   });
 

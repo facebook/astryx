@@ -16,9 +16,10 @@ import {
   isFilePathArg,
   PathSafetyError,
 } from '../../../foundation/fs/path-safety.mjs';
-import {AstryxError} from '../../error.mjs';
+import {AstryxError, writeFailed} from '../../error.mjs';
 import {ERROR_CODES} from '../../../foundation/response/error-codes.mjs';
-import {stripTemplateAssetRefs} from '../../../foundation/discovery/template-adapter.mjs';
+import {pkgOf, replaceDemoMedia} from '../../../foundation/discovery/template-adapter.mjs';
+import {analyzeTemplateNeeds} from '../../../foundation/discovery/template-needs.mjs';
 
 /**
  * Scaffold an already-resolved template to `targetPath` (relative to `cwd`) and
@@ -36,13 +37,22 @@ export function templateCopy(match, {targetPath, cwd, overwrite = false}) {
     );
   }
 
-  // Path-safety: resolve the user-supplied targetPath relative to cwd,
-  // rejecting absolute paths and any traversal that escapes the project
-  // root. This guard runs BEFORE any mkdir/copyFile so we never create
-  // directories outside the root just to fail on the file write.
-  let resolvedTarget;
+  // If targetPath looks like a file (e.g. `./foo.tsx`), write directly to
+  // it. Previously this path was treated as a directory and the file was
+  // written as `./foo.tsx/page.tsx`, which is wrong and surprising.
+  const fileTarget = isFilePathArg(targetPath)
+    ? targetPath
+    : path.join(
+        targetPath,
+        match.type === 'block' ? path.basename(match.filePath) : 'page.tsx',
+      );
+
+  // Path-safety: the guard sees the file that will be written, not only its
+  // directory — a symlink at that name would otherwise carry the write
+  // outside the project root. Runs BEFORE any mkdir/write.
+  let outputFilePath;
   try {
-    resolvedTarget = assertWithin(targetPath, cwd, {
+    outputFilePath = assertWithin(fileTarget, cwd, {
       label: 'template target path',
     });
   } catch (err) {
@@ -55,23 +65,8 @@ export function templateCopy(match, {targetPath, cwd, overwrite = false}) {
     }
     throw err;
   }
-
-  // If targetPath looks like a file (e.g. `./foo.tsx`), write directly to
-  // it. Previously this path was treated as a directory and the file was
-  // written as `./foo.tsx/page.tsx`, which is wrong and surprising.
-  let outputDir;
-  let outputFileName;
-  let outputFilePath;
-  if (isFilePathArg(targetPath)) {
-    outputDir = path.dirname(resolvedTarget);
-    outputFileName = path.basename(resolvedTarget);
-    outputFilePath = resolvedTarget;
-  } else {
-    outputDir = resolvedTarget;
-    outputFileName =
-      match.type === 'block' ? path.basename(match.filePath) : 'page.tsx';
-    outputFilePath = path.join(outputDir, outputFileName);
-  }
+  const outputDir = path.dirname(outputFilePath);
+  const outputFileName = path.basename(outputFilePath);
 
   // Refuse to clobber an existing file unless the caller opts in. The CLI has
   // its own pre-flight collision message, but the API is a public surface
@@ -80,28 +75,46 @@ export function templateCopy(match, {targetPath, cwd, overwrite = false}) {
   if (!overwrite && fs.existsSync(outputFilePath)) {
     const rel = path.relative(cwd, outputFilePath) || outputFilePath;
     throw new AstryxError(
-      `Refusing to overwrite existing file ${rel}. Re-run with overwrite to replace it.`,
+      `Refusing to overwrite existing file ${rel}. Re-run with --overwrite (or -f) to replace it.`,
       undefined,
       ERROR_CODES.ERR_FILE_EXISTS,
     );
   }
 
-  fs.mkdirSync(outputDir, {recursive: true});
-
   // Strip demo image references so the scaffolded file renders without a
-  // Meta-only network dependency.
-  const source = fs.readFileSync(match.filePath, 'utf-8');
-  const outputSource = stripTemplateAssetRefs(source);
-  fs.writeFileSync(outputFilePath, outputSource);
+  // Meta-only network dependency. Read before any write, so a failure below
+  // leaves nothing behind.
+  const {source: outputSource, demoMediaReplaced} = replaceDemoMedia(
+    fs.readFileSync(match.filePath, 'utf-8'),
+  );
+  try {
+    fs.mkdirSync(outputDir, {recursive: true});
+    fs.writeFileSync(outputFilePath, outputSource);
+  } catch (err) {
+    throw writeFailed(outputFilePath, cwd, err);
+  }
+
+  // Analyze what the template needs that the project lacks: external packages
+  // and the StyleX compiler. Derived from the source's own imports.
+  const {notes, missingPackages, installCommand} = analyzeTemplateNeeds(
+    outputSource,
+    cwd,
+  );
+  const missing = missingPackages;
 
   const relOutput = path.relative(cwd, outputDir) || '.';
   return {
     type: 'template.copy',
+    package: pkgOf(match),
     data: {
       template: match.dirName,
       outputDir: relOutput,
       fileName: outputFileName,
       filesCopied: 1,
+      demoMediaReplaced,
+      notes,
+      missingPackages: missing,
+      installCommand,
     },
   };
 }

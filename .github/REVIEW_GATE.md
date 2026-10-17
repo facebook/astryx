@@ -19,19 +19,41 @@ neutral yellow "waiting" signal, not a red failure).
 - **Design review is advisory** — it labels the PR and requests design owners,
   but does not block the merge.
 - An entitled owner's **approval clears the gate automatically** (no manual step).
+- **Write-access authors can also clear it with the review app.** When the PR
+  author has write or admin permission on the repository (internal
+  contributors, including designers and partners who are not owners), the
+  latest approval from the review app named in the `REVIEW_APP` repository
+  variable on the exact current head clears the gate. A later request for
+  changes or dismissal from the app, a new commit, or an engineering owner's
+  request for changes on that head makes it pending again. Authors without write
+  access, including fork contributors, still need an engineering owner's
+  approval. If `REVIEW_APP` is unset or the permission cannot be read, the app's
+  reviews have no effect.
 
 ## Spec records
 
 Any PR that creates, changes, or archives a `current` architecture, component,
 family, design, or system spec waits on `spec-owner-approval` for its exact
-current head. `cixzhang` or `imdreamrunner` can approve every record kind.
-Current design records and normative design assets may also be approved by any
-handle in `.github/DESIGNOWNERS`. Mixed PRs still require `cixzhang` or
-`imdreamrunner` for non-design current records. Same-repository owner reviews
-update the exact-head approval automatically. Fork review events cannot write
+current head. Any handle in `.github/ENGOWNERS` can approve every record kind.
+Current design and theme records and normative design assets may also be approved
+by any handle in `.github/DESIGNOWNERS`. Mixed PRs still require an ENGOWNER for
+non-design current records. Same-repository owner reviews update the exact-head
+approval automatically. Fork review events cannot write
 with their read-only token, so an approver uses an issue comment containing
 `/approve-spec <full-head-sha>` instead; that command runs from the trusted
 default branch and a new commit invalidates it.
+
+A review app may also relay an owner's decision, for owners who decide from
+the app's own pull request view. It sends a `spec-owner-decision` repository
+dispatch naming the pull request, the full head SHA, the owner's GitHub login,
+`approve` or `revoke`, and a request key. The gate accepts it only when the
+sender is the app named in the `SPEC_DECISION_APP` repository variable, the
+owner is in `.github/ENGOWNERS` or `.github/DESIGNOWNERS`, and the SHA is the
+live head; with the variable unset, every relay is ignored. An accepted relay
+is published as the trusted status `spec-owner-decision/<owner>`, and the gate
+counts it exactly like that owner's `/approve-spec` or `/revoke-spec` command:
+it satisfies only the groups that owner may approve, the owner's latest
+decision wins, and a new commit invalidates it.
 
 Only that exact form decides the gate. The command must start the comment,
 lowercase and unindented, because the workflow trigger matches the raw comment
@@ -55,9 +77,8 @@ head **for the design-approval group only**. The attestation is published only
 for a `.github/DESIGNOWNERS` handle, and it is read back only for a handle that
 is still in that file — a marker left by someone since removed, or published
 before this rule existed, authorizes nothing. It satisfies no other group: the
-spec and theme groups always need a real exact-head review or command from
-someone in their own list. A spec or engineering owner cannot attest their own
-head.
+non-design and theme groups always need a real exact-head review or command from
+someone in their own list. An engineering owner cannot attest their own head.
 
 The attestation does not grant auto-merge by itself. The existing gate may enable
 squash auto-merge only when every changed path is a recognized spec record,
@@ -72,6 +93,10 @@ A PR changes only spec records when every changed path is one of:
 - a colocated Core/Lab `<Name>.spec.md`.
 
 Draft-only spec records can merge after validation without owner approval.
+Approval reads the record against the `## Writing rubric results` the author
+reports in the pull request description (`docs/contributing/spec-writing.md`);
+a record pull request without them is incomplete. That is a review convention,
+not a status this gate publishes.
 Pure spec-record PRs do not add Changesets because they do not release packages;
 CI rejects a PR containing only spec records and `.changeset` entries.
 That classification fails closed on an empty or truncated file list and checks
@@ -82,11 +107,12 @@ CI and never gain this auto-merge path.
 
 ## Sources of truth
 
-| File                            | Meaning                                                          |
-| ------------------------------- | ---------------------------------------------------------------- |
-| `.github/ENGOWNERS`             | Engineering team. Self-serve **code**.                           |
-| `.github/DESIGNOWNERS`          | Design team. Self-serve **design**. Checked first.               |
-| `.github/CODEOWNERS` (`*` line) | Who can **clear** the code gate (and native review requirement). |
+| File                             | Meaning                                                                                                                              |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `.github/ENGOWNERS`              | Engineering team. Self-serve **code** and approve every spec kind.                                                                   |
+| `.github/DESIGNOWNERS`           | Design team. Self-serve **design** and approve visual specs. Checked first.                                                          |
+| `.github/CODEOWNERS` (`*` line)  | Who can **clear** the code gate (and native review requirement).                                                                     |
+| `REVIEW_APP` repository variable | The review app (exact `name[bot]` login) whose exact-head approval clears the code gate for write-access authors. Unset disables it. |
 
 Author bucket is resolved in order: **design owner → eng owner → contributor.**
 A handle in `DESIGNOWNERS` is treated as a design owner even if also an eng
@@ -134,6 +160,8 @@ internal contributors' PRs. Owners still self-serve their own domain.
      resolve author bucket (DESIGNOWNERS → ENGOWNERS → contributor)
      detect high-risk / design from changed paths (lab filtered out)
      read reviews → codeApproved / designApproved
+       (code: ENGOWNER approval, or REVIEW_APP's latest exact-head
+        verdict approving when the author has write/admin permission)
      effective gate = detected/contributor gate AND NOT owner AND NOT approved
        → labels: needs:code-review · needs:design-review (advisory) · community
        → request reviewers: CODEOWNERS (code) · DESIGNOWNERS (design)
@@ -147,21 +175,25 @@ internal contributors' PRs. Owners still self-serve their own domain.
    │ review-clear.yml  (workflow_run, base token) │  ← works for fork PRs
    └─────────────────────────────────────────────┘
      resolve the PR by the run's head_branch (head_sha points at main here)
-     entitled CODEOWNER approved?
+     entitled CODEOWNER approved, or REVIEW_APP approved a write-access author?
        → drop needs:code-review · status → success 🟢 · neutralize stale check
+     effective changes requested / dismissed (owner, or the app for a
+     write-access author), or an app-cleared gate no longer qualifies?
+       → status → pending 🟡 · restore needs:code-review
 
 ③ branch protection on main
      required status context "review-required": pending blocks, success allows
-     + 1 required approving review (native)
-     ⇒ blocks non-admin merges even for write-access internal contributors
+     ⇒ blocks non-admin merges until the status is success
 ```
 
 ## Enforcement
 
-`review-required` is a **required status check** on `main`, plus the native
-"1 approving review" requirement. Because a required check blocks non-admin
-merges regardless of write access, this holds internal contributors who have
-write but are not owners. (Repo admins can still bypass.)
+`review-required` is a **required status check** on `main`; no native
+approving-review count is required, so the status alone is the review gate.
+Because a required check blocks non-admin merges regardless of write access, a
+write-access author who is not an owner still needs an engineering owner's
+approval or the review app's exact-head approval. (Repo admins can still
+bypass.)
 
 `spec-owner-approval` must be a required status context on `main` as well. It is
 published on every PR — `success` when no knowledge records changed — so

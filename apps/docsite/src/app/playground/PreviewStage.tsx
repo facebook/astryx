@@ -2,14 +2,18 @@
 
 /**
  * @file PreviewStage.tsx
- * @input viewport size, fullscreen flag, iframe ref
+ * @input viewport size, fullscreen flag, a ref for the iframe element, the
+ *   current preview frame generation (key + src)
  * @output Responsive preview frame hosting the /playground/preview iframe
  * @position Playground right panel — preview surface.
  *
  * Keeps a SINGLE iframe element mounted across viewport + fullscreen changes
- * (only the wrapper styles change) so the parent's postMessage channel to the
- * preview never resets. Desktop = fill; Phone = a fixed 402px-wide frame
- * (content reflows natively at mobile width, no scaling).
+ * (only the wrapper styles change) so the parent's channel to the preview
+ * never resets. The one thing that DOES replace the element is the playground
+ * starting a new frame generation (see previewChannel.ts): the iframe is keyed
+ * on it, so a replaced preview document is torn down with its whole browsing
+ * context rather than navigated in place. Desktop = fill; Phone = a fixed
+ * 402px-wide frame (content reflows natively at mobile width, no scaling).
  */
 
 'use client';
@@ -21,6 +25,15 @@ import {Button} from '@astryxdesign/core/Button';
 import {Minimize2} from 'lucide-react';
 
 export type Viewport = 'desktop' | 'phone';
+
+// Under `next dev` the preview frame keeps the site origin (the sandbox the
+// preview always had before isolation): the dev server serves its /_next
+// assets only to requests that name an allowlisted host in Origin or Referer,
+// and a document with an opaque origin sends neither, so an isolated preview
+// cannot load its own scripts there. Production builds, which is where
+// untrusted code meets real users, get the opaque origin — see the iframe
+// below. `process.env.NODE_ENV` is inlined at build time.
+const PREVIEW_KEEPS_SITE_ORIGIN = process.env.NODE_ENV === 'development';
 
 // iPhone 17 logical viewport (402 × 874 CSS px, ~9:19.5).
 const PHONE_WIDTH = 402;
@@ -105,7 +118,24 @@ interface PreviewStageProps {
   viewport: Viewport;
   isFullscreen: boolean;
   onExitFullscreen: () => void;
-  iframeRef: React.RefObject<HTMLIFrameElement | null>;
+  /**
+   * Receives the iframe element of the current generation when it mounts —
+   * the playground hands its window to the channel (see previewChannel.ts).
+   */
+  frameRef: React.Ref<HTMLIFrameElement>;
+  /**
+   * The current preview frame generation: a key that remounts the iframe and
+   * the nonce-carrying URL it must load (see previewChannel.ts). Null until
+   * the playground has issued one on the client — the nonce must never be
+   * baked into server-rendered HTML.
+   */
+  frame: {key: number; src: string} | null;
+  /**
+   * Fires on every load of the preview document — including a replaced one
+   * (previewed code navigating or reloading its own frame), which is what
+   * tells the playground the attested document is gone (previewChannel.ts).
+   */
+  onFrameLoad?: () => void;
   /** Disable iframe pointer events (e.g. while the panel is being resized). */
   isInteractionDisabled?: boolean;
   /** Render the iframe directly, without the preview card/device frame. */
@@ -116,7 +146,9 @@ export function PreviewStage({
   viewport,
   isFullscreen,
   onExitFullscreen,
-  iframeRef,
+  frameRef,
+  frame,
+  onFrameLoad,
   isInteractionDisabled = false,
   isFullBleed = false,
 }: PreviewStageProps) {
@@ -153,13 +185,41 @@ export function PreviewStage({
           isFullBleed && !isFullscreen && s.cardFullBleed,
           dynamic.size(width, height),
         ]}>
-        <iframe
-          ref={iframeRef}
-          src="/playground/preview"
-          sandbox="allow-scripts allow-same-origin"
-          title="Preview"
-          {...stylex.props(s.iframe, isInteractionDisabled && s.iframeInert)}
-        />
+        {frame != null &&
+          // Two elements rather than one with a computed `sandbox`: the lint
+          // rule guarding iframes wants the attribute spelled out, and so does
+          // a reader auditing the boundary.
+          (PREVIEW_KEEPS_SITE_ORIGIN ? (
+            <iframe
+              key={frame.key}
+              ref={frameRef}
+              onLoad={onFrameLoad}
+              src={frame.src}
+              sandbox="allow-scripts allow-same-origin"
+              title="Preview"
+              {...stylex.props(
+                s.iframe,
+                isInteractionDisabled && s.iframeInert,
+              )}
+            />
+          ) : (
+            // No allow-same-origin: the preview document gets an opaque
+            // origin, so the code it compiles and runs holds no cookies, no
+            // storage, and no reach into this page — see previewChannel.ts
+            // for how the two ends talk without a nameable origin.
+            <iframe
+              key={frame.key}
+              ref={frameRef}
+              onLoad={onFrameLoad}
+              src={frame.src}
+              sandbox="allow-scripts"
+              title="Preview"
+              {...stylex.props(
+                s.iframe,
+                isInteractionDisabled && s.iframeInert,
+              )}
+            />
+          ))}
       </Card>
     </Center>
   );

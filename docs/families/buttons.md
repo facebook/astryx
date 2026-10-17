@@ -26,7 +26,11 @@ members:
     component:ToggleButtonGroup,
   ]
 architecture:
-  [architecture:component-theming-surface, architecture:public-component-api]
+  [
+    architecture:component-size-cascade,
+    architecture:component-theming-surface,
+    architecture:public-component-api,
+  ]
 contributing: []
 deciding_specs: [spec:AST-002/DEC-1]
 ---
@@ -121,8 +125,12 @@ Membership follows public responsibility, not an import of Button or a rendered
   distinct.
 - **FR5 — Callback and Action order is consistent.** Where a member exposes both
   a synchronous callback and an Action, the callback runs first. Preventing that
-  event prevents the Action. A fire-once action deduplicates activation while
-  pending; an explicitly interruptible persistent action may accept a new
+  event prevents the Action. Standalone ToggleButton runs `onPressedChange`
+  synchronously before `pressedChangeAction` and skips the Action when the callback
+  calls `preventDefault()`. The Action also runs when no callback is supplied.
+  Without `pressedChangeAction`, callback-only activation MUST remain synchronous
+  and report no Action-pending feedback. A fire-once action deduplicates activation
+  while pending; an explicitly interruptible persistent action may accept a new
   activation and replace the in-flight intent.
 - **FR6 — Persistent state is explicit and reversible.** A ToggleButton MUST
   expose its effective state with `aria-pressed` and request the next controlled
@@ -130,8 +138,11 @@ Membership follows public responsibility, not an import of Button or a rendered
   derive from the effective in-flight value rather than a stale committed value.
 - **FR7 — Shared size preserves family geometry.** Members using the family size
   axis MUST map `sm`, `md`, and `lg` to the same control-height contract. An
-  icon-only member is square at the resolved size. Label weight, pressed state,
-  loading, or icon replacement MUST NOT change its outer dimensions.
+  icon-only member is square at the resolved size. Button and IconButton MUST
+  default an Astryx Icon in their owned icon slot to `sm` for `sm` and `md`
+  controls and to `md` for `lg` controls; an explicit Icon size MUST win. Label
+  weight, pressed state, loading, or icon replacement MUST NOT change the outer
+  control dimensions.
 - **FR8 — Elevation belongs to the painted surface.** A standalone member that
   paints its visible surface owns its resting elevation. A connected group that
   paints one continuous surface owns one shared elevation and its members paint
@@ -148,6 +159,11 @@ Membership follows public responsibility, not an import of Button or a rendered
   ToggleButtonGroup MUST expose an accessible group label and propagate their
   documented size and disabled defaults without removing a member's accessible
   name. The group owns only the behavior and surface declared by its group mode.
+  A ToggleButtonGroup member identified by `value` MUST derive pressed state and
+  selection requests from the group, not its standalone `isPressed`,
+  `onPressedChange`, or `pressedChangeAction`. Member `onPressedChange` and
+  `pressedChangeAction` are ignored. Member activation MUST NOT start a member
+  Action or report member Action-pending feedback.
 - **FR12 — Connected and spaced groups stay distinct.** ButtonGroup's connected
   presentation removes inter-member gaps, shares outer edges, owns one elevation,
   and uses its documented roving-focus keyboard model. The current
@@ -208,13 +224,13 @@ and any later fill or outline treatment requires separate visual review.
 
 ## Verification map
 
-| Contract  | Verification                                                            | Representative members and states                                                            | Mutation or failure expectation                                                              |
-| --------- | ----------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
-| FR1–FR3   | role/name, keyboard, callback, disabled, and disabled-reason tests      | text Button, IconButton, ToggleButton, link mode, member/group disabled                      | a member loses its name, keyboard path, or invokes while disabled                            |
-| FR4–FR6   | Action order, pending, optimistic, dedupe, and interruptibility tests   | Button fire-once Action; ToggleButton rapid pressed/unpressed Actions                        | dimensions or purpose change, Action bypasses callback cancellation, or stale state wins     |
-| FR7       | unit plus real-browser geometry checks                                  | all sizes; text/icon-only; pressed/unpressed; loading                                        | family heights diverge, icon-only stops being square, or state shifts outer size             |
-| FR8–FR10  | data attribute, theme metadata, and computed-shadow tests               | standalone Button/IconButton/ToggleButton; connected and spaced groups; every elevation tier | shadow lands on the wrong box, state changes depth, or public/theme/rendered values disagree |
-| FR11–FR12 | group semantics, propagation, DOM, keyboard, and rendered-surface tests | connected ButtonGroup; spaced ToggleButtonGroup; horizontal/vertical; disabled members       | group lacks a name, default propagation fails, or spaced/connected ownership is conflated    |
+| Contract  | Verification                                                                                                                                          | Representative members and states                                                                              | Mutation or failure expectation                                                                  |
+| --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| FR1–FR3   | role/name, keyboard, callback, disabled, and disabled-reason tests                                                                                    | text Button, IconButton, ToggleButton, link mode, member/group disabled                                        | a member loses its name, keyboard path, or invokes while disabled                                |
+| FR4–FR6   | `ToggleButton.test.tsx`: callback/Action order and cancellation, callback-only no-pending path, Action-only settlement, and optimistic re-click tests | standalone ToggleButton with either/both callbacks; Button fire-once Action                                    | callback is dropped, an empty Action reports busy, cancellation is bypassed, or stale state wins |
+| FR7       | unit plus real-browser geometry checks                                                                                                                | all sizes; text/icon-only; pressed/unpressed; loading                                                          | family heights diverge, icon-only stops being square, or state shifts outer size                 |
+| FR8–FR10  | data attribute, theme metadata, and computed-shadow tests                                                                                             | standalone Button/IconButton/ToggleButton; connected and spaced groups; every elevation tier                   | shadow lands on the wrong box, state changes depth, or public/theme/rendered values disagree     |
+| FR11–FR12 | group semantics, propagation, DOM, keyboard, and rendered-surface tests; `ToggleButton.test.tsx` group ownership cases                                | single/multiple selection with member callbacks/Actions and delayed parent acceptance; connected/spaced groups | member callback or Action competes with group state, or surface ownership is conflated           |
 
 ## Decision links
 

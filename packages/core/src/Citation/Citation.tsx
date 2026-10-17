@@ -4,8 +4,8 @@
 
 /**
  * @file Citation.tsx
- * @input Uses React, StyleX, theme tokens
- * @output Exports Citation component for inline citation references
+ * @input Uses React, StyleX, theme tokens, and the shared navigation policy
+ * @output Exports Citation with safe navigation and named inert-reference states
  * @position Core implementation; consumed by index.ts
  *
  * SYNC: When modified, update these files to stay in sync:
@@ -30,6 +30,7 @@ import {
   easeVars,
 } from '../theme/tokens.stylex';
 import {mergeProps} from '../utils';
+import {isSafeUrl} from '../utils/safeUrl';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
@@ -189,7 +190,8 @@ export function Citation({
 }: CitationProps): React.ReactElement {
   const t = useTranslator();
   const title = source.title ?? String(number);
-  const href = source.url;
+  const href =
+    source.url != null && isSafeUrl(source.url) ? source.url : undefined;
 
   // Resolve the source icon. A non-string `icon` node renders as-is (an Astryx
   // <Icon>, SVG, avatar, etc.). Otherwise fall back to an image URL: `src`, or
@@ -203,10 +205,10 @@ export function Citation({
   const hasIcon = iconNode != null || imageSrc != null;
 
   const Tag = href ? 'a' : 'span';
-  // `doc-noteref` is a reference role — only appropriate on the interactive
-  // link form. On a plain (unlinked) span it is not a permitted role
-  // (axe: aria-allowed-role), so omit it there; the aria-label still names it.
-  const noteRole = href ? ('doc-noteref' as const) : undefined;
+  // `doc-noteref` is a link role and is not permitted on the inert span. Give
+  // that span a supported naming role so the component-authored aria-label
+  // still identifies number-only citations to assistive technology.
+  const noteRole = href ? ('doc-noteref' as const) : ('group' as const);
   const linkProps = href
     ? {
         href,

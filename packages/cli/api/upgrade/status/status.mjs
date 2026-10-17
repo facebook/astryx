@@ -24,7 +24,7 @@ import {logger} from '../../logger.mjs';
  * @returns {import('../upgrade.type.mjs').UpgradeStatusResponse}
  */
 export function statusUpToDate({from, to, agentDocs, registryCompositions}) {
-  logger.log('✓ Already up to date — no codemods to run.');
+  logger.log('[ok] Already up to date - no codemods to run.');
   logger.log('Use --force to run codemods anyway.');
   logger.log(registryCompositions?.ok === false ? 'Finished with unresolved registry items\n' : 'Done\n');
   return {
@@ -45,7 +45,7 @@ export function statusUpToDate({from, to, agentDocs, registryCompositions}) {
  * @returns {import('../upgrade.type.mjs').UpgradeStatusResponse}
  */
 export function statusNoCodemods({from, to, agentDocs, registryCompositions}) {
-  logger.log('✓ No codemods available for this version range.');
+  logger.log('[ok] No codemods available for this version range.');
   logger.log(registryCompositions?.ok === false ? 'Finished with unresolved registry items\n' : 'Done\n');
   return {
     type: 'upgrade.status',

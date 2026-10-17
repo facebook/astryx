@@ -8,13 +8,17 @@ const fs = require('node:fs');
 const path = require('node:path');
 const {classifyChanges} = require('./change-scope.cjs');
 const {
+  DECISION_STATUS_PREFIX,
   GATE_STATUS_CONTEXT,
   READY_STATUS_PREFIX,
   canonicalRunUrl,
+  decisionStatusDescription,
   describeOwnerCommandProblem,
   newestGateRun,
   parseOwnerCommand,
+  parseDecisionStatuses,
   parseOwnerCommandIntent,
+  parseOwnerDecisionDispatch,
   parseOwnerFile,
   parseReadyAttestations,
   requiredApprovalGroups,
@@ -72,6 +76,7 @@ async function reconcileSpecOwnerGate({
   core,
   workspace = process.env.GITHUB_WORKSPACE,
   env = process.env,
+  now = () => new Date(),
 }) {
   const {owner, repo} = context.repo;
   const repository = `${owner}/${repo}`;
@@ -85,29 +90,44 @@ async function reconcileSpecOwnerGate({
     return;
   }
 
-  const specOwners = env.SPEC_OWNERS.split(',').map(ownerName =>
-    ownerName.toLowerCase(),
-  );
   const designOwners = parseOwnerFile(
     fs.readFileSync(path.join(workspace, '.github/DESIGNOWNERS'), 'utf8'),
   );
   const engineeringOwners = parseOwnerFile(
     fs.readFileSync(path.join(workspace, '.github/ENGOWNERS'), 'utf8'),
   );
-  const allOwners = new Set([
-    ...specOwners,
-    ...engineeringOwners,
-    ...designOwners,
-  ]);
+  const allOwners = new Set([...engineeringOwners, ...designOwners]);
   if (!isAuthorizedEvent(context.eventName, context.payload, allOwners)) {
     core.info('Ignoring an event from someone outside the eligible owners.');
     return;
   }
 
+  // A review app may relay an owner's decision as a repository dispatch. It
+  // decides the gate exactly like that owner's exact-head command, so it is
+  // held to the same eligibility before any API work.
+  let relayedDecision = null;
+  if (context.eventName === 'repository_dispatch') {
+    const relayed = parseOwnerDecisionDispatch(context.payload, {
+      appLogin: env.SPEC_DECISION_APP,
+    });
+    if (relayed.problem) {
+      core.info(`Ignoring a relayed owner decision: ${relayed.problem}.`);
+      return;
+    }
+    if (!allOwners.has(relayed.decision.owner)) {
+      core.info(
+        'Ignoring a relayed decision for someone outside the eligible owners.',
+      );
+      return;
+    }
+    relayedDecision = relayed.decision;
+  }
+
   const pullNumber = Number(
     context.payload.pull_request?.number ??
       context.payload.issue?.number ??
-      context.payload.inputs?.pr,
+      context.payload.inputs?.pr ??
+      relayedDecision?.pr,
   );
   if (!pullNumber) {
     throw new Error('Could not resolve a pull request number.');
@@ -439,8 +459,8 @@ async function reconcileSpecOwnerGate({
   const eventHead = context.payload.pull_request?.head?.sha;
   const eventTime = context.payload.pull_request?.updated_at;
   // Only a DESIGNOWNER author may self-attest a head, and only for the design
-  // approval group (.github/DESIGNOWNERS). A spec or engineering owner marking
-  // their own pull request ready is not an approval by anyone else.
+  // approval group (.github/DESIGNOWNERS). An engineering owner marking their
+  // own pull request ready is not an approval by anyone else.
   if (
     context.eventName === 'pull_request_target' &&
     context.payload.action === 'ready_for_review' &&
@@ -457,6 +477,24 @@ async function reconcileSpecOwnerGate({
       state: 'success',
       description: `Owner ready at ${new Date(eventTime).toISOString()}.`,
     });
+  }
+
+  if (relayedDecision && relayedDecision.headSha !== initialHead) {
+    core.info(
+      `The relayed decision names ${relayedDecision.headSha.slice(0, 7)}, which is not the current head; it decides nothing.`,
+    );
+  } else if (relayedDecision) {
+    await createStatus({
+      sha: initialHead,
+      context: `${DECISION_STATUS_PREFIX}${relayedDecision.owner}`,
+      state: relayedDecision.approved ? 'success' : 'failure',
+      description: decisionStatusDescription({
+        approved: relayedDecision.approved,
+        at: now().toISOString(),
+        requestKey: relayedDecision.requestKey,
+      }),
+    });
+    if (!relayedDecision.approved) await disableAutoMerge(initialPr);
   }
 
   const commentAuthor = context.payload.comment?.user?.login?.toLowerCase();
@@ -526,49 +564,46 @@ async function reconcileSpecOwnerGate({
     return;
   }
 
-  if (scope.specOnly) {
-    await createStatus({
-      sha: initialHead,
-      context: 'visual-acceptance',
-      state: 'success',
-      description: 'Spec-only change — no visual scope.',
-    });
-  }
-
   const requiredGroups = requiredApprovalGroups(records, {
     complete: scope.complete,
     touchesDesignAssets: scope.touchesDesignAssets,
   });
   const ownerApprovalRequired =
     requiredGroups.spec || requiredGroups.design || requiredGroups.theme;
-  if (requiredGroups.design && designOwners.length === 0) {
-    throw new Error('No DESIGNOWNERS are configured.');
+  if (requiredGroups.spec && engineeringOwners.length === 0) {
+    throw new Error('No ENGOWNERS are configured.');
   }
   if (
-    requiredGroups.theme &&
+    (requiredGroups.design || requiredGroups.theme) &&
     engineeringOwners.length === 0 &&
     designOwners.length === 0
   ) {
     throw new Error('No ENGOWNERS or DESIGNOWNERS are configured.');
   }
-  const designApprovers = [...new Set([...specOwners, ...designOwners])];
+  const designApprovers = [...new Set([...engineeringOwners, ...designOwners])];
   const themeApprovers = [...new Set([...engineeringOwners, ...designOwners])];
   const readyAttestations = parseReadyAttestations(statuses, {
     repository,
     headSha: initialHead,
     owners: designOwners,
   });
+  const relayedDecisions = parseDecisionStatuses(statuses, {
+    repository,
+    headSha: initialHead,
+    owners: [...allOwners],
+  });
   const decisionInput = {
     reviews,
     comments,
+    relayedDecisions,
     dismissalEvents: timeline,
     headSha: initialHead,
   };
   // A ready-for-review attestation is the design group's own self-attestation
-  // path. It is not evidence for the spec or theme groups, which stay on real
-  // exact-head reviews and commands.
+  // path. It is not evidence for the non-design or theme groups, which stay on
+  // real exact-head reviews and commands.
   const specDecision = requiredGroups.spec
-    ? resolveOwnerDecision({...decisionInput, owners: specOwners})
+    ? resolveOwnerDecision({...decisionInput, owners: engineeringOwners})
     : {approved: true, owner: null};
   const designDecision = requiredGroups.design
     ? resolveOwnerDecision({
@@ -590,7 +625,9 @@ async function reconcileSpecOwnerGate({
     .filter(Boolean)
     .filter((ownerName, index, owners) => owners.indexOf(ownerName) === index);
   const requiredOwnerDescription = [
-    requiredGroups.spec ? `a spec owner (${specOwners.join(',')})` : null,
+    requiredGroups.spec
+      ? `an engineering owner (${engineeringOwners.join(',')})`
+      : null,
     requiredGroups.design
       ? `a design approver (${designApprovers.join(',')})`
       : null,

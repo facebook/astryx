@@ -3,7 +3,7 @@
 /**
  * @file BottomSheet.test.tsx
  * @input Uses vitest, @testing-library/react, BottomSheet component
- * @output Unit tests for BottomSheet component behavior
+ * @output Unit tests for BottomSheet behavior and observed content anatomy
  * @position Core testing; validates BottomSheet.tsx implementation
  *
  * SYNC: When BottomSheet.tsx changes, update tests to match new behavior
@@ -14,6 +14,7 @@ import {act, render, screen, fireEvent} from '@testing-library/react';
 import {createRef, useState} from 'react';
 import {BottomSheet} from './BottomSheet';
 import {BottomSheetSwitcher} from './BottomSheetSwitcher';
+import {__resetInteractionModalityForTest} from '../utils/interactionModality';
 
 // A sheet has no stops unless its host asks for them, so the tests that
 // exercise detents pass their own. These three — a 14% peek, a half-height
@@ -290,7 +291,7 @@ describe('BottomSheet', () => {
     expect(onClick).toHaveBeenCalledTimes(1);
   });
 
-  it('keeps consumer content as the last scroll-body child', () => {
+  it('keeps consumer content first and last inside the observed content box', () => {
     render(
       <BottomSheet isOpen onOpenChange={() => {}} label="Filters">
         <div data-testid="consumer-content">Sheet content</div>
@@ -300,7 +301,10 @@ describe('BottomSheet', () => {
     const consumer = screen.getByTestId('consumer-content');
 
     expect(body.children).toHaveLength(1);
-    expect(body.lastElementChild).toBe(consumer);
+    const content = body.lastElementChild;
+    expect(content).toHaveAttribute('data-scroll-content');
+    expect(content?.lastElementChild).toBe(consumer);
+    expect(consumer.matches(':first-child')).toBe(true);
     expect(consumer.matches(':last-child')).toBe(true);
   });
 
@@ -2348,6 +2352,119 @@ describe('BottomSheet', () => {
 
       expect(document.activeElement).toBe(finalFocusRef.current);
     });
+
+    // The returned focus shows the focus-visible ring only after keyboard
+    // input (`architecture:interaction-modality` INV1). A plain focus() leaves
+    // that to the browser, which rings it after a pointer close: WebKit after
+    // a tap, and Chromium when the sheet was opened from the keyboard.
+    describe('ring on the returned focus', () => {
+      beforeEach(() => {
+        __resetInteractionModalityForTest();
+      });
+
+      afterEach(() => {
+        vi.restoreAllMocks();
+      });
+
+      function openThenClose(closeWith: 'pointer' | 'keyboard') {
+        render(<Harness />);
+        const opener = screen.getByRole('button', {name: 'Open sheet'});
+        opener.focus();
+        fireEvent.click(opener);
+        const done = screen.getByRole('button', {name: 'Done'});
+        if (closeWith === 'pointer') {
+          fireEvent.pointerDown(done);
+        } else {
+          fireEvent.keyDown(done, {key: 'Enter'});
+        }
+        fireEvent.click(done);
+        return opener;
+      }
+
+      it('asks the browser for no ring after a pointer close', () => {
+        const opener = openThenClose('pointer');
+        const focus = vi.spyOn(opener, 'focus');
+        finishSheetExit();
+
+        expect(opener).toHaveFocus();
+        expect(focus.mock.calls).toEqual([[{focusVisible: false}]]);
+      });
+
+      it('leaves the ring to the browser after a keyboard close', () => {
+        const opener = openThenClose('keyboard');
+        const focus = vi.spyOn(opener, 'focus');
+        finishSheetExit();
+
+        expect(opener).toHaveFocus();
+        expect(focus.mock.calls).toEqual([[]]);
+      });
+
+      it('clears a ring the native close already drew before refocusing', () => {
+        const opener = openThenClose('pointer');
+        // The browser's own dialog close restores focus to the opener, with a
+        // ring, before the sheet moves focus, and focusing the focused element
+        // changes nothing.
+        HTMLDialogElement.prototype.close = vi.fn(function (
+          this: HTMLDialogElement,
+        ) {
+          this.removeAttribute('open');
+          opener.focus();
+        });
+        const matches = HTMLElement.prototype.matches;
+        vi.spyOn(HTMLElement.prototype, 'matches').mockImplementation(function (
+          this: HTMLElement,
+          selector: string,
+        ) {
+          return selector === ':focus-visible'
+            ? this === opener
+            : matches.call(this, selector);
+        });
+        const blur = vi.spyOn(opener, 'blur');
+        const focus = vi.spyOn(opener, 'focus');
+        finishSheetExit();
+
+        expect(blur).toHaveBeenCalledTimes(1);
+        expect(focus.mock.calls.at(-1)).toEqual([{focusVisible: false}]);
+        expect(blur.mock.invocationCallOrder[0]).toBeLessThan(
+          focus.mock.invocationCallOrder.at(-1) ?? 0,
+        );
+        expect(opener).toHaveFocus();
+      });
+
+      it('asks for no ring on an explicit final focus target too', () => {
+        const finalFocusRef = createRef<HTMLButtonElement>();
+        function ExplicitFocusHarness() {
+          const [isOpen, setIsOpen] = useState(true);
+          return (
+            <>
+              <button ref={finalFocusRef} type="button">
+                Adaptive trigger
+              </button>
+              <BottomSheet
+                isOpen={isOpen}
+                onOpenChange={setIsOpen}
+                finalFocusRef={finalFocusRef}
+                label="Filters">
+                <button type="button" onClick={() => setIsOpen(false)}>
+                  Done
+                </button>
+              </BottomSheet>
+            </>
+          );
+        }
+
+        render(<ExplicitFocusHarness />);
+        const done = screen.getByRole('button', {name: 'Done'});
+        fireEvent.pointerDown(done);
+        fireEvent.click(done);
+        const target = finalFocusRef.current!;
+        const focus = vi.spyOn(target, 'focus');
+        finishSheetExit();
+
+        expect(target).toHaveFocus();
+        expect(focus.mock.calls).toEqual([[{focusVisible: false}]]);
+      });
+    });
   });
 
   describe('initial focus', () => {
@@ -2436,6 +2553,41 @@ describe('BottomSheet', () => {
       expect(computed.getPropertyValue('--container-padding-block-end')).toBe(
         '0px',
       );
+    });
+  });
+
+  describe('container padding', () => {
+    it('passes padding to the content box of a standalone sheet', () => {
+      render(
+        <BottomSheet isOpen onOpenChange={() => {}} label="Filters" padding={0}>
+          <span data-testid="sheet-child">Content</span>
+        </BottomSheet>,
+      );
+      const box = screen.getByTestId('sheet-child').parentElement!;
+      expect(
+        getComputedStyle(box).getPropertyValue(
+          '--container-padding-inline-start',
+        ),
+      ).toBe('var(--spacing-0)');
+      expect(getSheet().hasAttribute('padding')).toBe(false);
+    });
+
+    it('passes padding to the content box of a switcher sheet', () => {
+      render(
+        <BottomSheetSwitcher
+          activeSheet="details"
+          onActiveSheetChange={() => {}}>
+          <BottomSheet sheetId="details" label="Details" padding={2}>
+            <span data-testid="switcher-child">Content</span>
+          </BottomSheet>
+        </BottomSheetSwitcher>,
+      );
+      const box = screen.getByTestId('switcher-child').parentElement!;
+      expect(
+        getComputedStyle(box).getPropertyValue(
+          '--container-padding-inline-start',
+        ),
+      ).toBe('var(--spacing-2)');
     });
   });
 });

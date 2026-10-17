@@ -4,7 +4,7 @@
 
 /**
  * @file Button.tsx
- * @input Uses React, ButtonHTMLAttributes, ReactNode, i18n (useTranslator)
+ * @input Uses React, ButtonHTMLAttributes, ReactNode, i18n (useTranslator), group contexts
  * @output Exports Button component, ButtonProps, ButtonVariant types
  * @position Core implementation; consumed by index.ts, tested by Button.test.tsx
  *
@@ -38,10 +38,14 @@ import {
 } from '../theme/tokens.stylex';
 import {Spinner} from '../Spinner';
 import {VisuallyHidden} from '../VisuallyHidden';
+import {IconDefaultSizeProvider} from '../Icon/IconDefaultSizeContext';
+import {iconBoxSizeStyles, type IconSize} from '../Icon/IconSize.stylex';
 
 import {EDGE_COMP_ATTR} from '../Layout/edgeCompensation.stylex';
 import {useSize} from '../SizeContext/SizeContext';
 import {useButtonGroup} from '../ButtonGroup/ButtonGroupContext';
+import {useInputGroup} from '../InputGroup/InputGroupContext';
+import {groupStyles as inputGroupStyles} from '../InputGroup/groupStyles';
 import {mergeProps} from '../utils';
 import {useMergedRefs} from '../hooks/useMergedRefs';
 import {useLinkComponent} from '../Link/useLinkComponent';
@@ -49,6 +53,7 @@ import type {LinkComponentType} from '../Link/types';
 import {themeProps} from '../utils/themeProps';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
 import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
+import {usePressFeedback} from '../hooks/usePressFeedback';
 import {useTranslator} from '../i18n';
 import type {ButtonVariantMap} from './index';
 
@@ -84,6 +89,13 @@ const styles = stylex.create({
     lineHeight: typeScaleVars['--text-label-leading'],
     fontWeight: fontWeightVars['--font-weight-medium'],
     whiteSpace: 'nowrap',
+    // One line by construction, so a label wider than the space available
+    // has to truncate. As a flex item the automatic minimum size would hold
+    // the button at its full label width (and `nowrap` lets an inline button
+    // run past its container), so the label's ellipsis never engaged. These
+    // let a row shrink the button and cap it at its container.
+    minWidth: 0,
+    maxWidth: '100%',
     cursor: {
       default: 'pointer',
       ':is(:disabled,[aria-disabled="true"])': 'default',
@@ -99,7 +111,14 @@ const styles = stylex.create({
   pressable: {
     transform: {
       default: 'scale(1)',
-      ':active:where(:not(:disabled,[aria-disabled="true"]))': 'scale(0.98)',
+      // A mouse press. Under a coarse pointer `:active` is not a press (it
+      // paints on the touch and outlives a scroll), so the touch press model
+      // writes `data-astryx-press` instead; see interactionOverlay.stylex.ts.
+      ':active:where(:not(:disabled,[aria-disabled="true"]))': {
+        default: 'scale(0.98)',
+        '@media (pointer: coarse)': 'scale(1)',
+      },
+      '[data-astryx-press="on"]': 'scale(0.98)',
     },
   },
   inactive: {
@@ -108,6 +127,7 @@ const styles = stylex.create({
     transform: {
       default: 'none',
       ':active': 'none',
+      '[data-astryx-press="on"]': 'none',
     },
   },
   disabled: {
@@ -120,6 +140,7 @@ const styles = stylex.create({
     backgroundImage: {
       default: 'none',
       ':active': 'none',
+      '[data-astryx-press="on"]': 'none',
     },
   },
   iconOnly: {
@@ -127,6 +148,10 @@ const styles = stylex.create({
     aspectRatio: 'var(--button-icon-only-aspect)',
     paddingInline: 0,
     paddingBlock: 0,
+    // An icon-only button has no label to truncate: keep it square rather
+    // than letting a crowded row squeeze it.
+    flexShrink: 0,
+    maxWidth: 'none',
   },
   endContentWrapper: {
     display: 'inline-flex',
@@ -168,17 +193,6 @@ const sizeStyles = stylex.create({
   lg: {
     height: sizeVars['--size-element-lg'],
   },
-});
-
-/**
- * Icon size per button size.
- * Matches Icon sizing: sm/md=16px, lg=20px.
- * fontSize is set so emoji and text-based icons scale correctly.
- */
-const iconSizeStyles = stylex.create({
-  sm: {width: 16, height: 16, fontSize: 16},
-  md: {width: 16, height: 16, fontSize: 16},
-  lg: {width: 20, height: 20, fontSize: 20},
 });
 
 /**
@@ -232,6 +246,12 @@ export type ButtonVariant = keyof ButtonVariantMap;
  * Button size type derived from the sizeStyles StyleX object
  */
 export type ButtonSize = keyof typeof sizeStyles;
+
+const iconSizeByButtonSize = {
+  sm: 'sm',
+  md: 'sm',
+  lg: 'md',
+} satisfies Record<ButtonSize, IconSize>;
 
 export interface ButtonProps extends BaseProps<HTMLButtonElement> {
   /** Ref forwarded to the root element */
@@ -437,7 +457,7 @@ const loadingStyles = stylex.create({
  * The leading edge still uses `:first-child` — a member's button always precedes
  * its own layer, so the first button is genuinely `:first-child`.
  */
-const IS_LAST_ITEM = ':not(:has(~ *:not([popover]):not(template)))';
+const IS_LAST_ITEM = ':not(:has(~ *:not([popover]):not(template):not(dialog)))';
 
 const groupStyles = stylex.create({
   horizontal: {
@@ -554,9 +574,11 @@ export function Button({
   ref,
   ...props
 }: ButtonProps): ReactNode {
+  const pressFeedback = usePressFeedback();
   const t = useTranslator();
   const size = useSize(sizeProp, 'md');
   const buttonGroup = useButtonGroup();
+  const inputGroup = useInputGroup();
 
   const [isPending, startTransition] = useTransition();
   // clickAction is normally fire-once (submit/save/pay), so a same-tick
@@ -572,26 +594,37 @@ export function Button({
   // the consumer is deliberately showing it.
   const delaySpinner = isPending || isInterruptible;
   const groupDisabled = buttonGroup?.isDisabled ?? false;
-  // When interruptible, the loading state drives the spinner and aria-busy but
-  // not disabled, so clicks keep landing and can interrupt the in-flight action.
-  const buttonDisabled =
-    isDisabled || groupDisabled || (isLoadingState && !isInterruptible);
-  // A loading button remains non-interactive, but its spinner communicates an
-  // active state and must retain contrast. Only explicitly disabled controls
-  // receive the visually dimmed treatment.
-  const visuallyDisabled = isDisabled || groupDisabled;
+  const isTrueDisabled = isDisabled || groupDisabled;
+  // Busy-only: the button can't fire again purely because an action is in
+  // flight, not because it's genuinely isDisabled/group-disabled. Per the API
+  // Conventions "Disabled vs Busy" rule, busy is visual-only (aria-busy +
+  // spinner) and must never take focusability away — the click-handler ref
+  // guard (actionInFlightRef) is what actually makes a fire-once action fire
+  // once, so the native disabled attribute adds nothing but a focus loss
+  // here. When interruptible, the loading state drives the spinner and
+  // aria-busy but not disabled at all, so clicks keep landing and can
+  // interrupt the in-flight action.
+  const isBusyOnlyDisabled =
+    !isTrueDisabled && isLoadingState && !isInterruptible;
+  const buttonDisabled = isTrueDisabled || isBusyOnlyDisabled;
   // isIconOnly prop is the source of truth for icon-only rendering.
   // When false (default), label is always rendered as visible text.
 
   const LinkComponent = useLinkComponent(as);
 
-  // Render as link when href is provided and button is not disabled.
-  // Disabled links are an accessibility anti-pattern — fall back to <button>.
-  const renderAsLink = href != null && !buttonDisabled;
+  // Render as link when href is provided and the button is not TRULY
+  // disabled. Disabled links are an accessibility anti-pattern, so a
+  // genuinely isDisabled/group-disabled button falls back to <button>.
+  // Busy-only does NOT fall back: swapping <a> for a disabled <button>
+  // mid-action would drop focus the same way the native attribute does
+  // (credit @AKnassa, #4879), which is exactly the bug this PR fixes.
+  const renderAsLink = href != null && !isTrueDisabled;
 
-  // Use aria-disabled when tooltip is present so the button remains focusable
-  // for keyboard users to reach the tooltip. Otherwise use native disabled.
-  const useAriaDisabled = tooltip != null && buttonDisabled;
+  // Use aria-disabled (button stays focusable) when busy-only, or when a
+  // tooltip is present so keyboard users can still reach it. A genuinely
+  // isDisabled/group-disabled button (not busy) keeps native disabled.
+  const useAriaDisabled =
+    buttonDisabled && (isBusyOnlyDisabled || tooltip != null);
 
   // Attach tooltip behavior via the hook rather than wrapping the button in a
   // <Tooltip> element. The hook adds hover/focus triggers to the button itself,
@@ -608,6 +641,16 @@ export function Button({
     // a re-click while pending starts a fresh action that interrupts the prior.
     if (buttonDisabled || (actionInFlightRef.current && !isInterruptible)) {
       e.preventDefault();
+      // A native `disabled` element never dispatches a click at all, so it
+      // never reaches a wrapping element's own handler either. An
+      // aria-disabled button (busy-only, or with a tooltip) is still a real,
+      // interactive element the DOM keeps dispatching clicks on —
+      // preventDefault alone only cancels the button's OWN default action
+      // (form submit, link navigation), not propagation. Without this, an
+      // unavailable Button inside a clickable row/card/backdrop still
+      // triggers that ancestor's action, which the previously native-disabled
+      // control never did.
+      e.stopPropagation();
       return;
     }
     props.onClick?.(e);
@@ -647,7 +690,7 @@ export function Button({
     isIconOnly && styles.iconOnly,
     interactionOverlayStyles.backgroundImage,
     buttonDisabled && styles.inactive,
-    visuallyDisabled && styles.disabled,
+    isTrueDisabled && styles.disabled,
     useAriaDisabled && styles.ariaDisabled,
     renderAsLink && styles.link,
     !buttonGroup && styles.pressable,
@@ -655,6 +698,7 @@ export function Button({
       (buttonGroup.orientation === 'horizontal'
         ? groupStyles.horizontal
         : groupStyles.vertical),
+    inputGroup != null && buttonGroup == null && inputGroupStyles.buttonAddon,
     buttonGroup &&
       (variant === 'primary' || variant === 'destructive') &&
       (buttonGroup.orientation === 'horizontal'
@@ -683,6 +727,8 @@ export function Button({
     style,
   );
 
+  const iconSize = iconSizeByButtonSize[size];
+
   const buttonContent = (
     <>
       {isLoadingState && (
@@ -705,8 +751,11 @@ export function Button({
         )}
         aria-hidden={isLoadingState || undefined}>
         {icon && (
-          <span {...stylex.props(styles.iconWrapper, iconSizeStyles[size])}>
-            {icon}
+          <span
+            {...stylex.props(styles.iconWrapper, iconBoxSizeStyles[iconSize])}>
+            <IconDefaultSizeProvider value={iconSize}>
+              {icon}
+            </IconDefaultSizeProvider>
           </span>
         )}
         {isIconOnly ? null : (
@@ -763,12 +812,15 @@ export function Button({
         target={target}
         rel={rel}
         {...sharedMergedProps}
+        {...pressFeedback}
         {...props}
         {...ariaLabelProp}
         {...describedByProp}
         {...edgeCompAttr}
         aria-busy={isLoadingState || undefined}
-        onClick={handleClick}>
+        aria-disabled={useAriaDisabled || undefined}
+        onClick={handleClick}
+        {...(handleKeyDown ? {onKeyDown: handleKeyDown} : null)}>
         {buttonContent}
       </LinkComponent>
     );
@@ -779,6 +831,7 @@ export function Button({
         type={type}
         disabled={useAriaDisabled ? undefined : buttonDisabled}
         {...sharedMergedProps}
+        {...pressFeedback}
         {...props}
         {...ariaLabelProp}
         {...describedByProp}

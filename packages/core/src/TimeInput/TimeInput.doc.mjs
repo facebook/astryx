@@ -26,6 +26,11 @@ export const docs = {
       {
         guidance: true,
         description:
+          "Base props such as ref, id, data-*, aria-*, and DOM event handlers go to the time input, the element that is focused and announced. A DOM handler runs after TimeInput's own handler for the same event and still receives events it handled (including ones it called preventDefault on), so it cannot cancel built-in behavior.",
+      },
+      {
+        guidance: true,
+        description:
           "Choose the hour format (12h or 24h) that matches your audience's locale: 12-hour with AM/PM for US-centric UIs, 24-hour for international or technical contexts.",
       },
       {
@@ -80,7 +85,7 @@ export const docs = {
         name: 'Time control',
         required: true,
         description:
-          'A real input type=time in native modes, or Astryx\'s editable text field for fine pointers, nativePicker="never", seconds, and custom increments.',
+          'A real input type=time in native modes, or Astryx\'s editable text field for fine pointers, presentation="text-input", seconds, and custom increments.',
       },
       {
         name: 'Clear button',
@@ -211,10 +216,17 @@ export const docs = {
       default: '1',
     },
     {
+      name: 'presentation',
+      type: "'text-input' | 'popover' | 'bottom-sheet' | 'native' | 'adaptive-bottom-sheet' | 'adaptive-native'",
+      description:
+        "Which surface selects the time. 'adaptive-native' (the default) uses Astryx's typed field on a fine pointer and the browser/OS input type=time on a coarse pointer — except hasSeconds or increment other than 1, which retain the typed field because iOS has no seconds wheel and treats step as validation rather than picker cadence; 'native' always uses the browser/OS control with no Astryx fallback; 'adaptive-bottom-sheet' uses the typed field on a fine pointer and Astryx's bottom-sheet time wheels on a coarse pointer; 'bottom-sheet' forces the wheels on every pointer; 'text-input' (like 'popover', which has no distinct TimeInput surface) keeps only the typed field. Native mode forwards min/max and enforces them on commit. hourFormat formats the closed value; the open OS picker follows the device locale.",
+      default: "'adaptive-native'",
+    },
+    {
       name: 'nativePicker',
       type: "'touch' | 'always' | 'never'",
       description:
-        "Which surface selects the time. 'touch' (the default) uses the browser/OS input type=time on a coarse pointer and Astryx's typed field on a fine pointer; 'always' requests the native control on every pointer; 'never' keeps Astryx's typed field everywhere. Native mode forwards min/max and enforces them on commit. hasSeconds or increment other than 1 automatically retains the typed field because iOS has no seconds wheel and treats step as validation rather than picker cadence. hourFormat formats the closed value; the open OS picker follows the device locale.",
+        "Deprecated: use presentation ('touch' = 'adaptive-native', 'always' = 'native', 'never' = 'text-input'). Still works exactly as released; presentation wins when both are set.",
       default: "'touch'",
     },
     {
@@ -256,10 +268,16 @@ export const docs = {
         'Width of the field (number = pixels, string used as-is, e.g. "100%"). Sizes the whole field (label, control, and status) so they stay aligned.',
     },
     {
-      name: 'xstyle',
+      name: 'containerXstyle',
       type: 'StyleXStyles',
       description:
-        'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value, not an inline style object like style={{}}.',
+        'StyleX styles for the Field box around the label, control, and status. containerClassName and containerStyle take a class name and inline styles for the same box. No effect (development warning) where no Field box renders: inside InputGroup (style the group) and in a horizontal-labels FormLayout.',
+    },
+    {
+      name: 'controlXstyle',
+      type: 'StyleXStyles',
+      description:
+        'StyleX styles for the visual control box: the bordered element that holds the text, icons, and end controls, never the native input. controlClassName and controlStyle take a class name and inline styles for the same box. Replaces root xstyle, className, and style, which this component does not accept.',
     },
   ],
   theming: {
@@ -378,10 +396,17 @@ export const docsZh = {
       default: '1',
     },
     {
+      name: 'presentation',
+      type: "'text-input' | 'popover' | 'bottom-sheet' | 'native' | 'adaptive-bottom-sheet' | 'adaptive-native'",
+      description:
+        "选择时间所用的界面。'adaptive-native'（默认）在精细指针上使用 Astryx 文本字段、在粗指针上使用浏览器/操作系统 input type=time——但 hasSeconds 或 increment 不为 1 时保留文本字段；'native' 始终使用浏览器/操作系统控件且不回退；'adaptive-bottom-sheet' 在精细指针上用文本字段、在粗指针上用 Astryx 底部滚轮选择器；'bottom-sheet' 在任何指针上强制使用滚轮；'text-input'（与无独立界面的 'popover' 相同）只保留文本字段。原生模式会传递 min/max 并在提交时强制校验。hourFormat 控制关闭状态的显示；打开的系统选择器遵循设备区域设置。",
+      default: "'adaptive-native'",
+    },
+    {
       name: 'nativePicker',
       type: "'touch' | 'always' | 'never'",
       description:
-        "选择时间所用的界面。'touch'（默认）在粗指针设备上使用浏览器/操作系统的 input type=time，在精细指针设备上使用 Astryx 文本字段；'always' 在所有指针类型上请求原生控件；'never' 始终使用 Astryx 文本字段。原生模式会传递 min/max 并在提交时强制校验。hasSeconds 或 increment 不为 1 时会自动保留文本字段，因为 iOS 没有秒滚轮，并且只把 step 当作校验规则而非选择器步进。hourFormat 控制关闭状态的显示；打开的系统选择器遵循设备区域设置。",
+        "已弃用：请使用 presentation（'touch'='adaptive-native'、'always'='native'、'never'='text-input'）。仍按已发布行为工作；同时设置时以 presentation 为准。",
       default: "'touch'",
     },
     {
@@ -416,10 +441,16 @@ export const docsZh = {
       description: '在标签行末尾以信息图标形式渲染的工具提示文本。',
     },
     {
-      name: 'xstyle',
+      name: 'containerXstyle',
       type: 'StyleXStyles',
       description:
-        'StyleX 样式，用于布局自定义（边距、定位、尺寸）。必须是 stylex.create() 的值，而非内联样式对象如 style={{}}。',
+        '作用于包含标签、控件和状态的 Field 容器的 StyleX 样式；containerClassName 与 containerStyle 以类名和内联样式作用于同一容器。没有 Field 容器时（InputGroup 内或 horizontal-labels FormLayout 中）不生效，并在开发环境发出警告。',
+    },
+    {
+      name: 'controlXstyle',
+      type: 'StyleXStyles',
+      description:
+        '作用于可见控件框（带边框、包含文本、图标和末端控件的元素，而非原生 input）的 StyleX 样式；controlClassName 与 controlStyle 以类名和内联样式作用于同一元素。本组件不接受根级 xstyle、className 和 style。',
     },
   ],
   theming: {
@@ -435,6 +466,11 @@ export const docsZh = {
     description:
       'TimeInput 默认在粗指针设备上使用浏览器/操作系统的时间选择器，在精细指针设备上使用 Astryx 文本字段。它将时间转换为标准格式，并在文本字段界面支持方向键调整。适用于表单、排期流程和其他时间选择场景。',
     bestPractices: [
+      {
+        guidance: true,
+        description:
+          "Base props such as ref, id, data-*, aria-*, and DOM event handlers go to the time input, the element that is focused and announced. A DOM handler runs after TimeInput's own handler for the same event and still receives events it handled (including ones it called preventDefault on), so it cannot cancel built-in behavior.",
+      },
       {
         guidance: true,
         description:
@@ -487,7 +523,7 @@ export const docsZh = {
         name: 'Time control',
         required: true,
         description:
-          '原生模式下使用真正的 input type=time；精细指针、nativePicker="never"、秒或自定义步进场景使用 Astryx 可编辑文本字段。',
+          '原生模式下使用真正的 input type=time；精细指针、presentation="text-input"、秒或自定义步进场景使用 Astryx 可编辑文本字段。',
       },
       {
         name: 'Clear button',
@@ -519,6 +555,11 @@ export const docsDense = {
     description:
       'TimeInput uses a browser/OS picker on coarse pointers by default and Astryx typed entry on fine pointers. It standardizes values and supports arrow-key adjustment on the typed surface.',
     bestPractices: [
+      {
+        guidance: true,
+        description:
+          "Base props such as ref, id, data-*, aria-*, and DOM event handlers go to the time input, the element that is focused and announced. A DOM handler runs after TimeInput's own handler for the same event and still receives events it handled (including ones it called preventDefault on), so it cannot cancel built-in behavior.",
+      },
       {
         guidance: true,
         description:
@@ -583,15 +624,19 @@ export const docsDense = {
     hourFormat:
       "Display format. '12h' shows AM/PM; '24h' uses 24-hour notation.",
     increment: 'Minutes to add/subtract on arrow up/down.',
+    presentation:
+      "picker surface: 'adaptive-native' (default) = typed field fine / browser/OS coarse (hasSeconds or increment!=1 retains typed); 'native' = browser/OS always, no fallback; 'adaptive-bottom-sheet' = typed fine / Astryx wheel sheet coarse; 'bottom-sheet' = sheet always; 'text-input'/'popover' = typed field only.",
     nativePicker:
-      "picker surface: 'touch' (default) = browser/OS on coarse pointer, 'always' = native wherever compatible, 'never' = Astryx typed field. hasSeconds or increment!=1 retains typed field; min/max enforced on commit.",
+      "deprecated, use presentation: 'touch'='adaptive-native', 'always'='native', 'never'='text-input'. still works as released; presentation wins if both set.",
     placeholder: 'Placeholder when empty. Focused+empty shows format hint.',
     size: 'Input element height.',
     status: 'Colored border+icon. Message rendered below input.',
     statusVariant:
       'How status message is placed: attached overlaps below input; detached floats below w/ spacing; tooltip hides the box and shows it on the status icon.',
     labelTooltip: 'Tooltip as info icon at label row end.',
-    xstyle:
-      'StyleX styles for layout customization. Must be stylex.create() value, not inline style.',
+    containerXstyle:
+      'Field box (label+control+status); also containerClassName/containerStyle. no effect in InputGroup or horizontal-labels FormLayout',
+    controlXstyle:
+      'visual control box (border/bg/icons), never the native input; also controlClassName/controlStyle. no root xstyle/className/style',
   },
 };

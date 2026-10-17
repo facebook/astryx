@@ -2,10 +2,9 @@
 
 /**
  * @file babel.test.mjs
- * @description Verifies that the XDS babel wrapper applies the configured
- *   library StyleX class-name prefix to XDS library files. Part of the
- *   the library atom prefix defaults to `astryx` and is configurable
- *   before the final cutover.
+ * @description Verifies that the Astryx babel wrapper applies the configured
+ *   library StyleX class-name prefix to Astryx library files. The prefix
+ *   defaults to `astryx` and remains configurable.
  */
 
 import {describe, it, expect} from 'vitest';
@@ -14,6 +13,7 @@ import {createRequire} from 'node:module';
 const require = createRequire(import.meta.url);
 const babel = require('@babel/core');
 const astryxBabelPlugin = require('./babel.js');
+const {stylexOptions: buildStylexOptions} = require('./config.js');
 
 const SOURCE = `
 import * as stylex from '@stylexjs/stylex';
@@ -22,16 +22,27 @@ export const styles = stylex.create({
 });
 `;
 
+const INVALID_BORDER_SOURCE = `
+import * as stylex from '@stylexjs/stylex';
+export const styles = stylex.create({
+  box: {borderTop: '1px solid var(--color-border)'},
+});
+`;
+
 /**
- * Transform a StyleX source through the XDS babel wrapper as if it were a
- * library file, returning the emitted code. `libraryPrefix` controls the
+ * Transform a StyleX source through the Astryx babel wrapper as if it were an
+ * Astryx library file, returning the emitted code. `libraryPrefix` controls the
  * atomic class-name prefix for library files.
  */
-function transformLibraryFile(libraryPrefix) {
-  const result = babel.transformSync(SOURCE, {
+function transformLibraryFile(
+  libraryPrefix,
+  source = SOURCE,
+  stylexOptions = {},
+) {
+  const result = babel.transformSync(source, {
     // A path matching one of the library patterns so the wrapper routes it
     // through the library plugin instance.
-    filename: 'node_modules/@astryxdesign/core/src/Box/XDSBox.tsx',
+    filename: 'node_modules/@astryxdesign/core/src/Box/AstryxBox.tsx',
     babelrc: false,
     configFile: false,
     plugins: [
@@ -40,6 +51,7 @@ function transformLibraryFile(libraryPrefix) {
         {
           ...(libraryPrefix ? {libraryPrefix} : {}),
           unstable_moduleResolution: {type: 'commonJS', rootDir: process.cwd()},
+          ...stylexOptions,
         },
       ],
     ],
@@ -53,7 +65,7 @@ function atomicClasses(code) {
   return code.match(/\b(?:xds|astryx|lib)[a-z0-9]{4,}\b/g) ?? [];
 }
 
-describe('xds babel wrapper -- library StyleX prefix', () => {
+describe('Astryx babel wrapper -- library StyleX prefix', () => {
   it('defaults library atoms to the `astryx` prefix', () => {
     const code = transformLibraryFile(undefined);
     const atoms = atomicClasses(code);
@@ -69,5 +81,31 @@ describe('xds babel wrapper -- library StyleX prefix', () => {
     const atoms = atomicClasses(code);
     expect(atoms.length).toBeGreaterThan(0);
     expect(atoms.every(c => c.startsWith('lib'))).toBe(true);
+  });
+
+  it('rejects declarations that StyleX would otherwise drop silently', () => {
+    expect(() =>
+      transformLibraryFile(undefined, INVALID_BORDER_SOURCE),
+    ).toThrow(
+      /borderTop is not supported.*borderTopWidth.*borderTopStyle.*borderTopColor/s,
+    );
+  });
+
+  it('keeps the upstream validation mode override available', () => {
+    expect(() =>
+      transformLibraryFile(undefined, INVALID_BORDER_SOURCE, {
+        propertyValidationMode: 'silent',
+      }),
+    ).not.toThrow();
+  });
+
+  it('uses the same strict default in generated Babel and PostCSS configs', () => {
+    expect(buildStylexOptions(process.cwd()).propertyValidationMode).toBe(
+      'throw',
+    );
+    expect(
+      buildStylexOptions(process.cwd(), {propertyValidationMode: 'warn'})
+        .propertyValidationMode,
+    ).toBe('warn');
   });
 });

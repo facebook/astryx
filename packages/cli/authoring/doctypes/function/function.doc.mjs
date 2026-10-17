@@ -57,7 +57,7 @@ export const doc = {
       name: 'namespace',
       type: 'string',
       description:
-        "Docs namespace path. Defaults (e.g. 'cli/api') applied by the docs index.",
+        "Optional in the type, but every doc the CLI ships declares it. The group that reads this doc. The CLI's API functions use 'cli/api', which the docs tree adopts by kind: each is the leaf `cli/api/functions/<name>`. Every function doc the CLI ships declares one, and `astryx doctor` fails on one that is missing or that nothing reads.",
     },
     {
       name: 'aliases',
@@ -201,7 +201,8 @@ export const doc = {
     {
       name: 'related',
       type: 'string[]',
-      description: 'Related function/command names.',
+      description:
+        'Related function names; the CLI links each to its doc. Name the CLI command with `command`, not here.',
     },
     {
       name: 'relatedComponents',
@@ -250,6 +251,10 @@ export const doc = {
     },
   ],
   notes: [
+    {
+      type: 'prose',
+      text: 'When it loads, a stamped function doc may leave out `displayName`, and its `usage` is not checked. Write to the type anyway; it is the contract.',
+    },
     {
       type: 'prose',
       text: "The `type` discriminant is 'function' for both flavors. Set `kind: 'hook'` or `kind: 'api'` to drive docsite sectioning; it is inferred from `importPath` when omitted.",

@@ -43,6 +43,7 @@ export * from './CheckboxList';
 export * from './Collapsible';
 export * from './RadioList';
 export * from './Resizable';
+export * from './ScrollableArea';
 export * from './Divider';
 export * from './VisuallyHidden';
 export * from './EmptyState';
@@ -94,6 +95,7 @@ export * from './AlertDialog';
 export * from './Dialog';
 export * from './ContextMenu';
 export * from './DropdownMenu';
+export * from './Drawer';
 export * from './MoreMenu';
 export * from './InteractiveRoleContext';
 export * from './SizeContext';
@@ -122,7 +124,7 @@ export type {
 
 // Layer provider
 export {LayerProvider} from './Layer';
-export type {LayerProviderProps, LayerToastConfig} from './Layer';
+export type {LayerProviderProps, LayerInset, LayerToastConfig} from './Layer';
 
 // Toast
 export {Toast, useToast} from './Toast';
@@ -159,6 +161,9 @@ export * from './Spinner';
 
 // Timestamp display
 export * from './Timestamp';
+
+// Elapsed timer display
+export * from './Timer';
 
 // Overlay
 export * from './Overlay';

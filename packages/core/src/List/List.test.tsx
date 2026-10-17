@@ -3,19 +3,40 @@
 /**
  * @file List.test.tsx
  * @input Uses vitest, @testing-library/react, List, ListItem
- * @output Unit tests for List and ListItem components
+ * @output Unit tests for List and ListItem, including the row edge treatment
  * @position Testing; validates List.tsx and ListItem.tsx implementation
  *
  * SYNC: When modified, update this header
  */
 
 import {describe, it, expect, vi} from 'vitest';
-import {render, screen} from '@testing-library/react';
+import {cleanup, render, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import {rulesDeclaredFor} from '../__tests__/pressState';
 import {List} from './List';
 import {ListItem} from './ListItem';
+import {ListMarkerScope} from './ListContext';
 
 describe('List', () => {
+  it('forwards ListItem align to its Item row unchanged', () => {
+    render(
+      <List>
+        <ListItem label="Default" data-testid="default" />
+        <ListItem label="Start" align="start" data-testid="start" />
+        <ListItem label="First" align="first-line" data-testid="first" />
+      </List>,
+    );
+    expect(screen.getByTestId('default')).toHaveAttribute(
+      'data-align',
+      'center',
+    );
+    expect(screen.getByTestId('start')).toHaveAttribute('data-align', 'start');
+    expect(screen.getByTestId('first')).toHaveAttribute(
+      'data-align',
+      'first-line',
+    );
+  });
+
   // ===========================================================================
   // Basic rendering
   // ===========================================================================
@@ -255,6 +276,172 @@ describe('List', () => {
     expect(item).toHaveAttribute('data-density', 'spacious');
   });
 
+  // ===========================================================================
+  // Edge treatment
+  // ===========================================================================
+
+  /** Every injected rule that names one of the element's classes. */
+  function declarationsFor(el: Element): string {
+    return rulesDeclaredFor(el).join('\n').replace(/\s+/g, '');
+  }
+
+  /** The declarations of the row inset variable that reach the row. */
+  function insetDeclarations(item: Element): string[] {
+    return rulesDeclaredFor(item).filter(rule =>
+      rule.includes('--_item-inset-inline:'),
+    );
+  }
+
+  const ZERO_INSET = /--_item-inset-inline:\s*0(px)?\s*;/;
+  const LIST_REACH = [
+    'margin-inline-start:calc(-1*var(--container-padding-inline-start,0px))',
+    'margin-inline-end:calc(-1*var(--container-padding-inline-end,0px))',
+    'width:calc(100%+var(--container-padding-inline-start,0px)+var(--container-padding-inline-end,0px))',
+  ];
+  const OUTSET_ROW = [
+    'margin-inline-start:max(var(--container-padding-inline-start,0px)-var(--_item-inset-inline),0px)',
+    'margin-inline-end:max(var(--container-padding-inline-end,0px)-var(--_item-inset-inline),0px)',
+  ];
+  const BLEED_ROW = [
+    'padding-inline-start:max(var(--container-padding-inline-start,0px),var(--_item-inset-inline))',
+    'padding-inline-end:max(var(--container-padding-inline-end,0px),var(--_item-inset-inline))',
+  ];
+
+  function renderEdge(props: Partial<React.ComponentProps<typeof List>>) {
+    const {container} = render(
+      <List header={<span>Items</span>} {...props}>
+        <ListItem label="Static" />
+        <ListItem label="Button" onClick={() => {}} />
+        <ListItem label="Link" href="/docs" />
+      </List>,
+    );
+    const ul = container.querySelector('ul')!;
+    return {
+      ul,
+      header: ul.parentElement!,
+      items: [...ul.querySelectorAll('li')],
+    };
+  }
+
+  it('keeps the row padding and leaves the list and rows in place by default', () => {
+    const {ul, items} = renderEdge({});
+    for (const item of items) {
+      expect(item.className).not.toMatch(/edge(Flush|Outset|Bleed)/);
+      expect(insetDeclarations(item)).toHaveLength(1);
+      expect(insetDeclarations(item)[0]).not.toMatch(ZERO_INSET);
+    }
+    expect(ul.className).not.toContain('reachesContainerPadding');
+    expect(edgeContext(ul)).toBe('padded');
+  });
+
+  /** The edge each row resolved, read from the row's own edge class. */
+  function edgeContext(ul: Element): string {
+    const edges = [...ul.querySelectorAll('li')].map(li => {
+      const match = /edge(Flush|Outset|Bleed)/.exec(li.className);
+      return match ? match[1].toLowerCase() : 'padded';
+    });
+    expect(new Set(edges).size).toBe(1);
+    return edges[0];
+  }
+
+  it('applies one treatment to every row, static or interactive, and never to the header', () => {
+    for (const edge of ['flush', 'outset', 'bleed'] as const) {
+      const {ul, header, items} = renderEdge({edge});
+      expect(items).toHaveLength(3);
+      expect(edgeContext(ul)).toBe(edge);
+      expect(header.className).not.toMatch(/edge|reachesContainerPadding/);
+      cleanup();
+    }
+  });
+
+  it('flush: zeroes the shared inset at every density and leaves the list in place', () => {
+    for (const density of ['compact', 'balanced', 'spacious'] as const) {
+      const {ul, items} = renderEdge({edge: 'flush', density});
+      expect(ul.className).not.toContain('reachesContainerPadding');
+      for (const item of items) {
+        expect(item).toHaveAttribute('data-density', density);
+        const insets = insetDeclarations(item);
+        expect(insets).toHaveLength(1);
+        expect(insets[0]).toMatch(ZERO_INSET);
+      }
+      cleanup();
+    }
+  });
+
+  it('outset: the list reaches the container padding and each row steps back in by what its inset does not fill, per edge', () => {
+    // Each edge reads its own container padding var: one var on both edges
+    // over-reaches the other edge under asymmetric padding (16px start /
+    // 4px end), so a selected row would paint past the outer border.
+    const {ul, items} = renderEdge({edge: 'outset'});
+    const listCss = declarationsFor(ul);
+    for (const declaration of LIST_REACH) {
+      expect(listCss).toContain(declaration);
+    }
+    for (const item of items) {
+      const css = declarationsFor(item);
+      for (const declaration of OUTSET_ROW) {
+        expect(css).toContain(declaration);
+      }
+      expect(css).not.toContain(
+        'margin-inline-end:max(var(--container-padding-inline-start',
+      );
+      expect(insetDeclarations(item)[0]).not.toMatch(ZERO_INSET);
+    }
+  });
+
+  it('bleed: the list reaches the container padding and rows fill it with text on the padding line, per edge', () => {
+    const {ul, items} = renderEdge({edge: 'bleed'});
+    const listCss = declarationsFor(ul);
+    for (const declaration of LIST_REACH) {
+      expect(listCss).toContain(declaration);
+    }
+    for (const item of items) {
+      const css = declarationsFor(item);
+      for (const declaration of BLEED_ROW) {
+        expect(css).toContain(declaration);
+      }
+      expect(css).toContain('border-radius:0');
+      expect(css).not.toMatch(/margin-inline-(start|end):max/);
+    }
+  });
+
+  it('keeps the inline clip on the list for every treatment', () => {
+    for (const edge of ['padded', 'flush', 'outset', 'bleed'] as const) {
+      const {ul} = renderEdge({edge});
+      expect(declarationsFor(ul)).toContain('overflow-x:clip');
+      cleanup();
+    }
+  });
+
+  it('treats the deprecated edgeCompensation="inline" as edge="outset" without a runtime warning', () => {
+    // Plain use is reported statically by the @deprecated type; rendering
+    // never warns merely because the old name is used (spec:AST-017 FR29a).
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const {ul} = renderEdge({edgeCompensation: 'inline'});
+    expect(edgeContext(ul)).toBe('outset');
+    expect(ul.className).toContain('reachesContainerPadding');
+    expect(warn).not.toHaveBeenCalled();
+    warn.mockRestore();
+  });
+
+  it('lets edge win over the deprecated edgeCompensation and warns about the conflict', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const {ul} = renderEdge({edge: 'flush', edgeCompensation: 'inline'});
+    expect(edgeContext(ul)).toBe('flush');
+    expect(ul.className).not.toContain('reachesContainerPadding');
+    expect(warn).toHaveBeenCalledTimes(1);
+    const message = String(warn.mock.calls[0][0]);
+    expect(message).toContain('`edge` wins');
+    expect(message).toContain('astryx upgrade');
+    warn.mockRestore();
+  });
+
+  it('keeps the inset of a ListItem outside a List', () => {
+    const {container} = render(<ListItem label="Standalone" />);
+    expect(container.querySelector('li')!.className).not.toMatch(
+      /edge(Flush|Outset|Bleed)/,
+    );
+  });
   // ===========================================================================
   // Dividers
   // ===========================================================================
@@ -726,5 +913,140 @@ describe('List', () => {
       </List>,
     );
     expect(screen.getByText('42')).toBeInTheDocument();
+  });
+
+  describe('ListMarkerScope (internal, for Markdown nested lists)', () => {
+    /** The shape inside the item's marker box. */
+    const markerShape = (container: HTMLElement) => {
+      // The dot, ring, or square: an empty element in the marker box.
+      const shape = container.querySelector('li > span > span:empty');
+      return shape == null ? null : getComputedStyle(shape);
+    };
+
+    it('draws the list style marker without a scope', () => {
+      const {container} = render(
+        <List listStyle="disc">
+          <ListItem label="Item" />
+        </List>,
+      );
+      expect(markerShape(container)?.borderRadius).toBe('50%');
+    });
+
+    it('draws the scope marker in place of the list style', () => {
+      const {container} = render(
+        <List listStyle="disc">
+          <ListMarkerScope marker="square">
+            <ListItem label="Item" />
+          </ListMarkerScope>
+        </List>,
+      );
+      const shape = markerShape(container);
+      expect(shape).not.toBeNull();
+      expect(shape?.borderRadius).not.toBe('50%');
+      expect(container.querySelector('ul')).not.toBeNull();
+    });
+
+    it("draws a task item's read-only checkbox in place of its marker", () => {
+      const {container} = render(
+        <List listStyle="disc">
+          <ListMarkerScope
+            marker="disc"
+            task={{isChecked: true, label: 'Done'}}>
+            <ListItem label="Done" />
+          </ListMarkerScope>
+          <ListItem label="Plain" />
+        </List>,
+      );
+      const checkbox = screen.getByRole('checkbox', {name: 'Done'});
+      expect(checkbox).toBeChecked();
+      expect(checkbox).toHaveAttribute('aria-readonly', 'true');
+      const [task, plain] = container.querySelectorAll('li');
+      expect(task?.contains(checkbox)).toBe(true);
+      // The task item has no dot in its marker box; the plain item keeps it.
+      expect(task?.querySelector(':scope > span > span:empty')).toBeNull();
+      expect(plain?.querySelector(':scope > span > span:empty')).not.toBeNull();
+    });
+
+    it('draws no task checkbox in a list without markers', () => {
+      render(
+        <List>
+          <ListMarkerScope
+            marker="disc"
+            task={{isChecked: true, label: 'Done'}}>
+            <ListItem label="Done" />
+          </ListMarkerScope>
+        </List>,
+      );
+      expect(screen.queryByRole('checkbox')).toBeNull();
+    });
+
+    it('keeps a numbered list ordered with a letter marker', () => {
+      render(
+        <List listStyle="decimal" start={3}>
+          <ListMarkerScope marker="lower-alpha">
+            <ListItem label="Item" />
+          </ListMarkerScope>
+        </List>,
+      );
+      const list = screen.getByRole('list');
+      expect(list.tagName).toBe('OL');
+      expect(list).toHaveAttribute('start', '3');
+    });
+
+    it('draws no marker in a list without markers, or outside a list', () => {
+      const {container} = render(
+        <>
+          <List>
+            <ListMarkerScope marker="square">
+              <ListItem label="In a plain list" />
+            </ListMarkerScope>
+          </List>
+          <ListMarkerScope marker="square">
+            <span>Outside a list</span>
+          </ListMarkerScope>
+        </>,
+      );
+      expect(markerShape(container)).toBeNull();
+      expect(screen.getByText('Outside a list')).toBeInTheDocument();
+    });
+  });
+});
+
+describe('List and swipe actions', () => {
+  it('clips the rows in the inline axis with clip, never hidden, so a row dragged aside paints no further than the list', () => {
+    render(
+      <List>
+        <ListItem label="A" />
+      </List>,
+    );
+    const rules = rulesDeclaredFor(screen.getByRole('list'));
+    // Declared as `overflow-inline`; StyleX emits the physical longhand of
+    // the same axis in horizontal writing modes.
+    expect(rules.some(r => /overflow-(inline|x): clip/.test(r))).toBe(true);
+    expect(rules.some(r => /overflow[-a-z]*: hidden/.test(r))).toBe(false);
+  });
+
+  it('passes swipeActions and swipeBehavior through to the row unchanged', async () => {
+    render(
+      <List>
+        <ListItem
+          label="A"
+          data-testid="row"
+          swipeBehavior="commit"
+          swipeActions={{trailing: [{label: 'Archive', onActivate: () => {}}]}}
+        />
+      </List>,
+    );
+    const row = screen.getByTestId('row');
+    expect(row.tagName).toBe('LI');
+    expect(row.parentElement).toBe(screen.getByRole('list'));
+    // The panel arrives with the lazily loaded swipe layer.
+    const panel = await waitFor(() => {
+      const found = row.querySelector('[data-swipe-panel="trailing"]');
+      expect(found).not.toBeNull();
+      return found;
+    });
+    // Commit: presentational.
+    expect(panel).toHaveAttribute('aria-hidden', 'true');
   });
 });

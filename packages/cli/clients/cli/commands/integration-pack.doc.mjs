@@ -5,23 +5,19 @@ export const doc = {
   type: 'command',
   name: 'integration pack',
   displayName: 'astryx integration pack',
-  namespace: 'cli',
-  summary: 'Prove the packed integration is what consumers receive',
+  namespace: 'cli/commands',
+  summary: 'Deprecated: the old name of `integration verify`',
   description:
-    'Runs the package lifecycle, packs with npm, checks every required contribution file against the real tarball, extracts it into a scratch consumer, and compares the local and packed contribution inventories through one shared contract.',
+    '`astryx integration pack --check` is the name this check had before {@link command:integration verify}. It still runs the same check, with the same output, JSON, and exit codes, and prints a note that names `integration verify`. It will be removed in a later release.',
   fn: 'integrationPackCheck',
   options: [
     {
       flag: '--check',
-      description: 'Run the packed-package verification gate',
+      description: 'Run the check. Required, as before.',
     },
   ],
   examples: [
-    {label: 'Verify before publishing', cli: 'astryx integration pack --check'},
-    {
-      label: 'Machine-readable result',
-      cli: 'astryx integration pack --check --json',
-    },
+    {label: 'The old spelling', cli: 'astryx integration pack --check'},
   ],
   exitCodes: [
     {code: 0, when: 'the packed package exposes the same valid contributions'},
@@ -30,5 +26,5 @@ export const doc = {
       when: '--check is omitted or the tarball is incomplete or invalid',
     },
   ],
-  related: ['integration add', 'doctor integration validate'],
+  related: ['integration verify'],
 };

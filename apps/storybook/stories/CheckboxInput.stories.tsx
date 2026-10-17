@@ -568,3 +568,41 @@ export const ThemedCheckboxTarget: Story = {
     </Theme>
   ),
 };
+
+export const PressedState: Story = {
+  name: 'Pressed state',
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Press and hold an enabled row to paint the system's `--color-overlay-pressed` layer on its indicator. Checked and unchecked indicators both respond; the disabled example remains visually unchanged.",
+      },
+    },
+  },
+  render: () => {
+    const [unchecked, setUnchecked] = useState<boolean | 'indeterminate'>(
+      false,
+    );
+    const [checked, setChecked] = useState<boolean | 'indeterminate'>(true);
+    return (
+      <div style={{display: 'flex', flexDirection: 'column', gap: 12}}>
+        <CheckboxInput
+          label="Unchecked — press and hold"
+          value={unchecked}
+          onChange={setUnchecked}
+        />
+        <CheckboxInput
+          label="Checked — press and hold"
+          value={checked}
+          onChange={setChecked}
+        />
+        <CheckboxInput
+          label="Disabled — no pressed state"
+          value={false}
+          onChange={() => {}}
+          isDisabled
+        />
+      </div>
+    );
+  },
+};

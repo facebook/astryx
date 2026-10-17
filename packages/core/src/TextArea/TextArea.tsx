@@ -48,6 +48,10 @@ import {Spinner} from '../Spinner';
 import {useTooltip} from '../Tooltip';
 import {mergeProps} from '../utils';
 import type {BaseProps} from '../BaseProps';
+import {
+  type FieldInputBaseProps,
+  useFieldInputStyling,
+} from '../Field/fieldParts';
 import type {SizeValue} from '../utils/types';
 import {useInputContainer} from '../hooks/useInputContainer';
 import {useInputStatusIcon} from '../hooks/useInputStatusIcon';
@@ -95,9 +99,14 @@ const styles = stylex.create({
     paddingBlock: spacingVars['--spacing-1'],
     paddingInline: 'var(--_textarea-inline-padding)',
     fontFamily: typographyVars['--font-family-body'],
+    // The 16px floor is iOS-only: iOS Safari zooms the page when a focused
+    // control sits under 16px, and only iOS WebKit implements
+    // -webkit-touch-callout to key the coarse-pointer floor to it.
     fontSize: {
       default: typeScaleVars['--text-body-size'],
-      '@media (pointer: coarse)': `max(1rem, ${typeScaleVars['--text-body-size']})`,
+      '@media (pointer: coarse)': {
+        '@supports (-webkit-touch-callout: none)': `max(1rem, ${typeScaleVars['--text-body-size']})`,
+      },
     },
     lineHeight: typeScaleVars['--text-body-leading'],
     color: colorVars['--color-text-primary'],
@@ -190,7 +199,7 @@ export interface TextAreaStatus {
 }
 
 export interface TextAreaProps extends Omit<
-  BaseProps,
+  FieldInputBaseProps,
   'onChange' | 'defaultValue'
 > {
   /** Ref forwarded to the root element */
@@ -294,7 +303,7 @@ export interface TextAreaProps extends Omit<
   /**
    * Width of the field. Numbers are treated as pixels, strings are used as-is
    * (e.g. `'100%'`). Sizes the whole field (label, control, and status) so they
-   * stay aligned, unlike setting width via `xstyle`/`className`/`style`.
+   * stay aligned, unlike setting width via `controlXstyle`/`controlClassName`/`controlStyle`.
    */
   width?: SizeValue;
   /**
@@ -395,17 +404,28 @@ export function TextArea({
   onFocus,
   onBlur,
   width,
-  xstyle,
-  className,
-  style,
+  containerXstyle,
+  containerClassName,
+  containerStyle,
+  controlXstyle,
+  controlClassName,
+  controlStyle,
   ref,
-  ...rest
+  id: idProp,
+  'aria-describedby': ariaDescribedByProp,
+  ...restProps
 }: TextAreaProps) {
+  const {rest, container} = useFieldInputStyling('TextArea', restProps, {
+    containerXstyle,
+    containerClassName,
+    containerStyle,
+  });
   const size = useSize(sizeProp, 'md');
   const t = useTranslator();
   const isEffectivelyRequired = useResolvedRequired({isRequired, isOptional});
   const announce = useAnnounce();
-  const id = useId();
+  const generatedID = useId();
+  const id = idProp ?? generatedID;
   const descriptionID = useId();
   const statusMessageID = useId();
   const counterID = useId();
@@ -532,6 +552,7 @@ export function TextArea({
 
   return (
     <Field
+      {...container}
       label={label}
       isLabelHidden={isLabelHidden}
       description={description}
@@ -563,18 +584,12 @@ export function TextArea({
         onClick={handleWrapperClick}
         onMouseUp={handleWrapperMouseUp}
         {...mergeProps(
-          themeProps(
-            'text-area',
-            {
-              size,
-              status: status?.type ?? null,
-              disabled: isDisabled ? 'disabled' : null,
-              readonly: isReadOnly ? 'readonly' : null,
-            },
-            // `textarea` ran the compound name together; keep it emitted so
-            // existing themes continue to work.
-            {legacyNames: ['textarea']},
-          ),
+          themeProps('text-area', {
+            size,
+            status: status?.type ?? null,
+            disabled: isDisabled ? 'disabled' : null,
+            readonly: isReadOnly ? 'readonly' : null,
+          }),
           stylex.props(
             inputWrapperStyles.base,
             styles.wrapper,
@@ -582,10 +597,10 @@ export function TextArea({
             status && inputStatusBorderStyles[status.type],
             status && !isDisabled && inputStatusHoverShadowStyles[status.type],
             status && inputStatusFocusWithinStyles[status.type],
-            xstyle,
+            controlXstyle,
           ),
-          className,
-          style,
+          controlClassName,
+          controlStyle,
         )}>
         {startIcon && (
           <span {...stylex.props(styles.startIcon)}>
@@ -613,7 +628,10 @@ export function TextArea({
           spellCheck={hasSpellCheck}
           autoFocus={hasAutoFocus}
           data-autofocus={hasAutoFocus || undefined}
-          aria-describedby={ariaDescribedBy}
+          aria-describedby={
+            [ariaDescribedByProp, ariaDescribedBy].filter(Boolean).join(' ') ||
+            undefined
+          }
           aria-required={isEffectivelyRequired ? 'true' : undefined}
           aria-invalid={
             status?.type === 'error' ||

@@ -1,5 +1,5 @@
 ---
-schema_version: 1
+schema_version: 4
 template_version: 1
 kind: system-spec
 id: spec:AST-003
@@ -22,6 +22,17 @@ affects_consumer_docs: []
 ---
 
 # Layer coordination and global hosting system spec
+
+<!-- review-applicability:v1 -->
+
+```json
+{
+  "scope": "global",
+  "triggers": {
+    "layering": ["FR10", "DEC-1", "DEC-2", "DEC-3", "DEC-5"]
+  }
+}
+```
 
 ## Intent
 

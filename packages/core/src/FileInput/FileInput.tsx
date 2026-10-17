@@ -5,7 +5,7 @@
 /**
  * @file FileInput.tsx
  * @input Uses React, useId, Field, Icon, Spinner, VisuallyHidden
- * @output Exports FileInput component, FileInputProps, FileInputStatus
+ * @output Exports FileInput component, public types, and its root/icon theme targets
  * @position Core implementation; consumed by index.ts, tested by FileInput.test.tsx
  *
  * SYNC: When modified, update these files to stay in sync:
@@ -21,6 +21,7 @@ import {
   useCallback,
   useRef,
   useState,
+  useOptimistic,
   useTransition,
   type DragEvent,
 } from 'react';
@@ -56,6 +57,10 @@ export type {
 } from '../Field';
 import {mergeProps} from '../utils';
 import type {BaseProps} from '../BaseProps';
+import {
+  type FieldInputBaseProps,
+  useFieldInputStyling,
+} from '../Field/fieldParts';
 import type {SizeValue} from '../utils/types';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
@@ -231,9 +236,14 @@ const styles = stylex.create({
   },
   placeholderText: {
     fontFamily: typographyVars['--font-family-body'],
+    // The 16px floor is iOS-only: iOS Safari zooms the page when a focused
+    // control sits under 16px, and only iOS WebKit implements
+    // -webkit-touch-callout to key the coarse-pointer floor to it.
     fontSize: {
       default: typeScaleVars['--text-body-size'],
-      '@media (pointer: coarse)': `max(1rem, ${typeScaleVars['--text-body-size']})`,
+      '@media (pointer: coarse)': {
+        '@supports (-webkit-touch-callout: none)': `max(1rem, ${typeScaleVars['--text-body-size']})`,
+      },
     },
     lineHeight: typeScaleVars['--text-body-leading'],
     color: colorVars['--color-text-secondary'],
@@ -242,9 +252,13 @@ const styles = stylex.create({
   },
   fileNameText: {
     fontFamily: typographyVars['--font-family-body'],
+    // ...and the filename beside it keeps the same floor, so both lines the
+    // control shows stay the same size.
     fontSize: {
       default: typeScaleVars['--text-body-size'],
-      '@media (pointer: coarse)': `max(1rem, ${typeScaleVars['--text-body-size']})`,
+      '@media (pointer: coarse)': {
+        '@supports (-webkit-touch-callout: none)': `max(1rem, ${typeScaleVars['--text-body-size']})`,
+      },
     },
     lineHeight: typeScaleVars['--text-body-leading'],
     color: colorVars['--color-text-primary'],
@@ -281,7 +295,7 @@ const statusBorderStyles = stylex.create({
 });
 
 export interface FileInputProps extends Omit<
-  BaseProps,
+  FieldInputBaseProps,
   'onChange' | 'defaultValue' | 'value'
 > {
   ref?: React.Ref<HTMLInputElement>;
@@ -399,7 +413,7 @@ export interface FileInputProps extends Omit<
   /**
    * Width of the field. Numbers are treated as pixels, strings are used as-is
    * (e.g. `'100%'`). Sizes the whole field (label, control, and status) so they
-   * stay aligned, unlike setting width via `xstyle`/`className`/`style`.
+   * stay aligned, unlike setting width via `controlXstyle`/`controlClassName`/`controlStyle`.
    */
   width?: SizeValue;
   /**
@@ -438,14 +452,24 @@ export function FileInput({
   isOptional = false,
   labelTooltip,
   width,
-  xstyle,
-  className,
-  style,
+  containerXstyle,
+  containerClassName,
+  containerStyle,
+  controlXstyle,
+  controlClassName,
+  controlStyle,
   ref,
-  ...rest
+  id: idProp,
+  ...restProps
 }: FileInputProps) {
+  const {rest, container} = useFieldInputStyling('FileInput', restProps, {
+    containerXstyle,
+    containerClassName,
+    containerStyle,
+  });
   const t = useTranslator();
-  const id = useId();
+  const generatedID = useId();
+  const id = idProp ?? generatedID;
   const descriptionID = useId();
   const statusMessageID = useId();
   const requiredID = useId();
@@ -454,6 +478,8 @@ export function FileInput({
   const [isDragOver, setIsDragOver] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
   const [, startTransition] = useTransition();
+  const [optimisticValue, setOptimisticValue] = useOptimistic(value);
+  const isBusy = isLoading || optimisticValue !== value;
 
   // Announce successful file selection to screen readers via a persistent
   // live region (forms-17). Validation errors are announced (assertively) by
@@ -553,6 +579,7 @@ export function FileInput({
 
       if (changeAction) {
         startTransition(async () => {
+          setOptimisticValue(result);
           await changeAction(result);
         });
       }
@@ -566,6 +593,7 @@ export function FileInput({
       onChange,
       changeAction,
       startTransition,
+      setOptimisticValue,
       announce,
       t,
     ],
@@ -587,6 +615,12 @@ export function FileInput({
       e.stopPropagation();
       setValidationError(null);
       onChange(null);
+      if (changeAction) {
+        startTransition(async () => {
+          setOptimisticValue(null);
+          await changeAction(null);
+        });
+      }
       if (inputRef.current) {
         inputRef.current.value = '';
         const targetInput = inputRef.current;
@@ -601,7 +635,7 @@ export function FileInput({
         }
       }
     },
-    [onChange],
+    [onChange, changeAction, startTransition, setOptimisticValue],
   );
 
   const handleClick = useCallback(() => {
@@ -687,15 +721,16 @@ export function FileInput({
   );
 
   const hasFiles =
-    value != null && (Array.isArray(value) ? value.length > 0 : true);
+    optimisticValue != null &&
+    (Array.isArray(optimisticValue) ? optimisticValue.length > 0 : true);
   const fileNames = hasFiles
-    ? Array.isArray(value)
-      ? value.map(f => f.name).join(', ')
-      : (value?.name ?? '')
+    ? Array.isArray(optimisticValue)
+      ? optimisticValue.map(f => f.name).join(', ')
+      : (optimisticValue?.name ?? '')
     : null;
 
   const renderDropzoneContent = () => {
-    if (isLoading) {
+    if (isBusy) {
       return <Spinner size="md" />;
     }
     if (hasFiles) {
@@ -707,7 +742,12 @@ export function FileInput({
     }
     return (
       <>
-        <Icon icon="arrowUp" size="md" color="secondary" />
+        <Icon
+          icon="upload"
+          size="md"
+          color="secondary"
+          {...themeProps('file-input-icon', {mode})}
+        />
         <span {...stylex.props(styles.placeholderText)}>
           {isDragOver ? t('@astryx.fileInput.dropHint') : displayPlaceholder}
         </span>
@@ -716,7 +756,7 @@ export function FileInput({
   };
 
   const renderCompactContent = () => {
-    if (isLoading) {
+    if (isBusy) {
       return (
         <>
           <span {...stylex.props(styles.fileNameText)}>
@@ -728,7 +768,12 @@ export function FileInput({
     }
     return (
       <>
-        <Icon icon="arrowUp" size="sm" color="secondary" />
+        <Icon
+          icon="upload"
+          size="sm"
+          color="secondary"
+          {...themeProps('file-input-icon', {mode})}
+        />
         <span
           {...stylex.props(
             hasFiles ? styles.fileNameText : styles.placeholderText,
@@ -754,6 +799,7 @@ export function FileInput({
 
   return (
     <Field
+      {...container}
       label={label}
       isLabelHidden={isLabelHidden}
       description={description}
@@ -796,10 +842,10 @@ export function FileInput({
             isDropzone && isDisabled && styles.dropzoneDisabled,
             !isDropzone && isDisabled && styles.compactDisabled,
             status && statusBorderStyles[status.type],
-            xstyle,
+            controlXstyle,
           ),
-          className,
-          style,
+          controlClassName,
+          controlStyle,
         )}>
         {/* Visually hidden real button carrying the accessible role, name, and
             ARIA. Kept as a sibling of the clear/status controls inside a
@@ -830,7 +876,7 @@ export function FileInput({
                 ? t('@astryx.fileInput.triggerWithFiles', {label, fileNames})
                 : label
             }
-            aria-busy={isLoading || undefined}
+            aria-busy={isBusy || undefined}
             aria-describedby={ariaDescribedBy}
             aria-invalid={status?.type === 'error' ? 'true' : undefined}
           />
@@ -851,7 +897,7 @@ export function FileInput({
           {...stylex.props(styles.hiddenInput)}
         />
         {isDropzone ? renderDropzoneContent() : renderCompactContent()}
-        {hasFiles && !isDisabled && !isLoading && (
+        {hasFiles && !isDisabled && !isBusy && (
           <InputClearButton
             label={t('@astryx.fileInput.clearLabel', {label})}
             onClick={handleClear}

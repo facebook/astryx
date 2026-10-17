@@ -36,6 +36,8 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 import {fileURLToPath} from 'node:url';
 
+import {findInstalledPackage} from '../../../foundation/fs/paths.mjs';
+
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(HERE, '../../../../..');
 const CLI_PKG = path.join(REPO_ROOT, 'packages/cli');
@@ -45,7 +47,13 @@ const CORE_THEME_ENTRY = path.join(CORE_DIST, 'theme/index.js');
 /** The CLI's published file set (packages/cli package.json `files`). */
 const PACKED_DIRS = ['clients', 'api', 'assets', 'authoring', 'foundation'];
 /** Runtime dependencies the packed CLI resolves from its install root. */
-const RUNTIME_DEPS = ['commander', 'jiti', 'jscodeshift', 'zod'];
+const RUNTIME_DEPS = [
+  '@babel/parser',
+  'commander',
+  'jiti',
+  'jscodeshift',
+  'zod',
+];
 
 const OLD_CORE_VERSION = '0.5.4';
 const CURRENT_CORE_VERSION = '0.6.0';
@@ -260,7 +268,7 @@ ${options.tla ? `const surface = await Promise.resolve('#eee');\n` : ''}export c
 }
 
 /**
- * @param {string} themeFile
+ * @param {string | string[]} themeFile
  * @param {string[]} [extraArgs]
  * @returns {{status: number, envelope: any}}
  */
@@ -270,11 +278,8 @@ function buildTheme(themeFile, extraArgs = []) {
     'node_modules/@astryxdesign/cli/clients/cli/bin/astryx.mjs',
   );
   try {
-    const stdout = execFileSync(
-      process.execPath,
-      [bin, 'theme', 'build', themeFile, ...extraArgs, '--json'],
-      {cwd: consumer, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe']},
-    );
+    // prettier-ignore
+    const stdout = execFileSync(process.execPath, [bin, 'theme', 'build', ...(Array.isArray(themeFile) ? themeFile : [themeFile]), ...extraArgs, '--json'], {cwd: consumer, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe']});
     return {status: 0, envelope: JSON.parse(stdout)};
   } catch (error) {
     const e = /** @type {any} */ (error);
@@ -425,9 +430,14 @@ beforeAll(() => {
   );
 
   // Its runtime dependencies, resolved from the install root like a real one.
+  // Found from the CLI package rather than the repo root: only a hoisted
+  // node_modules puts a package's own dependencies at the workspace root.
   for (const dep of RUNTIME_DEPS) {
-    const resolved = fs.realpathSync(path.join(REPO_ROOT, 'node_modules', dep));
-    fs.symlinkSync(resolved, path.join(modules, dep));
+    const installed = findInstalledPackage(CLI_PKG, dep);
+    if (!installed) throw new Error(`${dep} is not installed under ${CLI_PKG}`);
+    const target = path.join(modules, dep);
+    fs.mkdirSync(path.dirname(target), {recursive: true});
+    fs.symlinkSync(fs.realpathSync(installed), target);
   }
 
   // The installed core. Real built implementations behind a swappable
@@ -1082,6 +1092,12 @@ afterAll(() => {
 
 describe('packed CLI against a core that predates adaptations', () => {
   beforeAll(() => useCore('old'));
+
+  it('rejects a family before an old core can erase adaptations', () => {
+    // prettier-ignore
+    const result = buildTheme(['adaptive-base.ts', 'extending.ts'], ['--family', '--family-key', 'adaptive-family']);
+    expect(result.envelope.code).toBe('ERR_CORE_INCOMPATIBLE');
+  });
 
   it('builds a non-adaptation theme', () => {
     const {status, envelope} = buildTheme('plain.ts');

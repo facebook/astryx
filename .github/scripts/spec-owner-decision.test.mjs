@@ -7,12 +7,15 @@ const require = createRequire(import.meta.url);
 const {
   OWNER_COMMAND_PREFIXES,
   canonicalRunUrl,
+  decisionStatusDescription,
   describeOwnerCommandProblem,
   isDispatchableOwnerCommand,
   newestGateRun,
   parseCanonicalRunId,
+  parseDecisionStatuses,
   parseOwnerCommand,
   parseOwnerCommandIntent,
+  parseOwnerDecisionDispatch,
   parseOwnerFile,
   parseReadyAttestations,
   requiredApprovalGroups,
@@ -21,6 +24,15 @@ const {
 
 const head = 'abcdef1234567890abcdef1234567890abcdef12';
 const owner = {login: 'cixzhang'};
+const componentPath = 'packages/core/src/Button/Button.spec.md';
+
+function componentRecord({body = 'Body.', decision = null} = {}) {
+  const block =
+    decision === null
+      ? ''
+      : `\n\n### Design decisions\n\n<!-- design-decisions:v1 -->\n\n| ID | Decision | Intent or reason | Applies to | Allowed variation |\n| --- | --- | --- | --- | --- |\n| DD1 | ${decision} | Preserve emphasis. | Default state | Theme tokens may vary. |`;
+  return `---\nkind: component\nauthority: current\n---\n\n## Design relationships\n\n${body}${block}\n\n### Theming anatomy\n`;
+}
 
 describe('spec owner decision', () => {
   it('binds approval commands to the current head', () => {
@@ -143,6 +155,58 @@ describe('spec owner decision', () => {
           previousPath: 'docs/architecture/themes.md',
           baseContent: 'kind: architecture\nauthority: current',
           headContent: 'kind: design\nauthority: current',
+        },
+      ]),
+    ).toEqual({spec: true, design: true, theme: false});
+  });
+
+  it('routes DD-only component changes to design owners', () => {
+    expect(
+      requiredApprovalGroups([
+        {
+          path: componentPath,
+          baseContent: componentRecord({decision: 'Use a quiet label.'}),
+          headContent: componentRecord({decision: 'Keep the label quiet.'}),
+        },
+      ]),
+    ).toEqual({spec: false, design: true, theme: false});
+  });
+
+  it('routes mixed DD and component contract changes to both groups', () => {
+    expect(
+      requiredApprovalGroups([
+        {
+          path: componentPath,
+          baseContent: componentRecord({decision: 'Use a quiet label.'}),
+          headContent: componentRecord({
+            body: 'Changed contract.',
+            decision: 'Keep the label quiet.',
+          }),
+        },
+      ]),
+    ).toEqual({spec: true, design: true, theme: false});
+  });
+
+  it('keeps component edits without a DD change in engineering', () => {
+    expect(
+      requiredApprovalGroups([
+        {
+          path: componentPath,
+          baseContent: componentRecord(),
+          headContent: componentRecord({body: 'Changed contract.'}),
+        },
+      ]),
+    ).toEqual({spec: true, design: false, theme: false});
+  });
+
+  it('fails closed for a renamed component record', () => {
+    expect(
+      requiredApprovalGroups([
+        {
+          path: 'packages/core/src/Action/Action.spec.md',
+          previousPath: componentPath,
+          baseContent: componentRecord(),
+          headContent: componentRecord(),
         },
       ]),
     ).toEqual({spec: true, design: true, theme: false});
@@ -506,8 +570,8 @@ describe('spec owner decision', () => {
     });
     const statuses = [marker('ernestt'), marker('imdreamrunner')];
 
-    // imdreamrunner is a spec owner and a design *approver*, but not a design
-    // owner. A marker they published — including one predating the rule that
+    // imdreamrunner is an engineering owner and a design *approver*, but not a
+    // design owner. A marker they published — including one predating the rule that
     // only design owners self-attest — is not evidence for any group.
     expect(
       parseReadyAttestations(statuses, {
@@ -703,5 +767,151 @@ describe('spec owner decision', () => {
       expect(parseOwnerCommand(`/approve-spec ${head}`, head)).toBe(true);
       expect(describeOwnerCommandProblem(null, head)).toBe(null);
     });
+  });
+});
+
+describe('relayed owner decisions', () => {
+  const appLogin = 'review-app[bot]';
+  function dispatch(overrides = {}, sender = {login: appLogin, type: 'Bot'}) {
+    return {
+      action: 'spec-owner-decision',
+      sender,
+      client_payload: {
+        pr: 17,
+        headSha: head,
+        ownerLogin: 'CixZhang',
+        decision: 'approve',
+        requestKey: 'req-1',
+        ...overrides,
+      },
+    };
+  }
+
+  it('reads a well-formed decision from the configured app', () => {
+    expect(parseOwnerDecisionDispatch(dispatch(), {appLogin})).toEqual({
+      decision: {
+        pr: 17,
+        headSha: head,
+        owner: 'cixzhang',
+        approved: true,
+        requestKey: 'req-1',
+      },
+    });
+  });
+
+  it('reads a revoke as a rejection', () => {
+    expect(
+      parseOwnerDecisionDispatch(dispatch({decision: 'revoke'}), {appLogin})
+        .decision.approved,
+    ).toBe(false);
+  });
+
+  it.each([
+    ['no app is configured', dispatch(), ''],
+    [
+      'another sender relays it',
+      dispatch({}, {login: 'someone', type: 'User'}),
+      appLogin,
+    ],
+    [
+      'a user borrows the app login',
+      dispatch({}, {login: appLogin, type: 'User'}),
+      appLogin,
+    ],
+    ['the pull request is not a number', dispatch({pr: '17'}), appLogin],
+    ['the head is abbreviated', dispatch({headSha: 'abcdef1'}), appLogin],
+    ['the owner is not a login', dispatch({ownerLogin: 'a b'}), appLogin],
+    ['the decision is unknown', dispatch({decision: 'lgtm'}), appLogin],
+    ['the request key is missing', dispatch({requestKey: ''}), appLogin],
+  ])('refuses a dispatch when %s', (_reason, payload, configured) => {
+    expect(
+      parseOwnerDecisionDispatch(payload, {appLogin: configured}).problem,
+    ).toEqual(expect.any(String));
+  });
+
+  function decisionStatus({
+    owner: login = 'cixzhang',
+    approved = true,
+    at = '2026-08-30T10:00:00.000Z',
+    state = approved ? 'success' : 'failure',
+    creator = 'github-actions[bot]',
+  } = {}) {
+    return {
+      context: `spec-owner-decision/${login}`,
+      state,
+      description: decisionStatusDescription({
+        approved,
+        at,
+        requestKey: 'req-1',
+      }),
+      target_url: canonicalRunUrl('facebook/astryx', '9', '1'),
+      creator: {login: creator},
+    };
+  }
+  const readBack = (statuses, owners = ['cixzhang']) =>
+    parseDecisionStatuses(statuses, {
+      repository: 'facebook/astryx',
+      headSha: head,
+      owners,
+    });
+
+  it('reads a published decision back for a current owner', () => {
+    expect(readBack([decisionStatus({approved: false})])).toEqual([
+      {
+        approved: false,
+        at: '2026-08-30T10:00:00.000Z',
+        headSha: head,
+        owner: 'cixzhang',
+        source: 'command',
+      },
+    ]);
+  });
+
+  it('ignores a decision whose owner has left the owner files', () => {
+    expect(readBack([decisionStatus()], ['ernestt'])).toEqual([]);
+  });
+
+  it('ignores a decision status this workflow did not publish', () => {
+    expect(readBack([decisionStatus({creator: 'someone'})])).toEqual([]);
+  });
+
+  it('ignores a decision whose state contradicts its description', () => {
+    expect(readBack([decisionStatus({state: 'failure'})])).toEqual([]);
+  });
+
+  it('lets a later relayed revoke override an earlier command', () => {
+    const decision = resolveOwnerDecision({
+      reviews: [],
+      comments: [
+        {
+          user: owner,
+          body: `/approve-spec ${head}`,
+          created_at: '2026-08-30T09:00:00Z',
+        },
+      ],
+      relayedDecisions: readBack([decisionStatus({approved: false})]),
+      owners: ['cixzhang'],
+      headSha: head,
+    });
+    expect(decision).toMatchObject({approved: false, source: 'command'});
+  });
+
+  it('ignores a relayed decision for another head', () => {
+    const decision = resolveOwnerDecision({
+      reviews: [],
+      comments: [],
+      relayedDecisions: [
+        {
+          approved: true,
+          at: '2026-08-30T10:00:00Z',
+          headSha: '1'.repeat(40),
+          owner: 'cixzhang',
+          source: 'command',
+        },
+      ],
+      owners: ['cixzhang'],
+      headSha: head,
+    });
+    expect(decision.approved).toBe(false);
   });
 });

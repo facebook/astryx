@@ -29,7 +29,7 @@
 /**
  * @typedef {object} InitRemoveResponse
  * @property {'init.remove'} type
- * @property {{removed: true}} data
+ * @property {{removed: boolean}} data False when no managed agent-docs block was found, so nothing was removed.
  */
 
 /**
@@ -38,7 +38,7 @@
  * @property {string} [features] Comma-separated features to install (agents, theme, template).
  * @property {boolean} [all] Install all features.
  * @property {boolean} [removeAgents] Remove the managed agent-docs block instead of installing.
- * @property {string} [agent] Agent preset: claude, cursor, codex, hermes, all.
+ * @property {string} [agent] Agent preset: claude, cursor, codex, hermes, muse, all.
  * @property {string | string[]} [agentDocsPath] Explicit agent-docs file path(s).
  * @property {string} [templateName] Scaffold a named page template (programmatic only; the CLI never sets it).
  */

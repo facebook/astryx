@@ -31,7 +31,6 @@ import {
   radiusVars,
   typographyVars,
   typeScaleVars,
-  borderVars,
 } from '../theme/tokens.stylex';
 import {
   Field,
@@ -65,12 +64,19 @@ import {NativeDateField} from './NativeDateField';
 import {TouchDateField} from './TouchDateField';
 import {useTooltip} from '../Tooltip';
 import {getInputARIA, isImeKeyEvent, parseDateInput} from '../utils';
+import {chainEventHandlers} from '../utils/chainEventHandlers';
 import {
   plainDateFromISO,
   plainDateToISO,
   formatSharedDate,
 } from '../utils/plainDate';
 import type {TimestampFormat} from '../Timestamp';
+import {
+  effectivePickerPresentation,
+  resolvePickerPresentation,
+  type PickerPresentation,
+} from '../utils/inputPresentation';
+import {useDevWarning} from '../hooks/useDevWarning';
 
 const styles = stylex.create({
   iconButton: {
@@ -99,9 +105,14 @@ const styles = stylex.create({
     borderStyle: 'none',
     padding: 0,
     fontFamily: typographyVars['--font-family-body'],
+    // The 16px floor is iOS-only: iOS Safari zooms the page when a focused
+    // control sits under 16px, and only iOS WebKit implements
+    // -webkit-touch-callout to key the coarse-pointer floor to it.
     fontSize: {
       default: typeScaleVars['--text-body-size'],
-      '@media (pointer: coarse)': `max(1rem, ${typeScaleVars['--text-body-size']})`,
+      '@media (pointer: coarse)': {
+        '@supports (-webkit-touch-callout: none)': `max(1rem, ${typeScaleVars['--text-body-size']})`,
+      },
     },
     lineHeight: typeScaleVars['--text-body-leading'],
     color: colorVars['--color-text-primary'],
@@ -159,7 +170,11 @@ export type DateInputSize = keyof typeof sizeStyles;
  * - `'always'`: native wherever the browser supports `<input type="date">`
  * - `'never'`: Astryx's own pickers everywhere
  */
+/** @deprecated Use {@link DateInputPresentation} via the `presentation` prop. */
 export type DateInputNativePicker = 'touch' | 'always' | 'never';
+
+/** Which surface collects the date (`spec:AST-043` FR1; no `text-input` — TimeInput-only). */
+export type DateInputPresentation = PickerPresentation;
 
 export type DateInputFormat = Extract<
   TimestampFormat,
@@ -173,19 +188,22 @@ export type {
   InputStatusType as DateInputStatusType,
 } from '../Field';
 import {mergeProps, isFocusDetached} from '../utils';
-import type {BaseProps} from '../BaseProps';
+import {joinAriaIDs} from '../utils/inputAria';
+import {
+  useFieldInputStyling,
+  type FieldInputBaseProps,
+} from '../Field/fieldParts';
 import type {SizeValue} from '../utils/types';
 import {themeProps} from '../utils/themeProps';
 import {focusOutlineStyles} from '../utils/focusOutline.stylex';
-import {stableClassName} from '../naming';
 import {useLocale, useTranslator} from '../i18n';
 
 import {useMergedRefs} from '../hooks/useMergedRefs';
 export interface DateInputProps extends Omit<
-  BaseProps,
+  FieldInputBaseProps<HTMLInputElement>,
   'onChange' | 'defaultValue'
 > {
-  /** Ref forwarded to the root element */
+  /** Ref forwarded to the date input (the field's semantic control) */
   ref?: React.Ref<HTMLInputElement>;
   /**
    * Label text for the input (required for accessibility).
@@ -313,7 +331,7 @@ export interface DateInputProps extends Omit<
   /**
    * Width of the field. Numbers are treated as pixels, strings are used as-is
    * (e.g. `'100%'`). Sizes the whole field (label, control, and status) so they
-   * stay aligned, unlike setting width via `xstyle`/`className`/`style`.
+   * stay aligned, unlike setting width via `containerXstyle` or `controlXstyle`.
    */
   width?: SizeValue;
   /**
@@ -399,13 +417,30 @@ export interface DateInputProps extends Omit<
    * reason enough to prefer `'never'` on a field that uses it.
    *
    * @default 'touch'
-   * @example
-   * ```
-   * // Astryx's own touch picker instead of the platform's
-   * <DateInput label="Event date" value={date} onChange={setDate} nativePicker="never" />
-   * ```
+   * @deprecated Use `presentation` (`spec:AST-043` FR3):
+   * `'touch'` → `'adaptive-native'`, `'always'` → `'native'`,
+   * `'never'` → `'adaptive-bottom-sheet'`. Still works exactly as released;
+   * `presentation` wins when both are set.
    */
   nativePicker?: DateInputNativePicker;
+
+  /**
+   * Which surface collects the date (`spec:AST-043` FR1). Every value opens
+   * a picker; the typed-field-only `'text-input'` belongs to `TimeInput`.
+   *
+   * - `'popover'`: Astryx's typed field + calendar popover on every pointer
+   * - `'bottom-sheet'`: Astryx's bottom-sheet calendar on every pointer
+   * - `'native'`: the browser/OS picker on every pointer, with no Astryx
+   *   fallback (FR2)
+   * - `'adaptive-bottom-sheet'`: popover on a fine pointer, bottom sheet on
+   *   a coarse pointer
+   * - `'adaptive-native'` (default): popover on a fine pointer, browser/OS
+   *   picker on a coarse pointer, keeping the released Astryx fallbacks
+   *   where a native control cannot express the value (FR2)
+   *
+   * @default 'adaptive-native'
+   */
+  presentation?: DateInputPresentation;
 }
 
 /**
@@ -457,19 +492,38 @@ function PointerDateField({
   weekStartsOn,
   format = 'date_long',
   width,
-  xstyle,
-  className,
-  style,
+  containerXstyle,
+  containerClassName,
+  containerStyle,
+  controlXstyle,
+  controlClassName,
+  controlStyle,
   ref,
-  ...rest
+  ...restProps
 }: DateInputProps) {
+  const {rest, container} = useFieldInputStyling('DateInput', restProps, {
+    containerXstyle,
+    containerClassName,
+    containerStyle,
+  });
+  const {
+    id: idProp,
+    'aria-describedby': ariaDescribedByProp,
+    'aria-labelledby': ariaLabelledByProp,
+    onBlur: onBlurProp,
+    onClick: onClickProp,
+    onKeyDown: onKeyDownProp,
+    ...controlProps
+  } = rest;
   const t = useTranslator();
   const locale = useLocale();
   const isEffectivelyRequired = useResolvedRequired({isRequired, isOptional});
   const placeholder =
     placeholderFromProps ?? t('@astryx.dateInput.placeholder');
   const size = useSize(sizeProp, 'md');
-  const id = useId();
+  const generatedID = useId();
+  const id = idProp ?? generatedID;
+  const fieldLabelID = useId();
   const inputLabelID = useId();
   const descriptionID = useId();
   const statusMessageID = useId();
@@ -518,6 +572,7 @@ function PointerDateField({
       // tooltip's content instead so the status is still announced.
       statusTooltipDescribedBy,
       showsDisabledMessage ? disabledMessageTooltip.describedBy : null,
+      ariaDescribedByProp,
     ],
     inputGroup,
   );
@@ -743,7 +798,6 @@ function PointerDateField({
         // compose, so attaching unconditionally is safe.
         disabledMessageTooltip.ref(el);
       }}
-      {...rest}
       {...mergeProps(
         themeProps('date-input', {
           size,
@@ -760,10 +814,10 @@ function PointerDateField({
             inputStatusHoverShadowStyles[status.type],
           status && inputStatusFocusWithinStyles[status.type],
           inputGroup && groupStyles.inGroup,
-          xstyle,
+          controlXstyle,
         ),
-        className,
-        style,
+        controlClassName,
+        controlStyle,
       )}>
       {inputGroup && <VisuallyHidden id={inputLabelID}>{label}</VisuallyHidden>}
       <button
@@ -796,15 +850,16 @@ function PointerDateField({
         />
       </button>
       <input
+        {...controlProps}
         ref={useMergedRefs(ref, inputRef)}
         id={id}
         type="text"
         role="combobox"
         value={displayValue}
         onChange={handleInputChange}
-        onBlur={handleBlur}
-        onClick={handleInputClick}
-        onKeyDown={handleInputKeyDown}
+        onBlur={chainEventHandlers(handleBlur, onBlurProp)}
+        onClick={chainEventHandlers(handleInputClick, onClickProp)}
+        onKeyDown={chainEventHandlers(handleInputKeyDown, onKeyDownProp)}
         placeholder={placeholder}
         // With a disabledMessage the input keeps focusability via
         // aria-disabled so the reason is focus-discoverable; typing is
@@ -813,7 +868,11 @@ function PointerDateField({
         disabled={isEffectivelyDisabled && !showsDisabledMessage}
         aria-disabled={showsDisabledMessage ? 'true' : undefined}
         readOnly={showsDisabledMessage || undefined}
-        aria-labelledby={ariaLabelledBy}
+        aria-labelledby={
+          ariaLabelledByProp != null
+            ? joinAriaIDs(ariaLabelledBy ?? fieldLabelID, ariaLabelledByProp)
+            : ariaLabelledBy
+        }
         aria-describedby={ariaDescribedBy}
         aria-required={isEffectivelyRequired ? 'true' : undefined}
         aria-invalid={
@@ -843,7 +902,6 @@ function PointerDateField({
         <InputClearButton
           label={t('@astryx.dateInput.clear', {label})}
           onClick={handleClear}
-          iconClassName={stableClassName('date-input-clear-icon')}
         />
       )}
       {isBusy && <Spinner size="sm" />}
@@ -852,7 +910,7 @@ function PointerDateField({
         <Calendar
           handleRef={calendarRef}
           mode="single"
-          value={optimisticValue}
+          value={optimisticValue ?? null}
           onChange={handleDateSelect}
           min={min}
           max={max}
@@ -873,10 +931,12 @@ function PointerDateField({
 
   return (
     <Field
+      {...container}
       label={label}
       isLabelHidden={isLabelHidden}
       description={description}
       inputID={id}
+      labelID={ariaLabelledByProp != null ? fieldLabelID : undefined}
       descriptionID={description ? descriptionID : undefined}
       isOptional={isOptional}
       isRequired={isRequired}
@@ -932,6 +992,11 @@ PointerDateField.displayName = 'PointerDateField';
  * with a calendar icon and the formatted date — and differ only in what
  * opens. Nothing moves; the field just starts opening a sheet.
  *
+ * Base props (`ref`, `id`, `data-*`, `aria-*`, DOM event handlers) go to the date input.
+ * A DOM handler runs after the component's own handler for the same event
+ * and still receives events the component handled, even ones it called
+ * `preventDefault` on, so it cannot cancel built-in behavior.
+ *
  * @example
  * ```
  * <DateInput
@@ -943,18 +1008,28 @@ PointerDateField.displayName = 'PointerDateField';
  */
 export function DateInput(props: DateInputProps) {
   const isTouch = useMediaQuery(TOUCH_POINTER_QUERY);
-  const nativePicker = props.nativePicker ?? 'touch';
-
-  // The platform's picker, where the consumer asked for it — see the
-  // `nativePicker` prop for what that trades away.
-  if (nativePicker === 'always' || (nativePicker === 'touch' && isTouch)) {
-    return <NativeDateField {...props} />;
-  }
-  return isTouch ? (
-    <TouchDateField {...props} />
-  ) : (
-    <PointerDateField {...props} />
+  useDevWarning(
+    'DateInput',
+    '`nativePicker` is deprecated; use `presentation` instead (`touch` → `adaptive-native`, `always` → `native`, `never` → `adaptive-bottom-sheet`). `presentation` wins when both are set.',
+    props.nativePicker !== undefined,
   );
+  const surface = resolvePickerPresentation(
+    effectivePickerPresentation(props.presentation, props.nativePicker),
+    isTouch,
+  );
+  const {
+    presentation: _presentation,
+    nativePicker: _nativePicker,
+    ...rest
+  } = props;
+  switch (surface) {
+    case 'native':
+      return <NativeDateField {...rest} />;
+    case 'sheet':
+      return <TouchDateField {...rest} />;
+    case 'desktop':
+      return <PointerDateField {...rest} />;
+  }
 }
 
 DateInput.displayName = 'DateInput';

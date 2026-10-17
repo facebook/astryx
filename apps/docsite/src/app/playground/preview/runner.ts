@@ -36,6 +36,29 @@ for (const [key, value] of Object.entries(scope)) {
   scopeLookup.set(key.toLowerCase(), value as Record<string, unknown>);
 }
 
+const warnedModules = new Set<string>();
+
+/**
+ * The placeholder proxy below is deliberately forgiving — user code in the
+ * playground may import anything, and a hard failure on every stray import
+ * would make the editor unusable. The cost is that a module missing from the
+ * generated scope is indistinguishable from one that renders nothing: Recharts
+ * went unnoticed this way, with every chart in the dashboard templates
+ * resolving to `() => null` while the legends around it painted normally. Say
+ * so once per module, so the next gap is one console line rather than a
+ * silently empty preview.
+ */
+function warnUnresolved(id: string): void {
+  if (warnedModules.has(id)) {
+    return;
+  }
+  warnedModules.add(id);
+  console.warn(
+    `[playground] "${id}" is not in the preview scope — its exports will ` +
+      `render nothing. Add it in apps/docsite/scripts/generate-scope.mjs.`,
+  );
+}
+
 /** A CommonJS-style require resolving against the preview scope. */
 function makeRequire(): (id: string) => unknown {
   return (id: string) => {
@@ -49,6 +72,7 @@ function makeRequire(): (id: string) => unknown {
         ? mod
         : {...mod, __esModule: true};
     }
+    warnUnresolved(id);
     // Unknown module — return placeholders that render nothing.
     return new Proxy(
       {__esModule: true},

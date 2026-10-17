@@ -10,7 +10,7 @@
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render, screen} from '@testing-library/react';
+import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {DropdownMenu} from './DropdownMenu';
 import {DropdownMenuCheckboxItem} from './DropdownMenuCheckboxItem';
@@ -63,6 +63,151 @@ describe('DropdownMenuCheckboxItem', () => {
       }),
     );
     expect(onChangeSpy).toHaveBeenCalledWith(true);
+    expect(HTMLElement.prototype.hidePopover).not.toHaveBeenCalled();
+  });
+
+  it('composes the caller click handler with the checked-state change', async () => {
+    const user = userEvent.setup();
+    const calls: string[] = [];
+    const onChange = vi.fn(() => calls.push('change'));
+    const onClick = vi.fn(() => calls.push('click'));
+    render(
+      <DropdownMenu button={{label: 'View'}}>
+        <DropdownMenuCheckboxItem
+          label="Show archived"
+          value={false}
+          onChange={onChange}
+          onClick={onClick}
+        />
+      </DropdownMenu>,
+    );
+    await user.click(screen.getByRole('button', {name: /View/}));
+    await user.click(
+      screen.getByRole('menuitemcheckbox', {
+        name: /Show archived/,
+        hidden: true,
+      }),
+    );
+    expect(onChange).toHaveBeenCalledWith(true);
+    expect(onClick).toHaveBeenCalledOnce();
+    expect(calls).toEqual(['change', 'click']);
+  });
+
+  it('composes the caller click handler on keyboard activation', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    const onClick = vi.fn();
+    render(
+      <DropdownMenu button={{label: 'View'}}>
+        <DropdownMenuCheckboxItem
+          label="Show archived"
+          value={false}
+          onChange={onChange}
+          onClick={onClick}
+        />
+      </DropdownMenu>,
+    );
+    const trigger = screen.getByRole('button', {name: /View/});
+    trigger.focus();
+    await user.keyboard('{Enter}');
+    const item = screen.getByRole('menuitemcheckbox', {
+      name: /Show archived/,
+      hidden: true,
+    });
+    await waitFor(() => expect(item).toHaveFocus());
+    await user.keyboard('{Enter}');
+    expect(onChange).toHaveBeenCalledWith(true);
+    expect(onClick).toHaveBeenCalledOnce();
+  });
+
+  it('composes the caller pointer-move handler with menu hover focus', async () => {
+    const user = userEvent.setup();
+    const onPointerMove = vi.fn(() => document.activeElement);
+    render(
+      <DropdownMenu button={{label: 'View'}}>
+        <DropdownMenuCheckboxItem
+          label="Show archived"
+          value={false}
+          onPointerMove={onPointerMove}
+        />
+      </DropdownMenu>,
+    );
+    await user.click(screen.getByRole('button', {name: /View/}));
+    const item = screen.getByRole('menuitemcheckbox', {
+      name: /Show archived/,
+      hidden: true,
+    });
+    fireEvent.pointerMove(item, {pointerType: 'mouse'});
+    expect(item).toHaveFocus();
+    expect(onPointerMove).toHaveBeenCalledOnce();
+    expect(onPointerMove).toHaveReturnedWith(item);
+  });
+
+  it('does not call consumer activation handlers when disabled', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    const onClick = vi.fn();
+    render(
+      <DropdownMenu button={{label: 'View'}}>
+        <DropdownMenuCheckboxItem
+          label="Show archived"
+          value={false}
+          onChange={onChange}
+          onClick={onClick}
+          isDisabled
+        />
+      </DropdownMenu>,
+    );
+    await user.click(screen.getByRole('button', {name: /View/}));
+    await user.click(
+      screen.getByRole('menuitemcheckbox', {
+        name: /Show archived/,
+        hidden: true,
+      }),
+    );
+    expect(onChange).not.toHaveBeenCalled();
+    expect(onClick).not.toHaveBeenCalled();
+  });
+
+  it('closes after a successful toggle only when requested', async () => {
+    const user = userEvent.setup();
+    render(
+      <DropdownMenu button={{label: 'View'}}>
+        <DropdownMenuCheckboxItem
+          label="Show archived"
+          value={false}
+          onChange={() => {}}
+          hasCloseOnSelect
+        />
+      </DropdownMenu>,
+    );
+    await user.click(screen.getByRole('button', {name: /View/}));
+    await user.click(
+      screen.getByRole('menuitemcheckbox', {
+        name: /Show archived/,
+        hidden: true,
+      }),
+    );
+    expect(HTMLElement.prototype.hidePopover).toHaveBeenCalledOnce();
+  });
+
+  it('maps a small menu to the small shared checkbox marker', async () => {
+    const user = userEvent.setup();
+    render(
+      <DropdownMenu button={{label: 'View', size: 'sm'}}>
+        <DropdownMenuCheckboxItem label="Show archived" value={true} />
+      </DropdownMenu>,
+    );
+    await user.click(screen.getByRole('button', {name: /View/}));
+    const row = screen.getByRole('menuitemcheckbox', {
+      name: /Show archived/,
+      hidden: true,
+    });
+    expect(row).toHaveAttribute('aria-checked', 'true');
+    expect(row.querySelector('.astryx-checkbox-indicator')).toHaveAttribute(
+      'data-size',
+      'sm',
+    );
   });
 
   it('keeps the checkbox indicator decorative (row is the only announced control)', async () => {
@@ -88,8 +233,8 @@ describe('DropdownMenuCheckboxItem', () => {
     expect(row.querySelector('input[type="checkbox"]')).toBeNull();
     // The shared checkbox target, directly on the row — no wrapper, and no
     // menu-specific target added for it (main reached this element through
-    // `astryx-checkbox` too).
-    const marker = row.querySelector('.astryx-checkbox');
+    // `astryx-checkbox-indicator` too).
+    const marker = row.querySelector('.astryx-checkbox-indicator');
     expect(marker).toBeInTheDocument();
     expect(marker).toHaveAttribute('aria-hidden', 'true');
     expect(marker).toHaveAttribute('data-checked', 'checked');
@@ -142,21 +287,25 @@ describe('DropdownMenuRadioGroup / RadioItem', () => {
     // circle, so menu radios and RadioList radios theme together and a theme
     // never has to reach through a wrapper.
     const box = checked.querySelector('.astryx-dropdown-menu-radio');
-    expect(box).toHaveClass('astryx-radio');
+    expect(box).toHaveClass('astryx-radio-indicator');
     expect(box).toHaveAttribute('data-size', 'md');
     expect(box).toHaveAttribute('data-checked', 'checked');
-    expect(box?.querySelector('.astryx-radio-dot')).toBeInTheDocument();
+    expect(
+      box?.querySelector('.astryx-radio-indicator-dot'),
+    ).toBeInTheDocument();
 
     // The unchecked radio still draws its circle, without the dot.
     const unchecked = screen.getByRole('menuitemradio', {
       name: 'Oldest',
       hidden: true,
     });
-    const uncheckedIndicator = unchecked.querySelector('.astryx-radio');
+    const uncheckedIndicator = unchecked.querySelector(
+      '.astryx-radio-indicator',
+    );
     expect(uncheckedIndicator).toBeInTheDocument();
     expect(uncheckedIndicator).not.toHaveAttribute('data-checked');
     expect(
-      uncheckedIndicator?.querySelector('.astryx-radio-dot'),
+      uncheckedIndicator?.querySelector('.astryx-radio-indicator-dot'),
     ).not.toBeInTheDocument();
   });
 
@@ -191,5 +340,45 @@ describe('DropdownMenuRadioGroup / RadioItem', () => {
       ),
     ).toThrow(/DropdownMenuRadioGroup/);
     spy.mockRestore();
+  });
+});
+
+describe('selectable item refs', () => {
+  it('a ref reaches the menuitemcheckbox element', () => {
+    const ref = vi.fn();
+    render(
+      <DropdownMenu button={{label: 'View'}}>
+        <DropdownMenuCheckboxItem
+          label="Show archived"
+          value={false}
+          onChange={() => {}}
+          ref={ref}
+        />
+      </DropdownMenu>,
+    );
+    expect(ref).toHaveBeenCalledWith(
+      screen.getByRole('menuitemcheckbox', {
+        name: 'Show archived',
+        hidden: true,
+      }),
+    );
+  });
+
+  it('a ref reaches the menuitemradio element', () => {
+    const ref = vi.fn();
+    render(
+      <DropdownMenu button={{label: 'Sort'}}>
+        <DropdownMenuRadioGroup
+          label="Sort by"
+          value="newest"
+          onChange={() => {}}>
+          <DropdownMenuRadioItem value="newest" label="Newest" ref={ref} />
+          <DropdownMenuRadioItem value="oldest" label="Oldest" />
+        </DropdownMenuRadioGroup>
+      </DropdownMenu>,
+    );
+    expect(ref).toHaveBeenCalledWith(
+      screen.getByRole('menuitemradio', {name: 'Newest', hidden: true}),
+    );
   });
 });

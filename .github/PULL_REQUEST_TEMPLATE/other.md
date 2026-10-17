@@ -6,7 +6,11 @@
 
 ## User or maintainer impact
 
-<!-- Who is affected, in what state, and what changes? -->
+<!-- Who is affected, in what supported state, what behavior changes, and what does that enable or prevent? -->
+
+## Problem and solution fit
+
+<!-- Ask why three times, map every primary/supporting delta to the problem, and identify removable tagalongs. If public API changes, show before/after callsites and added caller decision burden. -->
 
 ## Authority
 

@@ -5,7 +5,7 @@
 /**
  * @file TopNavMenu.tsx
  * @input Uses React, StyleX, usePopover, useMenuHover, useListFocus,
- *   useTypeahead, TopNavItem tokens
+ *   useTypeahead, TopNavItem tokens, and the shared navigation policy
  * @output Exports TopNavMenu component and related types
  * @position Navigation item with hover-triggered overflow menu for TopNav
  *
@@ -37,9 +37,11 @@ import {useTopNavSlot} from './TopNavContext';
 import {useTopNavRenderMode} from './TopNavRenderContext';
 import {useAppShellMobile} from '../AppShell/AppShellMobileContext';
 import {useLinkComponent} from '../Link/useLinkComponent';
+import {isSafeUrl} from '../utils/safeUrl';
 import {themeProps} from '../utils/themeProps';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
 import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
+import {usePressFeedback} from '../hooks/usePressFeedback';
 import {
   colorVars,
   spacingVars,
@@ -80,7 +82,8 @@ const styles = stylex.create({
         '@media (hover: hover)': colorVars['--color-overlay-hover'],
       },
     },
-    border: 'none',
+    borderWidth: 0,
+    borderStyle: 'none',
     fontFamily: 'inherit',
   },
   triggerOpen: {
@@ -133,7 +136,8 @@ const styles = stylex.create({
         '@media (hover: hover)': colorVars['--color-overlay-hover'],
       },
     },
-    border: 'none',
+    borderWidth: 0,
+    borderStyle: 'none',
   },
   menuItemIcon: {
     display: 'flex',
@@ -172,8 +176,9 @@ const drawerStyles = stylex.create({
   },
   header: {
     justifyContent: 'space-between',
-    border: 'none',
-    background: 'none',
+    borderWidth: 0,
+    borderStyle: 'none',
+    backgroundColor: 'transparent',
   },
   chevron: {
     display: 'inline-flex',
@@ -341,6 +346,7 @@ export function TopNavMenu({
   onMouseLeave: onMouseLeaveProp,
   ...rest
 }: TopNavMenuProps) {
+  const pressable = usePressFeedback();
   const renderMode = useTopNavRenderMode();
   const {closeMobileNav} = useAppShellMobile();
   const LinkComponent = useLinkComponent();
@@ -456,6 +462,7 @@ export function TopNavMenu({
           )}
           aria-expanded={drawerExpanded}
           aria-controls={`${menuId}-items`}
+          {...pressable}
           {...mergeProps(
             focusOutlineProps.focusVisible(
               navItemStyles.item,
@@ -488,6 +495,7 @@ export function TopNavMenu({
               <LinkComponent
                 key={getMenuItemKey(item)}
                 href={item.href}
+                {...pressable}
                 onClick={(_e: React.MouseEvent) => {
                   item.onClick?.();
                   closeMobileNav();
@@ -575,7 +583,11 @@ export function TopNavMenu({
                 // Single tab stop: useListFocus owns the roving tabindex and
                 // promotes exactly one item to 0.
                 tabIndex={-1}
-                href={item.href}
+                href={
+                  item.href != null && isSafeUrl(item.href)
+                    ? item.href
+                    : undefined
+                }
                 onClick={item.onClick}
                 {...focusOutlineProps.focusVisible(styles.menuItem)}>
                 <div {...stylex.props(styles.menuItemIcon)}>{item.icon}</div>

@@ -1,5 +1,12 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+/**
+ * @file ProgressBar.test.tsx
+ * @input Uses Vitest, Testing Library, and ProgressBar
+ * @output DOM regressions for values, labels, themes, and external mark triggers
+ * @position Colocated unit tests; mark geometry is checked in Storybook
+ */
+
 import {describe, it, expect, beforeAll} from 'vitest';
 import {render, screen, waitFor} from '@testing-library/react';
 import {ProgressBar} from './ProgressBar';
@@ -259,7 +266,7 @@ describe('ProgressBar', () => {
 
   // Target marks
   describe('target marks', () => {
-    const MARK = '.astryx-progressbar-mark';
+    const MARK = '.astryx-progress-bar-mark';
 
     // The StyleX atomic classes on an element, without the stable astryx-*
     // theme classes and the bare variant/placement tokens — so a comparison
@@ -558,6 +565,21 @@ describe('ProgressBar', () => {
       expect(styleClasses(accentMarks[1])).toBe(styleClasses(errorMarks[1]));
     });
 
+    it('keeps tabbable target marks outside the progressbar subtree', () => {
+      const {container} = render(
+        <ProgressBar
+          value={50}
+          label="Progress"
+          marks={[{value: 80, label: 'Goal'}]}
+        />,
+      );
+      const progressbar = screen.getByRole('progressbar', {name: 'Progress'});
+      const mark = container.querySelector(MARK)!;
+      expect(mark).toHaveAttribute('tabindex', '0');
+      expect(progressbar.querySelector('[tabindex="0"]')).toBeNull();
+      expect(mark.closest('[role="progressbar"]')).toBeNull();
+    });
+
     it('renders every mark as a focusable trigger (label is required, never decorative)', () => {
       const {container} = render(
         <ProgressBar
@@ -605,10 +627,8 @@ describe('ProgressBar', () => {
     });
 
     it('keeps the progressbar element free of role="img"/aria-label children', () => {
-      // Marks are children of role="progressbar" (unchanged DOM), but a
-      // mark uses a Tooltip (aria-describedby) rather than a
-      // role="img"+aria-label child, so nothing muddies what SRs announce for
-      // the bar.
+      // Marks stay outside the progressbar's presentational subtree; their
+      // Tooltip descriptions must not change the bar's own semantics.
       const {container} = render(
         <ProgressBar
           value={50}
@@ -617,9 +637,7 @@ describe('ProgressBar', () => {
         />,
       );
       const progressbar = screen.getByRole('progressbar');
-      // Mark is a child of the progressbar (DOM unchanged from main).
-      expect(progressbar.querySelector(MARK)).not.toBeNull();
-      // But it is not a labeled graphic that pollutes the a11y subtree.
+      expect(progressbar.querySelector(MARK)).toBeNull();
       expect(progressbar.querySelector('[role="img"]')).toBeNull();
       expect(progressbar.querySelector('[aria-label]')).toBeNull();
       expect(container.querySelectorAll(MARK)).toHaveLength(1);
@@ -637,9 +655,9 @@ describe('ProgressBar', () => {
       expect(progressbar.getAttribute('aria-valuetext')).toBe('50%');
     });
 
-    it('renders marks as children of the progressbar (unchanged DOM)', () => {
-      // Marks stay children of role="progressbar", after the fill — the same
-      // shape as main. The fill remains the first child.
+    it('preserves the fill inside the progressbar when marks are rendered outside it', () => {
+      // Only the fill belongs to the semantic track; the focusable marks
+      // remain independently available outside its presentational subtree.
       const {container} = render(
         <ProgressBar
           value={50}
@@ -650,9 +668,9 @@ describe('ProgressBar', () => {
       const progressbar = screen.getByRole('progressbar');
       const fill = progressbar.firstElementChild as HTMLElement;
       expect(fill.style.width).toBe('50%');
-      expect(fill.classList.contains('astryx-progressbar-mark')).toBe(false);
+      expect(fill.classList.contains('astryx-progress-bar-mark')).toBe(false);
       const mark = container.querySelector<HTMLElement>(MARK)!;
-      expect(mark.closest('[role="progressbar"]')).toBe(progressbar);
+      expect(progressbar).not.toContainElement(mark);
       expect(container.querySelectorAll(MARK)).toHaveLength(1);
     });
 
@@ -739,7 +757,7 @@ describe('ProgressBar', () => {
     it('sizes the mark through the derived vars, so a theme override cannot lose the cascade', () => {
       // width/height are declared as `var(--_progressbar-mark-*)` and nothing
       // else declares those vars, so the value a theme sets on the
-      // `progressbar-mark` target lands even in a consumer whose StyleX is
+      // `progress-bar-mark` target lands even in a consumer whose StyleX is
       // unlayered and would otherwise outrank `@layer astryx-theme`.
       const {container} = render(
         <ProgressBar
@@ -776,9 +794,9 @@ describe('ProgressBar', () => {
       );
     });
 
-    it('renders the mark on the stable progressbar-mark target, centered for symmetric overhang', () => {
+    it('renders the mark on the stable progress-bar-mark target, centered for symmetric overhang', () => {
       // The mark's width/height/color are directly overridable via the
-      // `progressbar-mark` theme target. It is centered
+      // `progress-bar-mark` theme target. It is centered
       // on the track (translate -50%,-50%) so a themed taller tick overhangs the
       // bar symmetrically above and below without being clipped.
       const {container} = render(
@@ -789,7 +807,7 @@ describe('ProgressBar', () => {
         />,
       );
       const mark = container.querySelector<HTMLElement>(MARK)!;
-      expect(mark.className).toContain('astryx-progressbar-mark');
+      expect(mark.className).toContain('astryx-progress-bar-mark');
       let css = '';
       for (const sheet of Array.from(document.styleSheets)) {
         try {
@@ -811,7 +829,7 @@ describe('ProgressBar', () => {
 });
 
 describe('ProgressBar theme target names', () => {
-  it('renders the deprecated classes beside the current ones', () => {
+  it('renders only the canonical target classes', () => {
     const {container} = render(
       <ProgressBar
         value={50}
@@ -820,16 +838,20 @@ describe('ProgressBar theme target names', () => {
       />,
     );
     expect(container.querySelector('.astryx-progress-bar')).toHaveClass(
-      'astryx-progressbar',
+      'astryx-progress-bar',
     );
     expect(container.querySelector('.astryx-progress-bar-track')).toHaveClass(
-      'astryx-progressbar-track',
+      'astryx-progress-bar-track',
     );
     expect(container.querySelector('.astryx-progress-bar-fill')).toHaveClass(
-      'astryx-progressbar-fill',
+      'astryx-progress-bar-fill',
     );
     expect(container.querySelector('.astryx-progress-bar-mark')).toHaveClass(
-      'astryx-progressbar-mark',
+      'astryx-progress-bar-mark',
     );
+    expect(container.querySelector('.astryx-progressbar')).toBeNull();
+    expect(container.querySelector('.astryx-progressbar-track')).toBeNull();
+    expect(container.querySelector('.astryx-progressbar-fill')).toBeNull();
+    expect(container.querySelector('.astryx-progressbar-mark')).toBeNull();
   });
 });

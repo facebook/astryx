@@ -1,8 +1,19 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+/**
+ * @file BottomSheet.stories.tsx
+ * @input BottomSheet, content primitives, and controlled story state
+ * @output BottomSheet examples plus keyboard delegation and nested-layer
+ *   Escape browser fixtures
+ * @position Storybook coverage for BottomSheet presentation and interaction
+ */
+
 import type {Meta, StoryObj} from '@storybook/react';
-import {useState} from 'react';
+import * as stylex from '@stylexjs/stylex';
+import {expect, waitFor, within} from 'storybook/test';
+import {useState, type ComponentProps} from 'react';
 import {BottomSheet} from '@astryxdesign/core/BottomSheet';
+import {ScrollableArea} from '@astryxdesign/core/ScrollableArea';
 import {Button} from '@astryxdesign/core/Button';
 import {Divider} from '@astryxdesign/core/Divider';
 import {Heading} from '@astryxdesign/core/Heading';
@@ -12,6 +23,7 @@ import {Text} from '@astryxdesign/core/Text';
 import {TextInput} from '@astryxdesign/core/TextInput';
 import {TextArea} from '@astryxdesign/core/TextArea';
 import {CheckboxInput} from '@astryxdesign/core/CheckboxInput';
+import {Popover} from '@astryxdesign/core/Popover';
 
 const meta: Meta<typeof BottomSheet> = {
   title: 'Core/BottomSheet',
@@ -40,6 +52,115 @@ const meta: Meta<typeof BottomSheet> = {
 
 export default meta;
 type Story = StoryObj<typeof BottomSheet>;
+type StandaloneBottomSheetStoryProps = Extract<
+  ComponentProps<typeof BottomSheet>,
+  {sheetId?: never}
+>;
+
+/** Keep this sheet open so the accessibility audit inspects its scroll body. */
+export const TextOnly: Story = {
+  args: {
+    isOpen: true,
+    label: 'Reading details',
+    height: 'capped',
+    children: (
+      <Section>
+        <VStack gap={4}>
+          <Heading level={2}>Reading details</Heading>
+          {Array.from({length: 16}, (_, index) => (
+            <Text key={index}>
+              Paragraph {index + 1}. This sheet contains plain text. Use Tab to
+              reach the scrolling area, then Arrow Down or Page Down to read the
+              remaining content. Escape closes the sheet.
+            </Text>
+          ))}
+        </VStack>
+      </Section>
+    ),
+  },
+  render: args => {
+    const standaloneArgs = args as StandaloneBottomSheetStoryProps;
+    const [isOpen, setIsOpen] = useState(true);
+    return (
+      <BottomSheet
+        padding={0}
+        {...standaloneArgs}
+        isOpen={isOpen}
+        onOpenChange={setIsOpen}
+      />
+    );
+  },
+  play: async ({canvasElement}) => {
+    const body = within(canvasElement).getByRole('group', {
+      name: 'Reading details',
+    });
+    await waitFor(() => {
+      expect(body).toHaveAttribute('data-scrollable-block', 'true');
+      expect(body).toHaveAttribute('tabindex', '0');
+    });
+  },
+};
+
+export const TextOnlyFitting: Story = {
+  ...TextOnly,
+  args: {
+    ...TextOnly.args,
+    label: 'Short details',
+    children: (
+      <Section>
+        <Text>This content fits without a separate keyboard scroll stop.</Text>
+      </Section>
+    ),
+  },
+  play: async ({canvasElement}) => {
+    const body = within(canvasElement).getByRole('group', {
+      name: 'Short details',
+    });
+    await waitFor(() => {
+      expect(body).not.toHaveAttribute('data-scrollable-block');
+      expect(body).not.toHaveAttribute('tabindex');
+    });
+  },
+};
+
+/**
+ * Content placed directly in a sheet. The sheet pads it like Dialog, by
+ * default or at the `padding` step given here, and a full-bleed Divider
+ * reaches the sheet's edges because the content box publishes its inset.
+ * `padding={0}` restores the unpadded content box.
+ */
+export const ContainerPadding: Story = {
+  args: {
+    isOpen: true,
+    label: 'Order summary',
+    height: 'hug',
+    padding: 4,
+    children: (
+      <VStack gap={4}>
+        <Heading level={2}>Order summary</Heading>
+        <Text>
+          This content has no wrapper of its own. The sheet supplies the inset,
+          exactly as Dialog does.
+        </Text>
+        <Divider isFullBleed />
+        <Text color="secondary">
+          The divider above escapes the inset and spans the sheet.
+        </Text>
+      </VStack>
+    ),
+  },
+  render: args => {
+    const standaloneArgs = args as StandaloneBottomSheetStoryProps;
+    const [isOpen, setIsOpen] = useState(true);
+    return (
+      <BottomSheet
+        {...standaloneArgs}
+        isOpen={isOpen}
+        onOpenChange={setIsOpen}
+      />
+    );
+  },
+};
 
 interface CommentFormValues {
   title: string;
@@ -490,6 +611,177 @@ export const MobileKeyboard: Story = {
           <Section padding={4}>
             <MobileKeyboardCommentForm onPost={() => setIsOpen(false)} />
           </Section>
+        </BottomSheet>
+      </>
+    );
+  },
+};
+
+const keyboardFixtureStyles = stylex.create({
+  nestedViewport: {overflow: 'auto', height: 100},
+  nestedContent: {height: 200},
+});
+
+/** Native content variants deliberately exercise the hook's delegation boundary. */
+export const KeyboardDelegation: Story = {
+  render: () => {
+    const [variant, setVariant] = useState('button');
+    const [isOpen, setIsOpen] = useState(true);
+    const [hasScrim, setHasScrim] = useState(false);
+    const action = <Button label="First action" onClick={() => {}} />;
+    let first;
+    switch (variant) {
+      case 'text':
+        first = <Text>Read the details below.</Text>;
+        break;
+      case 'link':
+        first = <Button label="First link" href="#reading-end" />;
+        break;
+      case 'input':
+        first = <TextInput label="First input" value="" onChange={() => {}} />;
+        break;
+      case 'nested':
+        first = (
+          <ScrollableArea label="Nested reading" height={100}>
+            {action}
+            <div {...stylex.props(keyboardFixtureStyles.nestedContent)}>
+              Nested content
+            </div>
+          </ScrollableArea>
+        );
+        break;
+      case 'native-scroll':
+        first = (
+          <div {...stylex.props(keyboardFixtureStyles.nestedViewport)}>
+            {action}
+            <div {...stylex.props(keyboardFixtureStyles.nestedContent)}>
+              Nested content
+            </div>
+          </div>
+        );
+        break;
+      case 'disabled':
+        first = <Button label="First action" isDisabled />;
+        break;
+      case 'button':
+        first = action;
+        break;
+      default:
+        first = <div role={variant}>{action}</div>;
+    }
+    return (
+      <>
+        <label>
+          Content case
+          <select
+            value={variant}
+            onChange={event => setVariant(event.target.value)}>
+            {[
+              'button',
+              'link',
+              'text',
+              'input',
+              'disabled',
+              'nested',
+              'native-scroll',
+              'radiogroup',
+              'slider',
+              'combobox',
+              'listbox',
+              'menu',
+              'grid',
+              'tree',
+              'tablist',
+              'toolbar',
+            ].map(value => (
+              <option key={value} value={value}>
+                {value}
+              </option>
+            ))}
+          </select>
+        </label>
+        <Button label="Before sheet" onClick={() => setIsOpen(true)} />
+        <Button
+          label="Toggle modal"
+          onClick={() => setHasScrim(value => !value)}
+        />
+        <BottomSheet
+          key={hasScrim ? 'modal' : 'nonmodal'}
+          label="Keyboard reading"
+          isOpen={isOpen}
+          onOpenChange={setIsOpen}
+          hasScrim={hasScrim}
+          height="capped">
+          <Section>
+            <VStack gap={4}>
+              <Heading level={2}>Keyboard reading</Heading>
+              {first}
+              {Array.from({length: 24}, (_, index) => (
+                <Text key={index}>
+                  Paragraph {index + 1}. Use Arrow or Page keys to read the full
+                  content. The sheet keeps native scrolling after keyboard
+                  entry.
+                </Text>
+              ))}
+              {variant !== 'text' && variant !== 'disabled' && (
+                <Button label="Last action" onClick={() => {}} />
+              )}
+              <Text id="reading-end">End of reading</Text>
+            </VStack>
+          </Section>
+        </BottomSheet>
+        <Button label="After sheet" onClick={() => {}} />
+      </>
+    );
+  },
+};
+
+/** Escape closes only the top-most layer: a Popover opened inside the sheet first. */
+export const NestedPopover: Story = {
+  render: () => {
+    const [isOpen, setIsOpen] = useState(false);
+    const [hasScrim, setHasScrim] = useState(false);
+    const [purpose, setPurpose] = useState<'info' | 'form' | 'required'>(
+      'info',
+    );
+    return (
+      <>
+        <label>
+          Sheet purpose
+          <select
+            value={purpose}
+            onChange={event =>
+              setPurpose(event.target.value as 'info' | 'form' | 'required')
+            }>
+            {['info', 'form', 'required'].map(value => (
+              <option key={value} value={value}>
+                {value}
+              </option>
+            ))}
+          </select>
+        </label>
+        <CheckboxInput
+          label="Show scrim"
+          value={hasScrim}
+          onChange={setHasScrim}
+        />
+        <Button label="Open sheet" onClick={() => setIsOpen(true)} />
+        <BottomSheet
+          label="Reference"
+          isOpen={isOpen}
+          onOpenChange={setIsOpen}
+          hasScrim={hasScrim}
+          purpose={purpose}
+          height="tall"
+          snapPoints={['96px', '50%']}
+          padding={6}>
+          <Popover
+            label="Details"
+            hasAutoFocus={false}
+            content={<p>Nested information</p>}>
+            <Button label="About" />
+          </Popover>
+          <Button label="Close sheet" onClick={() => setIsOpen(false)} />
         </BottomSheet>
       </>
     );

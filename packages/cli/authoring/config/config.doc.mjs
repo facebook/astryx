@@ -10,8 +10,8 @@
 export const doc = {
   type: 'schema',
   name: 'config',
-  displayName: 'Astryx Config',
-  namespace: 'cli',
+  displayName: 'astryx.config',
+  namespace: 'authoring',
   description:
     'The optional astryx.config.* file at your project root. Declares which ' +
     'integrations to load, where to route issue links, post-codemod hooks, local ' +
@@ -48,7 +48,7 @@ export const doc = {
       name: 'debug',
       type: '(event: DebugEvent) => void',
       description:
-        'Record every command run. The handler is synchronous; promises are not awaited and output goes to stderr. Declare `debug` directly in this file so early commands can discover it. An integration can supply one too, as a `debug` named export from its manifest — both run; set `{"astryx": {"inheritDebug": false}}` in package.json to take only your own.',
+        'Record every command run. The handler is synchronous; promises are not awaited and output goes to stderr. Declare `debug` directly in this file so early commands can discover it. An integration can supply one too, as a `debug` named export from its manifest. Every handler runs: yours first, then each integration\'s in load order (the `integrations` list, then autolinked ones). A handler that throws is skipped; the others still run and the command\'s result does not change. Set `{"astryx": {"inheritDebug": false}}` in package.json to take only your own.',
       example:
         "event => appendFileSync('runs.ndjson', JSON.stringify(event) + '\\n')",
     },
@@ -59,6 +59,14 @@ export const doc = {
         'Handle explicit gap reports in addition to every loaded integration handler. The project handler runs first. Public handlers require caller consent; internal handlers always run.',
       example:
         "{ audience: 'internal', async handle(report, {signal}) { return sendGap(report, {signal}); } }",
+    },
+    {
+      name: 'discover',
+      type: 'DiscoverSource',
+      description:
+        'Tell `astryx discover` which integrations this project could add: an async function that returns a catalog. An integration can provide one too, as a `discover` named export from its manifest. Discover calls every source, yours first, and one that fails never hides the others. Discover only reads; your package manager installs.',
+      example:
+        "async ({signal, package: name, version}) => fetchCatalog({signal, name, version})",
     },
     {
       name: 'experimental',

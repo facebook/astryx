@@ -18,6 +18,10 @@
  *
  *
  * SYNC: When modified, update:
+ * - /packages/core/src/Chat/ChatComposerInput.test.tsx
+ * - /packages/core/src/Chat/ChatComposerInput.doc.mjs
+ * - /packages/core/src/Chat/ChatComposerInput.spec.md
+ * - /apps/storybook/stories/ChatComposerInput.stories.tsx
  * - /packages/core/src/Chat/index.ts
  * - /apps/storybook/stories/ChatComposer.stories.tsx
  * - /packages/cli/assets/templates/blocks/components/ChatComposerInput/ (block examples)
@@ -32,6 +36,7 @@ import {
   type ReactNode,
   type KeyboardEvent,
   type ClipboardEvent,
+  type DragEvent,
 } from 'react';
 import {createPortal} from 'react-dom';
 import type {BaseProps} from '../BaseProps';
@@ -109,6 +114,13 @@ export type ChatComposerTokenCustom = {
 export type ChatComposerToken =
   ChatComposerTokenBadge | ChatComposerTokenCustom;
 
+export interface ChatComposerTokenElementProps extends BaseProps<HTMLSpanElement> {
+  /** Ref forwarded to the token wrapper. */
+  ref?: React.Ref<HTMLSpanElement>;
+  /** Token rendered as a Badge or by its custom render function. */
+  token: ChatComposerToken;
+}
+
 export type ChatComposerTriggerItem = SearchableItem;
 
 export type ChatComposerTrigger = {
@@ -145,12 +157,28 @@ export type ChatComposerTrigger = {
    * Used when loading a previous message for editing.
    */
   deserialize?: (value: string) => ChatComposerToken | null;
-  /** Text shown when no results found. @default 'No results' */
-  emptySearchResultsText?: string;
+  /**
+   * Content shown when the query matched nothing (`spec:AST-056` FR1).
+   * Takes a `ReactNode`, so a dead end can carry a link or a create row.
+   *
+   * `null` means "not given", exactly as `undefined` does, so it falls
+   * through to the default. Pass an empty string to render nothing.
+   * @default 'No results'
+   */
+  emptySearchText?: ReactNode;
   /** Text shown during async search. @default 'Searching\u2026' */
   loadingText?: string;
   /** Accessible label for the menu. @default 'Suggestions' */
   menuLabel?: string;
+  /**
+   * Whether the query continues past spaces, for suggestions whose names have
+   * spaces (e.g. "@María José García", "@Design Review: Q4"). The query then
+   * runs until a line break or about 64 characters, and when nothing matches
+   * the menu hides unless `emptySearchText` is set. When false, the query ends
+   * at the first space.
+   * @default false
+   */
+  hasMultiWordQuery?: boolean;
 };
 
 export interface ChatComposerInputProps extends Omit<
@@ -233,15 +261,20 @@ const styles = stylex.create({
     whiteSpace: 'pre-wrap',
     wordBreak: 'break-word',
     overflowY: 'auto',
+    // The 16px floor is iOS-only: iOS Safari zooms the page when a focused
+    // control sits under 16px, and only iOS WebKit implements
+    // -webkit-touch-callout to key the coarse-pointer floor to it.
     fontSize: {
       default: typeScaleVars['--text-body-size'],
-      '@media (pointer: coarse)': `max(1rem, ${typeScaleVars['--text-body-size']})`,
+      '@media (pointer: coarse)': {
+        '@supports (-webkit-touch-callout: none)': `max(1rem, ${typeScaleVars['--text-body-size']})`,
+      },
     },
     lineHeight: `${LINE_HEIGHT_PX}px`,
     fontFamily: typographyVars['--font-family-body'],
     color: colorVars['--color-text-primary'],
     caretColor: colorVars['--color-accent'],
-    padding: spacingVars['--spacing-1'],
+    paddingInline: spacingVars['--spacing-1'],
   },
   placeholder: {
     position: 'absolute',
@@ -250,14 +283,17 @@ const styles = stylex.create({
     insetInlineEnd: 0,
     pointerEvents: 'none',
     color: colorVars['--color-text-secondary'],
+    // Same iOS-only floor as the editable region it stands in for.
     fontSize: {
       default: typeScaleVars['--text-body-size'],
-      '@media (pointer: coarse)': `max(1rem, ${typeScaleVars['--text-body-size']})`,
+      '@media (pointer: coarse)': {
+        '@supports (-webkit-touch-callout: none)': `max(1rem, ${typeScaleVars['--text-body-size']})`,
+      },
     },
     lineHeight: `${LINE_HEIGHT_PX}px`,
     fontFamily: typographyVars['--font-family-body'],
     userSelect: 'none',
-    padding: spacingVars['--spacing-1'],
+    paddingInline: spacingVars['--spacing-1'],
   },
   disabled: {
     opacity: 0.5,
@@ -265,7 +301,9 @@ const styles = stylex.create({
   },
   tokenSpan: {
     display: 'inline-flex',
-    verticalAlign: 'middle',
+    alignItems: 'center',
+    height: '1lh',
+    verticalAlign: 'top',
   },
 });
 
@@ -508,6 +546,7 @@ export function ChatComposerInput(props: ChatComposerInputProps) {
   }, [controlledValue]);
 
   const cleanupPortalsRef = useRef<(() => void) | null>(null);
+  const emitChangeVersionRef = useRef(0);
 
   const emitChange = useCallback(() => {
     if (!editableRef.current) {
@@ -524,6 +563,7 @@ export function ChatComposerInput(props: ChatComposerInputProps) {
     const nextValue = trimmedEmpty ? '' : text;
     pendingEchoValueRef.current = nextValue;
     setIsEmpty(trimmedEmpty);
+    emitChangeVersionRef.current += 1;
     onChange?.(nextValue);
     cleanupPortalsRef.current?.();
   }, [onChange]);
@@ -542,13 +582,21 @@ export function ChatComposerInput(props: ChatComposerInputProps) {
       ? null
       : (pasteAsTokenProp ?? defaultPasteAsToken);
 
-  const insertText = useCallback((text: string) => {
+  const insertTextWithoutEmit = useCallback((text: string) => {
     const editable = editableRef.current;
     if (!editable) {
       return;
     }
     insertTextAtCursor(editable, text);
   }, []);
+
+  const insertText = useCallback(
+    (text: string) => {
+      insertTextWithoutEmit(text);
+      emitChange();
+    },
+    [emitChange, insertTextWithoutEmit],
+  );
 
   // Keep stable refs in sync for imperative handle
   insertTokenRef.current = tokens.insertToken;
@@ -559,7 +607,7 @@ export function ChatComposerInput(props: ChatComposerInputProps) {
     triggers,
     editableRef,
     onInsertToken: tokens.insertToken,
-    onInsertText: insertText,
+    onInsertText: insertTextWithoutEmit,
     onEmitChange: emitChange,
     debounceMs,
   });
@@ -646,6 +694,10 @@ export function ChatComposerInput(props: ChatComposerInputProps) {
           currentDraftRef.current = '';
         }
 
+        // Submitting ends any trigger query, including one dismissed with
+        // Escape: no menu stays open, and no dismissal carries into the next
+        // message.
+        triggerMenu.reset();
         onSubmit?.(text);
         editableRef.current.textContent = '';
         setIsEmpty(true);
@@ -750,15 +802,21 @@ export function ChatComposerInput(props: ChatComposerInputProps) {
       e.preventDefault();
       const text = e.clipboardData.getData('text/plain');
 
-      // Paste-as-token: convert long pastes to token chips
-      if (pasteAsToken?.onPaste(e, text)) {
-        emitChange();
+      // Consumer onPaste gets first refusal over plain text. Return true after
+      // handling it so the built-in insertion paths do not run. A consumer may
+      // use the observable imperative handle while handling the event; emit only
+      // if that path did not already publish the change.
+      const versionBeforeConsumer = emitChangeVersionRef.current;
+      const handled = onPasteProp?.(e, text);
+      if (handled) {
+        if (emitChangeVersionRef.current === versionBeforeConsumer) {
+          emitChange();
+        }
         return;
       }
 
-      // Consumer onPaste — return true to prevent default text insert
-      const handled = onPasteProp?.(e, text);
-      if (handled) {
+      // Paste-as-token: convert long pastes to token chips.
+      if (pasteAsToken?.onPaste(e, text)) {
         emitChange();
         return;
       }
@@ -767,6 +825,28 @@ export function ChatComposerInput(props: ChatComposerInputProps) {
       emitChange();
     },
     [onFiles, onPasteProp, emitChange, tokens, pasteAsToken],
+  );
+
+  const handleDragOver = useCallback((e: DragEvent<HTMLDivElement>) => {
+    if (Array.from(e.dataTransfer.types).includes('Files')) {
+      e.preventDefault();
+    }
+  }, []);
+
+  const handleDrop = useCallback(
+    (e: DragEvent<HTMLDivElement>) => {
+      const files = Array.from(e.dataTransfer.files);
+      if (files.length === 0) {
+        return;
+      }
+      // File drops navigate the page by default. The input owns that drop
+      // target even when no callback is supplied, so keep the user in place.
+      e.preventDefault();
+      if (!isDisabled) {
+        onFiles?.(files);
+      }
+    },
+    [isDisabled, onFiles],
   );
 
   const maxHeight = maxRows * LINE_HEIGHT_PX;
@@ -794,7 +874,10 @@ export function ChatComposerInput(props: ChatComposerInputProps) {
         onInput={handleInput}
         onKeyDown={handleKeyDown}
         onPaste={handlePaste}
+        onDragOver={handleDragOver}
+        onDrop={handleDrop}
         {...triggerMenu.ariaProps}
+        aria-disabled={isDisabled || undefined}
         {...mergeProps(stylex.props(styles.editable), {
           style: {maxHeight: `${maxHeight}px`},
         })}
@@ -834,13 +917,17 @@ ChatComposerInput.displayName = 'ChatComposerInput';
 // Token element helper (for custom rendering in stories/consumers)
 // =============================================================================
 
-export function ChatComposerTokenElement({token}: {token: ChatComposerToken}) {
+export function ChatComposerTokenElement(props: ChatComposerTokenElementProps) {
+  const {token, ref, xstyle, className, style, ...rest} = props;
+
   return (
     <span
+      ref={ref}
+      {...mergeProps(stylex.props(styles.tokenSpan, xstyle), className, style)}
+      {...rest}
       data-astryx-token=""
       data-astryx-token-value={token.value}
-      contentEditable={false}
-      {...stylex.props(styles.tokenSpan)}>
+      contentEditable={false}>
       {isCustomToken(token) ? (
         token.render()
       ) : (

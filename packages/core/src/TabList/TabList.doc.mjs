@@ -103,6 +103,17 @@ export const docs = {
     {name: 'TabMenu'},
   ],
   usage: {
+    accessibility: [
+      {
+        name: 'Tab label',
+        category: 'Color contrast',
+        criterion: '1.4.3 Contrast (Minimum)',
+        requirement: '4.5:1',
+        states: ['Rest', 'Hover', 'Pointer down', 'Selected'],
+        description:
+          'Each label must have at least 4.5:1 contrast with the tab surface behind it. For Hover and Pointer down, measure the final background after the overlay layer is applied.',
+      },
+    ],
     description:
       'TabList provides tab-style navigation for organizing content into categorized sections. Use it to let users switch between related views without leaving the page, with overflow items handled by a built-in "more" menu.',
     bestPractices: [

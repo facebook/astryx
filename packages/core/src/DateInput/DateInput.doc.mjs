@@ -93,7 +93,7 @@ export const docs = {
     },
     {
       name: 'dateConstraints',
-      type: 'Array<(date: Date) => boolean>',
+      type: 'ReadonlyArray<(date: Date) => boolean>',
       description:
         'Array of custom constraint functions that disable specific dates.',
     },
@@ -146,7 +146,7 @@ export const docs = {
       name: 'weekStartsOn',
       type: "0 | 1 | 2 | 3 | 4 | 5 | 6 | 'sun' | 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat'",
       description:
-        'First day of week in the calendar popover. A number (0 = Sunday to 6 = Saturday) or a three-letter day name.',
+        'First day of week in Astryx calendar surfaces. A number (0 = Sunday to 6 = Saturday) or a three-letter day name; native pickers remain browser/OS-owned.',
       default: '0',
     },
     {
@@ -157,10 +157,17 @@ export const docs = {
       default: "'date_long'",
     },
     {
+      name: 'presentation',
+      type: "'popover' | 'bottom-sheet' | 'native' | 'adaptive-bottom-sheet' | 'adaptive-native'",
+      description:
+        "Which surface draws the date picker. 'adaptive-native' (the default) uses Astryx's calendar popover on a fine pointer and the browser/OS picker (input type=date) on a coarse pointer, keeping Astryx fallbacks where a native control cannot express the value; 'native' always uses the browser/OS picker with no fallback; 'adaptive-bottom-sheet' uses the popover on a fine pointer and Astryx's bottom-sheet picker on a coarse pointer; 'popover' and 'bottom-sheet' force that Astryx surface on every pointer. Every value opens a picker; a typed-only field is TimeInput's alone. Use a non-native presentation for a field that needs weekStartsOn, numberOfMonths or dateConstraints, none of which a native picker can express.",
+      default: "'adaptive-native'",
+    },
+    {
       name: 'nativePicker',
       type: "'touch' | 'always' | 'never'",
       description:
-        "Which surface draws the date picker. 'touch' (the default) hands a touch device to the browser/OS: the field becomes an input type=date and the platform draws the picker (the iOS wheel, the Android calendar dialog); 'always' does that wherever the browser supports input type=date; 'never' keeps Astryx's own pickers everywhere (the bottom-sheet picker on a finger, the calendar popover on a mouse). Use 'never' for a field that needs weekStartsOn, numberOfMonths or dateConstraints, none of which a native picker can express. format and placeholder still apply in native mode; min and max are forwarded, but a native picker may not show them (on iOS an out-of-range date can be selected and is refused on commit rather than greyed out).",
+        "Deprecated: use presentation ('touch' = 'adaptive-native', 'always' = 'native', 'never' = 'adaptive-bottom-sheet'). Still works exactly as released; presentation wins when both are set.",
       default: "'touch'",
     },
     {
@@ -170,23 +177,61 @@ export const docs = {
         'Width of the field (number = pixels, string used as-is, e.g. "100%"). Sizes the whole field (label, control, and status) so they stay aligned.',
     },
     {
-      name: 'xstyle',
+      name: 'containerXstyle',
       type: 'StyleXStyles',
       description:
-        'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value, not an inline style object like style={{}}.',
+        'StyleX styles for the Field box around the label, control, and status. containerClassName and containerStyle take a class name and inline styles for the same box. No effect (development warning) where no Field box renders: inside InputGroup (style the group) and in a horizontal-labels FormLayout.',
+    },
+    {
+      name: 'containerClassName',
+      type: 'string',
+      description:
+        'Class name for the Field box. Same targeting as containerXstyle.',
+    },
+    {
+      name: 'containerStyle',
+      type: 'CSSProperties',
+      description:
+        'Inline styles for the Field box. Same targeting as containerXstyle.',
+    },
+    {
+      name: 'controlXstyle',
+      type: 'StyleXStyles',
+      description:
+        'StyleX styles for the visual control box: the bordered element that holds the text, icons, and end controls, never the native input. controlClassName and controlStyle take a class name and inline styles for the same box. Replaces root xstyle, className, and style, which this component does not accept.',
+    },
+    {
+      name: 'controlClassName',
+      type: 'string',
+      description:
+        'Class name for the visual control box. Same targeting as controlXstyle.',
+    },
+    {
+      name: 'controlStyle',
+      type: 'CSSProperties',
+      description:
+        'Inline styles for the visual control box. Same targeting as controlXstyle.',
     },
   ],
   theming: {
     targets: [
-      {className: 'astryx-date-input', visualProps: ['size', 'status'], states: ['disabled']},
+      {
+        className: 'astryx-date-input',
+        visualProps: ['size', 'status'],
+        states: ['disabled'],
+      },
       {className: 'astryx-date-input-toggle-icon', states: ['state']},
-      {className: 'astryx-date-input-clear-icon', deprecatedFor: 'input-clear-icon'},
     ],
   },
   usage: {
     description:
       'DateInput lets the user type or pick a date from a calendar popover. Use it for scheduling, deadlines, booking dates, or any form field that needs a specific calendar date.',
     bestPractices: [
+      {
+        guidance: true,
+        description:
+          "Base props such as ref, id, data-*, aria-*, and DOM event handlers go to the date input, the element that is focused and announced. A DOM handler runs after DateInput's own handler for the same event and still receives events it handled (including ones it called preventDefault on), so it cannot cancel built-in behavior.",
+      },
       {
         guidance: true,
         description:
@@ -280,6 +325,11 @@ export const docsZh = {
     description:
       'DateInput lets the user type or pick a date from a calendar popover. Use it for scheduling, deadlines, booking dates, or any form field that needs a specific calendar date.',
     bestPractices: [
+      {
+        guidance: true,
+        description:
+          "Base props such as ref, id, data-*, aria-*, and DOM event handlers go to the date input, the element that is focused and announced. A DOM handler runs after DateInput's own handler for the same event and still receives events it handled (including ones it called preventDefault on), so it cannot cancel built-in behavior.",
+      },
       {
         guidance: true,
         description:
@@ -393,7 +443,7 @@ export const docsZh = {
     },
     {
       name: 'dateConstraints',
-      type: 'Array<(date: Date) => boolean>',
+      type: 'ReadonlyArray<(date: Date) => boolean>',
       description: '自定义约束函数数组，用于禁用特定日期。',
     },
     {
@@ -426,6 +476,12 @@ export const docsZh = {
       description: '通过标签末尾的信息图标显示的提示文本。',
     },
     {
+      name: 'hasClear',
+      type: 'boolean',
+      description: '有日期值时显示清除按钮。点击后清除日期。',
+      default: 'false',
+    },
+    {
       name: 'numberOfMonths',
       type: '1 | 2',
       description: '日历弹出层中同时显示的月份数量。',
@@ -434,7 +490,8 @@ export const docsZh = {
     {
       name: 'weekStartsOn',
       type: "0 | 1 | 2 | 3 | 4 | 5 | 6 | 'sun' | 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat'",
-      description: '日历弹出层中每周的起始日。可为数字（0=周日……6=周六）或三字母星期缩写。',
+      description:
+        'Astryx 日历表面中每周的起始日。可为数字（0=周日……6=周六）或三字母星期缩写；原生选择器仍由浏览器或操作系统控制。',
       default: '0',
     },
     {
@@ -445,17 +502,56 @@ export const docsZh = {
       default: "'date_long'",
     },
     {
+      name: 'presentation',
+      type: "'popover' | 'bottom-sheet' | 'native' | 'adaptive-bottom-sheet' | 'adaptive-native'",
+      description:
+        "由哪个界面绘制日期选择器。'adaptive-native'（默认）在精细指针上使用 Astryx 日历弹出层、在粗指针上使用浏览器/操作系统选择器（input type=date），且原生控件无法表达值时保留 Astryx 回退；'native' 始终使用浏览器/操作系统选择器且不回退；'adaptive-bottom-sheet' 在精细指针上用弹出层、在粗指针上用 Astryx 底部选择器；'popover' 与 'bottom-sheet' 在任何指针上强制使用对应 Astryx 界面。每个值都会打开选择器；仅输入字段的呈现只属于 TimeInput。需要 weekStartsOn、numberOfMonths 或 dateConstraints 的字段应使用非原生呈现，原生选择器无法表达这些。",
+      default: "'adaptive-native'",
+    },
+    {
       name: 'nativePicker',
       type: "'touch' | 'always' | 'never'",
       description:
-        "由哪个界面绘制日期选择器。'touch'（默认）在触摸设备上交给浏览器/操作系统：字段变为 input type=date，由平台绘制选择器（iOS 滚轮、Android 日历对话框）；'always' 在所有支持 input type=date 的浏览器上都这样做；'never' 始终使用 Astryx 自带的选择器（触摸设备用底部弹出选择器，鼠标设备用日历弹出层）。需要 weekStartsOn、numberOfMonths 或 dateConstraints 的字段应使用 'never'，原生选择器无法表达这些。原生模式下 format 和 placeholder 仍然生效；min 和 max 会传递给原生控件，但原生选择器可能不会显示这些限制（在 iOS 上仍可选中超出范围的日期，会在提交时被拒绝，而不是变灰）。",
+        "已弃用：请使用 presentation（'touch'='adaptive-native'、'always'='native'、'never'='adaptive-bottom-sheet'）。仍按已发布行为工作；同时设置时以 presentation 为准。",
       default: "'touch'",
     },
     {
-      name: 'xstyle',
+      name: 'width',
+      type: 'SizeValue',
+      description:
+        '字段宽度（数字按像素处理，字符串按原样使用，例如 “100%”）。统一调整标签、控件和状态消息的宽度。',
+    },
+    {
+      name: 'containerXstyle',
       type: 'StyleXStyles',
       description:
-        '用于布局自定义的 StyleX 样式（外边距、定位、尺寸）。必须是 stylex.create() 的值，而非内联样式对象如 style={{}}。',
+        '作用于包含标签、控件和状态的 Field 容器的 StyleX 样式；containerClassName 与 containerStyle 以类名和内联样式作用于同一容器。没有 Field 容器时（InputGroup 内或 horizontal-labels FormLayout 中）不生效，并在开发环境发出警告。',
+    },
+    {
+      name: 'containerClassName',
+      type: 'string',
+      description: 'Field 容器的类名，作用目标同 containerXstyle。',
+    },
+    {
+      name: 'containerStyle',
+      type: 'CSSProperties',
+      description: 'Field 容器的内联样式，作用目标同 containerXstyle。',
+    },
+    {
+      name: 'controlXstyle',
+      type: 'StyleXStyles',
+      description:
+        '作用于可见控件框（带边框、包含文本、图标和末端控件的元素，而非原生 input）的 StyleX 样式；controlClassName 与 controlStyle 以类名和内联样式作用于同一元素。本组件不接受根级 xstyle、className 和 style。',
+    },
+    {
+      name: 'controlClassName',
+      type: 'string',
+      description: '可见控件框的类名，作用目标同 controlXstyle。',
+    },
+    {
+      name: 'controlStyle',
+      type: 'CSSProperties',
+      description: '可见控件框的内联样式，作用目标同 controlXstyle。',
     },
   ],
   theming: {
@@ -466,7 +562,6 @@ export const docsZh = {
         states: ['disabled'],
       },
       {className: 'astryx-date-input-toggle-icon', states: ['state']},
-      {className: 'astryx-date-input-clear-icon', deprecatedFor: 'input-clear-icon'},
     ],
   },
 };
@@ -478,6 +573,11 @@ export const docsDense = {
     description:
       'DateInput lets the user type or pick a date from a calendar popover. Use for scheduling, deadlines, booking dates, or any form field needing a calendar date.',
     bestPractices: [
+      {
+        guidance: true,
+        description:
+          "Base props such as ref, id, data-*, aria-*, and DOM event handlers go to the date input, the element that is focused and announced. A DOM handler runs after DateInput's own handler for the same event and still receives events it handled (including ones it called preventDefault on), so it cannot cancel built-in behavior.",
+      },
       {
         guidance: true,
         description:
@@ -544,15 +644,30 @@ export const docsDense = {
     placeholder: 'placeholder text in input',
     size: 'input control size',
     status: 'error/warning/success status w/ message',
-    statusVariant: 'How status message is placed: attached overlaps below input; detached floats below w/ spacing; tooltip hides the box and shows it on the status icon.',
+    statusVariant:
+      'How status message is placed: attached overlaps below input; detached floats below w/ spacing; tooltip hides the box and shows it on the status icon.',
     labelTooltip: 'tooltip text via info icon at label end',
     hasClear: 'Shows clear button when date is set. Clears value on click.',
     numberOfMonths: 'months shown simultaneously in calendar popover',
-    weekStartsOn: 'first day of week in calendar (0=Sunday, or name e.g. "mon")',
+    weekStartsOn:
+      'first day of week in calendar (0=Sunday, or name e.g. "mon")',
     format:
       "committed-value display: 'date_long' (default, March 21, 2026), 'date' (Mar 21, 2026), 'date_weekday' (Wed, Mar 21, 2026), 'system_date' (2026-03-21), or (iso)=>string; reuses Timestamp vocabulary. Committed value only, not while typing.",
+    presentation:
+      "which surface draws the picker: 'adaptive-native' (default) = Astryx popover on fine, browser/OS on coarse w/ Astryx fallbacks; 'native' = browser/OS always, no fallback; 'adaptive-bottom-sheet' = popover fine / Astryx sheet coarse; 'popover'/'bottom-sheet' force Astryx. every value opens a picker (no text-only value; that is TimeInput's). use non-native for weekStartsOn/numberOfMonths/dateConstraints.",
     nativePicker:
-      "which surface draws the picker: 'touch' (default) = browser/OS on a coarse pointer, 'always', 'never' = Astryx's own everywhere. use 'never' for weekStartsOn/numberOfMonths/dateConstraints. format+placeholder still apply; min/max forwarded but not necessarily shown by the OS picker, refused on commit instead.",
-    xstyle: 'StyleX styles for layout; must be stylex.create() value',
+      "deprecated, use presentation: 'touch'='adaptive-native', 'always'='native', 'never'='adaptive-bottom-sheet'. still works as released; presentation wins if both set.",
+    containerXstyle:
+      'Field box (label+control+status); also containerClassName/containerStyle. no effect in InputGroup or horizontal-labels FormLayout',
+    containerClassName:
+      'class name for the Field box; same target as containerXstyle',
+    containerStyle:
+      'inline styles for the Field box; same target as containerXstyle',
+    controlXstyle:
+      'visual control box (border/bg/icons), never the native input; also controlClassName/controlStyle. no root xstyle/className/style',
+    controlClassName:
+      'class name for the visual control box; same target as controlXstyle',
+    controlStyle:
+      'inline styles for the visual control box; same target as controlXstyle',
   },
 };

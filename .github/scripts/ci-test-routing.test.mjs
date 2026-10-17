@@ -4,7 +4,8 @@
  * @file ci-test-routing.test.mjs
  *
  * The contract between `vitest.config.ts` and the CI jobs that run it, in both
- * workflows that run the suite.
+ * workflows that run the suite. FR23 must run after the other UI workers exit
+ * so its helper-overhead measurement does not compete with unrelated tests.
  *
  * This repo has now lost test coverage to routing twice. First a suite
  * belonged to no Vitest project, so `pnpm test` never collected it. Then the
@@ -84,6 +85,12 @@ describe.each(Object.entries(WORKFLOWS))(
   (file, {lanes, scopeConditional}) => {
     const workflow = load(file);
 
+    it('gives the Node suite more than one Vitest worker', () => {
+      // Vitest uses one worker per CPU beyond the first: on two cores the
+      // suite would run one file at a time.
+      expect(workflow.jobs['test-node']['runs-on']).toBe('4-core-ubuntu');
+    });
+
     it('runs every declared Vitest project in some lane', () => {
       const projects = declaredProjects();
       expect(projects.length).toBeGreaterThan(0);
@@ -110,6 +117,24 @@ describe.each(Object.entries(WORKFLOWS))(
       }
     });
 
+    it('runs FR23 only after the parallel UI suite has exited', () => {
+      const benchmark = 'packages/core/src/Markdown/Markdown.fr23.perf.test.ts';
+      const job = workflow.jobs['test-ui'];
+      const suites = job.steps.filter(step =>
+        step.run?.includes('--project ui'),
+      );
+
+      // One conditional step preserves the existing scope gate for both runs.
+      // Exact foreground commands also reject backgrounding or ignored exits.
+      expect(suites).toHaveLength(1);
+      expect(suites[0].run.trim().split('\n')).toEqual([
+        `pnpm vitest run --project ui --exclude ${benchmark}`,
+        `pnpm vitest run --project ui ${benchmark} --no-file-parallelism`,
+      ]);
+      expect(job['continue-on-error']).not.toBe(true);
+      expect(suites[0]['continue-on-error']).not.toBe(true);
+    });
+
     it('gives no lane the whole suite', () => {
       // A bare `pnpm test` runs every project in one job — the shape that hit
       // the wall.
@@ -131,12 +156,26 @@ describe.each(Object.entries(WORKFLOWS))(
 
     it('fails the join when any lane fails', () => {
       // `needs` alone does not fail a job whose `if` is `always()`; the join
-      // has to assert the results it waited for.
-      const join = runLines(workflow.jobs.test);
-      for (const lane of lanes) {
-        expect(join, `join does not assert ${lane}`).toContain(
-          `needs.${lane}.result }}" = "success"`,
+      // has to pass every result to its fail-closed contract.
+      const join = workflow.jobs.test;
+      if (file === 'ci.yml') {
+        const contract = join.steps.find(step =>
+          step.run?.includes('.github/scripts/ci-test-join.mjs'),
         );
+        expect(contract).toBeDefined();
+        for (const lane of lanes) {
+          const key = `${lane.replaceAll('-', '_').toUpperCase()}_RESULT`;
+          expect(contract.env[key], `join does not pass ${lane}`).toContain(
+            `needs.${lane}.result`,
+          );
+        }
+      } else {
+        const commands = runLines(join);
+        for (const lane of lanes) {
+          expect(commands, `join does not assert ${lane}`).toContain(
+            `needs.${lane}.result }}" = "success"`,
+          );
+        }
       }
     });
 
@@ -179,11 +218,14 @@ describe('ci.yml RTL package sharding', () => {
   const shard = workflow.jobs['pr-rtl-shard'];
   const join = workflow.jobs['pr-rtl'];
 
-  it('keeps specialized lanes as explicit successful no-audit classifications', () => {
+  it('skips component discovery for spec-only changes and classifies other lightweight lanes', () => {
     const classification = workflow.jobs['check-components'];
-    expect(classification.if).toBe("github.event_name == 'pull_request'");
+    expect(classification.if).toContain("github.event_name == 'pull_request'");
+    expect(classification.if).toContain(
+      "needs.check-scope.outputs.spec_only != 'true'",
+    );
     const commands = runLines(classification);
-    for (const lane of ['docsite_only', 'spec_only', 'tooling_only']) {
+    for (const lane of ['docsite_only', 'tooling_only']) {
       expect(commands).toContain(`needs.check-scope.outputs.${lane}`);
     }
     expect(commands).toContain('has_components=false');
@@ -193,15 +235,70 @@ describe('ci.yml RTL package sharding', () => {
     expect(commands).toContain('has_stable_visual=false');
   });
 
-  it('broadens both browser audits for unresolved canonical source ownership', () => {
+  it('binds component evidence source, Storybook bytes, and RTL code to the PR head', () => {
+    const exactRef = '${{ github.event.pull_request.head.sha || github.sha }}';
+    for (const name of [
+      'build-storybook',
+      'pr-a11y-shard',
+      'pr-a11y',
+      'a11y-contracts-shard',
+      'pr-rtl-shard',
+    ]) {
+      const checkout = workflow.jobs[name].steps.find(candidate =>
+        candidate.uses?.startsWith('actions/checkout@'),
+      );
+      expect(checkout?.with?.ref, `${name} checkout is not exact-head`).toBe(
+        exactRef,
+      );
+    }
+    const storybookVerify = workflow.jobs['build-storybook'].steps.find(
+      candidate => candidate.name === 'Verify Storybook source checkout',
+    );
+    expect(storybookVerify.if).toContain(
+      "needs.check-scope.outputs.tooling_only != 'true'",
+    );
+    expect(runLines(workflow.jobs['build-storybook'])).toContain(
+      'astryx-build-sha.txt',
+    );
+    expect(runLines(workflow.jobs['pr-a11y'])).toContain('git rev-parse HEAD');
+    expect(runLines(shard)).toContain('git rev-parse HEAD');
+
+    const evidence = read(
+      'packages/core/src/Chat/__tests__/ChatMessageBubble.a11y.chromium.spec.ts',
+    );
+    const provenance = read(
+      'packages/core/src/Chat/__tests__/ChatMessageBubble.auditProvenance.ts',
+    );
+    expect(evidence).toContain("execFileSync('git', ['rev-parse', 'HEAD']");
+    expect(evidence).toContain('resolveChatMessageBubbleAuditProvenance');
+    expect(provenance).toContain('/astryx-build-sha.txt');
+    expect(provenance).toContain('storybookSha !== checkoutSha');
+    expect(provenance).toContain("mode: 'local-unstamped'");
+  });
+
+  it('keeps PR accessibility scoped while RTL retains its canonical resolver', () => {
     expect(runLines(workflow.jobs['pr-a11y'])).toContain(
-      '.forceFullComponentAudits // false',
+      '.github/scripts/a11y-pr-scope.mjs',
+    );
+    expect(runLines(workflow.jobs['pr-a11y'])).toContain(
+      'SCOPE_ARGS=(--components "$COMPONENTS")',
     );
     expect(runLines(shard)).toContain('.github/scripts/rtl-shard-scope.mjs');
   });
 
   it('runs one bounded shard for every canonical component package', () => {
-    expect(shard.strategy.matrix.package).toEqual([...COMPONENT_PACKAGE_NAMES]);
+    const legs = shard.strategy.matrix.include;
+    expect([...new Set(legs.map(leg => leg.package))]).toEqual([
+      ...COMPONENT_PACKAGE_NAMES,
+    ]);
+    // Each package's parts are numbered 1..parts exactly once.
+    for (const name of COMPONENT_PACKAGE_NAMES) {
+      const parts = legs.filter(leg => leg.package === name);
+      expect(parts.map(leg => leg.part)).toEqual(
+        Array.from({length: parts[0].parts}, (_, index) => index + 1),
+      );
+      expect(new Set(parts.map(leg => leg.parts)).size).toBe(1);
+    }
     expect(shard['runs-on']).toBe('4-core-ubuntu');
     expect(shard['timeout-minutes']).toBeLessThanOrEqual(30);
     expect(shard['continue-on-error']).not.toBe(true);
@@ -223,7 +320,7 @@ describe('ci.yml RTL package sharding', () => {
       'produced no explicit should_run decision',
     );
     expect(runLines(shard)).toContain('--packages "$PACKAGE"');
-    expect(runLines(shard)).toContain('--concurrency 4');
+    expect(runLines(shard)).toContain('--concurrency 8');
     expect(runLines(shard)).toContain(
       '.github/scripts/rtl-report-completion.mjs',
     );
@@ -256,29 +353,76 @@ describe('ci.yml RTL package sharding', () => {
   });
 
   it('publishes a distinct scope manifest and optional report for each shard', () => {
-    const upload = shard.steps.find(step =>
-      step.uses?.startsWith('actions/upload-artifact@'),
+    const upload = shard.steps.find(
+      step => step.name === 'Upload RTL shard evidence',
     );
-    expect(upload.if).toBe('always()');
+    expect(upload.if).toBe('always() && matrix.parts == 1');
     expect(upload.with.name).toBe('rtl-audit-report-${{ matrix.package }}');
     expect(upload.with.path).toContain('rtl-shard-scope.json');
     expect(upload.with.path).toContain('rtl-audit-report.json');
     expect(upload.with['if-no-files-found']).toBe('error');
+    const part = shard.steps.find(step => step.name === 'Upload RTL part');
+    expect(part.if).toBe('always() && matrix.parts > 1');
+    expect(part.with.name).toBe(
+      'rtl-audit-part-${{ matrix.package }}-${{ matrix.part }}',
+    );
+    expect(part.with['if-no-files-found']).toBe('error');
+  });
+
+  it('joins split packages into the report a whole leg would upload', () => {
+    const merge = workflow.jobs['pr-rtl-merge'];
+    expect(merge.needs).toContain('pr-rtl-shard');
+    expect(merge.if).toContain('always()');
+    const commands = runLines(merge);
+    expect(commands).toContain('--merge-shards rtl-parts');
+    expect(commands).toContain('.github/scripts/rtl-report-completion.mjs');
+    expect(commands).toContain(
+      'case "$code" in 0|1) ;; *) exit "$code" ;; esac',
+    );
+    const upload = merge.steps.find(
+      step => step.name === 'Upload RTL shard evidence',
+    );
+    expect(upload.with.name).toBe('rtl-audit-report-core');
+    expect(upload.with['if-no-files-found']).toBe('error');
+    expect(join.needs).toContain('pr-rtl-merge');
+    // The join's --shards value: the shared result when the parts and the
+    // merge agree (success, or both skipped on an out-of-scope PR), and both
+    // results otherwise, which rtl-join.mjs rejects.
+    const expression = /--shards "\$\{\{(.*?)\}\}"/.exec(runLines(join))[1];
+    const render = (shards, merge) =>
+      new Function(
+        'S',
+        'M',
+        `return ${expression
+          .replaceAll('needs.pr-rtl-shard.result', 'S')
+          .replaceAll('needs.pr-rtl-merge.result', 'M')
+          .replaceAll('==', '===')
+          .replace("format('{0}/{1}', S, M)", '`${S}/${M}`')};`,
+      )(shards, merge);
+    expect(render('success', 'success')).toBe('success');
+    expect(render('skipped', 'skipped')).toBe('skipped');
+    expect(render('success', 'failure')).toBe('success/failure');
+    expect(render('failure', 'skipped')).toBe('failure/skipped');
+    expect(render('failure', 'failure')).toBe('failure');
   });
 });
 
 describe('deploy.yml push gating', () => {
   const workflow = load('deploy.yml');
 
-  it('still blocks the publish on the join and the build', () => {
-    // Splitting the gate must not let a deploy through on a red suite.
-    expect(workflow.jobs.deploy.needs).toEqual(
-      expect.arrayContaining(['test', 'build']),
-    );
-    expect(workflow.jobs.deploy.if).toContain("needs.test.result == 'success'");
-    expect(workflow.jobs.deploy.if).toContain(
-      "needs.build.result == 'success'",
-    );
+  it('ends at the stable validation join without a publisher', () => {
+    expect(workflow.jobs.deploy).toBeUndefined();
+    expect(workflow.jobs.test.needs).toEqual([
+      'test-ui',
+      'test-node',
+      'typecheck',
+    ]);
+    const join = workflow.jobs.test.steps.find(
+      step => step.name === 'Assert every push gate succeeded',
+    ).run;
+    for (const owner of ['test-ui', 'test-node', 'typecheck']) {
+      expect(join).toContain(`needs.${owner}.result`);
+    }
   });
 
   it('keeps the typecheck gates behind the build they need', () => {

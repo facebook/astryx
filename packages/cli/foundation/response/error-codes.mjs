@@ -64,6 +64,8 @@
  *   | 'ERR_UNKNOWN_FEATURE'
  *   | 'ERR_UNKNOWN_CODEMOD'
  *   | 'ERR_CODEMOD_FAILED'
+ *   | 'ERR_CODEMOD_PROTECTED'
+ *   | 'ERR_CODEMOD_PROTECTION_SOURCE'
  *   | 'ERR_NOT_FOUND'
  *   | 'ERR_NO_DOC'
  *   | 'ERR_NO_SHOWCASE'
@@ -161,6 +163,10 @@ export const ERROR_CODES = Object.freeze({
   ERR_UNKNOWN_CODEMOD: 'ERR_UNKNOWN_CODEMOD',
   /** One or more codemods failed during an upgrade run. */
   ERR_CODEMOD_FAILED: 'ERR_CODEMOD_FAILED',
+  /** A required codemod change remains blocked by a protected consumer file. */
+  ERR_CODEMOD_PROTECTED: 'ERR_CODEMOD_PROTECTED',
+  /** A working-tree protection declaration could not be read or parsed. */
+  ERR_CODEMOD_PROTECTION_SOURCE: 'ERR_CODEMOD_PROTECTION_SOURCE',
   /** A generic discover/lookup query matched nothing in any package. */
   ERR_NOT_FOUND: 'ERR_NOT_FOUND',
 
@@ -177,7 +183,7 @@ export const ERROR_CODES = Object.freeze({
   // ── Filesystem ───────────────────────────────────────────────────
   /** A required input file did not exist. */
   ERR_FILE_NOT_FOUND: 'ERR_FILE_NOT_FOUND',
-  /** Refused to overwrite an existing file in non-interactive mode. */
+  /** Refused to overwrite an existing file. */
   ERR_FILE_EXISTS: 'ERR_FILE_EXISTS',
   /** A path escaped its allowed root, or a name contained traversal markers. */
   ERR_PATH_TRAVERSAL: 'ERR_PATH_TRAVERSAL',
@@ -185,7 +191,7 @@ export const ERROR_CODES = Object.freeze({
   ERR_WRITE_FAILED: 'ERR_WRITE_FAILED',
 
   // ── Theme build ──────────────────────────────────────────────────
-  /** A theme definition or contributed theme catalog is invalid. */
+  /** A theme definition or contributed theme descriptor is invalid. */
   ERR_THEME_INVALID: 'ERR_THEME_INVALID',
   /** A theme file could not be loaded / parsed into a defineTheme result. */
   ERR_THEME_LOAD: 'ERR_THEME_LOAD',

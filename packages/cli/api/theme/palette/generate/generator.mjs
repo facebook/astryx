@@ -12,15 +12,17 @@ import {
 
 /** @typedef {import('../../theme.type.mjs').TonalPaletteAnchor} TonalPaletteAnchor */
 /** @typedef {import('../../theme.type.mjs').TonalPaletteGenerationInput} TonalPaletteGenerationInput */
+/** @typedef {import('../../theme.type.mjs').TonalPaletteRampDiagnostics} TonalPaletteRampDiagnostics */
+/** @typedef {import('../../theme.type.mjs').TonalPaletteCoordinationDiagnostics} TonalPaletteCoordinationDiagnostics */
+/** @typedef {import('../../theme.type.mjs').TonalPaletteNormalizedRequest} NormalizedRequest */
 /** @typedef {[number, number, number]} ColorTriple */
 /** @typedef {'light' | 'dark'} PaletteMode */
 /** @typedef {{lightness: number, chroma: number, hue: number}} PolarColor */
 /** @typedef {TonalPaletteAnchor & {color: string, generatedColor: string, deltaE: number}} AnchorResult */
-/** @typedef {{colors: Record<number, string>, diagnostics: Record<string, unknown>}} GeneratedRamp */
+/** @typedef {{colors: Record<number, string>, diagnostics: TonalPaletteRampDiagnostics}} GeneratedRamp */
 /** @typedef {{id: string, name: string, seed: string, kind: 'chromatic' | 'neutral', anchors: TonalPaletteAnchor[]}} NormalizedFamily */
-/** @typedef {{recipe: typeof PALETTE_RECIPE, vibrancy: number, neutralProfile: string, modeStrategy: string, stops: number[], families: NormalizedFamily[]}} NormalizedRequest */
 /** @typedef {{id: string, name: string, seed: string, light?: GeneratedRamp, dark?: GeneratedRamp}} GeneratedFamily */
-/** @typedef {{recipe: typeof PALETTE_RECIPE, status: 'candidate', request: NormalizedRequest, families: GeneratedFamily[], coordination: Record<string, unknown>[], errors: {familyId: string, message: string}[]}} PaletteGenerationResult */
+/** @typedef {{recipe: typeof PALETTE_RECIPE, status: 'candidate', request: NormalizedRequest, families: GeneratedFamily[], coordination: TonalPaletteCoordinationDiagnostics[], errors: {familyId: string, message: string}[]}} PaletteGenerationResult */
 
 export const PALETTE_RECIPE = 'astryx-oklch-v1';
 export const PALETTE_BLACK = '#000000';
@@ -35,6 +37,7 @@ export const COMPACT_11_STOPS = Object.freeze([
 
 const DARK_CHROMA_FACTOR = 0.85;
 const RESERVED_FAMILY_IDS = new Set(['black', 'white']);
+const NEUTRAL_PROFILES = ['neutral-v1', 'warm-v1', 'cool-v1', 'custom'];
 
 /** @param {number} value @param {number} minimum @param {number} maximum */
 function clamp(value, minimum, maximum) {
@@ -411,6 +414,7 @@ function buildDiagnostics(colors, stops, sourceHue, gamutMappedStops, anchors) {
   let minimumAdjacentDeltaE = Number.POSITIVE_INFINITY;
   let maximumAdjacentDeltaE = 0;
   let maximumHueDrift = 0;
+  /** @type {TonalPaletteRampDiagnostics['hueIdentityRisk']} */
   let hueIdentityRisk = null;
   for (let index = 0; index < stops.length; index++) {
     const stop = stops[index];
@@ -526,6 +530,7 @@ function buildCoordinationDiagnostics(request, families) {
           chroma: hexToOklch(color).C,
         };
       });
+    /** @type {[string, string] | null} */
     let closestFamilies = null;
     let minimumFamilyDeltaE = Number.POSITIVE_INFINITY;
     for (let index = 0; index < samples.length; index++) {
@@ -661,11 +666,17 @@ export function normalizeGenerationRequest(input) {
       anchors,
     };
   });
+  const neutralProfile = input.neutralProfile ?? 'neutral-v1';
+  // The receipt records this request, so an unknown profile fails even when no
+  // neutral family reads it.
+  if (!NEUTRAL_PROFILES.includes(neutralProfile)) {
+    throw new Error(`Unknown neutral profile: ${String(neutralProfile)}`);
+  }
   /** @type {NormalizedRequest} */
   const request = {
     recipe: PALETTE_RECIPE,
     vibrancy: input.vibrancy ?? 50,
-    neutralProfile: input.neutralProfile ?? 'neutral-v1',
+    neutralProfile,
     modeStrategy,
     stops,
     families: normalizedFamilies,

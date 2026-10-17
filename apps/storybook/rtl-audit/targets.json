@@ -9,6 +9,15 @@
     }
   },
   {
+    "component": "Button",
+    "storyId": "core-button--icon-with-text",
+    "dims": ["D2"],
+    "selectors": {
+      "prev": "[data-testid=\"button-leading-icon\"]",
+      "next": "[data-testid=\"button-label\"]"
+    }
+  },
+  {
     "component": "ButtonGroup",
     "storyId": "core-buttongroup--horizontal",
     "dims": ["D2"],
@@ -27,6 +36,15 @@
     "selectors": {
       "prev": ".astryx-command-palette-input > span:first-child",
       "next": ".astryx-command-palette-input > input[role=\"combobox\"]"
+    }
+  },
+  {
+    "component": "CommandPaletteInput",
+    "storyId": "core-commandpaletteinput--standalone",
+    "dims": ["D2"],
+    "selectors": {
+      "prev": ".astryx-command-palette-input > span:first-child",
+      "next": "[data-testid=\"input-end-content\"]"
     }
   },
   {
@@ -51,6 +69,15 @@
   },
   {
     "component": "CheckboxList",
+    "storyId": "core-checkboxlist--rich-descriptions",
+    "dims": ["D2"],
+    "selectors": {
+      "prev": ".astryx-checkbox-input",
+      "next": "[data-testid=\"checkbox-end-content\"]"
+    }
+  },
+  {
+    "component": "CheckboxListItem",
     "storyId": "core-checkboxlist--rich-descriptions",
     "dims": ["D2"],
     "selectors": {
@@ -112,6 +139,15 @@
     }
   },
   {
+    "component": "DateInput",
+    "storyId": "core-dateinput--clearable",
+    "dims": ["D2"],
+    "selectors": {
+      "prev": "button[aria-label=\"Open calendar\"]",
+      "next": "button[aria-label=\"Clear Event date\"]"
+    }
+  },
+  {
     "component": "Carousel",
     "storyId": "core-carousel--default",
     "dims": ["D3"],
@@ -121,12 +157,76 @@
     }
   },
   {
+    "component": "ScrollableArea",
+    "storyId": "core-scrollablearea--rtl-behavior-probe",
+    "dims": ["D3"],
+    "selectors": {
+      "scroller": "[data-rtl-scroll-probe]",
+      "nextButton": "[data-rtl-scroll-button]"
+    }
+  },
+  {
+    "component": "ChatMessageBubble",
+    "storyId": "core-chatmessagebubble--states",
+    "dims": ["D9"],
+    "selectors": {
+      "groups": [
+        {
+          "name": "assistant",
+          "logicalSide": "inline-start",
+          "first": "[data-testid=\"assistant-group-first\"]",
+          "middle": "[data-testid=\"assistant-group-middle\"]",
+          "last": "[data-testid=\"assistant-group-last\"]"
+        },
+        {
+          "name": "user",
+          "logicalSide": "inline-end",
+          "first": "[data-testid=\"user-group-first\"]",
+          "middle": "[data-testid=\"user-group-middle\"]",
+          "last": "[data-testid=\"user-group-last\"]"
+        }
+      ]
+    }
+  },
+  {
     "component": "Chat",
     "storyId": "core-chat--mixed-content",
     "dims": ["D2"],
     "selectors": {
       "prev": ".astryx-chat-message-bubble[data-sender=\"assistant\"]",
       "next": ".astryx-chat-message-bubble[data-sender=\"user\"]"
+    }
+  },
+  {
+    "component": "ChatMessage",
+    "storyId": "core-chatmessage--default",
+    "dims": ["D2"],
+    "selectors": {
+      "prev": "section[aria-label=\"Density precedence\"] article[data-sender=\"assistant\"] .astryx-chat-message-bubble",
+      "next": "section[aria-label=\"Density precedence\"] article[data-sender=\"user\"] .astryx-chat-message-bubble"
+    }
+  },
+  {
+    "component": "ChatSendButton",
+    "storyId": "core-chatcomposer--with-streaming",
+    "dims": []
+  },
+  {
+    "component": "ContextMenuItem",
+    "storyId": "core-contextmenuitem--states",
+    "dims": ["D2"],
+    "selectors": {
+      "prev": ".astryx-dropdown-menu-item .astryx-icon",
+      "next": "[data-testid=\"context-menu-item-end-content\"]"
+    }
+  },
+  {
+    "component": "DropdownMenuCheckboxItem",
+    "storyId": "core-dropdownmenu--lab-checkbox-items",
+    "dims": ["D2"],
+    "selectors": {
+      "prev": ".astryx-dropdown-menu-item .astryx-icon",
+      "next": "[data-testid=\"dropdown-menu-checkbox-item-end-content\"]"
     }
   },
   {
@@ -400,7 +500,7 @@
   },
   {
     "component": "Drawer",
-    "storyId": "lab-drawer--sides",
+    "storyId": "core-drawer--sides",
     "dims": ["D4"],
     "setup": {
       "click": "button:has-text(\"Open from end\")"
@@ -412,7 +512,7 @@
   },
   {
     "component": "richtext/RichTextEditor",
-    "storyId": "lab-richtexteditor--error-status",
+    "storyId": "richtext-richtexteditor--error-status",
     "dims": ["D4"],
     "selectors": {
       "overlay": ".astryx-rich-text-editor > div:first-child > div:last-child",
@@ -421,7 +521,7 @@
   },
   {
     "component": "richtext/RichTextEditorToolbar",
-    "storyId": "lab-richtexteditor--with-toolbar",
+    "storyId": "richtext-richtexteditor--with-toolbar",
     "dims": ["D2"],
     "selectors": {
       "prev": "[role=\"group\"][aria-label=\"Formatting actions\"] button:first-of-type",
@@ -430,12 +530,12 @@
   },
   {
     "component": "richtext/RichTextEditorAutoLinkPlugin",
-    "storyId": "lab-richtexteditor--with-auto-link",
+    "storyId": "richtext-richtexteditor--with-auto-link",
     "dims": []
   },
   {
     "component": "richtext/RichTextView",
-    "storyId": "lab-richtexteditor--markdown-serializers",
+    "storyId": "richtext-richtexteditor--markdown-serializers",
     "dims": []
   },
   {
@@ -445,6 +545,20 @@
     "selectors": {
       "prev": ".astryx-avatar-group > .astryx-avatar:first-child",
       "next": ".astryx-avatar-group-overflow"
+    }
+  },
+  {
+    "component": "CommandPaletteItem",
+    "storyId": "core-commandpaletteitem--states",
+    "dims": []
+  },
+  {
+    "component": "CommandPaletteFooter",
+    "storyId": "core-commandpalettefooter--default",
+    "dims": ["D2"],
+    "selectors": {
+      "prev": ".astryx-command-palette-footer > span:first-child",
+      "next": ".astryx-command-palette-footer > span:last-child"
     }
   }
 ]
