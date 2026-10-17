@@ -647,6 +647,9 @@ export function Slider({ref, ...props}: SliderProps) {
         percent = 1 - travelFraction(clientY - rect.top, rect.height);
       }
       percent = clamp(percent, 0, 1);
+      if (percent === 1) {
+        return max;
+      }
       const raw = min + percent * (max - min);
       return clamp(snapToStep(raw, min, step), min, max);
     },
@@ -672,9 +675,9 @@ export function Slider({ref, ...props}: SliderProps) {
       if (isDisabled) {
         return;
       }
-      // Home and End pass the bound itself (`snap: false`). The step grid is
-      // anchored at `min`, so Home always landed there; `max` may lie off the
-      // grid (max 100 with step 3 snapped End to 99, not 100).
+      // Home, End, and pointer-selected `max` skip step snapping (`snap: false`).
+      // The step grid is anchored at `min`, but `max` may lie off the grid
+      // (max 100 with step 3 would otherwise snap to 99, not 100).
       const clamped = clamp(
         snap ? snapToStep(newVal, min, step) : newVal,
         min,
@@ -770,7 +773,7 @@ export function Slider({ref, ...props}: SliderProps) {
         pressedThumbIndex >= 0 ? pressedThumbIndex : getClosestThumb(newVal);
       draggingThumbRef.current = thumbIndex;
       setDraggingThumb(thumbIndex);
-      updateValue(thumbIndex, newVal);
+      updateValue(thumbIndex, newVal, newVal !== max);
 
       // Focus the thumb that owns this drag.
       thumbs?.[thumbIndex]?.focus();
@@ -785,7 +788,7 @@ export function Slider({ref, ...props}: SliderProps) {
         (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
       }
     },
-    [isDisabled, getValueFromPosition, getClosestThumb, updateValue],
+    [isDisabled, getValueFromPosition, getClosestThumb, updateValue, max],
   );
 
   const handlePointerMove = useCallback(
@@ -794,9 +797,9 @@ export function Slider({ref, ...props}: SliderProps) {
         return;
       }
       const newVal = getValueFromPosition(e.clientX, e.clientY);
-      updateValue(draggingThumbRef.current, newVal);
+      updateValue(draggingThumbRef.current, newVal, newVal !== max);
     },
-    [isDisabled, getValueFromPosition, updateValue],
+    [isDisabled, getValueFromPosition, updateValue, max],
   );
 
   const handlePointerUp = useCallback(
