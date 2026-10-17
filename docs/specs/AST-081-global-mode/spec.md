@@ -223,9 +223,10 @@ works on is `spec:AST-040` FR9's.
     printed command MUST NOT run, through a package runner, the CLI package
     without a version or a package other than the CLI.
   - An integration MAY declare in its manifest, as `cliCommand`, the command
-    that runs the CLI for its users: one line of text of at most 120
-    characters, with no whitespace at its start or end, that starts the CLI
-    through a door following FR1 and FR2. With no declaration, the picker
+    that runs the CLI for its users: a non-blank single line of at most 120 characters,
+    with no surrounding spaces and no Astryx agent-docs marker text
+    (`ASTRYX:START`, `ASTRYX:END`), that starts the CLI through a door
+    following FR1 and FR2. With no declaration, the picker
     goes on to the door's name. Integrations that declare the same command
     agree. When the integrations the run loads declare different commands, the
     picker takes the package manager's name, even when a door started the run,
