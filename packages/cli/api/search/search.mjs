@@ -89,7 +89,9 @@ import {
   familyMember,
   findComponentReadme,
   forEachIntegrationDoc,
+  integrationMemberEntry,
   integrationRecordHold,
+  isIntegrationMember,
   resolveImportPath,
   resolveIntegrationImportPath,
   CORE_PACKAGE,
@@ -1140,24 +1142,31 @@ async function gatherIntegrationComponents(loadedIntegrations) {
     const renamed = new Set(
       discovered
         .filter(rec => integrationRecordHold(rec) === 'doc')
+        .filter(rec => !isIntegrationMember(rec))
         .map(rec => rec.docPath),
     );
     forEachIntegrationDoc(integration.components, (docPath, stem) => {
       if (!renamed.has(docPath)) hold(fileNamed, stem, docPath);
     });
     for (const rec of components) {
-      const doc = await loadModuleDoc(rec.docPath);
+      const loaded = await loadModuleDoc(rec.docPath);
+      // A family member is indexed from its own entry: the family's keywords
+      // and guidance describe the family.
+      const member = isIntegrationMember(rec);
+      const doc = member ? integrationMemberEntry(loaded, rec) : loaded;
       // A doc that names another export of its file still answers to the
       // file's name, as `component <file name>` does.
       const fileName = docStem(rec.docPath);
-      if (renamed.has(rec.docPath)) {
+      if (integrationRecordHold(rec) === 'doc') {
         hold(documented, rec.name, rec.docPath);
+      }
+      if (renamed.has(rec.docPath) && !member) {
         hold(documented, fileName, rec.docPath);
       }
       candidates.push({
         domain: 'component',
         name: rec.name,
-        aliases: fileName !== rec.name ? [fileName] : [],
+        aliases: !member && fileName !== rec.name ? [fileName] : [],
         _hold: integrationRecordHold(rec),
         _docPath: rec.docPath,
         keywords: doc && Array.isArray(doc.keywords) ? doc.keywords : [],
@@ -1179,7 +1188,7 @@ async function gatherIntegrationComponents(loadedIntegrations) {
             packageName: rec.package,
           },
           rec.name,
-          doc?.import,
+          loaded?.import,
         ),
       });
     }
@@ -1305,10 +1314,13 @@ export async function componentKeywords(coreDir, cwd) {
   const integrations = loadedIntegrations.map(async integration => {
     const {components} = await discoverValidIntegrationComponents(integration);
     return Promise.all(
-      components.map(async rec => ({
-        name: rec.name,
-        keywords: keywordsOf(await loadModuleDoc(rec.docPath)),
-      })),
+      components.map(async rec => {
+        const loaded = await loadModuleDoc(rec.docPath);
+        return {
+          name: rec.name,
+          keywords: keywordsOf(integrationMemberEntry(loaded, rec) ?? loaded),
+        };
+      }),
     );
   });
   return [

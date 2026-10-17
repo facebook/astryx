@@ -264,9 +264,13 @@ async function addComponent(name, options) {
       ERROR_CODES.ERR_FILE_EXISTS,
     );
   }
-  // Discovery keys components by doc stem anywhere under the root, so a second
-  // doc with this name would shadow one of the two.
-  const existingDoc = findIntegrationComponentDoc({components: root}, name);
+  // A second doc under a name discovery already records, by a doc's file name
+  // anywhere under the root or by a name a doc documents, would shadow one of
+  // the two.
+  const existingDoc = findIntegrationComponentDoc(
+    {name: owner, components: root, __packageDir: packageDir},
+    name,
+  );
   if (existingDoc != null) {
     throw new AstryxError(
       `Refusing to add component "${name}": ${projectPath(path.relative(packageDir, existingDoc))} already defines it.`,

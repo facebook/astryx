@@ -12,7 +12,13 @@ import {listDir, listDirEntries, pathExists} from '../fs/listing-cache.mjs';
 import {existsCaseExact} from '../fs/paths.mjs';
 import {CORE_PROVIDER_ID} from '../identity/providers.mjs';
 import {loadComponentDoc} from './component-loader.mjs';
-import {moduleExportsName, staticExportObject} from './module-exports.mjs';
+import {
+  HAS_COMPUTED,
+  moduleExportSource,
+  moduleExportsName,
+  staticExportObject,
+} from './module-exports.mjs';
+import {inspectPackageExport} from './package-exports.mjs';
 
 const require = createRequire(import.meta.url);
 
@@ -87,22 +93,27 @@ const HIDDEN_RE = /(?:^|\n) {0,2}hidden:\s*true/;
 // Every top-level `name: '...'` (or `"name": "..."`) in the file: a quick check
 // that a doc is named after its file before anything parses it.
 const NAME_FIELD_RE = /(?:^|\n) {0,2}['"]?name['"]?\s*:\s*['"]([^'"\n]+)['"]/g;
+// A `components` field anywhere in the file, written out or as a shorthand: the
+// quick check for a family doc, before anything parses it. A false match only
+// costs the parse.
+const MEMBERS_FIELD_RE = /\bcomponents\b/;
 // A top-level `replaces: '...'`: the Core name a doc claims for its package.
 const REPLACES_FIELD_RE =
   /(?:^|\n) {0,2}['"]?replaces['"]?\s*:\s*['"]([^'"\n]+)['"]/;
 
 /**
  * What a quick scan of a doc's text finds before anything parses it: the
- * top-level `name` values it writes (none when a spread could set the name)
- * and the Core name it replaces.
+ * top-level `name` values it writes (none when a spread could set the name),
+ * whether it may list family members, and the Core name it replaces.
  * @param {string} text
- * @returns {{names: string[], replaces: string | null}}
+ * @returns {{names: string[], hasMembers: boolean, replaces: string | null}}
  */
 function scanDocText(text) {
   return {
     names: text.includes('...')
       ? []
       : [...text.matchAll(NAME_FIELD_RE)].map(match => match[1]),
+    hasMembers: MEMBERS_FIELD_RE.test(text),
     replaces: REPLACES_FIELD_RE.exec(text)?.[1] ?? null,
   };
 }
@@ -112,7 +123,7 @@ function scanDocText(text) {
  * component's .doc.mjs file (synchronous), with what {@link scanDocText}
  * finds in it.
  * @param {string} docPath
- * @returns {{group: string | null, hiddenComponents: Set<string>, hidden: boolean, names: string[], replaces: string | null}}
+ * @returns {{group: string | null, hiddenComponents: Set<string>, hidden: boolean, names: string[], hasMembers: boolean, replaces: string | null}}
  */
 function readDocMeta(docPath) {
   try {
@@ -139,6 +150,7 @@ function readDocMeta(docPath) {
       hiddenComponents: new Set(),
       hidden: false,
       names: [],
+      hasMembers: false,
       replaces: null,
     };
   }
@@ -875,8 +887,8 @@ export function findExternalComponentDoc(docsDir, name) {
 // commands — and the future integration-component swizzle — can disambiguate
 // by package and route source/issues correctly.
 
-// A doc's `name` can name another export of its file; every other doc reads as
-// before.
+// A doc's `name` can name another export of its file, and a family doc's full
+// entries are components under their own names; every other doc reads as before.
 const COMPONENT_NAME_RE = /^[A-Z][\w$]*$/;
 
 /** @type {Map<string, {stamp: string, value: Record<string, any> | null}>} doc reads, reused while the doc file is unchanged */
@@ -943,6 +955,189 @@ function otherExportName({docPath, sourcePath, stem, names}) {
 }
 
 /**
+ * The file Node loads for a package without `exports`: its `main`, else its
+ * `index` file.
+ * @param {string} packageDir
+ * @returns {string | null}
+ */
+function packageMain(packageDir) {
+  let main;
+  try {
+    main = JSON.parse(
+      fs.readFileSync(path.join(packageDir, 'package.json'), 'utf-8'),
+    ).main;
+  } catch {
+    return null;
+  }
+  const entry =
+    typeof main === 'string' && main !== ''
+      ? `./${path.posix.normalize(main).replace(/^\.\//, '')}`
+      : './index';
+  return inspectPackageExport({}, packageDir, entry).target;
+}
+
+/**
+ * The local module a doc's import names: the doc's own `import`, else the
+ * subpath its directory publishes, read through the package's `exports` (its
+ * `main` when it has none). Undefined when the package directory is unknown;
+ * null when the import names another package or resolves to no file.
+ *
+ * @param {{name?: string, __packageDir?: string, __packageExports?: Record<string, unknown>|null}} integration
+ * @param {string} docPath
+ * @param {Record<string, any> | null} doc
+ * @returns {string | null | undefined}
+ */
+function importedModule(integration, docPath, doc) {
+  const packageName = integration?.name;
+  const packageDir = integration?.__packageDir;
+  if (!packageName || !packageDir) return undefined;
+  const exportsMap =
+    integration.__packageExports === undefined
+      ? readPackageExports(packageDir)
+      : integration.__packageExports;
+  const specifier = resolveIntegrationImportPath(
+    {exportsMap, packageDir, docPath, packageName},
+    docStem(docPath),
+    typeof doc?.import === 'string' ? doc.import : null,
+  );
+  if (specifier !== packageName && !specifier.startsWith(`${packageName}/`)) {
+    return null;
+  }
+  if (specifier === packageName && exportsMap == null) {
+    return packageMain(packageDir);
+  }
+  const subpath =
+    specifier === packageName
+      ? '.'
+      : `./${specifier.slice(packageName.length + 1)}`;
+  return inspectPackageExport(
+    {name: packageName, exports: exportsMap ?? undefined},
+    packageDir,
+    subpath,
+  ).target;
+}
+
+/**
+ * Whether `file` sits in `folder` or below it.
+ * @param {string} folder
+ * @param {string} file
+ */
+function isWithin(folder, file) {
+  const relative = path.relative(folder, file);
+  return (
+    relative !== '' &&
+    !path.isAbsolute(relative) &&
+    relative.split(path.sep)[0] !== '..'
+  );
+}
+
+/**
+ * The full entries a family doc lists in `components` that the module its
+ * import names exports, each with its source. An entry is full when it says
+ * more than its `name`; the name must be static PascalCase, not hidden, and
+ * neither the doc's stem nor the export the doc is recorded under. A member's
+ * source is the file that declares it, reached through the family's own source
+ * or through the imported module, and it must sit in the family doc's folder:
+ * a bundle or a package's root files are no member's source. A family doc
+ * without its own source lists no members.
+ *
+ * @param {{name?: string, __packageDir?: string, __packageExports?: Record<string, unknown>|null}} integration
+ * @param {{docPath: string, sourcePath: string|null}} record the doc's own
+ * @param {string | null | undefined} ownName the export the doc is recorded
+ *   under, when it names one
+ * @param {string} [only] look for this member alone
+ * @returns {Array<{name: string, sourcePath: string}>}
+ */
+function familyMembers(integration, record, ownName, only) {
+  const familySource = record.sourcePath;
+  if (familySource == null) return [];
+  const doc = docObject(record.docPath);
+  const entries = Array.isArray(doc?.components) ? doc.components : [];
+  const hidden = new Set(
+    Array.isArray(doc?.hiddenComponents) ? doc.hiddenComponents : [],
+  );
+  const stem = docStem(record.docPath);
+  /** @type {string[]} */
+  const names = [];
+  for (const entry of entries) {
+    if (entry == null || typeof entry !== 'object') continue;
+    const name = entry.name;
+    const full = Object.keys(entry).length > 1 || entry[HAS_COMPUTED] === true;
+    if (typeof name !== 'string' || !full) continue;
+    if (!COMPONENT_NAME_RE.test(name) || hidden.has(name)) continue;
+    if (name === stem || name === ownName) continue;
+    if (only != null && name !== only) continue;
+    names.push(name);
+  }
+  if (names.length === 0) return [];
+  const imported = importedModule(integration, record.docPath, doc);
+  const module = imported === undefined ? familySource : imported;
+  if (module == null) return [];
+  const folder = path.dirname(record.docPath);
+  return names.flatMap(name => {
+    const exported = moduleExportSource(module, name);
+    if (exported == null) return [];
+    const sourcePath = [moduleExportSource(familySource, name), exported].find(
+      file => file != null && isWithin(folder, file),
+    );
+    return sourcePath ? [{name, sourcePath}] : [];
+  });
+}
+
+/**
+ * Whether `record` is its doc's own component (under the doc's stem or the
+ * export its `name` documents) rather than a member the doc lists.
+ *
+ * @param {{name: string, docPath: string|null}} record
+ * @returns {boolean}
+ */
+function isOwnRecord(record) {
+  if (record.docPath == null) return true;
+  const stem = docStem(record.docPath);
+  if (stem === record.name) return true;
+  return (
+    otherExportName({
+      docPath: record.docPath,
+      sourcePath: integrationSourceForDoc(record.docPath),
+      stem,
+      names: [],
+    }) === record.name
+  );
+}
+
+/**
+ * Whether a discovered integration record is a member its family doc lists,
+ * decided from the files, not from whether the doc loads.
+ *
+ * @param {{name: string, docPath: string|null}} record
+ * @returns {boolean}
+ */
+export function isIntegrationMember(record) {
+  return !isOwnRecord(record);
+}
+
+/**
+ * The entry a family doc gives a member that discovery lists under its own
+ * name, or null when the record is the doc's own component or the loaded doc
+ * has no entry for it.
+ *
+ * @param {any} doc the doc loaded from `record.docPath`
+ * @param {{name: string, docPath: string|null}} record
+ * @returns {any}
+ */
+export function integrationMemberEntry(doc, record) {
+  if (doc == null || typeof doc !== 'object' || isOwnRecord(record)) {
+    return null;
+  }
+  if (!Array.isArray(doc.components)) return null;
+  return (
+    doc.components.find(
+      (/** @type {any} */ entry) => entry?.name === record.name,
+    ) ?? null
+  );
+}
+
+/**
  * Visit every component doc under an integration's components root, hidden
  * ones included, in discovery order, with its stem.
  *
@@ -986,10 +1181,11 @@ function integrationSourceForDoc(docPath) {
  * integration. Scans the integration's resolved `components` dir for same-stem
  * doc files and records each with owner package + issuesUrl + sourcePath. A doc
  * that names a differently named export of its file is recorded under that
- * export unless the name is taken: every doc's file name (a hidden doc's too),
- * a Core name a doc in the package replaces, and a name an earlier doc records.
+ * export, and each family member it lists, under the member's name, unless the
+ * name is taken: every doc's file name (a hidden doc's too), a Core name a doc
+ * in the package replaces, and a name an earlier doc records.
  *
- * @param {{name: string, components?: string, issuesUrl?: string}} integration
+ * @param {{name: string, components?: string, issuesUrl?: string, __packageDir?: string, __packageExports?: Record<string, unknown>|null}} integration
  *   a single entry from `loadedIntegrations` (lib/integrations.mjs)
  * @param {{documentedNames?: boolean}} [options] `documentedNames: false`
  *   records each doc under its file name alone, without reading the names
@@ -1005,14 +1201,14 @@ export function discoverIntegrationComponents(
 
   /** @type {Map<string, {name: string, package: string, docPath: string, sourcePath: string|null, issuesUrl: string|undefined, group: string|null}>} */
   const byName = new Map();
-  /** @type {Map<string, {names: string[], replaces: string | null}>} stem → quick scan */
+  /** @type {Map<string, {names: string[], hasMembers: boolean, replaces: string | null}>} stem → quick scan */
   const scans = new Map();
   /** @type {Set<string>} names no doc can record under another name */
   const taken = new Set();
 
   forEachIntegrationDoc(componentsDir, (fullPath, name) => {
     taken.add(name);
-    const {group, hidden, names, replaces} = readDocMeta(fullPath);
+    const {group, hidden, names, hasMembers, replaces} = readDocMeta(fullPath);
     if (hidden) return;
     // First doc wins per name (precedence matches INTEGRATION_DOC_SUFFIXES).
     if (byName.has(name)) return;
@@ -1024,12 +1220,13 @@ export function discoverIntegrationComponents(
       issuesUrl: integration.issuesUrl,
       group: group ?? null,
     });
-    scans.set(name, {names, replaces});
+    scans.set(name, {names, hasMembers, replaces});
   });
   if (!documentedNames) return [...byName.values()];
 
   // A doc that names a differently named export of its file is listed under
-  // that export, unless the name is taken.
+  // that export, and each member a family doc lists under the member's name,
+  // unless the name is taken.
   for (const {replaces} of scans.values()) if (replaces) taken.add(replaces);
   const records = [...byName.values()];
   const byPath = [...records].sort((a, b) => byCodeUnit(a.docPath, b.docPath));
@@ -1045,10 +1242,22 @@ export function discoverIntegrationComponents(
     taken.add(exportName);
     exportNames.set(record.name, exportName);
   }
-  return records.map(record => {
+  /** @type {typeof records} */
+  const members = [];
+  for (const record of byPath) {
+    if (!scans.get(record.name)?.hasMembers) continue;
+    const ownName = exportNames.get(record.name);
+    for (const member of familyMembers(integration, record, ownName)) {
+      if (taken.has(member.name)) continue;
+      taken.add(member.name);
+      members.push({...record, ...member});
+    }
+  }
+  const named = records.map(record => {
     const name = exportNames.get(record.name);
     return name ? {...record, name} : record;
   });
+  return [...named, ...members];
 }
 
 /**
@@ -1056,8 +1265,10 @@ export function discoverIntegrationComponents(
  * Invalid metadata or a missing same-stem source removes only that component;
  * callers can report the returned errors while retaining valid siblings. A
  * component whose doc sets `replaces` carries the value as written; the
- * component replacement resolver decides what it means. A doc that fails to
- * load is reported under its file name: what it says cannot be trusted.
+ * component replacement resolver decides what it means. A family member is
+ * read through its family's doc: it never carries the family's `replaces`, and
+ * a family doc that fails to load is reported once. A doc that fails to load
+ * is reported under its file name: what it says cannot be trusted.
  *
  * @param {{name: string, components?: string, issuesUrl?: string}} integration
  * @param {{documentedNames?: boolean}} [options] as for
@@ -1074,6 +1285,8 @@ export async function discoverValidIntegrationComponents(integration, options) {
   const components = [];
   /** @type {Array<{name: string, message: string}>} */
   const errors = [];
+  /** @type {Set<string>} docs that failed to load */
+  const failedDocs = new Set();
 
   for (const record of discovered) {
     if (record.sourcePath == null) {
@@ -1090,11 +1303,16 @@ export async function discoverValidIntegrationComponents(integration, options) {
           record
         );
       components.push(
-        doc != null && typeof doc === 'object' && doc.replaces !== undefined
+        isOwnRecord(record) &&
+          doc != null &&
+          typeof doc === 'object' &&
+          doc.replaces !== undefined
           ? {...valid, replaces: doc.replaces}
           : valid,
       );
     } catch (err) {
+      if (failedDocs.has(record.docPath)) continue;
+      failedDocs.add(record.docPath);
       const name = docStem(record.docPath);
       errors.push({
         name,
@@ -1112,8 +1330,8 @@ export async function discoverValidIntegrationComponents(integration, options) {
  * How an owner holds a component name, which the owner rule
  * ({@link unscopedComponentOwners}) reads: `core` when Core documents it;
  * `file` when an integration doc named after its file is recorded under it;
- * `doc` when only a doc records it: an export name, or the file name of a doc
- * recorded under another export.
+ * `doc` when only a doc records it: an export name, a member, or the file name
+ * of a doc recorded under another export.
  * @typedef {'core' | 'file' | 'doc'} NameHold
  */
 
@@ -1130,20 +1348,21 @@ export function integrationRecordHold(record) {
 
 /**
  * The doc that records `name` under it although its file is named otherwise,
- * with its source, as {@link discoverIntegrationComponents} would record it.
- * Reads only the docs that write the name as a string. The caller has checked
- * that no doc is named `name` after its file.
+ * with the member's or the doc's source, as {@link discoverIntegrationComponents}
+ * would record it. Reads only the docs that write the name as a string. The
+ * caller has checked that no doc is named `name` after its file.
  *
+ * @param {{name?: string, __packageDir?: string, __packageExports?: Record<string, unknown>|null}} integration
  * @param {string} componentsDir
  * @param {string} name
  * @returns {{docPath: string, sourcePath: string|null} | null}
  */
-function findDocumentedComponent(componentsDir, name) {
+function findDocumentedComponent(integration, componentsDir, name) {
   if (!COMPONENT_NAME_RE.test(name)) return null;
   const literals = [`'${name}'`, `"${name}"`, `\`${name}\``];
   /** @type {Set<string>} */
   const stems = new Set();
-  /** @type {Array<{docPath: string, stem: string, names: string[], replaces: string | null, sourcePath: string|null}>} */
+  /** @type {Array<{docPath: string, stem: string, names: string[], hasMembers: boolean, replaces: string | null, sourcePath: string|null}>} */
   const candidates = [];
   forEachIntegrationDoc(componentsDir, (docPath, stem) => {
     let text;
@@ -1166,19 +1385,29 @@ function findDocumentedComponent(componentsDir, name) {
   // A Core name a doc in the package replaces is the replacement's to answer.
   if (candidates.some(candidate => candidate.replaces === name)) return null;
   candidates.sort((a, b) => byCodeUnit(a.docPath, b.docPath));
-  const found = candidates.find(
-    candidate => otherExportName(candidate) === name,
-  );
-  return found ? {docPath: found.docPath, sourcePath: found.sourcePath} : null;
+  for (const candidate of candidates) {
+    if (otherExportName(candidate) === name) {
+      return {docPath: candidate.docPath, sourcePath: candidate.sourcePath};
+    }
+  }
+  for (const candidate of candidates) {
+    if (!candidate.hasMembers) continue;
+    const ownName = otherExportName(candidate);
+    const [member] = familyMembers(integration, candidate, ownName, name);
+    if (member) {
+      return {docPath: candidate.docPath, sourcePath: member.sourcePath};
+    }
+  }
+  return null;
 }
 
 /**
  * The integration component a name finds, as discovery records it, and how it
  * holds the name: the same-stem doc first (`file`, or `doc` when that doc is
- * recorded under another export), then a doc that records the name as its
- * export (`doc`).
+ * recorded under another export), then a doc that records the name as an
+ * export or a member (`doc`).
  *
- * @param {{components?: string}} integration
+ * @param {{name?: string, components?: string, __packageDir?: string, __packageExports?: Record<string, unknown>|null}} integration
  * @param {string} name
  * @returns {{docPath: string, sourcePath: string|null, hold: 'file' | 'doc'} | null}
  */
@@ -1196,14 +1425,15 @@ export function findIntegrationComponent(integration, name) {
     const renamed =
       exportName != null &&
       findSameStemDoc(componentsDir, exportName) == null &&
-      findDocumentedComponent(componentsDir, exportName)?.docPath === sameStem;
+      findDocumentedComponent(integration, componentsDir, exportName)
+        ?.docPath === sameStem;
     return {
       docPath: sameStem,
       sourcePath: integrationSourceForDoc(sameStem),
       hold: renamed ? 'doc' : 'file',
     };
   }
-  const found = findDocumentedComponent(componentsDir, name);
+  const found = findDocumentedComponent(integration, componentsDir, name);
   return found && {...found, hold: 'doc'};
 }
 
@@ -1211,9 +1441,10 @@ export function findIntegrationComponent(integration, name) {
  * Find an integration component's doc file by name within a loaded
  * integration's resolved `components` dir. Honors the same-stem convention
  * (`{Name}.doc.{ts,mjs,js}`), preferring `.ts` → `.mjs` → `.js`, and finds a
- * doc that records the component under a differently named export of its file.
+ * doc that records the component under another name: a differently named
+ * export of its file, or a member its family doc lists.
  *
- * @param {{components?: string}} integration
+ * @param {{name?: string, components?: string, __packageDir?: string, __packageExports?: Record<string, unknown>|null}} integration
  * @param {string} name bare component name (no `XDS`/`Astryx` prefix)
  * @returns {string|null}
  */
@@ -1257,9 +1488,10 @@ function findSameStemDoc(componentsDir, name) {
 /**
  * Find an integration component's swizzleable source file by name within a
  * loaded integration's resolved `components` dir: the same-stem `{Name}.tsx`
- * of its doc. Returns null when the integration ships docs without source.
+ * of its doc, or, for a family member, the file that declares it. Returns null
+ * when the integration ships docs without source.
  *
- * @param {{components?: string}} integration
+ * @param {{name?: string, components?: string, __packageDir?: string, __packageExports?: Record<string, unknown>|null}} integration
  * @param {string} name bare component name
  * @returns {string|null}
  */

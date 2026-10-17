@@ -310,6 +310,13 @@ export function moduleExportSource(file, exportName, seen = new Set()) {
   return found;
 }
 
+/**
+ * Marks an object {@link staticExportObject} returns (or one inside it) whose
+ * source also has properties or spreads it could not read as literals. Not
+ * enumerable, so the object compares and serializes as its literal properties.
+ */
+export const HAS_COMPUTED = Symbol('hasComputed');
+
 const TS_WRAPPERS = new Set([
   'TSSatisfiesExpression',
   'TSAsExpression',
@@ -427,21 +434,27 @@ export function staticExportObject(file, exportNames) {
       case 'ObjectExpression': {
         /** @type {Record<string, unknown>} */
         let object = {};
+        let computed = false;
         for (const property of value.properties) {
           if (property.type === 'SpreadElement') {
             object = {};
+            computed = true;
             continue;
           }
           const key = property.computed
             ? undefined
             : (property.key?.name ?? property.key?.value);
-          if (typeof key !== 'string') continue;
           const item =
-            property.type === 'ObjectProperty'
+            typeof key === 'string' && property.type === 'ObjectProperty'
               ? literal(property.value, following)
               : undefined;
+          if (item === undefined) computed = true;
+          if (typeof key !== 'string') continue;
           if (item === undefined) delete object[key];
           else object[key] = item;
+        }
+        if (computed) {
+          Object.defineProperty(object, HAS_COMPUTED, {value: true});
         }
         return object;
       }
