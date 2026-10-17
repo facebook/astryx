@@ -11,7 +11,7 @@
  * SYNC: When useResizable changes, update tests to match new behavior
  */
 
-import {createElement, useLayoutEffect, useRef} from 'react';
+import {createElement, useLayoutEffect, useRef, useState} from 'react';
 import {createRoot, hydrateRoot} from 'react-dom/client';
 import {flushSync} from 'react-dom';
 import {renderToString} from 'react-dom/server';
@@ -168,6 +168,46 @@ describe('useResizable persistence', () => {
     expect(result.current.size).toBe(300);
   });
 
+  // The restore-width fix under test is @AKnassa's, from #5118.
+  it('restores the pre-drag width after a multi-move drag-to-collapse', () => {
+    const {result} = renderHook(() =>
+      useResizable({...BASE_CONFIG, collapsible: true}),
+    );
+    act(() => result.current.resize(300));
+
+    // A real drag passes through every width on its way below the threshold.
+    // The last of them is not a width the user chose to keep.
+    act(() => result.current.props._onResizeStart());
+    for (const delta of [-40, -80, -110, -280]) {
+      act(() => result.current.props._onResizeMove(delta));
+    }
+
+    expect(result.current.isCollapsed).toBe(true);
+    expect(readStored()).toEqual({size: 300, isCollapsed: true});
+    act(() => result.current.expand());
+    expect(result.current.size).toBe(300);
+  });
+
+  it('keeps the restore width when a drag from collapsed crosses out and back', () => {
+    const {result} = renderHook(() =>
+      useResizable({...BASE_CONFIG, collapsible: true, collapsedSize: 160}),
+    );
+    act(() => result.current.resize(300));
+    act(() => result.current.collapse());
+
+    // One gesture: start on the collapsed rail, pull out past the threshold,
+    // then push back under it.
+    const gesture = result.current.props;
+    act(() => gesture._onResizeStart());
+    act(() => gesture._onResizeMove(200));
+    act(() => gesture._onResizeMove(100));
+
+    expect(result.current.isCollapsed).toBe(true);
+    expect(readStored()).toEqual({size: 300, isCollapsed: true});
+    act(() => result.current.expand());
+    expect(result.current.size).toBe(300);
+  });
+
   it('does not touch storage without an autoSaveId', () => {
     const {result} = renderHook(() =>
       useResizable({defaultSize: 260, collapsible: true}),
@@ -308,6 +348,53 @@ describe('useResizable controlled collapse', () => {
 
     expect(onCollapseChange).toHaveBeenCalledWith(true);
     expect(result.current.isCollapsed).toBe(false);
+  });
+
+  it('restores the pre-drag width once the owner accepts a drag-collapse', () => {
+    const {result} = renderHook(() => {
+      const [isCollapsed, setIsCollapsed] = useState(false);
+      return useResizable({
+        ...BASE_CONFIG,
+        collapsible: true,
+        isCollapsed,
+        onCollapseChange: setIsCollapsed,
+      });
+    });
+    act(() => result.current.resize(300));
+
+    act(() => result.current.props._onResizeStart());
+    for (const delta of [-40, -80, -110, -280]) {
+      act(() => result.current.props._onResizeMove(delta));
+    }
+
+    expect(result.current.isCollapsed).toBe(true);
+    expect(readStored()).toEqual({size: 300, isCollapsed: true});
+    act(() => result.current.expand());
+    expect(result.current.size).toBe(300);
+  });
+
+  it('leaves a refused drag-collapse at the width the drag reached', () => {
+    const onCollapseChange = vi.fn();
+    const {result} = renderHook(() =>
+      useResizable({
+        ...BASE_CONFIG,
+        collapsible: true,
+        isCollapsed: false,
+        onCollapseChange,
+      }),
+    );
+    act(() => result.current.resize(300));
+
+    act(() => result.current.props._onResizeStart());
+    for (const delta of [-40, -80, -110, -280]) {
+      act(() => result.current.props._onResizeMove(delta));
+    }
+
+    expect(onCollapseChange).toHaveBeenCalledWith(true);
+    // The owner kept the region open, so the pre-drag width must not snap
+    // back in under the pointer.
+    expect(result.current.isCollapsed).toBe(false);
+    expect(result.current.size).toBe(190);
   });
 
   it('persists the collapse state the owner holds', () => {
