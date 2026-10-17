@@ -4,7 +4,7 @@
 
 /**
  * @file ButtonGroup.tsx
- * @input Uses React, StyleX, Button/IconButton children
+ * @input Uses React, StyleX, Button/IconButton children, OverflowList, Popover
  * @output Exports ButtonGroup component, context, and types
  * @position Groups buttons with connected styling; consumed by index.ts
  *
@@ -21,7 +21,7 @@
  * - /packages/cli/assets/templates/blocks/components/ButtonGroup/ (showcase blocks)
  */
 
-import {useMemo, type ReactNode} from 'react';
+import {useCallback, useMemo, useRef, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {ButtonSize} from '../Button';
 import {radiusVars, shadowVars} from '../theme/tokens.stylex';
@@ -33,6 +33,12 @@ import type {BaseProps} from '../BaseProps';
 import {ButtonGroupContext} from './ButtonGroupContext';
 import type {ButtonGroupOrientation} from './ButtonGroupContext';
 import {themeProps} from '../utils/themeProps';
+import {OverflowList, type OverflowItem} from '../OverflowList';
+import {Popover} from '../Popover';
+import {IconButton} from '../IconButton';
+import {useIcon} from '../Icon';
+import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
+import {useTranslator} from '../i18n';
 
 import {useMergedRefs} from '../hooks/useMergedRefs';
 // =============================================================================
@@ -81,6 +87,13 @@ export interface ButtonGroupProps extends BaseProps<HTMLDivElement> {
   isDisabled?: boolean;
 
   /**
+   * Collapses horizontal members that no longer fit into an overflow actions
+   * popover. The overflow trigger participates in the group's roving focus.
+   * @default undefined
+   */
+  overflow?: 'menu';
+
+  /**
    * Test ID for testing frameworks.
    */
   'data-testid'?: string;
@@ -99,6 +112,49 @@ const styles = stylex.create({
     flexDirection: 'column',
   },
 });
+
+function ButtonGroupOverflowMenu({
+  items,
+  label,
+  size,
+  onTriggerRef,
+}: {
+  items: OverflowItem[];
+  label: string;
+  size: ButtonSize;
+  onTriggerRef: (element: HTMLButtonElement | null) => void;
+}): ReactNode {
+  const triggerRef = useRef<HTMLElement>(null);
+  const moreIcon = useIcon('moreHorizontal');
+
+  return (
+    <>
+      <IconButton
+        ref={element => {
+          triggerRef.current = element;
+          // The hidden measurement copy has its own trigger. It is never a
+          // focus-return target; keep the visible trigger instead.
+          if (element?.closest('[aria-hidden="true"], [inert]') == null) {
+            onTriggerRef(element);
+          }
+        }}
+        label={label}
+        icon={moreIcon}
+        size={size}
+      />
+      <Popover
+        anchorRef={triggerRef}
+        role="none"
+        hasCloseButton={false}
+        content={
+          <ButtonGroup label={label} orientation="vertical" size={size}>
+            {items.map(({child}) => child)}
+          </ButtonGroup>
+        }
+      />
+    </>
+  );
+}
 
 // Resting elevation for the whole group — the connected buttons share one
 // surface, so the shadow sits on the group wrapper and lifts them as a unit.
@@ -126,7 +182,8 @@ const elevationStyles = stylex.create({
 
 /**
  * Groups buttons with connected styling — shared borders, proper border-radius
- * handling (only on outer edges), and horizontal or vertical orientation.
+ * handling (only on outer edges), horizontal or vertical orientation, and an
+ * optional overflow actions popover for horizontal groups.
  *
  * Children automatically detect the group via context and apply position-aware
  * styles in pure CSS.
@@ -162,6 +219,7 @@ export function ButtonGroup({
   children,
   label,
   orientation = 'horizontal',
+  overflow,
   size: sizeProp,
   isDisabled = false,
   elevation = 'none',
@@ -175,6 +233,9 @@ export function ButtonGroup({
   ...props
 }: ButtonGroupProps): ReactNode {
   const size = useSize(sizeProp, 'md');
+  const t = useTranslator();
+  const lastFocusedMemberRef = useRef<HTMLElement | null>(null);
+  const overflowTriggerRef = useRef<HTMLButtonElement | null>(null);
 
   const {listRef, handleKeyDown, handleFocus} = useListFocus<HTMLDivElement>({
     // Roving rewrites `tabindex` on every item, so the selector cannot key off
@@ -197,6 +258,26 @@ export function ButtonGroup({
     [orientation, isDisabled],
   );
 
+  // React unmounts a member when it moves into the overflow popover. Keep the
+  // composite widget's tab stop valid by returning focus to its visible
+  // overflow trigger rather than letting it fall back to document.body.
+  useIsomorphicLayoutEffect(() => {
+    const focused = lastFocusedMemberRef.current;
+    if (focused != null && !focused.isConnected) {
+      overflowTriggerRef.current?.focus({preventScroll: true});
+    }
+  });
+
+  const handleGroupFocus = useCallback(
+    (event: React.FocusEvent<HTMLDivElement>) => {
+      if (event.target.closest('[aria-hidden="true"], [inert]') == null) {
+        lastFocusedMemberRef.current = event.target;
+      }
+      handleFocus(event);
+    },
+    [handleFocus],
+  );
+
   return (
     <ButtonGroupContext value={contextValue}>
       <SizeProvider value={size}>
@@ -217,10 +298,27 @@ export function ButtonGroup({
           role="group"
           aria-label={label}
           onKeyDown={composeEventHandlers(onKeyDown, handleKeyDown)}
-          onFocus={composeEventHandlers(onFocus, handleFocus)}
+          onFocus={composeEventHandlers(onFocus, handleGroupFocus)}
           aria-disabled={isDisabled || undefined}
           data-testid={testId}>
-          {children}
+          {overflow === 'menu' && orientation === 'horizontal' ? (
+            <OverflowList
+              gap={0}
+              overflowRenderer={items => (
+                <ButtonGroupOverflowMenu
+                  items={items}
+                  label={t('@astryx.moreMenu.label')}
+                  size={size}
+                  onTriggerRef={element => {
+                    overflowTriggerRef.current = element;
+                  }}
+                />
+              )}>
+              {children}
+            </OverflowList>
+          ) : (
+            children
+          )}
         </div>
       </SizeProvider>
     </ButtonGroupContext>
