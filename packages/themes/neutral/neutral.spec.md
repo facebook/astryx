@@ -26,10 +26,11 @@ references:
 This record is the current approved palette and Neutral token-mapping record.
 It does not decide cross-theme local-token, palette-generation, compiler, or
 artifact APIs; current `spec:AST-006` owns the accepted local-token contract.
-DEC-2 ratifies the exact palette shipped by this change, and DEC-4 ratifies the
-reviewed Neutral token mappings shipped with it. Proposed local-token roles and
-additional component mappings remain separate work and must not be treated as
-an approved public contract.
+DEC-2 ratifies the exact palette shipped by the current theme, and DEC-4
+ratifies its current reviewed mappings. The emphasized-status definitions and
+expanded mappings below are an exact-head proposal: they do not become current
+until the Neutral owner approves the pull request head with its rendered
+light/dark evidence.
 
 ## Intent and audience
 
@@ -53,18 +54,22 @@ vocabulary remains owned by `architecture:theme-tokens`.
 
 ## Theme-local role definitions
 
-Neutral's candidate implementation owns the approved accent role and proposes
-the related roles below for exact-head review:
+Neutral owns the existing filled-status roles and proposes four distinct
+plain-surface emphasized roles for exact-head review:
 
-| Exact name                                             | Neutral-only meaning                                | Proposed value               | Status   |
-| ------------------------------------------------------ | --------------------------------------------------- | ---------------------------- | -------- |
-| `--astryx-theme-neutral-color-status-fill-accent`      | Filled accent status                                | `['#0074e2', '#6d9cfe']`     | Approved |
-| `--astryx-theme-neutral-color-status-fill-success`     | Filled success status                               | `['#198100', '#64af4c']`     | Proposed |
-| `--astryx-theme-neutral-color-status-fill-warning`     | Filled warning status                               | `'#ffce2f'`                  | Proposed |
-| `--astryx-theme-neutral-color-status-fill-error`       | Filled error status                                 | `['#c9303a', '#ff705d']`     | Proposed |
-| `--astryx-theme-neutral-color-on-tint-neutral`         | Neutral content placed on a semantic tinted surface | `['#fafafa4D', '#0a0a0a4D']` | Proposed |
-| `--astryx-theme-neutral-color-on-tint-overlay-hover`   | Hover overlay placed on a semantic tinted surface   | `['#fafafa1A', '#0a0a0a1A']` | Proposed |
-| `--astryx-theme-neutral-color-on-tint-overlay-pressed` | Pressed overlay placed on a semantic tinted surface | `['#fafafa33', '#0a0a0a33']` | Proposed |
+| Exact name                                               | Neutral-only meaning                                                   | Proposed value                        | Status   |
+| -------------------------------------------------------- | ---------------------------------------------------------------------- | ------------------------------------- | -------- |
+| `--astryx-theme-neutral-color-status-fill-accent`        | Filled accent status                                                   | `[blue.light[50], blue.dark[70]]`     | Proposed |
+| `--astryx-theme-neutral-color-status-fill-success`       | Filled success status                                                  | `[green.light[45], green.dark[65]]`   | Proposed |
+| `--astryx-theme-neutral-color-status-fill-warning`       | Filled warning status                                                  | `[yellow.light[80], yellow.dark[80]]` | Proposed |
+| `--astryx-theme-neutral-color-status-fill-error`         | Filled error status                                                    | `[red.light[50], red.dark[65]]`       | Proposed |
+| `--astryx-theme-neutral-color-status-emphasized-info`    | Informational graphic or boundary directly on a plain surface          | `[blue.light[50], blue.dark[65]]`     | Proposed |
+| `--astryx-theme-neutral-color-status-emphasized-success` | Success graphic or boundary directly on a plain surface                | `[green.light[45], green.dark[65]]`   | Proposed |
+| `--astryx-theme-neutral-color-status-emphasized-warning` | Warning graphic or boundary directly on a plain surface                | `[yellow.light[60], yellow.dark[80]]` | Proposed |
+| `--astryx-theme-neutral-color-status-emphasized-error`   | Error graphic, readable label, or boundary directly on a plain surface | `[red.light[50], red.dark[65]]`       | Proposed |
+| `--astryx-theme-neutral-color-on-tint-neutral`           | Neutral content placed on a semantic tinted surface                    | `['#fafafa4D', '#0a0a0a4D']`          | Proposed |
+| `--astryx-theme-neutral-color-on-tint-overlay-hover`     | Hover overlay placed on a semantic tinted surface                      | `['#fafafa1A', '#0a0a0a1A']`          | Proposed |
+| `--astryx-theme-neutral-color-on-tint-overlay-pressed`   | Pressed overlay placed on a semantic tinted surface                    | `['#fafafa33', '#0a0a0a33']`          | Proposed |
 
 AST-006 is current and accepted, and its implementation is proposed separately
 in the parent local-token PR. This stacked candidate authors and consumes exact
@@ -115,15 +120,21 @@ tone coordinates.
 
 ## Component and state mappings
 
-The candidate maps the shared status-fill roles across Badge, StatusDot,
-AvatarStatusDot, Stepper indicators, and ProgressBar wherever the existing state
-already has the same semantic meaning. Banner uses the proposed tint-content and
-interaction roles. Every mapping remains subject to exact-head theme review and
-rendered light/dark evidence; shared color alone is not enough.
+The candidate keeps the released `status-fill-*` names as the source of truth
+for Badge, StatusDot, AvatarStatusDot, Stepper indicators, and ProgressBar.
+That preserves descendant themes' ability to replace those exact names. The
+new `status-emphasized-*` roles map semantic Icon variants, input-family status
+borders and icons, TextArea over-limit feedback, destructive menu/item-swipe
+rows, and representative Chat error/success states that paint directly on a
+plain surface.
 
-This work does not add component states. It intentionally excludes
-`table-row-status`, which has no approved theming target, and SegmentedControl
-geometry/shadow changes, which are reviewed independently.
+Banner and attached FieldStatus surfaces keep their existing darker categorical
+text and icon treatment. Destructive Button text also keeps its existing darker
+foreground. This work does not add component states. It intentionally excludes
+`table-row-status`, which has no approved theming target, and charts, which use
+the separate data-visualization color API. Every mapping remains subject to
+exact-head theme review and rendered light/dark evidence; shared color alone is
+not enough.
 
 ## Compatibility and migration
 
@@ -148,16 +159,18 @@ so this draft does not select or restate a methodology. The future record is an
 unresolved dependency and therefore is not listed in frontmatter.
 
 Current Neutral-specific receipts include the Badge contrast check and pairings
-documented beside Neutral source. The candidate accent fill uses `#0074e2` in
-light mode and `#6d9cfe` in dark mode, but those values are not an accessibility
-claim by themselves. Adoption requires the actual Badge informational foreground
-and background pairing to meet its threshold in rendered light and dark states;
-every later mapping needs receipts for its foreground, graphical-object,
-interaction, and disabled states. No palette stop is accessible by itself, and
-color cannot replace another signal required by the component contract. This
-record will own those pairings, exceptions, measurements, and known gaps after
-the shared methodology is current; it will not copy the methodology or shared
-measurement-tool implementation.
+documented beside Neutral source. The candidate uses distinct filled and
+plain-surface warning roles because a bright yellow fill with dark content does
+not also clear graphical-object contrast on white. In light mode,
+`yellow.light[60]` (`#b18c00`) is the brightest generated Neutral yellow that
+clears 3:1 on white (3.17:1); the brighter `yellow.light[80]` fill remains
+appropriate only with its contrasting `--color-on-warning` foreground.
+
+The focused theme test verifies every light-mode emphasized status foreground
+against Neutral's white surface at 3:1 or better. Adoption still requires the
+actual rendered component pairings to meet their applicable thresholds in both
+modes and states. No palette stop is accessible by itself, and color cannot
+replace another signal required by the component contract.
 
 ## Build and artifact contract
 
@@ -297,17 +310,34 @@ Rejected: importing the complete palette at runtime, maintaining a second manual
 selection manifest, or treating token-mapping assertions as proof that copied
 hex values still match the approved palette.
 
+### DEC-6 — Separate filled and plain-surface status emphasis
+
+**Reference:** `theme:neutral/DEC-6`
+
+**Proposed decider:** `rubyycheung`, exact-head review
+
+Neutral keeps its released `status-fill-*` roles as the replaceable contract for
+filled semantic components. It uses distinct `status-emphasized-*` roles where a
+semantic graphic, readable error label, or boundary paints directly on a plain
+surface. This separation lets bright fills retain their intended treatment while
+plain-surface graphics meet their own contrast requirement. Portable semantic
+tokens remain unchanged, and charts remain outside this contract.
+
+Rejected: repointing released fill names through new names, one warning color for
+both bright fills and plain-surface boundaries, public cross-theme roles, or
+mapping components solely because they currently share a hex value.
+
 ## Open questions
 
-- **OQ1 — Is rendered light/dark evidence complete for the proposed tuple and
-  Badge mapping, and for every later mapping's relevant interaction states?**
-  (`checkable`) Neutral promotion and implementation remain blocked until the
-  actual pairings meet the applicable current contrast methodology, each mapped
-  context is visibly verified, and `rubyycheung` ratifies that exact record head.
-- **OQ2 — Do the proposed success, warning, error, and tint roles have stable
-  meanings across every listed component mapping?** (`checkable`) The additional
-  names remain proposals until reviewers confirm each mapping represents the
-  same semantic role rather than merely sharing a current color value.
+- **OQ1 — Is rendered light/dark evidence complete for every proposed filled and
+  plain-surface mapping and its relevant interaction states?** (`checkable`)
+  Implementation remains blocked until the actual pairings meet their applicable
+  thresholds, each mapped context is visibly verified, and `rubyycheung` ratifies
+  that exact record head.
+- **OQ2 — Do the proposed emphasized roles have stable meanings across every
+  listed component mapping?** (`checkable`) The additional names remain proposals
+  until exact-head review confirms each mapping represents the documented role
+  rather than merely sharing a current color value.
 
 ## Content boundary
 

@@ -24,6 +24,13 @@ function contrastRatio(foreground: string, background: string): number {
   return (lighter + 0.05) / (darker + 0.05);
 }
 
+const statusEmphasized = {
+  info: 'var(--astryx-theme-neutral-color-status-emphasized-info)',
+  success: 'var(--astryx-theme-neutral-color-status-emphasized-success)',
+  warning: 'var(--astryx-theme-neutral-color-status-emphasized-warning)',
+  error: 'var(--astryx-theme-neutral-color-status-emphasized-error)',
+} as const;
+
 const statusFill = {
   accent: 'var(--astryx-theme-neutral-color-status-fill-accent)',
   success: 'var(--astryx-theme-neutral-color-status-fill-success)',
@@ -292,30 +299,79 @@ describe('neutral syntax contrast', () => {
 });
 
 describe('neutral theme-local status mappings', () => {
-  it('preserves the independently approved component status fills', () => {
+  it('maps emphasized status roles to reviewed palette stops', () => {
     expect(neutralTheme.localTokens).toMatchObject({
-      '--astryx-theme-neutral-color-status-fill-accent':
-        'light-dark(#0074e2, #6d9cfe)',
-      '--astryx-theme-neutral-color-status-fill-success':
-        'light-dark(#198100, #64af4c)',
-      '--astryx-theme-neutral-color-status-fill-warning': '#ffce2f',
-      '--astryx-theme-neutral-color-status-fill-error':
-        'light-dark(#c9303a, #ff705d)',
+      '--astryx-theme-neutral-color-status-emphasized-info': lightDark(
+        neutralPalettes.blue.light[50],
+        neutralPalettes.blue.dark[65],
+      ),
+      '--astryx-theme-neutral-color-status-emphasized-success': lightDark(
+        neutralPalettes.green.light[45],
+        neutralPalettes.green.dark[65],
+      ),
+      '--astryx-theme-neutral-color-status-emphasized-warning': lightDark(
+        neutralPalettes.yellow.light[60],
+        neutralPalettes.yellow.dark[80],
+      ),
+      '--astryx-theme-neutral-color-status-emphasized-error': lightDark(
+        neutralPalettes.red.light[50],
+        neutralPalettes.red.dark[65],
+      ),
     });
     expect(neutralTheme.tokens).not.toHaveProperty(
-      '--astryx-theme-neutral-color-status-fill-accent',
+      '--astryx-theme-neutral-color-status-emphasized-info',
     );
   });
 
-  it('shares each status fill across the components with the same role', () => {
+  it('keeps the released fill roles and mappings replaceable by exact name', () => {
+    expect(neutralTheme.localTokens).toMatchObject({
+      '--astryx-theme-neutral-color-status-fill-accent': lightDark(
+        neutralPalettes.blue.light[50],
+        neutralPalettes.blue.dark[70],
+      ),
+      '--astryx-theme-neutral-color-status-fill-success': lightDark(
+        neutralPalettes.green.light[45],
+        neutralPalettes.green.dark[65],
+      ),
+      '--astryx-theme-neutral-color-status-fill-warning': lightDark(
+        neutralPalettes.yellow.light[80],
+        neutralPalettes.yellow.dark[80],
+      ),
+      '--astryx-theme-neutral-color-status-fill-error': lightDark(
+        neutralPalettes.red.light[50],
+        neutralPalettes.red.dark[65],
+      ),
+    });
+    expect(neutralTheme.components?.badge?.['variant:info']).toMatchObject({
+      backgroundColor: statusFill.accent,
+    });
+    expect(
+      neutralTheme.components?.['status-dot']?.['variant:warning'],
+    ).toEqual({backgroundColor: statusFill.warning});
+    expect(
+      neutralTheme.components?.['step-indicator']?.['status:error'],
+    ).toEqual({'--color-error': statusFill.error});
+    expect(
+      neutralTheme.components?.['progress-bar']?.['variant:success'],
+    ).toEqual({'--color-success': statusFill.success});
+  });
+
+  it('uses emphasized roles on plain surfaces and fill roles on filled components', () => {
+    expect(neutralTheme.components?.icon?.['color:success']).toEqual({
+      color: statusEmphasized.success,
+    });
+    expect(neutralTheme.components?.['text-input']?.['status:error']).toEqual({
+      '--color-error': statusEmphasized.error,
+    });
+    expect(neutralTheme.components?.['text-area-counter']?.base).toEqual({
+      '--color-error': statusEmphasized.error,
+    });
     expect(neutralTheme.components?.badge?.['variant:info']).toMatchObject({
       backgroundColor: statusFill.accent,
     });
     expect(
       neutralTheme.components?.['status-dot']?.['variant:success'],
-    ).toEqual({
-      backgroundColor: statusFill.success,
-    });
+    ).toEqual({backgroundColor: statusFill.success});
     expect(
       neutralTheme.components?.['avatar-status-dot']?.['variant:error'],
     ).toEqual({backgroundColor: statusFill.error});
@@ -324,9 +380,26 @@ describe('neutral theme-local status mappings', () => {
     ).toEqual({'--color-warning': statusFill.warning});
     expect(
       neutralTheme.components?.['progress-bar']?.['variant:accent'],
-    ).toEqual({
-      '--color-accent': statusFill.accent,
+    ).toEqual({'--color-accent': statusFill.accent});
+    expect(
+      neutralTheme.components?.['dropdown-menu-item']?.['variant:destructive'],
+    ).toEqual({'--color-error': statusEmphasized.error});
+    expect(neutralTheme.components?.['chat-tool-calls']?.base).toEqual({
+      '--color-success': statusEmphasized.success,
+      '--color-error': statusEmphasized.error,
     });
+  });
+
+  it('keeps plain-surface emphasized graphics at 3:1 in light mode', () => {
+    const surface = neutralPalettes.neutral.light[100];
+    for (const foreground of [
+      neutralPalettes.blue.light[50],
+      neutralPalettes.green.light[45],
+      neutralPalettes.yellow.light[60],
+      neutralPalettes.red.light[50],
+    ]) {
+      expect(contrastRatio(foreground, surface)).toBeGreaterThanOrEqual(3);
+    }
   });
 
   it('does not adopt the unapproved table row-status target', () => {

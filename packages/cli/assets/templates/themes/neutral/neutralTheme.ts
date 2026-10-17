@@ -33,10 +33,42 @@ const neutralSyntax = defineSyntaxTheme({
 });
 
 const neutralLocalTokens: Record<string, TokenValue> = {
-  '--astryx-theme-neutral-color-status-fill-accent': ['#0074e2', '#6d9cfe'],
-  '--astryx-theme-neutral-color-status-fill-success': ['#198100', '#64af4c'],
-  '--astryx-theme-neutral-color-status-fill-warning': '#ffce2f',
-  '--astryx-theme-neutral-color-status-fill-error': ['#c9303a', '#ff705d'],
+  // Existing filled-status roles remain the compatibility source of truth for
+  // their released component mappings and descendant-theme replacements.
+  '--astryx-theme-neutral-color-status-fill-accent': [
+    blue.light[50],
+    blue.dark[70],
+  ],
+  '--astryx-theme-neutral-color-status-fill-success': [
+    green.light[45],
+    green.dark[65],
+  ],
+  '--astryx-theme-neutral-color-status-fill-warning': [
+    yellow.light[80],
+    yellow.dark[80],
+  ],
+  '--astryx-theme-neutral-color-status-fill-error': [
+    red.light[50],
+    red.dark[65],
+  ],
+  // Plain-surface foregrounds need independent roles because warning fills are
+  // intentionally brighter than meaningful icons and boundaries can be.
+  '--astryx-theme-neutral-color-status-emphasized-info': [
+    blue.light[50],
+    blue.dark[65],
+  ],
+  '--astryx-theme-neutral-color-status-emphasized-success': [
+    green.light[45],
+    green.dark[65],
+  ],
+  '--astryx-theme-neutral-color-status-emphasized-warning': [
+    yellow.light[60],
+    yellow.dark[80],
+  ],
+  '--astryx-theme-neutral-color-status-emphasized-error': [
+    red.light[50],
+    red.dark[65],
+  ],
   '--astryx-theme-neutral-color-status-muted-accent': [
     blue.light[85],
     withAlpha(blue.dark[75], '3D'),
@@ -65,6 +97,19 @@ const statusFill = {
   success: 'var(--astryx-theme-neutral-color-status-fill-success)',
   warning: 'var(--astryx-theme-neutral-color-status-fill-warning)',
   error: 'var(--astryx-theme-neutral-color-status-fill-error)',
+} as const;
+
+const statusEmphasized = {
+  info: 'var(--astryx-theme-neutral-color-status-emphasized-info)',
+  success: 'var(--astryx-theme-neutral-color-status-emphasized-success)',
+  warning: 'var(--astryx-theme-neutral-color-status-emphasized-warning)',
+  error: 'var(--astryx-theme-neutral-color-status-emphasized-error)',
+} as const;
+
+const statusComponentOverrides = {
+  'status:success': {'--color-success': statusEmphasized.success},
+  'status:warning': {'--color-warning': statusEmphasized.warning},
+  'status:error': {'--color-error': statusEmphasized.error},
 } as const;
 
 export const neutralTheme = defineTheme({
@@ -294,6 +339,54 @@ export const neutralTheme = defineTheme({
         '--color-overlay-pressed':
           'var(--astryx-theme-neutral-color-destructive-overlay-pressed)',
       },
+    },
+
+    icon: {
+      'color:success': {color: statusEmphasized.success},
+      'color:warning': {color: statusEmphasized.warning},
+      'color:error': {color: statusEmphasized.error},
+    },
+
+    // Inputs paint semantic borders and icons directly against plain surfaces.
+    // Keep their attached FieldStatus surfaces on the existing darker text map.
+    'text-input': statusComponentOverrides,
+    'text-area': statusComponentOverrides,
+    'file-input': statusComponentOverrides,
+    'number-input': statusComponentOverrides,
+    'date-input': statusComponentOverrides,
+    'date-range-input': statusComponentOverrides,
+    'date-time-input': statusComponentOverrides,
+    'time-input': statusComponentOverrides,
+    selector: statusComponentOverrides,
+    'multi-selector': statusComponentOverrides,
+    'complex-selector': statusComponentOverrides,
+    typeahead: statusComponentOverrides,
+    tokenizer: statusComponentOverrides,
+    'input-group': statusComponentOverrides,
+
+    'text-area-counter': {
+      base: {'--color-error': statusEmphasized.error},
+    },
+    'dropdown-menu': {
+      base: {'--color-error': statusEmphasized.error},
+    },
+    'dropdown-menu-item': {
+      'variant:destructive': {'--color-error': statusEmphasized.error},
+    },
+    'chat-tool-calls': {
+      base: {
+        '--color-success': statusEmphasized.success,
+        '--color-error': statusEmphasized.error,
+      },
+    },
+    'chat-message-metadata': {
+      base: {'--color-error': statusEmphasized.error},
+    },
+    'chat-dictation-button': {
+      base: {'--color-error': statusEmphasized.error},
+    },
+    'item-swipe-action': {
+      'variant:destructive': {'--color-error': statusEmphasized.error},
     },
 
     badge: {
