@@ -128,7 +128,14 @@ works on is `spec:AST-040` FR9's.
     matched release answers: the copy that started the run when it is that
     release, otherwise the release in the per-user cache, installed there
     through the package manager the first time a project needs it. The
-    project's own CLI hands such a run to the matched release too.
+    project's own CLI hands such a run to the matched release too. While a
+    release installs, or while the run waits for another run installing it,
+    a text-mode run prints one line on standard error saying so; a
+    machine-readable run prints none. An install that a live run is still
+    making is waited for, a lock its run left when it stopped is taken
+    over, and a cached release whose files are damaged is installed again.
+    An install that has not finished within a generous bound ends the run
+    with `ERR_VERSIONS_UNAVAILABLE`, never by stopping the process.
   - `astryx upgrade` follows the same rule, so it always runs the codemods of
     the release equal to the project's installed Core (`spec:AST-040` FR11).
     A project CLI that predates this rule answers for itself, and
@@ -323,6 +330,10 @@ works on is `spec:AST-040` FR9's.
   - A copy hands the run off before it loads anything the project provides
     (FR2). It does not hand off when it is itself the release FR2 names, or
     when the door that started it declined the project's CLI (FR2).
+  - A command that acts on the computer rather than the folder it runs in,
+    such as `astryx init --user` (FR8), is never handed to a project's
+    release: it is answered as outside a project wherever it runs, and its
+    standard-error line says it answered for the computer.
   - A run is handed off at most once. The copy a run is handed to makes the
     same choice and finds itself, so a run never returns to a copy it has
     left.
@@ -351,7 +362,11 @@ works on is `spec:AST-040` FR9's.
   provides.
 - Unsupported behavior: a door that cannot obtain the release FR2 names fails
   before any write; a global copy that cannot reach the registry keeps
-  answering with the release it has (FR6).
+  answering with the release it has (FR6). In a Yarn Plug'n'Play project, a
+  copy cannot see the project's own CLI without running the project's
+  loader, which FR2 forbids before the hand-off, so the release equal to the
+  project's Core answers from the per-user cache instead; it is the same
+  release whenever the project's CLI matches its Core.
 - Browser evidence: not applicable; the contract is CLI output, exit status,
   and file changes.
 
