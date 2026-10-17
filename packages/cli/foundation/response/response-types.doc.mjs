@@ -349,5 +349,10 @@ export const doc = {
       description:
         'validated (false when no integration manifest was found, so nothing was inspected), the integration identity, structural issues, and Core doc overlaps. Each finding includes `severity` (`info` | `error`) and `relationship` (`replaces` | `extends` | `accidental`).',
     },
+    {
+      value: 'integration.check',
+      description:
+        'Every source check of an integration package in one result: validated (false when no integration manifest was found, so nothing was checked), the package name and version, strict, and checks, one entry per check (validate, components, templates, docs), each with check, errors, warnings, skipped, failed, and response, the envelope that check returns on its own. The totals are errors, warnings, and skipped; unchecked counts what the checks could not compare. With --strict, failures lists each warning and each piece of skipped work again as an error, in the issue format the checks use; it is empty without --strict. failed decides the exit code.',
+    },
   ],
 };

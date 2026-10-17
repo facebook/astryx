@@ -3,18 +3,22 @@
 /** @file CLI bindings for integration authoring and package verification. */
 
 import {integrationAdd} from '../../../api/integration/add-contribution.mjs';
+import {integrationCheck} from '../../../api/integration/check/check.mjs';
 import {integrationPackCheck} from '../../../api/integration/pack-check.mjs';
 import {jsonOut} from '../../../foundation/response/json.mjs';
 import {ERROR_CODES} from '../../../foundation/response/error-codes.mjs';
 import {NO_RESULT_SET} from '../../../foundation/debug/index.mjs';
-import {emit, list, section, text} from '../formatters/index.mjs';
+import {emit, list, records, section, text} from '../formatters/index.mjs';
 import {cliError} from '../lib/cli-error.mjs';
 import {defineCommand} from '../lib/define-command.mjs';
 import {doc as integrationGroup} from './integration.doc.mjs';
 import {doc as integrationAddCommand} from './integration-add.doc.mjs';
+import {doc as integrationCheckCommand} from './integration-check.doc.mjs';
 import {doc as integrationVerifyCommand} from './integration-verify.doc.mjs';
 import {doc as integrationPackCommand} from './integration-pack.doc.mjs';
 import {doc as integrationAddFn} from '../../../api/integration/integrationAdd.doc.mjs';
+import {doc as integrationCheckFn} from '../../../api/integration/integrationCheck.doc.mjs';
+import {printIntegrationCheckResponse} from './doctor.mjs';
 import {doc as integrationPackCheckFn} from '../../../api/integration/integrationPackCheck.doc.mjs';
 
 /**
@@ -85,6 +89,102 @@ async function verifyPackage(program) {
     emit(...blocks);
   }
   if (!result.data.packable) process.exitCode = 1;
+  return NO_RESULT_SET;
+}
+
+/**
+ * Run `integration check` and print each check as its own subcommand prints
+ * it, then one summary: each check's errors, warnings and skipped work, and
+ * what decided the exit code.
+ * @param {import('commander').Command} program
+ * @param {{strict?: boolean}} options
+ */
+async function checkPackage(program, options) {
+  const result = await integrationCheck({strict: options.strict === true});
+  if (program.opts().json) {
+    jsonOut(result);
+  } else {
+    const {data} = result;
+    const noPackage = data.checks[0]?.response.data.issues.some(
+      issue => issue.code === 'no_package',
+    );
+    if (noPackage) {
+      emit(
+        text(
+          'Nothing was checked: no package.json found. Run this command inside a package directory.',
+        ),
+      );
+    } else if (!data.validated) {
+      emit(
+        text(
+          'Nothing was checked: no astryx.integration.* found next to package.json. ' +
+            "Run this command in an integration package's folder.",
+        ),
+      );
+    } else {
+      data.checks.forEach((check, index) => {
+        // A blank line keeps each check's output apart from the next.
+        if (index > 0) emit(text(''));
+        printIntegrationCheckResponse(check.response);
+      });
+    }
+    const plural = (/** @type {number} */ n, /** @type {string} */ word) =>
+      `${n} ${word}${n === 1 ? '' : 's'}`;
+    const counts =
+      `${plural(data.errors, 'error')}, ${plural(data.warnings, 'warning')}, ` +
+      `${data.skipped.length} skipped`;
+    const notCompared =
+      data.unchecked > 0
+        ? ` ${plural(data.unchecked, 'item')} could not be compared; the checks above list them.`
+        : '';
+    const closing = noPackage
+      ? `[fail] ${counts}. No package.json was found here, so nothing was checked.`
+      : data.checks.some(check => check.failed)
+        ? `[fail] ${counts}. Address the items marked [fail] above.`
+        : data.failed
+          ? `[fail] ${counts}. --strict fails on every warning and on skipped work; fix them, or drop --strict to fail only on errors.`
+          : data.warnings > 0 || data.skipped.length > 0
+            ? `[ok] ${counts}. No check failed; review the warnings and skipped work above (--strict fails on them).${notCompared}`
+            : notCompared
+              ? `[ok] ${counts}. No check failed.${notCompared}`
+              : `[ok] ${counts}. Every check passed.`;
+    const identity = noPackage
+      ? '(no package.json)'
+      : data.version != null
+        ? `${data.name}@${data.version}`
+        : data.name;
+    emit(
+      // --strict lists each warning and each skipped check again, as the
+      // error it now is, in the issue format the checks use.
+      ...(data.failures.length > 0
+        ? [
+            section('Failing under --strict'),
+            records(data.failures, {
+              fields: [
+                'severity',
+                'check',
+                'code',
+                'component',
+                'prop',
+                'message',
+                'fix',
+                'file',
+                'line',
+              ],
+              format: {severity: () => '[fail]'},
+            }),
+          ]
+        : []),
+      section(
+        `Integration check: ${identity ?? '(local package)'}${data.strict ? ' (strict)' : ''}`,
+      ),
+      records(data.checks, {
+        fields: ['check', 'failed', 'errors', 'warnings', 'skipped'],
+      }),
+      text(closing),
+    );
+  }
+  if (result.data.failed) process.exitCode = 1;
   return NO_RESULT_SET;
 }
 
@@ -159,6 +259,12 @@ export function registerIntegration(program) {
   });
   addCmd.allowExcessArguments(false);
 
+  // It takes no package name, so a name passed by mistake is an error, not a
+  // silent check of the current folder.
+  defineCommand(integration, integrationCheckCommand, {
+    fn: integrationCheckFn,
+    action: async options => checkPackage(program, options),
+  }).allowExcessArguments(false);
   defineCommand(integration, integrationVerifyCommand, {
     fn: integrationPackCheckFn,
     action: async () => verifyPackage(program),
