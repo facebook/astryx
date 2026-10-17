@@ -59,7 +59,11 @@ const baseTemplateFields = {
 };
 
 const pageTemplateSchema = z
-  .object({...baseTemplateFields, type: z.literal('page')})
+  .object({
+    ...baseTemplateFields,
+    type: z.literal('page'),
+    isFamilyDefault: z.boolean().optional(),
+  })
   .strict();
 const blockTemplateSchema = z
   .object({
@@ -107,6 +111,18 @@ const blockTemplateSchema = z
 const templateEnvelopeSchema = z
   .discriminatedUnion('type', [pageTemplateSchema, blockTemplateSchema])
   .superRefine((template, context) => {
+    // A family is the category text before " - ", so a default needs one.
+    if (
+      template.type === 'page' &&
+      template.isFamilyDefault &&
+      !template.category?.trim()
+    ) {
+      context.addIssue({
+        code: 'custom',
+        path: ['category'],
+        message: 'category is required when isFamilyDefault is true',
+      });
+    }
     if (
       template.type === 'block' &&
       template.isShowcase &&

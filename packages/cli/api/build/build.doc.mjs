@@ -21,13 +21,23 @@ export const doc = {
     'commands, the on-system rules, and related lookups. Called with a query it names the page template to ' +
     'START from (always one: the page template a ranker built for long descriptions puts first; for a part ' +
     'of a page, the page it names; else the app shell) and the next two templates, ' +
+    "starting a whole page from its family's default page (the template that declares `isFamilyDefault`) " +
+    'unless the idea names what a sibling is built for, ' +
     'and the unified search grouped around it: the other close page templates, drop-in blocks, and ' +
     'idea-specific components/hooks, plus the always-on frame + foundation. A template carries the page ' +
     'frame and spacing, so the kit never recommends composing a page from components.',
   importPath: '@astryxdesign/cli/api',
   signature:
     'build(query?: string, options?: BuildOptions): Promise<BuildHelpResponse | BuildKitResponse>',
-  keywords: ['build', 'compose', 'assemble', 'page', 'kit', 'scaffold'],
+  keywords: [
+    'build',
+    'compose',
+    'assemble',
+    'page',
+    'kit',
+    'scaffold',
+    'family default',
+  ],
   params: [
     {
       name: 'query',

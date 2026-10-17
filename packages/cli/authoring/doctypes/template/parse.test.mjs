@@ -55,6 +55,46 @@ describe('parseTemplate (load boundary)', () => {
     );
   });
 
+  it('accepts isFamilyDefault on a page with a category', () => {
+    const parsed = parseTemplate({
+      type: 'page',
+      name: 'Acme health',
+      category: 'Dashboard - Monitoring',
+      isFamilyDefault: true,
+    });
+    expect(parsed.type === 'page' && parsed.isFamilyDefault).toBe(true);
+  });
+
+  it('rejects isFamilyDefault without a category, on a block, or as a non-boolean', () => {
+    expect(
+      reason({type: 'page', name: 'Acme health', isFamilyDefault: true}),
+    ).toMatch(/category is required when isFamilyDefault is true/);
+    expect(
+      reason({
+        type: 'page',
+        name: 'Acme health',
+        category: ' ',
+        isFamilyDefault: true,
+      }),
+    ).toMatch(/category is required/);
+    expect(
+      reason({
+        type: 'block',
+        name: 'AcmeTile',
+        category: 'Dashboard - Monitoring',
+        isFamilyDefault: true,
+      }),
+    ).toMatch(/isFamilyDefault/);
+    expect(
+      reason({
+        type: 'page',
+        name: 'Acme health',
+        category: 'Dashboard - Monitoring',
+        isFamilyDefault: 'yes',
+      }),
+    ).toMatch(/isFamilyDefault/);
+  });
+
   it('rejects an empty replaces', () => {
     expect(reason({type: 'page', name: 'Acme shell', replaces: ''})).toMatch(
       /replaces must name a Core template id/,

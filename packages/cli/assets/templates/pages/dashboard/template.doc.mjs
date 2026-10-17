@@ -23,4 +23,5 @@ export const doc = {
   ],
   isReady: true,
   category: 'Dashboard - Analytics',
+  isFamilyDefault: true,
 };

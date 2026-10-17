@@ -32,9 +32,15 @@ import {findCoreDir} from '../../../foundation/fs/paths.mjs';
 import {AstryxError} from '../../error.mjs';
 import {ERROR_CODES} from '../../../foundation/response/error-codes.mjs';
 import {getResultCoverage} from '../../search/coverage.mjs';
-import {loadComponents, loadPageTemplates, loadWeights, templateSetupNotes} from '../_adapter.mjs';
+import {
+  loadComponents,
+  loadPageTemplates,
+  loadWeights,
+  templateSetupNotes,
+} from '../_adapter.mjs';
 import {
   asksForNewPage,
+  familyStart,
   ideaKind,
   pickAlternatives,
   pickStart,
@@ -158,9 +164,15 @@ function placement(kind, inPage) {
  * @param {import('./rank.mjs').IdeaKind} kind
  * @param {SearchResultEntry[]} pages
  * @param {boolean} directMatch
+ * A whole page starts family first: when the template chosen above has a
+ * sibling family default and the idea names nothing the chosen sibling is built
+ * for, the family's default is the start and the displaced sibling leads the
+ * alternatives (see rank.mjs `familyStart`). A template search matched by name
+ * keeps its place.
+ *
  * @param {PageTemplate[]} catalog
  * @param {string} idea
- * @returns {Omit<BuildStart, 'alternatives'> | null}
+ * @returns {{start: Omit<BuildStart, 'alternatives'>, displaced: string | null} | null}
  */
 function chooseStart(ranked, kind, pages, directMatch, catalog, idea) {
   const direct = directMatch ? pages[0].name : null;
@@ -192,7 +204,7 @@ function chooseStart(ranked, kind, pages, directMatch, catalog, idea) {
       : undefined;
   // A shell start keeps the shell the ranker named, if any, and never replaces
   // the template the ranker chose for a page search matched directly.
-  const pick =
+  const matched =
     weighed === undefined
       ? proposed
       : weighed === null
@@ -200,22 +212,40 @@ function chooseStart(ranked, kind, pages, directMatch, catalog, idea) {
           ? proposed
           : null
         : (ranked.find(r => r.name === weighed) ?? proposed);
+  // Family first: a whole page in a family with a default starts from that
+  // default unless the idea names what the chosen sibling is built for.
+  const family =
+    kind === 'page' &&
+    matched &&
+    matched.family !== 'Shell' &&
+    matched.name !== direct
+      ? familyStart(idea, matched.name, ranked, catalog)
+      : null;
+  const displaced = family?.displaced ?? null;
+  const pick = displaced
+    ? (ranked.find(r => r.name === family?.name) ?? matched)
+    : matched;
   const closest = pick && catalog.find(t => t.name === pick.name);
   if (pick && closest) {
     const agrees = closest.name === direct;
     const place = placement(kind, pick.base && pick.familyNamed);
     return {
-      ...asTemplate(closest),
-      basis: agrees ? 'direct' : 'closest',
-      reason: unready
-        ? `\`${unready}\` matches but is not ready yet; this is the closest ready template.`
-        : place
-          ? placed(place, closest.name)
-          : agrees
-            ? 'Matches the idea.'
-            : direct
-              ? `Search matched \`${direct}\` by name, but this template fits more of the idea.`
-              : 'The closest template; none is exactly this page.',
+      start: {
+        ...asTemplate(closest),
+        basis: agrees ? 'direct' : 'closest',
+        reason: unready
+          ? `\`${unready}\` matches but is not ready yet; this is the closest ready template.`
+          : place
+            ? placed(place, closest.name)
+            : agrees
+              ? 'Matches the idea.'
+              : displaced
+                ? `The ${family?.family} family's default page: the idea names nothing \`${displaced}\` is built for.`
+                : direct
+                  ? `Search matched \`${direct}\` by name, but this template fits more of the idea.`
+                  : 'The closest template; none is exactly this page.',
+      },
+      displaced: closest.name === pick.name ? displaced : null,
     };
   }
   for (const id of FALLBACK_STARTS) {
@@ -228,21 +258,24 @@ function chooseStart(ranked, kind, pages, directMatch, catalog, idea) {
         (weighed === null && !!proposed && proposed.family !== 'Shell');
       const place = placement(kind, false);
       return {
-        ...asTemplate(shell),
-        basis: 'fallback',
-        reason: unready
-          ? `\`${unready}\` matches but is not ready yet, so start from the app shell.`
-          : place
-            ? placed(place, shell.name)
-            : direct
-              ? weighed === null
-                ? `Search matched \`${direct}\` by name, but the app shell is the closer start.`
-                : `Search matched \`${direct}\` by name, but too little of the idea fits it, so start from the app shell.`
-              : nearest
-                ? 'No template is a clear match; the app shell is the closest.'
-                : loose
-                  ? `Search matched ${loose} only loosely, so start from the app shell.`
-                  : 'No template matched, so start from the app shell.',
+        start: {
+          ...asTemplate(shell),
+          basis: 'fallback',
+          reason: unready
+            ? `\`${unready}\` matches but is not ready yet, so start from the app shell.`
+            : place
+              ? placed(place, shell.name)
+              : direct
+                ? weighed === null
+                  ? `Search matched \`${direct}\` by name, but the app shell is the closer start.`
+                  : `Search matched \`${direct}\` by name, but too little of the idea fits it, so start from the app shell.`
+                : nearest
+                  ? 'No template is a clear match; the app shell is the closest.'
+                  : loose
+                    ? `Search matched ${loose} only loosely, so start from the app shell.`
+                    : 'No template matched, so start from the app shell.',
+        },
+        displaced: null,
       };
     }
   }
@@ -378,19 +411,29 @@ export async function buildKit(query, options = {}) {
         searchedComponents(result) ?? (await loadComponents(cwd)),
       )
     : 'page';
-  const chosen = wantsPages
+  const decided = wantsPages
     ? chooseStart(ranked, kind, matchedPages, directMatch, catalog, query)
     : null;
+  const chosen = decided?.start ?? null;
   // Name the ranker's next two templates beside the start: the reader judges
   // meaning better than keywords do, and an acceptable template is in these
-  // three far more often than it is the start alone.
+  // three far more often than it is the start alone. A sibling the family's
+  // default displaced leads them.
+  const displaced = decided?.displaced ?? null;
   /** @type {BuildStart | null} */
   const start = chosen && {
     ...chosen,
-    alternatives: pickAlternatives(ranked, chosen.name).flatMap(r => {
-      const t = catalog.find(c => c.name === r.name);
-      return t ? [asTemplate(t)] : [];
-    }),
+    alternatives: [
+      ...(displaced ? [displaced] : []),
+      ...pickAlternatives(ranked, chosen.name, 3)
+        .map(r => r.name)
+        .filter(n => n !== displaced),
+    ]
+      .slice(0, 2)
+      .flatMap(name => {
+        const t = catalog.find(c => c.name === name);
+        return t ? [asTemplate(t)] : [];
+      }),
   };
 
   // Analyze what the start template needs that the project lacks (external

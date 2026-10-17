@@ -96,13 +96,13 @@ to the catalog, and later template releases do not rewrite copied projects.
 Before this record can become `current`, every source must normalize into one catalog
 entry and pass one validation boundary. That boundary uses these requirements:
 
-| Scope                | Required                                                                                                                 | Optional or conditional                                                               |
-| -------------------- | ------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------- |
-| Every entry          | `id`, `package`, `type`, `name`, `displayName`, non-empty `description`, explicit `isReady`, and an existing source file | `keywords`; source-specific provenance and diagnostics                                |
-| Page                 | Everything above; `category` when eligible for the overview                                                              | `scaffold`, `isHiddenFromOverview`; a hidden special-purpose page may omit `category` |
-| Block                | Everything above plus `exampleFor`, positive `aspectRatio`, and complete `componentsUsed`                                | `scale`, `isShowcase`, `alsoExampleFor`, `alsoShowcaseFor`                            |
-| Primary showcase     | Block requirements plus `isShowcase: true`; at most one resolved primary showcase per `(package, target)`                | The same block may serve additional targets through `alsoShowcaseFor`                 |
-| Additional placement | A valid block and a valid target named by `alsoExampleFor` or `alsoShowcaseFor`                                          | Placement does not create another template identity                                   |
+| Scope                | Required                                                                                                                 | Optional or conditional                                                                                  |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------- |
+| Every entry          | `id`, `package`, `type`, `name`, `displayName`, non-empty `description`, explicit `isReady`, and an existing source file | `keywords`; source-specific provenance and diagnostics                                                   |
+| Page                 | Everything above; `category` when eligible for the overview, and when `isFamilyDefault` is set                           | `scaffold`, `isHiddenFromOverview`, `isFamilyDefault`; a hidden special-purpose page may omit `category` |
+| Block                | Everything above plus `exampleFor`, positive `aspectRatio`, and complete `componentsUsed`                                | `scale`, `isShowcase`, `alsoExampleFor`, `alsoShowcaseFor`                                               |
+| Primary showcase     | Block requirements plus `isShowcase: true`; at most one resolved primary showcase per `(package, target)`                | The same block may serve additional targets through `alsoShowcaseFor`                                    |
+| Additional placement | A valid block and a valid target named by `alsoExampleFor` or `alsoShowcaseFor`                                          | Placement does not create another template identity                                                      |
 
 Page and block metadata may be authored with richer first-party types or a narrower
 integration envelope. Source adapters translate those source-specific shapes into
