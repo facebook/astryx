@@ -135,7 +135,10 @@ works on is `spec:AST-040` FR9's.
     making is waited for, a lock its run left when it stopped is taken
     over, and a cached release whose files are damaged is installed again.
     An install that has not finished within a generous bound ends the run
-    with `ERR_VERSIONS_UNAVAILABLE`, never by stopping the process.
+    with `ERR_VERSIONS_UNAVAILABLE`, never by stopping the process. No
+    install outlives the run that started it: it ends when that run ends,
+    however the run ends, and a run that takes over a stopped run's lock
+    ends any install that lock records first.
   - `astryx upgrade` follows the same rule, so it always runs the codemods of
     the release equal to the project's installed Core (`spec:AST-040` FR11).
     A project CLI that predates this rule answers for itself, and
