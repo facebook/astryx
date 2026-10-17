@@ -60,6 +60,7 @@ import {
   applyTemplateReplacements,
   effectiveTemplateDiscovery,
   discoverAllUnresolved as discoverTemplates,
+  discoverCoreTemplates,
   discoverIntegrationTemplatesForOne,
 } from '../discovery/template-adapter.mjs';
 import {
@@ -822,6 +823,85 @@ export class Project {
   }
 
   /**
+   * The components and templates this project reads, as links name them: by
+   * owner provider id, kind, and name (a template by its id).
+   * @returns {Promise<import('../discovery/docs-discovery.mjs').LinkableContributions>}
+   */
+  async #linkableContributions() {
+    /** @type {Map<string, string>} */
+    const providers = new Map([[CORE_PACKAGE, CORE_PACKAGE]]);
+    for (const integration of this.#loadedIntegrations) {
+      if (integration?.name) {
+        providers.set(
+          integration.name,
+          integration.providerId ?? integration.name,
+        );
+      }
+    }
+    const providerOf = (/** @type {string | undefined} */ pkg) =>
+      providers.get(pkg ?? CORE_PACKAGE) ?? pkg ?? CORE_PACKAGE;
+    // An active replacement answers to the Core name it replaces, so a link
+    // to that Core component has to select Core (spec:AST-035 FR11).
+    /** @type {Map<string, string>} */
+    const replacing = new Map();
+    if (this.#loadedIntegrations.length > 0) {
+      const {active} = await resolveComponentReplacements(
+        findCoreDir(this.#cwd),
+        this.#loadedIntegrations,
+      );
+      for (const each of active) {
+        replacing.set(`${each.package}\0${each.name}`, each.target);
+      }
+    }
+    const components = (await this.components()).map(record => {
+      const replaces = replacing.get(`${record.package}\0${record.name}`);
+      return {
+        providerId: providerOf(record.package),
+        package: record.package,
+        name: record.name,
+        docPath: record.docPath,
+        ...(replaces == null ? {} : {replaces}),
+      };
+    });
+    /** @param {any} template @param {string} pkg */
+    const linkable = (template, pkg) => ({
+      providerId: providerOf(pkg),
+      package: pkg,
+      type: template.type,
+      id: template.dirName,
+      name: template.name,
+      ...(template.displayName == null
+        ? {}
+        : {displayName: template.displayName}),
+      ...(template.description == null
+        ? {}
+        : {description: template.description}),
+      ...(typeof template.replaces === 'string'
+        ? {replaces: template.replaces}
+        : {}),
+    });
+    /** @param {any} template */
+    const isPageOrBlock = template =>
+      template.type === 'page' || template.type === 'block';
+    // Every Core template, a replaced one too, since `--package
+    // @astryxdesign/core` still opens it; everyone else's as unqualified
+    // lookups see them, an active replacement with the id it takes over.
+    const templates = [
+      ...(await discoverCoreTemplates())
+        .filter(isPageOrBlock)
+        .map(template => linkable(template, CORE_PACKAGE)),
+      .../** @type {any[]} */ (await this.templates())
+        .filter(
+          template =>
+            isPageOrBlock(template) &&
+            (template.package ?? CORE_PACKAGE) !== CORE_PACKAGE,
+        )
+        .map(template => linkable(template, template.package)),
+    ];
+    return {components, templates};
+  }
+
+  /**
    * The CLI's own doc topics plus the ones the configured integrations
    * contribute, resolved into one catalog: additions, replacements (with the
    * replaced name left as an alias), and extensions merged in configuration
@@ -838,6 +918,8 @@ export class Project {
   async docs() {
     return this.#memo('docs', async () => {
       const catalog = DocsCatalog.fromBuiltins();
+      // Links name component, page, and block docs too (spec:AST-047 FR9).
+      catalog.setContributions(() => this.#linkableContributions());
       let rank = 0;
 
       for (const integration of this.#loadedIntegrations) {
