@@ -2,9 +2,11 @@
 
 import {describe, expect, it} from 'vitest';
 import {
+  guideNamespacePages,
   mergeFlatTopics,
   namespaceCategory,
   namespacePage,
+  nestPages,
   sectionAnchors,
 } from '../../scripts/docs-pages.mjs';
 import {buildOutline} from '../components/docs/docOutline';
@@ -199,6 +201,91 @@ describe('a page for part of a namespace', () => {
       'kit-guides': '/docs/kit-guide',
       'kit-overview': '/docs/kit-guide',
     });
+  });
+
+  it('shows under the page it names as parent, at its place there', async () => {
+    const result = await namespacePage(nested, 'kit/guides', {
+      parent: 'kit',
+      order: 2,
+    });
+    expect(result?.page).toMatchObject({
+      topic: 'kit-guides',
+      parent: 'kit',
+      order: 2,
+    });
+  });
+});
+
+describe('a page of one guide', () => {
+  const codemods = {
+    title: 'Codemods',
+    description: 'Add a codemod.',
+    category: 'guide',
+    sections: [section('Add a codemod')],
+  };
+  const read = async (route?: string) => {
+    if (route === 'kit/codemods') {
+      return {type: 'docs.detail', data: codemods};
+    }
+    throw new Error(`unexpected read ${route}`);
+  };
+
+  it('takes the guide text at the route slug', async () => {
+    const result = await namespacePage(read, 'kit/codemods', {
+      parent: 'kit',
+      order: 4,
+    });
+    expect(result).toEqual({
+      page: {
+        topic: 'kit-codemods',
+        title: 'Codemods',
+        description: 'Add a codemod.',
+        category: 'guide',
+        sections: codemods.sections,
+        parent: 'kit',
+        order: 4,
+      },
+      redirects: {},
+    });
+  });
+});
+
+describe('guideNamespacePages', () => {
+  it('leaves out of each page what the other pages hold, in list order', () => {
+    const pages = guideNamespacePages('cli');
+    const overview = pages.find(page => page.route === 'cli/integrations');
+    const others = pages.filter(page => page !== overview);
+    expect(overview?.except.sort()).toEqual(
+      others.map(page => page.route).sort(),
+    );
+    expect(others.every(page => page.parent === 'cli-integrations')).toBe(true);
+    expect(pages.map(page => page.order)).toEqual(pages.map((_, i) => i));
+  });
+});
+
+describe('nestPages', () => {
+  it('puts the Authoring Reference after the pages under CLI Integrations', () => {
+    const topics = nestPages([
+      {topic: 'cli-integrations'},
+      {topic: 'cli-integrations-ship', parent: 'cli-integrations', order: 7},
+      {topic: 'authoring'},
+    ]);
+    const authoring = topics.find(topic => topic.topic === 'authoring');
+    expect(authoring?.parent).toBe('cli-integrations');
+    expect(authoring?.order).toBeGreaterThan(7);
+  });
+
+  it('fails when a parent is not a top-level page', () => {
+    expect(() => nestPages([{topic: 'a', parent: 'missing'}])).toThrow(
+      'not a top-level page',
+    );
+    expect(() =>
+      nestPages([
+        {topic: 'a'},
+        {topic: 'b', parent: 'a'},
+        {topic: 'c', parent: 'b'},
+      ]),
+    ).toThrow('not a top-level page');
   });
 });
 

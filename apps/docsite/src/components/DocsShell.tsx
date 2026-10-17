@@ -5,7 +5,8 @@
 /**
  * @file DocsShell.tsx
  * @input Route metadata, component registry, and the rendered AppShell header
- * @output Docs navigation with a stable sidebar offset before hydration
+ * @output Docs navigation, with pages nested under their parent page, and a
+ *   stable sidebar offset before hydration
  * @position Docsite-only shell and first-paint header measurement
  */
 
@@ -126,13 +127,68 @@ export function DocsShell({children, packages, docTopics}: DocsShellProps) {
   const canaryPackages = packages.filter(p => !isTheme(p) && p.canaryOnly);
 
   // Classify doc topics by category (from data). Getting Started is promoted
-  // to a top-level nav item, so it is excluded from the Guide section.
+  // to a top-level nav item, so it is excluded from the Guide section. A page
+  // that names a parent shows under that page, in its order.
+  const childPages = useMemo(() => {
+    const byParent = new Map<string, DocTopic[]>();
+    for (const doc of docTopics) {
+      if (!doc.parent) {
+        continue;
+      }
+      byParent.set(doc.parent, [...(byParent.get(doc.parent) ?? []), doc]);
+    }
+    for (const pages of byParent.values()) {
+      pages.sort(
+        (a, b) =>
+          (a.order ?? 0) - (b.order ?? 0) || a.title.localeCompare(b.title),
+      );
+    }
+    return byParent;
+  }, [docTopics]);
   const guideTopics = docTopics
-    .filter(d => d.category === 'guide' && d.topic !== 'getting-started')
+    .filter(
+      d => d.category === 'guide' && d.topic !== 'getting-started' && !d.parent,
+    )
     .sort((a, b) => a.title.localeCompare(b.title));
   const foundationTopics = docTopics
-    .filter(d => d.category === 'foundations')
+    .filter(d => d.category === 'foundations' && !d.parent)
     .sort(foundationsSort);
+
+  const renderDocTopic = (d: DocTopic) => {
+    const href = `/docs/${d.topic}`;
+    const children = childPages.get(d.topic) ?? [];
+    if (children.length === 0) {
+      return (
+        <SideNavItem
+          key={d.topic}
+          label={d.title}
+          href={href}
+          isSelected={pathname === href}
+        />
+      );
+    }
+    return (
+      <SideNavItem
+        key={d.topic}
+        label={d.title}
+        href={href}
+        isSelected={pathname === href}
+        collapsible={{
+          defaultIsCollapsed:
+            pathname !== href &&
+            !children.some(child => pathname === `/docs/${child.topic}`),
+        }}>
+        {children.map(child => (
+          <SideNavItem
+            key={child.topic}
+            label={child.title}
+            href={`/docs/${child.topic}`}
+            isSelected={pathname === `/docs/${child.topic}`}
+          />
+        ))}
+      </SideNavItem>
+    );
+  };
 
   // True for the /components index AND every /components/[name] detail page.
   // On these routes we hide every non-Components section so the sidebar is
@@ -220,14 +276,7 @@ export function DocsShell({children, packages, docTopics}: DocsShellProps) {
                 <SideNavItem
                   label="Guide"
                   collapsible={{defaultIsCollapsed: false}}>
-                  {guideTopics.map(d => (
-                    <SideNavItem
-                      key={d.topic}
-                      label={d.title}
-                      href={`/docs/${d.topic}`}
-                      isSelected={pathname === `/docs/${d.topic}`}
-                    />
-                  ))}
+                  {guideTopics.map(renderDocTopic)}
                 </SideNavItem>
               </SideNavSection>
 
@@ -236,14 +285,7 @@ export function DocsShell({children, packages, docTopics}: DocsShellProps) {
                 <SideNavItem
                   label="Foundations"
                   collapsible={{defaultIsCollapsed: false}}>
-                  {foundationTopics.map(d => (
-                    <SideNavItem
-                      key={d.topic}
-                      label={d.title}
-                      href={`/docs/${d.topic}`}
-                      isSelected={pathname === `/docs/${d.topic}`}
-                    />
-                  ))}
+                  {foundationTopics.map(renderDocTopic)}
                 </SideNavItem>
               </SideNavSection>
 

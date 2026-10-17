@@ -89,20 +89,22 @@ describe('route resolution', () => {
   });
 
   it('lists the guides the sidebar listed before the splits, plus new topics only', () => {
-    // The Guide section as it was before the CLI integration guide and the
-    // other topics were split into short guides. `styling-overview` is a
-    // topic added since.
+    // The top level of the Guide section as it was before the CLI integration
+    // guide and the other topics were split into short guides.
+    // `styling-overview` is a topic added since. Writing docs and the
+    // Authoring Reference show under CLI Integrations.
     const sidebarGuides = docTopics
-      .filter(d => d.category === 'guide' && d.topic !== 'getting-started')
+      .filter(
+        d =>
+          d.category === 'guide' && d.topic !== 'getting-started' && !d.parent,
+      )
       .map(d => d.topic)
       .sort();
     expect(sidebarGuides).toEqual(
       [
-        'authoring',
         'browser-support',
         'cli-component-lookups',
         'cli-integrations',
-        'cli-writing-docs',
         'internationalization',
         'layout',
         'migration',
@@ -116,17 +118,52 @@ describe('route resolution', () => {
     );
   });
 
-  it('opens every CLI integration guide at its section on a full page', () => {
+  it('shows the integration guide as pages under CLI Integrations, the Authoring Reference last', () => {
+    const under = docTopics
+      .filter(d => d.parent === 'cli-integrations')
+      .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+      .map(d => d.title);
+    expect(under).toEqual([
+      'Components',
+      'Templates',
+      'Themes',
+      'Writing docs',
+      'Codemods',
+      'Configuration',
+      'Ship',
+      'Troubleshooting',
+      'Authoring Reference',
+    ]);
+  });
+
+  it('opens every CLI integration guide on its page or at its section on one', () => {
+    const integrationPages = new Set([
+      'cli-integrations',
+      ...docTopics
+        .filter(d => d.parent === 'cli-integrations')
+        .map(d => d.topic),
+    ]);
     for (const route of docsTreeRoutes) {
-      if (!route.startsWith('cli/integrations/')) continue;
+      if (!route.startsWith('cli/integrations/')) {
+        continue;
+      }
       const slug = route.replaceAll('/', '-');
-      expect(pageBySlug.has(slug), slug).toBe(false);
-      expect(docRedirects[slug], slug).toMatch(
-        /^\/docs\/cli-(integrations|writing-docs)(#|$)/,
-      );
+      if (pageBySlug.has(slug)) {
+        expect(pageBySlug.get(slug)?.parent, slug).toBe('cli-integrations');
+        continue;
+      }
+      const [, target] =
+        /^\/docs\/([^#]+)/.exec(docRedirects[slug] ?? '') ?? [];
+      expect(
+        integrationPages.has(target),
+        `${slug} -> ${docRedirects[slug]}`,
+      ).toBe(true);
     }
     expect(docRedirects['cli-integrations-overview']).toBe(
       '/docs/cli-integrations',
+    );
+    expect(docRedirects['cli-integrations-docs-add-a-topic']).toBe(
+      '/docs/cli-writing-docs',
     );
   });
 
