@@ -56,10 +56,12 @@ export interface BaseTemplateDoc extends AuthoredDocGraphFields {
    *  browsable template galleries like the craft browser. */
   scaffold?: boolean;
 
-  /** Functional category for the docsite Templates overview gallery.
-   *  Templates are grouped by the part before `" - "` (e.g. `"Dashboard"`).
+  /** Functional category. Core templates use a `TemplateCategory` value, and
+   *  the docsite Templates overview gallery groups them by the part before
+   *  `" - "` (e.g. `"Dashboard"`). An integration template may use its own
+   *  value instead: bare `astryx template` groups templates by this field.
    *  Independent of CLI discovery, which uses `name`/`description`. */
-  category?: TemplateCategory;
+  category?: TemplateCategory | (string & {});
 
   /** Boolean opt-out for templates that shouldn't appear on the Templates
    *  overview gallery. The template stays available via the CLI and
