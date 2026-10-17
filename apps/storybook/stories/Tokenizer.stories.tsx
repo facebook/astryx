@@ -5,6 +5,7 @@ import type {Meta, StoryObj} from '@storybook/react';
 import {Tokenizer} from '@astryxdesign/core/Tokenizer';
 import type {SearchableItem, SearchSource} from '@astryxdesign/core/Typeahead';
 import {Button} from '@astryxdesign/core/Button';
+import {Token} from '@astryxdesign/core/Token';
 import {MagnifyingGlassIcon} from '@heroicons/react/24/outline';
 
 // Sample data
@@ -548,4 +549,44 @@ export const RtlEndLane: Story = {
     placeholder: 'Search people...',
   },
   name: 'RTL end lane (token + clear)',
+};
+
+const longToken: SearchableItem = {
+  id: 'long',
+  label: 'Status: is In Progress, Blocked, or Waiting for Review',
+};
+
+/**
+ * One token wider than the row, beside the clear-all lane, as the default pill
+ * and through `renderToken`. Both must truncate short of the lane rather than
+ * run underneath it.
+ */
+export const LongTokenEndLane: Story = {
+  render: args => (
+    <div style={{display: 'grid', gap: 16}}>
+      <Tokenizer
+        {...args}
+        searchSource={userSource}
+        value={[longToken]}
+        onChange={() => {}}
+        hasClear
+      />
+      <Tokenizer
+        {...args}
+        label="Custom token"
+        searchSource={userSource}
+        value={[longToken]}
+        onChange={() => {}}
+        hasClear
+        renderToken={(item, onRemove) => (
+          <Token label={item.label} onRemove={onRemove} />
+        )}
+      />
+    </div>
+  ),
+  args: {
+    label: 'Filters',
+    placeholder: 'Add a filter...',
+  },
+  name: 'Long token beside the end lane',
 };
