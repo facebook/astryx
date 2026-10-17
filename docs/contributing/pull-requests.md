@@ -94,6 +94,15 @@ authority only after exact-head owner approval.
 
 A new visual representation, subjective direction, or interaction model remains a design decision. Put a shared decision in its own design specification; keep a durable component-local decision in the owning component/module table.
 
+## Review evidence
+
+[Knowledge contracts: review evidence placement](../architecture/knowledge-contracts.md#review-evidence-placement)
+owns where one-off evidence lives and how cleanup preserves historical links.
+Attach manual screenshots and their receipts to the pull request, or link a
+public retained copy outside the implementation branch. Keep reusable fixtures,
+accepted baselines, and media used by public documentation in their owning source
+paths. Evidence storage does not relax the matching template's evidence bar.
+
 ## Public repository boundary
 
 Descriptions, screenshots, commits, tests, and specification records are public. Do not include internal links, identifiers, hostnames, tools, or operational context.
