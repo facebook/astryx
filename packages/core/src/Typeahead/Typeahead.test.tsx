@@ -1637,6 +1637,54 @@ describe('Typeahead edit mode', () => {
     expect(onChange).not.toHaveBeenCalled();
   });
 
+  it('empties the input when cleared while editing the selected value (#7038)', async () => {
+    const onChangeQuery = vi.fn();
+    function Controlled() {
+      const [value, setValue] = useState<SearchableItem | null>(fruits[0]);
+      return (
+        <Typeahead
+          label="Fruit"
+          searchSource={fruitSource}
+          value={value}
+          onChange={setValue}
+          onChangeQuery={onChangeQuery}
+          hasClear
+        />
+      );
+    }
+    render(<Controlled />);
+    const input = screen.getByRole<HTMLInputElement>('combobox');
+
+    // Enter edit mode: the token gives way to the label as editable text
+    fireEvent.click(screen.getByText(fruits[0].label).closest('div')!);
+    await waitFor(() => expect(input.value).toBe(fruits[0].label));
+
+    fireEvent.click(screen.getByRole('button', {name: 'Clear selection'}));
+
+    // The value and the visible text agree: nothing selected, nothing typed
+    await waitFor(() => expect(input.value).toBe(''));
+    expect(onChangeQuery).toHaveBeenLastCalledWith('');
+    expect(input).toHaveFocus();
+  });
+
+  it('does not report a query change when cleared outside edit mode', () => {
+    const onChangeQuery = vi.fn();
+    render(
+      <Typeahead
+        label="Fruit"
+        searchSource={fruitSource}
+        value={fruits[0]}
+        onChange={vi.fn()}
+        onChangeQuery={onChangeQuery}
+        hasClear
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', {name: 'Clear selection'}));
+
+    expect(onChangeQuery).not.toHaveBeenCalled();
+  });
+
   it('restores token on blur without action', async () => {
     const onChange = vi.fn();
     render(
