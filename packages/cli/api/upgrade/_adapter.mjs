@@ -34,7 +34,15 @@ import {
   inspectAgentDocs,
   renderAgentDocsBlock,
 } from '../../foundation/agent-docs/agent-docs.mjs';
-import {formatCliCommand} from '../../foundation/env/package-manager.mjs';
+import {
+  CLI_PACKAGE,
+  commandInFolder,
+  formatCliCommand,
+  getDlxPrefix,
+  quoteCommandArgument,
+} from '../../foundation/env/package-manager.mjs';
+import {isValidSemver, semverGt} from '../../foundation/env/semver.mjs';
+import {CLI_ROOT} from '../../foundation/fs/paths.mjs';
 import {Project, providerLedgerOf} from '../../foundation/config/project.mjs';
 import {loadIntegrations} from '../../foundation/integrations/integrations.mjs';
 import {resolveProviders} from '../../foundation/integrations/provider-resolution.mjs';
@@ -94,6 +102,78 @@ export function detectInstalledTargetVersion(cwd) {
     }
   }
   return null;
+}
+
+/**
+ * The running CLI's own version, read from its package.json.
+ * @returns {string | null} null when it cannot be read or is not semver
+ */
+function readRunningCliVersion() {
+  try {
+    const pkg = JSON.parse(
+      fs.readFileSync(path.join(CLI_ROOT, 'package.json'), 'utf-8'),
+    );
+    return isValidSemver(pkg.version) ? pkg.version : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Whether the installed Core is newer than this CLI, so part of the requested
+ * range has no codemods here.
+ *
+ * Core codemods ship inside the CLI. A CLI older than the installed
+ * `@astryxdesign/core` has none for the releases after its own version, so it
+ * can find no codemods, or stop partway, while the code still needs those
+ * releases' migrations. The returned command repeats this upgrade with the CLI
+ * release that matches the installed Core.
+ *
+ * Where an upgrade runs decides what it finds: the installed Core is read
+ * from that folder, and `--path` must stay inside it. So the command first
+ * changes to `cwd`, the folder this run used, then names `sourcePath`, the
+ * directory this run scanned, as an absolute `--path`. Pasted from any folder,
+ * it finds the same Core and scans the same directory, even after a package
+ * runner moved this run (Yarn 1 runs `yarn astryx` at the project root). It is
+ * written for a POSIX shell, or for PowerShell on Windows (cmd.exe is not a
+ * target), with every argument quoted for that shell.
+ *
+ * Returns null when the CLI covers the whole range (`to` is not newer than
+ * both the CLI and `from`), when the CLI's own version cannot be read, or when
+ * the target is legacy `@xds/core`, which no CLI release shares a version with.
+ *
+ * @param {{from: string, to: string, packageName: string, options: UpgradeOptions, cwd: string, sourcePath: string}} input
+ * @returns {import('./upgrade.type.mjs').CliBehindCore | null}
+ */
+export function detectCliBehindCore({
+  from,
+  to,
+  packageName,
+  options,
+  cwd,
+  sourcePath,
+}) {
+  if (packageName !== '@astryxdesign/core') return null;
+  const cliVersion = readRunningCliVersion();
+  if (!cliVersion || !semverGt(to, cliVersion) || !semverGt(to, from)) {
+    return null;
+  }
+  const args = ['upgrade', '--from', from, '--path', sourcePath];
+  if (options.codemod) args.push('--codemod', options.codemod);
+  for (const name of options.skipCodemod ?? []) {
+    args.push('--skip-codemod', name);
+  }
+  for (const spec of options.integration ?? []) {
+    args.push('--integration', spec);
+  }
+  if (options.force) args.push('--force');
+  if (options.installDeps) args.push('--install-deps');
+  if (options.apply) args.push('--apply');
+  const upgrade = [
+    getDlxPrefix(cwd),
+    ...[`${CLI_PACKAGE}@${to}`, ...args].map(arg => quoteCommandArgument(arg)),
+  ].join(' ');
+  return {cliVersion, command: commandInFolder(path.resolve(cwd), upgrade)};
 }
 
 /**
@@ -332,11 +412,20 @@ export async function ensureCodemodDeps({installDeps} = {}) {
  * Run the CORE registry codemods. Runs BEFORE the config is loaded so a core
  * CONFIG codemod can repair a config the strict loader would otherwise reject.
  * @param {CoreVersionManifest[]} versionManifests
- * @param {{apply: boolean, path: string, codemod?: string, skipCodemods: Set<string>, root?: string, protection?: {root: string, classify: (file: string) => import('../../foundation/fs/file-protection.mjs').FileProtection[]}, silent?: boolean}} options
+ * @param {{apply: boolean, path: string, codemod?: string, skipCodemods: Set<string>, root?: string, protection?: {root: string, classify: (file: string) => import('../../foundation/fs/file-protection.mjs').FileProtection[]}, silent?: boolean, coversTarget?: boolean}} options
  */
 export async function runCoreCodemods(
   versionManifests,
-  {apply, path: srcPath, codemod, skipCodemods, root, protection, silent},
+  {
+    apply,
+    path: srcPath,
+    codemod,
+    skipCodemods,
+    root,
+    protection,
+    silent,
+    coversTarget,
+  },
 ) {
   return runCodemods(versionManifests, {
     apply,
@@ -346,6 +435,7 @@ export async function runCoreCodemods(
     silent: silent ?? logger.silent,
     root,
     protection,
+    coversTarget,
   });
 }
 

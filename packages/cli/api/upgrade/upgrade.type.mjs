@@ -107,6 +107,16 @@
  */
 
 /**
+ * Present only when the installed `@astryxdesign/core` (the response's `to`) is
+ * newer than the running CLI. Core codemods ship inside the CLI, so this CLI
+ * has none for the releases after `cliVersion`: the run could not migrate them,
+ * whatever else the response reports.
+ * @typedef {object} CliBehindCore
+ * @property {string} cliVersion The running CLI's version, the last release it has codemods for.
+ * @property {string} command The same upgrade, run with the CLI release that matches the installed Core. It first changes to the folder this run used, then names the directory this run scanned as an absolute `--path`, so pasted from any folder it finds the same Core and scans the same directory. It is written for a POSIX shell (sh, bash, zsh), or for PowerShell on Windows, with each argument quoted for that shell; cmd.exe is not a target.
+ */
+
+/**
  * astryx --json upgrade [--apply]
  * @typedef {object} UpgradeRunResponse
  * @property {'upgrade.run'} type
@@ -127,6 +137,7 @@
  * @property {Array<{file: string, location?: string, reason: string}>} [data.declinedCandidates] Candidates left unchanged because proof was insufficient.
  * @property {number} [data.transformsApplied] Total codemod changes. A code or config codemod counts once for each file it changed, so one file changed by four of them counts four times; a project codemod counts once, however many files it writes.
  * @property {Array<{file: string, codemod: string, error: string}>} [data.errors] Per-codemod errors, when any codemod failed.
+ * @property {CliBehindCore} [data.cliBehindCore] Present only when the installed Core is newer than this CLI: codemods for the releases after `cliBehindCore.cliVersion` did not run.
  */
 
 /**
@@ -140,9 +151,13 @@
  *   reports the exact command to apply it; integrations are skipped for the
  *   preview (they will be processed on the `--apply` run).
  *
+ * `no_codemods` and `config_fixable` carry `cliBehindCore` when the installed
+ * Core is newer than this CLI; `no_codemods` then means only that this CLI has
+ * no codemods for the range.
+ *
  * @typedef {object} UpgradeStatusResponse
  * @property {'upgrade.status'} type
- * @property {{status: 'up_to_date', from: string, to: string, agentDocs: AgentDocsSummary, registryCompositions?: RegistryCompositionSummary} | {status: 'no_codemods', from: string, to: string, agentDocs: AgentDocsSummary, registryCompositions?: RegistryCompositionSummary} | {status: 'config_fixable', from: string, to: string, configError: string, configCodemods: string[], suggestedCommand: string, message: string, note: string, agentDocs: AgentDocsSummary}} data
+ * @property {{status: 'up_to_date', from: string, to: string, agentDocs: AgentDocsSummary, registryCompositions?: RegistryCompositionSummary} | {status: 'no_codemods', from: string, to: string, agentDocs: AgentDocsSummary, registryCompositions?: RegistryCompositionSummary, cliBehindCore?: CliBehindCore} | {status: 'config_fixable', from: string, to: string, configError: string, configCodemods: string[], suggestedCommand: string, message: string, note: string, agentDocs: AgentDocsSummary, cliBehindCore?: CliBehindCore}} data
  */
 
 /**
