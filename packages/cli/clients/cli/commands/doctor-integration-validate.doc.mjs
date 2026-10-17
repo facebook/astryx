@@ -14,7 +14,9 @@ export const doc = {
   description:
     'Validates one integration at a time: the local package rooted at cwd, or an ' +
     'installed package resolved by name. It schema-checks the manifest, verifies ' +
-    'every declared contribution root, and reports every finding. Safe as a CI gate.',
+    'every declared contribution root, and reports every finding. Safe as a CI gate. ' +
+    'Outside a package, with no package name it writes nothing and reports one no_package issue (exit 1); ' +
+    'a package name is looked up as it is in a project.',
   fn: 'validateIntegration',
   args: [
     {
@@ -35,6 +37,7 @@ export const doc = {
       cli: 'astryx doctor integration validate @acme/widgets --json',
     },
   ],
+  outsideProject: 'own',
   exitCodes: [
     {code: 0, when: 'no error-severity issues (warnings are allowed)'},
     {code: 1, when: 'one or more error-severity issues'},

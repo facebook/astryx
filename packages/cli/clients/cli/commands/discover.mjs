@@ -31,6 +31,7 @@ import {discover as discoverApi} from '../../../api/discover/discover.mjs';
 import {Project} from '../../../foundation/config/project.mjs';
 import {warnOnIntegrationIssues} from '../../../foundation/integrations/integration-warnings.mjs';
 import {getCliInvocation} from '../../../foundation/env/package-manager.mjs';
+import {isOutsideProject} from '../../../foundation/env/project-scope.mjs';
 import {defineCommand} from '../lib/define-command.mjs';
 import {resultSet} from '../../../foundation/debug/index.mjs';
 import {doc as discoverCommand} from './discover.doc.mjs';
@@ -289,12 +290,19 @@ export function registerDiscover(program) {
                     ),
                   );
                 } else if (result.meta && result.meta.configured === false) {
+                  // Outside a project there is no astryx.config to add a
+                  // package to (spec AST-081 FR3).
+                  const outside = isOutsideProject();
                   emit(
                     text('No integrations configured.'),
-                    text('Add integration package names to astryx.config.mjs:'),
-                    code(
-                      "export default {\n  integrations: ['@scope/your-integration'],\n};",
-                    ),
+                    ...(outside
+                      ? [text('This folder is outside a project, so no integration is configured.')]
+                      : [
+                          text('Add integration package names to astryx.config.mjs:'),
+                          code(
+                            "export default {\n  integrations: ['@scope/your-integration'],\n};",
+                          ),
+                        ]),
                     text(
                       [
                         `Find Astryx packages on npm: npm search @astryxdesign`,

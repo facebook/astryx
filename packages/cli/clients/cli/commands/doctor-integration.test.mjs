@@ -19,7 +19,7 @@ import {Command} from 'commander';
 import {discoverCoreTemplates} from '../../../foundation/discovery/template-adapter.mjs';
 import {discoverOwnedComponents} from '../../../foundation/discovery/component-discovery.mjs';
 import {discoverBuiltinTopics} from '../../../foundation/discovery/docs-discovery.mjs';
-import {findCoreDir} from '../../../foundation/fs/paths.mjs';
+import {findCoreDir, findProjectCoreDir} from '../../../foundation/fs/paths.mjs';
 import {registerDoctor} from './doctor.mjs';
 
 let tmpDir;
@@ -184,7 +184,7 @@ describe('doctor integration — command', () => {
     ]);
 
     expect(logCalls.join('\n')).toContain(
-      'astryx doctor integration templates <package>',
+      ' doctor integration templates <package>',
     );
     expect(process.exitCode).toBeUndefined();
   });
@@ -352,7 +352,8 @@ describe('doctor integration — command', () => {
     tmpDir = outside;
     try {
       writeComponentIntegration('AcmeCarousel');
-      expect(findCoreDir(outside)).toBeNull();
+      // Doctor judges the project's own Core, never the one a copy carries.
+      expect(findProjectCoreDir(outside)).toBeNull();
       process.chdir(outside);
 
       await createProgram().parseAsync([

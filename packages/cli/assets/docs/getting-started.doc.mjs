@@ -60,7 +60,7 @@ export const docs = {
           type: 'code',
           lang: 'bash',
           label: 'Terminal',
-          code: `npx astryx init`,
+          code: `astryx init`,
         },
       ],
     },

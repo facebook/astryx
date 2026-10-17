@@ -20,6 +20,7 @@ import {
   checkPackageManager,
 } from '../../../api/doctor/doctor.mjs';
 import {MIN_NODE_VERSION} from '../../../foundation/env/node-version.mjs';
+import {CLI_VERSION, linkThisCliAsProjectCli} from '../../../test-utils/release-fixtures.mjs';
 
 let tmpDir;
 let logCalls;
@@ -101,7 +102,7 @@ describe('doctor — individual checks', () => {
   });
 
   it('app themes: reports unmanaged state as one INFO check', async () => {
-    fs.writeFileSync(path.join(tmpDir, 'package.json'), '{"name":"app"}\n');
+    fs.writeFileSync(path.join(tmpDir, 'package.json'), '{"name":"app","dependencies":{"@astryxdesign/core":"*"}}\n');
     const result = await runChecks({cwd: tmpDir});
     const themeChecks = result.checks.filter(check =>
       check.id.startsWith('theme-'),
@@ -176,13 +177,16 @@ describe('doctor — individual checks', () => {
   it('agent-docs: the fix names the scoped package when the project has no local CLI', () => {
     fs.writeFileSync(path.join(tmpDir, 'package-lock.json'), '{}');
     const res = checkAgentDocs({cwd: tmpDir});
-    expect(res.fix).toContain('`npx @astryxdesign/cli init --features agents`');
+    expect(res.fix).toContain(
+      `\`npx @astryxdesign/cli@${CLI_VERSION} init --features agents\``,
+    );
   });
 
   it('agent-docs: the fix keeps `npx astryx` when the project has a local CLI', () => {
     fs.writeFileSync(path.join(tmpDir, 'package-lock.json'), '{}');
     fs.mkdirSync(path.join(tmpDir, 'node_modules', '.bin'), {recursive: true});
     fs.writeFileSync(path.join(tmpDir, 'node_modules', '.bin', 'astryx'), '');
+    linkThisCliAsProjectCli(tmpDir);
     const res = checkAgentDocs({cwd: tmpDir});
     expect(res.fix).toContain('`npx astryx init --features agents`');
   });
@@ -301,7 +305,8 @@ describe('doctor — runChecks / report', () => {
     expect(total).toBe(report.checks.length);
   });
 
-  it('reports a FAIL for core when run in a bare directory', async () => {
+  it('reports a FAIL for core in a project that declares Core but installs none', async () => {
+    fs.writeFileSync(path.join(tmpDir, 'package.json'), '{"name":"app","dependencies":{"@astryxdesign/core":"*"}}\n');
     const report = await runChecks({cwd: tmpDir});
     expect(find(report.checks, 'core-installed').status).toBe('fail');
     expect(report.summary.fail).toBeGreaterThan(0);
@@ -346,7 +351,8 @@ describe('doctor — command', () => {
     process.exitCode = prevExit;
   });
 
-  it('sets exit code 1 when a check FAILs (bare dir, no @astryxdesign/core)', async () => {
+  it('sets exit code 1 when a check FAILs (Core declared, not installed)', async () => {
+    fs.writeFileSync(path.join(tmpDir, 'package.json'), '{"name":"app","dependencies":{"@astryxdesign/core":"*"}}\n');
     const prevCwd = process.cwd();
     const prevExit = process.exitCode;
     process.exitCode = undefined;

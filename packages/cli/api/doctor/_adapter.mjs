@@ -10,7 +10,7 @@ import {
   themeImportPackage,
 } from '../../foundation/discovery/theme-discovery.mjs';
 import {resolveThemeImports} from '../../foundation/discovery/theme-imports.mjs';
-import {findCoreDir, findInstalledPackage} from '../../foundation/fs/paths.mjs';
+import {findProjectCoreDir, findInstalledPackage} from '../../foundation/fs/paths.mjs';
 export {
   isLocalThemeOwner,
   planThemeAppWrite,
@@ -124,7 +124,7 @@ export function discoverDoctorUnmigratedCopies(projectDir) {
 
 /** @param {string} projectDir */
 export function findDoctorCoreDir(projectDir) {
-  return findCoreDir(projectDir);
+  return findProjectCoreDir(projectDir);
 }
 
 /** @param {string} projectDir @param {string} packageName */

@@ -105,7 +105,7 @@ export default {
         {
           type: 'code',
           lang: 'bash',
-          code: 'npx astryx doctor integration components\nnpx astryx component SideNav\nnpx astryx component AcmeSideNav\nnpx astryx component SideNav --package @astryxdesign/core',
+          code: 'astryx doctor integration components\nastryx component SideNav\nastryx component AcmeSideNav\nastryx component SideNav --package @astryxdesign/core',
         },
         {
           type: 'list',

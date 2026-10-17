@@ -20,7 +20,7 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'Readers open one section at a time, so give each section one idea and keep it to about 30 lines. `npx astryx doctor` warns on any read over 32 KB.',
+          text: 'Readers open one section at a time, so give each section one idea and keep it to about 30 lines. `astryx doctor` warns on any read over 32 KB.',
         },
         {
           type: 'list',
@@ -34,7 +34,7 @@ export const docs = {
         {
           type: 'code',
           lang: 'bash',
-          code: '# The section list\nnpx astryx docs acme/deploying\n# One section\nnpx astryx docs acme/deploying check-before-you-ship\n# Everything\nnpx astryx docs acme/deploying --full',
+          code: '# The section list\nastryx docs acme/deploying\n# One section\nastryx docs acme/deploying check-before-you-ship\n# Everything\nastryx docs acme/deploying --full',
         },
       ],
     },
@@ -92,7 +92,7 @@ export const docs = {
         {
           type: 'code',
           lang: 'bash',
-          code: 'npx astryx search "place a doc" --type doc',
+          code: 'astryx search "place a doc" --type doc',
         },
         {
           type: 'list',

@@ -48,7 +48,7 @@ export const docs = {
         {
           type: 'code',
           lang: 'bash',
-          code: 'npx astryx integration verify',
+          code: 'astryx integration verify',
         },
         {
           type: 'list',

@@ -13,7 +13,7 @@ export const docs = {
   name: 'commands',
   title: 'Commands',
   summary:
-    'Every command and subcommand: usage, options, examples, and exit codes.',
+    'Every command and subcommand: usage, options, examples, exit codes, and what it does outside a project.',
   keywords: ['commands', 'usage', 'options', 'flags'],
   placement: {parent: 'namespace:cli', slot: 'reference', order: 10},
   slots: {

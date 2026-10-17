@@ -39,6 +39,11 @@ const exists = rel => fs.existsSync(path.join(tmpDir, rel));
 
 describe('astryx init — default (no flags)', () => {
   it('installs the tool-agnostic AGENTS.md cheat sheet and prints next steps', async () => {
+    // Inside a project; outside one the steps are left out (outside-project.test.mjs).
+    fs.writeFileSync(
+      path.join(tmpDir, 'package.json'),
+      '{"name":"app","dependencies":{"@astryxdesign/core":"*"}}',
+    );
     const {status, stdout} = await runCli(['init'], {cwd: tmpDir});
     expect(status).toBe(0);
     expect(exists('AGENTS.md')).toBe(true);

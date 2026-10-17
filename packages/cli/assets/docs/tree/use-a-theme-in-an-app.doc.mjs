@@ -26,7 +26,7 @@ export const docs = {
         {
           type: 'code',
           lang: 'bash',
-          code: 'npm install @acme/astryx-widgets\nnpx astryx theme add ocean --package @acme/astryx-widgets',
+          code: 'npm install @acme/astryx-widgets\nastryx theme add ocean --package @acme/astryx-widgets',
         },
         {
           type: 'code',

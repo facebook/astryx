@@ -12,6 +12,7 @@ import {themeAdd} from '../theme/add/add.mjs';
 import {themeEject} from '../theme/eject/eject.mjs';
 import {themeBuild} from '../theme/build/build.mjs';
 import {parseThemeModuleRecord} from '../../foundation/config/theme-state.mjs';
+import {CLI_VERSION} from '../../test-utils/release-fixtures.mjs';
 
 /** @type {string[]} */
 const dirs = [];
@@ -47,7 +48,7 @@ async function fixture(themeSpecs = [{slug: 'ocean'}], options = {}) {
   );
   write(
     path.join(dir, 'node_modules/@astryxdesign/core/package.json'),
-    JSON.stringify({name: '@astryxdesign/core', version: '1.0.0'}),
+    JSON.stringify({name: '@astryxdesign/core', version: CLI_VERSION}),
   );
 
   const packageDir = path.join(dir, 'node_modules/@acme/themes');
@@ -67,7 +68,7 @@ async function fixture(themeSpecs = [{slug: 'ocean'}], options = {}) {
       version: '1.0.0',
       type: 'module',
       peerDependencies: {
-        '@astryxdesign/core': options.peerRange ?? '^1.0.0',
+        '@astryxdesign/core': options.peerRange ?? `^${CLI_VERSION}`,
       },
       exports: exportsMap,
     }),
@@ -610,7 +611,7 @@ describe('app-theme doctor checks', () => {
     for (const name of ['@astryxdesign/core', '@astryxdesign/theme-neutral']) {
       write(
         path.join(root, 'node_modules', name, 'package.json'),
-        JSON.stringify({name, version: '1.0.0'}),
+        JSON.stringify({name, version: CLI_VERSION}),
       );
     }
     const app = path.join(root, 'packages/app');
@@ -620,8 +621,8 @@ describe('app-theme doctor checks', () => {
         name: 'app',
         private: true,
         dependencies: {
-          '@astryxdesign/core': '1.0.0',
-          '@astryxdesign/theme-neutral': '1.0.0',
+          '@astryxdesign/core': CLI_VERSION,
+          '@astryxdesign/theme-neutral': CLI_VERSION,
         },
         astryx: {theme: '@astryxdesign/theme-neutral'},
       }),

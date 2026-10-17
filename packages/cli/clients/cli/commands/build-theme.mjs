@@ -34,6 +34,7 @@ import * as path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {spawn} from 'node:child_process';
 import {getCliInvocation} from '../../../foundation/env/package-manager.mjs';
+import {isOutsideProject} from '../../../foundation/env/project-scope.mjs';
 import {jsonOut} from '../../../foundation/response/json.mjs';
 import {
   emit,
@@ -283,12 +284,22 @@ function printThemeAddList(themes) {
         return theme.description ? [head, theme.description] : head;
       }),
     ),
-    text(
-      `Import one: ${run} theme add <slug> [--package <package>]\n` +
-        `Fork source: ${run} theme eject <slug> [target-path]`,
-    ),
+    text(themeNextSteps(run)),
     more,
   );
+}
+
+/**
+ * What to do with a listed theme. Outside a project there is no app to add one
+ * to, so only the fork step is named (spec AST-081 FR3).
+ * @param {string} run the CLI invocation
+ * @returns {string}
+ */
+function themeNextSteps(run) {
+  const fork = `Fork source: ${run} theme eject <slug> [target-path]`;
+  return isOutsideProject()
+    ? fork
+    : `Import one: ${run} theme add <slug> [--package <package>]\n${fork}`;
 }
 
 /**
@@ -325,10 +336,7 @@ function printThemeList(themes, unmigratedCopies = []) {
           default: (/** @type {boolean} */ value) => (value ? 'yes' : 'no'),
         },
       }),
-      text(
-        `Import one: ${run} theme add <slug> [--package <package>]\n` +
-          `Fork source: ${run} theme eject <slug> [target-path]`,
-      ),
+      text(themeNextSteps(run)),
       more,
     );
   }

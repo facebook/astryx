@@ -21,7 +21,9 @@ import {
   AGENT_DOC_PATHS,
   INIT_MARKERS,
   SETUP_NUDGE,
+  setupNudge,
 } from '../scripts/agent-doc-state.mjs';
+import {cliInvocation} from '../scripts/postinstall.mjs';
 // Dev-only, monorepo-relative: core must not depend on the CLI at runtime (the
 // CLI peer-depends on core), but the test can read the source and the generator.
 import * as cliLeaf from '../../cli/foundation/agent-docs/agent-doc-state.mjs';
@@ -92,6 +94,9 @@ describe('core postinstall — one authoritative source, no drift', () => {
     expect(AGENT_DOC_PATHS).toEqual(cliLeaf.AGENT_DOC_PATHS);
     expect(INIT_MARKERS).toEqual(cliLeaf.INIT_MARKERS);
     expect(SETUP_NUDGE).toBe(cliLeaf.SETUP_NUDGE);
+    expect(setupNudge('pnpm exec astryx')).toBe(
+      cliLeaf.setupNudge('pnpm exec astryx'),
+    );
   });
 
   it('agrees with the CLI leaf on a real project', () => {
@@ -133,5 +138,33 @@ describe('core postinstall — shouldNudge', () => {
         }
       }
     }
+  });
+});
+
+describe('core postinstall — the nudge names the command the CLI would print', () => {
+  it('words the nudge around the stem it is given', () => {
+    expect(setupNudge('pnpm exec astryx')).toContain(
+      'run `pnpm exec astryx init` to finish setup',
+    );
+    expect(SETUP_NUDGE).toContain('run `npx @astryxdesign/cli init`');
+  });
+
+  it("asks the project's installed CLI for its stem", async () => {
+    write('package.json', '{"name":"app"}');
+    write('pnpm-lock.yaml', '');
+    write('node_modules/.bin/astryx', '');
+    fs.mkdirSync(path.join(tmp, 'node_modules/@astryxdesign'), {
+      recursive: true,
+    });
+    fs.symlinkSync(
+      path.resolve(import.meta.dirname, '../../cli'),
+      path.join(tmp, 'node_modules/@astryxdesign/cli'),
+    );
+    expect(await cliInvocation(tmp)).toBe('pnpm exec astryx');
+  });
+
+  it('has no stem to offer when the CLI is not installed', async () => {
+    write('package.json', '{"name":"app"}');
+    expect(await cliInvocation(tmp)).toBeUndefined();
   });
 });

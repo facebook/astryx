@@ -4,7 +4,11 @@
  * @file Health-check engine for `astryx doctor`.
  *
  * Runs a series of diagnostic checks against the user's project and
- * environment, returning a structured report. Each check is a small,
+ * environment, returning a structured report. Outside a project it checks the
+ * computer instead (spec AST-081 FR4): the Node version, the release that
+ * answered, the newest release the computer knows of, and whether the
+ * computer-level agent text is present and current; no check fails because
+ * the folder has no project. Each check is a small,
  * self-contained function that returns a {@link DoctorCheck} record, so
  * adding a new diagnostic is just appending a function to {@link SYNC_CHECKS}.
  *
@@ -25,8 +29,9 @@ import * as path from 'node:path';
 
 import {MIN_NODE_VERSION, isNodeVersionSupported} from '../../foundation/env/node-version.mjs';
 import {AGENT_DOC_PATHS} from '../../foundation/agent-docs/agent-doc-state.mjs';
-import {CLI_ROOT, findCoreDir, findInstalledPackage} from '../../foundation/fs/paths.mjs';
-import {explainPackageManager, getCliInvocation} from '../../foundation/env/package-manager.mjs';
+import {CLI_ROOT, findProjectCoreDir, findInstalledPackage} from '../../foundation/fs/paths.mjs';
+import {explainPackageManager, formatCliCommand, getCliInvocation, guessCliInvocation} from '../../foundation/env/package-manager.mjs';
+import {chooseDeclaredCliCommand, declaredCliCommandsOf} from '../../foundation/env/cli-command.mjs';
 import {
   findConfigPath,
   Project,
@@ -52,6 +57,10 @@ import {typedEdges} from '../docs/node/node.mjs';
 import {detailView, indexView} from '../../foundation/doc-compiler/lenses.mjs';
 import {semverCompare, isValidSemver, satisfiesRange} from '../../foundation/env/semver.mjs';
 import {checkAppThemes, checkThemes} from './theme-checks.mjs';
+import {isOutsideProject} from '../../foundation/env/project-scope.mjs';
+import {answeredBy} from '../../foundation/release/run-context.mjs';
+import {knownLatestRelease} from '../../foundation/release/global-state.mjs';
+import {displayHomePath, inspectComputerAgentText} from '../../foundation/agent-docs/computer-agent-text.mjs';
 
 /**
  * @typedef {'pass'|'warn'|'fail'|'info'} DoctorStatus
@@ -331,7 +340,7 @@ export async function checkConfig(ctx) {
         label: 'astryx.config.mjs',
         status: 'fail',
         message: `astryx.config.mjs loads, but the CLI could not load the project from it: ${firstLine(ctx.projectError)}`,
-        fix: 'Fix what the message names. `astryx docs authoring config` lists every field astryx.config accepts.',
+        fix: `Fix what the message names. \`${formatCliCommand('docs authoring config', ctx.cwd)}\` lists every field astryx.config accepts.`,
       };
     }
     return {
@@ -476,7 +485,7 @@ function describeUnreadableManifests(failures) {
   return (
     ` ${failures.length} installed ${one ? 'dependency ships' : 'dependencies ship'} ` +
     `an astryx.integration.* manifest that could not be loaded, so ${one ? 'it contributes' : 'they contribute'} ` +
-    `nothing: ${listed}. Run \`astryx doctor integration validate <package>\` for details.`
+    `nothing: ${listed}. Run \`${formatCliCommand('doctor integration validate <package>')}\` for details.`
   );
 }
 
@@ -550,7 +559,7 @@ export function checkConfiguredIntegrations(ctx) {
         `${withdrawn.length} of ${configured.length} integration${plural} named in astryx.config could not be loaded, ` +
         `so ${withdrawn.length === 1 ? 'it contributes' : 'they contribute'} nothing: ${listed}.`,
       fix:
-        'Install each one, fix its astryx.integration.* manifest (`astryx doctor integration validate <package>` says what is wrong), ' +
+        `Install each one, fix its astryx.integration.* manifest (\`${formatCliCommand('doctor integration validate <package>', ctx.cwd)}\` says what is wrong), ` +
         'or remove it from `integrations` in astryx.config.',
     };
   }
@@ -748,7 +757,7 @@ export function checkIntegrationIssues(ctx) {
     label: 'Integration contributions',
     status: 'warn',
     message: `${issues.length} integration issue(s)${errors > 0 ? `, ${errors} of them errors` : ''}: ${details}`,
-    fix: 'Run `astryx doctor integration` for package-specific diagnostics and resolve cross-package precedence in astryx.config.',
+    fix: `Run \`${formatCliCommand('doctor integration', ctx.cwd)}\` for package-specific diagnostics and resolve cross-package precedence in astryx.config.`,
   };
 }
 
@@ -954,7 +963,7 @@ function surfaceProblems(surface) {
   const problems = [];
   if (surface.types === 0 && surface.untraced.length === 0) {
     problems.push(
-      '@astryxdesign/cli/authoring exports no types, so nothing was compared with `astryx docs authoring`',
+      `@astryxdesign/cli/authoring exports no types, so nothing was compared with \`${formatCliCommand('docs authoring')}\``,
     );
   }
   for (const {module, names, reason, source, key} of surface.unreadable) {
@@ -967,7 +976,7 @@ function surfaceProblems(surface) {
             ? `${source} does not load`
             : `${source} renders section "${key}", which the topic's index does not list`;
     problems.push(
-      `${nameTypes(names)} from ${module} ${names.length === 1 ? 'has' : 'have'} no doc in \`astryx docs authoring\`: ${why}`,
+      `${nameTypes(names)} from ${module} ${names.length === 1 ? 'has' : 'have'} no doc in \`${formatCliCommand('docs authoring')}\`: ${why}`,
     );
   }
   for (const {name, reason} of surface.untraced) {
@@ -1008,7 +1017,7 @@ export async function checkAuthoringDocs(_ctx, options = {}) {
     const audit = await auditAuthoringSelfDocs({root, sources});
     const problems = [
       ...audit.unreachable.map(
-        source => `${source} is not in \`astryx docs authoring\``,
+        source => `${source} is not in \`${formatCliCommand('docs authoring')}\``,
       ),
       ...audit.failed.map(
         ({source, error}) => `${source} failed to load: ${error}`,
@@ -1024,7 +1033,7 @@ export async function checkAuthoringDocs(_ctx, options = {}) {
         : {keys: options.topicKeys};
     const surface = [
       ...('error' in topic
-        ? [`\`astryx docs authoring\` could not be read: ${topic.error}`]
+        ? [`\`${formatCliCommand('docs authoring')}\` could not be read: ${topic.error}`]
         : []),
       ...surfaceProblems(
         await auditAuthoringSurface({root, sources, topicKeys: topic.keys}),
@@ -1048,7 +1057,7 @@ export async function checkAuthoringDocs(_ctx, options = {}) {
       id,
       label,
       status: 'pass',
-      message: `All ${audit.sections} authoring schemas are readable in \`astryx docs authoring\`.`,
+      message: `All ${audit.sections} authoring schemas are readable in \`${formatCliCommand('docs authoring')}\`.`,
     };
   } catch (err) {
     return {
@@ -1088,11 +1097,11 @@ export async function checkCliDocs(_ctx, options = {}) {
     const problems = [
       ...audit.missing.map(
         source =>
-          `${source} has no namespace, so no \`astryx docs\` topic reads it`,
+          `${source} has no namespace, so no \`${formatCliCommand('docs')}\` topic reads it`,
       ),
       ...audit.unknown.map(
         ({source, namespace}) =>
-          `${source} has namespace "${namespace}", which no \`astryx docs\` topic reads`,
+          `${source} has namespace "${namespace}", which no \`${formatCliCommand('docs')}\` topic reads`,
       ),
       ...audit.misfiled.map(({message}) => message),
       ...audit.failed.map(
@@ -1116,7 +1125,7 @@ export async function checkCliDocs(_ctx, options = {}) {
       id,
       label,
       status: 'pass',
-      message: `All ${audit.docs} CLI docs are readable: ${audit.tree} in the \`astryx docs cli\` tree and ${audit.authoring} in \`astryx docs authoring\`.`,
+      message: `All ${audit.docs} CLI docs are readable: ${audit.tree} in the \`${formatCliCommand('docs cli')}\` tree and ${audit.authoring} in \`${formatCliCommand('docs authoring')}\`.`,
     };
   } catch (err) {
     return {
@@ -1279,6 +1288,191 @@ export async function checkDocsProgressiveDisclosure(ctx) {
 }
 
 /**
+ * Check 11 — the command every printed command starts with, and a warning when
+ * loaded integrations declare different ones (their `cliCommand`). Then the
+ * picker uses neither, so commands fall back to the package-manager guess.
+ *
+ * @param {DoctorContext} ctx
+ * @returns {DoctorCheck}
+ */
+export function checkCliCommand(ctx) {
+  const id = 'cli-command';
+  const label = 'CLI command';
+  const {command, conflict, declared} = chooseDeclaredCliCommand(
+    declaredCliCommandsOf(ctx.integrations ?? []),
+  );
+  if (conflict) {
+    const claims = declared
+      .map(entry => `${entry.package} (\`${entry.command}\`)`)
+      .join(', ');
+    return {
+      id,
+      label,
+      status: 'warn',
+      message: `Loaded integrations declare different CLI commands: ${claims}. Neither is used, so printed commands start with \`${guessCliInvocation(ctx.cwd)}\`.`,
+      fix: 'Remove the integration that does not belong here, or have every package declare the same `cliCommand` in its astryx.integration manifest.',
+    };
+  }
+  if (command) {
+    const packages = declared.map(entry => entry.package).join(', ');
+    return {
+      id,
+      label,
+      status: 'pass',
+      message: `Printed commands start with \`${command}\`, the cliCommand of ${packages}.`,
+    };
+  }
+  return {
+    id,
+    label,
+    status: 'info',
+    message: `No loaded integration declares a cliCommand, so printed commands start with \`${getCliInvocation(ctx.cwd)}\`.`,
+  };
+}
+
+/* ── outside a project: the computer ─────────────────────────────────── */
+
+/**
+ * What a computer check reads: the running Node, the release that answered
+ * (`meta.answeredBy`), and the newest release the computer knows of.
+ * @typedef {object} ComputerContext
+ * @property {string} nodeVersion
+ * @property {{cli: string, core: string | null, copy: string}} answeredBy
+ * @property {string | null} latest the newest release known, or null
+ * @property {Array<{path: string, state: import('../../foundation/agent-docs/computer-agent-text.mjs').ComputerAgentTextState}>} [agentText]
+ *   each file of the computer-level agent text against this release's rendering
+ * @property {string} [cwd] the folder doctor runs in, for the printed fix
+ */
+
+/**
+ * The release that answered this run outside a project, and the Core it
+ * reads from.
+ * @param {ComputerContext} ctx
+ * @returns {DoctorCheck}
+ */
+export function checkAnsweringRelease(ctx) {
+  const {cli, core} = ctx.answeredBy;
+  return {
+    id: 'answering-release',
+    label: 'Release that answered',
+    status: core ? 'pass' : 'info',
+    message: core
+      ? `CLI ${cli} with Core ${core} answered, outside a project.`
+      : `CLI ${cli} answered, outside a project. It installs Core ${cli} into the per-user cache the first time a command needs it.`,
+  };
+}
+
+/**
+ * The newest release this computer knows of, beside the one that answered.
+ * Runs inside and outside a project. Always `info`: it reports, never warns or
+ * fails, and doctor installs nothing.
+ * @param {ComputerContext} ctx
+ * @returns {DoctorCheck}
+ */
+export function checkNewestRelease(ctx) {
+  const {latest} = ctx;
+  const {cli} = ctx.answeredBy;
+  const base = {id: 'newest-release', label: 'Newest release', status: /** @type {const} */ ('info')};
+  if (!latest) {
+    return {
+      ...base,
+      message: 'No newer release is known: this computer has not checked the package registry yet.',
+    };
+  }
+  if (isValidSemver(latest) && isValidSemver(cli) && semverCompare(latest, cli) > 0) {
+    return {
+      ...base,
+      message: `Release ${latest} is newer than ${cli}, the release that answered.`,
+    };
+  }
+  return {...base, message: `No newer release is known: the newest is ${latest}.`};
+}
+
+/**
+ * The computer-level agent text (spec AST-081 FR4, FR8): present and equal to
+ * this release's rendering, present but different, or absent. Always `info`:
+ * the text is optional, so it never warns or fails. A file Astryx did not
+ * write counts as absent, and `init --user` keeps it.
+ * @param {ComputerContext} ctx
+ * @returns {DoctorCheck}
+ */
+export function checkComputerAgentText(ctx) {
+  const files = ctx.agentText ?? inspectComputerAgentText();
+  const base = {
+    id: 'computer-agent-text',
+    label: 'Computer-level agent text',
+    status: /** @type {const} */ ('info'),
+  };
+  const fix = `Run \`${formatCliCommand('astryx init --user', ctx.cwd)}\`.`;
+  const ours = files.filter(f => f.state === 'current' || f.state === 'differs');
+  const kept = files
+    .filter(f => f.state === 'foreign')
+    .map(f => displayHomePath(f.path));
+  const keptNote =
+    kept.length > 0
+      ? ` Not written by Astryx, so left as they are: ${kept.join(', ')}.`
+      : '';
+  if (ours.length === 0) {
+    return {
+      ...base,
+      message: `No computer-level agent text: agents outside a project with Astryx agent docs are not told how to use Astryx.${keptNote}`,
+      fix,
+    };
+  }
+  if (files.every(f => f.state === 'current')) {
+    return {
+      ...base,
+      message: `The computer-level agent text matches this release: ${files.map(f => displayHomePath(f.path)).join(', ')}.`,
+    };
+  }
+  const stale = files
+    .filter(f => f.state === 'differs' || f.state === 'absent')
+    .map(f => displayHomePath(f.path));
+  return {
+    ...base,
+    message: `The computer-level agent text differs from this release's: ${stale.join(', ')}.${keptNote}`,
+    fix,
+  };
+}
+
+/**
+ * The checks doctor runs outside a project, in order.
+ * @type {Array<(ctx: ComputerContext) => DoctorCheck>}
+ */
+export const COMPUTER_CHECKS = [
+  ctx =>
+    checkNodeVersion({
+      cwd: '',
+      nodeVersion: ctx.nodeVersion,
+      coreDir: null,
+      configPath: null,
+    }),
+  checkAnsweringRelease,
+  checkNewestRelease,
+  checkComputerAgentText,
+];
+
+/**
+ * Doctor outside a project: the computer, never the folder.
+ * @param {string} cwd
+ * @returns {DoctorReport}
+ */
+function runComputerChecks(cwd) {
+  /** @type {ComputerContext} */
+  const ctx = {
+    nodeVersion: process.versions.node,
+    answeredBy: answeredBy(cwd),
+    latest: knownLatestRelease(),
+    agentText: inspectComputerAgentText(),
+    cwd,
+  };
+  const checks = COMPUTER_CHECKS.map(fn => fn(ctx));
+  const summary = {pass: 0, warn: 0, fail: 0, info: 0};
+  for (const c of checks) summary[c.status] += 1;
+  return {checks, summary};
+}
+
+/**
  * Ordered list of synchronous check functions. Append here to add a check.
  * (checkConfig is async and is awaited separately by {@link runChecks}.)
  * @type {Array<(ctx: DoctorContext) => DoctorCheck>}
@@ -1294,6 +1488,7 @@ export const SYNC_CHECKS = [
   checkAgentDocs,
   checkPeerDeps,
   checkPackageManager,
+  checkCliCommand,
 ];
 
 /**
@@ -1305,7 +1500,8 @@ export const SYNC_CHECKS = [
  */
 export async function runChecks(options = {}) {
   const cwd = options.cwd ?? process.cwd();
-  const coreDir = findCoreDir(cwd);
+  if (isOutsideProject(cwd)) return runComputerChecks(cwd);
+  const coreDir = findProjectCoreDir(cwd);
   // findConfigPath throws when multiple config files coexist. That's a
   // misconfiguration doctor exists to report — catch it and surface it through
   // checkConfig as a FAIL rather than crashing the whole diagnostic engine.
@@ -1466,6 +1662,13 @@ export async function runChecks(options = {}) {
       checks.push(await checkConfig(ctx));
     }
   }
+  checks.push(
+    checkNewestRelease({
+      nodeVersion: ctx.nodeVersion,
+      answeredBy: answeredBy(cwd),
+      latest: knownLatestRelease(),
+    }),
+  );
   checks.push(await checkAuthoringDocs(ctx));
   checks.push(await checkCliDocs(ctx));
   checks.push(await checkDocsTree(ctx));

@@ -33,7 +33,7 @@ export const docs = {
           type: 'list',
           style: 'unordered',
           items: [
-            "Install the CLI in the app too: `npx astryx` runs the CLI from the app's `node_modules`.",
+            "Install the CLI in the app too: `astryx` runs the CLI from the app's `node_modules`.",
             'The app holds a copy, not a link. After each change, pack again and run the same `npm install`.',
             'Reading your work inside the package shows your source. The app shows what npm would publish.',
           ],
@@ -51,7 +51,7 @@ export const docs = {
         {
           type: 'code',
           lang: 'bash',
-          code: 'npx astryx component AcmeCarousel\nnpx astryx template --list --package @acme/astryx-widgets\nnpx astryx theme list --package @acme/astryx-widgets\nnpx astryx docs acme\nnpx astryx search deploying --type doc',
+          code: 'astryx component AcmeCarousel\nastryx template --list --package @acme/astryx-widgets\nastryx theme list --package @acme/astryx-widgets\nastryx docs acme\nastryx search deploying --type doc',
         },
         {
           type: 'table',
@@ -88,12 +88,12 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: '`npx astryx doctor` checks the whole app, including every package it loaded. `doctor integration validate` checks your package as the app installed it.',
+          text: '`astryx doctor` checks the whole app, including every package it loaded. `doctor integration validate` checks your package as the app installed it.',
         },
         {
           type: 'code',
           lang: 'bash',
-          code: 'npx astryx doctor\nnpx astryx doctor integration validate @acme/astryx-widgets',
+          code: 'astryx doctor\nastryx doctor integration validate @acme/astryx-widgets',
         },
         {
           type: 'code',

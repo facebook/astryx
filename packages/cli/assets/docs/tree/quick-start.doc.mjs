@@ -46,7 +46,7 @@ export const docs = {
           style: 'unordered',
           items: [
             'Start with `"exports": {}`: each component and template you add then writes the public import that `integration verify` resolves.',
-            'Run the CLI as `npx astryx`, which runs the `@astryxdesign/cli` you installed as a devDependency.',
+            'Run the CLI as `astryx`, which runs the `@astryxdesign/cli` you installed as a devDependency.',
             'Component commands read Core, so they need `@astryxdesign/core` installed.',
           ],
         },
@@ -62,7 +62,7 @@ export const docs = {
         {
           type: 'code',
           lang: 'bash',
-          code: 'npx astryx integration add component AcmeCarousel',
+          code: 'astryx integration add component AcmeCarousel',
         },
         {
           type: 'code',
@@ -80,7 +80,7 @@ export const docs = {
         {
           type: 'code',
           lang: 'bash',
-          code: 'npx astryx component AcmeCarousel',
+          code: 'astryx component AcmeCarousel',
         },
         {
           type: 'prose',
@@ -98,7 +98,7 @@ export const docs = {
         {
           type: 'code',
           lang: 'bash',
-          code: 'npx astryx integration verify\nnpm pack --pack-destination ..',
+          code: 'astryx integration verify\nnpm pack --pack-destination ..',
         },
         {
           type: 'code',
@@ -121,7 +121,7 @@ export const docs = {
         {
           type: 'code',
           lang: 'bash',
-          code: 'cd ..\nmkdir my-app && cd my-app\nnpm init -y\nnpm install @astryxdesign/core @astryxdesign/cli ../acme-astryx-widgets-1.0.0.tgz\nnpx astryx component AcmeCarousel',
+          code: 'cd ..\nmkdir my-app && cd my-app\nnpm init -y\nnpm install @astryxdesign/core @astryxdesign/cli ../acme-astryx-widgets-1.0.0.tgz\nastryx component AcmeCarousel',
         },
         {
           type: 'code',
@@ -238,6 +238,7 @@ export const docs = {
               'themes',
               'agentDocs',
               'issuesUrl',
+              'cliCommand',
             ],
           },
           presentation: 'full',

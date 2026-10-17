@@ -55,6 +55,11 @@
         "description": "Every topic that no section places yet. Each keeps its own name; open one by it.",
         "package": "@astryxdesign/cli"
       }
-    ]
+    ],
+    "answeredBy": {
+      "cli": "<cli version>",
+      "core": "<cli version>",
+      "copy": "project"
+    }
   }
 }

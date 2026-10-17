@@ -77,6 +77,7 @@ import {
   selectIntegrationCodemods,
 } from '../../assets/codemods/integration-discovery.mjs';
 import {validateLoadedIntegration} from '../integrations/validate-contributions.mjs';
+import {recordDeclaredCliCommands} from '../env/cli-command.mjs';
 import {
   InMemoryConfigCache,
   cacheKey,
@@ -461,6 +462,9 @@ export class Project {
         : []),
     ]);
     loadedIntegrations = resolution.integrations;
+    // The picker (getCliInvocation) is synchronous, so the commands these
+    // integrations declare are recorded here, where they become known.
+    recordDeclaredCliCommands(projectDir, loadedIntegrations);
 
     // The debug recorder resolves its settings synchronously, long before any
     // command gets here, so this is where a project's `debug` block gets a

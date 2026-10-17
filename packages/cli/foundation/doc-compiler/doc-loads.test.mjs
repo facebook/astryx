@@ -293,6 +293,22 @@ const RUNNERS = {
     runs: "each installed integration's manifest",
     sites: ['importUserModule'],
   },
+  'foundation/release/cache.mjs': {
+    runs: 'npm (under npm-guard.mjs), to install and look up CLI releases in the per-user cache, and each installed release once, to check it starts and reports its version',
+    sites: ['child_process.spawnSync ×3'],
+  },
+  'foundation/release/npm-guard.mjs': {
+    runs: 'npm, in a process group of its own that it ends at the time limit, on Ctrl-C, or when the run that started it goes away',
+    sites: ['child_process.spawn'],
+  },
+  'foundation/release/global-state.mjs': {
+    runs: "the background check of the registry's `latest` release, detached",
+    sites: ['child_process.spawn'],
+  },
+  'foundation/release/handoff.mjs': {
+    runs: "the CLI release that answers a project's run, when it is not this copy",
+    sites: ['child_process.spawn'],
+  },
   'scripts/generate-cli-readme.mjs': {
     runs: '`astryx manifest` and the error-code and response-type docs, to write the README tables (build time, not shipped)',
     sites: ['child_process.spawnSync', 'import(<computed>)'],

@@ -32,6 +32,11 @@ export const doc = {
       description:
         'The removal receipt — returned when --remove-agents is set: `data.removed` is true when a managed agent-docs block was found and removed, and false when there was none to remove.',
     },
+    {
+      value: 'init.user',
+      description:
+        'The computer-level agent text receipt — returned when --user is set: `data.files`, one `{path, action}` per skill file (action `written` | `unchanged` | `removed` | `absent` | `kept`), `data.command` (the command the text names), and `data.warnings`.',
+    },
     // component
     {
       value: 'component.list',
@@ -295,7 +300,7 @@ export const doc = {
     {
       value: 'manifest',
       description:
-        'The CLI capability manifest: name, version, apiVersion, description, globalOptions, commands (each name, description, arguments, options, json, aliases?, responseTypes?, examples?, exitCodes? as [{code, when}], subcommands?), jsonSupported, and the flat responseTypes index.',
+        'The CLI capability manifest: name, version, apiVersion, description, globalOptions, commands (each name, description, arguments, options, json, aliases?, responseTypes?, examples?, exitCodes? as [{code, when}], outsideProject? (same, refuse, or own; absent on a group), subcommands?), jsonSupported, and the flat responseTypes index.',
     },
 
     // help and version, which no single command owns

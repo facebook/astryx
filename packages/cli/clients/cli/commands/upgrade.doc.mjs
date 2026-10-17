@@ -21,7 +21,9 @@ export const doc = {
     'agent-docs block when Core or configured integration guidance changes. ' +
     'Dry-run by default. --apply writes codemod and receipt changes, runs hooks, then refreshes agent docs. ' +
     'Anything a post-codemod hook prints goes to stderr, so stdout carries only the result. ' +
-    'ShadCN-copied compositions are checked automatically during a normal upgrade, or alone with --registry.',
+    'ShadCN-copied compositions are checked automatically during a normal upgrade, or alone with --registry. ' +
+    'Outside a project, --list lists the codemods this release ships and --registry finds no copied compositions to update; ' +
+    'a migration writes nothing and fails with ERR_VERSION_DETECT, because no installed Core names its target.',
   fn: 'upgrade',
   options: [
     {
@@ -102,6 +104,7 @@ export const doc = {
     },
     {label: 'Apply a migration', cli: 'astryx upgrade --from 0.1.0 --apply'},
   ],
+  outsideProject: 'own',
   exitCodes: [
     {code: 0, when: 'success, including complete dry-run previews'},
     {

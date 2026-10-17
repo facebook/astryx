@@ -26,7 +26,7 @@ export const docs = {
         {
           type: 'code',
           lang: 'bash',
-          code: 'npx astryx doctor integration docs\n# In an app, check an installed package\nnpx astryx doctor integration docs @acme/astryx-widgets',
+          code: 'astryx doctor integration docs\n# In an app, check an installed package\nastryx doctor integration docs @acme/astryx-widgets',
         },
         {
           type: 'code',
@@ -86,12 +86,12 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: '`npx astryx doctor` also measures every read and warns on one over 32 KB. Run it in your package or in an app that installs it; `doctor integration docs` does not check size.',
+          text: '`astryx doctor` also measures every read and warns on one over 32 KB. Run it in your package or in an app that installs it; `doctor integration docs` does not check size.',
         },
         {
           type: 'code',
           lang: 'bash',
-          code: 'npx astryx doctor',
+          code: 'astryx doctor',
         },
         {
           type: 'code',
@@ -115,7 +115,7 @@ export const docs = {
         {
           type: 'code',
           lang: 'bash',
-          code: 'npx astryx integration verify',
+          code: 'astryx integration verify',
         },
         {
           type: 'code',

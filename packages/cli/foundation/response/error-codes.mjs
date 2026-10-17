@@ -88,6 +88,8 @@
  *   | 'ERR_LAYOUT_INVALID'
  *   | 'ERR_UNCLASSIFIED_EXIT'
  *   | 'ERR_SIGNAL_TERMINATED'
+ *   | 'ERR_VERSIONS_UNAVAILABLE'
+ *   | 'ERR_PROJECT_REQUIRED'
  * )} ErrorCode
  */
 
@@ -236,6 +238,21 @@ export const ERROR_CODES = Object.freeze({
    * command never reached a terminal path of its own.
    */
   ERR_SIGNAL_TERMINATED: 'ERR_SIGNAL_TERMINATED',
+
+  // ── Global mode (which release answers) ──────────────────────────
+  /**
+   * The CLI release a run needs could not run: the release that matches the
+   * project's Core is not installed and could not be fetched (offline, or the
+   * registry lacks it), the project's own CLI could not be started, or a copy
+   * that carries no Core could not install its release's Core outside a
+   * project. Nothing was written.
+   */
+  ERR_VERSIONS_UNAVAILABLE: 'ERR_VERSIONS_UNAVAILABLE',
+  /**
+   * The command needs a project (an app with Astryx installed, or an
+   * integration package) and was run outside one. Nothing was written.
+   */
+  ERR_PROJECT_REQUIRED: 'ERR_PROJECT_REQUIRED',
 });
 
 /**

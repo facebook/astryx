@@ -29,31 +29,31 @@ export const docs = {
           headers: ['Command', 'Proves', 'Exits 1 when', 'Only warns when'],
           rows: [
             [
-              '`npx astryx doctor integration validate`',
+              '`astryx doctor integration validate`',
               'The manifest loads, and each root holds contributions the CLI can read',
               'A declared root is missing (`missing_root`), a contribution does not load (`invalid_doc`, `invalid_component`, `invalid_theme`), or two templates in the package replace one Core id (`ambiguous_template_replacement`)',
               'The manifest has a key this CLI does not know (`unknown_manifest_key`). With no `astryx.integration.mjs` it prints a hint and exits 0',
             ],
             [
-              '`npx astryx doctor integration components`',
+              '`astryx doctor integration components`',
               'No component name clashes with a Core component, and each `replaces` names one Core component',
               'Core is not installed (`core_not_found`). In a package that declares the CLI range that turns replacement on, a `replaces` target is missing (`missing_component_replacement_target`) or invalid (`invalid_component_replacement`), or two components replace one Core component (`ambiguous_component_replacement`)',
               'A name clashes with Core, or a component sets `replaces` in a package without that range (`inactive_component_replacement`, plus any missing, invalid, or duplicate `replaces` reported as a warning)',
             ],
             [
-              '`npx astryx doctor integration templates`',
+              '`astryx doctor integration templates`',
               'Each `replaces` names a Core template of the same type',
               'A `replaces` target is missing (`missing_template_replacement_target`) or of the other type (`invalid_template_replacement`), or two templates replace one id (`ambiguous_template_replacement`)',
               'A template id matches a Core id without `replaces`',
             ],
             [
-              '`npx astryx doctor integration docs`',
+              '`astryx doctor integration docs`',
               'Your docs tree, every link, and topic names against Core',
               'A topic takes a Core topic name without `replaces` or `extends`, a doc is invalid (`invalid_doc`), or a namespace or placement fails, which hides the doc (`invalid_doc_graph`)',
               'A link names no doc (`invalid_doc_graph`)',
             ],
             [
-              '`npx astryx integration verify`',
+              '`astryx integration verify`',
               'The packed package holds every file, shows the same contributions, resolves every public import, and declares the CLI it needs',
               'Anything `validate` fails on, no manifest, a file left out of the `.tgz` file, an import that does not resolve, or a missing CLI peer',
               'Anything `validate` warns about, or a component sets `replaces` and the package does not declare the CLI range that turns it on (`component_replaces_needs_cli`)',
@@ -62,7 +62,7 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: 'Pass a package name, such as `npx astryx doctor integration validate @acme/astryx-widgets`, to check an installed copy from an app instead.',
+          text: 'Pass a package name, such as `astryx doctor integration validate @acme/astryx-widgets`, to check an installed copy from an app instead.',
         },
       ],
     },
@@ -77,7 +77,7 @@ export const docs = {
         {
           type: 'code',
           lang: 'bash',
-          code: 'npx astryx doctor integration validate && npx astryx doctor integration components && npx astryx doctor integration templates && npx astryx doctor integration docs && npx astryx integration verify',
+          code: 'astryx doctor integration validate && astryx doctor integration components && astryx doctor integration templates && astryx doctor integration docs && astryx integration verify',
         },
         {
           type: 'list',
@@ -85,7 +85,7 @@ export const docs = {
           items: [
             '`integration verify` runs `validate` but none of the other three: a Core name clash, a `replaces` that names no Core template, a topic that takes a Core name, or a hidden guide still passes it.',
             'Warnings keep exit code 0, so read them before you publish.',
-            'Bare `npx astryx doctor` in the package also warns about a doc section over 32 KB, which no check above measures.',
+            'Bare `astryx doctor` in the package also warns about a doc section over 32 KB, which no check above measures.',
           ],
         },
       ],

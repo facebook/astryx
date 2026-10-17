@@ -5,6 +5,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {Project, DEFAULT_ISSUES_URL, findConfigPath} from './project.mjs';
 import {InMemoryConfigCache} from './config-cache.mjs';
+import {getCliInvocation} from '../env/package-manager.mjs';
 import * as componentDiscovery from '../discovery/component-discovery.mjs';
 import {discoverCoreTemplates} from '../discovery/template-adapter.mjs';
 
@@ -31,6 +32,7 @@ function scaffold({
   docs = null,
   unknownKeys = null,
   agentDocs = null,
+  cliCommand = null,
   integrationIssuesUrl = 'https://example.com/widgets/issues',
 } = {}) {
   fs.writeFileSync(
@@ -57,6 +59,7 @@ function scaffold({
   if (withCodemods) manifest.codemods = './codemods';
   if (docs) manifest.docs = './docs';
   if (agentDocs != null) manifest.agentDocs = agentDocs;
+  if (cliCommand != null) manifest.cliCommand = cliCommand;
   if (unknownKeys) Object.assign(manifest, unknownKeys);
   if (integrationIssuesUrl) manifest.issuesUrl = integrationIssuesUrl;
   fs.writeFileSync(
@@ -284,6 +287,40 @@ describe('Project.load', () => {
       `export default { integrations: [42] };\n`,
     );
     await expect(Project.load(tmpDir)).rejects.toThrow(/integrations/);
+  });
+});
+
+describe('Project.load and the cliCommand an integration declares', () => {
+  it('records it, so the picker prints commands with it', async () => {
+    scaffold({cliCommand: 'acme astryx'});
+    const project = await Project.load(tmpDir);
+    expect(project.loadedIntegrations[0].cliCommand).toBe('acme astryx');
+    expect(getCliInvocation(tmpDir)).toBe('acme astryx');
+  });
+
+  it('ignores an invalid one with a warning and keeps the rest of the package', async () => {
+    scaffold({cliCommand: ' acme astryx\n'});
+    const project = await Project.load(tmpDir);
+    const [widgets] = project.loadedIntegrations;
+    expect(widgets.__loadError).toBeUndefined();
+    expect(widgets.cliCommand).toBeUndefined();
+    expect(widgets.components).toBeDefined();
+    expect(getCliInvocation(tmpDir)).not.toContain('acme astryx');
+    const issues = await project.issues();
+    expect(issues).toContainEqual(
+      expect.objectContaining({
+        code: 'invalid_cli_command',
+        severity: 'warning',
+      }),
+    );
+  });
+
+  it('drops a previous load once the declaration is gone', async () => {
+    scaffold({cliCommand: 'acme astryx'});
+    await Project.load(tmpDir);
+    scaffold();
+    await Project.load(tmpDir, {fresh: true});
+    expect(getCliInvocation(tmpDir)).not.toBe('acme astryx');
   });
 });
 

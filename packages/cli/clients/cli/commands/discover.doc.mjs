@@ -78,6 +78,7 @@ export const doc = {
       cli: 'astryx discover dashboard --type template --available',
     },
   ],
+  outsideProject: 'same',
   exitCodes: [
     {code: 0, when: 'success'},
     {

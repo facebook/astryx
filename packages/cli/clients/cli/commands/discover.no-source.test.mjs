@@ -25,7 +25,11 @@ beforeEach(() => {
   fs.mkdirSync(project, {recursive: true});
   fs.writeFileSync(
     path.join(project, 'package.json'),
-    JSON.stringify({name: 'my-app', version: '1.0.0'}),
+    JSON.stringify({
+      name: 'my-app',
+      version: '1.0.0',
+      dependencies: {'@astryxdesign/core': '*'},
+    }),
   );
 });
 
@@ -58,7 +62,10 @@ describe('astryx discover --available with no source', () => {
     const result = JSON.parse(stdout);
     expect(result.type).toBe('discover.list');
     expect(result.data).toEqual([]);
-    expect(result.meta).toEqual({configured: false});
+    expect(result.meta).toEqual({
+      configured: false,
+      answeredBy: expect.any(Object),
+    });
   });
 });
 

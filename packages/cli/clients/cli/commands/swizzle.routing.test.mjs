@@ -306,7 +306,7 @@ describe('swizzle — StyleX build setup note (#3373)', () => {
     expect(humanResult.stdout).toMatch(/unstyled/i);
     expect(humanResult.stdout).toMatch(/next\/font/i);
     // The fixture has no `astryx` bin installed, so the note names the scoped package.
-    expect(humanResult.stdout).toMatch(/@astryxdesign\/cli docs styling/);
+    expect(humanResult.stdout).toMatch(/@astryxdesign\/cli@\S+ docs styling/);
   });
 
   it('does not print the StyleX note for components without StyleX', async () => {

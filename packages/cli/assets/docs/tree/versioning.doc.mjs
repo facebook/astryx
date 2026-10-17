@@ -54,13 +54,13 @@ export const docs = {
           rows: [
             [
               'A component name, such as `AcmeCarousel`',
-              'Imports, and `npx astryx component AcmeCarousel`',
+              'Imports, and `astryx component AcmeCarousel`',
             ],
             [
               'A template id, such as `acme-dashboard`',
-              '`npx astryx template acme-dashboard`',
+              '`astryx template acme-dashboard`',
             ],
-            ['A theme slug, such as `ocean`', '`npx astryx theme add ocean`'],
+            ['A theme slug, such as `ocean`', '`astryx theme add ocean`'],
             [
               'A topic name or route, such as `acme/deploying`',
               'Reads of the old name, and links to it from other docs',

@@ -19,7 +19,11 @@ export const doc = {
     'agents, and CI). By default it installs the AGENTS.md/CLAUDE.md agent-docs, ' +
     'including guidance from configured integrations, and prints getting-started ' +
     "steps. --features and --all print only the chosen features' guidance (no " +
-    'getting-started steps); the theme feature also writes an annotated theme template.',
+    'getting-started steps); the theme feature also writes an annotated theme template. ' +
+    'Outside a project it writes the same files but prints no step that sets up a project: ' +
+    'no getting-started steps, and no step that adds a theme to an app. ' +
+    '--user writes the computer-level agent text instead (see the flag), in any folder, and touches nothing in the folder; ' +
+    'install and upgrade never write it.',
   fn: 'init',
   options: [
     {
@@ -44,6 +48,16 @@ export const doc = {
         '--features, --all, --agent and --agent-docs-path are refused; a file written with --agent-docs-path keeps its block',
     },
     {
+      flag: '--user',
+      param: 'options.user',
+      description:
+        'Write or refresh the computer-level agent text, one skill file at ~/.agents/skills/astryx/SKILL.md and ~/.claude/skills/astryx/SKILL.md, ' +
+        "instead of setting up the folder. It tells agents anywhere on the computer how to use Astryx through the `astryx` command, and to follow a project's own agent docs inside that project. " +
+        'Works in any folder and writes only those two files. A file there without the Astryx markers, or a symlink, is kept as it is. ' +
+        'Warns, and still writes, when no `astryx` command on the computer runs the Astryx CLI. ' +
+        'With --remove-agents it removes the two files instead. --features, --all, --agent and --agent-docs-path are refused',
+    },
+    {
       flag: '--agent <tool>',
       param: 'options.agent',
       choices: ['claude', 'cursor', 'codex', 'hermes', 'muse', 'all'],
@@ -66,7 +80,10 @@ export const doc = {
     {label: 'Default setup', cli: 'astryx init'},
     {label: 'All features, no prompts', cli: 'astryx init --all'},
     {label: 'Machine-readable receipt', cli: 'astryx init --json'},
+    {label: 'Agent text for the whole computer', cli: 'astryx init --user'},
+    {label: 'Remove the computer-level agent text', cli: 'astryx init --user --remove-agents'},
   ],
+  outsideProject: 'own',
   exitCodes: [
     {
       code: 0,
@@ -74,7 +91,7 @@ export const doc = {
     },
     {
       code: 1,
-      when: 'an unknown --agent or feature, an --agent-docs-path outside the project, --remove-agents combined with install options, or --all with --features (ERR_INVALID_ARGUMENT)',
+      when: 'an unknown --agent or feature, an --agent-docs-path outside the project, --remove-agents combined with install options, --user combined with --features, --all, --agent or --agent-docs-path, or --all with --features (ERR_INVALID_ARGUMENT)',
     },
   ],
   related: ['doctor', 'upgrade', 'build', 'theme'],

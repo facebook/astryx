@@ -60,9 +60,13 @@ import {isBuiltin} from 'node:module';
 import {fileURLToPath, pathToFileURL} from 'node:url';
 import {parse} from '@babel/parser';
 import {createJiti} from 'jiti';
-import {getCliInvocation} from '../../../foundation/env/package-manager.mjs';
+import {
+  getCliInvocation,
+  formatCliCommand,
+} from '../../../foundation/env/package-manager.mjs';
 import {
   CLI_ROOT,
+  findCarriedCoreDir,
   findCoreDir,
   findInstalledPackage,
 } from '../../../foundation/fs/paths.mjs';
@@ -304,7 +308,10 @@ function realLocation(target) {
  * @returns {Promise<CoreBindings | null>}
  */
 async function loadProjectCore(cwd, cliCore) {
-  const dir = findInstalledPackage(cwd, '@astryxdesign/core');
+  // Outside a project, the Core the answering copy carries (spec AST-081 FR3).
+  const dir =
+    findInstalledPackage(cwd, '@astryxdesign/core') ??
+    findCarriedCoreDir(cwd, {fetch: true});
   const themeFile = dir ? importTarget(dir, './theme') : null;
   if (!dir || !themeFile) return null;
   if (cliCore.themeModule) {
@@ -396,8 +403,7 @@ function inAstryxRepository(cwd) {
  * @returns {string}
  */
 export function coreUnavailableMessage(cwd, importError) {
-  const why =
-    '`astryx theme build` generates CSS with @astryxdesign/core, the same code the runtime <Theme> uses';
+  const why = `\`${formatCliCommand('theme build')}\` generates CSS with @astryxdesign/core, the same code the runtime <Theme> uses`;
   const detail = importError ? `\n  Import error: ${importError.message}` : '';
   if (inAstryxRepository(cwd)) {
     return (
@@ -3178,7 +3184,7 @@ export function printCompactTrailer(trailers, {hint = false} = {}) {
       )
       .join(', ');
     logger.log(
-      `[note] Fonts named but not loaded: ${named}. Load them in your app (recipe: astryx docs typography).`,
+      `[note] Fonts named but not loaded: ${named}. Load them in your app (recipe: ${formatCliCommand('docs typography')}).`,
     );
   }
   if (hint) {

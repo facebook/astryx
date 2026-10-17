@@ -19,7 +19,7 @@ import {
   packageDocsProblems,
   packageReferenceProblems,
 } from '../docs/_adapter.mjs';
-import {findCoreDir} from '../../foundation/fs/paths.mjs';
+import {findProjectCoreDir} from '../../foundation/fs/paths.mjs';
 import {
   discoverIntegrationComponents,
   discoverOwnedComponents,
@@ -242,7 +242,7 @@ export async function integrationComponentConflicts(pkg, options = {}) {
     };
   }
 
-  const coreDir = findCoreDir(cwd);
+  const coreDir = findProjectCoreDir(cwd);
   if (!coreDir) {
     issues.push({
       code: 'core_not_found',

@@ -56,6 +56,9 @@ import {discoverIntegrationThemes} from '../discovery/theme-discovery.mjs';
 /** Stable issue code for an invalid optional agent-doc contribution. */
 export const INVALID_AGENT_DOCS = 'invalid_agent_docs';
 
+/** Stable issue code for a `cliCommand` that was ignored as invalid. */
+export const INVALID_CLI_COMMAND = 'invalid_cli_command';
+
 /** Stable issue code for a package whose provider ID is already claimed. */
 export const DUPLICATE_PROVIDER = 'duplicate_provider';
 
@@ -449,6 +452,14 @@ export async function validateLoadedIntegration(loaded) {
   checkUnknownKeys(loaded, issues);
   if (loaded.__agentDocsError) {
     issues.push(issueError(INVALID_AGENT_DOCS, loaded.__agentDocsError));
+  }
+  if (loaded.__cliCommandError) {
+    issues.push(
+      issueWarning(
+        INVALID_CLI_COMMAND,
+        `${loaded.__cliCommandError}. The command is ignored; printed commands use the package-manager prefix.`,
+      ),
+    );
   }
   checkRoots(
     {

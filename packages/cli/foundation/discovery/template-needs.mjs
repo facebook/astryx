@@ -20,7 +20,10 @@ import * as path from 'node:path';
 import module from 'node:module';
 import {CLI_ROOT} from '../fs/paths.mjs';
 import {detectStylingSystem} from '../agent-docs/agent-docs.mjs';
-import {decidePackageManagerIn} from '../env/package-manager.mjs';
+import {
+  decidePackageManagerIn,
+  formatCliCommand,
+} from '../env/package-manager.mjs';
 
 // ── Known packages that a template may import without the user installing them.
 // react and react-dom are the framework; @astryxdesign/* is the design system
@@ -230,7 +233,7 @@ export function analyzeTemplateNeeds(source, cwd) {
   }
   if (stylexCompilerNeeded) {
     notes.push(
-      'This template uses StyleX. Your project needs a StyleX compiler plugin \u2014 see `astryx docs styling-overview` for setup steps.',
+      `This template uses StyleX. Your project needs a StyleX compiler plugin \u2014 see \`${formatCliCommand('docs styling-overview')}\` for setup steps.`,
     );
   }
 

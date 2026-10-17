@@ -18,6 +18,7 @@
 import {levenshteinDistance} from '../text/levenshtein.mjs';
 import {KEY_ALIASES} from './parse.mjs';
 import {resolveComponent} from './registry-core.mjs';
+import {formatCliCommand} from '../env/package-manager.mjs';
 
 /**
  * Boolean flag synonyms — agent-frequency spellings of isX/hasX props.
@@ -391,7 +392,7 @@ export class Validation {
       this.error(
         node,
         `Unknown block '{${hint.name}}' — block hints must name an existing template block`,
-        nearest.length > 0 ? nearest : ['run: astryx template --list --type block'],
+        nearest.length > 0 ? nearest : [`run: ${formatCliCommand('template --list --type block')}`],
       );
     }
   }

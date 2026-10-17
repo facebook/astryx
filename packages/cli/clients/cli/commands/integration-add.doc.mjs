@@ -113,6 +113,7 @@ export const doc = {
       cli: 'astryx integration add theme ocean --from neutral',
     },
   ],
+  outsideProject: 'refuse',
   exitCodes: [
     {code: 0, when: 'the contribution is written or the dry run succeeds'},
     {

@@ -17,6 +17,7 @@ import {
   integrationAddComponent,
   integrationAddTemplate,
 } from './add-contribution.mjs';
+import {formatCliCommand} from '../../foundation/env/package-manager.mjs';
 
 let tmpDir;
 
@@ -337,8 +338,7 @@ describe('integrationPackCheck', () => {
       {
         code: 'theme_exports_missing',
         severity: 'warning',
-        message:
-          'Theme "ocean" has no declared built exports. The package remains source-compatible. To make it importable, run `astryx theme build themes/ocean/oceanTheme.ts` and export "./themes/ocean" plus "./themes/ocean.css" from package.json; `astryx integration add theme ocean` creates those exports for a new theme.',
+        message: `Theme "ocean" has no declared built exports. The package remains source-compatible. To make it importable, run \`${formatCliCommand('theme build themes/ocean/oceanTheme.ts', tmpDir)}\` and export "./themes/ocean" plus "./themes/ocean.css" from package.json; \`${formatCliCommand('integration add theme ocean', tmpDir)}\` creates those exports for a new theme.`,
       },
     ]);
     const cli = runCliVerify();
@@ -509,8 +509,7 @@ describe('integrationPackCheck', () => {
       {
         code: 'theme_stylesheet_stale',
         severity: 'warning',
-        message:
-          'Theme "ocean" stylesheet does not match themes/ocean/oceanTheme.ts. This incomplete export remains packable, but run `astryx theme build themes/ocean/oceanTheme.ts` before adding its matching export.',
+        message: `Theme "ocean" stylesheet does not match themes/ocean/oceanTheme.ts. This incomplete export remains packable, but run \`${formatCliCommand('theme build themes/ocean/oceanTheme.ts', tmpDir)}\` before adding its matching export.`,
       },
     ]);
     const cli = runCliVerify();
@@ -543,8 +542,7 @@ describe('integrationPackCheck', () => {
       {
         code: 'theme_stylesheet_stale',
         severity: 'warning',
-        message:
-          'Theme "ocean" stylesheet does not match themes/ocean/oceanTheme.ts. This incomplete export remains packable, but run `astryx theme build themes/ocean/oceanTheme.ts` before adding its matching export.',
+        message: `Theme "ocean" stylesheet does not match themes/ocean/oceanTheme.ts. This incomplete export remains packable, but run \`${formatCliCommand('theme build themes/ocean/oceanTheme.ts', tmpDir)}\` before adding its matching export.`,
       },
     ]);
     const cli = runCliVerify();
@@ -617,14 +615,12 @@ describe('integrationPackCheck', () => {
       {
         code: 'theme_module_stale',
         severity: 'error',
-        message:
-          'Theme "ocean" module does not match themes/ocean/oceanTheme.ts. Run `astryx theme build themes/ocean/oceanTheme.ts` before packing.',
+        message: `Theme "ocean" module does not match themes/ocean/oceanTheme.ts. Run \`${formatCliCommand('theme build themes/ocean/oceanTheme.ts', tmpDir)}\` before packing.`,
       },
       {
         code: 'theme_stylesheet_stale',
         severity: 'error',
-        message:
-          'Theme "ocean" stylesheet does not match themes/ocean/oceanTheme.ts. Run `astryx theme build themes/ocean/oceanTheme.ts` before packing.',
+        message: `Theme "ocean" stylesheet does not match themes/ocean/oceanTheme.ts. Run \`${formatCliCommand('theme build themes/ocean/oceanTheme.ts', tmpDir)}\` before packing.`,
       },
     ]);
     const cli = runCliVerify();

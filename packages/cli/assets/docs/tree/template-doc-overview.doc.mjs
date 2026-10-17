@@ -99,7 +99,7 @@ export const docs = {
         {
           type: 'code',
           lang: 'bash',
-          code: 'npx astryx --json template --list --package @acme/astryx-templates',
+          code: 'astryx --json template --list --package @acme/astryx-templates',
         },
         {
           type: 'code',

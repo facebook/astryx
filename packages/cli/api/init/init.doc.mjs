@@ -21,10 +21,13 @@ export const doc = {
     'agent-docs cheat sheet, including guidance from configured integrations, and ' +
     "prints getting-started guidance; `features` / `all` print only the chosen features' " +
     'guidance instead (the theme feature also writes the annotated theme template). ' +
-    'With `removeAgents` it removes the managed agent-docs block instead of installing.',
+    'With `removeAgents` it removes the managed agent-docs block instead of installing. ' +
+    'Outside a project it writes the same files but prints no getting-started steps and no step that adds a theme to an app, since those set up a project the folder does not have. ' +
+    "With `user` it sets up the computer instead of the folder: it writes the computer-level agent text, one skill file at `~/.agents/skills/astryx/SKILL.md` and `~/.claude/skills/astryx/SKILL.md` that tells agents anywhere on the computer how to use Astryx and to follow a project's own agent docs inside that project; with `user` and `removeAgents` it removes those two files. " +
+    'Nothing else writes that text: not installing the CLI, not project setup, not upgrade.',
   importPath: '@astryxdesign/cli/api',
   signature:
-    'init(options?: InitOptions, ctx?: {cwd?: string}): Promise<InitRunResponse | InitRemoveResponse>',
+    'init(options?: InitOptions, ctx?: {cwd?: string}): Promise<InitRunResponse | InitRemoveResponse | InitUserResponse>',
   keywords: ['init', 'setup', 'install', 'scaffold', 'agents', 'bootstrap'],
   params: [
     {
@@ -41,7 +44,17 @@ export const doc = {
     {
       name: 'options.removeAgents',
       type: 'boolean',
-      description: 'Remove the managed agent-docs block instead of installing.',
+      description:
+        'Remove the managed agent-docs block instead of installing. With `user`, remove the computer-level agent text instead.',
+    },
+    {
+      name: 'options.user',
+      type: 'boolean',
+      description:
+        "Write or refresh the computer-level agent text (`~/.agents/skills/astryx/SKILL.md` and `~/.claude/skills/astryx/SKILL.md`, in the current user's home folder) instead of setting up `ctx.cwd`. " +
+        'The text uses the `astryx` command, or the command of the host that started the run; an integration\'s `cliCommand` never applies. ' +
+        'A file without the Astryx markers, or a symlink, is kept as it is. When no `astryx` command on the computer runs the Astryx CLI, the text is still written and the receipt carries a warning to install the CLI for the computer (`npm i -g @astryxdesign/cli`). ' +
+        'Cannot be combined with `features`, `all`, `agent`, or `agentDocsPath`.',
     },
     {
       name: 'options.agent',
@@ -71,18 +84,23 @@ export const doc = {
     {
       type: 'init.run',
       description:
-        'The install receipt: the `mode` (`default` | `features`), the features run, agent-doc files written, any soft docsError, the theme-template outcome (`created` | `skipped` | `failed`) plus its path, the page-template outcome (`workflow` | `created` | `skipped`) plus its path, and whether the next-steps were emitted.',
+        'The install receipt: the `mode` (`default` | `features`), the features run, agent-doc files written, any soft docsError, the theme-template outcome (`created` | `skipped` | `failed`) plus its path, the page-template outcome (`workflow` | `created` | `skipped`) plus its path, and whether the next-steps were emitted (never outside a project).',
     },
     {
       type: 'init.remove',
       description:
         'The removal receipt, returned when `removeAgents` is set: `data.removed` is true when a managed agent-docs block was found and removed, and false when there was none to remove.',
     },
+    {
+      type: 'init.user',
+      description:
+        'The computer-level agent text receipt, returned when `user` is set: `data.files`, one `{path, action}` per file (`~/.agents/skills/astryx/SKILL.md`, then `~/.claude/skills/astryx/SKILL.md`; action `written` | `unchanged` | `removed` | `absent` | `kept`), `data.command` (the command the text names), and `data.warnings`.',
+    },
   ],
   throws: [
     {
       code: 'ERR_INVALID_ARGUMENT',
-      when: '--remove-agents is combined with --features, --all, --agent, or --agent-docs-path; or --all is combined with --features',
+      when: '--remove-agents or --user is combined with --features, --all, --agent, or --agent-docs-path; or --all is combined with --features',
     },
     {
       code: 'ERR_UNKNOWN_AGENT',
@@ -109,6 +127,7 @@ export const doc = {
     {label: 'Default setup', code: 'const r = await init();'},
     {label: 'All features', code: 'await init({all: true});'},
     {label: 'Remove agent docs', code: 'await init({removeAgents: true});'},
+    {label: 'Agent text for the whole computer', code: 'const r = await init({user: true});\nfor (const w of r.data.warnings) console.warn(w);'},
   ],
   command: 'init',
   related: ['doctor', 'upgrade', 'build', 'themeTemplate'],

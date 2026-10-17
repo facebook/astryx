@@ -27,7 +27,7 @@ export const docs = {
         {
           type: 'code',
           lang: 'bash',
-          code: "npx astryx integration add agent-doc 'Use AcmeCarousel for rotating content.'",
+          code: "astryx integration add agent-doc 'Use AcmeCarousel for rotating content.'",
         },
         {
           type: 'prose',
@@ -80,6 +80,10 @@ export default {
           type: 'prose',
           text: 'A line is one line of plain text. Line breaks, control characters, spaces at either end, and managed-block markers such as `<!-- ASTRYX:START -->` are rejected.',
         },
+        {
+          type: 'prose',
+          text: 'Start a command in a line with the word astryx alone, with no runner in front, as in: Run astryx doctor before finishing. The block names the command the app runs once, at its top, for every command below it, so your line works in every app. See {@link generic:cli-command}.',
+        },
       ],
     },
     {
@@ -93,7 +97,7 @@ export default {
         {
           type: 'code',
           lang: 'bash',
-          code: 'npx astryx init --features agents',
+          code: 'astryx init --features agents',
         },
         {
           type: 'code',
@@ -119,9 +123,9 @@ export default {
         {
           type: 'code',
           lang: 'bash',
-          code: `npx astryx init --features agents
+          code: `astryx init --features agents
 # Or: --from takes the Core version the app had before
-npx astryx upgrade --from 0.7.0 --apply`,
+astryx upgrade --from 0.7.0 --apply`,
         },
         {
           type: 'code',

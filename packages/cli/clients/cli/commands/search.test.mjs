@@ -17,6 +17,7 @@ import * as path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {search, scoreCandidate, SEARCH_DOMAINS} from '../../../api/search/search.mjs';
 import {runCli} from '../../../test-utils/run-cli.mjs';
+import {linkThisCliAsProjectCli} from '../../../test-utils/release-fixtures.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 // Run against the monorepo root so @astryxdesign/core is discoverable.
@@ -286,7 +287,7 @@ describe('search CLI — exit codes + JSON contract', () => {
 
   it('renders each result as a greppable key: value record', async () => {
     const r = await runCli(['search', 'button'], REPO_ROOT);
-    expect(r.stdout).toMatch(/^command:\s+\S.*(?:astryx|@astryxdesign\/cli) component Button$/m);
+    expect(r.stdout).toMatch(/^command:\s+\S.*(?:astryx|@astryxdesign\/cli(?:@\S+)?) component Button$/m);
     // Fields mirror the JSON object and are line-greppable.
     expect(r.stdout).toMatch(/^name:\s+Button$/m);
     expect(r.stdout).toMatch(/^domain:\s+component$/m);
@@ -350,6 +351,9 @@ describe('search CLI — exit codes + JSON contract', () => {
 
   it('searches the docs and themes when no @astryxdesign/core is reachable, and exits 1 for --type component', async () => {
     const empty = fs.mkdtempSync(path.join(os.tmpdir(), 'astryx-search-cli-no-core-'));
+    // The project's own CLI answers here and no Core is installed; outside a
+    // project the carried Core would answer instead (AST-081 FR3).
+    linkThisCliAsProjectCli(empty);
     try {
       const open = await runCli(['--json', 'search', 'make', 'an', 'integration'], empty);
       expect(open.status).toBe(0);

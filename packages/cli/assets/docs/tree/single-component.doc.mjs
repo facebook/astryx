@@ -157,7 +157,7 @@ export default {
         {
           type: 'code',
           lang: 'bash',
-          code: 'npx astryx component AcmeCarousel\nnpx astryx integration verify',
+          code: 'astryx component AcmeCarousel\nastryx integration verify',
         },
       ],
     },

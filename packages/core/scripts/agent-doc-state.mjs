@@ -107,15 +107,29 @@ export function isAstryxInitialized(targetDir = process.cwd()) {
 }
 
 /**
- * The one-line next-step both postinstall nudges print. Kept here so layer 1
- * (core) and layer 2 (cli) can never word it differently.
- *
- * Scoped package form (`@astryxdesign/cli`) — always resolves to us, even before
- * the CLI is installed. Bare `npx astryx` would fetch an unrelated look-alike
- * package (see PR #4151).
+ * The invocation the setup nudge falls back to when the CLI's picker
+ * (`getCliInvocation`) cannot be loaded. Scoped package form
+ * (`@astryxdesign/cli`) — always resolves to us, even before the CLI is
+ * installed. Bare `npx astryx` would fetch an unrelated look-alike package
+ * (see PR #4151).
  */
-export const SETUP_NUDGE =
-  '\nNext step: run `npx @astryxdesign/cli init` to finish setup and install the Astryx agent prompt.\n\n';
+export const SETUP_INVOCATION = 'npx @astryxdesign/cli';
+
+/**
+ * The one-line next-step every setup layer prints. Kept here so layer 1
+ * (core), layer 2 (cli postinstall) and layer 3 (each command) can never word
+ * it differently. Each layer passes the stem from the CLI's picker when it can
+ * load it.
+ *
+ * @param {string} [invocation] the CLI invocation stem, e.g. `pnpm exec astryx`
+ * @returns {string}
+ */
+export function setupNudge(invocation = SETUP_INVOCATION) {
+  return `\nNext step: run \`${invocation} init\` to finish setup and install the Astryx agent prompt.\n\n`;
+}
+
+/** The nudge with the fallback invocation. */
+export const SETUP_NUDGE = setupNudge();
 
 /**
  * Pure decision: should a postinstall print the setup nudge? Shared by BOTH

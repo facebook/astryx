@@ -30,7 +30,7 @@ export const docs = {
     },
     {
       type: 'prose',
-      text: 'For example, ship a carousel as an integration. Any app that installs it can find it with `npx astryx search carousel`, and the CLI uses it like any Astryx Core component.',
+      text: 'For example, ship a carousel as an integration. Any app that installs it can find it with `astryx search carousel`, and the CLI uses it like any Astryx Core component.',
     },
     {
       type: 'prose',

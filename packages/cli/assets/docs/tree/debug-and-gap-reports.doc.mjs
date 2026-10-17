@@ -138,7 +138,7 @@ export const gapReport = {
         {
           type: 'code',
           lang: 'bash',
-          code: "npx astryx gap-report AcmeCarousel --category missing_variant --reason 'Need a vertical layout'",
+          code: "astryx gap-report AcmeCarousel --category missing_variant --reason 'Need a vertical layout'",
         },
         {
           type: 'code',

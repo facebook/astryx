@@ -377,20 +377,33 @@ export function detectStylingSystem(targetDir) {
  * among them. An agent cannot ask for a topic it was never told about, and
  * `getting-started` is the one it should reach for first.
  *
- * @param {string} version
- * @param {{coreDir?: string|null, invocation?: string, stylingSystem?: 'stylex'|'tailwind'|'css', zh?: boolean, lang?: string, topics?: string[], agentDocs?: Array<{package: string, append: readonly string[]}>}} [options]
+ * `scope` picks the wrapper (spec AST-081 FR8). `project` (the default) is
+ * the block `init` writes into a project's agent docs: it names the Core
+ * version and component count, and lists the integrations' agent-doc lines.
+ * `computer` is the body of the computer-level agent text (`init --user`): it
+ * names no version and no count, lists no integrations, always takes the CSS
+ * styling line (there is no project to detect a compiler in), and opens by
+ * deferring to a project's own agent docs, which match that project's release.
+ * Everything else is the same text, so the two never drift apart.
+ *
+ * @param {string | null} version the Core version; ignored for `computer`.
+ * @param {{scope?: 'project'|'computer', coreDir?: string|null, invocation?: string, stylingSystem?: 'stylex'|'tailwind'|'css', zh?: boolean, lang?: string, topics?: string[], agentDocs?: Array<{package: string, append: readonly string[]}>}} [options]
  * @returns {string}
  */
 export function generateCompressedIndex(
   version,
   {
+    scope = 'project',
     coreDir,
     invocation = getCliInvocation(),
-    stylingSystem = 'css',
+    stylingSystem: projectStylingSystem = 'css',
     topics,
-    agentDocs = [],
+    agentDocs: projectAgentDocs = [],
   } = {},
 ) {
+  const computer = scope === 'computer';
+  const stylingSystem = computer ? 'css' : projectStylingSystem;
+  const agentDocs = computer ? [] : projectAgentDocs;
   const run = invocation;
   const totalAgentDocLines = agentDocs.reduce(
     (count, contribution) => count + contribution.append.length,
@@ -406,21 +419,30 @@ export function generateCompressedIndex(
   /** @type {string[]} */
   const lines = [MARKER_START];
 
-  // Component count from live discovery
-  let componentCount = '90+';
-  if (coreDir) {
-    try {
-      const comps = discoverComponents(coreDir);
-      let total = 0;
-      for (const list of Object.values(comps)) total += list.length;
-      if (total > 0) componentCount = String(total);
-    } catch {
-      // Best-effort: component count is cosmetic; fall back to the default.
+  if (computer) {
+    // The computer-level text serves every folder, so it names no release and
+    // hands a project with its own agent docs back to them.
+    lines.push('Astryx design system · agent guide for this computer');
+    lines.push(
+      'Inside a project with its own Astryx agent docs (the Astryx block in its AGENTS.md or CLAUDE.md), follow those instead: they match that project\'s release.',
+    );
+  } else {
+    // Component count from live discovery
+    let componentCount = '90+';
+    if (coreDir) {
+      try {
+        const comps = discoverComponents(coreDir);
+        let total = 0;
+        for (const list of Object.values(comps)) total += list.length;
+        if (total > 0) componentCount = String(total);
+      } catch {
+        // Best-effort: component count is cosmetic; fall back to the default.
+      }
     }
+    lines.push(`Astryx v${version} · ${componentCount} components`);
   }
 
-  // Header — state the CLI prefix once; commands below are shown as `astryx <cmd>`.
-  lines.push(`Astryx v${version} · ${componentCount} components`);
+  // State the CLI prefix once; commands below are shown as `astryx <cmd>`.
   lines.push(
     `CLI: run every command as \`${run} <cmd>\` (shown below as \`astryx ...\`).`,
   );

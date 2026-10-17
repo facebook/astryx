@@ -26,6 +26,7 @@ import {registryUpgrade} from './registry/registry.mjs';
 import {run} from './run/run.mjs';
 import {isValidSemver} from '../../foundation/env/semver.mjs';
 import {getCliInvocation} from '../../foundation/env/package-manager.mjs';
+import {isOutsideProject} from '../../foundation/env/project-scope.mjs';
 import {ERROR_CODES} from '../../foundation/response/error-codes.mjs';
 import {AstryxError} from '../error.mjs';
 import {logger} from '../logger.mjs';
@@ -91,7 +92,10 @@ export async function upgrade(options = {}, {cwd = process.cwd()} = {}) {
   }
 
   if (!options.list && !options.from) {
-    const msg = `Missing required --from. Install the target version first, then run \`${getCliInvocation()} upgrade --from <old-version>\`.`;
+    // Outside a project there is no version to install (spec AST-081 FR3).
+    const msg = isOutsideProject(cwd)
+      ? 'Missing required --from. This folder is outside a project; upgrade migrates the code of an app project that installs @astryxdesign/core.'
+      : `Missing required --from. Install the target version first, then run \`${getCliInvocation()} upgrade --from <old-version>\`.`;
     logger.error(msg);
     logger.log('Aborted\n');
     throw new AstryxError(msg, undefined, ERROR_CODES.ERR_INVALID_ARGUMENT);

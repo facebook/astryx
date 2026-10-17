@@ -9,7 +9,8 @@
  *
  * Its per-command facts come from the command's own definitions: names,
  * arguments and options from Commander metadata (program.commands, cmd.options,
- * cmd.registeredArguments, cmd.description()); examples from its CommandDoc;
+ * cmd.registeredArguments, cmd.description()); examples, exit codes, and what
+ * it does outside a project from its CommandDoc;
  * response `type` discriminators from the returns of the FunctionDoc it wraps
  * (both attached by `defineCommand`); `--json` support from the JSON_SUPPORTED
  * allowlist in index.mjs. The hand-kept lists are CLI_LAYER_RESPONSE_TYPES,
@@ -193,6 +194,10 @@ function describeCommand(cmd, root, jsonSupported) {
     when,
   }));
   if (exitCodes.length > 0) entry.exitCodes = exitCodes;
+
+  // What the command does outside a project (spec AST-081 FR4). Every command
+  // declares it in its CommandDoc; a group that only holds subcommands does not.
+  if (docs?.doc.outsideProject) entry.outsideProject = docs.doc.outsideProject;
 
   // Sort subcommands by name for a stable, agent-facing contract — the same
   // guarantee the top-level command list makes. Otherwise Commander

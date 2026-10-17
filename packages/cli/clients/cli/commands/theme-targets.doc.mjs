@@ -30,6 +30,7 @@ export const doc = {
     {label: 'Search keys', cli: 'astryx theme targets thumb'},
     {label: 'For a lint or an audit script', cli: 'astryx --json theme targets'},
   ],
+  outsideProject: 'same',
   exitCodes: [
     {code: 0, when: 'success'},
     {code: 1, when: 'a filter matches no target, or core cannot be resolved'},

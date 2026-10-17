@@ -27,7 +27,7 @@ export const docs = {
         {
           type: 'code',
           lang: 'bash',
-          code: 'npx astryx integration add codemod rename-delay --to 0.7.0',
+          code: 'astryx integration add codemod rename-delay --to 0.7.0',
         },
         {
           type: 'code',
@@ -116,9 +116,9 @@ export default {
           type: 'code',
           lang: 'bash',
           code: `# Preview each codemod and the files it would change
-npx astryx upgrade --from 0.6.3 --integration @acme/astryx-widgets
+astryx upgrade --from 0.6.3 --integration @acme/astryx-widgets
 # Write the changes
-npx astryx upgrade --from 0.6.3 --integration @acme/astryx-widgets --apply`,
+astryx upgrade --from 0.6.3 --integration @acme/astryx-widgets --apply`,
         },
         {
           type: 'code',

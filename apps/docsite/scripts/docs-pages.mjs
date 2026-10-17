@@ -121,6 +121,43 @@ export function withoutResolvedTokens(sections) {
 }
 
 /**
+ * Doc text with its CLI commands shown the way a reader runs them. Docs write
+ * commands as bare `astryx ...`; the CLI prefixes them when it prints a doc,
+ * and the docsite does the same with its own door name. `show(text, lang)`
+ * prefixes the commands in one piece of text: prose and list items (`lang`
+ * null), or one code block's body in its language. A table cell that is a
+ * whole command is prefixed too, the way `astryx docs` prints it.
+ * @param {any[]} sections
+ * @param {(text: string, lang?: string | null) => string} show
+ * @param {string} stem the invocation `show` prefixes with
+ */
+export function withCliCommands(sections, show, stem) {
+  /** @param {string} cell */
+  const cell = cell =>
+    /^astryx(\s|$)/.test(cell ?? '')
+      ? `${stem}${cell.slice('astryx'.length)}`
+      : show(cell ?? '');
+  return sections.map(section => ({
+    ...section,
+    content: (section.content ?? []).map(block => {
+      switch (block?.type) {
+        case 'prose':
+        case 'heading':
+          return {...block, text: show(block.text ?? '')};
+        case 'code':
+          return {...block, code: show(block.code ?? '', block.lang ?? '')};
+        case 'list':
+          return {...block, items: (block.items ?? []).map(item => show(item))};
+        case 'table':
+          return {...block, rows: (block.rows ?? []).map(row => row.map(cell))};
+        default:
+          return block;
+      }
+    }),
+  }));
+}
+
+/**
  * The sidebar group of a namespace page: the namespace's own category when it
  * declares one, otherwise `foundations` when every guide under it is a
  * foundations doc, otherwise `guide`.

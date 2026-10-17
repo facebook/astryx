@@ -16,7 +16,7 @@ export const doc = {
     'The astryx.integration.* manifest that sits beside an integration ' +
     "package's package.json. It can preserve a stable provider identity across a package rename, " +
     "and points the CLI at the package's components, templates, codemods, doc topics, " +
-    'source themes, managed agent guidance, and issue tracker. Every field is optional.',
+    'source themes, managed agent guidance, issue tracker, and the command its users run the CLI with. Every field is optional.',
   appliesTo: 'astryx.integration.{ts,mjs,js}',
   fields: [
     {
@@ -74,6 +74,13 @@ export const doc = {
       description: 'Where to file issues/feedback for this integration.',
       example: "'https://github.com/acme/widgets/issues'",
     },
+    {
+      name: 'cliCommand',
+      type: 'string',
+      description:
+        'The command your users run the Astryx CLI with, when it is not their package manager, such as a wrapper your company ships. Every command the CLI prints in an app that loads your package starts with it, in place of `npx astryx` or `pnpm exec astryx`: hints, errors, Doctor fixes, and doc text. One line, without a subcommand. If two loaded packages set different commands, neither is used and `astryx doctor` warns. An invalid value is ignored with an `invalid_cli_command` warning, and the rest of the manifest still loads. JSON output keeps commands bare.',
+      example: "'acme astryx'",
+    },
   ],
   examples: [
     {
@@ -107,7 +114,12 @@ export const doc = {
         'trimmed, non-blank string of at most 240 Unicode code points with no ' +
         'line separators, control characters, NUL, or Astryx/XDS managed-marker ' +
         'text. The configured project may contain at most 32 integration lines ' +
-        'total.',
+        'total. Start a command in a line with the word astryx alone, with no ' +
+        'runner in front: the block names the command the app runs once, at its top.',
+    },
+    {
+      type: 'prose',
+      text: "Set `cliCommand` only when your users run the CLI with a command other than their package manager's, such as `acme astryx`. The CLI picks the command it prints in this order: the `cliCommand` of the loaded integrations when they name one command, then the command a host tool names, then the package manager's. Two different `cliCommand` values cancel out, and `astryx doctor` warns in its `cli-command` check. See `astryx docs cli/integrations/building-blocks/configuration/cli-command`.",
     },
     {
       type: 'prose',

@@ -55,6 +55,7 @@ import {
 import {CLI_PROVIDER_ID} from '../../foundation/identity/providers.mjs';
 import {AstryxError} from '../error.mjs';
 import {ERROR_CODES} from '../../foundation/response/error-codes.mjs';
+import {formatCliCommand} from '../../foundation/env/package-manager.mjs';
 
 export {OVERLAY_LANGUAGES, overlayLanguages};
 
@@ -1097,7 +1098,7 @@ export async function unknownTopicError(topic, catalog) {
 export function notLoaded(catalog) {
   const packages = [...new Set(catalog.issues.map(issue => issue.package))];
   if (packages.length === 0) return '';
-  return `. The docs of ${packages.join(', ')} did not load; run \`astryx doctor integration docs\` in that package to see why.`;
+  return `. The docs of ${packages.join(', ')} did not load; run \`${formatCliCommand('doctor integration docs')}\` in that package to see why.`;
 }
 
 /**
@@ -1115,7 +1116,7 @@ export async function resolveTopicDocs(topic, options = {}) {
   if (found.kind !== 'topic') {
     throw found.kind === 'node'
       ? new AstryxError(
-          `"${found.node.route}" is a ${found.node.kind === 'namespace' ? 'namespace' : `${found.node.kind} doc`} in the docs tree, not a topic. Read it with \`astryx docs ${found.node.route}\`.`,
+          `"${found.node.route}" is a ${found.node.kind === 'namespace' ? 'namespace' : `${found.node.kind} doc`} in the docs tree, not a topic. Read it with \`${formatCliCommand(`docs ${found.node.route}`)}\`.`,
           undefined,
           ERROR_CODES.ERR_UNKNOWN_TOPIC,
         )

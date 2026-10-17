@@ -50,6 +50,13 @@ export interface ManifestCommand {
   examples?: string[];
   /** Documented exit codes: the process exit status and when it occurs. */
   exitCodes?: {code: number; when: string}[];
+  /**
+   * What the command does in a folder outside any project: `same` gives the
+   * answer it gives in a new project; `refuse` writes nothing and fails, naming
+   * the app project or integration package it needs; `own` does something
+   * else, which its docs state. Absent on a group that only holds subcommands.
+   */
+  outsideProject?: 'same' | 'refuse' | 'own';
   /** Nested subcommands (e.g. `theme build` under `theme`). */
   subcommands?: ManifestCommand[];
 }

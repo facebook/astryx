@@ -41,6 +41,7 @@ import {stripCopyrightHeader} from '../../foundation/text/copyright-header.mjs';
 import {loadIntegrations} from '../../foundation/integrations/integrations.mjs';
 import {importThemeArtifact} from '../../foundation/fs/module-loader.mjs';
 import {applyWrites} from '../integration/add-helpers.mjs';
+import {formatCliCommand} from '../../foundation/env/package-manager.mjs';
 
 export {BUNDLED_THEME_PACKAGE, THEMES_DIR};
 
@@ -565,7 +566,7 @@ export function resolveRecordedThemes(state, available) {
     );
     if (!theme) {
       throw new AstryxError(
-        `Added theme "${slug}" from ${owner} is unavailable. Reinstall the package or restore the local theme, then run \`astryx theme add ${slug} --package ${owner}\`.`,
+        `Added theme "${slug}" from ${owner} is unavailable. Reinstall the package or restore the local theme, then run \`${formatCliCommand(`theme add ${slug} --package ${owner}`, state.projectDir)}\`.`,
         undefined,
         ERROR_CODES.ERR_UNKNOWN_THEME,
       );
@@ -732,14 +733,14 @@ export async function removeThemeFromApp(slug, options = {}) {
   const recordedSlug = recordedThemeSlug(state, slug);
   if (!state.configured || recordedSlug == null) {
     throw new AstryxError(
-      `Theme "${slug}" is not added. Run \`astryx theme add ${slug}\` first.`,
+      `Theme "${slug}" is not added. Run \`${formatCliCommand(`theme add ${slug}`, state.projectDir)}\` first.`,
       undefined,
       ERROR_CODES.ERR_UNKNOWN_THEME,
     );
   }
   if (state.defaultSlug === recordedSlug) {
     throw new AstryxError(
-      `Theme "${recordedSlug}" is the default. Run \`astryx theme use <other-slug>\` before removing it.`,
+      `Theme "${recordedSlug}" is the default. Run \`${formatCliCommand('theme use <other-slug>', state.projectDir)}\` before removing it.`,
       undefined,
       ERROR_CODES.ERR_THEME_INVALID,
     );
@@ -748,7 +749,7 @@ export async function removeThemeFromApp(slug, options = {}) {
   delete themes[recordedSlug];
   if (state.defaultSlug == null) {
     throw new AstryxError(
-      'The generated theme module has no default theme. Run `astryx theme use <slug>` first.',
+      `The generated theme module has no default theme. Run \`${formatCliCommand('theme use <slug>', state.projectDir)}\` first.`,
       undefined,
       ERROR_CODES.ERR_THEME_INVALID,
     );
@@ -776,7 +777,7 @@ export async function useThemeInApp(slug, options = {}) {
   const recordedSlug = recordedThemeSlug(state, slug);
   if (!state.configured || recordedSlug == null) {
     throw new AstryxError(
-      `Theme "${slug}" is not added. Run \`astryx theme add ${slug}\` first.`,
+      `Theme "${slug}" is not added. Run \`${formatCliCommand(`theme add ${slug}`, state.projectDir)}\` first.`,
       undefined,
       ERROR_CODES.ERR_UNKNOWN_THEME,
     );

@@ -24,7 +24,7 @@ export const doc = {
     'integration provider identity and contribution issues, agent docs, the ' +
     'detected package manager, and the health of the docs the CLI reads (authoring ' +
     'and CLI docs, the docs tree, doc size), and returns a structured ' +
-    'report. Theme checks run when the generated app module exists; without one, doctor reports that the CLI manages no themes and names theme add. Earlier descriptor-less copies are a non-failing upgrade warning. It never installs, writes, or mutates. It imports astryx.config, executes every added theme source while validating private inputs, and loads every recorded built theme module to prove its runtime imports work, including themes from installed packages. Local theme source also runs during build-freshness checks. Stylesheets are parsed without execution. Config and theme top-level code therefore run, so use doctor only with project code you trust.',
+    'report. Theme checks run when the generated app module exists; without one, doctor reports that the CLI manages no themes and names theme add. Earlier descriptor-less copies are a non-failing upgrade warning. It never installs, writes, or mutates. It imports astryx.config, executes every added theme source while validating private inputs, and loads every recorded built theme module to prove its runtime imports work, including themes from installed packages. Local theme source also runs during build-freshness checks. Stylesheets are parsed without execution. Config and theme top-level code therefore run, so use doctor only with project code you trust. Outside a project it checks the computer instead: the Node version (`node-version`), the release that answered (`answering-release`), the newest release the computer knows of (`newest-release`), and the computer-level agent text (`computer-agent-text`): present and matching this release, present but different, or absent, with `astryx init --user` as the fix for the last two. The agent-text check is always info. The newest-release check also runs inside a project, and is always info: it names a newer release when the computer knows of one and installs nothing. It never fails a check because the folder has no project, and installs nothing.',
   importPath: '@astryxdesign/cli/api',
   signature: 'doctor(options?: DoctorOptions): Promise<DoctorResponse>',
   keywords: ['doctor', 'diagnose', 'health', 'check', 'verify', 'environment'],
@@ -33,7 +33,7 @@ export const doc = {
       name: 'options.cwd',
       type: 'string',
       description:
-        'Directory to diagnose. A missing directory is not an error; it shows up in the checks (e.g. core-installed: fail).',
+        'Directory to diagnose. A directory outside any project, a missing one included, gets the computer checks.',
       default: 'process.cwd()',
     },
   ],

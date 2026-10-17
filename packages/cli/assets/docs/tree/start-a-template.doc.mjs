@@ -38,8 +38,8 @@ export const docs = {
           type: 'code',
           lang: 'bash',
           code: `# How an app finds a template and copies it
-npx astryx template --list
-npx astryx template acme-dashboard src/app/dashboard`,
+astryx template --list
+astryx template acme-dashboard src/app/dashboard`,
         },
       ],
     },
@@ -97,7 +97,7 @@ npx astryx template acme-dashboard src/app/dashboard`,
         {
           type: 'code',
           lang: 'bash',
-          code: '# See the Core ids\nnpx astryx --json template --list --package @astryxdesign/core',
+          code: '# See the Core ids\nastryx --json template --list --package @astryxdesign/core',
         },
       ],
     },
@@ -112,8 +112,8 @@ npx astryx template acme-dashboard src/app/dashboard`,
         {
           type: 'code',
           lang: 'bash',
-          code: `npx astryx integration add template acme-dashboard
-npx astryx integration add template acme-stat-card --type block`,
+          code: `astryx integration add template acme-dashboard
+astryx integration add template acme-stat-card --type block`,
         },
         {
           type: 'code',

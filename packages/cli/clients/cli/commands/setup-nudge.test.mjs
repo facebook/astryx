@@ -62,7 +62,8 @@ describe('isAstryxInitialized — centralized setup check (one place)', () => {
 });
 
 describe('enforcement layer 3 — per-command setup nudge', () => {
-  const asProject = () => write('package.json', '{"name":"t"}');
+  const asProject = () =>
+    write('package.json', '{"name":"t","dependencies":{"@astryxdesign/core":"*"}}');
 
   it('nudges on stderr after a command when not set up', async () => {
     asProject();
@@ -86,6 +87,11 @@ describe('enforcement layer 3 — per-command setup nudge', () => {
   });
 
   it('is quiet outside a project (no package.json)', async () => {
+    expect((await runCli(['docs', 'tokens'], tmp)).stderr).not.toMatch(NUDGE);
+  });
+
+  it('is quiet outside a project (a package.json that declares no Astryx package)', async () => {
+    write('package.json', '{"name":"t"}');
     expect((await runCli(['docs', 'tokens'], tmp)).stderr).not.toMatch(NUDGE);
   });
 

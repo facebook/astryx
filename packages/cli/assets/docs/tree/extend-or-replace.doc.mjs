@@ -26,7 +26,7 @@ export const docs = {
         {
           type: 'code',
           lang: 'bash',
-          code: 'npx astryx integration add doc acme-getting-started --replaces getting-started\n# The old name now opens your topic\nnpx astryx docs getting-started',
+          code: 'astryx integration add doc acme-getting-started --replaces getting-started\n# The old name now opens your topic\nastryx docs getting-started',
         },
         {
           type: 'code',
@@ -51,7 +51,7 @@ export const docs = {
         {
           type: 'code',
           lang: 'bash',
-          code: 'npx astryx integration add doc acme-theming --extends theme\nnpx astryx docs theme --index',
+          code: 'astryx integration add doc acme-theming --extends theme\nastryx docs theme --index',
         },
         {
           type: 'code',
@@ -82,7 +82,7 @@ export const docs = {
         {
           type: 'code',
           lang: 'bash',
-          code: 'npx astryx doctor integration docs',
+          code: 'astryx doctor integration docs',
         },
         {
           type: 'code',

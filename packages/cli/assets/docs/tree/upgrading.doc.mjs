@@ -28,7 +28,7 @@ export const docs = {
         {
           type: 'code',
           lang: 'bash',
-          code: "# 1. Build and test against the new release\nnpm install -D @astryxdesign/cli@latest @astryxdesign/core@latest\n# 2. Rerun the checks\nnpx astryx doctor integration validate\nnpx astryx doctor integration docs\nnpx astryx integration verify\n# 3. Admit the new Core once the checks pass\nnpm pkg set 'peerDependencies.@astryxdesign/core=^0.6.0 || ^0.7.0'\n# 4. Migrate apps across a change that breaks them\nnpx astryx integration add codemod rename-delay --to 0.7.0",
+          code: "# 1. Build and test against the new release\nnpm install -D @astryxdesign/cli@latest @astryxdesign/core@latest\n# 2. Rerun the checks\nastryx doctor integration validate\nastryx doctor integration docs\nastryx integration verify\n# 3. Admit the new Core once the checks pass\nnpm pkg set 'peerDependencies.@astryxdesign/core=^0.6.0 || ^0.7.0'\n# 4. Migrate apps across a change that breaks them\nastryx integration add codemod rename-delay --to 0.7.0",
         },
         {
           type: 'list',
@@ -52,7 +52,7 @@ export const docs = {
         {
           type: 'code',
           lang: 'bash',
-          code: '# Preview what would change; nothing is written\nnpx astryx upgrade --from 0.6.3 --integration @acme/astryx-widgets\n# Write the changes\nnpx astryx upgrade --from 0.6.3 --integration @acme/astryx-widgets --apply',
+          code: '# Preview what would change; nothing is written\nastryx upgrade --from 0.6.3 --integration @acme/astryx-widgets\n# Write the changes\nastryx upgrade --from 0.6.3 --integration @acme/astryx-widgets --apply',
         },
         {
           type: 'code',

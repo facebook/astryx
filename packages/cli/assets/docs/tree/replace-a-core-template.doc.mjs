@@ -48,7 +48,7 @@ export const docs = {
         {
           type: 'code',
           lang: 'bash',
-          code: 'npx astryx --json template --list --package @astryxdesign/core',
+          code: 'astryx --json template --list --package @astryxdesign/core',
         },
         {
           type: 'code',
@@ -115,10 +115,10 @@ export default {
           type: 'code',
           lang: 'bash',
           code: `# Receives the active replacement
-npx astryx template shell-side-nav src/app
+astryx template shell-side-nav src/app
 
 # Receives the original Core template
-npx astryx template shell-side-nav --package @astryxdesign/core src/app`,
+astryx template shell-side-nav --package @astryxdesign/core src/app`,
         },
         {
           type: 'prose',
@@ -142,7 +142,7 @@ npx astryx template shell-side-nav --package @astryxdesign/core src/app`,
         {
           type: 'code',
           lang: 'bash',
-          code: 'npx astryx doctor integration templates',
+          code: 'astryx doctor integration templates',
         },
         {
           type: 'table',

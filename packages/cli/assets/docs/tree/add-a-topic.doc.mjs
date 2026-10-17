@@ -27,7 +27,7 @@ export const docs = {
         {
           type: 'code',
           lang: 'bash',
-          code: 'npx astryx integration add doc deploying\n# Read it the way an app will\nnpx astryx docs deploying',
+          code: 'astryx integration add doc deploying\n# Read it the way an app will\nastryx docs deploying',
         },
         {
           type: 'code',
@@ -66,6 +66,38 @@ export const docs = {
             'Content blocks are `prose`, `code`, `list`, and `table`, as shown; `heading`, with a `level` from 3 to 6 and a `text`; and `token-ref`, which inlines a token table from another topic.',
             '`id` is optional: a stable key for the section. Without it, the key comes from the title. A stable CLI before 0.6.4 cannot read `id`; see {@link generic:versioning}.',
             'Replace the `Overview` placeholder that `integration add` writes. Every field is in {@link generic:authoring}.',
+          ],
+        },
+      ],
+    },
+    {
+      id: 'write-commands-without-a-runner',
+      title: 'Write commands without a runner',
+      content: [
+        {
+          type: 'prose',
+          text: 'Start every CLI command in a doc with the word astryx alone, with no runner such as npx or pnpm exec in front. The CLI prefixes each one when it prints the doc, with the command the reader runs: `npx astryx` or `pnpm exec astryx` from their package manager, or the `cliCommand` an integration sets. See {@link generic:cli-command}.',
+        },
+        {
+          type: 'code',
+          lang: 'javascript',
+          label: 'docs/deploying.doc.mjs',
+          code: "{type: 'prose', text: 'Check the app with `astryx doctor` before you ship.'},\n{type: 'code', lang: 'bash', code: 'astryx doctor'},",
+        },
+        {
+          type: 'code',
+          lang: 'text',
+          label:
+            "Read in an app whose integration sets cliCommand: 'acme astryx'",
+          code: 'Check the app with `acme astryx doctor` before you ship.\n\n```bash\nacme astryx doctor\n```',
+        },
+        {
+          type: 'list',
+          style: 'unordered',
+          items: [
+            'The CLI prefixes an inline code span that starts with the word astryx, a command at the start of a line, or after `&&`, `||`, `;` or `|`, in a `bash`, `sh`, `shell`, `zsh`, `console`, `text` or `markdown` code block or one with no language, and a table cell that holds only a command.',
+            'Code in other languages, such as a `js` example, and the word astryx in plain prose stay as written.',
+            '`--json` returns the doc as written, so a reader that shows it prefixes the commands itself.',
           ],
         },
       ],

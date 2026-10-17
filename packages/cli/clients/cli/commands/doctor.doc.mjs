@@ -18,8 +18,11 @@ export const doc = {
     'Runs read-only project health diagnostics by default: Node version, @astryxdesign/core ' +
     'install and version alignment, theme packages, generated app themes when present, earlier copied-theme migration, config, integrations (every one astryx.config names must load, linked without a config entry, ' +
     'provider identity, contribution issues), agent docs, core peer dependencies, package manager, ' +
-    "and the docs the CLI reads. It writes nothing, but loading astryx.config runs that file's code. " +
-    'The `integration` subcommands provide authoring checks for one integration package.',
+    "the docs the CLI reads, and the newest release the computer knows of (info only). It writes nothing, but loading astryx.config runs that file's code. " +
+    'The `integration` subcommands provide authoring checks for one integration package. ' +
+    'Outside a project it checks the computer instead: the Node version, the release that answered, ' +
+    'the newest release this computer knows of, and whether the computer-level agent text (`astryx init --user`) is present and matches this release (info only). ' +
+    'It never fails a check because the folder has no project.',
   fn: 'doctor',
   subcommands: ['integration'],
   examples: [
@@ -42,6 +45,7 @@ export const doc = {
       cli: 'astryx doctor integration docs @acme/widgets',
     },
   ],
+  outsideProject: 'own',
   exitCodes: [
     {code: 0, when: 'no checks failed (warnings are allowed)'},
     {code: 1, when: 'one or more checks failed'},

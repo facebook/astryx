@@ -57,6 +57,7 @@ export const doc = {
       cli: 'astryx swizzle SideNav --package @astryxdesign/core',
     },
   ],
+  outsideProject: 'refuse',
   exitCodes: [
     {code: 0, when: 'success'},
     {

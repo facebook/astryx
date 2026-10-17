@@ -9,15 +9,15 @@ export const docs = {
   placement: {parent: 'namespace:building-blocks', slot: 'guides', order: 60},
   title: 'Configuration',
   summary:
-    'Set how your integration behaves in an app: agent guidance, debug and gap reports, and more as it grows.',
-  keywords: ['configuration', 'agent guidance', 'debug', 'gap reports'],
+    'Set how your integration behaves in an app: agent guidance, the command your users run, debug and gap reports, and more as it grows.',
+  keywords: ['configuration', 'agent guidance', 'cliCommand', 'debug', 'gap reports'],
   slots: {
     guides: {title: 'Configuration', accepts: {kinds: ['generic', 'namespace']}},
   },
   blocks: [
     {
       type: 'prose',
-      text: 'Beyond the things you ship, an integration can set how it behaves in an app: the guidance it gives the AI agents working there, and the record it keeps of each CLI run. Open one below to set it up.',
+      text: 'Beyond the things you ship, an integration can set how it behaves in an app: the guidance it gives the AI agents working there, the command its users run the CLI with, and the record it keeps of each CLI run. Open one below to set it up.',
     },
   ],
 };

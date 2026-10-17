@@ -44,6 +44,14 @@ export interface AstryxIntegration {
   };
   /** Where to file issues/feedback for this integration. */
   issuesUrl?: string;
+  /** The command that runs the Astryx CLI for this package's users, such as
+   *  `acme astryx`. Every command the CLI prints in a project that loads
+   *  this package starts with it, in place of the package-manager prefix
+   *  (`npx astryx`, `pnpm exec astryx`). One line, no subcommand. When two
+   *  loaded integrations set different commands, neither is used and
+   *  `astryx doctor` warns. An invalid value is ignored with a warning; the
+   *  rest of the manifest still loads. JSON output keeps commands bare. */
+  cliCommand?: string;
 }
 
 /**
