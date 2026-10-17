@@ -132,6 +132,17 @@ describe('EmptyState', () => {
     expect(screen.getByTestId('empty-state')).toBeInTheDocument();
   });
 
+  it('does not render empty optional slot wrappers', () => {
+    const {container} = render(
+      <EmptyState title="No results" description="" icon={false} actions="" />,
+    );
+    const root = screen.getByRole('status');
+    expect(root).toHaveTextContent('No results');
+    expect(root).toHaveTextContent(/^No results$/);
+    expect(root.children).toHaveLength(1);
+    expect(container.querySelector('[aria-hidden="true"]')).toBeNull();
+  });
+
   it('renders all slots together', () => {
     render(
       <EmptyState
