@@ -168,7 +168,9 @@ describe('theme build report', () => {
     }
     expect(count(out, 'Install in your app')).toBe(1);
     expect(count(out, 'Or with a <link> tag:')).toBe(1);
-    expect(count(out, "import { Theme } from '@astryxdesign/core';")).toBe(2);
+    expect(
+      count(out, "import { Theme } from '@astryxdesign/core/theme';"),
+    ).toBe(2);
     expect(count(out, '[note]')).toBe(1);
     expect(count(out, 'note: Font')).toBe(0);
     expect(count(out, 'fonts.googleapis.com/css2')).toBe(1);

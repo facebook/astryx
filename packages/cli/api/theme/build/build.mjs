@@ -3093,7 +3093,7 @@ function printBuildTrailer(trailer) {
   logger.log(`
 Install in your app (paths are relative to a file in src/; adjust if yours lives elsewhere):
 
-  import { Theme } from '@astryxdesign/core';
+  import { Theme } from '@astryxdesign/core/theme';
   import { ${trailer.exportName} } from '${trailer.jsImport}';
   import '${trailer.cssImport}';
 
@@ -3103,7 +3103,7 @@ Install in your app (paths are relative to a file in src/; adjust if yours lives
 
 Or with a <link> tag:
 
-  import { Theme } from '@astryxdesign/core';
+  import { Theme } from '@astryxdesign/core/theme';
   import { ${trailer.exportName} } from '${trailer.jsImport}';
 
   <link rel="stylesheet" href="${trailer.cssImport}" />
@@ -3129,7 +3129,7 @@ export function printBatchTrailer(trailers) {
   logger.log(`
 Install in your app (paths are relative to a file in src/; adjust if yours lives elsewhere):
 
-  import { Theme } from '@astryxdesign/core';
+  import { Theme } from '@astryxdesign/core/theme';
   import { ${first.exportName} } from '${first.jsImport}';
   import '${first.cssImport}';
 
@@ -3139,7 +3139,7 @@ Install in your app (paths are relative to a file in src/; adjust if yours lives
 
 Or with a <link> tag:
 
-  import { Theme } from '@astryxdesign/core';
+  import { Theme } from '@astryxdesign/core/theme';
   import { ${first.exportName} } from '${first.jsImport}';
 
   <link rel="stylesheet" href="${first.cssImport}" />
