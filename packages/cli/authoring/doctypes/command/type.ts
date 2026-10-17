@@ -69,6 +69,10 @@ export interface CommandDoc extends AuthoredDocGraphFields {
   namespace?: string;
   /** Alternate slugs that also resolve to this doc. */
   aliases?: string[];
+  /** Search terms beyond the command's own words: the tasks and phrases a
+   *  reader types to find it (e.g. `'ci'` for the command a build runs).
+   *  `astryx search` matches them as it matches a function doc's keywords. */
+  keywords?: string[];
   /** Name of the FunctionDoc (and `@astryxdesign/cli/api` export) this wraps. */
   fn?: string;
   /** Positional arguments. */
