@@ -87,13 +87,15 @@ this record says otherwise.
   `ERR_INVALID_OPTION`. `--limit <n>` caps search results (default 20) and the
   response reports the total when it cut the list. An unknown kind or a limit
   that is not a positive integer MUST fail with `ERR_INVALID_OPTION`.
-- **FR6 — Sources are functions a project or integration provides.** A source is
-  an async function that receives `{signal, package?, version?}` and resolves
-  to a catalog; `package` asks for one package with every version, and
-  `version` asks for that version's items. A project MAY set one as the
-  `discover` field of `astryx.config`, and each loaded integration MAY export
-  one as its `discover` named export. Every source is called, the project's
-  first and then each integration's in load order, and the same function runs
+- **FR6 — Sources are functions a project, an integration, or a door
+  provides.** A source is an async function that receives
+  `{signal, package?, version?}` and resolves to a catalog; `package` asks for
+  one package with every version, and `version` asks for that version's items.
+  A project MAY set one as the `discover` field of `astryx.config`, each loaded
+  integration MAY export one as its `discover` named export, and a door MAY
+  pass its own (`spec:AST-081` FR1), which discover names as the door's. Every
+  source is called, the project's first, then each integration's in load
+  order, then the door's, and the same function runs
   once. A source that throws, exceeds 30 seconds (signalled on `signal`), or
   returns an invalid catalog fails alone: the others still count, and discover
   reports which source failed and why. Sources only read, so `spec:AST-031`'s
