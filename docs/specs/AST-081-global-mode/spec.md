@@ -173,9 +173,7 @@ works on is `spec:AST-040` FR9's.
   minor changes it; that change, and any other change to what a released
   command does outside a project, is classified under `spec:AST-017`. `doctor`
   is `own`: outside a project it checks the computer, reporting the Node
-  version, the release that answered and the newest release it knows of, and,
-  in a release that ships the computer-level agent text (FR8), whether that
-  text is present, and it never fails a check because the folder has no
+  version, the release that answered and the newest release it knows of, and whether the computer-level agent text (FR8) is present and current, and it never fails a check because the folder has no
   project. `swizzle` is `refuse`, even with a
   carried Core.
 
@@ -299,8 +297,13 @@ works on is `spec:AST-040` FR9's.
   - Every agent text a release prints or writes, the project block and the
     computer-level text included, comes from one source and differs only by
     the command name FR5 picks and the wrapper its surface needs, such as
-    markers or a version line. The computer-level text names no version and
-    tells an agent to follow a project's own agent docs inside that project.
+    markers or a version line. The computer-level text names no version and tells an agent to follow a
+    project's own agent docs inside that project. It is one skill file named
+    `astryx`, in the two skill folders agent tools read in the home folder
+    (`.agents/skills/astryx/SKILL.md` and `.claude/skills/astryx/SKILL.md`),
+    written and refreshed only by `astryx init --user` and removed only by
+    `astryx init --user --remove-agents`. Neither overwrites or removes a file
+    that the CLI did not write, or follows a link in its place.
   - Every project starter a release ships scaffolds, installs, and builds with
     that release, and a check MUST prove it for every starter before the
     release ships. A scaffold pins every Astryx package to the release that
@@ -371,6 +374,14 @@ works on is `spec:AST-040` FR9's.
   from the package manager alone; many hints, errors, `doctor` fixes, docs,
   and the setup reminder print a fixed name instead; and an integration has no
   way to name the command its users run. Each of these departs from FR1–FR9.
+- The CLI provides FR2–FR9 through the doors that run the CLI package
+  directly. The parts that need the programmatic host entry arrive with it:
+  FR1's host entry, its inputs, and its one-call rule; FR2's clause for a
+  door that declines the project's CLI; FR3's integrations a door approves;
+  the door name in FR5's picker; the host line in FR6; and
+  `architecture:cli-surface` INV30. The official list FR8 ships is
+  `spec:AST-051` FR10's. The project starters FR8 ships arrive with the
+  template kind that ships them.
 - `architecture:cli-surface`: every copy hands a project's run to the release
   that answers there before dispatch (FR2, FR9); command docs and the manifest
   carry
@@ -585,10 +596,20 @@ place of a fetch; and replacing the installed copy, which writes outside FR7's
 places, can need administrator rights, and cannot keep the release it switched
 from.
 
+### DEC-12 — The computer-level agent text is one skill in two folders
+
+**Reference:** `spec:AST-081/DEC-12`
+**Decider:** `josephfarina (proposed)`
+
+A skill loads only when an agent uses Astryx, so it costs nothing in the
+sessions that never touch it, and the two folders reach the common coding
+agents: one is read by most of them and the other by the one that reads only
+its own. One explicit command writes it, so nothing changes a person's agent
+setup at install or as a side effect.
+
+Rejected: one always-on instruction file per agent, which loads in every
+session and reaches fewer agents.
+
 ## Open questions
 
-- **OQ1 — Where the computer-level agent text lives** (`human-design`). One
-  skill file in the folders agent CLIs read skills from: loaded only when an
-  agent uses it, and two folders reach the common coding agents. Or one
-  always-on instruction file per agent: loaded in every session, and fewer
-  agents read those files. A blind agent test decides.
+None.
