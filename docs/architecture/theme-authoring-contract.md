@@ -48,6 +48,7 @@ deciding_specs:
     spec:AST-012/DEC-3,
     spec:AST-012/DEC-4,
     spec:AST-017/DEC-1,
+    spec:AST-082/DEC-2,
   ]
 ---
 
@@ -59,7 +60,7 @@ deciding_specs:
 {
   "scope": "global",
   "triggers": {
-    "theming": ["INV1", "INV3", "INV8", "INV9", "INV11", "INV12"]
+    "theming": ["INV1", "INV3", "INV8", "INV9", "INV11", "INV12", "INV13"]
   }
 }
 ```
@@ -84,8 +85,10 @@ source configuration independently.
 - component target/style-key overrides;
 - icon and indicator registries;
 - syntax tokens;
-- `onDark` / `onLight` surface overrides; and
-- ordered environmental `adaptations` with a fixed named width map.
+- `onDark` / `onLight` surface overrides;
+- ordered environmental `adaptations` with a fixed named width map; and
+- an optional experimental `experimental.native` section of native-only intent
+  for native renderers (`spec:AST-082`).
 
 `defineTheme` resolves that input into a flat `DefinedTheme`. An extended theme
 contains the resolved values it inherits, so its normalized representation is
@@ -100,7 +103,8 @@ Normalization follows one precedence order:
 5. inherited and explicit media-surface overrides;
 6. inherited and explicit theme-local declarations, validated against the
    resolved token, component, and media surfaces; and
-7. inherited and explicit icon/indicator registry entries.
+7. inherited and explicit icon/indicator registry entries; and
+8. inherited and explicit experimental native members.
 
 Explicit values win within their surface. Component maps merge by component,
 style key, and CSS property rather than replacing the entire inherited target.
@@ -150,6 +154,11 @@ style key, and CSS property rather than replacing the entire inherited target.
   derive, or normalize input into a durable typed theme value used by a current
   supported consumer; validating and returning the exact input unchanged is
   insufficient.
+- **INV13 — Native intent is carried, never compiled.** `experimental.native`
+  passes through normalization and extension member by member and appears
+  unchanged in `DefinedTheme` and in a built theme. It produces no web output.
+  Its readers are native renderers outside Core; `spec:AST-082` owns its
+  vocabulary and experimental status.
 
 This record does not own:
 
@@ -174,7 +183,9 @@ public surface belongs to
   field or `define*` helper construct, and how do runtime and static build consume
   it?** No concrete answer keeps it out of Core runtime authoring. An admitted
   field's normalization, precedence, inheritance, validation, template exposure,
-  and negative tests change together.
+  and negative tests change together. The experimental native section answers
+  it with INV13: native renderers read the normalized section, and runtime and
+  static build carry it without compiling it.
 - Validation-only theme data stays in theme-package tests, internal test utilities,
   or an explicit CLI checker/doctor workflow used by a current supported consumer.
   It does not enter Core runtime merely to share a validator.
@@ -231,7 +242,9 @@ Its 2026-09-12 amendment makes key validity and ownership prefix-independent whi
 retaining exact owner metadata, lineage, collisions, cycles, and legacy unenrolled
 behavior. AST-012 decisions 1–4 establish the fixed width map, named closed conditions,
 ordered rule cascade, and source/built adaptation metadata parity. AST-017 decision 1
-owns released compatibility classification and migration.
+owns released compatibility classification and migration. AST-082 decision 2
+admits native-only intent as an experimental theme section that the web never
+reads.
 
 ## Known conformance and verification gaps
 
@@ -241,17 +254,21 @@ classify local references. Until the implementation lands, INV8's prefix-indepen
 clauses are current authority but not enforcement. Existing explicit enrollment,
 owner, lineage, collision, cycle, and legacy-unenrolled behavior remains shipped.
 
+INV13 is accepted but unshipped: `DefineThemeInput` and `DefinedTheme` have no
+`experimental` member yet.
+
 ## Verification
 
-| Invariant                | Evidence                                                                                                | Failure signal                                                                                                            |
-| ------------------------ | ------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| INV1, INV2, INV5         | `defineTheme.test.ts` plus representative runtime/build parity                                          | Runtime and build interpret one input differently, or generated values beat explicit tokens                               |
-| INV3, INV4               | extension and invalid-base tests                                                                        | Child themes require a base stylesheet or silently accept a non-theme base                                                |
-| INV6                     | component merge tests across base/generated/explicit rules                                              | Restating one property drops inherited component styles                                                                   |
-| INV7                     | `onMediaTokens.test.ts` and generated surface-rule tests                                                | A child loses inherited surface customization or surface precedence changes                                               |
-| INV8                     | AST-006 runtime/static validator and source/built inheritance tests                                     | A valid name fails because of its prefix, ownership follows spelling, or lineage/reference/collision/cycle checks diverge |
-| INV10                    | `themeAdaptations.test.ts` and CLI build fixtures                                                       | Width metadata, rule order, or child re-resolution diverges across source and built themes                                |
-| INV11                    | `DefineThemeInput`/output diff plus runtime/build fixtures                                              | Validation-only data enters the normalized theme, or productive input loses construction validation                       |
-| INV12                    | Core theme export diff, constructed-value evidence, and current-consumer callsite                       | A theme `define*` helper only checks input and returns that exact input unchanged                                         |
-| Theme/Core compatibility | Maintained theme source/build against the minimum Core in its currently supported peer/dependency range | A theme update silently requires newer in-range Core or bypasses the `spec:AST-017` path                                  |
-| Authoring projection     | `scripts/check-theme-template.test.mjs`                                                                 | A supported authoring concept is missing or misstated in the template                                                     |
+| Invariant                | Evidence                                                                                                       | Failure signal                                                                                                            |
+| ------------------------ | -------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| INV1, INV2, INV5         | `defineTheme.test.ts` plus representative runtime/build parity                                                 | Runtime and build interpret one input differently, or generated values beat explicit tokens                               |
+| INV3, INV4               | extension and invalid-base tests                                                                               | Child themes require a base stylesheet or silently accept a non-theme base                                                |
+| INV6                     | component merge tests across base/generated/explicit rules                                                     | Restating one property drops inherited component styles                                                                   |
+| INV7                     | `onMediaTokens.test.ts` and generated surface-rule tests                                                       | A child loses inherited surface customization or surface precedence changes                                               |
+| INV8                     | AST-006 runtime/static validator and source/built inheritance tests                                            | A valid name fails because of its prefix, ownership follows spelling, or lineage/reference/collision/cycle checks diverge |
+| INV10                    | `themeAdaptations.test.ts` and CLI build fixtures                                                              | Width metadata, rule order, or child re-resolution diverges across source and built themes                                |
+| INV11                    | `DefineThemeInput`/output diff plus runtime/build fixtures                                                     | Validation-only data enters the normalized theme, or productive input loses construction validation                       |
+| INV12                    | Core theme export diff, constructed-value evidence, and current-consumer callsite                              | A theme `define*` helper only checks input and returns that exact input unchanged                                         |
+| INV13                    | `defineTheme.test.ts` extension and built-theme cases, plus web output comparison with and without the section | The section is dropped, replaced wholesale on extension, differs in a built theme, or changes any web output              |
+| Theme/Core compatibility | Maintained theme source/build against the minimum Core in its currently supported peer/dependency range        | A theme update silently requires newer in-range Core or bypasses the `spec:AST-017` path                                  |
+| Authoring projection     | `scripts/check-theme-template.test.mjs`                                                                        | A supported authoring concept is missing or misstated in the template                                                     |
