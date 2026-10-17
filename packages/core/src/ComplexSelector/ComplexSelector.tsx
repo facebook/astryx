@@ -4,8 +4,8 @@
 
 /**
  * @file ComplexSelector.tsx
- * @input Uses React, StyleX, Field, Icon slots, Layer positioning, and usePopover
- * @output Exports a rich-selector shell with exact token-sized input, secondary, and ghost triggers, plus an imperative open/close handle
+ * @input Uses React, StyleX, Field, Icon slots, Layer positioning, usePopover, and useTooltip
+ * @output Exports a rich-selector shell with exact token-sized input, secondary, and ghost triggers, an imperative open/close handle, and a focusable disabled-reason tooltip
  * @position Core implementation; consumed by index.ts
  *
  * SYNC: When modified, update:
@@ -38,6 +38,7 @@ import {useMergedRefs} from '../hooks/useMergedRefs';
 import {Field, inputWrapperStyles, type FieldStatusVariant} from '../Field';
 import {Icon, renderIconSlot, type IconType} from '../Icon';
 import {Spinner} from '../Spinner';
+import {useTooltip} from '../Tooltip';
 import {useTranslator} from '../i18n';
 import {layerAnimations} from '../Layer/layerAnimations.stylex';
 import type {LayerAlignment, LayerPlacement} from '../Layer/useLayer';
@@ -235,6 +236,11 @@ const RENDER_TRIGGER_PARTS_MESSAGE =
   '`container*` and `control*` styling props have no effect with `renderTrigger`: ' +
   'no Field box or control box renders. Style the control you render instead.';
 
+const RENDER_TRIGGER_DISABLED_MESSAGE =
+  '`disabledMessage` has no effect with `renderTrigger`: the caller owns the ' +
+  'control, so no reason tooltip renders. Explain the disabled state on the ' +
+  'control you render instead.';
+
 /**
  * Props the `renderTrigger` render prop hands to the control the caller
  * renders.
@@ -319,6 +325,8 @@ export interface ComplexSelectorProps<Value> extends Omit<
    * Click handler on the trigger. It runs before the popup opens; call
    * `preventDefault()` to keep the popup closed. A press elsewhere in the
    * control box goes through the trigger, so it reaches this handler too.
+   * While disabled with a `disabledMessage`, the trigger stays focusable, so
+   * this handler still runs on a press; opening stays blocked.
    * With `renderTrigger` it lands on the caller's control and runs after the
    * built-in toggle, which it cannot cancel.
    */
@@ -357,6 +365,30 @@ export interface ComplexSelectorProps<Value> extends Omit<
   isRequired?: boolean;
   /** Disables the selector. */
   isDisabled?: boolean;
+  /**
+   * Explains why the selector is disabled. When set together with
+   * `isDisabled`, the selector shows a tooltip with this text on hover and
+   * keyboard focus, and the trigger stays focusable (via `aria-disabled`)
+   * so the reason is discoverable by keyboard and assistive technology.
+   * Activation stays blocked, but a caller `onClick` still runs on a press.
+   * Has no effect with `renderTrigger`, where the caller owns the control; a
+   * development warning says so.
+   *
+   * Use this instead of wrapping a disabled selector in `Tooltip` — disabled
+   * controls don't emit the pointer events an external tooltip needs.
+   *
+   * @example
+   * ```
+   * <ComplexSelector
+   *   label="Fruit blend"
+   *   value={value}
+   *   isDisabled
+   *   disabledMessage="You need the Editor role to change this">
+   *   {(value, onChange, close) => <FruitGrid ... />}
+   * </ComplexSelector>
+   * ```
+   */
+  disabledMessage?: string;
   /** Shows loading state on the trigger. */
   isLoading?: boolean;
   /** Validation status. */
@@ -474,6 +506,7 @@ export function ComplexSelector<Value>({
   isOptional = false,
   isRequired = false,
   isDisabled = false,
+  disabledMessage,
   isLoading = false,
   status,
   statusVariant = 'attached',
@@ -517,6 +550,11 @@ export function ComplexSelector<Value>({
         controlClassName != null ||
         controlStyle != null),
   );
+  useDevWarning(
+    'ComplexSelector',
+    RENDER_TRIGGER_DISABLED_MESSAGE,
+    renderTrigger != null && disabledMessage != null,
+  );
   const t = useTranslator();
   const pressable = usePressFeedback();
   const isEffectivelyRequired = useResolvedRequired({isRequired, isOptional});
@@ -533,10 +571,26 @@ export function ComplexSelector<Value>({
   const contentId = useId();
   const descriptionId = useId();
   const statusMessageId = useId();
+
+  // Disabled-reason tooltip. Disabled controls swallow pointer events, so the
+  // tooltip listeners attach to the trigger container (which already exists)
+  // and the trigger button stays perceivable via aria-disabled instead of the
+  // disabled attribute. Activation is blocked by the isDisabled guards in
+  // handleTriggerClick, the ArrowDown handler, and the imperative handle.
+  const showsDisabledMessage = isDisabled && !!disabledMessage;
+  const disabledMessageTooltip = useTooltip({
+    placement: 'above',
+    // The container div is not naturally focusable; focusin bubbles up from
+    // the trigger button, so always attach focus listeners.
+    focusTrigger: 'always',
+    isEnabled: showsDisabledMessage,
+  });
+
   const ariaDescribedBy =
     [
       description ? descriptionId : null,
       status?.message ? statusMessageId : null,
+      showsDisabledMessage ? disabledMessageTooltip.describedBy : null,
     ]
       .filter((id): id is string => id != null)
       .join(' ') || undefined;
@@ -719,7 +773,13 @@ export function ComplexSelector<Value>({
   const selectorContent = (
     <>
       <div
-        ref={popover.triggerRef}
+        ref={el => {
+          popover.triggerRef(el);
+          // Anchor + hover/focus listeners for the disabled-message tooltip.
+          // Handlers are gated internally by isEnabled, and anchor names
+          // compose, so attaching unconditionally is safe.
+          disabledMessageTooltip.ref(el);
+        }}
         {...pressable}
         onClick={handleControlBoxClick}
         {...mergeProps(
@@ -767,7 +827,11 @@ export function ComplexSelector<Value>({
           aria-required={isEffectivelyRequired ? 'true' : undefined}
           aria-invalid={status?.type === 'error' ? 'true' : undefined}
           aria-busy={isBusy || undefined}
-          disabled={isDisabled}
+          // With a disabledMessage the trigger keeps focusability via
+          // aria-disabled so the reason is focus-discoverable; activation is
+          // still blocked by the isDisabled guards.
+          disabled={isDisabled && !showsDisabledMessage}
+          aria-disabled={showsDisabledMessage ? 'true' : undefined}
           onClick={handleTriggerButtonClick}
           onKeyDown={handleTriggerButtonKeyDown}
           {...stylex.props(styles.trigger)}>
@@ -794,6 +858,9 @@ export function ComplexSelector<Value>({
       </div>
 
       {popup}
+
+      {showsDisabledMessage &&
+        disabledMessageTooltip.renderTooltip(disabledMessage)}
     </>
   );
 

@@ -133,6 +133,12 @@ export const docs = {
           description: 'Disables the selector.',
         },
         {
+          name: 'disabledMessage',
+          type: 'string',
+          description:
+            'Explains why the selector is disabled. With isDisabled, shows a tooltip on hover/keyboard focus and keeps the trigger focusable via aria-disabled (activation stays blocked; a caller onClick still runs). No effect with renderTrigger, which warns in development. Use this instead of wrapping a disabled ComplexSelector in Tooltip. Disabled controls swallow the hover events an external Tooltip needs.',
+        },
+        {
           name: 'isLoading',
           type: 'boolean',
           description: 'Shows loading state on the trigger.',
@@ -212,7 +218,7 @@ export const docs = {
           name: 'onClick',
           type: '(event: MouseEvent) => void',
           description:
-            'Click handler on the trigger. Runs before the popup opens; call preventDefault() to keep it closed. A press elsewhere in the control box goes through the trigger too. With renderTrigger it runs after the built-in toggle and cannot cancel it.',
+            'Click handler on the trigger. Runs before the popup opens; call preventDefault() to keep it closed. A press elsewhere in the control box goes through the trigger too. While disabled with a disabledMessage the trigger stays focusable, so this still runs; opening stays blocked. With renderTrigger it runs after the built-in toggle and cannot cancel it.',
         },
         {
           name: 'onKeyDown',
@@ -307,6 +313,11 @@ export const docs = {
         description:
           'Do not use ComplexSelector for a plain single-column text list; use Selector instead.',
       },
+      {
+        guidance: false,
+        description:
+          'Wrap a disabled ComplexSelector in Tooltip to explain why it is disabled; disabled triggers swallow the hover events the wrapper needs. Use the disabledMessage prop instead.',
+      },
     ],
   },
 };
@@ -368,6 +379,11 @@ export const docsDense = {
         description:
           'Do not use ComplexSelector for a plain single-column text list; use Selector instead.',
       },
+      {
+        guidance: false,
+        description:
+          'Wrap a disabled ComplexSelector in Tooltip to explain why it is disabled; disabled triggers swallow the hover events the wrapper needs. Use the disabledMessage prop instead.',
+      },
     ],
   },
   propDescriptions: {
@@ -375,6 +391,8 @@ export const docsDense = {
     value: 'Controlled value.',
     onChange: 'Commit value.',
     changeAction: 'Async action after onChange; drives optimistic value/busy.',
+    disabledMessage:
+      'why disabled; w/ isDisabled shows tooltip on hover/focus, trigger stays focusable via aria-disabled; use instead of Tooltip wrapper',
     children: 'Render custom dialog content from (value,onChange,close,state).',
     triggerLabel: 'Closed trigger label/content.',
     variant:
