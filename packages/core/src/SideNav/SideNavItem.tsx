@@ -17,6 +17,11 @@
  * `TopNavMenu` use). Hover is a progressive enhancement over the popover's
  * click behavior and is inert on coarse pointers.
  *
+ * Nested rows span the full width of the nav list, like top-level rows, so
+ * their hover and selected fill lines up with the rows above them. The
+ * nesting indent sits inside the row as extra inline-start padding, one step
+ * per level, tracked through a private depth context.
+ *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/SideNav/SideNav.doc.mjs
  * - /packages/core/src/SideNav/SideNav.test.tsx
@@ -26,6 +31,8 @@
  */
 
 import {
+  createContext,
+  use,
   useCallback,
   useId,
   useMemo,
@@ -108,26 +115,45 @@ const styles = stylex.create({
     gap: spacingVars['--spacing-1'],
     pointerEvents: 'auto',
   },
-  children: {
-    paddingInlineStart: spacingVars['--spacing-6'],
-  },
+  // The group clips its rows only for the 0fr collapse animation. Nested rows
+  // sit flush with the group, so a permanent clip would cut off their focus
+  // ring, which paints outside the row. The expanded group therefore stops
+  // clipping once it has finished opening: `overflow` is discrete, so it rides
+  // the same transition with `allow-discrete` and a delay equal to the open
+  // duration, holding `hidden` until the rows' height has settled. Collapsing
+  // flips back to `hidden` at once (no delay on the collapsed state), so
+  // nothing spills while the group closes.
+  //
+  // Reduced fallback: a browser without `transition-behavior: allow-discrete`
+  // (the tier below current Baseline) cannot delay the switch, so the group
+  // stops clipping as soon as it starts opening and the opening rows briefly
+  // overlap the row below. The group still opens and the ring still shows.
   childrenCollapsible: {
     display: 'grid',
     gridTemplateRows: '1fr',
-    transitionProperty: 'grid-template-rows',
+    overflow: 'visible',
+    transitionProperty: 'grid-template-rows, overflow',
+    transitionBehavior: 'allow-discrete',
     transitionDuration: {
-      default: durationVars['--duration-medium'],
-      '@media (prefers-reduced-motion: reduce)': '0s',
+      default: `${durationVars['--duration-medium']}, 0s`,
+      '@media (prefers-reduced-motion: reduce)': '0s, 0s',
+    },
+    transitionDelay: {
+      default: `0s, ${durationVars['--duration-medium']}`,
+      '@media (prefers-reduced-motion: reduce)': '0s, 0s',
     },
     transitionTimingFunction: easeVars['--ease-standard'],
   },
   childrenCollapsed: {
     gridTemplateRows: '0fr',
-  },
-  childrenInner: {
     overflow: 'hidden',
+    transitionDelay: '0s, 0s',
+  },
+  // No inline padding: nested rows fill the full width of the nav list, and
+  // each row carries its own indent (`indentStyles` below). `minHeight: 0`
+  // lets the 0fr track shrink this item to nothing; the group clips it.
+  childrenInner: {
     minHeight: 0,
-    paddingInlineStart: spacingVars['--spacing-6'],
   },
   expandChevron: {
     display: 'inline-flex',
@@ -231,6 +257,35 @@ const styles = stylex.create({
     lineHeight: typeScaleVars['--text-supporting-leading'],
   },
 });
+
+// Nesting indent, drawn inside the row: one `--spacing-6` step per nesting
+// level. The row itself stays full width, so its hover and selected fill
+// matches a top-level row's.
+// - `sm` / `md` — the ordinary row, where the row element is the link or
+//   button: its own inline-start padding plus the steps.
+//   SYNC: the base padding matches navItemStyles.sm / .md / .lg.
+// - `primary` — the row-wrapper path: the wrapper keeps its base padding and
+//   the steps go on the primary link or button, so the whole indent is part
+//   of the click target rather than dead space that still shows feedback.
+const indentStyles = stylex.create({
+  sm: (depth: number) => ({
+    paddingInlineStart: `calc(${spacingVars['--spacing-1']} + ${depth} * ${spacingVars['--spacing-6']})`,
+  }),
+  md: (depth: number) => ({
+    paddingInlineStart: `calc(${spacingVars['--spacing-2']} + ${depth} * ${spacingVars['--spacing-6']})`,
+  }),
+  primary: (depth: number) => ({
+    paddingInlineStart: `calc(${depth} * ${spacingVars['--spacing-6']})`,
+  }),
+});
+
+/**
+ * How many SideNavItems deep the current item sits: 0 at the top level,
+ * 1 inside one parent, and so on. A collapsed rail's flyout resets it to 0,
+ * since the flyout lists a parent's children as its own top level.
+ */
+const SideNavItemDepthContext = createContext(0);
+SideNavItemDepthContext.displayName = 'SideNavItemDepthContext';
 
 /**
  * Cascaded to the `actions` slot through `SizeContext` so a consumer's row
@@ -363,7 +418,9 @@ export interface SideNavItemProps extends BaseProps<HTMLElement> {
    */
   actions?: ReactNode;
   /**
-   * Sub-items for nesting.
+   * Sub-items for nesting. Nested items span the full width of the nav
+   * list, like top-level items; their content is indented one step per
+   * nesting level.
    */
   children?: ReactNode;
   /**
@@ -455,6 +512,7 @@ export function SideNavItem({
   const id = useId();
   const hasChildren = !!children;
   const itemRef = useRef<HTMLDivElement>(null);
+  const depth = use(SideNavItemDepthContext);
 
   // Popover for collapsed items with children
   const popover = usePopover({
@@ -608,7 +666,9 @@ export function SideNavItem({
               onClick={() => popover.hide()}>
               <div {...stylex.props(styles.popoverHeader)}>{label}</div>
               <SideNavCollapseContext value={EXPANDED_COLLAPSE_STATE}>
-                {children}
+                <SideNavItemDepthContext value={0}>
+                  {children}
+                </SideNavItemDepthContext>
               </SideNavCollapseContext>
             </div>,
             {placement: 'end', alignment: 'start', xstyle: styles.popoverGap},
@@ -686,6 +746,14 @@ export function SideNavItem({
     isSelected && navItemStyles.selected,
     isDisabled && navItemStyles.disabled,
   ] as const;
+  const rowIndent =
+    depth > 0 && indentStyles[size === 'sm' ? 'sm' : 'md'](depth);
+  const primaryIndent = depth > 0 && indentStyles.primary(depth);
+
+  // The indent is a runtime value, so it reaches the element as an inline
+  // style. These props are spread after `rest`, so fold the caller's `style`
+  // back in (caller wins) rather than letting the indent replace it.
+  const callerStyle = {style: rest.style};
 
   // Three shapes of the same row appearance:
   // - `rowProps` — split-action path (toggle, no actions): presentational
@@ -702,7 +770,10 @@ export function SideNavItem({
   const focusableRowProps = {
     ...mergeProps(
       itemThemeProps,
-      focusOutlineProps.focusVisible(...itemStyleArgs),
+      mergeProps(
+        focusOutlineProps.focusVisible(...itemStyleArgs, rowIndent),
+        callerStyle,
+      ),
     ),
     ...pressable,
   };
@@ -748,11 +819,17 @@ export function SideNavItem({
           onClick={handleClick}
           {...rest}
           {...rowPrimaryAriaProps}
-          {...(hasActions
-            ? // The wrapper rings for this element; suppressing here is what
-              // keeps the UA's own ring from painting inside that one.
-              focusOutlineProps.suppressed(styles.splitAction)
-            : focusOutlineProps.focusVisible(styles.splitAction))}>
+          {...mergeProps(
+            hasActions
+              ? // The wrapper rings for this element; suppressing here is what
+                // keeps the UA's own ring from painting inside that one.
+                focusOutlineProps.suppressed(styles.splitAction, primaryIndent)
+              : focusOutlineProps.focusVisible(
+                  styles.splitAction,
+                  primaryIndent,
+                ),
+            callerStyle,
+          )}>
           {itemContent}
         </NavItemElement>
         {hasIndependentToggle && (
@@ -831,7 +908,9 @@ export function SideNavItem({
             <span id={`${id}-label`} hidden>
               {label}
             </span>
-            {children}
+            <SideNavItemDepthContext value={depth + 1}>
+              {children}
+            </SideNavItemDepthContext>
           </div>
         </div>
       )}
