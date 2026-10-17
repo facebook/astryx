@@ -10,7 +10,8 @@
  *
  * The compound-mode peer of the data API's `{type: 'section', title, items}`
  * option: the same heading typography and `dropdown-menu-section-heading`
- * theme target, with the group named by its visible heading.
+ * theme target, with the group named by its visible heading. Its rows keep
+ * the menu's row gap, as DropdownMenuRadioGroup's do.
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/DropdownMenu/DropdownMenu.doc.mjs
@@ -36,6 +37,15 @@ import {mergeProps} from '../utils';
 import {themeProps} from '../utils/themeProps';
 
 const styles = stylex.create({
+  // Repeat the menu's own row gap (2px) inside the role="group" wrapper, so
+  // the heading, the rows and any divider in a group keep the rhythm of the
+  // rows around it instead of sitting flush (DropdownMenuRadioGroup does the
+  // same).
+  group: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: spacingVars['--spacing-0-5'],
+  },
   heading: {
     paddingBlock: spacingVars['--spacing-1'],
     paddingInline: spacingVars['--spacing-2'],
@@ -98,7 +108,7 @@ export function DropdownMenuGroup({
       ref={ref}
       role="group"
       aria-labelledby={hasTitle ? headingId : undefined}
-      {...mergeProps(stylex.props(xstyle), className, style)}>
+      {...mergeProps(stylex.props(styles.group, xstyle), className, style)}>
       {hasTitle && (
         <div
           id={headingId}

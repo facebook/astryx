@@ -711,6 +711,60 @@ export const CompoundWithGroups: Story = {
   ),
 };
 
+/**
+ * A titled group beside plain rows, in compound mode and in data mode. The
+ * group's heading and rows keep the same 2px gap as the rows around them, so
+ * the menu reads as one rhythm with a heading in it.
+ */
+export const GroupBesidePlainRows: Story = {
+  name: 'Group beside plain rows',
+  render: () => (
+    <div
+      data-testid="group-rhythm-fixture"
+      style={{display: 'flex', gap: 16, padding: 16}}>
+      <DropdownMenu button={{label: 'Compound'}}>
+        <DropdownMenuItem icon={PencilIcon} label="Rename" onClick={() => {}} />
+        <DropdownMenuItem
+          icon={DocumentDuplicateIcon}
+          label="Duplicate"
+          onClick={() => {}}
+        />
+        <DropdownMenuGroup title="Version history">
+          <DropdownMenuItem
+            icon={ArrowDownTrayIcon}
+            label="Restore this version"
+            onClick={() => {}}
+          />
+          <DropdownMenuItem
+            icon={DocumentDuplicateIcon}
+            label="Compare with current"
+            onClick={() => {}}
+          />
+        </DropdownMenuGroup>
+        <DropdownMenuDivider />
+        <DropdownMenuItem icon={TrashIcon} label="Delete" onClick={() => {}} />
+      </DropdownMenu>
+      <DropdownMenu
+        button={{label: 'Data'}}
+        items={[
+          {label: 'Rename', icon: PencilIcon},
+          {label: 'Duplicate', icon: DocumentDuplicateIcon},
+          {
+            type: 'section',
+            title: 'Create',
+            items: [
+              {label: 'New file', icon: DocumentPlusIcon},
+              {label: 'New folder', icon: FolderPlusIcon},
+            ],
+          },
+          {type: 'divider'},
+          {label: 'Delete', icon: TrashIcon},
+        ]}
+      />
+    </div>
+  ),
+};
+
 export const PlacementAbove: Story = {
   render: () => (
     <DropdownMenu
