@@ -177,14 +177,16 @@ export const docs = {
     anatomy: [
       {name: 'Container', required: true, description: 'Root field box that owns layout, width, and local stacking for the label, control, and status.'},
       {name: 'Label', required: true, description: 'Text identifying the field. Always rendered for accessibility, optionally hidden visually.'},
-      {name: 'Description', required: false, description: 'Helper text between the label and input explaining what to enter.'},
+      {name: 'Ordinary description', required: false, description: 'Helper text under the label in the ordinary field layout.'},
+      {name: 'Horizontal-label description', required: false, description: 'Helper text in the control column when FormLayout owns horizontal labels.'},
       {name: 'Control slot', required: true, description: 'A custom, native, or third-party control that does not already render a field shell.'},
       {name: 'Status message', required: false, description: 'Inline validation feedback showing error, warning, or success with a message.'},
       {name: 'Input status icon', required: false, description: 'Shared status affordance used by Field-composed input controls.'},
       {name: 'Input clear button', required: false, description: 'Shared clear action used by Field-composed input controls.'},
       {name: 'Input clear icon', required: false, description: 'Glyph inside the shared input clear action.'},
       {name: 'Optional/Required indicator', required: false, description: 'Badge next to the label showing whether the field is optional or required.'},
-      {name: 'Label tooltip', required: false, description: 'Info icon at the end of the label with a tooltip explaining the field.'},
+      {name: 'Label tooltip trigger', required: false, description: 'Info icon beside the label that opens explanatory content.'},
+      {name: 'Label tooltip surface', required: false, description: 'Layer-hosted explanatory content for the label tooltip.'},
     ],
   },
   examples: [

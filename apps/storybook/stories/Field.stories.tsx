@@ -369,11 +369,8 @@ const frameCaption = {
 };
 
 /**
- * The Field.doc.mjs "Filter bar" example (a search TextInput and three
- * Selectors) in a 390px phone frame, a 768px tablet frame, and at full width.
- * The last frame is the same bar without `wrap` at 390px: its fields now
- * shrink inside the frame instead of pushing past it, which is why filter bars
- * should wrap on phones.
+ * Comparison fixture for Field-owned structural states: horizontal labels,
+ * a detached status with explicit description/status wiring, and a group label.
  */
 export const StructuralStates: Story = {
   render: () => {
@@ -424,6 +421,13 @@ export const StructuralStates: Story = {
   },
 };
 
+/**
+ * The Field.doc.mjs "Filter bar" example (a search TextInput and three
+ * Selectors) in a 390px phone frame, a 768px tablet frame, and at full width.
+ * The last frame is the same bar without `wrap` at 390px: its fields now
+ * shrink inside the frame instead of pushing past it, which is why filter bars
+ * should wrap on phones.
+ */
 export const FilterBar: Story = {
   render: () => (
     <div style={{display: 'flex', flexDirection: 'column', gap: 24}}>

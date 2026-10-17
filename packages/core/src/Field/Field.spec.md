@@ -154,10 +154,13 @@ Draft requirements identify their basis so observed code is not mistaken for an 
 {
   "Container": {"target": "field"},
   "Label": {"target": "field-label"},
-  "Description": {
+  "Ordinary description": {
     "none": {
-      "reason": "reachability-gap: The stable description paints supporting text outside the field-label target and has no current public target of its own."
+      "reason": "reachability-gap: The ordinary-layout description paints supporting text outside the field-label target and has no current public target of its own."
     }
+  },
+  "Horizontal-label description": {
+    "delegatesTo": {"owner": "component:Text", "target": "text"}
   },
   "Control slot": {
     "none": {
@@ -169,11 +172,16 @@ Draft requirements identify their basis so observed code is not mistaken for an 
   "Input clear button": {"target": "input-clear-button"},
   "Input clear icon": {"target": "input-clear-icon"},
   "Optional/Required indicator": {"inherits": "field-label"},
-  "Label tooltip": {
+  "Label tooltip trigger": {
+    "delegatesTo": {"owner": "component:Icon", "target": "icon"}
+  },
+  "Label tooltip surface": {
     "delegatesTo": {"owner": "component:Tooltip", "target": "tooltip"}
   }
 }
 ```
+
+The ordinary description remains stable consumer anatomy without a Field-owned target. A visible horizontal-label description delegates to `Text/text`; when `isLabelHidden` is true, the same content delegates to `VisuallyHidden` and exposes no painted target. The label tooltip splits its visible `Icon/icon` trigger from its layer-hosted `Tooltip/tooltip` surface.
 
 ## Family and system relationships
 

@@ -612,6 +612,24 @@ describe('Field', () => {
       expect(onClick).toHaveBeenCalledOnce();
     });
 
+    it('visually hides the description in horizontal-label mode when the label is hidden', () => {
+      render(
+        <Field
+          label="Search"
+          inputID="search-input"
+          isLabelHidden
+          description="Search for items"
+          descriptionID="search-desc">
+          <input id="search-input" aria-describedby="search-desc" />
+        </Field>,
+        {wrapper: horizontalLabelsWrapper},
+      );
+
+      const description = screen.getByText('Search for items');
+      expect(description.className).toContain('visuallyHidden');
+      expect(description).toHaveAttribute('id', 'search-desc');
+    });
+
     it('applies display:contents when in horizontal-labels context', () => {
       const {container} = render(
         <Field label="Name" inputID="name-input">
