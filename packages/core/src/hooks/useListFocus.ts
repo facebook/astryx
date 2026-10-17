@@ -626,10 +626,39 @@ export function useListFocus<T extends HTMLElement = HTMLElement>(
    * roving tabindex is enabled.
    */
   const handleFocus = useCallback(() => {
-    if (hasRovingTabIndex) {
-      syncTabStops();
+    if (!hasRovingTabIndex) {
+      return;
     }
-  }, [hasRovingTabIndex, syncTabStops]);
+
+    const listEl = listRef.current;
+    const active = listEl?.ownerDocument.activeElement;
+    if (
+      !active ||
+      (boundarySelector && active.closest(boundarySelector) !== listEl)
+    ) {
+      return;
+    }
+    const items = getItems();
+    const focused = items.find(
+      item => item === active || item.contains(active),
+    );
+    if (!focused || isItemDisabled(focused)) {
+      syncTabStops();
+      return;
+    }
+    // Only move the tab stop, not DOM focus: a descendant may be editing, and
+    // a consumer's onFocus may already have redirected focus to another item.
+    for (const item of items) {
+      setTabIndex(item, item === focused ? 0 : -1);
+    }
+  }, [
+    hasRovingTabIndex,
+    boundarySelector,
+    getItems,
+    isItemDisabled,
+    setTabIndex,
+    syncTabStops,
+  ]);
 
   /**
    * Handle keyboard navigation.
