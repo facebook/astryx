@@ -77,12 +77,13 @@ change.
   when the module the descriptor's import names exports it. Every surface (FR7)
   lists, finds, and verifies these components by those names, and a source that
   exports its stem keeps the stem. A name discovery records only this way MUST
-  NOT take an unscoped lookup that Core answers: such a lookup returns the Core
-  component unless a declared replacement claims the name, a lookup scoped to
-  the package returns the package's component, and Doctor reports the shared
-  name. Discovery MUST reject a missing source, more than one eligible same-stem
-  source, an invalid inferred export name, or a descriptor whose authored
-  identity conflicts with its required directory identity.
+  NOT take an unscoped lookup that Core or a component named after its source
+  answers: such a lookup returns that component unless a declared replacement
+  claims the name, a lookup scoped to the package returns the package's
+  component, and Doctor reports a name Core shares. Discovery MUST reject a
+  missing source, more than one eligible same-stem source, an invalid inferred
+  export name, or a descriptor whose authored identity conflicts with its
+  required directory identity.
 - **FR5 — Multi-file items have one confined ownership boundary.** A kind whose
   item needs nested source, token, palette, asset, or receipt files MUST define
   one item-local copy and pack boundary. Discovery and authoring MUST enumerate
