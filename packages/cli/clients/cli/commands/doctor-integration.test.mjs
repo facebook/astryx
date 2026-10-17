@@ -425,6 +425,71 @@ describe('doctor integration — command', () => {
     expect(process.exitCode).toBeUndefined();
   });
 
+  it('docs resolves a link to a component or a template, its own or Core’s, and still flags one that names no doc', async () => {
+    const page = (await discoverCoreTemplates()).find(
+      template => template.type === 'page',
+    );
+    expect(page).toBeDefined();
+    fs.writeFileSync(
+      path.join(tmpDir, 'package.json'),
+      JSON.stringify({name: '@acme/widgets', version: '1.2.3'}),
+    );
+    fs.writeFileSync(
+      path.join(tmpDir, 'astryx.integration.mjs'),
+      "export default {components: './components', templates: './templates', docs: './docs'};\n",
+    );
+    for (const dir of ['components', 'templates', 'docs']) {
+      fs.mkdirSync(path.join(tmpDir, dir), {recursive: true});
+    }
+    fs.writeFileSync(
+      path.join(tmpDir, 'components', 'AcmeButton.doc.mjs'),
+      "export default {type: 'component', name: 'AcmeButton', displayName: 'Acme Button', description: 'A button.', props: []};\n",
+    );
+    fs.writeFileSync(
+      path.join(tmpDir, 'components', 'AcmeButton.tsx'),
+      'export function AcmeButton() { return null; }\n',
+    );
+    fs.writeFileSync(
+      path.join(tmpDir, 'templates', 'acme-card.doc.mjs'),
+      "export default {type: 'block', name: 'Acme card', description: 'A card.'};\n",
+    );
+    fs.writeFileSync(
+      path.join(tmpDir, 'templates', 'acme-card.tsx'),
+      'export default function Fixture() { return null; }\n',
+    );
+    const text =
+      'Start with {@link component:AcmeButton} or {@link block:acme-card}, ' +
+      'built on {@link @astryxdesign/core:component:Button} and ' +
+      `{@link @astryxdesign/core:page:${page?.dirName}}. Not {@link component:AcmeMissing}.`;
+    fs.writeFileSync(
+      path.join(tmpDir, 'docs', 'using-widgets.doc.mjs'),
+      `export default ${JSON.stringify({
+        type: 'generic',
+        name: 'using-widgets',
+        title: 'Using widgets',
+        description: 'Fixture topic.',
+        sections: [{title: 'Overview', content: [{type: 'prose', text}]}],
+      })};\n`,
+    );
+    process.chdir(tmpDir);
+
+    await createProgram().parseAsync([
+      'node',
+      'astryx',
+      '--json',
+      'doctor',
+      'integration',
+      'docs',
+    ]);
+
+    const parsed = JSON.parse(logCalls.join('\n'));
+    const unresolved = parsed.data.issues
+      .filter(issue => issue.code === 'invalid_doc_graph')
+      .map(issue => issue.message);
+    expect(unresolved).toHaveLength(1);
+    expect(unresolved[0]).toContain('"component:AcmeMissing" names no doc');
+  });
+
   it('docs reports an intentional replacement as info', async () => {
     const [coreTopic] = Object.keys(discoverBuiltinTopics());
     writeDocIntegration({name: 'acme-setup', replaces: coreTopic});
