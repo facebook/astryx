@@ -28,13 +28,14 @@ import {
 import {
   CORE_PACKAGE,
   discoverComponents,
+  docStem,
   findComponentReadme,
   findComponentSource,
   findExternalComponentDoc,
-  findIntegrationComponentDoc,
-  findIntegrationComponentSource,
+  findIntegrationComponent,
   resolveImportPath,
   resolveIntegrationImportPath as resolveIntegrationImport,
+  unscopedComponentOwners,
 } from '../../foundation/discovery/component-discovery.mjs';
 import {Project} from '../../foundation/config/project.mjs';
 import {loadComponentDoc as loadValidatedComponentDoc} from '../../foundation/discovery/component-loader.mjs';
@@ -42,7 +43,7 @@ import {resolveComponentReplacements} from '../../foundation/discovery/component
 import {searchComponents} from '../../foundation/text/string-utils.mjs';
 import {AstryxError} from '../error.mjs';
 
-export {CORE_PACKAGE};
+export {CORE_PACKAGE, unscopedComponentOwners};
 
 /**
  * A loaded component doc. The shared validated loader accepts stamped and legacy
@@ -71,6 +72,8 @@ export {CORE_PACKAGE};
  * @property {string|null} sourcePath
  * @property {string|undefined} issuesUrl
  * @property {import('../../foundation/integrations/integrations.mjs').LoadedIntegration|null} integration
+ * @property {import('../../foundation/discovery/component-discovery.mjs').NameHold} hold
+ *   how the owner holds the name, for the owner rule
  */
 
 /**
@@ -240,17 +243,19 @@ export function resolveOwners(coreDir, dirName, loadedIntegrations) {
       sourcePath: findComponentSource(coreDir, dirName),
       issuesUrl: undefined,
       integration: null,
+      hold: 'core',
     });
   }
   for (const integration of loadedIntegrations) {
-    const docPath = findIntegrationComponentDoc(integration, dirName);
-    if (!docPath) continue;
+    const found = findIntegrationComponent(integration, dirName);
+    if (!found) continue;
     owners.push({
       package: integration.name,
-      docPath,
-      sourcePath: findIntegrationComponentSource(integration, dirName),
+      docPath: found.docPath,
+      sourcePath: found.sourcePath,
       issuesUrl: integration.issuesUrl,
       integration,
+      hold: found.hold,
     });
   }
   return owners;
@@ -359,6 +364,39 @@ export function assertUnambiguousOwners(owners, dirName) {
 export function resolveLegacyExternalDoc(ext, dirName) {
   const extDocPath = findExternalComponentDoc(ext.docsDir, dirName);
   return extDocPath && extDocPath.endsWith('.doc.mjs') ? extDocPath : null;
+}
+
+/**
+ * Whether a legacy external package documents `dirName`.
+ * @param {string} cwd
+ * @param {string} dirName
+ * @returns {boolean}
+ */
+export function legacyExternalDocuments(cwd, dirName) {
+  return discoverExternalPackages(cwd).some(
+    ext => resolveLegacyExternalDoc(ext, dirName) != null,
+  );
+}
+
+/**
+ * Whether a legacy docs package keeps `dirName` over these owners, each of which
+ * holds it only as an export a doc records.
+ * @param {string} cwd
+ * @param {string} dirName
+ * @param {Array<{hold?: string, docPath?: string | null}>} owners
+ * @returns {boolean}
+ */
+export function legacyExternalKeeps(cwd, dirName, owners) {
+  return (
+    owners.length > 0 &&
+    owners.every(
+      owner =>
+        owner.hold === 'doc' &&
+        owner.docPath != null &&
+        docStem(owner.docPath).toLowerCase() !== dirName.toLowerCase(),
+    ) &&
+    legacyExternalDocuments(cwd, dirName)
+  );
 }
 
 /**

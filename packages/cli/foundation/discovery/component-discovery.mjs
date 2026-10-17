@@ -7,10 +7,12 @@
 import * as fs from 'node:fs';
 import {createRequire} from 'node:module';
 import * as path from 'node:path';
+import {DOC_EXPORTS} from '../doc-compiler/read.mjs';
 import {listDir, listDirEntries, pathExists} from '../fs/listing-cache.mjs';
 import {existsCaseExact} from '../fs/paths.mjs';
 import {CORE_PROVIDER_ID} from '../identity/providers.mjs';
 import {loadComponentDoc} from './component-loader.mjs';
+import {moduleExportsName, staticExportObject} from './module-exports.mjs';
 
 const require = createRequire(import.meta.url);
 
@@ -82,12 +84,35 @@ function componentNameFromFile(fileName) {
 const GROUP_RE = /(?:^|\n) {0,2}group:\s*['"]([^'"]+)['"]/;
 const HIDDEN_COMPONENTS_RE = /(?:^|\n) {0,2}hiddenComponents:\s*\[([^\]]*)\]/;
 const HIDDEN_RE = /(?:^|\n) {0,2}hidden:\s*true/;
+// Every top-level `name: '...'` (or `"name": "..."`) in the file: a quick check
+// that a doc is named after its file before anything parses it.
+const NAME_FIELD_RE = /(?:^|\n) {0,2}['"]?name['"]?\s*:\s*['"]([^'"\n]+)['"]/g;
+// A top-level `replaces: '...'`: the Core name a doc claims for its package.
+const REPLACES_FIELD_RE =
+  /(?:^|\n) {0,2}['"]?replaces['"]?\s*:\s*['"]([^'"\n]+)['"]/;
+
+/**
+ * What a quick scan of a doc's text finds before anything parses it: the
+ * top-level `name` values it writes (none when a spread could set the name)
+ * and the Core name it replaces.
+ * @param {string} text
+ * @returns {{names: string[], replaces: string | null}}
+ */
+function scanDocText(text) {
+  return {
+    names: text.includes('...')
+      ? []
+      : [...text.matchAll(NAME_FIELD_RE)].map(match => match[1]),
+    replaces: REPLACES_FIELD_RE.exec(text)?.[1] ?? null,
+  };
+}
 
 /**
  * Read the `group`, `hiddenComponents`, and `hidden` fields from a
- * component's .doc.mjs file (synchronous).
+ * component's .doc.mjs file (synchronous), with what {@link scanDocText}
+ * finds in it.
  * @param {string} docPath
- * @returns {{group: string | null, hiddenComponents: Set<string>, hidden: boolean}}
+ * @returns {{group: string | null, hiddenComponents: Set<string>, hidden: boolean, names: string[], replaces: string | null}}
  */
 function readDocMeta(docPath) {
   try {
@@ -106,9 +131,16 @@ function readDocMeta(docPath) {
       group: groupMatch ? groupMatch[1] : null,
       hiddenComponents: hiddenSet,
       hidden,
+      ...scanDocText(content),
     };
   } catch {
-    return {group: null, hiddenComponents: new Set(), hidden: false};
+    return {
+      group: null,
+      hiddenComponents: new Set(),
+      hidden: false,
+      names: [],
+      replaces: null,
+    };
   }
 }
 
@@ -843,6 +875,95 @@ export function findExternalComponentDoc(docsDir, name) {
 // commands — and the future integration-component swizzle — can disambiguate
 // by package and route source/issues correctly.
 
+// A doc's `name` can name another export of its file; every other doc reads as
+// before.
+const COMPONENT_NAME_RE = /^[A-Z][\w$]*$/;
+
+/** @type {Map<string, {stamp: string, value: Record<string, any> | null}>} doc reads, reused while the doc file is unchanged */
+const docReads = new Map();
+
+/**
+ * A file's identity for a cache: ctime and inode change on a rewrite even when
+ * npm stamps the same size and mtime.
+ * @param {string} file
+ */
+function fileStamp(file) {
+  try {
+    const {size, mtimeMs, ctimeMs, ino} = fs.statSync(file);
+    return `${size}:${mtimeMs}:${ctimeMs}:${ino}`;
+  } catch {
+    return 'missing';
+  }
+}
+
+/** UTF-16 code-unit order, the same in every locale. @param {string} a @param {string} b */
+function byCodeUnit(a, b) {
+  return a < b ? -1 : a > b ? 1 : 0;
+}
+
+/**
+ * A component doc's exported object as plain data, read without running it.
+ * @param {string} docPath
+ * @returns {Record<string, any> | null}
+ */
+function docObject(docPath) {
+  const stamp = fileStamp(docPath);
+  const cached = docReads.get(docPath);
+  if (cached?.stamp === stamp) return cached.value;
+  const value = staticExportObject(docPath, DOC_EXPORTS.components);
+  docReads.set(docPath, {stamp, value});
+  return value;
+}
+
+/** @param {string} docPath */
+export function docStem(docPath) {
+  return path.basename(docPath).replace(/\.doc\.(ts|mjs|js)$/, '');
+}
+
+/**
+ * The export a component doc names when its same-stem source is not named
+ * after an export, or null to keep the stem.
+ * @param {{docPath: string, sourcePath: string|null, stem: string, names: string[]}} doc
+ *   `names`: top-level names a quick scan found (none: the doc is read)
+ * @returns {string | null}
+ */
+function otherExportName({docPath, sourcePath, stem, names}) {
+  if (sourcePath == null) return null;
+  if (names.length > 0 && names.every(name => name === stem)) return null;
+  const name = docObject(docPath)?.name;
+  return typeof name === 'string' &&
+    name !== stem &&
+    COMPONENT_NAME_RE.test(name) &&
+    moduleExportsName(sourcePath, name) &&
+    !moduleExportsName(sourcePath, stem)
+    ? name
+    : null;
+}
+
+/**
+ * Visit every component doc under an integration's components root, hidden
+ * ones included, in discovery order, with its stem.
+ * @param {string | undefined} componentsDir
+ * @param {(docPath: string, stem: string) => void} visit
+ */
+export function forEachIntegrationDoc(componentsDir, visit) {
+  if (!componentsDir || !pathExists(componentsDir)) return;
+  /** @param {string} dirPath */
+  function scanDir(dirPath) {
+    for (const entry of listDirEntries(dirPath)) {
+      if (entry.name === 'node_modules' || entry.name === '__tests__') continue;
+      const fullPath = path.join(dirPath, entry.name);
+      if (entry.isDirectory()) {
+        scanDir(fullPath);
+        continue;
+      }
+      const suffix = INTEGRATION_DOC_SUFFIXES.find(s => entry.name.endsWith(s));
+      if (suffix) visit(fullPath, entry.name.slice(0, -suffix.length));
+    }
+  }
+  scanDir(componentsDir);
+}
+
 /**
  * Given an integration component doc path, return the sibling component source
  * (`{Name}.tsx`) if one exists, else null.
@@ -860,49 +981,71 @@ function integrationSourceForDoc(docPath) {
 /**
  * Discover ownership records for the components contributed by a single loaded
  * integration. Scans the integration's resolved `components` dir for same-stem
- * doc files and records each with owner package + issuesUrl + sourcePath.
+ * doc files and records each with owner package + issuesUrl + sourcePath. A doc
+ * that names a differently named export of its file is recorded under that
+ * export unless the name is taken: every doc's file name (a hidden doc's too),
+ * a Core name a doc in the package replaces, and a name an earlier doc records.
  *
  * @param {{name: string, components?: string, issuesUrl?: string}} integration
  *   a single entry from `loadedIntegrations` (lib/integrations.mjs)
+ * @param {{documentedNames?: boolean}} [options] `documentedNames: false`
+ *   records each doc under its file name alone, without reading the names
+ *   docs document: for a caller that needs only what each doc says
  * @returns {Array<{name: string, package: string, docPath: string, sourcePath: string|null, issuesUrl: string|undefined, group: string|null}>}
  */
-export function discoverIntegrationComponents(integration) {
+export function discoverIntegrationComponents(
+  integration,
+  {documentedNames = true} = {},
+) {
   const componentsDir = integration?.components;
   if (!componentsDir || !pathExists(componentsDir)) return [];
 
   /** @type {Map<string, {name: string, package: string, docPath: string, sourcePath: string|null, issuesUrl: string|undefined, group: string|null}>} */
   const byName = new Map();
+  /** @type {Map<string, {names: string[], replaces: string | null}>} stem → quick scan */
+  const scans = new Map();
+  /** @type {Set<string>} names no doc can record under another name */
+  const taken = new Set();
 
-  /** @param {string} dirPath */
-  function scanDir(dirPath) {
-    const entries = listDirEntries(dirPath);
-    for (const entry of entries) {
-      if (entry.name === 'node_modules' || entry.name === '__tests__') continue;
-      const fullPath = path.join(dirPath, entry.name);
-      if (entry.isDirectory()) {
-        scanDir(fullPath);
-        continue;
-      }
-      const suffix = INTEGRATION_DOC_SUFFIXES.find(s => entry.name.endsWith(s));
-      if (!suffix) continue;
-      const name = entry.name.slice(0, -suffix.length);
-      const {group, hidden} = readDocMeta(fullPath);
-      if (hidden) continue;
-      // First doc wins per name (precedence matches INTEGRATION_DOC_SUFFIXES).
-      if (byName.has(name)) continue;
-      byName.set(name, {
-        name,
-        package: integration.name,
-        docPath: fullPath,
-        sourcePath: integrationSourceForDoc(fullPath),
-        issuesUrl: integration.issuesUrl,
-        group: group ?? null,
-      });
-    }
+  forEachIntegrationDoc(componentsDir, (fullPath, name) => {
+    taken.add(name);
+    const {group, hidden, names, replaces} = readDocMeta(fullPath);
+    if (hidden) return;
+    // First doc wins per name (precedence matches INTEGRATION_DOC_SUFFIXES).
+    if (byName.has(name)) return;
+    byName.set(name, {
+      name,
+      package: integration.name,
+      docPath: fullPath,
+      sourcePath: integrationSourceForDoc(fullPath),
+      issuesUrl: integration.issuesUrl,
+      group: group ?? null,
+    });
+    scans.set(name, {names, replaces});
+  });
+  if (!documentedNames) return [...byName.values()];
+
+  // A doc that names a differently named export of its file is listed under
+  // that export, unless the name is taken.
+  for (const {replaces} of scans.values()) if (replaces) taken.add(replaces);
+  const records = [...byName.values()];
+  const byPath = [...records].sort((a, b) => byCodeUnit(a.docPath, b.docPath));
+  /** @type {Map<string, string>} stem → export name */
+  const exportNames = new Map();
+  for (const record of byPath) {
+    const exportName = otherExportName({
+      ...record,
+      stem: record.name,
+      names: scans.get(record.name)?.names ?? [],
+    });
+    if (exportName == null || taken.has(exportName)) continue;
+    taken.add(exportName);
+    exportNames.set(record.name, exportName);
   }
-
-  scanDir(componentsDir);
-  return [...byName.values()];
+  return records.map(record => {
+    const name = exportNames.get(record.name);
+    return name ? {...record, name} : record;
+  });
 }
 
 /**
@@ -910,17 +1053,20 @@ export function discoverIntegrationComponents(integration) {
  * Invalid metadata or a missing same-stem source removes only that component;
  * callers can report the returned errors while retaining valid siblings. A
  * component whose doc sets `replaces` carries the value as written; the
- * component replacement resolver decides what it means.
+ * component replacement resolver decides what it means. A doc that fails to
+ * load is reported under its file name: what it says cannot be trusted.
  *
  * @param {{name: string, components?: string, issuesUrl?: string}} integration
+ * @param {{documentedNames?: boolean}} [options] as for
+ *   {@link discoverIntegrationComponents}
  * @returns {Promise<{
  *   components: Array<{name: string, package: string, docPath: string, sourcePath: string, issuesUrl: string|undefined, group: string|null, replaces?: unknown}>,
  *   discovered: Array<{name: string, package: string, docPath: string, sourcePath: string|null, issuesUrl: string|undefined, group: string|null}>,
  *   errors: Array<{name: string, message: string}>,
  * }>}
  */
-export async function discoverValidIntegrationComponents(integration) {
-  const discovered = discoverIntegrationComponents(integration);
+export async function discoverValidIntegrationComponents(integration, options) {
+  const discovered = discoverIntegrationComponents(integration, options);
   /** @type {Array<{name: string, package: string, docPath: string, sourcePath: string, issuesUrl: string|undefined, group: string|null, replaces?: unknown}>} */
   const components = [];
   /** @type {Array<{name: string, message: string}>} */
@@ -946,9 +1092,10 @@ export async function discoverValidIntegrationComponents(integration) {
           : valid,
       );
     } catch (err) {
+      const name = docStem(record.docPath);
       errors.push({
-        name: record.name,
-        message: `Component "${record.name}" has invalid metadata: ${
+        name,
+        message: `Component "${name}" has invalid metadata: ${
           err instanceof Error ? err.message : String(err)
         }`,
       });
@@ -959,18 +1106,121 @@ export async function discoverValidIntegrationComponents(integration) {
 }
 
 /**
+ * How an owner holds a component name, which the owner rule
+ * ({@link unscopedComponentOwners}) reads: `core` when Core documents it;
+ * `file` when an integration doc named after its file is recorded under it;
+ * `doc` when only a doc records it: an export name, or the file name of a doc
+ * recorded under another export.
+ * @typedef {'core' | 'file' | 'doc'} NameHold
+ */
+
+/**
+ * How a discovered integration record holds its name.
+ * @param {{name: string, docPath: string|null}} record
+ * @returns {'file' | 'doc'}
+ */
+export function integrationRecordHold(record) {
+  return record.docPath == null || docStem(record.docPath) === record.name
+    ? 'file'
+    : 'doc';
+}
+
+/**
+ * The doc that records `name` though its file is named otherwise, with its
+ * source, reading only docs that write the name as a string.
+ *
+ * @param {string} componentsDir
+ * @param {string} name
+ * @returns {{docPath: string, sourcePath: string|null} | null}
+ */
+function findDocumentedComponent(componentsDir, name) {
+  if (!COMPONENT_NAME_RE.test(name)) return null;
+  const literals = [`'${name}'`, `"${name}"`, `\`${name}\``];
+  /** @type {Set<string>} */
+  const stems = new Set();
+  /** @type {Array<{docPath: string, stem: string, names: string[], replaces: string | null, sourcePath: string|null}>} */
+  const candidates = [];
+  forEachIntegrationDoc(componentsDir, (docPath, stem) => {
+    let text;
+    try {
+      text = fs.readFileSync(docPath, 'utf-8');
+    } catch {
+      return;
+    }
+    // The docs discovery records: the first visible doc for each stem.
+    if (HIDDEN_RE.test(text) || stems.has(stem)) return;
+    stems.add(stem);
+    if (!literals.some(literal => text.includes(literal))) return;
+    candidates.push({
+      docPath,
+      stem,
+      ...scanDocText(text),
+      sourcePath: integrationSourceForDoc(docPath),
+    });
+  });
+  // A Core name a doc in the package replaces is the replacement's to answer.
+  if (candidates.some(candidate => candidate.replaces === name)) return null;
+  candidates.sort((a, b) => byCodeUnit(a.docPath, b.docPath));
+  const found = candidates.find(
+    candidate => otherExportName(candidate) === name,
+  );
+  return found ? {docPath: found.docPath, sourcePath: found.sourcePath} : null;
+}
+
+/**
+ * The integration component a name finds, as discovery records it, and its
+ * hold: the same-stem doc first, then a doc that records the name.
+ *
+ * @param {{components?: string}} integration
+ * @param {string} name
+ * @returns {{docPath: string, sourcePath: string|null, hold: 'file' | 'doc'} | null}
+ */
+export function findIntegrationComponent(integration, name) {
+  const componentsDir = integration?.components;
+  if (!componentsDir || !pathExists(componentsDir)) return null;
+  const sameStem = findSameStemDoc(componentsDir, name);
+  if (sameStem) {
+    const exportName = otherExportName({
+      docPath: sameStem,
+      sourcePath: integrationSourceForDoc(sameStem),
+      stem: name,
+      names: readDocMeta(sameStem).names,
+    });
+    const renamed =
+      exportName != null &&
+      findSameStemDoc(componentsDir, exportName) == null &&
+      findDocumentedComponent(componentsDir, exportName)?.docPath === sameStem;
+    return {
+      docPath: sameStem,
+      sourcePath: integrationSourceForDoc(sameStem),
+      hold: renamed ? 'doc' : 'file',
+    };
+  }
+  const found = findDocumentedComponent(componentsDir, name);
+  return found && {...found, hold: 'doc'};
+}
+
+/**
  * Find an integration component's doc file by name within a loaded
  * integration's resolved `components` dir. Honors the same-stem convention
- * (`{Name}.doc.{ts,mjs,js}`), preferring `.ts` → `.mjs` → `.js`.
+ * (`{Name}.doc.{ts,mjs,js}`), preferring `.ts` → `.mjs` → `.js`, and finds a
+ * doc that records the component under a differently named export of its file.
  *
  * @param {{components?: string}} integration
  * @param {string} name bare component name (no `XDS`/`Astryx` prefix)
  * @returns {string|null}
  */
 export function findIntegrationComponentDoc(integration, name) {
-  const componentsDir = integration?.components;
-  if (!componentsDir || !pathExists(componentsDir)) return null;
+  return findIntegrationComponent(integration, name)?.docPath ?? null;
+}
 
+/**
+ * The first `{Name}.doc.{ts,mjs,js}` under `componentsDir`, shallowest first.
+ * @param {string} componentsDir
+ * @param {string} name
+ * @returns {string|null}
+ */
+function findSameStemDoc(componentsDir, name) {
   /**
    * @param {string} dirPath
    * @returns {string | null}
@@ -996,18 +1246,32 @@ export function findIntegrationComponentDoc(integration, name) {
 }
 
 /**
- * Find an integration component's swizzleable source file (`{Name}.tsx`) by
- * name within a loaded integration's resolved `components` dir. Returns null
- * when the integration ships docs without source.
+ * Find an integration component's swizzleable source file by name within a
+ * loaded integration's resolved `components` dir: the same-stem `{Name}.tsx`
+ * of its doc. Returns null when the integration ships docs without source.
  *
  * @param {{components?: string}} integration
  * @param {string} name bare component name
  * @returns {string|null}
  */
 export function findIntegrationComponentSource(integration, name) {
-  const docPath = findIntegrationComponentDoc(integration, name);
-  if (!docPath) return null;
-  return integrationSourceForDoc(docPath);
+  return findIntegrationComponent(integration, name)?.sourcePath ?? null;
+}
+
+/**
+ * The owner rule: an owner that holds a name only because a doc records it
+ * (`hold: 'doc'`) yields to Core and to every file-named owner; `--package`
+ * still reaches it. Surfaces resolve a replacement first, then this rule, then
+ * which docs load.
+ *
+ * @template {{hold?: string}} T
+ * @param {T[]} owners each with its {@link NameHold}; an owner without one
+ *   counts as Core's or file-named
+ * @returns {T[]}
+ */
+export function unscopedComponentOwners(owners) {
+  const primary = owners.filter(owner => owner.hold !== 'doc');
+  return primary.length > 0 ? primary : owners;
 }
 
 /**

@@ -754,6 +754,38 @@ describe('integrationPackCheck', () => {
     );
   });
 
+  it('checks the export a component doc names when its file is named otherwise', async () => {
+    fs.writeFileSync(
+      path.join(tmpDir, 'package.json'),
+      `${JSON.stringify({
+        name: '@acme/widgets',
+        version: '1.0.0',
+        files: ['astryx.integration.mjs', 'components'],
+        exports: {'./components/Slides': './components/Slides.tsx'},
+      })}\n`,
+    );
+    fs.writeFileSync(
+      path.join(tmpDir, 'astryx.integration.mjs'),
+      "export default {components: './components'};\n",
+    );
+    fs.mkdirSync(path.join(tmpDir, 'components'));
+    // Slides.tsx exports AcmeCarousel and nothing named Slides.
+    fs.writeFileSync(
+      path.join(tmpDir, 'components', 'Slides.tsx'),
+      'export function AcmeCarousel() { return null; }\n',
+    );
+    fs.writeFileSync(
+      path.join(tmpDir, 'components', 'Slides.doc.mjs'),
+      "export default {type: 'component', name: 'AcmeCarousel', import: '@acme/widgets/components/Slides', description: 'x', props: []};\n",
+    );
+
+    const result = await integrationPackCheck({cwd: tmpDir});
+    expect(result.data.packable).toBe(true);
+    expect(result.data.contributions.packed.components).toEqual([
+      'AcmeCarousel',
+    ]);
+  });
+
   it('passes a generated component through its exact packed export', async () => {
     fs.writeFileSync(
       path.join(tmpDir, 'package.json'),
