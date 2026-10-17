@@ -725,10 +725,7 @@ export function HistoryDialog({
         content={
           <LayoutContent>
             {history.isLoading ? (
-              <Spinner
-                size="lg"
-                label={t('@astryx.comments.historyLoading')}
-              />
+              <Spinner size="lg" label={t('@astryx.comments.historyLoading')} />
             ) : history.error != null ? (
               <Banner
                 status="error"
