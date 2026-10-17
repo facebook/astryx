@@ -18,7 +18,7 @@
   },
   {
     "component": "core/EmptyState",
-    "reason": "EmptyState is a centered block-flow status region. Its icon, text group, and action group stack only on the block axis; all spacing uses logical padding, and text is centered. The component owns no directional glyph, contextual separator, side-specific placement or ordering, horizontal scrolling or dragging, overlay, or directional keyboard behavior. Caller-supplied icons and action controls retain their own RTL ownership."
+    "reason": "EmptyState is a centered block-flow status region. Its icon, text group, and action group stack only on the block axis; spacing is block-axis or logical, and text is centered. The component owns no directional glyph, contextual separator, side-specific placement or ordering, horizontal scrolling or dragging, overlay, or directional keyboard behavior. Caller-supplied icons and action controls retain their own RTL ownership."
   },
   {
     "component": "core/FieldStatus",

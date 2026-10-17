@@ -175,13 +175,6 @@ No current family record owns EmptyState-specific behavior.
 | FR6            | compact target/DOM tests plus required exact-head rendered evidence | default and compact, wide and narrow              | compact state, spacing, or action direction no longer applies        | `audit:EmptyState/layout` |
 | PR1            | source review                                                       | every render path                                 | a retained resource appears without a named owner                    | `audit:EmptyState/code`   |
 
-### Verification status
-
-The focused unit and contract evidence above is checked in. Rendered pixels,
-axe, and the verified RTL non-applicability receipt are exact-head audit evidence;
-they must be read from the pull request checks before this draft can receive
-owner approval.
-
 ## Decision log
 
 No component-local decision is approved in this draft.
