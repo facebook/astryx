@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file `astryx docs cli/integrations/templates/document-the-template/page-template`:
+ * @file `astryx docs cli/integrations/building-blocks/templates/document-the-template/page-template`:
  * the page-only fields that help people find a page.
  */
 
@@ -49,12 +49,8 @@ export default {
       title: 'Help people find the page',
       content: [
         {
-          type: 'reference',
-          target: 'schema:template-doc',
-          projection: {
-            fields: ['category', 'scaffold'],
-          },
-          presentation: 'full',
+          type: 'prose',
+          text: 'Every field is in {@link schema:template-doc}.',
         },
         {
           type: 'list',

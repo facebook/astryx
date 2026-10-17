@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file `astryx docs cli/integrations/components/add-a-component`: choose a
+ * @file `astryx docs cli/integrations/building-blocks/components/add-a-component`: choose a
  * component name and generate its first source and doc files.
  */
 

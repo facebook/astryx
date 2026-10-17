@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file `astryx docs cli/integrations/components/describe-the-component/single-component`:
+ * @file `astryx docs cli/integrations/building-blocks/components/describe-the-component/single-component`:
  * write and maintain the default ComponentDoc for one public component.
  */
 
@@ -61,9 +61,8 @@ export default {
           ],
         },
         {
-          type: 'reference',
-          target: 'schema:component-doc',
-          presentation: 'summary',
+          type: 'prose',
+          text: 'Every field is in {@link schema:component-doc}.',
         },
       ],
     },
@@ -86,6 +85,15 @@ export default {
     {guidance: false, description: 'Hide information that must remain visible for comparison.'},
   ],
 },`,
+        },
+        {
+          type: 'prose',
+          text: "Set `keywords` to the words people search for: synonyms and the task the component does, such as `keywords: ['slider', 'slideshow', 'rotating cards']`. `astryx search` ranks a match on a component's name or keywords above one in its description, so without keywords a search for the component's task can list Core components first. Check with the words a person would type:",
+        },
+        {
+          type: 'code',
+          lang: 'bash',
+          code: 'npx astryx search "rotating cards" --type component',
         },
       ],
     },

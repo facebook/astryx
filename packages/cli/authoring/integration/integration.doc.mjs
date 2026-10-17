@@ -51,7 +51,7 @@ export const doc = {
       name: 'docs',
       type: 'string',
       description:
-        'The folder that holds your doc topics, relative to package.json. Every {topic}.doc.{ts,mjs,js} in it shows up in `astryx docs` next to the built-in topics; a topic can also set `replaces` or `extends` to take over a built-in topic or add to it.',
+        'The folder that holds your doc topics, relative to package.json. Every {topic}.doc.{ts,mjs,js} under it shows up in `astryx docs`: a flat topic next to the built-in topics, where it can set `replaces` or `extends` to take over a built-in topic or add to it, and a guide with `placement` at its own route in the docs tree, under a namespace doc of the same package.',
       example: "'./docs'",
     },
     {
@@ -71,7 +71,8 @@ export const doc = {
     {
       name: 'issuesUrl',
       type: 'string',
-      description: 'Where to file issues/feedback for this integration.',
+      description:
+        "Where people file issues for this package: an absolute URL, such as its GitHub issues page. A value that is not a URL fails the whole manifest; the scheme is not checked. Nothing warns when it is missing, but without it `astryx gap-report` about this package fails unless the project or a loaded integration has a gapReport handler, and `astryx swizzle` prints no feedback link for this package's components. When no handler is loaded, a github.com issues URL is filed with the GitHub CLI once the reporter passes `--confirm-public`; any other URL is returned for the reporter to open.",
       example: "'https://github.com/acme/widgets/issues'",
     },
   ],
@@ -111,7 +112,7 @@ export const doc = {
     },
     {
       type: 'prose',
-      text: 'A themes root is forward-compatible but version-gated: a CLI released before this field ignores it with a warning and continues loading every contribution kind it understands. That older CLI cannot list or add the contributed themes.',
+      text: 'A themes root is version-gated: an older CLI lists and adds none of its themes. Depending on its age, that CLI ignores `themes` with an `unknown_manifest_key` warning and loads every other contribution kind, reports the root as invalid because it expects the earlier `manifest.json` theme catalog, or, if it is old enough to treat an unknown field as an error, rejects the whole manifest, so the package contributes nothing there.',
     },
     {
       type: 'prose',

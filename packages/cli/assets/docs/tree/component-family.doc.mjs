@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file `astryx docs cli/integrations/components/describe-the-component/component-family`:
+ * @file `astryx docs cli/integrations/building-blocks/components/describe-the-component/component-family`:
  * author one ComponentDoc for several public exports in a component family.
  */
 
@@ -38,10 +38,8 @@ export const docs = {
           ],
         },
         {
-          type: 'reference',
-          target: 'schema:component-doc',
-          projection: {fields: ['components']},
-          presentation: 'full',
+          type: 'prose',
+          text: 'Every field is in {@link schema:component-doc}.',
         },
       ],
     },
