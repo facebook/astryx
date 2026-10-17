@@ -24,7 +24,6 @@ import * as path from 'node:path';
 import * as os from 'node:os';
 import {fileURLToPath} from 'node:url';
 import {spawnSync} from 'node:child_process';
-import jscodeshift from 'jscodeshift';
 import {assertWithin} from '../../foundation/fs/path-safety.mjs';
 import {resolvePackageDir} from '../../foundation/integrations/integrations.mjs';
 import {
@@ -41,6 +40,7 @@ import {
 } from '../../foundation/discovery/docs-discovery.mjs';
 import {discoverIntegrationThemes} from '../../foundation/discovery/theme-discovery.mjs';
 import {inspectPackageExport} from '../../foundation/discovery/package-exports.mjs';
+import {moduleExportsName} from '../../foundation/discovery/module-exports.mjs';
 import {
   ThemeImportError,
   resolveThemeImports,
@@ -305,98 +305,6 @@ function extractTarball(tgzPath, extractDir) {
       `tar extraction failed (exit ${result.status})${stderr ? `: ${stderr}` : ''}.`,
     );
   }
-}
-
-const MODULE_EXTENSIONS = ['.mjs', '.js', '.mts', '.ts', '.tsx', '.jsx'];
-const moduleParser = jscodeshift.withParser('tsx');
-
-/** @param {unknown} specifier @param {string} fromFile */
-function resolveLocalModule(specifier, fromFile) {
-  if (typeof specifier !== 'string' || !specifier.startsWith('.')) return null;
-  const base = path.resolve(path.dirname(fromFile), specifier);
-  const candidates = [
-    base,
-    ...MODULE_EXTENSIONS.map(extension => `${base}${extension}`),
-    ...MODULE_EXTENSIONS.map(extension => path.join(base, `index${extension}`)),
-  ];
-  return candidates.find(candidate => fs.existsSync(candidate)) ?? null;
-}
-
-/** @param {any} declaration @param {string} exportName */
-function declarationExports(declaration, exportName) {
-  if (!declaration) return false;
-  if (['FunctionDeclaration', 'ClassDeclaration'].includes(declaration.type)) {
-    return declaration.id?.name === exportName;
-  }
-  if (declaration.type !== 'VariableDeclaration') return false;
-  return declaration.declarations.some(
-    (/** @type {any} */ item) =>
-      item.id?.type === 'Identifier' && item.id.name === exportName,
-  );
-}
-
-/**
- * Check one resolved module's static export surface without executing package
- * code. Local ESM re-exports are followed recursively.
- *
- * @param {string} file
- * @param {string} exportName
- * @param {Set<string>} [seen]
- */
-function moduleExportsName(file, exportName, seen = new Set()) {
-  const identity = `${file}\0${exportName}`;
-  if (seen.has(identity) || !fs.existsSync(file)) return false;
-  seen.add(identity);
-
-  let root;
-  try {
-    root = moduleParser(fs.readFileSync(file, 'utf-8'));
-  } catch {
-    return false;
-  }
-
-  let found = false;
-  root
-    .find(moduleParser.ExportNamedDeclaration)
-    .forEach((/** @type {any} */ exportPath) => {
-      if (found) return;
-      const node = exportPath.node;
-      if (declarationExports(node.declaration, exportName)) {
-        found = true;
-        return;
-      }
-      for (const specifier of node.specifiers ?? []) {
-        const exported = specifier.exported?.name ?? specifier.exported?.value;
-        if (exported !== exportName) continue;
-        if (!node.source) {
-          found = true;
-          return;
-        }
-        const target = resolveLocalModule(node.source.value, file);
-        const imported =
-          specifier.local?.name ?? specifier.local?.value ?? exportName;
-        if (target && moduleExportsName(target, imported, seen)) {
-          found = true;
-          return;
-        }
-      }
-    });
-  if (found) return true;
-  if (
-    exportName === 'default' &&
-    root.find(moduleParser.ExportDefaultDeclaration).size() > 0
-  ) {
-    return true;
-  }
-
-  root
-    .find(moduleParser.ExportAllDeclaration)
-    .forEach((/** @type {any} */ exportPath) => {
-      if (found) return;
-      const target = resolveLocalModule(exportPath.node.source?.value, file);
-      if (target && moduleExportsName(target, exportName, seen)) found = true;
-    });
-  return found;
 }
 
 /**
