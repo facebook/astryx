@@ -3,7 +3,7 @@
 /**
  * @file List.stories.tsx
  * @input List, ListItem, and Storybook args
- * @output List examples, including the four row edge treatments
+ * @output List examples, including row edge treatments and long number markers
  * @position Storybook demonstrations for List consumers
  */
 
@@ -271,6 +271,21 @@ export const OrderedList: Story = {
       <ListItem
         label="Start building"
         description="Use components in your app"
+      />
+    </List>
+  ),
+};
+
+export const LongNumberMarkers: Story = {
+  args: {listStyle: 'decimal', start: 98},
+  render: args => (
+    <List {...args}>
+      <ListItem
+        label={<>Review the migration before applying it to your project.</>}
+      />
+      <ListItem label={<>Check that existing behavior stays unchanged.</>} />
+      <ListItem
+        label={<>Verify that the complete number stays beside its label.</>}
       />
     </List>
   ),

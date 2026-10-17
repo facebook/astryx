@@ -7,7 +7,8 @@
  * @input Uses React, ReactNode, StyleXStyles, theme tokens, the List row edge
  *   treatment, CheckboxInput, and the marker or task checkbox a
  *   ListMarkerScope sets (Markdown's nested lists and the task items of mixed
- *   lists)
+ *   lists). Number markers keep a single line and reserve their full width
+ *   beside the label.
  * @output Exports ListItem component, ListItemProps type
  * @position Core implementation; consumed by List, index.ts, tested by List.test.tsx
  *
@@ -241,7 +242,13 @@ const markerStyles = stylex.create({
     color: colorVars['--color-text-primary'],
     fontSize: typeScaleVars['--text-body-size'],
     lineHeight: typeScaleVars['--text-body-leading'],
-    width: spacingVars['--spacing-4'],
+    // Keep the usual inset for short markers, but let multiple digits or
+    // longer alphabetic/roman counters reserve the width they actually need.
+    // A fixed width splits numbers under Document's overflow-wrap: anywhere;
+    // nowrap alone would instead paint them across the following label.
+    minWidth: spacingVars['--spacing-4'],
+    width: 'auto',
+    whiteSpace: 'nowrap',
   },
   // A number outside a counter style's range (zero or below, or past 3999
   // in roman) is written in decimal, as CSS counter styles fall back.

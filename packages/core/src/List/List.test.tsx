@@ -803,6 +803,25 @@ describe('List', () => {
     expect(marker).toBeInTheDocument();
   });
 
+  it.each(['decimal', 'lower-alpha', 'lower-roman'] as const)(
+    'lets a %s marker grow beyond its minimum without wrapping',
+    marker => {
+      const {container} = render(
+        <List listStyle="decimal" start={99}>
+          <ListMarkerScope marker={marker}>
+            <ListItem label="Numbered item" />
+          </ListMarkerScope>
+        </List>,
+      );
+      const element = container.querySelector('li > span:first-child')!;
+      const style = getComputedStyle(element);
+      expect(style.whiteSpace).toBe('nowrap');
+      expect(style.width).toBe('auto');
+      expect(style.minWidth).not.toBe('');
+      expect(style.flexShrink).toBe('0');
+    },
+  );
+
   it('does not render markers when listStyle is none', () => {
     render(
       <List listStyle="disc">
