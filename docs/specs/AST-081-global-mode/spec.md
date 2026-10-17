@@ -212,13 +212,20 @@ works on is `spec:AST-040` FR9's.
        answers outside a project, and otherwise the package runner with the
        CLI package pinned to the answering version, such as
        `npx @astryxdesign/cli@0.7.2`.
+  - The computer-level agent text (FR8) belongs to no folder and names no
+    release, so its commands start with the name of the door that wrote it,
+    and otherwise with `astryx`, the command of the global copy, which answers
+    outside a project with the release FR6 keeps it on and hands a project's
+    run to that project's release (FR9). No integration's `cliCommand` applies
+    to it.
   - The picked name takes the place of the command's leading `astryx` and, run
     from that folder, MUST reach the same choice of release (FR2, FR3, FR9). A
     printed command MUST NOT run, through a package runner, the CLI package
     without a version or a package other than the CLI.
   - An integration MAY declare in its manifest, as `cliCommand`, the command
-    that runs the CLI for its users: one non-empty line of text that starts the
-    CLI through a door following FR1 and FR2. With no declaration, the picker
+    that runs the CLI for its users: one line of text of at most 120
+    characters, with no whitespace at its start or end, that starts the CLI
+    through a door following FR1 and FR2. With no declaration, the picker
     goes on to the door's name. Integrations that declare the same command
     agree. When the integrations the run loads declare different commands, the
     picker takes the package manager's name, even when a door started the run,
@@ -400,15 +407,12 @@ works on is `spec:AST-040` FR9's.
   `architecture:cli-surface` INV30. The official list FR8 ships is
   `spec:AST-051` FR10's. The project starters FR8 ships arrive with the
   template kind that ships them.
-- `architecture:cli-surface`: every copy hands a project's run to the release
-  that answers there before dispatch (FR2, FR9); command docs and the manifest
-  carry
-  `outsideProject` (FR4); the error-code set gains `ERR_PROJECT_REQUIRED` (FR4);
-  success envelopes carry `meta.answeredBy` (FR5); the host entry takes the
-  door's command name, its sources, and the reason for a declined hand-off (FR1,
-  FR2); INV22's hints phrased with the run prefix take the name FR5's picker
-  chooses; and INV13's single rendered source of agent docs covers every agent
-  text (FR8). Each lands with the code that implements it.
+- `architecture:cli-surface` records the release-choice stage before dispatch
+  (FR2, FR9), `outsideProject` in INV7 (FR4), `ERR_PROJECT_REQUIRED` and
+  `ERR_VERSIONS_UNAVAILABLE` in INV3 (FR2, FR4), `meta.answeredBy` in INV2
+  (FR5), the picker's command name in INV22's hints (FR5), and the
+  computer-level text in INV13's single rendered source (FR8). The host
+  entry's inputs (FR1, FR2) are recorded there with the host entry.
 - No record lists the integration manifest's fields. `cliCommand` (FR5) is an
   integration-level field, which INV24 allows, and the integration authoring
   reference documents it beside the other fields: its accepted values, its
@@ -421,8 +425,8 @@ works on is `spec:AST-040` FR9's.
 - `spec:AST-047` FR7 and `spec:AST-048`'s platform support take the command
   name they print from FR5, and `spec:AST-051` FR6 admits a door's sources
   (FR1).
-- `contributing:cli-conventions` adds the `outsideProject` declaration to its
-  command checklist.
+- `contributing:cli-conventions` lists the `outsideProject` declaration in its
+  command doc fields and its checklist.
 - Consumer docs (`cli`) describe the doors, which release answers a folder,
   what commands do outside a project, the per-user release cache, and how the
   global copy updates.
