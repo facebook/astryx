@@ -298,13 +298,13 @@ export function Field({
     return (
       <div
         ref={ref}
+        {...props}
         {...mergeProps(
           themeProps('field', {layout: 'horizontal-labels'}),
           stylex.props(styles.horizontalLabels, xstyle),
           className,
           style,
-        )}
-        {...props}>
+        )}>
         <div {...stylex.props(styles.horizontalLabelAlign)}>{labelNode}</div>
         <div {...stylex.props(styles.inputStatusWrapper)}>
           {description && (
