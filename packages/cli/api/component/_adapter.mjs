@@ -33,6 +33,9 @@ import {
   findComponentSource,
   findExternalComponentDoc,
   findIntegrationComponent,
+  integrationMemberEntry,
+  isIntegrationMember,
+  recordedDocName,
   resolveImportPath,
   resolveIntegrationImportPath as resolveIntegrationImport,
   unscopedComponentOwners,
@@ -620,4 +623,49 @@ export function scopeSubComponent(docs, dirName, coreDir) {
   if (docs.theming) scoped.theming = docs.theming;
 
   return {scoped, matchingComponent};
+}
+
+/**
+ * The doc an integration owner shows for `dirName`: when `dirName` is a member
+ * its family doc lists under its own name (`AcmeSlide` in an `AcmeCarousel`
+ * doc), the doc scoped to that member as {@link scopeSubComponent} scopes
+ * Core's, keeping the import the family doc states; otherwise `docs` itself.
+ * @param {LoadedComponentDoc} docs
+ * @param {OwnershipSubject} owner
+ * @param {string} dirName
+ * @returns {LoadedComponentDoc & {parentDoc?: string, import?: string}}
+ */
+export function scopeIntegrationMember(docs, owner, dirName) {
+  const record = {name: dirName, docPath: owner.docPath ?? null};
+  if (!isIntegrationMember(record)) return docs;
+  const entry = integrationMemberEntry(docs, record);
+  // The files list the member but the doc this process loaded has no entry
+  // for it (the doc changed after it loaded): never answer with the family.
+  if (entry == null) {
+    throw new AstryxError(
+      `No component named "${dirName}": its family doc changed after this process loaded it.`,
+      undefined,
+      ERROR_CODES.ERR_UNKNOWN_COMPONENT,
+    );
+  }
+  // Built from the entry, as scopeSubComponent scopes Core's, so a member that
+  // shares the doc's own `name` is scoped too.
+  /** @type {LoadedComponentDoc & {parentDoc?: string, import?: string}} */
+  const scoped = {
+    name: dirName,
+    description: entry.description,
+    props: entry.props,
+    components: [entry],
+    // The name the family doc opens under, for every member.
+    parentDoc:
+      owner.integration && record.docPath
+        ? recordedDocName(owner.integration, record.docPath)
+        : docs.name === dirName && record.docPath
+          ? docStem(record.docPath)
+          : docs.name,
+  };
+  if (docs.usage) scoped.usage = docs.usage;
+  if (docs.theming) scoped.theming = docs.theming;
+  if (docs.import) scoped.import = docs.import;
+  return scoped;
 }

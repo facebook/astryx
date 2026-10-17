@@ -19,6 +19,7 @@ import {
   requireCoreDir,
   loadIntegrationsSafely,
   resolveOwners,
+  scopeIntegrationMember,
   classifyScope,
   assertUnambiguousOwners,
   resolveLegacyExternalDoc,
@@ -429,7 +430,13 @@ export async function component(name, options = {}) {
       if (blocks) {
         return componentDetailBlocks(dirName, cwd, owner.package);
       }
-      const docs = await loadComponentDoc(owner.docPath, docOpts);
+      const loaded = await loadComponentDoc(owner.docPath, docOpts);
+      // A family member an integration lists under its own name reads as that
+      // member, the way a Core sub-component does below.
+      const docs =
+        scoped.kind === 'integration'
+          ? scopeIntegrationMember(loaded, owner, dirName)
+          : loaded;
       if (props) return componentDetailProps(docs, owner.package);
       return componentDetail(docs, owner, dirName, coreDir);
     }
@@ -525,7 +532,8 @@ export async function component(name, options = {}) {
       // Integration components don't carry showcases — fail without scanning.
       return componentDetailShowcase(dirName, {cwd, name, resolve: false, ownerPackage: owner.package});
     }
-    const docs = await loadComponentDoc(owner.docPath, docOpts);
+    const loaded = await loadComponentDoc(owner.docPath, docOpts);
+    const docs = scopeIntegrationMember(loaded, owner, dirName);
     if (props) return componentDetailProps(docs, owner.package);
     return componentDetail(docs, owner, dirName, coreDir);
   }

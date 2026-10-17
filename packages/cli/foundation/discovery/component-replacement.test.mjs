@@ -279,6 +279,26 @@ describe('resolveComponentReplacements', () => {
     });
   });
 
+  it("counts a doc's replaces once when the doc lists its own name as a member", async () => {
+    // Chip.doc.mjs documents AcmeChip beside a Chip.tsx that exports both, and
+    // lists itself first, as the component-family guide asks.
+    const acme = integrationWithDocSource(
+      '@acme/chips',
+      'Chip',
+      `export default {type: 'component', name: 'AcmeChip', replaces: 'Badge', usage: {description: 'Acme chip.'}, components: [{name: 'AcmeChip', description: 'A chip.', props: []}]};\n`,
+    );
+    fs.writeFileSync(
+      path.join(acme.components, 'Chip.tsx'),
+      'export function Chip() { return null; }\nexport function AcmeChip() { return null; }\n',
+    );
+    const result = await resolveComponentReplacements(CORE_DIR, [acme]);
+    expect(result.findings).toEqual([]);
+    expect(result.forTarget('Badge')).toMatchObject({
+      name: 'Chip',
+      package: '@acme/chips',
+    });
+  });
+
   it('lets a replacement keep the Core name it replaces', async () => {
     const acme = integration(
       '@acme/nav',
