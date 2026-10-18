@@ -74,13 +74,14 @@ per-user cache that global mode installed (FR2, FR3, FR6). The **global copy**
 is the CLI package installed for the computer.
 
 A folder's **project** is found the way the CLI finds the Core and the CLI it
-reads there: the `@astryxdesign/core` installed in the folder or one of the
-four folders above it, or a workspace's own Core package; the
-`@astryxdesign/cli` installed in the folder or one of the five folders above
-it, or resolved by the package manager's Plug'n'Play runtime; and otherwise
-the nearest `package.json` at or above the folder that declares either
-package, searched up to the first folder that holds version-control metadata
-and never in the home folder unless the run starts there. A folder is
+reads there: the `@astryxdesign/core` installed in the folder or one of the four
+folders above it, or a workspace's own Core package; the `@astryxdesign/cli`
+installed in the folder or one of the five folders above it, resolved by the
+package manager's Plug'n'Play runtime, or a workspace's own CLI package (the
+folder itself, or `packages/cli` in it or one of the five folders above it); and
+otherwise the nearest `package.json` at or above the folder that declares either
+package, searched up to the first folder that holds version-control metadata and
+never in the home folder unless the run starts there. A folder is
 **outside a project** when none of these exist. A folder inside another
 project, such as a repository cloned into it or a nested app, therefore
 answers with the enclosing project's release. The project that an upgrade
@@ -91,12 +92,11 @@ works on is `spec:AST-040` FR9's.
   CLI or a copy installed for the computer or fetched by a package runner, runs
   the CLI itself. A programmatic host carries the `@astryxdesign/core` release
   equal to the CLI release it runs, chooses that release (FR2, FR3, FR6), and
-  starts it through the host entry
-  `@astryxdesign/cli/host`, a supported programmatic API whose reference doc
-  states each input, its default, the result, and the errors (`spec:AST-017`
-  FR14). A door MUST NOT pass anything to the CLI through an environment
-  variable, an option, or a configuration key, and MUST NOT add a command, an
-  option, or any other behavior.
+  starts it through the host entry `@astryxdesign/cli/host`, a supported
+  programmatic API whose reference doc states each input, its default, the
+  result, and the errors (`spec:AST-017` FR14). A door MUST NOT pass anything to
+  the CLI through an environment variable, an option, or a configuration key,
+  and MUST NOT add a command, an option, or any other behavior.
   - The host entry's inputs are explicit: the arguments; the working folder;
     the command name the door's callers type (FR5); the package sets the door
     may serve, in its order of preference, and the integrations it approves for
@@ -183,13 +183,12 @@ works on is `spec:AST-040` FR9's.
   A command that only groups subcommands declares nothing. A refusal fails with
   `ERR_PROJECT_REQUIRED`, except that a command whose released versions refuse
   outside a project with another error code keeps that code until a declared
-  minor changes it; that change, and any other change to what a released
-  command does outside a project, is classified under `spec:AST-017`. `doctor`
-  is `own`: outside a project it checks the computer, reporting the Node
-  version, the release that answered and the newest release it knows of, and
-  whether the computer-level agent text (FR8) is present and current, and it
-  never fails a check because the folder has no
-  project. `swizzle` is `refuse`, even with a
+  minor changes it; that change, and any other change to what a released command
+  does outside a project, is classified under `spec:AST-017`. `doctor` is `own`:
+  outside a project it checks the computer, reporting the Node version, the
+  release that answered and the newest release it knows of, and whether the
+  computer-level agent text (FR8) is present and current, and it never fails a
+  check because the folder has no project. `swizzle` is `refuse`, even with a
   carried Core.
 
 - **FR5 — Every answer names who answered, and one picker names every printed
@@ -229,16 +228,15 @@ works on is `spec:AST-040` FR9's.
     without a version or a package other than the CLI.
   - An integration MAY declare in its manifest, as `cliCommand`, the command
     that runs the CLI for its users: a non-blank single line of at most 120
-    characters,
-    with no surrounding spaces and no Astryx agent-docs marker text
-    (`ASTRYX:START`, `ASTRYX:END`), that starts the CLI through a door
-    following FR1 and FR2. With no declaration, the picker
-    goes on to the door's name. Integrations that declare the same command
-    agree. When the integrations the run loads declare different commands, the
-    picker takes the package manager's name, even when a door started the run,
-    and `doctor` warns, naming each integration and the command it declares. A
-    declaration of any other form counts as absent, never withdraws the
-    integration's other contributions, and `doctor` warns about it.
+    characters, with no surrounding spaces and no Astryx agent-docs marker text
+    (`ASTRYX:START`, `ASTRYX:END`), that starts the CLI through a door following
+    FR1 and FR2. With no declaration, the picker goes on to the door's name.
+    Integrations that declare the same command agree. When the integrations the
+    run loads declare different commands, the picker takes the package manager's
+    name, even when a door started the run, and `doctor` warns, naming each
+    integration and the command it declares. A declaration of any other form
+    counts as absent, never withdraws the integration's other contributions, and
+    `doctor` warns about it.
   - The picker names every command the CLI prints or writes: hints and next
     steps, errors and their suggestions, `doctor` fixes, help, docs moves
     (`spec:AST-047`), recommended commands (`spec:AST-048`), the project's
@@ -265,35 +263,32 @@ works on is `spec:AST-040` FR9's.
     than an hour after its first run. A check and any install happen in the
     background, at most one at a time, and a new release answers from the next
     run.
-    - A release answers only after it is fully installed, starts, reports its
-      own
-      version, and supports the computer's Node. The cache keeps the release it
-      switched from, and a failed check, install, or start leaves the last good
-      release answering.
+  - A release answers only after it is fully installed, starts, reports its own
+    version, and supports the computer's Node. The cache keeps the release it
+    switched from, and a failed check, install, or start leaves the last good
+    release answering.
   - A kept release answers only on a Node it supports. When the computer's
     Node changes, as a version manager does, and the release the global copy
     keeps needs a newer Node, the newest kept release that supports this Node
     answers, and otherwise the installed copy does; FR10 says so once a day.
   - No command waits for an update, fails because of one, or changes its
     output or exit status because of one, apart from the line below.
-  - The first text-mode run on a new release prints one line on standard
-    error: the door's name, the new and previous versions, and a link to the
-    new release's notes. A machine-readable run never prints it, and the line
-    waits for the next text-mode run. A host that switches the release it runs
-    prints the same line. When the
-    copy cannot move to the newest release, FR10's reminder says so.
+  - The first text-mode run on a new release prints one line on standard error:
+    the door's name, the new and previous versions, and a link to the new
+    release's notes. A machine-readable run never prints it, and the line waits
+    for the next text-mode run. A host that switches the release it runs prints
+    the same line. When the copy cannot move to the newest release, FR10's
+    reminder says so.
   - Outside a project, a release requested by version, such as
     `npx @astryxdesign/cli@<version>`, runs exactly that release, with no check
-    and no switch; inside a project, FR2
-    and FR9 decide which release answers. Through a package runner, the
-    package manager chooses the release, and a copy it fetches adds no update
-    behavior.
+    and no switch; inside a project, FR2 and FR9 decide which release answers.
+    Through a package runner, the package manager chooses the release, and a
+    copy it fetches adds no update behavior.
   - Updates have no Astryx-owned control (`spec:AST-017` FR14); the package
     manager's registry, proxy, and offline settings apply.
-    - No door updates a project or installs into one. A project's release that
-      is behind the newest gets FR10's reminder, and `doctor` reports it;
-      neither
-      installs anything.
+  - No door updates a project or installs into one. A project's release that is
+    behind the newest gets FR10's reminder, and `doctor` reports it; neither
+    installs anything.
 - **FR7 — Writes stay inside named places.** Every file the CLI or a door
   writes MUST land in one of these places; a write anywhere else MUST be
   refused before anything is written (`ERR_PATH_TRAVERSAL`,
@@ -303,16 +298,16 @@ works on is `spec:AST-040` FR9's.
     root of an upgrade (`spec:AST-040` FR9), the project that holds the theme
     module (`spec:AST-050` FR2), and the folder where `init` writes agent docs
     (`architecture:cli-surface` INV31);
-    - the per-user cache directory of the platform (a cache or configuration
-      folder that an environment setting points at counts only when it is an
-      absolute path), for saved discover answers
-      (`spec:AST-051` FR8), for the releases global mode installs (FR2, FR3,
-      FR6), and for the global copy's update state (FR6);
+  - the per-user cache directory of the platform (a cache or configuration
+    folder that an environment setting points at counts only when it is an
+    absolute path), for saved discover answers (`spec:AST-051` FR8), for the
+    releases global mode installs (FR2, FR3, FR6), and for the global copy's
+    update state (FR6);
   - the platform's temporary directory, for scratch work such as building or
     verifying a package;
-    - the per-user configuration directory of the platform, for the documented
-      settings of the computer-level agent text and the times of FR10's
-      reminders (FR8, FR10);
+  - the per-user configuration directory of the platform, for the documented
+    settings of the computer-level agent text and the times of FR10's
+    reminders (FR8, FR10);
   - the files of the computer-level agent text (FR8), written by
     `astryx init --user` and by the global copy keeping that text installed,
     in the background, as FR8 states; no other command writes them, and no
@@ -353,11 +348,12 @@ works on is `spec:AST-040` FR9's.
     `computerAgentText.agents`, the chosen agent names, absent for every
     agent. A missing file means install for every agent. No environment
     variable or option changes it.
-  - Each file's managed markers record a hash of the text between them. A
-    file whose text no longer matches its recorded hash was edited by a
-    person and is never overwritten or removed; a file without the markers
-    is never changed; and no write follows a link in a file's place. `init
---user` names each such file as kept and why, and `doctor` reports it.
+  - Each file records, inside its managed markers, a hash of its text. A file
+    whose text no longer matches its recorded hash, or that records none, was
+    edited by a person and is never overwritten or removed; a file without
+    the markers is never changed; and no write follows a link in a file's
+    place. `init --user` names each such file as kept and why, and `doctor`
+    reports it.
   - Every project starter a release ships scaffolds, installs, and builds with
     that release, and a check MUST prove it for every starter before the
     release ships. A scaffold pins every Astryx package to the release that
@@ -403,23 +399,26 @@ works on is `spec:AST-040` FR9's.
 
 - **FR10 — A run reminds its caller when a release is behind.** A run in text
   mode prints one reminder line on standard error, and at most one line per
-  reminder in any 24 hours, when either of these holds; a machine-readable run
+  reminder in any 24 hours, when any of these holds; a machine-readable run
   never prints one, and no reminder changes a command's output or exit status:
-  - the global copy cannot move to the newest release it knows of (FR6),
-    because that release needs a newer Node than the computer has, because the
-    per-user cache cannot be written, or because no check has reached the
-    package registry for 7 days. The line names the cause and the command that
-    explains the fix: `astryx: cannot move to Astryx <newest>: <cause>. Run
-astryx doctor for the fix.`
+  - the global copy cannot move to the newest release it knows of (FR6), because
+    that release needs a newer Node than the computer has, because the per-user
+    cache cannot be written, or because no check has reached the package
+    registry for 7 days. The line names the cause and the command that explains
+    the fix:
+    `astryx: cannot move to Astryx <newest>: <cause>. Run astryx doctor for the fix.`
   - the release that answers a project is a release older than the newest
-    release the global copy knows of. The line names both versions and the
-    exact commands that upgrade the project with its own package manager:
-    `astryx: this project uses Astryx <current>; <newest> is the newest. To
-upgrade: <install command>, then <upgrade command>.` The install command
-    installs `@astryxdesign/core`, and `@astryxdesign/cli` when the project
-    declares it, at the newest release; the upgrade command is `astryx
-upgrade --from <current> --apply` with the command name FR5 picks for that
-    release.
+    release the global copy knows of. The line names both versions and the exact
+    commands that upgrade the project with its own package manager:
+    `astryx: this project uses Astryx <current>; <newest> is the newest. To upgrade: <install command>, then <upgrade command>.`
+    The install command installs `@astryxdesign/core`, and `@astryxdesign/cli`
+    when the project declares it, at the newest release; the upgrade command is
+    `astryx upgrade --from <current> --apply` with the command name FR5 picks
+    for that release.
+  - the first `astryx` command on the search path is an Astryx CLI release that
+    predates the hand-off, so it answers every run started through it with its
+    own release. The line names that release and the command that replaces it:
+    `astryx: the astryx command on this computer runs CLI <version>, which answers every folder itself. Replace it: npm i -g @astryxdesign/cli@latest.`
   - The copy that starts the run prints the reminder, before any hand-off, so
     a project whose own CLI predates reminders still gets one. A run handed
     to a release that also prints reminders prints no second one: the time
@@ -429,18 +428,27 @@ upgrade --from <current> --apply` with the command name FR5 picks for that
     release and prints no reminder, so a fresh home, such as a continuous
     integration run's, never prints one. Prerelease and canary releases are
     never reported as behind.
-  - `doctor` reports both: outside a project, whether the global copy is on
+  - `doctor` reports each: outside a project, whether the global copy is on
     the newest release and, when it cannot move, the cause and its fix; in a
-    project, whether the project's release is behind and the same commands.
+    project, whether the project's release is behind and the same commands;
+    and, in every folder, an `astryx` command that predates the hand-off.
 - **FR11 — Global and project copies meet by these rules.** Every case below
   follows FR2, FR3, FR6, FR9, and FR10; the table names who answers, what the
   run prints on standard error in text mode, and the test that proves the
   row. A contributor adding a door, an install layout, or a platform adds a
   row and its test. A copy the CLI cannot change, such as a release that
-  predates the hand-off, is reported, never worked around.
+  predates the hand-off, is reported, never worked around. The cases that
+  depend on an operating system's own file system run in the test suite for
+  their path rules and, on that system, only in the cross-platform smoke
+  workflow, which a maintainer starts by hand.
   - `doctor` lists every `astryx` command found on the search path, in order,
     and warns when the first one is not the Astryx CLI or is a release that
     predates the hand-off, naming the command that replaces it.
+  - A run that installs a release holds a lock in the per-user cache that
+    names its holder and computer, and renews it every 10 seconds while the
+    package manager works. A lock whose holder on this computer no longer
+    runs is taken over at once; a lock from another computer is taken over
+    once a waiting run has seen it go unrenewed for 60 seconds.
   - Paths are compared without regard to letter case on platforms whose file
     systems ignore it, and a project is found from the physical folder, so a
     link to a project folder answers as the folder does.
@@ -459,39 +467,40 @@ frontmatter is strict YAML, so a tool with a strict parser loads it.
 
 ### Who answers when global and project copies meet
 
-| Case                                                                           | Who answers                                                                                                  | What prints (text mode)                                                                       | Test                         |
-| ------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------- | ---------------------------- |
-| G1 Global copy newer than the project's own CLI, which matches its Core        | The project's own CLI                                                                                        | `answered by this project's CLI <p>, handed over from CLI <g>`                                | `global-local.test.mjs › G1` |
-| G2 Global copy older than the project's own CLI                                | The project's own CLI                                                                                        | The same hand-off line                                                                        | `› G2`                       |
-| G3 The project's CLI differs from its Core                                     | The release equal to the Core, from the cache                                                                | `answered by CLI <c> with Core <c>, the release that matches this project's Core`             | `› G3`                       |
-| G4 Core only, no CLI                                                           | The release equal to the Core                                                                                | The matched line                                                                              | `› G4`                       |
-| G5 Fresh clone: lockfile, nothing installed                                    | The release the lockfile records                                                                             | The matched line                                                                              | `› G5`                       |
-| G6 Lockfile and installed Core disagree                                        | The release equal to the installed Core                                                                      | The matched line                                                                              | `› G6`                       |
-| G7 Workspace member with its own Core under a root CLI                         | The member's matched release; a member matching the root uses the root CLI                                   | The matched or hand-off line                                                                  | `› G7`                       |
-| G8 Folder inside another project, such as a nested app or a cloned repository  | The enclosing project's release (the released read reach; answering for the folder itself waits for a minor) | As for the enclosing project                                                                  | `› G8`                       |
-| G9 Outside a project                                                           | Global copy: the newest kept release; any other copy: itself                                                 | `answered by CLI <v> with Core <v>, outside a project`                                        | `› G9`                       |
-| G10 A version typed on a package runner                                        | Outside a project: exactly that release; in a project: the project's release                                 | The outside or hand-off line                                                                  | `› G10`                      |
-| G11 A global copy that predates the hand-off, in a project                     | That old copy, which this record cannot change                                                               | Nothing from global mode; the project's `doctor` warns and names the command that replaces it | `› G11`                      |
-| G12 Two global installs, such as npm and pnpm                                  | The first on the search path; both choose the same release                                                   | As for that case; `doctor` lists both                                                         | `› G12`                      |
-| G13 An `astryx` earlier on the search path that is not the Astryx CLI          | That other program                                                                                           | `init --user` and `doctor` warn                                                               | `› G13`                      |
-| G14 A Node version manager switches Node, so each Node has its own global copy | The newest kept release that supports this Node, else that Node's own global copy                            | As for that case; FR10's reminder when the newest needs a newer Node                          | `› G14`                      |
-| G15 A project whose package manager is pinned through a package manager shim   | As for that project                                                                                          | As for that project; releases install in the cache folder, never the project                  | `› G15`                      |
-| G16 Global copy installed with administrator rights, run by a person           | As for that case; nothing is written to the install folder                                                   | As for that case                                                                              | `› G16`                      |
-| G17 The per-user cache cannot be written                                       | Outside a project: the installed copy; a run that needs a release fails with `ERR_VERSIONS_UNAVAILABLE`      | The error, and FR10's reminder once a day                                                     | `› G17`                      |
-| G18 Home unset, or cache and configuration folders set by environment          | Unchanged; an absolute folder setting is used, a relative one is ignored                                     | As for that case                                                                              | `› G18`                      |
-| G19 Continuous integration with a fresh home each run                          | As for that case; no check and no switch in a copy's first hour                                              | No reminder, since no newest release is known                                                 | `› G19`                      |
-| G20 A container whose home folder is read-only                                 | As for G17; the computer-level text is not written                                                           | As for G17                                                                                    | `› G20`                      |
-| G21 A cache shared by several people or computers                              | One install per release at a time; another computer's lock lapses after 20 minutes                           | As for that case                                                                              | `› G21`                      |
-| G22 The project's release is older than the newest                             | The project's release                                                                                        | FR10's project reminder once a day per project                                                | `› G22`                      |
-| G23 The global copy cannot move to the newest release                          | The current kept release                                                                                     | FR10's reminder once a day; `doctor` names the cause                                          | `› G23`                      |
-| G24 A link to a project folder                                                 | As for the folder it links to                                                                                | As for that folder                                                                            | `› G24`                      |
-| G25 A file system that ignores letter case                                     | As for the folder, whatever case was typed                                                                   | As for that folder                                                                            | `› G25`                      |
-| G26 Windows paths and installs                                                 | The same rules; releases install through `npm.cmd` with the time limit                                       | As for that case                                                                              | `› G26`                      |
-| G27 A package script, which puts the project's own commands first              | The project's own CLI, or the matched release when it differs from its Core                                  | As for that case                                                                              | `› G27`                      |
-| G28 A Yarn Plug'n'Play project                                                 | The release equal to the Core, from the cache                                                                | The matched line                                                                              | `› G28`                      |
-| G29 A package runner that reuses the global install                            | As the global copy                                                                                           | As for that case                                                                              | `› G29`                      |
-| G30 `astryx init --user` inside a project                                      | The starting copy, for the computer                                                                          | `answered by CLI <v> with Core <v>, for this computer`                                        | `› G30`                      |
-| G31 The kept release is damaged or removed                                     | The previous kept release, else the installed copy                                                           | As for that case                                                                              | `› G31`                      |
+| Case                                                                                                  | Who answers                                                                                                    | What prints (text mode)                                                                                             | Test                                                                                                  |
+| ----------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| G1 Global copy newer than the project's own CLI, which matches its Core                               | The project's own CLI                                                                                          | `answered by this project's CLI <p>, handed over from CLI <g>`                                                      | `global-local.test.mjs › G1`                                                                          |
+| G2 Global copy older than the project's own CLI                                                       | The project's own CLI                                                                                          | The same hand-off line                                                                                              | `› G2`                                                                                                |
+| G3 The project's CLI differs from its Core                                                            | The release equal to the Core, from the cache                                                                  | `answered by CLI <c> with Core <c>, the release that matches this project's Core`                                   | `› G3`                                                                                                |
+| G4 Core only, no CLI                                                                                  | The release equal to the Core                                                                                  | The matched line                                                                                                    | `› G4`                                                                                                |
+| G5 Fresh clone: lockfile, nothing installed                                                           | The release the lockfile records                                                                               | The matched line                                                                                                    | `› G5`                                                                                                |
+| G6 Lockfile and installed Core disagree                                                               | The release equal to the installed Core                                                                        | The matched line                                                                                                    | `› G6`                                                                                                |
+| G7 Workspace member with its own Core under a root CLI                                                | The member's matched release; a member matching the root uses the root CLI                                     | The matched or hand-off line                                                                                        | `› G7`                                                                                                |
+| G8 Folder inside another project, such as a nested app or a cloned repository                         | The enclosing project's release (the released read reach; answering for the folder itself waits for a minor)   | As for the enclosing project                                                                                        | `› G8`                                                                                                |
+| G9 Outside a project                                                                                  | Global copy: the newest kept release; any other copy: itself                                                   | `answered by CLI <v> with Core <v>, outside a project`                                                              | `› G9`                                                                                                |
+| G10 A version typed on a package runner                                                               | Outside a project: exactly that release; in a project: the project's release                                   | The outside or hand-off line                                                                                        | `› G10`                                                                                               |
+| G11 A global copy that predates the hand-off, in a project                                            | That old copy, which this record cannot change                                                                 | Nothing from that copy; FR10's reminder from any newer copy, and `doctor`, name `npm i -g @astryxdesign/cli@latest` | `› G11`                                                                                               |
+| G12 Two global installs, such as npm and pnpm                                                         | The first on the search path; both choose the same release                                                     | As for that case; `doctor` lists both                                                                               | `› G12`                                                                                               |
+| G13 An `astryx` earlier on the search path that is not the Astryx CLI                                 | That other program                                                                                             | `init --user` and `doctor` warn                                                                                     | `› G13`                                                                                               |
+| G14 A Node version manager switches Node, so each Node has its own global copy                        | The newest kept release that supports this Node, else that Node's own global copy                              | As for that case; FR10's reminder when the newest needs a newer Node                                                | `› G14`                                                                                               |
+| G15 A project whose package manager is pinned through a package manager shim                          | As for that project                                                                                            | As for that project; releases install in the cache folder, never the project                                        | `› G15`                                                                                               |
+| G16 Global copy installed with administrator rights, run by a person                                  | As for that case; nothing is written to the install folder                                                     | As for that case                                                                                                    | `› G16`                                                                                               |
+| G17 The per-user cache cannot be written                                                              | Outside a project: the installed copy; a run that needs a release fails with `ERR_VERSIONS_UNAVAILABLE`        | The error, and FR10's reminder once a day                                                                           | `› G17`                                                                                               |
+| G18 Home unset, or cache and configuration folders set by environment                                 | Unchanged; an absolute folder setting is used, a relative one is ignored                                       | As for that case                                                                                                    | `› G18`                                                                                               |
+| G19 Continuous integration with a fresh home each run                                                 | As for that case; no check and no switch in a copy's first hour                                                | No reminder, since no newest release is known                                                                       | `› G19`                                                                                               |
+| G20 A container whose home folder is read-only                                                        | As for G17; the computer-level text is not written                                                             | As for G17                                                                                                          | `› G20`                                                                                               |
+| G21 A cache shared by several people or computers                                                     | One install per release at a time; another computer's lock is taken over once it goes unrenewed for 60 seconds | As for that case                                                                                                    | `› G21`                                                                                               |
+| G22 The project's release is older than the newest                                                    | The project's release                                                                                          | FR10's project reminder once a day per project                                                                      | `› G22`                                                                                               |
+| G23 The global copy cannot move to the newest release                                                 | The current kept release                                                                                       | FR10's reminder once a day; `doctor` names the cause                                                                | `› G23`                                                                                               |
+| G24 A link to a project folder                                                                        | As for the folder it links to                                                                                  | As for that folder                                                                                                  | `› G24`                                                                                               |
+| G25 A file system that ignores letter case                                                            | As for the folder, whatever case was typed                                                                     | As for that folder                                                                                                  | `› G25` (path rules); the file system itself: the cross-platform smoke workflow only (macOS, Windows) |
+| G26 Windows paths and installs                                                                        | The same rules; releases install through `npm.cmd` with the time limit                                         | As for that case                                                                                                    | `› G26` (path rules); Windows itself: the cross-platform smoke workflow only                          |
+| G27 A package script, which puts the project's own commands first                                     | The project's own CLI, or the matched release when it differs from its Core                                    | As for that case                                                                                                    | `› G27`                                                                                               |
+| G28 A Yarn Plug'n'Play project                                                                        | The release equal to the Core, from the cache                                                                  | The matched line                                                                                                    | `› G28`                                                                                               |
+| G29 A package runner that reuses the global install                                                   | As the global copy                                                                                             | As for that case                                                                                                    | `› G29`                                                                                               |
+| G30 `astryx init --user` inside a project                                                             | The starting copy, for the computer                                                                            | `answered by CLI <v> with Core <v>, for this computer`                                                              | `› G30`                                                                                               |
+| G31 The kept release is damaged or removed                                                            | The previous kept release, else the installed copy                                                             | As for that case                                                                                                    | `› G31`                                                                                               |
+| G32 A workspace whose own CLI package sits beside its own Core package, such as the Astryx repository | The workspace's own CLI when it matches the Core, else the matched release                                     | As for that case                                                                                                    | `› G32`                                                                                               |
 
 ### Platform support
 
@@ -511,28 +520,26 @@ frontmatter is strict YAML, so a tool with a strict parser loads it.
 
 ## Current-state impact
 
-- A CLI installed for the computer answers in every folder, inside projects
-  that install their own copy too, and pairs its templates, docs, and agent
-  text with the project's Core. A project whose CLI and Core are on different
-  releases answers with the CLI's templates and docs and the Core's
-  components. A package runner runs a CLI package installed for the computer
-  in place of fetching one, at whatever release it was installed, and that
-  copy never updates. A version requested on a package runner's command line
-  answers inside a project, and in a package with no Astryx inside a project,
-  a package runner fetches the newest CLI instead of running the project's. A
-  project with Core and no CLI, and a fresh clone with nothing installed,
-  answer with whatever CLI started the run, or fail. Outside a project, the
-  commands that need Core fail, hints name the CLI package without a version,
-  refusals use several error codes, nothing names the release that answered,
-  and no check runs a command outside a project. Printed command names come
-  from the package manager alone; many hints, errors, `doctor` fixes, docs,
-  and the setup reminder print a fixed name instead; an integration has no way
-  to name the command its users run; the
-  computer-level agent text is written only when a person runs `astryx init
---user`; no run reminds anyone that a copy or a project is behind; a kept
-  release answers on a Node it does not support; and `doctor` does not list
-  the `astryx` commands on the search path. Each of these departs from
-  FR1–FR11.
+- A CLI installed for the computer answers in every folder, inside projects that
+  install their own copy too, and pairs its templates, docs, and agent text with
+  the project's Core. A project whose CLI and Core are on different releases
+  answers with the CLI's templates and docs and the Core's components. A package
+  runner runs a CLI package installed for the computer in place of fetching one,
+  at whatever release it was installed, and that copy never updates. A version
+  requested on a package runner's command line answers inside a project, and in
+  a package with no Astryx inside a project, a package runner fetches the newest
+  CLI instead of running the project's. A project with Core and no CLI, and a
+  fresh clone with nothing installed, answer with whatever CLI started the run,
+  or fail. Outside a project, the commands that need Core fail, hints name the
+  CLI package without a version, refusals use several error codes, nothing names
+  the release that answered, and no check runs a command outside a project.
+  Printed command names come from the package manager alone; many hints, errors,
+  `doctor` fixes, docs, and the setup reminder print a fixed name instead; an
+  integration has no way to name the command its users run; the computer-level
+  agent text is written only when a person runs `astryx init --user`; no run
+  reminds anyone that a copy or a project is behind; a kept release answers on a
+  Node it does not support; and `doctor` does not list the `astryx` commands on
+  the search path. Each of these departs from FR1–FR11.
 - The CLI provides FR2–FR9 through the doors that run the CLI package
   directly. The parts that need the programmatic host entry arrive with it:
   FR1's host entry, its inputs, and its one-call rule; FR2's clause for a
