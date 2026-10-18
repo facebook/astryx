@@ -8,7 +8,8 @@ export const doc = {
   name: 'doctor integration components',
   displayName: 'astryx doctor integration components',
   namespace: 'cli/commands',
-  summary: 'Check integration component names and replacements against Core',
+  summary:
+    'Check integration component names, replacements, and documented props',
   description:
     'Compares one local or installed integration with Core component names. A ' +
     'conflict is allowed and exits successfully, but the report recommends ' +
@@ -17,7 +18,12 @@ export const doc = {
     'range that turns replacement on, a missing Core target, an invalid value, a ' +
     'component named after a different Core component, or two replacements for one ' +
     'Core component is an error. In a package without that range they are warnings, ' +
-    'with a warning for each such component, naming the range to declare.',
+    'with a warning for each such component, naming the range to declare. ' +
+    "Then it compares each component doc's props with the component's TypeScript " +
+    "props, using the project's own `typescript`, and warns about a documented prop " +
+    'the code lacks, a prop the package declares that the doc omits, and a wrong ' +
+    '`required`. Without TypeScript it prints one ' +
+    'line saying the comparison was skipped.',
   fn: 'integrationComponentConflicts',
   args: [
     {
@@ -38,7 +44,7 @@ export const doc = {
   exitCodes: [
     {
       code: 0,
-      when: 'the check completed; component name conflicts, and replaces findings for a package without the CLI range, are warnings',
+      when: 'the check completed; component name conflicts, replaces findings for a package without the CLI range, and props that differ from the code are warnings',
     },
     {
       code: 1,

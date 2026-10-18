@@ -36,9 +36,9 @@ export const docs = {
             ],
             [
               '`npx astryx doctor integration components`',
-              'No component name clashes with a Core component, and each `replaces` names one Core component',
+              "No component name clashes with a Core component, each `replaces` names one Core component, and each component doc's props match the component's TypeScript props",
               'Core is not installed (`core_not_found`). In a package that declares the CLI range that turns replacement on, a `replaces` target is missing (`missing_component_replacement_target`) or invalid (`invalid_component_replacement`), or two components replace one Core component (`ambiguous_component_replacement`)',
-              'A name clashes with Core, or a component sets `replaces` in a package without that range (`inactive_component_replacement`, plus any missing, invalid, or duplicate `replaces` reported as a warning)',
+              'A name clashes with Core, a component sets `replaces` in a package without that range (`inactive_component_replacement`, plus any missing, invalid, or duplicate `replaces` reported as a warning), or a documented prop differs from the code: it is missing there (`not_in_code`), the doc omits a prop the package declares (`not_in_doc`), or its `required` disagrees (`required_mismatch`). It reads props with your installed `typescript`; without it, it prints `[skip] Props not compared`',
             ],
             [
               '`npx astryx doctor integration templates`',

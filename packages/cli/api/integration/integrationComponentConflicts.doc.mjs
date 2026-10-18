@@ -10,17 +10,30 @@ export const doc = {
   namespace: 'cli/api',
   displayName: 'integrationComponentConflicts()',
   summary:
-    'Check integration component names and replaces declarations against Core.',
+    'Check integration component names, replaces declarations, and documented props.',
   description:
     'Loads one local or installed integration, compares its component names with ' +
     'Core, and returns non-blocking conflicts with the exact package-qualified ' +
     "component command required to keep an intentional overlap. Each component's " +
     'replaces is checked too: its findings are issues, errors for a package that ' +
-    'declares the CLI range that turns replacement on and warnings otherwise.',
+    'declares the CLI range that turns replacement on and warnings otherwise. ' +
+    "Each component doc's props are compared with the component's TypeScript props, " +
+    "read with the project's own `typescript`: a documented prop the code lacks, a " +
+    'prop the package declares that the doc omits, or a wrong `required`. Those ' +
+    'findings are warnings ' +
+    'in `propDrift`; without TypeScript it is `skipped` with a reason.',
   importPath: '@astryxdesign/cli/api',
   signature:
     'integrationComponentConflicts(pkg?: string, options?: IntegrationAuthoringOptions): Promise<IntegrationComponentConflictResponse>',
-  keywords: ['integration', 'component', 'conflict', 'authoring', 'doctor'],
+  keywords: [
+    'integration',
+    'component',
+    'conflict',
+    'authoring',
+    'doctor',
+    'props',
+    'drift',
+  ],
   params: [
     {name: 'pkg', type: 'string', description: 'Installed package; omit for the local package.'},
     {name: 'options.cwd', type: 'string', description: 'Resolution directory.'},
@@ -29,11 +42,14 @@ export const doc = {
     {
       type: 'integration.component-conflicts',
       description:
-        '`validated` (false when no integration manifest was found, so nothing was inspected), integration identity, structural and replaces issues, and Core component-name conflicts with package-qualified commands. An active replacement that keeps the Core name it replaces is not a conflict.',
+        '`validated` (false when no integration manifest was found, so nothing was inspected), integration identity, structural and replaces issues, and Core component-name conflicts with package-qualified commands. An active replacement that keeps the Core name it replaces is not a conflict. When the manifest loads and declares a components root, `propDrift` holds the props comparison: `status` (`checked` | `skipped`), `reason` when skipped, `typescript`, `components` compared, `findings` ({component, prop, kind: `not_in_code` | `not_in_doc` | `required_mismatch`, severity: `warning`, message, doc, source, docType?, codeType?, docRequired?, codeRequired?}) and `unchecked` ({component, doc, reason}).',
     },
   ],
   examples: [
-    {label: 'Check the local integration', code: 'await integrationComponentConflicts();'},
+    {
+      label: 'Check the local integration',
+      code: 'await integrationComponentConflicts();',
+    },
   ],
   command: 'doctor integration components',
   related: ['integrationTemplateConflicts', 'component'],
