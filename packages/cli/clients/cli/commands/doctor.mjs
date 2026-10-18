@@ -178,6 +178,7 @@ function printTemplateConflicts(data) {
  * visible line when it was skipped, the findings (all warnings), the
  * components it could not read, and how many were compared with which
  * TypeScript, as an [ok] when nothing differs (never after a failed check).
+ * Then how many documented prop types were judged and which were not.
  * @param {import('../../../api/integration/authoring-checks.type.mjs').PropDriftReport | undefined} report
  * @param {boolean} failed
  */
@@ -241,6 +242,24 @@ function propDriftBlocks(report, failed) {
           ? `[ok] Documented prop names and required flags match the code in ${report.components} component(s)${apart} (TypeScript ${report.typescript}).`
           : `[info] Props compared in ${report.components} component(s) (TypeScript ${report.typescript}).`,
       ),
+    );
+  }
+  if (report.typesSkipped) {
+    blocks.push(text(`[skip] Prop types not judged: ${report.typesSkipped}.`));
+    return blocks;
+  }
+  const notCompared = report.typesNotCompared.flatMap(entry => entry.props);
+  blocks.push(
+    text(
+      `[info] Documented prop types judged: ${report.typesCompared}; not compared: ${notCompared.length}. ` +
+        'A type is judged when the doc writes it the same as the source (exactly, if it contains `readonly`), or when both are primitives, literals, arrays and unions of those, or names for them.',
+    ),
+  );
+  if (notCompared.length > 0) {
+    blocks.push(
+      records(report.typesNotCompared, {
+        fields: ['component', 'doc', 'reason', 'props'],
+      }),
     );
   }
   return blocks;

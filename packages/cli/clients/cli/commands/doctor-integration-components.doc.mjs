@@ -21,8 +21,10 @@ export const doc = {
     'with a warning for each such component, naming the range to declare. ' +
     "Then it compares each component doc's props with the component's TypeScript " +
     "props, using the project's own `typescript`, and warns about a documented prop " +
-    'the code lacks, a prop the package declares that the doc omits, and a wrong ' +
-    '`required`. Without TypeScript it prints one ' +
+    'the code lacks, a prop the package declares that the doc omits, a wrong ' +
+    '`required`, and a type that does not match where both sides read exactly ' +
+    '(it lists every other documented type as not compared, with the reason). ' +
+    'Without TypeScript it prints one ' +
     'line saying the comparison was skipped.',
   fn: 'integrationComponentConflicts',
   args: [
@@ -35,7 +37,10 @@ export const doc = {
     },
   ],
   examples: [
-    {label: 'Check the local integration', cli: 'astryx doctor integration components'},
+    {
+      label: 'Check the local integration',
+      cli: 'astryx doctor integration components',
+    },
     {
       label: 'Check an installed integration',
       cli: 'astryx doctor integration components @acme/widgets --json',

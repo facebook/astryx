@@ -639,12 +639,14 @@ describe('doctor integration — command', () => {
       `export default {type: 'component', name: 'AcmeBadge', displayName: 'AcmeBadge', description: 'Fixture component.', props: [${[
         "{name: 'label', type: 'string', description: 'Text.'}",
         "{name: 'elevation', type: 'number', description: 'Shadow.'}",
+        "{name: 'size', type: 'string', description: 'Size.'}",
+        "{name: 'meta', type: '{id: string; extra?: number}', description: 'Data.'}",
       ].join(', ')}]};\n`,
     );
     // `key` is a prop a doc never needs, though the component declares it.
     fs.writeFileSync(
       path.join(tmpDir, 'components', 'AcmeBadge.tsx'),
-      "export function AcmeBadge(props: {label: string; tone?: 'neutral' | 'info'; key?: string}) { return null; }\n",
+      "export function AcmeBadge(props: {label: string; tone?: 'neutral' | 'info'; size?: number; meta?: {id: string}; key?: string}) { return null; }\n",
     );
     fs.writeFileSync(
       path.join(tmpDir, 'components', 'AcmeLonely.doc.mjs'),
@@ -674,10 +676,30 @@ describe('doctor integration — command', () => {
     expect(report.findings.map(f => `${f.prop} ${f.kind}`)).toEqual([
       'elevation not_in_code',
       'label required_mismatch',
+      'size type_mismatch',
       'tone not_in_doc',
     ]);
     expectRecordsCarry(output, report.findings, ['component', 'prop', 'kind']);
     expectRecordsCarry(output, report.unchecked, ['component', 'reason']);
+    expectRecordsCarry(output, report.typesNotCompared, [
+      'component',
+      'reason',
+      'props',
+    ]);
+    expect(report.typesNotCompared).toHaveLength(1);
+    expect(output).toContain(
+      `Documented prop types judged: ${report.typesCompared}; not compared: 1.`,
+    );
+    // The response-type reference, which the README's JSON table comes from,
+    // names every field too.
+    const {doc: responseTypes} =
+      await import('../../../foundation/response/response-types.doc.mjs');
+    const member = responseTypes.members.find(
+      m => m.value === 'integration.component-conflicts',
+    );
+    for (const field of Object.keys(report)) {
+      expect(member?.description).toMatch(new RegExp(`\\b${field}\\b`));
+    }
     expect(output).toContain(
       `in 1 of ${report.components} component(s) compared (TypeScript ${report.typescript}).`,
     );
@@ -695,8 +717,12 @@ describe('doctor integration — command', () => {
       'components',
     ]);
 
-    expect(logCalls.join('\n')).toMatch(
+    const output = logCalls.join('\n');
+    expect(output).toMatch(
       /\[ok\] Documented prop names and required flags match the code in 1 component\(s\) \(TypeScript \d/,
+    );
+    expect(output).toMatch(
+      /\[info\] Documented prop types judged: \d+; not compared: 0\./,
     );
   });
 

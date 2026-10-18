@@ -2,8 +2,8 @@
 
 /**
  * @file Documented props against a component's TypeScript props: each kind
- * of finding, each component it cannot read, and the visible skip when the
- * project has no TypeScript.
+ * of finding, the loose type rules, the props a doc never needs, and the
+ * visible skip when the project has no TypeScript.
  */
 
 import * as fs from 'node:fs';
@@ -14,6 +14,7 @@ import {afterEach, beforeEach, describe, expect, it} from 'vitest';
 import {
   comparePropDocs,
   comparePropTables,
+  PROPS_NOT_DOCUMENTED,
   TYPESCRIPT_MISSING_REASON,
 } from './prop-drift.mjs';
 import {unusableTypeScriptReason} from './project-typescript.mjs';
@@ -112,7 +113,173 @@ const kinds = report =>
   report.findings.map(f => `${f.component}.${f.prop} ${f.kind}`);
 
 describe('comparePropTables', () => {
-  it("reports a prop missing from the code, one missing from the doc, and a wrong required flag, each component's together", async () => {
+  it('judges the type of a prop a mapped type of the package builds, and says why one another package builds is not judged', async () => {
+    withTypeScript();
+    const sizes = path.join(pkg, 'node_modules', '@acme', 'sizes');
+    fs.mkdirSync(sizes, {recursive: true});
+    fs.writeFileSync(
+      path.join(sizes, 'package.json'),
+      JSON.stringify({name: '@acme/sizes', types: 'index.d.ts'}),
+    );
+    fs.writeFileSync(
+      path.join(sizes, 'index.d.ts'),
+      "export type Sizes = Partial<Record<'sm' | 'md', string>>;\n",
+    );
+    const tables = [
+      component(
+        'Mapped',
+        "export function Mapped(props: Partial<Record<'a' | 'b', 'x' | 'y'>>) { return null; }",
+        {props: [prop('a', "'x' | 'z'"), prop('b', "'x' | 'y'")]},
+      ),
+      component(
+        'HandledCell',
+        "import type {Sizes} from '@acme/sizes';\nexport function HandledCell(props: Sizes) { return null; }",
+        {props: [prop('sm', 'number')]},
+      ),
+      // Keys the check can't trace, and a doc type that does not parse; and
+      // a name that starts with another's sorts after it.
+      component(
+        'Handled',
+        "type A = string;\nexport function Handled(props: {[K in `on${'Open' | 'Close'}`]?: () => void} & {items?: ((items: A[]) => A)[]}) { return null; }",
+        {props: [prop('onOpen', '() => A'), prop('items', '((A[]) => A)[]')]},
+      ),
+    ];
+
+    const report = await compare(tables);
+
+    expect(kinds(report)).toEqual(['Mapped.a type_mismatch']);
+    expect(report.typesNotCompared).toEqual(
+      [
+        ['Handled', 'not a form the check judges exactly', ['items', 'onOpen']],
+        ['HandledCell', 'declared outside the package, not compared', ['sm']],
+      ].map(([component, reason, props]) => ({
+        component,
+        doc: `components/${component}.doc.mjs`,
+        reason,
+        props,
+      })),
+    );
+  });
+
+  it('judges no prop type, and says why, with a TypeScript older than 4.8', async () => {
+    const dir = path.join(pkg, 'node_modules', 'typescript');
+    fs.mkdirSync(dir, {recursive: true});
+    fs.writeFileSync(path.join(dir, 'package.json'), '{"version": "4.7.4"}');
+    const real = JSON.stringify(TYPESCRIPT_DIR);
+    fs.writeFileSync(
+      path.join(dir, 'index.js'),
+      `module.exports = {...require(${real}), version: '4.7.4'};`,
+    );
+    const source = 'export function Badge(p: {size?: string}) { return null; }';
+    const doc = {props: [prop('size', 'number')]};
+
+    expect(await compare([component('Badge', source, doc)])).toMatchObject({
+      findings: [],
+      typesCompared: 0,
+      typesSkipped: `TypeScript 4.7.4 is older than 4.8, the oldest the type comparison reads`,
+    });
+  });
+
+  it("judges a prop a package's mapping rewrites by its type, and keeps the text of one a mapping copies", async () => {
+    withTypeScript();
+    const types = `interface Base { size: 'sm' | 'md' }
+interface Opt { tone?: 'info' | undefined }
+type Many<T> = {[K in keyof T]: T[K][]};
+type Nullable<T> = {[K in keyof T]: T[K] | null};
+interface Pickable<T = string> { pick?: (value: T) => void }
+type ChooserProps<T extends string = string> = {pick?: string} & {
+  change?: (value: readonly T[]) => void | Promise<void>;
+};
+interface ListProps<T> { value?: T; onChange?: (v: T) => void }
+type MultiProps<T> = ListProps<T[]>;
+import type {Item as Imported} from './item';
+import type * as NS from './item';
+interface Item { a: string }
+interface ItemList<Item> { items?: Item[] }`;
+    const size = {props: [prop('size', "'sm' | 'md'", {required: true})]};
+    const pick = {props: [prop('pick', '(value: T) => void')]};
+    const tables = [
+      ['Many', 'Many<Base>', size],
+      ['Nulls', 'Nullable<Base>', size],
+      ['Picked', "Pick<Base, 'size'>", size],
+      [
+        'Strict',
+        'Required<Opt>',
+        {props: [prop('tone', "'info' | undefined", {required: true})]},
+      ],
+      // A generic component's prop keeps its declaration's text; one a
+      // concrete type instantiates does not.
+      ['Boxed', 'Pickable<number>', pick],
+      [
+        'Chooser',
+        'ChooserProps<T>',
+        {
+          props: [
+            prop('pick', 'string'),
+            prop('change', '(value: readonly T[]) => void | Promise<void>'),
+          ],
+        },
+        '<T extends string = string>',
+      ],
+      // Instantiated with a type built from the component's own parameter,
+      // the declaration's `T` is no longer the prop's type.
+      // A type argument that prints with the parameter's name elsewhere is
+      // still another type here.
+      ['Renamed', 'ItemList<Imported>', {props: [prop('items', 'Item[]')]}],
+      ['Spaced', 'ItemList<NS.Item>', {props: [prop('items', 'Item[]')]}],
+      ['Owned', 'ItemList<Item>', {props: [prop('items', 'Item[]')]}],
+      ...[
+        ['Listed', 'ListProps<T[]>', 'T', '(v: T) => void'],
+        ['Maybe', 'ListProps<T | null>', 'T', '(v: T) => void'],
+        ['Multi', 'MultiProps<T>', 'T[]', '(v: T[]) => void'],
+      ].map(([name, props, value, onChange]) => [
+        name,
+        props,
+        {props: [prop('value', value), prop('onChange', onChange)]},
+        '<T>',
+      ]),
+    ].map(([name, props, doc, generics = '']) =>
+      component(
+        name,
+        `${types}\nexport function ${name}${generics}(props: ${props}) { return null; }`,
+        doc,
+      ),
+    );
+
+    fs.writeFileSync(
+      path.join(pkg, 'components', 'item.ts'),
+      'export interface Item { b: number }\n',
+    );
+    const report = await compare(tables);
+
+    expect(kinds(report)).toEqual([
+      'Many.size type_mismatch',
+      'Nulls.size type_mismatch',
+      'Strict.tone type_mismatch',
+    ]);
+    // A message shows the type the mapping makes, not the source's text.
+    expect(report.findings.map(f => f.codeType)).toEqual([
+      "('sm' | 'md')[]",
+      "'sm' | 'md' | null",
+      "'info'",
+    ]);
+    expect(report.typesNotCompared).toEqual(
+      [
+        ['Boxed', ['pick']],
+        ['Listed', ['onChange', 'value']],
+        ['Maybe', ['onChange', 'value']],
+        ['Renamed', ['items']],
+        ['Spaced', ['items']],
+      ].map(([component, props]) => ({
+        component,
+        doc: `components/${component}.doc.mjs`,
+        reason: 'not a form the check judges exactly',
+        props,
+      })),
+    );
+  });
+
+  it("reports a prop missing from the code, one missing from the doc, a wrong required flag, and a wrong type, each component's together", async () => {
     withTypeScript();
     const badge = component(
       'Badge',
@@ -147,20 +314,873 @@ export function Badge(props: BadgeProps) { return null; }`,
       'Badge.count not_in_doc',
       'Badge.label required_mismatch',
       'Badge.size not_in_code',
+      'Badge.tone type_mismatch',
       'BadgeCount.amount not_in_doc',
     ]);
     expect(report.findings.every(f => f.severity === 'warning')).toBe(true);
+    expect(report.findings.find(f => f.kind === 'type_mismatch')).toMatchObject(
+      {
+        docType: "'neutral' | 'info'",
+        codeType: 'Tone',
+        doc: 'components/Badge.doc.mjs',
+        source: 'components/Badge.tsx',
+        message: expect.stringContaining(
+          "Tone ('neutral' | 'info' | 'danger')",
+        ),
+      },
+    );
     expect(
       report.findings.find(f => f.kind === 'required_mismatch'),
-    ).toMatchObject({
-      docRequired: false,
-      codeRequired: true,
-      doc: 'components/Badge.doc.mjs',
-      source: 'components/Badge.tsx',
-    });
+    ).toMatchObject({docRequired: false, codeRequired: true});
   });
 
-  it('reads every overload, one without props included, reads a prop only some members of a union require as optional, and holds every prop one entry names to its `required`', async () => {
+  it("judges a field, a name an index signature takes, and a prop declared in another file by the type's name where the prop is declared, not by the name the type was declared with", async () => {
+    withTypeScript();
+    const dir = path.join(pkg, 'components');
+    fs.mkdirSync(dir, {recursive: true});
+    fs.writeFileSync(
+      path.join(dir, 'base.ts'),
+      "export interface Item { id: string }\nexport type Size = 'sm' | 'md';\n",
+    );
+    // Another file imports the same types under other names, and declares
+    // its own `Item` and `Size`.
+    fs.writeFileSync(
+      path.join(dir, 'types.ts'),
+      [
+        "import type {Item as BaseItem, Size as BaseSize} from './base';",
+        'interface Item { label: string }',
+        "type Size = 'lg';",
+        'export type ElsewhereProps = { size?: BaseSize; item?: BaseItem; onPick?: (item: BaseItem) => void; cfg?: {item: BaseItem}; [key: `size-${string}`]: BaseSize | undefined } & Required<Partial<{tone: BaseSize; entry: BaseItem}>>;',
+      ].join('\n'),
+    );
+    const here = component(
+      'Renamed',
+      [
+        "import type {Item as BaseItem, Size as BaseSize} from './base';",
+        'interface Item { label: string }',
+        "type Size = 'lg';",
+        'export function Renamed(props: {cfg?: {item: BaseItem}; [key: `size-${string}`]: BaseSize | undefined}) { return null; }',
+      ].join('\n'),
+      {props: [prop('cfg.item', 'Item'), prop('size-a', 'Size')]},
+    );
+    const elsewhere = component(
+      'Elsewhere',
+      "import type {ElsewhereProps} from './types';\nexport function Elsewhere(props: ElsewhereProps) { return null; }",
+      {
+        props: [
+          prop('size', 'Size'),
+          prop('tone', 'Size', {required: true}),
+          prop('entry', 'Item', {required: true}),
+          prop('item', 'Item'),
+          prop('onPick', '(item: Item) => void'),
+          prop('cfg.item', 'Item'),
+          prop('size-a', 'Size'),
+        ],
+      },
+    );
+    // The same docs, naming the types as each file does, are judged matches.
+    const named = component(
+      'Named',
+      [
+        "import type {Item as BaseItem, Size as BaseSize} from './base';",
+        'export function Named(props: {cfg?: {item: BaseItem}; [key: `size-${string}`]: BaseSize | undefined}) { return null; }',
+      ].join('\n'),
+      {props: [prop('cfg.item', 'BaseItem'), prop('size-a', 'BaseSize')]},
+    );
+
+    const report = await compare([here, elsewhere, named]);
+
+    // `Size` is `'lg'` where each prop is declared, which TypeScript rejects
+    // for `'sm' | 'md'`; `Item` is an object type there, not compared.
+    expect(kinds(report)).toEqual([
+      'Elsewhere.size type_mismatch',
+      'Elsewhere.size-a type_mismatch',
+      'Elsewhere.tone type_mismatch',
+      'Renamed.size-a type_mismatch',
+    ]);
+    expect(report.typesNotCompared).toEqual([
+      expect.objectContaining({
+        component: 'Elsewhere',
+        props: ['cfg.item', 'entry', 'item', 'onPick'],
+      }),
+      expect.objectContaining({component: 'Renamed', props: ['cfg.item']}),
+    ]);
+    expect(report.typesCompared).toBe(6);
+  });
+
+  it("reads `React.X` as React's own where the prop is declared, never as a bare name that means another type there", async () => {
+    withTypeScript();
+    fs.mkdirSync(path.join(pkg, 'node_modules', '@types'), {recursive: true});
+    fs.symlinkSync(
+      path.dirname(require.resolve('@types/react/package.json')),
+      path.join(pkg, 'node_modules', '@types', 'react'),
+      'dir',
+    );
+    const keys = component(
+      'Keys',
+      [
+        "import * as React from 'react';",
+        "type Key = 'a' | 'b';",
+        'export function Keys(props: {onKey?: (event: KeyboardEvent) => void; rowKey?: string | number | bigint; pick?: Key; native?: React.Key}) { return null; }',
+      ].join('\n'),
+      {
+        props: [
+          prop('onKey', '(event: React.KeyboardEvent) => void'),
+          prop('rowKey', 'React.Key'),
+          prop('pick', 'React.Key'),
+          prop('native', 'React.Key'),
+        ],
+      },
+    );
+    // React's global namespace, with no import.
+    const global = component(
+      'GlobalKeys',
+      'export function GlobalKeys(props: {rowKey?: string | number | bigint}) { return null; }',
+      {props: [prop('rowKey', 'React.Key')]},
+    );
+
+    const report = await compare([keys, global]);
+
+    // The DOM's `KeyboardEvent` is not React's, and the file's own `Key` is
+    // not `React.Key`.
+    expect(kinds(report)).toEqual(['Keys.pick type_mismatch']);
+    expect(report.typesNotCompared).toEqual([
+      expect.objectContaining({component: 'Keys', props: ['onKey']}),
+    ]);
+    expect(report.typesCompared).toBe(4);
+  });
+
+  it('judges primitives, literals, arrays, string enums, and names for them exactly, in any order', async () => {
+    withTypeScript();
+    const card = component(
+      'Card',
+      [
+        "type Tone = 'neutral' | 'info';",
+        "export enum Color { Red = 'red', Blue = 'blue' } export enum Hue { Red = 'red', Blue = 'blue' }",
+        'export interface CardProps {',
+        '  label: string;',
+        '  tone?: Tone;',
+        '  items?: ReadonlyArray<string>;',
+        '  isOpen?: boolean;',
+        "  size?: 'sm' | 'md' | number;",
+        '  color?: Color;',
+        '  count?: number;',
+        '  ids?: string[];',
+        '  hue?: Color;',
+        "  shade?: Color; shades?: Color[]; pick?: 'red' | 'blue';",
+        '}',
+        'export function Card(props: CardProps) { return null; }',
+      ].join('\n'),
+      {
+        props: [
+          prop('label', 'string', {required: true}),
+          prop('tone', '\'info\' | "neutral"'),
+          prop('items', 'Array<string>'),
+          prop('isOpen', 'true | false'),
+          prop('size', "number | 'md' | 'sm'"),
+          prop('color', 'Color'),
+          prop('count', 'string'),
+          prop('ids', 'number[]'),
+          prop('hue', "'red' | 'blue'"),
+          prop('shade', 'Hue'),
+          prop('shades', 'Hue[]'),
+          prop('pick', 'Color'),
+        ],
+      },
+    );
+
+    const report = await compare([card]);
+
+    // TypeScript takes neither `'red'` nor another enum's `Hue.Red` where the
+    // enum `Color` is expected, and `Color` does not take the `'red'` `pick` does.
+    expect(kinds(report)).toEqual([
+      'Card.count type_mismatch',
+      'Card.hue type_mismatch',
+      'Card.ids type_mismatch',
+      'Card.pick type_mismatch',
+      'Card.shade type_mismatch',
+      'Card.shades type_mismatch',
+    ]);
+    expect(report.typesCompared).toBe(12);
+    expect(report.typesNotCompared).toEqual([]);
+  });
+
+  it('reads a union the way TypeScript reduces it, and a default after `=` as no alias', async () => {
+    withTypeScript();
+    const icon = component(
+      'Icon',
+      [
+        "type IconName = 'add' | 'close';",
+        "export enum Color { Red = 'red', Blue = 'blue' }",
+        'type Step = 1 | 2;',
+        "type Size = 'sm' | 'md' | 'lg';",
+        'export interface IconProps {',
+        '  icon?: IconName | string;',
+        '  color?: Color | string;',
+        '  step?: Step | number;',
+        '  isOpen?: boolean;',
+        '  icons?: string[];',
+        '  size?: Size;',
+        '  limit?: 1000 | 2000;',
+        '  width?: number | string;',
+        '}',
+        'export function Icon(props: IconProps) { return null; }',
+      ].join('\n'),
+      {
+        props: [
+          prop('icon', 'IconName | string'),
+          prop('color', 'Color | string'),
+          prop('step', 'Step | number'),
+          prop('isOpen', 'boolean = false'),
+          prop('icons', '(IconName | string)[]'),
+          prop('size', "Size = 'md'"),
+          prop('limit', '1_000 | 2_000'),
+          prop('width', 'number (or a CSS length)'),
+        ],
+      },
+    );
+
+    const report = await compare([icon]);
+
+    expect(report.findings).toEqual([]);
+    expect(report.typesCompared).toBe(7);
+  });
+
+  it('sets aside null and undefined when the project has no strict null checks', async () => {
+    withTypeScript();
+    fs.writeFileSync(
+      path.join(pkg, 'tsconfig.json'),
+      JSON.stringify({compilerOptions: {strict: false, jsx: 'react-jsx'}}),
+    );
+    const loose = component(
+      'Loose',
+      [
+        'type MaybeNum = number | null;',
+        'export function Loose(props: {count?: MaybeNum; counts?: MaybeNum[]}) { return null; }',
+      ].join('\n'),
+      {
+        props: [
+          prop('count', 'number | null'),
+          prop('counts', '(number | null)[]'),
+        ],
+      },
+    );
+
+    const report = await compare([loose]);
+
+    expect(report.findings).toEqual([]);
+    expect(report.typesCompared).toBe(2);
+  });
+
+  it('respects exactOptionalPropertyTypes: an optional prop takes undefined only when its type says so', async () => {
+    withTypeScript();
+    const tsconfig = path.join(pkg, 'tsconfig.json');
+    const config = JSON.parse(fs.readFileSync(tsconfig, 'utf8'));
+    config.compilerOptions.exactOptionalPropertyTypes = true;
+    fs.writeFileSync(tsconfig, JSON.stringify(config));
+    const exact = component(
+      'Exact',
+      "type MaybeTone = 'a' | 'b' | 'c' | undefined;\nexport function Exact(props: {size?: 'sm' | 'md'; tone?: 'a' | undefined; mode?: 'x'; status?: {tone?: 'a' | 'b' | undefined; mode?: 'x'}; labels?: Record<string, string | undefined>; hue?: 'a' | 'b' | undefined; t6?: MaybeTone; [key: `x${string}`]: string | undefined}) { return null; }\n",
+      {
+        props: [
+          prop('size', "'sm' | 'md' | undefined"),
+          prop('tone', "'a' | undefined"),
+          prop('mode', "'x'"),
+          prop('status.tone', "'a' | 'b'"),
+          prop('status.mode', "'x'"),
+          prop('labels.close', 'string'),
+          prop('xTone', 'string'),
+          prop('hue', "'a' | 'b'"),
+          prop('t6', "'a' | 'b' | 'c'"),
+        ],
+      },
+    );
+    const variant = component(
+      'Variant',
+      "export function Variant(props: {kind: 'a'; size?: 'sm' | undefined} | {kind: 'b'; size?: 'md' | undefined}) { return null; }\n",
+      {
+        props: [
+          prop('kind', "'a' | 'b'", {required: true}),
+          prop('size', "'sm' | 'md'"),
+        ],
+      },
+    );
+
+    const report = await compare([exact, variant]);
+
+    // TypeScript rejects `size={undefined}` here, and takes the others; a
+    // field that declares `undefined` takes it too, unlike its doc. A name an
+    // index signature takes is held to the index's type the same way as a
+    // field or as a prop.
+    expect(kinds(report)).toEqual([
+      'Exact.hue type_mismatch',
+      'Exact.size type_mismatch',
+      'Exact.status.tone type_mismatch',
+      'Exact.t6 type_mismatch',
+      'Variant.size type_mismatch',
+    ]);
+    expect(report.typesCompared).toBe(11);
+    // The message shows the `undefined` the code declares, written once or by
+    // each member of a union, in the type and in its expansion.
+    for (const finding of report.findings.filter(
+      f => f.component === 'Variant' || f.prop === 'hue',
+    )) {
+      expect(finding.codeType).toMatch(/undefined/);
+      const declared = finding.message.split('but the code declares ')[1];
+      expect(declared).toMatch(/undefined/);
+      expect(declared.match(/\((.*)\)\.$/)?.[1] ?? 'undefined').toMatch(
+        /undefined/,
+      );
+    }
+    // Through an alias, the expansion shows it.
+    expect(report.findings.find(f => f.prop === 't6')?.message).toMatch(
+      /declares MaybeTone \(.*undefined.*\)\.$/,
+    );
+  });
+
+  it('holds a name an index signature takes, a field a Record takes, and a readonly array to the type TypeScript checks, and lists a field only an index takes and an `a / b` entry whose one type does not split', async () => {
+    withTypeScript();
+    const held = component(
+      'Held',
+      [
+        'export function Held(props: {',
+        '  labels?: Record<string, string>;',
+        '  tags?: string[];',
+        '  ids?: ReadonlyArray<string>;',
+        '  keys?: readonly string[];',
+        '  grid?: readonly string[][];',
+        '  rows?: (readonly string[])[];',
+        '  onPick?: (values: readonly string[]) => void;',
+        '  onDrop?: (values: readonly string[]) => void;',
+        '  pinned?: {readonly ids: readonly string[]};',
+        '  item?: {tags: readonly string[]};',
+        '  mix?: string[] | readonly number[];',
+        '  min?: number; max?: number; status?: {a: number};',
+        '  [key: `x${string}`]: string; [key: `y${string}`]: {color: string};',
+        '}) { return null; }',
+      ].join('\n'),
+      {
+        props: [
+          prop('labels.close', 'string | undefined'),
+          prop('xTone', 'string | undefined'),
+          prop('tags', 'readonly string[]'),
+          prop('ids', 'readonly string[]'),
+          prop('keys', 'string[]'),
+          prop('grid', '(readonly string[])[]'),
+          prop('rows', 'readonly string[][]'),
+          prop('onPick', '(values: string[]) => void'),
+          prop('onDrop', '(values:  readonly string[])=>void'),
+          prop('pinned', '{readonly ids: readonly string[]}'),
+          prop('item', '{tags: string[]}'),
+          prop('mix', 'readonly string[] | number[]'),
+          prop('min / max', 'number'),
+          prop('status.a / status.b', 'number'),
+          prop('yTone.color', 'string'),
+        ],
+      },
+    );
+
+    const report = await compare([held]);
+
+    // TypeScript passes no `undefined` through an index that does not take
+    // it, and no readonly array where a mutable one is taken; a mutable
+    // array passes where a readonly one is.
+    expect(kinds(report)).toEqual([
+      'Held.labels.close type_mismatch',
+      'Held.status.b not_in_code',
+      'Held.tags type_mismatch',
+      'Held.xTone type_mismatch',
+    ]);
+    expect(report.typesCompared).toBe(7);
+    // `readonly` written as the code writes it matches; written somewhere
+    // else, at another depth, in a callback's parameter, in an object's
+    // field, or on another union member, it is not placed: listed, never a
+    // match, as are a field only an index takes and `a / b` with one type.
+    expect(
+      report.typesNotCompared.map(e => `${e.reason}: ${e.props.join(' ')}`),
+    ).toEqual([
+      'not a form the check judges exactly: grid item max min mix onPick rows status.a yTone.color',
+    ]);
+  });
+
+  it('reads strict null checks as the TypeScript version defaults them', async () => {
+    withTypeScript();
+    fs.writeFileSync(
+      path.join(pkg, 'tsconfig.json'),
+      JSON.stringify({compilerOptions: {jsx: 'react-jsx'}}),
+    );
+    // The TypeScript the test links in: 6 checks strict null by default.
+    const ts = require(TYPESCRIPT_DIR);
+    const strictByDefault = ts.getStrictOptionValue({}, 'strictNullChecks');
+    const maybe = component(
+      'Maybe',
+      'export function Maybe(props: {count?: number | null}) { return null; }\n',
+      {props: [prop('count', 'number')]},
+    );
+
+    const report = await compare([maybe]);
+
+    expect(kinds(report)).toEqual(
+      strictByDefault ? ['Maybe.count type_mismatch'] : [],
+    );
+  });
+
+  it("lists a name two index signatures take and a field documented with one variant's type, and reads a default for one union member", async () => {
+    withTypeScript();
+    const pick = component(
+      'Pick',
+      [
+        "export enum SizeE { Sm = 'sm', Md = 'md' }",
+        'type Sel = {kind: "single"; value: string} | {kind: "multi"; value: string[]};',
+        'export type PickProps = {',
+        '  sizeE?: SizeE;',
+        '  sel?: Sel;',
+        '  tri?: {v: string} | {v: number} | {v: boolean};',
+        '  sev?: {v: 1} | {v: 2} | {v: 3} | {v: 4} | {v: 5} | {v: 6} | {v: 7};',
+        '  labels?: {close: string} | Record<string, number>;',
+        '  [key: `data-${string}`]: string | number | undefined;',
+        '  [key: `data-track${string}`]: string | undefined;',
+        '} & ({mode: "str"; [key: `x${string}`]: string} | {mode: "num"; [key: `x${string}`]: number});',
+        'export function Pick(props: PickProps) { return null; }',
+      ].join('\n'),
+      {
+        props: [
+          prop('sizeE', 'SizeE = SizeE.Md'),
+          prop('sel.value', 'string'),
+          prop('tri.v', 'string | number'),
+          prop('sev.v', '1 | 2'),
+          prop('labels.close', 'string | number'),
+          prop('data-tracker', 'string'),
+          prop('mode', "'str' | 'num'", {required: true}),
+          prop('xValue', 'number'),
+        ],
+      },
+    );
+
+    const report = await compare([pick]);
+
+    // TypeScript holds `data-tracker` to both signatures that take it, and
+    // `xValue` to the one of the member it is passed with; `sel.value`,
+    // `tri.v` and `sev.v` (past six variants, never reported) take every
+    // variant's type, and `labels.close` is documented with both.
+    expect(report.findings).toEqual([]);
+    expect(report.typesNotCompared).toEqual([
+      expect.objectContaining({
+        props: ['data-tracker', 'xValue'],
+        reason: 'not a form the check judges exactly',
+      }),
+      expect.objectContaining({
+        props: ['sel.value', 'sev.v', 'tri.v'],
+        reason: "the prop's variants give this field different types",
+      }),
+    ]);
+    expect(report.typesCompared).toBe(3);
+  });
+
+  it('reads fields in arrays of unions, a name one member indexes, and names only where the code can mean them', async () => {
+    withTypeScript();
+    const rows = component(
+      'Rows',
+      [
+        'type Items = number[];',
+        'export type RowsProps = {',
+        "  items?: Array<{kind: 'a'; value: string} | {kind: 'b'; value: number}>;",
+        '  list?: Items;',
+        "  behavior?: 'auto' | 'smooth';",
+        '  [key: `data-${string}`]: string | undefined;',
+        "} & ({mode: 'fixed'; xSize: number} | ({mode: 'free'} & {[k: `x${string}`]: string}));",
+        'export function Rows(props: RowsProps) { return null; }',
+      ].join('\n'),
+      {
+        props: [
+          prop('items[].value', 'string | number'),
+          prop('list', 'Items = string[]'),
+          prop('behavior', 'ScrollBehavior'),
+          prop('data-section', 'string'),
+          prop('mode', "'fixed' | 'free'", {required: true}),
+          prop('xSize', 'number | string'),
+        ],
+      },
+    );
+
+    const report = await compare([rows]);
+
+    // `ScrollBehavior` is the DOM's, which the code never names.
+    expect(kinds(report)).toEqual(['Rows.list type_mismatch']);
+    expect(report.typesNotCompared).toEqual([
+      expect.objectContaining({props: ['behavior']}),
+    ]);
+  });
+
+  it('judges a prop two intersected types declare by the type they narrow it to, and undefined on a required prop', async () => {
+    withTypeScript();
+    const narrow = component(
+      'Narrow',
+      [
+        "type A = {size?: 'sm'; tone?: 'a' | 'b'};",
+        "type B = {size?: 'sm' | 'md'; tone?: 'a' | 'b'};",
+        'export type NarrowProps = B & A & {isOpen: boolean; label: string | undefined};',
+        'export function Narrow(props: NarrowProps) { return null; }',
+      ].join('\n'),
+      {
+        props: [
+          prop('size', "'sm' | 'md'"),
+          prop('tone', "'b' | 'a'"),
+          prop('isOpen', 'boolean | undefined', {required: true}),
+          prop('label', 'string', {required: true}),
+        ],
+      },
+    );
+
+    const report = await compare([narrow]);
+
+    // TypeScript takes only 'sm' for `size`, rejects `isOpen={undefined}`,
+    // and accepts `label={undefined}`.
+    expect(kinds(report)).toEqual([
+      'Narrow.isOpen type_mismatch',
+      'Narrow.label type_mismatch',
+      'Narrow.size type_mismatch',
+    ]);
+    expect(report.findings.find(f => f.prop === 'size')?.codeType).toBe("'sm'");
+  });
+
+  it('lists every other form of type as not compared, never as a mismatch', async () => {
+    withTypeScript();
+    const thread = component(
+      'Thread',
+      [
+        'interface IconShape { path: string }',
+        'type MaybePromise<T> = T | Promise<T>;',
+        'type Parts = {a?: string; b?: number};',
+        "type A = {a: string}; type B = {b: number}; enum Color { Red = 'red' } namespace Theme { export enum Color { Red = 'red' } }",
+        'export interface ThreadProps {',
+        '  onSubmit?: (text: string, files?: File[]) => MaybePromise<void>;',
+        '  onPick?: (value: string, index: number) => void;',
+        '  item?: A & B;',
+        '  parts?: Partial<Parts>;',
+        '  key2?: keyof (A & B);',
+        '  key3?: keyof (A & B);',
+        "  target?: '_self' | '_blank' | (string & {});",
+        '  range?: [number, number?];',
+        '  labels?: Record<string, string>;',
+        '  icon?: IconShape;',
+        '  data?: any;',
+        '  extra?: unknown; tint?: Theme.Color;',
+        '}',
+        'export function Thread(props: ThreadProps) { return null; }',
+      ].join('\n'),
+      {
+        props: [
+          prop('onSubmit', '(text: string) => Promise<number>'),
+          prop('onPick', '(value: string, index: number) => void'),
+          prop('item', '{a: string; b: number}'),
+          prop('parts', 'Parts'),
+          prop('key2', 'keyof (A & B)'),
+          prop('key3', "'a' | 'b'"),
+          prop('target', "'_self' | '_blank'"),
+          prop('range', '[number]'),
+          prop('labels', '{[key: string]: number}'),
+          prop('icon', 'IconName'),
+          prop('data', 'string'),
+          prop('data.id', 'string'),
+          prop('extra.kind', 'string'),
+          prop('tint', 'Color'),
+        ],
+      },
+    );
+
+    const report = await compare([thread]);
+
+    expect(report.findings).toEqual([]);
+    // Written exactly as the source writes them, or a literal union the
+    // code's type resolves to (`keyof (A & B)` is `'a' | 'b'`).
+    expect(report.typesCompared).toBe(3);
+    expect(
+      report.typesNotCompared.map(e => `${e.reason}: ${e.props.join(' ')}`),
+    ).toEqual([
+      'not a form the check judges exactly: data data.id extra.kind icon item labels onSubmit parts range target tint',
+    ]);
+  });
+
+  it("compares a documented field's type, and a name an index signature takes, with the type the code gives it", async () => {
+    withTypeScript();
+    const note = component(
+      'Note',
+      [
+        'export interface NoteProps {',
+        "  status?: {type: 'error' | 'warning'; message?: string};",
+        '  items?: Array<{id: string; label: string}>;',
+        '  labels?: Record<string, string>;',
+        '  [key: `data-${string}`]: string | undefined;',
+        '  [key: `aria-${string}`]: string | number | undefined;',
+        '}',
+        'export function Note(props: NoteProps) { return null; }',
+      ].join('\n'),
+      {
+        props: [
+          prop('status.type', "'error' | 'info'"),
+          prop('items[].label', 'number'),
+          prop('labels.open', 'string'),
+          prop('labels.close', 'number'),
+          prop('data-section', 'string'),
+          prop('data-count', 'number'),
+          prop('aria-busy', 'boolean'),
+        ],
+      },
+    );
+
+    const report = await compare([note]);
+
+    expect(kinds(report)).toEqual([
+      'Note.aria-busy type_mismatch',
+      'Note.data-count type_mismatch',
+      'Note.items[].label type_mismatch',
+      'Note.labels.close type_mismatch',
+      'Note.status.type type_mismatch',
+    ]);
+    expect(report.typesCompared).toBe(7);
+  });
+
+  it('accepts an alias spelled out beside its name, and reports one whose spelled-out values are stale', async () => {
+    withTypeScript();
+    const links = ["'link' | 'token'", "'link' | 'token' | 'button'"].map(
+      (values, i) =>
+        component(
+          `Link${i}`,
+          `export type LinkVariant = ${values};\nexport function Link${i}(props: {variant?: LinkVariant; tone?: LinkVariant}) { return null; }`,
+          {
+            props: [
+              prop('variant', "LinkVariant = 'link' | 'token'"),
+              prop('tone', "LinkVariant ('link' | 'token')"),
+            ],
+          },
+        ),
+    );
+
+    expect(kinds(await compare(links))).toEqual([
+      'Link1.tone type_mismatch',
+      'Link1.variant type_mismatch',
+    ]);
+  });
+
+  it("reads an optional prop documented with `| undefined` as the code reads it, and names an alias's members in the source's order", async () => {
+    withTypeScript();
+    const badge = component(
+      'Badge',
+      [
+        "type Tone = 'neutral' | 'info';",
+        'export function Badge(props: {tone?: Tone}) { return null; }',
+      ].join('\n'),
+      {props: [prop('tone', "'neutral' | 'info' | undefined")]},
+    );
+    const chip = component(
+      'Chip',
+      "export function Chip(props: {tone?: 'a' | 'b' | undefined}) { return null; }\n",
+      {props: [prop('tone', "'a' | 'c'")]},
+    );
+
+    // The same literals, made first in another order, would set the
+    // compiler's own order.
+    const status = component(
+      'Status',
+      [
+        "type Other = 'detached' | 'attached' | 'tooltip';",
+        'export type Unrelated = Other;',
+        "type StatusVariant = 'tooltip' | 'attached' | 'detached';",
+        'export function Status(props: {variant?: StatusVariant}) { return null; }',
+      ].join('\n'),
+      {props: [prop('variant', "'attached' | 'detached'")]},
+    );
+
+    expect(kinds(await compare([badge]))).toEqual([]);
+    // The optional prop's `undefined` the expansion sets aside is shown once.
+    const [finding] = (await compare([chip])).findings;
+    expect(finding.message).toMatch(/declares 'a' \| 'b' \| undefined\.$/);
+    expect((await compare([status])).findings.map(f => f.message)).toEqual([
+      `"variant" is documented as 'attached' | 'detached', but the code declares StatusVariant ('tooltip' | 'attached' | 'detached').`,
+    ]);
+  });
+
+  it('judges a className the package declares, and lists standard props and props from other packages as not compared', async () => {
+    withTypeScript();
+    const base = path.join(pkg, 'node_modules', '@acme', 'base');
+    fs.mkdirSync(base, {recursive: true});
+    fs.writeFileSync(
+      path.join(base, 'package.json'),
+      JSON.stringify({name: '@acme/base', types: 'index.d.ts'}),
+    );
+    fs.writeFileSync(
+      path.join(base, 'index.d.ts'),
+      'export interface BaseProps { style?: object; id?: string; tone?: {level: number}; [key: `data-${string}`]: string | undefined }\n',
+    );
+    // A name only another package's index signature, or a mapped type's,
+    // takes is not judged either.
+    const card = component(
+      'Card',
+      "import type {BaseProps} from '@acme/base';\nexport function Card(props: BaseProps & {className?: string} & Record<`aria-${string}`, string>) { return null; }\n",
+      {
+        props: [
+          prop('className', 'number'),
+          prop('style', 'string'),
+          prop('id', 'number'),
+          prop('tone.level', 'string'),
+          prop('tone.missing', 'string'),
+          prop('data-variant', "'solid' | 'outline'"),
+          prop('aria-note', 'number'),
+        ],
+      },
+    );
+
+    const report = await compare([card]);
+
+    expect(kinds(report)).toEqual([
+      'Card.className type_mismatch',
+      'Card.tone.missing not_in_code',
+    ]);
+    expect(report.typesCompared).toBe(1);
+    expect(
+      report.typesNotCompared.map(e => `${e.reason}: ${e.props.join(' ')}`),
+    ).toEqual([
+      'declared outside the package, not compared: data-variant id tone.level',
+      'not a form the check judges exactly: aria-note',
+      'standard prop, not compared: style',
+    ]);
+  });
+
+  it('does not ask a doc for props from other packages, or for the props the authoring guidance skips', async () => {
+    expect(PROPS_NOT_DOCUMENTED).toEqual([
+      'className',
+      'style',
+      'xstyle',
+      'data-testid',
+      'ref',
+      'key',
+    ]);
+    withTypeScript();
+    const base = path.join(pkg, 'node_modules', '@acme', 'base');
+    fs.mkdirSync(base, {recursive: true});
+    fs.writeFileSync(
+      path.join(base, 'package.json'),
+      JSON.stringify({name: '@acme/base', types: 'index.d.ts'}),
+    );
+    fs.writeFileSync(
+      path.join(base, 'index.d.ts'),
+      [
+        'export interface BaseProps { id?: string; onBlur?: () => void }',
+        "export type Sizes = Partial<Record<'sm' | 'md', string>>;",
+        "export interface Spacing extends Partial<Record<'gap', number>> {}",
+        "export type Tone = 'info' | 'danger';",
+        'export type Flags<K extends string> = {[P in K]?: boolean};',
+        'export type FC<P> = (props: P) => null;',
+        "export type Responsive<T> = {[K in 'sm' | 'lg']?: T};",
+        "export type Breakpoint = 'sm' | 'lg';",
+        'export declare const BREAKPOINTS: readonly Breakpoint[];',
+        'export declare function memo<T extends (p: any) => null>(c: T): {(p: Parameters<T>[0]): null; $$typeof: symbol; type: T};',
+        'export declare function forwardRef<P>(render: (props: P, ref: unknown) => null): (props: P) => null;',
+      ].join('\n'),
+    );
+    const panel = component(
+      'Panel',
+      [
+        "import type {BaseProps} from '@acme/base';",
+        'export interface PanelProps extends BaseProps {',
+        '  title?: string;',
+        '  className?: string;',
+        '  style?: {color?: string};',
+        '  xstyle?: unknown;',
+        "  'data-testid'?: string;",
+        '  ref?: unknown;',
+        '  key?: string;',
+        '  /** @deprecated Use `title`. */',
+        '  heading?: string;',
+        '  /** @internal */',
+        '  debugName?: string;',
+        '}',
+        'export function Panel(props: PanelProps) { return null; }',
+      ].join('\n'),
+      {props: [prop('title', 'string'), prop('id', 'number')]},
+    );
+
+    // A prop a mapped type builds is the package's own when its key traces
+    // to the package's source: through aliases, `Exclude`, a generic's
+    // arguments, and a component `memo` or `forwardRef` wraps. A key another
+    // package defines, behind an alias or not, is that package's, and one
+    // the check can't trace is listed, not asked for.
+    const mapped = Object.entries({
+      Styled:
+        '(props: {[K in StyleKey]?: BaseProps[K]} & Partial<Record<StyleKey, number>>)',
+      Inlined: '(props: {[K in keyof BaseProps]?: BaseProps[K]})',
+      Spread: '(props: Responsive<number>)',
+      Memoed: ' = memo(Inner)',
+      Forwarded: ' = forwardRef(Impl)',
+      Excluded: "(props: {[K in Exclude<'a' | 'b' | 'c', 'c'>]?: string})",
+      Templated: "(props: {[K in `on${Capitalize<'open'>}`]?: () => void})",
+      // Another package's keys through an own interface's property, an
+      // `infer`, or a constant bound to its value stay that package's.
+      Indexed: "(props: {[K in Opts['size']]?: number})",
+      Inferred: '(props: {[K in KeysOf<Record<Breakpoint, 1>>]?: number})',
+      Rebound: '(props: {[K in (typeof SIZES)[number]]?: number})',
+      Inline: "(props: {[K in 'a' | 'b']?: string})",
+      Recorded: "(props: Partial<Record<'a' | 'b', string>>)",
+      Remapped: "(props: {[K in 'open' as `on${Capitalize<K>}`]?: () => void})",
+      Toned:
+        "(props: Partial<Record<Tone | 'xl', boolean>> & {[K in Tone]?: string} & Partial<Record<keyof BaseProps, string>> & {[K in keyof BaseProps as `x${Capitalize<K>}`]?: boolean})",
+      Flagged: "(props: Flags<'bold'>)",
+      Extended: '(props: ExtendedProps)',
+      Sized: '(props: Spaced & Partial<Sizes>)',
+    }).map(([name, props]) =>
+      component(
+        name,
+        [
+          "import {type BaseProps, type Sizes, type Spacing, type Tone, type Flags, type FC, type Responsive, type Breakpoint, BREAKPOINTS, memo, forwardRef} from '@acme/base';",
+          "interface ExtendedProps extends Partial<Record<'a', string>> {}",
+          'interface Spaced extends Spacing {}',
+          'type StyleKey = keyof BaseProps;',
+          'interface Opts { size: Breakpoint }',
+          'type KeysOf<T> = T extends Record<infer K, unknown> ? K : never;',
+          'const SIZES = BREAKPOINTS;',
+          "function Inner(props: {[K in 'top' | 'bottom']?: number}) { return null; }",
+          "function Impl(props: Partial<Record<'left', number>>, ref: unknown) { return null; }",
+          props.startsWith(' =')
+            ? `export const ${name}${props};`
+            : `export function ${name}${props} { return null; }`,
+          `export const Typed: FC<Partial<Record<'a', string>>> = () => null;`,
+        ].join('\n'),
+        {props: []},
+      ),
+    );
+
+    // A deprecated prop is still a prop the component accepts.
+    const typed = {...mapped[0], name: 'Typed'};
+    const report = await compare([panel, ...mapped, typed]);
+    expect(kinds(report)).toEqual([
+      'Excluded.a not_in_doc',
+      'Excluded.b not_in_doc',
+      'Extended.a not_in_doc',
+      'Flagged.bold not_in_doc',
+      'Forwarded.left not_in_doc',
+      'Inline.a not_in_doc',
+      'Inline.b not_in_doc',
+      'Memoed.bottom not_in_doc',
+      'Memoed.top not_in_doc',
+      'Panel.heading not_in_doc',
+      'Recorded.a not_in_doc',
+      'Recorded.b not_in_doc',
+      'Remapped.onOpen not_in_doc',
+      'Toned.xl not_in_doc',
+      'Typed.a not_in_doc',
+    ]);
+    expect(report.propsNotChecked).toEqual([
+      expect.objectContaining({component: 'Templated', props: ['onOpen']}),
+      expect.objectContaining({component: 'Inferred', props: ['lg', 'sm']}),
+    ]);
+    // The alias and the inline form give the same answer: nothing asked.
+    for (const name of ['Styled', 'Inlined']) {
+      expect(kinds(report).filter(kind => kind.startsWith(name))).toEqual([]);
+    }
+  });
+
+  it('reads every overload, one without props included, matches a doc that describes one member of a discriminated union, reads a prop only some members require as optional, and holds every prop one entry names to its `required`', async () => {
     withTypeScript();
     const picker = component(
       'Picker',
@@ -1169,8 +2189,10 @@ export const Hoc = withName((props: {label?: string}) => null);`;
       status: 'skipped',
       reason,
       components: 0,
+      typesCompared: 0,
       findings: [],
       unchecked: [],
+      typesNotCompared: [],
     });
 
     expect(await compare([badge])).toEqual(skipped(TYPESCRIPT_MISSING_REASON));

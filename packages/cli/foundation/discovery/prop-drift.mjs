@@ -28,7 +28,10 @@
  *   pass the prop (one only some members of the props type require, or that
  *   the package's `defaultProps` fills, is optional, as it is to JSX
  *   callers; an entry that names several props claims its `required` for
- *   each).
+ *   each);
+ * - `type_mismatch`: for a prop declared in the package, the documented type
+ *   differs from the code's where both sides read exactly (type-match.mjs
+ *   states the rules); every other type is listed as not compared.
  *
  * @input Component records (name, docPath, sourcePath), or prop tables, the
  *   package root, and the directories to resolve `typescript` from.
@@ -46,13 +49,15 @@ import {
   resolveProjectTypeScript,
   unusableTypeScriptReason,
 } from './project-typescript.mjs';
+import {judgeType} from './type-match.mjs';
+import {typeTextTooOld} from './type-text.mjs';
 import {
   unresolvedGlobals,
   unresolvedReference,
 } from './unresolved-references.mjs';
 
 /**
- * @typedef {'not_in_code' | 'not_in_doc' | 'required_mismatch'} PropDriftKind
+ * @typedef {'not_in_code' | 'not_in_doc' | 'required_mismatch' | 'type_mismatch'} PropDriftKind
  */
 
 /**
@@ -78,18 +83,32 @@ import {
  */
 
 /**
+ * @typedef {object} PropDriftTypesNotCompared
+ * @property {string} component
+ * @property {string} doc the doc file, relative to the package root
+ * @property {string} reason why: not a form the check judges exactly, a
+ *   field the prop's variants give different types, a standard prop
+ *   (`className`, `style`, …), or a prop declared outside the package
+ * @property {string[]} props documented props whose types were not compared
+ */
+
+/**
  * @typedef {object} PropDriftReport
  * @property {'checked' | 'skipped'} status `skipped` means nothing was
  *   compared, and `reason` says why
  * @property {string} [reason]
  * @property {string} [typescript] the version of the compiler that read the props
  * @property {number} components how many documented prop tables were compared
+ * @property {number} typesCompared how many documented prop types were judged
+ * @property {string} [typesSkipped] why no prop type was judged
  * @property {PropDriftFinding[]} findings
  * @property {PropDriftUnchecked[]} unchecked documented components whose props
  *   could not be read from the source
  * @property {Array<PropDriftUnchecked & {props: string[]}>} [propsNotChecked]
  *   props a mapped type builds from keys the check can't trace, which a doc
  *   leaving out draws no warning for
+ * @property {PropDriftTypesNotCompared[]} typesNotCompared every other
+ *   documented prop type, grouped by why it was not judged
  */
 
 /**
@@ -125,6 +144,17 @@ export const PROPS_NOT_DOCUMENTED = Object.freeze([
 
 /** The guidance's internal props: a declaration tagged `@internal`. */
 const SKIP_TAGS = new Set(['internal']);
+/** Why a documented prop type was not judged (`typesNotCompared`). */
+const NOT_EXACT = 'not a form the check judges exactly';
+/** A field documented with one variant's type, where they differ. */
+const VARIANTS = "the prop's variants give this field different types";
+/** @type {(name: string, code?: CodeProp) => string} why a prop is not judged */
+const outside = (name, code) =>
+  code?.untraced
+    ? NOT_EXACT
+    : PROPS_NOT_DOCUMENTED.includes(name)
+      ? 'standard prop, not compared'
+      : 'declared outside the package, not compared';
 const HOOK_NAME = /^use[A-Z0-9]/;
 
 /** The line both surfaces print when the compiler is missing. */
@@ -201,8 +231,14 @@ function ownFileTest(root) {
  * @property {boolean} [untraced] built from keys the check can't trace
  * @property {boolean} skipTagged its declaration carries an internal JSDoc tag
  * @property {string[]} declared the type as written, per own declaration
- * @property {() => string[]} renderings the compiler's renderings, computed on demand
+ * @property {() => string[][]} renderings the compiler's renderings, computed on demand
  * @property {() => any[]} types the prop's type in each member of the props type
+ * @property {boolean} intersected one member declares it more than once (an
+ *   intersection), so no one declaration's text is its type
+ * @property {() => any[] | null} indexed the type an index signature gives
+ *   the name in each member that lacks the prop; null when two signatures
+ *   in one member take it
+ * @property {any} location where names in the prop's type resolve
  */
 
 /**
@@ -216,7 +252,7 @@ function ownFileTest(root) {
  * @param {import('./unresolved-references.mjs').UnresolvedReference | null} ambient
  *   what the program's other roots cannot resolve, which any component may
  *   use
- * @returns {{ok: true, props: Map<string, CodeProp>, accepts: (name: string) => boolean} | {ok: false, reason: string}}
+ * @returns {{ok: true, props: Map<string, CodeProp>, accepts: (name: string) => any} | {ok: false, reason: string}}
  */
 function readCodeProps(
   ts,
@@ -328,7 +364,7 @@ function readCodeProps(
   }
   /** @type {Map<string, CodeProp>} */
   const props = new Map();
-  if (propsTypes.length === 0) return {ok: true, props, accepts: () => false};
+  if (propsTypes.length === 0) return {ok: true, props, accepts: () => []};
 
   // Props that are `any`, written so or made from it (`FC<any>`, or
   // `forwardRef<E, any>`'s `Omit<any, 'ref'>`).
@@ -475,42 +511,75 @@ function readCodeProps(
             ),
       ),
       // A property's `type` is the prop's type; a method's is its return
-      // type, so a method prop reads as the compiler renders it.
-      declared: ownDeclarations
-        .filter(
-          /** @param {any} d */ d =>
-            d.type && !ts.isMethodSignature(d) && !ts.isMethodDeclaration(d),
-        )
-        .map(/** @param {any} d */ d => d.type.getText(d.getSourceFile())),
+      // type, so a method prop reads as the compiler renders it. A
+      // declaration's text counts only for its own symbol, or where a mapping
+      // copies its type unchanged (`Pick`, `Omit`): one that rewrites it
+      // (`{[K in keyof T]: T[K][]}`, `Required<T>`) is judged by its type.
+      declared: symbols.flatMap(
+        /** @param {any} s */ s =>
+          (s.declarations ?? [])
+            .filter(
+              /** @param {any} d */ d =>
+                ownDeclarations.includes(d) &&
+                d.type &&
+                !ts.isMethodSignature(d) &&
+                !ts.isMethodDeclaration(d) &&
+                copiesType(ts, checker, s, d, sourceFile),
+            )
+            .map(/** @param {any} d */ d => d.type.getText(d.getSourceFile())),
+      ),
       types: () =>
         symbols.map(
           /** @param {any} s */ s =>
             checker.getTypeOfSymbolAtLocation(s, sourceFile),
         ),
+      intersected: symbols.some(
+        /** @param {any} s */ s =>
+          (s.declarations ?? []).filter(/** @param {any} d */ d => d.type)
+            .length > 1,
+      ),
+      indexed: memo(() => {
+        const lacking = members.filter(
+          /** @param {any} m */ m => !checker.getPropertyOfType(m, name),
+        );
+        const each = lacking.map(
+          /** @param {any} m */ m => indexesFor(ts, checker, [m], name),
+        );
+        return each.some(indexes => indexes.length > 1)
+          ? null
+          : each.flatMap(indexes => indexes.map(info => info.type));
+      }),
+      location: ownDeclarations[0] ?? sourceFile,
+      // Printed where the prop is declared, where a documented type's names
+      // resolve: a type another file imports under another name prints as
+      // that file names it.
       renderings: memo(() => {
+        const at = ownDeclarations[0] ?? sourceFile;
         /** @type {string[]} */
         const printed = [];
+        /** @type {string[]} */
+        const expanded = [];
         for (const s of symbols) {
           const propType = checker.getTypeOfSymbolAtLocation(s, sourceFile);
           for (const part of inDeclaredOrder(ts, checker, propType, s)) {
-            printed.push(checker.typeToString(part, sourceFile, flags));
+            printed.push(checker.typeToString(part, at, flags));
+            expanded.push(
+              checker.typeToString(
+                part,
+                at,
+                flags | ts.TypeFormatFlags.InTypeAlias,
+              ),
+            );
           }
         }
-        return printed;
+        return [printed, expanded];
       }),
     });
   }
 
-  /** Does an index signature of the props type accept this name? */
+  /** The index signatures of the props type that take this name. */
   const accepts = (/** @type {string} */ name) =>
-    members.some(
-      /** @param {any} member */ member =>
-        (checker.getIndexInfosOfType?.(member) ?? []).some(
-          /** @param {any} info */ info =>
-            !holdsNothing(ts, info.type) &&
-            keyAccepts(ts, checker, info.keyType, name),
-        ),
-    );
+    indexesFor(ts, checker, members, name);
   return {ok: true, props, accepts};
 }
 
@@ -568,27 +637,137 @@ function inDeclaredOrder(ts, checker, type, symbol) {
 }
 
 /**
+ * Whether a declaration's text reads as the prop's type: it is the prop's own
+ * declaration, or the generic type's prop it instantiates when the result
+ * prints as the declared type in the component's file (a generic component
+ * passing its own type parameters on), or a mapping copies its type
+ * unchanged. Instantiated with another type (`Box<string>`, `ListProps<T[]>`,
+ * or an imported `Item` the file names another way), its text names a type
+ * the prop no longer has.
+ * @param {any} ts
+ * @param {any} checker
+ * @param {any} symbol the prop
+ * @param {any} declaration one of its declarations
+ * @param {any} location
+ */
+function copiesType(ts, checker, symbol, declaration, location) {
+  const own = declaration.name && checker.getSymbolAtLocation(declaration.name);
+  if (!own) return false;
+  if (own === symbol) return true;
+  const type = checker.getTypeOfSymbolAtLocation(symbol, location);
+  const declared = checker.getTypeOfSymbolAtLocation(own, location);
+  /** @param {any} t */
+  const print = t =>
+    checker.typeToString(t, location, ts.TypeFormatFlags.NoTruncation);
+  return (
+    declared === type ||
+    (own === (symbol.links ?? symbol).target && print(type) === print(declared))
+  );
+}
+
+/**
+ * Does the code take `undefined` itself, written or through an alias? With
+ * `exactOptionalPropertyTypes` that is part of the type a message shows;
+ * otherwise an optional prop takes `undefined` anyway.
+ * @param {any} checker
+ * @param {CodeProp} code
+ * @param {boolean} exactOptional
+ */
+function ownUndefined(checker, code, exactOptional) {
+  const undefinedType = checker.getUndefinedType?.();
+  return (
+    exactOptional &&
+    (code.declared.some(text => /\bundefined\b/.test(text)) ||
+      code
+        .types()
+        .some(t => (t.isUnion() ? t.types : [t]).includes(undefinedType)))
+  );
+}
+
+/**
+ * One of a prop's renderings for a message, without the `undefined` an
+ * optional prop adds, unless the code takes it itself.
+ * @param {CodeProp} code
+ * @param {number} which 0 as printed, 1 expanded
+ * @param {boolean} keepUndefined
+ */
+function rendered(code, which, keepUndefined) {
+  const parts = code.renderings()[which];
+  return [
+    ...new Set(
+      parts.filter(
+        part =>
+          !(code.required !== true && part === 'undefined' && !keepUndefined),
+      ),
+    ),
+  ].join(' | ');
+}
+
+/**
  * The prop's type for a message: as the source writes it when its
  * declarations agree, else (a method or accessor, or declarations that differ
- * or narrow each other in an intersection) as the compiler prints it, without
- * the `undefined` an optional prop adds.
+ * or narrow each other in an intersection) as the compiler prints it.
  * @param {CodeProp} code
+ * @param {boolean} keepUndefined
  */
-function codeTypeText(code) {
+function codeTypeText(code, keepUndefined) {
   const written = [...new Set(code.declared)];
   const text =
-    written.length === 1
-      ? written[0]
-      : [
-          ...new Set(
-            code
-              .renderings()
-              .filter(
-                part => !(code.required !== true && part === 'undefined'),
-              ),
-          ),
-        ].join(' | ');
+    written.length === 1 ? written[0] : rendered(code, 0, keepUndefined);
   return text.replace(/\s+/g, ' ').trim();
+}
+
+/**
+ * Judge a documented type against a prop's code type (type-match.mjs).
+ * @param {any} ts
+ * @param {any} checker
+ * @param {string} docType
+ * @param {CodeProp} code
+ * @param {{nullable: boolean, exactOptional: boolean, isDefaultLibrary: (file: any) => boolean}} reading
+ *   how the project checks null, and which files are TypeScript's own
+ */
+function judgeProp(ts, checker, docType, code, reading) {
+  // A member that lacks the prop may take its name through an index
+  // signature, which a doc may describe too.
+  const indexed = code.indexed();
+  if (indexed == null) return 'not_compared';
+  return judgeMembers(docType, [...code.types(), ...indexed], {
+    ts,
+    checker,
+    location: code.location,
+    optional: code.required !== true && !reading.exactOptional,
+    ...reading,
+    // Declared text reads as the type only when each declaration is one
+    // member's; intersected declarations narrow each other.
+    written: code.intersected
+      ? code.renderings()
+      : [
+          code.declared,
+          ...code.declared.map(text => [text]),
+          ...code.renderings(),
+        ],
+  });
+}
+
+/**
+ * Judge a documented type against the types a prop has in the members of a
+ * union of props types: a doc may describe one member, so any member's type,
+ * or their union, matches, and it is a mismatch only against every one.
+ * @param {string} docType
+ * @param {any[]} types the type in each member
+ * @param {import('./type-match.mjs').JudgeContext} ctx
+ * @returns {import('./type-match.mjs').TypeVerdict}
+ */
+function judgeMembers(docType, types, ctx) {
+  const candidates =
+    types.length > 1 ? [types, ...types.map(type => [type])] : [types];
+  const verdicts = candidates.map(candidate =>
+    judgeType(docType, candidate, ctx),
+  );
+  if (verdicts.includes('match')) return 'match';
+  return verdicts.every(verdict => verdict === 'mismatch')
+    ? 'mismatch'
+    : 'not_compared';
 }
 
 /**
@@ -656,37 +835,101 @@ function holders(ts, checker, type, depth = 0) {
 }
 
 /**
- * Does a field path exist in a prop's type, in at least one member of a
- * union (through arrays)?
+ * Whether a type takes `undefined` (an index signature's value type, which
+ * TypeScript holds an explicit `undefined` to).
+ * @param {any} ts
+ * @param {any} type
+ */
+function takesUndefined(ts, type) {
+  return (type.isUnion() ? type.types : [type]).some(
+    /** @param {any} t */ t => t.flags & ts.TypeFlags.Undefined,
+  );
+}
+
+/**
+ * The types a field path reaches in a prop's type (in each member of a union
+ * that has it, through arrays at any depth), and whether its last field is
+ * optional: null when no member has the path, `any` when a type on the way
+ * is `any` or `unknown`, which holds any field.
  * @param {any} ts
  * @param {any} checker
  * @param {CodeProp} code
  * @param {string[]} fieldPath
+ * @returns {{types: any[], optional: boolean, ambiguous: boolean, indexed: boolean} | 'any' | null}
+ *   `ambiguous` when two index signatures take a field on the path, and
+ *   `indexed` when only index signatures take the last field
  */
-function fieldExists(ts, checker, code, fieldPath) {
+function fieldTypes(ts, checker, code, fieldPath) {
   /** @type {any[]} */
   let current = code.types();
+  let optional = false;
+  let ambiguous = false;
+  let indexed = false;
   for (const field of fieldPath) {
     /** @type {any[]} */
     const next = [];
+    optional = false;
+    let byName = false;
     for (const holder of current.flatMap(t => holders(ts, checker, t))) {
-      if (holder.flags & (ts.TypeFlags.Any | ts.TypeFlags.Unknown)) return true;
+      if (holder.flags & (ts.TypeFlags.Any | ts.TypeFlags.Unknown)) {
+        return 'any';
+      }
       const prop = checker.getPropertyOfType(holder, field);
-      // Or a field an index signature takes (`Record<string, string>`).
-      const index = prop
-        ? null
-        : (checker.getIndexInfosOfType?.(holder) ?? []).find(
-            /** @param {any} info */ info =>
-              !holdsNothing(ts, info.type) &&
-              keyAccepts(ts, checker, info.keyType, field),
-          );
-      if (prop) next.push(checker.getTypeOfSymbol(prop));
-      else if (index) next.push(index.type);
+      if (prop) {
+        next.push(checker.getTypeOfSymbol(prop));
+        if (prop.flags & ts.SymbolFlags.Optional) optional = true;
+        byName = true;
+        continue;
+      }
+      // A field an index signature takes (`Record<string, string>`) is of the
+      // index's type, which takes `undefined` only when it says so; two that
+      // take it hold it to both.
+      const indexes = indexesFor(ts, checker, [holder], field);
+      if (indexes.length > 1) ambiguous = true;
+      if (indexes.length > 0) {
+        next.push(indexes[0].type);
+        if (takesUndefined(ts, indexes[0].type)) optional = true;
+      }
     }
-    if (next.length === 0) return false;
+    if (next.length === 0) return null;
     current = next;
+    indexed = !byName;
   }
-  return true;
+  return {types: current, optional, ambiguous, indexed};
+}
+
+/**
+ * The types a field path reaches, printed where the prop is declared, where
+ * a documented type's names resolve.
+ * @param {any} ts
+ * @param {any} checker
+ * @param {{types: any[], optional: boolean}} reached
+ * @param {boolean} exactOptional the project sets `exactOptionalPropertyTypes`
+ * @param {any} location where the prop is declared
+ * @returns {string[]}
+ */
+function fieldTypeText(ts, checker, reached, exactOptional, location) {
+  // An optional field's `undefined` is the compiler's own; with
+  // `exactOptionalPropertyTypes` it is a marker of its own, and one the code
+  // declares stays.
+  const own = /** @param {any} t */ t =>
+    reached.optional &&
+    t.flags & ts.TypeFlags.Undefined &&
+    (!exactOptional || t !== checker.getUndefinedType?.());
+  return [
+    ...new Set(
+      reached.types
+        .flatMap(t => (t.isUnion() ? t.types : [t]))
+        .filter(t => !own(t))
+        .map(t =>
+          checker.typeToString(
+            t,
+            location,
+            ts.TypeFormatFlags.UseSingleQuotesForStringLiteralType,
+          ),
+        ),
+    ),
+  ];
 }
 
 /**
@@ -900,6 +1143,33 @@ function keyAccepts(ts, checker, key, name) {
     )
     .join('');
   return new RegExp(`^${pattern}$`).test(name);
+}
+
+/**
+ * The index signatures of these types that take a name, as TypeScript
+ * matches keys. TypeScript holds a value to every one of them.
+ * @param {any} ts
+ * @param {any} checker
+ * @param {any[]} types
+ * @param {string} name
+ * @returns {any[]}
+ */
+function indexesFor(ts, checker, types, name) {
+  // One signature seen through several union members is one signature.
+  const seen = new Set();
+  return types
+    .flatMap(type => checker.getIndexInfosOfType?.(type) ?? [])
+    .filter(
+      /** @param {any} info */ info => {
+        const key = `${checker.typeToString(info.keyType)}\0${checker.typeToString(info.type)}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return (
+          !holdsNothing(ts, info.type) &&
+          keyAccepts(ts, checker, info.keyType, name)
+        );
+      },
+    );
 }
 
 /**
@@ -1348,8 +1618,10 @@ export function comparePropTables(tables, options) {
           )
         : TYPESCRIPT_MISSING_REASON,
       components: 0,
+      typesCompared: 0,
       findings: [],
       unchecked: [],
+      typesNotCompared: [],
     };
   }
   const {ts, version} = compiler;
@@ -1369,8 +1641,10 @@ export function comparePropTables(tables, options) {
       status: 'checked',
       typescript: version,
       components: 0,
+      typesCompared: 0,
       findings: [],
       unchecked,
+      typesNotCompared: [],
     };
   }
 
@@ -1393,8 +1667,10 @@ export function comparePropTables(tables, options) {
       status: 'checked',
       typescript: version,
       components: 0,
+      typesCompared: 0,
       findings: [],
       unchecked,
+      typesNotCompared: [],
     };
   }
   const program = ts.createProgram({
@@ -1416,12 +1692,30 @@ export function comparePropTables(tables, options) {
     project.options,
     isOwnFile,
   );
+  // Without strict null checks the compiler drops `null` and `undefined`.
+  // Whether they are on by default depends on the TypeScript version.
+  const compilerOptions = program.getCompilerOptions();
+  const nullable = !(typeof ts.getStrictOptionValue === 'function'
+    ? ts.getStrictOptionValue(compilerOptions, 'strictNullChecks')
+    : (compilerOptions.strictNullChecks ?? compilerOptions.strict ?? false));
+  const reading = {
+    nullable,
+    // An optional prop takes `undefined` only when the project lets it.
+    exactOptional:
+      !nullable && compilerOptions.exactOptionalPropertyTypes === true,
+    isDefaultLibrary: (/** @type {any} */ file) =>
+      program.isSourceFileDefaultLibrary(file),
+  };
 
   /** @type {PropDriftFinding[]} */
   const findings = [];
   /** @type {Array<PropDriftUnchecked & {props: string[]}>} */
   const propsNotChecked = [];
   let compared = 0;
+  let typesCompared = 0;
+  /** @type {PropDriftTypesNotCompared[]} */
+  const typesNotCompared = [];
+  const typesSkipped = typeTextTooOld(ts);
   for (const table of tables) {
     /** @type {ReturnType<typeof readCodeProps> | null} */
     let read = null;
@@ -1456,14 +1750,41 @@ export function comparePropTables(tables, options) {
     compared++;
     const source = rel(sourcePath);
     const documented = new Set();
+    /** @type {Map<string, Set<string>>} */
+    const notCompared = new Map();
+    /** @type {(reason: string, name: string) => void} */
+    const skip = (reason, name) => {
+      notCompared.set(reason, (notCompared.get(reason) ?? new Set()).add(name));
+    };
     for (const raw of table.props) {
       if (!raw || typeof raw.name !== 'string') continue;
       const entries = documentedProps(raw);
       for (const entry of entries) {
         const propName = entry.name;
         if (entry.spread) continue;
+        const docType = entry.type;
+        if (typesSkipped) entry.type = undefined;
         documented.add(propName);
         const code = read.props.get(propName);
+        const reached =
+          code && entry.path.length > 0
+            ? fieldTypes(ts, checker, code, entry.path)
+            : null;
+        if (
+          entry.type === undefined &&
+          !typesSkipped &&
+          typeof raw.type === 'string' &&
+          (code && entry.path.length > 0
+            ? reached
+            : code || read.accepts(propName).length > 0)
+        ) {
+          // `a / b` with one type that does not split across the names (a
+          // field only once it is found).
+          skip(
+            code && !code.own ? outside(propName, code) : NOT_EXACT,
+            entry.written,
+          );
+        }
         const base = {
           component: table.name,
           prop: entry.written,
@@ -1472,11 +1793,74 @@ export function comparePropTables(tables, options) {
           source,
         };
         if (entry.path.length > 0) {
-          if (
-            code
-              ? fieldExists(ts, checker, code, entry.path)
-              : read.accepts(propName)
-          ) {
+          // Listed only once the field is found; a missing one is reported.
+          if (code && !code.own && reached && typeof entry.type === 'string') {
+            skip(outside(propName, code), entry.written);
+          }
+          if (reached === 'any') {
+            // A field of an `any` or `unknown` prop has no type to judge.
+            if (code?.own && typeof entry.type === 'string') {
+              skip(NOT_EXACT, entry.written);
+            }
+            continue;
+          }
+          if (code && reached) {
+            const fieldText = fieldTypeText(
+              ts,
+              checker,
+              reached,
+              reading.exactOptional,
+              code.location,
+            );
+            const ctx = {
+              ts,
+              checker,
+              location: code.location,
+              // A name an index signature takes sets the index's
+              // `undefined` aside, as a prop of that name does.
+              optional:
+                reached.optional && (!reading.exactOptional || reached.indexed),
+              ...reading,
+              written: [fieldText],
+            };
+            const verdict =
+              code.own && typeof entry.type === 'string'
+                ? reached.ambiguous
+                  ? 'not_compared'
+                  : judgeType(entry.type, reached.types, ctx)
+                : null;
+            // The field takes every variant's type: the types of only some
+            // variants are neither its type nor wrong. Past six, the sets of
+            // them are not tried, and the type is never reported.
+            const variants = [...new Set(reached.types)];
+            const someVariants =
+              (verdict === 'mismatch' || verdict === 'not_compared') &&
+              !reached.ambiguous &&
+              variants.length > 1 &&
+              (variants.length > 6 ||
+                Array.from({length: 2 ** variants.length - 2}, (_, i) =>
+                  variants.filter((__, j) => ((i + 1) >> j) & 1),
+                ).some(
+                  some => judgeType(entry.type ?? '', some, ctx) === 'match',
+                ));
+            if (someVariants) skip(VARIANTS, entry.written);
+            else if (verdict === 'not_compared') skip(NOT_EXACT, entry.written);
+            else if (verdict) typesCompared++;
+            if (verdict === 'mismatch' && !someVariants) {
+              const codeType = fieldText.join(' | ');
+              findings.push({
+                ...base,
+                kind: 'type_mismatch',
+                message: `"${entry.written}" is documented as ${entry.type}, but the code declares ${codeType}.`,
+                docType: entry.type,
+                codeType,
+              });
+            }
+            continue;
+          }
+          if (!code && read.accepts(propName).length > 0) {
+            // A field of a name only an index signature takes.
+            if (typeof entry.type === 'string') skip(NOT_EXACT, entry.written);
             continue;
           }
           findings.push({
@@ -1489,12 +1873,70 @@ export function comparePropTables(tables, options) {
           continue;
         }
         if (!code) {
-          if (read.accepts(propName)) continue;
+          // A name an index signature takes is a prop of the index's type;
+          // TypeScript holds it to every signature that takes it, so with
+          // several its type is not compared. Another package's signature is
+          // not the package's to judge, and a mapped type's (`Record`) has no
+          // declaration to say whose it is.
+          const indexes = read.accepts(propName);
+          const own = indexes.filter(
+            (/** @type {any} */ i) =>
+              i.declaration &&
+              isOwnFile(i.declaration.getSourceFile().fileName),
+          );
+          const index = indexes.length === 1 ? own[0] : null;
+          if (indexes.length > 0 && !index && typeof entry.type === 'string') {
+            const declared = indexes.every(
+              (/** @type {any} */ i) => i.declaration,
+            );
+            skip(
+              own.length || !declared ? NOT_EXACT : outside(propName),
+              propName,
+            );
+          }
+          if (index && typeof entry.type === 'string') {
+            const verdict = judgeType(entry.type, [index.type], {
+              ts,
+              checker,
+              location: index.declaration,
+              // An index signature takes `undefined` only when its type does.
+              optional: takesUndefined(ts, index.type),
+              ...reading,
+              // Printed where the index is declared, as the doc's names
+              // resolve there.
+              written: [
+                [
+                  checker.typeToString(
+                    index.type,
+                    index.declaration,
+                    ts.TypeFormatFlags.UseSingleQuotesForStringLiteralType,
+                  ),
+                ],
+              ],
+            });
+            if (verdict === 'not_compared') skip(NOT_EXACT, propName);
+            else typesCompared++;
+            if (verdict === 'mismatch') {
+              const codeType = checker.typeToString(
+                index.type,
+                index.declaration,
+                ts.TypeFormatFlags.UseSingleQuotesForStringLiteralType,
+              );
+              findings.push({
+                ...base,
+                kind: 'type_mismatch',
+                message: `"${propName}" is documented as ${entry.type}, but ${table.name}'s props take it as ${codeType}.`,
+                docType: entry.type,
+                codeType,
+              });
+            }
+          }
+          if (indexes.length > 0) continue;
           findings.push({
             ...base,
             kind: 'not_in_code',
             message: `"${propName}" is documented, but ${table.name}'s props have no "${propName}".`,
-            ...(typeof entry.type === 'string' ? {docType: entry.type} : {}),
+            ...(typeof docType === 'string' ? {docType} : {}),
           });
           continue;
         }
@@ -1509,6 +1951,42 @@ export function comparePropTables(tables, options) {
             docRequired,
             codeRequired: code.required,
           });
+        }
+        if (!code.own && typeof entry.type === 'string') {
+          skip(outside(propName, code), propName);
+        }
+        if (code.own && typeof entry.type === 'string') {
+          const verdict = judgeProp(
+            ts,
+            checker,
+            String(entry.type),
+            code,
+            reading,
+          );
+          if (verdict === 'not_compared') skip(NOT_EXACT, propName);
+          else typesCompared++;
+          if (verdict === 'mismatch') {
+            const keep = ownUndefined(checker, code, reading.exactOptional);
+            const codeType = codeTypeText(code, keep);
+            const expanded = rendered(code, 1, keep);
+            // The optional prop's `undefined` the expansion sets aside is no
+            // difference to show.
+            const bare = codeType
+              .split(' | ')
+              .filter(part => part !== 'undefined')
+              .join(' | ');
+            const shown =
+              expanded && expanded !== codeType && expanded !== bare
+                ? `${codeType} (${expanded.length <= 400 ? expanded : `${expanded.slice(0, 400)}…`})`
+                : codeType;
+            findings.push({
+              ...base,
+              kind: 'type_mismatch',
+              message: `"${propName}" is documented as ${entry.type}, but the code declares ${shown}.`,
+              docType: entry.type,
+              codeType,
+            });
+          }
         }
       }
     }
@@ -1526,6 +2004,10 @@ export function comparePropTables(tables, options) {
         if (code.untraced) untraced.push(code.name);
         continue;
       }
+      const codeType = codeTypeText(
+        code,
+        ownUndefined(checker, code, reading.exactOptional),
+      );
       findings.push({
         component: table.name,
         prop: code.name,
@@ -1534,7 +2016,7 @@ export function comparePropTables(tables, options) {
         message: `${table.name} declares "${code.name}", but the doc does not list it.`,
         doc: table.doc,
         source,
-        codeType: codeTypeText(code),
+        codeType,
         codeRequired: code.required,
       });
     }
@@ -1544,6 +2026,14 @@ export function comparePropTables(tables, options) {
         doc: table.doc,
         reason: `a mapped type builds them from keys the check can't trace to the package's source, so it did not check that the doc lists them`,
         props: untraced.sort(),
+      });
+    }
+    for (const [reason, props] of notCompared) {
+      typesNotCompared.push({
+        component: table.name,
+        doc: table.doc,
+        reason,
+        props: [...props].sort(),
       });
     }
   }
@@ -1557,12 +2047,20 @@ export function comparePropTables(tables, options) {
       a.kind.localeCompare(b.kind),
   );
   unchecked.sort((a, b) => a.component.localeCompare(b.component));
+  typesNotCompared.sort(
+    (a, b) =>
+      a.component.localeCompare(b.component) ||
+      a.reason.localeCompare(b.reason),
+  );
   return {
     status: 'checked',
     typescript: version,
     components: compared,
+    typesCompared,
     findings,
     unchecked,
+    typesNotCompared,
+    ...(typesSkipped ? {typesSkipped} : {}),
     ...(propsNotChecked.length > 0 ? {propsNotChecked} : {}),
   };
 }
