@@ -78,7 +78,7 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: "Run `integration check --strict` in your package's own build, so every build keeps your docs, types, and links in sync, and run `integration verify` before you publish. Install devDependencies first, because the components check needs Core. In package.json:",
+          text: "Run `integration check --strict` in your package's own build, so every build keeps your docs, types, and links in sync, and run `integration verify` before you publish. Install devDependencies first, because the components check needs Core, and `tsc --noEmit` needs `typescript` and a `tsconfig.json`. In package.json:",
         },
         {
           type: 'code',

@@ -184,7 +184,7 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: 'Peer ranges and releases are covered in {@link generic:versioning}; `files` and publishing in {@link generic:publishing}.',
+          text: 'Peer ranges and releases are covered in {@link generic:versioning}; `files` and publishing in {@link generic:publishing}. Add `"typecheck": "tsc --noEmit && astryx integration check --strict"` to `scripts` so each run checks your types and that your docs, props, and links still match the code. It needs `typescript` and a `tsconfig.json`; see {@link generic:checks}.',
         },
       ],
     },
