@@ -19,9 +19,7 @@ import {
   type StaticServer,
 } from '@astryxdesign/a11y-spec/storybook';
 
-const OUTPUT = path.resolve(
-  'test-results/command-palette-input-audit-evidence',
-);
+const OUTPUT = path.resolve('command-palette-input-audit-evidence');
 const WIDE = {width: 1024, height: 768};
 const NARROW = {width: 320, height: 720};
 

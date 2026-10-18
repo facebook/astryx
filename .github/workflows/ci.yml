@@ -2400,7 +2400,7 @@ jobs:
           name: command-palette-input-audit-evidence-${{ needs.build-storybook.outputs.short_hash }}
           path: |
             command-palette-input-a11y-report.json
-            test-results/command-palette-input-audit-evidence/
+            command-palette-input-audit-evidence/
           retention-days: 30
           if-no-files-found: error
 
