@@ -1001,21 +1001,10 @@ export async function integrationPackCheck(options = {}) {
   const fileInv = computeRequiredFiles(loaded);
   const {identities: localIdentities, errors: localDiscoveryErrors} =
     await collectIdentities(loaded);
-  // A family whose import names output the pack lifecycle writes lists its
-  // members from that output, so they are compared as local discovery lists
-  // them after the pack: the file the import names is stamped before and after.
-  /** @param {string | null} file */
-  const stamp = file => {
-    try {
-      const {size, mtimeMs} = fs.statSync(/** @type {string} */ (file));
-      return `${size}:${mtimeMs}`;
-    } catch {
-      return null;
-    }
-  };
-  const importsBefore = new Map(
-    familyImports(loaded).map(family => [family.docPath, stamp(family.module)]),
-  );
+  // A family lists its members from the module its import names, which the
+  // pack lifecycle may build or rebuild, so they are compared as local
+  // discovery lists them after the pack.
+  const familiesBefore = familyImports(loaded).map(family => family.docPath);
   /**
    * @param {Array<{name: string, docPath: string|null}>} records
    * @param {Set<string>} families
@@ -1290,18 +1279,15 @@ export async function integrationPackCheck(options = {}) {
       );
     }
 
-    const lifecycleFamilies = new Set(
-      familyImports(loaded)
-        .filter(
-          family => stamp(family.module) !== importsBefore.get(family.docPath),
-        )
-        .map(family => family.docPath),
-    );
+    const families = new Set([
+      ...familiesBefore,
+      ...familyImports(loaded).map(family => family.docPath),
+    ]);
     let localComponents = localIdentities.components;
-    if (lifecycleFamilies.size > 0) {
-      const stale = new Set(membersOf(recordsBefore, lifecycleFamilies));
+    if (families.size > 0) {
+      const stale = new Set(membersOf(recordsBefore, families));
       const built = new Set(
-        membersOf(discoverIntegrationComponents(loaded), lifecycleFamilies),
+        membersOf(discoverIntegrationComponents(loaded), families),
       );
       const {identities: afterPack} = await collectIdentities(loaded);
       localComponents = [

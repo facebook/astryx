@@ -570,7 +570,8 @@ describe('integration components a family doc lists in components', () => {
           'export function AcmeTabs() { return null; }\nexport function AcmeTab() { return null; }\n',
         'dist/index.mjs':
           'function AcmeTabs() { return null; }\nfunction AcmeTab() { return null; }\nexport {AcmeTabs, AcmeTab};\n',
-        // A member only the package's root file declares is no component.
+        // A member only the package's root file and the bundle declare is
+        // listed, with no source.
         'src/cards/AcmeCards.doc.mjs': family(
           'AcmeCards',
           "{name: 'AcmeCard', description: 'x'}",
@@ -588,6 +589,7 @@ describe('integration components a family doc lists in components', () => {
 
     const records = discoverIntegrationComponents(loaded);
     expect(records.map(record => record.name).sort()).toEqual([
+      'AcmeCard',
       'AcmeCards',
       'AcmeTab',
       'AcmeTabs',
@@ -595,10 +597,16 @@ describe('integration components a family doc lists in components', () => {
     expect(findIntegrationComponentSource(loaded, 'AcmeTab')).toBe(
       path.join(root, 'src', 'tabs', 'AcmeTabs.tsx'),
     );
-    expect(findIntegrationComponentDoc(loaded, 'AcmeCard')).toBeNull();
+    expect(findIntegrationComponentDoc(loaded, 'AcmeCard')).toBe(
+      path.join(root, 'src', 'cards', 'AcmeCards.doc.mjs'),
+    );
+    expect(findIntegrationComponentSource(loaded, 'AcmeCard')).toBeNull();
+    expect(
+      records.find(record => record.name === 'AcmeCard')?.sourcePath,
+    ).toBeNull();
   });
 
-  it('takes no member from a bundle when the family doc sits at the package root', () => {
+  it('lists a member only a bundle declares, with no source, when the family doc sits at the package root', () => {
     const loaded = {
       ...writePackage(
         {exports: {'.': './dist/index.mjs'}},
@@ -614,10 +622,11 @@ describe('integration components a family doc lists in components', () => {
       ),
       components: root,
     };
-    expect(namesIn(loaded)).toEqual(['AcmeStrip']);
+    expect(namesIn(loaded)).toEqual(['AcmeStrip', 'AcmeStripItem']);
+    expect(findIntegrationComponentSource(loaded, 'AcmeStripItem')).toBeNull();
   });
 
-  it('lists no members for a family doc without its own source', () => {
+  it('lists the members a family doc without its own source imports', () => {
     const loaded = writePackage(
       {exports: {'./group': './src/group/index.ts'}},
       {
@@ -631,8 +640,71 @@ describe('integration components a family doc lists in components', () => {
           'export function AcmeGroupItem() { return null; }\n',
       },
     );
-    expect(namesIn(loaded)).toEqual(['AcmeGroup']);
-    expect(findIntegrationComponentDoc(loaded, 'AcmeGroupItem')).toBeNull();
+    expect(namesIn(loaded)).toEqual(['AcmeGroup', 'AcmeGroupItem']);
+    expect(findIntegrationComponentSource(loaded, 'AcmeGroupItem')).toBe(
+      path.join(root, 'src', 'group', 'AcmeGroupItem.tsx'),
+    );
+  });
+
+  it("finds a member's source in the family's folder when the import names built output", () => {
+    const loaded = writePackage(
+      {exports: {'./list': './dist/list/index.js'}},
+      {
+        'src/list/AcmeList.doc.mjs': family(
+          'AcmeList',
+          "{name: 'AcmeListRow', description: 'x'}",
+        ).replace('usage:', "import: '@acme/widgets/list', usage:"),
+        'src/list/AcmeList.tsx':
+          'export function AcmeList() { return null; }\n',
+        'src/list/row.tsx': 'export function AcmeListRow() { return null; }\n',
+        'src/list/row.test.tsx':
+          'export function AcmeListRow() { return null; }\n',
+        'dist/list/index.js':
+          "export {AcmeList} from './list.js';\nexport * from './row.js';\n",
+        'dist/list/list.js': 'export function AcmeList() { return null; }\n',
+        'dist/list/row.js': 'export function AcmeListRow() { return null; }\n',
+      },
+    );
+    expect(namesIn(loaded)).toEqual(['AcmeList', 'AcmeListRow']);
+    expect(findIntegrationComponentSource(loaded, 'AcmeListRow')).toBe(
+      path.join(root, 'src', 'list', 'row.tsx'),
+    );
+    // Until the output exists, the import exports nothing.
+    fs.rmSync(path.join(root, 'dist'), {recursive: true});
+    expect(namesIn(loaded)).toEqual(['AcmeList']);
+  });
+
+  it('lists a member another folder declares, with no source', async () => {
+    const loaded = writePackage(
+      {exports: {'./menu': './src/menu/index.ts'}},
+      {
+        'src/menu/AcmeMenu.doc.mjs': family(
+          'AcmeMenu',
+          "{name: 'AcmeMenuItem', description: 'x'}",
+        ).replace('usage:', "import: '@acme/widgets/menu', usage:"),
+        'src/menu/AcmeMenu.tsx':
+          'export function AcmeMenu() { return null; }\n',
+        'src/menu/index.ts':
+          "export {AcmeMenu} from './AcmeMenu';\nexport {AcmeMenuItem} from '../shared/AcmeMenuItem';\n",
+        'src/shared/AcmeMenuItem.tsx':
+          'export function AcmeMenuItem() { return null; }\n',
+      },
+    );
+    expect(namesIn(loaded)).toEqual(['AcmeMenu', 'AcmeMenuItem']);
+    expect(findIntegrationComponentDoc(loaded, 'AcmeMenuItem')).toBe(
+      path.join(root, 'src', 'menu', 'AcmeMenu.doc.mjs'),
+    );
+    expect(findIntegrationComponentSource(loaded, 'AcmeMenuItem')).toBeNull();
+    // A member without a source is valid: only a doc's own component needs
+    // its same-stem file.
+    const {components, errors} = await discoverValidIntegrationComponents(
+      /** @type {any} */ (loaded),
+    );
+    expect(errors).toEqual([]);
+    expect(components.map(component => component.name).sort()).toEqual([
+      'AcmeMenu',
+      'AcmeMenuItem',
+    ]);
   });
 
   it('reads members a binding holds and entries with computed fields', () => {

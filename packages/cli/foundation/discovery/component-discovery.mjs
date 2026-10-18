@@ -192,9 +192,12 @@ function docMemberNames(source) {
   let ast;
   try {
     babelParser ??= require('@babel/parser');
-    ast = /** @type {typeof import('@babel/parser')} */ (babelParser).parse(source, {
-      sourceType: 'module',
-    });
+    ast = /** @type {typeof import('@babel/parser')} */ (babelParser).parse(
+      source,
+      {
+        sourceType: 'module',
+      },
+    );
   } catch {
     return [];
   }
@@ -209,12 +212,16 @@ function docMemberNames(source) {
       for (const declarator of declaration.declarations) {
         if (declarator.id.type !== 'Identifier' || !declarator.init) continue;
         constants.set(declarator.id.name, declarator.init);
-        if (node.type === 'ExportNamedDeclaration' && declarator.id.name === 'docs') {
+        if (
+          node.type === 'ExportNamedDeclaration' &&
+          declarator.id.name === 'docs'
+        ) {
           docsExport = declarator.init;
         }
       }
     }
-    if (node.type === 'ExportDefaultDeclaration') defaultExport = node.declaration;
+    if (node.type === 'ExportDefaultDeclaration')
+      defaultExport = node.declaration;
   }
   let doc = defaultExport ?? docsExport;
   if (doc?.type === 'Identifier') doc = constants.get(doc.name);
@@ -432,7 +439,9 @@ export function discoverComponents(coreDir) {
     if (!entry.isDirectory() || SKIP_DIRS.has(entry.name)) continue;
     const name = entry.name;
     if (componentGroups.has(name) || name.endsWith('Context')) continue;
-    if (listDir(path.join(srcDir, name)).some(file => file.endsWith('.doc.mjs'))) {
+    if (
+      listDir(path.join(srcDir, name)).some(file => file.endsWith('.doc.mjs'))
+    ) {
       continue;
     }
     if (!hasOwnFolder(srcDir, name)) continue;
@@ -1030,25 +1039,66 @@ function isWithin(folder, file) {
 }
 
 /**
+ * The `.tsx` file in `folder`, or below it, that declares `name`, taking files
+ * in path order: the source of a member whose import never reaches a `.tsx`
+ * file, as when the import names built output.
+ *
+ * @param {string} folder
+ * @param {string} name
+ * @returns {string | null}
+ */
+function folderSourceFor(folder, name) {
+  /** @type {string[]} */
+  const files = [];
+  /** @param {string} dirPath */
+  const scan = dirPath => {
+    for (const entry of listDirEntries(dirPath)) {
+      if (entry.name === 'node_modules' || entry.name === '__tests__') continue;
+      if (entry.name.startsWith('.')) continue;
+      const fullPath = path.join(dirPath, entry.name);
+      if (entry.isDirectory()) scan(fullPath);
+      else if (
+        entry.name.endsWith('.tsx') &&
+        !/\.(?:test|spec|stories)\.tsx$/.test(entry.name)
+      ) {
+        files.push(fullPath);
+      }
+    }
+  };
+  scan(folder);
+  for (const file of files.sort(byCodeUnit)) {
+    const declared = moduleExportSource(file, name);
+    if (
+      declared != null &&
+      declared.endsWith('.tsx') &&
+      isWithin(folder, declared)
+    ) {
+      return declared;
+    }
+  }
+  return null;
+}
+
+/**
  * The full entries a family doc lists in `components` that the module its
  * import names exports, each with its source. An entry is full when it says
  * more than its `name`; the name must be static PascalCase, not hidden, and
  * neither the doc's stem nor the export the doc is recorded under. A member's
- * source is the file that declares it, reached through the family's own source
- * or through the imported module, and it must sit in the family doc's folder:
- * a bundle or a package's root files are no member's source. A family doc
- * without its own source lists no members.
+ * source is the `.tsx` file in the family doc's folder, or below it, that
+ * declares it: the one the family's own source or the imported module reaches,
+ * else the one in that folder that declares the name, as when the import names
+ * built output. A member that only a bundle or a file outside the folder
+ * declares has no source.
  *
  * @param {{name?: string, __packageDir?: string, __packageExports?: Record<string, unknown>|null}} integration
  * @param {{docPath: string, sourcePath: string|null}} record the doc's own
  * @param {string | null | undefined} ownName the export the doc is recorded
  *   under, when it names one
  * @param {string} [only] look for this member alone
- * @returns {Array<{name: string, sourcePath: string}>}
+ * @returns {Array<{name: string, sourcePath: string | null}>}
  */
 function familyMembers(integration, record, ownName, only) {
   const familySource = record.sourcePath;
-  if (familySource == null) return [];
   const doc = docObject(record.docPath);
   const entries = Array.isArray(doc?.components) ? doc.components : [];
   const hidden = new Set(
@@ -1072,15 +1122,19 @@ function familyMembers(integration, record, ownName, only) {
   const module = imported === undefined ? familySource : imported;
   if (module == null) return [];
   const folder = path.dirname(record.docPath);
+  /** @param {string | null} file */
+  const inFolder = file =>
+    file != null && file.endsWith('.tsx') && isWithin(folder, file);
   return names.flatMap(name => {
     const exported = moduleExportSource(module, name);
     if (exported == null) return [];
-    // A member's source is a `.tsx` file, as a doc's own is, in the family's
-    // folder: never a bundle, even one under a family at the package root.
-    const sourcePath = [moduleExportSource(familySource, name), exported].find(
-      file => file != null && file.endsWith('.tsx') && isWithin(folder, file),
-    );
-    return sourcePath ? [{name, sourcePath}] : [];
+    // A member's source is a `.tsx` file in the family's folder, as a doc's own
+    // is: never a bundle, even one under a family at the package root.
+    const reached = [
+      familySource == null ? null : moduleExportSource(familySource, name),
+      exported,
+    ].find(inFolder);
+    return [{name, sourcePath: reached ?? folderSourceFor(folder, name)}];
   });
 }
 
@@ -1293,14 +1347,14 @@ export function discoverIntegrationComponents(
  * @param {{documentedNames?: boolean}} [options] as for
  *   {@link discoverIntegrationComponents}
  * @returns {Promise<{
- *   components: Array<{name: string, package: string, docPath: string, sourcePath: string, issuesUrl: string|undefined, group: string|null, replaces?: unknown}>,
+ *   components: Array<{name: string, package: string, docPath: string, sourcePath: string|null, issuesUrl: string|undefined, group: string|null, replaces?: unknown}>,
  *   discovered: Array<{name: string, package: string, docPath: string, sourcePath: string|null, issuesUrl: string|undefined, group: string|null}>,
  *   errors: Array<{name: string, message: string}>,
  * }>}
  */
 export async function discoverValidIntegrationComponents(integration, options) {
   const discovered = discoverIntegrationComponents(integration, options);
-  /** @type {Array<{name: string, package: string, docPath: string, sourcePath: string, issuesUrl: string|undefined, group: string|null, replaces?: unknown}>} */
+  /** @type {Array<{name: string, package: string, docPath: string, sourcePath: string|null, issuesUrl: string|undefined, group: string|null, replaces?: unknown}>} */
   const components = [];
   /** @type {Array<{name: string, message: string}>} */
   const errors = [];
@@ -1308,7 +1362,9 @@ export async function discoverValidIntegrationComponents(integration, options) {
   const failedDocs = new Set();
 
   for (const record of discovered) {
-    if (record.sourcePath == null) {
+    // A doc's own component needs its same-stem source. A member has none when
+    // only a bundle or a file outside its family's folder declares it.
+    if (record.sourcePath == null && isOwnRecord(record)) {
       errors.push({
         name: record.name,
         message: `Component "${record.name}" is missing its same-stem source file ${record.name}.tsx.`,
@@ -1318,7 +1374,7 @@ export async function discoverValidIntegrationComponents(integration, options) {
     try {
       const doc = await loadComponentDoc(record.docPath);
       const valid =
-        /** @type {{name: string, package: string, docPath: string, sourcePath: string, issuesUrl: string|undefined, group: string|null}} */ (
+        /** @type {{name: string, package: string, docPath: string, sourcePath: string|null, issuesUrl: string|undefined, group: string|null}} */ (
           record
         );
       components.push(
