@@ -69,10 +69,23 @@ change.
 - **FR4 — Pair identity is structural.** Discovery MUST derive the primary
   source path and any source-bound runtime export identity from the shared
   descriptor/source stem when that relationship is structural. The descriptor
-  owns the stable public item identity. Discovery MUST reject a missing source,
-  more than one eligible same-stem source, an invalid inferred export name, or
-  a descriptor whose authored identity conflicts with its required directory
-  identity.
+  owns the stable public item identity. A component descriptor's `name` is the
+  runtime export it documents: when the same-stem source has no runtime export
+  named after the stem, that `name` MAY name another runtime export of the
+  source, and discovery records the component under that name. Each full entry a
+  component descriptor lists in `components` is a component under its own name
+  when the module the descriptor's import names exports it. Every surface (FR7)
+  lists, finds, and verifies these components by those names, and a source that
+  exports its stem keeps the stem. A name discovery records only this way, and
+  the stem of a descriptor recorded under another name, MUST NOT take an exact
+  unscoped lookup that Core, a legacy docs package, or a component named after
+  its source answers: such a lookup returns that component unless a declared
+  replacement claims the name, a lookup scoped to the package returns the
+  package's component, and Doctor reports a recorded name Core shares. An exact
+  name, including one discovery records this way, takes precedence over Core's
+  keyword fallback. Discovery MUST reject a missing source, more than one
+  eligible same-stem source, an invalid inferred export name, or a descriptor
+  whose authored identity conflicts with its required directory identity.
 - **FR5 — Multi-file items have one confined ownership boundary.** A kind whose
   item needs nested source, token, palette, asset, or receipt files MUST define
   one item-local copy and pack boundary. Discovery and authoring MUST enumerate
@@ -117,6 +130,42 @@ change.
   MUST NOT change a file its siblings share; only the integration manifest and
   `package.json` may change, to declare a new root. Review MUST reject a change
   that adds a central catalog, and writer tests MUST fail on one.
+- **FR12 — Documented component props agree with the source.**
+  `astryx doctor integration components` MUST compare every prop table a
+  component descriptor documents with the props of the export it describes,
+  read with the TypeScript the project installs. It MUST warn about a
+  documented prop the code lacks, a prop the package's own source declares
+  that the table omits, a `required` flag the code contradicts, and a
+  documented type that does not match the code under the loose comparison the
+  command documents. Without the project's TypeScript it MUST say that the
+  comparison was skipped and why, and MUST NOT report a pass.
+- **FR13 — Every descriptor satisfies its published authoring type.**
+  `astryx doctor integration validate` MUST check each descriptor an
+  integration's roots hold, and each translation a descriptor carries, against
+  the type `@astryxdesign/cli/authoring` publishes for that kind, as the
+  TypeScript the project installs checks a value written with that type. It
+  MUST warn about every unknown field, missing required field, and value
+  outside its field's type, naming the field and the change that fixes it,
+  including a field the compiler reaches only once an earlier unknown field is
+  gone. A value the loader accepts and the CLI reads MUST satisfy the published
+  type. Without the project's TypeScript it MUST say that the descriptors were
+  not type-checked and why, and MUST NOT report a pass.
+- **FR14 — One command checks an integration, and can gate its build.** The
+  `astryx integration check` command, which takes no package argument, MUST run
+  the `validate`, `components`, `templates`, and `docs` checks against the
+  integration package in the current folder, report each check's own result and
+  a summary, and exit 1 exactly when one of those checks would exit 1 on its
+  own. With `--strict` it MUST also exit 1 on any warning and on any check, or
+  comparison within a check, that did not run, such as a package with no
+  integration manifest or a comparison that needs the project's TypeScript,
+  reporting each as an error from the same findings the default run reports
+  (`architecture:cli-surface` INV32). An item a comparison lists as unchecked,
+  such as a prop type it cannot read, does not fail `--strict`. Its exit codes
+  and JSON shape are a compatibility contract for the builds that run it: a new
+  check, or a new failure code, MAY join it only in a minor release that names
+  the addition. A name a patch release adds to Core or the CLI (a component,
+  template, or topic) MAY raise a conflict with a package's own name. Each
+  `doctor integration` subcommand, exit code, and JSON MUST stay unchanged.
 
 ### Compatibility transition
 
@@ -153,14 +202,18 @@ metadata stays outside Core runtime authoring, consistent with
 
 ## Verification
 
-| Contract | Verification                                                                          | Representative states                                                                 | Mutation or failure expectation                                                                            |
-| -------- | ------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| FR1–FR4  | authoring parser, discovery, and writer tests                                         | valid pair; missing/duplicate source; bad identity; malformed/missing doc             | a source without its typed same-stem descriptor becomes visible, or duplicated metadata can win            |
-| FR5–FR7  | contribution inventory, pack-check, materialization, and real-world integration tests | nested files; symlink/escape; missing import; local vs packed; duplicate package slug | a nested file is omitted, an escaped file is copied, or two surfaces disagree on ownership                 |
-| FR6      | static source-graph and runtime-export tests                                          | direct export; re-export; type-only export; source side effect                        | discovery executes source or accepts no runtime binding                                                    |
-| FR8–FR9  | integration-add snapshots and compatibility fixtures                                  | new writer output; released template/codemod/agent guidance input                     | a writer emits an untyped or non-`.doc.mjs` item, or a compatibility reader becomes the new canonical form |
-| FR10     | bundled-theme, integration-theme, and provider-to-consumer tests                      | all bundled themes; multi-theme package; list/add/build; no JSON catalog              | removing a theme doc still passes, or restoring `manifest.json` becomes necessary                          |
-| FR11     | integration-add writer tests; catalog codemod tests                                   | second item of a kind; leftover 0.6 catalog                                           | adding an item writes a shared file, or a leftover catalog is read instead of refused                      |
+| Contract | Verification                                                                                                                       | Representative states                                                                                                                                      | Mutation or failure expectation                                                                                                                                                                                                                |
+| -------- | ---------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| FR1–FR4  | authoring parser, discovery, and writer tests                                                                                      | valid pair; missing/duplicate source; bad identity; malformed/missing doc                                                                                  | a source without its typed same-stem descriptor becomes visible, or duplicated metadata can win                                                                                                                                                |
+| FR4      | discovery, lookup, search, Doctor, and pack-check tests                                                                            | a doc naming another export of its file; a file exporting its stem; a family member the import exports; one it does not; a recorded name Core also has     | one surface misses a component's name, a doc named after its file reads differently, or an unscoped lookup Core answers returns another package's component                                                                                    |
+| FR5–FR7  | contribution inventory, pack-check, materialization, and real-world integration tests                                              | nested files; symlink/escape; missing import; local vs packed; duplicate package slug                                                                      | a nested file is omitted, an escaped file is copied, or two surfaces disagree on ownership                                                                                                                                                     |
+| FR6      | static source-graph and runtime-export tests                                                                                       | direct export; re-export; type-only export; source side effect                                                                                             | discovery executes source or accepts no runtime binding                                                                                                                                                                                        |
+| FR8–FR9  | integration-add snapshots and compatibility fixtures                                                                               | new writer output; released template/codemod/agent guidance input                                                                                          | a writer emits an untyped or non-`.doc.mjs` item, or a compatibility reader becomes the new canonical form                                                                                                                                     |
+| FR10     | bundled-theme, integration-theme, and provider-to-consumer tests                                                                   | all bundled themes; multi-theme package; list/add/build; no JSON catalog                                                                                   | removing a theme doc still passes, or restoring `manifest.json` becomes necessary                                                                                                                                                              |
+| FR11     | integration-add writer tests; catalog codemod tests                                                                                | second item of a kind; leftover 0.6 catalog                                                                                                                | adding an item writes a shared file, or a leftover catalog is read instead of refused                                                                                                                                                          |
+| FR12     | prop-drift unit tests; `doctor integration components` tests; a repository test over every shipped component descriptor            | each finding kind; a type written differently but equal; props declared in another package; no TypeScript installed                                        | a removed or renamed prop or a changed union passes unreported, or a missing compiler reads as a pass                                                                                                                                          |
+| FR13     | doc type unit tests; `doctor integration validate` tests; a repository test over every shipped descriptor and translation          | each finding kind; a field hidden behind an unknown field; a descriptor in another kind's root; an annotation naming another type; no TypeScript installed | an unknown, missing, or mistyped field passes unreported, or a missing compiler reads as a pass                                                                                                                                                |
+| FR14     | `integration check` text and JSON tests, with and without `--strict`; a test that lists every finding that fails it; a search test | a clean package; a warning only; an error in one check; no manifest; a skipped comparison; a search for ci                                                 | the default exit differs from a check's own, a warning or a skipped comparison passes `--strict`, text and JSON exit differently, a new failing finding is added without the list changing, or a search for ci does not find the command first |
 
 ## Decision log
 
