@@ -330,8 +330,7 @@ works on is `spec:AST-040` FR9's.
     markers or a version line. The computer-level text names no version and
     tells an agent to follow a project's own agent docs inside that project.
   - The computer-level text is written to the files the agent tools read in
-    the home folder, one file per entry in the computer-level agent files
-    table below. It is installed with the global copy: on the global copy's
+    the home folder that the computer-level agent files table below names. It is installed with the global copy: on the global copy's
     first run, and after every switch to another release (FR6), the release
     the global copy answers with outside a project writes or refreshes it in
     the background, so no command waits for it or prints anything about it,
@@ -407,6 +406,9 @@ works on is `spec:AST-040` FR9's.
     registry for 7 days. The line names the cause and the command that explains
     the fix:
     `astryx: cannot move to Astryx <newest>: <cause>. Run astryx doctor for the fix.`
+    When the cause is the registry, which may hold a newer release than the
+    one known, the line reads
+    `astryx: cannot check for newer releases: <cause>. Run astryx doctor for the fix.`
   - the release that answers a project is a release older than the newest
     release the global copy knows of. The line names both versions and the exact
     commands that upgrade the project with its own package manager:
@@ -455,15 +457,36 @@ works on is `spec:AST-040` FR9's.
 
 ### Computer-level agent files
 
-| Agent name | File in the home folder          | Agent tool  |
-| ---------- | -------------------------------- | ----------- |
-| `claude`   | `.claude/skills/astryx/SKILL.md` | Claude Code |
-| `codex`    | `.agents/skills/astryx/SKILL.md` | Codex       |
-| `gemini`   | `.agents/skills/astryx/SKILL.md` | Gemini CLI  |
-| `copilot`  | `.agents/skills/astryx/SKILL.md` | Copilot CLI |
+| Agent name | File in the home folder                    | Agent tool                                |
+| ---------- | ------------------------------------------ | ----------------------------------------- |
+| `claude`   | `.claude/skills/astryx/SKILL.md`           | Claude Code                               |
+| `codex`    | `.agents/skills/astryx/SKILL.md`           | Codex                                     |
+| `gemini`   | `.agents/skills/astryx/SKILL.md`           | Gemini CLI                                |
+| `copilot`  | `.agents/skills/astryx/SKILL.md`           | Copilot CLI                               |
+| `cursor`   | `.agents/skills/astryx/SKILL.md`           | Cursor                                    |
+| `opencode` | `.agents/skills/astryx/SKILL.md`           | OpenCode                                  |
+| `crush`    | `.agents/skills/astryx/SKILL.md`           | Crush                                     |
+| `qwen`     | `.agents/skills/astryx/SKILL.md`           | Qwen Code                                 |
+| `cline`    | `.agents/skills/astryx/SKILL.md`           | Cline                                     |
+| `amp`      | `.agents/skills/astryx/SKILL.md`           | Amp                                       |
+| `goose`    | `.agents/skills/astryx/SKILL.md`           | Goose                                     |
+| `roo`      | `.agents/skills/astryx/SKILL.md`           | Roo Code                                  |
+| `zed`      | `.agents/skills/astryx/SKILL.md`           | Zed                                       |
+| `continue` | `.continue/skills/astryx/SKILL.md`         | Continue, when `.continue` exists         |
+| `kiro`     | `.kiro/skills/astryx/SKILL.md`             | Kiro, when `.kiro` exists                 |
+| `windsurf` | `.codeium/windsurf/skills/astryx/SKILL.md` | Windsurf, when `.codeium/windsurf` exists |
 
-Agents that share a file share one write. Each file is a skill whose
-frontmatter is strict YAML, so a tool with a strict parser loads it.
+Agents that share a file share one write, and a tool that reads both the
+shared folder and Claude Code's lists the skill once. A file that only one
+tool reads is written for every agent only when that tool's folder exists in
+the home folder, and always when the tool is chosen by name. No file goes in
+a folder that a tool reading the shared folder also reads, and no always-on
+instructions file is written, since a tool lists such a copy twice. Each file
+is a regular file, not a link, and a skill whose frontmatter is strict YAML
+and whose `name` is its folder's name, so a tool with a strict parser loads
+it. A tool that reads no skill folder without a change to its own
+configuration, such as Aider, gets no copy; the CLI never edits an agent
+tool's configuration.
 
 ### Who answers when global and project copies meet
 
