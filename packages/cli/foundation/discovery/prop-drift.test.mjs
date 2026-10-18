@@ -1,0 +1,554 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
+/**
+ * @file Documented props against a component's TypeScript props: each kind
+ * of finding, and each component it cannot read.
+ */
+
+import * as fs from 'node:fs';
+import * as os from 'node:os';
+import * as path from 'node:path';
+import {createRequire} from 'node:module';
+import {afterEach, beforeEach, describe, expect, it} from 'vitest';
+import {comparePropTables} from './prop-drift.mjs';
+
+const require = createRequire(import.meta.url);
+const TYPESCRIPT_DIR = path.dirname(require.resolve('typescript/package.json'));
+
+/** @type {string} */
+let pkg;
+
+beforeEach(() => {
+  pkg = fs.mkdtempSync(path.join(os.tmpdir(), 'astryx-prop-drift-'));
+  fs.writeFileSync(
+    path.join(pkg, 'package.json'),
+    JSON.stringify({name: '@acme/widgets', version: '1.0.0'}),
+  );
+  fs.writeFileSync(
+    path.join(pkg, 'tsconfig.json'),
+    JSON.stringify({
+      compilerOptions: {
+        strict: true,
+        jsx: 'react-jsx',
+        module: 'esnext',
+        moduleResolution: 'bundler',
+        target: 'es2022',
+      },
+    }),
+  );
+});
+
+afterEach(() => {
+  fs.rmSync(pkg, {recursive: true, force: true});
+});
+
+function withTypeScript() {
+  fs.mkdirSync(path.join(pkg, 'node_modules'), {recursive: true});
+  fs.symlinkSync(
+    TYPESCRIPT_DIR,
+    path.join(pkg, 'node_modules', 'typescript'),
+    'dir',
+  );
+}
+
+/**
+ * Write `components/<name>.tsx` and its doc; returns its prop table, which
+ * also carries the component record (name, docPath, sourcePath).
+ * @param {string} name
+ * @param {string} source
+ * @param {Record<string, any>} doc
+ */
+function component(name, source, doc) {
+  const dir = path.join(pkg, 'components');
+  fs.mkdirSync(dir, {recursive: true});
+  const sourcePath = path.join(dir, `${name}.tsx`);
+  const docPath = path.join(dir, `${name}.doc.mjs`);
+  fs.writeFileSync(sourcePath, source);
+  fs.writeFileSync(
+    docPath,
+    `export default ${JSON.stringify({
+      type: 'component',
+      name,
+      displayName: name,
+      description: 'Fixture.',
+      ...doc,
+    })};\n`,
+  );
+  return {
+    name,
+    docPath,
+    sourcePath,
+    doc: `components/${name}.doc.mjs`,
+    props: doc.props ?? [],
+    sources: [sourcePath],
+  };
+}
+
+/**
+ * @param {string} name
+ * @param {string} type
+ * @param {Record<string, unknown>} [extra]
+ */
+const prop = (name, type, extra = {}) => ({
+  name,
+  type,
+  description: 'Fixture prop.',
+  ...extra,
+});
+
+/** @param {import('./prop-drift.mjs').PropDriftTable[]} tables */
+function compare(tables) {
+  return comparePropTables(tables, {packageDir: pkg, resolveFrom: [pkg]});
+}
+
+/** @param {{findings: Array<{component: string, prop: string, kind: string}>}} report */
+const kinds = report =>
+  report.findings.map(f => `${f.component}.${f.prop} ${f.kind}`);
+
+describe('comparePropTables', () => {
+  it("reports a prop missing from the code, one missing from the doc, and a wrong required flag, each component's together", async () => {
+    withTypeScript();
+    const badge = component(
+      'Badge',
+      `export type Tone = 'neutral' | 'info' | 'danger';
+export interface BadgeProps {
+  label: string;
+  tone?: Tone;
+  count?: number;
+}
+export function Badge(props: BadgeProps) { return null; }`,
+      {
+        props: [
+          prop('label', 'string'),
+          prop('tone', "'neutral' | 'info'"),
+          prop('size', "'sm' | 'md'"),
+        ],
+      },
+    );
+    // A name that starts with another's sorts after all of the other's.
+    const count = component(
+      'BadgeCount',
+      'export function BadgeCount(props: {amount?: number}) { return null; }',
+      {props: []},
+    );
+
+    const report = await compare([count, badge]);
+
+    expect(report.status).toBe('checked');
+    expect(report.typescript).toMatch(/^\d+\.\d+/);
+    expect(report.components).toBe(2);
+    expect(kinds(report)).toEqual([
+      'Badge.count not_in_doc',
+      'Badge.label required_mismatch',
+      'Badge.size not_in_code',
+      'BadgeCount.amount not_in_doc',
+    ]);
+    expect(report.findings.every(f => f.severity === 'warning')).toBe(true);
+    expect(
+      report.findings.find(f => f.kind === 'required_mismatch'),
+    ).toMatchObject({
+      doc: 'components/Badge.doc.mjs',
+      source: 'components/Badge.tsx',
+    });
+  });
+
+  it('reads every overload, one without props included, reads a prop only some members of a union require as optional, and holds every prop one entry names to its `required`', async () => {
+    withTypeScript();
+    const picker = component(
+      'Picker',
+      `type Single = {isMulti?: false; value: string; onChange: (value: string) => void};
+type Multi = {isMulti: true; value: string[]; onChange: (value: string[]) => void};
+export type PickerProps = (Single | Multi) & {label: string};
+export function Picker(props: PickerProps) { return null; }`,
+      {
+        props: [
+          prop('label', 'string', {required: true}),
+          prop('isMulti', 'boolean'),
+          prop('value', 'string', {required: true}),
+          prop('onChange', '(value: string) => void', {required: true}),
+        ],
+      },
+    );
+
+    const select = component(
+      'Select',
+      `type Single = {multiple?: false; value?: string};
+type Multi = {multiple: true; value?: string[]; max?: number};
+export function Select(props: Single): null;
+export function Select(props: Multi): null;
+export function Select(props: Single | Multi) { return null; }`,
+      {
+        props: [
+          prop('multiple', 'boolean'),
+          prop('value', 'string | string[]'),
+          prop('max', 'number'),
+        ],
+      },
+    );
+    // An overload that takes no props makes every prop optional; a typed
+    // props type beside a `Record<string, any>` or a mapped `any` index is
+    // compared as it is beside an inline `[key: string]: any`.
+    const propless = component(
+      'Propless',
+      'export function Propless(): null;\nexport function Propless(props: {label: string}): null;\nexport function Propless(props?: {label: string}) { return null; }',
+      {props: [prop('label', 'string', {required: true})]},
+    );
+    const open = [
+      'Record<string, any>',
+      'Record<`data-${string}`, any>',
+      '{[K in string]?: any}',
+    ].map((index, i) =>
+      component(
+        `Open${i}`,
+        `export function Open${i}(props: {label?: string; size?: number} & ${index}) { return null; }`,
+        {props: [prop('label', 'string')]},
+      ),
+    );
+
+    // Required in one variant only: a caller may leave it out, so optional.
+    const menu = component(
+      'Menu',
+      'export function Menu(props: {items: string[]} | {alt: string}) { return null; }',
+      {props: [prop('items', 'X[]', {required: true}), prop('alt', 'X')]},
+    );
+    // One entry's `required` is a claim about every prop it names.
+    const pairs = ['label: string', 'label?: string'].map((label, i) =>
+      component(
+        `Pair${i}`,
+        `export function Pair${i}(props: {value: string; ${label}}) { return null; }`,
+        {props: [prop('value / label', 'string / string', {required: true})]},
+      ),
+    );
+    // Typed `any` through the package's own alias of `Omit`, written in the
+    // signature, as a named alias, or as an interface's base.
+    const without = ['Without<any>', 'P', 'Q', 'R'].map((props, i) =>
+      component(
+        `Without${i}`,
+        `type Without<T> = Omit<T, 'as'>; type P = Without<any>; interface Q extends Omit<any, 'as'> {} type R = Omit<P, 'ref'>;\nexport function Without${i}(props: ${props}) { return null; }`,
+        {props: [prop('label', 'string')]},
+      ),
+    );
+
+    const tables = [
+      picker,
+      select,
+      propless,
+      ...open,
+      menu,
+      ...pairs,
+      ...without,
+    ];
+    const report = await compare(tables);
+
+    expect(kinds(report)).toEqual([
+      'Menu.items required_mismatch',
+      'Open0.size not_in_doc',
+      'Open1.size not_in_doc',
+      'Open2.size not_in_doc',
+      'Pair1.label required_mismatch',
+      'Propless.label required_mismatch',
+    ]);
+    expect(report.components).toBe(9);
+    expect(report.propsNotChecked).toBeUndefined();
+    expect(report.unchecked.map(entry => entry.reason)).toEqual(
+      [0, 1, 2, 3].map(i =>
+        expect.stringMatching(`^Without${i}'s props are typed`),
+      ),
+    );
+  });
+
+  it('lists each component whose props it cannot read as not compared', async () => {
+    withTypeScript();
+    const tsconfig = path.join(pkg, 'tsconfig.json');
+    const config = JSON.parse(fs.readFileSync(tsconfig, 'utf8'));
+    config.compilerOptions.allowJs = true;
+    fs.writeFileSync(tsconfig, JSON.stringify(config));
+    /** @param {Record<string, string>} sources each component's props types */
+    const missing = sources =>
+      Object.entries(sources).map(([name, types]) =>
+        component(
+          name,
+          `import type {MissingProps} from '@acme/not-installed';\n${types}\nexport function ${name}(props: ${name}Props) { return null; }`,
+          {props: [prop('label', 'string')]},
+        ),
+      );
+    const unread = [
+      ...missing({
+        Ghost:
+          'export interface GhostProps extends MissingProps { label?: string }',
+        Omitted:
+          "export interface OmittedProps extends Omit<MissingProps, 'title'> { label?: string }",
+        Phantom:
+          'export type PhantomProps = Partial<MissingProps> & {label?: string};',
+        Named:
+          "type Base = Omit<MissingProps, 'title'>; export interface NamedProps extends Base { label?: string }",
+        Joined:
+          "type Base = Omit<MissingProps, 'title'>; export type JoinedProps = Base & {label?: string};",
+        Bare: "type Base = Omit<MissingProps, 'title'>; export type BareProps = Base;",
+        Mapped:
+          'export type MappedProps = {[K in keyof MissingProps]?: string};',
+        Prefixed:
+          'type On<K extends string> = {[P in `on${K}`]?: () => void}; export type PrefixedProps = On<MissingProps> & {label?: string};',
+        Picked:
+          "type Base = Pick<MissingProps, 'title'>; export type PickedProps = Base;",
+        Kept: "type W<T> = T & {label?: string}; export type KeptProps = W<Required<Pick<MissingProps, 'title'>>>;",
+        Nested:
+          "export type NestedProps = Partial<Omit<MissingProps, 'title'>> & {label?: string};",
+        Deep: 'interface L1 extends MissingProps {} interface L2 extends L1 {} interface L3 extends L2 {} interface L4 extends L3 {} interface L5 extends L4 {} export interface DeepProps extends L5 { label?: string }',
+      }),
+      component(
+        'Wrapped',
+        `import {forwardRef} from 'react';
+export const Wrapped = forwardRef<HTMLButtonElement, {label?: string}>((props, ref) => null);`,
+        {props: [prop('label', 'string')]},
+      ),
+      component(
+        'Classy',
+        "import {MissingBase} from '@acme/not-installed';\nexport class Classy extends MissingBase<{label?: string}> {}\n",
+        {props: [prop('label', 'string')]},
+      ),
+    ];
+    // Each of these is the only reference in its files that does not resolve:
+    // a name its module does not export, a dependency's own missing import, a
+    // missing type package, and a side-effect import.
+    fs.writeFileSync(
+      path.join(pkg, 'components', 'theme.ts'),
+      'export interface Theme { tone?: string }\n',
+    );
+    const dep = path.join(pkg, 'node_modules', '@acme', 'dep');
+    fs.mkdirSync(dep, {recursive: true});
+    fs.writeFileSync(
+      path.join(dep, 'package.json'),
+      JSON.stringify({name: '@acme/dep', types: 'index.d.ts'}),
+    );
+    fs.writeFileSync(
+      path.join(dep, 'index.d.ts'),
+      "import type {MissingProps} from '@acme/not-installed';\nexport type DepProps = MissingProps & {label?: string};\n",
+    );
+    const references = Object.entries({
+      Unnamed:
+        "import type {Gone} from './theme';\nexport function Unnamed(props: {label?: string; tone?: Gone}) { return null; }\n",
+      Peered:
+        "import type {DepProps} from '@acme/dep';\nexport function Peered(props: DepProps) { return null; }\n",
+      Referenced:
+        '/// <reference types="@acme/not-installed-types" />\nexport function Referenced(props: {label?: string}) { return null; }\n',
+      Effect:
+        "import '@acme/not-installed-effect';\nexport function Effect(props: {label?: string}) { return null; }\n",
+      // A type name declared nowhere, which only `keyof`, a `Record`'s keys
+      // or a template literal key reaches.
+      Omitting:
+        'export function Omitting(props: Omit<{label: string; size?: number}, keyof NowhereProps>) { return null; }\n',
+      Recorded:
+        'export function Recorded(props: Partial<Record<keyof NowhereProps, string>>) { return null; }\n',
+      Handlers:
+        'export function Handlers(props: {[K in `on${NowhereKey}`]?: () => void}) { return null; }\n',
+      Aliased:
+        'type Keys = keyof NowhereProps;\nexport function Aliased(props: {[K in Keys]?: string}) { return null; }\n',
+      // A value declared nowhere behind a binding, and a property that
+      // doesn't exist: the compiler can only give either its error type.
+      Valued:
+        'const d = missingValue;\nexport function Valued(props: Omit<{label: string; size?: number}, keyof typeof d>) { return null; }\n',
+      Sized:
+        "interface Theme { colors: {a: string} }\nexport function Sized(props: Partial<Record<keyof Theme['sizes'], string>>) { return null; }\n",
+      // A value the compiler can't type, spread into an object, makes the
+      // object `any`.
+      Spread:
+        'interface Theme { colors: {a: string} }\ndeclare const theme: Theme;\nconst defaults = {...theme.sizes};\nexport function Spread(props: Omit<{label: string; size?: number}, keyof typeof defaults>) { return null; }\n',
+      Toned:
+        'const tones = {...undeclaredTones};\nexport function Toned(props: Partial<Record<keyof typeof tones, string>>) { return null; }\n',
+    }).map(([name, source]) =>
+      component(name, source, {props: [prop('label', 'string')]}),
+    );
+    // A name declared nowhere in a JavaScript component's JSDoc, which `tsc`
+    // doesn't report there.
+    const documented = component(
+      'Documented',
+      '/** @param {Omit<{label: string; size?: number}, keyof NowhereJs>} props */\nexport function Documented(props) { return null; }\n',
+      {props: [prop('label', 'string')]},
+    );
+    const jsx = documented.sourcePath.replace(/\.tsx$/, '.jsx');
+    fs.renameSync(documented.sourcePath, jsx);
+    references.push({...documented, sourcePath: jsx, sources: [jsx]});
+    // A module found without types resolves: its names are `any`.
+    const untypedDir = path.join(pkg, 'node_modules', 'untyped-dep');
+    fs.mkdirSync(untypedDir, {recursive: true});
+    fs.writeFileSync(
+      path.join(untypedDir, 'package.json'),
+      JSON.stringify({name: 'untyped-dep', main: 'index.js'}),
+    );
+    fs.writeFileSync(
+      path.join(untypedDir, 'index.js'),
+      'export const fmt = text => text;\n',
+    );
+    const untyped = component(
+      'Untyped',
+      "import {fmt} from 'untyped-dep';\nexport function Untyped(props: {label?: string}) { fmt(props.label); return null; }\n",
+      {props: [prop('label', 'string')]},
+    );
+    const lonely = component(
+      'Lonely',
+      'export function Other(props: {label: string}) { return null; }\n',
+      {props: [prop('label', 'string', {required: true})]},
+    );
+    // An `any` index signature the package declares itself is no reason.
+    const open = component(
+      'Open',
+      'export function Open(props: {label?: string; [key: string]: any}) { return null; }\n',
+      {props: [prop('label', 'string')]},
+    );
+    // A missing import in the files a component comes from lists it, however
+    // the props reach it: only a member's type, a value's property, a
+    // conditional, `??`, a comma, or an own HOC that maps over `keyof P`.
+    const reached = Object.entries({
+      Member:
+        'interface Holder<T> { label?: T } export function Member(props: Holder<MissingProps>) { return null; }',
+      Header:
+        'function Inner(props: {label?: string}) { return null; } const Card = Object.assign(Inner, {Header: Inner}); export const Header = Card.Header;',
+      Chosen:
+        'function Inner(props: {label?: string}) { return null; } export const Chosen = (globalThis as {x?: 1}).x ? Inner : Inner;',
+      Fallback:
+        'function Inner(props: {label?: string}) { return null; } export const Fallback = (undefined as typeof Inner | undefined) ?? Inner;',
+      Comma:
+        'function Inner(props: {label?: string}) { return null; } export const Comma = (0, Inner);',
+      Keyed:
+        'function withKeys<P>(c: (props: P) => null) { return (props: {[K in keyof P]?: string}) => c(props as P); } export const Keyed = withKeys((props: MissingProps) => null);',
+    }).map(([name, source]) =>
+      component(
+        name,
+        `import type {MissingProps} from '@acme/not-installed';\n${source}\n`,
+        {props: [prop('label', 'string')]},
+      ),
+    );
+
+    // Props that take names from a type parameter, such as the element a
+    // component renders, accept any name until it is used.
+    const PROPS_OF = [
+      'interface Intrinsic { div: {title?: string}; span: {lang?: string} }',
+      'type ElementType = keyof Intrinsic | ((props: any) => unknown);',
+      'type PropsOf<E> = E extends (props: infer P) => unknown ? P : E extends keyof Intrinsic ? Intrinsic[E] : {};',
+      "type Prefixed<N extends string> = {[K in 'value' | 'change' as `${N}${Capitalize<K>}`]: string};",
+      "type Pair<N extends string> = {label: string} & {[K in 'a' | 'b' as `${N}${K}`]: string};",
+      'type Relayed<M extends string> = Prefixed<M>;',
+      'type Except<O, X extends keyof O> = {[K in keyof O as K extends X ? never : K]: O[K]};',
+      'type PickByValue<O, V> = {[K in keyof O as O[K] extends V ? K : never]: O[K]};',
+    ];
+    const generics = Object.entries({
+      Poly: "export type PolyProps<E extends ElementType> = {as?: E; padding?: number} & Omit<PropsOf<E>, 'as' | 'padding'>; export function Poly<E extends ElementType = 'div'>(props: PolyProps<E>) { return null; }",
+      Joint:
+        "export function Joint<E extends ElementType = 'div'>(props: {as?: E} & PropsOf<E>) { return null; }",
+      Partly:
+        "export function Partly<E extends ElementType = 'div'>(props: Partial<PropsOf<E>>) { return null; }",
+      Remapped:
+        'export function Remapped<T extends Record<string, unknown> = {value: string}>(props: {[K in keyof T & string as `on${Capitalize<K>}Change`]?: (value: T[K]) => void}) { return null; }',
+      Inferred:
+        'interface InferredBase { label?: string } export function Inferred<P extends InferredBase>(props: P) { return null; }',
+      // An `as` clause that names props from one: through an alias (in an
+      // intersection, or through another alias), inline, or behind a
+      // condition; and keys made from one.
+      PrefixAlias:
+        'export function PrefixAlias<N extends string>(props: Prefixed<N>) { return null; }',
+      PrefixNested:
+        'export function PrefixNested<N extends string>(props: Pair<N>) { return null; }',
+      PrefixDeep:
+        'export function PrefixDeep<N extends string>(props: Relayed<N>) { return null; }',
+      Templated:
+        'export function Templated<K extends string>(props: {[P in `on${K}`]?: () => void}) { return null; }',
+      PrefixInline:
+        "export function PrefixInline<N extends string>(props: {[K in 'value' | 'change' as `${N}${Capitalize<K>}`]?: string}) { return null; }",
+      PrefixGated:
+        "export function PrefixGated<T extends boolean>(props: {[K in 'value' | 'change' as T extends true ? K : never]?: string}) { return null; }",
+      // Props made from one that show the compiler no members at all.
+      Bagged:
+        'interface Bag<T> {} export function Bagged<T>(props: Bag<T>) { return null; }',
+    }).map(([name, source]) =>
+      component(name, [...PROPS_OF, source].join('\n'), {
+        props: [prop('elevation', 'number')],
+      }),
+    );
+    // A generic whose own props take any name, or map keys of its own (an
+    // `as` clause over its own key, or an alias or key filter given fixed
+    // arguments), has names of its own: compared.
+    const own = (/** @type {string} */ names) =>
+      names.split(' ').map(name => prop(name, 'X', {required: true}));
+    const owned = [
+      ['GenericOpen', '{items: T[]; [key: string]: any}', 'items'],
+      ['GenericRecord', '{items: T[]} & Record<string, any>', 'items'],
+      ['GenericRecordKeys', "Record<'value' | 'initial', T>", 'initial value'],
+      ['GenericFiltered', "{[K in 'a' | 'b' as Exclude<K, 'b'>]: T}", 'a'],
+      ['GenericPrefixed', "Prefixed<'my'>", 'myChange myValue'],
+      ['GenericPair', "Pair<'my'>", 'label mya myb'],
+      ['GenericRelayed', "Relayed<'my'>", 'myChange myValue'],
+      [
+        'GenericExcept',
+        "{items: T[]} & Except<{a: string; b: string}, 'b'>",
+        'a items',
+      ],
+      [
+        'GenericByValue',
+        '{items: T[]} & PickByValue<{onPick: () => void; size: number}, Function>',
+        'items onPick',
+      ],
+    ].map(([name, props, names]) =>
+      component(
+        name,
+        [
+          ...PROPS_OF,
+          `export function ${name}<T>(props: ${props}) { return null; }`,
+        ].join('\n'),
+        {props: own(names)},
+      ),
+    );
+    // Props that are plainly empty, generic or not, are compared: TypeScript
+    // takes none of the documented props.
+    const empty = ['NoProps', 'NoPropsT<T>'].map(name =>
+      component(
+        name.replace('<T>', ''),
+        `export function ${name}(props: {}) { return null; }\n`,
+        {props: [prop('label', 'string')]},
+      ),
+    );
+
+    const report = await compare([
+      ...unread,
+      lonely,
+      open,
+      ...reached,
+      ...references,
+      untyped,
+      ...generics,
+      ...owned,
+      ...empty,
+    ]);
+
+    expect(kinds(report)).toEqual([
+      'NoProps.label not_in_code',
+      'NoPropsT.label not_in_code',
+    ]);
+    expect(report.components).toBe(13);
+    const generic_ =
+      'Bagged Inferred Joint Partly Poly PrefixAlias PrefixDeep PrefixGated PrefixInline PrefixNested Remapped Templated'.split(
+        ' ',
+      );
+    expect(report.unchecked.map(u => u.component)).toEqual(
+      'Aliased Bagged Bare Chosen Classy Comma Deep Documented Effect Fallback Ghost Handlers Header Inferred Joined Joint Kept Keyed Lonely Mapped Member Named Nested Omitted Omitting Partly Peered Phantom Picked Poly PrefixAlias PrefixDeep Prefixed PrefixGated PrefixInline PrefixNested Recorded Referenced Remapped Sized Spread Templated Toned Unnamed Valued Wrapped'.split(
+        ' ',
+      ),
+    );
+    // A type the compiler can't work out, though every reference resolves.
+    const untyped_ =
+      'Aliased Documented Handlers Omitting Recorded Sized Spread Toned Valued'.split(
+        ' ',
+      );
+    for (const {component: name, reason} of report.unchecked) {
+      expect(reason).toContain(
+        name === 'Lonely'
+          ? 'Lonely.tsx has no export named Lonely'
+          : generic_.includes(name)
+            ? 'from a type parameter'
+            : untyped_.includes(name)
+              ? "a type the compiler can't work out"
+              : 'could not resolve',
+      );
+    }
+  });
+});
