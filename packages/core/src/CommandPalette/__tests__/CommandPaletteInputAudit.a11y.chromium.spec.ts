@@ -124,6 +124,11 @@ async function focusFromKeyboard(page: Page, input: Locator) {
 }
 
 async function focusFromPointer(input: Locator) {
+  // PopupContext is already focused by Dialog's open-time focus management.
+  // Move focus away first so the click acquires focus and runs the component's
+  // pointer-modality gate rather than merely clicking an existing keyboard focus.
+  await input.blur();
+  await expect(input).not.toBeFocused();
   await input.click();
   await expect(input).toBeFocused();
   // CSS Selectors 4 deliberately keeps text-entry controls focus-visible after
