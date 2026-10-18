@@ -178,7 +178,7 @@ export default {
     },
     {
       type: 'prose',
-      text: "`category` uses the shared TemplateCategory taxonomy: 'Group - Variant' strings (e.g. 'Table - Bulk Actions'). Not every value maps to an existing template; unused values are reserved so authors get autocomplete for the full taxonomy.",
+      text: "For a Core template, `category` uses the shared TemplateCategory taxonomy: 'Group - Variant' strings (e.g. 'Table - Bulk Actions'). Not every value maps to an existing template; unused values are reserved so authors get autocomplete for the full taxonomy. An integration template may use its own value.",
     },
   ],
 };

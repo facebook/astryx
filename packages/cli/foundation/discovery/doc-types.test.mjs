@@ -11,6 +11,7 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 import {createRequire} from 'node:module';
 import {afterEach, beforeEach, describe, expect, it} from 'vitest';
+import {unusableTypeScriptReason} from './project-typescript.mjs';
 import {
   checkDocTypes,
   DOC_TYPES_TYPESCRIPT_MISSING_REASON,
@@ -90,6 +91,40 @@ describe('checkDocTypes', () => {
       findings: [],
       unchecked: [],
     });
+  });
+
+  it('names an installed TypeScript it cannot use, rather than asking to install one', async () => {
+    write(
+      'components/Badge.doc.mjs',
+      `export default ${JSON.stringify(COMPONENT)};\n`,
+    );
+    // TypeScript 7 has no JavaScript compiler API: one entry exports none,
+    // another cannot be loaded at all.
+    for (const stub of [
+      {main: 'index.js', code: "module.exports = {version: '7.0.0'};\n"},
+      {exports: {'./package.json': './package.json'}},
+    ]) {
+      const dir = path.join(pkg, 'node_modules', 'typescript');
+      fs.rmSync(dir, {recursive: true, force: true});
+      fs.mkdirSync(dir, {recursive: true});
+      const {code, ...fields} = stub;
+      fs.writeFileSync(
+        path.join(dir, 'package.json'),
+        JSON.stringify({name: 'typescript', version: '7.0.0', ...fields}),
+      );
+      if (code) fs.writeFileSync(path.join(dir, 'index.js'), code);
+
+      const report = await check([['components/Badge.doc.mjs', 'components']]);
+
+      expect(report).toEqual({
+        status: 'skipped',
+        reason: unusableTypeScriptReason('7.0.0', 'docs were not checked'),
+        docs: 0,
+        findings: [],
+        unchecked: [],
+      });
+      expect(report.reason).toContain('TypeScript 7.0.0 is installed');
+    }
   });
 
   it('says there is nothing to check when the package has no doc files, with or without TypeScript', async () => {
@@ -238,19 +273,41 @@ describe('checkDocTypes', () => {
         '};',
         'export const docsZh = {',
         "  description: '一组行。',",
-        "  props: [{name: 'title', type: 'string', description: '标题。'}],",
+        "  props: [{name: 'title', description: '标题。'}],",
         '};',
         'export const docsDense = {',
-        "  props: [{name: 'title', type: 42, description: 'Heading.'}],",
+        "  props: [{name: 'title', type: 42, description: 'Heading.'}, {description: 'No name.'}],",
+        '};',
+        '',
+      ].join('\n'),
+    );
+    // The overlay merges props, and sub-component entries, by name and keeps
+    // the base doc's `type`: a translated entry needs only its `name`.
+    write(
+      'components/Family.doc.mjs',
+      [
+        'export default {',
+        "  type: 'component',",
+        "  name: 'Family',",
+        "  displayName: 'Family',",
+        "  usage: {description: 'Members.'},",
+        "  components: [{name: 'Member', description: 'One.', props: [{name: 'size', type: 'number', description: 'Size.'}]}],",
+        '};',
+        'export const docsZh = {',
+        "  components: [{name: 'Member', props: [{name: 'size', description: '大小。'}]}],",
         '};',
         '',
       ].join('\n'),
     );
 
-    const report = await check([['components/Group.doc.mjs', 'components']]);
+    const report = await check([
+      ['components/Group.doc.mjs', 'components'],
+      ['components/Family.doc.mjs', 'components'],
+    ]);
 
     expect(summary(report)).toEqual([
       'components/Group.doc.mjs docsDense props[0].type wrong_type',
+      'components/Group.doc.mjs docsDense props[1].name missing_field',
     ]);
   });
 

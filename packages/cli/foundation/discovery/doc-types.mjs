@@ -17,8 +17,9 @@
  * - components root: `ComponentDoc` (read as TypeScript reads the union, with
  *   the member the doc's shape names, so messages are about that member); its
  *   `docsZh` and `docsDense` translations against `ComponentTranslationDoc`,
- *   or, with no field required, `ComponentDoc` when a translation carries
- *   props, as the CLI overlays them on the base doc;
+ *   or, when a translation carries props, `ComponentDoc` with no field
+ *   required but each prop's and sub-component entry's `name`, as the CLI
+ *   overlays them on the base doc by name;
  * - hooks (Core): `HookDoc`, translations against `HookTranslationDoc`;
  * - templates root: `TemplateDoc`;
  * - docs root: the type the doc's `type` names (`ReferenceDoc` when it names
@@ -37,7 +38,10 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {fileURLToPath} from 'node:url';
-import {resolveProjectTypeScript} from './project-typescript.mjs';
+import {
+  resolveProjectTypeScript,
+  unusableTypeScriptReason,
+} from './project-typescript.mjs';
 
 /**
  * @typedef {'components' | 'hooks' | 'templates' | 'docs' | 'docs-overlay' | 'themes'} DocRoot
@@ -261,9 +265,16 @@ function expectedType(ts, root, exportName, node) {
     }
     // A translation with props overlays the base doc, which supplies every
     // field it leaves out: each field it writes must match, none is required.
+    // Props and sub-component entries merge by `name`, the base doc keeping
+    // each prop's `type`, so an entry needs only its `name`.
     if (translation) {
       const full = componentType(shape);
-      return {typeExpr: `Partial<${full.typeExpr}>`, typeName: full.typeName};
+      const prop = `Partial<${authoring('ComponentPropDoc')}> & {name: string}`;
+      const entry = `Partial<Omit<${authoring('ComponentEntry')}, 'props'>> & {name: string; props?: Array<${prop}>}`;
+      return {
+        typeExpr: `Omit<Partial<${full.typeExpr}>, 'props' | 'components'> & {props?: Array<${prop}>; components?: Array<${entry}>}`,
+        typeName: full.typeName,
+      };
     }
     return componentType(shape);
   }
@@ -879,10 +890,12 @@ export async function checkDocTypes(files, options) {
     return {status: 'checked', docs: 0, findings: [], unchecked: []};
   }
   const compiler = resolveProjectTypeScript(resolveFrom);
-  if (!compiler) {
+  if (!compiler?.ts) {
     return {
       status: 'skipped',
-      reason: DOC_TYPES_TYPESCRIPT_MISSING_REASON,
+      reason: compiler
+        ? unusableTypeScriptReason(compiler.version, 'docs were not checked')
+        : DOC_TYPES_TYPESCRIPT_MISSING_REASON,
       docs: 0,
       findings: [],
       unchecked: [],
