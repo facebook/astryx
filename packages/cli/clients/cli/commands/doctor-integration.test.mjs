@@ -368,6 +368,99 @@ describe('doctor integration — command', () => {
     );
   });
 
+  it('validate type-checks each doc component discovery serves, in __fixtures__, in a dot-folder or behind a symlink', async () => {
+    fs.writeFileSync(
+      path.join(tmpDir, 'package.json'),
+      JSON.stringify({name: '@acme/widgets', version: '1.2.3'}),
+    );
+    fs.writeFileSync(
+      path.join(tmpDir, 'astryx.integration.mjs'),
+      `export default {components: './components'};\n`,
+    );
+    for (const [rel, name] of [
+      ['components/__fixtures__/AcmeFixture.doc.mjs', 'AcmeFixture'],
+      ['components/.drafts/AcmeDraft.doc.mjs', 'AcmeDraft'],
+      ['shared/AcmeLinked.doc.mjs', 'AcmeLinked'],
+    ]) {
+      fs.mkdirSync(path.dirname(path.join(tmpDir, rel)), {recursive: true});
+      fs.writeFileSync(
+        path.join(tmpDir, rel),
+        `export default {type: 'component', name: '${name}', displayName: '${name}', usage: {description: 'Fixture.'}, props: [], keyword: []};\n`,
+      );
+    }
+    fs.symlinkSync(
+      path.join(tmpDir, 'shared', 'AcmeLinked.doc.mjs'),
+      path.join(tmpDir, 'components', 'AcmeLinked.doc.mjs'),
+    );
+    process.chdir(tmpDir);
+
+    await createProgram().parseAsync([
+      'node',
+      'astryx',
+      '--json',
+      'doctor',
+      'integration',
+      'validate',
+    ]);
+
+    const {docTypes} = JSON.parse(logCalls.join('\n')).data;
+    expect(docTypes).toMatchObject({status: 'checked', docs: 3, unchecked: []});
+    expect(
+      docTypes.findings.map(
+        (/** @type {any} */ f) => `${f.doc} ${f.field} ${f.problem}`,
+      ),
+    ).toEqual([
+      'components/__fixtures__/AcmeFixture.doc.mjs keyword unknown_field',
+      'components/.drafts/AcmeDraft.doc.mjs keyword unknown_field',
+      'components/AcmeLinked.doc.mjs keyword unknown_field',
+    ]);
+  });
+
+  it("validate keeps main's issue for a root it cannot read, and lists a root with a folder it cannot read", async () => {
+    fs.writeFileSync(
+      path.join(tmpDir, 'package.json'),
+      JSON.stringify({name: '@acme/widgets', version: '1.2.3'}),
+    );
+    fs.writeFileSync(
+      path.join(tmpDir, 'astryx.integration.mjs'),
+      `export default {components: './components', docs: './docs'};\n`,
+    );
+    fs.mkdirSync(path.join(tmpDir, 'components', 'locked'), {recursive: true});
+    fs.mkdirSync(path.join(tmpDir, 'docs'));
+    const locked = [
+      path.join(tmpDir, 'components', 'locked'),
+      path.join(tmpDir, 'docs'),
+    ];
+    for (const dir of locked) fs.chmodSync(dir, 0o000);
+    process.chdir(tmpDir);
+    try {
+      await createProgram().parseAsync([
+        'node',
+        'astryx',
+        '--json',
+        'doctor',
+        'integration',
+        'validate',
+      ]);
+    } finally {
+      for (const dir of locked) fs.chmodSync(dir, 0o755);
+    }
+
+    const {data} = JSON.parse(logCalls.join('\n'));
+    expect(data.issues.map((/** @type {any} */ i) => i.code).sort()).toEqual([
+      'invalid_component',
+      'unreadable_root',
+    ]);
+    expect(data.docTypes.unchecked).toEqual([
+      {
+        doc: 'components',
+        reason: expect.stringMatching(
+          /^the components root does not load, so no doc in it was checked: .*EACCES/,
+        ),
+      },
+    ]);
+  });
+
   it('validate reports the doc type check as additive JSON', async () => {
     writeIntegration({id: 'hero', name: 'Hero', type: 'block'});
     process.chdir(tmpDir);

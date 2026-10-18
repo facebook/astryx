@@ -17,6 +17,7 @@
  *   foundation/discovery/docs-discovery, which the catalog comes from.
  */
 
+import * as path from 'node:path';
 import {Project} from '../../foundation/config/project.mjs';
 import {DocsCatalog} from '../../foundation/discovery/docs-discovery.mjs';
 import {checkDocTypes} from '../../foundation/discovery/doc-types.mjs';
@@ -1345,8 +1346,20 @@ export async function resolveTopicDocs(topic, options = {}) {
 export async function integrationDocTypes(integration, cwd) {
   const packageDir = /** @type {{__packageDir?: string}} */ (integration)
     .__packageDir;
-  return checkDocTypes(integrationDocFiles(integration), {
+  const {files, unread} = await integrationDocFiles(integration);
+  const report = await checkDocTypes(files, {
     packageDir: packageDir ?? cwd,
     resolveFrom: [cwd, packageDir],
   });
+  if (report.status !== 'checked' || unread.length === 0) return report;
+  // A root its reader cannot read serves no doc; say so rather than skip it.
+  const rel = (/** @type {string} */ file) =>
+    path.relative(packageDir ?? cwd, file).split(path.sep).join('/') || '.';
+  return {
+    ...report,
+    unchecked: [
+      ...report.unchecked,
+      ...unread.map(entry => ({doc: rel(entry.path), reason: entry.reason})),
+    ].sort((a, b) => a.doc.localeCompare(b.doc)),
+  };
 }

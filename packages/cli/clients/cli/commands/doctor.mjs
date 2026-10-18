@@ -120,7 +120,7 @@ function docTypesBlocks(report, failed) {
   }
   const blocks = [
     section(
-      `Checking ${report.docs} doc(s) against the authoring types (TypeScript ${report.typescript})`,
+      `Checking ${report.docs} doc(s) against the authoring types${report.typescript ? ` (TypeScript ${report.typescript})` : ''}`,
     ),
   ];
   if (report.findings.length > 0) {
