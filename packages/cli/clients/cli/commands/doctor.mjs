@@ -242,6 +242,23 @@ function printDocConflicts(data) {
   emit(...output);
 }
 
+/**
+ * Print one `doctor integration` check's result as its own subcommand prints
+ * it. `astryx integration check` prints each check it runs through this.
+ * @param {import('../../../api/integration/integration-check.type.mjs').IntegrationCheckResponse} response
+ */
+export function printIntegrationCheckResponse(response) {
+  if (response.type === 'integration.validate') {
+    printIntegrationValidation(response.data);
+  } else if (response.type === 'integration.component-conflicts') {
+    printComponentConflicts(response.data);
+  } else if (response.type === 'integration.template-conflicts') {
+    printTemplateConflicts(response.data);
+  } else {
+    printDocConflicts(response.data);
+  }
+}
+
 /** @param {import('commander').Command} program */
 async function runProjectDoctor(program) {
   const report = await runChecks();

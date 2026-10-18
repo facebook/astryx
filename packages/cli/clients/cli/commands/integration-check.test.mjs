@@ -1,0 +1,267 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
+/**
+ * @file `astryx integration check`: every source check in one command, the
+ * summary, exit codes with and without `--strict`, and the `--strict`
+ * failures, in text and JSON alike.
+ */
+
+import {afterEach, beforeEach, describe, expect, it} from 'vitest';
+import * as fs from 'node:fs';
+import * as os from 'node:os';
+import * as path from 'node:path';
+import {runCli} from '../../../test-utils/run-cli.mjs';
+import {discoverCoreTemplates} from '../../../foundation/discovery/template-adapter.mjs';
+
+/** @type {string} */
+let tmpDir;
+
+beforeEach(() => {
+  // Under the repository, so the components check resolves Core.
+  tmpDir = fs.mkdtempSync(
+    path.join(process.cwd(), '.astryx-integration-check-cli-'),
+  );
+});
+
+afterEach(() => {
+  fs.rmSync(tmpDir, {recursive: true, force: true});
+});
+
+/**
+ * A package whose one page template takes a Core template's id: one warning
+ * (`templates` conflict). The doc matches TemplateDoc, so no other check
+ * warns about it.
+ * @param {{id: string, replaces?: string, extraManifest?: string, dir?: string}} options
+ */
+function writePackage({id, replaces, extraManifest = '', dir = tmpDir}) {
+  fs.writeFileSync(
+    path.join(dir, 'package.json'),
+    JSON.stringify({name: '@acme/widgets', version: '1.2.3'}),
+  );
+  fs.writeFileSync(
+    path.join(dir, 'astryx.integration.mjs'),
+    `export default {templates: './templates'${extraManifest}};\n`,
+  );
+  fs.mkdirSync(path.join(dir, 'templates'), {recursive: true});
+  fs.writeFileSync(
+    path.join(dir, 'templates', `${id}.doc.mjs`),
+    `export default {type: 'page', name: 'Integration template', displayName: 'Integration template', description: 'fixture'${replaces == null ? '' : `, replaces: ${JSON.stringify(replaces)}`}};\n`,
+  );
+  fs.writeFileSync(
+    path.join(dir, 'templates', `${id}.tsx`),
+    'export default function Fixture() { return null; }\n',
+  );
+}
+
+async function coreTemplateId() {
+  const core = (await discoverCoreTemplates()).find(
+    template => template.type === 'page',
+  );
+  expect(core).toBeDefined();
+  return /** @type {{dirName: string}} */ (core).dirName;
+}
+
+describe('astryx integration check', () => {
+  it('runs validate, components, templates, and docs in order, then a summary, and exits 0 on a warning', async () => {
+    writePackage({id: await coreTemplateId()});
+
+    const run = await runCli(['integration', 'check'], tmpDir);
+
+    const order = [
+      'Validating integration: @acme/widgets@1.2.3',
+      'Checking integration components: @acme/widgets@1.2.3',
+      'Checking integration templates: @acme/widgets@1.2.3',
+      'Checking integration docs: @acme/widgets@1.2.3',
+      'Integration check: @acme/widgets@1.2.3',
+    ].map(line => run.stdout.indexOf(line));
+    expect(order.every(index => index >= 0)).toBe(true);
+    expect([...order].sort((a, b) => a - b)).toEqual(order);
+    expect(run.stdout).toContain('Consider renaming');
+    expect(run.stdout).not.toContain('Failing under --strict');
+    expect(run.stdout).toContain(
+      '[ok] 0 errors, 1 warning, 0 skipped. No check failed;',
+    );
+    // Each check's output stands apart from the next.
+    const lines = run.stdout.split('\n');
+    for (const header of [
+      'Checking integration components:',
+      'Checking integration templates:',
+      'Checking integration docs:',
+    ]) {
+      expect(lines[lines.findIndex(line => line.includes(header)) - 1]).toBe(
+        '',
+      );
+    }
+    expect(run.status).toBe(0);
+  });
+
+  it('--strict lists the warning again as an error, after the checks, and exits 1', async () => {
+    const id = await coreTemplateId();
+    writePackage({id});
+
+    const run = await runCli(['integration', 'check', '--strict'], tmpDir);
+
+    expect(run.stdout).toContain(
+      'Integration check: @acme/widgets@1.2.3 (strict)',
+    );
+    const block = run.stdout.indexOf('Failing under --strict');
+    expect(block).toBeGreaterThan(
+      run.stdout.indexOf('Checking integration docs:'),
+    );
+    expect(run.stdout.slice(block)).toMatch(
+      /severity: \[fail\]\ncheck: +templates\ncode: +template_id_conflict\n/,
+    );
+    expect(run.stdout).toContain(
+      '[fail] 0 errors, 1 warning, 0 skipped. --strict fails on every warning and on skipped work;',
+    );
+    expect(run.status).toBe(1);
+  });
+
+  it('--json carries each check with its own envelope, the --strict failures, and exits as the text does', async () => {
+    const id = await coreTemplateId();
+    writePackage({id});
+
+    const run = await runCli(
+      ['integration', 'check', '--strict', '--json'],
+      tmpDir,
+    );
+
+    const parsed = JSON.parse(run.stdout.trim());
+    expect(parsed.type).toBe('integration.check');
+    expect(parsed.data).toMatchObject({
+      validated: true,
+      name: '@acme/widgets',
+      version: '1.2.3',
+      strict: true,
+      errors: 0,
+      warnings: 1,
+      skipped: [],
+      failed: true,
+    });
+    expect(parsed.data.checks.map(check => check.check)).toEqual([
+      'validate',
+      'components',
+      'templates',
+      'docs',
+    ]);
+    const templates = parsed.data.checks[2];
+    expect(templates).toMatchObject({
+      check: 'templates',
+      errors: 0,
+      warnings: 1,
+      skipped: [],
+      failed: false,
+      response: {
+        type: 'integration.template-conflicts',
+        data: {conflicts: [expect.objectContaining({id, severity: 'warning'})]},
+      },
+    });
+    expect(parsed.data.failures).toEqual([
+      {
+        check: 'templates',
+        severity: 'error',
+        code: 'template_id_conflict',
+        message: templates.response.data.conflicts[0].message,
+      },
+    ]);
+    expect(run.status).toBe(1);
+  });
+
+  it('exits 1 without --strict when one check fails on its own, and lists no failures', async () => {
+    writePackage({id: 'acme-app-shell', replaces: 'missing-core-shell'});
+
+    const text = await runCli(['integration', 'check'], tmpDir);
+    const json = await runCli(['integration', 'check', '--json'], tmpDir);
+
+    expect(text.stdout).toContain('missing_template_replacement_target');
+    expect(text.stdout).toMatch(
+      /\[fail\] [1-9]\d* errors?, .*Address the items marked \[fail\] above\./,
+    );
+    expect(text.stdout).not.toContain('Failing under --strict');
+    expect(JSON.parse(json.stdout.trim()).data).toMatchObject({
+      strict: false,
+      failures: [],
+      failed: true,
+    });
+    expect(text.status).toBe(1);
+    expect(json.status).toBe(1);
+  });
+
+  it('counts a package with no manifest as skipped work: exit 0, and 1 with --strict', async () => {
+    fs.writeFileSync(
+      path.join(tmpDir, 'package.json'),
+      JSON.stringify({name: '@acme/plain', version: '1.0.0'}),
+    );
+
+    const loose = await runCli(['integration', 'check'], tmpDir);
+    expect(loose.stdout).toContain(
+      "Nothing was checked: no astryx.integration.* found next to package.json. Run this command in an integration package's folder.",
+    );
+    // One cause, however many checks it stops: counted once.
+    expect(loose.stdout).toContain('[ok] 0 errors, 0 warnings, 1 skipped.');
+    expect(loose.status).toBe(0);
+
+    const strict = await runCli(
+      ['integration', 'check', '--strict', '--json'],
+      tmpDir,
+    );
+    const {data} = JSON.parse(strict.stdout.trim());
+    expect(data).toMatchObject({validated: false, errors: 0, failed: true});
+    // One cause, however many checks it stops: listed once.
+    expect(data.failures).toEqual([
+      {
+        check: 'validate',
+        severity: 'error',
+        code: 'missing_manifest',
+        message:
+          'No astryx.integration.* found next to package.json, so nothing was checked.',
+      },
+    ]);
+    expect(strict.status).toBe(1);
+  });
+
+  it('exits 1 for no package.json, as validate does', async () => {
+    const empty = fs.mkdtempSync(path.join(os.tmpdir(), 'astryx-no-pkg-'));
+    try {
+      const run = await runCli(['integration', 'check'], empty);
+      expect(run.stdout).toContain(
+        'Nothing was checked: no package.json found.',
+      );
+      expect(run.stdout).toContain('Integration check: (no package.json)');
+      expect(run.stdout).toContain(
+        '[fail] 1 error, 0 warnings, 0 skipped. No package.json was found here, so nothing was checked.',
+      );
+      expect(run.stdout).not.toContain('marked [fail] above');
+      expect(run.status).toBe(1);
+    } finally {
+      fs.rmSync(empty, {recursive: true, force: true});
+    }
+  });
+
+  it('states in its help that it is the CI check, the line to add, and what --strict promises', async () => {
+    const run = await runCli(['integration', 'check', '--help'], tmpDir);
+
+    expect(run.stdout).toContain(
+      "The CI check for an integration package's own build",
+    );
+    expect(run.stdout).toContain(
+      '"typecheck": "tsc --noEmit && astryx integration check --strict"',
+    );
+    expect(run.stdout).toContain(
+      'A new check or failure code joins only in a minor release, named in the release notes.',
+    );
+    expect(run.stdout).toContain('integration verify');
+    expect(run.stdout).toContain('against the package in the current folder');
+    expect(run.stdout).not.toContain('[package]');
+  });
+
+  it('takes no package name: one passed is an error, not a check of the current folder', async () => {
+    writePackage({id: 'acme-page'});
+
+    const run = await runCli(['integration', 'check', '@acme/widgets'], tmpDir);
+
+    expect(run.stderr).toContain('too many arguments');
+    expect(run.stdout).not.toContain('Integration check:');
+    expect(run.status).toBe(1);
+  });
+});

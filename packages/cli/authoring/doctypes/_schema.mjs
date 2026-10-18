@@ -529,6 +529,7 @@ export const CommandDocKindSchema = z
     summary: z.string(),
     description: z.string().optional(),
     namespace: z.string().optional(),
+    keywords: z.array(z.string()).optional(),
     fn: z.string().optional(),
     args: z
       .array(

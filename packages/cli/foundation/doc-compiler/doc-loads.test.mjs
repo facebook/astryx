@@ -195,8 +195,10 @@ const RUNNERS = {
     runs: SELF_DOCS,
     sites: [
       'import ../../../api/integration/integrationAdd.doc.mjs',
+      'import ../../../api/integration/integrationCheck.doc.mjs',
       'import ../../../api/integration/integrationPackCheck.doc.mjs',
       'import ./integration-add.doc.mjs',
+      'import ./integration-check.doc.mjs',
       'import ./integration-pack.doc.mjs',
       'import ./integration-verify.doc.mjs',
       'import ./integration.doc.mjs',
