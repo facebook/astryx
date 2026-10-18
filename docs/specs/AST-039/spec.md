@@ -144,14 +144,17 @@ change.
 - **FR13 — Every descriptor satisfies its published authoring type.**
   `astryx doctor integration validate` MUST check each descriptor an
   integration's roots hold, and each translation a descriptor carries, against
-  the type `@astryxdesign/cli/authoring` publishes for that kind, as the
-  TypeScript the project installs checks a value written with that type. It
-  MUST warn about every unknown field, missing required field, and value
-  outside its field's type, naming the field and the change that fixes it,
-  including a field the compiler reaches only once an earlier unknown field is
-  gone. A value the loader accepts and the CLI reads MUST satisfy the published
-  type. Without the project's TypeScript it MUST say that the descriptors were
-  not type-checked and why, and MUST NOT report a pass.
+  the type `@astryxdesign/cli/authoring` publishes for that kind in an
+  integration, as the TypeScript the project installs checks a value written
+  with that type. It MUST warn about every unknown field, missing required
+  field, and value outside its field's type, naming the field and the change
+  that fixes it, including a field the compiler reaches only once an earlier
+  unknown field is gone. A value the loader accepts and the CLI reads MUST
+  satisfy that type. Where an integration may author more than Core's type for a
+  kind allows, such as any template `category`, `@astryxdesign/cli/authoring`
+  MUST publish an additional integration type for that kind, and Core's type
+  MUST stay unchanged. Without the project's TypeScript it MUST say that the
+  descriptors were not type-checked and why, and MUST NOT report a pass.
 - **FR14 — One command checks an integration, and can gate its build.** The
   `astryx integration check` command, which takes no package argument, MUST run
   the `validate`, `components`, `templates`, and `docs` checks against the
