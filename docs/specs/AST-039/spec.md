@@ -134,46 +134,12 @@ change.
   MUST NOT change a file its siblings share; only the integration manifest and
   `package.json` may change, to declare a new root. Review MUST reject a change
   that adds a central catalog, and writer tests MUST fail on one.
-- **FR12 — Documented component props agree with the source.**
-  `astryx doctor integration components` MUST compare every prop table a
-  component descriptor documents with the props of the export it describes, read
-  with the TypeScript the project installs. It MUST warn about a documented prop
-  the code lacks, a prop the package's own source declares that the table omits,
-  a `required` flag the code contradicts, and a documented type that does not
-  match the code under the loose comparison the command documents. It MUST list
-  a documented type it cannot judge as unchecked rather than report a match or a
-  mismatch. Without the project's TypeScript it MUST say that the comparison was
-  skipped and why, and MUST NOT report a pass.
-- **FR13 — Every descriptor satisfies its published authoring type.**
-  `astryx doctor integration validate` MUST check each descriptor an
-  integration's roots hold, and each translation a descriptor carries, against
-  the type `@astryxdesign/cli/authoring` publishes for that kind in an
-  integration, as the TypeScript the project installs checks a value written
-  with that type. It MUST warn about every unknown field, missing required
-  field, and value outside its field's type, naming the field and the change
-  that fixes it, including a field the compiler reaches only once an earlier
-  unknown field is gone. A value the loader accepts and the CLI reads MUST
-  satisfy that type. Where an integration may author more than Core's type for a
-  kind allows, such as any template `category`, `@astryxdesign/cli/authoring`
-  MUST publish an additional integration type for that kind, and Core's type
-  MUST stay unchanged. Without the project's TypeScript it MUST say that the
-  descriptors were not type-checked and why, and MUST NOT report a pass.
-- **FR14 — One command checks an integration, and can gate its build.** The
-  `astryx integration check` command, which takes no package argument, MUST run
-  the `validate`, `components`, `templates`, and `docs` checks against the
-  integration package in the current folder, report each check's own result and
-  a summary, and exit 1 exactly when one of those checks would exit 1 on its
-  own. With `--strict` it MUST also exit 1 on any warning and on any check, or
-  comparison within a check, that did not run, such as a package with no
-  integration manifest or a comparison that needs the project's TypeScript,
-  reporting each as an error from the same findings the default run reports
-  (`architecture:cli-surface` INV32). An item a comparison lists as unchecked,
-  such as a prop type it cannot read, does not fail `--strict`. Its exit codes
-  and JSON shape are a compatibility contract for the builds that run it: a new
-  check, or a new failure code, MAY join it only in a minor release that names
-  the addition. A name a patch release adds to Core or the CLI (a component,
-  template, or topic) MAY raise a conflict with a package's own name. Each
-  `doctor integration` subcommand, exit code, and JSON MUST stay unchanged.
+- **FR12 — Documented component props agree with the source.** Governed by
+  `architecture:cli-surface` INV33.
+- **FR13 — Every descriptor satisfies its published authoring type.** Governed by
+  `architecture:cli-surface` INV34.
+- **FR14 — One command checks an integration, and can gate its build.** Governed by
+  `architecture:cli-surface` INV35.
 
 ### Compatibility transition
 
