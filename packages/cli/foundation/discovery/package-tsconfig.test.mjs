@@ -64,17 +64,37 @@ describe('readPackageTsconfig', () => {
     });
     const ambient = write('types/ambient.d.ts', 'interface A {}\n');
     const global = write('src/global.ts', 'declare global {}\nexport {};\n');
+    // A script (no import or export) declares globals too.
+    const script = write('types/props.ts', 'interface ScriptProps {}\n');
+    write('src/module.ts', 'export interface ModuleProps {}\n');
 
     const own = readPackageTsconfig(ts, root, [source]);
 
     expect(own.options.paths).toEqual(OPTIONS.paths);
-    expect(own.declarations.sort()).toEqual([global, ambient].sort());
+    expect(own.declarations.sort()).toEqual([global, ambient, script].sort());
   });
 
-  it("follows a solution-style config's references, at any depth, to the config that includes the sources", () => {
+  it("follows a solution-style config's references, at any depth and through a cycle, to the config that includes the sources", () => {
     const source = write('src/Button.tsx', 'export {};\n');
-    write('tsconfig.json', {files: [], references: [{path: './lib.json'}]});
-    write('lib.json', {files: [], references: [{path: './app.json'}]});
+    const chain = [
+      'tsconfig.json',
+      'l1.json',
+      'l2.json',
+      'l3.json',
+      'l4.json',
+      'l5.json',
+    ];
+    chain.forEach((file, i) =>
+      write(file, {
+        files: [],
+        // Each level also refers back to the root, a cycle tsc rejects but
+        // the walk must not loop on.
+        references: [
+          {path: `./${chain[i + 1] ?? 'app.json'}`},
+          {path: './tsconfig.json'},
+        ],
+      }),
+    );
     write('app.json', {compilerOptions: OPTIONS, include: ['src']});
 
     const project = readPackageTsconfig(ts, root, [source]);
@@ -103,6 +123,11 @@ describe('readPackageTsconfig', () => {
 
   it('reports a config with errors instead of reading defaults', () => {
     const source = write('src/Button.tsx', 'export {};\n');
+    write('tsconfig.json', {files: ['src/Button.tsx', 'src/missing.ts']});
+    expect(readPackageTsconfig(ts, root, [source]).error).toMatch(
+      /^tsconfig\.json: .*src\/missing\.ts.* not found/,
+    );
+
     write('tsconfig.json', {extends: './missing-base.json'});
     expect(readPackageTsconfig(ts, root, [source]).error).toMatch(
       /^tsconfig\.json: .*missing-base\.json/,

@@ -11,9 +11,9 @@
  *   not read.
  * - A solution-style config (`"files": []` with `references`) lends the
  *   referenced config, at any depth, that includes the files to read.
- * - The declaration files the config includes, and included files that
- *   declare globals or augment a module, join the files to read, so ambient
- *   types resolve as `tsc` resolves them.
+ * - The declaration files the config includes, included files that declare
+ *   globals or augment a module, and included scripts (no import or export)
+ *   join the files to read, so ambient types resolve as `tsc` resolves them.
  * - Without a config, defaults read TSX the way bundlers do. A config with
  *   errors is reported, never read as defaults.
  *
@@ -26,6 +26,26 @@
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+
+/**
+ * Whether a file the config includes declares types every file sees: a
+ * declaration file, a file that declares globals or augments a module, or a
+ * script (a `.ts` file with no import or export).
+ * @param {string} file
+ */
+function isAmbient(file) {
+  if (/\.d\.[cm]?ts$/.test(file)) return true;
+  let text;
+  try {
+    text = fs.readFileSync(file, 'utf8');
+  } catch {
+    return false;
+  }
+  return (
+    /\bdeclare\s+(?:global|module)\b/.test(text) ||
+    (/\.tsx?$/.test(file) && !/^\s*(?:import|export)\b/m.test(text))
+  );
+}
 
 /**
  * @param {any} ts the project's own `typescript`
@@ -63,8 +83,16 @@ export function readPackageTsconfig(ts, packageDir, sources) {
     const problem = config.errors.find(
       /** @param {any} d */ d => d.code !== 18003,
     );
+    // A `files` entry that does not exist parses, and `tsc` then reports it
+    // (TS6053).
+    const missing = config.fileNames.find(
+      /** @param {string} file */ file => !fs.existsSync(file),
+    );
+    const where = path.relative(packageDir, configPath);
     if (problem) {
-      config.error = `${path.relative(packageDir, configPath)}: ${ts.flattenDiagnosticMessageText(problem.messageText, ' ')}`;
+      config.error = `${where}: ${ts.flattenDiagnosticMessageText(problem.messageText, ' ')}`;
+    } else if (missing) {
+      config.error = `${where}: File '${path.relative(packageDir, missing)}' not found.`;
     }
     return config;
   };
@@ -92,22 +120,21 @@ export function readPackageTsconfig(ts, packageDir, sources) {
       config.fileNames.some(
         /** @param {string} file */ file => own.has(path.resolve(file)),
       );
-    /** @type {(config: any, depth: number) => any} */
-    const including = (config, depth) =>
-      includes(config)
-        ? config
-        : depth < 4
-          ? (config.projectReferences ?? [])
-              .map(
-                /** @param {any} ref */ ref =>
-                  including(
-                    parse(ts.resolveProjectReferencePath(ref)),
-                    depth + 1,
-                  ),
-              )
-              .find(Boolean)
-          : null;
-    if (parsed) parsed = including(parsed, 0) ?? parsed;
+    // Every reference, at any depth, each config once (a cycle ends).
+    const visited = new Set(found ? [path.resolve(found)] : []);
+    /** @type {(config: any) => any} */
+    const including = config => {
+      if (includes(config)) return config;
+      for (const ref of config.projectReferences ?? []) {
+        const next = path.resolve(ts.resolveProjectReferencePath(ref));
+        if (visited.has(next)) continue;
+        visited.add(next);
+        const hit = including(parse(next));
+        if (hit) return hit;
+      }
+      return null;
+    };
+    if (parsed) parsed = including(parsed) ?? parsed;
   } catch {
     parsed = null;
   }
@@ -123,10 +150,6 @@ export function readPackageTsconfig(ts, packageDir, sources) {
       composite: false,
     },
     ...(error ? {error} : {}),
-    declarations: (parsed?.fileNames ?? []).filter(
-      /** @param {string} file */ file =>
-        /\.d\.[cm]?ts$/.test(file) ||
-        /\bdeclare\s+(?:global|module)\b/.test(fs.readFileSync(file, 'utf8')),
-    ),
+    declarations: (parsed?.fileNames ?? []).filter(isAmbient),
   };
 }
