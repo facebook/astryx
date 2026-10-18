@@ -76,14 +76,15 @@ change.
   component descriptor lists in `components` is a component under its own name
   when the module the descriptor's import names exports it. Every surface (FR7)
   lists, finds, and verifies these components by those names, and a source that
-  exports its stem keeps the stem. A name discovery records only this way, and
-  the stem of a descriptor recorded under another name, MUST NOT take an exact
-  unscoped lookup that Core, a legacy docs package, or a component named after
-  its source answers: such a lookup returns that component unless a declared
-  replacement claims the name, a lookup scoped to the package returns the
-  package's component, and Doctor reports a recorded name Core shares. An exact
-  name, including one discovery records this way, takes precedence over Core's
-  keyword fallback. Discovery MUST reject a missing source, more than one
+  exports its stem keeps the stem. A name discovery records only this way MUST
+  NOT take an exact unscoped lookup that Core, a legacy docs package, or a
+  component named after its source answers, and the stem of a descriptor
+  recorded under another name yields the same way to Core and to a component
+  named after its source: such a lookup returns that owner's component unless a
+  declared replacement claims the name, a lookup scoped to the package returns
+  the package's component, and Doctor reports a recorded name Core shares. An
+  exact name, including one discovery records this way, takes precedence over
+  Core's keyword fallback. Discovery MUST reject a missing source, more than one
   eligible same-stem source, an invalid inferred export name, or a descriptor
   whose authored identity conflicts with its required directory identity.
 - **FR5 — Multi-file items have one confined ownership boundary.** A kind whose
