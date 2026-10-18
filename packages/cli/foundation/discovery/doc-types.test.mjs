@@ -53,11 +53,12 @@ function write(rel, text) {
 
 /**
  * @param {Array<[string, import('./doc-types.mjs').DocRoot]>} files
+ * @param {{core?: boolean}} [options]
  */
-function check(files) {
+function check(files, options = {}) {
   return checkDocTypes(
     files.map(([rel, root]) => ({path: path.join(pkg, rel), root})),
-    {packageDir: pkg, resolveFrom: [pkg]},
+    {packageDir: pkg, resolveFrom: [pkg], ...options},
   );
 }
 
@@ -430,21 +431,40 @@ describe('checkDocTypes', () => {
     ]);
   });
 
-  it("checks a doc against its root's type, so a topic stamped beside a component source is flagged", async () => {
+  it("checks a doc against its root's type, so a topic stamped beside a component source is flagged, with the rest of the doc", async () => {
     withTypeScript();
+    const {displayName, ...rest} = COMPONENT;
     write(
       'components/Badge.doc.mjs',
-      `export default ${JSON.stringify({...COMPONENT, type: 'generic'})};\n`,
+      `export default ${JSON.stringify({...rest, type: 'generic', colour: 'red'})};\n`,
+    );
+    // In the docs root the `type` picks the doc's type, so a wrong one leaves
+    // the rest of it unchecked.
+    write(
+      'docs/setup.doc.mjs',
+      "export default {type: 'generc', name: 'setup', title: 1, colour: 'red'};\n",
     );
 
-    const report = await check([['components/Badge.doc.mjs', 'components']]);
+    const report = await check([
+      ['components/Badge.doc.mjs', 'components'],
+      ['docs/setup.doc.mjs', 'docs'],
+    ]);
 
-    expect(report.findings).toEqual([
-      expect.objectContaining({
-        field: 'type',
-        problem: 'wrong_type',
-        fix: "This doc is in the components root, so it is a component doc: set type: 'component', or move it to the docs root.",
-      }),
+    expect(summary(report)).toEqual([
+      'components/Badge.doc.mjs default colour unknown_field',
+      'components/Badge.doc.mjs default displayName missing_field',
+      'components/Badge.doc.mjs default type wrong_type',
+      'docs/setup.doc.mjs default type wrong_type',
+    ]);
+    expect(report.findings[2].fix).toBe(
+      "This doc is in the components root, so it is a component doc: set type: 'component', or move it to the docs root.",
+    );
+    expect(report.unchecked).toEqual([
+      {
+        doc: 'docs/setup.doc.mjs',
+        reason:
+          'its `type` names no type the docs root takes, so its other fields were not checked; fix the `type` and run the check again',
+      },
     ]);
   });
 
@@ -463,6 +483,31 @@ describe('checkDocTypes', () => {
 
     expect(summary(report)).toEqual([
       'components/Badge.doc.mjs docs keyword unknown_field',
+    ]);
+  });
+
+  it("ignores a .doc.ts doc's own annotation and type assertion, as it does a JSDoc one", async () => {
+    withTypeScript();
+    const header =
+      "import type {ReferenceDoc} from '@astryxdesign/cli/authoring';";
+    const doc = JSON.stringify({...COMPONENT, keyword: []});
+    write(
+      'components/Badge.doc.ts',
+      `${header}\nexport const docs: ReferenceDoc = ${doc};\n`,
+    );
+    write(
+      'components/Chip.doc.ts',
+      `${header}\nexport default <ReferenceDoc>${doc};\n`,
+    );
+
+    const report = await check([
+      ['components/Badge.doc.ts', 'components'],
+      ['components/Chip.doc.ts', 'components'],
+    ]);
+
+    expect(summary(report)).toEqual([
+      'components/Badge.doc.ts docs keyword unknown_field',
+      'components/Chip.doc.ts default keyword unknown_field',
     ]);
   });
 
@@ -514,8 +559,8 @@ describe('checkDocTypes', () => {
       ['themes/ocean/oceanTheme.doc.mjs', 'themes'],
     ]);
 
-    // An integration template's own category is allowed; its missing
-    // displayName and aspectRatio are not.
+    // An integration template's own category is allowed (IntegrationTemplateDoc);
+    // its missing displayName and aspectRatio are not.
     // The topic's unknown `txt` hides its missing `text` from TypeScript;
     // the check looks again without it, so both are reported.
     expect(summary(report)).toEqual([
@@ -530,9 +575,22 @@ describe('checkDocTypes', () => {
       new Set([
         'ReferenceDoc',
         'ReferenceTranslationDoc',
-        'TemplateDoc',
+        'IntegrationTemplateDoc',
         'ThemeDoc',
       ]),
+    );
+
+    // Core's own templates keep TemplateDoc and its TemplateCategory values.
+    const core = await check([['templates/Hero.doc.mjs', 'templates']], {
+      core: true,
+    });
+    expect(summary(core)).toEqual([
+      'templates/Hero.doc.mjs default aspectRatio missing_field',
+      'templates/Hero.doc.mjs default category wrong_type',
+      'templates/Hero.doc.mjs default displayName missing_field',
+    ]);
+    expect(new Set(core.findings.map(f => f.type))).toEqual(
+      new Set(['TemplateDoc']),
     );
   });
 

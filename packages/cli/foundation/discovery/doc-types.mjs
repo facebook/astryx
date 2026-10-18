@@ -21,7 +21,8 @@
  *   required but each prop's and sub-component entry's `name`, as the CLI
  *   overlays them on the base doc by name;
  * - hooks (Core): `HookDoc`, translations against `HookTranslationDoc`;
- * - templates root: `TemplateDoc`;
+ * - templates root: `IntegrationTemplateDoc` (`TemplateDoc`, whose `category`
+ *   is a `TemplateCategory` value, for Core's own templates);
  * - docs root: the type the doc's `type` names (`ReferenceDoc` when it names
  *   none), and a `<topic>.doc.<lang>.mjs` overlay against
  *   `ReferenceTranslationDoc`;
@@ -124,8 +125,8 @@ const DOCS_ROOT_TYPES = {
   enum: 'EnumDoc',
   theme: 'ThemeDoc',
   component: 'ComponentDoc',
-  page: 'TemplateDoc',
-  block: 'TemplateDoc',
+  page: 'IntegrationTemplateDoc',
+  block: 'IntegrationTemplateDoc',
 };
 
 /**
@@ -248,9 +249,10 @@ function componentType(shape) {
  * @param {DocRoot} root
  * @param {string} exportName
  * @param {any} node
+ * @param {boolean} [core] the docs are Core's own
  * @returns {{typeExpr: string, typeName: string}}
  */
-function expectedType(ts, root, exportName, node) {
+function expectedType(ts, root, exportName, node, core = false) {
   const shape = shapeOf(ts, node);
   const translation = TRANSLATIONS.includes(exportName);
   if (root === 'components') {
@@ -294,7 +296,8 @@ function expectedType(ts, root, exportName, node) {
     return {typeExpr: authoring('HookDoc'), typeName: 'HookDoc'};
   }
   if (root === 'templates') {
-    return {typeExpr: authoring('TemplateDoc'), typeName: 'TemplateDoc'};
+    const typeName = core ? 'TemplateDoc' : 'IntegrationTemplateDoc';
+    return {typeExpr: authoring(typeName), typeName};
   }
   if (root === 'docs-overlay') {
     return {
@@ -316,7 +319,10 @@ function expectedType(ts, root, exportName, node) {
       ? /** @type {Record<string, string>} */ (DOCS_ROOT_TYPES)[shape.stamp]
       : undefined;
   if (named === 'ComponentDoc') return componentType(shape);
-  const typeName = named ?? 'ReferenceDoc';
+  const typeName =
+    core && named === 'IntegrationTemplateDoc'
+      ? 'TemplateDoc'
+      : (named ?? 'ReferenceDoc');
   return {typeExpr: authoring(typeName), typeName};
 }
 
@@ -406,9 +412,10 @@ function unwrap(ts, expression) {
  * @param {any} ts
  * @param {any} sf
  * @param {DocRoot} root
+ * @param {boolean} [core] the docs are Core's own
  * @returns {Target[]}
  */
-function targetsOf(ts, sf, root) {
+function targetsOf(ts, sf, root, core = false) {
   const exported = moduleExports(ts, sf);
   /** @type {string[]} */
   const names = [];
@@ -430,20 +437,33 @@ function targetsOf(ts, sf, root) {
     /** @type {Array<[number, number]>} */
     const blankRanges = [];
     for (const wrapper of wrappers) {
-      // ` satisfies X` / ` as X` after the value.
-      if (
+      if (ts.isTypeAssertionExpression?.(wrapper)) {
+        // `<X>` before the value.
+        blankRanges.push([
+          wrapper.getStart(sf),
+          wrapper.expression.getStart(sf),
+        ]);
+      } else if (
+        // ` satisfies X` / ` as X` after the value.
         !ts.isParenthesizedExpression(wrapper) &&
+        !ts.isNonNullExpression(wrapper) &&
         wrapper.end > wrapper.expression.end
       ) {
-        if (!ts.isNonNullExpression(wrapper)) {
-          blankRanges.push([wrapper.expression.end, wrapper.end]);
-        }
+        blankRanges.push([wrapper.expression.end, wrapper.end]);
+      }
+    }
+    // The variable's own annotation: `const docs: ReferenceDoc = …`.
+    for (const declaration of ts.isVariableStatement(entry.statement)
+      ? entry.statement.declarationList.declarations
+      : []) {
+      if (declaration.initializer === entry.expression && declaration.type) {
+        blankRanges.push([declaration.name.end, declaration.type.end]);
       }
     }
     targets.push({
       exportName,
       node,
-      ...expectedType(ts, root, exportName, node),
+      ...expectedType(ts, root, exportName, node, core),
       blank: [entry.statement, ...wrappers],
       blankRanges,
     });
@@ -880,11 +900,12 @@ function findingsFor(ts, diagnostic, astPath, where) {
 /**
  * Check each doc file's values against the published authoring types.
  * @param {DocFile[]} files
- * @param {{packageDir: string, resolveFrom: Array<string | null | undefined>}} options
+ * @param {{packageDir: string, resolveFrom: Array<string | null | undefined>, core?: boolean}} options
+ *   `core`: the docs are Core's own, so templates are held to TemplateDoc
  * @returns {Promise<DocTypesReport>}
  */
 export async function checkDocTypes(files, options) {
-  const {packageDir, resolveFrom} = options;
+  const {packageDir, resolveFrom, core = false} = options;
   // With no doc files there is nothing to check, TypeScript or not.
   if (files.length === 0) {
     return {status: 'checked', docs: 0, findings: [], unchecked: []};
@@ -956,7 +977,7 @@ export async function checkDocTypes(files, options) {
       true,
       isTs ? ts.ScriptKind.TS : ts.ScriptKind.JS,
     );
-    const targets = targetsOf(ts, sf, file.root);
+    const targets = targetsOf(ts, sf, file.root, core);
     if (targets.length === 0) {
       const names = MAIN_EXPORTS[file.root];
       const from = reexportSource(ts, sf, [...names, ...TRANSLATIONS]);
@@ -1029,6 +1050,7 @@ export async function checkDocTypes(files, options) {
 
   /** @type {DocTypeFinding[]} */
   const findings = [];
+  const stamped = new Set(); // docs-root docs whose `type` names no type
   let checked = [...instrumented.values()].reduce(
     (sum, entry) => sum + entry.targets.length,
     0,
@@ -1037,8 +1059,7 @@ export async function checkDocTypes(files, options) {
   // TypeScript stops at an object's first unknown field, and a value outside
   // its type hides the rest of its object, so a doc is checked again with each
   // unknown field blanked and each such value cast to `any`, until nothing new
-  // is found. The doc's own `type` is never cast: a wrong one means the doc is
-  // a different kind, and what the other kind would report is a guess.
+  // is found, the doc's own `type` too where its root fixes its type.
   /** @type {Entry[]} */
   let pending = [...instrumented.values()];
   /** @type {any} */
@@ -1115,15 +1136,26 @@ export async function checkDocTypes(files, options) {
               entry.casts.push(range);
               changed = true;
             }
-          } else if (
-            finding.problem === 'wrong_type' &&
-            finding.field !== 'type'
-          ) {
-            // A deeper `type` picks the shape of the object that holds it (a
-            // content block, a prop), so that whole object is set aside.
-            const range = /(^|\.)type$/.test(finding.field)
-              ? objectRangeAt(ts, entry.sf, target.node, pos)
-              : valueRangeAt(ts, entry.sf, target.node, pos);
+          } else if (finding.problem === 'wrong_type') {
+            // A deeper `type` picks the shape of the object that holds it, so
+            // that object is set aside; a docs-root doc's own `type` is not.
+            const picked =
+              finding.field === 'type' &&
+              entry.file.root === 'docs' &&
+              !TRANSLATIONS.includes(target.exportName);
+            if (picked && !stamped.has(doc)) {
+              stamped.add(doc);
+              unchecked.push({
+                doc,
+                reason:
+                  'its `type` names no type the docs root takes, so its other fields were not checked; fix the `type` and run the check again',
+              });
+            }
+            const range = picked
+              ? null
+              : /\.type$/.test(finding.field)
+                ? objectRangeAt(ts, entry.sf, target.node, pos)
+                : valueRangeAt(ts, entry.sf, target.node, pos);
             if (range && !entry.casts.some(([from]) => from === range[0])) {
               entry.casts.push(range);
               changed = true;
@@ -1169,7 +1201,8 @@ export async function checkDocTypes(files, options) {
     status: 'checked',
     typescript: version,
     docs: checked,
-    findings,
+    // A docs-root doc whose `type` names no type reports only that.
+    findings: findings.filter(f => !stamped.has(f.doc) || f.field === 'type'),
     unchecked,
   };
 }

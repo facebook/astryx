@@ -78,9 +78,9 @@ export const doc = {
     },
     {
       name: 'category',
-      type: 'TemplateCategory | string',
+      type: 'TemplateCategory',
       description:
-        "Functional category. Core templates use a TemplateCategory value following a 'Group - Variant' convention (e.g. 'Dashboard - Analytics', 'Table - Basic', 'Form - Wizard'); the overview groups by the text before ' - '. An integration template may use its own value, and bare `astryx template` groups templates by it.",
+        "Functional gallery category following a 'Group - Variant' convention (e.g. 'Dashboard - Analytics', 'Table - Basic', 'Form - Wizard'). The overview groups by the text before ' - '.",
     },
     {
       name: 'isHiddenFromOverview',
@@ -162,7 +162,7 @@ export default {
   notes: [
     {
       type: 'prose',
-      text: 'When it loads, a template may leave out `displayName` and `aspectRatio`, as integration templates already published do; a block with no `aspectRatio` previews at 1. Write to the type anyway; it is the contract.',
+      text: 'When it loads, a template may leave out `displayName` and `aspectRatio` and use its own `category`, as integration templates already published do; a block with no `aspectRatio` previews at 1. Write to the type anyway; it is the contract.',
     },
     {
       type: 'prose',
@@ -178,7 +178,7 @@ export default {
     },
     {
       type: 'prose',
-      text: "For a Core template, `category` uses the shared TemplateCategory taxonomy: 'Group - Variant' strings (e.g. 'Table - Bulk Actions'). Not every value maps to an existing template; unused values are reserved so authors get autocomplete for the full taxonomy. An integration template may use its own value.",
+      text: "`category` uses the shared TemplateCategory taxonomy: 'Group - Variant' strings (e.g. 'Table - Bulk Actions'). Not every value maps to an existing template; unused values are reserved so authors get autocomplete for the full taxonomy.",
     },
   ],
 };

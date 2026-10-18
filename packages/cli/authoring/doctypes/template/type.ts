@@ -56,12 +56,10 @@ export interface BaseTemplateDoc extends AuthoredDocGraphFields {
    *  browsable template galleries like the craft browser. */
   scaffold?: boolean;
 
-  /** Functional category. Core templates use a `TemplateCategory` value, and
-   *  the docsite Templates overview gallery groups them by the part before
-   *  `" - "` (e.g. `"Dashboard"`). An integration template may use its own
-   *  value instead: bare `astryx template` groups templates by this field.
+  /** Functional category for the docsite Templates overview gallery.
+   *  Templates are grouped by the part before `" - "` (e.g. `"Dashboard"`).
    *  Independent of CLI discovery, which uses `name`/`description`. */
-  category?: TemplateCategory | (string & {});
+  category?: TemplateCategory;
 
   /** Boolean opt-out for templates that shouldn't appear on the Templates
    *  overview gallery. The template stays available via the CLI and
@@ -203,3 +201,25 @@ export type TemplateCategory =
   | 'Shell - Blank';
 
 export type TemplateDoc = PageTemplateDoc | BlockTemplateDoc;
+
+/** A page template an integration package ships, with its own `category`. */
+export interface IntegrationPageTemplateDoc extends Omit<
+  PageTemplateDoc,
+  'category'
+> {
+  category?: string;
+}
+
+/** A block template an integration package ships, with its own `category`. */
+export interface IntegrationBlockTemplateDoc extends Omit<
+  BlockTemplateDoc,
+  'category'
+> {
+  category?: string;
+}
+
+/** The doc-type for an integration package's template metadata: TemplateDoc,
+ *  with `category` the package's own string (bare `astryx template` groups
+ *  the package's templates by it) instead of a TemplateCategory value. */
+export type IntegrationTemplateDoc =
+  IntegrationPageTemplateDoc | IntegrationBlockTemplateDoc;
