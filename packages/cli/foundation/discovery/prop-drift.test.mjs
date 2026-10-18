@@ -10,7 +10,7 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 import {createRequire} from 'node:module';
 import {afterEach, beforeEach, describe, expect, it} from 'vitest';
-import {comparePropTables} from './prop-drift.mjs';
+import {comparePropDocs, comparePropTables} from './prop-drift.mjs';
 
 const require = createRequire(import.meta.url);
 const TYPESCRIPT_DIR = path.dirname(require.resolve('typescript/package.json'));
@@ -147,6 +147,8 @@ export function Badge(props: BadgeProps) { return null; }`,
     expect(
       report.findings.find(f => f.kind === 'required_mismatch'),
     ).toMatchObject({
+      docRequired: false,
+      codeRequired: true,
       doc: 'components/Badge.doc.mjs',
       source: 'components/Badge.tsx',
     });
@@ -255,6 +257,125 @@ export function Select(props: Single | Multi) { return null; }`,
         expect.stringMatching(`^Without${i}'s props are typed`),
       ),
     );
+  });
+
+  it('shows a method prop the doc leaves out with its function type, optional or not', async () => {
+    withTypeScript();
+    const picker = component(
+      'Picker',
+      `export interface PickerProps {
+  label?: string;
+  onPick(value: string, index: number): void;
+  onClear?(reason: string): void;
+  get size(): number;
+}
+export function Picker(props: PickerProps) { return null; }`,
+      {props: [prop('label', 'string')]},
+    );
+
+    const report = await compare([picker]);
+
+    expect(
+      report.findings.map(f => `${f.prop} ${f.kind}: ${f.codeType}`),
+    ).toEqual([
+      'onClear not_in_doc: (reason: string) => void',
+      'onPick not_in_doc: (value: string, index: number) => void',
+      'size not_in_doc: number',
+    ]);
+  });
+
+  it("prints a union's members in the order the source declares them", async () => {
+    withTypeScript();
+    // The same literals, made first in another order, would set the
+    // compiler's own order.
+    const ordered = component(
+      'Ordered',
+      [
+        "type Other = 'md' | 'sm' | 'lg';",
+        'export type Unrelated = Other;',
+        "type Small = 'lg' | 'sm';",
+        "export function Ordered(props: {size?: Small} | {size?: 'md'; label?: string}) { return null; }",
+      ].join('\n'),
+      {props: [prop('label', 'string')]},
+    );
+
+    const report = await compare([ordered]);
+
+    expect(
+      report.findings.find(finding => finding.prop === 'size')?.codeType,
+    ).toBe("'lg' | 'sm' | 'md'");
+  });
+
+  it("reads a prop that the package's defaultProps fills as optional", async () => {
+    withTypeScript();
+    // A library type that declares an optional `defaultProps`, as React's
+    // component types do, fills nothing; without strict null checks it reads
+    // as filling every prop.
+    const lib = path.join(pkg, 'node_modules', '@acme', 'lib');
+    fs.mkdirSync(lib, {recursive: true});
+    fs.writeFileSync(
+      path.join(lib, 'package.json'),
+      JSON.stringify({name: '@acme/lib', types: 'index.d.ts'}),
+    );
+    fs.writeFileSync(
+      path.join(lib, 'index.d.ts'),
+      `export interface Kind<P> { new (props: P): {}; defaultProps?: Partial<P> }
+export declare function memo<T extends (p: any) => any>(c: T): {(p: Parameters<T>[0]): null; $$typeof: symbol; type: T};
+export declare function lazy<T extends (p: any) => any>(f: () => Promise<{default: T}>): {(p: Parameters<T>[0]): null; $$typeof: symbol; _result: T};\n`,
+    );
+    fs.writeFileSync(
+      path.join(pkg, 'tsconfig.json'),
+      JSON.stringify({compilerOptions: {strict: false, jsx: 'react-jsx'}}),
+    );
+    const source = `import {type Kind, lazy, memo} from '@acme/lib';
+declare class Component<P> { constructor(props: P); props: P }
+export class Klass extends Component<{label: string; size: number}> {
+  static defaultProps = {size: 1};
+}
+export function Fn(props: {label: string; size: number}) { return null; }
+Fn.defaultProps = {size: 1};
+export function Gn(props: {label: string; size: number}) { return null; }
+Gn.defaultProps = {size: 1};
+export declare const Typed: Kind<{label: string; size: number}>;
+export const Memoed = memo(Fn);
+export const Lazied = lazy(() => Promise.resolve({default: Fn}));
+export const Thrice = memo(memo(memo(Fn)));
+export class Loose extends Component<{label: string; size: number}> { static defaultProps: any = {}; }`;
+    const props = [
+      prop('label', 'string'),
+      prop('size', 'number', {required: true}),
+    ];
+
+    const report = await compare([
+      ...'Klass Fn Typed Memoed Lazied Thrice Loose'
+        .split(' ')
+        .map(name => component(name, source, {props})),
+      component('Gn', source, {
+        props: [prop('label', 'string'), prop('size', 'number')],
+      }),
+    ]);
+
+    // JSX callers may leave out a prop defaultProps fills (for `memo` and
+    // `lazy`, the wrapped component's, two layers deep as React's types read
+    // it; `any` fills every prop), so a doc that marks it required disagrees
+    // with the code, and one that doesn't agrees.
+    expect(kinds(report)).toEqual([
+      'Fn.label required_mismatch',
+      'Fn.size required_mismatch',
+      'Gn.label required_mismatch',
+      'Klass.label required_mismatch',
+      'Klass.size required_mismatch',
+      'Lazied.label required_mismatch',
+      'Lazied.size required_mismatch',
+      'Loose.size required_mismatch',
+      'Memoed.label required_mismatch',
+      'Memoed.size required_mismatch',
+      'Thrice.label required_mismatch',
+      'Typed.label required_mismatch',
+    ]);
+    expect(
+      report.findings.find(f => f.component === 'Fn' && f.prop === 'size'),
+    ).toMatchObject({docRequired: true, codeRequired: false});
   });
 
   it('lists each component whose props it cannot read as not compared', async () => {
@@ -550,5 +671,177 @@ export const Wrapped = forwardRef<HTMLButtonElement, {label?: string}>((props, r
               : 'could not resolve',
       );
     }
+  });
+});
+
+/**
+ * A multi-component doc's entry.
+ * @param {string} name
+ * @param {any[]} props
+ */
+const entry = (name, props) => ({
+  name,
+  displayName: name,
+  description: 'Fixture.',
+  props,
+});
+
+/** @param {import('./prop-drift.mjs').PropDriftComponent[]} components */
+function compareDocs(components) {
+  return comparePropDocs(components, {packageDir: pkg, resolveFrom: [pkg]});
+}
+
+describe('comparePropDocs', () => {
+  it('compares each entry of a multi-component doc against its own export, and skips hooks', async () => {
+    withTypeScript();
+    const tabs = component(
+      'Tabs',
+      `export function Tabs(props: {value: string}) { return null; }
+export function Tab(props: {value: string; isDisabled?: boolean}) { return null; }
+export function useTabs(options: {value: string}) { return options; }`,
+      {
+        components: [
+          entry('Tabs', [prop('value', 'string', {required: true})]),
+          entry('Tab', [
+            prop('value', 'string', {required: true}),
+            prop('isSelected', 'boolean'),
+          ]),
+          {
+            name: 'useTabs',
+            displayName: 'useTabs',
+            description: 'Fixture.',
+            params: [
+              {
+                name: 'options',
+                type: '{value: string}',
+                description: 'Fixture.',
+              },
+            ],
+          },
+        ],
+      },
+    );
+
+    const report = await compareDocs([tabs]);
+
+    expect(report.components).toBe(2);
+    expect(kinds(report)).toEqual([
+      'Tab.isDisabled not_in_doc',
+      'Tab.isSelected not_in_code',
+    ]);
+  });
+
+  it('compares a member record only against its own source, and the family record leaves that member alone', async () => {
+    withTypeScript();
+    const status = component(
+      'Status',
+      'export function Status(props: {value: string}) { return null; }\n',
+      {
+        components: [
+          entry('Status', [prop('value', 'string', {required: true})]),
+          entry('StatusGlyph', [
+            prop('size', 'number'),
+            prop('tone', 'string'),
+          ]),
+        ],
+      },
+    );
+    const glyphSource = path.join(pkg, 'components', 'StatusView.tsx');
+    fs.writeFileSync(
+      glyphSource,
+      'export function StatusGlyph(props: {size?: number}) { return null; }\n',
+    );
+
+    const report = await compareDocs([
+      status,
+      {...status, name: 'StatusGlyph', sourcePath: glyphSource},
+    ]);
+
+    expect(report.unchecked).toEqual([]);
+    expect(report.components).toBe(2);
+    expect(kinds(report)).toEqual(['StatusGlyph.tone not_in_code']);
+    expect(report.findings[0].source).toBe('components/StatusView.tsx');
+  });
+
+  it('lists a member record that no file in the package declares as not compared', async () => {
+    withTypeScript();
+    const status = component(
+      'Status',
+      'export function Status(props: {value: string}) { return null; }\n',
+      {
+        components: [
+          entry('Status', [prop('value', 'string', {required: true})]),
+          entry('StatusGlyph', [prop('size', 'number')]),
+        ],
+      },
+    );
+
+    // Only another folder, or built output, declares the member.
+    const report = await compareDocs([
+      status,
+      {...status, name: 'StatusGlyph', sourcePath: null},
+    ]);
+
+    expect(report.components).toBe(1);
+    expect(report.findings).toEqual([]);
+    expect(report.unchecked).toEqual([
+      {
+        component: 'StatusGlyph',
+        doc: 'components/Status.doc.mjs',
+        reason: 'no source file for StatusGlyph',
+      },
+    ]);
+  });
+
+  it("compares a doc's own props with the export its name names, which another file can hold", async () => {
+    withTypeScript();
+    const status = component(
+      'Status',
+      'export function Status(props: {value: string}) { return null; }\n',
+      {name: 'StatusView', props: [prop('size', 'number')]},
+    );
+    const viewSource = path.join(pkg, 'components', 'StatusView.tsx');
+    fs.writeFileSync(
+      viewSource,
+      'export function StatusView(props: {size?: number}) { return null; }\n',
+    );
+
+    // Discovery names the record after the file, or after the export.
+    const byFile = await compareDocs([status]);
+    const byExport = await compareDocs([
+      {...status, name: 'StatusView', sourcePath: viewSource},
+    ]);
+
+    for (const report of [byFile, byExport]) {
+      expect(report.unchecked).toEqual([]);
+      expect(report.components).toBe(1);
+      expect(report.findings).toEqual([]);
+    }
+  });
+
+  it('compares a table for one component in each doc that has one', async () => {
+    withTypeScript();
+    const title = prop('title', 'string', {required: true});
+    const list = component(
+      'List',
+      'export function List(props: {label: string}) { return null; }\n',
+      {
+        components: [
+          entry('List', [prop('label', 'string', {required: true})]),
+          entry('ListGroup', [title]),
+        ],
+      },
+    );
+    const group = component(
+      'ListGroup',
+      'export function ListGroup(props: {title: string}) { return null; }\n',
+      {props: [title, prop('stale', 'string')]},
+    );
+
+    const report = await compareDocs([list, group]);
+
+    expect(report.components).toBe(3);
+    expect(kinds(report)).toEqual(['ListGroup.stale not_in_code']);
+    expect(report.findings[0].doc).toBe('components/ListGroup.doc.mjs');
   });
 });

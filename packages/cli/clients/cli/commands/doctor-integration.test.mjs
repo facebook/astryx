@@ -366,6 +366,10 @@ describe('doctor integration — command', () => {
       const printed = logCalls.join('\n');
       expect(printed).toContain('core_not_found');
       expect(printed).not.toContain('[ok]');
+      // No TypeScript out here either: the props comparison says it skipped.
+      expect(printed).toContain(
+        '[skip] Props not compared: TypeScript is not installed in this project',
+      );
       expect(process.exitCode).toBe(1);
     } finally {
       tmpDir = previousTmp;
@@ -394,6 +398,78 @@ describe('doctor integration — command', () => {
     expect(output).toContain(core.name);
     expect(output).toContain(`component ${core.name} --package @acme/widgets`);
     expect(process.exitCode).toBeUndefined();
+  });
+
+  it('components prints each documented prop that differs from the code, and still exits 0', async () => {
+    writeComponentIntegration('AcmeBadge');
+    fs.writeFileSync(
+      path.join(tmpDir, 'components', 'AcmeBadge.doc.mjs'),
+      `export default {type: 'component', name: 'AcmeBadge', displayName: 'AcmeBadge', description: 'Fixture component.', props: [{name: 'label', type: 'string', description: 'Text.'}]};\n`,
+    );
+    fs.writeFileSync(
+      path.join(tmpDir, 'components', 'AcmeBadge.tsx'),
+      'export function AcmeBadge(props: {label: string}) { return null; }\n',
+    );
+    process.chdir(tmpDir);
+
+    await createProgram().parseAsync([
+      'node',
+      'astryx',
+      'doctor',
+      'integration',
+      'components',
+    ]);
+
+    const output = logCalls.join('\n');
+    expect(output).toContain('kind:      required_mismatch');
+    expect(output).toContain(
+      '"label" is required in the code, but the doc does not mark it required.',
+    );
+    expect(output).toContain(
+      '1 documented prop(s) differ from the code in 1 component(s).',
+    );
+    expect(output).not.toContain('[ok] Documented prop');
+    expect(process.exitCode).toBeUndefined();
+  });
+
+  it('components says documented props match when they do', async () => {
+    writeComponentIntegration('AcmeOnlyWidget');
+    process.chdir(tmpDir);
+
+    await createProgram().parseAsync([
+      'node',
+      'astryx',
+      'doctor',
+      'integration',
+      'components',
+    ]);
+
+    expect(logCalls.join('\n')).toMatch(
+      /\[ok\] Documented prop names and required flags match the code in 1 component\(s\) \(TypeScript \d/,
+    );
+  });
+
+  it('components prints no [ok] for props it could not compare', async () => {
+    writeComponentIntegration('AcmeLonely');
+    fs.writeFileSync(
+      path.join(tmpDir, 'components', 'AcmeLonely.tsx'),
+      'export function Other() { return null; }\n',
+    );
+    process.chdir(tmpDir);
+
+    await createProgram().parseAsync([
+      'node',
+      'astryx',
+      'doctor',
+      'integration',
+      'components',
+    ]);
+
+    const output = logCalls.join('\n');
+    expect(output).toContain(
+      '[info] Props not compared for 1 documented component(s):',
+    );
+    expect(output).not.toContain('[ok] Documented prop');
   });
 
   it('components exposes conflicts as structured JSON warnings', async () => {

@@ -7,6 +7,12 @@
  * The compiler is the project's own `typescript`. Without one it can use, the
  * comparison is skipped and says why. Every finding is a warning.
  *
+ * `comparePropDocs` finds each component doc's prop tables first: a doc's
+ * own `props` document the export its `name` names; each entry of a
+ * multi-component doc documents its own export, which a member record
+ * compares against its own source. Hook entries (`use…`) document parameters
+ * and returns, not props, and are not compared.
+ *
  * Each table (a doc's `props`, or a multi-component doc's entry, with the
  * export it documents and the files that may hold it) is compared with that
  * export's props type:
@@ -24,15 +30,16 @@
  *   callers; an entry that names several props claims its `required` for
  *   each).
  *
- * @input Prop tables, the package root, and the directories to resolve
- *   `typescript` from.
+ * @input Component records (name, docPath, sourcePath), or prop tables, the
+ *   package root, and the directories to resolve `typescript` from.
  * @output A PropDriftReport.
- * @position Foundation discovery: it reads the package's TypeScript and
- *   returns a report, and prints nothing itself.
+ * @position Shared by `astryx doctor integration components` and the Astryx
+ *   repository's test over Core's own component docs.
  */
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import {loadComponentDoc} from './component-loader.mjs';
 import {readPackageTsconfig} from './package-tsconfig.mjs';
 import {
   resolveProjectTypeScript,
@@ -56,6 +63,10 @@ import {
  * @property {string} message
  * @property {string} doc the doc file, relative to the package root
  * @property {string} source the source file, relative to the package root
+ * @property {string} [docType] the documented type, as written
+ * @property {string} [codeType] the type as the source declares it
+ * @property {boolean} [docRequired]
+ * @property {boolean} [codeRequired]
  */
 
 /**
@@ -89,6 +100,15 @@ import {
  */
 
 /**
+ * @typedef {object} PropDriftComponent
+ * @property {string} name
+ * @property {string} docPath absolute path to the component's `.doc.*` file
+ * @property {string | null} sourcePath absolute path to its same-stem
+ *   source, or null when no file in the package declares it (a family member
+ *   only another folder or built output defines)
+ */
+
+/**
  * Props a doc never needs to list: the internal and styling props the
  * `ComponentPropDoc` authoring guidance says to skip, `ref`, which Core's
  * docs also leave out, and `key`, which React keeps for itself.
@@ -104,10 +124,25 @@ export const PROPS_NOT_DOCUMENTED = Object.freeze([
 
 /** The guidance's internal props: a declaration tagged `@internal`. */
 const SKIP_TAGS = new Set(['internal']);
+const HOOK_NAME = /^use[A-Z0-9]/;
 
 /** The line both surfaces print when the compiler is missing. */
 export const TYPESCRIPT_MISSING_REASON =
   'TypeScript is not installed in this project, so documented props were not compared with the code. Install typescript and run this check again.';
+
+/**
+ * @template T
+ * @param {() => T} compute
+ * @returns {() => T}
+ */
+function memo(compute) {
+  /** @type {{value: T} | null} */
+  let cached = null;
+  return () => {
+    if (cached == null) cached = {value: compute()};
+    return cached.value;
+  };
+}
 
 /** @type {WeakMap<Function, (file: string) => boolean>} */
 const MINE = new WeakMap();
@@ -164,6 +199,8 @@ function ownFileTest(root) {
  *   from keys it writes
  * @property {boolean} [untraced] built from keys the check can't trace
  * @property {boolean} skipTagged its declaration carries an internal JSDoc tag
+ * @property {string[]} declared the type as written, per own declaration
+ * @property {() => string[]} renderings the compiler's renderings, computed on demand
  * @property {() => any[]} types the prop's type in each member of the props type
  */
 
@@ -340,6 +377,14 @@ function readCodeProps(
       reason: `${exportName}'s props take some of their names from a type parameter, such as the element it renders, so which props it accepts is known only where it is used`,
     };
   }
+  // Each member of a prop's type is printed on its own, and long prints are
+  // truncated: a type that expands to a huge structure (StyleX styles, say)
+  // never matches a documented type anyway, and printing it whole can take
+  // gigabytes.
+  const flags =
+    ts.TypeFormatFlags.UseSingleQuotesForStringLiteralType |
+    ts.TypeFormatFlags.UseAliasDefinedOutsideCurrentScope;
+
   // `defaultProps` the package sets (a class's static field, one assigned to a
   // function, or the wrapped component's through up to two layers of `memo`
   // and `lazy`, as React's JSX types read it) lets JSX callers leave its props
@@ -428,11 +473,30 @@ function readCodeProps(
               /** @param {any} tag */ tag => SKIP_TAGS.has(tag.tagName.text),
             ),
       ),
+      // A property's `type` is the prop's type; a method's is its return
+      // type, so a method prop reads as the compiler renders it.
+      declared: ownDeclarations
+        .filter(
+          /** @param {any} d */ d =>
+            d.type && !ts.isMethodSignature(d) && !ts.isMethodDeclaration(d),
+        )
+        .map(/** @param {any} d */ d => d.type.getText(d.getSourceFile())),
       types: () =>
         symbols.map(
           /** @param {any} s */ s =>
             checker.getTypeOfSymbolAtLocation(s, sourceFile),
         ),
+      renderings: memo(() => {
+        /** @type {string[]} */
+        const printed = [];
+        for (const s of symbols) {
+          const propType = checker.getTypeOfSymbolAtLocation(s, sourceFile);
+          for (const part of inDeclaredOrder(ts, checker, propType, s)) {
+            printed.push(checker.typeToString(part, sourceFile, flags));
+          }
+        }
+        return printed;
+      }),
     });
   }
 
@@ -447,6 +511,83 @@ function readCodeProps(
         ),
     );
   return {ok: true, props, accepts};
+}
+
+/**
+ * A prop type's union members in the order the source declares them,
+ * through the type aliases it names; members it doesn't reach, such as the
+ * `undefined` an optional prop adds, follow, sorted by their text. The
+ * compiler's own order follows when each type was first made, so it would
+ * move with whatever read the types first.
+ * @param {any} ts
+ * @param {any} checker
+ * @param {any} type
+ * @param {any} symbol the prop
+ * @returns {any[]}
+ */
+function inDeclaredOrder(ts, checker, type, symbol) {
+  if (!type.isUnion()) return [type];
+  /** @type {any[]} */
+  const order = [];
+  const seen = new Set();
+  /** @type {(node: any) => void} */
+  const visit = node => {
+    if (ts.isParenthesizedTypeNode(node)) return visit(node.type);
+    if (ts.isUnionTypeNode(node)) return node.types.forEach(visit);
+    if (ts.isTypeReferenceNode(node) && !node.typeArguments) {
+      let target = checker.getSymbolAtLocation(node.typeName);
+      if (target && target.flags & ts.SymbolFlags.Alias) {
+        target = checker.getAliasedSymbol(target);
+      }
+      const alias = target?.declarations?.find(ts.isTypeAliasDeclaration);
+      if (alias && !alias.typeParameters) {
+        if (!seen.has(alias)) {
+          seen.add(alias);
+          visit(alias.type);
+        }
+        return;
+      }
+    }
+    const found = checker.getTypeFromTypeNode(node);
+    order.push(...(found.isUnion() ? found.types : [found]));
+  };
+  for (const declaration of symbol.declarations ?? []) {
+    if (declaration.type) visit(declaration.type);
+  }
+  /** @type {(t: any) => number} */
+  const place = t => {
+    const at = order.indexOf(t);
+    return at === -1 ? order.length : at;
+  };
+  /** @type {(t: any) => string} */
+  const text = t => checker.typeToString(t);
+  return [...type.types].sort(
+    (a, b) => place(a) - place(b) || text(a).localeCompare(text(b)),
+  );
+}
+
+/**
+ * The prop's type for a message: as the source writes it when its
+ * declarations agree, else (a method or accessor, or declarations that differ
+ * or narrow each other in an intersection) as the compiler prints it, without
+ * the `undefined` an optional prop adds.
+ * @param {CodeProp} code
+ */
+function codeTypeText(code) {
+  const written = [...new Set(code.declared)];
+  const text =
+    written.length === 1
+      ? written[0]
+      : [
+          ...new Set(
+            code
+              .renderings()
+              .filter(
+                part => !(code.required !== true && part === 'undefined'),
+              ),
+          ),
+        ].join(' | ');
+  return text.replace(/\s+/g, ' ').trim();
 }
 
 /**
@@ -1352,6 +1493,7 @@ export function comparePropTables(tables, options) {
             ...base,
             kind: 'not_in_code',
             message: `"${propName}" is documented, but ${table.name}'s props have no "${propName}".`,
+            ...(typeof entry.type === 'string' ? {docType: entry.type} : {}),
           });
           continue;
         }
@@ -1363,6 +1505,8 @@ export function comparePropTables(tables, options) {
             message: code.required
               ? `"${propName}" is required in the code, but the doc does not mark it required.`
               : `"${propName}" is documented as required, but it is optional in the code.`,
+            docRequired,
+            codeRequired: code.required,
           });
         }
       }
@@ -1389,6 +1533,8 @@ export function comparePropTables(tables, options) {
         message: `${table.name} declares "${code.name}", but the doc does not list it.`,
         doc: table.doc,
         source,
+        codeType: codeTypeText(code),
+        codeRequired: code.required,
       });
     }
     if (untraced.length > 0) {
@@ -1417,5 +1563,174 @@ export function comparePropTables(tables, options) {
     findings,
     unchecked,
     ...(propsNotChecked.length > 0 ? {propsNotChecked} : {}),
+  };
+}
+
+/**
+ * The prop tables one doc file documents, each with the export it describes.
+ * A multi-component doc names each entry's export; an entry without `props`
+ * (a reference to a sibling doc) and a hook entry are not prop tables.
+ * @param {any} doc
+ * @param {PropDriftComponent} component
+ * @returns {Array<{name: string, props: any[]}>}
+ */
+function propTables(doc, component) {
+  if (!doc || typeof doc !== 'object') return [];
+  /** @type {Array<{name: string, props: any[]}>} */
+  const tables = [];
+  // A doc's own props document the export its `name` names, which can be
+  // another file's export than the one its file is named after.
+  const own = ownName(doc, component);
+  if (Array.isArray(doc.props) && !HOOK_NAME.test(own)) {
+    tables.push({name: own, props: doc.props});
+  }
+  if (Array.isArray(doc.components)) {
+    for (const entry of doc.components) {
+      if (
+        entry &&
+        typeof entry.name === 'string' &&
+        Array.isArray(entry.props) &&
+        !(Array.isArray(doc.props) && entry.name === own) &&
+        !HOOK_NAME.test(entry.name)
+      ) {
+        tables.push({name: entry.name, props: entry.props});
+      }
+    }
+  }
+  return tables;
+}
+
+/**
+ * The export a doc's own props document: its `name`, else its record's.
+ * @param {any} doc
+ * @param {PropDriftComponent} component
+ */
+function ownName(doc, component) {
+  return typeof doc.name === 'string' && doc.name !== ''
+    ? doc.name
+    : component.name;
+}
+
+/**
+ * The stem of a `<stem>.doc.{ts,mjs,js}` file: the name of the record that
+ * owns the doc.
+ * @param {string} docPath
+ */
+function docStem(docPath) {
+  return path.basename(docPath).replace(/\.doc\.(ts|mjs|js)$/, '');
+}
+
+/**
+ * Where an entry's export lives: `<entry>.tsx` beside the doc, else the doc's
+ * own same-stem source, else the directory's `index.ts`/`index.tsx`.
+ * @param {string} name
+ * @param {PropDriftComponent} component
+ * @returns {string[]} candidates, in order
+ */
+function sourcesForEntry(name, component) {
+  const own = component.sourcePath ? [component.sourcePath] : [];
+  if (name === component.name) return own;
+  const dir = path.dirname(component.docPath);
+  return [
+    path.join(dir, `${name}.tsx`),
+    ...own,
+    path.join(dir, 'index.ts'),
+    path.join(dir, 'index.tsx'),
+  ].filter((file, i, all) => all.indexOf(file) === i && fs.existsSync(file));
+}
+
+/**
+ * Compare documented props with each component's TypeScript props: find each
+ * doc's prop tables, then compare them (`comparePropTables`).
+ * @param {PropDriftComponent[]} components
+ * @param {{packageDir: string, resolveFrom: Array<string | null | undefined>, loadDoc?: (docPath: string) => Promise<any>}} options
+ * @returns {Promise<PropDriftReport>}
+ */
+export async function comparePropDocs(components, options) {
+  const {packageDir, resolveFrom, loadDoc = loadComponentDoc} = options;
+  const rel = (/** @type {string} */ file) =>
+    path.relative(packageDir, file).split(path.sep).join('/');
+
+  /** @type {PropDriftTable[]} */
+  const tables = [];
+  /** @type {PropDriftUnchecked[]} */
+  const unchecked = [];
+  const seen = new Set();
+  // A family doc can stand behind several records: its own, named after the
+  // doc, and one per member entry that discovery records as a component of
+  // its own. A member record compares only its own entry, against its own
+  // source; the family record leaves those entries to the members.
+  /** @type {Map<string, Set<string>>} */
+  const namesByDoc = new Map();
+  for (const component of components) {
+    const names = namesByDoc.get(component.docPath) ?? new Set();
+    names.add(component.name);
+    namesByDoc.set(component.docPath, names);
+  }
+  /** @type {Map<string, Promise<any>>} */
+  const docs = new Map();
+  for (const component of components) {
+    let doc;
+    try {
+      let loading = docs.get(component.docPath);
+      if (!loading) {
+        loading = Promise.resolve(loadDoc(component.docPath));
+        docs.set(component.docPath, loading);
+      }
+      doc = await loading;
+    } catch (err) {
+      unchecked.push({
+        component: component.name,
+        doc: rel(component.docPath),
+        reason: `its doc does not load: ${err instanceof Error ? err.message : String(err)}`,
+      });
+      continue;
+    }
+    if (component.name !== docStem(component.docPath)) {
+      // A record named after the export its doc's `name` names compares the
+      // doc's own props; a family member, its own entry.
+      const entry =
+        doc &&
+        ownName(doc, component) === component.name &&
+        Array.isArray(doc.props)
+          ? doc
+          : Array.isArray(doc?.components)
+            ? doc.components.find(
+                (/** @type {any} */ candidate) =>
+                  candidate?.name === component.name &&
+                  Array.isArray(candidate.props),
+              )
+            : undefined;
+      if (!entry || HOOK_NAME.test(component.name)) continue;
+      const key = `${component.docPath}\0${component.sourcePath}\0${component.name}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      tables.push({
+        doc: rel(component.docPath),
+        name: component.name,
+        props: entry.props,
+        sources: component.sourcePath ? [component.sourcePath] : [],
+      });
+      continue;
+    }
+    const members = namesByDoc.get(component.docPath) ?? new Set();
+    for (const table of propTables(doc, component)) {
+      if (table.name !== component.name && members.has(table.name)) continue;
+      const sources = sourcesForEntry(table.name, component);
+      // One table per doc: two docs that each document a component both
+      // get compared.
+      const key = `${component.docPath}\0${sources[0]}\0${table.name}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      tables.push({doc: rel(component.docPath), ...table, sources});
+    }
+  }
+  const report = comparePropTables(tables, {packageDir, resolveFrom});
+  if (report.status === 'skipped') return report;
+  return {
+    ...report,
+    unchecked: [...unchecked, ...report.unchecked].sort((a, b) =>
+      a.component.localeCompare(b.component),
+    ),
   };
 }
