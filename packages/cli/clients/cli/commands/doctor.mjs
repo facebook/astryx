@@ -174,9 +174,10 @@ function printTemplateConflicts(data) {
 }
 
 /**
- * The documented-props comparison: a visible line when it was skipped, the
- * findings (all warnings), the components it could not read, or an [ok]
- * (never after a failed check).
+ * The documented-props comparison, with every field its JSON carries: a
+ * visible line when it was skipped, the findings (all warnings), the
+ * components it could not read, and how many were compared with which
+ * TypeScript, as an [ok] when nothing differs (never after a failed check).
  * @param {import('../../../api/integration/authoring-checks.type.mjs').PropDriftReport | undefined} report
  * @param {boolean} failed
  */
@@ -200,11 +201,13 @@ function propDriftBlocks(report, failed) {
           'source',
           'docType',
           'codeType',
+          'docRequired',
+          'codeRequired',
         ],
         format: {severity: statusToken},
       }),
       text(
-        `${report.findings.length} documented prop(s) differ from the code in ${components} component(s). ` +
+        `${report.findings.length} documented prop(s) differ from the code in ${components} of ${report.components} component(s) compared (TypeScript ${report.typescript}). ` +
           'These are warnings: update the doc, or the code if the doc is right.',
       ),
     );
@@ -217,10 +220,12 @@ function propDriftBlocks(report, failed) {
       records(report.unchecked, {fields: ['component', 'doc', 'reason']}),
     );
   }
-  if (report.findings.length === 0 && !failed && report.components > 0) {
+  if (report.findings.length === 0) {
     blocks.push(
       text(
-        `[ok] Documented prop names and required flags match the code in ${report.components} component(s) (TypeScript ${report.typescript}).`,
+        !failed && report.components > 0
+          ? `[ok] Documented prop names and required flags match the code in ${report.components} component(s) (TypeScript ${report.typescript}).`
+          : `[info] Props compared in ${report.components} component(s) (TypeScript ${report.typescript}).`,
       ),
     );
   }

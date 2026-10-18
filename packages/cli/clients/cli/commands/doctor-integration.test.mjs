@@ -21,6 +21,7 @@ import {discoverOwnedComponents} from '../../../foundation/discovery/component-d
 import {discoverBuiltinTopics} from '../../../foundation/discovery/docs-discovery.mjs';
 import {findCoreDir} from '../../../foundation/fs/paths.mjs';
 import {registerDoctor} from './doctor.mjs';
+import {expectRecordsCarry} from '../../../test-utils/text-projection.mjs';
 
 let tmpDir;
 let previousCwd;
@@ -421,15 +422,65 @@ describe('doctor integration — command', () => {
     ]);
 
     const output = logCalls.join('\n');
-    expect(output).toContain('kind:      required_mismatch');
+    expect(output).toMatch(/^kind:\s+required_mismatch$/m);
     expect(output).toContain(
       '"label" is required in the code, but the doc does not mark it required.',
     );
     expect(output).toContain(
-      '1 documented prop(s) differ from the code in 1 component(s).',
+      '1 documented prop(s) differ from the code in 1 of 1 component(s) compared (TypeScript',
     );
     expect(output).not.toContain('[ok] Documented prop');
     expect(process.exitCode).toBeUndefined();
+  });
+
+  it('components prints every field of the props comparison that JSON carries', async () => {
+    writeComponentIntegration('AcmeBadge');
+    fs.writeFileSync(
+      path.join(tmpDir, 'components', 'AcmeBadge.doc.mjs'),
+      `export default {type: 'component', name: 'AcmeBadge', displayName: 'AcmeBadge', description: 'Fixture component.', props: [${[
+        "{name: 'label', type: 'string', description: 'Text.'}",
+        "{name: 'elevation', type: 'number', description: 'Shadow.'}",
+      ].join(', ')}]};\n`,
+    );
+    fs.writeFileSync(
+      path.join(tmpDir, 'components', 'AcmeBadge.tsx'),
+      "export function AcmeBadge(props: {label: string; tone?: 'neutral' | 'info'}) { return null; }\n",
+    );
+    fs.writeFileSync(
+      path.join(tmpDir, 'components', 'AcmeLonely.doc.mjs'),
+      `export default {type: 'component', name: 'AcmeLonely', displayName: 'AcmeLonely', description: 'Fixture component.', props: []};\n`,
+    );
+    fs.writeFileSync(
+      path.join(tmpDir, 'components', 'AcmeLonely.tsx'),
+      'export function Other() { return null; }\n',
+    );
+    process.chdir(tmpDir);
+    const run = async (/** @type {string[]} */ flags) => {
+      logCalls.length = 0;
+      await createProgram().parseAsync([
+        'node',
+        'astryx',
+        ...flags,
+        'doctor',
+        'integration',
+        'components',
+      ]);
+      return logCalls.join('\n');
+    };
+
+    const report = JSON.parse(await run(['--json'])).data.propDrift;
+    const output = await run([]);
+
+    expect(report.findings.map(f => `${f.prop} ${f.kind}`)).toEqual([
+      'elevation not_in_code',
+      'label required_mismatch',
+      'tone not_in_doc',
+    ]);
+    expectRecordsCarry(output, report.findings, ['component', 'prop', 'kind']);
+    expectRecordsCarry(output, report.unchecked, ['component', 'reason']);
+    expect(output).toContain(
+      `in 1 of ${report.components} component(s) compared (TypeScript ${report.typescript}).`,
+    );
   });
 
   it('components says documented props match when they do', async () => {
