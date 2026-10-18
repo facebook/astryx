@@ -48,6 +48,62 @@ function isAmbient(file) {
 }
 
 /**
+ * Read a config's `files` entries as `tsc` does, and report the first it
+ * cannot find. TypeScript itself substitutes `${configDir}` (on a version
+ * that has it), resolves each entry against the config that writes it, and
+ * tries the TypeScript extensions for one written without its own, so this
+ * cannot drift from `tsc`. The parsed file names then hold the files found.
+ * A file the `include` matched that is gone by the time it is read was
+ * another process's, and is not checked here.
+ * @param {any} ts
+ * @param {any} raw the config's JSON
+ * @param {string} configPath
+ * @param {any} config the parsed config, whose file names are updated
+ * @returns {string | null} the message `tsc` gives for the first entry it
+ *   cannot find (TS6053, or TS6231 for a folder)
+ */
+function readFilesEntries(ts, raw, configPath, config) {
+  const literal = ts.parseJsonConfigFileContent(
+    raw,
+    {...ts.sys, readDirectory: () => []},
+    path.dirname(configPath),
+    undefined,
+    configPath,
+  ).fileNames;
+  if (literal.length === 0 || typeof ts.createProgram !== 'function') {
+    return null;
+  }
+  // Only the entries themselves: no library, no types, no imports.
+  const program = ts.createProgram({
+    rootNames: literal,
+    options: {
+      ...config.options,
+      noLib: true,
+      noResolve: true,
+      types: [],
+      noEmit: true,
+    },
+  });
+  const missing = program
+    .getOptionsDiagnostics()
+    .find(/** @param {any} d */ d => d.code === 6053 || d.code === 6231);
+  if (missing) {
+    const text = missing.messageText;
+    return typeof text === 'string' ? text : text.messageText;
+  }
+  const entries = new Set(
+    literal.map(/** @param {string} f */ f => path.resolve(f)),
+  );
+  config.fileNames = [
+    ...config.fileNames.filter(
+      /** @param {string} f */ f => !entries.has(path.resolve(f)),
+    ),
+    ...program.getSourceFiles().map(/** @param {any} sf */ sf => sf.fileName),
+  ];
+  return null;
+}
+
+/**
  * @param {any} ts the project's own `typescript`
  * @param {string} packageDir
  * @param {string[]} sources the files to read
@@ -83,16 +139,19 @@ export function readPackageTsconfig(ts, packageDir, sources) {
     const problem = config.errors.find(
       /** @param {any} d */ d => d.code !== 18003,
     );
-    // A `files` entry that does not exist parses, and `tsc` then reports it
-    // (TS6053).
-    const missing = config.fileNames.find(
-      /** @param {string} file */ file => !fs.existsSync(file),
-    );
     const where = path.relative(packageDir, configPath);
     if (problem) {
       config.error = `${where}: ${ts.flattenDiagnosticMessageText(problem.messageText, ' ')}`;
-    } else if (missing) {
-      config.error = `${where}: File '${path.relative(packageDir, missing)}' not found.`;
+    } else if (!read.error) {
+      const missing = readFilesEntries(ts, read.config, configPath, config);
+      if (missing) {
+        // Paths read from the package, as the config's other errors are.
+        const dir = path.dirname(configPath).split(path.sep).join('/');
+        const rel = path.relative(packageDir, path.dirname(configPath));
+        config.error = `${where}: ${missing
+          .split(`${dir}/`)
+          .join(rel ? `${rel.split(path.sep).join('/')}/` : '')}`;
+      }
     }
     return config;
   };

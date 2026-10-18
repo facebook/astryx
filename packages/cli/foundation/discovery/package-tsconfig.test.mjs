@@ -138,4 +138,54 @@ describe('readPackageTsconfig', () => {
       /^tsconfig\.json: /,
     );
   });
+
+  it('reads each `files` entry as `tsc` finds it', () => {
+    const source = write('src/Button.tsx', 'export {};\n');
+    write('src/Card.ts', 'export {};\n');
+    write('types/globals.ts', 'interface AcmeGlobal { tone?: string }\n');
+    write('configs/base.json', {files: ['${configDir}/src/Button.tsx']});
+    /** @type {(config: object) => any} */
+    const read = config => {
+      write('tsconfig.json', {compilerOptions: OPTIONS, ...config});
+      return readPackageTsconfig(ts, root, [source]);
+    };
+
+    // `${configDir}`, written in the package's config or in a shared base it
+    // extends, and an entry without its extension compile with `tsc -p`.
+    expect(
+      read({files: ['${configDir}/src/Button.tsx']}).error,
+    ).toBeUndefined();
+    expect(read({extends: './configs/base.json'}).error).toBeUndefined();
+    const bare = read({files: ['src/Button', 'src/Card', 'types/globals']});
+    expect(bare.error).toBeUndefined();
+    expect(bare.declarations).toEqual([path.join(root, 'types', 'globals.ts')]);
+
+    // An entry `tsc` can't find is an error: a missing file (TS6053), and a
+    // folder (TS6231).
+    expect(read({files: ['src/Button.tsx', 'src/gone.ts']}).error).toMatch(
+      /^tsconfig\.json: File 'src\/gone\.ts' not found\.$/,
+    );
+    expect(read({files: ['src']}).error).toMatch(
+      /^tsconfig\.json: Could not resolve the path 'src' with the extensions/,
+    );
+  });
+
+  it('reports only a missing `files` entry, not a file the `include` matched that is gone by the time it is read', () => {
+    const source = write('src/Button.tsx', 'export {};\n');
+    write('tsconfig.json', {compilerOptions: OPTIONS, include: ['src']});
+    // A file another process writes and removes while the config is read.
+    const gone = path.join(root, 'src', 'gone.ts');
+    const racing = {
+      ...ts,
+      sys: {
+        ...ts.sys,
+        readDirectory: (/** @type {any[]} */ ...args) => [
+          ...ts.sys.readDirectory(...args),
+          gone,
+        ],
+      },
+    };
+
+    expect(readPackageTsconfig(racing, root, [source]).error).toBeUndefined();
+  });
 });
