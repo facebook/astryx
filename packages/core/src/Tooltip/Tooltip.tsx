@@ -61,7 +61,7 @@ export interface TooltipProps {
    * instead of wrapping children. This enables sibling-mode rendering,
    * useful for lazy-loaded tooltips that shouldn't remount children.
    */
-  anchorRef?: React.RefObject<HTMLElement | null>;
+  anchorRef?: React.RefObject<HTMLElement | SVGElement | null>;
 
   /**
    * Content to display in the tooltip.

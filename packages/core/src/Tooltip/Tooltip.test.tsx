@@ -25,6 +25,7 @@ import {
   fireEvent,
   waitFor,
 } from '@testing-library/react';
+import {useRef} from 'react';
 import {Tooltip} from './Tooltip';
 import {useTooltip} from './useTooltip';
 import {__resetInteractionModalityForTest} from '../utils/interactionModality';
@@ -211,6 +212,32 @@ describe('Tooltip', () => {
       expect(screen.getByTestId('icon').getAttribute('aria-describedby')).toBe(
         screen.getByRole('tooltip', {hidden: true}).id,
       );
+    });
+
+    it('opens an SVG anchor in sibling mode without passing source options', async () => {
+      const showSpy = vi.mocked(HTMLElement.prototype.showPopover);
+      showSpy.mockClear();
+
+      function SvgRepro() {
+        const pathRef = useRef<SVGPathElement>(null);
+        return (
+          <>
+            <svg width="100" height="100">
+              <path ref={pathRef} d="M0 0 L100 100" />
+            </svg>
+            <Tooltip anchorRef={pathRef} content="Path tooltip" isDefaultOpen />
+          </>
+        );
+      }
+
+      render(<SvgRepro />);
+
+      await waitFor(() => {
+        expect(showSpy).toHaveBeenCalled();
+      });
+
+      const [options] = showSpy.mock.calls[0];
+      expect(options).toBeUndefined();
     });
   });
 

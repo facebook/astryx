@@ -86,7 +86,7 @@ const ACTION_ROLES = new Set([
  * inert trigger that happens to carry its own `onClick` (a `<div onClick>`
  * with no role) gets both: the layer opens and the handler runs.
  */
-export function isActionTrigger(element: HTMLElement): boolean {
+export function isActionTrigger(element: HTMLElement | SVGElement): boolean {
   const role = element.getAttribute('role');
   if (role != null && role !== '') {
     return ACTION_ROLES.has(role);
@@ -113,8 +113,8 @@ export function isActionTrigger(element: HTMLElement): boolean {
  * the property: jsdom does not implement `isContentEditable`, and an editor
  * that is an action in the browser must not be inert under test.
  */
-function isEditable(element: HTMLElement): boolean {
-  if (element.isContentEditable === true) {
+function isEditable(element: HTMLElement | SVGElement): boolean {
+  if ('isContentEditable' in element && element.isContentEditable === true) {
     return true;
   }
   const attribute = element.getAttribute('contenteditable');
@@ -141,7 +141,7 @@ export interface UseTouchTriggerOptions {
   layerId: string;
 
   /** The trigger element the layer is anchored to. */
-  triggerRef: RefObject<HTMLElement | null>;
+  triggerRef: RefObject<HTMLElement | SVGElement | null>;
 
   /** Open the layer immediately, with no hover delay. */
   show: () => void;

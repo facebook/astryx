@@ -176,20 +176,20 @@ export interface TooltipReturn {
    * Combined ref that sets both position and interaction on the same element.
    * Shorthand for calling both positionRef and interactionRef.
    */
-  ref: RefCallback<HTMLElement>;
+  ref: RefCallback<HTMLElement | SVGElement>;
 
   /**
    * Ref for the positioning anchor element.
    * Injects anchorName style for CSS anchor positioning.
    */
-  positionRef: RefCallback<HTMLElement>;
+  positionRef: RefCallback<HTMLElement | SVGElement>;
 
   /**
    * Ref for the interaction element.
    * Attaches hover/focus event listeners via addEventListener.
    * Can be the same element as positionRef or different.
    */
-  interactionRef: RefCallback<HTMLElement>;
+  interactionRef: RefCallback<HTMLElement | SVGElement>;
 
   /**
    * The CSS anchor name to use for positioning.
@@ -220,7 +220,7 @@ export interface TooltipReturn {
 /**
  * Check if an element is naturally focusable
  */
-function isFocusable(element: HTMLElement): boolean {
+function isFocusable(element: HTMLElement | SVGElement): boolean {
   // Elements with explicit tabindex
   if (element.hasAttribute('tabindex')) {
     return element.tabIndex >= 0;
@@ -233,7 +233,7 @@ function isFocusable(element: HTMLElement): boolean {
   }
 
   // Elements with contenteditable
-  if (element.isContentEditable) {
+  if ('isContentEditable' in element && element.isContentEditable) {
     return true;
   }
 
@@ -298,7 +298,7 @@ export function useTooltip(options: TooltipOptions = {}): TooltipReturn {
 
   const showTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const triggerRef = useRef<HTMLElement | null>(null);
+  const triggerRef = useRef<HTMLElement | SVGElement | null>(null);
 
   // Clear all timeouts
   const clearTimeouts = useCallback(() => {
@@ -458,8 +458,8 @@ export function useTooltip(options: TooltipOptions = {}): TooltipReturn {
   );
 
   // Interaction ref that handles event listeners only
-  const interactionRef: RefCallback<HTMLElement> = useCallback(
-    (el: HTMLElement | null) => {
+  const interactionRef: RefCallback<HTMLElement | SVGElement> = useCallback(
+    (el: HTMLElement | SVGElement | null) => {
       // Cleanup previous element
       if (triggerRef.current) {
         triggerRef.current.removeEventListener('mouseenter', handleMouseEnter);
@@ -468,11 +468,11 @@ export function useTooltip(options: TooltipOptions = {}): TooltipReturn {
         triggerRef.current.removeEventListener('focusout', handleFocusOut);
         triggerRef.current.removeEventListener(
           'pointerenter',
-          handlePointerEnter,
+          handlePointerEnter as EventListener,
         );
         triggerRef.current.removeEventListener(
           'pointerdown',
-          handlePointerDown,
+          handlePointerDown as EventListener,
         );
       }
 
@@ -480,11 +480,14 @@ export function useTooltip(options: TooltipOptions = {}): TooltipReturn {
         // Attach hover listeners. `pointerenter` runs before the synthesized
         // `mouseenter` a tap produces, which is what lets the hover path know
         // it is looking at a finger.
-        el.addEventListener('pointerenter', handlePointerEnter);
+        el.addEventListener(
+          'pointerenter',
+          handlePointerEnter as EventListener,
+        );
         el.addEventListener('mouseenter', handleMouseEnter);
         el.addEventListener('mouseleave', handleMouseLeave);
         // Press-to-dismiss on a mouse; tap-to-open on a touch pointer.
-        el.addEventListener('pointerdown', handlePointerDown);
+        el.addEventListener('pointerdown', handlePointerDown as EventListener);
 
         // Attach focus listeners based on focusTrigger option
         const shouldAttachFocus =
@@ -511,8 +514,8 @@ export function useTooltip(options: TooltipOptions = {}): TooltipReturn {
   );
 
   // Combined ref - shorthand for calling both positionRef and interactionRef
-  const ref: RefCallback<HTMLElement> = useCallback(
-    (el: HTMLElement | null) => {
+  const ref: RefCallback<HTMLElement | SVGElement> = useCallback(
+    (el: HTMLElement | SVGElement | null) => {
       layerRef(el);
       interactionRef(el);
     },

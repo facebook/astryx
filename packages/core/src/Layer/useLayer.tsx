@@ -341,7 +341,7 @@ export interface ContextLayerReturn {
    * Ref to attach to trigger element.
    * Injects anchorName style for CSS anchor positioning.
    */
-  ref: RefCallback<HTMLElement>;
+  ref: RefCallback<HTMLElement | SVGElement>;
 
   /**
    * The CSS anchor name to use for positioning.
@@ -721,7 +721,7 @@ function useLayerImplementation(
   // A portal target change replaces the popover element; retaining the old
   // reference lets the ref callback recognize and reopen its replacement.
   const openedPopoverRef = useRef<HTMLElement | null>(null);
-  const triggerRef = useRef<HTMLElement | null>(null);
+  const triggerRef = useRef<HTMLElement | SVGElement | null>(null);
   // Context layers place a persistent inert marker at their real JSX position.
   // Its parent tells us whether the final layer can stay inline or needs a
   // corrective portal, including after the render call moves.
@@ -771,7 +771,11 @@ function useLayerImplementation(
           triggerRef.current instanceof HTMLElement
             ? triggerRef.current
             : undefined;
-        popover.showPopover({source: trigger});
+        if (trigger != null) {
+          popover.showPopover({source: trigger});
+        } else {
+          popover.showPopover();
+        }
       });
     } else {
       popover.style.display = 'block';
@@ -905,7 +909,7 @@ function useLayerImplementation(
 
   // Stable ref for the trigger element (context mode only).
   const contextRef = useCallback(
-    (el: HTMLElement | null) => {
+    (el: HTMLElement | SVGElement | null) => {
       // Remove only THIS layer's anchor name from the previous element so
       // other layers sharing the same trigger keep their anchors.
       if (triggerRef.current && triggerRef.current !== el) {

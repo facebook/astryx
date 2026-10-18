@@ -2,7 +2,7 @@
 
 /**
  * @file anchorName.ts
- * @input HTMLElement with CSS anchor-name property
+ * @input HTMLElement or SVGElement with CSS anchor-name property
  * @output Helpers for managing comma-separated anchor-name lists
  * @position Utility; used by useLayer for multi-anchor support
  *
@@ -17,7 +17,7 @@
  * overwriting the whole property would break every sibling layer's positioning.
  */
 
-export function readAnchorNames(el: HTMLElement): string[] {
+export function readAnchorNames(el: HTMLElement | SVGElement): string[] {
   const value =
     (el.style as unknown as Record<string, string>).anchorName ?? '';
   return value
@@ -26,11 +26,17 @@ export function readAnchorNames(el: HTMLElement): string[] {
     .filter(Boolean);
 }
 
-export function writeAnchorNames(el: HTMLElement, names: string[]): void {
+export function writeAnchorNames(
+  el: HTMLElement | SVGElement,
+  names: string[],
+): void {
   (el.style as unknown as Record<string, string>).anchorName = names.join(', ');
 }
 
-export function addAnchorName(el: HTMLElement, name: string): void {
+export function addAnchorName(
+  el: HTMLElement | SVGElement,
+  name: string,
+): void {
   const names = readAnchorNames(el);
   if (!names.includes(name)) {
     names.push(name);
@@ -38,7 +44,10 @@ export function addAnchorName(el: HTMLElement, name: string): void {
   }
 }
 
-export function removeAnchorName(el: HTMLElement, name: string): void {
+export function removeAnchorName(
+  el: HTMLElement | SVGElement,
+  name: string,
+): void {
   writeAnchorNames(
     el,
     readAnchorNames(el).filter(existing => existing !== name),
