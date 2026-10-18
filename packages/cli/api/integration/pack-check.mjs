@@ -473,11 +473,16 @@ async function validatePackedComponentExports(integration, scratchBase) {
   const issues = [];
   /** @type {Array<{name: string, specifier: string}>} */
   const components = [];
+  // A family doc backs several records: load it, and report it, once.
+  const loads = new Map();
   for (const record of records) {
+    const first = !loads.has(record.docPath);
+    if (first) loads.set(record.docPath, loadComponentDoc(record.docPath));
     let docs;
     try {
-      docs = await loadComponentDoc(record.docPath);
+      docs = await loads.get(record.docPath);
     } catch (err) {
+      if (!first) continue;
       issues.push(
         error(
           'component_doc_unloadable',

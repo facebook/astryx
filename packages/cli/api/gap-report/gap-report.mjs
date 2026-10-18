@@ -22,6 +22,7 @@ import {
   discoverIntegrationComponents,
   docStem,
   integrationRecordHold,
+  isIntegrationMember,
   unscopedComponentOwners,
 } from '../../foundation/discovery/component-discovery.mjs';
 import {captureEnv} from '../../foundation/debug/event.mjs';
@@ -201,7 +202,8 @@ async function selectTarget(project, component, packageName) {
           discoverIntegrationComponents(integration).flatMap(r =>
             r.name.toLowerCase() === wanted
               ? [{...r, hold: integrationRecordHold(r)}]
-              : docStem(r.docPath).toLowerCase() === wanted
+              : docStem(r.docPath).toLowerCase() === wanted &&
+                  !isIntegrationMember(r)
                 ? [{...r, hold: 'doc'}]
                 : [],
           ),

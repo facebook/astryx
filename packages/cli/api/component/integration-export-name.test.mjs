@@ -3,9 +3,10 @@
 /**
  * @file An integration component is one component at every surface under the
  * name its doc documents. `Slides.doc.mjs` with `name: 'AcmeCarousel'` beside a
- * `Slides.tsx` that exports `AcmeCarousel`: the list, `component <Name>`,
- * search and Doctor's package checks all know it by that name, and the file
- * name still opens the doc as before.
+ * `Slides.tsx` that exports `AcmeCarousel`, and the `AcmeTab` member an
+ * `AcmeTabs` family doc lists: the list, `component <Name>`, search and
+ * Doctor's package checks all know them by those names, and the file name
+ * still opens the doc as before.
  *
  * Fixtures live under a repo-local temp dir, not /tmp, because Vite refuses to
  * dynamically import a module from outside the project root.
@@ -14,13 +15,17 @@
 import {afterEach, beforeEach, describe, expect, it} from 'vitest';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import {spawnSync} from 'node:child_process';
 import {component} from './component.mjs';
 import {search} from '../search/search.mjs';
 import {validateIntegration} from '../integration/validate-integration.mjs';
 import {integrationComponentConflicts} from '../integration/authoring-checks.mjs';
 import {swizzleCopy} from '../swizzle/copy/copy.mjs';
 import {gapReport} from '../gap-report/gap-report.mjs';
+import {Project} from '../../foundation/config/project.mjs';
+import {collectDocInputs} from '../../foundation/doc-compiler/inputs.mjs';
 import {COMPONENT_REPLACES_CLI} from '../../foundation/integrations/cli-requirement.mjs';
+import {scopeIntegrationMember} from './_adapter.mjs';
 
 const SLOW = 30_000;
 
@@ -81,6 +86,7 @@ beforeEach(() => {
         './gallery/Slides': './src/gallery/Slides.tsx',
         './gallery/Overlays': './src/gallery/Overlays.tsx',
         './AcmeBadge': './src/AcmeBadge.tsx',
+        './tabs': './src/tabs/AcmeTabs.tsx',
       },
     }),
   );
@@ -99,6 +105,43 @@ beforeEach(() => {
     'AcmeBadge',
     'export function AcmeBadge() { return null; }\n',
     'A small status label.',
+  );
+  // A family doc whose members the module it imports exports.
+  fs.mkdirSync(path.join(pkgDir, 'src', 'tabs'), {recursive: true});
+  fs.writeFileSync(
+    path.join(pkgDir, 'src', 'tabs', 'AcmeTabs.tsx'),
+    'export function AcmeTabs() { return null; }\nexport function AcmeTab() { return null; }\n',
+  );
+  fs.writeFileSync(
+    path.join(pkgDir, 'src', 'tabs', 'AcmeTabs.doc.mjs'),
+    `export default ${JSON.stringify(
+      {
+        type: 'component',
+        name: 'AcmeTabs',
+        displayName: 'Acme Tabs',
+        import: '@acme/widgets/tabs',
+        keywords: ['tabs', 'navigation'],
+        usage: {description: 'Switches between views.'},
+        components: [
+          {
+            name: 'AcmeTabs',
+            displayName: 'Acme Tabs',
+            description: 'The tab list.',
+            props: [],
+          },
+          {
+            name: 'AcmeTab',
+            displayName: 'Acme Tab',
+            description: 'One labelled tab in the list.',
+            props: [
+              {name: 'label', type: 'string', description: 'The tab label.'},
+            ],
+          },
+        ],
+      },
+      null,
+      2,
+    )};\n`,
   );
 });
 
@@ -146,7 +189,7 @@ describe('a component doc that names another export of its file', () => {
     async () => {
       expect(
         listedNames(await component(undefined, {cwd: tmpDir, list: true})),
-      ).toEqual(['AcmeBadge', 'AcmeCarousel']);
+      ).toEqual(['AcmeBadge', 'AcmeCarousel', 'AcmeTab', 'AcmeTabs']);
 
       const detail = await component('AcmeCarousel', {cwd: tmpDir});
       expect(detail.type).toBe('component.detail');
@@ -186,15 +229,18 @@ describe('a component doc that names another export of its file', () => {
     SLOW,
   );
 
-  it(
-    "leaves a Core name to Core unless --package names it, and passes Doctor's package checks",
-    async () => {
+  it.each(['the export its doc names', 'a member its family doc lists'])(
+    "leaves a Core name to Core unless --package names it, when it is %s, and passes Doctor's package checks",
+    async kind => {
       // Overlays.tsx exports Dialog, a Core name, and nothing named Overlays.
+      const members = [{name: 'Dialog', description: 'A dialog.', props: []}];
+      const member = kind === 'a member its family doc lists';
       writeComponent(
         'gallery/Overlays',
-        'Dialog',
+        member ? 'AcmeOverlays' : 'Dialog',
         'export function AcmeOverlays() { return null; }\nexport function Dialog() { return null; }\n',
         'Overlays.',
+        member ? {components: members} : {},
       );
 
       const validation = await validateIntegration(undefined, {cwd: pkgDir});
@@ -367,6 +413,181 @@ describe('a component doc that names another export of its file', () => {
         package: '@acme/widgets',
         outputDir: path.join('components', 'astryx', 'Slides'),
       });
+    },
+    SLOW,
+  );
+
+  it(
+    "opens a member named like its family doc's own name as that member",
+    async () => {
+      // Overlays.tsx exports Overlays, so the doc keeps its file name, and
+      // AcmeChip, the doc's own name, is a member.
+      const label = {name: 'label', type: 'string', description: 'The label.'};
+      writeComponent(
+        'gallery/Overlays',
+        'AcmeChip',
+        'export function Overlays() { return null; }\nexport function AcmeChip() { return null; }\n',
+        'Chips.',
+        {
+          components: [
+            {name: 'AcmeChip', description: 'One chip.', props: [label]},
+          ],
+        },
+      );
+      const detail = await component('AcmeChip', {cwd: tmpDir});
+      expect(detail.data).toMatchObject({
+        name: 'AcmeChip',
+        description: 'One chip.',
+        parentDoc: 'Overlays',
+      });
+      const props = await component('AcmeChip', {cwd: tmpDir, props: true});
+      expect(props.data.map(prop => prop.name)).toEqual(['label']);
+    },
+    SLOW,
+  );
+
+  it(
+    'opens, lists and finds a family member as itself, with the import its family states',
+    async () => {
+      const list = await component(undefined, {cwd: tmpDir, list: true});
+      const entry = Object.values(list.data.components)
+        .flat()
+        .find(item => item.name === 'AcmeTab');
+      expect(entry).toEqual({
+        name: 'AcmeTab',
+        package: '@acme/widgets',
+        import: '@acme/widgets/tabs',
+      });
+
+      const detail = await component('AcmeTab', {cwd: tmpDir});
+      expect(detail.data).toMatchObject({
+        name: 'AcmeTab',
+        description: 'One labelled tab in the list.',
+        parentDoc: 'AcmeTabs',
+        package: '@acme/widgets',
+        import: '@acme/widgets/tabs',
+        sourceAvailable: true,
+      });
+      expect(detail.data.props.map(prop => prop.name)).toEqual(['label']);
+      const props = await component('AcmeTab', {cwd: tmpDir, props: true});
+      expect(props.data.map(prop => prop.name)).toEqual(['label']);
+      // The family's own doc is unchanged.
+      expect((await component('AcmeTabs', {cwd: tmpDir})).data).toMatchObject({
+        name: 'AcmeTabs',
+        import: '@acme/widgets/tabs',
+      });
+
+      const hits = (await search('AcmeTab', {cwd: tmpDir, type: 'component'}))
+        .data.results;
+      expect(hits[0]).toMatchObject({
+        name: 'AcmeTab',
+        description: 'One labelled tab in the list.',
+        import: '@acme/widgets/tabs',
+      });
+      // The member does not carry the family's keywords.
+      const tabs = (
+        await search('navigation', {cwd: tmpDir, type: 'component'})
+      ).data.results;
+      expect(tabs.map(hit => hit.name)).toContain('AcmeTabs');
+      expect(tabs.map(hit => hit.name)).not.toContain('AcmeTab');
+    },
+    SLOW,
+  );
+
+  it(
+    'leaves a member named like a Core sub-component to Core, and swizzle unknown',
+    async () => {
+      const tabs = path.join(pkgDir, 'src', 'tabs');
+      const doc = path.join(tabs, 'AcmeTabs.doc.mjs');
+      fs.writeFileSync(
+        doc,
+        fs
+          .readFileSync(doc, 'utf-8')
+          .replace(
+            '"components": [',
+            '"components": [{"name": "DialogHeader", "description": "x"},',
+          ),
+      );
+      fs.appendFileSync(
+        path.join(tabs, 'AcmeTabs.tsx'),
+        'export function DialogHeader() { return null; }\n',
+      );
+      const cwd = tmpDir;
+      expect(
+        listedNames(await component(undefined, {cwd, list: true})),
+      ).toContain('DialogHeader');
+      expect((await component('DialogHeader', {cwd})).data.package).toBe(
+        '@astryxdesign/core',
+      );
+      await expect(swizzleCopy('DialogHeader', {cwd})).rejects.toMatchObject({
+        code: 'ERR_UNKNOWN_COMPONENT',
+      });
+    },
+    SLOW,
+  );
+
+  it('fails a member its family doc, as this process loaded it, does not list', async () => {
+    const owner = {
+      package: '@acme/widgets',
+      docPath: path.join(pkgDir, 'src', 'tabs', 'AcmeTabs.doc.mjs'),
+      sourcePath: null,
+    };
+    // The doc this process loaded before AcmeTab was added.
+    const stale = {type: 'component', name: 'AcmeTabs', components: []};
+    expect(() =>
+      scopeIntegrationMember(/** @type {any} */ (stale), owner, 'AcmeTab', ''),
+    ).toThrow(expect.objectContaining({code: 'ERR_UNKNOWN_COMPONENT'}));
+  });
+
+  it(
+    'indexes a .doc.ts family member as a member when Node cannot load the doc',
+    () => {
+      const fam = path.join(pkgDir, 'src', 'fam');
+      fs.mkdirSync(fam, {recursive: true});
+      const manifest = path.join(pkgDir, 'package.json');
+      const pkg = JSON.parse(fs.readFileSync(manifest, 'utf-8'));
+      pkg.exports['./fam'] = './src/fam/AcmeFamTs.tsx';
+      fs.writeFileSync(manifest, JSON.stringify(pkg));
+      fs.writeFileSync(
+        path.join(fam, 'AcmeFamTs.doc.ts'),
+        "export default {type: 'component', name: 'AcmeFamTs', import: '@acme/widgets/fam', usage: {description: 'A family.'}, components: [{name: 'AcmeFamTs', description: 'x'}, {name: 'AcmeFamItem', description: 'One item.'}]};\n",
+      );
+      fs.writeFileSync(
+        path.join(fam, 'AcmeFamTs.tsx'),
+        'export function AcmeFamTs() { return null; }\nexport function AcmeFamItem() { return null; }\n',
+      );
+      // The real CLI under Node, which does not strip types in node_modules.
+      const run = spawnSync(
+        process.execPath,
+        [
+          path.join(process.cwd(), 'packages/cli/clients/cli/bin/astryx.mjs'),
+          'search',
+          'AcmeFamTs',
+          '--json',
+        ],
+        {cwd: tmpDir, encoding: 'utf-8'},
+      );
+      const hits = JSON.parse(run.stdout).data.results.filter(
+        (/** @type {any} */ hit) => hit.domain === 'component',
+      );
+      expect(hits.map((/** @type {any} */ hit) => hit.name)).toEqual([
+        'AcmeFamTs',
+      ]);
+    },
+    SLOW,
+  );
+
+  it(
+    'reads a family doc once when the docs compile',
+    async () => {
+      const {inputs, problems} = await collectDocInputs(
+        await Project.load(tmpDir),
+      );
+      expect(problems).toEqual([]);
+      const tabsDoc = path.join(pkgDir, 'src', 'tabs', 'AcmeTabs.doc.mjs');
+      expect(
+        inputs.filter(input => input.file === tabsDoc).map(input => input.name),
+      ).toEqual(['AcmeTabs']);
     },
     SLOW,
   );

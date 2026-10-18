@@ -95,7 +95,11 @@ export default {
         },
         {
           type: 'prose',
-          text: 'The public module named by `import` must export every component or hook named by a full entry.',
+          text: 'The public module named by `import` must export every component or hook named by a full entry. Apps then list, search and open each component in the family by its own name, and `integration verify` checks that the module exports it.',
+        },
+        {
+          type: 'prose',
+          text: "A member's source is the file that declares it, reached through the family's own file or the module `import` names, and it must sit in the family doc's folder or below it. A member is not listed when only a bundle or a file outside that folder declares it, when a doc's file or a Core name your package replaces already has its name, or when the family doc has no source file of its own. A member that shares a name with Core opens with `--package`.",
         },
       ],
     },
