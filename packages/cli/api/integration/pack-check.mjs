@@ -51,6 +51,7 @@ import {
 } from '../theme/build/build.mjs';
 import {
   discoverIntegrationComponents,
+  docStem,
   resolveIntegrationImportPath,
 } from '../../foundation/discovery/component-discovery.mjs';
 import {loadComponentReplacements} from '../component/_adapter.mjs';
@@ -480,7 +481,7 @@ async function validatePackedComponentExports(integration, scratchBase) {
       issues.push(
         error(
           'component_doc_unloadable',
-          `Component "${record.name}" doc at "${record.docPath}" could not be loaded: ${err instanceof Error ? err.message : String(err)}`,
+          `Component "${docStem(record.docPath)}" doc at "${record.docPath}" could not be loaded: ${err instanceof Error ? err.message : String(err)}`,
         ),
       );
       continue;

@@ -259,6 +259,26 @@ describe('resolveComponentReplacements', () => {
     ]);
   });
 
+  it('applies a replacement under the export a doc names when its file is named otherwise', async () => {
+    // Nav.doc.mjs documents AcmeSideNav, the export of a Nav.tsx that exports
+    // nothing named Nav.
+    const acme = integrationWithDocSource(
+      '@acme/nav',
+      'Nav',
+      BASE_DOC.replace("name: 'AcmeNav'", "name: 'AcmeSideNav'"),
+    );
+    fs.writeFileSync(
+      path.join(acme.components, 'Nav.tsx'),
+      'export function AcmeSideNav() { return null; }\n',
+    );
+    const result = await resolveComponentReplacements(CORE_DIR, [acme]);
+    expect(result.findings).toEqual([]);
+    expect(result.forTarget('SideNav')).toMatchObject({
+      name: 'AcmeSideNav',
+      package: '@acme/nav',
+    });
+  });
+
   it('lets a replacement keep the Core name it replaces', async () => {
     const acme = integration(
       '@acme/nav',
