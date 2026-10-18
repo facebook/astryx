@@ -99,6 +99,62 @@ function issueBlocks(issues) {
 }
 
 /**
+ * The docs checked against the authoring types: a visible line when it was
+ * skipped, the findings (all warnings), the files it could not check, or an
+ * [ok] (never after a failed check).
+ * @param {import('../../../api/integration/validate-integration.type.mjs').DocTypesReport | undefined} report
+ * @param {boolean} failed
+ */
+function docTypesBlocks(report, failed) {
+  if (!report) return [];
+  if (report.status === 'skipped') {
+    return [text(`[skip] Docs not type-checked: ${report.reason}`)];
+  }
+  const blocks = [
+    section(
+      `Checking docs against the authoring types (TypeScript ${report.typescript})`,
+    ),
+  ];
+  if (report.findings.length > 0) {
+    const files = new Set(report.findings.map(f => f.doc)).size;
+    blocks.push(
+      records(report.findings, {
+        fields: [
+          'severity',
+          'doc',
+          'line',
+          'field',
+          'problem',
+          'message',
+          'fix',
+        ],
+        format: {severity: statusToken},
+      }),
+      text(
+        `${report.findings.length} doc field(s) in ${files} file(s) do not match the authoring types. ` +
+          'These are warnings; `astryx docs authoring` lists every field.',
+      ),
+    );
+  }
+  if (report.unchecked.length > 0) {
+    blocks.push(
+      text(`[info] Not type-checked: ${report.unchecked.length} doc file(s):`),
+      records(report.unchecked, {fields: ['doc', 'reason']}),
+    );
+  }
+  if (report.findings.length === 0 && !failed && report.docs > 0) {
+    blocks.push(
+      text(
+        report.unchecked.length > 0
+          ? `[ok] Every doc that was checked matches its authoring type (${report.docs} checked).`
+          : `[ok] Every doc matches its authoring type (${report.docs} checked).`,
+      ),
+    );
+  }
+  return blocks;
+}
+
+/**
  * @param {import('../../../api/integration/validate-integration.type.mjs').ValidateIntegrationResponse['data']} data
  */
 function printIntegrationValidation(data) {
@@ -119,6 +175,7 @@ function printIntegrationValidation(data) {
       `Summary: ${errors} error${errors === 1 ? '' : 's'}, ` +
         `${warnings} warning${warnings === 1 ? '' : 's'}`,
     ),
+    ...docTypesBlocks(data.docTypes, errors > 0),
   );
 }
 
