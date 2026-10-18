@@ -2373,6 +2373,37 @@ jobs:
           retention-days: 30
           if-no-files-found: error
 
+      # CommandPaletteInput owns a standalone searchbox and contextual combobox.
+      # Its audit lane keeps the visible keyboard-focus, theme, direction,
+      # responsive, empty, and pending receipts bound to the exact PR head.
+      - name: Run CommandPaletteInput audit browser evidence
+        if: ${{ !cancelled() && github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, '[Component Audit] CommandPaletteInput:') }}
+        env:
+          ASTRYX_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          status=0
+          node .github/scripts/accessibility-audit.js \
+            --storybook-dir apps/storybook/dist \
+            --output command-palette-input-a11y-report.json \
+            --components CommandPaletteInput \
+            --baseline .github/a11y-baseline.json \
+            --fail-on-new || status=1
+          pnpm exec playwright test \
+            packages/core/src/CommandPalette/__tests__/CommandPaletteInputAudit.a11y.chromium.spec.ts \
+            --project chromium || status=1
+          exit "$status"
+
+      - name: Upload CommandPaletteInput audit evidence
+        if: always() && github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, '[Component Audit] CommandPaletteInput:')
+        uses: actions/upload-artifact@v7
+        with:
+          name: command-palette-input-audit-evidence-${{ needs.build-storybook.outputs.short_hash }}
+          path: |
+            command-palette-input-a11y-report.json
+            test-results/command-palette-input-audit-evidence/
+          retention-days: 30
+          if-no-files-found: error
+
       # Component-owned metadata fixtures retain exact-head browser receipts on
       # audit PRs, including failed pre-fix cases for before/after comparison.
       - name: Run ChatMessageMetadata audit browser evidence
