@@ -150,10 +150,12 @@ for (const item of cases) {
     const expectedDisabled = item.story === 'states' ? 1 : 0;
     await expect(list).toBeVisible();
     await expect(options).toHaveCount(expectedCount);
-    await expect(options.locator('[aria-selected="true"]')).toHaveCount(1);
-    await expect(options.locator('[aria-disabled="true"]')).toHaveCount(
-      expectedDisabled,
-    );
+    await expect(
+      list.locator('[role="option"][aria-selected="true"]'),
+    ).toHaveCount(1);
+    await expect(
+      list.locator('[role="option"][aria-disabled="true"]'),
+    ).toHaveCount(expectedDisabled);
     await expect(list.locator('button, a, [tabindex]')).toHaveCount(0);
 
     if (item.state === 'hover') {
