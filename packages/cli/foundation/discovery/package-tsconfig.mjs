@@ -30,10 +30,11 @@ import * as path from 'node:path';
 /**
  * Whether a file the config includes declares types every file sees: a
  * declaration file, a file that declares globals or augments a module, or a
- * script (a `.ts` file with no import or export).
+ * script (a `.ts` file that TypeScript reads as no module).
+ * @param {any} ts
  * @param {string} file
  */
-function isAmbient(file) {
+function isAmbient(ts, file) {
   if (/\.d\.[cm]?ts$/.test(file)) return true;
   let text;
   try {
@@ -41,9 +42,14 @@ function isAmbient(file) {
   } catch {
     return false;
   }
+  if (/\bdeclare\s+(?:global|module)\b/.test(text)) return true;
+  if (!/\.tsx?$/.test(file)) return false;
+  // Without the words, no module; with them, TypeScript decides.
   return (
-    /\bdeclare\s+(?:global|module)\b/.test(text) ||
-    (/\.tsx?$/.test(file) && !/^\s*(?:import|export)\b/m.test(text))
+    !/\b(?:import|export)\b/.test(text) ||
+    !ts.isExternalModule(
+      ts.createSourceFile(file, text, ts.ScriptTarget.Latest),
+    )
   );
 }
 
@@ -179,8 +185,12 @@ export function readPackageTsconfig(ts, packageDir, sources) {
       config.fileNames.some(
         /** @param {string} file */ file => own.has(path.resolve(file)),
       );
-    // Every reference, at any depth, each config once (a cycle ends).
+    // Every reference, at any depth, each config once (a cycle ends). One
+    // that is missing or doesn't parse is the project's error when no config
+    // includes the sources, as `tsc` reports it.
     const visited = new Set(found ? [path.resolve(found)] : []);
+    /** @type {any} */
+    let broken = null;
     /** @type {(config: any) => any} */
     const including = config => {
       if (includes(config)) return config;
@@ -188,12 +198,14 @@ export function readPackageTsconfig(ts, packageDir, sources) {
         const next = path.resolve(ts.resolveProjectReferencePath(ref));
         if (visited.has(next)) continue;
         visited.add(next);
-        const hit = including(parse(next));
+        const referenced = parse(next);
+        if (referenced.error) broken ??= referenced;
+        const hit = including(referenced);
         if (hit) return hit;
       }
       return null;
     };
-    if (parsed) parsed = including(parsed) ?? parsed;
+    if (parsed) parsed = including(parsed) ?? broken ?? parsed;
   } catch {
     parsed = null;
   }
@@ -209,6 +221,8 @@ export function readPackageTsconfig(ts, packageDir, sources) {
       composite: false,
     },
     ...(error ? {error} : {}),
-    declarations: (parsed?.fileNames ?? []).filter(isAmbient),
+    declarations: (parsed?.fileNames ?? []).filter(
+      /** @param {string} file */ file => isAmbient(ts, file),
+    ),
   };
 }

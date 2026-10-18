@@ -64,14 +64,21 @@ describe('readPackageTsconfig', () => {
     });
     const ambient = write('types/ambient.d.ts', 'interface A {}\n');
     const global = write('src/global.ts', 'declare global {}\nexport {};\n');
-    // A script (no import or export) declares globals too.
+    // A script (no import or export) declares globals too, an `export`
+    // inside its namespace included.
     const script = write('types/props.ts', 'interface ScriptProps {}\n');
+    const namespace = write(
+      'types/acme.ts',
+      'declare namespace Acme {\n  export interface Props {}\n}\n',
+    );
     write('src/module.ts', 'export interface ModuleProps {}\n');
 
     const own = readPackageTsconfig(ts, root, [source]);
 
     expect(own.options.paths).toEqual(OPTIONS.paths);
-    expect(own.declarations.sort()).toEqual([global, ambient, script].sort());
+    expect(own.declarations.sort()).toEqual(
+      [global, ambient, script, namespace].sort(),
+    );
   });
 
   it("follows a solution-style config's references, at any depth and through a cycle, to the config that includes the sources", () => {
@@ -101,6 +108,18 @@ describe('readPackageTsconfig', () => {
 
     expect(project.error).toBeUndefined();
     expect(project.options.paths).toEqual(OPTIONS.paths);
+
+    // A reference that is missing or doesn't parse, when no config includes
+    // the sources, is the project's error, as `tsc` reports it.
+    write('tsconfig.json', {files: [], references: [{path: './gone.json'}]});
+    expect(readPackageTsconfig(ts, root, [source]).error).toMatch(
+      /^gone\.json: .*gone\.json/,
+    );
+    write('broken.json', '{"compilerOptions": ');
+    write('tsconfig.json', {files: [], references: [{path: './broken.json'}]});
+    expect(readPackageTsconfig(ts, root, [source]).error).toMatch(
+      /^broken\.json: /,
+    );
   });
 
   it("reads a monorepo root's config for a local package, and not an app's config for a package installed below it", () => {
