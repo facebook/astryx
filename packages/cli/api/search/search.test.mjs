@@ -616,6 +616,42 @@ describe('search leaf — a theme is found by its names; its description is pros
   );
 });
 
+describe('search leaf — components whose docs live in a family folder', () => {
+  it("indexes a family member from its own entry, not the family's keywords", async () => {
+    // HStack and VStack are documented in Stack's doc, whose keywords
+    // (horizontal, vertical, row, column, ...) describe Stack.
+    const reasons = async (/** @type {string} */ query) =>
+      Object.fromEntries(
+        (await search(query, {cwd, type: 'component'})).data.results.map(r => [
+          r.name,
+          r.reason,
+        ]),
+      );
+    const column = await reasons('column');
+    expect(column.HStack ?? '').not.toMatch(/keyword/);
+    expect(column.VStack ?? '').not.toMatch(/keyword/);
+    expect(column.Stack).toMatch(/keyword/);
+    const vertical = (await search('vertical', {cwd, type: 'component'})).data.results.map(
+      r => r.name,
+    );
+    expect(vertical.indexOf('VStack')).toBeGreaterThanOrEqual(0);
+    if (vertical.includes('HStack')) {
+      expect(vertical.indexOf('VStack')).toBeLessThan(vertical.indexOf('HStack'));
+    }
+  }, SLOW);
+
+  it('ranks VStack, HStack and Heading first for their own names, with their own import', async () => {
+    for (const name of ['VStack', 'HStack', 'Heading']) {
+      const r = await search(name.toLowerCase(), {cwd, type: 'component'});
+      expect(r.data.results[0]).toMatchObject({
+        domain: 'component',
+        name,
+        import: `@astryxdesign/core/${name}`,
+      });
+    }
+  }, SLOW);
+});
+
 describe('search leaf — integration components', () => {
   /**
    * A minimal consumer project: a stub `@astryxdesign/core` (so `findCoreDir`

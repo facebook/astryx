@@ -81,11 +81,20 @@
 
 import {withListingCache} from '../../foundation/fs/listing-cache.mjs';
 import {readDocView} from '../../foundation/doc-compiler/read.mjs';
-import {findCoreDir} from '../../foundation/fs/paths.mjs';
+import {
+  discoverExternalPackages,
+  findCoreDir,
+} from '../../foundation/fs/paths.mjs';
 import {
   discoverComponents,
   discoverValidIntegrationComponents,
+  docStem,
+  familyMember,
   findComponentReadme,
+  forEachIntegrationDoc,
+  integrationMemberEntry,
+  integrationRecordHold,
+  isIntegrationMember,
   resolveImportPath,
   resolveIntegrationImportPath,
   CORE_PACKAGE,
@@ -97,6 +106,7 @@ import {
 import {
   loadComponentReplacements,
   loadIntegrationsSafely,
+  resolveLegacyExternalDoc,
 } from '../component/_adapter.mjs';
 import {levenshteinDistance} from '../../foundation/text/string-utils.mjs';
 import {discoverTemplates, extractComponents} from '../template/template.mjs';
@@ -149,6 +159,9 @@ import {setResultCoverage} from './coverage.mjs';
  * @property {'page'|'block'} [_kind]
  * @property {string} [_resultName]
  * @property {string} [_commandName]
+ * @property {'file'|'doc'} [_hold] - How an integration component holds its
+ *   name, for the owner rule.
+ * @property {string} [_docPath] - An integration component's doc.
  */
 
 /**
@@ -1079,7 +1092,11 @@ async function gatherCoreComponents(coreDir) {
     /** @type {string[]} */
     let guidance = [];
     if (readme && readme.endsWith('.doc.mjs')) {
-      const doc = await loadModuleDoc(readme);
+      const loaded = await loadModuleDoc(readme);
+      // A member documented in its family's doc (VStack in Stack's doc) is
+      // indexed from its own entry: the family's keywords and guidance
+      // describe the family, not the member.
+      const doc = familyMember(loaded, comp) ?? loaded;
       if (doc) {
         keywords = Array.isArray(doc.keywords) ? doc.keywords : [];
         description = doc.usage?.description || doc.description || '';
@@ -1105,20 +1122,57 @@ async function gatherCoreComponents(coreDir) {
  * usage/description from each component's .doc.mjs, same as core. Without
  * this, an integration component is invisible to `search`/`build` even
  * though `component --list`/`component <Name>` already resolve it — the two
- * discovery paths silently disagreed.
+ * discovery paths silently disagreed. Also returns, per name, the docs that
+ * hold it by their file name and the loadable docs that only record it.
  * @param {import('../../foundation/integrations/integrations.mjs').LoadedIntegration[]} loadedIntegrations
- * @returns {Promise<Candidate[]>}
+ * @returns {Promise<{candidates: Candidate[], fileNamed: Map<string, Set<string>>, documented: Map<string, Set<string>>}>}
  */
 async function gatherIntegrationComponents(loadedIntegrations) {
   /** @type {Candidate[]} */
   const candidates = [];
+  // What the owner rule reads: the docs that hold a name by their file name,
+  // loadable or not and hidden ones too, and the loadable docs that only
+  // record it.
+  /** @type {Map<string, Set<string>>} */
+  const fileNamed = new Map();
+  /** @type {Map<string, Set<string>>} */
+  const documented = new Map();
+  /** @param {Map<string, Set<string>>} map @param {string} name @param {string} docPath */
+  const hold = (map, name, docPath) =>
+    map.set(name, (map.get(name) ?? new Set()).add(docPath));
   for (const integration of loadedIntegrations) {
-    const {components} = await discoverValidIntegrationComponents(integration);
+    const {components, discovered} =
+      await discoverValidIntegrationComponents(integration);
+    const renamed = new Set(
+      discovered
+        .filter(rec => integrationRecordHold(rec) === 'doc')
+        .filter(rec => !isIntegrationMember(rec))
+        .map(rec => rec.docPath),
+    );
+    forEachIntegrationDoc(integration.components, (docPath, stem) => {
+      if (!renamed.has(docPath)) hold(fileNamed, stem, docPath);
+    });
     for (const rec of components) {
-      const doc = await loadModuleDoc(rec.docPath);
+      const loaded = await loadModuleDoc(rec.docPath);
+      // A family member is indexed from its own entry: the family's keywords
+      // and guidance describe the family.
+      const member = isIntegrationMember(rec);
+      const doc = member ? integrationMemberEntry(loaded, rec) : loaded;
+      // A doc that names another export of its file still answers to the
+      // file's name, as `component <file name>` does.
+      const fileName = docStem(rec.docPath);
+      if (integrationRecordHold(rec) === 'doc') {
+        hold(documented, rec.name, rec.docPath);
+      }
+      if (renamed.has(rec.docPath) && !member) {
+        hold(documented, fileName, rec.docPath);
+      }
       candidates.push({
         domain: 'component',
         name: rec.name,
+        aliases: !member && fileName !== rec.name ? [fileName] : [],
+        _hold: integrationRecordHold(rec),
+        _docPath: rec.docPath,
         keywords: doc && Array.isArray(doc.keywords) ? doc.keywords : [],
         description: doc ? doc.usage?.description || doc.description || '' : '',
         guidance: guidanceFrom(doc),
@@ -1138,12 +1192,12 @@ async function gatherIntegrationComponents(loadedIntegrations) {
             packageName: rec.package,
           },
           rec.name,
-          doc?.import,
+          loaded?.import,
         ),
       });
     }
   }
-  return candidates;
+  return {candidates, fileNamed, documented};
 }
 
 /**
@@ -1155,11 +1209,12 @@ async function gatherIntegrationComponents(loadedIntegrations) {
  */
 async function gatherComponents(coreDir, cwd) {
   const loadedIntegrations = await loadIntegrationsSafely(cwd);
-  const [core, integrations, replacements] = await Promise.all([
+  const [core, gathered, replacements] = await Promise.all([
     gatherCoreComponents(coreDir),
     gatherIntegrationComponents(loadedIntegrations),
     loadComponentReplacements(coreDir, loadedIntegrations),
   ]);
+  const {candidates: integrations, fileNamed, documented} = gathered;
   // An active replacement answers to the Core name it replaces, so a search
   // for that name finds the replacement and not the Core original
   // (spec:AST-035 FR11).
@@ -1170,9 +1225,43 @@ async function gatherComponents(coreDir, cwd) {
       active.target,
     ]),
   );
+  // The owner rule, as component detail applies it: a candidate `component
+  // <name>` does not open names its package and follows the owner, and a
+  // file-name alias that opens another owner is dropped.
+  const coreNames = new Set(core.map(candidate => candidate.name));
+  /** @param {string} name @param {Candidate} candidate */
+  const opens = (name, candidate) =>
+    !coreNames.has(name) &&
+    findComponentReadme(coreDir, name) == null &&
+    [...(fileNamed.get(name) ?? [])].every(doc => doc === candidate._docPath) &&
+    [...(documented.get(name) ?? [])].every(doc => doc === candidate._docPath);
+  // A legacy docs package keeps an exact name over an export name a doc records.
+  /** @type {ReturnType<typeof discoverExternalPackages> | undefined} */
+  let externals;
+  /** @param {string} name */
+  const legacyDocuments = name =>
+    (externals ??= discoverExternalPackages(cwd)).some(
+      ext => resolveLegacyExternalDoc(ext, name) != null,
+    );
+  const ruled = integrations.map(candidate => {
+    const aliases = (candidate.aliases ?? []).filter(alias =>
+      opens(alias, candidate),
+    );
+    return candidate._hold === 'doc' &&
+      (!opens(candidate.name, candidate) || legacyDocuments(candidate.name))
+      ? {
+          ...candidate,
+          aliases,
+          _command: `astryx component ${candidate.name} --package ${candidate._package}`,
+        }
+      : {...candidate, aliases};
+  });
   return [
     ...core.filter(candidate => !replacements.forTarget(candidate.name)),
-    ...integrations.map(candidate => {
+    ...[
+      ...ruled.filter(candidate => !candidate._command),
+      ...ruled.filter(candidate => candidate._command),
+    ].map(candidate => {
       const target = targetOf.get(`${candidate._package}\0${candidate.name}`);
       if (target != null) {
         return {...candidate, aliases: [...(candidate.aliases ?? []), target]};
@@ -1225,11 +1314,11 @@ export async function componentKeywords(coreDir, cwd) {
     .flat()
     .map(async name => {
       const readme = findComponentReadme(coreDir, name);
-      const doc =
+      const loaded =
         readme && readme.endsWith('.doc.mjs')
           ? await loadModuleDoc(readme)
           : null;
-      return {name, keywords: keywordsOf(doc)};
+      return {name, keywords: keywordsOf(familyMember(loaded, name) ?? loaded)};
     });
   const loadedIntegrations = await loadIntegrationsSafely(cwd);
   const replacements = await loadComponentReplacements(
@@ -1239,10 +1328,13 @@ export async function componentKeywords(coreDir, cwd) {
   const integrations = loadedIntegrations.map(async integration => {
     const {components} = await discoverValidIntegrationComponents(integration);
     return Promise.all(
-      components.map(async rec => ({
-        name: rec.name,
-        keywords: keywordsOf(await loadModuleDoc(rec.docPath)),
-      })),
+      components.map(async rec => {
+        const loaded = await loadModuleDoc(rec.docPath);
+        return {
+          name: rec.name,
+          keywords: keywordsOf(integrationMemberEntry(loaded, rec) ?? loaded),
+        };
+      }),
     );
   });
   return [

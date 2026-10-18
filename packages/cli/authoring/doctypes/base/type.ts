@@ -383,6 +383,12 @@ export interface ComponentPropDoc {
    *  ```
    */
   slotElements?: ComponentSlotElement[];
+  /** Lifecycle marker for a prop outside the stable compatibility promise
+   *  (spec:AST-017 FR21). Set `'experimental'` on a stable component's
+   *  optional `experimental` prop object, and say in `description` that its
+   *  contents may change or be removed in a patch release. Omit for stable
+   *  props. */
+  stability?: 'experimental';
 }
 
 /**

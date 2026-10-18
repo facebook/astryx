@@ -35,6 +35,14 @@ export const docs = {
           type: 'prose',
           text: 'Add writes the entry only when package.json already has an `exports` map, so start every package with `"exports": {}`.',
         },
+        {
+          type: 'prose',
+          text: 'A file does not have to be named after its component. When `Slides.tsx` exports `AcmeCarousel` and nothing named `Slides`, keep the doc beside it as `Slides.doc.mjs` and set its `name` to `AcmeCarousel`: apps list, search and open the component by that name, and `integration verify` checks that its import exports `AcmeCarousel`. A file that exports its own name keeps that name. A package that names its files in kebab case works the same way: `acme-gallery.doc.mjs` beside `acme-gallery.tsx` sets `name: \'AcmeGallery\'`.',
+        },
+        {
+          type: 'prose',
+          text: "The file name still opens the doc. A name that Core or another doc's file already has stays theirs, and so does a Core name your package replaces: with `Badge.doc.mjs` naming `AcmeBadge`, `astryx component Badge` opens Core's `Badge`, and `--package` with your package name reaches yours.",
+        },
       ],
     },
     {

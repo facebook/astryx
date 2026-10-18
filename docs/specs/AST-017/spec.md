@@ -99,8 +99,10 @@ affects_consumer_docs: [release-process, templates]
       "FR51",
       "FR52",
       "FR53",
+      "FR54",
       "DEC-15",
-      "DEC-16"
+      "DEC-16",
+      "DEC-22"
     ]
   }
 }
@@ -120,6 +122,10 @@ rewrite can remain compatible when released usage is preserved. A real bug can a
 be incompatible when consumers validly rely on its released behavior; that case is a
 `[breaking]` change that names the authority the released behavior violated and lands
 in a declared minor (FR31–FR34).
+
+Components take their compatibility rules from this spec. Every other published
+surface, such as the CLI, takes its compatibility contract from its own current record
+(FR54). Every surface goes through the one release process this spec defines.
 
 For CLI controls, keep every supported behavior discoverable and put each control on
 the narrowest surface that owns it. Global controls require evidence that their value
@@ -148,7 +154,8 @@ one removal merged ahead of the decision to allow it.
   published package must change source or configuration to keep its code,
   interaction, data, semantic output, or supported workflow working, or loses a
   stable public surface. The review names that scenario and the released surface
-  it uses.
+  it uses. For a surface other than a component, FR54 decides which scenarios are
+  valid and supported.
 - **FR2 — Classify against the latest stable release.** A surface added and then
   renamed, removed, or reworked before any stable release has no installed
   consumer and is not breaking. Private or ignored packages are outside the
@@ -206,6 +213,10 @@ one removal merged ahead of the decision to allow it.
   tier its change requires; it never sets the release version, which is the version
   main declares under FR46.
   Documentation-only, test-only, and private-package-only changes need no Changeset.
+  Translation-catalog updates and newly added languages need no Changeset, nor
+  English-catalog description or formatting edits that preserve every message key
+  and default message. This exemption never covers removal of a released locale
+  import path, which follows FR3–FR4 and FR31.
   Existing Changesets keep their current tag and validated bump semantics and MUST NOT
   be mass-migrated. `pnpm changeset:new` remains the authoring path, and
   `pnpm check:changesets` validates tag, bump, contributors, and the declared tier;
@@ -499,7 +510,9 @@ one removal merged ahead of the decision to allow it.
   workflow, the correction is `[breaking]` and follows FR31 for the declared tier,
   stating the corrected contract and the migration. A visible correction with no valid
   released victim remains `[fix]` under FR5. An accessibility behavior fix is not a
-  breaking correction: FR53 classifies it.
+  breaking correction: FR53 classifies it. For a surface other than a component, the
+  surface's compatibility contract decides whether a caller is a released victim
+  (FR54).
 - **FR33 — A correction's authority and victim are named.** The `[breaking]`
   Changeset or its pull request names the pre-existing authority the released behavior
   violated, a latest-stable reproducer, and the migration. Without pre-existing
@@ -694,6 +707,26 @@ one removal merged ahead of the decision to allow it.
   old and new behavior and the accessibility target it serves. A change that would
   require apps to edit code must be redesigned so the component absorbs it, or it is
   classified under FR1.
+- **FR54 — A surface other than a component defines its own compatibility contract.**
+  Each published surface other than a component takes its compatibility contract from
+  its own current record. For the CLI, that record is `architecture:cli-surface`. The
+  contract states which consumer scenarios are valid and supported, what counts as a
+  released victim, and which corrections to the surface are `[fix]` and which are
+  `[breaking]`. The surface record's owners decide that contract through the record's
+  normal approval, and this record does not restate it. Where the surface record
+  states a rule for a case, that rule decides the classification of that case. Where
+  it is silent, FR1–FR6 and this record's rules for that surface apply. A surface rule
+  turns on the change and its contract, never on risk or adoption (FR6), and covers
+  only released, published surfaces (FR2). The release process in this record applies
+  to the result unchanged: Changeset categories and bump tiers (FR7, FR22), migration
+  evidence (FR8), experimental isolation (FR21–FR27), the patch, minor, and emergency
+  paths (FR28, FR31, FR34, FR35, FR48), deprecation and coexistence (FR29–FR30), and
+  the release gates (FR37–FR44). A surface record defines only whether a change is
+  breaking; it never changes how a change ships. A change any surface record classifies
+  as `[breaking]` lands only in a declared minor (FR31) or through the emergency path
+  (FR35), never in a patch release, and no surface record can make it patch-eligible by
+  redefining a release rule. Components keep the rules in this record, including FR3 and
+  FR53.
 
 ### Platform support
 
@@ -707,9 +740,11 @@ one removal merged ahead of the decision to allow it.
 
 ## Authority relationships
 
-This spec owns compatibility classification, lifecycle state, release-pair delta
-classes, and the evidence that admits them. It delegates narrower questions rather
-than restating them:
+This spec owns compatibility classification for components, and the release process
+every surface's classification goes through: lifecycle state, release-pair delta
+classes, and the evidence that admits them. A surface other than a component defines
+its own compatibility contract in its current record (FR54). It delegates narrower
+questions rather than restating them:
 
 - [`spec:AST-002` — Public API admission and operation shape](../AST-002/spec.md)
   owns whether a public API concept should exist and its semantic shape.
@@ -717,8 +752,9 @@ than restating them:
   owns the stable component contract; this spec owns how it evolves.
 - [`architecture:cli-surface` — CLI surface architecture](../../architecture/cli-surface.md)
   and [`spec:AST-042` — CLI command admission and programmatic parity system spec](../AST-042-cli-command-admission/spec.md)
-  own CLI structure, admission, and parity; this spec owns compatibility and
-  release transition.
+  own CLI structure, admission, and parity. `architecture:cli-surface` also owns the
+  CLI's compatibility contract under FR54; this spec owns the release process that
+  applies it.
 - [`architecture:theme-tokens` — Theme token architecture](../../architecture/theme-tokens.md)
   owns token semantics; this spec owns compatibility and experimental isolation.
 - [`spec:AST-013` — Browser and platform support system spec](../AST-013/spec.md)
@@ -759,9 +795,10 @@ than restating them:
   implements FR47–FR51 admission, versioning, merge-back, and next-plan validation;
   none of these files may narrow or widen the rule it implements.
 
-The direct current owner decides the intended product contract. This spec decides how
-that contract may change in a stable release. The public Release Process decides how
-an eligible release is operated. A direct spec cannot waive compatibility silently;
+The direct current owner decides the intended product contract. For a surface other
+than a component, its record also decides what counts as breaking (FR54). This spec
+decides the release process every change goes through. The public Release Process
+decides how an eligible release is operated. A direct spec cannot waive compatibility silently;
 an incompatible change to its surface lands in a declared minor under FR31.
 
 ## Current-state impact
@@ -780,8 +817,10 @@ Public lifecycle classification remains in force with these operational effects:
 - contributor declarations are the Changeset tag and body, with no parallel
   lifecycle metadata and no migration of existing Changesets;
 - documentation catalog display names and routes remain mutable data while the stable
-  `docs` command and machine-readable schemas stay contractual; and
-- exact-main release comparison rejects unclassified deltas.
+  `docs` command and machine-readable schemas stay contractual;
+- exact-main release comparison rejects unclassified deltas; and
+- a surface other than a component is classified by its own record's compatibility
+  contract, and the release process here applies to the result.
 
 Main declares the next planned version, and Changeset admission uses that declaration
 to refuse `[breaking]` work on a patch plan. Pull-request lint does not compare the
@@ -832,6 +871,7 @@ lands, maintainers apply its requirement in review and release approval.
 | FR51      | Cut-time successor-plan preparation plus manifest/pin/lockfile/compatibility-asset and lifecycle fixtures                                                                                                                                                                                                                                                       | default patch successor, explicitly named minor, abort before any tag or publication, immutable tag before merge-back, pre-advanced main plan, unrelated main work during equality                                      | The plan merges before the cut version is non-reusable, survives a terminal cut with neither an immutable tag nor stable publication, skips the default patch, derives a minor from pending Changesets, splits pins/assets, or the prepared plan or merge-back lowers or duplicates an existing newer plan |
 | FR52      | Promotion fixtures plus every checked-in source consumer run before and after codemod promotion                                                                                                                                                                                                                                                                 | staged transform, promoted transform, missing source, ambiguous candidates, changed entry identity                                                                                                                      | Evidence hardcodes only `next/`, keeps a duplicate source, silently chooses among candidates, or passes when the promoted transform no longer exposes the same identity and entries                                                                                                                        |
 | FR53      | Changeset classification review against the governing component record's accessibility evidence                                                                                                                                                                                                                                                                 | a fix that replaces documented keyboard or focus behavior to meet an adopted APG pattern's required parts; a fix that changes a role, state, or accessible name to meet WCAG 2.2 A/AA; a fix that adds an optional prop | An accessibility fix is held for a minor, given a coexistence path, or classified `[breaking]`; or a change that needs an app-layer code edit, or that removes, renames, or narrows public surface, ships as an accessibility `[fix]`                                                                      |
+| FR54      | Changeset classification review against the surface's current record, then the same tier admission every Changeset receives                                                                                                                                                                                                                                     | a CLI correction the CLI record classifies as `[fix]`; a CLI change the CLI record leaves undecided; a CLI change the CLI record classifies as `[breaking]` on a patch plan; a component change                         | A non-component change is classified by a rule this record restates instead of its surface record, a surface rule turns on risk or adoption, a surface-classified `[breaking]` change ships in a patch or a surface rule makes it patch-eligible, or a component change is classified by a surface record  |
 
 ## Decision log
 
@@ -1239,6 +1279,24 @@ prepared change unmerged.
 Rejected: merging the successor before the cut version becomes non-reusable, which
 strands a terminal cut with neither a tag nor a publication on a skipped plan; and waiting until merge-back to
 prepare information already fixed at the cut.
+
+### DEC-22 — Each surface defines what breaks; this record owns the release process
+
+**Reference:** `spec:AST-017/DEC-22`
+**Decider:** `cixzhang`, 2026-10-15
+
+The owners of a surface know which of its behaviors callers may rely on and which of
+its corrections leave a real victim. A surface other than a component therefore
+defines its compatibility contract in its own current record, decided by that record's
+owners: the CLI's lives in `architecture:cli-surface`. This record applies the result
+through one release process, so every surface uses the same categories, tiers, paths,
+gates, and coexistence rules. Components keep their rules here, because the component
+contract and its accessibility fixes (DEC-20) are defined across all components in
+this record. Where a surface record is silent, this record's rules for that surface
+still apply, so no surface is left without a classification.
+
+Rejected: keeping every surface's breaking rules in this record, which makes this
+record's owners decide contracts for surfaces they do not own.
 
 ## Open questions
 

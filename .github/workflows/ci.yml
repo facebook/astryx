@@ -1630,6 +1630,56 @@ jobs:
           retention-days: 30
           if-no-files-found: warn
 
+      # The menu contract's role and name, item roles, and the arrow, Home/End,
+      # typeahead, Enter, Escape and Tab transitions are accessibility-tree and
+      # real-browser facts that jsdom cannot observe. Run the contract's own
+      # fixture proof and the DropdownMenu pointer-menu binding whenever
+      # DropdownMenu source, the binding's stories, or the contract changes.
+      # Its own --output directory; the JSON report is the head-bound record,
+      # uploaded next.
+      - name: Run Menu accessibility contract
+        id: menu-contract
+        if: ${{ !cancelled() && github.event_name == 'pull_request' }}
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PLAYWRIGHT_JSON_OUTPUT_FILE: menu-contract/report.json
+        run: |
+          should_run=false
+          # DropdownMenu and the contract are matched by file name.
+          # The helper comes from the base, since an older PR head lacks it.
+          # Exit 1 means out of scope; 0 in scope; 2 unknown, so run.
+          scope=2
+          helper="$(mktemp)"
+          if git fetch --quiet --no-tags --depth=1 origin "$BASE_SHA" \
+            && git show "$BASE_SHA:.github/scripts/pr-scope-touches.sh" > "$helper"; then
+            scope=0
+            bash "$helper" "$BASE_SHA" \
+              '^(internal/a11y-spec/src/patterns/menu\.|packages/core/src/DropdownMenu/|apps/storybook/stories/MenuA11y)' || scope=$?
+          fi
+          if [ "$scope" != 1 ]; then
+            should_run=true
+          fi
+          echo "should_run=${should_run}" >> "$GITHUB_OUTPUT"
+          if [ "$should_run" != true ]; then
+            echo "DropdownMenu and the menu contract are not in PR scope; skipping menu evidence."
+            exit 0
+          fi
+          pnpm exec playwright test \
+            internal/a11y-spec/src/patterns/menu.chromium.spec.ts \
+            packages/core/src/DropdownMenu/__tests__/Menu.a11y.chromium.spec.ts \
+            --project chromium \
+            --reporter list,json \
+            --output menu-contract-output
+
+      - name: Upload Menu accessibility contract evidence
+        if: ${{ !cancelled() && steps.menu-contract.outputs.should_run == 'true' }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: menu-contract-evidence-${{ needs.build-storybook.outputs.short_hash }}
+          path: menu-contract/
+          retention-days: 30
+          if-no-files-found: warn
+
       # The accordion contract's header role and name, the page Tab step between
       # headers, the absence of arrow-key focus movement, and the single-expansion
       # sibling collapse are accessibility-tree and real-browser facts that jsdom
@@ -2323,6 +2373,37 @@ jobs:
           retention-days: 30
           if-no-files-found: error
 
+      # CommandPaletteInput owns a standalone searchbox and contextual combobox.
+      # Its audit lane keeps the visible keyboard-focus, theme, direction,
+      # responsive, empty, and pending receipts bound to the exact PR head.
+      - name: Run CommandPaletteInput audit browser evidence
+        if: ${{ !cancelled() && github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, '[Component Audit] CommandPaletteInput:') }}
+        env:
+          ASTRYX_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          status=0
+          node .github/scripts/accessibility-audit.js \
+            --storybook-dir apps/storybook/dist \
+            --output command-palette-input-a11y-report.json \
+            --components CommandPaletteInput \
+            --baseline .github/a11y-baseline.json \
+            --fail-on-new || status=1
+          pnpm exec playwright test \
+            packages/core/src/CommandPalette/__tests__/CommandPaletteInputAudit.a11y.chromium.spec.ts \
+            --project chromium || status=1
+          exit "$status"
+
+      - name: Upload CommandPaletteInput audit evidence
+        if: always() && github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, '[Component Audit] CommandPaletteInput:')
+        uses: actions/upload-artifact@v7
+        with:
+          name: command-palette-input-audit-evidence-${{ needs.build-storybook.outputs.short_hash }}
+          path: |
+            command-palette-input-a11y-report.json
+            command-palette-input-audit-evidence/
+          retention-days: 30
+          if-no-files-found: error
+
       # Component-owned metadata fixtures retain exact-head browser receipts on
       # audit PRs, including failed pre-fix cases for before/after comparison.
       - name: Run ChatMessageMetadata audit browser evidence
@@ -2461,6 +2542,68 @@ jobs:
         with:
           name: context-menu-item-audit-evidence-${{ needs.build-storybook.outputs.short_hash }}
           path: context-menu-item-a11y-report.json
+          retention-days: 30
+          if-no-files-found: error
+
+      # Drawer audit evidence covers modal/non-modal, both logical sides,
+      # root-owned RTL, purpose, narrow widths, custom theming, padding, and
+      # sibling stacking. Axe and the sensor matrix both run even if one fails.
+      - name: Run Drawer audit browser evidence
+        if: ${{ !cancelled() && github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, '[Component Audit] Drawer:') }}
+        env:
+          ASTRYX_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          status=0
+          node .github/scripts/accessibility-audit.js \
+            --storybook-dir apps/storybook/dist \
+            --output drawer-a11y-report.json \
+            --components Drawer \
+            --baseline .github/a11y-baseline.json \
+            --fail-on-new || status=1
+          pnpm exec playwright test \
+            packages/core/src/Drawer/__tests__/DrawerAudit.a11y.chromium.spec.ts \
+            --project chromium || status=1
+          exit "$status"
+
+      - name: Upload Drawer audit evidence
+        if: always() && github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, '[Component Audit] Drawer:')
+        uses: actions/upload-artifact@v7
+        with:
+          name: drawer-audit-evidence-${{ needs.build-storybook.outputs.short_hash }}
+          path: |
+            drawer-a11y-report.json
+            test-results/drawer-audit-evidence/
+          retention-days: 30
+          if-no-files-found: error
+
+      # DrawerHeader audit evidence proves its title row, numeric ReactNode slot
+      # values, close action, direction, theme, focus, and narrow reflow on the
+      # exact PR head. Axe and the sensor matrix both run if either one fails.
+      - name: Run DrawerHeader audit browser evidence
+        if: ${{ !cancelled() && github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, '[Component Audit] DrawerHeader:') }}
+        env:
+          ASTRYX_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          status=0
+          node .github/scripts/accessibility-audit.js \
+            --storybook-dir apps/storybook/dist \
+            --output drawer-header-a11y-report.json \
+            --components DrawerHeader \
+            --baseline .github/a11y-baseline.json \
+            --fail-on-new || status=1
+          pnpm exec playwright test \
+            packages/core/src/Drawer/__tests__/DrawerHeaderAudit.a11y.chromium.spec.ts \
+            --project chromium || status=1
+          exit "$status"
+
+      - name: Upload DrawerHeader audit evidence
+        if: always() && github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, '[Component Audit] DrawerHeader:')
+        uses: actions/upload-artifact@v7
+        with:
+          name: drawer-header-audit-evidence-${{ needs.build-storybook.outputs.short_hash }}
+          path: |
+            drawer-header-a11y-report.json
+            test-results/drawer-header-audit-evidence/
           retention-days: 30
           if-no-files-found: error
 

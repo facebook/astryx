@@ -30,7 +30,7 @@ export const doc = {
       name: 'name',
       type: 'string',
       description:
-        "Stable machine identity without the Astryx prefix, PascalCase. e.g. 'Button', 'TextInput', 'AppShell'. Keep it equal to the doc's file name ({Name}.doc.mjs): the CLI looks up an integration component by its file name. Change `displayName`, not `name`, to edit the visible label; registry URLs derive from this identity by default.",
+        "Stable machine identity without the Astryx prefix, PascalCase. e.g. 'Button', 'TextInput', 'AppShell'. For an integration component it is the export apps import: the doc sits beside the file that exports it, and when that file exports nothing under its own name, `name` may name the export it does have. Change `displayName`, not `name`, to edit the visible label; registry URLs derive from this identity by default.",
       required: true,
     },
     {
@@ -56,7 +56,7 @@ export const doc = {
       name: 'replaces',
       type: 'string',
       description:
-        "Integration components only: the exact `name` of the Core ComponentDoc this component takes over for unqualified lookup, so every app that loads the integration gets it from component detail, component lists, search, `swizzle <Name>`, and issue routing; `swizzle --list` keeps listing Core names. The Core original stays reachable with `--package @astryxdesign/core`. It takes effect only when the package's peer range starts at the release that applies it, `\"@astryxdesign/cli\": \">=0.6.7\"` or later; without such a range the component keeps its own name and `doctor integration components` warns. Set it only to intentionally own a Core identity; give an alternative or variant its own name instead.",
+        'Integration components only: the exact `name` of the Core ComponentDoc this component takes over for unqualified lookup, so every app that loads the integration gets it from component detail, component lists, search, `swizzle <Name>`, and issue routing; `swizzle --list` keeps listing Core names. The Core original stays reachable with `--package @astryxdesign/core`. It takes effect only when the package\'s peer range starts at the release that applies it, `"@astryxdesign/cli": ">=0.6.7"` or later; without such a range the component keeps its own name and `doctor integration components` warns. Set it only to intentionally own a Core identity; give an alternative or variant its own name instead.',
     },
     {
       name: 'keywords',
@@ -68,7 +68,7 @@ export const doc = {
       name: 'hiddenComponents',
       type: 'string[]',
       description:
-        'Core: sub-component names to hide from human-facing UI (CLI listings, docs catalogs). They stay public and importable; agents and tooling can still discover them via source. Integration listings do not read it: hide an integration sub-component with `hidden` in its own doc.',
+        "Sub-component names to hide from human-facing UI (CLI listings, docs catalogs). They stay public and importable; agents and tooling can still discover them via source. In an integration it hides only full entries in this doc's `components`, which the CLI then neither lists nor opens; hide a sub-component that has its own doc with `hidden` in that doc.",
     },
     {
       name: 'hidden',
@@ -181,13 +181,13 @@ export const doc = {
       name: 'props',
       type: 'ComponentPropDoc[]',
       description:
-        'SingleComponentDoc variant (required there): all public props for the one primary component. Each prop is {name, type, description, default?, required?, slotElements?}. Skip styling props like xstyle/className/style. Also present on SubComponentDoc.',
+        'SingleComponentDoc variant (required there): all public props for the one primary component. Each prop is {name, type, description, default?, required?, slotElements?, stability?}. Skip styling props like xstyle/className/style. Also present on SubComponentDoc.',
     },
     {
       name: 'components',
       type: '(ComponentEntry | ComponentRef)[]',
       description:
-        'MultiComponentDoc variant (required there): one entry per public component/hook exported from the directory. Each entry is a full ComponentEntry (inline: name, displayName, description, props | params+returns) or a name-only ComponentRef pointing at a sibling {Name}.doc.mjs.',
+        'MultiComponentDoc variant (required there): one entry per public component/hook exported from the directory. Each entry is a full ComponentEntry (inline: name, displayName, description, props | params+returns) or a name-only ComponentRef pointing at a sibling {Name}.doc.mjs. In an integration, each full entry the module named by `import` exports is a component under its own name.',
     },
     {
       name: 'subComponentOf',

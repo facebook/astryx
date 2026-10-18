@@ -58,7 +58,7 @@ export const doc = {
       name: 'options.out',
       type: 'string',
       description:
-        'Override the output CSS path. The .js, .d.ts and any .variants.d.ts are written in the same directory, named after the theme (<name>.js), not after the CSS file. A relative path must stay within cwd.',
+        'Override the output CSS path, relative or absolute; it must resolve inside cwd. The .js, .d.ts and any .variants.d.ts are written in the same directory, named after the theme (<name>.js), not after the CSS file.',
     },
     {
       name: 'options.check',
@@ -77,7 +77,7 @@ export const doc = {
       name: 'ctx.cwd',
       type: 'string',
       description:
-        'Directory the theme file, a relative out path, and the returned output paths resolve against.',
+        'Directory the theme file, a relative out path, and the returned output paths resolve against. Every output is written inside it, including the default outputs beside the theme file.',
       default: 'process.cwd()',
     },
   ],
@@ -105,7 +105,7 @@ export const doc = {
     },
     {
       code: 'ERR_PATH_TRAVERSAL',
-      when: 'the theme name contains a path separator or traversal marker, or a relative `out` path resolves outside cwd (including through a symlink)',
+      when: 'the theme name contains a path separator or traversal marker, or an output resolves outside cwd (including through a symlink): an `out` path, relative or absolute, or the default outputs beside a theme file outside cwd (also rejected in check mode)',
     },
     {
       code: 'ERR_CORE_NOT_FOUND',

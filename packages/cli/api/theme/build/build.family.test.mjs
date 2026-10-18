@@ -252,6 +252,22 @@ describe('themeBuildFamily()', () => {
     expect(fs.existsSync(dtsPath)).toBe(false);
   });
 
+  it('refuses family outputs outside cwd before checking or writing', async () => {
+    const dir = makeDir();
+    const files = writeFamily(dir).map(file => path.join(dir, file));
+    const app = path.join(dir, 'app');
+    fs.mkdirSync(app);
+
+    for (const check of [false, true]) {
+      await expect(
+        themeBuildFamily(files, {familyKey: FAMILY_KEY, check}, {cwd: app}),
+      ).rejects.toMatchObject({code: 'ERR_PATH_TRAVERSAL'});
+    }
+    for (const output of OUTPUTS) {
+      expect(fs.existsSync(path.join(dir, 'themes', output))).toBe(false);
+    }
+  });
+
   it('fails without publishing a mixed trio when staging a write fails', async () => {
     const dir = makeDir();
     const files = writeFamily(dir);

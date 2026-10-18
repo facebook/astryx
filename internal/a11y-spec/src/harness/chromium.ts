@@ -315,6 +315,13 @@ async function computedNode(
 }
 
 /**
+ * How long `abortedPress` holds the press before sliding off: past the
+ * longest press-timing delay a component uses (DropdownMenu's 300 ms settle
+ * delay, the 500 ms long press).
+ */
+const ABORTED_PRESS_HOLD_MS = 700;
+
+/**
  * Stop transitions before an expectation reads state, so nothing measures a
  * frame the animation happens to be showing.
  *
@@ -1186,6 +1193,13 @@ export function createChromiumHarness(
       }
       await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
       await page.mouse.down();
+      // Hold the press before sliding off, as a person who changes their mind
+      // does. A press released at once has a duration set by the machine: a
+      // component that times the press (DropdownMenu ignores the release of an
+      // opening press shorter than its settle delay) then reports a different
+      // outcome on a loaded runner than on an idle one. Holding past any such
+      // delay gives every machine the same gesture.
+      await page.waitForTimeout(ABORTED_PRESS_HOLD_MS);
       await page.mouse.move(releaseX, releaseY);
       await page.mouse.up();
     },

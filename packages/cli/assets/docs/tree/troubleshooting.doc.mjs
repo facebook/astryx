@@ -67,7 +67,7 @@ export const docs = {
           rows: [
             [
               '`component_export_missing`: `Component "AcmeCarousel" advertises import "@acme/astryx-widgets/components/AcmeCarousel", but that packed module does not export "AcmeCarousel".`',
-              "package.json has no `exports` map, or the module does not export the name. Keep `export function AcmeCarousel`, and add the entry: `npm pkg set 'exports[./components/AcmeCarousel]=./components/AcmeCarousel.tsx'`.",
+              "package.json has no `exports` map, or the module does not export the name. Keep `export function AcmeCarousel`, and add the entry: `npm pkg set 'exports[./components/AcmeCarousel]=./components/AcmeCarousel.tsx'`. When the quoted name is a file name, such as `acme-carousel`, set the doc's `name` to the component the file exports. A type-only export does not count.",
             ],
             [
               '`template_export_missing`: `Template "acme-dashboard" public import "@acme/astryx-widgets/templates/acme-dashboard" does not have a default export.`',
@@ -125,6 +125,14 @@ export const docs = {
           type: 'table',
           headers: ['Symptom', 'Fix'],
           rows: [
+            [
+              '`Error: No component named "AcmeCarousel"` for a component your package documents.',
+              "Its doc still names its file. Set `name` to the export, such as `name: 'AcmeCarousel'` in `acme-carousel.doc.mjs`. A family member is listed only when the module its family doc imports exports it ({@link generic:component-family}).",
+            ],
+            [
+              '`npx astryx component Dialog` opens Core\'s `Dialog`, not yours.',
+              "A name that Core, a legacy docs package, or another package's file already has stays theirs. Run `npx astryx component Dialog --package @acme/astryx-widgets`, or give your component a name of its own.",
+            ],
             [
               '`Error: Template "dashboard" is ambiguous — narrow it with --type and/or --package.`',
               "Your template id matches a Core id. Rename it, such as `acme-dashboard`, or set `replaces: 'dashboard'` to take its place. `npx astryx doctor integration templates` warns about this before you publish.",
