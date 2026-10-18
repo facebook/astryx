@@ -19,6 +19,8 @@
 
 import {Project} from '../../foundation/config/project.mjs';
 import {DocsCatalog} from '../../foundation/discovery/docs-discovery.mjs';
+import {checkDocTypes} from '../../foundation/discovery/doc-types.mjs';
+import {integrationDocFiles} from '../../foundation/discovery/integration-doc-files.mjs';
 import {
   linkReferenceTopic,
   lowerReferenceTopic,
@@ -1330,4 +1332,21 @@ export async function resolveTopicDocs(topic, options = {}) {
   const {catalog, entry} = found;
   const node = await lowerTopic(catalog, entry, effectiveLang);
   return {catalog, node, lang: effectiveLang, entry};
+}
+
+/**
+ * Each doc one integration package ships, checked against the published
+ * authoring type for its kind with the project's own TypeScript (spec:AST-039
+ * FR13). Without TypeScript the report says nothing was checked.
+ * @param {any} integration a loaded integration
+ * @param {string} cwd
+ * @returns {Promise<import('../../foundation/discovery/doc-types.mjs').DocTypesReport>}
+ */
+export async function integrationDocTypes(integration, cwd) {
+  const packageDir = /** @type {{__packageDir?: string}} */ (integration)
+    .__packageDir;
+  return checkDocTypes(integrationDocFiles(integration), {
+    packageDir: packageDir ?? cwd,
+    resolveFrom: [cwd, packageDir],
+  });
 }

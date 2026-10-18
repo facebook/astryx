@@ -43,7 +43,7 @@ export default {
   notes: [
     {
       type: 'prose',
-      text: "Every other field, and the page and block variants, are TemplateDoc's. Core's own templates use TemplateDoc, whose `category` is a TemplateCategory value.",
+      text: "Every other field, and the page and block variants, are TemplateDoc's. Core's own templates use TemplateDoc, whose `category` is a TemplateCategory value. `astryx doctor integration validate` checks an integration's template docs against IntegrationTemplateDoc.",
     },
   ],
 };

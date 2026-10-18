@@ -14,7 +14,11 @@ export const doc = {
   description:
     'Validates one integration at a time: the local package rooted at cwd, or an ' +
     'installed package resolved by name. It schema-checks the manifest, verifies ' +
-    'every declared contribution root, and reports every finding. Safe as a CI gate.',
+    'every declared contribution root, and reports every finding. Safe as a CI gate. ' +
+    'It then checks each doc the package ships against the published authoring type ' +
+    "for its kind, with the project's own `typescript`, and warns about each field that " +
+    'does not match, naming the field and a fix. Without TypeScript it prints one line ' +
+    'saying the docs were not type-checked.',
   fn: 'validateIntegration',
   args: [
     {
@@ -36,7 +40,10 @@ export const doc = {
     },
   ],
   exitCodes: [
-    {code: 0, when: 'no error-severity issues (warnings are allowed)'},
+    {
+      code: 0,
+      when: 'no error-severity issues (warnings, including doc type findings, are allowed)',
+    },
     {code: 1, when: 'one or more error-severity issues'},
   ],
   related: ['doctor integration templates', 'template'],

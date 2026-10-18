@@ -32,8 +32,8 @@
  * @input Doc files with the root each was found in, the package root, and the
  *   directories to resolve `typescript` from.
  * @output A DocTypesReport.
- * @position Foundation discovery: it reads doc files and returns a report,
- *   and prints nothing itself.
+ * @position The check `astryx doctor integration validate` runs on an
+ *   integration's docs, and the Astryx repository's test runs on Core's own.
  */
 
 import * as fs from 'node:fs';
