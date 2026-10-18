@@ -76,9 +76,10 @@ const blockTemplateSchema = z
 
 /**
  * Templates as they load. Integration templates already published omit
- * `displayName` and `aspectRatio` and group themselves under their own
- * `category`, so the loader accepts those (template discovery falls back to an
- * aspect ratio of 1). The published types keep asking authors for all three.
+ * `displayName` and `aspectRatio`, so the loader accepts those (template
+ * discovery falls back to an aspect ratio of 1); the published types keep
+ * asking authors for both. `category` is any string in both: an integration
+ * template groups itself under its own.
  *
  * @typedef {Omit<PageTemplateDoc, 'displayName' | 'category'>
  *   & {displayName?: string, category?: string}} LoadedPageTemplateDoc
