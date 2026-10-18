@@ -91,7 +91,58 @@ docType:   boolean
               '`required` disagrees with the code',
               'Set `required: true` exactly when every caller must pass the prop. One your `defaultProps` fills counts as optional, as it is to JSX callers, and so does one only some members of a union require, since a caller can leave it out: say in its description which variants need it. An entry that names several props (`value / onChange`) makes the same claim about each: give them separate entries when they differ',
             ],
+            [
+              '`type_mismatch`',
+              "The documented `type` differs from the code's, where both read exactly",
+              'Copy the type from the source, or fix the code. The next section says which types are judged',
+            ],
           ],
+        },
+      ],
+    },
+    {
+      id: 'write-types-the-check-can-judge',
+      title: 'Write types the check can judge',
+      content: [
+        {
+          type: 'prose',
+          text: 'For a prop your package declares, the check also compares the documented `type`, but only where both sides read exactly. It never guesses, so a type it cannot judge is listed, not reported. It needs TypeScript 4.8 or later: with an older one it prints `[skip] Prop types not judged` and judges none.',
+        },
+        {
+          type: 'code',
+          lang: 'text',
+          code: `severity:  [warn]
+component: AcmeCarousel
+prop:      interval
+kind:      type_mismatch
+message:   "interval" is documented as string, but the code declares number.
+doc:       components/AcmeCarousel.doc.mjs
+source:    components/AcmeCarousel.tsx
+docType:   string
+codeType:  number`,
+        },
+        {
+          type: 'list',
+          style: 'unordered',
+          items: [
+            "Write the type as the source writes it, such as `ReactNode[]` or `(index: number) => void`. Parameter names, member order, quotes and whitespace may differ. Text that writes `readonly` must match exactly, parameter names included; only whitespace may differ. `React.X` names React's own `X` where the prop is declared, so it matches a bare `X` only where that name is React's: `React.KeyboardEvent` is not the DOM's `KeyboardEvent`.",
+            "Name a type as the file that declares the prop names it, so an import renamed there (`Item as BaseItem`) is written as that file writes it. A field (`cfg.level`) takes its prop's file, even when the field's own type is declared in another file.",
+            'A type written another way is judged only when both sides are built from exact parts: primitives such as `string` and `number`, string, number and boolean literals, string enum members, arrays and unions of these, and type names that stand for them. Union members may come in any order, and a member another covers adds nothing, as TypeScript passes it there: `undefined` beside `void`, or `string[]` beside `(string | number)[]`.',
+            'A mutable array type matches a readonly one, because callers can pass it. A readonly one documented for a mutable array is a mismatch.',
+            "When a prop's variants give a field different types, as `{value: string} | {value: number}` does, document every variant's type (`string | number`). The types of only some variants are listed: the prop's variants give this field different types. With more than six variant types, any other type is listed too.",
+            "To name an alias and show its values, write `AcmeSize = 'sm' | 'md'` or `AcmeSize ('sm' | 'md')`. Both parts must match.",
+            "An optional prop's `undefined` is set aside on both sides. With `exactOptionalPropertyTypes`, the doc shows `undefined` exactly when the code declares it.",
+            'Anything else, such as an object, a tuple, a generic with arguments, `keyof`, an intersection, or a mapped or conditional type written another way, is not compared.',
+          ],
+        },
+        {
+          type: 'prose',
+          text: "The check prints how many documented types it judged, then lists the rest by reason: not a form the check judges exactly, a field the prop's variants give different types, a standard prop, or a prop declared outside the package. With `--json`, they are in `data.propDrift.typesNotCompared`.",
+        },
+        {
+          type: 'code',
+          lang: 'text',
+          code: '[info] Documented prop types judged: 2; not compared: 0. A type is judged when the doc writes it the same as the source (exactly, if it contains `readonly`), or when both are primitives, literals, arrays and unions of those, or names for them.',
         },
       ],
     },
