@@ -187,7 +187,7 @@ export const doc = {
       name: 'components',
       type: '(ComponentEntry | ComponentRef)[]',
       description:
-        'MultiComponentDoc variant (required there): one entry per public component/hook exported from the directory. Each entry is a full ComponentEntry (inline: name, displayName, description, props | params+returns) or a name-only ComponentRef pointing at a sibling {Name}.doc.mjs.',
+        'MultiComponentDoc variant (required there): one entry per public component/hook exported from the directory. Each entry is a full ComponentEntry (inline: name, displayName, description, props | params+returns) or a name-only ComponentRef pointing at a sibling {Name}.doc.mjs. In an integration, each full entry the module named by `import` exports is a component under its own name.',
     },
     {
       name: 'subComponentOf',

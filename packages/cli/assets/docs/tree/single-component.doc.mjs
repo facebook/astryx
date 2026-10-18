@@ -56,7 +56,7 @@ export default {
           style: 'unordered',
           items: [
             'Keep `props` on the top-level doc. Private implementation helpers do not need entries.',
-            'Keep the doc beside the source and change both in the same pull request.',
+            'Name the doc after the source file beside it, such as `AcmeCarousel.doc.mjs` beside `AcmeCarousel.tsx`, and change both in the same pull request.',
             'If the module later exposes several related public exports, adapt this doc with {@link generic:component-family}.',
           ],
         },
