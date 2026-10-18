@@ -426,10 +426,13 @@ works on is `spec:AST-040` FR9's.
     to a release that also prints reminders prints no second one: the time
     of each reminder is kept in the per-user configuration directory (FR7),
     per cause for the global copy and per project for a project.
-  - A computer whose global copy has never completed a check knows no newest
-    release and prints no reminder, so a fresh home, such as a continuous
-    integration run's, never prints one. Prerelease and canary releases are
-    never reported as behind.
+    - A computer whose global copy has never completed a check knows no newest
+      release and prints neither reminder about one, so a fresh home, such as a
+      continuous integration run's, never prints those. The reminder about a
+      command that predates the hand-off needs no check: it prints wherever such
+      a command is first on the search path, and in a home that keeps no
+      reminder times, on each run. Prerelease and canary releases are never
+      reported as behind.
   - `doctor` reports each: outside a project, whether the global copy is on
     the newest release and, when it cannot move, the cause and its fix; in a
     project, whether the project's release is behind and the same commands;
@@ -510,7 +513,7 @@ tool's configuration.
 | G16 Global copy installed with administrator rights, run by a person                                  | As for that case; nothing is written to the install folder                                                     | As for that case                                                                                                    | `› G16`                                                                                               |
 | G17 The per-user cache cannot be written                                                              | Outside a project: the installed copy; a run that needs a release fails with `ERR_VERSIONS_UNAVAILABLE`        | The error, and FR10's reminder once a day                                                                           | `› G17`                                                                                               |
 | G18 Home unset, or cache and configuration folders set by environment                                 | Unchanged; an absolute folder setting is used, a relative one is ignored                                       | As for that case                                                                                                    | `› G18`                                                                                               |
-| G19 Continuous integration with a fresh home each run                                                 | As for that case; no check and no switch in a copy's first hour                                                | No reminder, since no newest release is known                                                                       | `› G19`                                                                                               |
+| G19 Continuous integration with a fresh home each run                                                 | As for that case; no check and no switch in a copy's first hour                                                | No reminder about a newer release, since none is known                                                              | `› G19`                                                                                               |
 | G20 A container whose home folder is read-only                                                        | As for G17; the computer-level text is not written                                                             | As for G17                                                                                                          | `› G20`                                                                                               |
 | G21 A cache shared by several people or computers                                                     | One install per release at a time; another computer's lock is taken over once it goes unrenewed for 60 seconds | As for that case                                                                                                    | `› G21`                                                                                               |
 | G22 The project's release is older than the newest                                                    | The project's release                                                                                          | FR10's project reminder once a day per project                                                                      | `› G22`                                                                                               |
@@ -828,8 +831,9 @@ chose, and nothing else tells its owner. A reminder that names both versions
 and the exact commands turns that into one step. It prints at most once a day
 per cause and per project, so a person or an agent running many commands sees
 it once; never in machine-readable output, so programs read the same fields;
-and only when a completed check knows the newest release, so a fresh home
-stays quiet. The global copy's reminder points at `astryx doctor`, which
+and, for a newer release, only when a completed check knows it, so a fresh
+home stays quiet about one. A command that predates the hand-off answers
+every folder with its own release, so its reminder needs no check. The global copy's reminder points at `astryx doctor`, which
 names the fix for this computer, because the fix for an old Node or an
 unwritable folder differs by platform.
 
