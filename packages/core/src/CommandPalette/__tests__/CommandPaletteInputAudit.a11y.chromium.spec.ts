@@ -27,7 +27,7 @@ type Mode = 'light' | 'dark';
 type Direction = 'ltr' | 'rtl';
 type Theme = 'neutral' | 'butter';
 type Story = 'standalone' | 'popup-context' | 'aggregate-matrix';
-type State = 'rest' | 'focus' | 'context-matrix';
+type State = 'rest' | 'keyboard-focus' | 'pointer-focus' | 'context-matrix';
 
 type AuditCase = {
   key: string;
@@ -58,21 +58,35 @@ function addPair(
 }
 
 addPair('standalone-rest');
-addPair('standalone-focus', {state: 'focus'});
-addPair('standalone-focus-custom-theme', {
-  state: 'focus',
+addPair('standalone-keyboard-focus', {state: 'keyboard-focus'});
+addPair('standalone-pointer-focus', {state: 'pointer-focus'});
+addPair('standalone-keyboard-focus-custom-theme', {
+  state: 'keyboard-focus',
   theme: 'butter',
 });
-addPair('standalone-focus-rtl', {state: 'focus', direction: 'rtl'});
-addPair('standalone-focus-narrow', {state: 'focus', viewport: NARROW});
+addPair('standalone-keyboard-focus-rtl', {
+  state: 'keyboard-focus',
+  direction: 'rtl',
+});
+addPair('standalone-keyboard-focus-narrow', {
+  state: 'keyboard-focus',
+  viewport: NARROW,
+});
 addPair('popup-rest', {story: 'popup-context'});
-addPair('popup-focus', {story: 'popup-context', state: 'focus'});
+addPair('popup-keyboard-focus', {
+  story: 'popup-context',
+  state: 'keyboard-focus',
+});
+addPair('popup-pointer-focus', {
+  story: 'popup-context',
+  state: 'pointer-focus',
+});
 addPair('context-matrix', {
   story: 'aggregate-matrix',
   state: 'context-matrix',
 });
 
-test.describe.configure({mode: 'serial', retries: 0});
+test.describe.configure({retries: 0});
 let server: StaticServer;
 let checkoutSha: string;
 let storybookSha: string;
@@ -99,6 +113,17 @@ async function focusFromKeyboard(page: Page, input: Locator) {
     await input.focus();
   }
   await expect(input).toBeFocused();
+  expect(
+    await input.evaluate(element => element.matches(':focus-visible')),
+  ).toBe(true);
+}
+
+async function focusFromPointer(input: Locator) {
+  await input.click();
+  await expect(input).toBeFocused();
+  // CSS Selectors 4 deliberately keeps text-entry controls focus-visible after
+  // a pointer click. The component's shared modality gate must still withhold
+  // its keyboard-only ring.
   expect(
     await input.evaluate(element => element.matches(':focus-visible')),
   ).toBe(true);
@@ -170,8 +195,10 @@ for (const item of cases) {
     }
 
     await expect(input).toBeVisible();
-    if (item.state === 'focus') {
+    if (item.state === 'keyboard-focus') {
       await focusFromKeyboard(page, input);
+    } else if (item.state === 'pointer-focus') {
+      await focusFromPointer(input);
     }
     await settle(page);
 
@@ -203,12 +230,15 @@ for (const item of cases) {
         outlineOffset: style.outlineOffset,
       };
     });
+    const ringVisible =
+      focus.outlineStyle !== 'none' &&
+      Number.parseFloat(focus.outlineWidth) >= 2;
     const focusIndicatorPass =
-      item.state !== 'focus' ||
-      (focus.focused &&
-        focus.focusVisible &&
-        focus.outlineStyle !== 'none' &&
-        Number.parseFloat(focus.outlineWidth) >= 2);
+      item.state === 'keyboard-focus'
+        ? focus.focused && focus.focusVisible && ringVisible
+        : item.state === 'pointer-focus'
+          ? focus.focused && focus.focusVisible && !ringVisible
+          : true;
 
     const png = await page.screenshot({animations: 'disabled', fullPage: true});
     const image = `${item.key}.png`;
