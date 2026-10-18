@@ -2,8 +2,8 @@
 
 /**
  * @file Documented props against a component's TypeScript props: each kind
- * of finding, the props a doc never needs, and the visible skip when the
- * project has no TypeScript.
+ * of finding, the loose type rules, the props a doc never needs, and the
+ * visible skip when the project has no TypeScript.
  */
 
 import * as fs from 'node:fs';
@@ -117,7 +117,7 @@ describe('comparePropDocs', () => {
     });
   });
 
-  it('reports a prop missing from the code, one missing from the doc, and a wrong required flag', async () => {
+  it('reports a prop missing from the code, one missing from the doc, a wrong required flag, and a wrong type', async () => {
     withTypeScript();
     const badge = component(
       'Badge',
@@ -148,16 +148,250 @@ describe('comparePropDocs', () => {
       'Badge.count not_in_doc',
       'Badge.label required_mismatch',
       'Badge.size not_in_code',
+      'Badge.tone type_mismatch',
     ]);
     expect(report.findings.every(f => f.severity === 'warning')).toBe(true);
+    expect(report.findings.find(f => f.kind === 'type_mismatch')).toMatchObject(
+      {
+        docType: "'neutral' | 'info'",
+        codeType: 'Tone',
+        doc: 'components/Badge.doc.mjs',
+        source: 'components/Badge.tsx',
+        message: expect.stringContaining(
+          "Tone ('neutral' | 'info' | 'danger')",
+        ),
+      },
+    );
     expect(
       report.findings.find(f => f.kind === 'required_mismatch'),
-    ).toMatchObject({
-      docRequired: false,
-      codeRequired: true,
-      doc: 'components/Badge.doc.mjs',
-      source: 'components/Badge.tsx',
-    });
+    ).toMatchObject({docRequired: false, codeRequired: true});
+  });
+
+  it('matches types written differently from the source', async () => {
+    withTypeScript();
+    const card = component(
+      'Card',
+      [
+        "type Tone = 'neutral' | 'info';",
+        "interface Status { type: 'error' | 'warning'; message?: string }",
+        'type Handler = (value: string, index: number) => void;',
+        'export interface CardProps {',
+        '  label: string;',
+        '  tone?: Tone;',
+        '  status?: Status;',
+        '  onPick?: Handler;',
+        '  items?: ReadonlyArray<string>;',
+        '  isOpen?: boolean;',
+        "  size?: 'sm' | 'md' | number;",
+        '}',
+        'export function Card(props: CardProps) { return null; }',
+      ].join('\n'),
+      {
+        props: [
+          prop('label', 'string', {required: true}),
+          prop('tone', "'info' | 'neutral'"),
+          prop('status', "{message?: string, type: 'warning' | 'error'}"),
+          prop('onPick', '(v: string, i: number) => void'),
+          prop('items', 'string[]'),
+          prop('isOpen', 'boolean'),
+          prop('size', "number | 'md' | 'sm'"),
+        ],
+      },
+    );
+
+    expect(kinds(await compare([card]))).toEqual([]);
+  });
+
+  it('reads `string & {}` beside literals as any string', async () => {
+    withTypeScript();
+    const field = component(
+      'Field',
+      [
+        'export interface FieldProps {',
+        "  autoComplete?: 'on' | 'off' | (string & {});",
+        "  target?: '_self' | '_blank' | (string & {});",
+        '}',
+        'export function Field(props: FieldProps) { return null; }',
+      ].join('\n'),
+      {
+        props: [
+          prop('autoComplete', 'string'),
+          prop('target', "'_self' | '_blank'"),
+        ],
+      },
+    );
+
+    expect(kinds(await compare([field]))).toEqual([
+      'Field.target type_mismatch',
+    ]);
+  });
+
+  it('reads optional callback parameters, intersections, and optional method props as the code declares them', async () => {
+    withTypeScript();
+    const thread = component(
+      'Thread',
+      [
+        'type Base = {id: string};',
+        'type Extra = {note?: string};',
+        'type Both = Base & Extra;',
+        'type Done = void | Promise<void>;',
+        'export interface ThreadProps {',
+        '  onSubmit?: (text: string, files?: File[]) => Done;',
+        '  onReact?: (emoji: string, count?: number) => Done;',
+        '  item?: Base & Extra;',
+        '  both?: Both;',
+        '  onClear?(reason?: string): void;',
+        '}',
+        'export function Thread(props: ThreadProps) { return null; }',
+      ].join('\n'),
+      {
+        props: [
+          prop(
+            'onSubmit',
+            '(text: string, files?: File[]) => void | Promise<void>',
+          ),
+          prop('onReact', '(emoji: string, count?: number) => Done'),
+          prop('item', 'Extra & Base'),
+          prop('both', 'Both = Base & Extra'),
+          prop('onClear', '(reason?: string) => number'),
+        ],
+      },
+    );
+
+    const report = await compare([thread]);
+
+    expect(
+      report.findings.map(({prop, kind, codeType}) => ({prop, kind, codeType})),
+    ).toEqual([
+      {
+        prop: 'onClear',
+        kind: 'type_mismatch',
+        codeType: '(reason?: string) => void',
+      },
+    ]);
+  });
+
+  it('compares objects, index signatures, records, tuples, enums, and fields structurally', async () => {
+    withTypeScript();
+    const probe = component(
+      'Probe',
+      [
+        "import type {MissingIcon} from '@acme/not-installed';",
+        "export enum Color { Red = 'red', Blue = 'blue' }",
+        'type Range = [number, number?];',
+        'type Spread = [string, ...number[]];',
+        'type Handler = (value: number) => void;',
+        'type Pair = (value: [number, number]) => void;',
+        'interface Parts { a?: string; b?: number }',
+        'export interface ProbeProps {',
+        '  both?: {a: string} & {b: number};',
+        '  record?: {[key: string]: string};',
+        "  labels?: Record<'open' | 'close', string>;",
+        '  wrongIndex?: Record<string, string>;',
+        '  empty?: Record<string, number>;',
+        '  method?: {onClick: string};',
+        '  color?: Color;',
+        '  range?: Range;',
+        '  spread?: Spread;',
+        '  change?: Handler | Pair;',
+        '  parts?: Partial<Parts>;',
+        '  icon?: MissingIcon;',
+        "  status?: {type: 'error' | 'warning'; message?: string};",
+        '}',
+        'export function Probe(props: ProbeProps) { return null; }',
+      ].join('\n'),
+      {
+        props: [
+          prop('both', '{a: string; b: number}'),
+          prop('record', 'Record<string, string>'),
+          prop('labels', '{open: string; close: string}'),
+          prop('wrongIndex', '{[key: string]: number}'),
+          prop('empty', '{}'),
+          prop('method', '{onClick(): void}'),
+          prop('color', "'red' | 'blue'"),
+          prop('range', '[number, number?]'),
+          prop('spread', '[string, ...number[]]'),
+          prop(
+            'change',
+            '(value: number) => void | (value: [number, number]) => void',
+          ),
+          prop('parts', 'Parts'),
+          prop('icon', 'IconName'),
+          prop('status.type', "'error' | 'info'"),
+        ],
+      },
+    );
+
+    const report = await compare([probe]);
+
+    expect(kinds(report)).toEqual([
+      'Probe.color type_mismatch',
+      'Probe.empty type_mismatch',
+      'Probe.method type_mismatch',
+      'Probe.status.type type_mismatch',
+      'Probe.wrongIndex type_mismatch',
+    ]);
+    expect(report.unchecked).toEqual([
+      expect.objectContaining({
+        component: 'Probe',
+        reason: expect.stringContaining('"icon"'),
+      }),
+    ]);
+  });
+
+  it('accepts an alias spelled out beside its name', async () => {
+    withTypeScript();
+    const link = component(
+      'Link',
+      [
+        "export type LinkVariant = 'link' | 'token';",
+        'export function Link(props: {variant?: LinkVariant; tone?: LinkVariant}) { return null; }',
+      ].join('\n'),
+      {
+        props: [
+          prop('variant', "LinkVariant = 'link' | 'token'"),
+          prop('tone', "LinkVariant ('link' | 'token')"),
+        ],
+      },
+    );
+
+    expect(kinds(await compare([link]))).toEqual([]);
+  });
+
+  it('reports an alias whose spelled-out values are stale', async () => {
+    withTypeScript();
+    const link = component(
+      'Link',
+      [
+        "export type LinkVariant = 'link' | 'token' | 'button';",
+        'export function Link(props: {variant?: LinkVariant; tone?: LinkVariant}) { return null; }',
+      ].join('\n'),
+      {
+        props: [
+          prop('variant', "LinkVariant = 'link' | 'token'"),
+          prop('tone', "LinkVariant ('link' | 'token')"),
+        ],
+      },
+    );
+
+    expect(kinds(await compare([link]))).toEqual([
+      'Link.tone type_mismatch',
+      'Link.variant type_mismatch',
+    ]);
+  });
+
+  it('reads an optional prop documented with `| undefined` as the code reads it', async () => {
+    withTypeScript();
+    const badge = component(
+      'Badge',
+      [
+        "type Tone = 'neutral' | 'info';",
+        'export function Badge(props: {tone?: Tone}) { return null; }',
+      ].join('\n'),
+      {props: [prop('tone', "'neutral' | 'info' | undefined")]},
+    );
+
+    expect(kinds(await compare([badge]))).toEqual([]);
   });
 
   it('does not ask a doc for props from other packages, styling props, or deprecated props', async () => {
@@ -385,7 +619,7 @@ describe('comparePropDocs', () => {
     }
   });
 
-  it("leaves a requirement that varies across a union's members alone", async () => {
+  it('matches a doc that describes one member of a discriminated union, and leaves a requirement that varies alone', async () => {
     withTypeScript();
     const picker = component(
       'Picker',
