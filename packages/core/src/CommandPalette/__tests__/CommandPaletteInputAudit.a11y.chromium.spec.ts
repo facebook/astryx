@@ -29,6 +29,11 @@ type Theme = 'neutral' | 'butter';
 type Story = 'standalone' | 'popup-context' | 'aggregate-matrix';
 type State = 'rest' | 'keyboard-focus' | 'pointer-focus' | 'context-matrix';
 
+type AuditReceipt = {
+  passed: boolean;
+  expected: Record<string, unknown>;
+};
+
 type AuditCase = {
   key: string;
   story: Story;
@@ -86,7 +91,7 @@ addPair('context-matrix', {
   state: 'context-matrix',
 });
 
-test.describe.configure({retries: 0});
+test.describe.configure({mode: 'serial', retries: 0});
 let server: StaticServer;
 let checkoutSha: string;
 let storybookSha: string;
@@ -289,23 +294,19 @@ for (const item of cases) {
     );
 
     await context.close();
-    expect(pageErrors).toEqual([]);
-    expect(observed.theme).toBe(item.theme);
-    expect(observed.mode).toBe(item.mode);
-    expect(observed.direction).toBe(item.direction);
-    expect(observed.viewport).toEqual(item.viewport);
-    expect(observed.reducedMotion).toBe(true);
-    expect(observed.horizontalOverflow).toBe(false);
-    expect(observed.fonts).toBe('loaded');
-    expect(focusIndicatorPass).toBe(true);
   });
 }
 
 test('manifest is complete', async () => {
-  const receipts = fs
+  const receiptFiles = fs
     .readdirSync(OUTPUT)
     .filter(file => file.endsWith('.sensors.json'));
-  expect(receipts).toHaveLength(cases.length);
+  const receipts = receiptFiles.map(
+    (file): AuditReceipt =>
+      JSON.parse(
+        fs.readFileSync(path.join(OUTPUT, file), 'utf8'),
+      ) as AuditReceipt,
+  );
   const manifest = {
     schemaVersion: 1,
     component: 'core/CommandPaletteInput',
@@ -320,4 +321,10 @@ test('manifest is complete', async () => {
     path.join(OUTPUT, 'manifest.json'),
     `${JSON.stringify(manifest, null, 2)}\n`,
   );
+  expect(receiptFiles).toHaveLength(cases.length);
+  expect(
+    receipts
+      .filter(receipt => !receipt.passed)
+      .map(receipt => receipt.expected),
+  ).toEqual([]);
 });
