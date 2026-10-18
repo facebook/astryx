@@ -133,13 +133,14 @@ change.
   that adds a central catalog, and writer tests MUST fail on one.
 - **FR12 — Documented component props agree with the source.**
   `astryx doctor integration components` MUST compare every prop table a
-  component descriptor documents with the props of the export it describes,
-  read with the TypeScript the project installs. It MUST warn about a
-  documented prop the code lacks, a prop the package's own source declares
-  that the table omits, a `required` flag the code contradicts, and a
-  documented type that does not match the code under the loose comparison the
-  command documents. Without the project's TypeScript it MUST say that the
-  comparison was skipped and why, and MUST NOT report a pass.
+  component descriptor documents with the props of the export it describes, read
+  with the TypeScript the project installs. It MUST warn about a documented prop
+  the code lacks, a prop the package's own source declares that the table omits,
+  a `required` flag the code contradicts, and a documented type that does not
+  match the code under the loose comparison the command documents. It MUST list
+  a documented type it cannot judge as unchecked rather than report a match or a
+  mismatch. Without the project's TypeScript it MUST say that the comparison was
+  skipped and why, and MUST NOT report a pass.
 - **FR13 — Every descriptor satisfies its published authoring type.**
   `astryx doctor integration validate` MUST check each descriptor an
   integration's roots hold, and each translation a descriptor carries, against
