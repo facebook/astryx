@@ -433,6 +433,54 @@ describe('doctor integration — command', () => {
     expect(process.exitCode).toBeUndefined();
   });
 
+  it('components compares a hidden doc and a family entry with no record, so their drift is never an [ok]', async () => {
+    writeComponentIntegration('AcmeMenu');
+    const dir = path.join(tmpDir, 'components');
+    fs.writeFileSync(
+      path.join(dir, 'AcmeMenu.doc.mjs'),
+      `export default {type: 'component', name: 'AcmeMenuRoot', displayName: 'AcmeMenuRoot', description: 'Fixture component.', hiddenComponents: ['AcmeMenuItem'], components: [{name: 'AcmeMenuItem', displayName: 'AcmeMenuItem', description: 'Fixture item.', props: [{name: 'label', type: 'string', description: 'Text.'}]}]};\n`,
+    );
+    fs.writeFileSync(
+      path.join(dir, 'AcmeMenu.tsx'),
+      'export function AcmeMenuRoot() { return null; }\nexport function AcmeMenuItem(props: {value?: string}) { return null; }\n',
+    );
+    fs.writeFileSync(
+      path.join(dir, 'AcmeSecret.doc.mjs'),
+      `export default {type: 'component', name: 'AcmeSecret', displayName: 'AcmeSecret', description: 'Fixture component.', hidden: true, props: [{name: 'tone', type: 'string', description: 'Tone.'}]};\n`,
+    );
+    fs.writeFileSync(
+      path.join(dir, 'AcmeSecret.tsx'),
+      'export function AcmeSecret(props: {size?: number}) { return null; }\n',
+    );
+    process.chdir(tmpDir);
+    const run = async (/** @type {string[]} */ flags) => {
+      logCalls.length = 0;
+      await createProgram().parseAsync([
+        'node',
+        'astryx',
+        ...flags,
+        'doctor',
+        'integration',
+        'components',
+      ]);
+      return logCalls.join('\n');
+    };
+
+    const report = JSON.parse(await run(['--json'])).data.propDrift;
+    const output = await run([]);
+
+    expect(
+      report.findings.map(f => `${f.component}.${f.prop} ${f.kind}`),
+    ).toEqual([
+      'AcmeMenuItem.label not_in_code',
+      'AcmeMenuItem.value not_in_doc',
+      'AcmeSecret.size not_in_doc',
+      'AcmeSecret.tone not_in_code',
+    ]);
+    expect(output).not.toContain('[ok] Documented prop');
+    expect(process.exitCode).toBeUndefined();
+  });
+
   it('components prints every field of the props comparison that JSON carries', async () => {
     writeComponentIntegration('AcmeBadge');
     fs.writeFileSync(

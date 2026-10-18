@@ -793,6 +793,41 @@ export function useTabs(options: {value: string}) { return options; }`,
     ]);
   });
 
+  it('compares every entry of a family doc named after another export, and lists one with no source as not compared', async () => {
+    withTypeScript();
+    const menu = component(
+      'Menu',
+      [
+        'export function MenuRoot(props: {open?: boolean}) { return null; }',
+        'export function MenuItem(props: {value: string}) { return null; }',
+      ].join('\n'),
+      {
+        name: 'MenuRoot',
+        hiddenComponents: ['MenuItem'],
+        components: [
+          entry('MenuItem', [prop('label', 'string')]),
+          entry('MenuGhost', [prop('tone', 'string')]),
+        ],
+      },
+    );
+
+    // Discovery records the doc under `MenuRoot` and leaves the hidden
+    // `MenuItem` and the unbuilt `MenuGhost` without records of their own.
+    const report = await compareDocs([{...menu, name: 'MenuRoot'}]);
+
+    expect(kinds(report)).toEqual([
+      'MenuItem.label not_in_code',
+      'MenuItem.value not_in_doc',
+    ]);
+    expect(report.unchecked).toEqual([
+      {
+        component: 'MenuGhost',
+        doc: 'components/Menu.doc.mjs',
+        reason: 'Menu.tsx has no export named MenuGhost',
+      },
+    ]);
+  });
+
   it("compares a doc's own props with the export its name names, which another file can hold", async () => {
     withTypeScript();
     const status = component(

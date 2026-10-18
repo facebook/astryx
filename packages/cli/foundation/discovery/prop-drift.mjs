@@ -1686,21 +1686,22 @@ export async function comparePropDocs(components, options) {
       });
       continue;
     }
-    if (component.name !== docStem(component.docPath)) {
-      // A record named after the export its doc's `name` names compares the
-      // doc's own props; a family member, its own entry.
-      const entry =
-        doc &&
-        ownName(doc, component) === component.name &&
-        Array.isArray(doc.props)
-          ? doc
-          : Array.isArray(doc?.components)
-            ? doc.components.find(
-                (/** @type {any} */ candidate) =>
-                  candidate?.name === component.name &&
-                  Array.isArray(candidate.props),
-              )
-            : undefined;
+    // The doc's own record is named after its file, or after the export its
+    // `name` names; any other record is a family member's.
+    const ownRecord =
+      component.name === docStem(component.docPath) ||
+      (doc != null &&
+        typeof doc === 'object' &&
+        ownName(doc, component) === component.name);
+    if (!ownRecord) {
+      // A family member compares its own entry.
+      const entry = Array.isArray(doc?.components)
+        ? doc.components.find(
+            (/** @type {any} */ candidate) =>
+              candidate?.name === component.name &&
+              Array.isArray(candidate.props),
+          )
+        : undefined;
       if (!entry || HOOK_NAME.test(component.name)) continue;
       const key = `${component.docPath}\0${component.sourcePath}\0${component.name}`;
       if (seen.has(key)) continue;
@@ -1713,6 +1714,9 @@ export async function comparePropDocs(components, options) {
       });
       continue;
     }
+    // Its own props, and every entry no member record compares: a hidden
+    // one, or one discovery doesn't record. One whose source isn't found is
+    // listed as not compared.
     const members = namesByDoc.get(component.docPath) ?? new Set();
     for (const table of propTables(doc, component)) {
       if (table.name !== component.name && members.has(table.name)) continue;

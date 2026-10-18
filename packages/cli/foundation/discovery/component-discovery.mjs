@@ -1242,7 +1242,7 @@ export function forEachIntegrationDoc(componentsDir, visit) {
  * @param {string} docPath absolute path to a `{Name}.doc.{ts,mjs,js}` file
  * @returns {string|null}
  */
-function integrationSourceForDoc(docPath) {
+export function integrationSourceForDoc(docPath) {
   const dir = path.dirname(docPath);
   const base = path.basename(docPath).replace(/\.doc\.(ts|mjs|js)$/, '');
   const candidate = path.join(dir, `${base}.tsx`);
