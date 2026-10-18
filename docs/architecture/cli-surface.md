@@ -286,8 +286,8 @@ and remains available through explicit Core package selection.
   the stem, and records each full entry a descriptor lists in `components`
   under its own name when the module the descriptor imports exports it
   (`spec:AST-039/FR4`). A name recorded only this way never takes an unscoped
-  lookup that Core or a component named after its source answers: that
-  component keeps it unless a declared replacement claims it.
+  lookup that Core, a legacy docs package, or a component named after its
+  source answers: that owner keeps it unless a declared replacement claims it.
 - **INV25 — Every CLI doc names the group that reads it.** Each command, API
   function, schema, and enum doc the CLI ships declares a `namespace`. The docs
   tree adopts `cli/commands` and `cli/api` docs, one route each under
