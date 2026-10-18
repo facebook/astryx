@@ -58,6 +58,27 @@ const listed = files =>
     .sort();
 
 describe('integrationDocFiles', () => {
+  it('reads a fixture folder relative to its root, so a package under a `__tests__` folder is checked', async () => {
+    write(
+      '__tests__/acme/components/Hidden.doc.mjs',
+      `${component('Hidden')}\n  hidden: true\n`,
+    );
+    write(
+      '__tests__/acme/components/__tests__/Tested.doc.mjs',
+      component('Tested'),
+    );
+
+    const {files, fixtures} = await integrationDocFiles({
+      name: '@acme/widgets',
+      components: path.join(pkg, '__tests__', 'acme', 'components'),
+    });
+
+    expect(listed(files)).toEqual([
+      ['__tests__/acme/components/Hidden.doc.mjs', 'components'],
+    ]);
+    expect(fixtures).toBe(1);
+  });
+
   it("gives a nested root's files to that root", async () => {
     write('src/Badge.doc.mjs', component('Badge'));
     write('src/docs/guide.doc.mjs', topic('guide'));
@@ -80,7 +101,7 @@ describe('integrationDocFiles', () => {
     ]);
   });
 
-  it('takes the docs each reader serves: __fixtures__, dot-folder and symlinked docs included, rejected ones not', async () => {
+  it('takes every doc the roots hold, served or not, and counts a test fixture no reader serves', async () => {
     write('components/__fixtures__/Fixture.doc.mjs', component('Fixture'));
     write('components/.drafts/Draft.doc.mjs', component('Draft'));
     write('components/__tests__/Tested.doc.mjs', component('Tested'));
@@ -97,6 +118,13 @@ describe('integrationDocFiles', () => {
     );
     template('templates/__tests__/tested.doc.mjs');
     write('templates/orphan.doc.mjs', "export default {type: 'block'};\n");
+    // The template reader reads `__fixtures__`: a template doc there without
+    // its source is the package's, so it is checked.
+    write(
+      'templates/__fixtures__/bad.doc.mjs',
+      "export default {type: 'block'};\n",
+    );
+    write('docs/__tests__/sample.doc.mjs', topic('sample'));
     write('docs/.drafts/topic.doc.mjs', topic('topic'));
     write('docs/.drafts/topic.doc.zh.mjs', 'export const docsZh = {};\n');
     write('docs/copy.doc.mjs', topic('topic'));
@@ -110,11 +138,12 @@ describe('integrationDocFiles', () => {
       themes: path.join(pkg, 'themes'),
     };
 
-    const {files, unread} = await integrationDocFiles(integration);
+    const {files, unread, fixtures} = await integrationDocFiles(integration);
 
     // Component discovery skips `__tests__` and a `hidden` doc, and serves the
     // first doc of a name; a template without its source, a second topic of
-    // a name, and an overlay without its topic are not served either.
+    // a name, and an overlay without its topic are not served either. All of
+    // them ship, so all are checked, but a test fixture no reader serves.
     const served = discoverIntegrationComponents(integration).map(c =>
       path.relative(pkg, c.docPath),
     );
@@ -124,11 +153,19 @@ describe('integrationDocFiles', () => {
     expect(listed(files)).toEqual(
       [
         ...served.map(file => [file, 'components']),
+        ['components/Hidden.doc.mjs', 'components'],
+        ['components/again/Twice.doc.mjs', 'components'],
         ['docs/.drafts/topic.doc.mjs', 'docs'],
         ['docs/.drafts/topic.doc.zh.mjs', 'docs-overlay'],
+        ['docs/copy.doc.mjs', 'docs'],
+        ['docs/orphan.doc.dense.mjs', 'docs-overlay'],
+        ['templates/__fixtures__/bad.doc.mjs', 'templates'],
         ['templates/__tests__/tested.doc.mjs', 'templates'],
+        ['templates/orphan.doc.mjs', 'templates'],
       ].sort(),
     );
+    // `components/__tests__/Tested` and `docs/__tests__/sample`.
+    expect(fixtures).toBe(2);
     expect(served.sort()).toEqual(
       expect.arrayContaining([
         'components/.drafts/Draft.doc.mjs',

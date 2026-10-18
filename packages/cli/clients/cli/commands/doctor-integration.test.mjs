@@ -416,6 +416,106 @@ describe('doctor integration — command', () => {
     ]);
   });
 
+  it('validate type-checks a hidden doc and a second doc for one name, and counts a test fixture', async () => {
+    fs.writeFileSync(
+      path.join(tmpDir, 'package.json'),
+      JSON.stringify({name: '@acme/widgets', version: '1.2.3'}),
+    );
+    fs.writeFileSync(
+      path.join(tmpDir, 'astryx.integration.mjs'),
+      `export default {components: './components'};\n`,
+    );
+    for (const [rel, name, extra] of [
+      ['components/AcmeBadge.doc.mjs', 'AcmeBadge', ''],
+      ['components/again/AcmeBadge.doc.mjs', 'AcmeBadge', ', keyword: []'],
+      [
+        'components/AcmeHidden.doc.mjs',
+        'AcmeHidden',
+        ', hidden: true, keyword: []',
+      ],
+      [
+        'components/__tests__/AcmeTested.doc.mjs',
+        'AcmeTested',
+        ', keyword: []',
+      ],
+    ]) {
+      fs.mkdirSync(path.dirname(path.join(tmpDir, rel)), {recursive: true});
+      fs.writeFileSync(
+        path.join(tmpDir, rel),
+        `export default {type: 'component', name: '${name}', displayName: '${name}', usage: {description: 'Fixture.'}, props: []${extra}};\n`,
+      );
+      fs.writeFileSync(
+        path.join(tmpDir, rel.replace('.doc.mjs', '.tsx')),
+        'export default function Fixture() { return null; }\n',
+      );
+    }
+    process.chdir(tmpDir);
+    const run = async (/** @type {string[]} */ flags) => {
+      logCalls.length = 0;
+      await createProgram().parseAsync([
+        'node',
+        'astryx',
+        ...flags,
+        'doctor',
+        'integration',
+        'validate',
+      ]);
+      return logCalls.join('\n');
+    };
+
+    const {docTypes} = JSON.parse(await run(['--json'])).data;
+    const output = await run([]);
+
+    expect(docTypes).toMatchObject({docs: 3, fixtures: 1, unchecked: []});
+    expect(
+      docTypes.findings.map(
+        (/** @type {any} */ f) => `${f.doc} ${f.field} ${f.problem}`,
+      ),
+    ).toEqual([
+      'components/AcmeHidden.doc.mjs keyword unknown_field',
+      'components/again/AcmeBadge.doc.mjs keyword unknown_field',
+    ]);
+    expect(output).toContain('[info] 1 test fixture doc(s) not checked.');
+    expect(output).not.toContain('[ok] Every doc matches');
+  });
+
+  it('validate keeps the fixture count when test fixtures are the only docs', async () => {
+    fs.writeFileSync(
+      path.join(tmpDir, 'package.json'),
+      JSON.stringify({name: '@acme/widgets', version: '1.2.3'}),
+    );
+    fs.writeFileSync(
+      path.join(tmpDir, 'astryx.integration.mjs'),
+      `export default {components: './components'};\n`,
+    );
+    const rel = 'components/__tests__/AcmeTested.doc.mjs';
+    fs.mkdirSync(path.dirname(path.join(tmpDir, rel)), {recursive: true});
+    fs.writeFileSync(
+      path.join(tmpDir, rel),
+      `export default {type: 'component', name: 'AcmeTested', displayName: 'AcmeTested', usage: {description: 'Fixture.'}, props: []};\n`,
+    );
+    process.chdir(tmpDir);
+    const run = async (/** @type {string[]} */ flags) => {
+      logCalls.length = 0;
+      await createProgram().parseAsync([
+        'node',
+        'astryx',
+        ...flags,
+        'doctor',
+        'integration',
+        'validate',
+      ]);
+      return logCalls.join('\n');
+    };
+
+    const {docTypes} = JSON.parse(await run(['--json'])).data;
+    const output = await run([]);
+
+    expect(docTypes).toMatchObject({docs: 0, fixtures: 1, findings: []});
+    expect(output).toContain('[info] No doc files to type-check.');
+    expect(output).toContain('[info] 1 test fixture doc(s) not checked.');
+  });
+
   it("validate keeps main's issue for a root it cannot read, and lists a root with a folder it cannot read", async () => {
     fs.writeFileSync(
       path.join(tmpDir, 'package.json'),

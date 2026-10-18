@@ -47,7 +47,9 @@
  * means nothing was checked (no TypeScript in the project) and `reason` says
  * why. Every finding is a warning.
  *
- * @typedef {import('../../foundation/discovery/doc-types.mjs').DocTypesReport} DocTypesReport
+ * @typedef {import('../../foundation/discovery/doc-types.mjs').DocTypesReport & {fixtures?: number}} DocTypesReport
+ *   `fixtures`: how many test fixture docs (under `__tests__` in the
+ *   components or docs root, which those readers skip) were not checked
  */
 
 export {};

@@ -1341,16 +1341,21 @@ export async function resolveTopicDocs(topic, options = {}) {
  * FR13). Without TypeScript the report says nothing was checked.
  * @param {any} integration a loaded integration
  * @param {string} cwd
- * @returns {Promise<import('../../foundation/discovery/doc-types.mjs').DocTypesReport>}
+ * @returns {Promise<import('../../foundation/discovery/doc-types.mjs').DocTypesReport & {fixtures?: number}>}
  */
 export async function integrationDocTypes(integration, cwd) {
   const packageDir = /** @type {{__packageDir?: string}} */ (integration)
     .__packageDir;
-  const {files, unread} = await integrationDocFiles(integration);
-  const report = await checkDocTypes(files, {
+  const {files, unread, fixtures} = await integrationDocFiles(integration);
+  const checked = await checkDocTypes(files, {
     packageDir: packageDir ?? cwd,
     resolveFrom: [cwd, packageDir],
   });
+  // Test fixtures no reader serves don't ship as docs: only counted.
+  const report =
+    checked.status === 'checked' && fixtures > 0
+      ? {...checked, fixtures}
+      : checked;
   if (report.status !== 'checked' || unread.length === 0) return report;
   // A root its reader cannot read serves no doc; say so rather than skip it.
   const rel = (/** @type {string} */ file) =>

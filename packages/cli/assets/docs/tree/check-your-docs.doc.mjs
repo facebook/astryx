@@ -87,7 +87,7 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: "`doctor integration validate` reads every doc your package ships against the type `@astryxdesign/cli/authoring` publishes for its kind, the way `tsc` would. It reports a field the type does not have (`unknown_field`), a missing required field (`missing_field`), and a value outside the field's type (`wrong_type`).",
+          text: "`doctor integration validate` reads every doc your package ships against the type `@astryxdesign/cli/authoring` publishes for its kind, the way `tsc` would: a `hidden` doc and a second doc for one name too. Test fixtures under `__tests__` in the components or docs root, which those readers skip, are counted, not checked. It reports a field the type does not have (`unknown_field`), a missing required field (`missing_field`), and a value outside the field's type (`wrong_type`).",
         },
         {
           type: 'code',

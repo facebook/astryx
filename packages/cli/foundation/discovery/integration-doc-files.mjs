@@ -1,12 +1,12 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file The doc files an integration package ships, by root: exactly the
- * docs each root's reader serves, so the doc type check covers every doc the
- * CLI serves and nothing it does not.
+ * @file The doc files an integration package ships, by root: every doc its
+ * roots hold, so the doc type check covers each one an agent can open.
  *
- * - components: the doc each component discovery records (the first per
- *   name; a `hidden` doc is not served);
+ * Each root's reader names the docs it serves, with the kind it reads each
+ * as:
+ * - components: the doc each component discovery records;
  * - templates: the doc of each template template discovery serves;
  * - docs: the file of each topic, namespace and placed guide docs discovery
  *   serves, and each topic's and guide's `zh` and `dense` overlay that a docs
@@ -14,13 +14,16 @@
  * - themes: each theme's descriptor, as theme discovery resolves it. A themes
  *   root that discovery cannot read serves no theme, and is listed with the
  *   reason.
- * A doc a reader rejects (one that does not load, or a second doc for one
- * name) is reported by that reader's own check, not here. A file two readers
- * serve goes to the deepest root.
+ * A doc no reader serves still ships: a `hidden` one, a second doc for one
+ * name, an overlay without its topic. It goes to its root's kind. A test
+ * fixture does not ship as a doc, and is only counted: a doc under
+ * `__tests__` in the components or docs root, which those readers skip.
+ * A file two roots hold goes to the deepest.
  *
  * @input A loaded integration and its resolved roots.
  * @output DocFile entries for checkDocTypes, each with the root it belongs to,
- *   and the roots a reader could not read.
+ *   the roots a reader could not read, and how many test fixtures it left
+ *   out.
  * @position Read by `astryx doctor integration validate` before it checks
  *   each doc against its authoring type.
  */
@@ -38,10 +41,11 @@ import {rootProblem} from '../integrations/validate-contributions.mjs';
 /** @typedef {import('./doc-types.mjs').DocRoot} DocRoot */
 
 /**
- * Every doc file the readers of an integration's roots serve, each assigned
- * to the deepest root that holds it, and each root a reader could not read.
+ * Every doc file an integration's roots hold, each assigned to the deepest
+ * root that holds it, each root a reader could not read, and how many test
+ * fixtures no reader serves.
  * @param {any} integration a loaded integration
- * @returns {Promise<{files: DocFile[], unread: Array<{path: string, reason: string}>}>}
+ * @returns {Promise<{files: DocFile[], unread: Array<{path: string, reason: string}>, fixtures: number}>}
  */
 export async function integrationDocFiles(integration) {
   const {components, templates, docs, themes} = integration ?? {};
@@ -119,18 +123,109 @@ export async function integrationDocFiles(integration) {
   ]);
   /** @type {Map<string, {root: DocRoot, dir: string}>} */
   const owners = new Map();
+  /** @type {(table: Map<string, {root: DocRoot, dir: string}>, root: DocRoot, dir: string, file: string) => void} */
+  const own = (table, root, dir, file) => {
+    const owner = table.get(file);
+    if (!owner || dir.length > owner.dir.length) table.set(file, {root, dir});
+  };
   for (const [root, dir, files] of read) {
-    for (const file of files) {
-      const owner = owners.get(file);
-      if (!owner || dir.length > owner.dir.length) {
-        owners.set(file, {root, dir});
-      }
+    for (const file of files) own(owners, root, dir, file);
+  }
+  // The docs no reader serves, in each root a reader could read.
+  /** @type {Map<string, {root: DocRoot, dir: string}>} */
+  const shipped = new Map();
+  const readable = new Set(read.map(([, dir]) => dir));
+  for (const [
+    kind,
+    dir,
+  ] of /** @type {Array<[DocRoot, string | undefined]>} */ ([
+    ['components', components],
+    ['templates', templates],
+    ['docs', docs],
+    ['themes', themes],
+  ])) {
+    if (!dir || !readable.has(dir)) continue;
+    for (const file of docFilesUnder(dir)) {
+      const overlay = OVERLAY_LANGUAGES.some(lang =>
+        file.endsWith(`.doc.${lang}.mjs`),
+      );
+      if (overlay && kind !== 'docs') continue;
+      own(shipped, overlay ? 'docs-overlay' : kind, dir, file);
     }
+  }
+  let fixtures = 0;
+  for (const [file, owner] of shipped) {
+    if (owners.has(file)) continue;
+    if (isFixture(path.relative(owner.dir, file), owner.root)) fixtures++;
+    else owners.set(file, owner);
   }
   return {
     files: [...owners]
       .map(([file, {root}]) => ({path: file, root}))
       .sort((a, b) => a.path.localeCompare(b.path)),
     unread,
+    fixtures,
   };
+}
+
+/**
+ * Whether a doc file is a test fixture: under `__tests__` in a root whose
+ * reader skips that folder (components and docs). The template reader reads
+ * it, so a template doc there is the package's like any other.
+ * @param {string} file its path relative to its root
+ * @param {DocRoot} root
+ */
+function isFixture(file, root) {
+  return (
+    root !== 'templates' &&
+    root !== 'themes' &&
+    file.split(path.sep).includes('__tests__')
+  );
+}
+
+/**
+ * Every doc file under a folder: a `.doc.ts`, `.doc.mjs` or `.doc.js` file,
+ * or a `zh` or `dense` overlay, through its folders and linked files, but not
+ * `node_modules`, `.git` or a linked folder.
+ * @param {string} dir
+ * @returns {string[]}
+ */
+function docFilesUnder(dir) {
+  /** @type {string[]} */
+  const found = [];
+  /** @type {(folder: string) => void} */
+  const walk = folder => {
+    /** @type {fs.Dirent[]} */
+    let entries;
+    try {
+      entries = fs.readdirSync(folder, {withFileTypes: true});
+    } catch {
+      return;
+    }
+    for (const entry of entries) {
+      if (entry.name === 'node_modules' || entry.name === '.git') continue;
+      const full = path.join(folder, entry.name);
+      if (entry.isDirectory()) {
+        walk(full);
+        continue;
+      }
+      if (entry.isSymbolicLink()) {
+        try {
+          if (!fs.statSync(full).isFile()) continue;
+        } catch {
+          continue;
+        }
+      } else if (!entry.isFile()) {
+        continue;
+      }
+      if (
+        /\.doc\.(ts|mjs|js)$/.test(entry.name) ||
+        OVERLAY_LANGUAGES.some(lang => entry.name.endsWith(`.doc.${lang}.mjs`))
+      ) {
+        found.push(full);
+      }
+    }
+  };
+  walk(dir);
+  return found;
 }

@@ -113,7 +113,12 @@ function docTypesBlocks(report, failed) {
     report.findings.length === 0 &&
     report.unchecked.length === 0
   ) {
-    return [text('[info] No doc files to type-check.')];
+    return [
+      text('[info] No doc files to type-check.'),
+      ...(report.fixtures
+        ? [text(`[info] ${report.fixtures} test fixture doc(s) not checked.`)]
+        : []),
+    ];
   }
   if (report.status === 'skipped') {
     return [text(`[skip] Docs not type-checked: ${report.reason}`)];
@@ -150,6 +155,11 @@ function docTypesBlocks(report, failed) {
     blocks.push(
       text(`[info] Not type-checked: ${report.unchecked.length} doc file(s):`),
       records(report.unchecked, {fields: ['doc', 'reason']}),
+    );
+  }
+  if (report.fixtures) {
+    blocks.push(
+      text(`[info] ${report.fixtures} test fixture doc(s) not checked.`),
     );
   }
   if (report.findings.length === 0 && report.docs > 0) {
