@@ -51,7 +51,7 @@ doc:       components/AcmeCarousel.doc.mjs
 source:    components/AcmeCarousel.tsx
 docType:   boolean
 
-3 documented prop(s) differ from the code in 1 of 1 component(s) compared (TypeScript 6.0.3). These are warnings: update the doc, or the code if the doc is right.`,
+1 prop(s) differ between the docs and the code in 1 of 1 component(s) compared (TypeScript 6.0.3). These are warnings: update the doc, or the code if the doc is right.`,
         },
         {
           type: 'list',

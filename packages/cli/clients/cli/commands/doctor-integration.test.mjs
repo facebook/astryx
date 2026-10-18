@@ -427,7 +427,7 @@ describe('doctor integration — command', () => {
       '"label" is required in the code, but the doc does not mark it required.',
     );
     expect(output).toContain(
-      '1 documented prop(s) differ from the code in 1 of 1 component(s) compared (TypeScript',
+      '1 prop(s) differ between the docs and the code in 1 of 1 component(s) compared (TypeScript',
     );
     expect(output).not.toContain('[ok] Documented prop');
     expect(process.exitCode).toBeUndefined();

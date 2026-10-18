@@ -207,7 +207,7 @@ function propDriftBlocks(report, failed) {
         format: {severity: statusToken},
       }),
       text(
-        `${report.findings.length} documented prop(s) differ from the code in ${components} of ${report.components} component(s) compared (TypeScript ${report.typescript}). ` +
+        `${report.findings.length} prop(s) differ between the docs and the code in ${components} of ${report.components} component(s) compared (TypeScript ${report.typescript}). ` +
           'These are warnings: update the doc, or the code if the doc is right.',
       ),
     );
