@@ -229,12 +229,12 @@ describe('doctor integration — command', () => {
     );
     expect(output).toContain('templates/hero.doc.mjs');
     expect(output).toMatch(/export:\s+default/);
-    expect(output).toMatch(/type:\s+TemplateDoc/);
+    expect(output).toMatch(/type:\s+IntegrationTemplateDoc/);
     expect(output).toContain(
-      'Add `aspectRatio`: BlockTemplateDoc requires it.',
+      'Add `aspectRatio`: IntegrationBlockTemplateDoc requires it.',
     );
     expect(output).toContain(
-      'Add `displayName`: BlockTemplateDoc requires it.',
+      'Add `displayName`: IntegrationBlockTemplateDoc requires it.',
     );
     expect(output).toContain(
       '2 doc field(s) in 1 file(s) do not match the authoring types.',
@@ -278,6 +278,96 @@ describe('doctor integration — command', () => {
     }
   });
 
+  it('validate says the docs matched even when another check failed', async () => {
+    writeIntegration({id: 'hero', missingRoot: true});
+    fs.writeFileSync(
+      path.join(tmpDir, 'astryx.integration.mjs'),
+      "export default {templates: './missing', components: './components'};\n",
+    );
+    fs.mkdirSync(path.join(tmpDir, 'components'), {recursive: true});
+    fs.writeFileSync(
+      path.join(tmpDir, 'components', 'AcmeBadge.doc.mjs'),
+      "export default {type: 'component', name: 'AcmeBadge', displayName: 'Badge', usage: {description: 'A badge.'}, props: []};\n",
+    );
+    fs.writeFileSync(
+      path.join(tmpDir, 'components', 'AcmeBadge.tsx'),
+      'export function AcmeBadge() { return null; }\n',
+    );
+    process.chdir(tmpDir);
+
+    await createProgram().parseAsync([
+      'node',
+      'astryx',
+      'doctor',
+      'integration',
+      'validate',
+    ]);
+
+    const output = logCalls.join('\n');
+    expect(process.exitCode).toBe(1);
+    expect(output).toContain(
+      '[info] No doc field differs from its authoring type (1 checked).',
+    );
+    expect(output).not.toContain('[ok] Every doc');
+  });
+
+  it('validate prints every field of the doc type check that JSON carries', async () => {
+    writeIntegration({id: 'hero', name: 'Hero', type: 'block'});
+    fs.writeFileSync(
+      path.join(tmpDir, 'astryx.integration.mjs'),
+      "export default {templates: './templates', components: './components'};\n",
+    );
+    fs.mkdirSync(path.join(tmpDir, 'components'), {recursive: true});
+    fs.writeFileSync(
+      path.join(tmpDir, 'components', 'AcmeBadge.doc.mjs'),
+      "export default {type: 'component', name: 'AcmeBadge', displayName: 5, usage: {description: 'A badge.'}, props: [], keyword: ['x']};\n",
+    );
+    fs.writeFileSync(
+      path.join(tmpDir, 'components', 'AcmeBadge.tsx'),
+      'export function AcmeBadge() { return null; }\n',
+    );
+    fs.writeFileSync(
+      path.join(tmpDir, 'components', 'shared.mjs'),
+      `export default {type: 'component', name: 'AcmeAgain', displayName: 'Again', usage: {description: 'x'}, props: []};\n`,
+    );
+    fs.writeFileSync(
+      path.join(tmpDir, 'components', 'AcmeAgain.doc.mjs'),
+      "export {default} from './shared.mjs';\n",
+    );
+    fs.writeFileSync(
+      path.join(tmpDir, 'components', 'AcmeAgain.tsx'),
+      'export function AcmeAgain() { return null; }\n',
+    );
+    process.chdir(tmpDir);
+    const run = async (/** @type {string[]} */ flags) => {
+      logCalls.length = 0;
+      await createProgram().parseAsync([
+        'node',
+        'astryx',
+        ...flags,
+        'doctor',
+        'integration',
+        'validate',
+      ]);
+      return logCalls.join('\n');
+    };
+
+    const report = JSON.parse(await run(['--json'])).data.docTypes;
+    const output = await run([]);
+
+    expect([...new Set(report.findings.map(f => f.problem))].sort()).toEqual([
+      'missing_field',
+      'unknown_field',
+      'wrong_type',
+    ]);
+    expect(report.unchecked).toHaveLength(1);
+    expectRecordsCarry(output, report.findings, ['doc', 'field', 'problem']);
+    expectRecordsCarry(output, report.unchecked, ['doc', 'reason']);
+    expect(output).toContain(
+      `Checking ${report.docs} doc(s) against the authoring types (TypeScript ${report.typescript})`,
+    );
+  });
+
   it('validate reports the doc type check as additive JSON', async () => {
     writeIntegration({id: 'hero', name: 'Hero', type: 'block'});
     process.chdir(tmpDir);
@@ -303,7 +393,7 @@ describe('doctor integration — command', () => {
       expect.objectContaining({
         doc: 'templates/hero.doc.mjs',
         export: 'default',
-        type: 'TemplateDoc',
+        type: 'IntegrationTemplateDoc',
         field: 'aspectRatio',
         problem: 'missing_field',
         severity: 'warning',
@@ -336,7 +426,9 @@ describe('doctor integration — command', () => {
       expect(output).toContain(
         '[skip] Docs not type-checked: TypeScript is not installed in this project',
       );
-      expect(output).not.toContain('Checking docs against the authoring types');
+      expect(output).not.toMatch(
+        /Checking \d+ doc\(s\) against the authoring types/,
+      );
       expect(process.exitCode).toBeUndefined();
     } finally {
       process.chdir(previousCwd);

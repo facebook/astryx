@@ -80,6 +80,7 @@ describe("Core's docs against the authoring types", () => {
     const report = await checkDocTypes(coreDocFiles(), {
       packageDir: REPO,
       resolveFrom: [REPO],
+      core: true,
     });
     expect(report.status).toBe('checked');
     expect(report.unchecked).toEqual([]);

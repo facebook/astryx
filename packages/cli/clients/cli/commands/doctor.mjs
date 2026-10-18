@@ -152,12 +152,15 @@ function docTypesBlocks(report, failed) {
       records(report.unchecked, {fields: ['doc', 'reason']}),
     );
   }
-  if (report.findings.length === 0 && !failed && report.docs > 0) {
+  if (report.findings.length === 0 && report.docs > 0) {
+    // After a failed check an [ok] reads as a pass, but the result still shows.
     blocks.push(
       text(
-        report.unchecked.length > 0
-          ? `[ok] Every doc that was checked matches its authoring type (${report.docs} checked).`
-          : `[ok] Every doc matches its authoring type (${report.docs} checked).`,
+        failed
+          ? `[info] No doc field differs from its authoring type (${report.docs} checked).`
+          : report.unchecked.length > 0
+            ? `[ok] Every doc that was checked matches its authoring type (${report.docs} checked).`
+            : `[ok] Every doc matches its authoring type (${report.docs} checked).`,
       ),
     );
   }
