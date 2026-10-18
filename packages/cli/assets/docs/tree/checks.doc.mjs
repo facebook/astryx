@@ -62,7 +62,7 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: 'Pass a package name, such as `npx astryx doctor integration validate @acme/astryx-widgets`, to check an installed copy from an app instead.',
+          text: 'Pass a package name, such as `npx astryx doctor integration validate @acme/astryx-widgets`, to check an installed copy from an app instead. To fix a props finding, see {@link generic:check-the-props}.',
         },
       ],
     },
