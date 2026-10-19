@@ -84,7 +84,7 @@ docType:   boolean
             [
               '`not_in_doc`',
               "Your package declares a prop the doc does not list, or builds one with a mapped type, such as `Partial<Record<'sm' | 'md', string>>`",
-              'Document it. Props from React, the DOM, or another package are never asked for, and neither are `className`, `style`, `xstyle`, `data-testid`, `ref`, `key`, or a prop whose JSDoc has `@internal`. A deprecated prop is still a prop: document it until you remove it',
+              'Document it. Props from React, the DOM, or another package are never asked for, and neither are props whose keys another package defines (`keyof CSSProperties`, behind an alias or not), `className`, `style`, `xstyle`, `data-testid`, `ref`, `key`, or a prop whose JSDoc has `@internal`. A deprecated prop is still a prop: document it until you remove it. A prop a mapped type builds from keys the check cannot trace (a template literal, say) is listed under `[info] Props not checked for a doc entry` instead',
             ],
             [
               '`required_mismatch`',

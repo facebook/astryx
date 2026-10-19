@@ -879,4 +879,222 @@ export function useTabs(options: {value: string}) { return options; }`,
     expect(kinds(report)).toEqual(['ListGroup.stale not_in_code']);
     expect(report.findings[0].doc).toBe('components/ListGroup.doc.mjs');
   });
+
+  it('lists every component as not compared when a declaration file the config includes, or a type package it names, does not resolve', async () => {
+    withTypeScript();
+    const tsconfig = path.join(pkg, 'tsconfig.json');
+    const config = JSON.parse(fs.readFileSync(tsconfig, 'utf8'));
+    /** @param {object} options */
+    const configure = options =>
+      fs.writeFileSync(
+        tsconfig,
+        JSON.stringify({
+          ...config,
+          compilerOptions: {...config.compilerOptions, ...options},
+          include: ['components', 'types'],
+        }),
+      );
+    fs.mkdirSync(path.join(pkg, 'types'));
+    const globals = path.join(pkg, 'types', 'globals.d.ts');
+    const tables = () => [
+      component(
+        'Omitted',
+        'export function Omitted(props: Omit<{label: string; size?: number}, keyof MissingProps>) { return null; }\n',
+        {
+          props: [
+            prop('label', 'string', {required: true}),
+            prop('size', 'number'),
+          ],
+        },
+      ),
+      component(
+        'Plain',
+        'export function Plain(props: {label?: string}) { return null; }\n',
+        {props: [prop('label', 'string')]},
+      ),
+    ];
+    /** @param {RegExp} reason */
+    const unread = reason =>
+      ['Omitted', 'Plain'].map(name => ({
+        component: name,
+        doc: `components/${name}.doc.mjs`,
+        reason: expect.stringMatching(reason),
+      }));
+
+    // A global type made from a package that isn't installed.
+    configure({});
+    fs.writeFileSync(
+      globals,
+      "import type {Props} from '@acme/not-installed';\ndeclare global { type MissingProps = Props; }\n",
+    );
+    let report = await compare(tables());
+    expect(report.findings).toEqual([]);
+    expect(report.unchecked).toEqual(
+      unread(
+        /depends on `@acme\/not-installed` \(imported in \.\.\/types\/globals\.d\.ts\)/,
+      ),
+    );
+
+    // A global type made from a name declared nowhere.
+    fs.writeFileSync(
+      globals,
+      'declare global { type MissingProps = NowhereProps; }\nexport {};\n',
+    );
+    report = await compare(tables());
+    expect(report.findings).toEqual([]);
+    expect(report.unchecked).toEqual(
+      unread(
+        /depends on `NowhereProps` \(used in \.\.\/types\/globals\.d\.ts\)/,
+      ),
+    );
+
+    // A type package the config names that isn't installed.
+    fs.writeFileSync(
+      globals,
+      'declare global { type MissingProps = {id?: string}; }\nexport {};\n',
+    );
+    configure({types: ['@acme/not-installed-globals']});
+    report = await compare(tables());
+    expect(report.findings).toEqual([]);
+    expect(report.unchecked).toEqual(
+      unread(
+        /depends on the types `@acme\/not-installed-globals` \(named in \.\.\/tsconfig\.json\)/,
+      ),
+    );
+
+    // Both resolved: compared.
+    configure({types: []});
+    report = await compare(tables());
+    expect(report.unchecked).toEqual([]);
+    expect(report.components).toBe(2);
+  });
+
+  it("lists every table, with the error, when the package's TypeScript config has an error", async () => {
+    withTypeScript();
+    fs.writeFileSync(
+      path.join(pkg, 'tsconfig.json'),
+      JSON.stringify({extends: './missing-base.json'}),
+    );
+    const titled = component(
+      'Titled',
+      'export function Titled(props: {title?: string}) { return null; }\n',
+      {props: [prop('title', 'string')]},
+    );
+
+    const report = await compare([titled]);
+
+    expect(report.components).toBe(0);
+    expect(report.unchecked).toEqual([
+      expect.objectContaining({
+        component: 'Titled',
+        reason: expect.stringMatching(
+          /config has an error.*missing-base\.json/,
+        ),
+      }),
+    ]);
+  });
+
+  it('accepts a name through an index signature only as TypeScript would', async () => {
+    withTypeScript();
+    const keyed = component(
+      'Keyed',
+      [
+        'export interface KeyedProps {',
+        '  [key: `data-${string}`]: string | undefined;',
+        '  [key: `${string}:${string}`]: string;',
+        '  [key: `col${number}`]: number;',
+        '  [key: `on${Capitalize<string>}`]: () => void;',
+        '}',
+        'export function Keyed(props: KeyedProps) { return null; }',
+      ].join('\n'),
+      {
+        props: [
+          prop('data-section', 'string'),
+          prop('a:b', 'string'),
+          prop('col2', 'number'),
+          prop('onClick', '() => void'),
+          prop('elevation', 'string'),
+          prop('colSpan', 'string'),
+          prop('onclick', 'string'),
+        ],
+      },
+    );
+    const empty = component(
+      'Empty',
+      `interface EmptyProps { label?: string }
+export function Empty(props: EmptyProps | Record<string, never>) { return null; }`,
+      {props: [prop('label', 'string'), prop('elevation', 'number')]},
+    );
+    const typedAny = component(
+      'TypedAny',
+      'export function TypedAny(props: any) { return null; }\n',
+      {props: [prop('label', 'string')]},
+    );
+    const anyConst = component(
+      'AnyConst',
+      'export const AnyConst: any = null;\n',
+      {props: [prop('label', 'string')]},
+    );
+
+    const report = await compare([keyed, empty, typedAny, anyConst]);
+
+    expect(kinds(report)).toEqual([
+      'Empty.elevation not_in_code',
+      'Keyed.colSpan not_in_code',
+      'Keyed.elevation not_in_code',
+      'Keyed.onclick not_in_code',
+    ]);
+    expect(report.unchecked.map(u => [u.component, u.reason])).toEqual([
+      ['AnyConst', expect.stringContaining('typed `any`')],
+      ['TypedAny', expect.stringContaining('typed `any`')],
+    ]);
+  });
+
+  it("reads props through React's component types, lists the ones typed any, and loads the ambient types tsconfig includes", async () => {
+    withTypeScript();
+    fs.mkdirSync(path.join(pkg, 'node_modules', '@types'), {recursive: true});
+    fs.symlinkSync(
+      path.dirname(require.resolve('@types/react/package.json')),
+      path.join(pkg, 'node_modules', '@types', 'react'),
+      'dir',
+    );
+    const tsconfig = path.join(pkg, 'tsconfig.json');
+    const config = JSON.parse(fs.readFileSync(tsconfig, 'utf8'));
+    fs.writeFileSync(
+      tsconfig,
+      JSON.stringify({...config, include: ['components', 'types']}),
+    );
+    fs.mkdirSync(path.join(pkg, 'types'));
+    fs.writeFileSync(
+      path.join(pkg, 'types', 'ambient.d.ts'),
+      'interface AmbientProps { label?: string }\n',
+    );
+    const source = `import {forwardRef, memo, type FC, type ComponentType} from 'react';
+export const Fc: FC<any> = () => null;
+export const Memo = memo((props: any) => null);
+export const Fwd = forwardRef<HTMLDivElement, any>((props, ref) => null);
+export function Ambient(props: AmbientProps) { return null; }
+export const Typed: ComponentType<{label?: string}> = () => null;
+const withName = <P,>(c: ComponentType<P>): ComponentType<P> => c;
+export const Hoc = withName((props: {label?: string}) => null);`;
+    const props = [prop('label', 'string'), prop('elevation', 'number')];
+
+    const report = await compare(
+      'Fc Memo Fwd Ambient Typed Hoc'
+        .split(' ')
+        .map(name => component(name, source, {props})),
+    );
+
+    expect(kinds(report)).toEqual(
+      'Ambient Hoc Typed'
+        .split(' ')
+        .map(name => `${name}.elevation not_in_code`),
+    );
+    expect(report.unchecked.map(u => [u.component, u.reason])).toEqual(
+      ['Fc', 'Fwd', 'Memo'].map(name => [
+        name,
+        expect.stringContaining('typed `any`'),
+      ]),
+    );
+  });
 });

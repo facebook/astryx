@@ -481,6 +481,45 @@ describe('doctor integration — command', () => {
     expect(process.exitCode).toBeUndefined();
   });
 
+  it('components lists props a mapped type builds from keys it cannot trace, and says the [ok] leaves them out', async () => {
+    writeComponentIntegration('AcmeChip');
+    const dir = path.join(tmpDir, 'components');
+    fs.writeFileSync(
+      path.join(dir, 'AcmeChip.doc.mjs'),
+      `export default {type: 'component', name: 'AcmeChip', displayName: 'AcmeChip', description: 'Fixture.', props: [{name: 'label', type: 'string', description: 'Text.'}]};\n`,
+    );
+    fs.writeFileSync(
+      path.join(dir, 'AcmeChip.tsx'),
+      "export function AcmeChip(props: {label?: string} & {[K in `on${Capitalize<'open'>}`]?: () => void}) { return null; }\n",
+    );
+    process.chdir(tmpDir);
+    const run = async (/** @type {string[]} */ flags) => {
+      logCalls.length = 0;
+      await createProgram().parseAsync([
+        'node',
+        'astryx',
+        ...flags,
+        'doctor',
+        'integration',
+        'components',
+      ]);
+      return logCalls.join('\n');
+    };
+
+    const {propsNotChecked} = JSON.parse(await run(['--json'])).data.propDrift;
+    const output = await run([]);
+
+    expect(propsNotChecked).toEqual([
+      expect.objectContaining({component: 'AcmeChip', props: ['onOpen']}),
+    ]);
+    expect(output).toContain(
+      '[info] Props not checked for a doc entry in 1 component(s):',
+    );
+    expect(output).toContain(
+      'in 1 component(s), apart from the props not checked (TypeScript',
+    );
+  });
+
   it('components compares the entries of a family doc whose own source is missing', async () => {
     writeComponentIntegration('AcmeTabs');
     const dir = path.join(tmpDir, 'components');

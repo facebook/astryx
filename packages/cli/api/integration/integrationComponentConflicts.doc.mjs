@@ -42,7 +42,7 @@ export const doc = {
     {
       type: 'integration.component-conflicts',
       description:
-        '`validated` (false when no integration manifest was found, so nothing was inspected), integration identity, structural and replaces issues, and Core component-name conflicts with package-qualified commands. An active replacement that keeps the Core name it replaces is not a conflict. When the manifest loads and declares a components root, `propDrift` holds the props comparison: `status` (`checked` | `skipped`), `reason` when skipped, `typescript`, `components` compared, `findings` ({component, prop, kind: `not_in_code` | `not_in_doc` | `required_mismatch`, severity: `warning`, message, doc, source, docType?, codeType?, docRequired?, codeRequired?}) and `unchecked` ({component, doc, reason}).',
+        '`validated` (false when no integration manifest was found, so nothing was inspected), integration identity, structural and replaces issues, and Core component-name conflicts with package-qualified commands. An active replacement that keeps the Core name it replaces is not a conflict. When the manifest loads and declares a components root, `propDrift` holds the props comparison: `status` (`checked` | `skipped`), `reason` when skipped, `typescript`, `components` compared, `findings` ({component, prop, kind: `not_in_code` | `not_in_doc` | `required_mismatch`, severity: `warning`, message, doc, source, docType?, codeType?, docRequired?, codeRequired?}), `unchecked` ({component, doc, reason}), and `propsNotChecked` when a mapped type builds props from keys the check cannot trace to the package ({component, doc, reason, props}: no warning is drawn for those props).',
     },
   ],
   examples: [

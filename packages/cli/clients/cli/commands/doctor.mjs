@@ -223,11 +223,22 @@ function propDriftBlocks(report, failed) {
       records(report.unchecked, {fields: ['component', 'doc', 'reason']}),
     );
   }
+  const notChecked = report.propsNotChecked ?? [];
+  if (notChecked.length > 0) {
+    blocks.push(
+      text(
+        `[info] Props not checked for a doc entry in ${notChecked.length} component(s):`,
+      ),
+      records(notChecked, {fields: ['component', 'doc', 'reason', 'props']}),
+    );
+  }
   if (report.findings.length === 0) {
+    const apart =
+      notChecked.length > 0 ? ', apart from the props not checked' : '';
     blocks.push(
       text(
         !failed && report.components > 0
-          ? `[ok] Documented prop names and required flags match the code in ${report.components} component(s) (TypeScript ${report.typescript}).`
+          ? `[ok] Documented prop names and required flags match the code in ${report.components} component(s)${apart} (TypeScript ${report.typescript}).`
           : `[info] Props compared in ${report.components} component(s) (TypeScript ${report.typescript}).`,
       ),
     );
