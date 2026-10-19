@@ -345,7 +345,8 @@ non-interactive guarantee.
 - `clients/cli/bin/astryx.mjs` — Node floor gate and the error boundary that
   converts an uncaught throw into an envelope.
 - `foundation/release` — the release choice, the per-user release cache, the
-  hand-off, and `meta.answeredBy` (`spec:AST-081`).
+  hand-off, `meta.answeredBy`, and the update check and its notices
+  (`spec:AST-081`).
 - `clients/cli/index.mjs` — Commander wiring, JSON-mode gate, dispatch.
 - `clients/cli/commands/<name>.mjs` — one command: parse, call the API, render.
 - `clients/cli/commands/<name>.doc.mjs` — the `CommandDoc` that generates help
