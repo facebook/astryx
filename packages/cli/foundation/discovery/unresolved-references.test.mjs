@@ -142,6 +142,17 @@ describe('unresolvedReference', () => {
         "interface Theme { colors: {a: string} }\nexport type Y = Partial<Record<keyof Theme['sizes'], string>>;\n",
       'jsdoc.js':
         '/** @param {Omit<{label: string; size?: number}, keyof NowhereJs>} props */\nexport function J(props) { return null; }\n',
+      // Tags whose types the compiler never reads.
+      'jsdoctags.js':
+        '/**\n * @param {{label: string}} props\n * @throws {HttpError} when offline\n * @exception {NowhereError}\n * @see NowhereGuide\n * @see {@link NowhereLink}\n */\nexport function T(props) { return null; }\n',
+      // A class's base that names nothing, written or in `@augments`, and
+      // one that names a class.
+      'baseless.ts':
+        'export class X extends NowhereBase<{label?: string}> {}\n',
+      'baselessjs.js':
+        'class Real {}\n/** @augments {NowhereBase} */\nexport class X extends Real {}\n',
+      'augments.js':
+        'class Real {}\n/** @augments {Real} */\nexport class X extends Real {}\n',
       // A class's base is a value, and a module found without types gives
       // its names no types to resolve.
       'classbase.ts':
@@ -257,8 +268,12 @@ describe('unresolvedReference', () => {
     expect(first('valued.ts')).toBe('`typeof d`');
     expect(first('indexed.ts')).toBe("`Theme['sizes']`");
     expect(first('jsdoc.js')).toBe('`NowhereJs`');
+    expect(first('jsdoctags.js')).toBeUndefined();
     expect(first('tsdoc.ts')).toBeUndefined();
     expect(first('classbase.ts')).toBeUndefined();
+    expect(first('baseless.ts')).toBe('`NowhereBase`');
+    expect(first('baselessjs.js')).toBe('`NowhereBase`');
+    expect(first('augments.js')).toBeUndefined();
     expect(first('untypedq.ts')).toBeUndefined();
     expect(first('instantiation.ts')).toBeUndefined();
     expect(first('spread.ts')).toBe('`theme.sizes`');

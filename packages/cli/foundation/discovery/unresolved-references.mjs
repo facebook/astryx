@@ -42,6 +42,29 @@ const PROGRAMS = new WeakMap();
  */
 
 /**
+ * The JSDoc tags whose types the compiler reads in a JavaScript file, in the
+ * TypeScript versions that have them. It never checks the others (`@throws`,
+ * `@exception`, `@see`, `@example` …), so a name declared nowhere in one
+ * decides no type.
+ */
+const TYPED_JSDOC_TAGS = [
+  'JSDocTypeTag',
+  'JSDocParameterTag',
+  'JSDocReturnTag',
+  'JSDocTypedefTag',
+  'JSDocCallbackTag',
+  'JSDocTemplateTag',
+  'JSDocPropertyTag',
+  'JSDocThisTag',
+  'JSDocEnumTag',
+  'JSDocAugmentsTag',
+  'JSDocImplementsTag',
+  'JSDocSatisfiesTag',
+  'JSDocOverloadTag',
+  'JSDocImportTag',
+];
+
+/**
  * The first reference that does not resolve from the given files, the files
  * they import, and so on, as far as `follow` allows. A reference fails when
  * the program finds no module, no type package or no file for it, when a
@@ -60,6 +83,9 @@ const PROGRAMS = new WeakMap();
  */
 export function unresolvedReference(ts, program, checker, roots, follow, mine) {
   const K = ts.SyntaxKind;
+  const typedTags = new Set(
+    TYPED_JSDOC_TAGS.map(name => K[name]).filter(kind => kind !== undefined),
+  );
   const STARTS = new Set([
     K.TypeReference,
     K.TypeQuery,
@@ -386,7 +412,8 @@ export function unresolvedReference(ts, program, checker, roots, follow, mine) {
     // declared nowhere, a property that doesn't exist. `keyof` or a template
     // literal key over one hides the error, so it is found where it starts.
     // `as const` is a type reference named `const`. A JavaScript file's
-    // JSDoc types count too; TypeScript reads no types from a `.ts` file's.
+    // JSDoc types count too, in the tags the compiler reads types from;
+    // TypeScript reads no types from a `.ts` file's.
     /** @type {UnresolvedReference | null} */
     let untyped = null;
     const js = /\.[cm]?jsx?$/.test(sf.fileName);
@@ -462,12 +489,34 @@ export function unresolvedReference(ts, program, checker, roots, follow, mine) {
       }
       return false;
     };
+    // A class's base, in its `extends` clause or a JavaScript file's
+    // `@augments` tag, that names nothing: the compiler can give the class no
+    // type, so it has no props to read. A base that resolves is read as a
+    // value below.
+    /** @type {(node: any) => boolean} */
+    const baseless = node =>
+      isValueWithTypeArguments(ts, node) &&
+      (ts.isHeritageClause(node.parent) ||
+        ts.isJSDocAugmentsTag(node.parent)) &&
+      ts.isEntityNameExpression(node.expression) &&
+      !checker.getSymbolAtLocation(node.expression);
     // The innermost such type names it: its parts are read first.
     /** @type {(node: any) => void} */
     const visit = node => {
       if (untyped) return;
-      if (js) for (const doc of node.jsDoc ?? []) visit(doc);
+      for (const doc of js ? (node.jsDoc ?? []) : []) {
+        for (const tag of doc.tags ?? []) {
+          if (typedTags.has(tag.kind)) visit(tag);
+        }
+      }
       ts.forEachChild(node, visit);
+      if (!untyped && baseless(node)) {
+        untyped = {
+          name: `\`${node.expression.getText(sf)}\``,
+          file: sf.fileName,
+          how: 'used',
+        };
+      }
       if (
         !untyped &&
         ((STARTS.has(node.kind) &&
