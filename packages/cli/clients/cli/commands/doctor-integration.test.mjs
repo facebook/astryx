@@ -641,9 +641,10 @@ describe('doctor integration — command', () => {
         "{name: 'elevation', type: 'number', description: 'Shadow.'}",
       ].join(', ')}]};\n`,
     );
+    // `key` is a prop a doc never needs, though the component declares it.
     fs.writeFileSync(
       path.join(tmpDir, 'components', 'AcmeBadge.tsx'),
-      "export function AcmeBadge(props: {label: string; tone?: 'neutral' | 'info'}) { return null; }\n",
+      "export function AcmeBadge(props: {label: string; tone?: 'neutral' | 'info'; key?: string}) { return null; }\n",
     );
     fs.writeFileSync(
       path.join(tmpDir, 'components', 'AcmeLonely.doc.mjs'),
