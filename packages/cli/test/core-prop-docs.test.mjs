@@ -19,9 +19,12 @@ const CLI = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const CORE = path.resolve(CLI, '..', 'core');
 const KNOWN = path.join(CLI, 'test', 'core-prop-docs.known-drift.json');
 
-/** Every `<Name>.doc.mjs` beside a same-stem `<Name>.tsx` under Core's src. */
+/**
+ * Every `<Name>.doc.mjs` under Core's src, as the command reads a package's
+ * docs: with its same-stem `<Name>.tsx`, or with none.
+ */
 function corePairs() {
-  /** @type {Array<{name: string, docPath: string, sourcePath: string}>} */
+  /** @type {Array<{name: string, docPath: string, sourcePath: string | null}>} */
   const pairs = [];
   /** @param {string} dir */
   const walk = dir => {
@@ -32,8 +35,11 @@ function corePairs() {
       else if (entry.name.endsWith('.doc.mjs')) {
         const name = entry.name.slice(0, -'.doc.mjs'.length);
         const sourcePath = path.join(dir, `${name}.tsx`);
-        if (fs.existsSync(sourcePath))
-          pairs.push({name, docPath: full, sourcePath});
+        pairs.push({
+          name,
+          docPath: full,
+          sourcePath: fs.existsSync(sourcePath) ? sourcePath : null,
+        });
       }
     }
   };
@@ -48,7 +54,14 @@ describe("Core's component docs match Core's props", () => {
       resolveFrom: [CORE],
     });
     expect(report.status).toBe('checked');
-    expect(report.unchecked).toEqual([]);
+    // A doc whose own export has no same-stem source, which discovery flags
+    // in an integration: listed, never compared as a guess.
+    expect(report.unchecked.map(u => `${u.doc} ${u.component}`)).toEqual([
+      'src/Chat/ChatComposerTokenElement.doc.mjs ChatComposerTokenElement',
+      'src/ContextMenu/ContextMenuItem.doc.mjs ContextMenuItem',
+      'src/Text/Heading.doc.mjs Heading',
+      'src/theme/SyntaxTheme.doc.mjs SyntaxTheme',
+    ]);
 
     /** @type {string[]} */
     const known = JSON.parse(fs.readFileSync(KNOWN, 'utf8'));

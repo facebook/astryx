@@ -56,6 +56,8 @@
   "src/MoreMenu/MoreMenu.doc.mjs MoreMenu.isMenuOpen not_in_doc",
   "src/MultiSelector/MultiSelector.doc.mjs MultiSelector.labelTooltip not_in_doc",
   "src/PowerSearch/PowerSearch.doc.mjs PowerSearch.components not_in_doc",
+  "src/Resizable/Resizable.doc.mjs ResizeHandle.position not_in_doc",
+  "src/Resizable/Resizable.doc.mjs ResizeHandle.resizable required_mismatch",
   "src/Selector/Selector.doc.mjs Selector.changeAction not_in_doc",
   "src/Selector/Selector.doc.mjs Selector.isDefaultOpen not_in_doc",
   "src/Selector/Selector.doc.mjs Selector.labelTooltip not_in_doc",
