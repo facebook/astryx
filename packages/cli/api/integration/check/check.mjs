@@ -184,6 +184,16 @@ export function strictIssues(check, response, context = {}) {
         asIssue(finding, finding.code ?? finding.problem ?? finding.kind),
       );
     }
+    // A comparison that ran but judged no prop type (a TypeScript older than
+    // the type comparison reads) skipped that work.
+    const typesSkipped = /** @type {{typesSkipped?: unknown}} */ (value)
+      .typesSkipped;
+    if (typeof typesSkipped === 'string') {
+      skipped.push({
+        code: 'prop_types_skipped',
+        message: `prop types not judged: ${typesSkipped}`,
+      });
+    }
   }
   return {warnings, skipped};
 }

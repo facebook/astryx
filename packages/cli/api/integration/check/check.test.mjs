@@ -127,6 +127,50 @@ describe('summarizeCheck', () => {
     expect(isCheckReport(data.notAReport)).toBe(false);
   });
 
+  it('names prop types the comparison could not judge as skipped work, which strict fails and the default run shows', () => {
+    const reason =
+      'TypeScript 4.7.4 is older than 4.8, the oldest the type comparison reads';
+    /** @type {any[]} */
+    const responses = [
+      {
+        type: 'integration.validate',
+        data: {...IDENTITY, issues: []},
+      },
+      {
+        type: 'integration.component-conflicts',
+        data: {
+          ...IDENTITY,
+          issues: [],
+          conflicts: [],
+          propDrift: {status: 'checked', findings: [], typesSkipped: reason},
+        },
+      },
+      {
+        type: 'integration.template-conflicts',
+        data: {...IDENTITY, issues: [], conflicts: []},
+      },
+      {
+        type: 'integration.doc-conflicts',
+        data: {...IDENTITY, issues: [], findings: []},
+      },
+    ];
+    const message = `prop types not judged: ${reason}`;
+    const loose = combineChecks(responses, false);
+    expect(loose.skipped).toEqual([`components: ${message}`]);
+    expect(loose.failures).toEqual([]);
+    expect(loose.failed).toBe(false);
+    const strict = combineChecks(responses, true);
+    expect(strict.failures).toEqual([
+      {
+        check: 'components',
+        severity: 'error',
+        code: 'prop_types_skipped',
+        message,
+      },
+    ]);
+    expect(strict.failed).toBe(true);
+  });
+
   it('names a skipped comparison by its key in snake case', () => {
     expect(skippedCode('propDrift')).toBe('prop_drift_skipped');
     expect(skippedCode('docTypes')).toBe('doc_types_skipped');
@@ -165,6 +209,12 @@ function warningsAndSkips(result) {
       ...Object.entries(data)
         .filter(([, v]) => isCheckReport(v) && v.status === 'skipped')
         .map(([key, v]) => [skippedCode(key), v.reason]),
+      ...reports
+        .filter(report => typeof report.typesSkipped === 'string')
+        .map(report => [
+          'prop_types_skipped',
+          `prop types not judged: ${report.typesSkipped}`,
+        ]),
     ];
     const repeats = new Map(fromValidate);
     for (const [code, message] of items) {

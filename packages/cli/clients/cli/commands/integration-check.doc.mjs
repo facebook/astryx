@@ -21,7 +21,8 @@ export const doc = {
     'and exits 1 when any of the four would exit 1 on its own. With `--strict` it ' +
     'also exits 1 on any warning and on any check, or comparison within a check, ' +
     'that did not run, such as a package with no `astryx.integration.*` or a ' +
-    'comparison skipped because the project has no TypeScript: it adds no check, ' +
+    'comparison skipped because the project has no TypeScript, or prop types not ' +
+    'judged because its TypeScript is older than 4.8: it adds no check, ' +
     'and lists each of those again as an error, after the checks, in their own ' +
     'issue format. That is the line ' +
     "for the package's own build, so its docs, types, and links stay in sync: run " +
