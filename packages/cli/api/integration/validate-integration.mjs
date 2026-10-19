@@ -282,8 +282,10 @@ async function validateAtPackageDir(
   let unknownKeys;
   /** @type {string | undefined} */
   let agentDocsError;
+  /** @type {string | undefined} */
+  let docsiteUrlError;
   try {
-    ({manifest, unknownKeys, agentDocsError} = await loadManifest(
+    ({manifest, unknownKeys, agentDocsError, docsiteUrlError} = await loadManifest(
       manifestFile,
       `Integration manifest (${path.basename(manifestFile)})`,
     ));
@@ -318,7 +320,9 @@ async function validateAtPackageDir(
     themes: resolveRoot(manifest.themes),
     issuesUrl: manifest.issuesUrl,
     agentDocs: manifest.agentDocs,
+    docsiteUrl: manifest.docsiteUrl,
     __agentDocsError: agentDocsError,
+    __docsiteUrlError: docsiteUrlError,
     __unknownKeys: unknownKeys,
     __spec: identity.name,
     __packageDir: packageDir,

@@ -74,6 +74,13 @@ export const doc = {
       description: 'Where to file issues/feedback for this integration.',
       example: "'https://github.com/acme/widgets/issues'",
     },
+    {
+      name: 'docsiteUrl',
+      type: 'string',
+      description:
+        "Where this package's documentation lives: an absolute https: or http: URL, at most 2,048 characters. `astryx discover` shows it for a package the project has. An invalid value is left out with a warning; the rest of the manifest still loads.",
+      example: "'https://widgets.acme.dev/docs'",
+    },
   ],
   examples: [
     {
@@ -88,6 +95,7 @@ export const doc = {
     append: ['Run acme verify before finishing.'],
   },
   issuesUrl: 'https://github.com/acme/widgets/issues',
+  docsiteUrl: 'https://widgets.acme.dev/docs',
 };`,
     },
   ],
@@ -118,7 +126,7 @@ export const doc = {
       text:
         'Validate the manifest with `astryx doctor integration validate`. At the ' +
         'load boundary, a known field of the wrong type is an error, issuesUrl ' +
-        'must be a valid URL, and unknown fields become warnings so an older CLI ' +
+        'must be a valid URL, an invalid docsiteUrl is left out with a warning, and unknown fields become warnings so an older CLI ' +
         'can still load the fields it understands. Before publishing, also run ' +
         '`templates`, `components`, and `docs` under the same `doctor integration` ' +
         'group. Those leaves compare authored identities with Core and explain ' +

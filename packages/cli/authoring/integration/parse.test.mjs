@@ -87,6 +87,31 @@ describe('parseIntegration (load boundary)', () => {
     expect(reason({issuesUrl: 'nope'})).toContain('issuesUrl');
   });
 
+  it('accepts an https or http docsiteUrl', () => {
+    expect(
+      parseIntegration({docsiteUrl: 'https://widgets.example.com/docs'}),
+    ).toEqual({docsiteUrl: 'https://widgets.example.com/docs'});
+    expect(parseIntegration({docsiteUrl: 'http://localhost:3000'})).toEqual({
+      docsiteUrl: 'http://localhost:3000',
+    });
+  });
+
+  it.each([
+    ['a relative path', './docs', 'absolute URL'],
+    ['another scheme', 'javascript:alert(1)', 'https: or http:'],
+    ['a file URL', 'file:///tmp/docs', 'https: or http:'],
+    ['surrounding whitespace', ' https://example.com ', 'absolute URL'],
+    [
+      'a value over 2,048 characters',
+      `https://example.com/${'a'.repeat(2048)}`,
+      'at most 2048',
+    ],
+  ])('rejects a docsiteUrl that is %s', (_label, docsiteUrl, message) => {
+    const thrown = reason({docsiteUrl});
+    expect(thrown).toContain('docsiteUrl');
+    expect(thrown).toContain(message);
+  });
+
   it('rejects a noncanonical providerId', () => {
     expect(reason({providerId: 'Acme Widgets'})).toContain('providerId');
   });

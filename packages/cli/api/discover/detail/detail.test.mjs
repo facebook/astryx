@@ -40,6 +40,17 @@ describe('discover.detail leaf', () => {
     });
   });
 
+  it('carries the docsiteUrl the package names', () => {
+    const res = detail(
+      [pkg('@acme/widgets', ['Alpha'], {docsiteUrl: 'https://widgets.example.com/docs'})],
+      '@acme/widgets',
+    );
+    expect(res.data.docsiteUrl).toBe('https://widgets.example.com/docs');
+    expect(detail(PACKAGES, '@acme/widgets').data).not.toHaveProperty(
+      'docsiteUrl',
+    );
+  });
+
   it('throws ERR_UNKNOWN_PACKAGE with the available packages as suggestions', () => {
     let err;
     try {
@@ -123,6 +134,17 @@ describe('discover.detail leaf with a discover source', () => {
     });
     expect(data.installedAs).toBe('@acme/charts-legacy');
     expect(data).not.toHaveProperty('install');
+  });
+
+  it('keeps the docsiteUrl of the installed package on another version page', () => {
+    const {data} = detail(
+      [pkg('@acme/charts', ['Chart'], {version: '1.0.0', docsiteUrl: 'https://charts.example.com'})],
+      '@acme/charts',
+      {catalog, add, version: '2.0.0'},
+    );
+    expect(data.version).toBe('2.0.0');
+    expect(data.installedVersion).toBe('1.0.0');
+    expect(data.docsiteUrl).toBe('https://charts.example.com');
   });
 
   it("keeps describing the installed copy from the project, with the source's versions", () => {

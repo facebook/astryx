@@ -44,6 +44,11 @@ export interface AstryxIntegration {
   };
   /** Where to file issues/feedback for this integration. */
   issuesUrl?: string;
+  /** Where this package's documentation lives: an absolute `https:` or
+   *  `http:` URL, at most 2,048 characters. `astryx discover` shows it for a
+   *  package the project has. An invalid value is left out with a warning; the
+   *  rest of the manifest still loads. */
+  docsiteUrl?: string;
 }
 
 /**

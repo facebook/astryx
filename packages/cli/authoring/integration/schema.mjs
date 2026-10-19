@@ -19,6 +19,8 @@ import {formatZodError} from '../_shared/errors.mjs';
 /** @typedef {import('./type.js').AstryxIntegration} AstryxIntegration */
 
 const MAX_AGENT_DOC_LINES = 8;
+const MAX_DOCSITE_URL_LENGTH = 2048;
+const DOCSITE_URL_PROTOCOLS = new Set(['https:', 'http:']);
 const MAX_AGENT_DOC_LINE_CODE_POINTS = 240;
 const MANAGED_MARKER_TEXT = /(?:ASTRYX|XDS):(START|END)/u;
 const PROVIDER_ID_RE =
@@ -67,6 +69,37 @@ export const agentDocsSchema = z.object({
     .optional(),
 });
 
+/**
+ * The docs-site link: an absolute `https:` or `http:` URL. The CLI only prints
+ * it as a link, so any other scheme is refused.
+ */
+export const docsiteUrlSchema = z.string().superRefine((value, ctx) => {
+  if (value.length > MAX_DOCSITE_URL_LENGTH) {
+    ctx.addIssue({
+      code: 'custom',
+      message: `must be at most ${MAX_DOCSITE_URL_LENGTH} characters (received ${value.length})`,
+    });
+    return;
+  }
+  /** @type {URL | null} */
+  let url = null;
+  try {
+    url = new URL(value);
+  } catch {
+    // Reported below.
+  }
+  if (url == null || value !== value.trim()) {
+    ctx.addIssue({code: 'custom', message: 'must be an absolute URL'});
+    return;
+  }
+  if (!DOCSITE_URL_PROTOCOLS.has(url.protocol)) {
+    ctx.addIssue({
+      code: 'custom',
+      message: `must use https: or http: (received ${url.protocol})`,
+    });
+  }
+});
+
 export const integrationBaseSchema = z.object({
   providerId: z
     .string()
@@ -91,14 +124,15 @@ export const integrationBaseSchema = z.object({
 // IS an authoring mistake and still fails here.
 export const integrationSchema = integrationBaseSchema.extend({
   agentDocs: agentDocsSchema.optional(),
+  docsiteUrl: docsiteUrlSchema.optional(),
 });
 
 /**
  * Parse every default-manifest field except the independently isolated
- * `agentDocs` contribution.
+ * `agentDocs` contribution and `docsiteUrl` link.
  * @param {unknown} input
  * @param {string} label
- * @returns {Omit<AstryxIntegration, 'agentDocs'>}
+ * @returns {Omit<AstryxIntegration, 'agentDocs' | 'docsiteUrl'>}
  */
 export function parseIntegrationBase(input, label) {
   const result = integrationBaseSchema.safeParse(input);
@@ -114,6 +148,20 @@ export function parseIntegrationBase(input, label) {
  */
 export function parseAgentDocsField(input, label) {
   const result = agentDocsSchema.safeParse(input);
+  if (!result.success) throw new Error(formatZodError(label, result.error));
+  return result.data;
+}
+
+/**
+ * Parse only the optional `docsiteUrl` link. Isolated like `agentDocs`: an
+ * invalid link is left out with a warning, and the rest of the manifest still
+ * contributes.
+ * @param {unknown} input
+ * @param {string} label
+ * @returns {string}
+ */
+export function parseDocsiteUrlField(input, label) {
+  const result = docsiteUrlSchema.safeParse(input);
   if (!result.success) throw new Error(formatZodError(label, result.error));
   return result.data;
 }

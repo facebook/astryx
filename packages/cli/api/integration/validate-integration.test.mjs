@@ -176,6 +176,37 @@ describe('validate-integration API', () => {
     expect(agentDocsIssues[0].severity).toBe('error');
   });
 
+  it('warns on an invalid docsiteUrl without invalidating other manifest fields', async () => {
+    const pkgDir = path.join(tmpDir, 'pkg');
+    writePackage(pkgDir, {
+      manifest: `export default {
+        components: './components',
+        docsiteUrl: 'ftp://example.com/docs',
+      };\n`,
+    });
+    fs.mkdirSync(path.join(pkgDir, 'components'));
+
+    const result = await validateLocalIntegration(pkgDir);
+
+    expect(byCode(result.issues, 'invalid_manifest')).toHaveLength(0);
+    const docsiteIssues = byCode(result.issues, 'invalid_docsite_url');
+    expect(docsiteIssues).toHaveLength(1);
+    expect(docsiteIssues[0].severity).toBe('warning');
+    expect(docsiteIssues[0].message).toContain('docsiteUrl');
+  });
+
+  it('reports nothing for a valid docsiteUrl', async () => {
+    const pkgDir = path.join(tmpDir, 'pkg');
+    writePackage(pkgDir, {
+      manifest: `export default {docsiteUrl: 'https://widgets.example.com/docs'};\n`,
+    });
+
+    const result = await validateLocalIntegration(pkgDir);
+
+    expect(byCode(result.issues, 'invalid_docsite_url')).toHaveLength(0);
+    expect(byCode(result.issues, 'unknown_manifest_key')).toHaveLength(0);
+  });
+
   it('flags a broken codemod as invalid_codemod error', async () => {
     const pkgDir = path.join(tmpDir, 'pkg');
     writePackage(pkgDir, {

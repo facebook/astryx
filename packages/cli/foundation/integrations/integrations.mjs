@@ -24,6 +24,7 @@ import {normalizeProviderId} from '../identity/provider-identity.mjs';
 // the loader can isolate an invalid optional contribution from valid roots.
 import {
   parseAgentDocsField,
+  parseDocsiteUrlField,
   parseIntegrationBase,
   unknownIntegrationKeys,
 } from '../../authoring/integration/schema.mjs';
@@ -51,6 +52,9 @@ import {resolveProviders} from './provider-resolution.mjs';
  * @property {string} [themes]
  * @property {string} [issuesUrl]
  * @property {{append?: readonly string[]}} [agentDocs]
+ * @property {string} [docsiteUrl] where the package's documentation lives
+ * @property {string} [__docsiteUrlError] why the manifest's `docsiteUrl` was
+ *   left out
  * @property {string} [__agentDocsError] contribution-specific validation
  *   failure; other manifest contributions remain available
  * @property {string} __spec
@@ -195,6 +199,8 @@ function parseDiscoverSourceExport(value, label) {
  * The base manifest still fails as one unit when a root or `issuesUrl` is
  * invalid. `agentDocs` is parsed separately: a bad contribution is returned as
  * `agentDocsError`, while valid components/templates/docs/codemods stay loaded.
+ * `docsiteUrl` is isolated the same way: an invalid link comes back as
+ * `docsiteUrlError` and is left out of the manifest.
  * The raw object is also inspected before parsing so unknown-key warnings retain
  * forward compatibility.
  *
@@ -204,7 +210,7 @@ function parseDiscoverSourceExport(value, label) {
  * @param {string} file absolute manifest path
  * @param {string} [label] used in error messages
  * @param {{fresh?: boolean}} [options]
- * @returns {Promise<{manifest: import('../../authoring/integration/type').AstryxIntegration, unknownKeys: string[], debug?: import('../../authoring/debug/type').DebugEventHandler, gapReport?: import('../../authoring/gap-report/type').GapReportHandler, gapReportError?: string, discover?: import('../../authoring/discover/type').DiscoverSource, discoverError?: string, agentDocsError?: string}>}
+ * @returns {Promise<{manifest: import('../../authoring/integration/type').AstryxIntegration, unknownKeys: string[], debug?: import('../../authoring/debug/type').DebugEventHandler, gapReport?: import('../../authoring/gap-report/type').GapReportHandler, gapReportError?: string, discover?: import('../../authoring/discover/type').DiscoverSource, discoverError?: string, agentDocsError?: string, docsiteUrlError?: string}>}
  */
 export async function loadManifest(
   file,
@@ -239,8 +245,31 @@ export async function loadManifest(
     }
   }
 
+  /** @type {string | undefined} */
+  let docsiteUrl;
+  /** @type {string | undefined} */
+  let docsiteUrlError;
+  const rawDocsiteUrl =
+    raw != null && typeof raw === 'object' && !Array.isArray(raw)
+      ? /** @type {{docsiteUrl?: unknown}} */ (raw).docsiteUrl
+      : undefined;
+  if (rawDocsiteUrl !== undefined) {
+    try {
+      docsiteUrl = parseDocsiteUrlField(
+        rawDocsiteUrl,
+        `${label} field "docsiteUrl"`,
+      );
+    } catch (err) {
+      docsiteUrlError = err instanceof Error ? err.message : String(err);
+    }
+  }
+
   return {
-    manifest: agentDocs == null ? baseManifest : {...baseManifest, agentDocs},
+    manifest: {
+      ...baseManifest,
+      ...(agentDocs == null ? {} : {agentDocs}),
+      ...(docsiteUrl == null ? {} : {docsiteUrl}),
+    },
     unknownKeys: unknownIntegrationKeys(raw),
     debug:
       typeof mod?.debug === 'function'
@@ -253,6 +282,7 @@ export async function loadManifest(
     discover: discover.source,
     discoverError: discover.error,
     agentDocsError,
+    docsiteUrlError,
   };
 }
 
@@ -375,6 +405,8 @@ export async function loadLocalIntegration(packageDir, {fresh = false} = {}) {
   let discoverError;
   /** @type {string | undefined} */
   let agentDocsError;
+  /** @type {string | undefined} */
+  let docsiteUrlError;
   try {
     ({
       manifest,
@@ -385,6 +417,7 @@ export async function loadLocalIntegration(packageDir, {fresh = false} = {}) {
       discover: discoverSource,
       discoverError,
       agentDocsError,
+      docsiteUrlError,
     } = await loadManifest(manifestFile, `Integration ${spec}`, {fresh}));
   } catch (err) {
     return {
@@ -422,7 +455,9 @@ export async function loadLocalIntegration(packageDir, {fresh = false} = {}) {
     themes: resolveRoot(manifest.themes),
     issuesUrl: manifest.issuesUrl,
     agentDocs: manifest.agentDocs,
+    docsiteUrl: manifest.docsiteUrl,
     __agentDocsError: agentDocsError,
+    __docsiteUrlError: docsiteUrlError,
     __unknownKeys: unknownKeys,
     __debug: debugHandler,
     __gapReport: gapReportHandler,
@@ -486,6 +521,8 @@ export async function loadIntegrations(
     let discoverError;
     /** @type {string | undefined} */
     let agentDocsError;
+    /** @type {string | undefined} */
+    let docsiteUrlError;
     try {
       ({
         manifest,
@@ -496,6 +533,7 @@ export async function loadIntegrations(
         discover: discoverSource,
         discoverError,
         agentDocsError,
+        docsiteUrlError,
       } = await loadManifest(manifestFile, `Integration ${spec}`, {fresh}));
     } catch (err) {
       // A manifest that throws on import or fails schema validation must NOT take
@@ -540,7 +578,9 @@ export async function loadIntegrations(
       themes: resolveRoot(manifest.themes),
       issuesUrl: manifest.issuesUrl,
       agentDocs: manifest.agentDocs,
+      docsiteUrl: manifest.docsiteUrl,
       __agentDocsError: agentDocsError,
+      __docsiteUrlError: docsiteUrlError,
       __unknownKeys: unknownKeys,
       __debug: debugHandler,
       __gapReport: gapReportHandler,
