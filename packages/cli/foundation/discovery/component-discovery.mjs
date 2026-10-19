@@ -1047,7 +1047,7 @@ function isWithin(folder, file) {
  * @param {string} name
  * @returns {string | null}
  */
-function folderSourceFor(folder, name) {
+export function folderSourceFor(folder, name) {
   /** @type {string[]} */
   const files = [];
   /** @param {string} dirPath */

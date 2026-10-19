@@ -803,21 +803,30 @@ export function useTabs(options: {value: string}) { return options; }`,
       ].join('\n'),
       {
         name: 'MenuRoot',
-        hiddenComponents: ['MenuItem'],
+        hiddenComponents: ['MenuItem', 'MenuPart'],
         components: [
           entry('MenuItem', [prop('label', 'string')]),
           entry('MenuGhost', [prop('tone', 'string')]),
+          entry('MenuPart', [prop('tone', 'string')]),
         ],
       },
     );
+    // A hidden entry declared in another file of the doc's folder.
+    fs.writeFileSync(
+      path.join(pkg, 'components', 'menu-parts.tsx'),
+      'export function MenuPart(props: {depth?: number}) { return null; }\n',
+    );
 
     // Discovery records the doc under `MenuRoot` and leaves the hidden
-    // `MenuItem` and the unbuilt `MenuGhost` without records of their own.
+    // `MenuItem` and `MenuPart` and the unbuilt `MenuGhost` without records
+    // of their own.
     const report = await compareDocs([{...menu, name: 'MenuRoot'}]);
 
     expect(kinds(report)).toEqual([
       'MenuItem.label not_in_code',
       'MenuItem.value not_in_doc',
+      'MenuPart.depth not_in_doc',
+      'MenuPart.tone not_in_code',
     ]);
     expect(report.unchecked).toEqual([
       {

@@ -39,6 +39,7 @@
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import {folderSourceFor} from './component-discovery.mjs';
 import {loadComponentDoc} from './component-loader.mjs';
 import {readPackageTsconfig} from './package-tsconfig.mjs';
 import {
@@ -1622,7 +1623,8 @@ function docStem(docPath) {
 
 /**
  * Where an entry's export lives: `<entry>.tsx` beside the doc, else the doc's
- * own same-stem source, else the directory's `index.ts`/`index.tsx`.
+ * own same-stem source, else the directory's `index.ts`/`index.tsx`, else the
+ * `.tsx` in the doc's folder that declares it, as discovery finds a member's.
  * @param {string} name
  * @param {PropDriftComponent} component
  * @returns {string[]} candidates, in order
@@ -1636,7 +1638,13 @@ function sourcesForEntry(name, component) {
     ...own,
     path.join(dir, 'index.ts'),
     path.join(dir, 'index.tsx'),
-  ].filter((file, i, all) => all.indexOf(file) === i && fs.existsSync(file));
+    folderSourceFor(dir, name),
+  ].filter(
+    /** @type {(file: string | null, i: number, all: Array<string | null>) => file is string} */ (
+      (file, i, all) =>
+        file != null && all.indexOf(file) === i && fs.existsSync(file)
+    ),
+  );
 }
 
 /**
