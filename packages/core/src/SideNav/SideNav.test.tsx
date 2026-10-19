@@ -1170,6 +1170,23 @@ describe('SideNavItem (collapsed)', () => {
     expect(link).toHaveAttribute('aria-label', 'Dashboard');
   });
 
+  it('links the tooltip when the item mounts already collapsed (#7435)', () => {
+    render(
+      <SideNav
+        collapsible={{
+          isCollapsed: true,
+          onCollapsedChange: () => {},
+          hasButton: false,
+        }}>
+        <SideNavItem label="Dashboard" icon={StubIcon} href="/dashboard" />
+      </SideNav>,
+    );
+
+    const link = screen.getByRole('link', {name: 'Dashboard'});
+    const tooltip = screen.getByRole('tooltip', {hidden: true});
+    expect(link).toHaveAttribute('aria-describedby', tooltip.id);
+  });
+
   it('renders popover trigger when collapsed with icon and children', () => {
     renderCollapsed(
       <SideNavItem label="Settings" icon={StubIcon} data-testid="parent">

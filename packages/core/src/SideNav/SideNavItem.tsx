@@ -10,7 +10,9 @@
  *
  * Navigation item with icon, selected state, row-level actions, and nesting.
  * Collapsed icon-only controls use a meaningful consumer `aria-label` when
- * provided and fall back to `label` when it is missing or blank.
+ * provided and fall back to `label` when it is missing or blank. Their tooltip
+ * wraps the interactive control so hover, focus, and `aria-describedby` are
+ * attached on the first collapsed render.
  *
  * Collapsed items with children open their submenu flyout through
  * `useMenuHover`, the shared hover-intent hook (same one `SideNavHeading` and
@@ -25,14 +27,7 @@
  * - /packages/cli/assets/templates/blocks/components/SideNav/ (showcase blocks)
  */
 
-import {
-  useCallback,
-  useId,
-  useMemo,
-  useRef,
-  useState,
-  type ReactNode,
-} from 'react';
+import {useCallback, useId, useMemo, useState, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
   colorVars,
@@ -454,7 +449,6 @@ export function SideNavItem({
   const isInDrawer = renderMode === 'drawer' || renderMode === 'drawer-content';
   const id = useId();
   const hasChildren = !!children;
-  const itemRef = useRef<HTMLDivElement>(null);
 
   // Popover for collapsed items with children
   const popover = usePopover({
@@ -640,9 +634,10 @@ export function SideNavItem({
     );
 
     return (
-      <div ref={itemRef} {...stylex.props(styles.root, xstyle)}>
-        {collapsedElement}
-        <Tooltip content={label} placement="end" anchorRef={itemRef} />
+      <div {...stylex.props(styles.root, xstyle)}>
+        <Tooltip content={label} placement="end">
+          {collapsedElement}
+        </Tooltip>
       </div>
     );
   }
@@ -814,7 +809,7 @@ export function SideNavItem({
   }
 
   const item = (
-    <div ref={itemRef} {...stylex.props(styles.root, xstyle)}>
+    <div {...stylex.props(styles.root, xstyle)}>
       {itemElement}
       {hasChildren && !isCollapsed && (
         <div
