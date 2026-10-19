@@ -139,10 +139,13 @@ and remains available through explicit Core package selection.
   with the TypeScript the project installs. It MUST warn about a documented prop
   the code lacks, a prop the package's own source declares that the table omits,
   a `required` flag the code contradicts, and a documented type that does not
-  match the code under the loose comparison the command documents. It MUST list
-  a documented type it cannot judge as unchecked rather than report a match or a
-  mismatch. Without the project's TypeScript it MUST say that the comparison was
-  skipped and why, and MUST NOT report a pass.
+  match the code under the loose comparison the command documents. It MUST NOT
+  warn that a table omits `ref`, the React-reserved `key`, the internal and
+  styling props the published `ComponentPropDoc` type tells authors to skip
+  (`xstyle`, `className`, `style`, and `data-testid`), or a prop its declaration
+  marks `@internal`. It MUST list a documented type it cannot judge as unchecked
+  rather than report a match or a mismatch. Without the project's TypeScript it
+  MUST say that the comparison was skipped and why, and MUST NOT report a pass.
 - **INV34 — Every descriptor satisfies its published authoring type.**
   `astryx doctor integration validate` MUST check each descriptor an
   integration's roots hold, and each translation a descriptor carries, against
@@ -529,7 +532,7 @@ govern).
 | INV28     | `test/inv28-package-provenance.test.mjs`, `clients/cli/commands/text-json-parity.test.mjs`, `cli-api-types-verify`                                         | A result about one artifact has no envelope `package`, a listed artifact has no `package`, or text omits the package the envelope names.        |
 | INV29     | `api/doctor/doctor.test.mjs` (configured-integrations: not installed, no manifest, manifest throws; self-named authored package, direct and through a symlinked `node_modules` or `cwd`; provider-conflict set-aside; an astryx.config that imports but cannot load the project → failed `config` check)| A configured integration that cannot load leaves `doctor` at exit 0, or an installed-but-unnamed one fails it                                   |
 | INV32     | `test/cli-strict-guard.test.mjs` lists every command offering `--strict` and every command whose exit depends on warnings; `api/integration/check/check.test.mjs` compares a strict run with the default run       | A second command offers `--strict`, a command exits 1 on a warning alone without `--strict`, or a strict run reports a finding the default run does not or outside the command's issue format. |
-| INV33     | `foundation/discovery/prop-drift.test.mjs`, `foundation/discovery/type-text.test.mjs`, `clients/cli/commands/doctor-integration.test.mjs`, `test/core-prop-docs.test.mjs` | A removed or renamed prop or a changed union passes unreported, or a missing compiler reads as a pass. |
+| INV33     | `foundation/discovery/prop-drift.test.mjs`, `foundation/discovery/type-text.test.mjs`, `clients/cli/commands/doctor-integration.test.mjs`, `test/core-prop-docs.test.mjs` | A removed or renamed prop or a changed union passes unreported, a missing compiler reads as a pass, or a table that leaves out `ref`, `key`, `xstyle`, `className`, `style`, `data-testid`, or an `@internal` prop draws a warning. |
 | INV34     | `foundation/discovery/doc-types.test.mjs`, `clients/cli/commands/doctor-integration.test.mjs`, `test/core-doc-types.test.mjs` | An unknown, missing, or mistyped field passes unreported, or a missing compiler reads as a pass. |
 | INV35     | `api/integration/check/check.test.mjs`, `clients/cli/commands/integration-check.test.mjs`, `test/integration-check-failures.test.mjs`, `api/search/search.integration-check.test.mjs` | The default exit differs from a check's own, a warning or a skipped comparison passes `--strict`, text and JSON exit differently, a new failing finding is added without the list changing, or a search for ci does not find the command first. |
 

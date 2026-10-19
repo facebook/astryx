@@ -260,8 +260,15 @@ const dynamicStyles = stylex.create({
 // Close timing
 // =============================================================================
 
-/** Longest the drawer will wait before closing, however long the hold is. */
-const MAX_CLOSE_DELAY_MS = 250;
+/**
+ * Longest the drawer will wait before closing, however long the hold is.
+ *
+ * Exported so `AppShell` can defer hiding this drawer's `Activity` boundary
+ * by at least this long too (`ACTIVITY_HIDE_BUFFER_MS` in AppShell.tsx) —
+ * otherwise Activity's `display: none !important` lands before this delay's
+ * own scheduled `dialog.close()` has a chance to run (#5701).
+ */
+export const MAX_CLOSE_DELAY_MS = 250;
 /** Fraction of the hold to close at, so the close never lands on its boundary. */
 const CLOSE_WITHIN_HOLD = 0.6;
 
@@ -488,6 +495,21 @@ export function MobileNav({
   // Element that was focused when the drawer opened; focus goes back to it
   // once the native dialog has closed (see closeAndRestoreFocus).
   const triggerElementRef = useRef<HTMLElement | null>(null);
+
+  // Keeps the dialog rendered from the commit that closes it until the delayed
+  // `close()` below has run. The `display` transition on the dialog is meant to
+  // do this, but a browser that does not hold a discrete `display` transition
+  // (WebKit) drops the dialog to `display: none` at once while it is still an
+  // open modal: nothing is visible, yet the whole page stays inert until the
+  // timer fires. Set during render, so it is already true in the commit that
+  // closes. The drawer's transform and the backdrop stay keyed to `isOpen`, so
+  // the slide-out is unchanged.
+  const [isCloseHeld, setIsCloseHeld] = useState(false);
+  const [wasOpen, setWasOpen] = useState(isOpen);
+  if (wasOpen !== isOpen) {
+    setWasOpen(isOpen);
+    setIsCloseHeld(!isOpen);
+  }
   const gutterRef = useRef<ScrollbarGutterHold | null>(null);
 
   // Gives back the gutter held open in place of the hidden scrollbar.
@@ -563,7 +585,12 @@ export function MobileNav({
 
       closeTimeoutRef.current = setTimeout(() => {
         closeAndRestoreFocus(dialog, triggerElementRef);
+        setIsCloseHeld(false);
       }, resolveCloseDelay(dialog));
+    } else {
+      // Nothing is open, so there is no close to hold the dialog for, and no
+      // close timer is left to release the hold.
+      setIsCloseHeld(false);
     }
 
     return () => {
@@ -647,7 +674,7 @@ export function MobileNav({
           layerStructureReset.reset,
           styles.dialog,
           overlayPaddingReset.reset,
-          isOpen && styles.open,
+          (isOpen || isCloseHeld) && styles.open,
           styles.backdrop,
           isOpen && styles.backdropOpen,
           xstyle,

@@ -130,6 +130,7 @@ export default {
             'Set `required: true` only when every caller must pass the prop.',
             'Write `default` exactly as the value should appear in documentation.',
             'Skip styling escape hatches such as `xstyle`, `className`, and `style`.',
+            '`npx astryx doctor integration components` lists a documented prop the code lacks, a public prop the doc misses, and a wrong `required`. See {@link generic:check-the-props}.',
           ],
         },
       ],
@@ -165,7 +166,7 @@ export default {
         {
           type: 'code',
           lang: 'bash',
-          code: 'npx astryx component AcmeCarousel\nnpx astryx integration verify',
+          code: 'npx astryx component AcmeCarousel\nnpx astryx doctor integration components\nnpx astryx integration verify',
         },
       ],
     },

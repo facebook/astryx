@@ -2404,6 +2404,37 @@ jobs:
           retention-days: 30
           if-no-files-found: error
 
+      # CommandPaletteItem owns the option semantics and visible result states.
+      # Its audit lane keeps state, theme, direction, and narrow receipts bound
+      # to the exact PR head without changing the component's public contract.
+      - name: Run CommandPaletteItem audit browser evidence
+        if: ${{ !cancelled() && github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, '[Component Audit] CommandPaletteItem:') }}
+        env:
+          ASTRYX_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          status=0
+          node .github/scripts/accessibility-audit.js \
+            --storybook-dir apps/storybook/dist \
+            --output command-palette-item-a11y-report.json \
+            --components CommandPaletteItem \
+            --baseline .github/a11y-baseline.json \
+            --fail-on-new || status=1
+          pnpm exec playwright test \
+            packages/core/src/CommandPalette/__tests__/CommandPaletteItemAudit.a11y.chromium.spec.ts \
+            --project chromium || status=1
+          exit "$status"
+
+      - name: Upload CommandPaletteItem audit evidence
+        if: always() && github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, '[Component Audit] CommandPaletteItem:')
+        uses: actions/upload-artifact@v7
+        with:
+          name: command-palette-item-audit-evidence-${{ needs.build-storybook.outputs.short_hash }}
+          path: |
+            command-palette-item-a11y-report.json
+            command-palette-item-audit-evidence/
+          retention-days: 30
+          if-no-files-found: error
+
       # Component-owned metadata fixtures retain exact-head browser receipts on
       # audit PRs, including failed pre-fix cases for before/after comparison.
       - name: Run ChatMessageMetadata audit browser evidence
@@ -2517,6 +2548,70 @@ jobs:
           path: |
             chat-tokenized-text-a11y-report.json
             test-results/chat-tokenized-text-audit-evidence/
+          retention-days: 30
+          if-no-files-found: error
+
+      # DropdownMenuDivider is a hidden compound subcomponent, so the dedicated
+      # story and sensor lane keep its open-menu semantics, paint, target
+      # placement, keyboard exclusion, theme, direction, and narrow layout bound
+      # to the exact pull-request head.
+      - name: Run DropdownMenuDivider audit browser evidence
+        if: ${{ !cancelled() && github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, '[Component Audit] DropdownMenuDivider:') }}
+        env:
+          ASTRYX_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          status=0
+          node .github/scripts/accessibility-audit.js \
+            --storybook-dir apps/storybook/dist \
+            --output dropdown-menu-divider-a11y-report.json \
+            --components DropdownMenuDivider \
+            --ready-selector '[role="menu"]' \
+            --baseline .github/a11y-baseline.json \
+            --fail-on-new || status=1
+          pnpm exec playwright test \
+            packages/core/src/DropdownMenu/__tests__/DropdownMenuDividerAudit.a11y.chromium.spec.ts \
+            --project chromium || status=1
+          exit "$status"
+
+      - name: Upload DropdownMenuDivider audit evidence
+        if: always() && github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, '[Component Audit] DropdownMenuDivider:')
+        uses: actions/upload-artifact@v7
+        with:
+          name: dropdown-menu-divider-audit-evidence-${{ needs.build-storybook.outputs.short_hash }}
+          path: |
+            dropdown-menu-divider-a11y-report.json
+            dropdown-menu-divider-audit-evidence/
+          retention-days: 30
+          if-no-files-found: error
+
+      # ContextMenu owns pointer and touch presentations across cursor anchoring,
+      # selectable rows, sections, inline triggers, RTL, and narrow viewports.
+      # Its audit lane binds the rendered matrix to the exact pull-request head.
+      - name: Run ContextMenu audit browser evidence
+        if: ${{ !cancelled() && github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, '[Component Audit] ContextMenu:') }}
+        env:
+          ASTRYX_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          status=0
+          node .github/scripts/accessibility-audit.js \
+            --storybook-dir apps/storybook/dist \
+            --output context-menu-a11y-report.json \
+            --components ContextMenu \
+            --baseline .github/a11y-baseline.json \
+            --fail-on-new || status=1
+          pnpm exec playwright test \
+            packages/core/src/ContextMenu/__tests__/ContextMenuAudit.a11y.chromium.spec.ts \
+            --project chromium || status=1
+          exit "$status"
+
+      - name: Upload ContextMenu audit evidence
+        if: always() && github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, '[Component Audit] ContextMenu:')
+        uses: actions/upload-artifact@v7
+        with:
+          name: context-menu-audit-evidence-${{ needs.build-storybook.outputs.short_hash }}
+          path: |
+            context-menu-a11y-report.json
+            context-menu-audit-evidence/
           retention-days: 30
           if-no-files-found: error
 

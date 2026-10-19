@@ -2,8 +2,8 @@
 
 /**
  * @file `astryx docs cli/integrations/building-blocks/docs/check-your-docs`:
- * what each check proves about an integration's docs: the docs check, the read
- * size, and the CLI peer.
+ * what each check proves about an integration's docs: the docs check, each
+ * doc's fields, the read size, and the CLI peer.
  */
 
 /** @type {import('@astryxdesign/cli/authoring').ReferenceDoc} */
@@ -13,7 +13,8 @@ export const docs = {
   placement: {parent: 'namespace:docs', slot: 'guides', order: 60},
   title: 'Check your docs',
   category: 'guide',
-  description: 'Check the docs tree, links, overlaps, read size, and CLI peer.',
+  description:
+    'Check the docs tree, links, overlaps, doc fields, read size, and CLI peer.',
   sections: [
     {
       id: 'run-the-docs-check',
@@ -82,6 +83,46 @@ export const docs = {
         {
           type: 'prose',
           text: 'Read the warnings before you publish. With `--json`, they are in `data.issues`, with `severity: "warning"`.',
+        },
+      ],
+    },
+    {
+      id: 'check-each-doc-against-its-type',
+      title: 'Check each doc against its type',
+      content: [
+        {
+          type: 'prose',
+          text: "`doctor integration validate` reads every doc your package ships against the type `@astryxdesign/cli/authoring` publishes for its kind, the way `tsc` would: a `hidden` doc and a second doc for one name too. Test fixtures under `__tests__` in the components or docs root, which those readers skip, are counted, not checked. It reports a field the type does not have (`unknown_field`), a missing required field (`missing_field`), and a value outside the field's type (`wrong_type`).",
+        },
+        {
+          type: 'code',
+          lang: 'bash',
+          code: 'npx astryx doctor integration validate',
+        },
+        {
+          type: 'code',
+          lang: 'text',
+          code: `Checking 1 doc(s) against the authoring types (TypeScript 6.0.3)
+
+severity: [warn]
+doc:      components/AcmeCarousel.doc.mjs
+line:     7
+export:   default
+type:     ComponentDoc
+field:    summary
+problem:  unknown_field
+message:  Object literal may only specify known properties, and 'summary' does not exist in type 'SingleComponentDoc'.
+fix:      Remove \`summary\`: SingleComponentDoc has no field \`summary\`.`,
+        },
+        {
+          type: 'list',
+          style: 'unordered',
+          items: [
+            "The folder decides the type: `ComponentDoc` in your components root, `IntegrationTemplateDoc` in your templates root, `ThemeDoc` in your themes root, and in your docs root the type the doc's `type` names. Keep the `@type` comment above each doc's export too, so your editor shows the same problems as you type.",
+            'Every finding is a warning, so the exit code stays 0. With `--json`, they are in `data.docTypes.findings`.',
+            'It uses the `typescript` your package installs. Without it, it prints `[skip] Docs not type-checked` and the reason.',
+            'Every field of every doc type is in `astryx docs authoring`.',
+          ],
         },
       ],
     },

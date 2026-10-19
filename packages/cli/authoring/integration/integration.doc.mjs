@@ -75,6 +75,13 @@ export const doc = {
         "Where people file issues for this package: an absolute URL, such as its GitHub issues page. A value that is not a URL fails the whole manifest; the scheme is not checked. Nothing warns when it is missing, but without it `astryx gap-report` about this package fails unless the project or a loaded integration has a gapReport handler, and `astryx swizzle` prints no feedback link for this package's components. When no handler is loaded, a github.com issues URL is filed with the GitHub CLI once the reporter passes `--confirm-public`; any other URL is returned for the reporter to open.",
       example: "'https://github.com/acme/widgets/issues'",
     },
+    {
+      name: 'docsiteUrl',
+      type: 'string',
+      description:
+        "Link to this integration's docs site, such as its home page. Catalogs that list the package may show it.",
+      example: "'https://widgets.acme.dev'",
+    },
   ],
   examples: [
     {
@@ -119,7 +126,7 @@ export const doc = {
       text:
         'Validate the manifest with `astryx doctor integration validate`. At the ' +
         'load boundary, a known field of the wrong type is an error, issuesUrl ' +
-        'must be a valid URL, and unknown fields become warnings so an older CLI ' +
+        'and docsiteUrl must be valid URLs, and unknown fields become warnings so an older CLI ' +
         'can still load the fields it understands. Before publishing, also run ' +
         '`templates`, `components`, and `docs` under the same `doctor integration` ' +
         'group. Those leaves compare authored identities with Core and explain ' +

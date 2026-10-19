@@ -37,7 +37,7 @@ export const docs = {
       items: [
         'Change the source and its `.doc.mjs` together.',
         'Update the doc whenever the public name, import, behavior, props, defaults, examples, or accessibility requirements change.',
-        '`integration verify` checks the doc shape and packed import, but it cannot prove the prose still matches the component.',
+        '`integration verify` checks the doc shape and packed import, and `doctor integration components` compares each props table with the component\'s TypeScript props ({@link generic:check-the-props}). Neither can prove the prose still matches the component.',
       ],
     },
     {

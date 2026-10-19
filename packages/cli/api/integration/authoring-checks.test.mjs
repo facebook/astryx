@@ -417,6 +417,45 @@ describe('integrationComponentConflicts', () => {
     expect(result.data.conflicts).toEqual([]);
     expect(result.data.issues).toEqual([]);
   });
+
+  it("compares each component doc's props with the component's TypeScript props, as warnings", async () => {
+    writeComponentIntegration('AcmeBadge');
+    fs.writeFileSync(
+      path.join(tmpDir, 'components', 'AcmeBadge.doc.mjs'),
+      `export default {type: 'component', name: 'AcmeBadge', displayName: 'AcmeBadge', description: 'Fixture component.', props: [{name: 'label', type: 'string', description: 'Text.', required: true}, {name: 'size', type: "'sm' | 'md'", description: 'Size.'}]};\n`,
+    );
+    fs.writeFileSync(
+      path.join(tmpDir, 'components', 'AcmeBadge.tsx'),
+      'export function AcmeBadge(props: {label: string; count?: number}) { return null; }\n',
+    );
+
+    const result = await integrationComponentConflicts(undefined, {
+      cwd: tmpDir,
+    });
+
+    expect(result.data.issues).toEqual([]);
+    expect(result.data.propDrift).toMatchObject({
+      status: 'checked',
+      components: 1,
+      unchecked: [],
+    });
+    expect(
+      result.data.propDrift?.findings.map(f => [f.prop, f.kind, f.severity]),
+    ).toEqual([
+      ['count', 'not_in_doc', 'warning'],
+      ['size', 'not_in_code', 'warning'],
+    ]);
+  });
+
+  it('leaves propDrift out when the package has no components root', async () => {
+    writeDocIntegration({name: 'acme-setup'});
+
+    const result = await integrationComponentConflicts(undefined, {
+      cwd: tmpDir,
+    });
+
+    expect(result.data).not.toHaveProperty('propDrift');
+  });
 });
 
 describe('integrationDocConflicts', () => {

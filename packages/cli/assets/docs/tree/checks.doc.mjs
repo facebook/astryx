@@ -30,15 +30,15 @@ export const docs = {
           rows: [
             [
               '`npx astryx doctor integration validate`',
-              'The manifest loads, and each root holds contributions the CLI can read',
+              'The manifest loads, each root holds contributions the CLI can read, and each doc matches its authoring type',
               'A declared root is missing (`missing_root`), a contribution does not load (`invalid_doc`, `invalid_component`, `invalid_theme`), or two templates in the package replace one Core id (`ambiguous_template_replacement`)',
-              'The manifest has a key this CLI does not know (`unknown_manifest_key`). With no `astryx.integration.mjs` it prints a hint and exits 0',
+              "The manifest has a key this CLI does not know (`unknown_manifest_key`), or a doc field does not match the doc's authoring type: a field the type does not have, a missing required field, or a value outside the field's type. It checks docs with your installed `typescript`; without it, it prints `[skip] Docs not type-checked`. With no `astryx.integration.mjs` it prints a hint and exits 0",
             ],
             [
               '`npx astryx doctor integration components`',
-              'No component name clashes with a Core component, and each `replaces` names one Core component',
+              "No component name clashes with a Core component, each `replaces` names one Core component, and each component doc's props match the component's TypeScript props",
               'Core is not installed (`core_not_found`). In a package that declares the CLI range that turns replacement on, a `replaces` target is missing (`missing_component_replacement_target`) or invalid (`invalid_component_replacement`), or two components replace one Core component (`ambiguous_component_replacement`)',
-              'A name clashes with Core, or a component sets `replaces` in a package without that range (`inactive_component_replacement`, plus any missing, invalid, or duplicate `replaces` reported as a warning)',
+              'A name clashes with Core, a component sets `replaces` in a package without that range (`inactive_component_replacement`, plus any missing, invalid, or duplicate `replaces` reported as a warning), or a documented prop differs from the code: it is missing there (`not_in_code`), the doc omits a prop the package declares (`not_in_doc`), or its `required` (`required_mismatch`) or type (`type_mismatch`) disagrees. It reads props with your installed `typescript`; without it, it prints `[skip] Props not compared`',
             ],
             [
               '`npx astryx doctor integration templates`',
@@ -62,7 +62,7 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: 'Pass a package name, such as `npx astryx doctor integration validate @acme/astryx-widgets`, to check an installed copy from an app instead.',
+          text: 'Pass a package name, such as `npx astryx doctor integration validate @acme/astryx-widgets`, to check an installed copy from an app instead. To fix a props finding, see {@link generic:check-the-props}.',
         },
       ],
     },

@@ -369,5 +369,15 @@
   {
     "component": "lab/Comments",
     "reason": "Comments is a block-axis timeline of CommentThread rows and activity events inside the core ChatLayout and ChatMessageList, with the composer docked on the block axis. It adds no horizontal positioning, directional glyphs, or arrow-key behavior of its own: rows, rails, and dividers use logical properties, and the load-earlier control and error Banners are centered or full width."
+  },
+  {
+    "component": "core/DropdownMenuDivider",
+    "reason": "DropdownMenuDivider is one horizontal, full-width separator with block-axis margin only. It renders no text, glyph, inline-side placement, reordered content, horizontal scrolling or dragging, overlay, or keyboard behavior of its own; the containing DropdownMenu owns direction-sensitive placement and navigation, while the separator is deliberately skipped by the row focus model. The exact-head audit still renders RTL frames to confirm inherited direction without adding a component-owned RTL dimension.",
+    "evidence": {
+      "apps/storybook/stories/DropdownMenuDivider.stories.tsx": "sha256:d734898c48c73a887e6bdd6485e8539600354c720ee292c326a93c760f470311",
+      "packages/core/src/DropdownMenu/DropdownMenuDivider.tsx": "sha256:c172c36b3900ac83c76c8472a92bd5618184b3ff4fbfdc71ca89e6d3ca7cfdc7",
+      "packages/core/src/DropdownMenu/index.ts": "sha256:59bf02be4a577cbecf3ad7e981e2577602375892f74548593aa9b998cae733fa",
+      "packages/core/src/Divider/Divider.tsx": "sha256:37bfa57103fdc546226fe751844bb193490439bd990b6bc9bced8f6ced99618d"
+    }
   }
 ]

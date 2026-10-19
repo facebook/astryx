@@ -695,7 +695,7 @@ async function addTemplate(name, options) {
   const sourcePath = projectPath(path.relative(packageDir, sourceFile));
   const extensionlessPath = sourcePath.replace(/\.tsx?$/u, '');
   const blockFields = templateType === 'block' ? '\n  aspectRatio: 1,' : '';
-  const specContents = `/** @type {import('@astryxdesign/cli/authoring').TemplateDoc} */\nexport default {\n  type: '${templateType}',\n  name: '${name}',\n  displayName: '${kebabToTitle(name)}',\n  description: '${kebabToTitle(name)} template.',${blockFields}\n};\n`;
+  const specContents = `/** @type {import('@astryxdesign/cli/authoring').IntegrationTemplateDoc} */\nexport default {\n  type: '${templateType}',\n  name: '${name}',\n  displayName: '${kebabToTitle(name)}',\n  description: '${kebabToTitle(name)} template.',${blockFields}\n};\n`;
   const sourceContents = `export default function ${pascalName}() {\n  return <div>${kebabToTitle(name)}</div>;\n}\n`;
 
   /** @type {import('./add-helpers.mjs').WritePlan[]} */
