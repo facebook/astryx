@@ -101,6 +101,27 @@ describe('astryx discover with a docsiteUrl', () => {
     expect(JSON.parse(stdout).data).not.toHaveProperty('docsiteUrl');
   });
 
+  it('carries feedback in JSON and prints its destination as text', async () => {
+    writeKit({feedback: {destination: 'acme-kit'}});
+
+    const json = await runCli(['discover', '@test/kit', '--json'], {
+      cwd: project,
+    });
+    expect(JSON.parse(json.stdout).data.feedback).toEqual({
+      destination: 'acme-kit',
+    });
+    const listed = await runCli(['discover', '--json'], {cwd: project});
+    expect(JSON.parse(listed.stdout).data[0].feedback).toEqual({
+      destination: 'acme-kit',
+    });
+
+    const page = await runCli(['discover', '@test/kit'], {cwd: project});
+    expect(page.stdout).toMatch(/^feedback:\s+acme-kit$/m);
+    const list = await runCli(['discover'], {cwd: project});
+    expect(list.stdout).toMatch(/^feedback:\s+acme-kit$/m);
+    expect(list.stdout).not.toContain('[object Object]');
+  });
+
   it('leaves out an invalid docsiteUrl and keeps the package', async () => {
     writeKit({docsiteUrl: 'javascript:alert(1)'});
 

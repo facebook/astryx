@@ -20,6 +20,7 @@ import {formatZodError} from '../_shared/errors.mjs';
 
 const MAX_AGENT_DOC_LINES = 8;
 const MAX_DOCSITE_URL_LENGTH = 2048;
+const MAX_FEEDBACK_DESTINATION_CODE_POINTS = 512;
 const DOCSITE_URL_PROTOCOLS = new Set(['https:', 'http:']);
 const MAX_AGENT_DOC_LINE_CODE_POINTS = 240;
 const MANAGED_MARKER_TEXT = /(?:ASTRYX|XDS):(START|END)/u;
@@ -100,6 +101,39 @@ export const docsiteUrlSchema = z.string().superRefine((value, ctx) => {
   }
 });
 
+/**
+ * Where a package's feedback goes: an opaque single-line string (a namespace,
+ * an address, or a URL) that the CLI passes through and never resolves. Other
+ * keys inside `feedback` are stripped, so later routing details can join it.
+ */
+export const feedbackSchema = z.object({
+  destination: z.string().superRefine((value, ctx) => {
+    /** @param {string} message */
+    const fail = message => ctx.addIssue({code: 'custom', message});
+    if (value.trim().length === 0) return fail('must not be blank');
+    if (value !== value.trim()) {
+      return fail('must not have surrounding whitespace');
+    }
+    for (const character of value) {
+      const codePoint = character.codePointAt(0) ?? 0;
+      if (
+        codePoint <= 0x1f ||
+        (codePoint >= 0x7f && codePoint <= 0x9f) ||
+        codePoint === 0x2028 ||
+        codePoint === 0x2029
+      ) {
+        return fail('must be a single line with no control characters');
+      }
+    }
+    const codePoints = [...value].length;
+    if (codePoints > MAX_FEEDBACK_DESTINATION_CODE_POINTS) {
+      fail(
+        `must contain at most ${MAX_FEEDBACK_DESTINATION_CODE_POINTS} Unicode code points (received ${codePoints})`,
+      );
+    }
+  }),
+});
+
 export const integrationBaseSchema = z.object({
   providerId: z
     .string()
@@ -125,14 +159,15 @@ export const integrationBaseSchema = z.object({
 export const integrationSchema = integrationBaseSchema.extend({
   agentDocs: agentDocsSchema.optional(),
   docsiteUrl: docsiteUrlSchema.optional(),
+  feedback: feedbackSchema.optional(),
 });
 
 /**
  * Parse every default-manifest field except the independently isolated
- * `agentDocs` contribution and `docsiteUrl` link.
+ * `agentDocs` contribution and the `docsiteUrl` and `feedback` metadata.
  * @param {unknown} input
  * @param {string} label
- * @returns {Omit<AstryxIntegration, 'agentDocs' | 'docsiteUrl'>}
+ * @returns {Omit<AstryxIntegration, 'agentDocs' | 'docsiteUrl' | 'feedback'>}
  */
 export function parseIntegrationBase(input, label) {
   const result = integrationBaseSchema.safeParse(input);
@@ -162,6 +197,18 @@ export function parseAgentDocsField(input, label) {
  */
 export function parseDocsiteUrlField(input, label) {
   const result = docsiteUrlSchema.safeParse(input);
+  if (!result.success) throw new Error(formatZodError(label, result.error));
+  return result.data;
+}
+
+/**
+ * Parse only the optional `feedback` object. Isolated like `docsiteUrl`.
+ * @param {unknown} input
+ * @param {string} label
+ * @returns {NonNullable<AstryxIntegration['feedback']>}
+ */
+export function parseFeedbackField(input, label) {
+  const result = feedbackSchema.safeParse(input);
   if (!result.success) throw new Error(formatZodError(label, result.error));
   return result.data;
 }

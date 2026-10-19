@@ -195,6 +195,24 @@ describe('validate-integration API', () => {
     expect(docsiteIssues[0].message).toContain('docsiteUrl');
   });
 
+  it('warns on an invalid feedback object and keeps the rest', async () => {
+    const pkgDir = path.join(tmpDir, 'pkg');
+    writePackage(pkgDir, {
+      manifest: `export default {
+        components: './components',
+        feedback: {destination: 'two\\nlines'},
+      };\n`,
+    });
+    fs.mkdirSync(path.join(pkgDir, 'components'));
+
+    const result = await validateLocalIntegration(pkgDir);
+
+    expect(byCode(result.issues, 'invalid_manifest')).toHaveLength(0);
+    const issues = byCode(result.issues, 'invalid_feedback');
+    expect(issues).toHaveLength(1);
+    expect(issues[0].severity).toBe('warning');
+  });
+
   it('reports nothing for a valid docsiteUrl', async () => {
     const pkgDir = path.join(tmpDir, 'pkg');
     writePackage(pkgDir, {

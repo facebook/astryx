@@ -68,6 +68,7 @@ export function detail(packages, name, options = {}) {
         installed: pkg != null,
         ...(pkg?.version ? {installedVersion: pkg.version} : {}),
         ...(pkg?.docsiteUrl ? {docsiteUrl: pkg.docsiteUrl} : {}),
+        ...(pkg?.feedback ? {feedback: pkg.feedback} : {}),
       };
   if (catalog) {
     if (catalog.latest) data.latest = catalog.latest;

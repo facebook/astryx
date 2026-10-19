@@ -49,6 +49,15 @@ export interface AstryxIntegration {
    *  package the project has. An invalid value is left out with a warning; the
    *  rest of the manifest still loads. */
   docsiteUrl?: string;
+  /** Where this package's feedback goes. `destination` is an opaque
+   *  single-line string of at most 512 characters, such as a namespace or a
+   *  URL your own tooling understands; the CLI passes it through and never
+   *  resolves or sends to it. `astryx discover` shows it for a package the
+   *  project has. An invalid value is left out with a warning; the rest of the
+   *  manifest still loads. */
+  feedback?: {
+    destination: string;
+  };
 }
 
 /**

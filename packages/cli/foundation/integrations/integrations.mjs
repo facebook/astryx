@@ -25,6 +25,7 @@ import {normalizeProviderId} from '../identity/provider-identity.mjs';
 import {
   parseAgentDocsField,
   parseDocsiteUrlField,
+  parseFeedbackField,
   parseIntegrationBase,
   unknownIntegrationKeys,
 } from '../../authoring/integration/schema.mjs';
@@ -55,6 +56,10 @@ import {resolveProviders} from './provider-resolution.mjs';
  * @property {string} [docsiteUrl] where the package's documentation lives
  * @property {string} [__docsiteUrlError] why the manifest's `docsiteUrl` was
  *   left out
+ * @property {{destination: string}} [feedback] where the package's feedback
+ *   goes, passed through as written
+ * @property {string} [__feedbackError] why the manifest's `feedback` was left
+ *   out
  * @property {string} [__agentDocsError] contribution-specific validation
  *   failure; other manifest contributions remain available
  * @property {string} __spec
@@ -199,8 +204,8 @@ function parseDiscoverSourceExport(value, label) {
  * The base manifest still fails as one unit when a root or `issuesUrl` is
  * invalid. `agentDocs` is parsed separately: a bad contribution is returned as
  * `agentDocsError`, while valid components/templates/docs/codemods stay loaded.
- * `docsiteUrl` is isolated the same way: an invalid link comes back as
- * `docsiteUrlError` and is left out of the manifest.
+ * `docsiteUrl` and `feedback` are isolated the same way: an invalid value comes
+ * back as `docsiteUrlError` or `feedbackError` and is left out of the manifest.
  * The raw object is also inspected before parsing so unknown-key warnings retain
  * forward compatibility.
  *
@@ -210,7 +215,7 @@ function parseDiscoverSourceExport(value, label) {
  * @param {string} file absolute manifest path
  * @param {string} [label] used in error messages
  * @param {{fresh?: boolean}} [options]
- * @returns {Promise<{manifest: import('../../authoring/integration/type').AstryxIntegration, unknownKeys: string[], debug?: import('../../authoring/debug/type').DebugEventHandler, gapReport?: import('../../authoring/gap-report/type').GapReportHandler, gapReportError?: string, discover?: import('../../authoring/discover/type').DiscoverSource, discoverError?: string, agentDocsError?: string, docsiteUrlError?: string}>}
+ * @returns {Promise<{manifest: import('../../authoring/integration/type').AstryxIntegration, unknownKeys: string[], debug?: import('../../authoring/debug/type').DebugEventHandler, gapReport?: import('../../authoring/gap-report/type').GapReportHandler, gapReportError?: string, discover?: import('../../authoring/discover/type').DiscoverSource, discoverError?: string, agentDocsError?: string, docsiteUrlError?: string, feedbackError?: string}>}
  */
 export async function loadManifest(
   file,
@@ -245,30 +250,25 @@ export async function loadManifest(
     }
   }
 
-  /** @type {string | undefined} */
-  let docsiteUrl;
-  /** @type {string | undefined} */
-  let docsiteUrlError;
-  const rawDocsiteUrl =
-    raw != null && typeof raw === 'object' && !Array.isArray(raw)
-      ? /** @type {{docsiteUrl?: unknown}} */ (raw).docsiteUrl
-      : undefined;
-  if (rawDocsiteUrl !== undefined) {
-    try {
-      docsiteUrl = parseDocsiteUrlField(
-        rawDocsiteUrl,
-        `${label} field "docsiteUrl"`,
-      );
-    } catch (err) {
-      docsiteUrlError = err instanceof Error ? err.message : String(err);
-    }
-  }
+  const {value: docsiteUrl, error: docsiteUrlError} = parseIsolatedField(
+    raw,
+    'docsiteUrl',
+    parseDocsiteUrlField,
+    label,
+  );
+  const {value: feedback, error: feedbackError} = parseIsolatedField(
+    raw,
+    'feedback',
+    parseFeedbackField,
+    label,
+  );
 
   return {
     manifest: {
       ...baseManifest,
       ...(agentDocs == null ? {} : {agentDocs}),
       ...(docsiteUrl == null ? {} : {docsiteUrl}),
+      ...(feedback == null ? {} : {feedback}),
     },
     unknownKeys: unknownIntegrationKeys(raw),
     debug:
@@ -283,7 +283,29 @@ export async function loadManifest(
     discoverError: discover.error,
     agentDocsError,
     docsiteUrlError,
+    feedbackError,
   };
+}
+
+/**
+ * Parse one optional manifest field on its own, so an invalid value is
+ * reported and left out without failing the rest of the manifest.
+ * @template T
+ * @param {unknown} raw the manifest's default export
+ * @param {string} key
+ * @param {(input: unknown, label: string) => T} parse
+ * @param {string} label
+ * @returns {{value?: T, error?: string}}
+ */
+function parseIsolatedField(raw, key, parse, label) {
+  if (raw == null || typeof raw !== 'object' || Array.isArray(raw)) return {};
+  const input = /** @type {Record<string, unknown>} */ (raw)[key];
+  if (input === undefined) return {};
+  try {
+    return {value: parse(input, `${label} field "${key}"`)};
+  } catch (err) {
+    return {error: err instanceof Error ? err.message : String(err)};
+  }
 }
 
 /**
@@ -407,6 +429,8 @@ export async function loadLocalIntegration(packageDir, {fresh = false} = {}) {
   let agentDocsError;
   /** @type {string | undefined} */
   let docsiteUrlError;
+  /** @type {string | undefined} */
+  let feedbackError;
   try {
     ({
       manifest,
@@ -418,6 +442,7 @@ export async function loadLocalIntegration(packageDir, {fresh = false} = {}) {
       discoverError,
       agentDocsError,
       docsiteUrlError,
+      feedbackError,
     } = await loadManifest(manifestFile, `Integration ${spec}`, {fresh}));
   } catch (err) {
     return {
@@ -456,8 +481,10 @@ export async function loadLocalIntegration(packageDir, {fresh = false} = {}) {
     issuesUrl: manifest.issuesUrl,
     agentDocs: manifest.agentDocs,
     docsiteUrl: manifest.docsiteUrl,
+    feedback: manifest.feedback,
     __agentDocsError: agentDocsError,
     __docsiteUrlError: docsiteUrlError,
+    __feedbackError: feedbackError,
     __unknownKeys: unknownKeys,
     __debug: debugHandler,
     __gapReport: gapReportHandler,
@@ -523,6 +550,8 @@ export async function loadIntegrations(
     let agentDocsError;
     /** @type {string | undefined} */
     let docsiteUrlError;
+    /** @type {string | undefined} */
+    let feedbackError;
     try {
       ({
         manifest,
@@ -534,6 +563,7 @@ export async function loadIntegrations(
         discoverError,
         agentDocsError,
         docsiteUrlError,
+        feedbackError,
       } = await loadManifest(manifestFile, `Integration ${spec}`, {fresh}));
     } catch (err) {
       // A manifest that throws on import or fails schema validation must NOT take
@@ -579,8 +609,10 @@ export async function loadIntegrations(
       issuesUrl: manifest.issuesUrl,
       agentDocs: manifest.agentDocs,
       docsiteUrl: manifest.docsiteUrl,
+      feedback: manifest.feedback,
       __agentDocsError: agentDocsError,
       __docsiteUrlError: docsiteUrlError,
+      __feedbackError: feedbackError,
       __unknownKeys: unknownKeys,
       __debug: debugHandler,
       __gapReport: gapReportHandler,

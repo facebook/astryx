@@ -249,6 +249,27 @@ describe('configured integrations', () => {
     },
   );
 
+  it('loads feedback as written', async () => {
+    writeManifestPackage(tmpDir, {
+      body: `export default {feedback: {destination: 'acme-widgets'}};\n`,
+    });
+    const [loaded] = await loadIntegrations(['@acme/widgets'], {cwd: tmpDir});
+    expect(loaded.feedback).toEqual({destination: 'acme-widgets'});
+    expect(loaded.__unknownKeys).toEqual([]);
+  });
+
+  it('isolates an invalid feedback object from valid roots', async () => {
+    const pkgDir = writeManifestPackage(tmpDir, {
+      body: `export default {components: './components', feedback: {destination: ''}};\n`,
+    });
+    fs.mkdirSync(path.join(pkgDir, 'components'));
+    const [loaded] = await loadIntegrations(['@acme/widgets'], {cwd: tmpDir});
+    expect(loaded.__loadError).toBeUndefined();
+    expect(loaded.components).toBe(path.join(pkgDir, 'components'));
+    expect(loaded.feedback).toBeUndefined();
+    expect(loaded.__feedbackError).toMatch(/feedback/);
+  });
+
   it('errors when the package has no conventional root manifest', async () => {
     const pkgDir = path.join(tmpDir, 'node_modules', '@acme', 'widgets');
     fs.mkdirSync(pkgDir, {recursive: true});

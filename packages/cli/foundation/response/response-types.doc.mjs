@@ -112,12 +112,12 @@ export const doc = {
     {
       value: 'discover.list',
       description:
-        'The integrations the project loads (name, category, components, version, a list per other kind they add, docsiteUrl when the manifest names one, and latest when a source knows it); with a discover source, meta.available lists what the project could add and meta.sources reports each source; when empty it carries meta.configured to tell "nothing configured" from "nothing discovered".',
+        'The integrations the project loads (name, category, components, version, a list per other kind they add, docsiteUrl and feedback when the manifest names them, and latest when a source knows it); with a discover source, meta.available lists what the project could add and meta.sources reports each source; when empty it carries meta.configured to tell "nothing configured" from "nothing discovered".',
     },
     {
       value: 'discover.detail',
       description:
-        'One package, for an @scope/name or @scope/name@version query: what the shown version adds, whether the project has it, its docsiteUrl when the project has it and the manifest names one, and, when a source knows the package, its versions, latest release, and the command that adds it.',
+        'One package, for an @scope/name or @scope/name@version query: what the shown version adds, whether the project has it, its docsiteUrl and feedback when the project has it and the manifest names them, and, when a source knows the package, its versions, latest release, and the command that adds it.',
     },
     {
       value: 'discover.detail.doc',

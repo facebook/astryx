@@ -112,6 +112,28 @@ describe('parseIntegration (load boundary)', () => {
     expect(thrown).toContain(message);
   });
 
+  it('passes a feedback destination through and strips other inner keys', () => {
+    expect(parseIntegration({feedback: {destination: 'acme-widgets'}})).toEqual(
+      {feedback: {destination: 'acme-widgets'}},
+    );
+    expect(
+      parseIntegration({
+        feedback: {destination: 'https://acme.example/feedback', later: true},
+      }),
+    ).toEqual({feedback: {destination: 'https://acme.example/feedback'}});
+  });
+
+  it.each([
+    ['a string instead of an object', 'acme-widgets'],
+    ['no destination', {}],
+    ['a blank destination', {destination: '  '}],
+    ['surrounding whitespace', {destination: ' acme '}],
+    ['two lines', {destination: 'acme\nwidgets'}],
+    ['a destination over 512 code points', {destination: 'a'.repeat(513)}],
+  ])('rejects feedback with %s', (_label, feedback) => {
+    expect(reason({feedback})).toContain('feedback');
+  });
+
   it('rejects a noncanonical providerId', () => {
     expect(reason({providerId: 'Acme Widgets'})).toContain('providerId');
   });

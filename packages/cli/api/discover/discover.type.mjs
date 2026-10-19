@@ -52,6 +52,8 @@
  * @property {string[]} [agentDocs] Agent guidance, when a source lists any.
  * @property {string} [docsiteUrl] Where the package's documentation lives,
  *   when its integration manifest names it.
+ * @property {{destination: string}} [feedback] Where the package's feedback
+ *   goes, as its integration manifest wrote it.
  * @property {string} [latest] The latest release a discover source knows.
  */
 

@@ -53,6 +53,20 @@ describe('discover.list leaf', () => {
     expect('docsiteUrl' in res.data[1]).toBe(false);
   });
 
+  it('carries feedback only when the package names one', () => {
+    const res = list(
+      [
+        pkg('@acme/widgets', ['Alpha'], {
+          feedback: {destination: 'acme-widgets'},
+        }),
+        pkg('@acme/plain', ['Beta']),
+      ],
+      {configured: true},
+    );
+    expect(res.data[0].feedback).toEqual({destination: 'acme-widgets'});
+    expect('feedback' in res.data[1]).toBe(false);
+  });
+
   it('returns the configured:true empty envelope when nothing was discovered', () => {
     const res = list([], {configured: true});
     expect(res).toEqual({
