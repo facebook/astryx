@@ -136,6 +136,17 @@ source, packages}`. `source` has `name`, `generatedAt`, and `complete`. Each
   manifest from loading: discover leaves the field out, and `astryx doctor
 integration validate` reports it as a warning with the code
   `invalid_docsite_url`. The CLI never opens or fetches the URL.
+- **FR11 — A package can name where its feedback goes.** An integration
+  manifest MAY set `feedback` to an object whose `destination` is a single-line
+  string of 1 to 512 characters with no surrounding whitespace: a namespace, an
+  address, or a URL that the package's own tooling understands. The CLI treats
+  the value as opaque and passes it through unchanged; it never resolves,
+  opens, or sends to it, and it ignores other keys inside `feedback`. For a
+  package the project has, `discover.list` entries and `discover.detail` MUST
+  carry it as `feedback`, and the text package page MUST print the
+  destination. An invalid value is left out the same way as an invalid
+  `docsiteUrl`, and `astryx doctor integration validate` reports it as a
+  warning with the code `invalid_feedback`.
 
 ### Platform support
 
@@ -159,11 +170,12 @@ integration validate` reports it as a warning with the code
   consent gate (FR6).
 - Consumer docs: `cli/integrations` gains the `discover` named export and config
   field, and `astryx docs authoring` gains the `discover-source` section.
-- Integration manifests gain the optional `docsiteUrl` field (FR10). A CLI
+- Integration manifests gain the optional `docsiteUrl` and `feedback` fields
+  (FR10, FR11). A CLI
   that does not know the field ignores it with its unknown-field warning and
   loads the rest of the manifest, as `architecture:cli-surface` INV11 requires.
-  The manifest reference in `astryx docs authoring` and the CLI README list the
-  field.
+  The manifest reference in `astryx docs authoring` and the CLI README list
+  both fields.
 
 ## Verification
 
@@ -179,6 +191,7 @@ integration validate` reports it as a warning with the code
 | FR8      | adapter saved-copy and command tests   | fresh answer; failure with a saved copy; failure with none; another request                                                        | a stale copy hides a fresh answer, the saved date is missing, or a project file is written                                         |
 | FR9      | existing discover JSON tests           | each response type with and without a source                                                                                       | an existing field changes type or meaning                                                                                          |
 | FR10     | parser, validate, leaf, command tests  | no field; an https URL; an http URL; a relative path; another scheme; a value over 2,048 characters                                | an invalid value hides a contribution, a valid value is missing from JSON or text, or validate does not warn                       |
+| FR11     | parser, validate, leaf, command tests  | no field; a namespace; a URL; a blank or multi-line value; an unknown inner key                                                    | a value is changed or resolved, an invalid value hides a contribution, or validate does not warn                                   |
 
 ## Decision log
 
@@ -250,6 +263,22 @@ follows.
 Rejected: reading `homepage` from package.json, which often names the
 repository rather than the docs; a `docs` URL key, which already names the
 reference-docs folder.
+
+### DEC-6 — Feedback destination is opaque manifest metadata
+
+**Reference:** `spec:AST-051/DEC-6`
+**Decider:** `josephfarina (proposed)`
+
+A package routes its feedback to its own place, and the tools that collect
+feedback differ between hosts, so the manifest carries the destination as an
+opaque string and the CLI only passes it on. It sits in a `feedback` object so
+later routing details can join it without a new top-level key. `issuesUrl`
+keeps its meaning: the URL that "report an issue" links and the gap-report
+fallback use.
+
+Rejected: reusing `issuesUrl`, which must be a URL and drives the gap-report
+fallback; a CLI-owned list of feedback services, which ties the public CLI to
+specific hosts.
 
 ## Open questions
 
