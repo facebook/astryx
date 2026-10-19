@@ -213,63 +213,6 @@ describe('configured integrations', () => {
     },
   );
 
-  it('loads a valid docsiteUrl', async () => {
-    writeManifestPackage(tmpDir, {
-      body: `export default {docsiteUrl: 'https://widgets.example.com/docs'};\n`,
-    });
-
-    const [loaded] = await loadIntegrations(['@acme/widgets'], {cwd: tmpDir});
-
-    expect(loaded.docsiteUrl).toBe('https://widgets.example.com/docs');
-    expect(loaded.__docsiteUrlError).toBeUndefined();
-    expect(loaded.__unknownKeys).toEqual([]);
-  });
-
-  it.each([
-    ['a relative path', './docs'],
-    ['another scheme', 'javascript:alert(1)'],
-    ['a number', 42],
-  ])(
-    'isolates an invalid docsiteUrl (%s) from valid roots',
-    async (_label, docsiteUrl) => {
-      const pkgDir = writeManifestPackage(tmpDir, {
-        body: `export default ${JSON.stringify({
-          components: './components',
-          docsiteUrl,
-        })};\n`,
-      });
-      fs.mkdirSync(path.join(pkgDir, 'components'));
-
-      const [loaded] = await loadIntegrations(['@acme/widgets'], {cwd: tmpDir});
-
-      expect(loaded.__loadError).toBeUndefined();
-      expect(loaded.components).toBe(path.join(pkgDir, 'components'));
-      expect(loaded.docsiteUrl).toBeUndefined();
-      expect(loaded.__docsiteUrlError).toMatch(/docsiteUrl/);
-    },
-  );
-
-  it('loads feedback as written', async () => {
-    writeManifestPackage(tmpDir, {
-      body: `export default {feedback: {destination: 'acme-widgets'}};\n`,
-    });
-    const [loaded] = await loadIntegrations(['@acme/widgets'], {cwd: tmpDir});
-    expect(loaded.feedback).toEqual({destination: 'acme-widgets'});
-    expect(loaded.__unknownKeys).toEqual([]);
-  });
-
-  it('isolates an invalid feedback object from valid roots', async () => {
-    const pkgDir = writeManifestPackage(tmpDir, {
-      body: `export default {components: './components', feedback: {destination: ''}};\n`,
-    });
-    fs.mkdirSync(path.join(pkgDir, 'components'));
-    const [loaded] = await loadIntegrations(['@acme/widgets'], {cwd: tmpDir});
-    expect(loaded.__loadError).toBeUndefined();
-    expect(loaded.components).toBe(path.join(pkgDir, 'components'));
-    expect(loaded.feedback).toBeUndefined();
-    expect(loaded.__feedbackError).toMatch(/feedback/);
-  });
-
   it('errors when the package has no conventional root manifest', async () => {
     const pkgDir = path.join(tmpDir, 'node_modules', '@acme', 'widgets');
     fs.mkdirSync(pkgDir, {recursive: true});
@@ -516,7 +459,7 @@ describe('provider identity conflicts', () => {
     ]);
   });
 
-  it("reports an unversioned set-aside package whose spec is the winner's name", async () => {
+  it('reports an unversioned set-aside package whose spec is the winner\'s name', async () => {
     installPackage(
       'widgets-old',
       {name: '@acme/widgets', version: '1.0.0'},

@@ -44,20 +44,10 @@ export interface AstryxIntegration {
   };
   /** Where to file issues/feedback for this integration. */
   issuesUrl?: string;
-  /** Where this package's documentation lives: an absolute `https:` or
-   *  `http:` URL, at most 2,048 characters. `astryx discover` shows it for a
-   *  package the project has. An invalid value is left out with a warning; the
-   *  rest of the manifest still loads. */
+  /** Link to this integration's docs site, such as its home page. The CLI
+   *  accepts it as a known field; catalogs that list the package may show
+   *  it. */
   docsiteUrl?: string;
-  /** Where this package's feedback goes. `destination` is an opaque
-   *  single-line string of at most 512 characters, such as a namespace or a
-   *  URL your own tooling understands; the CLI passes it through and never
-   *  resolves or sends to it. `astryx discover` shows it for a package the
-   *  project has. An invalid value is left out with a warning; the rest of the
-   *  manifest still loads. */
-  feedback?: {
-    destination: string;
-  };
 }
 
 /**

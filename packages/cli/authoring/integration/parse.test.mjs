@@ -87,51 +87,14 @@ describe('parseIntegration (load boundary)', () => {
     expect(reason({issuesUrl: 'nope'})).toContain('issuesUrl');
   });
 
-  it('accepts an https or http docsiteUrl', () => {
-    expect(
-      parseIntegration({docsiteUrl: 'https://widgets.example.com/docs'}),
-    ).toEqual({docsiteUrl: 'https://widgets.example.com/docs'});
-    expect(parseIntegration({docsiteUrl: 'http://localhost:3000'})).toEqual({
-      docsiteUrl: 'http://localhost:3000',
-    });
+  it('accepts a docsiteUrl as a known key', () => {
+    const manifest = {docsiteUrl: 'https://widgets.example.com'};
+    expect(parseIntegration(manifest)).toEqual(manifest);
+    expect(unknownIntegrationKeys(manifest)).toEqual([]);
   });
 
-  it.each([
-    ['a relative path', './docs', 'absolute URL'],
-    ['another scheme', 'javascript:alert(1)', 'https: or http:'],
-    ['a file URL', 'file:///tmp/docs', 'https: or http:'],
-    ['surrounding whitespace', ' https://example.com ', 'absolute URL'],
-    [
-      'a value over 2,048 characters',
-      `https://example.com/${'a'.repeat(2048)}`,
-      'at most 2048',
-    ],
-  ])('rejects a docsiteUrl that is %s', (_label, docsiteUrl, message) => {
-    const thrown = reason({docsiteUrl});
-    expect(thrown).toContain('docsiteUrl');
-    expect(thrown).toContain(message);
-  });
-
-  it('passes a feedback destination through and strips other inner keys', () => {
-    expect(parseIntegration({feedback: {destination: 'acme-widgets'}})).toEqual(
-      {feedback: {destination: 'acme-widgets'}},
-    );
-    expect(
-      parseIntegration({
-        feedback: {destination: 'https://acme.example/feedback', later: true},
-      }),
-    ).toEqual({feedback: {destination: 'https://acme.example/feedback'}});
-  });
-
-  it.each([
-    ['a string instead of an object', 'acme-widgets'],
-    ['no destination', {}],
-    ['a blank destination', {destination: '  '}],
-    ['surrounding whitespace', {destination: ' acme '}],
-    ['two lines', {destination: 'acme\nwidgets'}],
-    ['a destination over 512 code points', {destination: 'a'.repeat(513)}],
-  ])('rejects feedback with %s', (_label, feedback) => {
-    expect(reason({feedback})).toContain('feedback');
+  it('rejects a non-URL docsiteUrl', () => {
+    expect(reason({docsiteUrl: 'nope'})).toContain('docsiteUrl');
   });
 
   it('rejects a noncanonical providerId', () => {

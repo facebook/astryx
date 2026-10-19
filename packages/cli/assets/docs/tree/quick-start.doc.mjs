@@ -238,8 +238,6 @@ export const docs = {
               'themes',
               'agentDocs',
               'issuesUrl',
-              'docsiteUrl',
-              'feedback',
             ],
           },
           presentation: 'full',

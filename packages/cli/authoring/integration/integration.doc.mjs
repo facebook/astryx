@@ -78,15 +78,8 @@ export const doc = {
       name: 'docsiteUrl',
       type: 'string',
       description:
-        "Where this package's documentation lives: an absolute https: or http: URL, at most 2,048 characters. `astryx discover` shows it for a package the project has. An invalid value is left out with a warning; the rest of the manifest still loads.",
-      example: "'https://widgets.acme.dev/docs'",
-    },
-    {
-      name: 'feedback',
-      type: '{ destination: string }',
-      description:
-        "Where this package's feedback goes. `destination` is an opaque single-line string of at most 512 characters, such as a namespace or a URL your own tooling understands; the CLI passes it through and never resolves or sends to it. `astryx discover` shows it for a package the project has. An invalid value is left out with a warning; the rest of the manifest still loads.",
-      example: "{ destination: 'acme-widgets' }",
+        "Link to this integration's docs site, such as its home page. Catalogs that list the package may show it.",
+      example: "'https://widgets.acme.dev'",
     },
   ],
   examples: [
@@ -102,8 +95,6 @@ export const doc = {
     append: ['Run acme verify before finishing.'],
   },
   issuesUrl: 'https://github.com/acme/widgets/issues',
-  docsiteUrl: 'https://widgets.acme.dev/docs',
-  feedback: {destination: 'acme-widgets'},
 };`,
     },
   ],
@@ -134,7 +125,7 @@ export const doc = {
       text:
         'Validate the manifest with `astryx doctor integration validate`. At the ' +
         'load boundary, a known field of the wrong type is an error, issuesUrl ' +
-        'must be a valid URL, an invalid docsiteUrl or feedback is left out with a warning, and unknown fields become warnings so an older CLI ' +
+        'and docsiteUrl must be valid URLs, and unknown fields become warnings so an older CLI ' +
         'can still load the fields it understands. Before publishing, also run ' +
         '`templates`, `components`, and `docs` under the same `doctor integration` ' +
         'group. Those leaves compare authored identities with Core and explain ' +

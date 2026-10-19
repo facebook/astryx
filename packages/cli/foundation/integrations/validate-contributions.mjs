@@ -56,12 +56,6 @@ import {discoverIntegrationThemes} from '../discovery/theme-discovery.mjs';
 /** Stable issue code for an invalid optional agent-doc contribution. */
 export const INVALID_AGENT_DOCS = 'invalid_agent_docs';
 
-/** Stable issue code for an invalid `docsiteUrl` link, which is left out. */
-export const INVALID_DOCSITE_URL = 'invalid_docsite_url';
-
-/** Stable issue code for an invalid `feedback` object, which is left out. */
-export const INVALID_FEEDBACK = 'invalid_feedback';
-
 /** Stable issue code for a package whose provider ID is already claimed. */
 export const DUPLICATE_PROVIDER = 'duplicate_provider';
 
@@ -455,12 +449,6 @@ export async function validateLoadedIntegration(loaded) {
   checkUnknownKeys(loaded, issues);
   if (loaded.__agentDocsError) {
     issues.push(issueError(INVALID_AGENT_DOCS, loaded.__agentDocsError));
-  }
-  if (loaded.__docsiteUrlError) {
-    issues.push(issueWarning(INVALID_DOCSITE_URL, loaded.__docsiteUrlError));
-  }
-  if (loaded.__feedbackError) {
-    issues.push(issueWarning(INVALID_FEEDBACK, loaded.__feedbackError));
   }
   checkRoots(
     {

@@ -176,53 +176,15 @@ describe('validate-integration API', () => {
     expect(agentDocsIssues[0].severity).toBe('error');
   });
 
-  it('warns on an invalid docsiteUrl without invalidating other manifest fields', async () => {
+  it('reports nothing for a docsiteUrl', async () => {
     const pkgDir = path.join(tmpDir, 'pkg');
     writePackage(pkgDir, {
-      manifest: `export default {
-        components: './components',
-        docsiteUrl: 'ftp://example.com/docs',
-      };\n`,
-    });
-    fs.mkdirSync(path.join(pkgDir, 'components'));
-
-    const result = await validateLocalIntegration(pkgDir);
-
-    expect(byCode(result.issues, 'invalid_manifest')).toHaveLength(0);
-    const docsiteIssues = byCode(result.issues, 'invalid_docsite_url');
-    expect(docsiteIssues).toHaveLength(1);
-    expect(docsiteIssues[0].severity).toBe('warning');
-    expect(docsiteIssues[0].message).toContain('docsiteUrl');
-  });
-
-  it('warns on an invalid feedback object and keeps the rest', async () => {
-    const pkgDir = path.join(tmpDir, 'pkg');
-    writePackage(pkgDir, {
-      manifest: `export default {
-        components: './components',
-        feedback: {destination: 'two\\nlines'},
-      };\n`,
-    });
-    fs.mkdirSync(path.join(pkgDir, 'components'));
-
-    const result = await validateLocalIntegration(pkgDir);
-
-    expect(byCode(result.issues, 'invalid_manifest')).toHaveLength(0);
-    const issues = byCode(result.issues, 'invalid_feedback');
-    expect(issues).toHaveLength(1);
-    expect(issues[0].severity).toBe('warning');
-  });
-
-  it('reports nothing for a valid docsiteUrl', async () => {
-    const pkgDir = path.join(tmpDir, 'pkg');
-    writePackage(pkgDir, {
-      manifest: `export default {docsiteUrl: 'https://widgets.example.com/docs'};\n`,
+      manifest: `export default {docsiteUrl: 'https://widgets.example.com'};\n`,
     });
 
     const result = await validateLocalIntegration(pkgDir);
 
-    expect(byCode(result.issues, 'invalid_docsite_url')).toHaveLength(0);
-    expect(byCode(result.issues, 'unknown_manifest_key')).toHaveLength(0);
+    expect(result.issues).toEqual([]);
   });
 
   it('flags a broken codemod as invalid_codemod error', async () => {

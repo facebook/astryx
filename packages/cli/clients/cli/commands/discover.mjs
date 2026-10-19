@@ -49,12 +49,6 @@ const KIND_PLURALS = {
   'agent-doc': 'agent docs',
 };
 
-// A package's feedback object prints as its destination.
-const FEEDBACK_FORMAT = {
-  /** @param {{destination: string}} feedback */
-  feedback: feedback => feedback.destination,
-};
-
 // The list fields that hold item names, summarized in the package list.
 const ITEM_FIELDS = [
   'components',
@@ -136,7 +130,7 @@ function summarize(result) {
  * @returns {import('../formatters/index.mjs').RecordOptions}
  */
 function itemListOptions(full) {
-  if (full) return {format: FEEDBACK_FORMAT};
+  if (full) return {};
   /** @param {string[]} names */
   const summary = names => {
     const shown = names.slice(0, MAX_ITEMS_SHOWN);
@@ -146,10 +140,7 @@ function itemListOptions(full) {
       : shown.join(', ');
   };
   return {
-    format: {
-      ...Object.fromEntries(ITEM_FIELDS.map(field => [field, summary])),
-      ...FEEDBACK_FORMAT,
-    },
+    format: Object.fromEntries(ITEM_FIELDS.map(field => [field, summary])),
   };
 }
 
@@ -386,12 +377,7 @@ export function registerDiscover(program) {
           case 'discover.detail': {
             const d = result.data;
             /** @type {import('../formatters/index.mjs').Block[]} */
-            const blocks = [
-              record(d, {
-                omit: ['versions', 'install'],
-                format: FEEDBACK_FORMAT,
-              }),
-            ];
+            const blocks = [record(d, {omit: ['versions', 'install']})];
             if (d.versions) {
               const shown = d.version;
               const lines = versionLines(d.versions, {

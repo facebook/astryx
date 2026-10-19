@@ -56,8 +56,6 @@ const DEPENDENCY_FIELDS = [
  *   docs?: string[],
  *   themes?: string[],
  *   codemods?: string[],
- *   docsiteUrl?: string,
- *   feedback?: {destination: string},
  * }} InstalledPackage
  */
 
@@ -186,8 +184,6 @@ export async function describeInstalled(project, scanned) {
       docs: identities.docs,
       themes: identities.themes.map(t => t.slug),
       codemods: identities.codemods.map(c => `${c.version}/${c.id}`),
-      ...(integration.docsiteUrl ? {docsiteUrl: integration.docsiteUrl} : {}),
-      ...(integration.feedback ? {feedback: integration.feedback} : {}),
     });
   }
   return installed;
@@ -469,8 +465,6 @@ export function toEntry(pkg) {
     const values = /** @type {Record<string, unknown>} */ (pkg)[field];
     if (Array.isArray(values) && values.length > 0) entry[field] = values;
   }
-  if (pkg.docsiteUrl) entry.docsiteUrl = pkg.docsiteUrl;
-  if (pkg.feedback) entry.feedback = pkg.feedback;
   if (pkg.latest) entry.latest = pkg.latest;
   return /** @type {import('./discover.type.mjs').DiscoverListEntry} */ (entry);
 }
