@@ -333,36 +333,26 @@ for (const item of cases) {
       ).toHaveCount(1);
     }
 
-    const observed = await page.evaluate(() => {
-      const visibleSurface = Array.from(
-        document.querySelectorAll<HTMLElement>(
-          '[role="menu"], [role="dialog"]',
-        ),
-      ).find(element => {
-        const box = element.getBoundingClientRect();
-        return box.width > 0 && box.height > 0;
-      });
-      const box = visibleSurface?.getBoundingClientRect();
+    const observed = await surface.evaluate(element => {
+      const box = element.getBoundingClientRect();
       return {
         theme: document
           .querySelector('[data-astryx-theme]')
           ?.getAttribute('data-astryx-theme'),
         mode: document.documentElement.getAttribute('data-theme'),
-        direction: visibleSurface
-          ? getComputedStyle(visibleSurface).direction
-          : null,
+        direction: getComputedStyle(element).direction,
         viewport: {width: innerWidth, height: innerHeight},
         reducedMotion: matchMedia('(prefers-reduced-motion: reduce)').matches,
         horizontalOverflow:
           document.documentElement.scrollWidth > innerWidth + 1,
         fonts: document.fonts.status,
-        surfaceRole: visibleSurface?.getAttribute('role'),
+        surfaceRole:
+          element.getAttribute('role') ??
+          (element instanceof HTMLDialogElement ? 'dialog' : null),
         surfaceName:
-          visibleSurface?.getAttribute('aria-label') ??
-          visibleSurface?.getAttribute('aria-labelledby'),
-        geometry: box
-          ? {x: box.x, y: box.y, width: box.width, height: box.height}
-          : null,
+          element.getAttribute('aria-label') ??
+          element.getAttribute('aria-labelledby'),
+        geometry: {x: box.x, y: box.y, width: box.width, height: box.height},
       };
     });
     const geometryPass =
