@@ -481,6 +481,59 @@ describe('doctor integration — command', () => {
     expect(process.exitCode).toBeUndefined();
   });
 
+  it('components compares the entries of a family doc whose own source is missing', async () => {
+    writeComponentIntegration('AcmeTabs');
+    const dir = path.join(tmpDir, 'components');
+    const entry = (/** @type {string} */ name, /** @type {string} */ prop) =>
+      `{name: '${name}', displayName: '${name}', description: 'Fixture.', props: [{name: '${prop}', type: 'string', description: 'Text.'}]}`;
+    fs.writeFileSync(
+      path.join(dir, 'AcmeTabs.doc.mjs'),
+      `export default {type: 'component', name: 'AcmeTabs', displayName: 'AcmeTabs', description: 'Fixture.', props: [], hiddenComponents: ['AcmeTabsPanel'], components: [${entry('AcmeTabsItem', 'label')}, ${entry('AcmeTabsPanel', 'ghost')}]};\n`,
+    );
+    fs.rmSync(path.join(dir, 'AcmeTabs.tsx'), {force: true});
+    // The package's entry exports the members, so discovery records the
+    // listed one, though the family's own file is missing.
+    for (const name of ['AcmeTabsItem', 'AcmeTabsPanel']) {
+      fs.writeFileSync(
+        path.join(dir, `${name}.tsx`),
+        `export function ${name}(props: {label?: string; open?: boolean}) { return null; }\n`,
+      );
+      fs.appendFileSync(
+        path.join(tmpDir, 'index.ts'),
+        `export {${name}} from './components/${name}';\n`,
+      );
+    }
+    process.chdir(tmpDir);
+
+    await createProgram().parseAsync([
+      'node',
+      'astryx',
+      '--json',
+      'doctor',
+      'integration',
+      'components',
+    ]);
+    const report = JSON.parse(logCalls.join('\n')).data.propDrift;
+
+    expect(
+      report.findings.map(
+        (/** @type {any} */ f) => `${f.component}.${f.prop} ${f.kind}`,
+      ),
+    ).toEqual([
+      'AcmeTabsItem.open not_in_doc',
+      'AcmeTabsPanel.ghost not_in_code',
+      'AcmeTabsPanel.label not_in_doc',
+      'AcmeTabsPanel.open not_in_doc',
+    ]);
+    expect(report.unchecked).toEqual([
+      {
+        component: 'AcmeTabs',
+        doc: 'components/AcmeTabs.doc.mjs',
+        reason: 'no source file for AcmeTabs',
+      },
+    ]);
+  });
+
   it('components counts two docs of one name as two components, and compares a .doc.ts beside a .doc.mjs', async () => {
     writeComponentIntegration('AcmeTwin');
     const dir = path.join(tmpDir, 'components');

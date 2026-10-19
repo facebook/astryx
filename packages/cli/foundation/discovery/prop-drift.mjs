@@ -1669,6 +1669,27 @@ export async function comparePropDocs(components, options) {
   }
   /** @type {Map<string, Promise<any>>} */
   const docs = new Map();
+  /** @type {Set<string>} docs whose own record is here */
+  const owned = new Set();
+  // Its own props, and every entry no member record compares: a hidden one,
+  // or one discovery doesn't record. One whose source isn't found is listed
+  // as not compared.
+  const compareOwn = (
+    /** @type {PropDriftComponent} */ component,
+    /** @type {any} */ doc,
+  ) => {
+    const members = namesByDoc.get(component.docPath) ?? new Set();
+    for (const table of propTables(doc, component)) {
+      if (table.name !== component.name && members.has(table.name)) continue;
+      const sources = sourcesForEntry(table.name, component);
+      // One table per doc: two docs that each document a component both
+      // get compared.
+      const key = `${component.docPath}\0${sources[0]}\0${table.name}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      tables.push({doc: rel(component.docPath), ...table, sources});
+    }
+  };
   for (const component of components) {
     let doc;
     try {
@@ -1714,20 +1735,16 @@ export async function comparePropDocs(components, options) {
       });
       continue;
     }
-    // Its own props, and every entry no member record compares: a hidden
-    // one, or one discovery doesn't record. One whose source isn't found is
-    // listed as not compared.
-    const members = namesByDoc.get(component.docPath) ?? new Set();
-    for (const table of propTables(doc, component)) {
-      if (table.name !== component.name && members.has(table.name)) continue;
-      const sources = sourcesForEntry(table.name, component);
-      // One table per doc: two docs that each document a component both
-      // get compared.
-      const key = `${component.docPath}\0${sources[0]}\0${table.name}`;
-      if (seen.has(key)) continue;
-      seen.add(key);
-      tables.push({doc: rel(component.docPath), ...table, sources});
-    }
+    owned.add(component.docPath);
+    compareOwn(component, doc);
+  }
+  // A family doc whose own record is missing, because its same-stem source
+  // is, still has its own props and unrecorded entries compared or listed.
+  for (const [docPath, loading] of docs) {
+    if (owned.has(docPath)) continue;
+    const doc = await loading.catch(() => null);
+    if (doc == null || typeof doc !== 'object') continue;
+    compareOwn({name: docStem(docPath), docPath, sourcePath: null}, doc);
   }
   const report = comparePropTables(tables, {packageDir, resolveFrom});
   if (report.status === 'skipped') return report;
