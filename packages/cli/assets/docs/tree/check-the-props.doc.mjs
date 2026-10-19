@@ -89,7 +89,7 @@ docType:   boolean
             [
               '`required_mismatch`',
               '`required` disagrees with the code',
-              'Set `required: true` exactly when every caller must pass the prop. A prop required in only some members of a union is not compared, and one your `defaultProps` fills counts as optional, as it is to JSX callers',
+              'Set `required: true` exactly when every caller must pass the prop. One your `defaultProps` fills counts as optional, as it is to JSX callers, and so does one only some members of a union require, since a caller can leave it out: say in its description which variants need it. An entry that names several props (`value / onChange`) makes the same claim about each: give them separate entries when they differ',
             ],
           ],
         },

@@ -2,7 +2,8 @@
 
 /**
  * @file Documented props against a component's TypeScript props: each kind
- * of finding, and each component it cannot read.
+ * of finding, each component it cannot read, and the visible skip when the
+ * project has no TypeScript.
  */
 
 import * as fs from 'node:fs';
@@ -10,7 +11,12 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 import {createRequire} from 'node:module';
 import {afterEach, beforeEach, describe, expect, it} from 'vitest';
-import {comparePropDocs, comparePropTables} from './prop-drift.mjs';
+import {
+  comparePropDocs,
+  comparePropTables,
+  TYPESCRIPT_MISSING_REASON,
+} from './prop-drift.mjs';
+import {unusableTypeScriptReason} from './project-typescript.mjs';
 
 const require = createRequire(import.meta.url);
 const TYPESCRIPT_DIR = path.dirname(require.resolve('typescript/package.json'));
@@ -1059,7 +1065,7 @@ export function Empty(props: EmptyProps | Record<string, never>) { return null; 
     ]);
   });
 
-  it("reads props through React's component types, lists the ones typed any, and loads the ambient types tsconfig includes", async () => {
+  it("reads props through React's component types, lists the ones typed any or named by the element they render, and loads the ambient types tsconfig includes", async () => {
     withTypeScript();
     fs.mkdirSync(path.join(pkg, 'node_modules', '@types'), {recursive: true});
     fs.symlinkSync(
@@ -1078,10 +1084,13 @@ export function Empty(props: EmptyProps | Record<string, never>) { return null; 
       path.join(pkg, 'types', 'ambient.d.ts'),
       'interface AmbientProps { label?: string }\n',
     );
-    const source = `import {forwardRef, memo, type FC, type ComponentType} from 'react';
+    const source = `import {forwardRef, memo, type FC, type ComponentType, type ComponentPropsWithoutRef, type ElementType} from 'react';
+export function Poly<E extends ElementType = 'div'>(props: {as?: E; padding?: number} & Omit<ComponentPropsWithoutRef<E>, 'as' | 'padding'>) { return null; }
 export const Fc: FC<any> = () => null;
 export const Memo = memo((props: any) => null);
 export const Fwd = forwardRef<HTMLDivElement, any>((props, ref) => null);
+export const FwdOmit = forwardRef<HTMLDivElement, Omit<any, 'as'>>((props, ref) => null);
+export const FwdPartial = memo(forwardRef<HTMLDivElement, Partial<any>>((props, ref) => null));
 export function Ambient(props: AmbientProps) { return null; }
 export const Typed: ComponentType<{label?: string}> = () => null;
 const withName = <P,>(c: ComponentType<P>): ComponentType<P> => c;
@@ -1089,7 +1098,7 @@ export const Hoc = withName((props: {label?: string}) => null);`;
     const props = [prop('label', 'string'), prop('elevation', 'number')];
 
     const report = await compare(
-      'Fc Memo Fwd Ambient Typed Hoc'
+      'Fc Memo Fwd FwdOmit FwdPartial Poly Ambient Typed Hoc'
         .split(' ')
         .map(name => component(name, source, {props})),
     );
@@ -1100,10 +1109,89 @@ export const Hoc = withName((props: {label?: string}) => null);`;
         .map(name => `${name}.elevation not_in_code`),
     );
     expect(report.unchecked.map(u => [u.component, u.reason])).toEqual(
-      ['Fc', 'Fwd', 'Memo'].map(name => [
+      ['Fc', 'Fwd', 'FwdOmit', 'FwdPartial', 'Memo', 'Poly'].map(name => [
         name,
-        expect.stringContaining('typed `any`'),
+        expect.stringContaining(
+          name === 'Poly' ? 'from a type parameter' : 'typed `any`',
+        ),
       ]),
+    );
+  });
+
+  it('reads names that list several props, spreads, and fields through arrays, tuples, unions and index signatures', async () => {
+    withTypeScript();
+    const menu = component(
+      'Menu',
+      [
+        'export interface MenuProps {',
+        '  onOpen?: () => void;',
+        '  onClose?: () => void;',
+        '  value?: {label: string; items: ReadonlyArray<{id: string}>};',
+        '  labels?: Record<string, string>;',
+        '  slots?: {[key: `slot-${string}`]: string};',
+        "  rows?: Array<{kind: 'a'; total: string} | {kind: 'b'}>;",
+        '  grid?: Array<Array<{id: string}>>;',
+        '  pair?: readonly [{id: string}, {id: number}];',
+        '}',
+        'export function Menu(props: MenuProps) { return null; }',
+      ].join('\n'),
+      {
+        props: [
+          prop('onOpen / onClose', '() => void / () => void'),
+          prop('...rest', 'Omit<OtherProps, "x">'),
+          ...['value.label', 'value.items[].id', 'value.missing'].map(name =>
+            prop(name, 'string'),
+          ),
+          ...['labels.close', 'slots.slot-a', 'slots.other'].map(name =>
+            prop(name, 'string'),
+          ),
+          ...['rows[].total', 'grid[][].id', 'grid[][].size', 'pair[].id'].map(
+            name => prop(name, 'string'),
+          ),
+        ],
+      },
+    );
+
+    expect(kinds(await compare([menu]))).toEqual([
+      'Menu.grid[][].size not_in_code',
+      'Menu.slots.other not_in_code',
+      'Menu.value.missing not_in_code',
+    ]);
+  });
+
+  it('skips with a reason, and compares nothing, without a TypeScript it can use', async () => {
+    const badge = component(
+      'Badge',
+      'export function Badge(props: {label: string}) { return null; }\n',
+      {props: [prop('label', 'number')]},
+    );
+    const skipped = (/** @type {string} */ reason) => ({
+      status: 'skipped',
+      reason,
+      components: 0,
+      findings: [],
+      unchecked: [],
+    });
+
+    expect(await compare([badge])).toEqual(skipped(TYPESCRIPT_MISSING_REASON));
+    // TypeScript 7 has no JavaScript compiler API to load.
+    const dir = path.join(pkg, 'node_modules', 'typescript');
+    fs.mkdirSync(dir, {recursive: true});
+    fs.writeFileSync(
+      path.join(dir, 'package.json'),
+      JSON.stringify({
+        name: 'typescript',
+        version: '7.0.0',
+        exports: {'./package.json': './package.json'},
+      }),
+    );
+    expect(await compare([badge])).toEqual(
+      skipped(
+        unusableTypeScriptReason(
+          '7.0.0',
+          'documented props were not compared with the code',
+        ),
+      ),
     );
   });
 });
