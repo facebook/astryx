@@ -359,6 +359,18 @@ for (const item of cases) {
       observed.geometry !== null &&
       observed.geometry.width > 0 &&
       observed.geometry.height > 0;
+    let pointerPlacementPass = true;
+    if (item.storyId === 'core-contextmenu--pointer-presentation') {
+      const triggerBox = await page
+        .getByTestId('pointer-context-menu')
+        .boundingBox();
+      const surfaceBox = await surface.boundingBox();
+      pointerPlacementPass =
+        triggerBox !== null &&
+        surfaceBox !== null &&
+        Math.abs(surfaceBox.x - (triggerBox.x + 40)) <= 24 &&
+        Math.abs(surfaceBox.y - (triggerBox.y + 40)) <= 24;
+    }
 
     const png = await page.screenshot({animations: 'disabled', fullPage: true});
     const image = `${item.key}.png`;
@@ -386,7 +398,7 @@ for (const item of cases) {
         width: png.readUInt32BE(16),
         height: png.readUInt32BE(20),
       },
-      checks: {geometryPass},
+      checks: {geometryPass, pointerPlacementPass},
       passed:
         storybookSha === checkoutSha &&
         pageErrors.length === 0 &&
@@ -399,7 +411,8 @@ for (const item of cases) {
         !observed.horizontalOverflow &&
         observed.fonts === 'loaded' &&
         observed.surfaceRole === item.surface &&
-        geometryPass,
+        geometryPass &&
+        pointerPlacementPass,
     };
     fs.writeFileSync(path.join(OUTPUT, image), png);
     fs.writeFileSync(
