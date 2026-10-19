@@ -272,7 +272,7 @@ export const doc = {
     {
       value: 'theme.palette.generate',
       description:
-        'An author-reviewable OKLCH palette candidate, its reproducibility receipt, summary counts, and optional candidate/receipt file-write result.',
+        'An author-reviewable OKLCH palette response: recipe (`astryx-oklch-v1`), status (`candidate`), familyCount, stopCount, modes, candidate (`TonalPaletteCandidate`), and generationReceipt. The generationReceipt contains schemaVersion (1), recipe, generatorVersion (`palette-generator-v1`), candidateFormatVersion (`palette-typescript-v1` or `palette-json-v1`), candidateSha256, optional preview, resolved request, and diagnostics. File-write fields are output, receipt, preview, written, and reason (`exists` or null).',
     },
 
     // upgrade
