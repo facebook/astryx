@@ -3,7 +3,7 @@
 /**
  * @file Central registry of sandbox categories and persistent navigation.
  * @input Authored sandbox metadata and the generated template registry.
- * @output Typed category, home, and audit navigation entries.
+ * @output Typed category, home, audit and foundation smoke navigation entries.
  * @position Central registry of all sandbox pages, grouped by category.
  *
  * The "Templates" category is auto-populated from packages/cli/assets/templates/
@@ -234,6 +234,12 @@ export const categories: SandboxCategory[] = [
     description:
       'Interactive tools for building and exploring Astryx components.',
     pages: [
+      {
+        name: 'Foundation Smoke Check',
+        href: '/pages/foundation-smoke/',
+        description:
+          'Button, TextInput, Card and Table on one screen to verify CSS foundation padding before feature work',
+      },
       {
         name: 'Layout DSL',
         href: '/pages/layout-dsl/',

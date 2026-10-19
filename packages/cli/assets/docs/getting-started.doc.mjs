@@ -1,5 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+import {foundationLayers, foundationCoreCSS} from './tree/foundation-css.mjs';
+
 /** @type {import('@astryxdesign/cli/authoring').ReferenceDoc} */
 
 export const docs = {
@@ -74,9 +76,14 @@ export const docs = {
         {
           type: 'code',
           lang: 'css',
+          label: 'layers.css (import first)',
+          code: foundationLayers,
+        },
+        {
+          type: 'code',
+          lang: 'css',
           label: 'globals.css',
-          code: `@import '@astryxdesign/core/reset.css';
-@import '@astryxdesign/core/astryx.css';`,
+          code: foundationCoreCSS,
         },
         {
           type: 'prose',
@@ -86,7 +93,9 @@ export const docs = {
           type: 'code',
           lang: 'tsx',
           label: 'App root',
-          code: `import {Theme} from '@astryxdesign/core';
+          code: `import './layers.css';
+import './globals.css';
+import {Theme} from '@astryxdesign/core';
 import {themes, defaultThemeSlug} from './astryx-themes';
 
 <Theme theme={themes[defaultThemeSlug]}><App /></Theme>`,
@@ -110,7 +119,7 @@ import {themes, defaultThemeSlug} from './astryx-themes';
         },
         {
           type: 'prose',
-          text: 'Run {@link generic:use-a-theme} for the full theming guide.',
+          text: 'Run {@link generic:use-a-theme} for the full theming guide. Before building screens, scaffold and run the Foundation Smoke Test in {@link generic:migration-setup} under your own app CSS.',
         },
       ],
     },

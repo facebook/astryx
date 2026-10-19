@@ -32,6 +32,36 @@ Root-local development uses `/`. For staging under the docsite, run `SANDBOX_BAS
 
 Add `src/app/(sandbox)/pages/<slug>/page.tsx` for a sidebar-framed page, `(fullscreen)` for a template/preview shell, or `(raw)` for an unframed page. Add the navigation entry to `src/app/sandboxPages.ts` when the page belongs in the catalog. The route manifest discovers the page automatically. Generated template wrappers are owned by `scripts/sync-templates.js`, not hand-authored. When adding or intentionally removing a public deep link, review and update the checked `scripts/next-export-routes.json` route list along with the change; the contract test fails until the difference is accounted for.
 
+## Foundation smoke check
+
+Adopters can scaffold the same screen with `astryx template FoundationSmoke` and
+run the guard shipped in the CLI against their own app URL. See
+`astryx docs migration/migration-setup foundation-smoke-test`; no repository
+checkout is needed for that workflow.
+
+Open `/pages/foundation-smoke/` or Storybook **Core / FoundationSmoke / Default**.
+Both render the same Button, TextInput, Card and Table without local padding
+overrides. After `pnpm build`, run:
+
+```bash
+pnpm -F @astryxdesign/sandbox build
+pnpm exec playwright install chromium
+node .github/scripts/foundation-smoke.js --self-test --output-dir test-results/foundation-smoke
+```
+
+The guard reads all four logical padding sides on the labelled Button and fails
+on zero or unresolved values. It also requires the companion primitives to render.
+`--self-test` verifies that the same universal reset preserves padding in `reset`
+but is rejected in the later `product` layer and unlayered. Each case uses a fresh
+browser page. Screenshots and computed values are written to the output directory.
+This catches collapsed-padding foundations, not every theme or CSS integration error.
+
+For a built Storybook, pass `--storybook-dir apps/storybook/dist`. For a running
+smoke screen, pass `--url http://localhost:5173/pages/foundation-smoke/`; the URL
+must contain this composition. For a prefixed static build, pass its prefix as
+`--base-path /sandbox`. CI runs the Sandbox guard and failure controls after its
+production build.
+
 ## Key files
 
 - `vite.config.mts`, `src/main.tsx`, `src/route-entry.tsx`, `src/RouteView.tsx`, `src/entry-server.tsx`, `src/router.tsx`: prerendered routes, matching hydration, group layouts, navigation and base paths.
