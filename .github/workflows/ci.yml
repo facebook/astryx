@@ -2551,6 +2551,37 @@ jobs:
           retention-days: 30
           if-no-files-found: error
 
+      # ContextMenu owns pointer and touch presentations across cursor anchoring,
+      # selectable rows, sections, inline triggers, RTL, and narrow viewports.
+      # Its audit lane binds the rendered matrix to the exact pull-request head.
+      - name: Run ContextMenu audit browser evidence
+        if: ${{ !cancelled() && github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, '[Component Audit] ContextMenu:') }}
+        env:
+          ASTRYX_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          status=0
+          node .github/scripts/accessibility-audit.js \
+            --storybook-dir apps/storybook/dist \
+            --output context-menu-a11y-report.json \
+            --components ContextMenu \
+            --baseline .github/a11y-baseline.json \
+            --fail-on-new || status=1
+          pnpm exec playwright test \
+            packages/core/src/ContextMenu/__tests__/ContextMenuAudit.a11y.chromium.spec.ts \
+            --project chromium || status=1
+          exit "$status"
+
+      - name: Upload ContextMenu audit evidence
+        if: always() && github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, '[Component Audit] ContextMenu:')
+        uses: actions/upload-artifact@v7
+        with:
+          name: context-menu-audit-evidence-${{ needs.build-storybook.outputs.short_hash }}
+          path: |
+            context-menu-a11y-report.json
+            context-menu-audit-evidence/
+          retention-days: 30
+          if-no-files-found: error
+
       # ContextMenuItem opens from a pointer gesture after the trigger renders.
       # The focused selector wait binds axe to the open menu rather than letting
       # the trigger's first frame satisfy generic Storybook readiness.
