@@ -9,10 +9,8 @@
  * @position api/integration (internal; not exported from ./api)
  */
 
-import * as path from 'node:path';
 import {
   discoverValidIntegrationComponents,
-  docStem,
   forEachIntegrationDoc,
   integrationSourceForDoc,
 } from '../../foundation/discovery/component-discovery.mjs';
@@ -31,18 +29,15 @@ export async function integrationPropDrift(integration, cwd) {
     .__packageDir;
   const {components} = await discoverValidIntegrationComponents(integration);
   // Every doc the package ships has its prop tables compared or listed as not
-  // compared. A doc discovery leaves out (a hidden one, or one whose source
-  // or own file doesn't load) gets a record under its file name. A doc that
-  // another with the same stem beside it outranks is the same doc.
-  const stems = new Set(
-    components.map(c => path.join(path.dirname(c.docPath), docStem(c.docPath))),
-  );
+  // compared. A doc discovery leaves out (a hidden one, a second doc for one
+  // name, or one whose source or own file doesn't load) gets a record under
+  // its file name.
+  const recorded = new Set(components.map(c => c.docPath));
   /** @type {typeof components} */
   const left = [];
   forEachIntegrationDoc(integration?.components, (docPath, stem) => {
-    const key = path.join(path.dirname(docPath), stem);
-    if (stems.has(key)) return;
-    stems.add(key);
+    if (recorded.has(docPath)) return;
+    recorded.add(docPath);
     left.push({
       name: stem,
       package: integration.name,

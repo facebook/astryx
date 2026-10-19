@@ -481,6 +481,65 @@ describe('doctor integration — command', () => {
     expect(process.exitCode).toBeUndefined();
   });
 
+  it('components counts two docs of one name as two components, and compares a .doc.ts beside a .doc.mjs', async () => {
+    writeComponentIntegration('AcmeTwin');
+    const dir = path.join(tmpDir, 'components');
+    const doc = (/** @type {string} */ name, /** @type {string} */ prop) =>
+      `export default {type: 'component', name: '${name}', displayName: '${name}', description: 'Fixture.', props: [{name: '${prop}', type: 'string', description: 'Text.'}]};\n`;
+    fs.writeFileSync(
+      path.join(dir, 'AcmeTwin.doc.mjs'),
+      doc('AcmeTwin', 'tone'),
+    );
+    fs.writeFileSync(
+      path.join(dir, 'AcmeTwin.doc.ts'),
+      doc('AcmeTwin', 'size'),
+    );
+    fs.writeFileSync(
+      path.join(dir, 'AcmeTwin.tsx'),
+      'export function AcmeTwin(props: {label?: string}) { return null; }\n',
+    );
+    for (const folder of ['a', 'b']) {
+      fs.mkdirSync(path.join(dir, folder));
+      fs.writeFileSync(
+        path.join(dir, folder, 'AcmeX.doc.mjs'),
+        doc('AcmeX', folder),
+      );
+      fs.writeFileSync(
+        path.join(dir, folder, 'AcmeX.tsx'),
+        'export function AcmeX() { return null; }\n',
+      );
+    }
+    process.chdir(tmpDir);
+    const run = async (/** @type {string[]} */ flags) => {
+      logCalls.length = 0;
+      await createProgram().parseAsync([
+        'node',
+        'astryx',
+        ...flags,
+        'doctor',
+        'integration',
+        'components',
+      ]);
+      return logCalls.join('\n');
+    };
+
+    const report = JSON.parse(await run(['--json'])).data.propDrift;
+    const output = await run([]);
+
+    expect(
+      report.findings
+        .filter(f => f.kind === 'not_in_code')
+        .map(f => `${f.doc} ${f.prop}`)
+        .sort(),
+    ).toEqual([
+      'components/AcmeTwin.doc.mjs tone',
+      'components/AcmeTwin.doc.ts size',
+      'components/a/AcmeX.doc.mjs a',
+      'components/b/AcmeX.doc.mjs b',
+    ]);
+    expect(output).toMatch(/ in 4 of 4 component\(s\) compared /);
+  });
+
   it('components prints every field of the props comparison that JSON carries', async () => {
     writeComponentIntegration('AcmeBadge');
     fs.writeFileSync(

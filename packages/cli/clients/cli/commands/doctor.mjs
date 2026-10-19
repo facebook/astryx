@@ -188,7 +188,10 @@ function propDriftBlocks(report, failed) {
   }
   const blocks = [];
   if (report.findings.length > 0) {
-    const components = new Set(report.findings.map(f => f.component)).size;
+    // Two docs of one name are two components.
+    const components = new Set(
+      report.findings.map(f => `${f.doc}\0${f.component}`),
+    ).size;
     blocks.push(
       records(report.findings, {
         fields: [
