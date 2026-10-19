@@ -2551,6 +2551,39 @@ jobs:
           retention-days: 30
           if-no-files-found: error
 
+      # DropdownMenuDivider is a hidden compound subcomponent, so the dedicated
+      # story and sensor lane keep its open-menu semantics, paint, target
+      # placement, keyboard exclusion, theme, direction, and narrow layout bound
+      # to the exact pull-request head.
+      - name: Run DropdownMenuDivider audit browser evidence
+        if: ${{ !cancelled() && github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, '[Component Audit] DropdownMenuDivider:') }}
+        env:
+          ASTRYX_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          status=0
+          node .github/scripts/accessibility-audit.js \
+            --storybook-dir apps/storybook/dist \
+            --output dropdown-menu-divider-a11y-report.json \
+            --components DropdownMenuDivider \
+            --ready-selector '[role="menu"]' \
+            --baseline .github/a11y-baseline.json \
+            --fail-on-new || status=1
+          pnpm exec playwright test \
+            packages/core/src/DropdownMenu/__tests__/DropdownMenuDividerAudit.a11y.chromium.spec.ts \
+            --project chromium || status=1
+          exit "$status"
+
+      - name: Upload DropdownMenuDivider audit evidence
+        if: always() && github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, '[Component Audit] DropdownMenuDivider:')
+        uses: actions/upload-artifact@v7
+        with:
+          name: dropdown-menu-divider-audit-evidence-${{ needs.build-storybook.outputs.short_hash }}
+          path: |
+            dropdown-menu-divider-a11y-report.json
+            dropdown-menu-divider-audit-evidence/
+          retention-days: 30
+          if-no-files-found: error
+
       # ContextMenu owns pointer and touch presentations across cursor anchoring,
       # selectable rows, sections, inline triggers, RTL, and narrow viewports.
       # Its audit lane binds the rendered matrix to the exact pull-request head.
