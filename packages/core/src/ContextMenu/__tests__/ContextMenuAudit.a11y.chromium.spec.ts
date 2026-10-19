@@ -241,18 +241,31 @@ async function settle(page: Page) {
   await page.waitForTimeout(40);
 }
 
-async function openSurface(page: Page, item: AuditCase): Promise<Locator> {
-  if (item.triggerText) {
-    await page
-      .getByText(item.triggerText, {exact: true})
-      .first()
-      .dispatchEvent('contextmenu', {
-        button: 2,
-        clientX: 40,
-        clientY: 40,
-        detail: 1,
-      });
+async function openSurface(
+  page: Page,
+  item: AuditCase,
+): Promise<{surface: Locator; pointer: {x: number; y: number}}> {
+  const trigger =
+    item.storyId === 'core-contextmenu--pointer-presentation'
+      ? page.getByTestId('pointer-context-menu')
+      : item.storyId === 'core-contextmenu--bottom-sheet-presentation'
+        ? page.getByTestId('bottom-sheet-context-menu')
+        : item.triggerText
+          ? page.getByText(item.triggerText, {exact: true}).first()
+          : null;
+  if (trigger === null) {
+    throw new Error(`No trigger configured for ${item.key}`);
   }
+  await trigger.scrollIntoViewIfNeeded();
+  const triggerBox = await trigger.boundingBox();
+  if (triggerBox === null) {
+    throw new Error(`Trigger has no rendered box for ${item.key}`);
+  }
+  const pointer = {
+    x: triggerBox.x + Math.min(40, triggerBox.width / 2),
+    y: triggerBox.y + Math.min(40, triggerBox.height / 2),
+  };
+  await page.mouse.click(pointer.x, pointer.y, {button: 'right'});
   const surface =
     item.surface === 'dialog'
       ? page.getByRole('dialog').last()
@@ -260,7 +273,7 @@ async function openSurface(page: Page, item: AuditCase): Promise<Locator> {
         ? page.getByRole('menu', {name: item.menuName}).last()
         : page.getByRole('menu').last();
   await expect(surface).toBeVisible();
-  return surface;
+  return {surface, pointer};
 }
 
 test.beforeAll(async () => {
@@ -306,7 +319,7 @@ for (const item of cases) {
     page.on('pageerror', error => pageErrors.push(String(error)));
     await page.goto(storyUrl(item), {waitUntil: 'load'});
     await page.locator('#storybook-root').waitFor();
-    const surface = await openSurface(page, item);
+    const {surface, pointer} = await openSurface(page, item);
     await settle(page);
 
     const menuItems = page.locator(
@@ -361,15 +374,15 @@ for (const item of cases) {
       observed.geometry.height > 0;
     let pointerPlacementPass = true;
     if (item.storyId === 'core-contextmenu--pointer-presentation') {
-      const triggerBox = await page
-        .getByTestId('pointer-context-menu')
-        .boundingBox();
       const surfaceBox = await surface.boundingBox();
       pointerPlacementPass =
-        triggerBox !== null &&
         surfaceBox !== null &&
-        Math.abs(surfaceBox.x - (triggerBox.x + 40)) <= 24 &&
-        Math.abs(surfaceBox.y - (triggerBox.y + 40)) <= 24;
+        Math.abs(
+          (item.direction === 'rtl'
+            ? surfaceBox.x + surfaceBox.width
+            : surfaceBox.x) - pointer.x,
+        ) <= 24 &&
+        Math.abs(surfaceBox.y - pointer.y) <= 24;
     }
 
     const png = await page.screenshot({animations: 'disabled', fullPage: true});
