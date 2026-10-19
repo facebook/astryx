@@ -928,6 +928,36 @@ describe('SideNavItem', () => {
     expect(indentOf(security)).toBe('calc(1 * var(--spacing-6))');
   });
 
+  it("lets a caller's inline-start padding replace the indent", () => {
+    // The caller's `style` composes after the indent: a caller-set
+    // inline-start padding is an inline declaration, so it wins over the
+    // indent's class rule on the element that carries the indent, on both
+    // the ordinary and the split row path.
+    render(
+      <SideNavItem label="Settings">
+        <SideNavItem
+          label="General"
+          href="/settings/general"
+          style={{paddingInlineStart: '20px'}}
+        />
+        <SideNavItem
+          label="Security"
+          href="/settings/security"
+          style={{paddingInlineStart: '20px'}}>
+          <SideNavItem label="Keys" href="/settings/security/keys" />
+        </SideNavItem>
+      </SideNavItem>,
+    );
+    const general = screen.getByRole('link', {name: 'General'});
+    expect(general.style.paddingInlineStart).toBe('20px');
+    const security = screen.getByRole('link', {name: 'Security'});
+    expect(security.style.paddingInlineStart).toBe('20px');
+    // A row whose caller sets no padding keeps its indent.
+    expect(indentOf(screen.getByRole('link', {name: 'Keys'}))).toBe(
+      'calc(var(--spacing-2) + 2 * var(--spacing-6))',
+    );
+  });
+
   it('indents a small nested row from the small row padding', () => {
     render(
       <SideNavItem label="Settings">
