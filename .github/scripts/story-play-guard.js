@@ -261,6 +261,12 @@ const TARGETS = [
     guards: 'just above the collapse, labels stay beside their controls',
   },
   {
+    component: 'Grid',
+    story: 'core-grid--grid-span-with-long-content',
+    guards:
+      'a full-width GridSpan holding a Tokenizer with a long token stays within its 500px host',
+  },
+  {
     component: 'TabList',
     story: 'core-tablist--full-bleed-geometry',
     guards:

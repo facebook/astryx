@@ -1,12 +1,15 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import type {Meta, StoryObj} from '@storybook/react';
+import {expect} from 'storybook/test';
 import * as stylex from '@stylexjs/stylex';
 import {Grid, GridSpan} from '@astryxdesign/core/Grid';
 import {Card} from '@astryxdesign/core/Card';
 import {Section} from '@astryxdesign/core/Section';
 import {Text} from '@astryxdesign/core/Text';
 import {VStack} from '@astryxdesign/core/Stack';
+import {Tokenizer} from '@astryxdesign/core/Tokenizer';
+import type {SearchableItem} from '@astryxdesign/core/Typeahead';
 import {
   colorVars,
   spacingVars,
@@ -45,6 +48,11 @@ const styles = stylex.create({
   },
   sectionLabel: {
     marginBlockEnd: spacingVars['--spacing-2'],
+  },
+  narrowHost: {
+    maxWidth: 500,
+    minWidth: 0,
+    outline: `1px dashed ${colorVars['--color-border-emphasized']}`,
   },
 });
 
@@ -294,6 +302,62 @@ export const WithGridSpan: Story = {
       </Grid>
     </div>
   ),
+};
+
+const longTokens: SearchableItem[] = [
+  {id: 'short', label: 'Design'},
+  {
+    id: 'long',
+    label:
+      'A long token label with spaces that is much wider than the 500px grid cell it sits in, so it has to truncate',
+  },
+];
+
+const longTokenSource = {
+  search: () => longTokens,
+  bootstrap: () => longTokens,
+};
+
+export const GridSpanWithLongContent: Story = {
+  name: 'GridSpan contains a long token (#7438)',
+  render: () => (
+    <div {...stylex.props(styles.container)}>
+      <Text type="supporting" xstyle={styles.sectionLabel}>
+        The dashed box is 500px wide. The long token truncates inside it.
+      </Text>
+      <div data-testid="host" {...stylex.props(styles.narrowHost)}>
+        <Grid columns={{minWidth: 280, max: 2}} gap={4}>
+          <GridSpan columns="full">
+            <VStack>
+              <Tokenizer
+                label="Labels"
+                width="100%"
+                searchSource={longTokenSource}
+                value={longTokens}
+                onChange={() => {}}
+              />
+            </VStack>
+          </GridSpan>
+        </Grid>
+      </div>
+    </div>
+  ),
+  play: async ({canvasElement}) => {
+    const host = canvasElement.querySelector('[data-testid="host"]');
+    const span = host?.querySelector('.astryx-grid-span');
+    const field = span?.firstElementChild;
+    if (!host || !span || !field) {
+      throw new Error('Expected the host, its GridSpan and the field stack');
+    }
+    // The span's single column must not grow past the host to fit a token.
+    const hostRight = host.getBoundingClientRect().right;
+    await expect(span.getBoundingClientRect().right).toBeLessThanOrEqual(
+      hostRight + 0.5,
+    );
+    await expect(field.getBoundingClientRect().right).toBeLessThanOrEqual(
+      hostRight + 0.5,
+    );
+  },
 };
 
 export const GridSpanWithRows: Story = {

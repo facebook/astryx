@@ -754,6 +754,285 @@ describe('integrationPackCheck', () => {
     );
   });
 
+  it('checks the export a component doc names when its file is named otherwise', async () => {
+    fs.writeFileSync(
+      path.join(tmpDir, 'package.json'),
+      `${JSON.stringify({
+        name: '@acme/widgets',
+        version: '1.0.0',
+        files: ['astryx.integration.mjs', 'components'],
+        exports: {'./components/Slides': './components/Slides.tsx'},
+      })}\n`,
+    );
+    fs.writeFileSync(
+      path.join(tmpDir, 'astryx.integration.mjs'),
+      "export default {components: './components'};\n",
+    );
+    fs.mkdirSync(path.join(tmpDir, 'components'));
+    // Slides.tsx exports AcmeCarousel and nothing named Slides.
+    fs.writeFileSync(
+      path.join(tmpDir, 'components', 'Slides.tsx'),
+      'export function AcmeCarousel() { return null; }\n',
+    );
+    fs.writeFileSync(
+      path.join(tmpDir, 'components', 'Slides.doc.mjs'),
+      "export default {type: 'component', name: 'AcmeCarousel', import: '@acme/widgets/components/Slides', description: 'x', props: []};\n",
+    );
+
+    const result = await integrationPackCheck({cwd: tmpDir});
+    expect(result.data.packable).toBe(true);
+    expect(result.data.contributions.packed.components).toEqual([
+      'AcmeCarousel',
+    ]);
+  });
+
+  it('checks each family member against the module its family doc imports', async () => {
+    fs.writeFileSync(
+      path.join(tmpDir, 'package.json'),
+      `${JSON.stringify({
+        name: '@acme/widgets',
+        version: '1.0.0',
+        files: ['astryx.integration.mjs', 'components'],
+        exports: {'./tabs': './components/tabs/index.ts'},
+      })}\n`,
+    );
+    fs.writeFileSync(
+      path.join(tmpDir, 'astryx.integration.mjs'),
+      "export default {components: './components'};\n",
+    );
+    const dir = path.join(tmpDir, 'components', 'tabs');
+    fs.mkdirSync(dir, {recursive: true});
+    fs.writeFileSync(
+      path.join(dir, 'AcmeTabs.tsx'),
+      'export function AcmeTabs() { return null; }\nexport function AcmeTabsLegacy() { return null; }\n',
+    );
+    fs.writeFileSync(
+      path.join(dir, 'tab.tsx'),
+      'export function AcmeTab() { return null; }\n',
+    );
+    // The module apps import exports AcmeTabs and AcmeTab, not AcmeTabsLegacy.
+    fs.writeFileSync(
+      path.join(dir, 'index.ts'),
+      "export {AcmeTabs} from './AcmeTabs';\nexport {AcmeTab} from './tab';\n",
+    );
+    fs.writeFileSync(
+      path.join(dir, 'AcmeTabs.doc.mjs'),
+      "export default {type: 'component', name: 'AcmeTabs', import: '@acme/widgets/tabs', description: 'x', components: [{name: 'AcmeTabs', description: 'x', props: []}, {name: 'AcmeTab', description: 'x', props: []}, {name: 'AcmeTabsLegacy', description: 'x', props: []}]};\n",
+    );
+
+    const result = await integrationPackCheck({cwd: tmpDir});
+
+    expect(result.data.issues).toEqual([]);
+    expect(result.data.packable).toBe(true);
+    expect(result.data.contributions.packed.components).toEqual([
+      'AcmeTab',
+      'AcmeTabs',
+    ]);
+  });
+
+  it.each([
+    'a clean checkout',
+    'a stale build',
+    'a stale build that exports more',
+  ])(
+    'reads members a family imports from output its pack lifecycle builds, from %s',
+    async start => {
+      fs.writeFileSync(
+        path.join(tmpDir, 'package.json'),
+        `${JSON.stringify({
+          name: '@acme/widgets',
+          version: '1.0.0',
+          files: ['astryx.integration.mjs', 'components', 'dist'],
+          exports: {'./tabs': './dist/tabs/index.mjs'},
+          scripts: {prepack: 'node build.mjs'},
+        })}\n`,
+      );
+      fs.writeFileSync(
+        path.join(tmpDir, 'astryx.integration.mjs'),
+        "export default {components: './components'};\n",
+      );
+      // The build writes the module the family imports; a clean checkout has none.
+      fs.writeFileSync(
+        path.join(tmpDir, 'build.mjs'),
+        "import fs from 'node:fs';\nfs.mkdirSync('dist/tabs', {recursive: true});\nfs.writeFileSync('dist/tabs/index.mjs', \"export {AcmeTabs, AcmeTab} from '../../components/tabs/AcmeTabs.tsx';\\n\");\n",
+      );
+      const dir = path.join(tmpDir, 'components', 'tabs');
+      fs.mkdirSync(dir, {recursive: true});
+      fs.writeFileSync(
+        path.join(dir, 'AcmeTabs.tsx'),
+        'export function AcmeTabs() { return null; }\nexport function AcmeTab() { return null; }\nexport function AcmeTabLegacy() { return null; }\n',
+      );
+      fs.writeFileSync(
+        path.join(dir, 'AcmeTabs.doc.mjs'),
+        "export default {type: 'component', name: 'AcmeTabs', import: '@acme/widgets/tabs', description: 'x', components: [{name: 'AcmeTabs', description: 'x', props: []}, {name: 'AcmeTab', description: 'x', props: []}, {name: 'AcmeTabLegacy', description: 'x', props: []}]};\n",
+      );
+
+      if (start !== 'a clean checkout') {
+        // An earlier build: before AcmeTab was exported, or while AcmeTabLegacy
+        // still was.
+        const names =
+          start === 'a stale build'
+            ? 'AcmeTabs'
+            : 'AcmeTabs, AcmeTab, AcmeTabLegacy';
+        fs.mkdirSync(path.join(tmpDir, 'dist', 'tabs'), {recursive: true});
+        fs.writeFileSync(
+          path.join(tmpDir, 'dist', 'tabs', 'index.mjs'),
+          `export {${names}} from '../../components/tabs/AcmeTabs.tsx';\n`,
+        );
+      }
+
+      const result = await integrationPackCheck({cwd: tmpDir});
+
+      expect(result.data.issues).toEqual([]);
+      expect(result.data.packable).toBe(true);
+      expect(result.data.contributions.local.components).toEqual(
+        result.data.contributions.packed.components,
+      );
+    },
+  );
+
+  it.each(['a clean checkout', 'an incremental build'])(
+    'reads members built output re-exports from compiled files, from %s',
+    async start => {
+      fs.writeFileSync(
+        path.join(tmpDir, 'package.json'),
+        `${JSON.stringify({
+          name: '@acme/widgets',
+          version: '1.0.0',
+          files: ['astryx.integration.mjs', 'components', 'dist'],
+          exports: {'./tabs': './dist/tabs/index.mjs'},
+          scripts: {prepack: 'node build.mjs'},
+        })}\n`,
+      );
+      fs.writeFileSync(
+        path.join(tmpDir, 'astryx.integration.mjs'),
+        "export default {components: './components'};\n",
+      );
+      // The build compiles each source to its own file and, like an
+      // incremental build, rewrites only the files whose output changed.
+      const output = {
+        'index.mjs':
+          "export {AcmeTabs} from './tabs.mjs';\nexport * from './tab.mjs';\n",
+        'tabs.mjs': 'export function AcmeTabs() { return null; }\n',
+        'tab.mjs': 'export function AcmeTab() { return null; }\n',
+      };
+      fs.writeFileSync(
+        path.join(tmpDir, 'build.mjs'),
+        `import fs from 'node:fs';\nconst output = ${JSON.stringify(output)};\nfs.mkdirSync('dist/tabs', {recursive: true});\nfor (const [file, text] of Object.entries(output)) {\n  const target = 'dist/tabs/' + file;\n  if (!fs.existsSync(target) || fs.readFileSync(target, 'utf-8') !== text) fs.writeFileSync(target, text);\n}\n`,
+      );
+      const dir = path.join(tmpDir, 'components', 'tabs');
+      fs.mkdirSync(dir, {recursive: true});
+      fs.writeFileSync(
+        path.join(dir, 'AcmeTabs.tsx'),
+        'export function AcmeTabs() { return null; }\n',
+      );
+      fs.writeFileSync(
+        path.join(dir, 'AcmeTab.tsx'),
+        'export function AcmeTab() { return null; }\n',
+      );
+      fs.writeFileSync(
+        path.join(dir, 'AcmeTabs.doc.mjs'),
+        "export default {type: 'component', name: 'AcmeTabs', import: '@acme/widgets/tabs', description: 'x', components: [{name: 'AcmeTabs', description: 'x', props: []}, {name: 'AcmeTab', description: 'x', props: []}]};\n",
+      );
+      if (start === 'an incremental build') {
+        // An earlier build from before AcmeTab existed: the file the import
+        // names is already current, so the build leaves it untouched.
+        fs.mkdirSync(path.join(tmpDir, 'dist', 'tabs'), {recursive: true});
+        for (const [file, text] of Object.entries({...output, 'tab.mjs': ''})) {
+          fs.writeFileSync(path.join(tmpDir, 'dist', 'tabs', file), text);
+        }
+      }
+
+      const result = await integrationPackCheck({cwd: tmpDir});
+
+      expect(result.data.issues).toEqual([]);
+      expect(result.data.packable).toBe(true);
+      expect(result.data.contributions.packed.components).toEqual([
+        'AcmeTab',
+        'AcmeTabs',
+      ]);
+      expect(result.data.contributions.local.components).toEqual(
+        result.data.contributions.packed.components,
+      );
+    },
+  );
+
+  it('passes a member another folder declares, which has no source', async () => {
+    fs.writeFileSync(
+      path.join(tmpDir, 'package.json'),
+      `${JSON.stringify({
+        name: '@acme/widgets',
+        version: '1.0.0',
+        files: ['astryx.integration.mjs', 'components'],
+        exports: {'./menu': './components/menu/index.ts'},
+      })}\n`,
+    );
+    fs.writeFileSync(
+      path.join(tmpDir, 'astryx.integration.mjs'),
+      "export default {components: './components'};\n",
+    );
+    const menu = path.join(tmpDir, 'components', 'menu');
+    const shared = path.join(tmpDir, 'components', 'shared');
+    fs.mkdirSync(menu, {recursive: true});
+    fs.mkdirSync(shared, {recursive: true});
+    fs.writeFileSync(
+      path.join(menu, 'AcmeMenu.doc.mjs'),
+      "export default {type: 'component', name: 'AcmeMenu', import: '@acme/widgets/menu', description: 'x', components: [{name: 'AcmeMenuItem', description: 'x', props: []}]};\n",
+    );
+    fs.writeFileSync(
+      path.join(menu, 'AcmeMenu.tsx'),
+      'export function AcmeMenu() { return null; }\n',
+    );
+    fs.writeFileSync(
+      path.join(menu, 'index.ts'),
+      "export {AcmeMenu} from './AcmeMenu';\nexport {AcmeMenuItem} from '../shared/AcmeMenuItem';\n",
+    );
+    fs.writeFileSync(
+      path.join(shared, 'AcmeMenuItem.tsx'),
+      'export function AcmeMenuItem() { return null; }\n',
+    );
+
+    const result = await integrationPackCheck({cwd: tmpDir});
+
+    expect(result.data.issues).toEqual([]);
+    expect(result.data.packable).toBe(true);
+    expect(result.data.contributions.packed.components).toEqual([
+      'AcmeMenu',
+      'AcmeMenuItem',
+    ]);
+  });
+
+  it('reports a family doc the loader rejects once, not once per member', async () => {
+    fs.writeFileSync(
+      path.join(tmpDir, 'package.json'),
+      `${JSON.stringify({
+        name: '@acme/widgets',
+        version: '1.0.0',
+        files: ['astryx.integration.mjs', 'components'],
+      })}\n`,
+    );
+    fs.writeFileSync(
+      path.join(tmpDir, 'astryx.integration.mjs'),
+      "export default {components: './components'};\n",
+    );
+    fs.mkdirSync(path.join(tmpDir, 'components'));
+    fs.writeFileSync(
+      path.join(tmpDir, 'components', 'AcmeTabs.tsx'),
+      'export function AcmeTabs() { return null; }\nexport function AcmeTab() { return null; }\nexport function AcmeTabPanel() { return null; }\n',
+    );
+    // A displayName that is not a string makes the loader reject the doc.
+    fs.writeFileSync(
+      path.join(tmpDir, 'components', 'AcmeTabs.doc.mjs'),
+      "export default {type: 'component', name: 'AcmeTabs', displayName: 1, description: 'x', components: [{name: 'AcmeTab', description: 'x', props: []}, {name: 'AcmeTabPanel', description: 'x', props: []}]};\n",
+    );
+
+    const result = await integrationPackCheck({cwd: tmpDir});
+    const codes = result.data.issues.map(issue => issue.code);
+
+    expect(codes).toContain('component_doc_unloadable');
+    expect(codes.length).toBe(new Set(codes).size);
+  });
+
   it('passes a generated component through its exact packed export', async () => {
     fs.writeFileSync(
       path.join(tmpDir, 'package.json'),
@@ -809,6 +1088,86 @@ describe('integrationPackCheck', () => {
     expect(result.data.issues).toContainEqual(
       expect.objectContaining({code: 'component_export_missing'}),
     );
+  });
+
+  it('does not count a type-only re-export as the component', async () => {
+    fs.writeFileSync(
+      path.join(tmpDir, 'package.json'),
+      `${JSON.stringify({
+        name: '@acme/widgets',
+        version: '1.0.0',
+        files: ['astryx.integration.mjs', 'src'],
+        exports: {'.': './src/index.ts'},
+      })}\n`,
+    );
+    fs.writeFileSync(
+      path.join(tmpDir, 'astryx.integration.mjs'),
+      "export default {components: './src'};\n",
+    );
+    fs.mkdirSync(path.join(tmpDir, 'src'));
+    fs.writeFileSync(
+      path.join(tmpDir, 'src', 'index.ts'),
+      "export type {AcmeWidget} from './AcmeWidget';\n",
+    );
+    fs.writeFileSync(
+      path.join(tmpDir, 'src', 'AcmeWidget.tsx'),
+      'export function AcmeWidget() { return null; }\n',
+    );
+    fs.writeFileSync(
+      path.join(tmpDir, 'src', 'AcmeWidget.doc.mjs'),
+      "export default {type: 'component', name: 'AcmeWidget', import: '@acme/widgets', description: 'Widget.', props: []};\n",
+    );
+
+    const result = await integrationPackCheck({cwd: tmpDir});
+
+    expect(result.data.issues).toContainEqual(
+      expect.objectContaining({code: 'component_export_missing'}),
+    );
+  });
+
+  it('follows a re-export of a folder to its index file', async () => {
+    // `./primitives` names a folder: TypeScript and bundlers load its index file.
+    fs.writeFileSync(
+      path.join(tmpDir, 'package.json'),
+      `${JSON.stringify({
+        name: '@acme/widgets',
+        version: '1.0.0',
+        files: ['astryx.integration.mjs', 'src'],
+        exports: {'.': './src/index.ts'},
+      })}\n`,
+    );
+    fs.writeFileSync(
+      path.join(tmpDir, 'astryx.integration.mjs'),
+      "export default {components: './src'};\n",
+    );
+    const primitives = path.join(tmpDir, 'src', 'primitives');
+    fs.mkdirSync(primitives, {recursive: true});
+    fs.writeFileSync(
+      path.join(tmpDir, 'src', 'index.ts'),
+      "export * from './primitives';\n",
+    );
+    fs.writeFileSync(
+      path.join(primitives, 'index.ts'),
+      "export * from './AcmeWidget';\n",
+    );
+    fs.writeFileSync(
+      path.join(primitives, 'AcmeWidget.tsx'),
+      'export function AcmeWidget() { return null; }\n',
+    );
+    fs.writeFileSync(
+      path.join(primitives, 'AcmeWidget.doc.mjs'),
+      "export default {type: 'component', name: 'AcmeWidget', import: '@acme/widgets', description: 'Widget.', props: []};\n",
+    );
+
+    const result = await integrationPackCheck({cwd: tmpDir});
+
+    expect(result.data.issues).not.toContainEqual(
+      expect.objectContaining({code: 'component_export_missing'}),
+    );
+    expect(
+      result.data.packable,
+      JSON.stringify(result.data.issues, null, 2),
+    ).toBe(true);
   });
 
   it('fails when packed template source is hidden by package exports', async () => {

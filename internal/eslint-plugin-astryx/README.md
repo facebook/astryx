@@ -587,7 +587,9 @@ const styles = stylex.create({
 
 **Scope:** `:hover` on the styled element itself. A key that hovers something else — `:is(th:hover *)`, `stylex.when.ancestor(':hover')` — styles a descendant when an **ancestor** is hovered, which is a different question (a row may legitimately highlight around a disabled control) and is left alone. The rule is deliberately unconditional rather than scoped to components that have a disabled state: on an element that can never be disabled the guard is a no-op, and asking the question per component is what leaves the gaps.
 
-Autofixable, and mirrored at runtime by `.github/scripts/disabled-hover-audit.js`, which forces `:hover` on every disabled element in every story in Chromium and fails on any painted difference.
+**Pseudo-elements:** `:hover::after` and `:hover::before` are reported but never autofixed. StyleX 0.19.0 drops the pseudo-element's weight from the ranking of any key that also carries a `:not()` guard (priority 8330 becomes 3240), so the guarded rule loses to a plain `::after` rule and the hover treatment silently never paints. No spelling of the guard inside such a key avoids it, and an already guarded pseudo-element key is reported too. The fix is outside the selector: keep the disabled case out in JS (apply the class only when the control is enabled) and silence that one key with an `eslint-disable` comment that says so.
+
+Autofixable for every other key, and mirrored at runtime by `.github/scripts/disabled-hover-audit.js`, which forces `:hover` on every disabled element in every story in Chromium and fails on any painted difference.
 
 Ships as an **error in both tiers**: core and lab are clean, and this keeps them that way.
 

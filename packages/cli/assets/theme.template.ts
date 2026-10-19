@@ -18,7 +18,7 @@
  *
  * 1. WRAP THE APP. A theme does nothing until it is provided.
  *
- *      import {Theme} from '@astryxdesign/core';
+ *      import {Theme} from '@astryxdesign/core/theme';
  *      import {myTheme} from './theme';
  *
  *      <Theme theme={myTheme} mode="system">   // 'system' | 'light' | 'dark'

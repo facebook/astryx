@@ -30,7 +30,7 @@ export const doc = {
       name: 'name',
       type: 'string',
       description:
-        "Stable machine identity and directory name without the Astryx prefix, PascalCase. e.g. 'Button', 'TextInput', 'AppShell'. Change `displayName`, not `name`, to edit the visible label; registry URLs derive from this identity by default.",
+        "Stable machine identity and directory name without the Astryx prefix, PascalCase. e.g. 'Button', 'TextInput', 'AppShell'. For an integration component it is the export apps import: the doc sits beside the file that exports it, and when that file exports nothing under its own name, `name` may name the export it does have. Change `displayName`, not `name`, to edit the visible label; registry URLs derive from this identity by default.",
       required: true,
     },
     {
@@ -187,7 +187,7 @@ export const doc = {
       name: 'components',
       type: '(ComponentEntry | ComponentRef)[]',
       description:
-        'MultiComponentDoc variant (required there): one entry per public component/hook exported from the directory. Each entry is a full ComponentEntry (inline: name, displayName, description, props | params+returns) or a name-only ComponentRef pointing at a sibling {Name}.doc.mjs.',
+        'MultiComponentDoc variant (required there): one entry per public component/hook exported from the directory. Each entry is a full ComponentEntry (inline: name, displayName, description, props | params+returns) or a name-only ComponentRef pointing at a sibling {Name}.doc.mjs. In an integration, each full entry the module named by `import` exports is a component under its own name.',
     },
     {
       name: 'subComponentOf',

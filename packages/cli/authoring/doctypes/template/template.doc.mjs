@@ -162,7 +162,7 @@ export default {
   notes: [
     {
       type: 'prose',
-      text: 'When it loads, a template may leave out `displayName` and `aspectRatio` and use its own `category`, as integration templates already published do; a block with no `aspectRatio` previews at 1. Write to the type anyway; it is the contract.',
+      text: 'When it loads, a template may leave out `displayName` and `aspectRatio` and use its own `category`, as integration templates already published do; a block with no `aspectRatio` previews at 1. Write to the type anyway; it is the contract, and `astryx doctor integration validate` warns about an integration template that leaves out `displayName` or `aspectRatio`.',
     },
     {
       type: 'prose',

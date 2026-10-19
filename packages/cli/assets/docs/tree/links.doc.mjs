@@ -36,8 +36,8 @@ export const docs = {
           type: 'list',
           style: 'unordered',
           items: [
-            'The kind is `generic` for a topic or guide, `namespace` for a docs section, and `command` or `function` for a CLI command or API function.',
-            'A link to a component or a template does not resolve. Write its name in backticks instead, such as `AcmeCarousel`.',
+            'The kind is `generic` for a topic or guide, `namespace` for a docs section, `command` or `function` for a CLI command or API function, `component` for a component, and `page` or `block` for a template.',
+            'Name a component by its export name and a template by its id. Its link reads as the command that opens it, such as `astryx component AcmeCarousel --package @acme/widgets`.',
             'Inside backticks or a code block, link syntax prints as written.',
           ],
         },

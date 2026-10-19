@@ -13,7 +13,7 @@
  * - /packages/cli/assets/templates/blocks/components/CommandPalette/ (showcase blocks)
  */
 
-import {useCallback, useEffect, useRef, type ReactNode} from 'react';
+import {useCallback, useEffect, useRef, useState, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {Icon} from '../Icon';
 import {Spinner} from '../Spinner';
@@ -28,6 +28,11 @@ import {useCommandPaletteContext} from './CommandPaletteContext';
 import {useDialogContext} from '../Dialog/DialogContext';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
+import {focusOutlineProps} from '../utils/focusOutline.stylex';
+import {
+  getInteractionModality,
+  useInteractionModalityTracking,
+} from '../utils/interactionModality';
 import {useTranslator} from '../i18n';
 
 import {useMergedRefs} from '../hooks/useMergedRefs';
@@ -71,7 +76,6 @@ const styles = stylex.create({
     minWidth: 0,
     borderWidth: 0,
     borderStyle: 'none',
-    outline: 'none',
     backgroundColor: 'transparent',
     color: colorVars['--color-text-primary'],
     fontFamily: typographyVars['--font-family-body'],
@@ -169,6 +173,8 @@ export function CommandPaletteInput({
   endContent,
   onChange,
   onKeyDown,
+  onFocus,
+  onBlur,
   ref,
   xstyle,
   className,
@@ -184,6 +190,26 @@ export function CommandPaletteInput({
   const hasListbox = ctx ? ctx.selectableItems.length > 0 : true;
   const dialogContext = useDialogContext();
   const inputRef = useRef<HTMLInputElement>(null);
+  const [isKeyboardFocus, setIsKeyboardFocus] = useState(false);
+
+  // Text-entry controls match :focus-visible after pointer focus in Chromium.
+  // Keep the shared selector, but narrow its ring to focus acquired through
+  // keyboard navigation so a click or pointer-opened palette stays unringed.
+  useInteractionModalityTracking();
+  const handleFocus = useCallback(
+    (event: React.FocusEvent<HTMLInputElement>) => {
+      setIsKeyboardFocus(getInteractionModality() === 'keyboard');
+      onFocus?.(event);
+    },
+    [onFocus],
+  );
+  const handleBlur = useCallback(
+    (event: React.FocusEvent<HTMLInputElement>) => {
+      setIsKeyboardFocus(false);
+      onBlur?.(event);
+    },
+    [onBlur],
+  );
 
   // Use context values as fallback
   const value = controlledValue ?? ctx?.search;
@@ -259,7 +285,9 @@ export function CommandPaletteInput({
       <input
         {...props}
         ref={useMergedRefs(ref, inputRef)}
-        {...stylex.props(styles.input)}
+        {...(isKeyboardFocus
+          ? focusOutlineProps.focusVisible(styles.input)
+          : focusOutlineProps.suppressed(styles.input))}
         type="text"
         role={ctx ? 'combobox' : standaloneRole}
         aria-expanded={
@@ -300,6 +328,8 @@ export function CommandPaletteInput({
           onChange?.(e);
         }}
         onKeyDown={handleKeyDown}
+        onFocus={handleFocus}
+        onBlur={handleBlur}
       />
       {(ctx?.isBusy || hasEndContent) && (
         <span {...stylex.props(styles.end)}>

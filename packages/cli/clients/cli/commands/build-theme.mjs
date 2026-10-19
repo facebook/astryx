@@ -397,7 +397,7 @@ function printThemeApp(result) {
   emit(
     text('Wire the generated module once in the app root:'),
     code(
-      "import {Theme} from '@astryxdesign/core';\n" +
+      "import {Theme} from '@astryxdesign/core/theme';\n" +
         `import {themes, defaultThemeSlug} from './${stem}';\n\n` +
         '<Theme theme={themes[defaultThemeSlug]}>\n  <App />\n</Theme>',
     ),

@@ -91,8 +91,9 @@ npx astryx template acme-stat-card src/features/account/StatusCard.tsx`,
           lang: 'tsx',
           code: `import {Button} from '@astryxdesign/core/Button';
 import {Card} from '@astryxdesign/core/Card';
-import {HStack, VStack} from '@astryxdesign/core/Stack';
+import {HStack} from '@astryxdesign/core/HStack';
 import {Text} from '@astryxdesign/core/Text';
+import {VStack} from '@astryxdesign/core/VStack';
 import {AcmeStatusCard} from '@acme/astryx-widgets/components/AcmeStatusCard';
 
 const metrics = [
