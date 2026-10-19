@@ -127,6 +127,16 @@ source, packages}`. `source` has `name`, `generatedAt`, and `complete`. Each
   `--limit` cut the list. A free-text query that used to return
   `discover.detail.doc` now returns `discover.search` (FR4).
 
+- **FR10 — A package can name its docs site.** An integration manifest MAY
+  set `docsiteUrl` to the absolute `https:` or `http:` URL, at most 2,048
+  characters, where the package's documentation lives. For a package the
+  project has, `discover.list` entries and `discover.detail` MUST carry it as
+  `docsiteUrl`, and the text package page MUST print it. A manifest without the
+  field shows nothing new. An invalid value MUST NOT stop the rest of the
+  manifest from loading: discover leaves the field out, and `astryx doctor
+integration validate` reports it as a warning with the code
+  `invalid_docsite_url`. The CLI never opens or fetches the URL.
+
 ### Platform support
 
 - Supported feature/engine floor: every supported CLI runtime.
@@ -149,6 +159,11 @@ source, packages}`. `source` has `name`, `generatedAt`, and `complete`. Each
   consent gate (FR6).
 - Consumer docs: `cli/integrations` gains the `discover` named export and config
   field, and `astryx docs authoring` gains the `discover-source` section.
+- Integration manifests gain the optional `docsiteUrl` field (FR10). A CLI
+  that does not know the field ignores it with its unknown-field warning and
+  loads the rest of the manifest, as `architecture:cli-surface` INV11 requires.
+  The manifest reference in `astryx docs authoring` and the CLI README list the
+  field.
 
 ## Verification
 
@@ -163,6 +178,7 @@ source, packages}`. `source` has `name`, `generatedAt`, and `complete`. Each
 | FR7      | catalog schema tests                   | unknown field; unknown kind; `schemaVersion: 2`; duplicate package across sources; misordered versions                             | an unknown field fails, another version is accepted, the later source wins, or versions keep the source order                      |
 | FR8      | adapter saved-copy and command tests   | fresh answer; failure with a saved copy; failure with none; another request                                                        | a stale copy hides a fresh answer, the saved date is missing, or a project file is written                                         |
 | FR9      | existing discover JSON tests           | each response type with and without a source                                                                                       | an existing field changes type or meaning                                                                                          |
+| FR10     | parser, validate, leaf, command tests  | no field; an https URL; an http URL; a relative path; another scheme; a value over 2,048 characters                                | an invalid value hides a contribution, a valid value is missing from JSON or text, or validate does not warn                       |
 
 ## Decision log
 
@@ -218,6 +234,22 @@ only on the form of the query. One item opens by its package path.
 Rejected: keeping the earlier shortcut, where an exact or only
 installed-component match opened that component's doc. The same query then
 returned a doc or a list depending on what the project and its sources held.
+
+### DEC-5 — The docs site link is manifest metadata named `docsiteUrl`
+
+**Reference:** `spec:AST-051/DEC-5`
+**Decider:** `josephfarina (proposed)`
+
+The integration manifest already holds integration-level metadata such as
+`issuesUrl`, so the docs site link sits beside it with a parallel name. The
+link is optional and only shown, so a bad value costs only the link: it is
+parsed on its own, and the package's contributions still load. Only `https:`
+and `http:` are accepted, because the value is printed as a link a reader
+follows.
+
+Rejected: reading `homepage` from package.json, which often names the
+repository rather than the docs; a `docs` URL key, which already names the
+reference-docs folder.
 
 ## Open questions
 
