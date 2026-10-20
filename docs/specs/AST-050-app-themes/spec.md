@@ -198,9 +198,9 @@ described.
      its machine result are the released ones. `theme add --list` keeps its
      machine result at every stage, and its text names the commands of the
      current stage.
-  2. **Cleanup is a scheduled minor.** Once a minor's frozen manifest carries
-     the deprecation id and its cleanup id (`spec:AST-017/FR31`),
-     `theme add <slug>` imports as FR1 states, with or without `--import`, and
+  2. **Cleanup lands in a declared minor.** When `main` declares a minor, a
+     `[breaking]` Changeset describing the change (`spec:AST-017/FR31`) lets
+     `theme add <slug>` import as FR1 states, with or without `--import`, and
      returns `theme.app`, and `theme add` accepts no target path or
      `--overwrite`, which stay on `theme eject`. That minor carries no other
      delta from this record (`spec:AST-017/FR39`).

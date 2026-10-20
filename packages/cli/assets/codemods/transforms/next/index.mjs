@@ -7,17 +7,14 @@
  * this file into the resolved version folder.
  */
 
-import migrateCopiedThemesToDescriptors, {
-  meta as migrateCopiedThemesToDescriptorsMeta,
-} from './migrate-copied-themes-to-descriptors.mjs';
+import migrateListEdgeCompensationToEdge, {
+  meta as migrateListEdgeCompensationToEdgeMeta,
+} from './migrate-list-edge-compensation-to-edge.mjs';
 
 export default [
   {
-    name: 'migrate-copied-themes-to-descriptors',
-    transform:
-      /** @type {import('../../../../authoring/codemod/type').CodemodTransform} */ (
-        /** @type {unknown} */ (migrateCopiedThemesToDescriptors)
-      ),
-    meta: migrateCopiedThemesToDescriptorsMeta,
+    name: 'migrate-list-edge-compensation-to-edge',
+    transform: migrateListEdgeCompensationToEdge,
+    meta: migrateListEdgeCompensationToEdgeMeta,
   },
 ];

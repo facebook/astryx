@@ -20,6 +20,7 @@ import * as path from 'node:path';
 import module from 'node:module';
 import {CLI_ROOT} from '../fs/paths.mjs';
 import {detectStylingSystem} from '../agent-docs/agent-docs.mjs';
+import {decidePackageManagerIn} from '../env/package-manager.mjs';
 
 // ── Known packages that a template may import without the user installing them.
 // react and react-dom are the framework; @astryxdesign/* is the design system
@@ -59,16 +60,86 @@ export function extractImportedPackages(source) {
   return pkgs;
 }
 
+/** @type {Record<string, string>} */
+const ADD_VERB = {
+  pnpm: 'pnpm add',
+  yarn: 'yarn add',
+  bun: 'bun add',
+  npm: 'npm install',
+};
+
 /**
- * Detect which package manager the project uses, from its lockfile.
- * @param {string} cwd Project root
- * @returns {'pnpm add' | 'yarn add' | 'bun add' | 'npm install'}
+ * Whether a package.json declares a workspace (`workspaces` field).
+ * @param {string} dir
+ * @returns {{exists: boolean, declaresWorkspace: boolean}}
  */
-function detectInstallCommand(cwd) {
-  if (fs.existsSync(path.join(cwd, 'pnpm-lock.yaml'))) return 'pnpm add';
-  if (fs.existsSync(path.join(cwd, 'yarn.lock'))) return 'yarn add';
-  if (fs.existsSync(path.join(cwd, 'bun.lockb'))) return 'bun add';
-  return 'npm install';
+function readPackageJson(dir) {
+  const pkgPath = path.join(dir, 'package.json');
+  if (!fs.existsSync(pkgPath)) return {exists: false, declaresWorkspace: false};
+  try {
+    const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8'));
+    return {exists: true, declaresWorkspace: pkg.workspaces != null};
+  } catch {
+    return {exists: true, declaresWorkspace: false};
+  }
+}
+
+/**
+ * The workspace root (AST-048 FR15): the nearest directory at or above the
+ * target that declares a workspace, by `pnpm-workspace.yaml` or a package.json
+ * `workspaces` field; outside a workspace, the nearest package.json's
+ * directory; with no package.json, the target itself.
+ * @param {string} target
+ * @returns {string}
+ */
+function findWorkspaceRoot(target) {
+  let dir = path.resolve(target);
+  /** @type {string | null} */
+  let nearestPackage = null;
+  for (;;) {
+    const pkg = readPackageJson(dir);
+    if (
+      fs.existsSync(path.join(dir, 'pnpm-workspace.yaml')) ||
+      pkg.declaresWorkspace
+    ) {
+      return dir;
+    }
+    if (pkg.exists && nearestPackage == null) nearestPackage = dir;
+    const parent = path.dirname(dir);
+    if (parent === dir) return nearestPackage ?? path.resolve(target);
+    dir = parent;
+  }
+}
+
+/**
+ * The project's package manager for an install command (AST-048 FR17, FR19):
+ * the nearest directory from the target up to the workspace root that has a
+ * `packageManager` field or a lockfile decides, by the CLI's shared
+ * per-directory rule; with none, npm. Ambiguous when that directory's
+ * lockfiles disagree and nothing it commits picks one.
+ * @param {string} target
+ * @returns {{verb: string} | {verb: null, dir: string, lockfiles: string[]}}
+ */
+function resolveInstallVerb(target) {
+  const root = findWorkspaceRoot(target);
+  let dir = path.resolve(target);
+  for (;;) {
+    const decision = decidePackageManagerIn(dir);
+    if (decision) {
+      if (decision.ambiguous) {
+        return {
+          verb: null,
+          dir,
+          lockfiles: decision.lockfiles.map(lock => lock.file),
+        };
+      }
+      return {verb: ADD_VERB[decision.pm] ?? ADD_VERB.npm};
+    }
+    const parent = path.dirname(dir);
+    if (dir === root || parent === dir) break;
+    dir = parent;
+  }
+  return {verb: ADD_VERB.npm};
 }
 
 /**
@@ -128,11 +199,18 @@ export function analyzeTemplateNeeds(source, cwd) {
 
   // Build the install command with version ranges from the CLI workspace.
   let installCommand = null;
+  /** @type {string | null} */
+  let noCommandReason = null;
   if (missing.length > 0) {
-    const pm = detectInstallCommand(cwd);
+    const resolved = resolveInstallVerb(cwd);
     const ranges = cliPackageRanges();
     const specs = missing.map(p => (ranges[p] ? `${p}@"${ranges[p]}"` : p));
-    installCommand = `${pm} ${specs.join(' ')}`;
+    if (resolved.verb !== null) {
+      installCommand = `${resolved.verb} ${specs.join(' ')}`;
+    } else {
+      const where = path.relative(cwd, resolved.dir) || '.';
+      noCommandReason = `Install missing dependencies: ${specs.join(' ')}. No install command: ${where} has ${resolved.lockfiles.join(' and ')}, and nothing there says which package manager to use.`;
+    }
   }
 
   // ── StyleX compiler ────────────────────────────────────────────────────
@@ -144,7 +222,11 @@ export function analyzeTemplateNeeds(source, cwd) {
   /** @type {string[]} */
   const notes = [];
   if (missing.length > 0) {
-    notes.push(`Install missing dependencies: ${installCommand}`);
+    notes.push(
+      installCommand
+        ? `Install missing dependencies: ${installCommand}`
+        : (noCommandReason ?? ''),
+    );
   }
   if (stylexCompilerNeeded) {
     notes.push(

@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file `astryx docs cli/integrations/templates/build-the-template/package-and-test/test-template-in-app`:
+ * @file `astryx docs cli/integrations/building-blocks/templates/build-the-template/package-and-test/test-template-in-app`:
  * copy the packed template into a clean app, build it, and render it the way
  * apps will.
  */

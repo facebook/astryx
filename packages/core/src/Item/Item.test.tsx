@@ -10,8 +10,23 @@
  */
 
 import {use, useRef} from 'react';
-import {afterEach, beforeEach, describe, it, expect, vi} from 'vitest';
-import {act, fireEvent, render, screen} from '@testing-library/react';
+import {
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  it,
+  expect,
+  vi,
+} from 'vitest';
+import {
+  act,
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from '@testing-library/react';
 import {rulesDeclaredFor} from '../__tests__/pressState';
 import userEvent from '@testing-library/user-event';
 import {Item} from './Item';
@@ -516,6 +531,67 @@ describe('Item', () => {
     expect(screen.getByTestId('item')).toBeInTheDocument();
   });
 
+  it('reflects the resolved alignment on the item theme target', () => {
+    const {rerender} = render(<Item label="Item" data-testid="item" />);
+    expect(screen.getByTestId('item')).toHaveAttribute('data-align', 'center');
+    for (const align of ['center', 'start', 'first-line'] as const) {
+      rerender(<Item label="Item" align={align} data-testid="item" />);
+      const item = screen.getByTestId('item');
+      expect(item).toHaveClass('astryx-item');
+      expect(item).toHaveAttribute('data-align', align);
+    }
+  });
+
+  it('aligns the row on first baselines only under first-line', () => {
+    const {rerender} = render(<Item label="Item" data-testid="item" />);
+    const declares = (value: string) =>
+      rulesDeclaredFor(screen.getByTestId('item')).some(rule =>
+        rule.includes(`align-items: ${value}`),
+      );
+    expect(declares('baseline')).toBe(false);
+    rerender(<Item label="Item" align="start" data-testid="item" />);
+    expect(declares('baseline')).toBe(false);
+    rerender(<Item label="Item" align="first-line" data-testid="item" />);
+    expect(declares('baseline')).toBe(true);
+  });
+
+  it('gives each first-line slot a strut with no accessible text', () => {
+    render(
+      <Item
+        label="Item"
+        align="first-line"
+        startContent={<span data-testid="start">S</span>}
+        endContent={<span data-testid="end">E</span>}
+      />,
+    );
+    for (const id of ['start', 'end']) {
+      const slot = screen.getByTestId(id).parentElement!;
+      const before = rulesDeclaredFor(slot).filter(rule =>
+        rule.slice(0, rule.indexOf('{')).includes('::before'),
+      );
+      expect(before.some(rule => rule.includes('/ ""'))).toBe(true);
+    }
+  });
+
+  it('leaves center and start slots without a strut', () => {
+    const {rerender} = render(
+      <Item label="Item" startContent={<span data-testid="start">S</span>} />,
+    );
+    const hasStrut = () =>
+      rulesDeclaredFor(screen.getByTestId('start').parentElement!).some(rule =>
+        rule.slice(0, rule.indexOf('{')).includes('::before'),
+      );
+    expect(hasStrut()).toBe(false);
+    rerender(
+      <Item
+        label="Item"
+        align="start"
+        startContent={<span data-testid="start">S</span>}
+      />,
+    );
+    expect(hasStrut()).toBe(false);
+  });
+
   // ===========================================================================
   // Description rendering
   // ===========================================================================
@@ -607,6 +683,26 @@ describe('Item', () => {
 });
 
 describe('swipeActions', () => {
+  // The panels and the gesture are loaded lazily (React.lazy + Suspense), so
+  // the first row with swipe actions renders them a tick after it mounts.
+  // Mount one once up front: the resolved module is cached on the lazy
+  // component, and every row below renders its panels synchronously.
+  beforeAll(async () => {
+    render(
+      <Item
+        label="Warm"
+        data-testid="warm"
+        swipeActions={{leading: [{label: 'Unread', onActivate: () => {}}]}}
+      />,
+    );
+    await waitFor(() => {
+      expect(
+        screen.getByTestId('warm').querySelector('[data-swipe-panel]'),
+      ).not.toBeNull();
+    });
+    cleanup();
+  });
+
   beforeEach(() => {
     // The gesture reads the clock for its fling test and its settle timers:
     // fake both, and space the moves out the way a finger does.

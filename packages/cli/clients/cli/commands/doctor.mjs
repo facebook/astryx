@@ -99,6 +99,85 @@ function issueBlocks(issues) {
 }
 
 /**
+ * The docs checked against the authoring types: a visible line when it was
+ * skipped, the findings (all warnings), the files it could not check, or an
+ * [ok] (never after a failed check).
+ * @param {import('../../../api/integration/validate-integration.type.mjs').DocTypesReport | undefined} report
+ * @param {boolean} failed
+ */
+function docTypesBlocks(report, failed) {
+  if (!report) return [];
+  if (
+    report.status === 'checked' &&
+    report.docs === 0 &&
+    report.findings.length === 0 &&
+    report.unchecked.length === 0
+  ) {
+    return [
+      text('[info] No doc files to type-check.'),
+      ...(report.fixtures
+        ? [text(`[info] ${report.fixtures} test fixture doc(s) not checked.`)]
+        : []),
+    ];
+  }
+  if (report.status === 'skipped') {
+    return [text(`[skip] Docs not type-checked: ${report.reason}`)];
+  }
+  const blocks = [
+    section(
+      `Checking ${report.docs} doc(s) against the authoring types${report.typescript ? ` (TypeScript ${report.typescript})` : ''}`,
+    ),
+  ];
+  if (report.findings.length > 0) {
+    const files = new Set(report.findings.map(f => f.doc)).size;
+    blocks.push(
+      records(report.findings, {
+        fields: [
+          'severity',
+          'doc',
+          'line',
+          'export',
+          'type',
+          'field',
+          'problem',
+          'message',
+          'fix',
+        ],
+        format: {severity: statusToken},
+      }),
+      text(
+        `${report.findings.length} doc field(s) in ${files} file(s) do not match the authoring types. ` +
+          'These are warnings; `astryx docs authoring` lists every field.',
+      ),
+    );
+  }
+  if (report.unchecked.length > 0) {
+    blocks.push(
+      text(`[info] Not type-checked: ${report.unchecked.length} doc file(s):`),
+      records(report.unchecked, {fields: ['doc', 'reason']}),
+    );
+  }
+  if (report.fixtures) {
+    blocks.push(
+      text(`[info] ${report.fixtures} test fixture doc(s) not checked.`),
+    );
+  }
+  if (report.findings.length === 0 && report.docs > 0) {
+    // After a failed check an [ok] reads as a pass, but the result still shows.
+    blocks.push(
+      text(
+        failed
+          ? `[info] No doc field differs from its authoring type (${report.docs} checked).`
+          : report.unchecked.length > 0
+            ? `[ok] Every doc that was checked matches its authoring type (${report.docs} checked).`
+            : `[ok] Every doc matches its authoring type (${report.docs} checked).`,
+      ),
+    );
+  }
+  return blocks;
+}
+
+/**
  * @param {import('../../../api/integration/validate-integration.type.mjs').ValidateIntegrationResponse['data']} data
  */
 function printIntegrationValidation(data) {
@@ -119,6 +198,7 @@ function printIntegrationValidation(data) {
       `Summary: ${errors} error${errors === 1 ? '' : 's'}, ` +
         `${warnings} warning${warnings === 1 ? '' : 's'}`,
     ),
+    ...docTypesBlocks(data.docTypes, errors > 0),
   );
 }
 
@@ -174,6 +254,98 @@ function printTemplateConflicts(data) {
 }
 
 /**
+ * The documented-props comparison, with every field its JSON carries: a
+ * visible line when it was skipped, the findings (all warnings), the
+ * components it could not read, and how many were compared with which
+ * TypeScript, as an [ok] when nothing differs (never after a failed check).
+ * Then how many documented prop types were judged and which were not.
+ * @param {import('../../../api/integration/authoring-checks.type.mjs').PropDriftReport | undefined} report
+ * @param {boolean} failed
+ */
+function propDriftBlocks(report, failed) {
+  if (!report) return [];
+  if (report.status === 'skipped') {
+    return [text(`[skip] Props not compared: ${report.reason}`)];
+  }
+  const blocks = [];
+  if (report.findings.length > 0) {
+    // Two docs of one name are two components.
+    const components = new Set(
+      report.findings.map(f => `${f.doc}\0${f.component}`),
+    ).size;
+    blocks.push(
+      records(report.findings, {
+        fields: [
+          'severity',
+          'component',
+          'prop',
+          'kind',
+          'message',
+          'doc',
+          'source',
+          'docType',
+          'codeType',
+          'docRequired',
+          'codeRequired',
+        ],
+        format: {severity: statusToken},
+      }),
+      text(
+        `${report.findings.length} prop(s) differ between the docs and the code in ${components} of ${report.components} component(s) compared (TypeScript ${report.typescript}). ` +
+          'These are warnings: update the doc, or the code if the doc is right.',
+      ),
+    );
+  }
+  if (report.unchecked.length > 0) {
+    blocks.push(
+      text(
+        `[info] Props not compared for ${report.unchecked.length} documented component(s):`,
+      ),
+      records(report.unchecked, {fields: ['component', 'doc', 'reason']}),
+    );
+  }
+  const notChecked = report.propsNotChecked ?? [];
+  if (notChecked.length > 0) {
+    blocks.push(
+      text(
+        `[info] Props not checked for a doc entry in ${notChecked.length} component(s):`,
+      ),
+      records(notChecked, {fields: ['component', 'doc', 'reason', 'props']}),
+    );
+  }
+  if (report.findings.length === 0) {
+    const apart =
+      notChecked.length > 0 ? ', apart from the props not checked' : '';
+    blocks.push(
+      text(
+        !failed && report.components > 0
+          ? `[ok] Documented prop names and required flags match the code in ${report.components} component(s)${apart} (TypeScript ${report.typescript}).`
+          : `[info] Props compared in ${report.components} component(s) (TypeScript ${report.typescript}).`,
+      ),
+    );
+  }
+  if (report.typesSkipped) {
+    blocks.push(text(`[skip] Prop types not judged: ${report.typesSkipped}.`));
+    return blocks;
+  }
+  const notCompared = report.typesNotCompared.flatMap(entry => entry.props);
+  blocks.push(
+    text(
+      `[info] Documented prop types judged: ${report.typesCompared}; not compared: ${notCompared.length}. ` +
+        'A type is judged when the doc writes it the same as the source (exactly, if it contains `readonly`), or when both are primitives, literals, arrays and unions of those, or names for them.',
+    ),
+  );
+  if (notCompared.length > 0) {
+    blocks.push(
+      records(report.typesNotCompared, {
+        fields: ['component', 'doc', 'reason', 'props'],
+      }),
+    );
+  }
+  return blocks;
+}
+
+/**
  * @param {import('../../../api/integration/authoring-checks.type.mjs').IntegrationComponentConflictResponse['data']} data
  */
 function printComponentConflicts(data) {
@@ -205,6 +377,7 @@ function printComponentConflicts(data) {
       ),
     );
   }
+  output.push(...propDriftBlocks(data.propDrift, failed));
   emit(...output);
 }
 
@@ -242,6 +415,23 @@ function printDocConflicts(data) {
   emit(...output);
 }
 
+/**
+ * Print one `doctor integration` check's result as its own subcommand prints
+ * it. `astryx integration check` prints each check it runs through this.
+ * @param {import('../../../api/integration/integration-check.type.mjs').IntegrationCheckResponse} response
+ */
+export function printIntegrationCheckResponse(response) {
+  if (response.type === 'integration.validate') {
+    printIntegrationValidation(response.data);
+  } else if (response.type === 'integration.component-conflicts') {
+    printComponentConflicts(response.data);
+  } else if (response.type === 'integration.template-conflicts') {
+    printTemplateConflicts(response.data);
+  } else {
+    printDocConflicts(response.data);
+  }
+}
+
 /** @param {import('commander').Command} program */
 async function runProjectDoctor(program) {
   const report = await runChecks();
@@ -259,10 +449,13 @@ async function runIntegrationValidation(program, pkg) {
   const result = await validateIntegration(pkg);
   if (program.opts().json) jsonOut(result);
   else if (!result.data.validated) {
+    const noPackage = result.data.issues.some(i => i.code === 'no_package');
     emit(
       text(
-        'Nothing was validated: no astryx.integration.* found next to package.json. ' +
-          'To validate an installed integration: astryx doctor integration validate <package>',
+        noPackage
+          ? 'Nothing was validated: no package.json found. Run this command inside a package directory.'
+          : 'Nothing was validated: no astryx.integration.* found next to package.json. ' +
+            'To validate an installed integration: astryx doctor integration validate <package>',
       ),
     );
   } else printIntegrationValidation(result.data);

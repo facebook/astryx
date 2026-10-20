@@ -176,6 +176,17 @@ describe('validate-integration API', () => {
     expect(agentDocsIssues[0].severity).toBe('error');
   });
 
+  it('reports nothing for a docsiteUrl', async () => {
+    const pkgDir = path.join(tmpDir, 'pkg');
+    writePackage(pkgDir, {
+      manifest: `export default {docsiteUrl: 'https://widgets.example.com'};\n`,
+    });
+
+    const result = await validateLocalIntegration(pkgDir);
+
+    expect(result.issues).toEqual([]);
+  });
+
   it('flags a broken codemod as invalid_codemod error', async () => {
     const pkgDir = path.join(tmpDir, 'pkg');
     writePackage(pkgDir, {

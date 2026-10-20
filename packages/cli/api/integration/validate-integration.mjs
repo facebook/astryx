@@ -34,6 +34,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {assertWithin} from '../../foundation/fs/path-safety.mjs';
+import {integrationDocTypes} from '../docs/_adapter.mjs';
 import {
   THEME_SLUG_RE,
   unreadThemeFolders,
@@ -72,6 +73,7 @@ export {validateLoadedIntegration};
  * @property {string} [name] Integration package name (from package.json).
  * @property {string} [version] Integration package version.
  * @property {string} [manifestFile] Absolute path to the loaded manifest.
+ * @property {'no_package_json'} [reason] Why nothing was validated (internal).
  * @property {Issue[]} issues
  * @property {import('../../foundation/integrations/integrations.mjs').LoadedIntegration} [integration]
  */
@@ -349,7 +351,7 @@ async function validateAtPackageDir(
 export async function validateLocalIntegration(cwd = process.cwd()) {
   const pkgJsonPath = findNearestPackageJson(cwd);
   if (!pkgJsonPath) {
-    return {found: false, issues: []};
+    return {found: false, reason: 'no_package_json', issues: []};
   }
   const packageDir = path.dirname(pkgJsonPath);
 
@@ -460,6 +462,12 @@ export async function validateIntegration(pkg, options = {}) {
   const result = pkg
     ? await validateInstalledIntegration(pkg, cwd)
     : await validateLocalIntegration(cwd);
+  // Each doc the package ships, against the published authoring type for its
+  // kind, read with the project's own compiler. Findings are warnings only.
+  const integration = result.found ? result.integration : undefined;
+  const docTypes = integration
+    ? await integrationDocTypes(integration, cwd)
+    : undefined;
   return {
     type: 'integration.validate',
     data: {
@@ -468,7 +476,10 @@ export async function validateIntegration(pkg, options = {}) {
       validated: result.found,
       name: result.found ? (result.name ?? null) : null,
       version: result.found ? (result.version ?? null) : null,
-      issues: result.issues,
+      issues: result.reason === 'no_package_json'
+        ? [{code: 'no_package', severity: 'error', message: 'No package.json found. Run this command inside a package directory.'}]
+        : result.issues,
+      ...(docTypes ? {docTypes} : {}),
     },
   };
 }

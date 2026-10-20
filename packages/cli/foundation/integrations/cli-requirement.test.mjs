@@ -6,9 +6,10 @@ import {semverCompare} from '../env/semver.mjs';
 import * as requirement from './cli-requirement.mjs';
 import {
   COMPONENT_REPLACES_CLI,
+  KEYWORDS_CLI,
   NAMESPACE_DOCS_CLI,
-  REPLACES_CLI,
   SECTION_IDS_CLI,
+  TEMPLATE_REPLACES_CLI,
   cliRangeProblem,
   componentReplacesCliProblem,
   THEMES_CLI,
@@ -91,20 +92,78 @@ describe('docsTreeCliProblem', () => {
 });
 
 describe('replacesCliProblem', () => {
-  it('asks a package that sets replaces for a CLI that reads the field', () => {
+  // Published 0.6.4 applies a template's `replaces`. Published 0.6.3 and
+  // earlier reject the field, drop the template, and hide the package's doc
+  // topics.
+  it('asks a package that sets replaces for a CLI from 0.6.4', () => {
     expect(replacesCliProblem({name: '@acme/kit'})).toContain(
       'sets `replaces`',
     );
-    expect(
-      replacesCliProblem({peerDependencies: {'@astryxdesign/cli': '^0.6.0'}}),
-    ).toContain('admits a stable CLI before');
-    expect(
-      replacesCliProblem({peerDependencies: {'@astryxdesign/cli': '>=0.7.0'}}),
-    ).toBeNull();
-    // Unlike the docs tree, `replaces` still needs 0.7.0.
-    expect(
-      replacesCliProblem({peerDependencies: {'@astryxdesign/cli': '>=0.6.4'}}),
-    ).toContain('admits a stable CLI before 0.7.0');
+    expect(replacesCliProblem({name: '@acme/kit'})).toContain(
+      "A stable CLI before 0.6.4 rejects the field, drops that template, and hides the package's doc topics.",
+    );
+    for (const range of ['>=0.6.4', '^0.6.4', '>=0.6.5', '>=0.7.0']) {
+      expect(
+        replacesCliProblem({peerDependencies: {'@astryxdesign/cli': range}}),
+      ).toBeNull();
+    }
+    for (const range of ['>=0.6.3', '^0.6.0', '*']) {
+      expect(
+        replacesCliProblem({peerDependencies: {'@astryxdesign/cli': range}}),
+      ).toContain('admits a stable CLI before 0.6.4');
+    }
+  });
+});
+
+describe('keywordsCliProblem', () => {
+  // Published 0.6.6 reads a template's `keywords`. Published 0.6.4 and 0.6.5
+  // reject the field and drop the template; 0.6.3 and earlier also hide the
+  // package's doc topics.
+  it('asks a package that sets keywords for a CLI from 0.6.6', () => {
+    expect(keywordsCliProblem({name: '@acme/kit'})).toContain(
+      'sets `keywords`',
+    );
+    expect(keywordsCliProblem({name: '@acme/kit'})).toContain(
+      "A stable CLI before 0.6.6 rejects the field and drops that template, and one before 0.6.4 also hides the package's doc topics.",
+    );
+    for (const range of ['>=0.6.6', '^0.6.6', '>=0.6.7', '>=0.7.0']) {
+      expect(
+        keywordsCliProblem({peerDependencies: {'@astryxdesign/cli': range}}),
+      ).toBeNull();
+    }
+    for (const range of ['>=0.6.5', '>=0.6.4', '^0.6.4', '^0.6.0']) {
+      expect(
+        keywordsCliProblem({peerDependencies: {'@astryxdesign/cli': range}}),
+      ).toContain('admits a stable CLI before 0.6.6');
+    }
+  });
+});
+
+describe('template replaces and keywords floors in the shipped docs', () => {
+  // The range an author is told to declare is the range `integration verify`
+  // accepts, so following the docs never fails the check or asks for a CLI
+  // no release satisfies.
+  const read = (/** @type {string} */ file) =>
+    fs.readFileSync(new URL(file, import.meta.url), 'utf-8');
+
+  it('shows the replaces floor in the replace-a-core-template guide', () => {
+    const named = [
+      ...read(
+        '../../assets/docs/tree/replace-a-core-template.doc.mjs',
+      ).matchAll(/"@astryxdesign\/cli":\s*">=(\d+\.\d+\.\d+)"/g),
+    ].map(match => match[1]);
+    expect(named.length).toBeGreaterThan(0);
+    expect(new Set(named)).toEqual(new Set([TEMPLATE_REPLACES_CLI]));
+  });
+
+  it.each([
+    ['`replaces_needs_cli`', TEMPLATE_REPLACES_CLI],
+    ['`keywords_needs_cli`', KEYWORDS_CLI],
+  ])('gives the %s fix the floor the check asks for', (code, floor) => {
+    const row = read('../../assets/docs/tree/troubleshooting.doc.mjs')
+      .split('],')
+      .find(part => part.includes(`${code}:`));
+    expect(row).toContain(`@astryxdesign/cli=>=${floor}'`);
   });
 });
 
@@ -193,17 +252,17 @@ describe('themesCliProblem and sectionIdsCliProblem', () => {
     }
   });
 
-  it('keeps 0.7.0 for replaces and keywords', () => {
+  it('gives replaces and keywords their own floors', () => {
+    // `>=0.6.4` admits published 0.6.4 and 0.6.5, which drop a template that
+    // sets `keywords` but apply one that sets `replaces`.
     const pkg = {peerDependencies: {'@astryxdesign/cli': '>=0.6.4'}};
     expect(docsTreeCliProblem(pkg)).toBeNull();
-    expect(replacesCliProblem(pkg)).toContain(
-      'admits a stable CLI before 0.7.0',
-    );
+    expect(replacesCliProblem(pkg)).toBeNull();
     expect(keywordsCliProblem(pkg)).toContain(
-      'admits a stable CLI before 0.7.0',
+      'admits a stable CLI before 0.6.6',
     );
     expect(
-      keywordsCliProblem({peerDependencies: {'@astryxdesign/cli': '>=0.7.0'}}),
+      keywordsCliProblem({peerDependencies: {'@astryxdesign/cli': '>=0.6.6'}}),
     ).toBeNull();
   });
 
@@ -211,7 +270,13 @@ describe('themesCliProblem and sectionIdsCliProblem', () => {
     const {version} = JSON.parse(
       fs.readFileSync(new URL('../../package.json', import.meta.url), 'utf-8'),
     );
-    for (const floor of [NAMESPACE_DOCS_CLI, THEMES_CLI, SECTION_IDS_CLI]) {
+    for (const floor of [
+      NAMESPACE_DOCS_CLI,
+      THEMES_CLI,
+      SECTION_IDS_CLI,
+      TEMPLATE_REPLACES_CLI,
+      KEYWORDS_CLI,
+    ]) {
       expect(semverCompare(floor, version.split('-')[0])).toBeLessThanOrEqual(
         0,
       );
@@ -252,8 +317,8 @@ describe('every feature check names its CLI floor', () => {
   const FLOORS = {
     componentReplacesCliProblem: COMPONENT_REPLACES_CLI,
     docsTreeCliProblem: '0.6.4',
-    replacesCliProblem: REPLACES_CLI,
-    keywordsCliProblem: REPLACES_CLI,
+    replacesCliProblem: TEMPLATE_REPLACES_CLI,
+    keywordsCliProblem: KEYWORDS_CLI,
     sectionIdsCliProblem: '0.6.4',
     themesCliProblem: '0.6.4',
   };
@@ -279,8 +344,10 @@ describe('every feature check names its CLI floor', () => {
       // Tied to the next patch slot: the first stable release that ships
       // component replacement.
       componentReplacesCliProblem: '0.6.7',
-      replacesCliProblem: '0.7.0',
-      keywordsCliProblem: '0.7.0',
+      // Measured on published releases: 0.6.4 applies a template's
+      // `replaces`, and 0.6.6 reads its `keywords`.
+      replacesCliProblem: '0.6.4',
+      keywordsCliProblem: '0.6.6',
     });
   });
 });

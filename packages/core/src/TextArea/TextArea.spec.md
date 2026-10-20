@@ -28,17 +28,19 @@ system_specs: []
 
 ## Intent
 
-TextArea presents a labeled multi-line text field. This draft records its current
-consumer anatomy and the theming ownership of parts rendered by TextArea, Field,
-FieldStatus, and Spinner. It changes no runtime behavior or public API.
+TextArea presents a labeled multi-line text field. This record preserves its
+current consumer anatomy and the theming ownership of parts rendered by TextArea,
+Field, FieldStatus, and Spinner while 0.7.0 removes the deprecated `textarea`
+theming alias.
 
 ## Compatibility and migration
 
-- Released default preserved: `yes`
-- Compatibility class: additive documentation only; runtime, DOM, styling,
-  targets, aliases, and public API remain unchanged
+- Released default preserved: `yes`; canonical `text-area` behavior is unchanged
+- Removed alias: 0.7.0 stops emitting `textarea`
 - Controlled/uncontrolled behavior: unchanged; TextArea remains controlled
-- Migration decision: none
+- Migration decision: replace `textarea` theme keys and `.astryx-textarea`
+  selectors with `text-area` and `.astryx-text-area`, or run
+  `astryx upgrade --from 0.6.3 --apply --path .`
 
 Consumer migration instructions belong in consumer docs and release notes.
 
@@ -59,7 +61,6 @@ Consumer migration instructions belong in consumer docs and release notes.
   by `component:Icon` and `component:Field`, respectively.
 - Loading-indicator presentation — owned by `component:Spinner`.
 - Caller-provided custom start content outside Icon's supported source forms.
-- The deprecated `textarea` alias as separate anatomy.
 
 ## Public concepts
 
@@ -164,8 +165,6 @@ values render through Icon and delegate to its `icon` target; arbitrary ReactNod
 start content is caller-provided and intentionally stays outside TextArea's
 public theming ownership. Attached and detached status messages delegate to
 FieldStatus, while the tooltip variant delegates its rendered surface to Tooltip.
-The deprecated `textarea` alias is compatibility evidence only and does not
-appear in the map.
 
 ## Family and system relationships
 
@@ -179,16 +178,15 @@ appear in the map.
 | Contract            | Verification                                                                                  | Representative states                                                    | Mutation or failure expectation                                                                                                                 | Audit section            |
 | ------------------- | --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------ |
 | FR1, FR4            | `TextArea.test.tsx` structure and counter suites                                              | Default, placeholder, counter, over limit                                | Removing or regrouping stable parts breaks existing role, content, or DOM assertions.                                                           | `audit:TextArea/anatomy` |
-| FR2                 | `TextArea.test.tsx` root-target suite and `themingTargets.test.ts`                            | Current and deprecated root names; current targets                       | Removing root compatibility classes fails focused coverage; source/docs drift fails the target guard.                                           | `audit:TextArea/theming` |
+| FR2                 | `TextArea.test.tsx` root-target suite and `themingTargets.test.ts`                            | Three canonical local targets                                            | Missing canonical classes or source/docs drift fails focused coverage after the 0.7 alias removal.                                              | `audit:TextArea/theming` |
 | FR3                 | `TextArea.test.tsx`, `useInputStatusIcon.test.tsx`, and source inspection of `renderIconSlot` | Standard/custom start content; Spinner; attached/detached/tooltip status | Removing or rerouting composed content breaks existing icon, spinner, tooltip, message, or association assertions.                              | `audit:TextArea/anatomy` |
 | Theming anatomy map | `scripts/check-knowledge.mjs`                                                                 | Canonical anatomy and current local targets                              | Canonical-key drift, invalid dispositions or target spelling, alias-backed local claims, or an unclaimed current local target fails validation. | `audit:TextArea/theming` |
 
-The focused TextArea suite pins the current and deprecated root classes, but does
-not separately assert the exact `text-area-control` or `text-area-counter` class
-placement. The source/metadata target guard covers those local declarations. No
-current repository check resolves `delegatesTo` owner/target pairs; the pairs in
-this draft were verified manually, so semantic delegation drift remains a
-validation gap.
+The focused TextArea suite pins the canonical root class, but does not separately
+assert the exact `text-area-control` or `text-area-counter` class placement. The
+source/metadata target guard covers those local declarations. No current repository
+check resolves `delegatesTo` owner/target pairs; the pairs in this draft were
+verified manually, so semantic delegation drift remains a validation gap.
 
 ## Decision log
 

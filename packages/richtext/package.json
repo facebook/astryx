@@ -1,9 +1,8 @@
 {
   "name": "@astryxdesign/richtext",
   "displayName": "Rich Text",
-  "version": "0.1.9",
-  "private": true,
-  "description": "Astryx rich text — a Lexical-based rich text editor and viewer. Published to npm only under the @canary dist-tag for early testing; never released as a stable (latest) version.",
+  "version": "0.7.2",
+  "description": "Astryx rich text — a Lexical-based rich text editor and viewer, styled with Astryx design tokens.",
   "author": "Meta Open Source",
   "license": "MIT",
   "homepage": "https://github.com/facebook/astryx#readme",
@@ -23,14 +22,12 @@
     "lexical",
     "design-system"
   ],
-  "astryx": {
-    "canaryOnly": true,
-    "_comment": "Published ONLY to the @canary dist-tag (see .github/workflows/release.yml). Never released as a stable `latest` release. `private: true` is intentional and must stay — it is npm\"s hard guarantee against an accidental stable publish."
-  },
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
-  "sideEffects": false,
+  "sideEffects": [
+    "**/*.css"
+  ],
   "files": [
     "astryx.integration.mjs",
     "blocks",
@@ -68,22 +65,22 @@
   },
   "peerDependencies": {
     "@stylexjs/stylex": ">=0.10.0",
-    "@astryxdesign/core": "0.6.6",
+    "@astryxdesign/core": "0.7.2",
     "react": ">=19.0.0",
     "react-dom": ">=19.0.0",
-    "lexical": "^0.46.0",
-    "@lexical/react": "^0.46.0",
-    "@lexical/markdown": "^0.46.0",
-    "@lexical/headless": "^0.46.0",
-    "@lexical/html": "^0.46.0",
-    "@lexical/link": "^0.46.0",
-    "@lexical/list": "^0.46.0",
-    "@lexical/rich-text": "^0.46.0",
-    "@lexical/selection": "^0.46.0",
-    "@lexical/code": "^0.46.0",
-    "@lexical/extension": "^0.46.0",
-    "@lexical/table": "^0.46.0",
-    "@lexical/utils": "^0.46.0"
+    "lexical": "^0.52.0",
+    "@lexical/react": "^0.52.0",
+    "@lexical/markdown": "^0.52.0",
+    "@lexical/headless": "^0.52.0",
+    "@lexical/html": "^0.52.0",
+    "@lexical/link": "^0.52.0",
+    "@lexical/list": "^0.52.0",
+    "@lexical/rich-text": "^0.52.0",
+    "@lexical/selection": "^0.52.0",
+    "@lexical/code": "^0.52.0",
+    "@lexical/extension": "^0.52.0",
+    "@lexical/table": "^0.52.0",
+    "@lexical/utils": "^0.52.0"
   },
   "peerDependenciesMeta": {
     "lexical": {
@@ -133,20 +130,20 @@
     "@babel/core": "catalog:",
     "@babel/preset-react": "catalog:",
     "@babel/preset-typescript": "catalog:",
-    "@lexical/code": "^0.46.0",
-    "@lexical/extension": "^0.46.0",
-    "@lexical/headless": "^0.46.0",
-    "@lexical/html": "^0.46.0",
-    "@lexical/link": "^0.46.0",
-    "@lexical/list": "^0.46.0",
-    "@lexical/markdown": "^0.46.0",
-    "@lexical/react": "^0.46.0",
-    "@lexical/rich-text": "^0.46.0",
-    "@lexical/selection": "^0.46.0",
-    "@lexical/table": "^0.46.0",
-    "@lexical/utils": "^0.46.0",
+    "@lexical/code": "^0.52.0",
+    "@lexical/extension": "^0.52.0",
+    "@lexical/headless": "^0.52.0",
+    "@lexical/html": "^0.52.0",
+    "@lexical/link": "^0.52.0",
+    "@lexical/list": "^0.52.0",
+    "@lexical/markdown": "^0.52.0",
+    "@lexical/react": "^0.52.0",
+    "@lexical/rich-text": "^0.52.0",
+    "@lexical/selection": "^0.52.0",
+    "@lexical/table": "^0.52.0",
+    "@lexical/utils": "^0.52.0",
     "@stylexjs/babel-plugin": "catalog:",
     "@testing-library/react": "catalog:",
-    "lexical": "^0.46.0"
+    "lexical": "^0.52.0"
   }
 }

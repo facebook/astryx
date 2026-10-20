@@ -828,6 +828,169 @@ describe('SideNavItem', () => {
     expect(screen.getByText('Security')).toBeInTheDocument();
   });
 
+  it('keeps nested rows full width and indents their content inside the row', () => {
+    render(
+      <SideNavItem label="Settings">
+        <SideNavItem label="General" href="/settings/general">
+          <SideNavItem label="Advanced" href="/settings/general/advanced" />
+        </SideNavItem>
+      </SideNavItem>,
+    );
+
+    // The children group adds no inset of its own, so a nested row's hover
+    // and selected fill spans the nav list like a top-level row's.
+    const groups = screen.getAllByRole('group', {hidden: true});
+    for (const group of groups) {
+      expect(declaredOn(group, 'padding-inline-start')).toEqual([]);
+      expect(
+        declaredOn(group.firstElementChild!, 'padding-inline-start'),
+      ).toEqual([]);
+    }
+
+    // The indent lives inside each row instead, one step per nesting level.
+    // An ordinary row is the link itself: its own padding plus the steps.
+    const top = screen.getByRole('button', {name: 'Settings'});
+    const general = screen.getByRole('link', {name: 'General'});
+    const advanced = screen.getByRole('link', {name: 'Advanced'});
+    expect(indentOf(top)).toBeNull();
+    expect(indentOf(advanced)).toBe(
+      'calc(var(--spacing-2) + 2 * var(--spacing-6))',
+    );
+
+    // A split row (own href plus children) keeps the wrapper's base padding
+    // and puts the steps on the link, so the whole indent is clickable
+    // instead of dead space that still shows hover and press feedback.
+    expect(indentOf(general.parentElement!)).toBeNull();
+    expect(indentOf(general)).toBe('calc(1 * var(--spacing-6))');
+  });
+
+  it('clips the children group only while it is collapsed', async () => {
+    // Nested rows sit flush with the group, so a permanent clip would cut off
+    // their focus ring. The group clips for the collapse animation only.
+    const user = userEvent.setup();
+    render(
+      <SideNavItem label="Settings" collapsible>
+        <SideNavItem label="General" href="/settings/general" />
+      </SideNavItem>,
+    );
+    const group = () => screen.getByRole('group', {hidden: true});
+    expect(declaredOn(group(), 'overflow')).toEqual(['visible']);
+    expect(declaredOn(group().firstElementChild!, 'overflow')).toEqual([]);
+
+    await user.click(screen.getByRole('button', {name: 'Settings'}));
+    expect(declaredOn(group(), 'overflow')).toEqual(['hidden']);
+  });
+
+  it('puts the indent on the primary link of a nested actions row', () => {
+    render(
+      <SideNavItem label="Projects">
+        <SideNavItem
+          label="Alpha"
+          href="/projects/alpha"
+          actions={
+            <button type="button" aria-label="Alpha actions">
+              More
+            </button>
+          }
+        />
+      </SideNavItem>,
+    );
+    const alpha = screen.getByRole('link', {name: 'Alpha'});
+    expect(indentOf(alpha.parentElement!)).toBeNull();
+    expect(indentOf(alpha)).toBe('calc(1 * var(--spacing-6))');
+  });
+
+  it("composes a caller's style with the indent on a nested row", () => {
+    render(
+      <SideNavItem label="Settings">
+        <SideNavItem
+          label="General"
+          href="/settings/general"
+          style={{color: 'rebeccapurple'}}
+        />
+        <SideNavItem
+          label="Security"
+          href="/settings/security"
+          style={{color: 'rebeccapurple'}}>
+          <SideNavItem label="Keys" href="/settings/security/keys" />
+        </SideNavItem>
+      </SideNavItem>,
+    );
+    // Ordinary row: the link is the row.
+    const general = screen.getByRole('link', {name: 'General'});
+    expect(general.style.color).toBe('rebeccapurple');
+    expect(indentOf(general)).toBe(
+      'calc(var(--spacing-2) + 1 * var(--spacing-6))',
+    );
+    // Split row: the caller's style still lands on the primary link.
+    const security = screen.getByRole('link', {name: 'Security'});
+    expect(security.style.color).toBe('rebeccapurple');
+    expect(indentOf(security)).toBe('calc(1 * var(--spacing-6))');
+  });
+
+  it("lets a caller's inline-start padding replace the indent", () => {
+    // The caller's `style` composes after the indent: a caller-set
+    // inline-start padding is an inline declaration, so it wins over the
+    // indent's class rule on the element that carries the indent, on both
+    // the ordinary and the split row path.
+    render(
+      <SideNavItem label="Settings">
+        <SideNavItem
+          label="General"
+          href="/settings/general"
+          style={{paddingInlineStart: '20px'}}
+        />
+        <SideNavItem
+          label="Security"
+          href="/settings/security"
+          style={{paddingInlineStart: '20px'}}>
+          <SideNavItem label="Keys" href="/settings/security/keys" />
+        </SideNavItem>
+      </SideNavItem>,
+    );
+    const general = screen.getByRole('link', {name: 'General'});
+    expect(general.style.paddingInlineStart).toBe('20px');
+    const security = screen.getByRole('link', {name: 'Security'});
+    expect(security.style.paddingInlineStart).toBe('20px');
+    // A row whose caller sets no padding keeps its indent.
+    expect(indentOf(screen.getByRole('link', {name: 'Keys'}))).toBe(
+      'calc(var(--spacing-2) + 2 * var(--spacing-6))',
+    );
+  });
+
+  it('indents a small nested row from the small row padding', () => {
+    render(
+      <SideNavItem label="Settings">
+        <SideNavItem label="General" href="/settings/general" size="sm" />
+      </SideNavItem>,
+    );
+    expect(indentOf(screen.getByRole('link', {name: 'General'}))).toBe(
+      'calc(var(--spacing-1) + 1 * var(--spacing-6))',
+    );
+  });
+
+  it('does not indent the first level of a collapsed rail flyout', async () => {
+    const user = userEvent.setup();
+    renderCollapsed(
+      <SideNavItem label="Settings" icon={StubIcon}>
+        <SideNavItem label="General" href="/settings/general">
+          <SideNavItem label="Advanced" href="/settings/general/advanced" />
+        </SideNavItem>
+      </SideNavItem>,
+    );
+    await user.click(screen.getByRole('button', {name: 'Settings'}));
+
+    // jsdom leaves the native popover `display: none`, hence `hidden: true`.
+    // The flyout lists the parent's children as its own top level.
+    const general = screen.getByRole('link', {name: 'General', hidden: true});
+    const advanced = screen.getByRole('link', {name: 'Advanced', hidden: true});
+    expect(indentOf(general)).toBeNull();
+    expect(indentOf(general.parentElement!)).toBeNull();
+    expect(indentOf(advanced)).toBe(
+      'calc(var(--spacing-2) + 1 * var(--spacing-6))',
+    );
+  });
+
   it('passes data-testid', () => {
     render(<SideNavItem label="Dashboard" data-testid="nav-item" />);
     expect(screen.getByTestId('nav-item')).toBeInTheDocument();
@@ -987,6 +1150,41 @@ describe('SideNav resizable', () => {
     expect(
       screen.getByTestId('astryx-sidenav-resize-handle'),
     ).toBeInTheDocument();
+  });
+
+  it('names the nav it resizes with aria-controls (APG window splitter)', () => {
+    render(<SideNav resizable>Content</SideNav>);
+    const nav = screen.getByRole('navigation');
+    const handle = screen.getByRole('separator');
+    expect(nav.id).not.toBe('');
+    expect(handle).toHaveAttribute('aria-controls', nav.id);
+  });
+
+  it("keeps a consumer's nav id and points the handle at it", () => {
+    render(
+      <SideNav resizable id="primary-nav">
+        Content
+      </SideNav>,
+    );
+    expect(screen.getByRole('navigation')).toHaveAttribute('id', 'primary-nav');
+    expect(screen.getByRole('separator')).toHaveAttribute(
+      'aria-controls',
+      'primary-nav',
+    );
+  });
+
+  it('keeps the generated nav id when a wrapper forwards id={undefined}', () => {
+    render(
+      <SideNav resizable id={undefined}>
+        Content
+      </SideNav>,
+    );
+    const nav = screen.getByRole('navigation');
+    expect(nav.id).not.toBe('');
+    expect(screen.getByRole('separator')).toHaveAttribute(
+      'aria-controls',
+      nav.id,
+    );
   });
 
   it('clips the overlay drag handle within the resizable nav bounds', () => {
@@ -2420,6 +2618,22 @@ function declaredOn(el: Element, prop: string): string[] {
     })
     .map(rule => declaredValue(rule, prop))
     .filter(value => value != null);
+}
+
+/**
+ * The nesting indent a row carries, or null for none. The indent is a
+ * runtime StyleX value, so it rides the row's inline style as a custom
+ * property; read the value rather than the generated property name.
+ */
+function indentOf(el: HTMLElement): string | null {
+  const {style} = el;
+  for (let i = 0; i < style.length; i++) {
+    const value = style.getPropertyValue(style[i]).trim();
+    if (value.includes('var(--spacing-6)')) {
+      return value;
+    }
+  }
+  return null;
 }
 
 /**

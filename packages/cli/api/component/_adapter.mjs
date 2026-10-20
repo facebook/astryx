@@ -28,13 +28,17 @@ import {
 import {
   CORE_PACKAGE,
   discoverComponents,
+  docStem,
   findComponentReadme,
   findComponentSource,
   findExternalComponentDoc,
-  findIntegrationComponentDoc,
-  findIntegrationComponentSource,
+  findIntegrationComponent,
+  integrationMemberEntry,
+  isIntegrationMember,
+  recordedDocName,
   resolveImportPath,
   resolveIntegrationImportPath as resolveIntegrationImport,
+  unscopedComponentOwners,
 } from '../../foundation/discovery/component-discovery.mjs';
 import {Project} from '../../foundation/config/project.mjs';
 import {loadComponentDoc as loadValidatedComponentDoc} from '../../foundation/discovery/component-loader.mjs';
@@ -42,7 +46,7 @@ import {resolveComponentReplacements} from '../../foundation/discovery/component
 import {searchComponents} from '../../foundation/text/string-utils.mjs';
 import {AstryxError} from '../error.mjs';
 
-export {CORE_PACKAGE};
+export {CORE_PACKAGE, unscopedComponentOwners};
 
 /**
  * A loaded component doc. The shared validated loader accepts stamped and legacy
@@ -71,6 +75,8 @@ export {CORE_PACKAGE};
  * @property {string|null} sourcePath
  * @property {string|undefined} issuesUrl
  * @property {import('../../foundation/integrations/integrations.mjs').LoadedIntegration|null} integration
+ * @property {import('../../foundation/discovery/component-discovery.mjs').NameHold} hold
+ *   how the owner holds the name, for the owner rule
  */
 
 /**
@@ -240,17 +246,19 @@ export function resolveOwners(coreDir, dirName, loadedIntegrations) {
       sourcePath: findComponentSource(coreDir, dirName),
       issuesUrl: undefined,
       integration: null,
+      hold: 'core',
     });
   }
   for (const integration of loadedIntegrations) {
-    const docPath = findIntegrationComponentDoc(integration, dirName);
-    if (!docPath) continue;
+    const found = findIntegrationComponent(integration, dirName);
+    if (!found) continue;
     owners.push({
       package: integration.name,
-      docPath,
-      sourcePath: findIntegrationComponentSource(integration, dirName),
+      docPath: found.docPath,
+      sourcePath: found.sourcePath,
       issuesUrl: integration.issuesUrl,
       integration,
+      hold: found.hold,
     });
   }
   return owners;
@@ -324,7 +332,7 @@ export class ComponentAmbiguityError extends AstryxError {
     super(
       `Component "${dirName}" is provided by multiple packages. Re-run with --package <pkg> to choose one.`,
       owners.map(o => ({name: o.package, reason: 'provides this component'})),
-      ERROR_CODES.ERR_UNKNOWN_COMPONENT,
+      ERROR_CODES.ERR_AMBIGUOUS_COMPONENT,
     );
     this.candidates = owners.map(owner => ({
       package: owner.package,
@@ -362,6 +370,39 @@ export function resolveLegacyExternalDoc(ext, dirName) {
 }
 
 /**
+ * Whether a legacy external package documents `dirName`.
+ * @param {string} cwd
+ * @param {string} dirName
+ * @returns {boolean}
+ */
+export function legacyExternalDocuments(cwd, dirName) {
+  return discoverExternalPackages(cwd).some(
+    ext => resolveLegacyExternalDoc(ext, dirName) != null,
+  );
+}
+
+/**
+ * Whether a legacy docs package keeps `dirName` over these owners, each of which
+ * holds it only as an export a doc records.
+ * @param {string} cwd
+ * @param {string} dirName
+ * @param {Array<{hold?: string, docPath?: string | null}>} owners
+ * @returns {boolean}
+ */
+export function legacyExternalKeeps(cwd, dirName, owners) {
+  return (
+    owners.length > 0 &&
+    owners.every(
+      owner =>
+        owner.hold === 'doc' &&
+        owner.docPath != null &&
+        docStem(owner.docPath).toLowerCase() !== dirName.toLowerCase(),
+    ) &&
+    legacyExternalDocuments(cwd, dirName)
+  );
+}
+
+/**
  * The core source file for `dirName` (the no-scope `--source` path reads core
  * directly — it does NOT fall back to externals or fuzzy search).
  * @param {string} coreDir
@@ -375,6 +416,8 @@ export function resolveCoreSourcePath(coreDir, dirName) {
 /**
  * Resolve a bare (unscoped) name to a `.doc.mjs`: core first, then back-compat
  * externals, then a conservative fuzzy search. Throws ERR_UNKNOWN_COMPONENT
+ * for a genuinely unknown name, and ERR_AMBIGUOUS_COMPONENT when multiple
+ * packages provide the same name
  * (with candidate suggestions when close) or ERR_NO_DOC.
  * @param {string} dirName - bare component name (no `XDS` prefix)
  * @param {{coreDir: string, cwd: string, name: string}} ctx - `name` is the caller's original (prefixed) input, used in error text
@@ -580,4 +623,49 @@ export function scopeSubComponent(docs, dirName, coreDir) {
   if (docs.theming) scoped.theming = docs.theming;
 
   return {scoped, matchingComponent};
+}
+
+/**
+ * The doc an integration owner shows for `dirName`: when `dirName` is a member
+ * its family doc lists under its own name (`AcmeSlide` in an `AcmeCarousel`
+ * doc), the doc scoped to that member as {@link scopeSubComponent} scopes
+ * Core's, keeping the import the family doc states; otherwise `docs` itself.
+ * @param {LoadedComponentDoc} docs
+ * @param {OwnershipSubject} owner
+ * @param {string} dirName
+ * @returns {LoadedComponentDoc & {parentDoc?: string, import?: string}}
+ */
+export function scopeIntegrationMember(docs, owner, dirName) {
+  const record = {name: dirName, docPath: owner.docPath ?? null};
+  if (!isIntegrationMember(record)) return docs;
+  const entry = integrationMemberEntry(docs, record);
+  // The files list the member but the doc this process loaded has no entry
+  // for it (the doc changed after it loaded): never answer with the family.
+  if (entry == null) {
+    throw new AstryxError(
+      `No component named "${dirName}": its family doc changed after this process loaded it.`,
+      undefined,
+      ERROR_CODES.ERR_UNKNOWN_COMPONENT,
+    );
+  }
+  // Built from the entry, as scopeSubComponent scopes Core's, so a member that
+  // shares the doc's own `name` is scoped too.
+  /** @type {LoadedComponentDoc & {parentDoc?: string, import?: string}} */
+  const scoped = {
+    name: dirName,
+    description: entry.description,
+    props: entry.props,
+    components: [entry],
+    // The name the family doc opens under, for every member.
+    parentDoc:
+      owner.integration && record.docPath
+        ? recordedDocName(owner.integration, record.docPath)
+        : docs.name === dirName && record.docPath
+          ? docStem(record.docPath)
+          : docs.name,
+  };
+  if (docs.usage) scoped.usage = docs.usage;
+  if (docs.theming) scoped.theming = docs.theming;
+  if (docs.import) scoped.import = docs.import;
+  return scoped;
 }

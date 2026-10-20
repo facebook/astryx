@@ -23,7 +23,7 @@ import {
   typeScaleVars,
 } from '../theme/tokens.stylex';
 import type {BaseProps} from '../BaseProps';
-import {mergeProps} from '../utils';
+import {isRenderable, mergeProps} from '../utils';
 import {themeProps} from '../utils/themeProps';
 
 const styles = stylex.create({
@@ -169,7 +169,7 @@ export function EmptyState({
         className,
         style,
       )}>
-      {icon != null && <div aria-hidden="true">{icon}</div>}
+      {isRenderable(icon) && <div aria-hidden="true">{icon}</div>}
       <div {...stylex.props(styles.textGroup)}>
         {createElement(
           HeadingTag,
@@ -181,11 +181,7 @@ export function EmptyState({
           ),
           title,
         )}
-        {description != null && (
-          // Rendered as <div> (not <p>): description accepts ReactNode and a
-          // <p> cannot legally contain block children, which causes hydration
-          // mismatches. The StyleX style sets margin: 0, so appearance is
-          // unchanged.
+        {isRenderable(description) && (
           <div
             {...mergeProps(
               themeProps('empty-state-description', {
@@ -200,7 +196,7 @@ export function EmptyState({
           </div>
         )}
       </div>
-      {actions != null && (
+      {isRenderable(actions) && (
         <div
           {...stylex.props(styles.actions, isCompact && styles.actionsCompact)}>
           {actions}
