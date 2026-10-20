@@ -73,7 +73,13 @@ project's own CLI), installed for the computer, such as with
 `@astryxdesign/cli/host`. A **copy** is the `@astryxdesign/cli` a door starts:
 the one it installed or fetched, the one a host carries, or a release in the
 per-user cache that global mode installed (FR2, FR3, FR6). The **global copy**
-is the CLI package installed for the computer.
+is the CLI package installed for the computer: one in npm's global folder (a
+`node_modules` whose owner holds no package.json), or in a global folder that a
+package manager's own settings name (Bun's `BUN_INSTALL` or `globalDir`, Yarn's
+`global-folder`, pnpm's `PNPM_HOME` or `global-dir`, and each one's default),
+read the way that package manager reads them. A folder's layout alone never
+makes a copy global, and when the CLI cannot tell, the copy is not global, so it
+runs no update check and writes no agent text.
 
 A folder's **project** is found the way the CLI finds the Core and the CLI it
 reads there: the `@astryxdesign/core` installed in the folder or one of the four
@@ -454,13 +460,10 @@ works on is `spec:AST-040` FR9's.
     (Node's own prefix, `/usr/local`, `/usr`, or `%APPDATA%\npm` on Windows) is
     upgraded into that prefix:
     `npm i -g --prefix <prefix> @astryxdesign/cli@latest`, with `~` for the home
-    folder. A global folder is recognized by its layout, so one moved by the
-    package manager's own setting counts: Bun's `<BUN_INSTALL>/install/global`,
-    whose command names `BUN_INSTALL=<folder>` when the variable does not point
-    at it now, and Yarn 1's global folder (a package.json with only its
-    dependencies, a yarn.lock, and node_modules, nothing else), whose command is
-    `yarn global add --global-folder <folder> @astryxdesign/cli@latest` when it
-    is not Yarn's default.
+    folder. A global folder a package manager's settings move, such as Bun's
+    `BUN_INSTALL` or Yarn's `global-folder`, counts as global (the global copy,
+    above), and its plain command reinstalls there, since the package manager
+    reads the same settings.
   - Inside a project, when the release that answers it is older than the newest
     release the check found: the command installs `@astryxdesign/core` and
     `@astryxdesign/cli`, so a project that installed only Core gets its own CLI
@@ -629,8 +632,8 @@ with another skills folder links it to `.agents/skills/astryx` themselves.
 | G47 A project whose own CLI is newer than its Core, online or offline                                                                            | The project's own CLI; nothing is fetched                                                                                    | The hand-off line; `copy` is `project`                                                                                                                                          | `› G47`                                                                                               |
 | G48 Offline, a project whose own CLI cannot start                                                                                                | The starting copy                                                                                                            | FR2's warning line, once; `copy` is `fallback`                                                                                                                                  | `› G48`                                                                                               |
 | G49 Offline, a release a project whose own CLI cannot start needs failed to install; run again within ten minutes, from the same or another copy | The starting copy                                                                                                            | FR2's warning line, saying when the install was last tried; no install starts                                                                                                   | `› G49`                                                                                               |
-| G50 A global copy in a Bun global folder moved with `BUN_INSTALL`                                                                                | The global copy, as for any global install                                                                                   | The notice's command reinstalls into that folder                                                                                                                                | `› G50`                                                                                               |
-| G51 A global copy in a Yarn 1 global folder moved with `global-folder`                                                                           | The global copy, as for any global install                                                                                   | The notice names the folder with `--global-folder`; the same files in a folder with a project's own files are a project                                                         | `› G51`                                                                                               |
+| G50 A global copy in a Bun global folder moved with `BUN_INSTALL`; an app in a folder that ends in `install/global`                              | The global copy while `BUN_INSTALL` names the folder; the app's own CLI for the app                                          | `bun add -g` reinstalls there; the app is never global                                                                                                                          | `› G50`                                                                                               |
+| G51 A global copy in a Yarn 1 global folder named by `global-folder`; an app made with `yarn add` alone                                          | The global copy while Yarn's settings name the folder; the app's own CLI for the app                                         | `yarn global add` reinstalls there; the app runs no update check and writes no agent text                                                                                       | `› G51`                                                                                               |
 
 ### Platform support
 
