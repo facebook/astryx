@@ -14,7 +14,13 @@
 import fs from 'node:fs';
 
 import {builtinGuideFiles} from './docs-discovery.mjs';
-import {loadQuietly} from './copied-passages.mjs';
+import {
+  fileWords,
+  lineAtOffset,
+  loadQuietly,
+  locateWords,
+  textWords,
+} from './copied-passages.mjs';
 
 /**
  * A code span that is exactly the command opening one doc. A command with
@@ -134,23 +140,23 @@ export async function findStrayPointers(discovered) {
     if (!topic.file) continue;
     const doc = await loadQuietly(topic.file);
     if (!doc) continue;
-    let lines = /** @type {string[]} */ ([]);
+    /** @type {{word: string, line: number}[]} */
+    let source = [];
     try {
-      lines = fs.readFileSync(topic.file, 'utf8').split('\n');
+      source = fileWords(fs.readFileSync(topic.file, 'utf8'));
     } catch {
       // No line numbers; the finding still names the section.
     }
+    // Each string is found by its whole run of words, from where the last
+    // one was found, so two strings that open alike keep their own lines.
+    let cursor = 0;
     for (const {text, section} of linkableStrings(doc)) {
-      // The string's longest plain run is written in the file as it reads,
-      // so it finds the line where the string starts; each pointer is on
-      // that line or a later one of the same string.
-      const plain = (text.match(/[A-Za-z0-9 ,.;:()-]{12,}/g) ?? []).sort(
-        (a, b) => b.length - a.length,
-      )[0];
-      const start = plain ? lines.findIndex(line => line.includes(plain)) : -1;
-      const end = start < 0 ? -1 : start + text.split('\n').length + 2;
-      let within = start;
-      for (const target of pointersIn(text)) {
+      const words = textWords(text);
+      let index = locateWords(source, words, cursor);
+      if (index < 0) index = locateWords(source, words);
+      if (index >= 0) cursor = index + words.length;
+      for (const match of text.matchAll(POINTER)) {
+        const target = match[1];
         const link = own.has(target)
           ? `{@link ${own.get(target)}:${target}}`
           : core.has(target)
@@ -158,21 +164,15 @@ export async function findStrayPointers(discovered) {
             : null;
         if (!link) continue;
         const command = `astryx docs ${target}`;
-        let line = null;
-        for (
-          let at = Math.max(within, 0);
-          start >= 0 && at < Math.min(lines.length, end);
-          at++
-        ) {
-          if (
-            lines[at].includes(`\`${command}\``) ||
-            lines[at].includes(`\\\`${command}\\\``)
-          ) {
-            line = at + 1;
-            within = at;
-            break;
-          }
-        }
+        const line =
+          index < 0
+            ? null
+            : lineAtOffset(
+                source,
+                index,
+                words,
+                /** @type {number} */ (match.index) + 1,
+              );
         const where = [
           section ? `section "${section}"` : null,
           line == null ? null : `line ${line}`,
