@@ -4,7 +4,7 @@
 
 /**
  * @file BottomSheet.tsx
- * @input Uses React, StyleX, core hooks, shared layer dismissal, the shared interaction modality, named BottomSheetPanel, BottomSheetSwitcherContext
+ * @input Uses React, StyleX, core hooks, shared layer dismissal, the shared interaction modality, named BottomSheetPanel, BottomSheetSwitcherContext, sheetScrollLock
  * @output Exports BottomSheet component and BottomSheetProps
  * @position Public BottomSheet router plus private standalone/switcher hosts
  *
@@ -15,8 +15,15 @@
  * which owns sheet presentation, content padding, gestures, mobile-keyboard
  * accommodation, and motion completion.
  *
+ * A modal sheet's page scroll lock is CSS keyed off `dialog:modal`
+ * (sheetScrollLock), not a `<body>` pin from script: it engages the instant
+ * the dialog enters the top layer and releases with the last modal sheet
+ * dialog, however many are open. The host prepares the lock right before
+ * showModal() and settles it right after.
+ *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/BottomSheet/BottomSheetPanel.tsx
+ * - /packages/core/src/BottomSheet/sheetScrollLock.ts
  * - /packages/core/src/BottomSheet/BottomSheetEdgeTint.tsx
  * - /packages/core/src/BottomSheet/BottomSheet.doc.mjs
  * - /packages/core/src/BottomSheet/BottomSheet.test.tsx
@@ -43,7 +50,7 @@ import type {BaseProps} from '../BaseProps';
 import type {DialogPurpose} from '../Dialog';
 import type {SpacingStep} from '../utils/types';
 import {colorVars, durationVars, easeVars} from '../theme/tokens.stylex';
-import {useDevWarning, useScrollLock} from '../hooks';
+import {useDevWarning} from '../hooks';
 import {LayerDepthProvider} from '../Layer/LayerDepthContext';
 import {useLayerDismissal} from '../Layer/useLayerDismissal';
 import {focusForLastInput} from '../utils/focusReturn';
@@ -54,6 +61,11 @@ import {
   type BottomSheetPanelState,
 } from './BottomSheetPanel';
 import {BottomSheetEdgeTint} from './BottomSheetEdgeTint';
+import {
+  SHEET_DIALOG_ATTRIBUTE,
+  acquireSheetScrollLock,
+  prepareSheetScrollLock,
+} from './sheetScrollLock';
 import {
   BottomSheetSwitcherContext,
   type BottomSheetSwitcherContextValue,
@@ -235,6 +247,8 @@ function focusPanel(panel: HTMLElement | null, isModal: boolean): void {
   }
 }
 
+const sheetDialogAttribute = {[SHEET_DIALOG_ATTRIBUTE]: ''};
+
 function StandaloneBottomSheet({
   ref,
   isOpen,
@@ -298,7 +312,9 @@ function StandaloneBottomSheet({
     if (!wasOpen) {
       if (hasScrim) {
         triggerRef.current = document.activeElement as HTMLElement | null;
+        const settleScrollLock = prepareSheetScrollLock(dialog);
         dialog.showModal();
+        settleScrollLock();
       } else {
         dialog.show();
       }
@@ -336,7 +352,19 @@ function StandaloneBottomSheet({
   );
 
   useInteractionModalityTracking();
-  useScrollLock(shouldPresent && hasScrim);
+  // The CSS lock follows the dialog's own modal state; the scrollbar-gutter
+  // padding fallback (engines without `scrollbar-gutter`) is script, so its
+  // membership is paired here: joined while the sheet is a presented modal
+  // sheet, left in the cleanup -- on close, on unmount while presented, and
+  // on a StrictMode replay alike. Declared after the presenting effect so
+  // the dialog has been prepared and presented when it joins.
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (dialog == null || !(shouldPresent && hasScrim)) {
+      return;
+    }
+    return acquireSheetScrollLock(dialog);
+  }, [hasScrim, shouldPresent]);
   useDevWarning(
     'BottomSheet',
     'requires a non-empty `label` for an accessible name; the open sheet ' +
@@ -392,6 +420,7 @@ function StandaloneBottomSheet({
         hasScrim && !isOpen && isPresented && styles.scrimClosing,
         !hasScrim && styles.dialogNonModal,
       )}
+      {...sheetDialogAttribute}
       ref={dialogRef}
       aria-label={label}
       aria-hidden={!isOpen && isPresented ? 'true' : undefined}

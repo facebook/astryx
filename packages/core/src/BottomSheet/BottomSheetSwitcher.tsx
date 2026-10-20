@@ -4,7 +4,7 @@
 
 /**
  * @file BottomSheetSwitcher.tsx
- * @input Uses React context, StyleX, theme tokens, shared layer dismissal, focus/scroll-lock hooks, BottomSheetSwitcherContext
+ * @input Uses React context, StyleX, theme tokens, shared layer dismissal, the focus-trap hook, sheetScrollLock, BottomSheetSwitcherContext
  * @output Exports BottomSheetSwitcher and BottomSheetSwitcherProps
  * @position Core switcher for mutually exclusive BottomSheet flows
  *
@@ -19,9 +19,12 @@
  * scrim flow calls showModal() once and keeps that native top-layer dialog open
  * across every handoff. A no-scrim flow calls show() on the same non-modal shell.
  * This keeps one modal boundary and one native ::backdrop without a portal.
+ * Page scroll is locked by CSS keyed off that dialog's modal state
+ * (sheetScrollLock.ts), as for a standalone sheet.
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/BottomSheet/BottomSheet.tsx
+ * - /packages/core/src/BottomSheet/sheetScrollLock.ts
  * - /packages/core/src/BottomSheet/BottomSheetEdgeTint.tsx
  * - /packages/core/src/BottomSheet/BottomSheetSwitcher.doc.mjs
  * - /packages/core/src/BottomSheet/BottomSheetSwitcher.spec.md
@@ -46,7 +49,6 @@ import * as stylex from '@stylexjs/stylex';
 import type {BaseProps} from '../BaseProps';
 import type {DialogPurpose} from '../Dialog';
 import {colorVars, durationVars, easeVars} from '../theme/tokens.stylex';
-import {useScrollLock} from '../hooks';
 import {
   useFocusTrap,
   useFocusTrapEscapeCompatibilitySignal,
@@ -56,6 +58,11 @@ import {dispatchLayerEscapeKeyDown} from '../Layer/layerStack';
 import {useLayerDismissal} from '../Layer/useLayerDismissal';
 import {composeEventHandlers, mergeProps} from '../utils';
 import {BottomSheetEdgeTint} from './BottomSheetEdgeTint';
+import {
+  SHEET_DIALOG_ATTRIBUTE,
+  acquireSheetScrollLock,
+  prepareSheetScrollLock,
+} from './sheetScrollLock';
 import {
   BottomSheetSwitcherContext,
   type BottomSheetSwitcherContextValue,
@@ -313,7 +320,6 @@ export function BottomSheetSwitcher({
     getContainer: () => dialogRef.current,
     isPresent: () => dialogRef.current?.open ?? false,
   });
-  useScrollLock(isModal);
 
   // Open one shared shell for the complete flow. Modal flows enter the native
   // top layer once; handoffs only swap panels inside it. The final panel owns
@@ -335,7 +341,9 @@ export function BottomSheetSwitcher({
           triggerRef.current = document.activeElement as HTMLElement | null;
         }
         if (hasScrim) {
+          const settleScrollLock = prepareSheetScrollLock(dialog);
           dialog.showModal();
+          settleScrollLock();
         } else {
           dialog.show();
         }
@@ -353,6 +361,18 @@ export function BottomSheetSwitcher({
     triggerRef.current = null;
     dialogModeRef.current = null;
   }, [hasScrim, isFlowVisible]);
+
+  // Membership in the scrollbar-gutter padding fallback (engines without
+  // `scrollbar-gutter`) is paired with the flow being modal: joined after the
+  // effect above presents the dialog, left in the cleanup on close, unmount
+  // while presented, and StrictMode replay alike.
+  useLayoutEffect(() => {
+    const dialog = dialogRef.current;
+    if (dialog == null || !isModal) {
+      return;
+    }
+    return acquireSheetScrollLock(dialog);
+  }, [isModal]);
 
   const getSheetPhase = useCallback(
     (sheetId: string): BottomSheetSwitcherPhase => {
@@ -641,6 +661,7 @@ export function BottomSheetSwitcher({
       <dialog
         {...props}
         {...dialogPresentationProps}
+        {...{[SHEET_DIALOG_ATTRIBUTE]: ''}}
         ref={useMergedRefs(ref, dialogRef, containerRef)}
         aria-label={ariaLabel}
         aria-modal={isModal ? 'true' : undefined}

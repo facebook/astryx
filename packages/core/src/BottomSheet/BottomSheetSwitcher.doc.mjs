@@ -173,7 +173,7 @@ export const docs = {
       name: 'hasScrim',
       type: 'boolean',
       description:
-        "Whether the shared dialog is modal. true uses showModal() once for one native ::backdrop, focus trap, scroll lock, and click-to-dismiss when the active BottomSheet has purpose='info'. false uses show() with no backdrop and leaves the page interactive; avoid transformed, contained, or clipping ancestors because the non-modal dialog remains in its containing context.",
+        "Whether the shared dialog is modal. true uses showModal() once for one native ::backdrop, focus trap, a CSS page-scroll lock keyed off the open modal dialog, and click-to-dismiss when the active BottomSheet has purpose='info'. false uses show() with no backdrop and leaves the page interactive; avoid transformed, contained, or clipping ancestors because the non-modal dialog remains in its containing context.",
       default: 'true',
     },
     {

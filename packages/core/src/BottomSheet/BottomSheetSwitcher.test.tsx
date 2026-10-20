@@ -21,18 +21,25 @@ import {hasActiveFocusTrapEscape, useFocusTrap} from '../hooks';
 import {useLayerDismissal} from '../Layer/useLayerDismissal';
 import {BottomSheet} from './BottomSheet';
 import {BottomSheetSwitcher} from './BottomSheetSwitcher';
+import {SHEET_DIALOG_ATTRIBUTE} from './sheetScrollLock';
 
+// jsdom implements no <dialog> presentation. The stubs record which open
+// dialogs are modal, standing in for the `:modal` pseudo-class jsdom cannot
+// match, so the CSS scroll lock's precondition can be read from the DOM.
+const modalDialogs = new WeakSet<HTMLDialogElement>();
 beforeEach(() => {
   HTMLDialogElement.prototype.showModal = vi.fn(function (
     this: HTMLDialogElement,
   ) {
     this.setAttribute('open', '');
+    modalDialogs.add(this);
   });
   HTMLDialogElement.prototype.show = vi.fn(function (this: HTMLDialogElement) {
     this.setAttribute('open', '');
   });
   HTMLDialogElement.prototype.close = vi.fn(function (this: HTMLDialogElement) {
     this.removeAttribute('open');
+    modalDialogs.delete(this);
   });
   window.scrollTo = vi.fn();
   vi.stubGlobal(
@@ -226,6 +233,20 @@ function ModeSwitchFlow() {
 
 function getSharedDialog(): HTMLDialogElement {
   return screen.getByRole<HTMLDialogElement>('dialog');
+}
+
+/**
+ * Whether the CSS page-scroll lock is engaged: its selector,
+ * `:root:has(dialog[data-sheet-dialog]:modal)`, matches exactly when an open
+ * sheet dialog was presented with showModal(). The browser spec measures the
+ * lock itself; this reads its precondition.
+ */
+function isScrollLockEngaged(): boolean {
+  return Array.from(
+    document.querySelectorAll<HTMLDialogElement>(
+      `dialog[${SHEET_DIALOG_ATTRIBUTE}][open]`,
+    ),
+  ).some(dialog => modalDialogs.has(dialog));
 }
 
 function finishSheetTransition(
@@ -558,12 +579,42 @@ describe('BottomSheetSwitcher', () => {
     expect(outgoingSheet).not.toHaveAttribute('hidden');
     expect(outgoingSheet).toHaveAttribute('inert');
     expect(sharedDialog).toHaveStyle({'--_sheet-scrim-opacity': '0'});
-    expect(document.body.style.position).toBe('fixed');
+    // Scroll stays locked through the exit: the dialog is still modal, and
+    // no script pinned the body for it.
+    expect(isScrollLockEngaged()).toBe(true);
+    expect(document.body.style.position).toBe('');
 
     finishSheetTransition(outgoingSheet, 'transform');
 
     expect(sharedDialog).not.toHaveAttribute('open');
-    expect(document.body.style.position).not.toBe('fixed');
+    expect(isScrollLockEngaged()).toBe(false);
+  });
+
+  it('locks page scroll by CSS for the whole flow: one modal dialog across handoffs, no body pin, released after the last exit', () => {
+    render(<Flow />);
+    expect(isScrollLockEngaged()).toBe(false);
+
+    fireEvent.click(screen.getByRole('button', {name: 'Start flow'}));
+    const dialog = getSharedDialog();
+    expect(dialog).toHaveAttribute(SHEET_DIALOG_ATTRIBUTE, '');
+    expect(isScrollLockEngaged()).toBe(true);
+    expect(document.body.style.position).toBe('');
+    expect(document.body.style.overflow).toBe('');
+
+    fireEvent.click(screen.getByRole('button', {name: 'Continue'}));
+    expect(HTMLDialogElement.prototype.showModal).toHaveBeenCalledTimes(1);
+    expect(isScrollLockEngaged()).toBe(true);
+    finishSheetTransition(getSheetLayer('confirm-sheet'), 'transform');
+    finishSheetTransition(getSheetLayer('details-sheet'), 'opacity');
+    expect(isScrollLockEngaged()).toBe(true);
+
+    fireEvent.keyDown(dialog, {key: 'Escape'});
+    // Still modal through the exit motion.
+    expect(isScrollLockEngaged()).toBe(true);
+    finishSheetTransition(getSheetLayer('confirm-sheet'), 'transform');
+    expect(dialog).not.toHaveAttribute('open');
+    expect(isScrollLockEngaged()).toBe(false);
+    expect(document.body.style.position).toBe('');
   });
 
   it('releases the shared modal layer when the closing sheet unmounts immediately', () => {
@@ -578,7 +629,7 @@ describe('BottomSheetSwitcher', () => {
     fireEvent.keyDown(sharedDialog, {key: 'Escape'});
 
     expect(sharedDialog).not.toHaveAttribute('open');
-    expect(document.body.style.position).not.toBe('fixed');
+    expect(isScrollLockEngaged()).toBe(false);
   });
 
   it('keeps the shared dialog inline and opens it modally', () => {
@@ -644,7 +695,7 @@ describe('BottomSheetSwitcher', () => {
     expect(dialog).toHaveAttribute('open');
     expect(HTMLDialogElement.prototype.show).toHaveBeenCalledTimes(1);
     expect(HTMLDialogElement.prototype.showModal).not.toHaveBeenCalled();
-    expect(document.body.style.position).not.toBe('fixed');
+    expect(isScrollLockEngaged()).toBe(false);
   });
 
   it('requests activeSheet=null when the active sheet dismisses', () => {
