@@ -176,6 +176,11 @@ and remains available through explicit Core package selection.
   the addition. A name a patch release adds to Core or the CLI (a component,
   template, or topic) MAY raise a conflict with a package's own name. Each
   `doctor integration` subcommand, exit code, and JSON MUST stay unchanged.
+  Because builds fail on its findings, it MUST NOT report a finding the
+  package's code does not contradict: a check that cannot judge an item lists
+  it as not checked instead (DEC-7). A change that can fail a build that
+  passes today, including a stricter rule for an existing finding, MAY ship
+  only in a minor release that names it.
 - **INV9 — A command that cannot support `--json` is rejected before any side
   effect**, not part-way through the work.
 - **INV10 — Every write is confined.** Output paths pass `assertWithin`, which
@@ -517,6 +522,17 @@ opt-in (DEC-4).
 Rejected: guidance that leaves the check optional (packages ship drift their
 users find first).
 
+### DEC-7 — The integration check reports only what the code contradicts
+
+**Decider:** `josephfarina`, `2026-10-19`
+
+Every integration runs `integration check --strict` in its build (DEC-6), so a
+false finding fails a package for a fault it does not have, and its only way
+out, dropping `--strict`, also drops the check for every real fault. A check
+that cannot tell whether the code contradicts a doc lists the item as not
+checked, which `--strict` does not fail.
+Rejected: reporting a doubtful item as a warning (`--strict` fails it).
+
 ## Verification
 
 | Invariant | Evidence                                                                                                                                                   | Failure signal                                                                                                                                  |
@@ -544,7 +560,7 @@ users find first).
 | INV32     | `test/cli-strict-guard.test.mjs` lists every command offering `--strict` and every command whose exit depends on warnings; `api/integration/check/check.test.mjs` compares a strict run with the default run       | A second command offers `--strict`, a command exits 1 on a warning alone without `--strict`, or a strict run reports a finding the default run does not or outside the command's issue format. |
 | INV33     | `foundation/discovery/prop-drift.test.mjs`, `foundation/discovery/type-text.test.mjs`, `clients/cli/commands/doctor-integration.test.mjs`, `test/core-prop-docs.test.mjs` | A removed or renamed prop or a changed union passes unreported, a missing compiler reads as a pass, or a table that leaves out `ref`, `key`, `xstyle`, `className`, `style`, `data-testid`, or an `@internal` prop draws a warning. |
 | INV34     | `foundation/discovery/doc-types.test.mjs`, `clients/cli/commands/doctor-integration.test.mjs`, `test/core-doc-types.test.mjs` | An unknown, missing, or mistyped field passes unreported, or a missing compiler reads as a pass. |
-| INV35     | `api/integration/check/check.test.mjs`, `clients/cli/commands/integration-check.test.mjs`, `test/integration-check-failures.test.mjs`, `api/search/search.integration-check.test.mjs` | The default exit differs from a check's own, a warning or a skipped comparison passes `--strict`, text and JSON exit differently, a new failing finding is added without the list changing, or a search for ci does not find the command first. |
+| INV35     | `api/integration/check/check.test.mjs`, `clients/cli/commands/integration-check.test.mjs`, `test/integration-check-failures.test.mjs`, `api/search/search.integration-check.test.mjs`, `foundation/discovery/prop-drift.test.mjs`, `foundation/discovery/type-match.test.mjs`, `foundation/discovery/doc-types.test.mjs` | The default exit differs from a check's own, a warning or a skipped comparison passes `--strict`, text and JSON exit differently, a new failing finding is added without the list changing, a search for ci does not find the command first, or a finding is reported on a doc the code does not contradict (for a type, one TypeScript accepts). |
 
 ## Open questions
 
