@@ -117,6 +117,23 @@ describe('astryx integration check', () => {
     expect(run.status).toBe(1);
   });
 
+  it('--strict prints each finding once: its message above, its code in the failing list', async () => {
+    const id = await coreTemplateId();
+    writePackage({id});
+
+    const run = await runCli(['integration', 'check', '--strict'], tmpDir);
+    const json = await runCli(
+      ['integration', 'check', '--strict', '--json'],
+      tmpDir,
+    );
+    const [failure] = JSON.parse(json.stdout.trim()).data.failures;
+
+    expect(run.stdout.split(failure.message).length - 1).toBe(1);
+    expect(
+      run.stdout.slice(run.stdout.indexOf('Failing under --strict')),
+    ).toContain('template_id_conflict');
+  });
+
   it('--json carries each check with its own envelope, the --strict failures, and exits as the text does', async () => {
     const id = await coreTemplateId();
     writePackage({id});

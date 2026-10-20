@@ -21,6 +21,7 @@ export const docs = {
     'reset',
     'smoke test',
     'layer audit',
+    'cascade layers',
     'Tailwind coexistence',
   ],
 

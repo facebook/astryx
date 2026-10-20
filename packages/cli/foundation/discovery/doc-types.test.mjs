@@ -41,6 +41,37 @@ function withTypeScript() {
 }
 
 /**
+ * TypeScript 7 (no JavaScript compiler API) with the TypeScript 6 API package
+ * beside it, which re-exports a real TypeScript.
+ */
+function withTypeScript7AndItsTypeScript6Api() {
+  const ts7 = path.join(pkg, 'node_modules', 'typescript');
+  fs.mkdirSync(ts7, {recursive: true});
+  fs.writeFileSync(
+    path.join(ts7, 'package.json'),
+    JSON.stringify({
+      name: 'typescript',
+      version: '7.0.2',
+      exports: {'./package.json': './package.json'},
+    }),
+  );
+  const ts6 = path.join(pkg, 'node_modules', '@typescript', 'typescript6');
+  fs.mkdirSync(ts6, {recursive: true});
+  fs.writeFileSync(
+    path.join(ts6, 'package.json'),
+    JSON.stringify({
+      name: '@typescript/typescript6',
+      version: '6.0.2',
+      main: 'index.js',
+    }),
+  );
+  fs.writeFileSync(
+    path.join(ts6, 'index.js'),
+    `module.exports = require(${JSON.stringify(TYPESCRIPT_DIR)});\n`,
+  );
+}
+
+/**
  * @param {string} rel
  * @param {string} text
  */
@@ -117,6 +148,10 @@ describe('checkDocTypes', () => {
 
       const report = await check([['components/Badge.doc.mjs', 'components']]);
 
+      // The reason names the version and the fix, so a --strict failure
+      // says what to install.
+      expect(report.reason).toContain('TypeScript 7.0.0');
+      expect(report.reason).toContain('npm install -D @typescript/typescript6');
       expect(report).toEqual({
         status: 'skipped',
         reason: unusableTypeScriptReason('7.0.0', 'docs were not checked'),
@@ -126,6 +161,19 @@ describe('checkDocTypes', () => {
       });
       expect(report.reason).toContain('TypeScript 7.0.0 is installed');
     }
+  });
+
+  it("checks with TypeScript 7's TypeScript 6 API package when the project has one", async () => {
+    write(
+      'components/Badge.doc.mjs',
+      `export default ${JSON.stringify(COMPONENT)};\n`,
+    );
+    withTypeScript7AndItsTypeScript6Api();
+
+    const report = await check([['components/Badge.doc.mjs', 'components']]);
+
+    expect(report.status).toBe('checked');
+    expect(report.docs).toBe(1);
   });
 
   it('says there is nothing to check when the package has no doc files, with or without TypeScript', async () => {

@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file `astryx docs cli/integrations/debug-and-gap-reports`: receive a record
+ * @file `astryx docs cli/integrations/building-blocks/configuration/debug-and-gap-reports`: receive a record
  * of each CLI run with `debug`, and handle `astryx gap-report` with
  * `gapReport`, both named exports of the integration manifest.
  */
@@ -44,7 +44,7 @@ export default {
         },
         {
           type: 'prose',
-          text: 'The event is a `DebugEvent` with `command`, `outcome`, `exitCode`, `durationMs`, `error`, and more, its values scrubbed (`redacted: true`). Every field is in {@link generic:authoring}.',
+          text: 'The event is a `DebugEvent` with `command`, `outcome`, `exitCode`, `durationMs`, `error`, and more, its values scrubbed (`redacted: true`). Every field is in {@link schema:debug-event}.',
         },
         {
           type: 'prose',
@@ -104,22 +104,11 @@ export const gapReport = {
         },
         {
           type: 'prose',
-          text: 'Every handler in the app gets every report, so check `report.target.package` and skip reports about other packages. The receipt `status` is one of:',
+          text: 'Every handler in the app gets every report, so check `report.target.package` and skip reports about other packages.',
         },
         {
-          type: 'table',
-          headers: ['`status`', 'Meaning'],
-          rows: [
-            [
-              '`filed`',
-              'You created or queued the report. Return `url` or `message`.',
-            ],
-            [
-              '`routed_only`',
-              'You point the caller to where to file it. `url` is required.',
-            ],
-            ['`skipped`', 'You chose not to act, for example on a duplicate.'],
-          ],
+          type: 'prose',
+          text: 'Every field is in {@link schema:gap-report-handler}.',
         },
         {
           type: 'prose',
@@ -175,6 +164,26 @@ message:     Rerun with --confirm-public to file this report.`,
         {
           type: 'prose',
           text: 'One handler anywhere in the app, from the app or from any package, turns the fallback off for every report. So does a listed package that fails to load: the CLI cannot tell whether it has a handler, so the report fails for that package instead of going to another tracker. See {@link command:gap-report}.',
+        },
+      ],
+    },
+    {
+      id: 'choose-a-destination',
+      title: 'Let the person choose where a report goes',
+      content: [
+        {
+          type: 'prose',
+          text: 'When an app loads packages that name their own `issuesUrl`, a report can go to the default (the handlers, or the fallback above) or to one of those packages. `astryx gap-report --list-categories` and the receipt of a report filed without `--to` list every destination, with a line telling the agent to ask the person.',
+        },
+        {
+          type: 'list',
+          style: 'unordered',
+          items: [
+            'An agent asks the person where to file. It never picks a package destination on its own.',
+            "`--to <package>` carries the person's choice: the report goes only to that package's `issuesUrl`, under the same `--confirm-public` rule, and the handlers do not run.",
+            'Without a choice, leave out `--to`; the report goes to the default.',
+            'A `--to` that names no destination fails before anything is sent and lists the destinations.',
+          ],
         },
       ],
     },

@@ -26,7 +26,9 @@ export const doc = {
     'can stay exit-0 in a non-integration directory. It also checks every doc the ' +
     'package ships under its roots (component, template, docs topic, theme, and translation, served or not) against ' +
     "the published authoring type for its kind, as `tsc` would, with the project's " +
-    'own `typescript`: an unknown field, a missing required field, or a value outside ' +
+    'own `typescript` (or, where `typescript` is missing or has no JavaScript compiler ' +
+    'API, as TypeScript 7 does, the `@typescript/typescript6` it installs): an unknown ' +
+    'field, a missing required field, or a value outside ' +
     "a field's type is a warning in `docTypes` naming the field and a fix. A test " +
     'fixture under `__tests__` in the components or docs root is counted, not checked. ' +
     'Without TypeScript, `docTypes` is `skipped` with a reason.',

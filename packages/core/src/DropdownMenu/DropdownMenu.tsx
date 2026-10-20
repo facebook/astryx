@@ -4,7 +4,7 @@
 
 /**
  * @file DropdownMenu.tsx
- * @input Uses React, StyleX, usePopover, MenuBottomSheet, Button, List,
+ * @input Uses React, StyleX, usePopover, MenuBottomSheet (lazy), Button, List,
  *   useListFocus, and the shared viewport-safe menu-width resolver
  * @output Exports DropdownMenu with caller-selected popover or bottom-sheet
  *   presentation
@@ -81,8 +81,11 @@ import {
   useAdaptivePresentation,
   type AdaptivePresentation,
 } from '../hooks/useAdaptivePresentation';
-import {MenuBottomSheet} from './MenuBottomSheet';
-import {MenuBottomSheetActionList} from './MenuBottomSheetActionList';
+// Loaded on demand: only the bottom-sheet presentation renders the sheet.
+import {
+  MenuBottomSheet,
+  MenuBottomSheetActionList,
+} from './lazyMenuBottomSheet';
 import {layerAnimations} from '../Layer/layerAnimations.stylex';
 import type {LayerAlignment, LayerPlacement} from '../Layer/useLayer';
 import {
@@ -759,12 +762,37 @@ function DropdownMenuBottomSheet({
     if (!isOpen || openModalityRef.current !== 'keyboard') {
       return;
     }
-    const frame = requestAnimationFrame(() => {
-      actionListRef.current
-        ?.querySelector<HTMLElement>('button:not(:disabled), a[href]')
-        ?.focus({preventScroll: true});
+    const findFirstAction = () =>
+      actionListRef.current?.querySelector<HTMLElement>(
+        'button:not(:disabled), a[href]',
+      ) ?? null;
+    let observer: MutationObserver | null = null;
+    let frame = requestAnimationFrame(() => {
+      const action = findFirstAction();
+      if (action != null) {
+        action.focus({preventScroll: true});
+        return;
+      }
+      // The sheet loads on demand, so a keyboard open can arrive before its
+      // rows exist. Wait for them, then focus a frame later so the sheet's
+      // own open-focus has already run.
+      observer = new MutationObserver(() => {
+        const loaded = findFirstAction();
+        if (loaded == null) {
+          return;
+        }
+        observer?.disconnect();
+        observer = null;
+        frame = requestAnimationFrame(() => {
+          loaded.focus({preventScroll: true});
+        });
+      });
+      observer.observe(document.body, {childList: true, subtree: true});
     });
-    return () => cancelAnimationFrame(frame);
+    return () => {
+      cancelAnimationFrame(frame);
+      observer?.disconnect();
+    };
   }, [currentItems, isOpen]);
 
   useEffect(() => {

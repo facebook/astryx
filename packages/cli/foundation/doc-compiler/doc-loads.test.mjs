@@ -257,8 +257,12 @@ const RUNNERS = {
     sites: ['importDocModule'],
   },
   'foundation/discovery/project-typescript.mjs': {
-    runs: "the project's own typescript, for the author checks that read source and docs with it, and its package.json for the version of one they cannot use",
-    sites: ['require(typescript)', 'require(typescript/package.json)'],
+    runs: "the project's own typescript, for the author checks that read source and docs with it, and its package.json for the version of one they cannot use; beside TypeScript 7, which has no compiler API, the TypeScript 6 API package @typescript/typescript6",
+    sites: [
+      'require(<computed>)',
+      'require(typescript)',
+      'require(typescript/package.json)',
+    ],
   },
   'foundation/discovery/template-adapter.mjs': {
     runs: '@babel/parser, to find the fixture references and page-local bindings in template source; and a template doc that does not validate, to read the replacement it declares',

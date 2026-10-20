@@ -353,6 +353,49 @@ describe('checkImplicitIntegrations', () => {
     expect(c.message).toContain('named in astryx.config');
   });
 
+  // A package with no astryx.config that loads its own manifest: there is no
+  // config file, so the message must not say anything is named in one.
+  it("names the package's own manifest instead of a config that does not exist", () => {
+    const c = checkImplicitIntegrations({
+      integrations: [autolinked({__autolinked: false, __local: true, name: '@acme/kit'})],
+    });
+    expect(c.status).toBe('info');
+    expect(c.message).toBe(
+      "None — the only loaded integration is this package's own manifest (@acme/kit).",
+    );
+    expect(c.message).not.toContain('astryx.config');
+  });
+
+  // An own manifest that failed to load keeps a `__local` record carrying
+  // `__loadError`; it loaded nothing, so it is never named as loaded.
+  it("does not name the package's own manifest as loaded when it failed to load", () => {
+    const failed = autolinked({
+      __autolinked: false,
+      __local: true,
+      name: '@acme/kit',
+      __loadError: 'astryx.integration.mjs threw: boom',
+    });
+    const alone = checkImplicitIntegrations({integrations: [failed]});
+    expect(alone.status).toBe('info');
+    expect(alone.message).toBe('None loaded.');
+    const beside = checkImplicitIntegrations({
+      integrations: [autolinked({__autolinked: false}), failed],
+    });
+    expect(beside.message).toBe('None — every loaded integration is named in astryx.config.');
+  });
+
+  it('names both when configured integrations load beside the own manifest', () => {
+    const c = checkImplicitIntegrations({
+      integrations: [
+        autolinked({__autolinked: false}),
+        autolinked({__autolinked: false, __local: true, name: '@acme/kit'}),
+      ],
+    });
+    expect(c.message).toBe(
+      "None — every loaded integration is named in astryx.config or is this package's own manifest (@acme/kit).",
+    );
+  });
+
   it('names the package, the field, and what it contributes', () => {
     // Roots count only when they exist, so this one gives them real folders.
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'astryx-implicit-'));
