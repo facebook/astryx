@@ -209,8 +209,9 @@ function MessageFieldExample() {
     isOpen,
     onOpen: () => false,
     onClose: () => setMention(undefined),
-    onSelect: (_value, person) => {
-      if (mention == null) {
+    onSelect: value => {
+      const person = PEOPLE.find(candidate => candidate.value === value);
+      if (mention == null || person == null) {
         return;
       }
       const end = mention.start + 1 + mention.query.length;
@@ -315,8 +316,8 @@ function SearchFieldExample() {
       setIsOpen(true);
     },
     onClose: () => setIsOpen(false),
-    onSelect: (_value, setting) => {
-      setPicked(setting.label);
+    onSelect: value => {
+      setPicked(SETTINGS.find(setting => setting.value === value)?.label);
       setQuery('');
     },
     listboxId,
@@ -392,8 +393,11 @@ function EditableFieldExample() {
     isOpen: isShown,
     onOpen: () => false,
     onClose: () => setIsOpen(false),
-    onSelect: (_value, person) => {
-      setPeople([...people, person]);
+    onSelect: value => {
+      const person = PEOPLE.find(candidate => candidate.value === value);
+      if (person != null) {
+        setPeople([...people, person]);
+      }
       setQuery('');
       if (editableRef.current) {
         editableRef.current.textContent = '';
@@ -477,8 +481,11 @@ function InDialogExample() {
       setIsOpen(true);
     },
     onClose: () => setIsOpen(false),
-    onSelect: (_value, person) => {
-      setShared([...shared, person.label]);
+    onSelect: value => {
+      const person = PEOPLE.find(candidate => candidate.value === value);
+      if (person != null) {
+        setShared([...shared, person.label]);
+      }
       setQuery('');
     },
     listboxId,

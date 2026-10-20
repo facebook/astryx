@@ -52,7 +52,7 @@ interface PickerProps {
   options?: Person[];
   isInitiallyOpen?: boolean;
   query?: string;
-  onSelect?: (value: string, item: Person) => void;
+  onSelect?: (value: string) => void;
   onOpen?: () => void;
   onClose?: () => void;
   onFieldKeyDown?: (event: React.KeyboardEvent) => void;
@@ -319,7 +319,7 @@ describe('useCombobox field props — keys (FR4)', () => {
     expect(box).toHaveValue('\n');
 
     await user.keyboard('{ArrowDown}{Enter}');
-    expect(onSelect).toHaveBeenCalledWith('ada', PEOPLE[0]);
+    expect(onSelect).toHaveBeenCalledWith('ada');
     // The arrow and the pick never reached the field's handler or its text.
     expect(onFieldKeyDown).toHaveBeenCalledTimes(1);
     expect(box).toHaveValue('\n');
@@ -399,6 +399,29 @@ describe('useCombobox field props — keys (FR4)', () => {
       expect(onOpen).not.toHaveBeenCalled();
       expect(onFieldKeyDown).toHaveBeenCalledTimes(4);
       expect(screen.queryByRole('listbox')).toBeNull();
+    },
+  );
+
+  it.each(['textarea', 'contenteditable'] as const)(
+    'an open list with no options leaves every key to a multi-line %s, as its collapsed state says',
+    field => {
+      const onClose = vi.fn();
+      const onFieldKeyDown = vi.fn();
+      render(
+        <Picker
+          field={field}
+          options={[]}
+          onClose={onClose}
+          onFieldKeyDown={onFieldKeyDown}
+        />,
+      );
+      const box = fieldFor(field);
+      expect(box).not.toHaveAttribute('aria-controls');
+      for (const key of ['ArrowDown', 'ArrowUp', 'Enter', 'Escape']) {
+        expect(fireEvent.keyDown(box, {key})).toBe(true);
+      }
+      expect(onClose).not.toHaveBeenCalled();
+      expect(onFieldKeyDown).toHaveBeenCalledTimes(4);
     },
   );
 
@@ -489,7 +512,7 @@ describe('useCombobox field props — input-method composition (FR5)', () => {
 
     // Once the composition ends, Enter picks again.
     fireEvent.keyDown(box, {key: 'Enter'});
-    expect(onSelect).toHaveBeenCalledWith('ada', PEOPLE[0]);
+    expect(onSelect).toHaveBeenCalledWith('ada');
   });
 });
 
@@ -513,7 +536,7 @@ describe('useCombobox field props — pointer (FR6)', () => {
     expect(box).toHaveFocus();
 
     await user.click(option('Cy'));
-    expect(onSelect).toHaveBeenCalledWith('cy', PEOPLE[2]);
+    expect(onSelect).toHaveBeenCalledWith('cy');
     expect(box).toHaveFocus();
     expect(screen.queryByRole('listbox')).toBeNull();
   });

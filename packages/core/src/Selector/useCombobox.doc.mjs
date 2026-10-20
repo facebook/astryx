@@ -73,9 +73,9 @@ export const docs = {
     },
     {
       name: 'options.onSelect',
-      type: '(value: string, item: T) => void',
+      type: '(value: string) => void',
       description:
-        'Called with the picked option\u2019s value and the option itself. Picking also closes the list.',
+        'Called with the picked value. Picking also closes the list.',
     },
     {
       name: 'options.onClear',
@@ -238,7 +238,7 @@ export const docs = {
         category: 'Keyboard',
         requirement: 'AST-075 FR4',
         description:
-          'While the list shows, ArrowDown and ArrowUp move the active option and wrap; Enter picks an active option and only then stops the field\u2019s own Enter; Escape hides the list without closing an enclosing dialog or popover on the same press. While it is hidden, ArrowDown shows it in an `input` that has options, and a multi-line field keeps every key. Home, End, chords and every other key reach the field.',
+          'While the list shows, ArrowDown and ArrowUp move the active option and wrap; Enter picks an active option and only then stops the field\u2019s own Enter; Escape hides the list without closing an enclosing dialog or popover on the same press. While it is hidden, ArrowDown shows it in an `input` that has options, and a multi-line field keeps every key, as it also does while an open list has no options. Home, End, chords and every other key reach the field.',
       },
       {
         name: 'Input method',
@@ -285,7 +285,7 @@ export const docsDense = {
     'options.listboxId': 'listbox id; option ids derive from it (getItemId).',
     'options.value':
       'selected value; w/o search, press / Enter / Space opening highlights it (else first); ArrowDown/Up open on first / last.',
-    'options.onSelect': 'called w/ picked value + option; picking closes.',
+    'options.onSelect': 'called w/ picked value; picking closes.',
     'options.onClear':
       'clears value; Delete / Backspace on closed control. ignored when open or hasSearch.',
     'options.hasSearch':
@@ -377,7 +377,7 @@ export const docsDense = {
         category: 'Keyboard',
         requirement: 'AST-075 FR4',
         description:
-          'shown: ArrowDown/Up move (wrap), Enter picks active option then stops field Enter, Escape hides w/o closing enclosing dialog / popover same press. hidden: ArrowDown shows in input w/ options; multi-line keeps every key. Home / End / chords / others reach field.',
+          'shown: ArrowDown/Up move (wrap), Enter picks active option then stops field Enter, Escape hides w/o closing enclosing dialog / popover same press. hidden: ArrowDown shows in input w/ options; multi-line keeps every key (also while open list has no options). Home / End / chords / others reach field.',
       },
       {
         name: 'Input method',
