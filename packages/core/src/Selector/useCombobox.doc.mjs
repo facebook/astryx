@@ -238,7 +238,7 @@ export const docs = {
         category: 'Keyboard',
         requirement: 'AST-075 FR4',
         description:
-          'While the list shows, ArrowDown and ArrowUp move the active option and wrap; Enter picks an active option and only then stops the field\u2019s own Enter; Escape hides the list without closing an enclosing dialog or popover on the same press. While it is hidden, ArrowDown shows it in an `input` that has options, and a multi-line field keeps every key, as it also does while an open list has no options. Home, End, chords and every other key reach the field.',
+          'While the list shows, ArrowDown and ArrowUp move the active option and wrap; Enter picks an active option and only then stops the field\u2019s own Enter; Escape hides the list without closing an enclosing dialog or popover on the same press. While it is hidden, ArrowDown shows it in an `input` that has options, and a multi-line field keeps every key, as it also does while an open list has no options. An open `input` with no options still takes Escape, which closes the list, so render an empty message while it is open. Home, End, chords and every other key reach the field.',
       },
       {
         name: 'Input method',
@@ -377,7 +377,7 @@ export const docsDense = {
         category: 'Keyboard',
         requirement: 'AST-075 FR4',
         description:
-          'shown: ArrowDown/Up move (wrap), Enter picks active option then stops field Enter, Escape hides w/o closing enclosing dialog / popover same press. hidden: ArrowDown shows in input w/ options; multi-line keeps every key (also while open list has no options). Home / End / chords / others reach field.',
+          'shown: ArrowDown/Up move (wrap), Enter picks active option then stops field Enter, Escape hides w/o closing enclosing dialog / popover same press. hidden: ArrowDown shows in input w/ options; multi-line keeps every key (also while open list has no options). open input w/ no options still takes Escape (closes list): render an empty message while open. Home / End / chords / others reach field.',
       },
       {
         name: 'Input method',

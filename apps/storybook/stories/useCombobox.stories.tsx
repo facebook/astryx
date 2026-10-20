@@ -521,13 +521,17 @@ function InDialogExample() {
                   {...combobox.getFieldProps()}
                   {...stylex.props(styles.field)}
                 />
-                {isShown && options.length > 0 ? (
-                  <div
-                    aria-label="People"
-                    {...combobox.getListboxProps()}
-                    {...stylex.props(styles.listbox)}>
-                    <Rows combobox={combobox} options={options} />
-                  </div>
+                {isShown ? (
+                  options.length > 0 ? (
+                    <div
+                      aria-label="People"
+                      {...combobox.getListboxProps()}
+                      {...stylex.props(styles.listbox)}>
+                      <Rows combobox={combobox} options={options} />
+                    </div>
+                  ) : (
+                    <p {...stylex.props(styles.muted)}>No one matches</p>
+                  )
                 ) : null}
                 <p {...stylex.props(styles.muted)}>
                   {shared.length > 0
@@ -544,9 +548,9 @@ function InDialogExample() {
 }
 
 /**
- * A field inside a dialog, its matches listed in the dialog's flow. With the
- * list shown, the first Escape hides it and the dialog stays; the next Escape
- * closes the dialog.
+ * A field inside a dialog, its matches listed in the dialog's flow and an
+ * empty message shown when nothing matches. With either shown, the first
+ * Escape hides it and the dialog stays; the next Escape closes the dialog.
  */
 export const InDialog: Story = {
   render: () => <InDialogExample />,

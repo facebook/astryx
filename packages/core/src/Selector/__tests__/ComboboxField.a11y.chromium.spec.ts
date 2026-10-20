@@ -321,6 +321,28 @@ test('Escape hides the list before it closes the dialog around the field', async
   await expect(dialog).toHaveCount(0);
 });
 
+test('with no matches in the dialog, the first Escape hides the empty message and the dialog stays', async ({
+  page,
+}) => {
+  await openStory(page, STORY.dialog);
+  const dialog = page.getByRole('dialog', {name: 'Share'});
+  const field = page.getByRole('combobox', {name: 'Add people'});
+  await field.click();
+  await page.keyboard.type('zz');
+  const empty = page.getByText('No one matches');
+  await expect(empty).toBeVisible();
+  await expect(page.getByRole('listbox')).toHaveCount(0);
+  await expect(field).toHaveAttribute('aria-expanded', 'false');
+
+  await page.keyboard.press('Escape');
+  await expect(empty).toHaveCount(0);
+  await expect(dialog).toBeVisible();
+  expect(await hasFocus(field)).toBe(true);
+
+  await page.keyboard.press('Escape');
+  await expect(dialog).toHaveCount(0);
+});
+
 test('hovering makes an option active and a press picks it, with focus kept in the field', async ({
   page,
 }) => {
