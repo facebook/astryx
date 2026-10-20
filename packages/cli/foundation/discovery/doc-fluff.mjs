@@ -14,10 +14,14 @@ import fs from 'node:fs';
 
 import {
   contentWords,
+  fileWords,
+  lineAtOffset,
+  locateWords,
   loadCoreGuides,
   loadQuietly,
   proseStrings,
   proseWords,
+  textWords,
 } from './copied-passages.mjs';
 
 /**
@@ -89,21 +93,24 @@ const PATTERNS = FILLER_PHRASES.map(phrase => ({
 }));
 
 /**
- * Each padding phrase in a text, outside inline code, in order.
+ * Each padding phrase in a text, outside inline code and quotes, in order,
+ * with its offset in the text.
  *
  * @param {string} text
- * @returns {string[]}
+ * @returns {{phrase: string, at: number}[]}
  */
-export function fillerIn(text) {
+export function fillerAt(text) {
   // A quoted phrase is mentioned, not used ("cut 'in order to'"), so quotes
-  // are set aside along with inline code.
+  // are set aside along with inline code. Each mask keeps the text's length,
+  // so an offset in the masked text is an offset in the text.
+  const blank = (/** @type {string} */ span) => ' '.repeat(span.length);
   const prose = text
-    .replace(/`[^`]*`/g, ' ')
-    .replace(/"[^"]*"|“[^”]*”|‘[^’]*’/g, ' ')
+    .replace(/`[^`]*`/g, blank)
+    .replace(/"[^"]*"|“[^”]*”|‘[^’]*’/g, blank)
     .replace(/’/g, "'")
     // A single-quoted span opens and closes beside a non-letter, so the
     // apostrophe in "don't" or "it's" opens nothing.
-    .replace(/(?<![A-Za-z])'[^']*'(?![A-Za-z])/g, ' ');
+    .replace(/(?<![A-Za-z])'[^']*'(?![A-Za-z])/g, blank);
   /** @type {{phrase: string, at: number}[]} */
   const found = [];
   for (const {phrase, pattern} of PATTERNS) {
@@ -118,7 +125,17 @@ export function fillerIn(text) {
       }
     }
   }
-  return found.sort((a, b) => a.at - b.at).map(each => each.phrase);
+  return found.sort((a, b) => a.at - b.at);
+}
+
+/**
+ * Each padding phrase in a text, outside inline code and quotes, in order.
+ *
+ * @param {string} text
+ * @returns {string[]}
+ */
+export function fillerIn(text) {
+  return fillerAt(text).map(each => each.phrase);
 }
 
 /**
@@ -134,58 +151,6 @@ export function density(words) {
     if (contentWords(words, i, 1) === 1) content++;
   }
   return content / words.length;
-}
-
-/**
- * The 1-based line of a doc file that holds the `nth` (1-based) use of a
- * phrase in a prose string, looked for from the line where that string
- * starts, or null when that cannot be found.
- *
- * @param {string} file
- * @param {string} text the prose string the phrase is in
- * @param {string} phrase
- * @param {number} nth
- * @param {Map<string, string[]>} cache
- * @returns {number | null}
- */
-function lineOf(file, text, phrase, nth, cache) {
-  let lines = cache.get(file);
-  if (!lines) {
-    try {
-      lines = fs.readFileSync(file, 'utf8').split('\n');
-    } catch {
-      lines = [];
-    }
-    cache.set(file, lines);
-  }
-  // The string's words are written in the file as they read, though a
-  // concatenated or template string spreads them over lines. Its first three
-  // words mark the line the string starts on; its last three, a few lines on
-  // at most, tell that line from an earlier one that happens to share them.
-  const words = text.match(/[A-Za-z0-9][A-Za-z0-9'.,-]*/g) ?? [];
-  if (words.length === 0) return null;
-  const head = words.slice(0, 3).join(' ');
-  const tail = words.slice(-3).join(' ');
-  const span = text.split('\n').length + Math.ceil(text.length / 40) + 2;
-  let from = -1;
-  for (let at = 0; at < lines.length && from < 0; at++) {
-    if (!lines[at].includes(head)) continue;
-    for (let k = at; k < Math.min(lines.length, at + span); k++) {
-      if (lines[k].includes(tail)) {
-        from = at;
-        break;
-      }
-    }
-  }
-  if (from < 0) return null;
-  const escaped = phrase.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const pattern = new RegExp(`(?<![a-z])${escaped}(?![a-z])`, 'gi');
-  let seen = 0;
-  for (let at = from; at < Math.min(lines.length, from + span); at++) {
-    seen += (lines[at].replace(/\\u2019|’/g, "'").match(pattern) ?? []).length;
-    if (seen >= nth) return at + 1;
-  }
-  return null;
 }
 
 /**
@@ -225,20 +190,28 @@ export async function findFluff(discovered) {
   ];
   /** @type {import('../../api/integration/authoring-checks.type.mjs').DocFluff[]} */
   const found = [];
-  /** @type {Map<string, string[]>} */
-  const lines = new Map();
   /** @type {number | null} */
   let median = null;
   for (const {name, file} of topics) {
     const doc = file ? await loadQuietly(file) : null;
     if (!doc || !file) continue;
+    /** @type {{word: string, line: number}[]} */
+    let source = [];
+    try {
+      source = fileWords(fs.readFileSync(file, 'utf8'));
+    } catch {
+      // No line numbers; each finding still names its section.
+    }
+    // Each string is found by its whole run of words, from where the last
+    // one was found, so two strings that open alike keep their own lines.
+    let cursor = 0;
     for (const {text, section} of proseStrings(doc)) {
-      /** @type {Map<string, number>} */
-      const uses = new Map();
-      for (const phrase of fillerIn(text)) {
-        const nth = (uses.get(phrase) ?? 0) + 1;
-        uses.set(phrase, nth);
-        const line = lineOf(file, text, phrase, nth, lines);
+      const words = textWords(text);
+      let index = locateWords(source, words, cursor);
+      if (index < 0) index = locateWords(source, words);
+      if (index >= 0) cursor = index + words.length;
+      for (const {phrase, at} of fillerAt(text)) {
+        const line = index < 0 ? null : lineAtOffset(source, index, words, at);
         const where = section ? ` (section "${section}")` : '';
         const instead = /** @type {Record<string, string>} */ (INSTEAD)[phrase];
         found.push({

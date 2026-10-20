@@ -978,6 +978,36 @@ describe('integrationDocConflicts fluff', () => {
     expect(found).toEqual([8, 9, 11]);
   });
 
+  it('finds the line of strings that open or end with code, links, quotes or escapes', async () => {
+    writeTopics([]);
+    fs.writeFileSync(
+      path.join(tmpDir, 'docs', 'acme-shapes.doc.mjs'),
+      [
+        'export default {',
+        "  type: 'generic',",
+        "  name: 'acme-shapes',",
+        "  title: 'Fixture',",
+        "  description: 'Fixture topic.',",
+        "  sections: [{title: 'Overview', content: [",
+        "    {type: 'prose', text: '`build` runs first, in order to check it.'},",
+        "    {type: 'prose', text: '{@link generic:acme-shapes} runs it in order to ship.'},",
+        "    {type: 'prose', text: '\"Build\" is a step you run in order to test (and ship).'},",
+        "    {type: 'prose', text: '(Build) runs it once in order to publish the app\\'s files.'},",
+        "    {type: 'prose', text: 'Run the build in order to check the files.'},",
+        "    {type: 'prose', text: 'Run the build in order to publish the files.'},",
+        '  ]}],',
+        '};',
+        '',
+      ].join('\n'),
+    );
+
+    const found = fluff(
+      await integrationDocConflicts(undefined, {cwd: tmpDir}),
+    ).map((/** @type {any} */ each) => each.line);
+
+    expect(found).toEqual([7, 8, 9, 10, 11, 12]);
+  });
+
   it('lists a long topic that is mostly glue, and not a dense one', async () => {
     const glue = Array.from(
       {length: 12},
