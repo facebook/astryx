@@ -97,10 +97,11 @@ describe('toolbar binding inventory', () => {
     expect(new Set(stories).size).toBe(stories.length);
   });
 
-  it('keeps control semantics, editing and popover keys, and outer chrome explicit', () => {
+  it('keeps control semantics, editing and popover keys, the three-lane layout, and outer chrome explicit', () => {
     expect(TOOLBAR_EXCLUSIONS.map(row => row.id)).toEqual([
       'control-semantics',
       'caret-guard-and-nested-popovers',
+      'three-lane-layout',
       'outer-chrome',
     ]);
     for (const exclusion of TOOLBAR_EXCLUSIONS) {

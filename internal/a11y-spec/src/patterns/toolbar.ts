@@ -2,7 +2,7 @@
 
 /**
  * @file toolbar.ts
- * @input WCAG 2.2 A/AA success criteria and the APG Toolbar pattern's role, label, orientation, and keyboard requirements
+ * @input WCAG 2.2 A/AA success criteria, the APG Toolbar pattern's role, label, orientation, and keyboard requirements, and design:bidirectionality DR6 for the mirrored arrows
  * @output TOOLBAR_PATTERN — the reusable contract a toolbar binds to: its role and name, its orientation, its controls inside it, one Tab stop entering on the first enabled control, and the arrow (with wrap) and Home/End movement between controls
  * @position Pattern contract; bound by Toolbar (`spec:AST-020/FR15`: a roving-tabindex toolbar is one composite control, so it adopts the arrow and Home/End movement it ships)
  */
@@ -128,6 +128,21 @@ const AST_020_FR15: AstryxRecord = {
   url: 'https://github.com/facebook/astryx/blob/878fad9d7ac23cd3f4c5def64595abd770bb01a3/docs/specs/AST-020/spec.md#L83-L92',
   requirement:
     "Where a component part already plays an APG pattern's role, Astryx adopts that pattern's required parts for it: the role, the accessible name, the state and relationship properties, and activation by Tab plus Enter or Space. The pattern's optional keyboard extras — arrow-key movement between parts, Home and End — are adopted only where the component already acts as one composite control.",
+};
+
+/**
+ * The current Astryx bidirectionality rule: horizontal keyboard movement
+ * follows the RTL visual state, so under right-to-left the arrow pointing the
+ * way the controls read (ArrowLeft) is "next". The APG names only Right as
+ * next, so the mirrored arm rests on this record.
+ */
+const DESIGN_BIDI_DR6: AstryxRecord = {
+  standard: 'astryx',
+  id: 'design:bidirectionality',
+  clause: 'DR6',
+  url: 'https://github.com/facebook/astryx/blob/22c592a7a5a911945c0c53204e4daa09a349843d/docs/design/bidirectionality.md#L79-L81',
+  requirement:
+    'Horizontal keyboard movement, drag/resize math, carousel or scroll progression, range navigation, and side placement MUST produce the action indicated by the RTL visual state.',
 };
 
 /**
@@ -312,7 +327,7 @@ export const TOOLBAR_PATTERN: PatternContract<ToolbarStateFacts> =
         id: 'toolbar.keys.next-arrow',
         outcome:
           'The next arrow (Right, Left under right-to-left, Down when vertical) moves focus from one control to the next enabled control.',
-        sources: [WCAG_2_1_1, APG_ARROWS, AST_020_FR15],
+        sources: [WCAG_2_1_1, APG_ARROWS, AST_020_FR15, DESIGN_BIDI_DR6],
         covers: ['2.1.1-keyboard', '2.4.3-focus-order', 'apg-interaction'],
         appliesWhen: ALWAYS,
         evidenceLayer: 'real-browser',
@@ -336,7 +351,7 @@ export const TOOLBAR_PATTERN: PatternContract<ToolbarStateFacts> =
         id: 'toolbar.keys.previous-arrow',
         outcome:
           'The previous arrow (Left, Right under right-to-left, Up when vertical) moves focus from one control to the previous enabled control.',
-        sources: [WCAG_2_1_1, APG_ARROWS, AST_020_FR15],
+        sources: [WCAG_2_1_1, APG_ARROWS, AST_020_FR15, DESIGN_BIDI_DR6],
         covers: ['2.1.1-keyboard', '2.4.3-focus-order', 'apg-interaction'],
         appliesWhen: ALWAYS,
         evidenceLayer: 'real-browser',
@@ -360,7 +375,7 @@ export const TOOLBAR_PATTERN: PatternContract<ToolbarStateFacts> =
         id: 'toolbar.keys.arrows-wrap',
         outcome:
           'The next arrow on the last control moves to the first, and the previous arrow on the first moves to the last.',
-        sources: [WCAG_2_1_1, APG_WRAP, AST_020_FR15],
+        sources: [WCAG_2_1_1, APG_WRAP, AST_020_FR15, DESIGN_BIDI_DR6],
         covers: ['2.1.1-keyboard', 'apg-interaction'],
         appliesWhen: {
           condition: 'the binding ships arrow-key wrapping',

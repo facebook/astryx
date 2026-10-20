@@ -127,6 +127,13 @@ export const TOOLBAR_EXCLUSIONS = [
       'Leaving caret keys to a text field mid-line, leaving keys inside an open MoreMenu to that menu, and composing a caller onKeyDown are binding behaviour the APG leaves to the author, so no state here places a text field or popover in the toolbar.',
   },
   {
+    id: 'three-lane-layout',
+    owner:
+      'Toolbar.test.tsx (centerContent and three-slot layout tests) and the repository visual gate',
+    reason:
+      'Center content switches the row to a three-column grid, but the controls stay in DOM order inside the same toolbar element and the same roving tab stop walks them, so the role, name, Tab stop and arrow order this contract reads do not change; the grid itself is layout paint.',
+  },
+  {
     id: 'outer-chrome',
     owner: 'component:Section and the repository visual gate',
     reason:
