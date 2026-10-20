@@ -2,7 +2,13 @@
 
 import {describe, expect, it} from 'vitest';
 
-import {density, fillerIn} from './doc-fluff.mjs';
+import {
+  density,
+  fillerAt,
+  fillerIn,
+  floorTo,
+  sharePercent,
+} from './doc-fluff.mjs';
 import {passageWords} from './copied-passages.mjs';
 
 const words = (/** @type {string} */ text) =>
@@ -48,6 +54,37 @@ describe('fillerIn', () => {
     expect(fillerIn('It’s important to note the order.')).toEqual([
       "it's important to note",
     ]);
+  });
+});
+
+describe('fillerAt', () => {
+  it('reads no phrase inside a link target or a hyphenated word', () => {
+    expect(
+      fillerIn(
+        'Read {@link generic:obviously-fast} before you tune the build.',
+      ),
+    ).toEqual([]);
+    expect(fillerIn('A non-obviously slow build still passes.')).toEqual([]);
+    expect(fillerIn('It is obviously slow.')).toEqual(['obviously']);
+  });
+
+  it('marks a "that" the reader cuts with the phrase', () => {
+    expect(
+      fillerAt('It is worth noting that the cache is shared.').map(
+        each => each.thatAfter,
+      ),
+    ).toEqual([true]);
+    expect(
+      fillerAt('Basically, the cache is shared.').map(each => each.thatAfter),
+    ).toEqual([false]);
+  });
+});
+
+describe('share rounding', () => {
+  it('rounds a share under the floor down, never up to it', () => {
+    expect(floorTo(0.4995, 3)).toBe(0.499);
+    expect(sharePercent(0.4995)).toBe('49.9%');
+    expect(sharePercent(0.5)).toBe('50.0%');
   });
 });
 

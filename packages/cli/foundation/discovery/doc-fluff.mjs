@@ -84,7 +84,8 @@ function phrasePattern(phrase) {
   // one ("a note that explains").
   return phrase === 'note that'
     ? new RegExp(`(?:^|[.;:!?]\\s+)${escaped}\\b`, 'gi')
-    : new RegExp(`(?<![a-z'])${escaped}(?![a-z])`, 'gi');
+    : // A hyphen joins words ("non-obviously"), so it bounds no phrase.
+      new RegExp(`(?<![a-z'-])${escaped}(?![a-z-])`, 'gi');
 }
 
 const PATTERNS = FILLER_PHRASES.map(phrase => ({
@@ -96,8 +97,11 @@ const PATTERNS = FILLER_PHRASES.map(phrase => ({
  * Each padding phrase in a text, outside inline code and quotes, in order,
  * with its offset in the text.
  *
+ * `thatAfter` is true when the phrase is followed by a "that" a reader cuts
+ * with it ("It is worth noting that the cache is shared").
+ *
  * @param {string} text
- * @returns {{phrase: string, at: number}[]}
+ * @returns {{phrase: string, at: number, thatAfter: boolean}[]}
  */
 export function fillerAt(text) {
   // A quoted phrase is mentioned, not used ("cut 'in order to'"), so quotes
@@ -105,13 +109,16 @@ export function fillerAt(text) {
   // so an offset in the masked text is an offset in the text.
   const blank = (/** @type {string} */ span) => ' '.repeat(span.length);
   const prose = text
+    // A pointer names a doc, and its target is no prose ("{@link
+    // generic:obviously-fast}").
+    .replace(/\{@link\s[^}]*\}/g, blank)
     .replace(/`[^`]*`/g, blank)
     .replace(/"[^"]*"|“[^”]*”|‘[^’]*’/g, blank)
     .replace(/’/g, "'")
     // A single-quoted span opens and closes beside a non-letter, so the
     // apostrophe in "don't" or "it's" opens nothing.
     .replace(/(?<![A-Za-z])'[^']*'(?![A-Za-z])/g, blank);
-  /** @type {{phrase: string, at: number}[]} */
+  /** @type {{phrase: string, at: number, thatAfter: boolean}[]} */
   const found = [];
   for (const {phrase, pattern} of PATTERNS) {
     for (const match of prose.matchAll(pattern)) {
@@ -121,7 +128,13 @@ export function fillerAt(text) {
       if (
         !found.some(each => at >= each.at && at < each.at + each.phrase.length)
       ) {
-        found.push({phrase, at});
+        found.push({
+          phrase,
+          at,
+          thatAfter:
+            !phrase.endsWith('that') &&
+            /^\s+that\b/i.test(prose.slice(at + phrase.length)),
+        });
       }
     }
   }
@@ -151,6 +164,29 @@ export function density(words) {
     if (contentWords(words, i, 1) === 1) content++;
   }
   return content / words.length;
+}
+
+/**
+ * A number rounded down to `places` decimals, so a share under the floor
+ * never reads as the floor.
+ *
+ * @param {number} value
+ * @param {number} places
+ * @returns {number}
+ */
+export function floorTo(value, places) {
+  const scale = 10 ** places;
+  return Math.floor(value * scale + 1e-9) / scale;
+}
+
+/**
+ * A share as a percent with one decimal, rounded down ("49.5%").
+ *
+ * @param {number} share
+ * @returns {string}
+ */
+export function sharePercent(share) {
+  return `${floorTo(share * 100, 1).toFixed(1)}%`;
 }
 
 /**
@@ -210,7 +246,7 @@ export async function findFluff(discovered) {
       let index = locateWords(source, words, cursor);
       if (index < 0) index = locateWords(source, words);
       if (index >= 0) cursor = index + words.length;
-      for (const {phrase, at} of fillerAt(text)) {
+      for (const {phrase, at, thatAfter} of fillerAt(text)) {
         const line = index < 0 ? null : lineAtOffset(source, index, words, at);
         const where = section ? ` (section "${section}")` : '';
         const instead = /** @type {Record<string, string>} */ (INSTEAD)[phrase];
@@ -227,7 +263,9 @@ export async function findFluff(discovered) {
             `${line == null ? '' : ` (line ${line})`}. ` +
             (instead
               ? `Write "${instead}" instead.`
-              : 'Cut it; the sentence says the same without it.'),
+              : thatAfter
+                ? 'Cut it and the "that" after it; the sentence says the same without them.'
+                : 'Cut it; the sentence says the same without it.'),
         });
       }
     }
@@ -243,9 +281,9 @@ export async function findFluff(discovered) {
       section: null,
       file,
       line: null,
-      density: Math.round(score * 100) / 100,
+      density: floorTo(score, 3),
       message:
-        `"${name}" is mostly glue: ${Math.round(score * 100)}% of its ${words.length} prose words carry content, ` +
+        `"${name}" is mostly glue: ${sharePercent(score)} of its ${words.length} prose words carry content, ` +
         `under the ${Math.round(MIN_DENSITY * 100)}% floor (Core's guides have a median of ${Math.round(median * 100)}%). ` +
         'Cut filler and restated context until each sentence states one thing.',
     });
