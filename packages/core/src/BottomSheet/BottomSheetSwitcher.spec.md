@@ -13,6 +13,8 @@ review_triggers: [public-api, behavior, layout, theming, accessibility]
 verified_by:
   [
     packages/core/src/BottomSheet/BottomSheetSwitcher.test.tsx,
+    packages/core/src/BottomSheet/__tests__/BottomSheetScrollLock.a11y.browser.spec.ts,
+    packages/core/src/BottomSheet/__tests__/BottomSheetNativeModal.a11y.browser.spec.ts,
     apps/storybook/stories/BottomSheetSwitcher.stories.tsx,
     scripts/check-knowledge.mjs,
   ]
@@ -34,16 +36,19 @@ system_specs: [spec:AST-002, spec:AST-027]
 ## Intent
 
 BottomSheetSwitcher coordinates a mutually exclusive sequence of BottomSheet
-children inside one shared native dialog. This draft records verified shipped and
-remediated behavior without adding a prop, changing a default, or settling the
-open modality, hosting, identifier, or theming decisions below.
+children. This draft records verified shipped and remediated behavior, and the
+hosting requirements its decision log decides — each child presented in its own
+native dialog — without adding a prop, changing a default, or settling the
+open modality, identifier, or theming decisions below. A row whose review state
+is "Owner decision" is the decided requirement, not shipped behavior.
 
 ## Compatibility and migration
 
 - Released default preserved: `yes`
-- Compatibility class: observational backfill plus a shared-dismissal conformance
-  fix; public props, defaults, exports, DOM ownership, and transition behavior stay
-  unchanged
+- Compatibility class: nonbreaking; public props, defaults, exports, visual
+  output, and transition behavior stay unchanged. The element the `ref` resolves
+  to, and that it changes on a handoff, is implementation rather than public
+  contract (DEC-2)
 - Controlled/uncontrolled behavior: `activeSheet` remains fully controlled
 - Migration decision: none
 
@@ -53,10 +58,16 @@ Consumer migration instructions belong in consumer docs and release notes.
 
 **Owns**
 
-- One shared native dialog for all directly nested BottomSheet children.
+- The presentation lifecycle of every directly nested BottomSheet child's native
+  dialog: which is presented, retained during a handoff, or closed.
 - Which child sheet is active, retained during a handoff, or hidden.
-- Shared scrim, focus containment, scroll lock, Escape/platform-close routing,
-  and final focus return for the flow.
+- Which sheet dialog hosts the flow (its ref, `id`, and dismissal
+  registration) and which paints the flow's one scrim, plus
+  Escape/platform-close routing and final focus return for the flow. Focus
+  containment is the native modal dialog's; the page scroll lock is
+  `component:BottomSheet` FR5's, which holds while any sheet dialog is modal.
+- The flow wrapper: the isolated surface that orders non-modal sheet dialogs
+  locally (`spec:AST-027` FR2).
 
 **Does not own / non-goals**
 
@@ -69,30 +80,30 @@ Consumer migration instructions belong in consumer docs and release notes.
 
 ## Public concepts
 
-| Concept             | Closed values or states                              | Meaning                                                                               | Availability by variant/orientation/state                                      | Default                                | Owner                                                                     | Stability | Invalid-value behavior                                                                     |
-| ------------------- | ---------------------------------------------------- | ------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ | -------------------------------------- | ------------------------------------------------------------------------- | --------- | ------------------------------------------------------------------------------------------ |
-| Active sheet        | `null` or one nested BottomSheet `sheetId`           | Selects the only interactive child, or closes the flow                                | All presentations                                                              | `null` is closed; the prop is required | `component:BottomSheetSwitcher`                                           | released  | A non-matching or duplicate id is not given a safe public fallback by the current contract |
-| Shared presentation | `true` / `false` through `hasScrim`                  | Selects the current modal scrim-backed host or non-modal no-scrim host                | Entire flow                                                                    | `true`                                 | `component:BottomSheetSwitcher`                                           | released  | Boolean only                                                                               |
-| Child identity      | Non-empty `sheetId` on each direct BottomSheet child | Associates controlled selection, labeling, purpose, and transition state with a child | Direct nested BottomSheet children                                             | none                                   | `component:BottomSheet`                                                   | released  | Empty ids warn and stay hidden; duplicate-id behavior is not specified                     |
-| Dismissal request   | `onActiveSheetChange(null)`                          | Reports an allowed implicit close without taking control from the caller              | Escape/platform close, scrim click, or swipe according to active child purpose | none                                   | `component:BottomSheetSwitcher`; `family:overlay-dismissal` owns ordering | released  | The caller may retain its controlled value                                                 |
-| Dialog surface      | inherited dialog props plus `ref` and `onCancel`     | Reaches the one shared native dialog                                                  | Entire flow                                                                    | none                                   | `component:BottomSheetSwitcher`                                           | released  | Component-owned semantics and handlers retain precedence                                   |
+| Concept             | Closed values or states                              | Meaning                                                                                                                                                    | Availability by variant/orientation/state                                      | Default                                | Owner                                                                     | Stability | Invalid-value behavior                                                                     |
+| ------------------- | ---------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ | -------------------------------------- | ------------------------------------------------------------------------- | --------- | ------------------------------------------------------------------------------------------ |
+| Active sheet        | `null` or one nested BottomSheet `sheetId`           | Selects the only interactive child, or closes the flow                                                                                                     | All presentations                                                              | `null` is closed; the prop is required | `component:BottomSheetSwitcher`                                           | released  | A non-matching or duplicate id is not given a safe public fallback by the current contract |
+| Shared presentation | `true` / `false` through `hasScrim`                  | Selects the current modal scrim-backed host or non-modal no-scrim host                                                                                     | Entire flow                                                                    | `true`                                 | `component:BottomSheetSwitcher`                                           | released  | Boolean only                                                                               |
+| Child identity      | Non-empty `sheetId` on each direct BottomSheet child | Associates controlled selection, labeling, purpose, and transition state with a child                                                                      | Direct nested BottomSheet children                                             | none                                   | `component:BottomSheet`                                                   | released  | Empty ids warn and stay hidden; duplicate-id behavior is not specified                     |
+| Dismissal request   | `onActiveSheetChange(null)`                          | Reports an allowed implicit close without taking control from the caller                                                                                   | Escape/platform close, scrim click, or swipe according to active child purpose | none                                   | `component:BottomSheetSwitcher`; `family:overlay-dismissal` owns ordering | released  | The caller may retain its controlled value                                                 |
+| Dialog surface      | inherited dialog props plus `ref` and `onCancel`     | Dialog props reach every sheet dialog; `ref`, `id`, `data-testid`, and `onCancel` resolve to the host dialog, which is never null while a sheet is mounted | Entire flow                                                                    | none                                   | `component:BottomSheetSwitcher`                                           | released  | Component-owned semantics and handlers retain precedence                                   |
 
 ## Behavioral and layout contract
 
 Draft requirements identify their basis so observed code is not mistaken for an
 intentional decision. This draft cannot clear the gaps it records.
 
-| ID  | Candidate invariant                                                                                                                                                                                             | Basis                                                    | Draft review state                                                                     |
-| --- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------- | -------------------------------------------------------------------------------------- |
-| FR1 | Zero or one child sheet is interactive for each controlled `activeSheet` value; all other children are hidden or retained inert and `aria-hidden` during a transition.                                          | Current source, docs, and tests                          | Verified shipped behavior                                                              |
-| FR2 | All child sheets share one native dialog. Opening the first sheet opens that dialog once; handoffs do not replace it.                                                                                           | Current source, docs, and tests                          | Verified shipped behavior                                                              |
-| FR3 | During a handoff, the entering sheet is above the retained sheet. A taller retained sheet aligns down to a shorter entering sheet, and the retained sheet fades only after required transform motion completes. | Current source and transition tests                      | Verified shipped behavior; exact visual treatment remains human-reviewed               |
-| FR4 | Closing retains the outgoing sheet through its exit, then closes the dialog. A modal flow restores focus to the element captured when that modal flow opened.                                                   | Current source and focus tests                           | Verified shipped behavior                                                              |
-| FR5 | `hasScrim=true` uses `showModal()`, a native backdrop, focus containment, and page scroll lock. `hasScrim=false` uses `show()` without a backdrop or scroll lock and leaves the page interactive.               | Current source, docs, tests, and Chromium evidence       | Verified shipped behavior; the non-modal host remains a `spec:AST-027` conformance gap |
-| FR6 | The active child purpose governs implicit dismissal: `info` allows Escape, scrim click, and swipe; `form` allows Escape; `required` blocks all three and exposes `alertdialog`.                                 | Current BottomSheet docs and switcher tests              | Verified shipped behavior                                                              |
-| FR7 | While visible, the switcher participates in `family:overlay-dismissal`; one Escape or platform close request reaches only the topmost present layer, and descendants receive a deeper logical layer scope.      | `family:overlay-dismissal` and the audit regression test | Settled remediation in this audit                                                      |
-| FR8 | A stale gesture from an outgoing sheet cannot change the shared scrim, and unmounting a retained sheet cannot keep the shared dialog open.                                                                      | Current tests                                            | Verified shipped behavior                                                              |
-| FR9 | The switcher forwards its ref, neutral dialog attributes, styling inputs, and composed handlers to the shared dialog while preserving its owned ARIA and dismissal behavior.                                    | Current source, public API architecture, and tests       | Verified shipped behavior                                                              |
+| ID  | Candidate invariant                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | Basis                                                              | Draft review state                                                                                                       |
+| --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------ |
+| FR1 | Zero or one child sheet is interactive for each controlled `activeSheet` value; all other children are hidden or retained inert and `aria-hidden` during a transition.                                                                                                                                                                                                                                                                                                                                                                                                                    | Current source, docs, and tests                                    | Verified shipped behavior                                                                                                |
+| FR2 | Each child sheet owns one native dialog. Opening a sheet presents its dialog once; a handoff presents the entering sheet's dialog above the retained one and closes the retained dialog only after its panel has faded. Returning to a sheet whose dialog is still open beneath a newer one re-presents it so the interactive sheet is the topmost layer.                                                                                                                                                                                                                                 | DEC-1                                                              | Owner decision                                                                                                           |
+| FR3 | During a handoff, the entering sheet is above the retained sheet. A taller retained sheet aligns down to a shorter entering sheet, and the retained sheet fades only after required transform motion completes.                                                                                                                                                                                                                                                                                                                                                                           | Current source and transition tests                                | Verified shipped behavior; exact visual treatment remains human-reviewed                                                 |
+| FR4 | Closing retains the outgoing sheet through its exit, then closes the dialog. A modal flow restores focus to the element captured when that modal flow opened.                                                                                                                                                                                                                                                                                                                                                                                                                             | Current source and focus tests                                     | Verified shipped behavior                                                                                                |
+| FR5 | `hasScrim=true` uses `showModal()`, a native backdrop, native focus containment, and the page scroll lock of `component:BottomSheet` FR5 (owner decision, DEC-1). `hasScrim=false` uses `show()` without a backdrop or scroll lock and leaves the page interactive; the sheet dialogs of a non-modal flow order themselves with local values inside the switcher's isolated flow wrapper, which carries the one page-level value the host carried before (verified current behavior; the non-modal host remains a `spec:AST-027` conformance gap, not a decision).                        | DEC-1; `component:BottomSheet` DEC-2; `spec:AST-027` FR2, FR4, FR8 | Modal: owner decision. Non-modal: verified current behavior; the non-modal host remains a `spec:AST-027` conformance gap |
+| FR6 | The active child purpose governs implicit dismissal: `info` allows Escape, scrim click, and swipe; `form` allows Escape; `required` blocks all three and exposes `alertdialog`.                                                                                                                                                                                                                                                                                                                                                                                                           | Current BottomSheet docs and switcher tests                        | Verified shipped behavior                                                                                                |
+| FR7 | While visible, the switcher participates in `family:overlay-dismissal`; one Escape or platform close request reaches only the topmost present layer, and descendants receive a deeper logical layer scope.                                                                                                                                                                                                                                                                                                                                                                                | `family:overlay-dismissal` and the audit regression test           | Settled remediation in this audit                                                                                        |
+| FR8 | One backdrop paints the flow's scrim at a time: the retained sheet's dialog keeps it through a handoff and the entering dialog takes it over without a fade when the retained dialog closes. A stale gesture from an outgoing sheet cannot change the flow's scrim, and unmounting a retained sheet cannot keep its dialog open or the flow's modal layer held.                                                                                                                                                                                                                           | DEC-1; current tests                                               | Owner decision                                                                                                           |
+| FR9 | The switcher forwards neutral dialog attributes, styling inputs, and composed handlers to every sheet dialog; renders `id` and `data-testid` on the host dialog only, so each appears once in the document; attaches its ref to the host dialog; and preserves its owned ARIA and dismissal behavior. An object ref's `current` is never `null` while a sheet is mounted. A callback ref follows React's semantics on a handoff: a cleanup it returned runs when it detaches from the old host; a callback ref without a cleanup is called with `null` on detach, then with the new host. | DEC-1, DEC-2; `architecture:public-component-api` INV8             | Owner decision                                                                                                           |
 
 ### Allowed variation
 
@@ -104,14 +115,14 @@ intentional decision. This draft cannot clear the gaps it records.
 
 ### Representative states
 
-| State      | Required invariant                                                                                                    | Allowed variation                                                                        |
-| ---------- | --------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| Closed     | Shared dialog is closed and no child is interactive.                                                                  | Child panels may remain mounted but hidden.                                              |
-| First open | Matching child is visible and interactive in one shared dialog.                                                       | Child-owned height and content.                                                          |
-| Handoff    | Entering child is interactive; retained child is visible but inert and hidden from accessibility APIs until it fades. | Alignment offset depends on measured panel geometry.                                     |
-| Closing    | Outgoing child is retained inert while exit motion completes; modal focus and scroll ownership remain until close.    | Theme-controlled duration.                                                               |
-| Modal      | Native modal host, backdrop, focus containment, and scroll lock are active.                                           | Active child's `purpose` controls implicit dismissal.                                    |
-| Non-modal  | Native non-modal host has no backdrop or scroll lock and background content remains interactive.                      | The current clipping/stacking limitation is a conformance gap, not an allowed exception. |
+| State      | Required invariant                                                                                                                                                               | Allowed variation                                                                        |
+| ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| Closed     | Every sheet dialog is closed and no child is interactive.                                                                                                                        | Child panels may remain mounted but hidden.                                              |
+| First open | Matching child is visible and interactive in its own dialog.                                                                                                                     | Child-owned height and content.                                                          |
+| Handoff    | Entering child is interactive in its own dialog; retained child's dialog stays open, inert, and hidden from accessibility APIs until it fades, and keeps painting the one scrim. | Alignment offset depends on measured panel geometry.                                     |
+| Closing    | Outgoing child is retained inert while exit motion completes; modal focus and scroll ownership remain until close.                                                               | Theme-controlled duration.                                                               |
+| Modal      | Native modal host, backdrop, native focus containment, and the page scroll lock are active.                                                                                      | Active child's `purpose` controls implicit dismissal.                                    |
+| Non-modal  | Native non-modal host has no backdrop or scroll lock and background content remains interactive.                                                                                 | The current clipping/stacking limitation is a conformance gap, not an allowed exception. |
 
 ### Transformation and precedence order
 
@@ -124,8 +135,11 @@ intentional decision. This draft cannot clear the gaps it records.
 
 ### Performance and resources
 
-- **PR1 — One shared host.** A flow keeps one dialog, focus boundary, scroll lock,
-  and backdrop across child handoffs rather than mounting a host for every child.
+- **PR1 — One painted scrim.** In a modal flow, at rest exactly one sheet
+  dialog is presented; during a handoff two are, with one backdrop painted.
+  Native modality and the page scroll lock hold across a modal flow's child
+  handoffs because a sheet dialog is modal throughout. A non-modal flow paints
+  no backdrop and holds no lock.
 - **PR2 — Stable child registration.** Parent rerenders and changing consumer ref
   identities do not unregister a mounted child or cancel an active handoff.
 
@@ -141,11 +155,11 @@ intentional decision. This draft cannot clear the gaps it records.
 
 ## Design relationships
 
-| Anatomy or state | Design requirement                                                               | Representation authority                               | Hierarchy role | Component contract |
-| ---------------- | -------------------------------------------------------------------------------- | ------------------------------------------------------ | -------------- | ------------------ |
-| Shared dialog    | Transparent host for the flow's interaction and accessibility boundary           | Current source and public docs                         | Structural     | FR2, FR5, AR1      |
-| Sheet panels     | Delegate visible panel, content, handle, and gesture presentation to BottomSheet | `component:BottomSheet` draft as observational context | Prominent      | FR1, FR3           |
-| Scrim            | Optional native backdrop that dims and blocks the page in modal presentation     | Current source and public docs                         | Supporting     | FR5                |
+| Anatomy or state | Design requirement                                                                                                  | Representation authority                               | Hierarchy role | Component contract |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ | -------------- | ------------------ |
+| Shared dialog    | Transparent host for the flow's interaction and accessibility boundary; DEC-1 decides one such host per child sheet | Current source and public docs                         | Structural     | FR2, FR5, AR1      |
+| Sheet panels     | Delegate visible panel, content, handle, and gesture presentation to BottomSheet                                    | `component:BottomSheet` draft as observational context | Prominent      | FR1, FR3           |
+| Scrim            | Optional native backdrop that dims and blocks the page in modal presentation; one sheet dialog paints it at a time  | Current source and public docs                         | Supporting     | FR5                |
 
 ### Theming anatomy
 
@@ -163,7 +177,7 @@ intentional decision. This draft cannot clear the gaps it records.
   },
   "Scrim": {
     "none": {
-      "reason": "reachability-gap: The switcher-owned native backdrop paints the scrim but has no current public theming target."
+      "reason": "reachability-gap: The switcher-coordinated native backdrop paints the scrim but has no current public theming target."
     }
   }
 }
@@ -183,17 +197,64 @@ intentional decision. This draft cannot clear the gaps it records.
 
 ## Verification map
 
-| Contract         | Verification                                      | Representative states                                                                      | Mutation or failure expectation                                                                                        | Audit section                             |
-| ---------------- | ------------------------------------------------- | ------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------- | ----------------------------------------- |
-| FR1–FR4, FR8     | `BottomSheetSwitcher.test.tsx`                    | closed, first open, handoffs in either completion order, rapid replacement, unmount, close | A child becomes interactive at the wrong time, a retained child disappears early, or the shared host lifecycle breaks. | `audit:BottomSheetSwitcher/behavior`      |
-| FR5–FR7, AR1–AR3 | `BottomSheetSwitcher.test.tsx`; Chromium evidence | modal/non-modal, info/form/required, nested layer, IME, focus return                       | Modality, dismissal order, naming, inertness, scroll lock, or focus behavior diverges.                                 | `audit:BottomSheetSwitcher/accessibility` |
-| FR9              | `BottomSheetSwitcher.test.tsx`; export checks     | ref, DOM/ARIA/data/events, class, style, xstyle                                            | A supported input is dropped or overrides component-owned semantics accidentally.                                      | `audit:BottomSheetSwitcher/api`           |
-| Theming anatomy  | `scripts/check-knowledge.mjs`; theming tests      | dialog, delegated sheet panel, scrim                                                       | A non-painting host gains a target, a delegated panel loses its owner, or the scrim gap disappears without review.     | `audit:BottomSheetSwitcher/theming`       |
+| Contract         | Verification                                                                  | Representative states                                                                                                  | Mutation or failure expectation                                                                                                                                        | Audit section                             |
+| ---------------- | ----------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------- |
+| FR1–FR4, FR8     | `BottomSheetSwitcher.test.tsx`                                                | closed, first open, handoffs in either completion order, rapid replacement, unmount, close                             | A child becomes interactive at the wrong time, a retained child disappears early, a second backdrop paints, or a sheet dialog's lifecycle breaks.                      | `audit:BottomSheetSwitcher/behavior`      |
+| FR5–FR7, AR1–AR3 | `BottomSheetSwitcher.test.tsx`; `BottomSheetNativeModal.a11y.browser.spec.ts` | modal/non-modal, info/form/required, nested layer, IME, focus return, scroll lock in engines, non-modal local ordering | Modality, dismissal order, naming, inertness, scroll lock, or focus behavior diverges, or a sheet dialog takes a page-level z-index.                                   | `audit:BottomSheetSwitcher/accessibility` |
+| FR9              | `BottomSheetSwitcher.test.tsx`; export checks                                 | ref across open/handoff/close/unmount, callback-ref cleanup, `id` once, DOM/ARIA/data/events, class, style, xstyle     | A supported input is dropped or duplicated, the ref is null while a sheet is mounted or skips a cleanup, or an input overrides component-owned semantics accidentally. | `audit:BottomSheetSwitcher/api`           |
+| Theming anatomy  | `scripts/check-knowledge.mjs`; theming tests                                  | dialog, delegated sheet panel, scrim                                                                                   | A non-painting host gains a target, a delegated panel loses its owner, or the scrim gap disappears without review.                                                     | `audit:BottomSheetSwitcher/theming`       |
 
 ## Decision log
 
-None. This draft records observed behavior and one remediation already required by
-current shared authority; it introduces no component-local design or API decision.
+### DEC-1 — Each step owns its native dialog; the switcher coordinates
+
+**Reference:** `component:BottomSheetSwitcher/DEC-1`
+**Decider:** imdreamrunner, 2026-10-20
+
+A switcher step is a BottomSheet with its own native dialog, presented and
+closed like a standalone sheet, so one DOM shape serves standalone sheets and
+switcher steps alike and the browser supplies modality per step: an inert
+page, focus containment, `cancel` for Escape and the platform close, and the
+backdrop. The switcher owns only what no single dialog can decide: which dialog
+is presented, retained, or closed; the one scrim handed from the retained
+dialog to the entering one without a fade; re-presenting a sheet that is still
+open beneath a newer one when the flow returns to it; focus kept in the active
+sheet when a retained dialog closes; focus returned to the flow's opener; and
+`cancel` gated by the active step's `purpose` through the shared dismissal
+stack. The switcher's one element is a flow wrapper with no box in a modal
+flow and, in a non-modal flow, the isolated surface inside which the sheet
+dialogs order themselves with local values.
+Rejected: one switcher-owned dialog hosting every step as a panel, because a
+step is then not a sheet and every standalone-sheet mechanism needs a second,
+switcher-only implementation.
+Rejected: a script focus trap on top of native containment, because the
+browser already contains focus in a modal dialog and the trap fights its
+inertness.
+Rejected: a page-level `z-index` on a non-modal step's dialog, because
+`spec:AST-027` FR4 forbids a new page band; the wrapper is the isolation owner.
+
+### DEC-2 — The host dialog's identity is implementation, not contract
+
+**Reference:** `component:BottomSheetSwitcher/DEC-2`
+**Decider:** imdreamrunner, 2026-10-20
+
+The `ref`, `onCancel`, `id`, and `data-testid` of the switcher reach the dialog
+hosting the flow: the active sheet's, the exiting sheet's through its exit,
+and, while the flow is closed, the dialog that hosted it last or the first
+mounted sheet's, so the ref is never `null` while a sheet is mounted and the
+identifying attributes appear once. Which element that is, and that it changes
+on a handoff, is implementation: the released contract is that the ref reaches
+the flow's native dialog. Code that copies `ref.current` once at mount keeps a
+real `<dialog>`, but after a handoff that element may no longer be the host;
+read `ref.current` at use time, or use a callback ref, to follow the flow. DOM
+props and handlers given to the switcher (`className`, `style`, `onCancel`,
+`onToggle`, `aria-*`, and the rest) reach every sheet dialog, with `id` and
+`data-testid` on the host only, so a handler fires for whichever sheet dialog
+raises the event. The owner rules this hosting — the moving host and the
+per-dialog props alike — nonbreaking under `spec:AST-017` FR3 because no
+visual output and no public API surface changes.
+Rejected: classifying the moving ref as a breaking change, because no public
+API, documented interaction, or visual output changes.
 
 ## Open questions
 
