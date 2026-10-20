@@ -923,6 +923,10 @@ export function titleInQuery(term, titles) {
  * @param {string} term - Lowercased full query.
  * @param {string[]} tokens - Content tokens from tokenizeQuery(term).
  * @param {Candidate} candidate
+ * @param {string[]} [words] - The query's words for compound names (see
+ *   compoundHit); empty when the query names an entry outright.
+ * @param {{plain?: boolean}} [opts] - `plain`: score without matches on part
+ *   of a name or a joined keyword.
  * @returns {{score: number, reason: string, matched: number, total: number, alias?: boolean} | null}
  *   `matched`/`total` are the query concepts this candidate answered, out of
  *   the concepts the query had. Callers that must distinguish "matched one word
@@ -930,7 +934,13 @@ export function titleInQuery(term, titles) {
  *   on coverage — cannot recover that from the score, because a single strong
  *   hit and a broad weak one land on the same number.
  */
-export function scoreQuery(term, tokens, candidate, words = phraseWords(term)) {
+export function scoreQuery(
+  term,
+  tokens,
+  candidate,
+  words = phraseWords(term),
+  {plain = false} = {},
+) {
   const total = Math.max(tokens.length, 1);
   // A whole-phrase hit answered the whole query by definition.
   const asFull = (/** @type {{score: number, reason: string}} */ hit) => ({
@@ -944,15 +954,19 @@ export function scoreQuery(term, tokens, candidate, words = phraseWords(term)) {
   const fuzzy = tokens.length <= 1 || !/\s/.test(term);
   const full = scoreCandidate(term, candidate, {
     fuzzy,
-    joins: words.length > 0,
+    joins: !plain && words.length > 0,
   });
   // A query of several words keeps its phrase tiers below even when stopwords
   // leave one content word: "make an integration" is still the phrase an
   // author declares as a keyword, and "build an integration" still names a
   // title outright, though each tokenizes to `integration` alone.
   const phrase = phraseWords(term).length >= 2 || words.length >= 2;
-  const compound = compoundHit(words, candidate);
-  compoundOf.set(candidate, compound);
+  let compound = compoundHit(words, candidate);
+  if (plain) {
+    if (compound?.alias) compound = null;
+  } else {
+    compoundOf.set(candidate, compound);
+  }
 
   /** 0–1 content tokens: whole-phrase fuzzy matching (typo tolerance for
    *  single words), but if stopwords left exactly one DIFFERENT token (e.g.
@@ -2274,6 +2288,18 @@ async function searchOnce(query, options) {
       if (!spans.has(run)) spans.set(run, [a, a + len]);
     }
   }
+  const plainWords = new Set(queryWords);
+  /**
+   * Whether a query word is the candidate's whole name: such an entry keeps
+   * the rank its name earns, whatever else it matched.
+   * @param {Candidate} candidate
+   */
+  const wordNamed = candidate =>
+    candidate.domain !== 'doc' &&
+    [candidate.name, ...(candidate.aliases ?? [])].some(name => {
+      const n = joined(name);
+      return plainWords.has(n) || plainWords.has(`${n}s`);
+    });
   /** @param {Candidate} candidate @returns {[number, number] | null} */
   const namedSpan = candidate => {
     if (candidate.domain === 'doc') return null;
@@ -2296,7 +2322,7 @@ async function searchOnce(query, options) {
   // role (page / block / component) and takes the top of each, so there's no
   // cross-role competition to engineer — a target page only needs to be the
   // strongest PAGE, not outrank every component.
-  /** @type {{result: any, priority: 0 | 1 | 2, key: number, alias: boolean, span: [number, number] | null}[]} */
+  /** @type {{result: any, priority: 0 | 1 | 2, key: number, alias: boolean, candidate: Candidate, span: [number, number] | null, word: boolean}[]} */
   const ranked = [];
   for (const candidate of all) {
     const hit = scoreQuery(term, tokens, candidate, words);
@@ -2312,7 +2338,9 @@ async function searchOnce(query, options) {
         priority: domainPriority(term, tokens, candidate, hit, words),
         key: hit.score,
         alias: hit.alias === true,
+        candidate,
         span: namedSpan(candidate),
+        word: wordNamed(candidate),
       });
   }
   // A match through part of a name or a keyword read joined never outranks
@@ -2335,7 +2363,13 @@ async function searchOnce(query, options) {
   if (named.length > 0) {
     const floor = Math.min(...named.map(r => r.key));
     for (const r of ranked) {
-      if (r.alias && !named.includes(r)) r.key = Math.min(r.key, floor - 0.5);
+      if (r.alias && !named.includes(r) && !r.word) {
+        // It keeps what it earns without those matches.
+        const own =
+          scoreQuery(term, tokens, r.candidate, words, {plain: true})?.score ??
+          0;
+        r.key = Math.max(own, Math.min(r.key, floor - 0.5));
+      }
     }
   }
 

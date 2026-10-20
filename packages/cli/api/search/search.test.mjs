@@ -947,6 +947,15 @@ describe('search leaf — compound names, other names, and word forms', () => {
     );
   }, SLOW);
 
+  it('keeps an entry a query word names by its whole name at its own rank', async () => {
+    // Two words join into TextInput, and TextArea also matches two words
+    // through its joined keyword; one word is still TextArea's whole name.
+    const {data} = await search('text input and textarea with multi line', {
+      cwd,
+    });
+    expect(data.results[0]).toMatchObject({name: 'TextArea'});
+  }, SLOW);
+
   it('finds Icon by a glyph name', async () => {
     for (const q of ['cog', 'lightning bolt']) {
       const {data} = await search(q, {cwd});
