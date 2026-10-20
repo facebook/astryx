@@ -6,12 +6,14 @@
  * up-to-date exit says so in `cliBehindCore`, with the same upgrade pinned to
  * the CLI release that matches the Core; a CLI that covers the range returns
  * what it always did. The pinned command changes to the folder the run used
- * and names the directory it scanned as an absolute path, so a POSIX shell
- * runs it there, with every argument unchanged, wherever it is pasted.
+ * and names the directory it scanned as an absolute path, both with symbolic
+ * links resolved, so a POSIX shell runs it there, with every argument
+ * unchanged, wherever it is pasted, even when upgrade() reached the project
+ * through a link.
  */
 
 import {describe, it, expect, beforeEach, afterEach} from 'vitest';
-import {execFileSync} from 'node:child_process';
+import {execFileSync, spawnSync} from 'node:child_process';
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
@@ -57,12 +59,21 @@ function write(rel, body) {
 }
 
 /**
+ * A path in the project as a process running there sees it: every symbolic
+ * link resolved.
+ * @param {string} rel
+ */
+function inProject(rel) {
+  return path.join(fs.realpathSync(dir), rel);
+}
+
+/**
  * The pinned command for this project, as the CLI prints it.
  * @param {...string} args the arguments after `upgrade`
  */
 function pinned(...args) {
   return commandInFolder(
-    dir,
+    fs.realpathSync(dir),
     [
       getDlxPrefix(dir),
       `@astryxdesign/cli@${NEWER_CORE}`,
@@ -132,7 +143,7 @@ describe('a CLI older than the installed Core', {timeout: SLOW}, () => {
         '--from',
         CLI_VERSION,
         '--path',
-        path.join(dir, 'src'),
+        inProject('src'),
         '--apply',
       ),
     });
@@ -150,13 +161,7 @@ describe('a CLI older than the installed Core', {timeout: SLOW}, () => {
     );
     expect(res.data.cliBehindCore).toEqual({
       cliVersion: CLI_VERSION,
-      command: pinned(
-        '--from',
-        '0.6.8',
-        '--path',
-        path.join(dir, 'src'),
-        '--apply',
-      ),
+      command: pinned('--from', '0.6.8', '--path', inProject('src'), '--apply'),
     });
   });
 
@@ -180,7 +185,7 @@ describe('a CLI older than the installed Core', {timeout: SLOW}, () => {
         '--from',
         CLI_VERSION,
         '--path',
-        path.join(dir, 'my src'),
+        inProject('my src'),
         '--codemod',
         'only-this',
         '--skip-codemod',
@@ -203,10 +208,10 @@ describe('a CLI older than the installed Core', {timeout: SLOW}, () => {
     const project = fs.realpathSync(dir);
 
     for (const [given, scanned] of [
-      [undefined, path.join(dir, 'src')],
-      ['.', dir],
-      ['app', path.join(dir, 'app')],
-      ['./app/', path.join(dir, 'app')],
+      [undefined, inProject('src')],
+      ['.', project],
+      ['app', inProject('app')],
+      ['./app/', inProject('app')],
     ]) {
       const res = await upgrade(
         {from: CLI_VERSION, ...(given ? {path: given} : {})},
@@ -264,7 +269,7 @@ describe('a CLI older than the installed Core', {timeout: SLOW}, () => {
         '--from',
         CLI_VERSION,
         '--path',
-        path.join(dir, 'src'),
+        inProject('src'),
         '--skip-codemod',
         "it's",
         '--skip-codemod',
@@ -274,6 +279,88 @@ describe('a CLI older than the installed Core', {timeout: SLOW}, () => {
     },
   );
 });
+
+/** The CLI's own bin, which the stand-in runners below run. */
+const BIN = path.join(CLI_ROOT, 'clients', 'cli', 'bin', 'astryx.mjs');
+
+/**
+ * Stand-ins for the package runners: each drops its own words and the pinned
+ * package, then runs this CLI with the rest of the command.
+ */
+const RUNS_THIS_CLI = /** @type {Array<[string, number]>} */ ([
+  ['npx', 1],
+  ['bunx', 1],
+  ['pnpm', 2],
+  ['yarn', 2],
+])
+  .map(
+    ([name, words]) =>
+      `${name}() { shift ${words}; "$0" ${quoteCommandArgument(BIN)} "$@"; }`,
+  )
+  .join('; ');
+
+// A shell's `cd` follows a symbolic link, but the CLI it starts reads its
+// folder with every link resolved and checks --path against that. A command
+// that kept the link upgrade() was given exited 1 with ERR_PATH_TRAVERSAL.
+describe.skipIf(process.platform === 'win32')(
+  'a project upgrade() reaches through a symbolic link',
+  {timeout: SLOW},
+  () => {
+    /** @type {string} */
+    let base;
+
+    beforeEach(() => {
+      fs.rmSync(dir, {recursive: true, force: true});
+      base = fs.mkdtempSync(path.join(os.tmpdir(), 'upg-link-'));
+      dir = path.join(base, 'real', 'my app');
+      write(
+        'package.json',
+        JSON.stringify({name: 'consumer', version: '1.0.0'}),
+      );
+      write('src/index.tsx', TYPEAHEAD_SOURCE);
+      installCore(NEWER_CORE);
+    });
+
+    afterEach(() => fs.rmSync(base, {recursive: true, force: true}));
+
+    /**
+     * Run upgrade() from `cwd`, then the command it prints, in /bin/sh, from
+     * `cwd` and from the folder above the project.
+     * @param {string} cwd
+     */
+    async function expectPrintedCommandToRun(cwd) {
+      const res = await upgrade({from: CLI_VERSION}, {cwd});
+      const command = /** @type {string} */ (res.data.cliBehindCore?.command);
+
+      for (const pastedIn of [cwd, base]) {
+        const ran = spawnSync(
+          '/bin/sh',
+          ['-c', `${RUNS_THIS_CLI}; ${command}`, process.execPath],
+          {cwd: pastedIn, encoding: 'utf8'},
+        );
+
+        expect(ran.status, ran.stderr).toBe(0);
+        expect(ran.stdout).toContain(`Installed target: ${NEWER_CORE}`);
+        expect(ran.stdout).toContain(`Scanning ${inProject('src')} `);
+      }
+      expect(command).toBe(
+        pinned('--from', CLI_VERSION, '--path', inProject('src')),
+      );
+    }
+
+    it('prints a command that runs, from a folder reached through a link above the project', async () => {
+      fs.symlinkSync(path.join(base, 'real'), path.join(base, 'link'), 'dir');
+
+      await expectPrintedCommandToRun(path.join(base, 'link', 'my app'));
+    });
+
+    it('prints a command that runs, through a project root that is a link', async () => {
+      fs.symlinkSync(dir, path.join(base, 'app'), 'dir');
+
+      await expectPrintedCommandToRun(path.join(base, 'app'));
+    });
+  },
+);
 
 describe('a CLI that covers the range', {timeout: SLOW}, () => {
   it('adds nothing when the installed Core is this CLI release', async () => {

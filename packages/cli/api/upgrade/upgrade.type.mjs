@@ -113,7 +113,7 @@
  * whatever else the response reports.
  * @typedef {object} CliBehindCore
  * @property {string} cliVersion The running CLI's version, the last release it has codemods for.
- * @property {string} command The same upgrade, run with the CLI release that matches the installed Core. It first changes to the folder this run used, then names the directory this run scanned as an absolute `--path`, so pasted from any folder it finds the same Core and scans the same directory. It is written for a POSIX shell (sh, bash, zsh), or for PowerShell on Windows, with each argument quoted for that shell; cmd.exe is not a target.
+ * @property {string} command The same upgrade, run with the CLI release that matches the installed Core. It first changes to the folder this run used, then names the directory this run scanned as an absolute `--path`, both with symbolic links resolved, so pasted from any folder it finds the same Core and scans the same directory. It is written for a POSIX shell (sh, bash, zsh), or for PowerShell on Windows, with each argument quoted for that shell; cmd.exe is not a target.
  */
 
 /**

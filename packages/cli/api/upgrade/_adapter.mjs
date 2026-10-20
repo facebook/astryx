@@ -132,11 +132,14 @@ function readRunningCliVersion() {
  * Where an upgrade runs decides what it finds: the installed Core is read
  * from that folder, and `--path` must stay inside it. So the command first
  * changes to `cwd`, the folder this run used, then names `sourcePath`, the
- * directory this run scanned, as an absolute `--path`. Pasted from any folder,
- * it finds the same Core and scans the same directory, even after a package
- * runner moved this run (Yarn 1 runs `yarn astryx` at the project root). It is
- * written for a POSIX shell, or for PowerShell on Windows (cmd.exe is not a
- * target), with every argument quoted for that shell.
+ * directory this run scanned, as an absolute `--path`. Both are named by their
+ * physical paths, with every symbolic link resolved: a shell's `cd` follows a
+ * link, but the CLI it starts reads its folder with every link resolved and
+ * checks `--path` against that. Pasted from any folder, the command finds the
+ * same Core and scans the same directory, even after a package runner moved
+ * this run (Yarn 1 runs `yarn astryx` at the project root). It is written for
+ * a POSIX shell, or for PowerShell on Windows (cmd.exe is not a target), with
+ * every argument quoted for that shell.
  *
  * Returns null when the CLI covers the whole range (`to` is not newer than
  * both the CLI and `from`), when the CLI's own version cannot be read, or when
@@ -158,7 +161,10 @@ export function detectCliBehindCore({
   if (!cliVersion || !semverGt(to, cliVersion) || !semverGt(to, from)) {
     return null;
   }
-  const args = ['upgrade', '--from', from, '--path', sourcePath];
+  const runFolder = path.resolve(cwd);
+  const folder = physicalFolder(runFolder);
+  const scanned = path.join(folder, path.relative(runFolder, sourcePath));
+  const args = ['upgrade', '--from', from, '--path', scanned];
   if (options.codemod) args.push('--codemod', options.codemod);
   for (const name of options.skipCodemod ?? []) {
     args.push('--skip-codemod', name);
@@ -173,7 +179,22 @@ export function detectCliBehindCore({
     getDlxPrefix(cwd),
     ...[`${CLI_PACKAGE}@${to}`, ...args].map(arg => quoteCommandArgument(arg)),
   ].join(' ');
-  return {cliVersion, command: commandInFolder(path.resolve(cwd), upgrade)};
+  return {cliVersion, command: commandInFolder(folder, upgrade)};
+}
+
+/**
+ * A folder as the operating system reports it to a process that runs there,
+ * with every symbolic link on the way resolved. Falls back to the path as
+ * given when it cannot be resolved.
+ * @param {string} dir an absolute folder
+ * @returns {string}
+ */
+function physicalFolder(dir) {
+  try {
+    return fs.realpathSync(dir);
+  } catch {
+    return dir;
+  }
 }
 
 /**
