@@ -252,6 +252,13 @@ describe('search leaf — matchCount is the total, not the cap', () => {
   }, SLOW);
 });
 
+describe('search leaf — hooks a product composes over its own field', () => {
+  it('finds useCombobox for a mention list over a field the product renders', async () => {
+    const r = await search('mention', {cwd, type: 'hook'});
+    expect(r.data.results.map(x => x.name)).toContain('useCombobox');
+  }, SLOW);
+});
+
 describe('search leaf — --type filter', () => {
   it('restricts results to the requested domain', async () => {
     const r = await search('button', {cwd, type: 'component'});
