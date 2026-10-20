@@ -10,6 +10,8 @@
  * so a reported passage is always a real copy, never a shared phrase.
  */
 
+import fs from 'node:fs';
+
 import {builtinGuideFiles, loadTopicModule} from './docs-discovery.mjs';
 
 /** The shortest run of identical words reported as a copy. */
@@ -100,28 +102,23 @@ export function passageWords(text) {
 }
 
 /**
- * Each prose word of a doc, in order, with the title of the section it is in
- * (null before the first section) and the number of the string it came from.
- * A passage never runs from one string into the next, so two fields that
- * happen to sit side by side are not read as one sentence.
+ * Each prose string of a doc, in order, with the title of the section it is
+ * in (null before the first section). Code, examples, reference blocks, and
+ * identifier fields are left out.
  *
  * @param {unknown} doc an authored doc object
- * @returns {{word: string, section: string | null, block: number}[]}
+ * @returns {{text: string, section: string | null}[]}
  */
-export function proseWords(doc) {
-  /** @type {{word: string, section: string | null, block: number}[]} */
-  const words = [];
-  let block = 0;
+export function proseStrings(doc) {
+  /** @type {{text: string, section: string | null}[]} */
+  const strings = [];
   /**
    * @param {unknown} value
    * @param {string | null} section
    */
   const walk = (value, section) => {
     if (typeof value === 'string') {
-      block++;
-      for (const word of passageWords(value)) {
-        words.push({word, section, block});
-      }
+      strings.push({text: value, section});
       return;
     }
     if (Array.isArray(value)) {
@@ -147,6 +144,26 @@ export function proseWords(doc) {
     }
   };
   walk(doc, null);
+  return strings;
+}
+
+/**
+ * Each prose word of a doc, in order, with the title of the section it is in
+ * (null before the first section) and the number of the string it came from.
+ * A passage never runs from one string into the next, so two fields that
+ * happen to sit side by side are not read as one sentence.
+ *
+ * @param {unknown} doc an authored doc object
+ * @returns {{word: string, section: string | null, block: number}[]}
+ */
+export function proseWords(doc) {
+  /** @type {{word: string, section: string | null, block: number}[]} */
+  const words = [];
+  proseStrings(doc).forEach(({text, section}, at) => {
+    for (const word of passageWords(text)) {
+      words.push({word, section, block: at + 1});
+    }
+  });
   return words;
 }
 
@@ -214,7 +231,7 @@ export function sharedPassages(mine, other, size = PASSAGE_WORDS) {
 }
 
 /**
- * @typedef {{name: string, words: {word: string, section: string | null, block: number}[], replaces: string | null}} GuideWords
+ * @typedef {{name: string, title?: string, file?: string, doc?: unknown, words: {word: string, section: string | null, block: number}[], replaces: string | null}} GuideWords
  */
 
 /**
@@ -334,49 +351,133 @@ export async function findCopiedPassages(discovered) {
   const mine = [];
   for (const each of topics) {
     const doc = each.file ? await loadQuietly(each.file) : null;
-    if (doc) mine.push({...each, words: proseWords(doc)});
+    if (doc) {
+      mine.push({
+        ...each,
+        title: typeof doc.title === 'string' ? doc.title : each.name,
+        doc,
+        words: proseWords(doc),
+      });
+    }
   }
   if (mine.length === 0) return [];
   const core = await loadCoreGuides();
   /** @type {import('../../api/integration/authoring-checks.type.mjs').CopiedPassage[]} */
   const found = [];
   /**
+   * How well a passage fits a topic: how many of its content words the
+   * topic's name, title, or the section the passage sits in also use.
    * @param {GuideWords} topic
-   * @param {GuideWords} other
-   * @param {'package' | 'core'} owner
+   * @param {string[]} words the passage's words
+   * @param {string | null} section
    */
-  const compare = (topic, other, owner) => {
-    const runs = sharedPassages(topic.words, other.words).filter(
-      ({start, length}) =>
-        contentWords(topic.words, start, length) >= MIN_CONTENT_WORDS &&
-        topicsSharing(topic.words, start) < BOILERPLATE_TOPICS,
+  const fit = (topic, words, section) => {
+    const label = new Set(
+      passageWords(
+        `${topic.name.replace(/-/g, ' ')} ${topic.title ?? ''} ${section ?? ''}`,
+      ),
     );
+    return new Set(words.filter(word => label.has(word))).size;
+  };
+  /**
+   * The file line where a passage starts, found from the prose string it is
+   * in, or null.
+   * @param {GuideWords} topic
+   * @param {number} start
+   */
+  const lineOf = (topic, start) => {
+    if (!topic.file || !topic.doc) return null;
+    const text = proseStrings(topic.doc)[topic.words[start].block - 1]?.text;
+    if (!text) return null;
+    // The longest plain run of the string, which the file holds as written.
+    const plain = (text.match(/[A-Za-z0-9 ,.;:()-]{12,}/g) ?? []).sort(
+      (a, b) => b.length - a.length,
+    )[0];
+    if (!plain) return null;
+    let lines;
+    try {
+      lines = fs.readFileSync(topic.file, 'utf8').split('\n');
+    } catch {
+      return null;
+    }
+    const at = lines.findIndex(line => line.includes(plain));
+    return at < 0 ? null : at + 1;
+  };
+  /**
+   * One entry for a pair: the topic that should keep the text (a Core topic,
+   * or of two package topics the one the passage fits), and the exact change
+   * for the other.
+   * @param {GuideWords} first
+   * @param {GuideWords} second
+   * @param {'package' | 'core'} kind
+   */
+  const compare = (first, second, kind) => {
+    const filtered = (
+      /** @type {GuideWords} */ a,
+      /** @type {GuideWords} */ b,
+    ) =>
+      sharedPassages(a.words, b.words).filter(
+        ({start, length}) =>
+          contentWords(a.words, start, length) >= MIN_CONTENT_WORDS &&
+          topicsSharing(a.words, start) < BOILERPLATE_TOPICS,
+      );
+    let runs = filtered(first, second);
     if (runs.length === 0) return;
+    let topic = first;
+    let owner = second;
+    if (kind === 'package') {
+      const words = first.words
+        .slice(runs[0].start, runs[0].start + runs[0].length)
+        .map(each => each.word);
+      const otherRuns = filtered(second, first);
+      const firstFit = fit(first, words, first.words[runs[0].start].section);
+      const secondFit = otherRuns.length
+        ? fit(second, words, second.words[otherRuns[0].start].section)
+        : 0;
+      // The passage stays where it fits best; on a tie, in the topic whose
+      // name sorts first, so the advice is the same on every run.
+      const firstKeeps =
+        firstFit > secondFit ||
+        (firstFit === secondFit && first.name.localeCompare(second.name) < 0);
+      if (firstKeeps && otherRuns.length) {
+        topic = second;
+        owner = first;
+        runs = otherRuns;
+      }
+    }
     const [{start, length}] = runs;
     const excerpt = topic.words
       .slice(start, start + Math.min(length, 12))
       .map(each => each.word)
       .join(' ');
     const section = topic.words[start].section;
-    const where = section ? ` (section "${section}")` : '';
+    const line = lineOf(topic, start);
+    const where = [
+      section ? `section "${section}"` : null,
+      line == null ? null : `line ${line}`,
+    ]
+      .filter(Boolean)
+      .join(', ');
     const more =
       runs.length > 1 ? `, and ${runs.length - 1} more passage(s)` : '';
     const named =
-      owner === 'core' ? `the Core topic "${other.name}"` : `"${other.name}"`;
-    const fix =
-      owner === 'core'
-        ? `Link to the Core topic with {@link generic:${other.name}} instead of copying it`
-        : 'Keep the passage in the topic that owns it and link to it from the other with {@link generic:<topic>}';
+      kind === 'core' ? `the Core topic "${owner.name}"` : `"${owner.name}"`;
+    const link =
+      kind === 'core'
+        ? `{@link @astryxdesign/cli:generic:${owner.name}}`
+        : `{@link generic:${owner.name}}`;
     found.push({
       topic: topic.name,
       section,
-      otherTopic: other.name,
-      otherOwner: owner,
+      line,
+      otherTopic: owner.name,
+      otherOwner: kind,
+      owner: owner.name,
       words: length,
       passages: runs.length,
       message:
-        `"${topic.name}"${where} repeats ${length} words of ${named} word for word${more}: "${excerpt}…". ` +
-        `${fix}, so an edit to one cannot leave a stale copy in the other.`,
+        `"${topic.name}"${where ? ` (${where})` : ''} repeats ${length} words of ${named} word for word${more}: "${excerpt}…". ` +
+        `Keep the text in "${owner.name}"; in "${topic.name}", replace the passage with ${link}.`,
     });
   };
   const own = indexGuides(mine);

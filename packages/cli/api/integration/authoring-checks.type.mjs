@@ -52,16 +52,19 @@
  * A passage two topics repeat word for word: two of the package's own topics,
  * or one of them and a Core topic (never the Core topic it replaces). Only
  * prose counts, and only a run of 10 or more identical words, so each entry
- * is a real copy. Listed for the author to fix; it never fails a check.
+ * is a real copy. Each is also a `copied_passage` warning, so
+ * `integration check --strict` fails on it (architecture:cli-surface DEC-8).
  *
  * @typedef {object} CopiedPassage
- * @property {string} topic the package topic that repeats the passage
+ * @property {string} topic the package topic to change: it repeats the passage
  * @property {string | null} section the title of the section the passage starts in
+ * @property {number | null} line the file line where the passage starts in `topic`, or null
  * @property {string} otherTopic the topic that also has it
+ * @property {string} owner the topic that should keep the text: a Core topic, or of two package topics the one it fits
  * @property {'package' | 'core'} otherOwner whether that topic is the package's own or Core's
  * @property {number} words the length of the longest shared run, in words
  * @property {number} passages how many separate runs the two topics share
- * @property {string} message what is repeated, and the fix: one owner, a link from the other
+ * @property {string} message what is repeated, and the exact fix: the passage in `topic` replaced by a link to `owner`
  */
 
 /**

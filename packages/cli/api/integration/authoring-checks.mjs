@@ -29,7 +29,7 @@ import {
   discoverOwnedComponents,
 } from '../../foundation/discovery/component-discovery.mjs';
 import {loadComponentReplacements} from '../component/_adapter.mjs';
-import {integrationPropDrift} from './_adapter.mjs';
+import {integrationCopiedPassages, integrationPropDrift} from './_adapter.mjs';
 import {
   discoverBuiltinTopics,
   discoverIntegrationDocs,
@@ -40,7 +40,6 @@ import {
   discoverIntegrationTemplatesForOne,
 } from '../../foundation/discovery/template-adapter.mjs';
 import {expandedTemplateConflictSchemaActive} from '../../foundation/discovery/template-conflict-release.mjs';
-import {findCopiedPassages} from '../../foundation/discovery/copied-passages.mjs';
 import {
   validateInstalledIntegration,
   validateLocalIntegration,
@@ -424,7 +423,7 @@ export async function integrationDocConflicts(pkg, options = {}) {
     // of them. Each is listed and is a warning (architecture:cli-surface
     // DEC-8), so `integration check --strict` fails until it is fixed;
     // `doctor integration docs` keeps its exit code, as it fails on errors.
-    copiedPassages.push(...(await findCopiedPassages(discovered)));
+    copiedPassages.push(...(await integrationCopiedPassages(discovered)));
     for (const {message} of copiedPassages) {
       issues.push({code: 'copied_passage', severity: 'warning', message});
     }

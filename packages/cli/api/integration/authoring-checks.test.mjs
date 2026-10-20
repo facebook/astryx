@@ -621,18 +621,21 @@ describe('integrationDocConflicts copied passages', () => {
     ]);
 
     expect(rest).toEqual([]);
+    // The passage is about menus, so "acme-menus" keeps it.
     expect(issue).toMatchObject({
-      topic: 'acme-menus',
-      otherTopic: 'acme-setup',
+      topic: 'acme-setup',
+      otherTopic: 'acme-menus',
       otherOwner: 'package',
+      owner: 'acme-menus',
       section: 'Overview',
+      line: 1,
       words: PASSAGE.split(' ').length,
       passages: 1,
     });
-    expect(issue.message).toContain('"acme-menus"');
-    expect(issue.message).toContain('"acme-setup"');
     expect(issue.message).toContain(`${PASSAGE.split(' ').length} words`);
-    expect(issue.message).toContain('{@link generic:<topic>}');
+    expect(issue.message).toContain(
+      'Keep the text in "acme-menus"; in "acme-setup", replace the passage with {@link generic:acme-menus}.',
+    );
   });
 
   it('reports a passage copied from a Core topic, except into the topic that replaces it', async () => {
@@ -649,7 +652,10 @@ describe('integrationDocConflicts copied passages', () => {
     );
     expect(issue.otherOwner).toBe('core');
     expect(issue.message).toContain(`the Core topic "${coreDoc.name}"`);
-    expect(issue.message).toContain(`{@link generic:${coreDoc.name}}`);
+    expect(issue.owner).toBe(coreDoc.name);
+    expect(issue.message).toContain(
+      `replace the passage with {@link @astryxdesign/cli:generic:${coreDoc.name}}.`,
+    );
 
     fs.rmSync(path.join(tmpDir, 'docs'), {recursive: true, force: true});
     writeTopics([{name: 'acme-own', text: coreText, replaces: coreDoc.name}]);

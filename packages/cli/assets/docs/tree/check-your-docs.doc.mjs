@@ -36,7 +36,7 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: 'Write each fact in one topic. When two of your topics, or one of yours and a Core topic, repeat 10 or more words of prose word for word, the check lists the pair as `[info]`, with the fix: keep the passage in one topic and link to it from the other ({@link generic:links}). Code and examples are not compared, and a topic may carry the text of the Core topic it replaces. A run of mostly function words, or one that three or more topics share (a series lead-in), is not listed. Each listed pair is also a warning (`copied_passage`): `doctor integration docs` still exits 0, and `integration check --strict` fails until you fix it.',
+          text: 'Write each fact in one topic. When two of your topics, or one of yours and a Core topic, repeat 10 or more words of prose word for word, the check lists the pair as a `copied_passage` warning. It names the topic that keeps the text (a Core topic, or of your two the one the passage fits) and the line in the other where to put the link instead ({@link generic:links}). Code and examples are not compared, and a topic may carry the text of the Core topic it replaces. A run of mostly function words, or one that three or more topics share (a series lead-in), is not listed. Each listed pair is also a warning (`copied_passage`): `doctor integration docs` still exits 0, and `integration check --strict` fails until you fix it.',
         },
         {
           type: 'prose',

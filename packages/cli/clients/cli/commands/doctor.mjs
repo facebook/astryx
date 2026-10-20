@@ -425,9 +425,21 @@ function printDocConflicts(data) {
   } else {
     output.push(
       text(
-        `[info] ${copied.length} copied passage(s): two topics say the same thing word for word. Keep each in one topic and link to it from the other.`,
+        `[warn] ${copied.length} copied passage(s) (copied_passage): two topics say the same thing word for word. Keep the text in one and link to it from the other.`,
       ),
-      records(copied, {fields: ['topic', 'otherTopic', 'words', 'message']}),
+      records(copied, {
+        fields: [
+          'topic',
+          'section',
+          'line',
+          'otherTopic',
+          'otherOwner',
+          'owner',
+          'words',
+          'passages',
+          'message',
+        ],
+      }),
     );
   }
   emit(...output);
