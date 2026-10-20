@@ -205,11 +205,14 @@ export async function resolveWorkflowRunPullRequest({
   }
   if (
     matches.length === 0 &&
-    candidates.every(pull => pull?.state !== 'open')
+    candidates.every(
+      pull => pull?.state !== 'open' || pull?.head?.sha !== run?.head_sha,
+    )
   ) {
-    // A source run can be rerun after its pull request merges. No privileged
-    // work remains when there is no open candidate, so finish without turning
-    // the trusted default-branch workflow red.
+    // A source run can be rerun after its pull request merges, or after the
+    // branch moved to a new head. Either way the run's report has no current
+    // pull request: no privileged work remains, so finish without turning the
+    // trusted default-branch workflow red. The newer head has its own run.
     return null;
   }
   if (matches.length !== 1) {
@@ -228,8 +231,24 @@ export async function confirmSourceRunIdentity({
 }) {
   const sourceRunId = positiveInteger(expected.sourceRunId, 'source run id');
   const prNumber = positiveInteger(expected.prNumber, 'pull request number');
+  const attemptNumber = positiveInteger(
+    expected.sourceRunAttempt,
+    'source run attempt',
+  );
+  // Read the exact attempt the trusted event reported. `getWorkflowRun`
+  // describes the LATEST attempt, so a rerun started after the event would make
+  // the same run look like a different identity (attempt and conclusion).
+  const readRun =
+    typeof github.rest.actions.getWorkflowRunAttempt === 'function'
+      ? github.rest.actions.getWorkflowRunAttempt({
+          owner,
+          repo,
+          run_id: sourceRunId,
+          attempt_number: attemptNumber,
+        })
+      : github.rest.actions.getWorkflowRun({owner, repo, run_id: sourceRunId});
   const [{data: run}, {data: pull}] = await Promise.all([
-    github.rest.actions.getWorkflowRun({owner, repo, run_id: sourceRunId}),
+    readRun,
     github.rest.pulls.get({owner, repo, pull_number: prNumber}),
   ]);
   const actual = identityFromPullAndRun({
@@ -239,6 +258,38 @@ export async function confirmSourceRunIdentity({
   });
   sameIdentity(actual, expected);
   return actual;
+}
+
+/**
+ * The run's latest attempt number, or null when the client cannot say. A
+ * report for an earlier attempt must not replace the latest attempt's: that
+ * attempt's own completion publishes.
+ */
+export async function latestAttemptOf({github, owner, repo, sourceRunId}) {
+  const {data: run} = await github.rest.actions.getWorkflowRun({
+    owner,
+    repo,
+    run_id: positiveInteger(sourceRunId, 'source run id'),
+  });
+  const attempt = Number(run?.run_attempt);
+  return Number.isSafeInteger(attempt) && attempt > 0 ? attempt : null;
+}
+
+/** True when a newer attempt of the reported run exists. */
+async function supersededByNewerAttempt({github, owner, repo, identity, core}) {
+  const latest = await latestAttemptOf({
+    github,
+    owner,
+    repo,
+    sourceRunId: identity.sourceRunId,
+  });
+  if (latest != null && latest > identity.sourceRunAttempt) {
+    core.info(
+      `Attempt ${latest} of source run ${identity.sourceRunId} supersedes the reported attempt ${identity.sourceRunAttempt}; its own completion publishes.`,
+    );
+    return true;
+  }
+  return false;
 }
 
 export function validateAnalysisMetadata(metadata, identity) {
@@ -364,6 +415,9 @@ export async function reconcilePrComment({
     repo,
     expected: expectedIdentity,
   });
+  if (await supersededByNewerAttempt({github, owner, repo, identity, core})) {
+    return {action: 'none', body: null, identity};
+  }
   const runUrl = `${context.serverUrl}/${owner}/${repo}/actions/runs/${identity.sourceRunId}`;
   const analysisReady = trustedAnalysis({
     analysisPath,
@@ -464,14 +518,19 @@ export async function reconcilePrComment({
     });
   }
 
-  // Vercel readiness can take minutes after the source run finishes. Check the
-  // current PR and CI attempt again before changing any comment.
+  // Vercel readiness can take minutes after the source run finishes. Confirm
+  // the reported attempt's identity again, and stand down if a newer attempt
+  // of the run has started since: an earlier attempt's report must not replace
+  // the latest attempt's.
   await confirmSourceRunIdentity({
     github,
     owner,
     repo,
     expected: expectedIdentity,
   });
+  if (await supersededByNewerAttempt({github, owner, repo, identity, core})) {
+    return {action: 'none', body: null, identity};
+  }
   if (
     previewOrigin &&
     (await lookupPreview({

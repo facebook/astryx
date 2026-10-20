@@ -4,7 +4,7 @@
 
 /**
  * @file DialogHeader.tsx
- * @input Uses React, StyleX, LayoutHeader, Button, Icon, Heading, Text, DialogContext, mergeProps, themeProps
+ * @input Uses React, StyleX, LayoutHeader, Button, Icon, Heading, Text, DialogContext, isRenderable, mergeProps, themeProps
  * @output Exports DialogHeader component and DialogHeaderProps
  * @position Dialog header component; used with Dialog and Layout
  *
@@ -25,7 +25,7 @@ import {Icon} from '../Icon';
 import {Heading} from '../Heading/Heading';
 import {Text} from '../Text/Text';
 import type {BaseProps} from '../BaseProps';
-import {mergeProps} from '../utils';
+import {isRenderable, mergeProps} from '../utils';
 import {themeProps} from '../utils/themeProps';
 import {useDialogContext} from './DialogContext';
 import {useTranslator} from '../i18n';
@@ -164,10 +164,9 @@ export function DialogHeader({
   const dialogContext = useDialogContext();
   const shouldAutoFocus = dialogContext?.isInline !== true;
   const titleId = dialogContext?.titleId;
-  // A node subtitle may be `0`: render it inside Text instead of letting a
-  // truthiness check leak a bare text node, and skip only empty values.
-  const hasSubtitle =
-    subtitle != null && typeof subtitle !== 'boolean' && subtitle !== '';
+  const hasSubtitle = isRenderable(subtitle);
+  const hasStartContent = isRenderable(startContent);
+  const hasEndContent = isRenderable(endContent);
   const shouldCompensateEndBlock =
     endContentEdgeCompensation == null
       ? onOpenChange != null
@@ -203,7 +202,7 @@ export function DialogHeader({
           themeProps('dialog-header'),
           stylex.props(styles.container),
         )}>
-        {startContent && (
+        {hasStartContent && (
           <div
             {...mergeProps(
               themeProps('dialog-header-start-content'),
@@ -231,7 +230,7 @@ export function DialogHeader({
             </Text>
           )}
         </div>
-        {(endContent || onOpenChange) && (
+        {(hasEndContent || onOpenChange != null) && (
           <div
             {...mergeProps(
               themeProps('dialog-header-end-content'),

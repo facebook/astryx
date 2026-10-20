@@ -31,7 +31,7 @@ export const docs = {
           type: 'code',
           lang: 'javascript',
           label: 'templates/acme-stat-card.doc.mjs',
-          code: `/** @type {import('@astryxdesign/cli/authoring').TemplateDoc} */
+          code: `/** @type {import('@astryxdesign/cli/authoring').IntegrationTemplateDoc} */
 export default {
   type: 'block',
   name: 'acme-stat-card',
@@ -75,7 +75,7 @@ export default {
           type: 'code',
           lang: 'javascript',
           label: 'templates/acme-status-card-showcase.doc.mjs',
-          code: `/** @type {import('@astryxdesign/cli/authoring').TemplateDoc} */
+          code: `/** @type {import('@astryxdesign/cli/authoring').IntegrationTemplateDoc} */
 export default {
   type: 'block',
   name: 'acme-status-card-showcase',

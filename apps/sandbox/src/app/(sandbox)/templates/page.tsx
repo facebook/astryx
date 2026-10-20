@@ -33,7 +33,8 @@ import {TextInput} from '@astryxdesign/core/TextInput';
 import {colorVars, radiusVars} from '@astryxdesign/core/theme/tokens.stylex';
 import {Toolbar} from '@astryxdesign/core/Toolbar';
 import {useToast} from '@astryxdesign/core/Toast';
-import {Drawer, DrawerHeader, Stat} from '@astryxdesign/lab';
+import {Drawer, DrawerHeader} from '@astryxdesign/core/Drawer';
+import {Stat} from '@astryxdesign/lab';
 
 import {
   TEMPLATE_AUDIT_CATEGORIES,
@@ -865,7 +866,7 @@ export default function TemplatesPage() {
                       )
                     }
                     options={TEMPLATE_AUDIT_FILTER_OPTIONS}
-                    xstyle={styles.filterToken}
+                    controlXstyle={styles.filterToken}
                   />
                   <Selector
                     label="Template type"
@@ -880,7 +881,7 @@ export default function TemplatesPage() {
                       )
                     }
                     options={TEMPLATE_TYPE_FILTER_OPTIONS}
-                    xstyle={styles.filterToken}
+                    controlXstyle={styles.filterToken}
                   />
                   <Text type="supporting" color="secondary">
                     {visible.length}{' '}

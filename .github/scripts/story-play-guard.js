@@ -39,6 +39,12 @@ const port = Number(getArg('port') || 6010);
 // whole cost of promoting its play function into required CI.
 const TARGETS = [
   {
+    component: 'Item',
+    story: 'core-item--align-first-line',
+    guards:
+      'under align="first-line" every start and end slot centers on the label\'s first line (wrapped, clamped, dense, spacious, avatar, interactive, RTL, ListItem, RadioListItem) and never rises into the row padding',
+  },
+  {
     component: 'Selector',
     story: 'core-selector--size-variants',
     guards:
@@ -48,6 +54,18 @@ const TARGETS = [
     component: 'MultiSelector',
     story: 'core-multiselector--sizes',
     guards: 'compact trigger variants match their size tokens',
+  },
+  {
+    component: 'MultiSelector',
+    story: 'core-multiselector--secondary-variant',
+    guards:
+      'the secondary trigger keeps its explicit 180px inline size while selected labels change',
+  },
+  {
+    component: 'ComplexSelector',
+    story: 'core-complexselector--secondary-variant',
+    guards:
+      'the secondary trigger keeps its explicit 190px inline size while the selected value changes',
   },
   {
     component: 'Code',
@@ -73,6 +91,41 @@ const TARGETS = [
     guards:
       'ChartTooltip stays continuously open across content-bearing points in ' +
       'nested Theme/MediaTheme scope above a native modal with nonzero geometry',
+  },
+  {
+    component: 'ChartTheming',
+    story: 'lab-charttheming-colorpicker--end-user-choices',
+    guards:
+      'Automatic, theme, custom, mode switching, and Reset update the selected chart color',
+  },
+  {
+    component: 'ChartTheming',
+    story: 'lab-charttheming-recharts--theme-tokens',
+    guards:
+      'Recharts resolves theme-aware resting colors and a same-series active-state tint in the browser',
+  },
+  {
+    component: 'ChartTheming',
+    story: 'lab-charttheming-recharts--runtime-theme-switch',
+    guards:
+      'Recharts keeps its SVG and focused chart surface while authored data colors switch modes',
+  },
+  {
+    component: 'ChartTheming',
+    story: 'lab-charttheming-recharts--square-bars',
+    guards:
+      'A chart can opt its bar geometry out of the theme radius without mutating the theme',
+  },
+  {
+    component: 'ChartTheming',
+    story: 'lab-charttheming-canvas--runtime-theme-switch',
+    guards: 'Canvas redraws concrete theme colors on the same drawing surface',
+  },
+  {
+    component: 'ChartTheming',
+    story: 'lab-charttheming-vega--serialized-canvas-config',
+    guards:
+      'Vega receives serialized concrete values and explicitly rebuilds its View when config changes',
   },
   {
     component: 'ChatToolCalls',
@@ -194,6 +247,25 @@ const TARGETS = [
       hasTouch: true,
     },
   ]),
+  {
+    component: 'FormLayout (phone)',
+    story: 'core-formlayout--horizontal-labels',
+    viewport: {width: 390, height: 844},
+    guards:
+      'below the 480px collapse, horizontal-labels controls fill the column, including a Selector with a short value',
+  },
+  {
+    component: 'FormLayout',
+    story: 'core-formlayout--horizontal-labels',
+    viewport: {width: 481, height: 844},
+    guards: 'just above the collapse, labels stay beside their controls',
+  },
+  {
+    component: 'Grid',
+    story: 'core-grid--grid-span-with-long-content',
+    guards:
+      'a full-width GridSpan holding a Tokenizer with a long token stays within its 500px host',
+  },
   {
     component: 'TabList',
     story: 'core-tablist--full-bleed-geometry',

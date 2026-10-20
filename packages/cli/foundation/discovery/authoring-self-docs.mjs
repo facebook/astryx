@@ -46,6 +46,7 @@ export const AUTHORING_SELF_DOCS = [
   'doctypes/reference/reference.doc.mjs',
   'doctypes/schema/schema.doc.mjs',
   'doctypes/template/template.doc.mjs',
+  'doctypes/template/integration-template.doc.mjs',
   'doctypes/theme/theme.doc.mjs',
 ];
 

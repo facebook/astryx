@@ -5,13 +5,14 @@
 /**
  * @file MultiSelector.tsx
  * @input Uses React, StyleX, usePopover, useTooltip, CheckboxInput, Field, Badge, Icon, InputGroupContext
- * @output Exports MultiSelector component
+ * @output Exports MultiSelector with input, secondary, and ghost trigger variants
  * @position Core implementation; consumed by index.ts
  *
  * SYNC: When modified, update:
  * - /packages/core/src/MultiSelector/MultiSelector.doc.mjs
  * - /packages/core/src/MultiSelector/MultiSelector.test.tsx
  * - /packages/core/src/MultiSelector/index.ts
+ * - /apps/storybook/stories/MultiSelector.stories.tsx
  * - /apps/storybook/stories/InputGroup.stories.tsx
  * - /packages/cli/assets/templates/blocks/components/MultiSelector/ (showcase blocks)
  */
@@ -49,6 +50,7 @@ import type {IndicatorPosition} from '../Indicator';
 import {Badge} from '../Badge';
 import {
   colorVars,
+  focusVars,
   sizeVars,
   spacingVars,
   radiusVars,
@@ -73,19 +75,29 @@ import {
 import {useMultiCombobox} from './hooks';
 import {getInputARIA, isImeKeyEvent, mergeProps} from '../utils';
 import {devWarn, warnOnce} from '../utils/devWarning';
-import {FOCUS_OUTLINE_PARTS} from '../utils/focusOutline.stylex';
+import {
+  getInteractionModality,
+  useInteractionModalityTracking,
+} from '../utils/interactionModality';
 import {useAnnounce} from '../hooks/useAnnounce';
 import {FOCUSABLE_SELECTOR} from '../hooks/focusableSelector';
 import {useAnnounceRenderedText} from '../hooks/useAnnounceRenderedText';
 import {useResolvedRequired} from '../hooks/useResolvedRequired';
-import type {BaseProps} from '../BaseProps';
+import {
+  useFieldInputStyling,
+  type FieldInputBaseProps,
+  type FieldPartStyleProps,
+} from '../Field/fieldParts';
+import {useDevWarning} from '../hooks/useDevWarning';
+import {composeEventHandlers} from '../utils/composeEventHandlers';
+import {mergeRefs} from '../utils/mergeRefs';
+import {useMergedRefs} from '../hooks/useMergedRefs';
 import type {SizeValue} from '../utils/types';
 import {useSize} from '../SizeContext/SizeContext';
 import {themeProps} from '../utils/themeProps';
 import {focusOutlineStyles} from '../utils/focusOutline.stylex';
 import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
 import {usePressFeedback} from '../hooks/usePressFeedback';
-import {stableClassName} from '../naming';
 import {groupStyles} from '../InputGroup/groupStyles';
 import {useInputGroup} from '../InputGroup/InputGroupContext';
 import {VisuallyHidden} from '../VisuallyHidden';
@@ -227,6 +239,31 @@ const styles = stylex.create({
       default: 'scale(1)',
       // A mouse press; under a coarse pointer the touch press model writes
       // `data-astryx-press` instead (see interactionOverlay.stylex.ts).
+      ':active': {
+        default: 'scale(0.98)',
+        '@media (pointer: coarse)': 'scale(1)',
+      },
+      '[data-astryx-press="on"]': 'scale(0.98)',
+    },
+  },
+  // Keep the input-family width contract while reusing ghost's borderless paint
+  // and the neutral resting fill used by secondary buttons.
+  triggerSecondary: {
+    borderWidth: 0,
+    backgroundColor: colorVars['--color-neutral'],
+    boxShadow: {
+      default: 'none',
+      ':hover:not(:focus-within):where(:not(:disabled,[aria-disabled="true"]))':
+        {
+          '@media (hover: hover)': 'none',
+        },
+      ':focus-within': 'none',
+    },
+    fontWeight: fontWeightVars['--font-weight-medium'],
+    transitionProperty:
+      'background-image, background-color, color, opacity, transform',
+    transform: {
+      default: 'scale(1)',
       ':active': {
         default: 'scale(0.98)',
         '@media (pointer: coarse)': 'scale(1)',
@@ -403,11 +440,15 @@ const styles = stylex.create({
     flexShrink: 0,
     borderRadius: radiusVars['--radius-element'],
   },
+  // The standard ring, from the focus tokens themselves: inside
+  // `stylex.create` StyleX resolves an imported `defineVars` group, and a
+  // plain object such as `FOCUS_OUTLINE_PARTS` compiles to variables nothing
+  // defines.
   actionCellActive: {
-    outlineWidth: FOCUS_OUTLINE_PARTS.outlineWidth,
-    outlineStyle: FOCUS_OUTLINE_PARTS.outlineStyle,
-    outlineColor: FOCUS_OUTLINE_PARTS.outlineColor,
-    outlineOffset: FOCUS_OUTLINE_PARTS.outlineOffset,
+    outlineWidth: focusVars['--focus-outline-width'],
+    outlineStyle: focusVars['--focus-outline-style'],
+    outlineColor: focusVars['--focus-outline-color'],
+    outlineOffset: focusVars['--focus-outline-offset'],
   },
 
   // Empty state
@@ -460,6 +501,10 @@ const selectAllSizeStyles = stylex.create({
   },
 });
 
+const RENDER_TRIGGER_PARTS_MESSAGE =
+  '`container*` and `control*` styling props have no effect with `renderTrigger`: ' +
+  'no Field box or control box renders. Style the control you render instead.';
+
 const STATUS_ICON_MAP: Record<MultiSelectorStatusType, IconName> = {
   warning: 'warning',
   error: 'error',
@@ -483,7 +528,7 @@ const STATUS_BUTTON_LABEL_KEY: Record<MultiSelectorStatusType, string> = {
 
 export type MultiSelectorSize = 'sm' | 'md' | 'lg';
 
-export type MultiSelectorVariant = 'input' | 'ghost';
+export type MultiSelectorVariant = 'input' | 'secondary' | 'ghost';
 
 export type MultiSelectorPresentation = AdaptivePresentation;
 
@@ -497,8 +542,23 @@ export type {MultiSelectorStatus};
  * Spread them onto that control: it becomes the panel's anchor, the element
  * focus returns to, and the control that announces the panel's state.
  */
-export interface MultiSelectorRenderTriggerProps {
-  /** Attaches the control as the panel's anchor and focus-return target. */
+export interface MultiSelectorRenderTriggerProps extends Omit<
+  FieldInputBaseProps,
+  | keyof FieldPartStyleProps
+  | 'id'
+  | 'onClick'
+  | 'onKeyDown'
+  | 'onFocus'
+  | 'aria-haspopup'
+  | 'aria-expanded'
+  | 'aria-controls'
+  | 'aria-busy'
+  | 'aria-readonly'
+> {
+  /**
+   * Attaches the control as the panel's anchor and focus-return target, and
+   * forwards it to the selector's own `ref`.
+   */
   ref: (element: HTMLElement | null) => void;
   /** The id the field would have given its own button. */
   id: string;
@@ -563,11 +623,36 @@ export interface MultiSelectorSelectedItem {
 
 export interface MultiSelectorProps<
   T extends MultiSelectorOptionType = MultiSelectorOptionType,
-> extends Omit<BaseProps, 'onChange' | 'defaultValue'> {
+> extends Omit<FieldInputBaseProps, 'onChange' | 'defaultValue'> {
   /**
    * Label text for the multi-selector (always rendered for accessibility).
    */
   label: string;
+
+  /**
+   * Ref to the trigger: the button that carries the combobox role, the
+   * accessible name, and the value — or, with `renderTrigger`, the caller's
+   * control.
+   */
+  ref?: React.Ref<HTMLElement>;
+
+  /**
+   * Click handler on the trigger (or, with `renderTrigger`, the caller's
+   * control). It runs after the built-in toggle and cannot cancel it.
+   */
+  onClick?: React.MouseEventHandler<HTMLElement>;
+
+  /**
+   * Focus handler on the trigger. It runs before the selector's own focus
+   * handling.
+   */
+  onFocus?: React.FocusEventHandler<HTMLElement>;
+
+  /**
+   * Key handler on the trigger. It runs after the built-in keyboard model and
+   * is skipped for keys that model handles and cancels.
+   */
+  onKeyDown?: React.KeyboardEventHandler<HTMLElement>;
 
   /**
    * Whether to visually hide the label (still accessible to screen readers).
@@ -685,7 +770,9 @@ export interface MultiSelectorProps<
   /**
    * Visual style of the selector trigger.
    * - 'input': bordered input-style trigger for forms
-   * - 'ghost': borderless trigger matching ghost buttons, for toolbars
+   * - 'secondary': matches the theme's secondary buttons (borderless and
+   *   neutral-filled by default)
+   * - 'ghost': borderless, transparent trigger matching ghost buttons
    * @default 'input'
    */
   variant?: MultiSelectorVariant;
@@ -699,14 +786,14 @@ export interface MultiSelectorProps<
    * - 'attached': message overlaps directly below the bordered input (input variant only)
    * - 'detached': message floats below as a separate element with spacing
    * - 'tooltip': message is exposed from the on-field status icon
-   * @default 'attached' for input selectors; 'detached' for ghost selectors
+   * @default 'attached' for input selectors; 'detached' for secondary and ghost selectors
    */
   statusVariant?: FieldStatusVariant;
 
   /**
    * Width of the field. Numbers are treated as pixels, strings are used as-is
    * (e.g. `'100%'`). Sizes the whole field (label, control, and status) so they
-   * stay aligned, unlike setting width via `xstyle`/`className`/`style`.
+   * stay aligned, unlike setting width via `controlXstyle`/`controlClassName`/`controlStyle`.
    */
   width?: SizeValue;
   /**
@@ -890,7 +977,8 @@ export interface MultiSelectorProps<
   onOpenChange?: (isOpen: boolean) => void;
 
   /**
-   * Test ID for testing frameworks.
+   * Test ID for testing frameworks, set on the trigger button (or, with
+   * `renderTrigger`, the caller's control).
    */
   'data-testid'?: string;
 }
@@ -1016,14 +1104,38 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
   renderTrigger,
   handleRef,
   onOpenChange,
-  'data-testid': testId,
   htmlName,
   width,
-  xstyle,
-  className,
-  style,
+  containerXstyle,
+  containerClassName,
+  containerStyle,
+  controlXstyle,
+  controlClassName,
+  controlStyle,
+  ref,
+  id,
+  onClick,
   onFocus,
+  onKeyDown: onKeyDownProp,
+  'aria-describedby': ariaDescribedByProp,
+  ...restProps
 }: MultiSelectorProps<T>) {
+  const {rest, container} = useFieldInputStyling('MultiSelector', restProps, {
+    containerXstyle,
+    containerClassName,
+    containerStyle,
+  });
+  useDevWarning(
+    'MultiSelector',
+    RENDER_TRIGGER_PARTS_MESSAGE,
+    renderTrigger != null &&
+      (containerXstyle != null ||
+        containerClassName != null ||
+        containerStyle != null ||
+        controlXstyle != null ||
+        controlClassName != null ||
+        controlStyle != null),
+  );
   const t = useTranslator();
   const pressable = usePressFeedback();
   const isEffectivelyRequired = useResolvedRequired({isRequired, isOptional});
@@ -1038,12 +1150,15 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
     emptySearchTextFromProps ?? t('@astryx.multiSelector.emptySearchResults');
   const size = useSize(sizeProp, 'md');
   const effectiveStatusVariant =
-    variant === 'ghost' && statusVariant === 'attached'
+    variant !== 'input' && statusVariant === 'attached'
       ? 'detached'
       : statusVariant;
   const isEffectivelyReadOnly = isReadOnly && !isDisabled;
 
-  const triggerId = useId();
+  const generatedTriggerId = useId();
+  // A caller's `id` lands on the trigger, so the label and listbox wiring
+  // must use that same value.
+  const triggerId = id ?? generatedTriggerId;
   const listboxId = useId();
   const descriptionId = useId();
   const statusMessageId = useId();
@@ -1053,6 +1168,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
   // Read by the live region above so it speaks what this element renders.
   const emptyStateRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLElement>(null);
+  const triggerButtonRef = useMergedRefs<HTMLElement>(triggerRef, ref);
   const searchRef = useRef<HTMLInputElement>(null);
   const listboxRef = useRef<HTMLDivElement>(null);
   const inputGroup = useInputGroup();
@@ -1489,6 +1605,14 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
     (e: React.MouseEvent) => {
       e.stopPropagation(); // Don't open dropdown
       clearValues();
+      // A keyboard activation (detail 0) leaves focus on the clear button,
+      // which unmounts once the value is empty and would drop focus to <body>;
+      // hand it to the trigger. A pointer press never focuses the button, so
+      // there is no focus to repair, and moving it would pull focus out of an
+      // open list's search input.
+      if (e.detail === 0) {
+        triggerRef.current?.focus();
+      }
     },
     [clearValues],
   );
@@ -1636,8 +1760,8 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
     getActionCellId,
     activeDescendantId,
     onTriggerClick,
-    onKeyDown,
-    onItemMouseEnter,
+    onKeyDown: onComboboxKeyDown,
+    onItemMouseEnter: onComboboxItemMouseEnter,
   } = useMultiCombobox({
     selectableItems: sortedItems,
     isDisabled: isDisabled || isEffectivelyReadOnly,
@@ -1667,6 +1791,47 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
       [getActionCellIdForActivate],
     ),
   });
+
+  // A hover moves the highlight too, but the focus ring follows the shared
+  // interaction modality (architecture:interaction-modality INV1): it is read
+  // whenever a key or the pointer moves the highlight, so an action cell
+  // highlighted after pointer input keeps the hover treatment and no ring.
+  useInteractionModalityTracking();
+  const [isKeyboardHighlight, setIsKeyboardHighlight] = useState(
+    () => getInteractionModality() === 'keyboard',
+  );
+  const onKeyDown = useCallback(
+    (event: React.KeyboardEvent<HTMLElement>) => {
+      onComboboxKeyDown(event);
+      setIsKeyboardHighlight(getInteractionModality() === 'keyboard');
+    },
+    [onComboboxKeyDown],
+  );
+  const onItemMouseEnter = useCallback(
+    (...args: Parameters<typeof onComboboxItemMouseEnter>) => {
+      onComboboxItemMouseEnter(...args);
+      setIsKeyboardHighlight(getInteractionModality() === 'keyboard');
+    },
+    [onComboboxItemMouseEnter],
+  );
+
+  // The trigger button owns its click so a consumer `onClick`, which lands on
+  // the button, composes after the built-in toggle. A press elsewhere in the
+  // control box (padding, start icon, chevron) still opens the panel.
+  const handleTriggerButtonClick = useCallback(() => {
+    onTriggerClick();
+  }, [onTriggerClick]);
+  const handleControlBoxClick = useCallback(
+    (event: React.MouseEvent<HTMLDivElement>) => {
+      if (triggerRef.current?.contains(event.target as Node)) {
+        return;
+      }
+      // Route the press through the trigger so it behaves exactly like a
+      // press on the trigger itself, caller `onClick` included.
+      triggerRef.current?.click();
+    },
+    [],
+  );
 
   // Highlight scrolling (and its hover/keyboard split) lives in useMultiCombobox.
 
@@ -1983,6 +2148,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
                   styles.actionCell,
                   isHighlighted &&
                     highlightedCell === 'action' &&
+                    isKeyboardHighlight &&
                     styles.actionCellActive,
                 )}>
                 {isSelectAll || isCreate ? null : item.action}
@@ -1997,6 +2163,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
     [
       isGrid,
       highlightedCell,
+      isKeyboardHighlight,
       getActionCellId,
       renderOption,
       indicatorPosition,
@@ -2243,17 +2410,25 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
   }
 
   const triggerSharedProps: React.HTMLAttributes<HTMLElement> = {
+    ...rest,
     id: triggerId,
-    'aria-describedby': ariaDescribedBy,
+    // A caller's description is kept alongside the field's own.
+    'aria-describedby':
+      [ariaDescribedByProp, ariaDescribedBy].filter(Boolean).join(' ') ||
+      undefined,
     'aria-labelledby': ariaLabelledBy,
     'aria-required': isEffectivelyRequired ? 'true' : undefined,
     'aria-invalid': status?.type === 'error' ? 'true' : undefined,
     'aria-busy': isBusy || undefined,
-    onKeyDown,
+    // Newly forwarded handlers compose component first: the built-in toggle
+    // and keyboard model always run. `onFocus` keeps its existing caller-first
+    // order.
+    onKeyDown: composeEventHandlers(onKeyDown, onKeyDownProp),
     onFocus: event => {
       onFocus?.(event);
       surface.onTriggerFocus(event);
     },
+    onClick: composeEventHandlers(handleTriggerButtonClick, onClick),
     tabIndex: isDisabled && !showsDisabledMessage ? -1 : 0,
     ...stylex.props(
       styles.trigger,
@@ -2266,7 +2441,11 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
     // on it. No Field, no status, no clear button — the caller owns the
     // control; the selector owns the panel, its anchor, and focus return.
     const triggerProps: MultiSelectorRenderTriggerProps = {
-      ref: el => {
+      // Base props reach the caller's control, the primary semantic control
+      // in this mode; the selector's own wiring below wins over them.
+      ...rest,
+      'aria-describedby': ariaDescribedByProp,
+      ref: mergeRefs<HTMLElement>(el => {
         popover.triggerRef(el);
         triggerRef.current = el;
         // A control that takes no focus has nowhere for focus to return to
@@ -2279,10 +2458,14 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
         if (el != null && !el.matches(FOCUSABLE_SELECTOR)) {
           el.tabIndex = -1;
         }
-      },
+      }, ref),
       id: triggerId,
-      onClick: isEffectivelyReadOnly ? undefined : onTriggerClick,
-      onKeyDown: isEffectivelyReadOnly ? undefined : onKeyDown,
+      onClick: isEffectivelyReadOnly
+        ? onClick
+        : composeEventHandlers(onTriggerClick, onClick),
+      onKeyDown: isEffectivelyReadOnly
+        ? onKeyDownProp
+        : composeEventHandlers(onKeyDown, onKeyDownProp),
       onFocus: event => {
         onFocus?.(event);
         surface.onTriggerFocus(event);
@@ -2337,8 +2520,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
           // compose, so attaching unconditionally is safe.
           disabledMessageTooltip.ref(el);
         }}
-        onClick={onTriggerClick}
-        data-testid={testId}
+        onClick={handleControlBoxClick}
         {...pressable}
         {...mergeProps(
           themeProps('multi-selector', {
@@ -2352,30 +2534,33 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
             inputWrapperStyles.base,
             styles.triggerContainer,
             sizeStyles[size],
+            variant === 'secondary' && styles.triggerSecondary,
             variant === 'ghost' && styles.triggerGhost,
-            variant === 'ghost' && interactionOverlayStyles.backgroundImage,
-            variant === 'ghost' && focusOutlineStyles.focusWithin,
+            variant !== 'input' && interactionOverlayStyles.backgroundImage,
+            variant !== 'input' && focusOutlineStyles.focusWithin,
             surface.isTriggerFocusRingSuppressed &&
               selectorPresentationStyles.pointerRestoredFocus,
             isDisabled && inputWrapperStyles.disabled,
             isEffectivelyReadOnly && styles.triggerReadOnly,
-            variant === 'ghost' && isDisabled && styles.triggerGhostDisabled,
-            variant === 'ghost' &&
+            variant !== 'input' && isDisabled && styles.triggerGhostDisabled,
+            variant !== 'input' &&
               isEffectivelyReadOnly &&
               styles.triggerGhostReadOnly,
             optimisticValue.length === 0 && styles.triggerPlaceholder,
-            variant !== 'ghost' &&
+            variant === 'input' &&
               status &&
               inputStatusBorderStyles[status.type],
-            variant !== 'ghost' &&
+            variant === 'input' &&
               status &&
               !isDisabled &&
               inputStatusHoverShadowStyles[status.type],
+            // Grouped secondary triggers keep their neutral fill but take the
+            // group's row height, connected edge radii, and focus stacking.
             variant !== 'ghost' && inputGroup && groupStyles.inGroup,
-            xstyle,
+            controlXstyle,
           ),
-          className,
-          style,
+          controlClassName,
+          controlStyle,
         )}>
         {startIcon &&
           renderIconSlot(startIcon, {size: 'sm', color: 'secondary'})}
@@ -2389,7 +2574,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
         )}
         <button
           {...triggerSharedProps}
-          ref={triggerRef as React.Ref<HTMLButtonElement>}
+          ref={triggerButtonRef}
           type="button"
           // The read-only trigger stays a combobox even when hasSearch is set:
           // no search input is rendered in that state, and preserving the role
@@ -2443,7 +2628,6 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
               {...keepOpenProps}
               label={t('@astryx.multiSelector.clearAll', {label})}
               onClick={handleClear}
-              iconClassName={stableClassName('multi-selector-clear-icon')}
             />
           )}
         {/*
@@ -2539,7 +2723,8 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
       }
       statusVariant={effectiveStatusVariant}
       labelTooltip={labelTooltip}
-      width={width}>
+      width={width}
+      {...container}>
       {multiSelectorContent}
     </Field>
   );

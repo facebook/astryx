@@ -58,7 +58,7 @@ export const doc = {
       name: 'themes',
       type: 'string',
       description:
-        'The folder that holds your themes, relative to package.json, with one folder per theme. Each theme folder has the theme source and a matching .doc.mjs file with the same name. Installed themes show up in `astryx theme list`; `theme add --import` imports their built package exports, and `theme eject` creates an editable local fork.',
+        'The folder that holds your themes, relative to package.json, with one folder per theme. Each theme folder has the theme source and a matching .doc.mjs file with the same name. Installed themes show up in `astryx theme list`; `theme add` imports their built package exports, and `theme eject` creates an editable local fork.',
       example: "'./themes'",
     },
     {
@@ -73,6 +73,13 @@ export const doc = {
       type: 'string',
       description: 'Where to file issues/feedback for this integration.',
       example: "'https://github.com/acme/widgets/issues'",
+    },
+    {
+      name: 'docsiteUrl',
+      type: 'string',
+      description:
+        "Link to this integration's docs site, such as its home page. Catalogs that list the package may show it.",
+      example: "'https://widgets.acme.dev'",
     },
   ],
   examples: [
@@ -118,7 +125,7 @@ export const doc = {
       text:
         'Validate the manifest with `astryx doctor integration validate`. At the ' +
         'load boundary, a known field of the wrong type is an error, issuesUrl ' +
-        'must be a valid URL, and unknown fields become warnings so an older CLI ' +
+        'and docsiteUrl must be valid URLs, and unknown fields become warnings so an older CLI ' +
         'can still load the fields it understands. Before publishing, also run ' +
         '`templates`, `components`, and `docs` under the same `doctor integration` ' +
         'group. Those leaves compare authored identities with Core and explain ' +

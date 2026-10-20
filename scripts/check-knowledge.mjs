@@ -1,5 +1,12 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+/**
+ * @file Knowledge-record validation.
+ * @input Versioned schemas, records, and current ENGOWNERS/DESIGNOWNERS.
+ * @output Structural, relationship, and approval-eligibility problems.
+ * @position Repository knowledge guardrail; schemas do not grant approval rights.
+ */
+
 /* global console, process */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -1206,9 +1213,11 @@ function loadComponentContract(root, specPath, componentName) {
         problem: `${path.relative(root, docPath)}: ${componentName} has no canonical English usage.anatomy.`,
       };
     }
-    const targets = (candidate.theming?.targets ?? doc.theming?.targets ?? [])
-      .filter(target => target.deprecatedFor == null)
-      .map(target => target.className.replace(/^astryx-/, ''));
+    const targets = (
+      candidate.theming?.targets ??
+      doc.theming?.targets ??
+      []
+    ).map(target => target.className.replace(/^astryx-/, ''));
     return {
       contract: {
         anatomy: anatomy.map(part => part.name),
@@ -1275,9 +1284,9 @@ function loadModuleContract(root, specPath, moduleName) {
       problem: `${path.relative(root, docPath)}: ${moduleName} has no canonical English usage.anatomy; module records never inherit parent aggregate anatomy.`,
     };
   }
-  const targets = (doc.theming?.targets ?? [])
-    .filter(target => target.deprecatedFor == null)
-    .map(target => target.className.replace(/^astryx-/, ''));
+  const targets = (doc.theming?.targets ?? []).map(target =>
+    target.className.replace(/^astryx-/, ''),
+  );
   return {
     contract: {
       anatomy: doc.usage.anatomy.map(part => part.name),
@@ -1294,7 +1303,7 @@ function validateAgainstSchema(
   isTemplate,
   currentTemplateVersion,
   designApprovalOwners = [],
-  themeApprovalOwners = [],
+  engineeringApprovalOwners = [],
 ) {
   const problems = [...document.problems];
   const {frontmatter, sections} = document;
@@ -1407,11 +1416,9 @@ function validateAgainstSchema(
     const approvedBy = frontmatter.get('approved_by');
     const approvedAt = frontmatter.get('approved_at');
     const authorizedOwners =
-      kind === 'design'
-        ? [...new Set([...schema.approvalOwners, ...designApprovalOwners])]
-        : kind === 'theme'
-          ? themeApprovalOwners
-          : schema.approvalOwners;
+      kind === 'design' || kind === 'theme'
+        ? [...new Set([...engineeringApprovalOwners, ...designApprovalOwners])]
+        : engineeringApprovalOwners;
     if (!authorizedOwners.includes(approvedBy)) {
       problems.push(
         `${filePath}: current records require approved_by to name an authorized owner.`,
@@ -1591,9 +1598,6 @@ export async function validateKnowledgeRoot(root = DEFAULT_ROOT) {
   const engineeringApprovalOwners = fs.existsSync(engineeringOwnersPath)
     ? parseOwnerFile(fs.readFileSync(engineeringOwnersPath, 'utf8'))
     : [];
-  const themeApprovalOwners = [
-    ...new Set([...engineeringApprovalOwners, ...designApprovalOwners]),
-  ];
   const problems = [...discoverThemeRecordCandidates(root).problems];
   const ids = new Map();
   const records = [];
@@ -1632,7 +1636,7 @@ export async function validateKnowledgeRoot(root = DEFAULT_ROOT) {
         true,
         templateVersions[kind],
         designApprovalOwners,
-        themeApprovalOwners,
+        engineeringApprovalOwners,
       ),
     );
     if (template.frontmatter.get('kind') !== kind) {
@@ -1685,7 +1689,7 @@ export async function validateKnowledgeRoot(root = DEFAULT_ROOT) {
         false,
         templateVersions[document.frontmatter.get('kind')],
         designApprovalOwners,
-        themeApprovalOwners,
+        engineeringApprovalOwners,
       ),
     );
     const authority = document.frontmatter.get('authority');
@@ -1771,7 +1775,6 @@ export async function validateKnowledgeRoot(root = DEFAULT_ROOT) {
 
     const canonicalTargets = await collectThemingTargets(
       path.join(root, 'packages/core/src'),
-      {includeDeprecated: false},
     );
     problems.push(
       ...validateDelegations(delegations, canonicalTargets, activeFamilies),

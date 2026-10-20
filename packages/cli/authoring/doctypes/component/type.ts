@@ -33,9 +33,12 @@ export interface ComponentBaseDoc extends AuthoredDocGraphFields {
   type?: 'component';
   /**
    * Stable machine identity and directory name without the Astryx prefix,
-   * PascalCase (for example `Button`, `Table`, or `AppShell`). Do not change
-   * this to edit the visible label; use `displayName` for that. Registry URLs
-   * derive from this value by default.
+   * PascalCase (for example `Button`, `Table`, or `AppShell`). For an
+   * integration component it is the export apps import: the doc sits beside
+   * the file that exports it, and when that file exports nothing under its own
+   * name, `name` may name the export it does have. Do not change this to edit
+   * the visible label; use `displayName` for that. Registry URLs derive from
+   * this value by default.
    */
   name: string;
   /** Human-readable display name with spaces between words, used by the

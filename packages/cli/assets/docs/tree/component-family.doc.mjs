@@ -95,7 +95,11 @@ export default {
         },
         {
           type: 'prose',
-          text: 'The public module named by `import` must export every component or hook named by a full entry.',
+          text: "The public module named by `import` must export every component or hook named by a full entry. Apps then list, search and open each component in the family by its own name. A full entry the module does not export is not listed, and `integration verify` does not report it: check the family with `astryx component --list`. When `import` names output your pack lifecycle builds (such as `dist`), the members are listed once that output exists, and `integration verify` compares them as they are listed after the pack builds it.",
+        },
+        {
+          type: 'prose',
+          text: "A member's source is the `.tsx` file in the family doc's folder, or below it, that declares it: the one the family's own file or the module `import` names reaches, else the one in that folder that declares the name, as when `import` names built output. A member that only a bundle or a file outside that folder declares is still listed, with no source for `--source` or `swizzle`. A member is not listed when a doc's file or a Core name your package replaces already has its name. A member that shares a name with Core opens with `--package`.",
         },
       ],
     },

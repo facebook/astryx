@@ -31,7 +31,7 @@ export const docs = {
           type: 'code',
           lang: 'javascript',
           label: 'templates/acme-dashboard.doc.mjs',
-          code: `/** @type {import('@astryxdesign/cli/authoring').TemplateDoc} */
+          code: `/** @type {import('@astryxdesign/cli/authoring').IntegrationTemplateDoc} */
 export default {
   type: 'page',
   name: 'acme-dashboard',

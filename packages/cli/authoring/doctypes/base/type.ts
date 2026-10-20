@@ -383,6 +383,12 @@ export interface ComponentPropDoc {
    *  ```
    */
   slotElements?: ComponentSlotElement[];
+  /** Lifecycle marker for a prop outside the stable compatibility promise
+   *  (spec:AST-017 FR21). Set `'experimental'` on a stable component's
+   *  optional `experimental` prop object, and say in `description` that its
+   *  contents may change or be removed in a patch release. Omit for stable
+   *  props. */
+  stability?: 'experimental';
 }
 
 /**
@@ -500,15 +506,6 @@ export interface ComponentThemingTarget {
    *  selectors such as `[data-checked="checked"]`. Omit if the element has no
    *  state-driven selectors. */
   states?: string[];
-  /** Set when this target has been renamed and this entry is the old name.
-   *  The component continues emitting the class through `themeProps`'s
-   *  `legacyNames`, so existing themes keep working while discovery and build
-   *  guidance prefer the replacement. The value is the canonical target key
-   *  without the `astryx-` prefix — e.g. `"checkbox-indicator"`.
-   *
-   *  A theme target is public API; deprecation alone does not authorize
-   *  removing either this metadata or runtime support. */
-  deprecatedFor?: string;
 }
 
 /**

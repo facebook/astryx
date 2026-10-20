@@ -87,6 +87,16 @@ describe('parseIntegration (load boundary)', () => {
     expect(reason({issuesUrl: 'nope'})).toContain('issuesUrl');
   });
 
+  it('accepts a docsiteUrl as a known key', () => {
+    const manifest = {docsiteUrl: 'https://widgets.example.com'};
+    expect(parseIntegration(manifest)).toEqual(manifest);
+    expect(unknownIntegrationKeys(manifest)).toEqual([]);
+  });
+
+  it('rejects a non-URL docsiteUrl', () => {
+    expect(reason({docsiteUrl: 'nope'})).toContain('docsiteUrl');
+  });
+
   it('rejects a noncanonical providerId', () => {
     expect(reason({providerId: 'Acme Widgets'})).toContain('providerId');
   });

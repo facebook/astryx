@@ -39,7 +39,7 @@ export default function TokenizerStates() {
         value={[users[0], users[2]]}
         onChange={() => {}}
         isDisabled
-        style={{width: 400}}
+        containerStyle={{width: 400}}
       />
       <Tokenizer
         label="Error message"
@@ -49,7 +49,7 @@ export default function TokenizerStates() {
         onChange={items => setErrorValue(items)}
         isRequired
         status={{type: 'error', message: 'At least one reviewer is required'}}
-        style={{width: 400}}
+        containerStyle={{width: 400}}
       />
       <Tokenizer
         label="Warning message"
@@ -61,7 +61,7 @@ export default function TokenizerStates() {
           type: 'warning',
           message: 'Consider adding at least 2 approvers',
         }}
-        style={{width: 400}}
+        containerStyle={{width: 400}}
       />
       <Tokenizer
         label="Success message"
@@ -70,7 +70,7 @@ export default function TokenizerStates() {
         value={successValue}
         onChange={items => setSuccessValue(items)}
         status={{type: 'success', message: 'All required reviewers added'}}
-        style={{width: 400}}
+        containerStyle={{width: 400}}
       />
     </Stack>
   );

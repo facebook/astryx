@@ -17,7 +17,18 @@
 import {Worker} from 'node:worker_threads';
 import {AstryxError} from '../error.mjs';
 import {Project} from '../../foundation/config/project.mjs';
-import {CORE_PACKAGE} from '../../foundation/discovery/component-discovery.mjs';
+import {
+  CORE_PACKAGE,
+  discoverIntegrationComponents,
+  docStem,
+  findComponentReadme,
+  findIntegrationComponent,
+  integrationRecordHold,
+  isIntegrationMember,
+  unscopedComponentOwners,
+} from '../../foundation/discovery/component-discovery.mjs';
+import {legacyExternalKeeps} from '../component/_adapter.mjs';
+import {findCoreDir} from '../../foundation/fs/paths.mjs';
 import {captureEnv} from '../../foundation/debug/event.mjs';
 import {ERROR_CODES} from '../../foundation/response/error-codes.mjs';
 import {parseGapReportReceipt} from '../../authoring/gap-report/parse.mjs';
@@ -178,13 +189,65 @@ async function selectTarget(project, component, packageName) {
     coreName,
   );
   if (replacement) return targetForPackage(project, replacement.package);
+  // The owner rule runs over every owner discovery finds, loadable or not
+  // (a doc recorded under another export still answers to its file's name);
+  // then only owners whose docs load route a report.
+  const wanted = bareComponent.toLowerCase();
+  const loads = new Set(records.map(r => `${r.package}\0${r.docPath}`));
+  const recorded = project.loadedIntegrations.flatMap(integration =>
+    discoverIntegrationComponents(integration).flatMap(r =>
+      r.name.toLowerCase() === wanted
+        ? [{...r, hold: integrationRecordHold(r)}]
+        : docStem(r.docPath).toLowerCase() === wanted && !isIntegrationMember(r)
+          ? [{...r, hold: 'doc'}]
+          : [],
+    ),
+  );
+  // The checks below find files by name, so they run on every spelling the
+  // case-blind match above found, as well as the one typed.
+  const spellings = new Set([
+    bareComponent,
+    ...recorded.flatMap(r =>
+      [r.name, docStem(r.docPath)].filter(n => n.toLowerCase() === wanted),
+    ),
+  ]);
+  // Core also holds a name only its doc lookup finds, as in detail: a name a
+  // doc records yields to it, though it routes no report itself.
+  const coreDir = findCoreDir(project.cwd);
+  const coreDocs =
+    coreDir != null &&
+    [...spellings].some(name => findComponentReadme(coreDir, name) != null);
+  const ruled = unscopedComponentOwners([
+    ...records
+      .filter(
+        r => r.package === CORE_PACKAGE && r.name.toLowerCase() === wanted,
+      )
+      .map(r => ({...r, hold: 'core'})),
+    ...recorded,
+    // A hidden doc named after its file still holds that name, as the
+    // component lookup finds it; it routes no report.
+    ...project.loadedIntegrations.flatMap(integration =>
+      [...spellings].flatMap(spelling => {
+        const found = findIntegrationComponent(integration, spelling);
+        return found?.hold === 'file'
+          ? [{...found, package: integration.name}]
+          : [];
+      }),
+    ),
+  ]).filter(r => !coreDocs || r.hold !== 'doc');
+  // A legacy docs package keeps an export name a doc records, as in detail.
   const owners = [
     ...new Set(
-      records
+      ([...spellings].some(name =>
+        legacyExternalKeeps(project.cwd, name, ruled),
+      )
+        ? []
+        : ruled
+      )
         .filter(
-          record => record.name.toLowerCase() === bareComponent.toLowerCase(),
+          r => r.hold === 'core' || loads.has(`${r.package}\0${r.docPath}`),
         )
-        .map(record => record.package),
+        .map(r => r.package),
     ),
   ];
 
@@ -595,6 +658,21 @@ function aggregateStatus(deliveries) {
  */
 export async function gapReport(component, options = {}) {
   if (options.listCategories) {
+    const ignored = [
+      component ? 'component' : null,
+      options.category ? '--category' : null,
+      options.reason ? '--reason' : null,
+      options.detail ? '--additional-context' : null,
+      options.package ? '--package' : null,
+      options.confirmPublic ? '--confirm-public' : null,
+    ].filter(Boolean);
+    if (ignored.length > 0) {
+      throw new AstryxError(
+        `\`--list-categories\` cannot be combined with ${ignored.join(', ')}: it lists categories and ignores submission options.`,
+        undefined,
+        ERROR_CODES.ERR_INVALID_ARGUMENT,
+      );
+    }
     return {
       type: 'gap-report.categories',
       data: GAP_REPORT_CATEGORIES.map(category => ({...category})),

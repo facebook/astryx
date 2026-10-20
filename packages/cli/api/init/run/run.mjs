@@ -35,7 +35,7 @@ const VALID_AGENTS = ['claude', 'cursor', 'codex', 'hermes', 'muse', 'all'];
 /**
  * Build the "Next steps" lines printed at the end of `astryx init`.
  *
- * Theme guidance follows the generated app-module workflow. `theme add --import` records
+ * Theme guidance follows the generated app-module workflow. `theme add` records
  * installed built themes and imports their production and font stylesheets. The
  * app imports that module once and passes its default to <Theme>.
  *
@@ -50,11 +50,11 @@ export function getNextSteps(invocation) {
     `       (run \`${invocation} doctor\` to verify)`,
     "    2. Import base styles: import '@astryxdesign/core/reset.css'",
     "       and import '@astryxdesign/core/astryx.css'",
-    "    3. Import components: import { Button } from '@astryxdesign/core'",
+    "    3. Import components: import { Button } from '@astryxdesign/core/Button'",
     '    4. Add and wire a theme:',
     '       npm install @astryxdesign/theme-neutral',
-    `       ${invocation} theme add neutral --import`,
-    "       import { Theme } from '@astryxdesign/core'",
+    `       ${invocation} theme add neutral`,
+    "       import { Theme } from '@astryxdesign/core/theme'",
     "       import { themes, defaultThemeSlug } from './astryx-themes'",
     '       <Theme theme={themes[defaultThemeSlug]}>...</Theme>',
     `       Extend an imported theme to customize it. Run \`${invocation} theme eject <slug>\` only to fork source.`,
@@ -141,7 +141,7 @@ function applyTheme(cwd, invocation, data) {
     logger.error('Could not write the theme template.');
   }
   logger.log(
-    `  Edit the blank template for a new theme, or run \`${invocation} theme add <slug> --import\` to import an installed built theme (\`${invocation} theme list\` to browse). Extend an imported theme for ordinary customization; use \`${invocation} theme eject <slug>\` only to fork source.`,
+    `  Edit the blank template for a new theme, or run \`${invocation} theme add <slug>\` to import an installed built theme (\`${invocation} theme list\` to browse). Extend an imported theme for ordinary customization; use \`${invocation} theme eject <slug>\` only to fork source.`,
   );
 }
 

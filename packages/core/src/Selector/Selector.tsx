@@ -6,7 +6,7 @@
  * @file Selector.tsx
  * @input Uses React, StyleX, adaptive selection surfaces, theme-resolved
  *   indicators, Field, and InputGroup context
- * @output Exports Selector with content-derived option-mark layout and token-sized single-line triggers
+ * @output Exports Selector with input, secondary, and ghost trigger treatments, content-derived option-mark layout, and token-sized single-line triggers
  * @position Core implementation; consumed by index.ts
  *
  * SYNC: When modified, update:
@@ -81,13 +81,17 @@ import {SelectorRowLayoutContext} from './SelectorRowLayoutContext';
 import {getInputARIA, isImeKeyEvent, mergeProps} from '../utils';
 import {warnOnce} from '../utils/devWarning';
 import {useSize} from '../SizeContext/SizeContext';
-import type {BaseProps} from '../BaseProps';
+import {
+  useFieldInputStyling,
+  type FieldInputBaseProps,
+} from '../Field/fieldParts';
+import {composeEventHandlers} from '../utils/composeEventHandlers';
+import {useMergedRefs} from '../hooks/useMergedRefs';
 import type {SizeValue} from '../utils/types';
 import {themeProps} from '../utils/themeProps';
 import {focusOutlineStyles} from '../utils/focusOutline.stylex';
 import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
 import {usePressFeedback} from '../hooks/usePressFeedback';
-import {stableClassName} from '../naming';
 import {groupStyles} from '../InputGroup/groupStyles';
 import {useInputGroup} from '../InputGroup/InputGroupContext';
 import {VisuallyHidden} from '../VisuallyHidden';
@@ -256,6 +260,37 @@ const styles = stylex.create({
       '[data-astryx-press="on"]': 'scale(0.98)',
     },
   },
+  // Secondary is ghost's chrome with the resting fill of a secondary
+  // button (`--color-neutral`): no border, no shadow, content width, so a
+  // selector in a nav reads as the sibling of the secondary buttons and
+  // segmented controls beside it instead of as a form field. The hover and
+  // pressed answers still come from the shared interaction overlay, layered
+  // over the fill via backgroundImage.
+  triggerSecondary: {
+    width: 'auto',
+    borderWidth: 0,
+    lineHeight: `max(${spacingVars['--spacing-5']}, 20px, 1rem)`,
+    backgroundColor: colorVars['--color-neutral'],
+    boxShadow: {
+      default: 'none',
+      ':hover:not(:focus-within):where(:not(:disabled,[aria-disabled="true"]))':
+        {
+          '@media (hover: hover)': 'none',
+        },
+      ':focus-within': 'none',
+    },
+    fontWeight: fontWeightVars['--font-weight-medium'],
+    transitionProperty:
+      'background-image, background-color, color, opacity, transform',
+    transform: {
+      default: 'scale(1)',
+      ':active': {
+        default: 'scale(0.98)',
+        '@media (pointer: coarse)': 'scale(1)',
+      },
+      '[data-astryx-press="on"]': 'scale(0.98)',
+    },
+  },
   triggerGhostDisabled: {
     backgroundImage: 'none',
     transform: {
@@ -307,18 +342,19 @@ const styles = stylex.create({
   },
   dropdownInput: {
     // The input trigger's text inset includes its border. Mirror that extra
-    // pixel in the menu; the borderless ghost variant needs no correction.
+    // pixel in the menu; the borderless secondary/ghost variants need no correction.
     paddingInline: `calc(${spacingVars['--spacing-1']} + ${borderVars['--border-width']})`,
   },
   // Scroll ownership by the browser's own signal, as the menus declare it: a
-  // list whose options fit keeps every finger, so a slide over the options
-  // stays a slide; one that scrolls lets the browser pan it vertically and
-  // cancel the press when it does.
-  touchNone: {
-    touchAction: 'none',
+  // list whose options fit keeps every one-finger move, so a slide over the
+  // options stays a slide; one that scrolls lets the browser pan it vertically
+  // and cancel the press when it does. Both leave a two-finger pinch to the
+  // browser, so the page stays zoomable over an open list.
+  touchPinchZoom: {
+    touchAction: 'pinch-zoom',
   },
-  touchPanY: {
-    touchAction: 'pan-y',
+  touchPanYPinchZoom: {
+    touchAction: 'pan-y pinch-zoom',
     overscrollBehavior: 'contain',
   },
   // Same correction for the search row's gutter, so the search field and the
@@ -507,7 +543,7 @@ const STATUS_BUTTON_LABEL_KEY: Record<SelectorStatusType, string> = {
 
 export type SelectorSize = 'sm' | 'md' | 'lg';
 
-export type SelectorVariant = 'input' | 'ghost';
+export type SelectorVariant = 'input' | 'secondary' | 'ghost';
 
 export type SelectorPresentation = AdaptivePresentation;
 
@@ -526,11 +562,36 @@ export interface SelectorStatus {
 
 interface SelectorPropsBase<
   T extends SelectorOptionType = SelectorOptionType,
-> extends Omit<BaseProps, 'onChange' | 'defaultValue'> {
+> extends Omit<FieldInputBaseProps, 'onChange' | 'defaultValue'> {
   /**
    * Label text for the selector (always rendered for accessibility).
    */
   label: string;
+
+  /**
+   * Ref to the trigger button: the element that carries the combobox role,
+   * the accessible name, and the value.
+   */
+  ref?: React.Ref<HTMLButtonElement>;
+
+  /**
+   * Click handler on the trigger button. It runs before the selector toggles
+   * its surface (the press then reaches the control box), and calling
+   * `preventDefault()` does not keep the surface closed.
+   */
+  onClick?: React.MouseEventHandler<HTMLElement>;
+
+  /**
+   * Focus handler on the trigger button. It runs before the selector's own
+   * focus handling.
+   */
+  onFocus?: React.FocusEventHandler<HTMLElement>;
+
+  /**
+   * Key handler on the trigger button. It runs after the built-in keyboard
+   * model and is skipped for keys that model handles and cancels.
+   */
+  onKeyDown?: React.KeyboardEventHandler<HTMLElement>;
 
   /**
    * Whether to visually hide the label (still accessible to screen readers).
@@ -625,6 +686,9 @@ interface SelectorPropsBase<
   /**
    * Visual style of the selector trigger.
    * - 'input': bordered input-style trigger for forms
+   * - 'secondary': matches the theme's secondary buttons (borderless and
+   *   neutral-filled by default), for navs and toolbars where the selector
+   *   sits beside secondary actions
    * - 'ghost': borderless trigger matching ghost buttons, for toolbars
    * @default 'input'
    */
@@ -641,14 +705,14 @@ interface SelectorPropsBase<
    * - 'attached': message overlaps directly below the bordered input (input variant only)
    * - 'detached': message floats below as a separate element with spacing
    * - 'tooltip': message is exposed from the on-field status icon
-   * @default 'attached' for input selectors; 'detached' for ghost selectors
+   * @default 'attached' for input selectors; 'detached' for secondary/ghost selectors
    */
   statusVariant?: FieldStatusVariant;
 
   /**
    * Width of the field. Numbers are treated as pixels, strings are used as-is
    * (e.g. `'100%'`). Sizes the whole field (label, control, and status) so they
-   * stay aligned, unlike setting width via `xstyle`/`className`/`style`.
+   * stay aligned, unlike setting width via `controlXstyle`/`controlClassName`/`controlStyle`.
    */
   width?: SizeValue;
   /**
@@ -897,16 +961,26 @@ export function Selector<T extends SelectorOptionType>(
     placement,
     presentation = 'popover',
     isDefaultOpen = false,
-    'data-testid': testId,
     width,
-    xstyle,
-    className,
-    style,
+    containerXstyle,
+    containerClassName,
+    containerStyle,
+    controlXstyle,
+    controlClassName,
+    controlStyle,
+    ref,
     onFocus,
+    onKeyDown: onKeyDownProp,
+    'aria-describedby': ariaDescribedByProp,
     hasClear: hasClearProp,
     id,
-    ...rest
+    ...restProps
   } = props as SelectorPropsClearable<T>;
+  const {rest, container} = useFieldInputStyling('Selector', restProps, {
+    containerXstyle,
+    containerClassName,
+    containerStyle,
+  });
   const isEffectivelyRequired = useResolvedRequired({isRequired, isOptional});
   const placeholder = placeholderFromProps ?? t('@astryx.selector.placeholder');
   const searchPlaceholder =
@@ -917,7 +991,7 @@ export function Selector<T extends SelectorOptionType>(
   const hasClear = hasClearProp === true;
   const size = useSize(sizeProp, 'md');
   const effectiveStatusVariant =
-    variant === 'ghost' && statusVariant === 'attached'
+    variant !== 'input' && statusVariant === 'attached'
       ? 'detached'
       : statusVariant;
   const isEffectivelyReadOnly = isReadOnly && !isDisabled;
@@ -940,6 +1014,10 @@ export function Selector<T extends SelectorOptionType>(
   // shorter inner button makes every size's selected row land too low.
   const anchorRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLElement>(null);
+  const triggerButtonRef = useMergedRefs<HTMLButtonElement>(
+    triggerRef as React.Ref<HTMLButtonElement>,
+    ref,
+  );
   const searchRef = useRef<HTMLInputElement>(null);
   const inputGroup = useInputGroup();
 
@@ -1337,6 +1415,14 @@ export function Selector<T extends SelectorOptionType>(
     (e: React.MouseEvent) => {
       e.stopPropagation(); // Don't open dropdown
       clearValue();
+      // A keyboard activation (detail 0) leaves focus on the clear button,
+      // which unmounts once the value is null and would drop focus to <body>;
+      // hand it to the trigger as `hasClear` documents. A pointer press never
+      // focuses the button, so there is no focus to repair, and moving it
+      // would pull it out of an open list's search input.
+      if (e.detail === 0) {
+        triggerRef.current?.focus();
+      }
     },
     [clearValue],
   );
@@ -1364,7 +1450,7 @@ export function Selector<T extends SelectorOptionType>(
         {...themeProps('selector-search')}
         xstyle={
           surface.activePresentation === 'popover' &&
-          variant !== 'ghost' &&
+          variant === 'input' &&
           styles.searchRowInput
         }
         // When hasSearch is set, focus moves into this input on open, so it —
@@ -1705,9 +1791,11 @@ export function Selector<T extends SelectorOptionType>(
         {...listboxPress.menuProps}
         {...stylex.props(
           styles.dropdown,
-          listboxHasOverflow ? styles.touchPanY : styles.touchNone,
+          listboxHasOverflow
+            ? styles.touchPanYPinchZoom
+            : styles.touchPinchZoom,
           surface.activePresentation === 'popover' &&
-            variant !== 'ghost' &&
+            variant === 'input' &&
             styles.dropdownInput,
         )}>
         {renderOptions()}
@@ -1743,9 +1831,9 @@ export function Selector<T extends SelectorOptionType>(
       }
       {...stylex.props(
         styles.dropdown,
-        listboxHasOverflow ? styles.touchPanY : styles.touchNone,
+        listboxHasOverflow ? styles.touchPanYPinchZoom : styles.touchPinchZoom,
         surface.activePresentation === 'popover' &&
-          variant !== 'ghost' &&
+          variant === 'input' &&
           styles.dropdownInput,
         surface.activePresentation === 'popover' &&
           !isPositioned &&
@@ -1787,12 +1875,19 @@ export function Selector<T extends SelectorOptionType>(
   const triggerSharedProps: React.HTMLAttributes<HTMLElement> = {
     ...rest,
     id: triggerId,
-    'aria-describedby': ariaDescribedBy,
+    // A caller's description is kept alongside the field's own.
+    'aria-describedby':
+      [ariaDescribedByProp, ariaDescribedBy].filter(Boolean).join(' ') ||
+      undefined,
     'aria-labelledby': ariaLabelledBy,
     'aria-required': isEffectivelyRequired ? 'true' : undefined,
     'aria-invalid': status?.type === 'error' ? 'true' : undefined,
     'aria-busy': isBusy || undefined,
-    onKeyDown: handleTriggerKeyDown,
+    // The built-in keyboard model runs first; a caller handler sees the keys
+    // it leaves uncancelled. A caller `onClick` arrives through `rest` and
+    // runs on the trigger before the press bubbles to the control box's
+    // toggle, as it always has.
+    onKeyDown: composeEventHandlers(handleTriggerKeyDown, onKeyDownProp),
     onFocus: event => {
       onFocus?.(event);
       surface.onTriggerFocus(event);
@@ -1817,7 +1912,6 @@ export function Selector<T extends SelectorOptionType>(
           disabledMessageTooltip.ref(el);
         }}
         onClick={onTriggerClick}
-        data-testid={testId}
         {...pressable}
         {...mergeProps(
           themeProps('selector', {
@@ -1832,30 +1926,33 @@ export function Selector<T extends SelectorOptionType>(
             styles.triggerContainer,
             sizeStyles[size],
             variant === 'ghost' && styles.triggerGhost,
-            variant === 'ghost' && interactionOverlayStyles.backgroundImage,
-            variant === 'ghost' && focusOutlineStyles.focusWithin,
+            variant === 'secondary' && styles.triggerSecondary,
+            variant !== 'input' && interactionOverlayStyles.backgroundImage,
+            variant !== 'input' && focusOutlineStyles.focusWithin,
             surface.isTriggerFocusRingSuppressed &&
               selectorPresentationStyles.pointerRestoredFocus,
             isDisabled && inputWrapperStyles.disabled,
             isEffectivelyReadOnly && styles.triggerReadOnly,
-            variant === 'ghost' && isDisabled && styles.triggerGhostDisabled,
-            variant === 'ghost' &&
+            variant !== 'input' && isDisabled && styles.triggerGhostDisabled,
+            variant !== 'input' &&
               isEffectivelyReadOnly &&
               styles.triggerGhostReadOnly,
             !selectedItem && styles.triggerPlaceholder,
-            variant !== 'ghost' &&
+            variant === 'input' &&
               status &&
               inputStatusBorderStyles[status.type],
-            variant !== 'ghost' &&
+            variant === 'input' &&
               status &&
               !isDisabled &&
               inputStatusHoverShadowStyles[status.type],
+            // Grouped secondary triggers keep their neutral fill but take the
+            // group's row height, connected edge radii, and focus stacking.
             variant !== 'ghost' && inputGroup && groupStyles.inGroup,
             inputGroup && styles.triggerInGroup,
-            xstyle,
+            controlXstyle,
           ),
-          className,
-          style,
+          controlClassName,
+          controlStyle,
         )}>
         {startIcon &&
           renderIconSlot(startIcon, {size: 'sm', color: 'secondary'})}
@@ -1869,7 +1966,7 @@ export function Selector<T extends SelectorOptionType>(
         )}
         <button
           {...triggerSharedProps}
-          ref={triggerRef as React.Ref<HTMLButtonElement>}
+          ref={triggerButtonRef}
           type="button"
           // The read-only trigger stays a combobox even when hasSearch is set:
           // no search input is rendered in that state, and preserving the role
@@ -1917,7 +2014,6 @@ export function Selector<T extends SelectorOptionType>(
             {...keepOpenProps}
             label={t('@astryx.selector.clearLabel', {label})}
             onClick={handleClear}
-            iconClassName={stableClassName('selector-clear-icon')}
           />
         )}
         {/*
@@ -2013,7 +2109,8 @@ export function Selector<T extends SelectorOptionType>(
       }
       statusVariant={effectiveStatusVariant}
       labelTooltip={labelTooltip}
-      width={width}>
+      width={width}
+      {...container}>
       {selectorContent}
     </Field>
   );
