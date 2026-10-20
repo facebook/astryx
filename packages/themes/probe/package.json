@@ -20,7 +20,7 @@
     "src"
   ],
   "scripts": {
-    "build": "node ../../../scripts/clean-dist.mjs && astryx theme build src/probeTheme.ts -o dist/theme.css --icons-specifier ./registries.mjs && tsup && tsc --project tsconfig.build.json && node ../../../scripts/check-fully-specified.mjs"
+    "build": "node ../../../scripts/clean-dist.mjs && astryx theme build src/probeTheme.ts -o dist/theme.css --icons-specifier ./registries.mjs && tsup && tsc --project tsconfig.build.json && node ../../../scripts/add-declaration-extensions.mjs && node ../../../scripts/check-fully-specified.mjs"
   },
   "peerDependencies": {
     "@astryxdesign/core": "0.7.2",

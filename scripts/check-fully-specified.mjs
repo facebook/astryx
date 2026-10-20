@@ -8,14 +8,15 @@
  * These runtime files are consumed as ESM, where relative specifiers need an
  * explicit extension — strict-ESM consumers (Node itself, Rspack, webpack's
  * `fullySpecified`) refuse to resolve './XDSButton' where './XDSButton.js' is
- * required. Different packages use different compilers to produce those
- * specifiers; this guard makes sure nothing slips into the artifact again
- * (#4569: dynamic `import()` specifiers did exactly that).
+ * required. The .d.ts files follow the same rule for TypeScript consumers on
+ * NodeNext resolution (#7702). Different packages use different compilers to
+ * produce those specifiers; this guard makes sure nothing slips into the
+ * artifact again (#4569: dynamic `import()` specifiers did exactly that).
  *
  * Like check-no-dev-jsx.mjs this is a textual scan, not a parse. Comment
  * lines are skipped: dist keeps some JSDoc comments whose usage examples
- * legitimately mention extensionless specifiers. Only runtime files are
- * scanned — the .d.ts surface resolves through TypeScript, not Node.
+ * legitimately mention extensionless specifiers. Runtime files and .d.ts
+ * declarations are scanned.
  *
  * Usage: node <repo-root>/scripts/check-fully-specified.mjs   (run from a
  * package root, after the package's dist has been built; the relative depth
@@ -35,10 +36,11 @@ const FULLY_SPECIFIED = /\.(?:js|mjs|cjs|json|css)$/;
 //   import('./x')      (dynamic import)
 //   import(`./x`)      (no-substitution template — a static specifier in
 //                       disguise; templates with `${` stay computed and exempt)
+// A bare '.' or '..' is a directory import, so it is relative too.
 const SPECIFIER_PATTERNS = [
-  /\bfrom\s*["'](\.\.?\/[^"']*)["']/g,
-  /\bimport\s+["'](\.\.?\/[^"']*)["']/g,
-  /\bimport\(\s*["'](\.\.?\/[^"']*)["']\s*\)/g,
+  /\bfrom\s*["'](\.\.?(?:\/[^"']*)?)["']/g,
+  /\bimport\s+["'](\.\.?(?:\/[^"']*)?)["']/g,
+  /\bimport\(\s*["'](\.\.?(?:\/[^"']*)?)["']\s*\)/g,
   /\bimport\(\s*`(\.\.?\/[^`$]*)`\s*\)/g,
 ];
 
@@ -68,7 +70,7 @@ function walk(dir) {
     const full = path.join(dir, entry.name);
     if (entry.isDirectory()) {
       results.push(...walk(full));
-    } else if (/\.(js|mjs|cjs)$/.test(entry.name)) {
+    } else if (/\.(js|mjs|cjs)$|\.d\.ts$/.test(entry.name)) {
       results.push(full);
     }
   }
@@ -76,7 +78,7 @@ function walk(dir) {
 }
 
 /**
- * Scan every runtime file under `distDir`; return
+ * Scan every runtime and declaration file under `distDir`; return
  * {checked, offenders: [{file, specifiers}]}.
  */
 export function findOffenders(distDir) {
@@ -154,6 +156,13 @@ function main() {
         'extension. ESM loaders and strict-ESM bundlers cannot resolve ' +
         `them (see #4569).\n${failureGuidance(process.cwd())}`,
     );
+    if (offenders.some(({file}) => file.endsWith('.d.ts'))) {
+      console.error(
+        'For .d.ts files: run scripts/add-declaration-extensions.mjs right ' +
+          'after the tsc declaration emit, and check that every reported ' +
+          'specifier has a declaration to resolve to (see #7702).',
+      );
+    }
     process.exit(1);
   }
 
