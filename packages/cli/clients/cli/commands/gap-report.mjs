@@ -7,14 +7,7 @@
 import {gapReport as gapReportApi} from '../../../api/gap-report/gap-report.mjs';
 import {NO_RESULT_SET, resultSet} from '../../../foundation/debug/index.mjs';
 import {jsonOut} from '../../../foundation/response/json.mjs';
-import {
-  emit,
-  list,
-  record,
-  records,
-  section,
-  text,
-} from '../formatters/index.mjs';
+import {emit, record, records, section, text} from '../formatters/index.mjs';
 import {cliError} from '../lib/cli-error.mjs';
 import {defineCommand} from '../lib/define-command.mjs';
 import {doc as gapReportCommand} from './gap-report.doc.mjs';
@@ -149,13 +142,7 @@ export function registerGapReport(program) {
 function destinationBlocks(destinations, ask) {
   return [
     section('Destinations'),
-    list(
-      destinations.map(destination =>
-        destination.default
-          ? 'default (leave out --to): the configured report handlers, or the owning package issues URL when there are none'
-          : `${destination.to}: ${destination.issuesUrl}`,
-      ),
-    ),
+    records(destinations, {fields: ['to', 'default', 'issuesUrl']}),
     text(ask),
   ];
 }

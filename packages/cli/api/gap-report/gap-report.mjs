@@ -753,7 +753,7 @@ export async function gapReport(component, options = {}) {
       options.detail ? '--additional-context' : null,
       options.package ? '--package' : null,
       options.confirmPublic ? '--confirm-public' : null,
-      options.to ? '--to' : null,
+      options.to != null ? '--to' : null,
     ].filter(Boolean);
     if (ignored.length > 0) {
       throw new AstryxError(
@@ -800,17 +800,20 @@ export async function gapReport(component, options = {}) {
   const destinations = listDestinations(project);
   /** @type {GapReportDestination | undefined} */
   let chosen;
-  if (options.to !== undefined) {
-    const to = requiredText(options.to, 'to', 214);
+  // `to: null` is absent, like `package: null`; any other value is matched
+  // against the destinations as given, so an empty or unknown one lists them.
+  if (options.to != null) {
+    const to = options.to;
     chosen = destinations.find(
       destination => !destination.default && destination.to === to,
     );
     if (!chosen) {
       const choices = destinations.filter(destination => !destination.default);
+      const named = JSON.stringify(String(to).slice(0, 214));
       throw new AstryxError(
         choices.length > 0
-          ? `No gap-report destination "${to}". Choose one of: ${choices.map(destination => destination.to).join(', ')}; or leave out --to for the default.`
-          : `No gap-report destination "${to}": no loaded integration names an issues URL. Leave out --to for the default.`,
+          ? `No gap-report destination ${named}. Choose one of: ${choices.map(destination => destination.to).join(', ')}; or leave out --to for the default.`
+          : `No gap-report destination ${named}: no loaded integration names an issues URL. Leave out --to for the default.`,
         choices.map(destination => ({
           name: /** @type {string} */ (destination.to),
           reason: /** @type {string} */ (destination.issuesUrl),

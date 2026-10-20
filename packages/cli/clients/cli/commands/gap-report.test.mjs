@@ -361,8 +361,10 @@ describe('gap-report destinations in text', () => {
       const listed = await runCli(['gap-report', '--list-categories'], {cwd});
       expect(listed.status).toBe(0);
       expect(listed.stdout).toContain('Destinations');
-      expect(listed.stdout).toContain(
-        '@test/widgets: https://tracker.example/widgets',
+      expect(listed.stdout).toMatch(/^default:\s+true$/m);
+      expect(listed.stdout).toMatch(/^to:\s+@test\/widgets$/m);
+      expect(listed.stdout).toMatch(
+        /^issuesUrl:\s+https:\/\/tracker\.example\/widgets$/m,
       );
       expect(listed.stdout).toMatch(/ask the person/i);
 

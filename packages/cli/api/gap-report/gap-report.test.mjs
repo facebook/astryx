@@ -1177,6 +1177,40 @@ describe('gapReport destinations and --to', () => {
     },
   );
 
+  it.each([
+    ['an empty value', ''],
+    ['a blank value', '   '],
+    ['an over-long value', `@test/${'a'.repeat(300)}`],
+  ])('refuses %s for --to with the destination list', async (_label, to) => {
+    const marker = addSharedHandler();
+    addWidgets();
+    configure(['@test/shared', '@test/widgets']);
+
+    await expect(
+      gapReport('General', {...reportOptions, to, cwd: projectDir}),
+    ).rejects.toMatchObject({
+      code: 'ERR_UNKNOWN_PACKAGE',
+      suggestions: [{name: '@test/widgets'}],
+    });
+    expect(fs.existsSync(marker)).toBe(false);
+  });
+
+  it('treats to: null as absent', async () => {
+    const marker = addSharedHandler();
+    addWidgets();
+    configure(['@test/shared', '@test/widgets']);
+
+    const result = await gapReport('General', {
+      ...reportOptions,
+      to: /** @type {any} */ (null),
+      cwd: projectDir,
+    });
+
+    expect(result.data.deliveries).toHaveLength(1);
+    expect(fs.existsSync(marker)).toBe(true);
+    expect(result.data.destinations).toHaveLength(2);
+  });
+
   it('lists the destinations with the categories', async () => {
     addSharedHandler();
     addWidgets();
