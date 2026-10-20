@@ -2,15 +2,15 @@
 
 /**
  * @file PanelFooter.a11y.chromium.spec.ts
- * @input The `Core/MultiSelector` PanelFooter and PanelFooterWithoutSearch
- *   stories in a built Storybook.
+ * @input The `Core/MultiSelector` PanelFooter, PanelFooterWithoutSearch and
+ *   PanelFooterWithPopover stories in a built Storybook.
  * @output Real-engine proof that a panel with a footer is a modal dialog
  *   (`component:MultiSelector` FR11, AR1): the dialog's role, modality and
  *   name and the trigger's wiring; Tab and Shift+Tab cycle through the
  *   search field, the listbox when it takes a stop, and the footer, wrapping
  *   at both ends; focus moves into the listbox on open without search;
  *   Escape returns focus to the trigger; a press on the footer toggles
- *   nothing.
+ *   nothing; Tab inside a popover a footer control opens stays in it.
  * @position Run with `pnpm test:a11y-contract`; a DOM emulator treats the
  *   popover layer as hidden, so it cannot walk real Tab order through it.
  */
@@ -139,4 +139,27 @@ test('without search, focus moves into the listbox, which owns the keys, and Tab
   await page.keyboard.press('Escape');
   await expect(listbox).toBeHidden();
   await expect(trigger).toBeFocused();
+});
+
+test('Tab inside a popover a footer control opens stays in it, past its last control too', async ({
+  page,
+}) => {
+  await mount(page, 'panel-footer-with-popover');
+  const search = page.getByRole('combobox');
+  await expect(search).toBeFocused();
+  await page.getByRole('button', {name: 'Filters'}).click();
+  const popover = page.getByRole('dialog', {name: 'Label filters'});
+  await expect(popover).toBeVisible();
+  // More presses than the popover has stops, so the walk passes its last
+  // one: every Tab lands inside the popover, never on the search field.
+  for (let press = 0; press < 5; press++) {
+    await page.keyboard.press('Tab');
+    const isInside = await popover.evaluate(element =>
+      element.contains(document.activeElement),
+    );
+    expect(isInside).toBe(true);
+  }
+  await expect(search).not.toBeFocused();
+  await expect(popover).toBeVisible();
+  await expect(page.getByRole('dialog', {name: 'Labels'})).toBeVisible();
 });
