@@ -59,7 +59,7 @@ export const docs = {
           items: [
             'List only the roots you ship, and always `astryx.integration.mjs`. npm adds package.json, and a README and LICENSE when you have them.',
             'Each later `integration add` appends its root to the list.',
-            '`integration verify` fails when a root is missing from the list: `Declared templates root "templates" has 0 of 2 expected files in the pack list. Add "templates" to "files" in package.json.`',
+            '`integration verify` fails when a root is missing from the list, and names the root to add to `files` (the message is in {@link generic:troubleshooting}).',
           ],
         },
       ],

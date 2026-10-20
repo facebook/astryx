@@ -138,7 +138,7 @@ export const docs = {
           items: [
             'Readers open a topic by its `name`, not its file name. Name the file after the doc, `<name>.doc.mjs`, so each one is easy to find.',
             'A topic with no `placement` is a flat topic: the docs list shows it under Topics, and readers open it by its name.',
-            'To give your package its own section in the docs tree instead, see {@link generic:sections-and-placement}.',
+            'For a section of your own in the docs tree, see {@link generic:sections-and-placement}.',
           ],
         },
       ],

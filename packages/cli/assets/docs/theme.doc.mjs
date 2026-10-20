@@ -59,7 +59,7 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: "Use [light, dark] tuples in token values for automatic mode switching. Use mode='system' (default) on Theme to follow OS preference. Full guide: {@link generic:use-a-theme}.",
+          text: 'Light, dark, and system modes: {@link generic:use-a-theme}.',
         },
         {
           type: 'code',

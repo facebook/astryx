@@ -158,7 +158,7 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: "If importing a swizzled component throws an error that starts `Unexpected 'stylex.create' call at runtime` and the page does not render, the app is missing a StyleX compiler. See the StyleX Build Setup section of {@link generic:tokens-and-setup} for bundler config examples.",
+          text: 'If a swizzled component fails at runtime with a `stylex.create` error, the app is missing a StyleX compiler: see the StyleX Build Setup section of {@link generic:tokens-and-setup}.',
         },
       ],
     },

@@ -58,8 +58,8 @@ docType:   boolean
           style: 'unordered',
           items: [
             "A doc's own `props` describe the export its `name` names. In a family doc, each entry describes its own export. A hook entry documents parameters and returns, so it is not compared.",
-            "It reads props with the `typescript` your package installs, and reads your package's `tsconfig.json` the way `tsc -p` does. Where `typescript` is missing or has no JavaScript compiler API, as TypeScript 7 does, it uses `@typescript/typescript6`, the TypeScript 6 API package, if your package installs it. Without either it prints `[skip] Props not compared` and the reason.",
-            'Every finding is a warning, so the exit code stays 0. Read them before you publish. With `--json`, they are in `data.propDrift.findings`.',
+            "It reads props with the `typescript` your package installs, and reads your package's `tsconfig.json` the way `tsc -p` does. It finds TypeScript the way the docs check does, TypeScript 7 included ({@link generic:check-your-docs}). Without a usable one it prints `[skip] Props not compared` and the reason.",
+            'Findings are warnings and leave the exit code at 0. Read them before you publish. With `--json`, they are in `data.propDrift.findings`.',
           ],
         },
       ],

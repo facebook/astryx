@@ -78,7 +78,7 @@ export const docs = {
               "The `exports` map has no entry for it. Run `npm pkg set 'exports[./components/AcmeCarousel]=./components/AcmeCarousel.tsx'`, or `'exports[./templates/acme-dashboard]=./templates/acme-dashboard.tsx'` for a template.",
             ],
             [
-              '`component_import_unresolvable`: `…but a consumer cannot resolve it: Cannot find package \'@acme/old-name\'`',
+              "`component_import_unresolvable`: `…but a consumer cannot resolve it: Cannot find package '@acme/old-name'`",
               "You renamed the package after the add wrote each doc's `import`. Change `import` in every component doc to the new name.",
             ],
             [
@@ -95,11 +95,11 @@ export const docs = {
             ],
             [
               '`component_replaces_needs_cli` (a warning): The package has a component that sets `replaces` but declares no @astryxdesign/cli peer, or a peer range that admits an earlier CLI.',
-              "Run `npm pkg set 'peerDependencies.@astryxdesign/cli=>=0.6.7'` and `npm pkg set 'peerDependenciesMeta.@astryxdesign/cli.optional=true' --json` to turn the replacement on. Until then the component keeps its own name and the Core component stays selected; a component named like its target stays ambiguous by that bare name.",
+              "Run `npm pkg set 'peerDependencies.@astryxdesign/cli=>=0.6.7'` and `npm pkg set 'peerDependenciesMeta.@astryxdesign/cli.optional=true' --json` to turn the replacement on. Until then apps see no change ({@link generic:replace-a-core-component}).",
             ],
             [
               '`keywords_needs_cli`: The package has a template that sets `keywords` but declares no @astryxdesign/cli peer.',
-              "Run `npm pkg set 'peerDependencies.@astryxdesign/cli=>=0.6.6'` and `npm pkg set 'peerDependenciesMeta.@astryxdesign/cli.optional=true' --json`. A stable CLI before 0.6.6 rejects `keywords` and drops that template, and one before 0.6.4 also hides your doc topics.",
+              "Run `npm pkg set 'peerDependencies.@astryxdesign/cli=>=0.6.6'` and `npm pkg set 'peerDependenciesMeta.@astryxdesign/cli.optional=true' --json`. What an older CLI does with the field is in {@link generic:template-doc-overview}.",
             ],
             [
               '`themes_need_cli`: The package ships a theme but declares no @astryxdesign/cli peer.',
@@ -130,7 +130,7 @@ export const docs = {
               "Its doc still names its file. Set `name` to the export, such as `name: 'AcmeCarousel'` in `acme-carousel.doc.mjs`. A family member is listed only when the module its family doc imports exports it ({@link generic:component-family}).",
             ],
             [
-              '`npx astryx component Dialog` opens Core\'s `Dialog`, not yours.',
+              "`npx astryx component Dialog` opens Core's `Dialog`, not yours.",
               "A name that Core, a legacy docs package, or another package's file already has stays theirs. Run `npx astryx component Dialog --package @acme/astryx-widgets`, or give your component a name of its own.",
             ],
             [
@@ -151,7 +151,7 @@ export const docs = {
             ],
             [
               'Your docs section, templates, or themes are missing only in some apps',
-              "Those apps run a CLI too old to read them: a stable CLI before 0.6.6 for a template that sets `keywords`, or before 0.6.4 for a template that sets `replaces`, a docs section, or a theme. Update `@astryxdesign/cli` there, and keep your optional `@astryxdesign/cli` peer so npm checks the app's CLI against it when the app installs your package.",
+              "Those apps run a CLI too old to read them ({@link generic:checks} lists which field needs which CLI). Update `@astryxdesign/cli` there, and keep your optional `@astryxdesign/cli` peer so npm checks the app's CLI against it when the app installs your package.",
             ],
           ],
         },

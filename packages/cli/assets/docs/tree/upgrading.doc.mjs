@@ -35,7 +35,7 @@ export const docs = {
           style: 'unordered',
           items: [
             'Run every check in {@link generic:checks}, not only the ones shown.',
-            'Name each codemod folder after the Core version whose upgrade should run it; see {@link generic:codemods}.',
+            'Codemod folders are named for Core versions: {@link generic:codemods}.',
             'Release the result as a new version of your package; see {@link generic:publishing}.',
           ],
         },

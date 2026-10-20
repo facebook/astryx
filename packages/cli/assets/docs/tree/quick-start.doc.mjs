@@ -95,7 +95,7 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: 'Every integration runs `integration check --strict` in its own build, so a doc, prop, template, or link that stops matching the code fails your build instead of reaching the apps that install your package. Set it up now, as the `typecheck` script, and run it.',
+          text: "Run `integration check --strict` in every build ({@link generic:checks}): a doc, prop, template, or link that drifts from the code then fails your build, not your users' apps. Set it up now, as the `typecheck` script, and run it.",
         },
         {
           type: 'code',
@@ -136,7 +136,7 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: '`integration verify` packs the package, unpacks it into a temporary app, and checks that the component resolves through its public import there. It publishes nothing and leaves no `.tgz` file, so `npm pack` writes `../acme-astryx-widgets-1.0.0.tgz` for the next step.',
+          text: '`integration verify` installs the packed package in a temporary app and confirms the component resolves through its public import there ({@link generic:checks}). It publishes nothing and leaves no `.tgz` file, so `npm pack` writes `../acme-astryx-widgets-1.0.0.tgz` for the next step.',
         },
         {
           type: 'heading',
