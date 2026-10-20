@@ -426,6 +426,19 @@ function printDocConflicts(data) {
       records(copied, {fields: ['topic', 'otherTopic', 'words', 'message']}),
     );
   }
+  const fluff = data.fluff ?? [];
+  if (fluff.length === 0) {
+    if (!data.issues.some(issue => issue.severity === 'error')) {
+      output.push(text('[ok] No filler phrases or low-density topics.'));
+    }
+  } else {
+    output.push(
+      text(
+        `[info] ${fluff.length} fluff finding(s): words that add length, not meaning. Cut each one.`,
+      ),
+      records(fluff, {fields: ['topic', 'kind', 'line', 'message']}),
+    );
+  }
   emit(...output);
 }
 

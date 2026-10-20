@@ -100,28 +100,23 @@ export function passageWords(text) {
 }
 
 /**
- * Each prose word of a doc, in order, with the title of the section it is in
- * (null before the first section) and the number of the string it came from.
- * A passage never runs from one string into the next, so two fields that
- * happen to sit side by side are not read as one sentence.
+ * Each prose string of a doc, in order, with the title of the section it is
+ * in (null before the first section). Code, examples, reference blocks, and
+ * identifier fields are left out.
  *
  * @param {unknown} doc an authored doc object
- * @returns {{word: string, section: string | null, block: number}[]}
+ * @returns {{text: string, section: string | null}[]}
  */
-export function proseWords(doc) {
-  /** @type {{word: string, section: string | null, block: number}[]} */
-  const words = [];
-  let block = 0;
+export function proseStrings(doc) {
+  /** @type {{text: string, section: string | null}[]} */
+  const strings = [];
   /**
    * @param {unknown} value
    * @param {string | null} section
    */
   const walk = (value, section) => {
     if (typeof value === 'string') {
-      block++;
-      for (const word of passageWords(value)) {
-        words.push({word, section, block});
-      }
+      strings.push({text: value, section});
       return;
     }
     if (Array.isArray(value)) {
@@ -147,6 +142,26 @@ export function proseWords(doc) {
     }
   };
   walk(doc, null);
+  return strings;
+}
+
+/**
+ * Each prose word of a doc, in order, with the title of the section it is in
+ * (null before the first section) and the number of the string it came from.
+ * A passage never runs from one string into the next, so two fields that
+ * happen to sit side by side are not read as one sentence.
+ *
+ * @param {unknown} doc an authored doc object
+ * @returns {{word: string, section: string | null, block: number}[]}
+ */
+export function proseWords(doc) {
+  /** @type {{word: string, section: string | null, block: number}[]} */
+  const words = [];
+  proseStrings(doc).forEach(({text, section}, at) => {
+    for (const word of passageWords(text)) {
+      words.push({word, section, block: at + 1});
+    }
+  });
   return words;
 }
 
@@ -283,7 +298,7 @@ let coreGuides = null;
  * @returns {Promise<any>} the doc, or null for one that does not load (the
  *   load problem is reported elsewhere)
  */
-async function loadQuietly(file) {
+export async function loadQuietly(file) {
   try {
     return await loadTopicModule(file);
   } catch {
@@ -292,7 +307,7 @@ async function loadQuietly(file) {
 }
 
 /** @returns {Promise<IndexedGuides>} the CLI's own guides, read and indexed once */
-function loadCoreGuides() {
+export function loadCoreGuides() {
   coreGuides ??= (async () => {
     /** @type {GuideWords[]} */
     const guides = [];

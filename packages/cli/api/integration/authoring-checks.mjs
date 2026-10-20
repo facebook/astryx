@@ -41,6 +41,7 @@ import {
 } from '../../foundation/discovery/template-adapter.mjs';
 import {expandedTemplateConflictSchemaActive} from '../../foundation/discovery/template-conflict-release.mjs';
 import {findCopiedPassages} from '../../foundation/discovery/copied-passages.mjs';
+import {findFluff} from '../../foundation/discovery/doc-fluff.mjs';
 import {
   validateInstalledIntegration,
   validateLocalIntegration,
@@ -326,10 +327,20 @@ export async function integrationDocConflicts(pkg, options = {}) {
 
   /** @type {import('./authoring-checks.type.mjs').CopiedPassage[]} */
   const copiedPassages = [];
+  /** @type {import('./authoring-checks.type.mjs').DocFluff[]} */
+  const fluff = [];
   if (!resolved.integration?.docs || name == null) {
     return {
       type: 'integration.doc-conflicts',
-      data: {validated, name, version, findings: [], copiedPassages, issues},
+      data: {
+        validated,
+        name,
+        version,
+        findings: [],
+        copiedPassages,
+        fluff,
+        issues,
+      },
     };
   }
 
@@ -424,10 +435,13 @@ export async function integrationDocConflicts(pkg, options = {}) {
     // of them. Listed, not an issue, so it never fails a build that passes
     // today.
     copiedPassages.push(...(await findCopiedPassages(discovered)));
+    // Docs should be dense: padding phrases and mostly-glue topics, listed
+    // the same way.
+    fluff.push(...(await findFluff(discovered)));
   }
 
   return {
     type: 'integration.doc-conflicts',
-    data: {validated, name, version, findings, copiedPassages, issues},
+    data: {validated, name, version, findings, copiedPassages, fluff, issues},
   };
 }
