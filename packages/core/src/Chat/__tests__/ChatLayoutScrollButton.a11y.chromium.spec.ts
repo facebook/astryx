@@ -127,7 +127,11 @@ test.afterAll(async () => {
 
 async function openStory(
   page: Page,
-  {theme = 'neutral', colorMode = 'light'} = {},
+  {
+    theme = 'neutral',
+    colorMode = 'light',
+    holdMotion = true,
+  }: {theme?: string; colorMode?: string; holdMotion?: boolean} = {},
 ): Promise<Locator> {
   page.on('pageerror', error => pageErrors.push(String(error)));
   browserVersion = page.context().browser()?.version() ?? 'unknown';
@@ -137,7 +141,9 @@ async function openStory(
   );
   const root = page.locator('.astryx-chat-layout');
   await root.waitFor({state: 'visible'});
-  await holdMotionStill(page);
+  if (holdMotion) {
+    await holdMotionStill(page);
+  }
   await page.evaluate(async () => document.fonts.ready);
   return root;
 }
@@ -344,6 +350,36 @@ async function capture(
   receipts.push(receipt);
   return receipt;
 }
+
+test('the hiding affordance releases focus before its fade finishes', async ({
+  page,
+}) => {
+  const root = await openStory(page, {holdMotion: false});
+  const pill = page.locator(PILL);
+  const affordance = page.locator(AFFORDANCE);
+
+  await scrollToTop(root);
+  await expect(pill).toHaveCSS('visibility', 'visible');
+  await affordance.focus();
+  await expect(affordance).toBeFocused();
+
+  await page.keyboard.press('Enter');
+  await expect
+    .poll(
+      async () =>
+        affordance.evaluate(element => document.activeElement === element),
+      {timeout: 5000},
+    )
+    .toBe(false);
+
+  // `visibility` flips only after the fade. Focus leaving while it is still
+  // visible proves the immediate `inert` state rather than the delayed CSS.
+  await expect(pill).toHaveCSS('visibility', 'visible');
+  await expect
+    .poll(async () => distanceFromBottom(root), {timeout: 5000})
+    .toBeLessThan(2);
+  await expect(pill).toHaveCSS('visibility', 'hidden');
+});
 
 test('the scroll affordance is keyboard reachable exactly while it is visible', async ({
   page,
