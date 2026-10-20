@@ -276,11 +276,12 @@ Every record is either:
   links; an image or expiring artifact is not the only record of the conclusion.
   Attachments remain evidence under INV16, not authority. Owner-specific receipt
   requirements, operational audit stores, and CI artifact lifetimes remain with
-  their current owners. [AST-009](../specs/AST-009/spec.md) owns real-AT receipts,
-  [AST-029](../specs/AST-029/spec.md) owns component-audit records, and
-  [AST-030](../specs/AST-030/spec.md) owns visual-regression execution, baseline
-  adoption, and its artifact lifecycle. This placement rule does not add a capture
-  owner or require permanent archiving of every CI run.
+  their current owners. [AST-009](../specs/AST-009/spec.md) owns real-AT receipts;
+  INV12 owns the operational audit datastore. [AST-029](../specs/AST-029/spec.md)
+  FR5 and FR10 own the audit pull request's evidence receipt and exact-head
+  eligibility report. [AST-030](../specs/AST-030/spec.md) FR12 owns shared
+  visual-regression execution and baseline adoption. This placement rule does
+  not add a capture owner or require permanent archiving of every CI run.
 
 ## Global review applicability
 
