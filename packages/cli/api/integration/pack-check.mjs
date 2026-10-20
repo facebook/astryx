@@ -24,7 +24,6 @@ import * as path from 'node:path';
 import * as os from 'node:os';
 import {fileURLToPath} from 'node:url';
 import {spawnSync} from 'node:child_process';
-import jscodeshift from 'jscodeshift';
 import {assertWithin} from '../../foundation/fs/path-safety.mjs';
 import {resolvePackageDir} from '../../foundation/integrations/integrations.mjs';
 import {
@@ -41,6 +40,7 @@ import {
 } from '../../foundation/discovery/docs-discovery.mjs';
 import {discoverIntegrationThemes} from '../../foundation/discovery/theme-discovery.mjs';
 import {inspectPackageExport} from '../../foundation/discovery/package-exports.mjs';
+import {moduleExportsName} from '../../foundation/discovery/module-exports.mjs';
 import {
   ThemeImportError,
   resolveThemeImports,
@@ -51,6 +51,9 @@ import {
 } from '../theme/build/build.mjs';
 import {
   discoverIntegrationComponents,
+  docStem,
+  familyImports,
+  isIntegrationMember,
   resolveIntegrationImportPath,
 } from '../../foundation/discovery/component-discovery.mjs';
 import {loadComponentReplacements} from '../component/_adapter.mjs';
@@ -307,98 +310,6 @@ function extractTarball(tgzPath, extractDir) {
   }
 }
 
-const MODULE_EXTENSIONS = ['.mjs', '.js', '.mts', '.ts', '.tsx', '.jsx'];
-const moduleParser = jscodeshift.withParser('tsx');
-
-/** @param {unknown} specifier @param {string} fromFile */
-function resolveLocalModule(specifier, fromFile) {
-  if (typeof specifier !== 'string' || !specifier.startsWith('.')) return null;
-  const base = path.resolve(path.dirname(fromFile), specifier);
-  const candidates = [
-    base,
-    ...MODULE_EXTENSIONS.map(extension => `${base}${extension}`),
-    ...MODULE_EXTENSIONS.map(extension => path.join(base, `index${extension}`)),
-  ];
-  return candidates.find(candidate => fs.existsSync(candidate)) ?? null;
-}
-
-/** @param {any} declaration @param {string} exportName */
-function declarationExports(declaration, exportName) {
-  if (!declaration) return false;
-  if (['FunctionDeclaration', 'ClassDeclaration'].includes(declaration.type)) {
-    return declaration.id?.name === exportName;
-  }
-  if (declaration.type !== 'VariableDeclaration') return false;
-  return declaration.declarations.some(
-    (/** @type {any} */ item) =>
-      item.id?.type === 'Identifier' && item.id.name === exportName,
-  );
-}
-
-/**
- * Check one resolved module's static export surface without executing package
- * code. Local ESM re-exports are followed recursively.
- *
- * @param {string} file
- * @param {string} exportName
- * @param {Set<string>} [seen]
- */
-function moduleExportsName(file, exportName, seen = new Set()) {
-  const identity = `${file}\0${exportName}`;
-  if (seen.has(identity) || !fs.existsSync(file)) return false;
-  seen.add(identity);
-
-  let root;
-  try {
-    root = moduleParser(fs.readFileSync(file, 'utf-8'));
-  } catch {
-    return false;
-  }
-
-  let found = false;
-  root
-    .find(moduleParser.ExportNamedDeclaration)
-    .forEach((/** @type {any} */ exportPath) => {
-      if (found) return;
-      const node = exportPath.node;
-      if (declarationExports(node.declaration, exportName)) {
-        found = true;
-        return;
-      }
-      for (const specifier of node.specifiers ?? []) {
-        const exported = specifier.exported?.name ?? specifier.exported?.value;
-        if (exported !== exportName) continue;
-        if (!node.source) {
-          found = true;
-          return;
-        }
-        const target = resolveLocalModule(node.source.value, file);
-        const imported =
-          specifier.local?.name ?? specifier.local?.value ?? exportName;
-        if (target && moduleExportsName(target, imported, seen)) {
-          found = true;
-          return;
-        }
-      }
-    });
-  if (found) return true;
-  if (
-    exportName === 'default' &&
-    root.find(moduleParser.ExportDefaultDeclaration).size() > 0
-  ) {
-    return true;
-  }
-
-  root
-    .find(moduleParser.ExportAllDeclaration)
-    .forEach((/** @type {any} */ exportPath) => {
-      if (found) return;
-      const target = resolveLocalModule(exportPath.node.source?.value, file);
-      if (target && moduleExportsName(target, exportName, seen)) found = true;
-    });
-  return found;
-}
-
 /**
  * Whether any of these doc files has a section that sets `id`.
  * @param {string[]} files
@@ -472,15 +383,20 @@ async function validatePackedComponentExports(integration, scratchBase) {
   const issues = [];
   /** @type {Array<{name: string, specifier: string}>} */
   const components = [];
+  // A family doc backs several records: load it, and report it, once.
+  const loads = new Map();
   for (const record of records) {
+    const first = !loads.has(record.docPath);
+    if (first) loads.set(record.docPath, loadComponentDoc(record.docPath));
     let docs;
     try {
-      docs = await loadComponentDoc(record.docPath);
+      docs = await loads.get(record.docPath);
     } catch (err) {
+      if (!first) continue;
       issues.push(
         error(
           'component_doc_unloadable',
-          `Component "${record.name}" doc at "${record.docPath}" could not be loaded: ${err instanceof Error ? err.message : String(err)}`,
+          `Component "${docStem(record.docPath)}" doc at "${record.docPath}" could not be loaded: ${err instanceof Error ? err.message : String(err)}`,
         ),
       );
       continue;
@@ -660,11 +576,10 @@ async function validateIncompleteThemeExports(
   const expectedCss = path.join(expectedDir, `${localTheme.slug}.css`);
   try {
     if (outputs.some(output => output.kind !== 'font stylesheet')) {
-      const receipt = await themeBuild(
-        source,
-        {out: expectedCss},
-        {cwd: packageDir},
-      );
+      // The scratch directory is the write root; the package stays the cwd,
+      // so the build selects the package's Core and its paths as before.
+      const scratchBuild = {out: expectedCss, __writeRoot: expectedDir};
+      const receipt = await themeBuild(source, scratchBuild, {cwd: packageDir});
       if (receipt == null || receipt.type !== 'theme.build') {
         throw new Error('the theme build produced no complete receipt');
       }
@@ -847,11 +762,12 @@ async function validatePackedThemeExports(
     );
     const expectedCss = path.join(expectedDir, `${localTheme.slug}.css`);
     try {
-      const receipt = await themeBuild(
-        source,
-        {out: expectedCss},
-        {cwd: localIntegration.__packageDir},
-      );
+      // The scratch directory is the write root; the package stays the cwd,
+      // so the build selects the package's Core and its paths as before.
+      const scratchBuild = {out: expectedCss, __writeRoot: expectedDir};
+      const receipt = await themeBuild(source, scratchBuild, {
+        cwd: localIntegration.__packageDir,
+      });
       if (receipt == null || receipt.type !== 'theme.build') {
         issues.push(
           error(
@@ -1085,6 +1001,24 @@ export async function integrationPackCheck(options = {}) {
   const fileInv = computeRequiredFiles(loaded);
   const {identities: localIdentities, errors: localDiscoveryErrors} =
     await collectIdentities(loaded);
+  // A family lists its members from the module its import names, which the
+  // pack lifecycle may build or rebuild, so they are compared as local
+  // discovery lists them after the pack.
+  const familiesBefore = familyImports(loaded).map(family => family.docPath);
+  /**
+   * @param {Array<{name: string, docPath: string|null}>} records
+   * @param {Set<string>} families
+   */
+  const membersOf = (records, families) =>
+    records
+      .filter(
+        r =>
+          r.docPath != null &&
+          families.has(r.docPath) &&
+          isIntegrationMember(r),
+      )
+      .map(r => r.name);
+  const recordsBefore = discoverIntegrationComponents(loaded);
   for (const discoveryError of localDiscoveryErrors) {
     issues.push(
       error(
@@ -1345,7 +1279,27 @@ export async function integrationPackCheck(options = {}) {
       );
     }
 
-    issues.push(...compareIdentities(localIdentities, packedIdentities));
+    const families = new Set([
+      ...familiesBefore,
+      ...familyImports(loaded).map(family => family.docPath),
+    ]);
+    let localComponents = localIdentities.components;
+    if (families.size > 0) {
+      const stale = new Set(membersOf(recordsBefore, families));
+      const built = new Set(
+        membersOf(discoverIntegrationComponents(loaded), families),
+      );
+      const {identities: afterPack} = await collectIdentities(loaded);
+      localComponents = [
+        ...new Set([
+          ...localComponents.filter(name => !stale.has(name)),
+          ...afterPack.components.filter(name => built.has(name)),
+        ]),
+      ].sort();
+    }
+    // The receipt reports the local inventory that was compared.
+    const comparedLocal = {...localIdentities, components: localComponents};
+    issues.push(...compareIdentities(comparedLocal, packedIdentities));
     issues.push(
       ...(await validatePackedThemeExports(
         loaded,
@@ -1367,7 +1321,7 @@ export async function integrationPackCheck(options = {}) {
       pkgVersion,
       fileInv,
       packResult,
-      localIdentities,
+      comparedLocal,
       packedIdentities,
       issues,
     );

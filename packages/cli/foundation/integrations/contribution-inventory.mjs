@@ -248,11 +248,16 @@ export async function collectIdentities(loaded) {
   if (loaded.components && fs.existsSync(loaded.components)) {
     try {
       const records = discoverIntegrationComponents(loaded) ?? [];
+      // A family doc backs several records: load it, and report it, once.
+      const loads = new Map();
       for (const record of records) {
+        const first = !loads.has(record.docPath);
+        if (first) loads.set(record.docPath, loadComponentDoc(record.docPath));
         try {
-          await loadComponentDoc(record.docPath);
+          await loads.get(record.docPath);
           identities.components.push(record.name);
         } catch (err) {
+          if (!first) continue;
           errors.push({
             kind: 'components',
             message: `${path.relative(loaded.components, record.docPath)}: ${

@@ -3,6 +3,10 @@
 /**
  * @file Integration authoring diagnostics against the built-in Core catalog.
  *
+ * The components check also compares each component doc's props with the
+ * component's TypeScript props (foundation/discovery/prop-drift.mjs); those
+ * findings are warnings under `propDrift`.
+ *
  * Templates may intentionally replace Core identities; undeclared same-id
  * overlaps stay fail-closed and require package selection. The CLI package
  * version gates replacement-specific fields so 0.6.x keeps its released shape.
@@ -25,6 +29,7 @@ import {
   discoverOwnedComponents,
 } from '../../foundation/discovery/component-discovery.mjs';
 import {loadComponentReplacements} from '../component/_adapter.mjs';
+import {integrationPropDrift} from './_adapter.mjs';
 import {
   discoverBuiltinTopics,
   discoverIntegrationDocs,
@@ -242,6 +247,10 @@ export async function integrationComponentConflicts(pkg, options = {}) {
     };
   }
 
+  // Each documented prop against the component's TypeScript props, read with
+  // the project's own compiler; without one the report says it was skipped.
+  const propDrift = await integrationPropDrift(resolved.integration, cwd);
+
   const coreDir = findCoreDir(cwd);
   if (!coreDir) {
     issues.push({
@@ -252,7 +261,7 @@ export async function integrationComponentConflicts(pkg, options = {}) {
     });
     return {
       type: 'integration.component-conflicts',
-      data: {validated, name, version, conflicts: [], issues},
+      data: {validated, name, version, conflicts: [], issues, propDrift},
     };
   }
 
@@ -296,7 +305,7 @@ export async function integrationComponentConflicts(pkg, options = {}) {
 
   return {
     type: 'integration.component-conflicts',
-    data: {validated, name, version, conflicts, issues},
+    data: {validated, name, version, conflicts, issues, propDrift},
   };
 }
 

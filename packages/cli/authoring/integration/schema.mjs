@@ -78,6 +78,7 @@ export const integrationBaseSchema = z.object({
   docs: z.string().optional(),
   themes: z.string().optional(),
   issuesUrl: z.string().url().optional(),
+  docsiteUrl: z.string().url().optional(),
 });
 
 // Unknown top-level keys are stripped rather than rejected. `.strict()` made a key from a

@@ -47,10 +47,12 @@ const CODE_SPAN = /(`[^`]*`)/;
  * @typedef {object} DocLink
  * @property {string} target the target as written: `[<provider>:]<kind>:<name>`
  * @property {string} id the doc's identity (a DocId)
- * @property {string} route what `astryx docs <route>` opens
+ * @property {string | null} route what `astryx docs <route>` opens; null for a
+ *   component, page, or block doc, which no docs route opens
  * @property {string} title
  * @property {string} summary
- * @property {string} command the command that opens it, `astryx docs <route>`
+ * @property {string} command the command that opens it: `astryx docs <route>`,
+ *   or `astryx component` or `astryx template` for a component, page, or block
  */
 
 /**

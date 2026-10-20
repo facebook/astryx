@@ -332,7 +332,7 @@ export const doc = {
     {
       value: 'integration.validate',
       description:
-        'The validation result: validated (false when nothing was validated: with no package.json the issues list carries one no_package error so the command exits 1, and with a package.json but no integration manifest the issues list is empty and proves nothing), the package name and version (both null when validated is false) plus issues, an AstryxIntegrationIssue[] of {code, severity: warning | error, message}.',
+        'The validation result: validated (false when nothing was validated: with no package.json the issues list carries one no_package error so the command exits 1, and with a package.json but no integration manifest the issues list is empty and proves nothing), the package name and version (both null when validated is false) plus issues, an AstryxIntegrationIssue[] of {code, severity: warning | error, message}. When the manifest loads, docTypes checks each doc against its published authoring type: status (checked | skipped), reason, typescript, docs, findings (all warnings, each naming the field and a fix), unchecked, and fixtures (test fixture docs not checked).',
     },
     {
       value: 'integration.template-conflicts',
@@ -342,12 +342,17 @@ export const doc = {
     {
       value: 'integration.component-conflicts',
       description:
-        'validated (false when no integration manifest was found, so nothing was inspected), the integration identity, structural issues, and non-blocking conflicts where an integration component name is also owned by Core; each conflict includes the exact package-qualified command.',
+        'validated (false when no integration manifest was found, so nothing was inspected), the integration identity, structural issues, and non-blocking conflicts where an integration component name is also owned by Core; each conflict includes the exact package-qualified command. When the manifest loads and declares a components root, propDrift compares documented props with the TypeScript props: status (checked | skipped), reason, typescript, components, typesCompared, typesSkipped, findings (all warnings), unchecked, typesNotCompared, and propsNotChecked.',
     },
     {
       value: 'integration.doc-conflicts',
       description:
         'validated (false when no integration manifest was found, so nothing was inspected), the integration identity, structural issues, and Core doc overlaps. Each finding includes `severity` (`info` | `error`) and `relationship` (`replaces` | `extends` | `accidental`).',
+    },
+    {
+      value: 'integration.check',
+      description:
+        'Every source check of an integration package in one result: validated (false when no integration manifest was found, so nothing was checked), the package name and version, strict, and checks, one entry per check (validate, components, templates, docs), each with check, errors, warnings, skipped, failed, and response, the envelope that check returns on its own. The totals are errors, warnings, and skipped; unchecked counts what the checks could not compare. With --strict, failures lists each warning and each piece of skipped work again as an error, in the issue format the checks use; it is empty without --strict. failed decides the exit code.',
     },
   ],
 };

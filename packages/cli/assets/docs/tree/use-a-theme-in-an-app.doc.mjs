@@ -34,7 +34,9 @@ export const docs = {
           code: `import {Theme} from '@astryxdesign/core/theme';
 import {themes, defaultThemeSlug} from './astryx-themes';
 
-<Theme theme={themes[defaultThemeSlug]}>{/* app */}</Theme>`,
+<Theme theme={themes[defaultThemeSlug]}>
+  <App />
+</Theme>`,
         },
         {
           type: 'prose',

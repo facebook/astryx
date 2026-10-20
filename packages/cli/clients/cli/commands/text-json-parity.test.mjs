@@ -342,6 +342,11 @@ const CASES = [
     skipFieldChecks: true,
   },
   {
+    name: 'integration check',
+    args: ['integration', 'check'],
+    skipFieldChecks: true,
+  },
+  {
     name: 'doctor integration components',
     args: ['doctor', 'integration', 'components'],
     skipFieldChecks: true,

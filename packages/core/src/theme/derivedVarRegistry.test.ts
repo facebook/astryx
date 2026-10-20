@@ -224,9 +224,6 @@ const DIR_TO_REGISTRY_KEY: Record<string, string> = {
   Chat: 'chat',
   ContextMenu: 'context-menu',
   Dialog: 'dialog',
-  // The Drawer doc file lives in packages/lab/src/Drawer, outside this
-  // package's scan; the mapping keeps the registry orphan check honest and
-  // defineTheme.test.ts pins the expansion.
   Drawer: 'drawer',
   DropdownMenu: 'dropdown-menu',
   Field: 'field',
@@ -264,6 +261,9 @@ const CROSS_COMPONENT_VARS: Record<string, string[]> = {
   // The destructive item variant recolors the Item it renders; Item owns,
   // documents and reads both slots.
   DropdownMenu: ['--_item-label-color', '--_item-description-color'],
+  // List's edge="flush" zeroes the inline inset of the Item each ListItem
+  // renders; Item owns, documents and reads it.
+  List: ['--_item-inset-inline'],
   // A layer content root stops an outer Stepper's connector gap; Stepper owns,
   // documents and reads it.
   Layer: ['--step-connector-gap'],
@@ -319,6 +319,10 @@ const VARS_WITHOUT_DERIVED_MAPPING = new Set([
   '--tree-list-indent',
   '--_tree-indent',
   '--tree-list-row-gap',
+  // Published by each treeitem while it has keyboard focus and read as its
+  // row's z-index, so the focused row paints above the guide lines. Focus
+  // state, not a value a theme author sets.
+  '--_tree-focus-z',
   // Clipped on the ONE side each on-track connector segment faces the
   // indicator from — trailing above the node, leading below it, mirrored
   // again per axis. No standard property maps onto this purpose-based seam:

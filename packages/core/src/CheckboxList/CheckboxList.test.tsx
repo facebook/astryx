@@ -59,6 +59,28 @@ beforeEach(() => {
 });
 
 describe('CheckboxList', () => {
+  it('forwards CheckboxListItem align to its Item row unchanged', () => {
+    render(
+      <CheckboxList label="Toppings" value={[]} onChange={() => {}}>
+        <CheckboxListItem label="Cheese" value="cheese" data-testid="cheese" />
+        <CheckboxListItem
+          label="Olives"
+          value="olives"
+          align="first-line"
+          data-testid="olives"
+        />
+      </CheckboxList>,
+    );
+    expect(screen.getByTestId('cheese')).toHaveAttribute(
+      'data-align',
+      'center',
+    );
+    expect(screen.getByTestId('olives')).toHaveAttribute(
+      'data-align',
+      'first-line',
+    );
+  });
+
   it('renders with label', () => {
     render(
       <CheckboxList label="Preferences" value={[]} onChange={() => {}}>

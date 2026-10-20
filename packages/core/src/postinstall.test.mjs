@@ -11,12 +11,15 @@
  */
 
 import {describe, it, expect, beforeEach, afterEach} from 'vitest';
+import {spawnSync} from 'node:child_process';
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
+import {fileURLToPath} from 'node:url';
 // Core's own package-local contract copy — what actually runs at install time.
 import {
   isAstryxInitialized,
+  isAstryxPromptInReach,
   shouldNudge,
   AGENT_DOC_PATHS,
   INIT_MARKERS,
@@ -97,6 +100,49 @@ describe('core postinstall — one authoritative source, no drift', () => {
   it('agrees with the CLI leaf on a real project', () => {
     write('AGENTS.md', `# doc\n${MARKER}\nbody`);
     expect(isAstryxInitialized(tmp)).toBe(cliLeaf.isAstryxInitialized(tmp));
+  });
+
+  it('agrees with the CLI leaf on a monorepo package', () => {
+    fs.mkdirSync(path.join(tmp, '.git'));
+    write('AGENTS.md', MARKER);
+    write('packages/app/package.json', '{"name":"app"}');
+    const app = path.join(tmp, 'packages/app');
+    expect(isAstryxPromptInReach(app)).toBe(true);
+    expect(isAstryxPromptInReach(app)).toBe(cliLeaf.isAstryxPromptInReach(app));
+  });
+});
+
+// Install time, end to end: core's real script and its contract copy, installed
+// under a monorepo's node_modules, run the way npm runs them for a package.
+describe('core postinstall — inside a monorepo package', () => {
+  const CORE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+  const install = () => {
+    const installed = path.join(tmp, 'node_modules/@astryxdesign/core/scripts');
+    fs.mkdirSync(installed, {recursive: true});
+    for (const file of ['postinstall.mjs', 'agent-doc-state.mjs']) {
+      fs.copyFileSync(path.join(CORE, 'scripts', file), path.join(installed, file));
+    }
+    return spawnSync(process.execPath, [path.join(installed, 'postinstall.mjs')], {
+      env: {...process.env, INIT_CWD: path.join(tmp, 'packages/app'), npm_command: 'install'},
+      encoding: 'utf8',
+    });
+  };
+  beforeEach(() => {
+    fs.mkdirSync(path.join(tmp, '.git'));
+    write('packages/app/package.json', '{"name":"app"}');
+  });
+
+  it('stays quiet when init ran at the repository root', () => {
+    write('AGENTS.md', MARKER);
+    const r = install();
+    expect(r.status).toBe(0);
+    expect(r.stdout).toBe('');
+  });
+
+  it('still nudges when no folder up to the repository root ran init', () => {
+    const r = install();
+    expect(r.status).toBe(0);
+    expect(r.stdout).toMatch(/finish setup and install the Astryx agent prompt/);
   });
 });
 

@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file `astryx docs cli/integrations/checks`: what each package check
+ * @file `astryx docs cli/integrations/ship/checks`: what each package check
  * proves, what fails and what only warns, and one command to run them all.
  */
 
@@ -12,7 +12,7 @@ export const docs = {
   placement: {parent: 'namespace:ship', slot: 'guides', order: 20},
   title: 'Check an integration',
   category: 'guide',
-  keywords: ['check before publishing', 'validate an integration', 'ci'],
+  keywords: ['check before publishing', 'validate an integration'],
   description:
     'Pick the check for each problem, learn what fails and what only warns, and run every check in CI.',
   sections: [
@@ -22,7 +22,7 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'Run these in the package folder. The four `doctor integration` checks read your source; `integration verify` checks the package npm would publish.',
+          text: 'Run these in the package folder. The four `doctor integration` checks read your source, and `integration check` runs all four; `integration verify` checks the package npm would publish.',
         },
         {
           type: 'table',
@@ -30,15 +30,15 @@ export const docs = {
           rows: [
             [
               '`npx astryx doctor integration validate`',
-              'The manifest loads, and each root holds contributions the CLI can read',
+              'The manifest loads, each root holds contributions the CLI can read, and each doc matches its authoring type',
               'A declared root is missing (`missing_root`), a contribution does not load (`invalid_doc`, `invalid_component`, `invalid_theme`), or two templates in the package replace one Core id (`ambiguous_template_replacement`)',
-              'The manifest has a key this CLI does not know (`unknown_manifest_key`). With no `astryx.integration.mjs` it prints a hint and exits 0',
+              "The manifest has a key this CLI does not know (`unknown_manifest_key`), or a doc field does not match the doc's authoring type: a field the type does not have, a missing required field, or a value outside the field's type. It checks docs with your installed `typescript`, or, where that is missing or has no JavaScript compiler API (TypeScript 7), with an installed `@typescript/typescript6`; without either, it prints `[skip] Docs not type-checked`. With no `astryx.integration.mjs` it prints a hint and exits 0",
             ],
             [
               '`npx astryx doctor integration components`',
-              'No component name clashes with a Core component, and each `replaces` names one Core component',
+              "No component name clashes with a Core component, each `replaces` names one Core component, and each component doc's props match the component's TypeScript props",
               'Core is not installed (`core_not_found`). In a package that declares the CLI range that turns replacement on, a `replaces` target is missing (`missing_component_replacement_target`) or invalid (`invalid_component_replacement`), or two components replace one Core component (`ambiguous_component_replacement`)',
-              'A name clashes with Core, or a component sets `replaces` in a package without that range (`inactive_component_replacement`, plus any missing, invalid, or duplicate `replaces` reported as a warning)',
+              'A name clashes with Core, a component sets `replaces` in a package without that range (`inactive_component_replacement`, plus any missing, invalid, or duplicate `replaces` reported as a warning), or a documented prop differs from the code: it is missing there (`not_in_code`), the doc omits a prop the package declares (`not_in_doc`), or its `required` (`required_mismatch`) or type (`type_mismatch`) disagrees. It reads props with your installed `typescript`; without it, it prints `[skip] Props not compared`',
             ],
             [
               '`npx astryx doctor integration templates`',
@@ -53,6 +53,12 @@ export const docs = {
               'A link names no doc (`invalid_doc_graph`)',
             ],
             [
+              '`npx astryx integration check`',
+              'Everything the four `doctor integration` checks prove, in one command, for your build',
+              'Any of the four would exit 1 on its own. With `--strict`, also any warning, and any check that did not run, such as a package with no `astryx.integration.*`',
+              'Anything the four warn about, unless you pass `--strict`',
+            ],
+            [
               '`npx astryx integration verify`',
               'The packed package holds every file, shows the same contributions, resolves every public import, and declares the CLI it needs',
               'Anything `validate` fails on, no manifest, a file left out of the `.tgz` file, an import that does not resolve, or a missing CLI peer',
@@ -62,29 +68,31 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: 'Pass a package name, such as `npx astryx doctor integration validate @acme/astryx-widgets`, to check an installed copy from an app instead.',
+          text: 'Pass a package name, such as `npx astryx doctor integration validate @acme/astryx-widgets`, to check an installed copy from an app instead. To fix a props finding, see {@link generic:check-the-props}.',
         },
       ],
     },
     {
       id: 'run-every-check-in-ci',
-      title: 'Run every check in CI',
+      title: 'Run every check in every build (required)',
       content: [
         {
           type: 'prose',
-          text: 'Chain the five checks so the first failure stops the run. Install devDependencies first, because the components check needs Core.',
+          text: 'Every integration runs `integration check --strict` in its own build, so every build keeps your docs, types, and links in sync; this is required, not optional. Run `integration verify` before you publish. Install devDependencies first, because the components check needs Core, and `tsc --noEmit` needs `typescript` and a `tsconfig.json`. In package.json:',
         },
         {
           type: 'code',
-          lang: 'bash',
-          code: 'npx astryx doctor integration validate && npx astryx doctor integration components && npx astryx doctor integration templates && npx astryx doctor integration docs && npx astryx integration verify',
+          lang: 'json',
+          code: '"typecheck": "tsc --noEmit && astryx integration check --strict"',
         },
         {
           type: 'list',
           style: 'unordered',
           items: [
-            '`integration verify` runs `validate` but none of the other three: a Core name clash, a `replaces` that names no Core template, a topic that takes a Core name, or a hidden guide still passes it.',
-            'Warnings keep exit code 0, so read them before you publish.',
+            '`integration check` runs `validate`, `components`, `templates`, and `docs` in that order, prints each result, then a summary, and exits 1 when any of them would.',
+            '`--strict` also exits 1 on any warning and on any check that did not run. Without it, warnings keep exit code 0: use that while you fix the warnings a package already has.',
+            'Its exit codes and JSON are a contract for your build: a new check, or a new failure code, joins only in a minor release that names it in the release notes. A patch can still ship a Core component, template, or CLI topic whose name conflicts with one of yours.',
+            '`integration verify` runs `validate` but none of the other three: a Core name clash, a `replaces` that names no Core template, a topic that takes a Core name, or a hidden guide still passes it. Run both before you publish: `npx astryx integration check --strict && npx astryx integration verify`.',
             'Bare `npx astryx doctor` in the package also warns about a doc section over 32 KB, which no check above measures.',
           ],
         },
@@ -105,14 +113,14 @@ export const docs = {
             'It runs `npm pack` the way `npm publish` would, including your `prepack` script.',
             'It checks that every contribution file is in the `.tgz` file. A root missing from `files` fails with `Add "templates" to "files" in package.json.`',
             'It lists the components, templates, themes, docs, and codemods the temporary app sees, and compares them with your source.',
-            "It resolves each component's `import`, and each template's public import, the way Node does, and checks that the module exports the component, or a default export for a template.",
+            "It resolves each component's `import`, and each template's public import, the way Node does, and checks that the module exports the component under the name its doc documents, or a default export for a template. A type-only export does not count.",
             'For each theme, it rebuilds the source, compares the built module and production CSS with the authored outputs, and proves the module, CSS, and optional font CSS exports resolve from the packed package.',
             'It fails a package that needs an `@astryxdesign/cli` peer and lacks it: `>=0.6.6` for a template that sets `keywords`, and `>=0.6.4` for a template that sets `replaces`, a docs section, a placed guide, a doc section with an `id`, or a theme.',
           ],
         },
         {
           type: 'prose',
-          text: '`integration pack --check`, the name this check had in 0.6, still runs it and prints a note; it will be removed in a later release. The options and exit codes are in {@link command:integration verify}.',
+          text: '`integration pack --check`, the name this check had before published 0.6.5, still runs it and prints a note; it will be removed in a later release. The options and exit codes are in {@link command:integration verify}.',
         },
       ],
     },
