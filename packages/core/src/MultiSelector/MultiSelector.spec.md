@@ -184,10 +184,11 @@ the same read-only combobox semantics because neither exposes a search control i
 this state.
 
 With `renderTrigger`, the caller's control carries `aria-haspopup`, `aria-expanded`,
-and `aria-controls` for the listbox (for the dialog with a footer, AR1), the listbox carries `aria-label` from
-`label` instead of `aria-labelledby` the trigger, and the listbox is the
-focused element that owns arrow, Enter, Escape, and typeahead keys while open,
-so an anchor that cannot take focus still leaves a keyboard path.
+and `aria-controls` for the listbox (with a footer, for the popover that holds
+the dialog, AR1), the listbox carries `aria-label` from `label` instead of
+`aria-labelledby` the trigger, and the listbox is the focused element that owns
+arrow, Enter, Escape, and typeahead keys while open, so an anchor that cannot
+take focus still leaves a keyboard path.
 
 The create row is a `role="option"` with `aria-selected="false"` and no
 checkbox indicator. When it is the only result, the polite live region
@@ -203,10 +204,10 @@ arrow keys never reach them, Tab does, and they keep their own roles and names.
   dialog as it opens, to the search field or else to the listbox (FR11); Tab
   and Shift+Tab cycle within it; Escape closes it and focus returns to the
   trigger. The listbox or grid inside keeps its own roles and its
-  `aria-activedescendant` model. The trigger keeps `aria-expanded`, and its
-  `aria-haspopup` and `aria-controls` name the dialog rather than the
-  listbox. The bottom sheet is already a modal dialog and adopts nothing
-  further.
+  `aria-activedescendant` model. The trigger keeps `aria-expanded`; its
+  `aria-haspopup` is `dialog`, and its `aria-controls` names the popover that
+  holds the dialog rather than the listbox. The bottom sheet is already a
+  modal dialog and adopts nothing further.
 
 ## Design relationships
 
@@ -380,8 +381,9 @@ owner evidence rather than new MultiSelector targets.
   listbox: a screen-reader user promised a list of options would then meet a
   button. With a footer the popover is therefore a named modal dialog holding
   the search row, the list and the footer, the trigger says
-  `aria-haspopup="dialog"`, and `aria-controls` names the dialog. A dialog
-  means focus moves into it, so without a search field the listbox takes the
+  `aria-haspopup="dialog"`, and `aria-controls` names the popover that holds
+  the dialog. A dialog means focus moves into it,
+  so without a search field the listbox takes the
   focus and the keys the trigger kept, and Tab and Shift+Tab wrap within the
   panel as the APG Dialog pattern requires. Without a footer the component is
   unchanged; the bottom sheet is already a dialog and holds the footer
