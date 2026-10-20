@@ -1787,17 +1787,20 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
   }
   // Synchronizes the shared polite live region (`useAnnounce`) with the
   // creations the caller accepted: each batch is announced once, as one
-  // message, so a second creation never cuts off the first.
+  // catalog message, so a second creation never cuts off the first.
   const announcedBatchRef = useRef<{labels: ReadonlyArray<string>} | null>(
     null,
   );
   useEffect(() => {
     if (createdBatch != null && announcedBatchRef.current !== createdBatch) {
       announcedBatchRef.current = createdBatch;
+      // One creation is named; several accepted together are counted, as
+      // bulk changes elsewhere are, and show as new options in the list.
+      const {labels} = createdBatch;
       announce(
-        createdBatch.labels
-          .map(label => t('@astryx.multiSelector.optionCreated', {label}))
-          .join(' '),
+        labels.length === 1
+          ? t('@astryx.multiSelector.optionCreated', {label: labels[0]})
+          : t('@astryx.multiSelector.optionsCreated', {count: labels.length}),
       );
     }
   }, [createdBatch, announce, t]);

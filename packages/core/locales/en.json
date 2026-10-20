@@ -1567,6 +1567,10 @@
     "defaultMessage": "{label} created",
     "description": "Polite screen-reader announcement after the create row of a MultiSelector is picked. Live-region text, never shown on screen; `{label}` is the text the person typed."
   },
+  "@astryx.multiSelector.optionsCreated": {
+    "defaultMessage": "{count, number} {count, plural, one {option} other {options}} created",
+    "description": "Polite screen-reader announcement when a MultiSelector's caller accepts two or more options created from the create row at once, such as names picked while an earlier change was still saving. Live-region text, never shown on screen. `count` is the number of new options, always 2 or more; the new options show in the list."
+  },
   "@astryx.multiSelector.emptySearchResults": {
     "defaultMessage": "No results found",
     "description": "Shown in a MultiSelector's dropdown panel when the search query matches no options, and announced in a polite live region at the same time. Short; neutral tone (not error-y)."

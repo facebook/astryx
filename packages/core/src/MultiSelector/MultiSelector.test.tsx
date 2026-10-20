@@ -4148,6 +4148,73 @@ describe('MultiSelector hasCreate', () => {
     expect(search).toHaveValue('');
   });
 
+  it('with a change action, announces creations the caller accepts together as one message', async () => {
+    const user = userEvent.setup();
+    const releases: (() => void)[] = [];
+    function Labels() {
+      const [options, setOptions] = useState(OPTIONS);
+      const [value, setValue] = useState<string[]>([]);
+      return (
+        <MultiSelector
+          label="Labels"
+          options={options}
+          value={value}
+          onChange={() => {}}
+          changeAction={async next => {
+            await new Promise<void>(resolve => {
+              releases.push(resolve);
+            });
+            setOptions(current => [
+              ...current,
+              ...next
+                .filter(
+                  entry => !current.some(option => option.value === entry),
+                )
+                .map(entry => ({value: entry, label: entry})),
+            ]);
+            setValue(current => [...new Set([...current, ...next])]);
+          }}
+          hasSearch
+          hasCreate
+        />
+      );
+    }
+    render(<Labels />);
+    await user.click(screen.getByRole('button', {name: 'Labels'}));
+    const search = screen.getByRole('combobox', h);
+    await user.type(search, 'Urgent');
+    await user.click(
+      screen.getByRole('option', {name: 'Create "Urgent"', ...h}),
+    );
+    await user.clear(search);
+    await user.type(search, 'Blocked');
+    await user.click(
+      screen.getByRole('option', {name: 'Create "Blocked"', ...h}),
+    );
+    expect(releases).toHaveLength(2);
+
+    // The second action settles first and its `next` carries both names, so
+    // both are accepted in one render and announced as one message.
+    await act(async () => {
+      releases[1]();
+    });
+    await waitFor(() => {
+      expect(politeRegion()?.textContent).toBe('2 options created');
+    });
+    expect(search).toHaveValue('');
+    expect(
+      screen.getByRole('option', {name: 'Urgent', ...h}),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('option', {name: 'Blocked', ...h}),
+    ).toBeInTheDocument();
+    // Settle the first action too: a pending action holds later transitions.
+    await act(async () => {
+      releases[0]();
+    });
+    expect(politeRegion()?.textContent).toBe('2 options created');
+  });
+
   it('is off by default', async () => {
     const user = userEvent.setup();
     render(
