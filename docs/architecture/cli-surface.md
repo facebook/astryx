@@ -183,17 +183,41 @@ and remains available through explicit Core package selection.
   integration manifest or a comparison that needs the project's TypeScript,
   reporting each as an error from the same findings the default run reports
   (INV32). An item a comparison lists as unchecked,
-  such as a prop type it cannot read, does not fail `--strict`. Its exit codes
-  and JSON shape are a compatibility contract for the builds that run it: a new
-  check, or a new failure code, MAY join it only in a minor release that names
-  the addition. A name a patch release adds to Core or the CLI (a component,
-  template, or topic) MAY raise a conflict with a package's own name. Each
-  `doctor integration` subcommand, exit code, and JSON MUST stay unchanged.
-  Because builds fail on its findings, it MUST NOT report a finding the
-  package's code does not contradict: a check that cannot judge an item lists
-  it as not checked instead (DEC-7). A change that can fail a build that
-  passes today, including a stricter rule for an existing finding, MAY ship
-  only in a minor release that names it.
+  such as a prop type it cannot read, does not fail `--strict`. `--strict` also
+  fails on two exact doc faults the `docs` check finds in prose (DEC-8): a
+  copied passage, where two topics repeat 10 or more words word for word (a
+  run of mostly function words, or one that three or more topics share, is not
+  a copy), and fluff, a listed padding phrase or a topic whose share of content
+  words is under the published floor. Its exit codes and JSON shape are a compatibility
+  contract for the builds that run it, from the first stable release that
+  ships `integration check`: from then on, a new check, or a new failure code,
+  MAY join it only in a minor release that names the addition, and a change
+  that can fail a build that passes, including a stricter rule for an existing
+  finding, MAY ship only in a minor release that names it. Before that
+  release, its checks and failure codes MAY change in any release. A name a
+  patch release adds to Core or the CLI (a component, template, or topic) MAY
+  raise a conflict with a package's own name. Each `doctor integration`
+  subcommand MUST keep its exit codes, and its JSON MAY change only by
+  additions. Because builds fail on its findings, it MUST NOT report a finding
+  the package's code does not contradict, other than the doc faults of DEC-8:
+  a check that cannot judge an item lists it as not checked instead (DEC-7).
+- **INV36 — The person filing a gap report chooses where it goes.**
+  `astryx gap-report` MUST send a report to the configured report handlers, or
+  with none to the owning package's `issuesUrl` (`spec:AST-031` FR8), unless
+  the caller names a destination with `--to <package>`. A destination is a
+  loaded integration whose manifest sets `issuesUrl`. With `--to`, the report
+  goes only to that `issuesUrl`, the way the zero-handler fallback sends it: a
+  GitHub issues URL is filed only with `--confirm-public` and reports
+  `consent_required` without it, and any other URL comes back as
+  `routed_only`. A `--to` that names no destination MUST fail with
+  `ERR_UNKNOWN_PACKAGE` before anything is sent, listing the destinations it
+  accepts. While at least one destination exists, the categories listing and
+  the receipt of a run without `--to` MUST list the default and every
+  destination, in text and JSON, and MUST tell the agent to ask the person
+  where to file and to pass the person's choice with `--to`. The command's
+  docs and agent guidance MUST say the same: an agent asks the person, never
+  picks a package destination on its own, and leaves out `--to` when the person
+  does not choose (DEC-9).
 - **INV9 — A command that cannot support `--json` is rejected before any side
   effect**, not part-way through the work.
 - **INV10 — Every write is confined.** Output paths pass `assertWithin`, which
@@ -481,7 +505,9 @@ updated in the same pull request when it moves an invariant:
 - changing local, configured, or autolinked integration precedence;
 - changing an integration item descriptor, the theme directory boundary, or the consumer copy contract;
 - changing which files hold the agent-docs block, how init finds the project
-  root, where it refuses to write agent docs, or where it removes them (INV31).
+  root, where it refuses to write agent docs, or where it removes them (INV31);
+- adding a kind of gap-report destination, or changing who chooses one
+  (INV36).
 
 `pnpm check:cli-structure` enforces the layout. The contract tests listed in
 `verified_by` enforce the envelope, the exit codes, the error codes, and the
@@ -624,8 +650,41 @@ Every integration runs `integration check --strict` in its build (DEC-6), so a
 false finding fails a package for a fault it does not have, and its only way
 out, dropping `--strict`, also drops the check for every real fault. A check
 that cannot tell whether the code contradicts a doc lists the item as not
-checked, which `--strict` does not fail.
+checked, which `--strict` does not fail. The one exception is the doc-quality
+findings of DEC-8.
 Rejected: reporting a doubtful item as a warning (`--strict` fails it).
+
+### DEC-8 — The strict check fails on copied passages and fluff in docs
+
+**Decider:** `josephfarina`, `2026-10-20`
+
+People and agents read integration docs on a budget. A fact written in two
+topics goes stale in one of them at the next edit, and padding costs every
+reader. So these doc-quality findings fail `--strict` by owner decision, as
+the one exception to DEC-7. A copied passage (a run of identical words, after
+the filters for function-word runs and for boilerplate that three or more
+topics share) and a listed padding phrase (outside code and quotes) are exact
+matches. The density floor is a threshold, not a contradiction. The phrase
+list and the floor are published in the check's docs, and every finding
+names the phrase, or the measured density and the floor, so its fix is
+mechanical. Each is a warning, so `integration check --strict` fails on it and
+an agent that runs the build fixes it, while `doctor integration docs` keeps
+exit 0. `integration check` first ships with these rules, so no build that
+passed before can newly fail.
+Rejected: listing them as information only, which an agent treats as optional.
+
+### DEC-9 — The person chooses where a gap report goes
+
+**Decider:** `josephfarina`, `2026-10-20`
+
+Report handlers usually feed one shared place, while an integration names its
+own tracker in `issuesUrl`. Which place should get a report is a judgment about
+the gap, so the person decides: the CLI lists the places, the agent asks, and
+`--to` carries the answer. Without a choice the report goes to the shared
+default.
+Rejected: copying every report to the integration's own `issuesUrl`
+automatically (reports land in places nobody picked); letting the agent pick
+the destination.
 
 ## Verification
 
@@ -655,7 +714,8 @@ Rejected: reporting a doubtful item as a warning (`--strict` fails it).
 | INV32     | `test/cli-strict-guard.test.mjs` lists every command offering `--strict` and every command whose exit depends on warnings; `api/integration/check/check.test.mjs` compares a strict run with the default run       | A second command offers `--strict`, a command exits 1 on a warning alone without `--strict`, or a strict run reports a finding the default run does not or outside the command's issue format. |
 | INV33     | `foundation/discovery/prop-drift.test.mjs`, `foundation/discovery/type-text.test.mjs`, `clients/cli/commands/doctor-integration.test.mjs`, `test/core-prop-docs.test.mjs` | A removed or renamed prop or a changed union passes unreported, a missing compiler reads as a pass, or a table that leaves out `ref`, `key`, `xstyle`, `className`, `style`, `data-testid`, or an `@internal` prop draws a warning. |
 | INV34     | `foundation/discovery/doc-types.test.mjs`, `clients/cli/commands/doctor-integration.test.mjs`, `test/core-doc-types.test.mjs` | An unknown, missing, or mistyped field passes unreported, or a missing compiler reads as a pass. |
-| INV35     | `api/integration/check/check.test.mjs`, `clients/cli/commands/integration-check.test.mjs`, `test/integration-check-failures.test.mjs`, `api/search/search.integration-check.test.mjs`, `foundation/discovery/prop-drift.test.mjs`, `foundation/discovery/type-match.test.mjs`, `foundation/discovery/doc-types.test.mjs` | The default exit differs from a check's own, a warning or a skipped comparison passes `--strict`, text and JSON exit differently, a new failing finding is added without the list changing, a search for ci does not find the command first, or a finding is reported on a doc the code does not contradict (for a type, one TypeScript accepts). |
+| INV35     | `api/integration/check/check.test.mjs`, `clients/cli/commands/integration-check.test.mjs`, `test/integration-check-failures.test.mjs`, `api/search/search.integration-check.test.mjs`, `foundation/discovery/prop-drift.test.mjs`, `foundation/discovery/type-match.test.mjs`, `foundation/discovery/doc-types.test.mjs`, `api/integration/authoring-checks.test.mjs` | The default exit differs from a check's own, a warning or a skipped comparison passes `--strict`, text and JSON exit differently, a new failing finding is added without the list changing, a search for ci does not find the command first, a finding is reported on a doc the code does not contradict (for a type, one TypeScript accepts), or a copied passage or a fluff finding passes `--strict`, or a function-word run or shared boilerplate is reported as a copy. |
+| INV36 | `api/gap-report/gap-report.test.mjs`, `clients/cli/commands/gap-report.test.mjs` | A run without `--to` reaches an `issuesUrl` the handlers did not choose, `--to` runs a handler or files on GitHub without `--confirm-public`, an unknown `--to` sends anything, or the destinations list or its line telling the agent to ask the person is missing while a destination exists. |
 
 ## Open questions
 

@@ -250,6 +250,39 @@ Every record is either:
   authority. A human request supplies intent but becomes committed current
   authority only through exact-head owner approval.
 
+### Review evidence placement
+
+- **INV22 — One-off evidence stays with the change.** Ad-hoc screenshots,
+  recordings, measurements, sensor receipts, and run logs are attached or linked
+  from the pull request that uses them, not committed to `main` as disposable
+  assets under `docs/pr-assets/` or another source directory. Public GitHub
+  attachments are the preferred home for manually published one-off evidence.
+  Standing records keep durable conclusions and verification relationships, not
+  individual run inventories. Accepted visual baselines, reusable stories and
+  test fixtures, shipped documentation media, and repository-owned receipts
+  explicitly permitted by their current owner remain versioned with the code.
+- **INV23 — Cleanup preserves historical evidence.** Removing disposable assets
+  from the current tree MUST NOT rewrite history or break existing commit-pinned
+  evidence links. Before deletion, every removed file has a verified public
+  retained copy. A linked commit outside retained `main` history needs a durable
+  retention anchor at that exact commit; a commit hash or a temporary branch
+  alone is insufficient. An immutable non-release `evidence/` tag may retain
+  historical Git-hosted evidence when attachment publication is unavailable.
+  Its name stays outside release-tag conventions and automated pruning, and it
+  MUST NOT be moved or removed while the evidence is referenced. Cleanup verifies
+  the remote anchor, exact bytes, and existing links before removing source files.
+- **INV24 — Storage does not change proof or authority.** The pull request's text
+  states the claim, tested build, relevant state, observed result, and evidence
+  links; an image or expiring artifact is not the only record of the conclusion.
+  Attachments remain evidence under INV16, not authority. Owner-specific receipt
+  requirements, operational audit stores, and CI artifact lifetimes remain with
+  their current owners. [AST-009](../specs/AST-009/spec.md) owns real-AT receipts;
+  INV12 owns the operational audit datastore. [AST-029](../specs/AST-029/spec.md)
+  FR5 and FR10 own the audit pull request's evidence receipt and exact-head
+  eligibility report. [AST-030](../specs/AST-030/spec.md) FR12 owns shared
+  visual-regression execution and baseline adoption. This placement rule does
+  not add a capture owner or require permanent archiving of every CI run.
+
 ## Global review applicability
 
 Use this optional block only when named claims apply across otherwise unrelated
@@ -847,6 +880,14 @@ clear.
 | INV20, DEC-9                      | `scripts/check-knowledge.test.mjs` and `scripts/review-global-baselines.mjs`                                                                                                                                 | A matching review misses a current global claim, loads a draft/nonmatching claim, loses base-commit provenance, or treats the rest of a routed record as authority                                                                                            |
 | INV21, DEC-10                     | `.github/scripts/component-design-decisions.test.mjs`, `.github/scripts/review-signal-decision.test.mjs`, `.github/scripts/spec-owner-decision.test.mjs`, and `.github/scripts/lib/classify-visual.test.mjs` | A malformed/local DD escapes validation, stale approval clears a new head, owner routing loses mixed-change gates, or executable/API/unknown runtime code is misclassified as appearance-only                                                                 |
 | DEC-11                            | `.github/scripts/review-signal-decision.test.mjs`, `.github/scripts/review-clear-workflow.test.mjs`, and `.github/scripts/review-signal-workflow.test.mjs`                                                   | An app approval clears a read-only or fork author or an earlier head; a later app request for changes or dismissal leaves the gate clear; an app approval overrides an ENGOWNER request for changes; or an unset app or unreadable permission clears the gate |
+
+| Invariant   | Evidence                                                                                                                                 | Failure signal                                                                                                                                                                         |
+| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| INV22–INV24 | Contributor/reviewer evidence inventory; public-link and byte verification; retained remote refs; unchanged fixture/baseline/media paths | Disposable captures enter the source tree, cleanup loses a referenced image, a temporary branch is called durable, or storage changes overwrite an owner's proof or retention contract |
+
+Evidence placement is enforced by contributors and reviewers. The local
+`docs/pr-assets/` ignore prevents accidental staging; it is not a blocking CI
+check and does not prevent force-added evidence elsewhere.
 
 Current enforcement gap: no checked-in gate yet proves the open-pull-request
 search. Until one exists, the pull-request summary records the search terms,
