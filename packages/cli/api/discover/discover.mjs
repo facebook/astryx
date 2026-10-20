@@ -4,7 +4,8 @@
  * @file Programmatic API for the discover command — dispatcher + barrel.
  *
  * `discover()` browses the integrations a project has and, through discover
- * sources, the ones it could add. It only reads: the package manager installs.
+ * sources and the official list the CLI carries, the ones it could add. It
+ * only reads: the package manager installs.
  * Its job is to resolve the project and its sources (via ./_adapter) and route
  * to the leaf that owns each response shape:
  *
@@ -22,6 +23,7 @@
  *   the discover leaves.
  */
 
+export {OFFICIAL_SOURCE_NAME} from './_adapter.mjs';
 import {
   addCommand,
   callSources,
@@ -30,6 +32,10 @@ import {
   discoverPackages,
   findComponent,
   hasSources,
+  officialDeclarations,
+  officialFirst,
+  officialList,
+  withDeclaredOfficial,
 } from './_adapter.mjs';
 import {
   availableEntries,
@@ -48,9 +54,6 @@ import {levenshteinDistance} from '../../foundation/text/string-utils.mjs';
 import {DISCOVER_KINDS} from '../../authoring/discover/parse.mjs';
 
 const DEFAULT_LIMIT = 20;
-
-/** @type {import('./_adapter.mjs').CatalogResult} */
-const NO_CATALOG = {sources: [], packages: []};
 
 /**
  * Split a package-shaped query: `name`, `name@version`, or `name/item`, with an
@@ -145,6 +148,23 @@ function similarItems(entry, wanted) {
 }
 
 /**
+ * Whether discover answers a query in this project, or answers every query
+ * with the list (spec:AST-051 FR1): it answers once the project loads an
+ * integration or has a discover source of its own. This is the rule
+ * `discover()` applies to the project it loads; the command reads it to keep
+ * the list's hints from suggesting queries that only return the list.
+ * @param {import('../../foundation/config/project.mjs').Project | undefined} project
+ * @returns {boolean}
+ */
+export function answersQueries(project) {
+  return (
+    project != null &&
+    (project.loadedIntegrations.some(i => !i.__loadError) ||
+      hasSources(project))
+  );
+}
+
+/**
  * @param {string} [query]
  * @param {import('./discover.type.mjs').DiscoverOptions} [options]
  * @returns {Promise<
@@ -165,24 +185,49 @@ export async function discover(query, options = {}) {
       : undefined;
 
   const {packages: scanned, configured, project} = await discoverPackages();
-  const withSources = hasSources(project);
-  const packages = await describeInstalled(project, scanned);
+  const integrations = await describeInstalled(project, scanned);
   const declared = declaredDependencies(project);
+  // The official list is always read, so discover always has a source.
+  const official = officialList({project});
+  const declarations = officialDeclarations(project, official.packages);
   const add = addCommand(project);
+  const addOfficial = addCommand(project, {official: official.packages});
+  /** @param {{package: string, official?: true}} pkg */
+  const installFor = pkg => (pkg.official ? addOfficial : add)(pkg.package);
 
   /** @param {{package?: string, version?: string}} [request] */
-  const catalogFor = async request =>
-    withSources ? await callSources(project, request) : NO_CATALOG;
+  const catalogFor = request => callSources(project, request, {official});
+  /**
+   * What the project has, once a catalog says which official packages it
+   * declares.
+   * @param {import('./_adapter.mjs').CatalogResult} catalog
+   */
+  const installedFor = catalog =>
+    withDeclaredOfficial(
+      project,
+      integrations,
+      catalog,
+      declarations,
+      official.packages,
+    );
 
-  // No query, or nothing to look through: the list.
-  if (!query || (packages.length === 0 && !withSources)) {
-    if (!withSources) return list(packages, {configured, type, only});
+  // No query, or any query in a project that loads no integration and has no
+  // discover source of its own: the list (spec:AST-051 FR1).
+  if (!query || (integrations.length === 0 && !hasSources(project))) {
     const catalog = await catalogFor();
+    const packages = installedFor(catalog);
     return list(withLatest(packages, catalog), {
       configured,
       type,
       only,
-      available: availableEntries(catalog, packages, declared),
+      available: officialFirst(
+        availableEntries(catalog, packages, declared, {
+          officialDeclared: declarations.any,
+          install: installFor,
+        }),
+        official.packages,
+        entry => entry.name,
+      ),
       sources: catalog.sources,
     });
   }
@@ -199,7 +244,6 @@ export async function discover(query, options = {}) {
   }
 
   const target = splitTarget(query);
-  const installedNames = new Set(packages.map(p => p.name));
 
   /**
    * One package, one version, or one item, once `target.name` is known to be
@@ -207,29 +251,72 @@ export async function discover(query, options = {}) {
    * @param {import('./_adapter.mjs').CatalogResult} catalog
    */
   const packageView = async catalog => {
+    const packages = installedFor(catalog);
+    const installedNames = new Set(packages.map(p => p.name));
     const entry = catalog.packages.find(p => p.package === target.name);
     const installedAs = entry
-      ? catalogState(entry, installedNames, declared).installedAs
+      ? catalogState(entry, installedNames, declared, declarations.any)
+          .installedAs
       : undefined;
-    const context = {catalog: entry, version: target.version, add, installedAs};
+    const isIntegration = integrations.some(p => p.name === target.name);
+    // An entry only the official list supplies answers for what it lists.
+    // Any other version or item of that package keeps the answer discover
+    // gave before the list existed: ERR_UNKNOWN_PACKAGE.
+    const officialOnly = entry?.official === true && !isIntegration;
+    if (officialOnly && target.version) {
+      const local = packages.find(p => p.name === target.name)?.version;
+      if (
+        target.version !== local &&
+        !entry.versions.some(v => v.version === target.version)
+      ) {
+        throw new AstryxError(
+          `${target.name}@${target.version} is not a version discover knows here: ${
+            entry.versions.length > 0
+              ? `it knows ${entry.versions.map(v => v.version).join(', ')}`
+              : 'it knows no version of it for this project'
+          }. Other versions are on the package registry.`,
+          [...new Set([...entry.versions.map(v => v.version), local])]
+            .filter(v => v != null)
+            .map(v => ({
+              name: `${target.name}@${v}`,
+              reason: 'version discover knows',
+            })),
+          ERROR_CODES.ERR_UNKNOWN_PACKAGE,
+        );
+      }
+    }
+    const context = {
+      catalog: entry,
+      version: target.version,
+      // Only an entry the official list supplied gets a pinned version.
+      add: entry?.official ? addOfficial : add,
+      installedAs,
+    };
     if (!target.item) return detail(packages, target.name, context);
     const found = item(packages, target.name, target.item, context);
     if (found) return found;
+    if (officialOnly) {
+      throw new AstryxError(
+        `"${target.item}" not found in ${target.name}`,
+        similarItems(entry, target.item),
+        ERROR_CODES.ERR_UNKNOWN_PACKAGE,
+      );
+    }
     // Only an installed package has docs to fall back to. For one that is
     // only in a source, the item is what is unknown, not the package.
-    if (entry && !packages.some(p => p.name === target.name)) {
+    if (entry && !isIntegration) {
       throw new AstryxError(
         `"${target.item}" not found in ${target.name}`,
         similarItems(entry, target.item),
         ERROR_CODES.ERR_UNKNOWN_COMPONENT,
       );
     }
-    return await doc(packages, target.name, target.item, {lang, zh});
+    return await doc(integrations, target.name, target.item, {lang, zh});
   };
 
   // An installed component keeps resolving to its full doc, before any source
   // is asked anything.
-  const installedPkg = packages.find(p => p.name === target.name);
+  const installedPkg = integrations.find(p => p.name === target.name);
   if (installedPkg && target.item && !target.version) {
     const resolved = findComponent([installedPkg], target.item);
     if (resolved) return await docFromResult(resolved, {lang, zh});
@@ -251,8 +338,9 @@ export async function discover(query, options = {}) {
     );
   }
 
+  const packages = installedFor(listing);
   return await search(packages, query, {
-    items: searchItems(packages, listing, declared),
+    items: searchItems(packages, listing, declared, declarations.any),
     type,
     only,
     limit: limit ?? DEFAULT_LIMIT,
