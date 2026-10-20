@@ -55,6 +55,16 @@ The value you store is Lexical editor state, serialized as JSON. Pass it to `Ric
 
 `markdownToEditorStateJSON` and `editorStateJSONToMarkdown` convert in both directions without mounting an editor, including on the server. Open Markdown, change nothing, and export it: you get back the exact bytes. Change one paragraph and everything else comes back as written: list markers, escapes, spacing and character references.
 
+```ts
+import {
+  editorStateJSONToMarkdown,
+  markdownToEditorStateJSON,
+} from '@astryxdesign/richtext/markdown';
+
+const editorState = markdownToEditorStateJSON(markdown); // pass to defaultValue
+editorStateJSONToMarkdown(editorState) === markdown; // true until someone edits
+```
+
 ## The same document in read and edit mode
 
 A RichText document matches the same document rendered by Astryx `Markdown`: same type scale, block spacing, measure, list markers and code frames, in light and dark, left-to-right and right-to-left. Switching a page between `Markdown` and `RichTextEditor` keeps every block in the same order with the same spacing; the editor adds only its field frame. Long code lines wrap in both, so phone readers never scroll code sideways.
