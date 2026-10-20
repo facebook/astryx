@@ -91,7 +91,10 @@ package manager's Plug'n'Play runtime, or a workspace's own CLI package (the
 folder itself, or `packages/cli` in it or one of the five folders above it); and
 otherwise the nearest `package.json` at or above the folder that declares either
 package, searched up to the first folder that holds version-control metadata and
-never in the home folder unless the run starts there. A folder is
+never in the home folder unless the run starts there. A folder deeper than that
+nearby look finds the project's own CLI the same way from that `package.json`'s
+folder, as a package runner resolves the project's command from any depth. A
+folder is
 **outside a project** when none of these exist. A folder inside another
 project, such as a repository cloned into it or a nested app, therefore
 answers with the enclosing project's release. The project that an upgrade
@@ -172,8 +175,9 @@ works on is `spec:AST-040` FR9's.
     lock records only when the process is surely it: its arguments are exactly
     npm, or node running npm's entry file, installing `@astryxdesign/cli` at the
     lock's release, it started after the lock was taken, and the lock is younger
-    than any install may take. Otherwise it takes the lock over and leaves the
-    process alone.
+    than any install may take. npm's process title, which the system may report
+    as one argument, is read as its arguments. Otherwise it takes the lock over
+    and leaves the process alone.
   - `astryx upgrade` follows the same rule: the project's own CLI runs its
     codemods, and `spec:AST-040` FR13 defines what it reports when it is older
     than the installed Core; in a project with no CLI of its own, the copy that
@@ -210,7 +214,10 @@ works on is `spec:AST-040` FR9's.
   global copy also installs its own release's Core there in the background, on
   any run while none is beside it or cached (FR6), so commands that read Core
   work offline after one online run. When it cannot be installed, those commands
-  fail with `ERR_VERSIONS_UNAVAILABLE` before any write. `doctor`, `swizzle`,
+  fail with `ERR_VERSIONS_UNAVAILABLE` before any write, except an open
+  `search`, which answers from the domains that need no Core and says what it
+  skipped and why: `meta.partial` in a machine-readable result, and one line on
+  standard error in text mode. `doctor`, `swizzle`,
   and `upgrade` judge or change a project and MUST NOT read the carried Core.
   Output outside a project MUST NOT give advice that works only inside one, such
   as a step that sets up, configures, or refreshes a project the folder does not
@@ -316,11 +323,14 @@ works on is `spec:AST-040` FR9's.
     or exit status because of it. It records what it found, and when, in the
     per-user state file (FR7), and installs nothing.
   - On a run while it carries no Core beside it and none is cached for its
-    release, the global copy installs that Core into the per-user cache from
-    a detached background step, as FR3 needs: never when `CI` is set as below,
-    never blocking or changing a command, and a failure is silent and waits
-    out FR2's backoff before a later run's step tries again. This installs
-    the global copy's own release's Core only, never a newer release.
+    release, the global copy installs that Core into the per-user cache from a
+    detached step it starts as the run ends, as FR3 needs: never when `CI` is
+    set as below, never blocking or changing a command or holding anything the
+    command's caller waits on, and a failure is silent and waits out FR2's
+    backoff before a later run's step tries again. On Windows, where a detached
+    process inherits the caller's open pipes, it starts only when the run
+    writes to a terminal. This installs the global copy's own release's Core
+    only, never a newer release.
   - No check runs when the environment variable `CI` is set to a value other
     than empty, `0`, or `false`, or when `NO_UPDATE_NOTIFIER` is set to any
     value. Astryx defines neither: `CI` is the platform convention continuous
@@ -650,6 +660,9 @@ with another skills folder links it to `.agents/skills/astryx` themselves.
 | G51 A global copy in a Yarn 1 global folder named by `global-folder`; an app made with `yarn add` alone                      | The global copy while Yarn's settings name the folder; the app's own CLI for the app                                         | `yarn global add` reinstalls there; the app runs no update check and writes no agent text                                                                                       | `› G51`                                                                                               |
 | G52 The global copy with no Core beside it and none cached                                                                   | The global copy                                                                                                              | A detached step installs its Core into the cache after a run (never in CI); offline, the failure waits out the backoff                                                          | `› G52`                                                                                               |
 | G53 pnpm's global virtual store: a project's own CLI kept in the store's `links` folder                                      | The project's own CLI, not a global copy; a copy a pnpm global folder links to is global                                     | The project run starts no update check and writes no agent text                                                                                                                 | `› G53`                                                                                               |
+| G54 A folder more than five levels deep in a project with its own CLI                                                        | The project's own CLI                                                                                                        | The hand-off line; no hint                                                                                                                                                      | `› G54`                                                                                               |
+| G55 A `--json` run in a fresh clone while the global copy's Core step runs                                                   | The global copy                                                                                                              | Returns at once with clean JSON; the step starts as the run ends                                                                                                                | `› G55`                                                                                               |
+| G56 An open `search` outside a project before the release's Core is cached                                                   | The global copy                                                                                                              | Gets the Core as `component` does; when it cannot, `meta.partial` names the skipped domains and the reason, with one standard-error line                                        | `› G56`                                                                                               |
 
 ### Platform support
 
@@ -697,6 +710,10 @@ with another skills folder links it to `.agents/skills/astryx` themselves.
   `architecture:cli-surface` INV30. The official list FR8 ships is
   `spec:AST-051` FR10's. The project starters FR8 ships arrive with the template
   kind that ships them.
+- Follow-up, next minor release: `integration check --strict` fails on
+  `invalid_cli_command`, a malformed `cliCommand` (FR5), which this release
+  reports without failing it, since a new failure code joins only in a minor
+  (`architecture:cli-surface` INV35).
 - Follow-up, next minor release, breaking: the release equal to the project's
   Core answers even when the project's own CLI is another release, and answers
   a project with only Core instead of the copy that started the run (DEC-10).
