@@ -762,12 +762,37 @@ function DropdownMenuBottomSheet({
     if (!isOpen || openModalityRef.current !== 'keyboard') {
       return;
     }
-    const frame = requestAnimationFrame(() => {
-      actionListRef.current
-        ?.querySelector<HTMLElement>('button:not(:disabled), a[href]')
-        ?.focus({preventScroll: true});
+    const findFirstAction = () =>
+      actionListRef.current?.querySelector<HTMLElement>(
+        'button:not(:disabled), a[href]',
+      ) ?? null;
+    let observer: MutationObserver | null = null;
+    let frame = requestAnimationFrame(() => {
+      const action = findFirstAction();
+      if (action != null) {
+        action.focus({preventScroll: true});
+        return;
+      }
+      // The sheet loads on demand, so a keyboard open can arrive before its
+      // rows exist. Wait for them, then focus a frame later so the sheet's
+      // own open-focus has already run.
+      observer = new MutationObserver(() => {
+        const loaded = findFirstAction();
+        if (loaded == null) {
+          return;
+        }
+        observer?.disconnect();
+        observer = null;
+        frame = requestAnimationFrame(() => {
+          loaded.focus({preventScroll: true});
+        });
+      });
+      observer.observe(document.body, {childList: true, subtree: true});
     });
-    return () => cancelAnimationFrame(frame);
+    return () => {
+      cancelAnimationFrame(frame);
+      observer?.disconnect();
+    };
   }, [currentItems, isOpen]);
 
   useEffect(() => {
