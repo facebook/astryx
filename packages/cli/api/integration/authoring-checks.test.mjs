@@ -608,7 +608,7 @@ describe('integrationDocConflicts', () => {
 describe('integrationDocConflicts copied passages', () => {
   const copied = (/** @type {any} */ result) => result.data.copiedPassages;
 
-  it('lists a passage two of the package topics repeat, without an issue', async () => {
+  it('lists a passage two of the package topics repeat, and warns about it', async () => {
     writeTopics([
       {name: 'acme-setup', text: `Read this first. ${PASSAGE}`},
       {name: 'acme-menus', text: `${PASSAGE} See the theme guide.`},
@@ -616,7 +616,9 @@ describe('integrationDocConflicts copied passages', () => {
 
     const result = await integrationDocConflicts(undefined, {cwd: tmpDir});
     const [issue, ...rest] = copied(result);
-    expect(result.data.issues).toEqual([]);
+    expect(result.data.issues).toEqual([
+      {code: 'copied_passage', severity: 'warning', message: issue.message},
+    ]);
 
     expect(rest).toEqual([]);
     expect(issue).toMatchObject({
@@ -711,7 +713,9 @@ describe('integrationDocConflicts fluff', () => {
     const [hit, ...rest] = fluff(result);
 
     expect(rest).toEqual([]);
-    expect(result.data.issues).toEqual([]);
+    expect(result.data.issues).toEqual([
+      {code: 'doc_fluff', severity: 'warning', message: hit.message},
+    ]);
     expect(hit).toMatchObject({
       topic: 'acme-setup',
       kind: 'phrase',

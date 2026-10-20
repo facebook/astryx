@@ -19,7 +19,7 @@ export const doc = {
     "package's topics, or one of them and a Core topic other than the one it replaces. " +
     'Code and examples are not compared. `fluff` lists each padding phrase, with its file ' +
     'line, and each topic of 80 or more prose words in which fewer than half carry content. ' +
-    'Neither list fails the check.',
+    'Each entry of either list is also a warning issue (`copied_passage`, `doc_fluff`), so `--strict` fails on it.',
   importPath: '@astryxdesign/cli/api',
   signature:
     'integrationDocConflicts(pkg?: string, options?: IntegrationAuthoringOptions): Promise<IntegrationDocConflictResponse>',

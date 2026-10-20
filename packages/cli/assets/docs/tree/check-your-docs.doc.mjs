@@ -36,11 +36,11 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: 'Write each fact in one topic. When two of your topics, or one of yours and a Core topic, repeat 10 or more words of prose word for word, the check lists the pair as `[info]`, with the fix: keep the passage in one topic and link to it from the other ({@link generic:links}). Code and examples are not compared, and a topic may carry the text of the Core topic it replaces. A run of mostly function words, or one that three or more topics share (a series lead-in), is not listed. The list does not fail the check today; from the next minor release a listed pair fails `integration check --strict`, so fix each one now.',
+          text: 'Write each fact in one topic. When two of your topics, or one of yours and a Core topic, repeat 10 or more words of prose word for word, the check lists the pair as `[info]`, with the fix: keep the passage in one topic and link to it from the other ({@link generic:links}). Code and examples are not compared, and a topic may carry the text of the Core topic it replaces. A run of mostly function words, or one that three or more topics share (a series lead-in), is not listed. Each listed pair is also a warning (`copied_passage`), so `integration check --strict` fails until you fix it.',
         },
         {
           type: 'prose',
-          text: 'Keep docs dense. The check lists, as `[info]`, each padding phrase in your prose ("in order to", "note that", "it is worth noting", "simply", and the like), with its file line and what to write instead, and each topic of 80 or more prose words in which fewer than half the words carry content. Code and examples are not read. The list does not fail the check today; from the next minor release it fails `integration check --strict` too.',
+          text: 'Keep docs dense. The check lists, as `[info]`, each padding phrase in your prose ("in order to", "note that", "it is worth noting", "simply", and the like), with its file line and what to write instead, and each topic of 80 or more prose words in which fewer than half the words carry content. Code and examples are not read. Each one is also a warning (`doc_fluff`), so `integration check --strict` fails until you cut it.',
         },
         {
           type: 'prose',

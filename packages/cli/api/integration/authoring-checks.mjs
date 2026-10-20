@@ -438,6 +438,14 @@ export async function integrationDocConflicts(pkg, options = {}) {
     // Docs should be dense: padding phrases and mostly-glue topics, listed
     // the same way.
     fluff.push(...(await findFluff(discovered)));
+    // Each one is a warning, so `integration check --strict` fails until the
+    // author fixes it, and an agent reading the result knows to.
+    for (const {message} of copiedPassages) {
+      issues.push({code: 'copied_passage', severity: 'warning', message});
+    }
+    for (const {message} of fluff) {
+      issues.push({code: 'doc_fluff', severity: 'warning', message});
+    }
   }
 
   return {
