@@ -4,14 +4,25 @@
 
 /**
  * @file Tokenizer.tsx
- * @input Uses React, BaseTypeahead, Field, Token, useAnnounce
+ * @input Uses React, BaseTypeahead, Field, Token, InputGroupContext, useAnnounce
  * @output Exports Tokenizer multi-select typeahead component
  * @position Composed component; forwards DOM ref and exposes focus control via
- *   handleRef
+ *   handleRef. Inside an InputGroup it takes the group's size and drops its
+ *   own Field chrome, local description/status, and border radius so the
+ *   group provides the shared border, and it keeps its tokens on one
+ *   scrolling strip beside its end controls. The strip adopts the shared
+ *   scroll capability (spec:AST-025): edge fades show hidden tokens, forced
+ *   colors restore the native scrollbar, and a disabled strip is its own
+ *   keyboard stop while it overflows.
  *
  * SYNC: When modified, update:
  * - /packages/core/src/Tokenizer/index.ts
  * - /apps/storybook/stories/Tokenizer.stories.tsx
+ * - /apps/storybook/stories/InputGroup.stories.tsx (WithTokenizer,
+ *   WithTokenizerOverflow, WithTokenizerOverflowEndControls,
+ *   WithTokenizerOverflowDisabled)
+ * - /packages/core/src/Tokenizer/__tests__/TokenizerGroupScroll.a11y.browser.spec.ts
+ * - /packages/core/src/InputGroup/InputGroup.doc.mjs (compatible controls)
  * - /packages/cli/assets/templates/blocks/components/Tokenizer/ (showcase blocks)
  */
 
@@ -23,6 +34,7 @@ import React, {
   useRef,
   useState,
   type ReactNode,
+  type Ref,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
@@ -37,6 +49,11 @@ import {
   useFieldInputStyling,
 } from '../Field/fieldParts';
 import {useMergedRefs} from '../hooks/useMergedRefs';
+import {
+  useScrollableArea,
+  type ScrollAxisState,
+  type UseScrollableAreaResult,
+} from '../hooks/useScrollableArea';
 import type {SizeValue} from '../utils/types';
 import {BaseTypeahead} from '../Typeahead/BaseTypeahead';
 import {useSize} from '../SizeContext/SizeContext';
@@ -57,6 +74,7 @@ import {renderIconSlot, type IconType} from '../Icon';
 import {OverflowList} from '../OverflowList';
 import {useLayer} from '../Layer/useLayer';
 import {useTooltip} from '../Tooltip';
+import {VisuallyHidden} from '../VisuallyHidden';
 import {useAnnounce} from '../hooks/useAnnounce';
 import {
   colorVars,
@@ -64,8 +82,10 @@ import {
   sizeVars,
   typeScaleVars,
 } from '../theme/tokens.stylex';
+import {groupStyles} from '../InputGroup/groupStyles';
+import {useInputGroup} from '../InputGroup/InputGroupContext';
 import type {SearchableItem, SearchSource} from '../Typeahead/types';
-import {mergeProps} from '../utils';
+import {getInputARIA, mergeProps} from '../utils';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
 
@@ -227,7 +247,10 @@ export interface TokenizerProps<T extends SearchableItem> extends Omit<
   endContent?: ReactNode;
   /** Auto-focus on mount. @default false */
   hasAutoFocus?: boolean;
-  /** Input size. @default 'md' */
+  /**
+   * Input size. Inside an InputGroup the group's size applies instead.
+   * @default 'md'
+   */
   size?: TokenizerSize;
   /**
    * Controls how tokens overflow when the container is too narrow.
@@ -270,6 +293,15 @@ export interface TokenizerProps<T extends SearchableItem> extends Omit<
 // because the input's reserve is derived from the same value.
 const END_LANE_INSET = spacingVars['--spacing-2'];
 const TOKEN_ROW_INSET = `calc(${spacingVars['--spacing-1']} - 1px)`;
+/**
+ * Where a grouped strip's edge fade turns opaque, and how far focus scrolling
+ * keeps a focused control from a faded edge. The fade is transparent across
+ * the strip's focus-ring bleed, so a faded edge never paints into the row
+ * padding.
+ */
+const TRACK_FADE_INSET = `calc(${TOKEN_ROW_INSET} + ${spacingVars['--spacing-6']})`;
+const TRACK_FADE_FROM_LEFT = `linear-gradient(to right, transparent ${TOKEN_ROW_INSET}, black ${TRACK_FADE_INSET})`;
+const TRACK_FADE_FROM_RIGHT = `linear-gradient(to left, transparent ${TOKEN_ROW_INSET}, black ${TRACK_FADE_INSET})`;
 // InputClearButton grows 2px past its visible box under `(pointer: coarse)`.
 // Keep this maximum reserve in sync with Field/InputClearButton.tsx.
 const INPUT_CLEAR_COARSE_POINTER_OUTSET = '2px';
@@ -376,6 +408,101 @@ const styles = stylex.create({
   truncatedWrapper: {
     flexWrap: 'nowrap',
     overflow: 'hidden',
+  },
+  inGroupWrapper: {
+    // InputGroup is a fixed-height, single-line surface: a second row would
+    // spill past the group's shared border, so the row never wraps. A single
+    // row of tokens fits the group height (token = element size - 8px, plus
+    // 3px block padding).
+    flexWrap: 'nowrap',
+  },
+  inGroupTrack: {
+    // The grouped row keeps to one line by scrolling, and only this track
+    // scrolls. The end lane is its sibling, so tokens are clipped beside the
+    // end controls instead of painting under them, and the controls hold the
+    // row's inline end while the tokens move. useScrollableArea owns the
+    // overflow declarations.
+    display: 'flex',
+    alignItems: 'center',
+    alignSelf: 'stretch',
+    flex: '1 1 0',
+    minWidth: 0,
+    // A scroll container clips at its own padding edge. Bleed back out to the
+    // row's, so a token's focus ring keeps the room the row padding gives it.
+    margin: `calc(-1 * ${TOKEN_ROW_INSET})`,
+    padding: TOKEN_ROW_INSET,
+    // A native scrollbar would take most of a 28-32px row. The edge fades
+    // show what is out of view instead, and the keyboard reaches it through
+    // the remove buttons or, when disabled, through the track itself. Forced
+    // colors restore the platform scrollbar (AST-025 FR12, FR16).
+    scrollbarWidth: {
+      default: 'none',
+      '@media (forced-colors: active)': 'auto',
+    },
+    scrollPaddingInline: TRACK_FADE_INSET,
+  },
+  inGroupTrackContent: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: spacingVars['--spacing-1'],
+    flex: 'none',
+    // At least the track's width, so the input can take what the tokens
+    // leave; wider once they overflow, which is the range the track scrolls.
+    minWidth: '100%',
+  },
+  inGroupTrackContentTruncated: {
+    // The "+N more" summary measures this box, so it holds the track's width.
+    width: '100%',
+  },
+  // Each fade masks an edge that hides tokens. Forced colors drop the fades,
+  // since the native scrollbar is back there.
+  trackFadeStart: {
+    maskImage: {
+      default: TRACK_FADE_FROM_LEFT,
+      ':is([dir="rtl"] *)': {
+        default: TRACK_FADE_FROM_RIGHT,
+        '@media (forced-colors: active)': 'none',
+      },
+      '@media (forced-colors: active)': 'none',
+    },
+  },
+  trackFadeEnd: {
+    maskImage: {
+      default: TRACK_FADE_FROM_RIGHT,
+      ':is([dir="rtl"] *)': {
+        default: TRACK_FADE_FROM_LEFT,
+        '@media (forced-colors: active)': 'none',
+      },
+      '@media (forced-colors: active)': 'none',
+    },
+  },
+  trackFadeBoth: {
+    maskImage: {
+      default: `linear-gradient(to right, transparent ${TOKEN_ROW_INSET}, black ${TRACK_FADE_INSET}, black calc(100% - ${TRACK_FADE_INSET}), transparent calc(100% - ${TOKEN_ROW_INSET}))`,
+      '@media (forced-colors: active)': 'none',
+    },
+  },
+  inGroupInput: {
+    // Always in flow after the last token. The empty-query hit surface of
+    // inputCompact keeps a wrapping field from growing a blank row; a grouped
+    // row cannot wrap, and its in-flow lane needs no reserve.
+    minWidth: '40px',
+    flex: '1 1 40px',
+    width: 0,
+    paddingInlineStart: `calc(${spacingVars['--spacing-2']} - ${spacingVars['--spacing-1']} + 1px)`,
+  },
+  inGroupEndSection: {
+    // In flow beside the track: with one row there is no first row to pin to,
+    // so the lane takes its own width out of the row and needs no measuring.
+    position: 'static',
+    transform: 'none',
+    // Give back the gap the track's bleed takes.
+    marginInlineStart: TOKEN_ROW_INSET,
+  },
+  inGroupEndSectionWithTokens: {
+    // Restore the lane's 8px inset from the border, since wrapperWithTokens
+    // reduces the row padding to 3px.
+    marginInlineEnd: `calc(${END_LANE_INSET} - ${TOKEN_ROW_INSET})`,
   },
   layerPopover: {
     // Top-layer popover: match the anchor width exactly so the expanded
@@ -525,7 +652,7 @@ function EndLane({
   children,
 }: {
   lane: BusyIndicatorLane;
-  laneRef: (node: HTMLElement | null) => void;
+  laneRef?: (node: HTMLElement | null) => void;
   laneXStyle: stylex.StyleXStyles[];
   loadingLabel: string;
   hasStaticContent: boolean;
@@ -539,6 +666,81 @@ function EndLane({
     <div ref={laneRef} {...stylex.props(laneXStyle)}>
       {isBusy && <Spinner size="sm" aria-label={loadingLabel} />}
       {children}
+    </div>
+  );
+}
+
+function trackFade(inline: ScrollAxisState) {
+  if (!inline.isScrollable) {
+    return null;
+  }
+  if (!inline.atStart && !inline.atEnd) {
+    return styles.trackFadeBoth;
+  }
+  if (!inline.atStart) {
+    return styles.trackFadeStart;
+  }
+  return inline.atEnd ? null : styles.trackFadeEnd;
+}
+
+/**
+ * Keyboard focus in a grouped track brings the whole item it lands in into
+ * view, clear of the fades: the track's scroll padding is the fade width.
+ * Browsers scroll only as far as the focused control, which can leave a
+ * token's label cut off or faded beside its remove button. Pointer focus is
+ * left alone, so a press never moves its target before the release.
+ */
+function revealFocusedItem(event: React.FocusEvent<HTMLElement>): void {
+  if (
+    !(event.target instanceof Element) ||
+    !event.target.matches(':focus-visible')
+  ) {
+    return;
+  }
+  const content = event.currentTarget.firstElementChild;
+  let item: Element | null = event.target;
+  while (item != null && item.parentElement !== content) {
+    item = item.parentElement;
+  }
+  item?.scrollIntoView?.({block: 'nearest', inline: 'nearest'});
+}
+
+/**
+ * The start icon, tokens, and input. In a grouped row they scroll together in
+ * one track beside the end lane: the viewport of the shared scroll capability,
+ * around a content box it measures. In a wrapping field (`scrollArea` null)
+ * they stay direct children of the wrapper.
+ */
+function TokenTrack({
+  scrollArea,
+  trackRef,
+  isTruncated,
+  children,
+}: {
+  scrollArea: UseScrollableAreaResult | null;
+  trackRef: Ref<HTMLDivElement>;
+  isTruncated: boolean;
+  children: ReactNode;
+}): ReactNode {
+  if (scrollArea == null) {
+    return children;
+  }
+  return (
+    <div
+      {...scrollArea.getViewportProps<HTMLDivElement>({
+        ref: trackRef,
+        onFocus: revealFocusedItem,
+        xstyle: [styles.inGroupTrack, trackFade(scrollArea.state.inline)],
+      })}>
+      <div
+        {...scrollArea.getContentProps<HTMLDivElement>(
+          stylex.props(
+            styles.inGroupTrackContent,
+            isTruncated && styles.inGroupTrackContentTruncated,
+          ),
+        )}>
+        {children}
+      </div>
     </div>
   );
 }
@@ -598,13 +800,35 @@ export function Tokenizer<T extends SearchableItem>({
     containerStyle,
   });
   const t = useTranslator();
-  const size = useSize(sizeProp, 'md');
+  const inputGroup = useInputGroup();
+  // The group's fixed-height row owns the size: an explicit larger size (and
+  // its tokens) would escape it, so a grouped Tokenizer takes the group's.
+  const size = useSize(inputGroup ? undefined : sizeProp, 'md');
   const generatedInputId = useId();
   const inputId = idProp ?? generatedInputId;
+  const inputLabelId = useId();
   const descriptionId = useId();
   const statusMessageId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
+  const trackRef = useRef<HTMLDivElement>(null);
+
+  // A grouped row scrolls its tokens in a track that adopts the shared scroll
+  // capability (AST-025), which measures the overflow and reports the edges
+  // that hide tokens. Enabled tokens keep the keyboard path: each has a native
+  // remove button, reached with Shift+Tab from the input, and keyboard focus
+  // on one brings its token into view (revealFocusedItem). A disabled field
+  // has none, so the track itself is the stop while it overflows.
+  const scrollArea = useScrollableArea({
+    axis: 'inline',
+    keyboardAccess: isDisabled
+      ? {
+          owner: 'viewport',
+          role: 'group',
+          label: t('@astryx.tokenizer.selectedItems'),
+        }
+      : {owner: 'content'},
+  });
 
   // Disabled-reason tooltip. Disabled controls swallow pointer events, so the
   // tooltip listeners attach to the input wrapper and the typeahead input stays
@@ -699,8 +923,9 @@ export function Tokenizer<T extends SearchableItem>({
       if (comingFromOutside) {
         onFocus?.(e);
         // Redirect to the input so the user doesn't have to tab through
-        // every token remove button.
-        if (e.target !== inputRef.current) {
+        // every token remove button. A disabled grouped track that takes
+        // focus keeps it: it is the keyboard path to its hidden tokens.
+        if (e.target !== inputRef.current && e.target !== trackRef.current) {
           inputRef.current?.focus();
         }
       }
@@ -912,14 +1137,20 @@ export function Tokenizer<T extends SearchableItem>({
     }
   }, [isDisabled, isLayerMode, layer]);
 
-  const ariaDescribedBy =
+  // Inside an InputGroup no Field renders the local description or status —
+  // the group's are the ones shown — so neither is referenced or painted; the
+  // disabled reason is input-local and stays.
+  const localStatus = inputGroup ? undefined : status;
+
+  const {ariaLabelledBy, ariaDescribedBy} = getInputARIA(
+    inputLabelId,
     [
-      description ? descriptionId : null,
-      status?.message ? statusMessageId : null,
+      !inputGroup && description ? descriptionId : null,
+      localStatus?.message ? statusMessageId : null,
       showsDisabledMessage ? disabledMessageTooltip.describedBy : null,
-    ]
-      .filter(Boolean)
-      .join(' ') || undefined;
+    ],
+    inputGroup,
+  );
 
   const sizeStyle = sizeStyles[size];
 
@@ -956,6 +1187,15 @@ export function Tokenizer<T extends SearchableItem>({
     left: 'anchor(start)',
   };
 
+  // The group container owns the shared border, so a grouped Tokenizer drops
+  // its own outer radius. In layer mode the placeholder — not this wrapper —
+  // is the element sitting in the group's flex row, so the content inside the
+  // popover keeps its standalone radius.
+  const isInGroupRow = inputGroup != null && !isLayerMode;
+  const compactInputStyle = isInGroupRow
+    ? styles.inGroupInput
+    : [styles.inputCompact, compactInputSizeStyles[size]];
+
   const wrapperContent = (
     <div
       ref={el => {
@@ -981,7 +1221,7 @@ export function Tokenizer<T extends SearchableItem>({
       {...mergeProps(
         themeProps('tokenizer', {
           size,
-          status: status?.type,
+          status: localStatus?.type,
           disabled: isDisabled ? 'disabled' : null,
         }),
         stylex.props(
@@ -991,82 +1231,94 @@ export function Tokenizer<T extends SearchableItem>({
           isTruncated ? truncatedSizeStyles[size] : sizeStyle,
           isTruncated && styles.truncatedWrapper,
           isDisabled && inputWrapperStyles.disabled,
-          status && inputStatusBorderStyles[status.type],
-          status && !isDisabled && inputStatusHoverShadowStyles[status.type],
-          status && inputStatusFocusWithinStyles[status.type],
+          localStatus && inputStatusBorderStyles[localStatus.type],
+          localStatus &&
+            !isDisabled &&
+            inputStatusHoverShadowStyles[localStatus.type],
+          localStatus && inputStatusFocusWithinStyles[localStatus.type],
+          isInGroupRow && groupStyles.inGroup,
+          isInGroupRow && styles.inGroupWrapper,
           controlXstyle,
         ),
         controlClassName,
         controlStyle,
       )}>
-      {startIcon && (
-        <span {...stylex.props(value.length > 0 && styles.startIconWithTokens)}>
-          {renderIconSlot(startIcon, {size: 'sm', color: 'secondary'})}
-        </span>
-      )}
-      {isTruncated ? (
-        <OverflowList
-          gap={1}
-          behavior="observeParent"
-          overflowRenderer={items => (
-            <span {...stylex.props(styles.overflowText)}>
-              +{items.length} more
-            </span>
-          )}>
-          {tokens}
-        </OverflowList>
-      ) : (
-        tokens
-      )}
-      {/* The base reports its busy state through this lane, so the
-          indicator lands in the end controls below beside the clear
-          button rather than as a second one inside the base. */}
-      <BusyIndicatorLaneProvider value={busyLane}>
-        <TrailingKeyDownContext value={onKeyDown}>
-          <BaseTypeahead
-            {...rest}
-            ref={useMergedRefs(inputRef, ref)}
-            searchSource={isAtMax ? emptySource : filteredSource}
-            value={null}
-            onChange={handleAdd}
-            renderItem={renderItem}
-            // A space keeps :placeholder-shown available as the CSS-only empty
-            // query signal without painting placeholder text beside tokens.
-            placeholder={value.length === 0 ? placeholder : ' '}
-            hasEntriesOnFocus={isAtMax ? false : hasEntriesOnFocus}
-            maxMenuItems={maxMenuItems}
-            menuWidth={menuWidth}
-            minQueryLength={minQueryLength}
-            emptySearchText={emptySearchText}
-            isDisabled={isDisabled}
-            isFocusableDisabled={showsDisabledMessage}
-            hasAutoFocus={hasAutoFocus}
-            inputId={inputId}
-            ariaDescribedBy={
-              [ariaDescribedByProp, ariaDescribedBy]
-                .filter(Boolean)
-                .join(' ') || undefined
-            }
-            onChangeQuery={onChangeQuery}
-            __queryEntries={createEntries}
-            debounceMs={debounceMs}
-            onKeyDown={handleKeyDown}
-            anchorRef={wrapperRef}
-            size={size}
-            inputXStyle={[
-              isAtMax || isTruncated
-                ? styles.inputAtMax
-                : value.length > 0
-                  ? [styles.inputCompact, compactInputSizeStyles[size]]
-                  : undefined,
-              // The compact-token style owns the same reserve with an empty-query
-              // exception. This standalone rule is only for an empty Tokenizer;
-              // it still resolves to zero until the lane publishes a width.
-              !(isAtMax || isTruncated || value.length > 0) && laneReserve,
-            ]}
-          />
-        </TrailingKeyDownContext>
-      </BusyIndicatorLaneProvider>
+      {inputGroup && <VisuallyHidden id={inputLabelId}>{label}</VisuallyHidden>}
+      <TokenTrack
+        scrollArea={isInGroupRow ? scrollArea : null}
+        trackRef={trackRef}
+        isTruncated={isTruncated}>
+        {startIcon && (
+          <span
+            {...stylex.props(value.length > 0 && styles.startIconWithTokens)}>
+            {renderIconSlot(startIcon, {size: 'sm', color: 'secondary'})}
+          </span>
+        )}
+        {isTruncated ? (
+          <OverflowList
+            gap={1}
+            behavior="observeParent"
+            overflowRenderer={items => (
+              <span {...stylex.props(styles.overflowText)}>
+                +{items.length} more
+              </span>
+            )}>
+            {tokens}
+          </OverflowList>
+        ) : (
+          tokens
+        )}
+        {/* The base reports its busy state through this lane, so the
+            indicator lands in the end controls below beside the clear
+            button rather than as a second one inside the base. */}
+        <BusyIndicatorLaneProvider value={busyLane}>
+          <TrailingKeyDownContext value={onKeyDown}>
+            <BaseTypeahead
+              {...rest}
+              ref={useMergedRefs(inputRef, ref)}
+              searchSource={isAtMax ? emptySource : filteredSource}
+              value={null}
+              onChange={handleAdd}
+              renderItem={renderItem}
+              // A space keeps :placeholder-shown available as the CSS-only empty
+              // query signal without painting placeholder text beside tokens.
+              placeholder={value.length === 0 ? placeholder : ' '}
+              hasEntriesOnFocus={isAtMax ? false : hasEntriesOnFocus}
+              maxMenuItems={maxMenuItems}
+              menuWidth={menuWidth}
+              minQueryLength={minQueryLength}
+              emptySearchText={emptySearchText}
+              isDisabled={isDisabled}
+              isFocusableDisabled={showsDisabledMessage}
+              hasAutoFocus={hasAutoFocus}
+              inputId={inputId}
+              ariaDescribedBy={
+                [ariaDescribedByProp, ariaDescribedBy]
+                  .filter(Boolean)
+                  .join(' ') || undefined
+              }
+              ariaLabelledBy={ariaLabelledBy}
+              onChangeQuery={onChangeQuery}
+              __queryEntries={createEntries}
+              debounceMs={debounceMs}
+              onKeyDown={handleKeyDown}
+              anchorRef={wrapperRef}
+              size={size}
+              inputXStyle={[
+                isAtMax || isTruncated
+                  ? styles.inputAtMax
+                  : value.length > 0
+                    ? compactInputStyle
+                    : undefined,
+                // The compact-token style owns the same reserve with an empty-query
+                // exception. This standalone rule is only for an empty Tokenizer;
+                // it still resolves to zero until the lane publishes a width.
+                !(isAtMax || isTruncated || value.length > 0) && laneReserve,
+              ]}
+            />
+          </TrailingKeyDownContext>
+        </BusyIndicatorLaneProvider>
+      </TokenTrack>
       {htmlName != null &&
         value.map(item => (
           <input
@@ -1081,8 +1333,16 @@ export function Tokenizer<T extends SearchableItem>({
         ))}
       <EndLane
         lane={busyLane}
-        laneRef={laneRef}
-        laneXStyle={[styles.endSection, endSectionSizeStyles[size]]}
+        // A grouped lane is in flow, so nothing has to measure or reserve it.
+        laneRef={isInGroupRow ? undefined : laneRef}
+        laneXStyle={[
+          styles.endSection,
+          endSectionSizeStyles[size],
+          isInGroupRow && styles.inGroupEndSection,
+          isInGroupRow &&
+            value.length > 0 &&
+            styles.inGroupEndSectionWithTokens,
+        ]}
         loadingLabel={t('@astryx.typeahead.loading')}
         hasStaticContent={hasStaticEndLane}>
         {endContent}
@@ -1110,7 +1370,7 @@ export function Tokenizer<T extends SearchableItem>({
           {...mergeProps(
             themeProps('tokenizer', {
               size,
-              status: status?.type,
+              status: localStatus?.type,
               disabled: isDisabled ? 'disabled' : null,
             }),
             stylex.props(
@@ -1120,11 +1380,13 @@ export function Tokenizer<T extends SearchableItem>({
               placeholderSizeStyle,
               isTruncated && styles.truncatedWrapper,
               isDisabled && inputWrapperStyles.disabled,
-              status && inputStatusBorderStyles[status.type],
-              status &&
+              localStatus && inputStatusBorderStyles[localStatus.type],
+              localStatus &&
                 !isDisabled &&
-                inputStatusHoverShadowStyles[status.type],
-              status && inputStatusFocusWithinStyles[status.type],
+                inputStatusHoverShadowStyles[localStatus.type],
+              localStatus && inputStatusFocusWithinStyles[localStatus.type],
+              // The placeholder is the element in the group's flex row.
+              inputGroup && groupStyles.inGroup,
               controlXstyle,
             ),
             controlClassName,
@@ -1167,6 +1429,18 @@ export function Tokenizer<T extends SearchableItem>({
     );
   } else {
     tokenizerContent = wrapperContent;
+  }
+
+  // Inside an InputGroup the group owns the label, description, and status
+  // chrome, so the Tokenizer must not render a second Field around itself.
+  if (inputGroup) {
+    return (
+      <>
+        {tokenizerContent}
+        {showsDisabledMessage &&
+          disabledMessageTooltip.renderTooltip(disabledMessage)}
+      </>
+    );
   }
 
   return (

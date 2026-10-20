@@ -1372,6 +1372,17 @@ jobs:
             --project chromium \
             --output codeblock-overflow-stop-output
 
+      # A grouped Tokenizer scrolls its tokens on one strip with the native
+      # scrollbar hidden. Which edges fade, the scrollbar coming back under
+      # forced colors, and the keyboard path to hidden tokens (a disabled strip
+      # becomes a Tab stop only while it overflows) need real layout and keys.
+      - name: Run Tokenizer grouped strip contract
+        run: |
+          pnpm exec playwright test \
+            packages/core/src/Tokenizer/__tests__/TokenizerGroupScroll.a11y.browser.spec.ts \
+            --project chromium \
+            --output tokenizer-group-scroll-output
+
       # A DropdownMenu header and footer sit beside the menu, outside its
       # role="menu" element, and join one Tab sequence with it. Focus order,
       # the popover's focus trap, the keyboard-only ring and a finger tap on a
