@@ -15,7 +15,8 @@
  * needs it: `Project` assembles templates from it. While this sat in api/, that
  * made a cycle across the layer boundary — Project reached up for discovery and
  * this module imported Project back. Nothing here depends on api/; every import
- * is node:*, jiti, foundation/*, or authoring/*.
+ * is node:*, jiti, foundation/*, or authoring/*, plus a lazily required
+ * @babel/parser for extractComponents' local-declaration scan.
  *
  * @position packages/cli/foundation/discovery — shared template discovery/IO;
  *   consumed by Project and by the api/template leaves.
@@ -512,6 +513,19 @@ function expressionUse(source, open, close) {
   return null;
 }
 
+/** @type {typeof import('@babel/parser') | undefined} */
+let babelParser;
+
+/**
+ * The template source parser, loaded on first use so listing templates
+ * never pays for it.
+ * @returns {typeof import('@babel/parser')}
+ */
+function templateSourceParser() {
+  babelParser ??= require('@babel/parser');
+  return /** @type {typeof import('@babel/parser')} */ (babelParser);
+}
+
 /**
  * The [start, end) range of every comment in `source`, or none when it does
  * not parse as TSX.
@@ -520,8 +534,7 @@ function expressionUse(source, open, close) {
  */
 function commentRanges(source) {
   try {
-    const {parse} = require('@babel/parser');
-    const {comments} = parse(source, {
+    const {comments} = templateSourceParser().parse(source, {
       sourceType: 'module',
       plugins: ['jsx', 'typescript'],
     });
@@ -1267,7 +1280,8 @@ export async function discoverIntegrationTemplatesForOne(integration) {
         template: id,
         message: `Template "${id}" is missing a "type" of "page" or "block". Stamp the default export with type: 'page' or type: 'block'.`,
       });
-      const declared = doc?.replaces ?? (await declaredReplacement(docPath, id));
+      const declared =
+        doc?.replaces ?? (await declaredReplacement(docPath, id));
       if (declared != null) {
         errors.push({
           code: 'invalid_template_replacement',
@@ -1424,6 +1438,51 @@ const UBIQUITOUS = new Set([
 ]);
 
 /**
+ * Names bound by top-level `function`, `class`, `const`, `let` or `var`
+ * declarations (exported or not). Returns an empty set when the source does
+ * not parse, so a parse failure never drops a real component.
+ *
+ * @param {string} src
+ * @returns {Set<string>}
+ */
+function topLevelBindingNames(src) {
+  /** @type {Set<string>} */
+  const names = new Set();
+  let program;
+  try {
+    program = templateSourceParser().parse(src, {
+      sourceType: 'module',
+      plugins: ['jsx', 'typescript'],
+      errorRecovery: true,
+    }).program;
+  } catch {
+    return names;
+  }
+  for (const statement of program.body) {
+    const node =
+      statement.type === 'ExportNamedDeclaration' ||
+      statement.type === 'ExportDefaultDeclaration'
+        ? statement.declaration
+        : statement;
+    if (node == null) continue;
+    if (
+      (node.type === 'FunctionDeclaration' ||
+        node.type === 'ClassDeclaration') &&
+      node.id
+    ) {
+      names.add(node.id.name);
+    } else if (node.type === 'VariableDeclaration') {
+      for (const declarator of node.declarations) {
+        if (declarator.id.type === 'Identifier') {
+          names.add(declarator.id.name);
+        }
+      }
+    }
+  }
+  return names;
+}
+
+/**
  * @param {string} pagePath
  * @returns {string[]}
  */
@@ -1449,14 +1508,24 @@ export function extractComponents(pagePath) {
   while ((m = tagRegex.exec(src)) !== null) {
     matches.push(m[2]);
   }
+
+  // Exclude names bound by a top-level declaration in the same file: those are
+  // page-local helpers (e.g. `function TimelineSection()`), not components a
+  // builder can import. Read real bindings from the syntax tree so comments,
+  // strings and type annotations cannot add or hide a name.
+  const localDeclNames = topLevelBindingNames(src);
+
   return [
     ...new Set(
       matches
+        .filter(n => !localDeclNames.has(n))
         .filter(n => !['Theme', 'ThemeProvider'].includes(n))
         .filter(n => !UBIQUITOUS.has(n))
         .map(n =>
           n.replace(
-            /(Item|Section|Header|Content|Footer|Panel|Heading|CollapseButton|Column|Sortable|Selection|Group|Source)$/,
+            // Strip only when a stem remains, so a bare `<Section>` keeps its
+            // own name instead of emptying out.
+            /(?<=.)(Item|Section|Header|Content|Footer|Panel|Heading|CollapseButton|Column|Sortable|Selection|Group|Source)$/,
             '',
           ),
         )

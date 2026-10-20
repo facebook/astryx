@@ -272,12 +272,12 @@ const styles = stylex.create({
   surfaceViewportFit: {
     boxSizing: 'border-box',
     maxInlineSize: stylex.firstThatWorks(
-      layerViewportInset.maxInlineSize,
-      layerViewportInset.maxInlineSizeFallback,
+      `calc(${layerViewportInset.maxInlineSize})`,
+      `calc(${layerViewportInset.maxInlineSizeFallback})`,
     ),
     maxBlockSize: stylex.firstThatWorks(
-      layerViewportInset.maxBlockSize,
-      layerViewportInset.maxBlockSizeFallback,
+      `calc(${layerViewportInset.maxBlockSize})`,
+      `calc(${layerViewportInset.maxBlockSizeFallback})`,
     ),
   },
   surfaceScrollable: {

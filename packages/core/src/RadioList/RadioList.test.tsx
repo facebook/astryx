@@ -524,6 +524,28 @@ describe('RadioList', () => {
   });
 
   describe('RadioListItem rest forwarding', () => {
+    it('forwards align to its Item row unchanged', () => {
+      render(
+        <RadioList label="Preference" value="" onChange={() => {}}>
+          <RadioListItem label="Option A" value="a" data-testid="item-a" />
+          <RadioListItem
+            label="Option B"
+            value="b"
+            align="first-line"
+            data-testid="item-b"
+          />
+        </RadioList>,
+      );
+      expect(screen.getByTestId('item-a')).toHaveAttribute(
+        'data-align',
+        'center',
+      );
+      expect(screen.getByTestId('item-b')).toHaveAttribute(
+        'data-align',
+        'first-line',
+      );
+    });
+
     it('forwards data-testid, id, and aria-* to the item root element', () => {
       render(
         <RadioList label="Preference" value="" onChange={() => {}}>

@@ -1,5 +1,12 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+/**
+ * @file Knowledge-record validation.
+ * @input Versioned schemas, records, and current ENGOWNERS/DESIGNOWNERS.
+ * @output Structural, relationship, and approval-eligibility problems.
+ * @position Repository knowledge guardrail; schemas do not grant approval rights.
+ */
+
 /* global console, process */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -1296,7 +1303,7 @@ function validateAgainstSchema(
   isTemplate,
   currentTemplateVersion,
   designApprovalOwners = [],
-  themeApprovalOwners = [],
+  engineeringApprovalOwners = [],
 ) {
   const problems = [...document.problems];
   const {frontmatter, sections} = document;
@@ -1409,11 +1416,9 @@ function validateAgainstSchema(
     const approvedBy = frontmatter.get('approved_by');
     const approvedAt = frontmatter.get('approved_at');
     const authorizedOwners =
-      kind === 'design'
-        ? [...new Set([...schema.approvalOwners, ...designApprovalOwners])]
-        : kind === 'theme'
-          ? themeApprovalOwners
-          : schema.approvalOwners;
+      kind === 'design' || kind === 'theme'
+        ? [...new Set([...engineeringApprovalOwners, ...designApprovalOwners])]
+        : engineeringApprovalOwners;
     if (!authorizedOwners.includes(approvedBy)) {
       problems.push(
         `${filePath}: current records require approved_by to name an authorized owner.`,
@@ -1593,9 +1598,6 @@ export async function validateKnowledgeRoot(root = DEFAULT_ROOT) {
   const engineeringApprovalOwners = fs.existsSync(engineeringOwnersPath)
     ? parseOwnerFile(fs.readFileSync(engineeringOwnersPath, 'utf8'))
     : [];
-  const themeApprovalOwners = [
-    ...new Set([...engineeringApprovalOwners, ...designApprovalOwners]),
-  ];
   const problems = [...discoverThemeRecordCandidates(root).problems];
   const ids = new Map();
   const records = [];
@@ -1634,7 +1636,7 @@ export async function validateKnowledgeRoot(root = DEFAULT_ROOT) {
         true,
         templateVersions[kind],
         designApprovalOwners,
-        themeApprovalOwners,
+        engineeringApprovalOwners,
       ),
     );
     if (template.frontmatter.get('kind') !== kind) {
@@ -1687,7 +1689,7 @@ export async function validateKnowledgeRoot(root = DEFAULT_ROOT) {
         false,
         templateVersions[document.frontmatter.get('kind')],
         designApprovalOwners,
-        themeApprovalOwners,
+        engineeringApprovalOwners,
       ),
     );
     const authority = document.frontmatter.get('authority');

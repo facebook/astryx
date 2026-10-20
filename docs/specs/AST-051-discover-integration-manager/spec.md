@@ -7,7 +7,7 @@ authority: current
 archive_reason: null
 superseded_by: null
 approved_by: josephfarina
-approved_at: 2026-10-13
+approved_at: 2026-10-19
 phase: accepted
 owners: [josephfarina]
 affects_architecture: [architecture:cli-surface]
@@ -38,7 +38,7 @@ discover sources follow it except where this record says otherwise.
 - Installing, updating, or removing packages. The package manager does that,
   and autolink loads a newly installed integration with no discover step.
 - Hosting a catalog. The official list ships inside each CLI release and is
-  never fetched (FR10).
+  never fetched (FR11).
 - How a source signs in. A source runs as the person running the CLI and uses
   whatever credentials its host already has. The CLI never prompts
   (`architecture:cli-surface` INV1) and reads no Astryx-owned environment
@@ -53,7 +53,7 @@ discover sources follow it except where this record says otherwise.
   query, and with any query in a project that loads no integration and has no
   discover source of its own, discover MUST list every integration the project
   loads, configured or autolinked, and every official package the official list
-  supplies (FR10) that the project's own `package.json`, the nearest one above
+  supplies (FR11) that the project's own `package.json`, the nearest one above
   the folder discover runs in, declares in `dependencies`, `devDependencies` or
   `optionalDependencies`, under its name or an npm alias, each with its
   version, what it adds as one list per kind, and the latest release a source
@@ -73,7 +73,7 @@ discover sources follow it except where this record says otherwise.
   For a package the project does not have, discover MUST print the
   package-manager command that adds it, as text, and MUST NOT run it; for an
   alias of a package the project has, it names that package instead. For a
-  package the official list supplies, that command pins what FR10 names and
+  package the official list supplies, that command pins what FR11 names and
   quotes a range for the shell.
 - **FR3 — An item page shows one item.** `discover <package>/<Component>` for an
   installed component keeps printing its doc. Any other item a package adds,
@@ -103,7 +103,7 @@ discover sources follow it except where this record says otherwise.
   `discover` field of `astryx.config`, and each loaded integration MAY export
   one as its `discover` named export. Every source is called, the project's
   first and then each integration's in load order, and the same function runs
-  once; discover then reads the official list (FR10). A source that
+  once; discover then reads the official list (FR11). A source that
   throws, exceeds 30 seconds (signalled on `signal`), or returns an invalid
   catalog fails alone: the others still count, and discover reports which
   source failed and why. Sources only read, so `spec:AST-031`'s consent gate
@@ -136,7 +136,11 @@ source, packages}`. `source` has `name`, `generatedAt`, and `complete`. Each
   `component` holds the item name for every kind, and `data.total` appears when
   `--limit` cut the list. A free-text query returns `discover.search`, never
   `discover.detail.doc` (FR4).
-- **FR10 — The CLI carries the official list.** Each CLI release carries the
+- **FR10 — A package can link its docs site.** An integration manifest MAY
+  set `docsiteUrl`, a URL of the package's docs site, so catalogs that list
+  the package can link to it. The CLI MUST accept it as a known key, without
+  an unknown-key warning, and does nothing else with it.
+- **FR11 — The CLI carries the official list.** Each CLI release carries the
   list of official packages: every package that release publishes that adds at
   least one item discover lists. The list is generated from the repository when
   the CLI is built and never edited by hand, and a check fails when it no longer
@@ -185,15 +189,15 @@ source, packages}`. `source` has `name`, `generatedAt`, and `complete`. Each
 - `astryx discover` with no source configured listed only the project's
   integrations. It also lists the official packages, first, each with the
   command that adds it, and a declared official package the official list
-  supplies counts as installed from any folder of the project (FR1, FR10). A
+  supplies counts as installed from any folder of the project (FR1, FR11). A
   version or item of a package only the official list supplies that its entry
   does not list fails with `ERR_UNKNOWN_PACKAGE`, the answer for a package no
-  source lists (FR10).
+  source lists (FR11).
   A query in a project that loads no integration and has no source of its own
   answers with the list, as it does without the official list (FR1).
 - Release: the CLI build generates the official list from the packages the
   release publishes, and a drift check fails when the committed list is stale
-  (FR10). `astryx docs authoring` `discover-source` says the official list comes
+  (FR11). `astryx docs authoring` `discover-source` says the official list comes
   before every source.
 
 ## Verification
@@ -209,7 +213,8 @@ source, packages}`. `source` has `name`, `generatedAt`, and `complete`. Each
 | FR7      | catalog schema tests                                           | unknown field; unknown kind; `schemaVersion: 2`; duplicate package across sources; misordered versions                                                                                                                                                                                                        | an unknown field fails, another version is accepted, the later source wins, or versions keep the source order                                                                                                                                                                                                                                                                                                                                                               |
 | FR8      | adapter saved-copy and command tests                           | fresh answer; failure with a saved copy; failure with none; another request                                                                                                                                                                                                                                   | a stale copy hides a fresh answer, the saved date is missing, or a project file is written                                                                                                                                                                                                                                                                                                                                                                                  |
 | FR9      | existing discover JSON tests                                   | each response type with and without a source                                                                                                                                                                                                                                                                  | an existing field changes type or meaning                                                                                                                                                                                                                                                                                                                                                                                                                                   |
-| FR10     | official list generator, drift test, adapter and command tests | stable and canary CLI; Core older and newer than the CLI; Core declared exactly, as a range, and as a path; canary Core; no Core; private package; package that adds nothing; theme folder that does not match its file; empty folder; subfolder; another source lists an official package or its integration | a private or empty package is listed, an unreadable theme package is skipped, the committed list drifts from the repository, latest is older than a release the CLI knows, the project's Core version cannot be looked up, a declared range is not pinned or not quoted, a canary-only package shows on a stable CLI or beside a released Core, an official entry replaces a source's entry for the same integration, or a version it does not list fails with another code |
+| FR10     | manifest parser and validate tests                             | no field; a URL; a value that is not a URL                                                                                                                                                                                                                                                                    | the key raises an unknown-key warning, or a valid URL is refused                                                                                                                                                                                                                                                                                                                                                                                                            |
+| FR11     | official list generator, drift test, adapter and command tests | stable and canary CLI; Core older and newer than the CLI; Core declared exactly, as a range, and as a path; canary Core; no Core; private package; package that adds nothing; theme folder that does not match its file; empty folder; subfolder; another source lists an official package or its integration | a private or empty package is listed, an unreadable theme package is skipped, the committed list drifts from the repository, latest is older than a release the CLI knows, the project's Core version cannot be looked up, a declared range is not pinned or not quoted, a canary-only package shows on a stable CLI or beside a released Core, an official entry replaces a source's entry for the same integration, or a version it does not list fails with another code |
 
 ## Decision log
 

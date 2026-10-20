@@ -19,7 +19,6 @@ export const docs = {
     'Tailwind',
     'shadcn',
     'Radix',
-    'cascade layers',
     'coexistence',
   ],
   slots: {
