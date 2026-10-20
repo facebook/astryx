@@ -113,11 +113,10 @@ works on is `spec:AST-040` FR9's.
   - The host entry's inputs are explicit: the arguments; the working folder;
     the command name the door's callers type (FR5); the package sets the door
     may serve, in its order of preference, and the integrations it approves for
-    use outside a project that are not installed beside the CLI it runs
-    (`architecture:cli-surface` INV30), since those installed beside it are
-    computer-level and need no input (FR12); the discover
-    sources the door adds; and, when the door found the project's own CLI and
-    did not run it, the reason (FR2).
+    use outside a project, resolved by name from the package set that serves
+    the run, in addition to what FR12 finds there (`architecture:cli-surface`
+    INV30); the discover sources the door adds; and, when the door found the
+    project's own CLI and did not run it, the reason (FR2).
   - Discover calls a door's sources after every integration's source and before
     the official list (`spec:AST-051` FR6 and FR11), and names each as the
     door's, never as an integration's.
@@ -206,8 +205,8 @@ works on is `spec:AST-040` FR9's.
   would.** Outside a project, every copy answers itself, the global copy
   included (FR6, FR9). The answering release MUST answer as it would in a new
   project that installs only that release of Core, the computer-level
-  integrations (FR12), and any integration a programmatic host approves that is
-  not installed beside it (FR1). Outside a project, or in a project with nothing
+  integrations (FR12), and any integration a programmatic host approves (FR1).
+  Outside a project, or in a project with nothing
   installed (FR2's copy that started the run, such as in a fresh clone), every
   command that needs Core answers from the carried Core: the
   `@astryxdesign/core` release equal to the answering CLI, beside it, carried by
@@ -719,8 +718,8 @@ with another skills folder links it to `.agents/skills/astryx` themselves.
 - The CLI provides FR2–FR9 through the doors that run the CLI package directly.
   The parts that need the programmatic host entry arrive with it: FR1's host
   entry, its inputs, and its one-call rule; FR2's clause for a door that
-  declines the project's CLI; FR3's integrations a host approves that are not
-  installed beside it; the door name in FR5's picker; and
+  declines the project's CLI; FR3's integrations a host approves; the door name
+  in FR5's picker; and
   `architecture:cli-surface` INV30. The official list FR8 ships is
   `spec:AST-051` FR11's. The project starters FR8 ships arrive with the template
   kind that ships them.
