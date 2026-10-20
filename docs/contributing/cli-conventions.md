@@ -157,7 +157,8 @@ name, the command that lists valid values.
 
 A command is not done without its `CommandDoc` in `<name>.doc.mjs`. Fill in
 `summary`, `description`, `args`, `options` (each with a description),
-`examples`, `exitCodes`, and `related`. Help text, the README tables, and the
+`examples`, `exitCodes`, `related`, and `outsideProject`: what the command does
+outside a project. Help text, the README tables, and the
 manifest are generated from it, so an undocumented flag is an invisible flag.
 
 Give at least one example that an agent would actually run, including a `--json`
@@ -218,6 +219,8 @@ change.
       refused with a message, or cannot co-occur.
 - [ ] Any path you write passes through `assertWithin`.
 - [ ] The doc lists the new flag, an example, and the exit codes.
+- [ ] The doc declares `outsideProject` (`same`, `refuse`, or `own`), and a test
+      run outside a project matches it.
 - [ ] Marked as work in progress if it is not ready to be depended on.
 
 ## Common review smells

@@ -204,8 +204,9 @@ own ranking and output, and template owners own what each template is.
 ### Platform support
 
 - Supported floor: every shell and package manager the CLI already supports.
-  Commands are printed with the project's run prefix in text and without it in
-  JSON, as the CLI does for every command it prints; the install command
+  Commands are printed in text with the command name `spec:AST-081` FR5
+  picks, and without it in JSON, as the CLI does for every command it prints;
+  the install command
   (FR17) is the package manager's own and reads the same in both. The common
   shells an install command runs in as printed (FR18) are sh-compatible shells
   such as bash and zsh, fish, PowerShell (Windows PowerShell 5.1 and PowerShell
