@@ -102,10 +102,11 @@ equal to it, and the integrations the host installs with them. The host entry,
 through the package-private implementation in `foundation/runtime`. The working
 folder stays the caller's: the project, its config, local themes, and the
 package being authored resolve as they do without a host, and no write lands in
-a package root. Core and integration lookups consult the active root only after
-the project's own resolution misses. With no active set, every lookup behaves
-exactly as it does without the seam (INV30). Which release answers a hosted run,
-the host entry's inputs, and the lines a hosted run prints are `spec:AST-081`'s.
+a package root. Core lookups, and integration lookups outside a project, consult
+the active root only after the project's own resolution misses. With no active
+set, every lookup behaves exactly as it does without the seam (INV30). Which
+release answers a hosted run, the host entry's inputs, and the lines a hosted
+run prints are `spec:AST-081`'s.
 
 AST-017 DEC-4 owns stable response-entry fields and requires their complete type,
 test, applicable text, and consumer-documentation projections. A `template.list`
@@ -499,32 +500,34 @@ and remains available through explicit Core package selection.
   key, or command does, and no `foundation/runtime` module is exported.
   - A project's installed packages always resolve from the project. Inside a
     project, a root fills only the `@astryxdesign/*` packages the project leaves
-    uninstalled and contributes no integration (`spec:AST-081` FR12). A run
-    resolves from at most one root, so a CLI never pairs with a Core or an
-    integration from another set. A run handed to the project's own CLI
-    (`spec:AST-081` FR9) uses no root.
+    uninstalled whose copy in the root ships no integration manifest, so it
+    contributes no integration (`spec:AST-081` FR12). A run resolves from at
+    most one root, so a CLI never pairs with a Core or an integration from
+    another set. A run handed to the project's own CLI (`spec:AST-081` FR9) uses
+    no root.
   - Whenever the copy that started the run answers, outside a project, in a
-    project that installs no CLI of its own, or as `spec:AST-081` FR2's
-    fallback, the root that holds that copy serves the run.
+    project that installs no CLI of its own, as the release `spec:AST-081` FR2
+    names, or as FR2's fallback, the root that holds that copy serves the run.
   - When `spec:AST-081` FR2 has a hosted run in a project answered by a named
-    release, the matched release or the release of a project CLI the host
-    declined, a root qualifies only when its CLI is that release and it holds,
-    for every `@astryxdesign/*` package the project declares but has not
-    installed, the version the project would install: the valid lockfile
-    version, else a published version that satisfies the declared range. A
-    declared value that is not a version range, such as a path or a protocol,
-    matches only through its lockfile version, and an unrequested prerelease
-    does not satisfy a range. The first root in the host's order that qualifies
-    serves.
+    release other than the copy that started the run, the matched release or the
+    release of a project CLI the host declined, a root qualifies only when its
+    CLI is that release and it holds, for every package the project declares
+    that a root may fill, the version the project would install: the valid
+    lockfile version, else a published version that satisfies the declared
+    range. A declared value that is not a version range, such as a path or a
+    protocol, matches only through its lockfile version, and an unrequested
+    prerelease does not satisfy a range. The first root in the host's order that
+    qualifies serves.
   - A hosted run installs nothing: a release `spec:AST-081` FR2 names comes only
-    from a root that qualifies, and when no root qualifies, that release cannot
-    be obtained and FR2's fallback applies.
+    from the copy that started the run, when it is that release, or from a root
+    that qualifies; when neither does, that release cannot be obtained and FR2's
+    fallback applies.
   - Outside a project, each integration the host approves resolves by name from
     the root that serves the run, in addition to what `spec:AST-081` FR12 finds
     there, and loads with FR12's validation, peer-range check, and provider
     identity rules. An approved name that root does not hold is left out.
-  - Enumeration through a root stays declaration-driven (INV14), and a root's
-    own config is never read.
+  - Enumeration through a root reads only the packages INV14 or `spec:AST-081`
+    FR12 name, and a root's own config is never read.
   - Every run a package set serves records, for each package it resolves, its
     name, version, and whether it comes from the project or the package set, and
     the host entry returns that record with the run's result (`spec:AST-081`
@@ -779,7 +782,7 @@ the destination.
 | INV25     | `foundation/discovery/cli-self-docs.test.mjs`, `api/doctor/doctor.test.mjs`                                                                                                                                                                                                                              | A CLI doc with no namespace, a namespace no topic reads, or no section in its topic passes doctor.                                              |
 | INV28     | `test/inv28-package-provenance.test.mjs`, `clients/cli/commands/text-json-parity.test.mjs`, `cli-api-types-verify`                                                                                                                                                                                       | A result about one artifact has no envelope `package`, a listed artifact has no `package`, or text omits the package the envelope names.        |
 | INV29     | `api/doctor/doctor.test.mjs` (configured-integrations: not installed, no manifest, manifest throws; self-named authored package, direct and through a symlinked `node_modules` or `cwd`; provider-conflict set-aside; an astryx.config that imports but cannot load the project → failed `config` check) | A configured integration that cannot load leaves `doctor` at exit 0, or an installed-but-unnamed one fails it                                   |
-| INV30     | `foundation/runtime/package-set.test.mjs`, `foundation/runtime/hosted-runtime.test.mjs` | A run resolves from two roots; a root contributes an integration inside a project; a run the starting copy answers resolves from a root other than the one that holds it; a named-release run resolves from a root whose CLI is not the release `spec:AST-081` FR2 names, from one that lacks a version the project would install, or from a later root when an earlier one qualifies; a hosted run installs a release, or a named-release run with no qualifying root does not fall back as FR2 says; a lookup consults a root before the project's own install, or with no set active; an approved integration resolves from another root or skips its validation; a root's config is read; a run writes into a package root or outside the places `spec:AST-081` FR7 names; the host entry's result lacks a resolved package or its source; or a project check judges the package set. |
+| INV30     | `foundation/runtime/package-set.test.mjs`, `foundation/runtime/hosted-runtime.test.mjs` | A run resolves from two roots; a root contributes an integration inside a project, including an `@astryxdesign/*` package that ships an integration manifest; a run the starting copy answers resolves from a root other than the one that holds it, or is announced as a fallback when that copy is the release `spec:AST-081` FR2 names; a run another named release answers resolves from a root whose CLI is not that release, from one that lacks a version the project would install, or from a later root when an earlier one qualifies; a hosted run installs a release, or a named-release run with no qualifying root does not fall back as FR2 says; a lookup consults a root before the project's own install, or with no set active; an approved integration resolves from another root or skips its validation; a root's config is read; a run writes into a package root or outside the places `spec:AST-081` FR7 names; the host entry's result lacks a resolved package or its source; or a project check judges the package set. |
 | INV31     | `foundation/agent-docs/agent-docs.test.mjs`, `foundation/agent-docs/agent-docs.path-safety.test.mjs`, `clients/cli/commands/init.behavior.test.mjs`, `api/init/remove/remove.test.mjs`, `clients/cli/commands/doctor.test.mjs`                                                                           | A layout test finds the block missing from a file INV31 names or present in a file it excludes, a managed import of a block-less `AGENTS.md` passes doctor, agent docs land in the home folder or in a settings folder outside a project, or `--remove-agents` leaves a block at the project root or in the working folder. |
 | INV32     | `test/cli-strict-guard.test.mjs` lists every command offering `--strict` and every command whose exit depends on warnings; `api/integration/check/check.test.mjs` compares a strict run with the default run       | A second command offers `--strict`, a command exits 1 on a warning alone without `--strict`, or a strict run reports a finding the default run does not or outside the command's issue format. |
 | INV33     | `foundation/discovery/prop-drift.test.mjs`, `foundation/discovery/type-text.test.mjs`, `clients/cli/commands/doctor-integration.test.mjs`, `test/core-prop-docs.test.mjs` | A removed or renamed prop or a changed union passes unreported, a missing compiler reads as a pass, or a table that leaves out `ref`, `key`, `xstyle`, `className`, `style`, `data-testid`, or an `@internal` prop draws a warning. |
