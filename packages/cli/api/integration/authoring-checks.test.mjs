@@ -949,6 +949,35 @@ describe('integrationDocConflicts fluff', () => {
     ]);
   });
 
+  it('gives each use its own line in multi-line and concatenated strings', async () => {
+    writeTopics([]);
+    fs.writeFileSync(
+      path.join(tmpDir, 'docs', 'acme-multi.doc.mjs'),
+      [
+        'export default {',
+        "  type: 'generic',",
+        "  name: 'acme-multi',",
+        "  title: 'Fixture',",
+        "  description: 'Fixture topic.',",
+        "  sections: [{title: 'Overview', content: [",
+        "    {type: 'prose', text: `Build the package first.",
+        'Run the build in order to refresh the files.',
+        'Run it again in order to check them.`},',
+        "    {type: 'prose', text: 'Publishing reads the built files ' +",
+        "      'in order to ship them, so build before you publish.'},",
+        '  ]}],',
+        '};',
+        '',
+      ].join('\n'),
+    );
+
+    const found = fluff(
+      await integrationDocConflicts(undefined, {cwd: tmpDir}),
+    ).map((/** @type {any} */ each) => each.line);
+
+    expect(found).toEqual([8, 9, 11]);
+  });
+
   it('lists a long topic that is mostly glue, and not a dense one', async () => {
     const glue = Array.from(
       {length: 12},

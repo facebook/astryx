@@ -137,16 +137,18 @@ export function density(words) {
 }
 
 /**
- * The 1-based line of a doc file that holds the phrase, looked for from the
- * line where its own string starts, or null when that cannot be found.
+ * The 1-based line of a doc file that holds the `nth` (1-based) use of a
+ * phrase in a prose string, looked for from the line where that string
+ * starts, or null when that cannot be found.
  *
  * @param {string} file
  * @param {string} text the prose string the phrase is in
  * @param {string} phrase
+ * @param {number} nth
  * @param {Map<string, string[]>} cache
  * @returns {number | null}
  */
-function lineOf(file, text, phrase, cache) {
+function lineOf(file, text, phrase, nth, cache) {
   let lines = cache.get(file);
   if (!lines) {
     try {
@@ -156,19 +158,32 @@ function lineOf(file, text, phrase, cache) {
     }
     cache.set(file, lines);
   }
-  // The string's longest plain run is written in the file as it reads, so it
-  // finds where the string starts; the phrase is on that line or a later one
-  // of the same string.
-  const plain = (text.match(/[A-Za-z0-9 ,.;:()-]{12,}/g) ?? []).sort(
-    (a, b) => b.length - a.length,
-  )[0];
-  const from = plain ? lines.findIndex(line => line.includes(plain)) : -1;
+  // The string's words are written in the file as they read, though a
+  // concatenated or template string spreads them over lines. Its first three
+  // words mark the line the string starts on; its last three, a few lines on
+  // at most, tell that line from an earlier one that happens to share them.
+  const words = text.match(/[A-Za-z0-9][A-Za-z0-9'.,-]*/g) ?? [];
+  if (words.length === 0) return null;
+  const head = words.slice(0, 3).join(' ');
+  const tail = words.slice(-3).join(' ');
+  const span = text.split('\n').length + Math.ceil(text.length / 40) + 2;
+  let from = -1;
+  for (let at = 0; at < lines.length && from < 0; at++) {
+    if (!lines[at].includes(head)) continue;
+    for (let k = at; k < Math.min(lines.length, at + span); k++) {
+      if (lines[k].includes(tail)) {
+        from = at;
+        break;
+      }
+    }
+  }
   if (from < 0) return null;
   const escaped = phrase.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const pattern = new RegExp(`(?<![a-z])${escaped}(?![a-z])`, 'i');
-  const span = text.split('\n').length + 2;
+  const pattern = new RegExp(`(?<![a-z])${escaped}(?![a-z])`, 'gi');
+  let seen = 0;
   for (let at = from; at < Math.min(lines.length, from + span); at++) {
-    if (pattern.test(lines[at].replace(/\\u2019|’/g, "'"))) return at + 1;
+    seen += (lines[at].replace(/\\u2019|’/g, "'").match(pattern) ?? []).length;
+    if (seen >= nth) return at + 1;
   }
   return null;
 }
@@ -218,8 +233,12 @@ export async function findFluff(discovered) {
     const doc = file ? await loadQuietly(file) : null;
     if (!doc || !file) continue;
     for (const {text, section} of proseStrings(doc)) {
+      /** @type {Map<string, number>} */
+      const uses = new Map();
       for (const phrase of fillerIn(text)) {
-        const line = lineOf(file, text, phrase, lines);
+        const nth = (uses.get(phrase) ?? 0) + 1;
+        uses.set(phrase, nth);
+        const line = lineOf(file, text, phrase, nth, lines);
         const where = section ? ` (section "${section}")` : '';
         const instead = /** @type {Record<string, string>} */ (INSTEAD)[phrase];
         found.push({
