@@ -4,7 +4,7 @@
 
 /**
  * @file DropdownMenu.tsx
- * @input Uses React, StyleX, usePopover, MenuBottomSheet, Button, List,
+ * @input Uses React, StyleX, usePopover, MenuBottomSheet (lazy), Button, List,
  *   useListFocus, and the shared viewport-safe menu-width resolver
  * @output Exports DropdownMenu with caller-selected popover or bottom-sheet
  *   presentation
@@ -81,8 +81,11 @@ import {
   useAdaptivePresentation,
   type AdaptivePresentation,
 } from '../hooks/useAdaptivePresentation';
-import {MenuBottomSheet} from './MenuBottomSheet';
-import {MenuBottomSheetActionList} from './MenuBottomSheetActionList';
+// Loaded on demand: only the bottom-sheet presentation renders the sheet.
+import {
+  MenuBottomSheet,
+  MenuBottomSheetActionList,
+} from './lazyMenuBottomSheet';
 import {layerAnimations} from '../Layer/layerAnimations.stylex';
 import type {LayerAlignment, LayerPlacement} from '../Layer/useLayer';
 import {
