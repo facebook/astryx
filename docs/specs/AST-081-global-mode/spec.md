@@ -456,7 +456,11 @@ works on is `spec:AST-040` FR9's.
     directly in that folder: the same arguments, working folder, and standard
     input, output, and error, with nothing added to its environment, options,
     or configuration (FR1). The run ends with that copy's exit status, or the
-    signal that ended it.
+    signal that ended it. An interrupt, termination, or hangup signal sent to
+    the copy that started the run reaches the copy it handed the run to. An
+    interrupt a terminal sends to the whole process group, which that copy
+    already receives, is not passed on a second time while it is still
+    stopping.
   - When the project's own CLI cannot be started, the matched release answers
     (FR2). When the matched release cannot be obtained, the copy that started
     the run answers, announced (FR2).
@@ -670,6 +674,7 @@ with another skills folder links it to `.agents/skills/astryx` themselves.
 | G55 A `--json` run in a fresh clone while the global copy's Core step runs                                                   | The global copy                                                                                                              | Returns at once with clean JSON; the step starts as the run ends                                                                                                                | `› G55`                                                                                               |
 | G56 An open `search` outside a project before the release's Core is cached                                                   | The global copy                                                                                                              | Gets the Core as `component` does; when it cannot, `meta.partial` names the skipped domains and the reason, with one standard-error line                                        | `› G56`                                                                                               |
 | G57 A folder more than four levels deep in a project with only Core                                                          | The copy that started the run                                                                                                | Reads the project's Core, never the carried one; `meta.answeredBy.core` names it                                                                                                | `› G57`                                                                                               |
+| G58 An interrupt sent to the copy that started a handed-off run alone                                                        | The project's own CLI                                                                                                        | Receives it once; the run stops with that CLI's exit status or signal                                                                                                           | `› G58`                                                                                               |
 
 ### Platform support
 
