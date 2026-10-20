@@ -40,5 +40,9 @@ export const docs = {
       type: 'prose',
       text: 'Every field of every file you write for an integration is in {@link generic:authoring}.',
     },
+    {
+      type: 'prose',
+      text: "Every integration runs `astryx integration check --strict` in its own build: it is required, not optional, so a doc, prop, or link that stops matching the code fails your build instead of your users' apps. See {@link generic:checks}.",
+    },
   ],
 };

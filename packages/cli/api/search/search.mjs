@@ -57,9 +57,10 @@
  * Between domains, ranking adds one rule ahead of the score: domain priority
  * (see {@link domainPriority}). A component, hook, template, or theme whose
  * name or keyword a query word hits ranks ahead of every doc the reader did not
- * ask for by name or title, so `font size` finds `Text` before a typography
- * topic that declares the phrase. A doc the query names, or whose title the
- * query holds, keeps its place.
+ * ask for by name, title, or a declared phrase, so `font size` finds `Text`
+ * before a token page whose heading holds the phrase. A doc the query names,
+ * whose title the query holds, or that declares the whole query as a keyword
+ * keeps its place.
  *
  * Description and guidance are separate tiers on purpose. A component's own
  * one-line description saying "notification" is a claim about what it IS; the
@@ -138,6 +139,9 @@ import {setResultCoverage} from './coverage.mjs';
  * @property {string[]} [aliases] - Other names the candidate answers to, scored
  *   with the same name signals: a theme's display name.
  * @property {string[]} [keywords]
+ * @property {string[]} [_declared] - A doc's own declared keywords: what its
+ *   author lists in `keywords`, without the code terms and table cells its
+ *   other keywords add.
  * @property {string[]} [weakKeywords]
  * @property {string} [description]
  * @property {string[]} [prose]
@@ -513,19 +517,20 @@ const STRONG_TOKEN_SCORE = 70;
  *   typography/font-setup, `side panel` is "Side panels");
  * - 1: a word of the query is the topic's name (`illustration` in a longer
  *   question is the illustrations guide);
+ * - 1: a query of two or more words is one of the topic's own declared
+ *   keywords, whatever the plural (`code review` on a guide that declares it);
  * - 1: the query holds one of the doc's titles whole (`resizable side panels`
  *   names "Side panels"; `light dark mode button` names "Light/Dark Mode");
  * - 1: the doc matches every word of the query and one of them is a word of
  *   its title (`switch to a dark theme` and "Use a theme").
  * A section answers to its topic's name.
  *
- * A doc that matched only by keyword, by a heading holding the query, or by
+ * A doc that matched only by a heading holding the query, by one word, or by
  * words spread through its text has no priority. Docs are split into many
- * small topics, and each declares its own keywords and headings, so a common
- * phrase such as `font size` hits a guide's keyword or heading exactly
- * (170-190) while the component the reader is after matches one word by
- * keyword (`Text`, 98). Ranked on text alone, every split adds another doc
- * above the component. Broad reference pages match every word of many queries
+ * small topics, each with its own headings, so a common phrase such as
+ * `font size` hits a heading exactly (170) while the component the reader is
+ * after matches one word by keyword (`Text`, 98). Ranked on text alone, every
+ * split adds another doc above the component. Broad reference pages match every word of many queries
  * in their text the same way. The score stays the text-match strength the
  * result reports, so callers that gate on it (`build`) see the same numbers.
  *
@@ -550,6 +555,20 @@ export function domainPriority(term, tokens, candidate, hit) {
     }
     if (named.some(n => samePhrase(term, n))) {
       return 2;
+    }
+    // A query of two or more words that is one of the doc's own declared
+    // keywords, read as words whatever the plural, is the author naming the
+    // doc for that phrase: `code review` on a guide that declares it. Only
+    // what the author declared counts: the code terms and table cells a
+    // doc's other keywords add (`missing_field`) name what it mentions, not
+    // what it is for. One word is left out too, and a section declares
+    // nothing.
+    if (
+      phraseWords(term).length >= 2 &&
+      candidate._section == null &&
+      (candidate._declared ?? []).some(k => samePhrase(term, String(k)))
+    ) {
+      return 1;
     }
     if (
       words.some(
@@ -1508,6 +1527,10 @@ async function gatherDocs(cwd) {
         ...defined,
         ...codeTerms({content}),
       ],
+      _declared: [
+        ...(Array.isArray(selfDoc?.keywords) ? selfDoc.keywords : []),
+        ...(Array.isArray(node.keywords) ? node.keywords : []),
+      ],
       description: node.summary || '',
       prose: sectionProse({title: node.title, content}),
       titles: [node.title],
@@ -1644,6 +1667,7 @@ function topicCandidates(
         ...(doc?.title || title ? [doc?.title || title] : []),
         ...(Array.isArray(doc?.keywords) ? doc.keywords : []),
       ],
+      _declared: Array.isArray(doc?.keywords) ? doc.keywords : [],
       description: doc?.description || summary,
       prose: split
         ? sections.map(section => section.title).filter(Boolean)

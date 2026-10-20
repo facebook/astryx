@@ -507,6 +507,16 @@ They are command contracts beside INV32, so this record governs them, and
 Rejected: governing them only from `spec:AST-039` (a draft record does not
 govern).
 
+### DEC-6 — Integration authoring guidance requires the strict check in every build
+
+**Decider:** `josephfarina`, `2026-10-19`
+
+Integration authoring guidance requires each integration package to run
+`astryx integration check --strict` in its own build; the CLI flag stays
+opt-in (DEC-4).
+Rejected: guidance that leaves the check optional (packages ship drift their
+users find first).
+
 ## Verification
 
 | Invariant | Evidence                                                                                                                                                   | Failure signal                                                                                                                                  |

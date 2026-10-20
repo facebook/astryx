@@ -12,7 +12,7 @@ export const docs = {
   placement: {parent: 'namespace:ship', slot: 'guides', order: 20},
   title: 'Check an integration',
   category: 'guide',
-  keywords: ['check before publishing', 'validate an integration', 'ci'],
+  keywords: ['check before publishing', 'validate an integration'],
   description:
     'Pick the check for each problem, learn what fails and what only warns, and run every check in CI.',
   sections: [
@@ -22,7 +22,7 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'Run these in the package folder. The four `doctor integration` checks read your source; `integration verify` checks the package npm would publish.',
+          text: 'Run these in the package folder. The four `doctor integration` checks read your source, and `integration check` runs all four; `integration verify` checks the package npm would publish.',
         },
         {
           type: 'table',
@@ -53,6 +53,12 @@ export const docs = {
               'A link names no doc (`invalid_doc_graph`)',
             ],
             [
+              '`npx astryx integration check`',
+              'Everything the four `doctor integration` checks prove, in one command, for your build',
+              'Any of the four would exit 1 on its own. With `--strict`, also any warning, and any check that did not run, such as a package with no `astryx.integration.*`',
+              'Anything the four warn about, unless you pass `--strict`',
+            ],
+            [
               '`npx astryx integration verify`',
               'The packed package holds every file, shows the same contributions, resolves every public import, and declares the CLI it needs',
               'Anything `validate` fails on, no manifest, a file left out of the `.tgz` file, an import that does not resolve, or a missing CLI peer',
@@ -68,23 +74,25 @@ export const docs = {
     },
     {
       id: 'run-every-check-in-ci',
-      title: 'Run every check in CI',
+      title: 'Run every check in every build (required)',
       content: [
         {
           type: 'prose',
-          text: 'Chain the five checks so the first failure stops the run. Install devDependencies first, because the components check needs Core.',
+          text: 'Every integration runs `integration check --strict` in its own build, so every build keeps your docs, types, and links in sync; this is required, not optional. Run `integration verify` before you publish. Install devDependencies first, because the components check needs Core, and `tsc --noEmit` needs `typescript` and a `tsconfig.json`. In package.json:',
         },
         {
           type: 'code',
-          lang: 'bash',
-          code: 'npx astryx doctor integration validate && npx astryx doctor integration components && npx astryx doctor integration templates && npx astryx doctor integration docs && npx astryx integration verify',
+          lang: 'json',
+          code: '"typecheck": "tsc --noEmit && astryx integration check --strict"',
         },
         {
           type: 'list',
           style: 'unordered',
           items: [
-            '`integration verify` runs `validate` but none of the other three: a Core name clash, a `replaces` that names no Core template, a topic that takes a Core name, or a hidden guide still passes it.',
-            'Warnings keep exit code 0, so read them before you publish.',
+            '`integration check` runs `validate`, `components`, `templates`, and `docs` in that order, prints each result, then a summary, and exits 1 when any of them would.',
+            '`--strict` also exits 1 on any warning and on any check that did not run. Without it, warnings keep exit code 0: use that while you fix the warnings a package already has.',
+            'Its exit codes and JSON are a contract for your build: a new check, or a new failure code, joins only in a minor release that names it in the release notes. A patch can still ship a Core component, template, or CLI topic whose name conflicts with one of yours.',
+            '`integration verify` runs `validate` but none of the other three: a Core name clash, a `replaces` that names no Core template, a topic that takes a Core name, or a hidden guide still passes it. Run both before you publish: `npx astryx integration check --strict && npx astryx integration verify`.',
             'Bare `npx astryx doctor` in the package also warns about a doc section over 32 KB, which no check above measures.',
           ],
         },
