@@ -13,7 +13,8 @@
  *     absolute `--out` path or a theme file outside it fails before anything
  *     is written, while absolute paths inside it build, also through a
  *     symlinked spelling. `--check` writes nothing, so it compares those
- *     outside outputs read-only.
+ *     outside outputs read-only, and a stale report for them ends with a
+ *     remedy that works: the directory to build and check from.
  *
  * Runs the CLI in-process (shared runCli harness) against a tiny synthetic theme file.
  */
@@ -27,6 +28,7 @@ import {runCli} from '../../../test-utils/run-cli.mjs';
 import {themeBuild} from '../../../api/theme/build/build.mjs';
 import {AstryxError} from '../../../api/error.mjs';
 import {ERROR_CODES} from '../../../foundation/response/error-codes.mjs';
+import {getCliInvocation} from '../../../foundation/env/package-manager.mjs';
 
 function writeTheme(dir, name) {
   fs.mkdirSync(dir, {recursive: true});
@@ -64,7 +66,9 @@ describe('theme build path safety', () => {
     );
 
     expect(result.code).not.toBe(0);
-    expect(result.stderr + result.stdout).toMatch(/path separator|invalid theme name/i);
+    expect(result.stderr + result.stdout).toMatch(
+      /path separator|invalid theme name/i,
+    );
 
     // The traversal target must not exist.
     expect(fs.existsSync(path.join(tmpDir, 'escaped.js'))).toBe(false);
@@ -97,7 +101,10 @@ describe('theme build path safety', () => {
 
     const themeFile = writeTheme(themesDir, '../leak');
 
-    await runCli(['theme', 'build', path.relative(project, themeFile)], project);
+    await runCli(
+      ['theme', 'build', path.relative(project, themeFile)],
+      project,
+    );
 
     // Neither the CSS nor any sibling JS should have been written.
     const entries = fs.readdirSync(themesDir).sort();
@@ -218,6 +225,73 @@ describe('theme build output-path failures carry registered codes', () => {
       expect(checked.envelope.data.upToDate).toBe(false);
     }
     expect(fs.readdirSync(shared)).toEqual(['theme.mjs']);
+  });
+
+  /**
+   * Read the remedy that ends a stale report for outputs outside cwd: the
+   * directory to run from, then the build and check arguments after `theme
+   * build`. Each command starts with the install-aware invocation for it.
+   * @param {string} stderr
+   */
+  function readRemedy(stderr) {
+    const lines = stderr.split('\n').map(line => line.trim());
+    const cd = lines.find(line => line.startsWith('cd '));
+    expect(cd).toBeDefined();
+    const dir = /** @type {string} */ (cd).slice('cd '.length);
+    const stem = `${getCliInvocation(dir)} theme build `;
+    const commands = lines.filter(line => line.startsWith(stem));
+    expect(commands).toHaveLength(2);
+    const [build, check] = commands.map(line =>
+      line.slice(stem.length).split(' '),
+    );
+    expect(check).toEqual([...build, '--check']);
+    return {dir, build, check};
+  }
+
+  it('ends a stale report for outputs outside cwd with a remedy that works, and keeps the report for outputs inside it', async () => {
+    const project = path.join(tmpDir, 'project');
+    const inside = path.relative(
+      project,
+      writeTheme(path.join(project, 'themes'), 'ocean'),
+    );
+    const shared = writeTheme(path.join(tmpDir, 'shared'), 'ocean');
+    const outside = path.join(tmpDir, 'outside');
+
+    for (const args of [
+      [path.relative(project, shared)],
+      [inside, '--out', path.join(outside, 'ocean.css')],
+    ]) {
+      const stale = await runCli(
+        ['theme', 'build', ...args, '--check'],
+        project,
+      );
+      expect(stale.code).toBe(1);
+      // The old remedy ran the build from cwd, which refuses these outputs.
+      expect(stale.stderr).not.toContain('Rebuild with:');
+      expect(stale.stderr).not.toContain(`theme build ${args.join(' ')}`);
+
+      // Following the remedy builds, and the check from there passes.
+      const remedy = readRemedy(stale.stderr);
+      const built = await runCli(
+        ['theme', 'build', ...remedy.build],
+        remedy.dir,
+      );
+      expect(built.code).toBe(0);
+      const checked = await runCli(
+        ['--json', 'theme', 'build', ...remedy.check],
+        remedy.dir,
+      );
+      expect(checked.code).toBe(0);
+      expect(JSON.parse(checked.stdout).data.upToDate).toBe(true);
+    }
+
+    // Outputs inside cwd keep the plain rebuild line.
+    const local = await runCli(['theme', 'build', inside, '--check'], project);
+    expect(local.code).toBe(1);
+    expect(local.stderr).toContain(
+      `Rebuild with: astryx theme build ${inside}`,
+    );
+    expect(local.stderr).not.toMatch(/^\s*cd /m);
   });
 
   it('builds absolute paths inside the project, also when they reach it through a symlink', async () => {

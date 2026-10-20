@@ -64,7 +64,7 @@ export const doc = {
       name: 'options.check',
       type: 'boolean',
       description:
-        'Compile in memory and compare each output against what is on disk instead of writing: the CI drift guard. Because it writes nothing, it also compares outputs outside cwd.',
+        'Compile in memory and compare each output against what is on disk instead of writing: the CI drift guard. Because it writes nothing, it also compares outputs outside cwd; when those are stale, the report names the directory that contains them and the build and check commands to run from there, since a build refuses them and each output records the directory it was built from.',
       default: 'false',
     },
     {

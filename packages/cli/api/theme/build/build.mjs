@@ -62,7 +62,10 @@ import {isBuiltin} from 'node:module';
 import {fileURLToPath, pathToFileURL} from 'node:url';
 import {parse} from '@babel/parser';
 import {createJiti} from 'jiti';
-import {getCliInvocation} from '../../../foundation/env/package-manager.mjs';
+import {
+  formatCliCommand,
+  getCliInvocation,
+} from '../../../foundation/env/package-manager.mjs';
 import {
   CLI_ROOT,
   findCoreDir,
@@ -568,6 +571,86 @@ function confineOutput(dest, root, remedy, shown = dest) {
 /** @param {Array<{dest: string}>} writes @param {string} root @param {string} remedy */
 function confineOutputs(writes, root, remedy) {
   for (const write of writes) confineOutput(write.dest, root, remedy);
+}
+
+/** @param {string} dest absolute output path @param {string} root @returns {boolean} whether a build at `root` refuses to write `dest` */
+function refusedOutput(dest, root) {
+  try {
+    confineOutput(dest, root, '');
+    return false;
+  } catch (err) {
+    if (
+      err instanceof AstryxError &&
+      err.code === ERROR_CODES.ERR_PATH_TRAVERSAL
+    )
+      return true;
+    throw err;
+  }
+}
+
+/** @param {string[]} dirs absolute directories @returns {string | null} the deepest directory containing all of them, or null across roots */
+function commonDirectory(dirs) {
+  let common = dirs[0];
+  for (const dir of dirs.slice(1)) {
+    while (
+      path.relative(common, dir).startsWith('..') ||
+      path.isAbsolute(path.relative(common, dir))
+    ) {
+      const parent = path.dirname(common);
+      if (parent === common) return null;
+      common = parent;
+    }
+  }
+  return common;
+}
+
+/** @param {string} value @returns {string} `value` as one shell word */
+function shellWord(value) {
+  if (/^[A-Za-z0-9@%+=:,./_-]+$/.test(value)) return value;
+  return `'${value.replace(/'/g, `'\\''`)}'`;
+}
+
+/**
+ * How a stale check report ends when outputs sit outside the write root. A
+ * build there refuses them, and each output's `Source:` header records the
+ * directory its build ran from, so the build and the check both run from the
+ * nearest directory that contains every theme file and output.
+ * @param {Array<{dest: string}>} writes
+ * @param {string[]} sources absolute theme files the build reads
+ * @param {string} root the directory a build here keeps its writes inside
+ * @param {(relative: (file: string) => string) => string[]} args the arguments after `theme build`, given each path relative to the directory to run from
+ * @returns {string[] | null} report lines, or null when every output is inside `root`
+ */
+function outsideCheckRemedy(writes, sources, root, args) {
+  if (!writes.some(write => refusedOutput(write.dest, root))) return null;
+  const real = (/** @type {string} */ file) => realLocation(path.resolve(file));
+  const dir = commonDirectory([
+    ...sources.map(file => path.dirname(real(file))),
+    ...writes.map(write => path.dirname(real(write.dest))),
+  ]);
+  if (!dir) {
+    return [
+      'These outputs are outside the working directory, so a build here refuses them. Build and check them from one directory that contains the theme files and the outputs.',
+    ];
+  }
+  const command = (/** @type {string[]} */ extra) =>
+    formatCliCommand(
+      [
+        'theme',
+        'build',
+        ...args(file => path.relative(dir, real(file))),
+        ...extra,
+      ]
+        .map(shellWord)
+        .join(' '),
+      dir,
+    );
+  return [
+    'These outputs are outside the working directory, so a build here refuses them, and each output records the directory it was built from. Build and check them from a directory that contains them:',
+    `  cd ${shellWord(dir)}`,
+    `  ${command([])}`,
+    `  ${command(['--check'])}`,
+  ];
 }
 
 /** @param {Array<{dest: string, content: string}>} writes */
@@ -2988,7 +3071,10 @@ async function themeBuildInternal(
           `  ${s.reason === 'missing' ? 'missing' : 'stale'}: ${s.path}`,
         );
       }
-      logger.error(`\n  Rebuild with: ${buildCommand}`);
+      // prettier-ignore
+      const remedy = outsideCheckRemedy(writes, [filePath], writeRoot, relative => [relative(filePath), ...(options.out ? ['--out', relative(outPath)] : []), ...(options.iconsSpecifier ? ['--icons-specifier', options.iconsSpecifier] : [])]);
+      if (remedy) logger.error(`\n  ${remedy.join('\n  ')}`);
+      else logger.error(`\n  Rebuild with: ${buildCommand}`);
     }
     return {
       type: 'theme.build.check',
@@ -3532,7 +3618,10 @@ export async function themeBuildFamily(
           `  ${entry.reason === 'missing' ? 'missing' : 'stale'}: ${entry.path}`,
         );
       }
-      logger.error(`\n  Rebuild with: ${buildCommand}`);
+      // prettier-ignore
+      const remedy = outsideCheckRemedy(writes, members.map(member => member.filePath), cwd, relative => ['--family', ...members.map(member => relative(member.filePath)), '--family-key', baseName, ...(options.iconsSpecifier ? ['--icons-specifier', options.iconsSpecifier] : [])]);
+      if (remedy) logger.error(`\n  ${remedy.join('\n  ')}`);
+      else logger.error(`\n  Rebuild with: ${buildCommand}`);
     }
     return {
       type: 'theme.build.check',
