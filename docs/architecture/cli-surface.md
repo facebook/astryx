@@ -6,8 +6,8 @@ id: architecture:cli-surface
 authority: current
 archive_reason: null
 superseded_by: null
-approved_by: cixzhang
-approved_at: 2026-09-13
+approved_by: josephfarina
+approved_at: 2026-10-20
 owners: [josephfarina]
 applies_to: [packages/cli]
 verified_by:
