@@ -2,5 +2,5 @@
 '@astryxdesign/cli': patch
 ---
 
-[fix] When the project's TypeScript is missing, too old, or has no JavaScript compiler API (TypeScript 7), `integration check` and `doctor integration validate|components` now name the version and the fix in the skip reason: install TypeScript 5.0 through 6 (`npm install -D typescript@6`). `--strict` fails with that message instead of a bare skip.
+[feat] On TypeScript 7, which ships no JavaScript compiler API, the doc-type and prop checks in `integration check` and `doctor integration validate|components` use the TypeScript 6 API package TypeScript publishes for tools (`@typescript/typescript6`) when the project installs it beside TypeScript 7. When no usable TypeScript is found, the skip reason now ends with the remedy: add `@typescript/typescript6` on TypeScript 7, or install TypeScript 5.0 through 6 (`npm install -D typescript@6`).
 @josephfarina

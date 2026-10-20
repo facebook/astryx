@@ -15,7 +15,15 @@ import * as path from 'node:path';
 import {createRequire} from 'node:module';
 
 /**
- * Resolve the project's own `typescript`, trying each directory in order.
+ * TypeScript 7 has no JavaScript compiler API; the package TypeScript ships
+ * beside it for tools that need one carries TypeScript 6's.
+ */
+const TYPESCRIPT_6_API = '@typescript/typescript6';
+
+/**
+ * Resolve the project's own `typescript`, trying each directory in order;
+ * where it has no JavaScript compiler API (TypeScript 7), the TypeScript 6
+ * API package installed beside it.
  * @param {Array<string | null | undefined>} dirs
  * @returns {{ts: any, version: string} | {ts: null, version: string} | null}
  *   `ts: null` when a TypeScript is installed but has no `createProgram`
@@ -43,20 +51,29 @@ export function resolveProjectTypeScript(dirs) {
       unusable ??= installed();
     } catch {
       // Not installed from here, or installed without an entry this CLI can
-      // load; try the next directory.
+      // load.
       unusable ??= installed();
+    }
+    try {
+      const ts = require(TYPESCRIPT_6_API);
+      if (ts && typeof ts.createProgram === 'function') {
+        return {ts, version: String(ts.version)};
+      }
+    } catch {
+      // Not installed from here; try the next directory.
     }
   }
   return unusable ? {ts: null, version: unusable} : null;
 }
 
 /**
- * What to do when the project's TypeScript is missing or cannot be used: a
- * version every check here reads, 5.0 (the oldest that checks a JavaScript
- * doc) through 6 (the newest with a JavaScript compiler API).
+ * What to do when the project's TypeScript is missing or cannot be used:
+ * beside TypeScript 7, the TypeScript 6 API package it ships for tools;
+ * otherwise a version every check here reads, 5.0 (the oldest that checks a
+ * JavaScript doc) through 6.
  */
 export const TYPESCRIPT_FIX =
-  'Install TypeScript 5.0 through 6 (`npm install -D typescript@6`) and run this check again.';
+  'On TypeScript 7, add its TypeScript 6 API package (`npm install -D @typescript/typescript6`); otherwise install TypeScript 5.0 through 6 (`npm install -D typescript@6`). Then run this check again.';
 
 /**
  * Why a check that needs the compiler did not run, when the TypeScript
