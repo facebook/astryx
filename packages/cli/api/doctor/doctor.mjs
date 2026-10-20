@@ -358,7 +358,8 @@ export async function checkConfig(ctx) {
  * astryx.config: a package with no config that loads its own manifest has no
  * config file to name it.
  *
- * @param {Array<{name?: string, __local?: boolean}>} integrations loaded, none autolinked
+ * @param {Array<{name?: string, __local?: boolean}>} integrations loaded, none
+ *   autolinked and none that failed to load
  * @returns {string}
  */
 function describeNoImplicit(integrations) {
@@ -414,14 +415,18 @@ export function checkImplicitIntegrations(ctx) {
   const unreadable = describeUnreadableManifests(ctx.autolinkFailures ?? []);
 
   if (implicit.length === 0) {
+    // A record that carries `__loadError` (the package's own manifest, or a
+    // configured one, that failed to load) loaded nothing, so it is not named
+    // as loaded beside the line reporting that it could not be loaded.
+    const loaded = ctx.integrations.filter(integration => !integration.__loadError);
     return {
       id,
       label,
       status: 'info',
       message:
-        (ctx.integrations.length > 0
-          ? describeNoImplicit(ctx.integrations)
-          : unreadable
+        (loaded.length > 0
+          ? describeNoImplicit(loaded)
+          : ctx.integrations.length > 0 || unreadable
             ? 'None loaded.'
             : 'None — no installed dependency ships an astryx.integration.* manifest.') +
         unreadable,

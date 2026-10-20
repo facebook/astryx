@@ -366,6 +366,24 @@ describe('checkImplicitIntegrations', () => {
     expect(c.message).not.toContain('astryx.config');
   });
 
+  // An own manifest that failed to load keeps a `__local` record carrying
+  // `__loadError`; it loaded nothing, so it is never named as loaded.
+  it("does not name the package's own manifest as loaded when it failed to load", () => {
+    const failed = autolinked({
+      __autolinked: false,
+      __local: true,
+      name: '@acme/kit',
+      __loadError: 'astryx.integration.mjs threw: boom',
+    });
+    const alone = checkImplicitIntegrations({integrations: [failed]});
+    expect(alone.status).toBe('info');
+    expect(alone.message).toBe('None loaded.');
+    const beside = checkImplicitIntegrations({
+      integrations: [autolinked({__autolinked: false}), failed],
+    });
+    expect(beside.message).toBe('None — every loaded integration is named in astryx.config.');
+  });
+
   it('names both when configured integrations load beside the own manifest', () => {
     const c = checkImplicitIntegrations({
       integrations: [
