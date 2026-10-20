@@ -80,6 +80,19 @@ function createSearchSource(
   };
 }
 
+it('forwards isDisabled to the built-in text editor', () => {
+  render(
+    <PowerSearchValueEditor
+      operatorValue={{type: 'string'}}
+      filterValue={undefined}
+      onChange={() => {}}
+      config={stubConfig}
+      isDisabled
+    />,
+  );
+  expect(screen.getByRole('textbox')).toBeDisabled();
+});
+
 // =============================================================================
 // #1103 — StringEditor ignores searchSource
 // =============================================================================
