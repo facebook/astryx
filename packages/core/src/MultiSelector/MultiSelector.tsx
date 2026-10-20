@@ -1946,17 +1946,16 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
   );
   // Escape closes the panel from the footer as from anywhere else in it, and
   // Tab moves on through the dialog's stops.
+  // Escape is left to the shared dismissal stack, so an Escape inside a layer
+  // a footer control opens (a menu, which React bubbles through its portal)
+  // closes only that layer.
   const handleFooterKeyDown = useCallback(
     (event: React.KeyboardEvent<HTMLDivElement>) => {
-      if (event.key === 'Escape') {
-        onKeyDown(event);
-        return;
-      }
       if (event.key === 'Tab') {
         moveDialogTab(event);
       }
     },
-    [onKeyDown, moveDialogTab],
+    [moveDialogTab],
   );
 
   // Highlight scrolling (and its hover/keyboard split) lives in useMultiCombobox.
@@ -2511,10 +2510,13 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
         aria-multiselectable="true"
         // The bottom sheet is rendered in a modal layer, so Chromium cannot
         // reliably compute this listbox's name from the trigger outside that
-        // layer. Name only this no-search sheet directly from the component's
-        // existing label; searchable sheets and popovers retain their current
-        // trigger relationship.
-        {...(surface.activePresentation === 'bottom-sheet'
+        // layer. Name this no-search sheet directly from the component's
+        // existing label, and so any listbox that takes focus itself (a
+        // footer and no search), which would otherwise read the trigger's
+        // text; searchable sheets and popovers retain their current trigger
+        // relationship.
+        {...(surface.activePresentation === 'bottom-sheet' ||
+        listboxOwnsKeyboard
           ? {'aria-label': label}
           : listboxLabelProps)}
         aria-activedescendant={activeDescendantId}
