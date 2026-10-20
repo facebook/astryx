@@ -7,7 +7,8 @@
  * @input A ref to a rendered element, whether it is showing, and a token that
  *   marks a new occasion to speak
  * @output Announces that element's own rendered text through the persistent
- *   polite live region
+ *   polite live region; exports `renderedText`, that text with `aria-hidden`
+ *   parts left out
  * @position Core a11y hook; mirrors on-screen content into the shared live
  *   region by reading the DOM
  *

@@ -4733,6 +4733,60 @@ describe('MultiSelector renderCreateOption', () => {
     );
   });
 
+  it('warns in development when the content renders no readable text, and not when it names the row', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      const user = userEvent.setup();
+      const {unmount} = render(
+        <MultiSelector
+          label="Labels"
+          options={OPTIONS}
+          value={[]}
+          onChange={() => {}}
+          hasSearch
+          hasCreate
+          renderCreateOption={() => <span aria-hidden="true">●</span>}
+        />,
+      );
+      await user.click(screen.getByRole('button', {name: 'Labels'}));
+      await user.type(screen.getByRole('combobox', h), 'Urgent');
+      await waitFor(() =>
+        expect(warn).toHaveBeenCalledWith(
+          expect.stringContaining('rendered no readable text'),
+        ),
+      );
+      unmount();
+
+      warn.mockClear();
+      render(
+        <MultiSelector
+          label="Labels"
+          options={OPTIONS}
+          value={[]}
+          onChange={() => {}}
+          hasSearch
+          hasCreate
+          renderCreateOption={({label}) => (
+            <>
+              <span aria-hidden="true">●</span>
+              {label}
+            </>
+          )}
+        />,
+      );
+      await user.click(screen.getByRole('button', {name: 'Labels'}));
+      await user.type(screen.getByRole('combobox', h), 'Urgent');
+      expect(
+        screen.getByRole('option', {name: 'Create "Urgent"', ...h}),
+      ).toBeInTheDocument();
+      expect(warn).not.toHaveBeenCalledWith(
+        expect.stringContaining('rendered no readable text'),
+      );
+    } finally {
+      warn.mockRestore();
+    }
+  });
+
   it('warns in development when set without hasCreate', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     try {
