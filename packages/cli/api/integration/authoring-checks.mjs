@@ -29,7 +29,11 @@ import {
   discoverOwnedComponents,
 } from '../../foundation/discovery/component-discovery.mjs';
 import {loadComponentReplacements} from '../component/_adapter.mjs';
-import {integrationCopiedPassages, integrationPropDrift} from './_adapter.mjs';
+import {
+  integrationCopiedPassages,
+  integrationFluff,
+  integrationPropDrift,
+} from './_adapter.mjs';
 import {
   discoverBuiltinTopics,
   discoverIntegrationDocs,

@@ -50,7 +50,7 @@ export const docs = {
               '`npx astryx doctor integration docs`',
               'Your docs tree, every link, topic names against Core, passages two topics repeat word for word, and padding phrases and low-density topics',
               'A topic takes a Core topic name without `replaces` or `extends`, a doc is invalid (`invalid_doc`), or a namespace or placement fails, which hides the doc (`invalid_doc_graph`)',
-              'A link names no doc (`invalid_doc_graph`), or two topics repeat a passage word for word (`copied_passage`)',
+              'A link names no doc (`invalid_doc_graph`), two topics repeat a passage word for word (`copied_passage`), or prose pads with a listed phrase or falls under the density floor (`doc_fluff`)',
             ],
             [
               '`npx astryx integration check`',

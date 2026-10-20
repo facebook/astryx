@@ -744,6 +744,8 @@ describe('integrationDocConflicts copied passages and extensions', () => {
       '"acme-more" and "acme-base" show on the same page ("acme-base"): delete the passage from "acme-more"',
     );
     expect(issue.message).not.toContain('{@link');
+  });
+});
 
 describe('integrationDocConflicts fluff', () => {
   const fluff = (/** @type {any} */ result) => result.data.fluff;

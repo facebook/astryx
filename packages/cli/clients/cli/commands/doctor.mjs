@@ -453,9 +453,20 @@ function printDocConflicts(data) {
   } else {
     output.push(
       text(
-        `[info] ${fluff.length} fluff finding(s): words that add length, not meaning. Cut each one.`,
+        `[warn] ${fluff.length} fluff finding(s) (doc_fluff): words that add length, not meaning. Cut each one.`,
       ),
-      records(fluff, {fields: ['topic', 'kind', 'line', 'message']}),
+      records(fluff, {
+        fields: [
+          'topic',
+          'kind',
+          'phrase',
+          'section',
+          'file',
+          'line',
+          'density',
+          'message',
+        ],
+      }),
     );
   }
   emit(...output);

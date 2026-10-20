@@ -72,8 +72,8 @@
  * Fluff in a topic's prose: a padding phrase (`kind: 'phrase'`, with the
  * phrase, its section, and the file line where it was found), or a topic of
  * 80 or more prose words of which fewer than half are content words
- * (`kind: 'density'`, with the share). Listed for the author to fix; it never
- * fails a check.
+ * (`kind: 'density'`, with the share). Each is also a `doc_fluff` warning, so
+ * `integration check --strict` fails on it (architecture:cli-surface DEC-8).
  *
  * @typedef {object} DocFluff
  * @property {string} topic
