@@ -67,7 +67,7 @@ const LazyItemSwipeLayer = lazy(async () => import('./ItemSwipeLayer'));
 // Types
 // =============================================================================
 
-export type ItemAlign = 'center' | 'start';
+export type ItemAlign = 'center' | 'start' | 'first-line';
 export type ItemDensity = 'compact' | 'balanced' | 'spacious';
 
 /**
@@ -168,7 +168,11 @@ export interface ItemProps extends BaseProps<HTMLElement> {
   endContent?: ReactNode;
 
   /**
-   * Vertical alignment of the start/end content slots.
+   * Vertical alignment of the start/end content slots. `center` centers each
+   * slot on the whole text block; `start` lines up slot tops with the text's
+   * top; `first-line` centers each slot on the label's first line, so a small
+   * mark (a status dot, a radio, a timestamp) stays level with the first line
+   * of a wrapped label. A slot taller than that line moves the text down.
    * @default 'center'
    */
   align?: ItemAlign;
@@ -338,7 +342,7 @@ const styles = stylex.create({
     gap: spacingVars['--spacing-2'],
     // The inline inset is published as --_item-inset-inline and the padding
     // derives from it, so consumers that need to compensate for the inset
-    // (List's edgeCompensation) read the var instead of mirroring the values.
+    // (List's edge treatments) read the var instead of mirroring the values.
     // Themes that set paddingInline on `item` also feed this var via the
     // derived var registry, keeping padding and compensation in sync.
     '--_item-inset-inline': spacingVars['--spacing-2'],
@@ -350,6 +354,30 @@ const styles = stylex.create({
   },
   alignStart: {
     alignItems: 'flex-start',
+  },
+  // `first-line`: the row aligns its children on their first baselines. The
+  // label's first baseline is its first line's; each slot gets the same
+  // baseline from its strut (below), which the slot centers against its
+  // content. So each slot's center lands on the first line's center for any
+  // slot height, and a taller slot pushes the text down instead of leaving
+  // the row. Pure CSS: no measurement.
+  alignFirstLine: {
+    alignItems: 'baseline',
+  },
+  // A zero-width line of label text inside the slot: same size and leading as
+  // the label, so its line box is the label's first line box. The slot centers
+  // it against the slot's content, and the row's baseline alignment puts it on
+  // the label's first line. Its content carries empty alternative text so
+  // assistive technology reads nothing from it.
+  firstLineSlot: {
+    alignItems: 'center',
+    '::before': {
+      content: stylex.firstThatWorks('"\\200B" / ""', '"\\200B"'),
+      inlineSize: 0,
+      overflow: 'hidden',
+      fontSize: typeScaleVars['--text-body-size'],
+      lineHeight: typeScaleVars['--text-body-leading'],
+    },
   },
   interactive: {
     cursor: {
@@ -712,7 +740,13 @@ export function Item({
     <>
       {marker}
       {startContent != null && (
-        <span {...stylex.props(styles.startContent)}>{startContent}</span>
+        <span
+          {...stylex.props(
+            styles.startContent,
+            align === 'first-line' && styles.firstLineSlot,
+          )}>
+          {startContent}
+        </span>
       )}
 
       {hasParentRole || isDelegate ? (
@@ -768,6 +802,7 @@ export function Item({
         <span
           {...stylex.props(
             styles.endContent,
+            align === 'first-line' && styles.firstLineSlot,
             isDisabled && styles.disabledContent,
           )}>
           {endContent}
@@ -846,6 +881,7 @@ export function Item({
           styles.root,
           densityStyles[density],
           align === 'start' && styles.alignStart,
+          align === 'first-line' && styles.alignFirstLine,
           isInteractive && styles.interactive,
           isInteractive && interactionOverlayStyles.backgroundColor,
           isLinkRoot && styles.linkRoot,

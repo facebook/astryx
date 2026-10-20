@@ -4,7 +4,7 @@
 
 /**
  * @file DropdownMenu.tsx
- * @input Uses React, StyleX, usePopover, MenuBottomSheet, Button, List,
+ * @input Uses React, StyleX, usePopover, MenuBottomSheet (lazy), Button, List,
  *   useListFocus, and the shared viewport-safe menu-width resolver
  * @output Exports DropdownMenu with caller-selected popover or bottom-sheet
  *   presentation
@@ -60,6 +60,7 @@ import {
 } from './menuItemRoles';
 import {
   DropdownMenuContext,
+  DropdownMenuRootOpenContext,
   type DropdownMenuContextValue,
 } from './DropdownMenuContext';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
@@ -80,8 +81,11 @@ import {
   useAdaptivePresentation,
   type AdaptivePresentation,
 } from '../hooks/useAdaptivePresentation';
-import {MenuBottomSheet} from './MenuBottomSheet';
-import {MenuBottomSheetActionList} from './MenuBottomSheetActionList';
+// Loaded on demand: only the bottom-sheet presentation renders the sheet.
+import {
+  MenuBottomSheet,
+  MenuBottomSheetActionList,
+} from './lazyMenuBottomSheet';
 import {layerAnimations} from '../Layer/layerAnimations.stylex';
 import type {LayerAlignment, LayerPlacement} from '../Layer/useLayer';
 import {
@@ -229,8 +233,8 @@ const styles = stylex.create({
     WebkitTouchCallout: 'none',
     userSelect: 'none',
     maxInlineSize: stylex.firstThatWorks(
-      layerViewportInset.maxInlineSize,
-      layerViewportInset.maxInlineSizeFallback,
+      `calc(${layerViewportInset.maxInlineSize})`,
+      `calc(${layerViewportInset.maxInlineSizeFallback})`,
     ),
     maxHeight: stylex.firstThatWorks(
       MENU_MAX_BLOCK_SIZE,
@@ -758,12 +762,37 @@ function DropdownMenuBottomSheet({
     if (!isOpen || openModalityRef.current !== 'keyboard') {
       return;
     }
-    const frame = requestAnimationFrame(() => {
-      actionListRef.current
-        ?.querySelector<HTMLElement>('button:not(:disabled), a[href]')
-        ?.focus({preventScroll: true});
+    const findFirstAction = () =>
+      actionListRef.current?.querySelector<HTMLElement>(
+        'button:not(:disabled), a[href]',
+      ) ?? null;
+    let observer: MutationObserver | null = null;
+    let frame = requestAnimationFrame(() => {
+      const action = findFirstAction();
+      if (action != null) {
+        action.focus({preventScroll: true});
+        return;
+      }
+      // The sheet loads on demand, so a keyboard open can arrive before its
+      // rows exist. Wait for them, then focus a frame later so the sheet's
+      // own open-focus has already run.
+      observer = new MutationObserver(() => {
+        const loaded = findFirstAction();
+        if (loaded == null) {
+          return;
+        }
+        observer?.disconnect();
+        observer = null;
+        frame = requestAnimationFrame(() => {
+          loaded.focus({preventScroll: true});
+        });
+      });
+      observer.observe(document.body, {childList: true, subtree: true});
     });
-    return () => cancelAnimationFrame(frame);
+    return () => {
+      cancelAnimationFrame(frame);
+      observer?.disconnect();
+    };
   }, [currentItems, isOpen]);
 
   useEffect(() => {
@@ -987,6 +1016,43 @@ function DropdownMenuPopover({
   // above it ends the gesture in flight through this ref.
   const cancelMenuPressRef = useRef<() => void>(() => {});
 
+  // Submenu flyouts are `popover="manual"` elements nested inside the menu's
+  // `popover="auto"` element, so the browser's light dismiss of the menu never
+  // reaches them: without a sweep they keep their open state and their
+  // top-layer entry while the menu is hidden, and re-anchor to the viewport
+  // corner when the menu reopens (#6893). Closing them through the popover
+  // API lets useLayer's toggle handling reset their state. Only flyouts that
+  // are actually open are touched: `:popover-open` ships wherever
+  // `hidePopover` does (they are one API), and the display fallback keeps its
+  // own open signal (`display: block`) so it is guarded the same way.
+  const hideOpenFlyouts = useCallback(() => {
+    const menuPopover = contentRef.current;
+    if (!menuPopover) {
+      return;
+    }
+    // Innermost first: hiding a flyout may unmount the flyouts nested inside
+    // it, and a detached element no longer has the toggle listener that
+    // resets its open state.
+    const flyouts = [
+      ...menuPopover.querySelectorAll<HTMLElement>('[popover]'),
+    ].reverse();
+    for (const flyout of flyouts) {
+      if (typeof flyout.hidePopover === 'function') {
+        if (flyout.matches(':popover-open')) {
+          flyout.hidePopover();
+        }
+      } else if (flyout.style.display === 'block') {
+        flyout.style.display = 'none';
+        const toggle = new Event('toggle', {bubbles: false});
+        Object.defineProperty(toggle, 'newState', {
+          value: 'closed',
+          configurable: true,
+        });
+        flyout.dispatchEvent(toggle);
+      }
+    }
+  }, []);
+
   // Focus lands somewhere stated when the menu closes. A press outside that
   // landed on a focusable control has already moved focus there; leave it.
   // Otherwise — a row acted, Escape, a press on nothing — focus returns to
@@ -994,6 +1060,9 @@ function DropdownMenuPopover({
   // keyboard (the modality tracker decides; the suppressed style hides the
   // pointer case, which Safari would otherwise paint after a touch pick).
   const handleLayerHide = useCallback(() => {
+    // Whatever closed the menu — light dismiss, the dismissal stack, Escape
+    // or a controlled close — its flyouts close with it.
+    hideOpenFlyouts();
     if (suppressControlledRollbackHideRef.current) {
       suppressControlledRollbackHideRef.current = false;
       return;
@@ -1024,7 +1093,7 @@ function DropdownMenuPopover({
     // also reaches a control the caller renders, which the browser would
     // otherwise ring (Chromium after a mouse pick, WebKit after a touch).
     focusForLastInput(trigger, {preventScroll: true});
-  }, [isControlled, onOpenChange, prepareFocusReturn]);
+  }, [hideOpenFlyouts, isControlled, onOpenChange, prepareFocusReturn]);
 
   // Defer item focus until the layer has committed open, so focus restore
   // captures the trigger instead of the first menu item.
@@ -1694,7 +1763,9 @@ function DropdownMenuPopover({
             )}>
             <MenuRegionsContext value={hasRegions}>
               <DropdownMenuContext value={contextValue}>
-                {menuContent}
+                <DropdownMenuRootOpenContext value={isOpen}>
+                  {menuContent}
+                </DropdownMenuRootOpenContext>
               </DropdownMenuContext>
             </MenuRegionsContext>
           </div>,

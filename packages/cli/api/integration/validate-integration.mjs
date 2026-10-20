@@ -34,6 +34,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {assertWithin} from '../../foundation/fs/path-safety.mjs';
+import {integrationDocTypes} from '../docs/_adapter.mjs';
 import {
   THEME_SLUG_RE,
   unreadThemeFolders,
@@ -461,6 +462,12 @@ export async function validateIntegration(pkg, options = {}) {
   const result = pkg
     ? await validateInstalledIntegration(pkg, cwd)
     : await validateLocalIntegration(cwd);
+  // Each doc the package ships, against the published authoring type for its
+  // kind, read with the project's own compiler. Findings are warnings only.
+  const integration = result.found ? result.integration : undefined;
+  const docTypes = integration
+    ? await integrationDocTypes(integration, cwd)
+    : undefined;
   return {
     type: 'integration.validate',
     data: {
@@ -472,6 +479,7 @@ export async function validateIntegration(pkg, options = {}) {
       issues: result.reason === 'no_package_json'
         ? [{code: 'no_package', severity: 'error', message: 'No package.json found. Run this command inside a package directory.'}]
         : result.issues,
+      ...(docTypes ? {docTypes} : {}),
     },
   };
 }

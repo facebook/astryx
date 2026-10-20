@@ -44,7 +44,7 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: 'By default this creates `AGENTS.md` (the tool-agnostic standard most agents read). To target a specific tool\'s file instead:',
+          text: "By default this creates `AGENTS.md` (the tool-agnostic standard most agents read). To target a specific tool's file instead:",
         },
         {
           type: 'code',
@@ -182,20 +182,59 @@ astryx docs principles --dense`,
         },
         {
           type: 'prose',
-          text: 'Add the server to your MCP config file. This works with any MCP-compatible tool: Claude Desktop (claude_desktop_config.json), Cursor (.cursor/mcp.json), Windsurf (.windsurf/mcp.json), Cline, and others.',
+          text: 'Add the server to your MCP config file. The entry is a remote HTTP server, and the exact shape differs per client, so use the snippet for the tool you run. An entry with an unrecognized transport is skipped with a warning rather than an error, which reads as a server that connects but exposes no tools.',
         },
         {
           type: 'code',
           lang: 'json',
-          label: 'MCP config (same for all tools)',
+          label: 'Claude Code (.mcp.json)',
           code: `{
   "mcpServers": {
     "astryx": {
-      "type": "url",
+      "type": "http",
       "url": "https://astryx.atmeta.com/mcp"
     }
   }
 }`,
+        },
+        {
+          type: 'prose',
+          text: 'Claude Code can also write that entry from the terminal:',
+        },
+        {
+          type: 'code',
+          lang: 'bash',
+          code: `claude mcp add --transport http astryx https://astryx.atmeta.com/mcp`,
+        },
+        {
+          type: 'code',
+          lang: 'json',
+          label: 'Cline (cline_mcp_settings.json) - type is streamableHttp',
+          code: `{
+  "mcpServers": {
+    "astryx": {
+      "type": "streamableHttp",
+      "url": "https://astryx.atmeta.com/mcp"
+    }
+  }
+}`,
+        },
+        {
+          type: 'code',
+          lang: 'json',
+          label:
+            'Cursor (.cursor/mcp.json) - remote servers take no type field',
+          code: `{
+  "mcpServers": {
+    "astryx": {
+      "url": "https://astryx.atmeta.com/mcp"
+    }
+  }
+}`,
+        },
+        {
+          type: 'prose',
+          text: 'Claude Desktop is the exception: claude_desktop_config.json holds local stdio servers, so a remote server is added through Settings, then Connectors, then Add custom connector, pasting the URL above.',
         },
         {
           type: 'prose',

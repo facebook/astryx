@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file `astryx docs cli/integrations/components/add-a-component`: choose a
+ * @file `astryx docs cli/integrations/building-blocks/components/add-a-component`: choose a
  * component name and generate its first source and doc files.
  */
 
@@ -68,6 +68,16 @@ Declare component root ./components in astryx.integration.mjs.
         {
           type: 'prose',
           text: 'Add never overwrites a file, and `--dry-run` shows what it would write. Component commands read Core, so install `@astryxdesign/core` in the package first ({@link generic:quick-start}).',
+        },
+      ],
+    },
+    {
+      id: 'document-an-existing-component',
+      title: 'Document a component you already have',
+      content: [
+        {
+          type: 'prose',
+          text: "To document a component your package already has, write its doc beside the source file and name the doc after that file, such as `acme-gallery.doc.mjs` beside `acme-gallery.tsx`. Set `name` to the export apps import, such as `name: 'AcmeGallery'`, and keep both files inside the components root that `astryx.integration.mjs` declares. The file does not have to be named after the component; {@link generic:component-imports} shows how apps then find it.",
         },
       ],
     },

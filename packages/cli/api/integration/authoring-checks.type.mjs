@@ -59,9 +59,22 @@
  */
 
 /**
+ * Documented props compared with the component's TypeScript props. Present
+ * when the manifest loads and declares a components root. `status: 'skipped'`
+ * means nothing was compared (no TypeScript in the project) and `reason` says
+ * why. Every finding is a warning.
+ *
+ * @typedef {import('../../foundation/discovery/prop-drift.mjs').PropDriftReport} PropDriftReport
+ */
+
+/**
+ * @typedef {import('../../foundation/discovery/prop-drift.mjs').PropDriftFinding} PropDriftFinding
+ */
+
+/**
  * @typedef {object} IntegrationComponentConflictResponse
  * @property {'integration.component-conflicts'} type
- * @property {{validated: boolean, name: string | null, version: string | null, conflicts: IntegrationComponentConflict[], issues: import('../../foundation/integrations/issue').AstryxIntegrationIssue[]}} data
+ * @property {{validated: boolean, name: string | null, version: string | null, conflicts: IntegrationComponentConflict[], issues: import('../../foundation/integrations/issue').AstryxIntegrationIssue[], propDrift?: PropDriftReport}} data
  */
 
 /**

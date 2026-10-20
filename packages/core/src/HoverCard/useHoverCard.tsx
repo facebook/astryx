@@ -345,6 +345,14 @@ export function useHoverCard(options: HoverCardOptions = {}): HoverCardReturn {
     hideLayer();
   }, [clearTimeouts, hideLayer]);
 
+  // The imperative hide. A card closed while the pointer rests on it unmounts
+  // without a mouseleave, so the content-hover latch is cleared here; left set,
+  // it would keep the trigger's next hover-open from closing on leave.
+  const hide = useCallback(() => {
+    isHoveringContentRef.current = false;
+    hideLayer();
+  }, [hideLayer]);
+
   const {
     isTouchPointerRef,
     isTouchInteraction,
@@ -508,7 +516,7 @@ export function useHoverCard(options: HoverCardOptions = {}): HoverCardReturn {
           ? null
           : document.getElementById(layerId);
       const hadFocus = card?.contains(document.activeElement) ?? false;
-      hideLayer();
+      hide();
       if (hadFocus) {
         isEscapeDismissingRef.current = true;
         triggerRef.current?.focus();
@@ -720,6 +728,6 @@ export function useHoverCard(options: HoverCardOptions = {}): HoverCardReturn {
     isOpen: isLayerOpen,
     renderHoverCard,
     show: showLayer,
-    hide: hideLayer,
+    hide,
   };
 }

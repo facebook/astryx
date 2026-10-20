@@ -280,10 +280,10 @@ describe('Popover', () => {
       'utf8',
     );
     expect(popoverSource).toMatch(
-      /surfaceViewportFit:[\s\S]*?maxInlineSize: stylex\.firstThatWorks\(\s*layerViewportInset\.maxInlineSize/,
+      /surfaceViewportFit:[\s\S]*?maxInlineSize: stylex\.firstThatWorks\(\s*`calc\(\$\{layerViewportInset\.maxInlineSize\}\)`/,
     );
     expect(popoverSource).toMatch(
-      /surfaceViewportFit:[\s\S]*?maxBlockSize: stylex\.firstThatWorks\(\s*layerViewportInset\.maxBlockSize/,
+      /surfaceViewportFit:[\s\S]*?maxBlockSize: stylex\.firstThatWorks\(\s*`calc\(\$\{layerViewportInset\.maxBlockSize\}\)`/,
     );
     expect(popoverSource).not.toMatch(/safe-area-inset|calc\(100%/);
     expect(surface?.className).not.toContain(

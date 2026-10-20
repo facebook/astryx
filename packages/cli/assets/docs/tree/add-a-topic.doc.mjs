@@ -1,9 +1,9 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file `astryx docs cli/integrations/docs/add-a-topic`: add a doc topic to an
- * integration package, write its sections, and pick the doc kind for each
- * thing the package ships.
+ * @file `astryx docs cli/integrations/building-blocks/docs/add-a-topic`: add a
+ * doc topic to an integration package, write its sections, and pick the doc
+ * kind for each thing the package ships.
  */
 
 /** @type {import('@astryxdesign/cli/authoring').ReferenceDoc} */
@@ -40,7 +40,7 @@ export const docs = {
           items: [
             'Name the topic in lowercase kebab-case, such as `deploying`. Readers type the name as a command argument, so it holds only letters, digits, `_`, and `-`.',
             'Keep the name stable: readers and links find the topic by it.',
-            'Pick a name no Core topic uses. To take over or add to a Core topic, see {@link generic:extend-or-replace}.',
+            'Pick a name that `astryx docs` does not already list: no Core topic, and no section such as `tokens` or `layout`. To take over or add to a Core topic, see {@link generic:extend-or-replace}.',
           ],
         },
       ],
@@ -60,12 +60,15 @@ export const docs = {
           code: "/** @type {import('@astryxdesign/cli/authoring').ReferenceDoc} */\nexport default {\n  type: 'generic',\n  name: 'deploying',\n  title: 'Deploying',\n  description: 'Ship an app built with Acme widgets.',\n  sections: [{\n    id: 'build-before-you-ship',\n    title: 'Build before you ship',\n    content: [\n      {type: 'prose', text: 'Build the app, then upload the `dist` folder.'},\n      {type: 'code', lang: 'bash', code: 'npm run build'},\n      {type: 'list', style: 'unordered', items: ['Keep `dist` out of git.']},\n      {type: 'table', headers: ['Variable', 'Value'], rows: [['`NODE_ENV`', '`production`']]},\n    ],\n  }],\n};",
         },
         {
+          type: 'prose',
+          text: 'The sample sets a section `id`, so `package.json` needs the CLI peer `"@astryxdesign/cli": ">=0.6.4"`. Published 0.6.3 and earlier reject `id` and hide every doc topic your package ships, and `integration verify` fails without that peer; see {@link generic:versioning}.',
+        },
+        {
           type: 'list',
           style: 'unordered',
           items: [
-            'Content blocks are `prose`, `code`, `list`, and `table`, as shown; `heading`, with a `level` from 3 to 6 and a `text`; and `token-ref`, which inlines a token table from another topic.',
-            '`id` is optional: a stable key for the section. Without it, the key comes from the title. A stable CLI before 0.6.4 cannot read `id`; see {@link generic:versioning}.',
-            'Replace the `Overview` placeholder that `integration add` writes. Every field is in {@link generic:authoring}.',
+            'Replace the `Overview` placeholder that `integration add` writes.',
+            'Every field is in {@link schema:reference-doc}.',
           ],
         },
       ],

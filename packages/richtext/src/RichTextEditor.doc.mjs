@@ -37,6 +37,26 @@ export const docs = {
       description: 'Description text displayed between the label and editor.',
     },
     {
+      name: 'isOptional',
+      type: 'boolean',
+      description:
+        'Displays an "Optional" indicator next to the label. Mutually exclusive with isRequired.',
+      default: 'false',
+    },
+    {
+      name: 'isRequired',
+      type: 'boolean',
+      description:
+        'Displays a "Required" indicator next to the label and sets aria-required on the editable surface. Mutually exclusive with isOptional.',
+      default: 'false',
+    },
+    {
+      name: 'labelTooltip',
+      type: 'string',
+      description:
+        'Tooltip text displayed in an info icon at the end of the label.',
+    },
+    {
       name: 'defaultValue',
       type: 'string',
       description:
@@ -157,6 +177,12 @@ export const docs = {
       description:
         'Minimum height of the editable content surface. Numbers are pixels; strings are used as CSS lengths. Content continues growing beyond this height.',
       default: "'4.5rem'",
+    },
+    {
+      name: 'namespace',
+      type: 'string',
+      description: 'The Lexical composer namespace, used for editor identity.',
+      default: "'astryx-editor'",
     },
     {
       name: 'xstyle',

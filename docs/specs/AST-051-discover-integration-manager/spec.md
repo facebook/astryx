@@ -7,7 +7,7 @@ authority: current
 archive_reason: null
 superseded_by: null
 approved_by: josephfarina
-approved_at: 2026-09-30
+approved_at: 2026-10-19
 phase: accepted
 owners: [josephfarina]
 affects_architecture: [architecture:cli-surface]
@@ -129,6 +129,11 @@ source, packages}`. `source` has `name`, `generatedAt`, and `complete`. Each
   `--limit` cut the list. A free-text query that used to return
   `discover.detail.doc` now returns `discover.search` (FR4).
 
+- **FR10 — A package can link its docs site.** An integration manifest MAY
+  set `docsiteUrl`, a URL of the package's docs site, so catalogs that list
+  the package can link to it. The CLI MUST accept it as a known key, without
+  an unknown-key warning, and does nothing else with it.
+
 ### Platform support
 
 - Supported feature/engine floor: every supported CLI runtime.
@@ -165,6 +170,7 @@ source, packages}`. `source` has `name`, `generatedAt`, and `complete`. Each
 | FR7      | catalog schema tests                   | unknown field; unknown kind; `schemaVersion: 2`; duplicate package across sources; misordered versions                             | an unknown field fails, another version is accepted, the later source wins, or versions keep the source order                      |
 | FR8      | adapter saved-copy and command tests   | fresh answer; failure with a saved copy; failure with none; another request                                                        | a stale copy hides a fresh answer, the saved date is missing, or a project file is written                                         |
 | FR9      | existing discover JSON tests           | each response type with and without a source                                                                                       | an existing field changes type or meaning                                                                                          |
+| FR10     | manifest parser and validate tests     | no field; a URL; a value that is not a URL                                                                                         | the key raises an unknown-key warning, or a valid URL is refused                                                                   |
 
 ## Decision log
 

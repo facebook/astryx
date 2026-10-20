@@ -862,6 +862,27 @@ describe('Switch', () => {
       const root = container.querySelector('[data-testid="my-switch"]');
       expect(root).not.toHaveAttribute('aria-describedby');
     });
+
+    it('names the switch control from a caller aria-labelledby', () => {
+      const {container} = render(
+        <>
+          <span id="row-title">Release notes</span>
+          <Switch
+            label="Pin Release notes"
+            isLabelHidden
+            value={false}
+            onChange={() => {}}
+            data-testid="my-switch"
+            aria-labelledby="row-title"
+          />
+        </>,
+      );
+      const control = screen.getByRole('switch', {name: 'Release notes'});
+      expect(control).toHaveAttribute('aria-labelledby', 'row-title');
+      // The id reference lives on the control only, not on the field wrapper.
+      const root = container.querySelector('[data-testid="my-switch"]');
+      expect(root).not.toHaveAttribute('aria-labelledby');
+    });
   });
 
   describe('pressed state', () => {

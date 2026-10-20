@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file `astryx docs cli/integrations/templates/build-the-template/package-and-test/export-template-assets`:
+ * @file `astryx docs cli/integrations/building-blocks/templates/build-the-template/package-and-test/export-template-assets`:
  * expose and include everything a copied template imports, and declare the
  * packages it needs.
  */
