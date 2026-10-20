@@ -15,8 +15,9 @@ import * as path from 'node:path';
 import {createRequire} from 'node:module';
 
 /**
- * TypeScript 7 has no JavaScript compiler API; the package TypeScript ships
- * beside it for tools that need one carries TypeScript 6's.
+ * The package TypeScript publishes beside TypeScript 7 for tools that need a
+ * JavaScript compiler API: TypeScript 6's. Kept in a constant so the type
+ * check does not treat the load as a static import of an uninstalled package.
  */
 const TYPESCRIPT_6_API = '@typescript/typescript6';
 
@@ -54,6 +55,8 @@ export function resolveProjectTypeScript(dirs) {
       // load.
       unusable ??= installed();
     }
+    // TypeScript 7 has no JavaScript compiler API; the package TypeScript
+    // ships beside it for tools that need one carries TypeScript 6's.
     try {
       const ts = require(TYPESCRIPT_6_API);
       if (ts && typeof ts.createProgram === 'function') {
