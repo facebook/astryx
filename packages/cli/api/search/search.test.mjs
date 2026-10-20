@@ -956,6 +956,17 @@ describe('search leaf — compound names, other names, and word forms', () => {
     expect(data.results[0]).toMatchObject({name: 'TextArea'});
   }, SLOW);
 
+  it('ranks a match on more of the query above a shorter named entry', async () => {
+    const {data} = await search('dropdown menu radio options', {cwd});
+    expect(data.results[0]).toMatchObject({name: 'DropdownMenuRadioItem'});
+  }, SLOW);
+
+  it('lets a plural start a name through its singular', () => {
+    expect(
+      scoreCandidate('tokens', {domain: 'component', name: 'Tokenizer'}),
+    ).toMatchObject({score: 60});
+  });
+
   it('finds Icon by a glyph name', async () => {
     for (const q of ['cog', 'lightning bolt']) {
       const {data} = await search(q, {cwd});
