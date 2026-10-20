@@ -787,7 +787,8 @@ export interface MultiSelectorProps<
    * Status indicator for the selector. With `renderTrigger` no field
    * renders, so the message shows in the open panel instead, under the
    * search row (above the list without one), describing the search input,
-   * which an error marks invalid; `statusVariant` does not apply there.
+   * which an error marks invalid, or, without search, the list;
+   * `statusVariant` does not apply there.
    */
   status?: MultiSelectorStatus;
   /**
@@ -2433,7 +2434,9 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
         </div>
       </div>
     </div>
-  ) : panelStatusNode != null ? (
+  ) : hasExternalTrigger ? (
+    // The wrapper stays for the panel's lifetime, whether or not a message
+    // shows, so setting or clearing one never replaces the focused list.
     <div>
       {panelStatusNode}
       {renderListWithoutSearch()}

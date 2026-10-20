@@ -4,6 +4,7 @@ import type {Meta, StoryObj} from '@storybook/react';
 import {expect, userEvent, waitFor, within} from 'storybook/test';
 import {useState} from 'react';
 import {Button} from '@astryxdesign/core/Button';
+import {Icon} from '@astryxdesign/core/Icon';
 import {IconButton} from '@astryxdesign/core/IconButton';
 import {InputGroup, InputGroupText} from '@astryxdesign/core/InputGroup';
 import {MultiSelector} from '@astryxdesign/core/MultiSelector';
@@ -909,7 +910,11 @@ export const TriggerPanelStatus: Story = {
         hasCreate
         status={refusal != null ? {type: 'error', message: refusal} : undefined}
         renderTrigger={props => (
-          <IconButton icon="moreHorizontal" label="Labels" {...props} />
+          <IconButton
+            icon={<Icon icon="moreHorizontal" />}
+            label="Labels"
+            {...props}
+          />
         )}
         isDefaultOpen
       />

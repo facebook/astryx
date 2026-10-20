@@ -4652,6 +4652,41 @@ describe('MultiSelector renderTrigger — panel status', () => {
     ).toBeTruthy();
   });
 
+  it('without search, setting and clearing the message while the panel is open keeps the focused listbox, and its keys', async () => {
+    const user = userEvent.setup();
+    const selector = (message?: string) => (
+      <MultiSelector
+        label="Labels"
+        options={OPTIONS}
+        value={[]}
+        onChange={() => {}}
+        status={message != null ? {type: 'error', message} : undefined}
+        renderTrigger={props => (
+          <button type="button" {...props}>
+            Tags
+          </button>
+        )}
+      />
+    );
+    const {rerender} = render(selector());
+    await user.click(screen.getByRole('button', {name: 'Tags'}));
+    const listbox = screen.getByRole('listbox', h);
+    act(() => listbox.focus());
+    rerender(selector('That name is taken'));
+    expect(screen.getByRole('listbox', h)).toBe(listbox);
+    expect(listbox).toHaveFocus();
+    rerender(selector());
+    expect(screen.getByRole('listbox', h)).toBe(listbox);
+    expect(listbox).toHaveFocus();
+    const highlighted = () =>
+      document.getElementById(
+        listbox.getAttribute('aria-activedescendant') ?? '',
+      );
+    expect(highlighted()).toHaveTextContent('Bug');
+    await user.keyboard('{ArrowDown}');
+    expect(highlighted()).toHaveTextContent('Feature');
+  });
+
   it('shows the message in the bottom sheet, and nothing while the panel is closed', async () => {
     const user = userEvent.setup();
     render(

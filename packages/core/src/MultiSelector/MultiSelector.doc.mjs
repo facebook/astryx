@@ -341,7 +341,7 @@ export const docs = {
           name: 'status',
           type: "{type: 'error' | 'warning' | 'success', message?: string}",
           description:
-            'Validation status with an optional message. With renderTrigger, which renders no field, the message shows in the open panel under the search row (above the list without one) and describes the search input, which an error marks invalid; statusVariant does not apply there.',
+            'Validation status with an optional message. With renderTrigger, which renders no field, the message shows in the open panel under the search row (above the list without one) and describes the search input, which an error marks invalid, or, without search, the list; statusVariant does not apply there.',
         },
         {
           name: 'statusVariant',
@@ -566,7 +566,7 @@ export const docsZh = {
         isRequired: '将字段标记为必填。',
         isLoading: '在触发器中显示加载旋转器。',
         status:
-          '带可选消息的验证状态。使用 renderTrigger 时不渲染字段，消息改为显示在打开的面板中（搜索行下方，无搜索时在列表上方），并描述搜索输入；error 类型会将其标记为无效。',
+          '带可选消息的验证状态。使用 renderTrigger 时不渲染字段，消息改为显示在打开的面板中（搜索行下方，无搜索时在列表上方），并描述搜索输入（error 类型会将其标记为无效）；无搜索时描述列表。',
         statusVariant:
           '状态消息的放置方式：attached 直接叠加在输入框下方；detached 作为独立元素浮于下方并留有间距。',
         renderOption:
@@ -726,7 +726,7 @@ export const docsDense = {
         isRequired: 'marks required',
         isLoading: 'spinner in trigger',
         status:
-          'validation status w/ optional message; with renderTrigger shown in the open panel, describing the search input',
+          'validation status w/ optional message; with renderTrigger shown in the open panel, describing the search input (the list without search)',
         statusVariant:
           'status message placement; secondary and ghost detach attached by default; use tooltip for compact toolbars.',
         renderOption:
