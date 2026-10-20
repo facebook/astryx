@@ -2381,8 +2381,9 @@ async function searchOnce(query, options) {
         word: wordNamed(candidate),
       });
   }
-  // A match through part of a name or a keyword read joined never outranks
-  // an entry the query names: `table header with sticky columns` keeps
+  // A match on a keyword read joined never outranks an entry the query names,
+  // and neither does a match on part of another name unless it spans more
+  // query words than any named run: `table header with sticky columns` keeps
   // TableHeader above useTableStickyColumns, which only holds the words
   // `sticky columns`. Only the order changes; each result keeps the score its
   // text earned.
