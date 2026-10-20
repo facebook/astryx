@@ -42,8 +42,9 @@ installed for the computer learns of newer releases (FR6), where any run may
 write (FR7), what each release carries for use outside a project and how the
 computer-level agent text stays installed (FR8), how every copy of the CLI hands
 a project's run to the release that answers there (FR9), when a run reminds its
-caller to update (FR10), and who answers when global and project copies meet
-(FR11).
+caller to update (FR10), who answers when global and project copies meet
+(FR11), and which integrations installed for the computer apply, and where
+(FR12).
 
 ## Non-goals
 
@@ -101,7 +102,9 @@ works on is `spec:AST-040` FR9's.
   - The host entry's inputs are explicit: the arguments; the working folder;
     the command name the door's callers type (FR5); the package sets the door
     may serve, in its order of preference, and the integrations it approves for
-    use outside a project (`architecture:cli-surface` INV30); the discover
+    use outside a project that are not installed beside the CLI it runs
+    (`architecture:cli-surface` INV30), since those installed beside it are
+    computer-level and need no input (FR12); the discover
     sources the door adds; and, when the door found the project's own CLI and
     did not run it, the reason (FR2).
   - Discover calls a door's sources after every integration's source and before
@@ -160,16 +163,17 @@ works on is `spec:AST-040` FR9's.
 - **FR3 — Outside a project, the running release answers as a new project
   would.** Outside a project, every copy answers itself, the global copy
   included (FR6, FR9). The answering release MUST answer as it would in a new
-  project that installs only that release of Core and the integrations the door
-  approves (FR1). Every command that needs Core answers from the carried Core:
-  the `@astryxdesign/core` release equal to the answering CLI, beside it,
-  carried by its door (FR1), or kept in the per-user cache, where a copy that
-  carries none installs it the first time a command needs it. When it cannot be
-  installed, those commands fail with `ERR_VERSIONS_UNAVAILABLE` before any
-  write. `doctor`, `swizzle`, and `upgrade` judge or change a project and MUST
-  NOT read the carried Core. Output outside a project MUST NOT give advice that
-  works only inside one, such as a step that sets up, configures, or refreshes a
-  project the folder does not have.
+  project that installs only that release of Core, the computer-level
+  integrations (FR12), and any integration a programmatic host approves that is
+  not installed beside it (FR1). Every command that needs Core answers from the
+  carried Core: the `@astryxdesign/core` release equal to the answering CLI,
+  beside it, carried by its door (FR1), or kept in the per-user cache, where a
+  copy that carries none installs it the first time a command needs it. When it
+  cannot be installed, those commands fail with `ERR_VERSIONS_UNAVAILABLE`
+  before any write. `doctor`, `swizzle`, and `upgrade` judge or change a project
+  and MUST NOT read the carried Core. Output outside a project MUST NOT give
+  advice that works only inside one, such as a step that sets up, configures, or
+  refreshes a project the folder does not have.
 - **FR4 — Every command declares what it does outside a project.** Every
   command and subcommand MUST declare one of three values in its command doc,
   and `astryx manifest` MUST publish that value as the command's
@@ -430,7 +434,7 @@ works on is `spec:AST-040` FR9's.
     beside the newest with the same commands; and, in every folder, an
     `astryx` command that predates the hand-off.
 - **FR11 — Global and project copies meet by these rules.** Every case below
-  follows FR2, FR3, FR6, FR9, and FR10; the table names who answers, what the
+  follows FR2, FR3, FR6, FR9, FR10, and FR12; the table names who answers, what the
   run prints on standard error in text mode, and the test that proves the
   row. A contributor adding a door, an install layout, or a platform adds a
   row and its test. A copy the CLI cannot change, such as a release that
@@ -449,6 +453,40 @@ works on is `spec:AST-040` FR9's.
   - Paths are compared without regard to letter case on platforms whose file
     systems ignore it, and a project is found from the physical folder, so a
     link to a project folder answers as the folder does.
+
+- **FR12 — Integrations installed for the computer apply outside projects,
+  and only there.** A **computer-level integration** is an integration package,
+  one that ships exactly one root `astryx.integration.*` manifest, installed in
+  the same install root as the CLI installed for the computer: the folder whose
+  `node_modules` holds that CLI package, such as a package manager's global
+  folder beside a global copy, or the package set a tool installs together and
+  runs the CLI from, such as a door's runtime holding the CLI, Core, and an
+  integration. When that root has a `package.json`, the packages it declares
+  are read; otherwise every package directly in its `node_modules`, scoped
+  ones included. The CLI and Core packages are never integrations of it. A
+  package runner's temporary install and the per-user release cache are not
+  install roots. A door needs no host entry input for them (FR1).
+  - Outside a project, the copy that answers loads the computer-level
+    integrations installed beside it as a project loads its own: their
+    components, templates, docs, themes, codemods, discover sources, and
+    `cliCommand` (FR5) apply, with the same validation and the same provider
+    identity rules. One whose declared peer range for `@astryxdesign/core` or
+    `@astryxdesign/cli` excludes the answering release is skipped.
+  - Inside a project, only the project's own integrations load: configured,
+    installed, or being authored there. A computer-level integration adds no
+    component, template, doc, theme, codemod, discover source, or command name
+    there, because a printed import or command would name a package the
+    project does not install. `discover` lists each computer-level integration
+    the project does not install among the packages the project could add,
+    with source `installed for this computer` and the project's install
+    command. The command name a door passes still applies (FR5).
+  - When a project installs the same integration, by package name, the
+    project's copy is the only one that loads, inside the project and in any
+    folder whose project it is.
+  - `doctor` outside a project lists each computer-level integration it uses
+    and warns about each it skips or cannot load, naming why; inside a
+    project, it lists the computer-level integrations the project does not
+    install, as available, with the project's install command.
 
 ### Computer-level agent files
 
@@ -521,6 +559,11 @@ tool's configuration.
 | G32 A workspace whose own CLI package sits beside its own Core package, such as the Astryx repository | The workspace's own CLI when it matches the Core, else the matched release                                     | As for that case                                                                                                    | `› G32`                                                                                               |
 | G33 The global copy is older than the newest release                                                  | The global copy                                                                                                | FR10's notice after the command, naming the package manager that installed it, once a day                           | `› G33`                                                                                               |
 | G34 `NO_UPDATE_NOTIFIER` or `CI` set                                                                  | As for that case; no update check                                                                              | No notice                                                                                                           | `› G34`                                                                                               |
+| G35 Outside a project, with an integration installed beside the global copy                           | The global copy, with that integration loaded                                                                  | As for that case                                                                                                    | `› G35`                                                                                               |
+| G36 Inside a project that does not install an integration installed for the computer                  | The project's release, without it                                                                              | As for that case; `discover` and `doctor` list it as available with the project's install command                   | `› G36`                                                                                               |
+| G37 A project that installs the same integration as the computer                                      | The project's release, with the project's copy only                                                            | As for that case                                                                                                    | `› G37`                                                                                               |
+| G38 An integration installed for the computer whose peer range excludes the answering release         | The global copy, without it                                                                                    | As for that case; `doctor` warns                                                                                    | `› G38`                                                                                               |
+| G39 A door's package set: the CLI and an integration installed together in one root                   | That copy, with the integration loaded outside a project                                                       | As for that case                                                                                                    | `› G39`                                                                                               |
 
 ### Platform support
 
@@ -557,15 +600,17 @@ tool's configuration.
   `doctor` fixes, docs, and the setup reminder print a fixed name instead; an
   integration has no way to name the command its users run; the computer-level
   agent text is written only when a person runs `astryx init --user`; no run
-  tells anyone that a copy or a project is behind; and `doctor` does not list
-  the `astryx` commands on the search path. Each of these departs from FR1–FR11.
+  tells anyone that a copy or a project is behind; `doctor` does not list the
+  `astryx` commands on the search path; and an integration installed for the
+  computer applies nowhere. Each of these departs from FR1–FR12.
 - The CLI provides FR2–FR9 through the doors that run the CLI package directly.
   The parts that need the programmatic host entry arrive with it: FR1's host
   entry, its inputs, and its one-call rule; FR2's clause for a door that
-  declines the project's CLI; FR3's integrations a door approves; the door name
-  in FR5's picker; and `architecture:cli-surface` INV30. The official list FR8
-  ships is `spec:AST-051` FR10's. The project starters FR8 ships arrive with the
-  template kind that ships them.
+  declines the project's CLI; FR3's integrations a host approves that are not
+  installed beside it; the door name in FR5's picker; and
+  `architecture:cli-surface` INV30. The official list FR8 ships is
+  `spec:AST-051` FR10's. The project starters FR8 ships arrive with the template
+  kind that ships them.
 - `architecture:cli-surface` records the release-choice stage before dispatch
   (FR2, FR9), `outsideProject` in INV7 (FR4), `ERR_PROJECT_REQUIRED` and
   `ERR_VERSIONS_UNAVAILABLE` in INV3 (FR2, FR4), `meta.answeredBy` in INV2
@@ -612,6 +657,7 @@ needs no Changeset.
 | FR9      | Hand-off probes: every command example run through each copy in each folder kind, compared with the release FR2 names run directly in that folder                                                                             | the CLI package installed for the computer on an older and on a newer release than the project's CLI, run directly and run by a package runner in place of a fetch; a package runner's copy, unversioned and with a version requested inside a project, for a read and for `upgrade`; a project with Core but no CLI, through a package runner that fetches the newest release; a package with no Astryx inside a project, which the package runner takes for the project; a project CLI that predates the hand-off and one that hands off itself; a declined project CLI; a project CLI that cannot start; a non-zero exit; piped standard input; outside a project; text and JSON | A release other than the one FR2 names answers in a project, outside the declined case; a project CLI that differs from its Core answers; a requested version answers inside a project; a run is handed off twice or returns to a copy it left; arguments, folder, streams, or exit status differ from a direct run of the project's CLI; outside a project, a release answers that FR3 and FR6 do not name; or the line is missing, prints twice, prints in JSON mode, or prints for a run the project's own CLI answers directly |
 | FR10     | Notice tests                                                                                                                                                                                                                  | the global copy behind, for npm, pnpm, Yarn, Bun, and Volta installs; a newest release that needs a newer Node; a project behind, with and without its own CLI; an old `astryx` first on the search path; two runs in one day and a run the next day; a failed command; JSON mode; `CI`; `NO_UPDATE_NOTIFIER`; standard error not a terminal; a prerelease                                                                                                                                                                                                                                                                                                                          | A notice prints in JSON mode, after a failure, twice in a day, with `CI` or `NO_UPDATE_NOTIFIER` set, or before the command's output; it names another package manager's command; or `doctor` omits it                                                                                                                                                                                                                                                                                                                             |
 | FR11     | One test per row of the global and project table, with packed CLI copies in each install layout                                                                                                                               | every row of the table                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | A row's answer, line, or test differs from the table, or a row has no test                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| FR12     | Computer-level integration tests and table rows G35–G39                                                                                                                                                                       | npm and pnpm global folders; a door's package set; a runner's temporary install; the release cache; outside a project; inside one with and without the same integration; an incompatible peer range; a manifest that fails                                                                                                                                                                                                                                                                                                                                                                                                                                                          | A computer-level integration contributes inside a project, is missing outside one, loads beside the project's copy, loads with an excluded peer range, or `discover` and `doctor` omit it                                                                                                                                                                                                                                                                                                                                          |
 
 ## Decision log
 
@@ -868,6 +914,27 @@ knows this one.
 Rejected: installing newer releases into the per-user cache and switching to
 them in the background, which kept the CLI current without a step but changed
 what answers without the person choosing it; the standard was chosen instead.
+
+### DEC-17 — Integrations installed for the computer apply outside projects only
+
+**Reference:** `spec:AST-081/DEC-17`
+**Decider:** `josephfarina (proposed)`
+
+Integrations change what the CLI answers, so a person who installs one beside
+the CLI installed for the computer, or a tool that installs one with the CLI,
+expects it to apply wherever no project decides: an agent outside any project
+then learns that integration's components and docs too. Inside a project, the
+project decides: its output must match what it installs, so a component, a
+template, or an import from a package it does not install would be code that
+fails to build. Listing the integration as available, with the project's
+install command, keeps it findable without changing the project's answers.
+Reading the install root itself, instead of a host input, gives every install
+route the same rule.
+
+Rejected: computer-level integrations applying inside projects too, which
+makes a project's answers depend on the computer and prints imports of
+packages the project does not install; and requiring a host entry input for
+them, which leaves a global install without them.
 
 ## Open questions
 
