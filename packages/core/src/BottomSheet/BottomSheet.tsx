@@ -22,6 +22,15 @@
  * native top layer is kept in open order even when several sheets open in one
  * commit. A sheet on its own never notices the stack.
  *
+ * A standalone sheet closing in the same update as another standalone sheet
+ * opens, at the same level, is replaced by it: the two run the handoff a
+ * BottomSheetSwitcher runs between its steps (entering sheet above, retained
+ * sheet aligning down then fading, one steady scrim, focus into the new sheet
+ * and back to the flow's opener on close). The registry pairs them and drives
+ * the handoff; this host renders the retained panel state it reports, and
+ * reports its panel's motions back. Non-modal sheets (`hasScrim={false}`)
+ * take no part: they neither stack nor replace.
+ *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/BottomSheet/BottomSheetPanel.tsx
  * - /packages/core/src/BottomSheet/BottomSheetEdgeTint.tsx
@@ -36,6 +45,7 @@
  * - /packages/core/src/Layer/layerDismissalInvariants.test.tsx
  * - /apps/storybook/stories/BottomSheet.stories.tsx
  * - /apps/storybook/stories/BottomSheetStacking.stories.tsx
+ * - /apps/storybook/stories/BottomSheetReplace.stories.tsx
  * - /packages/cli/assets/templates/blocks/components/BottomSheet/BottomSheetShowcase.tsx
  */
 
@@ -82,6 +92,7 @@ import {
   focusSheetPanel,
   getBottomSheetBeneath,
   registerBottomSheet,
+  reportBottomSheetMotion,
   sealBottomSheetBatch,
   setBottomSheetOpen,
   writeScrimOpacity,
@@ -205,12 +216,12 @@ function stackPositionerStyles(view: BottomSheetStackView) {
 function stackStateAttribute(
   view: BottomSheetStackView,
   isOpen: boolean,
-): 'top' | 'covered' | 'exiting' | undefined {
+): 'top' | 'covered' | 'exiting' | 'replaced' | undefined {
   if (!view.isStacked) {
     return undefined;
   }
   if (!isOpen) {
-    return 'exiting';
+    return view.replacedMotion != null ? 'replaced' : 'exiting';
   }
   return view.isTop ? 'top' : 'covered';
 }
@@ -331,11 +342,6 @@ function StandaloneBottomSheet({
   const isOpen = isOpenProp && isHostOpen;
   const [isPresented, setIsPresented] = useState(isOpen);
   const shouldPresent = isOpen || isPresented;
-  const panelState: BottomSheetPanelState = isOpen
-    ? {kind: 'open', entering: false}
-    : isPresented
-      ? {kind: 'exiting'}
-      : {kind: 'hidden'};
 
   // The sheet's place in the stack of presented modal sheets. Default until
   // the stack reports otherwise, which it does in the commit that presents
@@ -346,6 +352,36 @@ function StandaloneBottomSheet({
   );
   const isOpenRef = useRef(isOpen);
   isOpenRef.current = isOpen;
+  // Closed and being replaced by the sheet that opened in the same update:
+  // the panel is retained (stays, aligns, fades) instead of sliding out.
+  const isReplaced = !isOpen && isPresented && stackView.replacedMotion != null;
+  // Whether a replace pairs this close is known only once every sheet of the
+  // commit has reported to the registry, in the layout phase. Until the
+  // registry has answered (a synchronous re-render later, before paint) the
+  // panel holds its open pose: an exit pose rendered first and read back by
+  // the panel's own style query would start the exit transition, and the
+  // reversal into the retained pose would then snap the panel to rest. The
+  // flag is keyed to the close it settles: every change of `isOpen` starts
+  // it over, during render, and the layout effect below settles a close.
+  const [isCloseSettled, setIsCloseSettled] = useState(false);
+  const [settledIsOpen, setSettledIsOpen] = useState(isOpen);
+  if (settledIsOpen !== isOpen) {
+    setSettledIsOpen(isOpen);
+    setIsCloseSettled(false);
+  }
+  const panelState: BottomSheetPanelState = isOpen
+    ? {kind: 'open', entering: stackView.isReplacing}
+    : isReplaced
+      ? {
+          kind: 'retained',
+          motion: stackView.replacedMotion ?? 'covered',
+          alignmentOffset: stackView.alignmentOffset,
+        }
+      : isPresented
+        ? isCloseSettled
+          ? {kind: 'exiting'}
+          : {kind: 'open', entering: false}
+        : {kind: 'hidden'};
 
   const dismissOnEscape = useCallback(() => {
     if (isOpen && purpose !== 'required') {
@@ -444,14 +480,29 @@ function StandaloneBottomSheet({
           stackViewRef.current = view;
           setStackView(view);
           // Who owns the scrim is the stack's decision; a change of owner
-          // lands with no fade (see writeScrimOpacity). A closing sheet
-          // whose scrim an open sheet took over drops its backdrop the same
-          // way; a closing sheet that owned the scrim alone fades it out.
-          if (isOpenRef.current) {
+          // lands with no fade (see writeScrimOpacity). A replaced sheet
+          // keeps the scrim it owns until the sheet replacing it takes it
+          // over; a closing sheet whose scrim an open sheet took over drops
+          // its backdrop the same way; a closing sheet that owned the scrim
+          // alone fades it out.
+          if (isOpenRef.current || view.replacedMotion != null) {
             writeScrim(scrimOpacityForView(view));
           } else if (view.isScrimTakenOver) {
             writeScrim('0');
           }
+        },
+        replaceable: {
+          getPanel: () => panelRef.current,
+          getOpener: () => triggerRef.current,
+          setOpener: opener => {
+            triggerRef.current = opener;
+          },
+          finish: () => {
+            // The registry has closed the dialog; focus stayed in the sheet
+            // that replaced this one, and so did the flow's opener.
+            triggerRef.current = null;
+            setIsPresented(false);
+          },
         },
       },
       isOpenRef.current,
@@ -460,6 +511,12 @@ function StandaloneBottomSheet({
   useLayoutEffect(() => {
     if (shouldPresent && hasScrim) {
       setBottomSheetOpen(stackKeyRef.current, isOpen);
+    }
+    if (!isOpen) {
+      // The registry has had every sheet's report for this commit; a close
+      // that was not paired as a replace is an exit from here on.
+      // eslint-disable-next-line @eslint-react/set-state-in-effect -- settles the close once the registry has answered
+      setIsCloseSettled(true);
     }
   }, [hasScrim, isOpen, shouldPresent]);
   // Closes a batch of same-commit opens; see sealBottomSheetBatch.
@@ -488,7 +545,9 @@ function StandaloneBottomSheet({
     if (dialog == null || !hasScrim) {
       return;
     }
-    if (isOpen) {
+    // A replaced sheet keeps the scrim it owns until the sheet replacing it
+    // takes it over; see bottomSheetStack.
+    if (isOpen || isReplaced) {
       dialog.style.setProperty(
         '--_sheet-scrim-opacity',
         scrimOpacityForView(stackViewRef.current),
@@ -496,10 +555,16 @@ function StandaloneBottomSheet({
     } else if (isPresented) {
       dialog.style.setProperty('--_sheet-scrim-opacity', '0');
     }
-  }, [hasScrim, isOpen, isPresented]);
+  }, [hasScrim, isOpen, isPresented, isReplaced]);
 
+  const handleMotionStart = useCallback((motion: BottomSheetPanelMotion) => {
+    reportBottomSheetMotion(stackKeyRef.current, 'start', motion);
+  }, []);
   const handleMotionComplete = useCallback(
     (motion: BottomSheetPanelMotion) => {
+      // The replace handoff's motions (entering as a replacer, aligning and
+      // fading as the replaced sheet) are the registry's to sequence.
+      reportBottomSheetMotion(stackKeyRef.current, 'complete', motion);
       if (motion !== 'exiting' || isOpen) {
         return;
       }
@@ -568,8 +633,12 @@ function StandaloneBottomSheet({
     // a covered sheet nested in another sheet's content ahead of a top sheet
     // written outside it. Standing down while covered keeps Escape and the
     // platform close request with the top sheet, as the sheet stack orders.
+    // A replaced sheet stands down the same way: the sheet that replaced it,
+    // registered before or after it, takes the press.
     isPresent: () =>
-      (dialogRef.current?.open ?? false) && !stackViewRef.current.isCovered,
+      (dialogRef.current?.open ?? false) &&
+      !stackViewRef.current.isCovered &&
+      stackViewRef.current.replacedMotion == null,
   });
 
   // The native `cancel` event is a close request the stack never saw a press
@@ -644,6 +713,7 @@ function StandaloneBottomSheet({
           onDismiss={dismissOnLightInteraction}
           onScrimOpacity={handleScrimOpacity}
           onElementChange={handlePanelElementChange}
+          onMotionStart={handleMotionStart}
           onMotionComplete={handleMotionComplete}>
           <LayerDepthProvider>
             <BottomSheetHostContext

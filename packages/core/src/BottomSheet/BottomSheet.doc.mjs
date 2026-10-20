@@ -95,7 +95,7 @@ export const docs = {
     derived: [{property: 'padding', expand: 'container'}],
   },
   description:
-    "A mobile touch sheet that rises from the bottom edge, with animated entrance and exit, a grab handle, optional drag-to-resize snap points, and purpose-controlled dismissal. Like Dialog, it is a padded container: content starts at the theme's bottom-sheet padding (--spacing-4 by default), and a lone Section child or bleed children such as Table and Divider align against it. A standalone sheet owns a native <dialog>; inside BottomSheetSwitcher it renders a panel in the switcher's shared dialog. In both modes, ref and shared DOM props target the visual panel <div>. Sheets stack: a sheet opened while another is open sits on top of it, the covered sheet stays mounted and recedes, and one scrim covers the page.",
+    "A mobile touch sheet that rises from the bottom edge, with animated entrance and exit, a grab handle, optional drag-to-resize snap points, and purpose-controlled dismissal. Like Dialog, it is a padded container: content starts at the theme's bottom-sheet padding (--spacing-4 by default), and a lone Section child or bleed children such as Table and Divider align against it. A standalone sheet owns a native <dialog>; inside BottomSheetSwitcher it renders a panel in the switcher's shared dialog. In both modes, ref and shared DOM props target the visual panel <div>. Sheets stack: a sheet opened while another is open sits on top of it, the covered sheet stays mounted and recedes, and one scrim covers the page. A sheet that closes as another opens in the same update is replaced by it, with the step-to-step handoff a multi-step flow needs.",
   props: [
     {
       name: 'isOpen',
@@ -165,14 +165,14 @@ export const docs = {
       name: 'hasScrim',
       type: 'boolean',
       description:
-        "For a standalone BottomSheet, whether to render a scrim, the semi-transparent overlay that covers and blocks the background. true (default) uses showModal(): top layer, focus trap, ::backdrop scrim, body scroll lock, and tap-scrim-to-dismiss when purpose='info', with the background inert. A scrim sheet also takes part in stacking (see Stacking below). false uses show() with no scrim, leaving the page behind interactive and scrollable; a no-scrim sheet neither stacks nor is stacked on. For a multi-step flow, configure hasScrim on BottomSheetSwitcher instead; it owns one shared dialog across every child.",
+        "For a standalone BottomSheet, whether to render a scrim, the semi-transparent overlay that covers and blocks the background. true (default) uses showModal(): top layer, focus trap, ::backdrop scrim, body scroll lock, and tap-scrim-to-dismiss when purpose='info', with the background inert. A scrim sheet also takes part in stacking (see Stacking below). false uses show() with no scrim, leaving the page behind interactive and scrollable; a no-scrim sheet neither stacks nor is stacked on, and a no-scrim step change is a plain exit and entrance rather than the replace handoff. In a multi-step flow, set hasScrim the same on every step.",
       default: 'true',
     },
   ],
   usage: {
     anatomy,
     description:
-      "A mobile touch surface for filters, actions, forms, and detail views that should rise from the bottom of the viewport; use BottomSheetSwitcher for multi-step flows that replace one step with the next, and open a second sheet over the first when a step should stay visible beneath it.\n\nStacking. Every sheet keeps its own isOpen. Open a sheet while another scrim sheet is open and it stacks on top: the sheet beneath stays mounted with its scroll position and inputs, recedes behind the new one (the nearest covered sheet shrinks to 0.96 and lifts 8px, deeper ones to 0.92 and 16px), and is blocked from pointer, keyboard, and assistive technology by the top sheet's modal dialog. The sheets can be siblings, live in separate components, sit inside another sheet's content, or sit inside a BottomSheetSwitcher step; a whole switcher is one level, and switching its step in place does not change its position. Nothing moves in the DOM: each sheet's dialog stays where it is written, and no wrapper component is needed.\n\nOrder is open order. The top sheet is the one presented most recently that is still open; a sheet that closes and reopens comes back on top. When several sheets open in one update (a deep link into a flow), there is no open order between them, so tree order decides: a sheet below the sheets rendered in its content, siblings in the order they are written. That order is right in the first painted frame.\n\nOne scrim. Only the bottom sheet's backdrop dims the page; the backdrops of the sheets above it are transparent, so a stack never darkens per level. The dim holds steady while sheets push and pop, and if the bottom sheet closes while sheets remain above it, the next sheet's backdrop takes over in the same frame.\n\nDismissal. Escape, a tap on the scrim, a downward swipe, and a platform close request (Android back, a close watcher) reach only the top sheet, through that sheet's own onOpenChange, and that sheet's purpose applies: required blocks all of them, form blocks the scrim and the swipe. Nothing closes a whole stack at once; set every sheet closed in one update when a flow is done and they leave together.\n\nClosing a covered sheet from code. Sheets rendered inside the closing sheet's content are part of it: they are presented only while it is open, and when it closes their onOpenChange(false) is called and they leave with it. Sheets above it that are not in its content stay open and keep their order; the closing sheet slides out from beneath them, and if it owned the scrim, the sheet above takes it over.\n\nFocus. Opening a sheet moves focus into it (a data-autofocus descendant first). Closing the top sheet returns focus into the sheet it reveals: to the control that opened it when that control is still there, otherwise to the revealed sheet's panel. When the last sheet closes, the standalone rules apply: finalFocusRef, else the element that opened the sheet, with a focus ring only after keyboard input.\n\nCaveats. A Dialog, AlertDialog, or Popover opened from a sheet paints above the sheet and does not make it recede; a sheet opened from inside that Dialog paints above the Dialog and stacks over the sheet beneath. Sheets with hasScrim={false} stay out of the stack entirely. A sheet React hides (a suspended Suspense boundary, Activity mode=\"hidden\") leaves the stack and closes its dialog; when it is shown again it is presented again, on top. Only sheets rendered in the same document stack; a sheet inside an iframe is its own stack.",
+      "A mobile touch surface for filters, actions, forms, and detail views that should rise from the bottom of the viewport. For a multi-step flow, give each step its own sheet and one state value that names the open step (see Replacing a sheet); open a second sheet over the first when a step should stay visible beneath it.\n\nStacking. Every sheet keeps its own isOpen. Open a sheet while another scrim sheet is open and it stacks on top: the sheet beneath stays mounted with its scroll position and inputs, recedes behind the new one (the nearest covered sheet shrinks to 0.96 and lifts 8px, deeper ones to 0.92 and 16px), and is blocked from pointer, keyboard, and assistive technology by the top sheet's modal dialog. The sheets can be siblings, live in separate components, sit inside another sheet's content, or sit inside a BottomSheetSwitcher step; a whole switcher is one level, and switching its step in place does not change its position. Nothing moves in the DOM: each sheet's dialog stays where it is written, and no wrapper component is needed.\n\nOrder is open order. The top sheet is the one presented most recently that is still open; a sheet that closes and reopens comes back on top. When several sheets open in one update (a deep link into a flow), there is no open order between them, so tree order decides: a sheet below the sheets rendered in its content, siblings in the order they are written. That order is right in the first painted frame.\n\nOne scrim. Only the bottom sheet's backdrop dims the page; the backdrops of the sheets above it are transparent, so a stack never darkens per level. The dim holds steady while sheets push and pop, and if the bottom sheet closes while sheets remain above it, the next sheet's backdrop takes over in the same frame.\n\nDismissal. Escape, a tap on the scrim, a downward swipe, and a platform close request (Android back, a close watcher) reach only the top sheet, through that sheet's own onOpenChange, and that sheet's purpose applies: required blocks all of them, form blocks the scrim and the swipe. Nothing closes a whole stack at once; set every sheet closed in one update when a flow is done and they leave together.\n\nClosing a covered sheet from code. Sheets rendered inside the closing sheet's content are part of it: they are presented only while it is open, and when it closes their onOpenChange(false) is called and they leave with it. Sheets above it that are not in its content stay open and keep their order; the closing sheet slides out from beneath them, and if it owned the scrim, the sheet above takes it over.\n\nReplacing a sheet. Close the top sheet and open another in the same update (one state value that names the open step does this) and the new sheet replaces it instead of stacking on it: the new sheet rises above the one it replaces; if the replaced sheet is taller it moves down to meet the new sheet's top edge at the same time; the replaced sheet fades only after both motions finish, and is inert and hidden from assistive technology from the start. The scrim holds steady throughout, with no dip; focus moves into the new sheet; and when the flow closes, focus returns to the element that opened its first sheet, whichever sheet closed last. This is the handoff BottomSheetSwitcher runs between its steps, so a multi-step flow needs no switcher: give each step its own BottomSheet and one state value. A replace happens only when exactly one sheet closes and one opens in the update, the closing sheet was the top sheet of its stack, and the move was made from inside it (the focused control was in the closing sheet, as a step's own Continue or Back button is); a covered sheet closing while a sheet opens, a close and an open in different updates, or a close and an open driven from a control outside the closing sheet (two unrelated owners acting at once) keep the ordinary push and pop motion and their own focus return. A replace over an open stack runs one level up and leaves the sheets beneath covered. Non-modal sheets (hasScrim={false}) do not replace: a non-modal step change is a plain exit and entrance.\n\nFocus. Opening a sheet moves focus into it (a data-autofocus descendant first). Closing the top sheet returns focus into the sheet it reveals: to the control that opened it when that control is still there, otherwise to the revealed sheet's panel. When the last sheet closes, the standalone rules apply: finalFocusRef, else the element that opened the sheet, with a focus ring only after keyboard input.\n\nCaveats. A Dialog, AlertDialog, or Popover opened from a sheet paints above the sheet and does not make it recede; a sheet opened from inside that Dialog paints above the Dialog and stacks over the sheet beneath. Sheets with hasScrim={false} stay out of the stack entirely. A sheet React hides (a suspended Suspense boundary, Activity mode=\"hidden\") leaves the stack and closes its dialog; when it is shown again it is presented again, on top. Only sheets rendered in the same document stack; a sheet inside an iframe is its own stack.",
     bestPractices: [
       {
         guidance: true,
@@ -202,7 +202,7 @@ export const docs = {
       {
         guidance: false,
         description:
-          "Don't stack more than two or three sheets: deeper sheets share the second recede step and the user has to pop them one at a time. Replace steps with BottomSheetSwitcher when they do not need to stay visible.",
+          "Don't stack more than two or three sheets: deeper sheets share the second recede step and the user has to pop them one at a time. Replace steps instead (close one, open the next in one update) when they do not need to stay visible.",
       },
     ],
   },
@@ -275,20 +275,25 @@ export const docs = {
 </BottomSheet>`,
     },
     {
-      label: 'Multi-step flow (one sheet at a time)',
-      code: `const [activeSheet, setActiveSheet] = useState(null);
+      label:
+        'Multi-step flow (one sheet at a time, each step replaces the last)',
+      code: `// One value names the open step. Moving on closes one sheet and opens the
+// next in the same update: the next step rises above the current one, which
+// fades once it has arrived. A dismissed step closes the flow.
+const [step, setStep] = useState(null);
+const stepProps = own => ({
+  isOpen: step === own,
+  onOpenChange: isOpen => !isOpen && setStep(current => (current === own ? null : current)),
+});
 <>
-  <Button label="Start" onClick={() => setActiveSheet('details')} />
-  <BottomSheetSwitcher
-    activeSheet={activeSheet}
-    onActiveSheetChange={setActiveSheet}>
-    <BottomSheet sheetId="details" label="Details">
-      <Button label="Continue" onClick={() => setActiveSheet('confirm')} />
-    </BottomSheet>
-    <BottomSheet sheetId="confirm" label="Confirm">
-      <Button label="Back" onClick={() => setActiveSheet('details')} />
-    </BottomSheet>
-  </BottomSheetSwitcher>
+  <Button label="Start" onClick={() => setStep('details')} />
+  <BottomSheet {...stepProps('details')} label="Details">
+    <Button label="Continue" onClick={() => setStep('confirm')} />
+  </BottomSheet>
+  <BottomSheet {...stepProps('confirm')} label="Confirm">
+    <Button label="Back" onClick={() => setStep('details')} />
+    <Button label="Done" onClick={() => setStep(null)} />
+  </BottomSheet>
 </>`,
     },
     {
@@ -396,7 +401,7 @@ export const docsDense = {
   usage: {
     anatomy,
     description:
-      "Mobile touch surface for filters, actions, forms, and detail views that should rise from the bottom of the viewport; use BottomSheetSwitcher for multi-step flows that replace one step with the next. Open a sheet over another to stack: each sheet keeps its own isOpen, the top sheet is the most recently opened one, the covered sheet recedes and is blocked, one scrim dims the page, and dismissal pops only the top sheet. Sheets rendered in a closing sheet's content close with it; siblings above it stay open.",
+      "Mobile touch surface for filters, actions, forms, and detail views that should rise from the bottom of the viewport; for a multi-step flow give each step its own sheet and one state value naming the open step: a same-update close and open is a replace handoff (entering sheet above, retained sheet aligns then fades, one steady scrim, focus back to the flow's opener on close). Open a sheet over another to stack: each sheet keeps its own isOpen, the top sheet is the most recently opened one, the covered sheet recedes and is blocked, one scrim dims the page, and dismissal pops only the top sheet. Sheets rendered in a closing sheet's content close with it; siblings above it stay open.",
     bestPractices: [
       {
         guidance: true,
@@ -421,7 +426,7 @@ export const docsDense = {
       {
         guidance: false,
         description:
-          "Don't stack more than two or three sheets; replace steps with BottomSheetSwitcher when they need not stay visible.",
+          "Don't stack more than two or three sheets; replace steps (close one, open the next in one update) when they need not stay visible.",
       },
     ],
   },

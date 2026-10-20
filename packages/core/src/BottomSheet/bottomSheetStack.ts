@@ -7,8 +7,9 @@
  * @input Uses the DOM (dialog elements, document order) and focusForLastInput
  * @output Exports the private bottom-sheet stack registry: registration of
  *   modal sheet hosts, open-order ranking with tree-order ties, native
- *   top-layer reconciliation, and one view per host (top, covered, recede
- *   depth, scrim ownership, blocking)
+ *   top-layer reconciliation, one view per host (top, covered, recede
+ *   depth, scrim ownership, blocking), and the replace handoff between a
+ *   sheet closing and a sheet opening in the same update
  * @position Internal to BottomSheet; consumed by the standalone host in
  *   BottomSheet.tsx and by BottomSheetSwitcher. Not exported from the package
  *   root, and no public API reaches it.
@@ -17,7 +18,9 @@
  * - /packages/core/src/BottomSheet/BottomSheet.tsx
  * - /packages/core/src/BottomSheet/BottomSheetSwitcher.tsx
  * - /packages/core/src/BottomSheet/BottomSheetStacking.test.tsx
+ * - /packages/core/src/BottomSheet/BottomSheetReplace.test.tsx
  * - /packages/core/src/BottomSheet/BottomSheet.doc.mjs
+ * - /apps/storybook/stories/BottomSheetReplace.stories.tsx
  *
  * ## Why a registry and not a component
  *
@@ -57,6 +60,26 @@
  * only the dialogs that have to move up are re-shown, the rest keep their
  * place, their backdrop and any motion in flight.
  *
+ * ## A replace is a move the person makes from one sheet to the next
+ *
+ * One sheet closing and another opening in the same commit, where the closing
+ * sheet was the top open sheet of its stack (no other open sheet above it,
+ * the opening sheet aside) and the interaction came from inside it, is a
+ * replace: the person is moving from one step to the next, not stacking one
+ * on the other. The registry then runs the handoff a BottomSheetSwitcher runs
+ * between its steps, on the two standalone dialogs: the entering sheet rises
+ * above the retained one; a taller retained sheet moves down to meet it; the
+ * retained sheet fades only after both motions complete, then its dialog
+ * closes and the entering sheet takes over the scrim in the same frame. The
+ * retained sheet is inert at once, keeps no place in the dismissal order, and
+ * lends its opener to the sheet replacing it, so closing the flow later
+ * returns focus to where the flow began. A covered sheet closing (not the
+ * top), a sheet closing in a different update from the open, or a close and
+ * an open driven from a control outside the closing sheet (two owners acting
+ * in one update) is never a replace, so a push over a stack and a pop out of
+ * one keep their motion and their own openers. Non-modal sheets neither stack
+ * nor replace: their `show()` dialogs have no top layer to order them.
+ *
  * ## One state per realm, per document
  *
  * The state lives on `globalThis` so that two copies of this module on one
@@ -94,7 +117,23 @@ export interface BottomSheetStackView {
    * other sheet's from this frame on, and two backdrops would double it.
    */
   readonly isScrimTakenOver: boolean;
+  /**
+   * This closed sheet is being replaced by the sheet opened in the same
+   * update: it stays in place (`covered`), moves down to the entering sheet's
+   * top edge (`aligning`), or fades (`fading`), instead of sliding out.
+   */
+  readonly replacedMotion: BottomSheetReplacedMotion | null;
+  /** How far down a replaced sheet moves to meet the entering sheet, in px. */
+  readonly alignmentOffset: number;
+  /** This open sheet is replacing the sheet that closed in the same update. */
+  readonly isReplacing: boolean;
 }
+
+export type BottomSheetReplacedMotion = 'covered' | 'aligning' | 'fading';
+
+/** The motions a host's panel reports to the registry during a replace. */
+export type BottomSheetReplaceMotion =
+  'entering' | 'aligning' | 'fading' | 'exiting';
 
 export const BOTTOM_SHEET_STACK_DEFAULT_VIEW: BottomSheetStackView = {
   isStacked: false,
@@ -105,6 +144,9 @@ export const BOTTOM_SHEET_STACK_DEFAULT_VIEW: BottomSheetStackView = {
   isScrimHandoff: false,
   isBlocked: false,
   isScrimTakenOver: false,
+  replacedMotion: null,
+  alignmentOffset: 0,
+  isReplacing: false,
 };
 
 /**
@@ -128,11 +170,36 @@ export interface BottomSheetStackRegistration {
   focus: (reason: BottomSheetFocusReason) => void;
   /** Receive this host's view whenever it changes. */
   onView: (view: BottomSheetStackView) => void;
+  /**
+   * What a host must supply to take part in a replace. A host without it (a
+   * switcher flow, which replaces its own steps) is never paired.
+   */
+  replaceable?: BottomSheetReplaceable;
+}
+
+export interface BottomSheetReplaceable {
+  /** The host's visual panel, measured for the replace alignment. */
+  getPanel: () => HTMLElement | null;
+  /** The element focus returns to when the sheet closes the flow. */
+  getOpener: () => HTMLElement | null;
+  /** Adopt the replaced sheet's opener, so the flow closes back to it. */
+  setOpener: (opener: HTMLElement | null) => void;
+  /** The replace is over: this replaced sheet is hidden and its dialog closed. */
+  finish: () => void;
 }
 
 interface Rank {
   batch: number;
   seq: number;
+}
+
+interface ReplaceState {
+  /** The sheet that opened in the same update and now stands in for this one. */
+  replacer: Entry;
+  motion: BottomSheetReplacedMotion;
+  alignmentOffset: number;
+  isAlignmentComplete: boolean;
+  isEnteringComplete: boolean;
 }
 
 interface Entry extends BottomSheetStackRegistration {
@@ -141,7 +208,18 @@ interface Entry extends BottomSheetStackRegistration {
   /** The document whose top layer this sheet's dialog is in. */
   doc: Document;
   view: BottomSheetStackView;
+  /** Set on a closed sheet while another sheet replaces it. */
+  replace: ReplaceState | null;
+  /** Set on an open sheet while it replaces the sheet that closed with it. */
+  replacing: Entry | null;
+  /**
+   * Reopened while it was being replaced: its panel is already in place, so
+   * when it replaces in turn its entrance is complete the moment it starts.
+   */
+  isEnteringInPlace: boolean;
 }
+
+const ALIGNMENT_THRESHOLD_PX = 1;
 
 /**
  * The registry's state. One per JavaScript realm, shared by every copy of this
@@ -158,6 +236,14 @@ interface StackState {
   // The order showModal() was called in for the presented entries, per
   // document: each document has its own top layer.
   shownOrder: Map<Document, Entry[]>;
+  // The open/close flips of the current batch (one commit); a replace pairs
+  // one of each. Cleared with the seal.
+  batchOpened: Entry[];
+  batchClosed: Entry[];
+  // Where focus was when the batch's first flip arrived: the control the
+  // person acted from, read before any dialog of this commit is shown and
+  // moves focus. A replace is recognised by it.
+  batchActor: Element | null;
   // Rank persists across a StrictMode replay (unregister and register in one
   // synchronous pass) so the replay cannot promote a sheet. A rank marked
   // closed is spent: the next open takes a new one.
@@ -174,13 +260,16 @@ interface StackState {
 const STACK_STATE_KEY = Symbol.for('astryx.bottomSheetStack');
 // Bump when Entry, the registration, or the batch/seal protocol changes shape
 // or meaning, so an older copy on the same page cannot share this state.
-const STACK_STATE_SHAPE = 1;
+const STACK_STATE_SHAPE = 2;
 
 function createStackState(): StackState {
   return {
     shape: STACK_STATE_SHAPE,
     entries: [],
     shownOrder: new Map(),
+    batchOpened: [],
+    batchClosed: [],
+    batchActor: null,
     rankByKey: new WeakMap(),
     currentBatch: 0,
     nextSeq: 0,
@@ -231,6 +320,17 @@ export function sealBottomSheetBatch(): void {
     state.currentBatch += 1;
     state.isBatchDirty = false;
   }
+  state.batchOpened = [];
+  state.batchClosed = [];
+  state.batchActor = null;
+}
+
+/** Record a flip of the current batch, and who acted if it is the first. */
+function recordFlip(entry: Entry, flip: 'opened' | 'closed'): void {
+  if (state.batchOpened.length === 0 && state.batchClosed.length === 0) {
+    state.batchActor = entry.doc.activeElement;
+  }
+  (flip === 'opened' ? state.batchOpened : state.batchClosed).push(entry);
 }
 
 function compareRank(a: Entry, b: Entry): number {
@@ -267,19 +367,26 @@ function isSameView(a: BottomSheetStackView, b: BottomSheetStackView): boolean {
     a.ownsScrim === b.ownsScrim &&
     a.isScrimHandoff === b.isScrimHandoff &&
     a.isBlocked === b.isBlocked &&
-    a.isScrimTakenOver === b.isScrimTakenOver
+    a.isScrimTakenOver === b.isScrimTakenOver &&
+    a.replacedMotion === b.replacedMotion &&
+    a.alignmentOffset === b.alignmentOffset &&
+    a.isReplacing === b.isReplacing
   );
 }
 
 function computeViews(order: Entry[]): void {
   const openEntries = order.filter(entry => entry.isOpen);
   const top = openEntries[openEntries.length - 1] ?? null;
-  const owner = openEntries[0] ?? null;
+  // A replaced sheet keeps the scrim while it is retained; the sheet replacing
+  // it takes the scrim over, instantly, when the replaced sheet leaves.
+  const owner =
+    order.find(entry => entry.isOpen || entry.replace != null) ?? null;
   const changed: Entry[] = [];
   order.forEach((entry, index) => {
     let depth = 0;
     for (let above = index + 1; above < order.length; above += 1) {
-      if (order[above].isOpen) {
+      // The sheet replacing this one stands in its place, not above it.
+      if (order[above].isOpen && order[above] !== entry.replace?.replacer) {
         depth += 1;
       }
     }
@@ -308,7 +415,10 @@ function computeViews(order: Entry[]): void {
       ownsScrim,
       isScrimHandoff,
       isBlocked: isCovered && !containsPresented,
-      isScrimTakenOver: !entry.isOpen && owner != null,
+      isScrimTakenOver: !entry.isOpen && owner != null && owner !== entry,
+      replacedMotion: entry.replace?.motion ?? null,
+      alignmentOffset: entry.replace?.alignmentOffset ?? 0,
+      isReplacing: entry.replacing != null,
     };
     if (!isSameView(entry.view, view)) {
       entry.view = view;
@@ -372,8 +482,8 @@ export function cancelScrimWrite(pending: BottomSheetScrimWrite): void {
  * focus to the element that was focused when `showModal()` ran; with another
  * sheet still open on top, that would pull focus out of the sheet the person
  * is using (a re-show that repairs the top-layer order, a covered sheet
- * closing from code). Focus stays where it is; the caller decides where it
- * goes next, if anywhere.
+ * closing from code, a replaced sheet leaving). Focus stays where it is; the
+ * caller decides where it goes next, if anywhere.
  */
 export function closeDialogKeepingFocus(
   dialog: HTMLDialogElement | null,
@@ -390,6 +500,203 @@ export function closeDialogKeepingFocus(
     activeElement.isConnected
   ) {
     activeElement.focus({preventScroll: true});
+  }
+}
+
+/**
+ * Pair the one close and the one open of this batch as a replace. A replace
+ * is a move the person makes from one sheet to the next, and that is what
+ * the conditions check:
+ *
+ * - exactly one sheet closed and exactly one opened in this update;
+ * - both are standalone sheets of one document (a switcher flow replaces its
+ *   own steps and is never paired);
+ * - the closing sheet was the top sheet of its stack once the opening sheet
+ *   is set aside — a covered sheet closing while a sheet opens is a pop
+ *   beneath a push;
+ * - neither dialog contains the other — a sheet in another's content closes
+ *   with it, it does not replace it;
+ * - the interaction came from inside the closing sheet: the element that was
+ *   focused when this update's first flip arrived (before any dialog of the
+ *   update was shown) is in its dialog, or nowhere (a control that left with
+ *   the step). A close and an open driven from a control outside the closing
+ *   sheet are two unrelated owners acting in one update, so the sheets keep
+ *   their own openers and their own push and pop motion.
+ *
+ * The opening sheet then adopts the closing sheet's opener: its own opener
+ * is inside the sheet that is leaving, and the flow began where the closing
+ * sheet's did.
+ */
+function detectReplace(): void {
+  if (state.batchOpened.length !== 1 || state.batchClosed.length !== 1) {
+    return;
+  }
+  const [replacer] = state.batchOpened;
+  const [replaced] = state.batchClosed;
+  if (
+    replaced === replacer ||
+    replaced.replaceable == null ||
+    replacer.replaceable == null ||
+    replaced.doc !== replacer.doc ||
+    replaced.replace?.replacer === replacer ||
+    !replacer.isOpen ||
+    replaced.isOpen
+  ) {
+    return;
+  }
+  const replacedElement = replaced.getElement();
+  const replacerElement = replacer.getElement();
+  if (
+    replacedElement == null ||
+    replacerElement == null ||
+    replacedElement.contains(replacerElement) ||
+    replacerElement.contains(replacedElement)
+  ) {
+    return;
+  }
+  const wasTop = !sortedEntries(replaced.doc).some(
+    other =>
+      other !== replacer &&
+      other !== replaced &&
+      other.isOpen &&
+      compareRank(other, replaced) > 0,
+  );
+  if (!wasTop) {
+    return;
+  }
+  const actor = state.batchActor;
+  const actedFromReplaced =
+    actor == null ||
+    actor === replaced.doc.body ||
+    replacedElement.contains(actor);
+  if (!actedFromReplaced) {
+    return;
+  }
+  // A sheet the closing sheet was itself replacing is dropped at once, the
+  // way a switcher drops a step that is left mid-handoff.
+  if (replaced.replacing != null) {
+    finishReplace(replaced.replacing);
+  }
+  if (replaced.replace != null) {
+    replaced.replace.replacer.replacing = null;
+  }
+  if (replacer.replace != null) {
+    replacer.replace = null;
+  }
+  replaced.replace = {
+    replacer,
+    motion: 'covered',
+    alignmentOffset: 0,
+    isAlignmentComplete: false,
+    isEnteringComplete: false,
+  };
+  replacer.replacing = replaced;
+  replacer.replaceable.setOpener(replaced.replaceable.getOpener());
+}
+
+/**
+ * End a replace: the replaced sheet is hidden and its dialog closed; the
+ * views computed next hand the scrim to the sheet that replaced it, which
+ * takes it in the same frame. Focus stays where it is.
+ */
+function finishReplace(replaced: Entry): void {
+  const replace = replaced.replace;
+  if (replace == null) {
+    return;
+  }
+  const {replacer} = replace;
+  replaced.replace = null;
+  if (replacer.replacing === replaced) {
+    replacer.replacing = null;
+  }
+  replaced.hide();
+  replaced.replaceable?.finish();
+}
+
+function alignmentOffsetForPanels(
+  enteringPanel: HTMLElement | null,
+  retainedPanel: HTMLElement | null,
+): number {
+  if (enteringPanel == null || retainedPanel == null) {
+    return 0;
+  }
+  // The positioner is where the entering sheet will rest; the panel itself
+  // is still rising from below the viewport.
+  const enteringTop =
+    enteringPanel.parentElement?.getBoundingClientRect().top ??
+    enteringPanel.getBoundingClientRect().top;
+  return Math.max(0, enteringTop - retainedPanel.getBoundingClientRect().top);
+}
+
+/**
+ * A host's panel reports the start and end of its motions here. During a
+ * replace they drive the handoff: when the entering sheet starts to rise, a
+ * taller retained sheet starts moving down to its top edge; the retained
+ * sheet fades once both have finished; when the fade ends the replace is over.
+ */
+export function reportBottomSheetMotion(
+  key: object,
+  event: 'start' | 'complete',
+  motion: BottomSheetReplaceMotion,
+): void {
+  const entry = state.entries.find(candidate => candidate.key === key);
+  if (entry == null) {
+    return;
+  }
+  if (motion === 'entering') {
+    const replaced = entry.replacing;
+    const replace = replaced?.replace ?? null;
+    if (replaced == null || replace == null || replace.replacer !== entry) {
+      return;
+    }
+    if (event === 'start') {
+      if (replace.motion !== 'covered') {
+        return;
+      }
+      const alignmentOffset = alignmentOffsetForPanels(
+        entry.replaceable?.getPanel() ?? null,
+        replaced.replaceable?.getPanel() ?? null,
+      );
+      if (alignmentOffset > ALIGNMENT_THRESHOLD_PX) {
+        replace.motion = 'aligning';
+        replace.alignmentOffset = alignmentOffset;
+        replace.isAlignmentComplete = false;
+      }
+      // A sheet that came back while fading is already where it belongs:
+      // its entrance is over as soon as it starts, like a switcher step's.
+      if (entry.isEnteringInPlace) {
+        entry.isEnteringInPlace = false;
+        replace.isEnteringComplete = true;
+        if (replace.motion !== 'aligning') {
+          replace.motion = 'fading';
+        }
+      } else if (replace.motion === 'covered') {
+        return;
+      }
+    } else {
+      replace.isEnteringComplete = true;
+      if (replace.motion === 'aligning' && !replace.isAlignmentComplete) {
+        return;
+      }
+      replace.motion = 'fading';
+    }
+    update(entry.doc);
+    return;
+  }
+  const replace = entry.replace;
+  if (replace == null || event !== 'complete') {
+    return;
+  }
+  if (motion === 'aligning' && replace.motion === 'aligning') {
+    if (replace.isEnteringComplete) {
+      replace.motion = 'fading';
+    } else {
+      replace.isAlignmentComplete = true;
+    }
+    update(entry.doc);
+  } else if (motion === 'fading' && replace.motion === 'fading') {
+    finishReplace(entry);
+    update(entry.doc);
   }
 }
 
@@ -444,6 +751,7 @@ function reconcileTopLayer(doc: Document, order: Entry[]): void {
 }
 
 function update(doc: Document): void {
+  detectReplace();
   const order = sortedEntries(doc);
   computeViews(order);
   reconcileTopLayer(doc, order);
@@ -488,8 +796,14 @@ export function registerBottomSheet(
     isOpen,
     doc: registration.getElement()?.ownerDocument ?? document,
     view: BOTTOM_SHEET_STACK_DEFAULT_VIEW,
+    replace: null,
+    replacing: null,
+    isEnteringInPlace: false,
   };
   state.entries.push(entry);
+  if (isOpen && rank.batch === state.currentBatch && state.isBatchDirty) {
+    recordFlip(entry, 'opened');
+  }
   update(entry.doc);
 
   return () => {
@@ -504,6 +818,17 @@ export function registerBottomSheet(
         entry.doc,
         shownOrder.filter(shown => shown !== entry),
       );
+    }
+    state.batchOpened = state.batchOpened.filter(other => other !== entry);
+    state.batchClosed = state.batchClosed.filter(other => other !== entry);
+    if (entry.replace != null) {
+      entry.replace.replacer.replacing = null;
+      entry.replace = null;
+    }
+    if (entry.replacing != null) {
+      // The sheet it was replacing is left as an ordinary closing sheet.
+      entry.replacing.replace = null;
+      entry.replacing = null;
     }
     // A sheet that leaves while its dialog is still open was hidden by React
     // (Suspense, Activity) or is unmounting: a modal dialog with no box would
@@ -540,8 +865,26 @@ export function setBottomSheetOpen(key: object, isOpen: boolean): void {
       isClosed: false,
       detachedBatch: null,
     });
-  } else if (remembered != null) {
-    remembered.isClosed = true;
+    recordFlip(entry, 'opened');
+    // Reopened while being replaced: it is a sheet again, not a fading one.
+    if (entry.replace != null) {
+      entry.replace.replacer.replacing = null;
+      entry.replace = null;
+      entry.isEnteringInPlace = true;
+    }
+  } else {
+    if (remembered != null) {
+      remembered.isClosed = true;
+    }
+    state.isBatchDirty = true;
+    scheduleSeal();
+    recordFlip(entry, 'closed');
+    entry.isEnteringInPlace = false;
+    // A replacing sheet that closes drops the sheet it was replacing at once,
+    // the way a switcher hides a retained step when the flow is left.
+    if (entry.replacing != null) {
+      finishReplace(entry.replacing);
+    }
   }
   update(entry.doc);
 }
@@ -628,6 +971,9 @@ export function getBottomSheetStackForTests(
 export function resetBottomSheetStackForTests(): void {
   state.entries.length = 0;
   state.shownOrder.clear();
+  state.batchOpened = [];
+  state.batchClosed = [];
+  state.batchActor = null;
   state.currentBatch = 0;
   state.nextSeq = 0;
   state.isBatchDirty = false;
