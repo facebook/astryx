@@ -81,7 +81,10 @@ import {
 } from '../utils/interactionModality';
 import {useAnnounce} from '../hooks/useAnnounce';
 import {FOCUSABLE_SELECTOR} from '../hooks/focusableSelector';
-import {useAnnounceRenderedText} from '../hooks/useAnnounceRenderedText';
+import {
+  renderedText,
+  useAnnounceRenderedText,
+} from '../hooks/useAnnounceRenderedText';
 import {useResolvedRequired} from '../hooks/useResolvedRequired';
 import {
   useFieldInputStyling,
@@ -1663,6 +1666,32 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
     hasCreateRow &&
     realItemCount === 0;
   useAnnounceRenderedText(createRowRef, isCreateRowAlone, searchQuery);
+  // Content that renders no readable text leaves the create row with no
+  // accessible name and nothing to announce; say so once in development. A
+  // development diagnostic that reads the DOM the row rendered, so it runs
+  // after every commit, as the announcement above does.
+  const isCreateRowContentShown =
+    surface.isOpen && hasCreateOptionContent && hasCreateRow;
+  const hasWarnedNamelessCreateRowRef = useRef(false);
+  useEffect(() => {
+    if (
+      process.env.NODE_ENV === 'production' ||
+      !isCreateRowContentShown ||
+      hasWarnedNamelessCreateRowRef.current
+    ) {
+      return;
+    }
+    const row = createRowRef.current;
+    if (row != null && renderedText(row) === '') {
+      hasWarnedNamelessCreateRowRef.current = true;
+      devWarn(
+        'MultiSelector',
+        '`renderCreateOption` rendered no readable text, so the create row ' +
+          'has no accessible name and announces nothing. Render text that ' +
+          'names the creation, such as its `label`, visually hidden if need be.',
+      );
+    }
+  });
 
   // Handle toggle
   // Clear all selected values. Shared by the clear button and the keyboard
