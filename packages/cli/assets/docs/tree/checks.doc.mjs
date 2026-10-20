@@ -74,11 +74,11 @@ export const docs = {
     },
     {
       id: 'run-every-check-in-ci',
-      title: 'Run every check in CI',
+      title: 'Run every check in every build (required)',
       content: [
         {
           type: 'prose',
-          text: "Run `integration check --strict` in your package's own build, so every build keeps your docs, types, and links in sync, and run `integration verify` before you publish. Install devDependencies first, because the components check needs Core, and `tsc --noEmit` needs `typescript` and a `tsconfig.json`. In package.json:",
+          text: 'Every integration runs `integration check --strict` in its own build, so every build keeps your docs, types, and links in sync; this is required, not optional. Run `integration verify` before you publish. Install devDependencies first, because the components check needs Core, and `tsc --noEmit` needs `typescript` and a `tsconfig.json`. In package.json:',
         },
         {
           type: 'code',

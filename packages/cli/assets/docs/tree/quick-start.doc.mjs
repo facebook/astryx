@@ -34,12 +34,12 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: 'An integration starts as a normal npm package. Make a folder for it, create a package.json inside that folder, give the package a name, then install the Astryx CLI and Core for development.',
+          text: 'An integration starts as a normal npm package. Make a folder for it, create a package.json inside that folder, give the package a name, then install the Astryx CLI, Core, and TypeScript for development.',
         },
         {
           type: 'code',
           lang: 'bash',
-          code: "mkdir acme-widgets && cd acme-widgets\nnpm init -y\nnpm pkg set name=@acme/astryx-widgets\nnpm pkg set 'exports={}' --json\nnpm install -D @astryxdesign/cli @astryxdesign/core",
+          code: "mkdir acme-widgets && cd acme-widgets\nnpm init -y\nnpm pkg set name=@acme/astryx-widgets\nnpm pkg set 'exports={}' --json\nnpm install -D @astryxdesign/cli @astryxdesign/core typescript@6",
         },
         {
           type: 'list',
@@ -48,6 +48,7 @@ export const docs = {
             'Start with `"exports": {}`: each component and template you add then writes the public import that `integration verify` resolves.',
             'Run the CLI as `npx astryx`, which runs the `@astryxdesign/cli` you installed as a devDependency.',
             'Component commands read Core, so they need `@astryxdesign/core` installed.',
+            "The checks compare your docs with your code through TypeScript's JavaScript compiler API, so they need `typescript` 5.0 through 6 installed. TypeScript 7 does not ship that API, and with it the checks skip those comparisons.",
           ],
         },
         {
@@ -85,6 +86,33 @@ export const docs = {
         {
           type: 'prose',
           text: 'You now have an integration package with one exported component.',
+        },
+        {
+          type: 'heading',
+          level: 3,
+          text: 'Check it in every build (required)',
+        },
+        {
+          type: 'prose',
+          text: 'Every integration runs `integration check --strict` in its own build, so a doc, prop, template, or link that stops matching the code fails your build instead of reaching the apps that install your package. Set it up now, as the `typecheck` script, and run it.',
+        },
+        {
+          type: 'code',
+          lang: 'bash',
+          code: 'npm pkg set scripts.typecheck="astryx integration check --strict"\nnpm run typecheck',
+        },
+        {
+          type: 'code',
+          lang: 'text',
+          code: '[ok] 0 errors, 0 warnings, 0 skipped. Every check passed.',
+        },
+        {
+          type: 'list',
+          style: 'unordered',
+          items: [
+            'Run `typecheck` in CI and before every publish. When you add a `tsconfig.json`, put `tsc --noEmit && ` in front of the check so the same script checks your types.',
+            'What each check covers, and what `--strict` adds: {@link generic:checks}.',
+          ],
         },
         {
           type: 'heading',
@@ -177,8 +205,8 @@ export const docs = {
             ],
             [
               '`devDependencies`',
-              '`@astryxdesign/cli` and `@astryxdesign/core`',
-              'Lets you run the CLI and build components while working on the integration.',
+              '`@astryxdesign/cli`, `@astryxdesign/core`, and `typescript`',
+              'Lets you run the CLI, build components, and run the checks while working on the integration.',
             ],
           ],
         },
