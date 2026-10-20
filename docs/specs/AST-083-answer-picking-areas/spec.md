@@ -84,22 +84,27 @@ contains and how good it must be (`spec:AST-048` for `astryx build`).
   the routed ids MUST be tried in order, and the first node that answers gives
   the area's answer; when none answers, the fallback runs. A routed dispatcher
   is run the same way, at any depth. Answers are never combined across nodes.
-- **FR6 — Local, deterministic, and free.** A node MUST NOT open a network
-  connection, call a remote model or service, start a subprocess, read or write
-  files, or call another command's function that does. The area's adapter MUST
-  gather everything the nodes read, including the catalog, the weights, and any
-  model asset the CLI ships, before the tree runs, and every node MUST receive
-  it through the same node context at every depth. An area MAY declare one
-  per-request preparation step, run once before the root under the same rules.
-  The same request, catalog, and weights MUST give the same answer, byte for
-  byte, on every supported platform: ties break in a fixed order, and no answer
-  depends on floating-point evaluation order. A node that runs a shipped model
-  asset MUST have a test that pins its output across the supported platforms.
-- **FR7 — Weights are static, reviewed, and public-safe.** A node MAY declare
-  one weights file beside it. The file MUST hold only numbers and public
+- **FR6 — Plain algorithms, local and deterministic.** A searcher MUST be a
+  deterministic algorithm written as code, reading at most the small static
+  weight files of FR7. The CLI MUST NOT ship a model runtime, an inference or
+  neural-network library, a model file, or code that loads one. A node MUST NOT
+  open a network connection, call a remote model or service, start a
+  subprocess, read or write files, or call another command's function that
+  does. The area's adapter MUST gather everything the nodes read, the catalog
+  and the weights, before the tree runs, and every node MUST receive it through
+  the same node context at every depth. An area MAY declare one per-request
+  preparation step, run once before the root under the same rules. The same
+  request, catalog, and weights MUST give the same answer, byte for byte, on
+  every supported platform: ties break in a fixed order, and no answer depends
+  on floating-point evaluation order. Each area MUST have a test that pins its
+  answers for representative requests across the supported platforms.
+- **FR7 — Weights are static, small, reviewed, and public-safe.** A node MAY
+  declare one weights file beside it. An area's weights files MUST total at
+  most 1 MB (1,000,000 bytes). The file MUST hold only numbers and public
   vocabulary: no request text, identifiers of people or sessions, training
   code, lineage, or scores. The area's adapter MUST load it. A declared file
-  that is missing MUST fail the structure check (FR12).
+  that is missing, or an area over the size limit, MUST fail the structure
+  check (FR12).
 - **FR8 — Examples are executable.** Every handled example MUST give its stated
   output (a partial match: it pins what it states), and every not-handled
   example MUST be declined, when run through the area as it ships. The node's
@@ -127,7 +132,9 @@ contains and how good it must be (`spec:AST-048` for `astryx build`).
 - **FR12 — The structure is checked.** The CLI's structure check MUST fail on
   an area entry function with logic beyond gathering and running the tree; a
   node without a complete descriptor, examples, or tests; a declared weights
-  file that does not exist; a dispatcher that imports a searcher or scoring
+  file that does not exist; an area whose weights files exceed the size limit
+  of FR7; a model runtime or inference library among the CLI's dependencies,
+  or a model file in an area; a dispatcher that imports a searcher or scoring
   code; a network or model import in a node; and file, subprocess, or project
   access in a node.
 - **FR13 — Nodes do not grow answers.** An area's tests MUST pin the serialized
@@ -147,18 +154,18 @@ contains and how good it must be (`spec:AST-048` for `astryx build`).
 
 ## Verification
 
-| Contract  | Verification                                                                                                             | Representative states                                                                          | Mutation or failure expectation                                                         |
-| --------- | ------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
-| FR1, FR12 | The CLI structure check                                                                                                  | an entry with a scoring loop; a node missing tests; a declared weights file absent             | Each state fails the check; removing the check lets them pass                           |
-| FR2       | The CLI strict type check over the kit and every area                                                                    | a third `kind`; a descriptor without examples; an untyped node                                 | Each fails to type-check                                                                |
-| FR3, FR5  | Kit runner tests                                                                                                         | a route above and below the floor; a routed child that declines; nested dispatchers            | Taking a routed answer below the floor, or skipping the fallback, fails                 |
-| FR4, FR13 | Per-area output-size tests                                                                                               | a node that adds a field                                                                       | The pinned size fails                                                                   |
-| FR6       | Offline assertion around every node test; for a node with a model asset, a pinned-output test on each supported platform | a node that calls the network, a subprocess, or the file system; a model node on two platforms | The call fails the test; output that differs across platforms fails                     |
-| FR7       | Structure check and review                                                                                               | a missing weights file; a weights file with free text                                          | The missing file fails the check                                                        |
-| FR8       | Example checks in each node's tests                                                                                      | a handled example whose output changed; a declined example that now answers                    | Each fails                                                                              |
-| FR10      | Kit tests and per-area tests                                                                                             | a weights override; a trace; no `tuning`                                                       | Output without `tuning` that differs from the shipped answer fails; trace in JSON fails |
-| FR11      | Docs tests and `astryx doctor`'s CLI docs check                                                                          | a node in every area                                                                           | A node with no readable doc fails                                                       |
-| FR14      | Each area's existing JSON-shape tests                                                                                    | the area before and after restructuring                                                        | A changed shape fails                                                                   |
+| Contract  | Verification                                                                                      | Representative states                                                                                                                                       | Mutation or failure expectation                                                         |
+| --------- | ------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| FR1, FR12 | The CLI structure check                                                                           | an entry with a scoring loop; a node missing tests; a declared weights file absent; an inference library in the CLI's dependencies; a model file in an area | Each state fails the check; removing the check lets them pass                           |
+| FR2       | The CLI strict type check over the kit and every area                                             | a third `kind`; a descriptor without examples; an untyped node                                                                                              | Each fails to type-check                                                                |
+| FR3, FR5  | Kit runner tests                                                                                  | a route above and below the floor; a routed child that declines; nested dispatchers                                                                         | Taking a routed answer below the floor, or skipping the fallback, fails                 |
+| FR4, FR13 | Per-area output-size tests                                                                        | a node that adds a field                                                                                                                                    | The pinned size fails                                                                   |
+| FR6       | Offline assertion around every node test; per-area pinned-answer tests on each supported platform | a node that calls the network, a subprocess, or the file system; the same request on two platforms                                                          | The call fails the test; answers that differ across platforms fail                      |
+| FR7       | Structure check and review                                                                        | a missing weights file; an area over 1 MB of weights; a weights file with free text                                                                         | The missing file and the oversized area fail the check                                  |
+| FR8       | Example checks in each node's tests                                                               | a handled example whose output changed; a declined example that now answers                                                                                 | Each fails                                                                              |
+| FR10      | Kit tests and per-area tests                                                                      | a weights override; a trace; no `tuning`                                                                                                                    | Output without `tuning` that differs from the shipped answer fails; trace in JSON fails |
+| FR11      | Docs tests and `astryx doctor`'s CLI docs check                                                   | a node in every area                                                                                                                                        | A node with no readable doc fails                                                       |
+| FR14      | Each area's existing JSON-shape tests                                                             | the area before and after restructuring                                                                                                                     | A changed shape fails                                                                   |
 
 ## Decision log
 
@@ -215,10 +222,21 @@ A node's descriptor is read by the runner, the tests, and `astryx docs` alike,
 so what a node claims to handle is what it is tested to handle and what readers
 see.
 
+### DEC-6 — Plain algorithms and a 1 MB weights limit per area
+
+**Reference:** `spec:AST-083/DEC-6`
+**Decider:** `josephfarina (proposed)`, `2026-10-20`
+
+Areas improve by adding and tuning nodes, each a plain algorithm, not by
+shipping models. Without a model runtime the CLI's install stays small, every
+answer is reproducible from code and reviewed numbers, and nodes stay readable.
+The weights an area ships today are far under the limit: build's word weights
+are 156,741 bytes, and search and name suggestions ship none, so 1 MB per area
+leaves room to grow while keeping each file reviewable.
+
+Rejected: a model runtime with an encoder — it adds install size and answers no
+reviewer can trace to code.
+
 ## Open questions
 
-- **OQ1 — Is there a size cap for what an area ships?** (`human-design`) The
-  cap would count weights and model assets together with any runtime
-  dependency they need, such as an inference library added to the CLI's
-  dependencies. A cap bounds the install size areas add; no cap leaves it to
-  review.
+None.
