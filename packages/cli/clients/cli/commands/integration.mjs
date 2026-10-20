@@ -155,7 +155,8 @@ async function checkPackage(program, options) {
         : data.name;
     emit(
       // --strict lists each warning and each skipped check again, as the
-      // error it now is, in the issue format the checks use.
+      // error it now is: by check, code and place only, since the check's own
+      // output above already printed its message and fix once.
       ...(data.failures.length > 0
         ? [
             section('Failing under --strict'),
@@ -166,8 +167,6 @@ async function checkPackage(program, options) {
                 'code',
                 'component',
                 'prop',
-                'message',
-                'fix',
                 'file',
                 'line',
               ],

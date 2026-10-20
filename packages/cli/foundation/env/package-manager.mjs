@@ -512,3 +512,50 @@ export function formatCliCommand(command, targetDir) {
   const stem = getCliInvocation(targetDir);
   return sub ? `${stem} ${sub}` : stem;
 }
+
+/**
+ * Quote one argument of a printed command so the shell it is pasted into
+ * passes it on unchanged. Printed commands target a POSIX shell (sh, bash,
+ * zsh), and PowerShell on Windows; cmd.exe is not a target. A value made only
+ * of letters, digits and `@ / . _ -` (and, on Windows, a drive path's `:` and
+ * `\`) stays bare. Any other value gets single quotes, inside which both
+ * shells read `$`, backticks, `%`, `!`, spaces and double quotes literally. An
+ * embedded single quote is written `'\''` for a POSIX shell and doubled for
+ * PowerShell, which also ends a single-quoted string at the typographic
+ * quotes `‘ ’ ‚ ‛`, so those are doubled too (`Macy’s` → `'Macy’’s'`).
+ *
+ * @param {string} value
+ * @param {string} [platform] the `process.platform` the command is printed for
+ * @returns {string}
+ */
+export function quoteCommandArgument(value, platform = process.platform) {
+  const text = String(value);
+  if (platform === 'win32') {
+    if (/^[A-Za-z0-9@/._:\\-]+$/u.test(text)) return text;
+    return `'${text.replace(/['\u2018\u2019\u201A\u201B]/gu, quote => quote + quote)}'`;
+  }
+  if (/^[A-Za-z0-9@/._-]+$/u.test(text)) return text;
+  return `'${text.replace(/'/gu, `'\\''`)}'`;
+}
+
+/**
+ * A printed command that changes to `dir`, then runs `command` there, so it
+ * does the same work pasted from any folder. It runs `command` only when the
+ * change worked. For a POSIX shell: `cd <dir> && <command>`. For PowerShell
+ * on Windows: `cd -LiteralPath <dir> -ErrorAction Stop; <command>`, because
+ * `-LiteralPath` reads `[` and `]` in a folder name literally, and a failed
+ * change stops the line in Windows PowerShell 5.1, which has no `&&`, as in
+ * PowerShell 7.
+ *
+ * @param {string} dir an absolute folder
+ * @param {string} command the command to run there, its arguments already
+ *   quoted with {@link quoteCommandArgument}
+ * @param {string} [platform] the `process.platform` the command is printed for
+ * @returns {string}
+ */
+export function commandInFolder(dir, command, platform = process.platform) {
+  const folder = quoteCommandArgument(dir, platform);
+  return platform === 'win32'
+    ? `cd -LiteralPath ${folder} -ErrorAction Stop; ${command}`
+    : `cd ${folder} && ${command}`;
+}

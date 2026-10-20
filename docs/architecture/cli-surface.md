@@ -61,22 +61,28 @@ the commands do.
 
 ## System model
 
-A run has four stages, and each one is a place where the surface is enforced
+A run has five stages, and each one is a place where the surface is enforced
 rather than left to the command author.
 
 1. **Preflight.** `clients/cli/bin/astryx.mjs` gates the Node version using
    only built-ins, before importing anything that could fail on an old
    runtime. The gate honours `--json` with a hand-rolled envelope carrying
    `ERR_NODE_VERSION`.
-2. **Dispatch.** `clients/cli/index.mjs` parses with Commander, sets JSON mode
+2. **Release choice.** `foundation/release/handoff.mjs` chooses the release
+   that answers the folder (`spec:AST-081` FR2) before anything the project
+   provides loads. When that release is not this copy, the run is handed to
+   it once, with the same arguments, folder, and standard streams, and ends
+   with its exit status (`spec:AST-081` FR9); a release that cannot run fails
+   the run with `ERR_VERSIONS_UNAVAILABLE` before any write.
+3. **Dispatch.** `clients/cli/index.mjs` parses with Commander, sets JSON mode
    in `preAction` before any command body runs, and rejects a command that
    cannot support `--json` before any side effect.
-3. **Work.** The command parses its arguments and calls a function in `api/`.
+4. **Work.** The command parses its arguments and calls a function in `api/`.
    The command is a thin wrapper: parse, call, render. The API function is the
    unit that is scriptable and typed, and it is the source of truth for the
    `type` discriminator on its own envelope. `spec:AST-042` FR1 makes this the
    contract; INV20–INV22 fix where each part lives.
-4. **Render.** Exactly one of two paths. In `--json` mode, `jsonOut` writes a
+5. **Render.** Exactly one of two paths. In `--json` mode, `jsonOut` writes a
    single envelope. Otherwise the formatters render the same values as text,
    from a closed set of blocks (INV23). Nothing else may write to stdout.
 
@@ -114,14 +120,16 @@ and remains available through explicit Core package selection.
   condition, not a fallback. A command with nothing to do exits with a result,
   never a question.
 - **INV2 — Every `--json` emission is one valid envelope.** Success is
-  `{apiVersion, type, data}` plus optional `package` (INV28) and `meta`. Failure is
+  `{apiVersion, type, data}` plus optional `package` (INV28) and `meta`, which
+  carries `answeredBy` on every success (`spec:AST-081` FR5). Failure is
   `{apiVersion, error, code}` plus optional `suggestions`. There is no third
   shape, no partial write, and no raw stack trace: an uncaught throw becomes an
   envelope at the bin error boundary.
 - **INV3 — The code is the contract; the prose is not.** `code` is stable and
   append-only. Once shipped, a code's meaning never changes and the code is
-  never removed. The `error` string may be reworded at any time. A consumer
-  branches on `code`.
+  never removed. The `error` string may be reworded at any time. A consumer branches on `code`.
+  `ERR_PROJECT_REQUIRED` and `ERR_VERSIONS_UNAVAILABLE` carry the refusals and
+  failures `spec:AST-081` FR2 and FR4 define.
 - **INV4 — Human output is a projection of the JSON, produced only by the
   formatters.** `emit` accepts a renderer-produced `Block` and nothing else, so
   a stray string cannot reach stdout. Output is plain ASCII: no colour, no TTY
@@ -134,7 +142,9 @@ and remains available through explicit Core package selection.
   `<parent>-<child>.doc.mjs`.
 - **INV7 — Every command ships a `CommandDoc`, and the generated surfaces come
   from it.** Help text, the README command and error-code tables, and the
-  manifest are generated. None of them is written by hand.
+  manifest are generated. None of them is written by hand. Every command and
+  subcommand's `CommandDoc` declares `outsideProject`, which the manifest
+  publishes (`spec:AST-081` FR4).
 - **INV8 — Exit codes do not depend on the output mode.** The same condition
   exits the same way with and without `--json`, so a command works as a gate
   without parsing stdout.
@@ -226,7 +236,12 @@ and remains available through explicit Core package selection.
   effect**, not part-way through the work.
 - **INV10 — Every write is confined.** Output paths pass `assertWithin`, which
   canonicalises symlinks and rejects a NUL byte; an escape is
-  `ERR_PATH_TRAVERSAL`. Bounded inputs are capped rather than trusted.
+  `ERR_PATH_TRAVERSAL`. Bounded inputs are capped rather than trusted. The only
+  writes outside a project or output folder are the per-user ones
+  `spec:AST-081` FR7 lists: releases and records in the per-user cache, the
+  settings and state files, and the computer-level skill file with its links or
+  copy in the home folder. None follows a link in its place, and none replaces
+  anything the CLI did not create.
 - **INV10a — Refusing a write outside its confined root is a compatible fix.**
   When a current record already confines the writes of a CLI operation (a
   command or its programmatic API) to a root, a change that makes the operation
@@ -260,11 +275,15 @@ and remains available through explicit Core package selection.
   owned by the checks that read them.
 - **INV12 — Human chatter never touches stdout in JSON mode.** `humanLog` and
   `humanWarn` are the only chatter primitives, and both are no-ops under
-  `--json`.
+  `--json`. The run-level lines `spec:AST-081` defines, which print before or
+  after a command (who answered, the fallback warning, install progress, and
+  update notices), go to standard error and print nothing under `--json`.
 - **INV13 — Agent docs have one rendered source of truth.** Init and upgrade
   render configured integration `agentDocs` through the existing `Project`
   seam. Upgrade compares complete block bytes even when Core is unchanged and,
   when codemods or hooks run, writes the prepared block only after they succeed.
+  The computer-level agent text that `astryx init --user` writes renders from
+  the same source (`spec:AST-081` FR8).
 - **INV31 — Agent docs reach every agent from the project's own files.** By
   default, init writes the agent-docs block so that every agent CLI reads at
   least one copy, whether it starts at the project root or in a folder below
@@ -300,7 +319,12 @@ and remains available through explicit Core package selection.
     project. A folder inside a settings folder belongs to a project when it,
     or a folder above it below the settings folder, has a `package.json`; the
     settings folder itself never does. Init reports the folder it refused and
-    still succeeds, and removing a block there stays allowed.
+    still succeeds, and removing a block there stays allowed. The
+    computer-level skill file `spec:AST-081` FR8 writes
+    (`~/.agents/skills/astryx/SKILL.md`, with its folder links or copy in other
+    agents' skill folders) is not a project's agent docs: only
+    `astryx init --user` and the global copy's background step write it, as
+    INV10 and FR8 state.
   - Upgrade refreshes every copy where it is and moves none.
   - `--remove-agents` removes the block at the project root and in the working
     folder. Every file it would change resolves inside its own folder, or it
@@ -315,6 +339,12 @@ and remains available through explicit Core package selection.
   manifest fails to load is dropped rather than raised as the consuming
   project's issue. Outside a project, a hosted run also loads each integration
   its host approves, by name, from the package root that serves it (INV30).
+  Integrations installed for the computer (`spec:AST-081` FR12) contribute
+  only outside a project, from the packages installed beside the global copy.
+  Inside a project they contribute nothing: `discover` and `doctor` load the
+  manifest of each one the project does not install only to list as available
+  the ones whose peer range admits the answering release and whose manifest
+  loads.
 - **INV15 — Integration authoring writes one complete, discoverable contribution.**
   `integration add <kind> <name>` and its typed per-kind APIs share one receipt
   contract. A dry run reports the same planned paths without writing. A real run
@@ -393,8 +423,8 @@ and remains available through explicit Core package selection.
   function it calls. The handler parses its arguments, calls that function, and
   renders the result through `jsonOut` or the formatter kit. It reads no files,
   loads no project, runs no discovery, and starts no subprocess or network
-  request; it may phrase hints with how the CLI was invoked, such as the package
-  manager's run prefix. Only command handlers, their `CommandDoc` files, and
+  request; it may phrase hints with the command name `spec:AST-081` FR5's picker
+  chooses. Only command handlers, their `CommandDoc` files, and
   their tests live in that directory. `clients/cli/commands/blog.mjs` is the
   reference handler.
 - **INV23 — The formatter kit is closed.** Text output is built only from the
@@ -544,6 +574,9 @@ non-interactive guarantee.
 
 - `clients/cli/bin/astryx.mjs` — Node floor gate and the error boundary that
   converts an uncaught throw into an envelope.
+- `foundation/release` — the release choice, the per-user release cache, the
+  hand-off, `meta.answeredBy`, and the update check and its notices
+  (`spec:AST-081`).
 - `clients/cli/index.mjs` — Commander wiring, JSON-mode gate, dispatch.
 - `clients/cli/commands/<name>.mjs` — one command: parse, call the API, render.
 - `clients/cli/commands/<name>.doc.mjs` — the `CommandDoc` that generates help
@@ -586,6 +619,8 @@ non-interactive guarantee.
   function.
 - `spec:AST-042/DEC-2` — every command's text output uses one shared block
   vocabulary.
+- `spec:AST-081` — which release answers a run, the hand-off, what every
+  command does outside a project, and `meta.answeredBy`.
 
 ### DEC-1 — Doctor is the one command a broken configured integration fails
 
@@ -716,30 +751,30 @@ the destination.
 
 ## Verification
 
-| Invariant | Evidence                                                                                                                                                   | Failure signal                                                                                                                                  |
-| --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
-| INV1      | `clients/cli/commands/interactive-guard.test.mjs`                                                                                                          | The subprocess hangs: `signal === 'SIGTERM'` and `status === null`.                                                                             |
-| INV2      | `clients/cli/commands/json-contract.test.mjs`                                                                                                              | `--json` stdout does not parse, or parses to a shape outside the two.                                                                           |
-| INV3      | `foundation/response/error-codes.test.mjs`                                                                                                                 | A shipped code disappears, or an envelope carries an unregistered one.                                                                          |
-| INV4      | `clients/cli/formatters/index.test.mjs`, type tests                                                                                                        | `emit` accepts a bare string, or output varies between pipe and TTY.                                                                            |
-| INV6      | `pnpm check:cli-structure`                                                                                                                                 | A command's file or its doc is missing, or sits at the wrong path.                                                                              |
-| INV8      | `clients/cli/cli-exit-codes.test.mjs`                                                                                                                      | The same condition exits differently with and without `--json`.                                                                                 |
-| INV14     | `foundation/integrations/autolink.test.mjs`, `foundation/config/project.test.mjs`                                                                          | An undeclared package contributes, or configured/local precedence changes.                                                                      |
-| INV15     | `api/integration/add-contribution.test.mjs`, `clients/cli/commands/integration-authoring.test.mjs`                                                         | Dry-run/write paths differ, a writer clobbers bytes, or the new contribution is not discoverable.                                               |
-| INV16     | `foundation/integrations/manifest-writer.test.mjs`, `api/integration/add-contribution.test.mjs`                                                            | A writer invents package policy, replaces an author entry, or local bytes lose precedence.                                                      |
-| INV17     | `api/integration/pack-check.test.mjs`                                                                                                                      | Lifecycle output, packed files, identities, or public imports diverge without failing the gate.                                                 |
-| INV18     | `api/integration/validate-integration.test.mjs`, `api/theme/integration-themes.test.mjs`                                                                   | Diagnostics mutate files, or a selected broken theme package is reported as merely unknown.                                                     |
-| INV19     | `clients/cli/commands/integration-real-world.test.mjs`                                                                                                     | A CLI-authored theme, nested palette, or guides fail across pack, install, list, add, and build.                                                |
-| INV20     | `pnpm check:cli-structure` checks that each subject has a `FunctionDoc`, typedefs, and a test; per-function coverage and leaf layout are checked in review | A subject or exported function lacks its `FunctionDoc`, typedefs, or tests, or an operation sits outside its subject.                           |
-| INV21     | Review of imports under `api/**`; no mechanical check yet                                                                                                  | A module other than a subject's adapter reads or writes files, contacts the network, starts a subprocess, loads the project, or runs discovery. |
-| INV22     | Review of imports under `clients/cli/commands/**`; the docs drift harness checks each `CommandDoc` against the live command                                | A handler reaches the environment itself, an executable command's `CommandDoc` names no `fn`, or a non-command file sits in the directory.      |
-| INV23     | `clients/cli/formatters/index.test.mjs` for the kit; review of handlers; no mechanical check yet                                                           | A handler pads, aligns, or draws text itself, or a block kind is missing from the help "Output format" list.                                    |
-| INV24     | `api/integration/add-contribution.test.mjs`, `api/integration/add-theme.test.mjs`, `foundation/discovery/theme-discovery.test.mjs`                         | New authoring emits an untyped or non-`.doc.mjs` item, adding one item edits a shared file, or an item catalog becomes authoritative.           |
-| INV25     | `foundation/discovery/cli-self-docs.test.mjs`, `api/doctor/doctor.test.mjs`                                                                                | A CLI doc with no namespace, a namespace no topic reads, or no section in its topic passes doctor.                                              |
-| INV28     | `test/inv28-package-provenance.test.mjs`, `clients/cli/commands/text-json-parity.test.mjs`, `cli-api-types-verify`                                         | A result about one artifact has no envelope `package`, a listed artifact has no `package`, or text omits the package the envelope names.        |
-| INV29     | `api/doctor/doctor.test.mjs` (configured-integrations: not installed, no manifest, manifest throws; self-named authored package, direct and through a symlinked `node_modules` or `cwd`; provider-conflict set-aside; an astryx.config that imports but cannot load the project → failed `config` check)| A configured integration that cannot load leaves `doctor` at exit 0, or an installed-but-unnamed one fails it                                   |
+| Invariant | Evidence                                                                                                                                                                                                                                                                                                 | Failure signal                                                                                                                                  |
+| --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| INV1      | `clients/cli/commands/interactive-guard.test.mjs`                                                                                                                                                                                                                                                        | The subprocess hangs: `signal === 'SIGTERM'` and `status === null`.                                                                             |
+| INV2      | `clients/cli/commands/json-contract.test.mjs`                                                                                                                                                                                                                                                            | `--json` stdout does not parse, or parses to a shape outside the two.                                                                           |
+| INV3      | `foundation/response/error-codes.test.mjs`                                                                                                                                                                                                                                                               | A shipped code disappears, or an envelope carries an unregistered one.                                                                          |
+| INV4      | `clients/cli/formatters/index.test.mjs`, type tests                                                                                                                                                                                                                                                      | `emit` accepts a bare string, or output varies between pipe and TTY.                                                                            |
+| INV6      | `pnpm check:cli-structure`                                                                                                                                                                                                                                                                               | A command's file or its doc is missing, or sits at the wrong path.                                                                              |
+| INV8      | `clients/cli/cli-exit-codes.test.mjs`                                                                                                                                                                                                                                                                    | The same condition exits differently with and without `--json`.                                                                                 |
+| INV14     | `foundation/integrations/autolink.test.mjs`, `foundation/config/project.test.mjs`                                                                                                                                                                                                                        | An undeclared package contributes, or configured/local precedence changes.                                                                      |
+| INV15     | `api/integration/add-contribution.test.mjs`, `clients/cli/commands/integration-authoring.test.mjs`                                                                                                                                                                                                       | Dry-run/write paths differ, a writer clobbers bytes, or the new contribution is not discoverable.                                               |
+| INV16     | `foundation/integrations/manifest-writer.test.mjs`, `api/integration/add-contribution.test.mjs`                                                                                                                                                                                                          | A writer invents package policy, replaces an author entry, or local bytes lose precedence.                                                      |
+| INV17     | `api/integration/pack-check.test.mjs`                                                                                                                                                                                                                                                                    | Lifecycle output, packed files, identities, or public imports diverge without failing the gate.                                                 |
+| INV18     | `api/integration/validate-integration.test.mjs`, `api/theme/integration-themes.test.mjs`                                                                                                                                                                                                                 | Diagnostics mutate files, or a selected broken theme package is reported as merely unknown.                                                     |
+| INV19     | `clients/cli/commands/integration-real-world.test.mjs`                                                                                                                                                                                                                                                   | A CLI-authored theme, nested palette, or guides fail across pack, install, list, add, and build.                                                |
+| INV20     | `pnpm check:cli-structure` checks that each subject has a `FunctionDoc`, typedefs, and a test; per-function coverage and leaf layout are checked in review                                                                                                                                               | A subject or exported function lacks its `FunctionDoc`, typedefs, or tests, or an operation sits outside its subject.                           |
+| INV21     | Review of imports under `api/**`; no mechanical check yet                                                                                                                                                                                                                                                | A module other than a subject's adapter reads or writes files, contacts the network, starts a subprocess, loads the project, or runs discovery. |
+| INV22     | Review of imports under `clients/cli/commands/**`; the docs drift harness checks each `CommandDoc` against the live command                                                                                                                                                                              | A handler reaches the environment itself, an executable command's `CommandDoc` names no `fn`, or a non-command file sits in the directory.      |
+| INV23     | `clients/cli/formatters/index.test.mjs` for the kit; review of handlers; no mechanical check yet                                                                                                                                                                                                         | A handler pads, aligns, or draws text itself, or a block kind is missing from the help "Output format" list.                                    |
+| INV24     | `api/integration/add-contribution.test.mjs`, `api/integration/add-theme.test.mjs`, `foundation/discovery/theme-discovery.test.mjs`                                                                                                                                                                       | New authoring emits an untyped or non-`.doc.mjs` item, adding one item edits a shared file, or an item catalog becomes authoritative.           |
+| INV25     | `foundation/discovery/cli-self-docs.test.mjs`, `api/doctor/doctor.test.mjs`                                                                                                                                                                                                                              | A CLI doc with no namespace, a namespace no topic reads, or no section in its topic passes doctor.                                              |
+| INV28     | `test/inv28-package-provenance.test.mjs`, `clients/cli/commands/text-json-parity.test.mjs`, `cli-api-types-verify`                                                                                                                                                                                       | A result about one artifact has no envelope `package`, a listed artifact has no `package`, or text omits the package the envelope names.        |
+| INV29     | `api/doctor/doctor.test.mjs` (configured-integrations: not installed, no manifest, manifest throws; self-named authored package, direct and through a symlinked `node_modules` or `cwd`; provider-conflict set-aside; an astryx.config that imports but cannot load the project → failed `config` check) | A configured integration that cannot load leaves `doctor` at exit 0, or an installed-but-unnamed one fails it                                   |
 | INV30     | `foundation/runtime/package-set.test.mjs`, `foundation/runtime/hosted-runtime.test.mjs` | A run resolves from two roots, from a root whose CLI is not the release `spec:AST-081` FR2 names or that lacks a pinned version the project would install, or from a later root when an earlier one qualifies; a hosted run installs a release; a lookup consults a root before the project's own install, or with no set active; an approved integration resolves from another root or skips its validation; a root's config is read; a write lands outside the caller's working folder; a run records a package without its source; or a project check judges the package set. |
-| INV31     | `foundation/agent-docs/agent-docs.test.mjs`, `foundation/agent-docs/agent-docs.path-safety.test.mjs`, `clients/cli/commands/init.behavior.test.mjs`, `api/init/remove/remove.test.mjs`, `clients/cli/commands/doctor.test.mjs` | A layout test finds the block missing from a file INV31 names or present in a file it excludes, a managed import of a block-less `AGENTS.md` passes doctor, agent docs land in the home folder or in a settings folder outside a project, or `--remove-agents` leaves a block at the project root or in the working folder. |
+| INV31     | `foundation/agent-docs/agent-docs.test.mjs`, `foundation/agent-docs/agent-docs.path-safety.test.mjs`, `clients/cli/commands/init.behavior.test.mjs`, `api/init/remove/remove.test.mjs`, `clients/cli/commands/doctor.test.mjs`                                                                           | A layout test finds the block missing from a file INV31 names or present in a file it excludes, a managed import of a block-less `AGENTS.md` passes doctor, agent docs land in the home folder or in a settings folder outside a project, or `--remove-agents` leaves a block at the project root or in the working folder. |
 | INV32     | `test/cli-strict-guard.test.mjs` lists every command offering `--strict` and every command whose exit depends on warnings; `api/integration/check/check.test.mjs` compares a strict run with the default run       | A second command offers `--strict`, a command exits 1 on a warning alone without `--strict`, or a strict run reports a finding the default run does not or outside the command's issue format. |
 | INV33     | `foundation/discovery/prop-drift.test.mjs`, `foundation/discovery/type-text.test.mjs`, `clients/cli/commands/doctor-integration.test.mjs`, `test/core-prop-docs.test.mjs` | A removed or renamed prop or a changed union passes unreported, a missing compiler reads as a pass, or a table that leaves out `ref`, `key`, `xstyle`, `className`, `style`, `data-testid`, or an `@internal` prop draws a warning. |
 | INV34     | `foundation/discovery/doc-types.test.mjs`, `clients/cli/commands/doctor-integration.test.mjs`, `test/core-doc-types.test.mjs` | An unknown, missing, or mistyped field passes unreported, or a missing compiler reads as a pass. |

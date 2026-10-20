@@ -283,12 +283,12 @@ export const doc = {
     {
       value: 'upgrade.status',
       description:
-        'A short-circuit outcome with no codemods run (up_to_date, no_codemods, or config_fixable), each carrying the agent-docs summary.',
+        'A short-circuit outcome with no codemods run (up_to_date, no_codemods, or config_fixable), each carrying the agent-docs summary. no_codemods and config_fixable carry cliBehindCore ({cliVersion, command}) when the installed Core is newer than the CLI, which then has no codemods for the releases after its own version.',
     },
     {
       value: 'upgrade.run',
       description:
-        'The run receipt: from/to versions, codemod count, integrations processed, the agent-docs summary, sourcePathFound (false when the resolved source directory does not exist, so no source file was read), and (apply mode) filesChanged, transformsApplied, and per-codemod errors.',
+        'The run receipt: from/to versions, codemod count, integrations processed, the agent-docs summary, sourcePathFound (false when the resolved source directory does not exist, so no source file was read), and (apply mode) filesChanged, transformsApplied, and per-codemod errors. When the installed Core is newer than the CLI, it also carries cliBehindCore ({cliVersion, command}): codemods for the releases after cliVersion did not run.',
     },
 
     // manifest
