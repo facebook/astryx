@@ -207,18 +207,22 @@ works on is `spec:AST-040` FR9's.
   included (FR6, FR9). The answering release MUST answer as it would in a new
   project that installs only that release of Core, the computer-level
   integrations (FR12), and any integration a programmatic host approves that is
-  not installed beside it (FR1). Every command that needs Core answers from the
-  carried Core: the `@astryxdesign/core` release equal to the answering CLI,
-  beside it, carried by its door (FR1), or kept in the per-user cache, where a
-  copy that carries none installs it the first time a command needs it. The
-  global copy also installs its own release's Core there in the background, on
-  any run while none is beside it or cached (FR6), so commands that read Core
-  work offline after one online run. When it cannot be installed, those commands
-  fail with `ERR_VERSIONS_UNAVAILABLE` before any write, except an open
-  `search`, which answers from the domains that need no Core and says what it
-  skipped and why: `meta.partial` in a machine-readable result, and one line on
-  standard error in text mode. `doctor`, `swizzle`,
-  and `upgrade` judge or change a project and MUST NOT read the carried Core.
+  not installed beside it (FR1). Outside a project, or in a project with nothing
+  installed (FR2's copy that started the run, such as in a fresh clone), every
+  command that needs Core answers from the carried Core: the
+  `@astryxdesign/core` release equal to the answering CLI, beside it, carried by
+  its door (FR1), or kept in the per-user cache, where a copy that carries none
+  installs it the first time a command needs it. The global copy also installs
+  its own release's Core there in the background, on any run while none is
+  beside it or cached (FR6), so commands that read Core work offline after one
+  online run. A project's installed Core is always read in its place, from any
+  depth. When the carried Core cannot be installed, those commands fail with
+  `ERR_VERSIONS_UNAVAILABLE` before any write, and in a project the message says
+  the project has no Core installed and to install its dependencies; the
+  exception is an open `search`, which answers from the domains that need no
+  Core and says what it skipped and why: `meta.partial` in a machine-readable
+  result, and one line on standard error in text mode. `doctor`, `swizzle`, and
+  `upgrade` judge or change a project and MUST NOT read the carried Core.
   Output outside a project MUST NOT give advice that works only inside one, such
   as a step that sets up, configures, or refreshes a project the folder does not
   have.
@@ -293,7 +297,9 @@ works on is `spec:AST-040` FR9's.
     name, even when a door started the run, and `doctor` warns, naming each
     integration and the command it declares. A declaration of any other form
     counts as absent, never withdraws the integration's other contributions, and
-    `doctor` warns about it.
+    `doctor` warns about it; `doctor integration validate` and
+    `integration check` report it as a note (`invalid_cli_command`) beside
+    their issues, which fails nothing.
   - The picker names every command the CLI prints or writes: hints and next
     steps, errors and their suggestions, `doctor` fixes, help, docs moves
     (`spec:AST-047`), recommended commands (`spec:AST-048`), the project's
@@ -711,10 +717,11 @@ with another skills folder links it to `.agents/skills/astryx` themselves.
   `architecture:cli-surface` INV30. The official list FR8 ships is
   `spec:AST-051` FR10's. The project starters FR8 ships arrive with the template
   kind that ships them.
-- Follow-up, next minor release: `integration check --strict` fails on
-  `invalid_cli_command`, a malformed `cliCommand` (FR5), which this release
-  reports without failing it, since a new failure code joins only in a minor
-  (`architecture:cli-surface` INV35).
+- Follow-up, next minor release: `invalid_cli_command`, a malformed
+  `cliCommand` (FR5), becomes a validate warning, which
+  `integration check --strict` fails on. This release reports it as a note
+  outside the issues, since `--strict` fails on every warning and a new failure
+  code joins only in a minor (`architecture:cli-surface` INV35).
 - Follow-up, next minor release, breaking: the release equal to the project's
   Core answers even when the project's own CLI is another release, and answers
   a project with only Core instead of the copy that started the run (DEC-10).
