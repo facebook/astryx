@@ -1567,10 +1567,9 @@ describe('DropdownMenuItem host attributes', () => {
 
 describe('DropdownMenuGroup (compound mode)', () => {
   it('a focusable node in the heading is not reachable by the arrow keys', async () => {
-    // A heading is not a menu row, so a control inside one lands in the
-    // group but outside the roving focus order. The type does not prevent
-    // this — a rich heading is a legitimate need — so the behavior is
-    // pinned rather than discovered.
+    // The public ReactNode type permits a focusable descendant, but the menu's
+    // roving focus model cannot reach it. Pin that shipped gap while the public
+    // title contract remains unsettled.
     const user = userEvent.setup();
     render(
       <DropdownMenu button={{label: 'Actions'}}>

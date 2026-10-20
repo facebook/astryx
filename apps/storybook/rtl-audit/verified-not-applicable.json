@@ -380,6 +380,15 @@
     "reason": "Comments is a block-axis timeline of CommentThread rows and activity events inside the core ChatLayout and ChatMessageList, with the composer docked on the block axis. It adds no horizontal positioning, directional glyphs, or arrow-key behavior of its own: rows, rails, and dividers use logical properties, and the load-earlier control and error Banners are centered or full width."
   },
   {
+    "component": "core/DropdownMenuGroup",
+    "reason": "DropdownMenuGroup owns a block-axis set of menu rows and an optional heading with symmetric logical inline padding. It renders no directional glyph, physical inline placement, reordered content, horizontal scrolling or dragging, side-placed overlay, or horizontal keyboard behavior of its own; DropdownMenu owns menu placement and row navigation. The exact-head audit still renders RTL frames to confirm inherited direction without adding a component-owned RTL dimension.",
+    "evidence": {
+      "apps/storybook/stories/DropdownMenuGroup.stories.tsx": "sha256:57927e1c41ededf5b0105c2eefab5bf79fc21ceca084f47251aac0057781aec5",
+      "packages/core/src/DropdownMenu/DropdownMenuGroup.tsx": "sha256:b0baa04f2440927fc38b3c73bab9c0c0a210341a60cc6b59e5450148736b3d20",
+      "packages/core/src/DropdownMenu/index.ts": "sha256:59bf02be4a577cbecf3ad7e981e2577602375892f74548593aa9b998cae733fa"
+    }
+  },
+  {
     "component": "core/DropdownMenuDivider",
     "reason": "DropdownMenuDivider is one horizontal, full-width separator with block-axis margin only. It renders no text, glyph, inline-side placement, reordered content, horizontal scrolling or dragging, overlay, or keyboard behavior of its own; the containing DropdownMenu owns direction-sensitive placement and navigation, while the separator is deliberately skipped by the row focus model. The exact-head audit still renders RTL frames to confirm inherited direction without adding a component-owned RTL dimension.",
     "evidence": {

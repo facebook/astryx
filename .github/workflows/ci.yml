@@ -2582,6 +2582,39 @@ jobs:
           retention-days: 30
           if-no-files-found: error
 
+      # DropdownMenuGroup is a hidden compound subcomponent, so the dedicated
+      # story and sensor lane keep named and unnamed group semantics, heading
+      # paint, target placement, keyboard exclusion, theme, direction, and
+      # narrow layout bound to the exact pull-request head.
+      - name: Run DropdownMenuGroup audit browser evidence
+        if: ${{ !cancelled() && github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, '[Component Audit] DropdownMenuGroup:') }}
+        env:
+          ASTRYX_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          status=0
+          node .github/scripts/accessibility-audit.js \
+            --storybook-dir apps/storybook/dist \
+            --output dropdown-menu-group-a11y-report.json \
+            --components DropdownMenuGroup \
+            --ready-selector '[role="menu"]' \
+            --baseline .github/a11y-baseline.json \
+            --fail-on-new || status=1
+          pnpm exec playwright test \
+            packages/core/src/DropdownMenu/__tests__/DropdownMenuGroupAudit.a11y.chromium.spec.ts \
+            --project chromium || status=1
+          exit "$status"
+
+      - name: Upload DropdownMenuGroup audit evidence
+        if: always() && github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, '[Component Audit] DropdownMenuGroup:')
+        uses: actions/upload-artifact@v7
+        with:
+          name: dropdown-menu-group-audit-evidence-${{ needs.build-storybook.outputs.short_hash }}
+          path: |
+            dropdown-menu-group-a11y-report.json
+            dropdown-menu-group-audit-evidence/
+          retention-days: 30
+          if-no-files-found: error
+
       # DropdownMenuDivider is a hidden compound subcomponent, so the dedicated
       # story and sensor lane keep its open-menu semantics, paint, target
       # placement, keyboard exclusion, theme, direction, and narrow layout bound
