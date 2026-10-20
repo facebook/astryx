@@ -3,12 +3,12 @@ schema_version: 4
 template_version: 2
 kind: system-spec
 id: spec:AST-081
-authority: draft
+authority: current
 archive_reason: null
 superseded_by: null
-approved_by: null
-approved_at: null
-phase: proposed
+approved_by: josephfarina
+approved_at: 2026-10-19
+phase: accepted
 owners: [josephfarina]
 affects_architecture: [architecture:cli-surface]
 affects_families: []
@@ -57,8 +57,8 @@ caller to update (FR10), who answers when global and project copies meet
   integrations they serve, and how a run records the packages it resolved:
   `architecture:cli-surface` INV30.
 - Classifying a change to released behavior that this record requires:
-  `spec:AST-017`, including FR54 for a refusal that corrects a write outside
-  its confined root.
+  `spec:AST-017`, and `architecture:cli-surface` INV10a for a refusal that
+  corrects a write outside its confined root.
 - What a project starter contains, and the template kind that ships it.
 - Equivalent internal implementations remain valid when they satisfy this
   contract.
@@ -311,8 +311,8 @@ works on is `spec:AST-040` FR9's.
   No run writes a project's agent docs into the home folder or a settings
   folder in it (`architecture:cli-surface` INV31). When a door fetches a
   release through the package manager, the package manager's own files follow
-  its own settings. `spec:AST-017` FR54 classifies a refusal that corrects a
-  write a released version made outside these places.
+  its own settings. `architecture:cli-surface` INV10a classifies a refusal that
+  corrects a write a released version made outside these places.
 
 - **FR8 — Everything global ships inside the release.** The agent text, the
   official package list (`spec:AST-051` FR10), and the project starters ship
@@ -676,7 +676,7 @@ needs no Changeset.
 ### DEC-1 — One release answers each folder
 
 **Reference:** `spec:AST-081/DEC-1`
-**Decider:** `josephfarina (proposed)`
+**Decider:** `josephfarina`, `2026-10-19`
 
 Two releases in one run write code that fails without an error: one release's
 templates and component docs use props another release's Core does not have,
@@ -692,7 +692,7 @@ project's Core rejects.
 ### DEC-2 — Outside a project, answer as a new project would
 
 **Reference:** `spec:AST-081/DEC-2`
-**Decider:** `josephfarina (proposed)`
+**Decider:** `josephfarina`, `2026-10-19`
 
 An agent with no project files still needs Core's components and docs, and a
 new project on the release it runs is what it would create. The carried Core
@@ -706,7 +706,7 @@ leaves an agent without project files unable to learn Core.
 ### DEC-3 — Each command declares same, refuse, or own
 
 **Reference:** `spec:AST-081/DEC-3`
-**Decider:** `josephfarina (proposed)`
+**Decider:** `josephfarina`, `2026-10-19`
 
 A declaration in each command doc, published in the manifest, tells a door and
 an agent before a run whether a command works outside a project, and lets a
@@ -719,7 +719,7 @@ does a different job outside a project or has modes of each kind.
 ### DEC-4 — Who answered is data, and printed commands return through their door
 
 **Reference:** `spec:AST-081/DEC-4`
-**Decider:** `josephfarina (proposed)`
+**Decider:** `josephfarina`, `2026-10-19`
 
 An agent comparing two reads needs to know whether one release gave both; a
 field in `meta` tells it without changing an existing field or the envelope. A
@@ -732,7 +732,7 @@ consumer reads.
 ### DEC-5 — No door changes a project's versions
 
 **Reference:** `spec:AST-081/DEC-5`
-**Decider:** `josephfarina (proposed)`
+**Decider:** `josephfarina`, `2026-10-19`
 
 A project's versions belong to its owner, so no door installs into a project;
 FR10 tells the owner instead, with the exact commands, and `doctor` reports
@@ -743,7 +743,7 @@ Rejected: updating a project, or installing into one, from any door.
 ### DEC-6 — Anything global ships inside the release
 
 **Reference:** `spec:AST-081/DEC-6`
-**Decider:** `josephfarina (proposed)`
+**Decider:** `josephfarina`, `2026-10-19`
 
 A list, a starter, or an agent text fetched at run time can disagree with the
 release that reads it, and fails offline. Generated when the release is built,
@@ -754,7 +754,7 @@ Rejected: fetching global assets at run time.
 ### DEC-7 — Doors start the CLI through one entry, and their sources are their own
 
 **Reference:** `spec:AST-081/DEC-7`
-**Decider:** `josephfarina (proposed)`
+**Decider:** `josephfarina`, `2026-10-19`
 
 A door's inputs cannot travel by flag or environment variable, and a call takes
 over the process it runs in, so every door uses one documented programmatic
@@ -768,7 +768,7 @@ name, which reports the door's catalog as the integration's own.
 ### DEC-8 — One picker names every printed command, and an integration's command comes first
 
 **Reference:** `spec:AST-081/DEC-8`
-**Decider:** `josephfarina (proposed)`
+**Decider:** `josephfarina`, `2026-10-19`
 
 An integration that gives its users a command of its own knows how they reach
 the CLI better than a guess from the package manager, and a door's name covers
@@ -786,7 +786,7 @@ choose the command a project's users are told to run.
 ### DEC-9 — Every copy hands off, so any install route reaches the project's release
 
 **Reference:** `spec:AST-081/DEC-9`
-**Decider:** `josephfarina (proposed)`
+**Decider:** `josephfarina`, `2026-10-19`
 
 The CLI package itself is the common install, for the computer or through a
 package runner, and a copy installed for the computer is also what a package
@@ -806,7 +806,7 @@ gives people two packages to choose between.
 ### DEC-10 — The project's Core decides the release, not its CLI
 
 **Reference:** `spec:AST-081/DEC-10`
-**Decider:** `josephfarina (proposed)`
+**Decider:** `josephfarina`, `2026-10-19`
 
 A project's CLI and Core drift apart after a partial upgrade, and in a
 workspace an app can install an older Core than the root's CLI. The CLI's
@@ -822,7 +822,7 @@ the mix DEC-1 rejects inside every half-upgraded project.
 ### DEC-11 — The global copy answers with its own installed release
 
 **Reference:** `spec:AST-081/DEC-11`
-**Decider:** `josephfarina (proposed)`
+**Decider:** `josephfarina`, `2026-10-19`
 
 What answers outside a project is what the person installed, so the version
 they see is the version the package manager reports, and an upgrade is a step
@@ -837,7 +837,7 @@ places and can need administrator rights.
 ### DEC-12 — The computer-level agent text is a skill in each folder agent tools read
 
 **Reference:** `spec:AST-081/DEC-12`
-**Decider:** `josephfarina (proposed)`
+**Decider:** `josephfarina`, `2026-10-19`
 
 A skill loads only when an agent uses Astryx, so it costs nothing in the
 sessions that never touch it, and one file per skill folder reaches every
@@ -851,7 +851,7 @@ session and reaches fewer agents.
 ### DEC-13 — The global copy installs the computer-level text itself, in the background
 
 **Reference:** `spec:AST-081/DEC-13`
-**Decider:** `josephfarina (proposed)`
+**Decider:** `josephfarina`, `2026-10-19`
 
 The text has to be present wherever the CLI is installed for the computer, and
 stay matched to the release that answers. A package's install scripts do not run
@@ -872,7 +872,7 @@ turn it off, which a person has to repeat everywhere and an agent cannot see.
 ### DEC-14 — Notices name the upgrade, at most once a day, even without a terminal
 
 **Reference:** `spec:AST-081/DEC-14`
-**Decider:** `josephfarina (proposed)`
+**Decider:** `josephfarina`, `2026-10-19`
 
 A copy or a project that falls behind writes code against a release nobody
 chose, and nothing else tells its owner. A notice that names both versions
@@ -895,7 +895,7 @@ changes a project's versions without its owner.
 ### DEC-15 — Every meeting of global and project copies is a table row with a test
 
 **Reference:** `spec:AST-081/DEC-15`
-**Decider:** `josephfarina (proposed)`
+**Decider:** `josephfarina`, `2026-10-19`
 
 Global and project copies meet in many ways, from version managers to links
 and shared caches, and each one is easy to get wrong in only one of them. One
@@ -910,7 +910,7 @@ listed.
 ### DEC-16 — Notify, never self-update, as `gh` and the Vercel CLI do
 
 **Reference:** `spec:AST-081/DEC-16`
-**Decider:** `josephfarina`
+**Decider:** `josephfarina`, `2026-10-19`
 
 The global copy follows the standard that command-line tools installed through
 a package manager share: `gh` checks its newest release once a day and, after
@@ -930,7 +930,7 @@ what answers without the person choosing it; the standard was chosen instead.
 ### DEC-17 — Integrations installed for the computer apply outside projects only
 
 **Reference:** `spec:AST-081/DEC-17`
-**Decider:** `josephfarina (proposed)`
+**Decider:** `josephfarina`, `2026-10-19`
 
 Integrations change what the CLI answers, so a person who installs one beside
 the CLI installed for the computer, or a tool that installs one with the CLI,
