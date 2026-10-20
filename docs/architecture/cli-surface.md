@@ -184,6 +184,12 @@ and remains available through explicit Core package selection.
   it as not checked instead (DEC-7). A change that can fail a build that
   passes today, including a stricter rule for an existing finding, MAY ship
   only in a minor release that names it.
+- **INV36 — A command that picks among candidates is an area
+  (`spec:AST-083`).** Its answer comes from a tree of dispatcher and searcher
+  nodes built on the one shared kit in `foundation/areas/`: one node module per
+  node under `api/<subject>/nodes/`, with its tests and weights beside it, and
+  one registry line per node. The subject's entry gathers through its adapter
+  and runs the tree; `pnpm check:cli-structure` checks the layout.
 - **INV9 — A command that cannot support `--json` is rejected before any side
   effect**, not part-way through the work.
 - **INV10 — Every write is confined.** Output paths pass `assertWithin`, which
@@ -383,9 +389,11 @@ and remains available through explicit Core package selection.
   function, schema, and enum doc the CLI ships declares a `namespace`. The docs
   tree adopts `cli/commands` and `cli/api` docs, one route each under
   `cli/commands` and `cli/api/<kind>s`; `authoring` docs are sections of
-  `astryx docs authoring` and appear in its list. `astryx doctor` fails when a
-  CLI doc has no namespace, names one nothing reads, or disagrees with the
-  authoring list, so every doc the CLI ships stays readable from the CLI.
+  `astryx docs authoring` and appear in its list. Each answer-picking node's
+  descriptor is a doc at `cli/areas/<area>/<node-id>` (`spec:AST-083` FR11).
+  `astryx doctor` fails when a CLI doc has no namespace, names one nothing
+  reads, or disagrees with the authoring list, so every doc the CLI ships stays
+  readable from the CLI.
 - **INV26 — The docs tree gives each doc one home (`spec:AST-046`).** The tree
   is compiled in `foundation/doc-compiler/tree.mjs` from namespace docs, the
   guides they place, and the typed docs they adopt; the CLI's own tree files
@@ -621,6 +629,7 @@ Rejected: reporting a doubtful item as a warning (`--strict` fails it).
 | INV33     | `foundation/discovery/prop-drift.test.mjs`, `foundation/discovery/type-text.test.mjs`, `clients/cli/commands/doctor-integration.test.mjs`, `test/core-prop-docs.test.mjs` | A removed or renamed prop or a changed union passes unreported, a missing compiler reads as a pass, or a table that leaves out `ref`, `key`, `xstyle`, `className`, `style`, `data-testid`, or an `@internal` prop draws a warning. |
 | INV34     | `foundation/discovery/doc-types.test.mjs`, `clients/cli/commands/doctor-integration.test.mjs`, `test/core-doc-types.test.mjs` | An unknown, missing, or mistyped field passes unreported, or a missing compiler reads as a pass. |
 | INV35     | `api/integration/check/check.test.mjs`, `clients/cli/commands/integration-check.test.mjs`, `test/integration-check-failures.test.mjs`, `api/search/search.integration-check.test.mjs`, `foundation/discovery/prop-drift.test.mjs`, `foundation/discovery/type-match.test.mjs`, `foundation/discovery/doc-types.test.mjs` | The default exit differs from a check's own, a warning or a skipped comparison passes `--strict`, text and JSON exit differently, a new failing finding is added without the list changing, a search for ci does not find the command first, or a finding is reported on a doc the code does not contradict (for a type, one TypeScript accepts). |
+| INV36     | `pnpm check:cli-structure`, the area kit's tests | An area entry with matching or ranking logic, a node without a complete descriptor, examples, or tests, or a declared weights file that is missing passes the check. |
 
 ## Open questions
 
