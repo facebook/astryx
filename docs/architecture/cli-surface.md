@@ -191,6 +191,23 @@ and remains available through explicit Core package selection.
   additions. Because builds fail on its findings, it MUST NOT report a finding
   the package's code does not contradict, other than the doc faults of DEC-8:
   a check that cannot judge an item lists it as not checked instead (DEC-7).
+- **INV36 — The person filing a gap report chooses where it goes.**
+  `astryx gap-report` MUST send a report to the configured report handlers, or
+  with none to the owning package's `issuesUrl` (`spec:AST-031` FR8), unless
+  the caller names a destination with `--to <package>`. A destination is a
+  loaded integration whose manifest sets `issuesUrl`. With `--to`, the report
+  goes only to that `issuesUrl`, the way the zero-handler fallback sends it: a
+  GitHub issues URL is filed only with `--confirm-public` and reports
+  `consent_required` without it, and any other URL comes back as
+  `routed_only`. A `--to` that names no destination MUST fail with
+  `ERR_UNKNOWN_PACKAGE` before anything is sent, listing the destinations it
+  accepts. While at least one destination exists, the categories listing and
+  the receipt of a run without `--to` MUST list the default and every
+  destination, in text and JSON, and MUST tell the agent to ask the person
+  where to file and to pass the person's choice with `--to`. The command's
+  docs and agent guidance MUST say the same: an agent asks the person, never
+  picks a package destination on its own, and leaves out `--to` when the person
+  does not choose (DEC-9).
 - **INV9 — A command that cannot support `--json` is rejected before any side
   effect**, not part-way through the work.
 - **INV10 — Every write is confined.** Output paths pass `assertWithin`, which
@@ -458,7 +475,9 @@ updated in the same pull request when it moves an invariant:
 - changing local, configured, or autolinked integration precedence;
 - changing an integration item descriptor, the theme directory boundary, or the consumer copy contract;
 - changing which files hold the agent-docs block, how init finds the project
-  root, where it refuses to write agent docs, or where it removes them (INV31).
+  root, where it refuses to write agent docs, or where it removes them (INV31);
+- adding a kind of gap-report destination, or changing who chooses one
+  (INV36).
 
 `pnpm check:cli-structure` enforces the layout. The contract tests listed in
 `verified_by` enforce the envelope, the exit codes, the error codes, and the
@@ -619,6 +638,19 @@ exit 0. `integration check` first ships with these rules, so no build that
 passed before can newly fail.
 Rejected: listing them as information only, which an agent treats as optional.
 
+### DEC-9 — The person chooses where a gap report goes
+
+**Decider:** `josephfarina`, `2026-10-20`
+
+Report handlers usually feed one shared place, while an integration names its
+own tracker in `issuesUrl`. Which place should get a report is a judgment about
+the gap, so the person decides: the CLI lists the places, the agent asks, and
+`--to` carries the answer. Without a choice the report goes to the shared
+default.
+Rejected: copying every report to the integration's own `issuesUrl`
+automatically (reports land in places nobody picked); letting the agent pick
+the destination.
+
 ## Verification
 
 | Invariant | Evidence                                                                                                                                                   | Failure signal                                                                                                                                  |
@@ -648,6 +680,7 @@ Rejected: listing them as information only, which an agent treats as optional.
 | INV33     | `foundation/discovery/prop-drift.test.mjs`, `foundation/discovery/type-text.test.mjs`, `clients/cli/commands/doctor-integration.test.mjs`, `test/core-prop-docs.test.mjs` | A removed or renamed prop or a changed union passes unreported, a missing compiler reads as a pass, or a table that leaves out `ref`, `key`, `xstyle`, `className`, `style`, `data-testid`, or an `@internal` prop draws a warning. |
 | INV34     | `foundation/discovery/doc-types.test.mjs`, `clients/cli/commands/doctor-integration.test.mjs`, `test/core-doc-types.test.mjs` | An unknown, missing, or mistyped field passes unreported, or a missing compiler reads as a pass. |
 | INV35     | `api/integration/check/check.test.mjs`, `clients/cli/commands/integration-check.test.mjs`, `test/integration-check-failures.test.mjs`, `api/search/search.integration-check.test.mjs`, `foundation/discovery/prop-drift.test.mjs`, `foundation/discovery/type-match.test.mjs`, `foundation/discovery/doc-types.test.mjs`, `api/integration/authoring-checks.test.mjs` | The default exit differs from a check's own, a warning or a skipped comparison passes `--strict`, text and JSON exit differently, a new failing finding is added without the list changing, a search for ci does not find the command first, a finding is reported on a doc the code does not contradict (for a type, one TypeScript accepts), or a copied passage or a fluff finding passes `--strict`, or a function-word run or shared boilerplate is reported as a copy. |
+| INV36 | `api/gap-report/gap-report.test.mjs`, `clients/cli/commands/gap-report.test.mjs` | A run without `--to` reaches an `issuesUrl` the handlers did not choose, `--to` runs a handler or files on GitHub without `--confirm-public`, an unknown `--to` sends anything, or the destinations list or its line telling the agent to ask the person is missing while a destination exists. |
 
 ## Open questions
 
