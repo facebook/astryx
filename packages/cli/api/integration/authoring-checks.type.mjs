@@ -69,6 +69,24 @@
  */
 
 /**
+ * Fluff in a topic's prose: a padding phrase (`kind: 'phrase'`, with the
+ * phrase, its section, and the file line where it was found), or a topic of
+ * 80 or more prose words of which fewer than half are content words
+ * (`kind: 'density'`, with the share). Listed for the author to fix; it never
+ * fails a check.
+ *
+ * @typedef {object} DocFluff
+ * @property {string} topic
+ * @property {'phrase' | 'density'} kind
+ * @property {string | null} phrase the padding phrase, for `kind: 'phrase'`
+ * @property {string | null} section the title of the section it is in
+ * @property {string} file the doc file
+ * @property {number | null} line the file line that holds the phrase, when one line does
+ * @property {number | null} density the share of content words, for `kind: 'density'`
+ * @property {string} message what to cut or write instead
+ */
+
+/**
  * Each of the three authoring checks reports `validated`: false means no
  * integration manifest was found, so nothing was inspected and the empty
  * conflicts/findings list carries no information about the package.
@@ -100,7 +118,7 @@
 /**
  * @typedef {object} IntegrationDocConflictResponse
  * @property {'integration.doc-conflicts'} type
- * @property {{validated: boolean, name: string | null, version: string | null, findings: IntegrationDocFinding[], copiedPassages: CopiedPassage[], issues: import('../../foundation/integrations/issue').AstryxIntegrationIssue[]}} data
+ * @property {{validated: boolean, name: string | null, version: string | null, findings: IntegrationDocFinding[], copiedPassages: CopiedPassage[], fluff: DocFluff[], issues: import('../../foundation/integrations/issue').AstryxIntegrationIssue[]}} data
  */
 
 export {};

@@ -390,10 +390,12 @@ function printDocConflicts(data) {
     section(
       `Checking integration docs: ${integrationLabel(data) ?? '(local package)'}`,
     ),
-    // A copied passage is listed below with its pair, so its issue is not
-    // printed twice.
+    // A copied passage or fluff is listed below with its detail, so its
+    // issue is not printed twice.
     ...issueBlocks(
-      data.issues.filter(issue => issue.code !== 'copied_passage'),
+      data.issues.filter(
+        issue => issue.code !== 'copied_passage' && issue.code !== 'doc_fluff',
+      ),
     ),
   ];
   if (
@@ -441,6 +443,19 @@ function printDocConflicts(data) {
           'message',
         ],
       }),
+    );
+  }
+  const fluff = data.fluff ?? [];
+  if (fluff.length === 0) {
+    if (!data.issues.some(issue => issue.severity === 'error')) {
+      output.push(text('[ok] No filler phrases or low-density topics.'));
+    }
+  } else {
+    output.push(
+      text(
+        `[info] ${fluff.length} fluff finding(s): words that add length, not meaning. Cut each one.`,
+      ),
+      records(fluff, {fields: ['topic', 'kind', 'line', 'message']}),
     );
   }
   emit(...output);

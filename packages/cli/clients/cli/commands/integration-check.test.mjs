@@ -330,3 +330,41 @@ describe('a copied passage', () => {
     expect(strict.stdout).toContain('copied_passage');
   });
 });
+
+describe('a padding phrase', () => {
+  it('keeps doctor integration docs at exit 0, and fails integration check --strict', async () => {
+    fs.writeFileSync(
+      path.join(tmpDir, 'package.json'),
+      JSON.stringify({name: '@acme/widgets', version: '1.2.3'}),
+    );
+    fs.writeFileSync(
+      path.join(tmpDir, 'astryx.integration.mjs'),
+      `export default {docs: './docs'};\n`,
+    );
+    fs.mkdirSync(path.join(tmpDir, 'docs'));
+    const doc = {
+      type: 'generic',
+      name: 'acme-setup',
+      title: 'Fixture',
+      description: 'Fixture topic.',
+      sections: [
+        {
+          title: 'Overview',
+          content: [{type: 'prose', text: 'In order to start, run the setup.'}],
+        },
+      ],
+    };
+    fs.writeFileSync(
+      path.join(tmpDir, 'docs', 'acme-setup.doc.mjs'),
+      `export default ${JSON.stringify(doc)};\n`,
+    );
+
+    const doctor = await runCli(['doctor', 'integration', 'docs'], tmpDir);
+    expect(doctor.status).toBe(0);
+    expect(doctor.stdout).toContain('1 fluff finding(s)');
+
+    const strict = await runCli(['integration', 'check', '--strict'], tmpDir);
+    expect(strict.status).toBe(1);
+    expect(strict.stdout).toContain('doc_fluff');
+  });
+});

@@ -424,7 +424,7 @@ let coreGuides = null;
  * @returns {Promise<any>} the doc, or null for one that does not load (the
  *   load problem is reported elsewhere)
  */
-async function loadQuietly(file) {
+export async function loadQuietly(file) {
   try {
     return await loadTopicModule(file);
   } catch {
@@ -433,7 +433,7 @@ async function loadQuietly(file) {
 }
 
 /** @returns {Promise<IndexedGuides>} the CLI's own guides, read and indexed once */
-function loadCoreGuides() {
+export function loadCoreGuides() {
   coreGuides ??= (async () => {
     /** @type {GuideWords[]} */
     const guides = [];

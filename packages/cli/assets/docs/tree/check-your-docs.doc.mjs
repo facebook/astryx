@@ -32,11 +32,15 @@ export const docs = {
         {
           type: 'code',
           lang: 'text',
-          code: 'Checking integration docs: @acme/astryx-widgets@1.0.0\n\n[ok] The docs tree and every link in these docs check out.\n\n[ok] No doc topics overlap with Core.\n[ok] No topic copies a passage from another.',
+          code: 'Checking integration docs: @acme/astryx-widgets@1.0.0\n\n[ok] The docs tree and every link in these docs check out.\n\n[ok] No doc topics overlap with Core.\n[ok] No topic copies a passage from another.\n[ok] No filler phrases or low-density topics.',
         },
         {
           type: 'prose',
           text: 'Write each fact in one topic. When two of your topics, or one of yours and a Core topic, repeat 10 or more words of prose word for word, the check lists the pair as a `copied_passage` warning. It names the topic that keeps the text (a Core topic, or of your two the one the passage fits) and the line in the other where to put the link instead ({@link generic:links}). Code and examples are not compared, and a topic may carry the text of the Core topic it replaces. A run with fewer than 4 distinct content words (words other than function words such as \"the\", \"in\" or \"it\"), or one that three or more topics share (a series lead-in), is not listed. Each listed pair is also a warning (`copied_passage`): `doctor integration docs` still exits 0, and `integration check --strict` fails until you fix it.',
+        },
+        {
+          type: 'prose',
+          text: "Keep docs dense. The check lists, as a `doc_fluff` warning, each padding phrase in your prose, with its file line and what to write instead, and each topic of 80 or more prose words in which fewer than half the words carry content (words other than function words such as the, and, in), with its measured share and the floor of 0.5. `doctor integration docs` still exits 0, and `integration check --strict` fails until you cut it. Code, examples, and quoted text are not read. The phrases: `it\'s important to note`, `it is important to note`, `important to note that`, `it\'s worth noting`, `it is worth noting`, `worth noting that`, `it should be noted`, `please note`, `note that` (opening a sentence), `keep in mind`, `as mentioned above`, `as mentioned earlier`, `as mentioned before`, `as noted above`, `as you can see`, `needless to say`, `in order to`, `due to the fact that`, `for the purpose of`, `at this point in time`, `whether or not`, `in other words`, `simply`, `basically`, `essentially`, `obviously`, `feel free to`.",
         },
         {
           type: 'prose',

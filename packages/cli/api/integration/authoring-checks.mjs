@@ -325,10 +325,20 @@ export async function integrationDocConflicts(pkg, options = {}) {
 
   /** @type {import('./authoring-checks.type.mjs').CopiedPassage[]} */
   const copiedPassages = [];
+  /** @type {import('./authoring-checks.type.mjs').DocFluff[]} */
+  const fluff = [];
   if (!resolved.integration?.docs || name == null) {
     return {
       type: 'integration.doc-conflicts',
-      data: {validated, name, version, findings: [], copiedPassages, issues},
+      data: {
+        validated,
+        name,
+        version,
+        findings: [],
+        copiedPassages,
+        fluff,
+        issues,
+      },
     };
   }
 
@@ -427,10 +437,16 @@ export async function integrationDocConflicts(pkg, options = {}) {
     for (const {message} of copiedPassages) {
       issues.push({code: 'copied_passage', severity: 'warning', message});
     }
+    // Docs should be dense: padding phrases and mostly-glue topics, listed
+    // and warned about the same way (DEC-8).
+    fluff.push(...(await integrationFluff(discovered)));
+    for (const {message} of fluff) {
+      issues.push({code: 'doc_fluff', severity: 'warning', message});
+    }
   }
 
   return {
     type: 'integration.doc-conflicts',
-    data: {validated, name, version, findings, copiedPassages, issues},
+    data: {validated, name, version, findings, copiedPassages, fluff, issues},
   };
 }
