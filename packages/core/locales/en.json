@@ -2090,5 +2090,13 @@
   "@astryx.comments.postFailed": {
     "defaultMessage": "Your comment couldn't be posted.",
     "description": "Error shown above the new-comment composer of a lab Comments panel when posting failed; the draft is kept and a Retry action follows."
+  },
+  "@astryx.combobox.resultCount": {
+    "defaultMessage": "{count, number} {count, plural, one {result} other {results}}",
+    "description": "Polite screen-reader announcement of how many options match a new query in a combobox built with useCombobox over a text field the product renders, such as a mention or people list under a message field. Example: `12 results`, `1 result`; keep compact."
+  },
+  "@astryx.combobox.noResults": {
+    "defaultMessage": "No results found",
+    "description": "Polite screen-reader announcement that a new query matches no options in a combobox built with useCombobox over a text field the product renders, such as a mention or people list under a message field. Short; neutral tone (not error-y)."
   }
 }
