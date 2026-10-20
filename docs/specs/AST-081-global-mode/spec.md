@@ -92,9 +92,9 @@ folder itself, or `packages/cli` in it or one of the five folders above it); and
 otherwise the nearest `package.json` at or above the folder that declares either
 package, searched up to the first folder that holds version-control metadata and
 never in the home folder unless the run starts there. A folder deeper than that
-nearby look finds the project's own CLI the same way from that `package.json`'s
-folder, as a package runner resolves the project's command from any depth. A
-folder is
+nearby look finds the project's Core and its own CLI the same way from that
+`package.json`'s folder, as a package runner resolves the project's command from
+any depth. A folder is
 **outside a project** when none of these exist. A folder inside another
 project, such as a repository cloned into it or a nested app, therefore
 answers with the enclosing project's release. The project that an upgrade
@@ -663,6 +663,7 @@ with another skills folder links it to `.agents/skills/astryx` themselves.
 | G54 A folder more than five levels deep in a project with its own CLI                                                        | The project's own CLI                                                                                                        | The hand-off line; no hint                                                                                                                                                      | `› G54`                                                                                               |
 | G55 A `--json` run in a fresh clone while the global copy's Core step runs                                                   | The global copy                                                                                                              | Returns at once with clean JSON; the step starts as the run ends                                                                                                                | `› G55`                                                                                               |
 | G56 An open `search` outside a project before the release's Core is cached                                                   | The global copy                                                                                                              | Gets the Core as `component` does; when it cannot, `meta.partial` names the skipped domains and the reason, with one standard-error line                                        | `› G56`                                                                                               |
+| G57 A folder more than four levels deep in a project with only Core                                                          | The copy that started the run                                                                                                | Reads the project's Core, never the carried one; `meta.answeredBy.core` names it                                                                                                | `› G57`                                                                                               |
 
 ### Platform support
 
