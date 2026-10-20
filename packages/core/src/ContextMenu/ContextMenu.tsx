@@ -598,13 +598,15 @@ export function ContextMenu({
       } else {
         layer.show();
         // A keyboard-invoked open (Shift+F10, the Menu key) lands on the
-        // first enabled row per the APG menu pattern. A right-click or a
-        // long press focuses the menu itself (tabIndex={-1}), so no row is
-        // lit as if pre-selected; arrows, typeahead and Escape still reach
-        // the menu's key handler. DropdownMenu opens from its trigger the
-        // same way. The menu is also the fallback when no row can focus.
+        // first enabled row per the APG menu pattern; with no row that can
+        // take focus, focus stays, with its ring, on the element that invoked
+        // the menu. A right-click or a long press focuses the menu itself
+        // (tabIndex={-1}), so no row is lit as if pre-selected; arrows,
+        // typeahead and Escape still reach the menu's key handler.
+        // DropdownMenu opens from its trigger the same way.
         requestAnimationFrame(() => {
-          if (modality === 'keyboard' && focusFirst()) {
+          if (modality === 'keyboard') {
+            focusFirst();
             return;
           }
           listRef.current?.focus();

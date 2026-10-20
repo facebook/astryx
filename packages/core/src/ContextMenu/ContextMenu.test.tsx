@@ -1431,6 +1431,33 @@ describe('ContextMenu open focus', () => {
     await waitFor(() => expect(item('Cut')).toHaveFocus());
   });
 
+  it('a keyboard open with every row disabled leaves focus, and its ring, on the invoking element', async () => {
+    render(
+      <ContextMenu
+        items={[
+          {label: 'Cut', isDisabled: true},
+          {label: 'Copy', isDisabled: true},
+        ]}>
+        <button type="button">Target</button>
+      </ContextMenu>,
+    );
+    const target = screen.getByRole('button', {name: 'Target'});
+    act(() => target.focus());
+    fireEvent.keyDown(target, {key: 'F10', shiftKey: true});
+    fireEvent.contextMenu(target, {clientX: 30, clientY: 12, detail: 0});
+    await waitFor(() =>
+      expect(screen.getByRole('menu', {hidden: true})).toBeInTheDocument(),
+    );
+    // Let the open's focus frame pass.
+    await act(async () => {
+      await new Promise<void>(resolve => {
+        requestAnimationFrame(() => resolve());
+      });
+    });
+    expect(target).toHaveFocus();
+    expect(menu()).not.toHaveFocus();
+  });
+
   it('Shift+F10 reported at the focused element still focuses the first row', async () => {
     render(
       <ContextMenu items={ITEMS}>
