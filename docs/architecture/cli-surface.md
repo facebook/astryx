@@ -281,7 +281,12 @@ and remains available through explicit Core package selection.
     project. A folder inside a settings folder belongs to a project when it,
     or a folder above it below the settings folder, has a `package.json`; the
     settings folder itself never does. Init reports the folder it refused and
-    still succeeds, and removing a block there stays allowed.
+    still succeeds, and removing a block there stays allowed. The
+    computer-level skill file `spec:AST-081` FR8 writes
+    (`~/.agents/skills/astryx/SKILL.md`, with its folder links or copy in other
+    agents' skill folders) is not a project's agent docs: only
+    `astryx init --user` and the global copy's background step write it, as
+    INV10 and FR8 state.
   - Upgrade refreshes every copy where it is and moves none.
   - `--remove-agents` removes the block at the project root and in the working
     folder. Every file it would change resolves inside its own folder, or it

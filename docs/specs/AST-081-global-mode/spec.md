@@ -333,10 +333,10 @@ works on is `spec:AST-040` FR9's.
     detached step it starts as the run ends, as FR3 needs: never when `CI` is
     set as below, never blocking or changing a command or holding anything the
     command's caller waits on, and a failure is silent and waits out FR2's
-    backoff before a later run's step tries again. On Windows, where a detached
-    process inherits the caller's open pipes, it starts only when the run
-    writes to a terminal. This installs the global copy's own release's Core
-    only, never a newer release.
+    backoff before a later run's step tries again. It never runs on Windows,
+    where a detached process inherits the caller's open pipes; there a command
+    that reads Core installs it the first time it needs it. This installs the
+    global copy's own release's Core only, never a newer release.
   - No check runs when the environment variable `CI` is set to a value other
     than empty, `0`, or `false`, or when `NO_UPDATE_NOTIFIER` is set to any
     value. Astryx defines neither: `CI` is the platform convention continuous
@@ -376,8 +376,9 @@ works on is `spec:AST-040` FR9's.
     in the background, as FR8 states; no other command writes them, and no
     package install script does.
 
-  No run writes a project's agent docs into the home folder or a settings
-  folder in it (`architecture:cli-surface` INV31). When a door fetches a
+  No run writes a project's agent docs into the home folder or a settings folder
+  in it (`architecture:cli-surface` INV31); the computer-level agent text above
+  is not a project's agent docs, and INV31 says so. When a door fetches a
   release through the package manager, the package manager's own files follow
   its own settings. `architecture:cli-surface` INV10a classifies a refusal that
   corrects a write a released version made outside these places.
@@ -456,11 +457,12 @@ works on is `spec:AST-040` FR9's.
     directly in that folder: the same arguments, working folder, and standard
     input, output, and error, with nothing added to its environment, options,
     or configuration (FR1). The run ends with that copy's exit status, or the
-    signal that ended it. An interrupt, termination, or hangup signal sent to
-    the copy that started the run reaches the copy it handed the run to. An
-    interrupt a terminal sends to the whole process group, which that copy
-    already receives, is not passed on a second time while it is still
-    stopping.
+    signal that ended it. A termination or hangup signal sent to the copy that
+    started the run reaches the copy it handed the run to. A SIGINT that
+    reaches only the starting copy is forwarded if the handed-off CLI is still
+    running 5 seconds later, so an interrupt the whole process group got (a
+    terminal's Ctrl-C) reaches a CLI that stops within that time exactly once.
+    On Windows the starting copy forwards no interrupt.
   - When the project's own CLI cannot be started, the matched release answers
     (FR2). When the matched release cannot be obtained, the copy that started
     the run answers, announced (FR2).
@@ -668,13 +670,13 @@ with another skills folder links it to `.agents/skills/astryx` themselves.
 | G49 Offline, a release a project whose own CLI cannot start needs failed to install; run again from the same or another copy | The starting copy                                                                                                            | FR2's warning line, saying when the install was last tried; no install starts for 2 minutes, then 10 after a second failure; a success forgets it                               | `› G49`                                                                                               |
 | G50 A global copy in a Bun global folder moved with `BUN_INSTALL`; an app in a folder that ends in `install/global`          | The global copy while `BUN_INSTALL` names the folder; the app's own CLI for the app                                          | `bun add -g` reinstalls there; the app is never global                                                                                                                          | `› G50`                                                                                               |
 | G51 A global copy in a Yarn 1 global folder named by `global-folder`; an app made with `yarn add` alone                      | The global copy while Yarn's settings name the folder; the app's own CLI for the app                                         | `yarn global add` reinstalls there; the app runs no update check and writes no agent text                                                                                       | `› G51`                                                                                               |
-| G52 The global copy with no Core beside it and none cached                                                                   | The global copy                                                                                                              | A detached step installs its Core into the cache after a run (never in CI); offline, the failure waits out the backoff                                                          | `› G52`                                                                                               |
+| G52 The global copy with no Core beside it and none cached (not on Windows)                                                  | The global copy                                                                                                              | A detached step installs its Core into the cache after a run (never in CI or on Windows); offline, the failure waits out the backoff                                            | `› G52`                                                                                               |
 | G53 pnpm's global virtual store: a project's own CLI kept in the store's `links` folder                                      | The project's own CLI, not a global copy; a copy a pnpm global folder links to is global                                     | The project run starts no update check and writes no agent text                                                                                                                 | `› G53`                                                                                               |
 | G54 A folder more than five levels deep in a project with its own CLI                                                        | The project's own CLI                                                                                                        | The hand-off line; no hint                                                                                                                                                      | `› G54`                                                                                               |
 | G55 A `--json` run in a fresh clone while the global copy's Core step runs                                                   | The global copy                                                                                                              | Returns at once with clean JSON; the step starts as the run ends                                                                                                                | `› G55`                                                                                               |
 | G56 An open `search` outside a project before the release's Core is cached                                                   | The global copy                                                                                                              | Gets the Core as `component` does; when it cannot, `meta.partial` names the skipped domains and the reason, with one standard-error line                                        | `› G56`                                                                                               |
 | G57 A folder more than four levels deep in a project with only Core                                                          | The copy that started the run                                                                                                | Reads the project's Core, never the carried one; `meta.answeredBy.core` names it                                                                                                | `› G57`                                                                                               |
-| G58 An interrupt sent to the copy that started a handed-off run alone                                                        | The project's own CLI                                                                                                        | Receives it once; the run stops with that CLI's exit status or signal                                                                                                           | `› G58`                                                                                               |
+| G58 An interrupt sent to the copy that started a handed-off run alone, or to its whole process group                         | The project's own CLI                                                                                                        | Alone: forwarded once after 5 seconds; group: received once, not forwarded to a CLI that stopped in time; the run ends with that CLI's exit status or signal                    | `› G58`                                                                                               |
 
 ### Platform support
 
