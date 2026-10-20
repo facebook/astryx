@@ -52,7 +52,7 @@ caller to update (FR10), who answers when global and project copies meet
   reports when the CLI is older than that Core: `spec:AST-040` FR9–FR13.
 - Which files hold a project's agent docs, and where `init` writes them and
   refuses to: `architecture:cli-surface` INV31.
-- The official package list and how discover reads it: `spec:AST-051` FR10.
+- The official package list and how discover reads it: `spec:AST-051` FR11.
 - How a host's package sets are matched to a project's pins, which
   integrations they serve, and how a run records the packages it resolved:
   `architecture:cli-surface` INV30.
@@ -119,7 +119,7 @@ works on is `spec:AST-040` FR9's.
     sources the door adds; and, when the door found the project's own CLI and
     did not run it, the reason (FR2).
   - Discover calls a door's sources after every integration's source and before
-    the official list (`spec:AST-051` FR6 and FR10), and names each as the
+    the official list (`spec:AST-051` FR6 and FR11), and names each as the
     door's, never as an integration's.
   - A door makes one call per process. A call takes over the process's working
     folder, arguments, standard streams, and exit, so a second call in the same
@@ -383,7 +383,7 @@ works on is `spec:AST-040` FR9's.
   corrects a write a released version made outside these places.
 
 - **FR8 — Everything global ships inside the release.** The agent text, the
-  official package list (`spec:AST-051` FR10), and the project starters ship
+  official package list (`spec:AST-051` FR11), and the project starters ship
   inside each CLI release. Each is generated from the repository when the
   release is built and is never fetched at run time or edited by hand, and a
   check MUST fail when a committed copy no longer matches the repository.
@@ -720,7 +720,7 @@ with another skills folder links it to `.agents/skills/astryx` themselves.
   declines the project's CLI; FR3's integrations a host approves that are not
   installed beside it; the door name in FR5's picker; and
   `architecture:cli-surface` INV30. The official list FR8 ships is
-  `spec:AST-051` FR10's. The project starters FR8 ships arrive with the template
+  `spec:AST-051` FR11's. The project starters FR8 ships arrive with the template
   kind that ships them.
 - Follow-up, next minor release: `invalid_cli_command`, a malformed
   `cliCommand` (FR5), becomes a validate warning, which
