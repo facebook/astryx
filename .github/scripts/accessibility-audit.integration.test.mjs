@@ -16,7 +16,6 @@ import {describe, expect, it} from 'vitest';
 const SCRIPTS_DIR = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(SCRIPTS_DIR, '../..');
 const SCRIPT = path.join(SCRIPTS_DIR, 'accessibility-audit.js');
-let nextPort = 40000 + (process.pid % 10000);
 
 const BROWSER_MOCK = String.raw`
 const Module = require('node:module');
@@ -68,7 +67,15 @@ function evaluateInFixture(fn, arg) {
 }
 
 const page = {
-  goto: async url => { requestedUrl = url; },
+  // A real request, so a run only passes when the audit opens the port its
+  // server actually holds.
+  goto: async url => {
+    requestedUrl = url;
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error('fixture server answered ' + response.status + ' for ' + url);
+    }
+  },
   addStyleTag: async () => {},
   waitForSelector: async (selector, options) => {
     if (process.env.A11Y_TEST_SCENARIO === 'selector-missing') {
@@ -123,7 +130,6 @@ function runFixture(
   fs.writeFileSync(path.join(storybook, 'index.json'), indexContent);
   fs.writeFileSync(path.join(storybook, 'iframe.html'), '<!doctype html>');
   fs.writeFileSync(mock, BROWSER_MOCK);
-  const port = nextPort++;
   try {
     const result = spawnSync(
       process.execPath,
@@ -135,8 +141,10 @@ function runFixture(
         output,
         '--components',
         components,
+        // Any fixed port may already be held by another process's socket, so
+        // let the OS assign a free one.
         '--port',
-        String(port),
+        '0',
         ...(readySelector == null
           ? []
           : ['--ready-selector', readySelector]),
@@ -203,6 +211,16 @@ const PATTERN_INDEX = JSON.stringify({
 });
 
 describe.sequential('accessibility-audit CLI readiness', () => {
+  it('serves the stories on a port the OS assigns', () => {
+    const result = runFixture('delayed', VALID_INDEX);
+    expect(result.status).toBe(0);
+    const served = /Storybook server running on http:\/\/localhost:(\d+)/.exec(
+      result.stdout,
+    );
+    expect(Number(served?.[1])).toBeGreaterThan(0);
+    expect(result.report.auditedStoryKeys).toHaveLength(1);
+  });
+
   it('waits through a delayed valid Storybook root and writes audited evidence', () => {
     const result = runFixture('delayed', VALID_INDEX);
     expect(result.status).toBe(0);
