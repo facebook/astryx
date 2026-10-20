@@ -390,7 +390,11 @@ function printDocConflicts(data) {
     section(
       `Checking integration docs: ${integrationLabel(data) ?? '(local package)'}`,
     ),
-    ...issueBlocks(data.issues),
+    // A copied passage is listed below with its pair, so its issue is not
+    // printed twice.
+    ...issueBlocks(
+      data.issues.filter(issue => issue.code !== 'copied_passage'),
+    ),
   ];
   if (
     !data.issues.some(

@@ -421,9 +421,13 @@ export async function integrationDocConflicts(pkg, options = {}) {
     }
 
     // One fact has one owner: a passage two topics repeat goes stale in one
-    // of them. Listed, not an issue, so it never fails a build that passes
-    // today.
+    // of them. Each is listed and is a warning (architecture:cli-surface
+    // DEC-8), so `integration check --strict` fails until it is fixed;
+    // `doctor integration docs` keeps its exit code, as it fails on errors.
     copiedPassages.push(...(await findCopiedPassages(discovered)));
+    for (const {message} of copiedPassages) {
+      issues.push({code: 'copied_passage', severity: 'warning', message});
+    }
   }
 
   return {

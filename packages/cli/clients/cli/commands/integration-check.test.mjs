@@ -265,3 +265,51 @@ describe('astryx integration check', () => {
     expect(run.status).toBe(1);
   });
 });
+
+describe('a copied passage', () => {
+  const passage =
+    'Themes cannot style the layer that holds a menu or a popover, so a menu ' +
+    'keeps the default surface color until the next release adds a token for it.';
+
+  function writeCopiedDocs() {
+    fs.writeFileSync(
+      path.join(tmpDir, 'package.json'),
+      JSON.stringify({name: '@acme/widgets', version: '1.2.3'}),
+    );
+    fs.writeFileSync(
+      path.join(tmpDir, 'astryx.integration.mjs'),
+      `export default {docs: './docs'};\n`,
+    );
+    fs.mkdirSync(path.join(tmpDir, 'docs'));
+    for (const name of ['acme-setup', 'acme-menus']) {
+      const doc = {
+        type: 'generic',
+        name,
+        title: 'Fixture',
+        description: 'Fixture topic.',
+        sections: [
+          {title: 'Overview', content: [{type: 'prose', text: passage}]},
+        ],
+      };
+      fs.writeFileSync(
+        path.join(tmpDir, 'docs', `${name}.doc.mjs`),
+        `export default ${JSON.stringify(doc)};\n`,
+      );
+    }
+  }
+
+  it('keeps doctor integration docs at exit 0, and fails integration check --strict', async () => {
+    writeCopiedDocs();
+
+    const doctor = await runCli(['doctor', 'integration', 'docs'], tmpDir);
+    expect(doctor.status).toBe(0);
+    expect(doctor.stdout).toContain('1 copied passage(s)');
+
+    const loose = await runCli(['integration', 'check'], tmpDir);
+    expect(loose.status).toBe(0);
+
+    const strict = await runCli(['integration', 'check', '--strict'], tmpDir);
+    expect(strict.status).toBe(1);
+    expect(strict.stdout).toContain('copied_passage');
+  });
+});

@@ -17,7 +17,8 @@ export const doc = {
     'conflicts that need an explicit relationship or a rename. `copiedPassages` lists each ' +
     'pair of topics that repeat 10 or more words of prose word for word: two of the ' +
     "package's topics, or one of them and a Core topic other than the one it replaces. " +
-    'Code and examples are not compared. The list never fails the check.',
+    'Code and examples are not compared. Each entry is also a `copied_passage` warning, so ' +
+    '`integration check --strict` fails on it; the check itself still fails only on errors.',
   importPath: '@astryxdesign/cli/api',
   signature:
     'integrationDocConflicts(pkg?: string, options?: IntegrationAuthoringOptions): Promise<IntegrationDocConflictResponse>',
