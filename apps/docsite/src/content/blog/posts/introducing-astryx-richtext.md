@@ -90,5 +90,5 @@ Screen readers announce the editor properly: they read out the field's label and
 ## Get started
 
 - Install the package and the Lexical peers shown above.
-- Read the [RichTextEditor docs](/components/RichTextEditor), or run `npx astryx component RichTextEditor` in a project that has the package installed.
+- Read the [RichTextEditor docs](/components/RichTextEditor), or run `npx @astryxdesign/cli component RichTextEditor` in a project that has the package installed.
 - Try every feature together in the [RichText playground story](https://astryx.atmeta.com/storybook/?path=/story/richtext-richtexteditor--playground).
