@@ -2127,15 +2127,6 @@ async function searchOnce(query, options) {
   }
 
   const term = String(query).trim().toLowerCase();
-  // A query that is one identifier counts as the words it spells
-  // (`SidebarToggle`), and still matches whole as typed. In a
-  // query of several words, each identifier stays one term (`ChatComposer
-  // ChatLayout` names two components), and its words still join into names
-  // (see compoundHit).
-  const spelled = spellIdentifiers(String(query).trim());
-  const tokens = tokenizeQuery(/\s/.test(term) ? term : spelled);
-  const words = phraseWords(spelled);
-
   // `astryx docs` reads docs without @astryxdesign/core, and `astryx theme
   // list` reads themes without it (bundled themes need no project), so a
   // search of either must too. Every other domain reads core: asked for by
@@ -2166,6 +2157,29 @@ async function searchOnce(query, options) {
   ]);
 
   const all = [...components, ...hooks, ...docTopics, ...templates, ...themes];
+
+  // A query that is one identifier counts as the words it spells
+  // (`SidebarToggle`), and still matches whole as typed. In a query of several
+  // words, each identifier stays one term (`ChatComposer ChatLayout` names two
+  // components), and its words still join into names (see compoundHit). Both
+  // only help a query that names no entry outright: when the query is an
+  // entry's name, typed whole or as its words, that entry answers it, and
+  // neither reading may add near siblings beside it.
+  const spelled = spellIdentifiers(String(query).trim());
+  const exact = all.some(candidate =>
+    [candidate.name, ...(candidate.aliases ?? [])].some(name => {
+      const lower = String(name).toLowerCase();
+      return (
+        lower === term ||
+        (candidate.domain !== 'doc' &&
+          !/[\s_-]/.test(lower) &&
+          lower === term.replace(/\s+/g, ''))
+      );
+    }),
+  );
+  const tokens = tokenizeQuery(exact || /\s/.test(term) ? term : spelled);
+  /** @type {string[]} */
+  const words = exact ? [] : phraseWords(spelled);
 
   // Score every candidate on its own merits. The consumer groups results by
   // role (page / block / component) and takes the top of each, so there's no
