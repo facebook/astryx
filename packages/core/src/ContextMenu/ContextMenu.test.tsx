@@ -10,7 +10,7 @@
 
 import {useRef, useState} from 'react';
 import {createPortal} from 'react-dom';
-import {describe, it, expect, vi, beforeEach} from 'vitest';
+import {describe, it, expect, vi, beforeAll, beforeEach} from 'vitest';
 import {render, screen, fireEvent, act, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {readFileSync} from 'node:fs';
@@ -26,6 +26,11 @@ import {
 import {DropdownMenuItem} from '../DropdownMenu/DropdownMenuItem';
 import {Divider} from '../Divider';
 import {useLayerDismissal} from '../Layer/useLayerDismissal';
+import {warmMenuBottomSheet} from '../DropdownMenu/__tests__/warmMenuBottomSheet';
+
+// The touch sheet is loaded lazily; resolve its modules once up front, so
+// ContextMenu's own lazy sheet renders within the cases' waitFor.
+beforeAll(warmMenuBottomSheet, 20000);
 
 function NestedDismissibleLayer({onDismiss}: {onDismiss: () => void}) {
   const [isOpen, setIsOpen] = useState(true);
