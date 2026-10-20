@@ -49,6 +49,7 @@ export const docs = {
     'sun',
     'moon',
     'bookmark',
+    'thumbsup',
     'smiley',
     'emoji',
     'lock',

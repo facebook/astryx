@@ -2409,11 +2409,11 @@ async function searchOnce(query, options) {
   for (const r of ranked) {
     if (named.includes(r)) continue;
     if (!r.alias || r.word) continue;
-    // A named run holds back a match on fewer of its words; a partial match
-    // on more words than any named run spans reads more of the query than the
-    // named entry does (`dropdown menu radio` and DropdownMenuRadioItem,
-    // against DropdownMenu).
-    if (r.aliasWords > longestNamed) continue;
+    // A match on part of a longer name that spans more words than any named
+    // run reads more of the query than the named entry does (`dropdown menu
+    // radio` and DropdownMenuRadioItem, against DropdownMenu), so it is not
+    // held back. A joined keyword always is.
+    if (r.alias === 'partial' && r.aliasWords > longestNamed) continue;
     // It keeps what it earns without those matches.
     const own =
       scoreQuery(term, tokens, r.candidate, words, {plain: true})?.score ?? 0;
