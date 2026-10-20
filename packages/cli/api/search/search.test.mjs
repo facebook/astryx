@@ -916,6 +916,37 @@ describe('search leaf — compound names, other names, and word forms', () => {
     }
   }, SLOW);
 
+  it('reads a one-identifier other name as typed', async () => {
+    const {data} = await search('AppHeader', {cwd});
+    expect(data.results[0]).toMatchObject({
+      domain: 'component',
+      name: 'LayoutHeader',
+    });
+  }, SLOW);
+
+  it('adds no near siblings beside an entry the query names outright', async () => {
+    const {data} = await search('top nav mega menu', {cwd});
+    expect(data.results[0]).toMatchObject({name: 'TopNavMegaMenu'});
+    // Its sub-parts start with its name; read joined they would score in the
+    // whole-name tier right under it.
+    const siblings = data.results.filter(
+      r => r.name !== 'TopNavMegaMenu' && r.name.startsWith('TopNavMegaMenu'),
+    );
+    for (const sibling of siblings) expect(sibling.score).toBeLessThan(190);
+  }, SLOW);
+
+  it('ranks an entry the query names above a match on part of another name', async () => {
+    // `table header` names TableHeader; useTableStickyColumns only holds the
+    // words `sticky columns`.
+    const {data} = await search('table header with sticky columns', {cwd});
+    const names = data.results.map(r => r.name);
+    expect(names.indexOf('TableHeader')).toBeLessThan(
+      names.indexOf('useTableStickyColumns') === -1
+        ? Infinity
+        : names.indexOf('useTableStickyColumns'),
+    );
+  }, SLOW);
+
   it('finds Icon by a glyph name', async () => {
     for (const q of ['cog', 'lightning bolt']) {
       const {data} = await search(q, {cwd});

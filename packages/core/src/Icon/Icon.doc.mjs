@@ -41,7 +41,6 @@ export const docs = {
     'magnifyingglass',
     'paperclip',
     'house',
-    'envelope',
     'flame',
     'rocket',
     'lightning',
