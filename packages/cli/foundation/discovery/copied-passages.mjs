@@ -477,11 +477,27 @@ export async function findCopiedPassages(discovered) {
       /** @type {GuideWords} */ a,
       /** @type {GuideWords} */ b,
     ) =>
-      sharedPassages(a.words, b.words).filter(
-        ({start, length}) =>
-          contentWords(a.words, start, length) >= MIN_CONTENT_WORDS &&
-          topicsSharing(a.words, start) < BOILERPLATE_TOPICS,
-      );
+      sharedPassages(a.words, b.words).flatMap(({start, length}) => {
+        // Boilerplate is judged window by window: the leading and trailing
+        // 10-word windows three or more topics share are trimmed, so a
+        // lead-in many topics open with does not hide the copy after it.
+        const boilerplate = (/** @type {number} */ at) =>
+          topicsSharing(a.words, at) >= BOILERPLATE_TOPICS;
+        const lastWindow = start + length - PASSAGE_WORDS;
+        // Every word a leading boilerplate window covers is boilerplate, and
+        // so is every word from the first trailing one on.
+        let lead = start;
+        while (lead <= lastWindow && boilerplate(lead)) lead += 1;
+        const begin = lead > start ? lead - 1 + PASSAGE_WORDS : start;
+        let tail = lastWindow;
+        while (tail >= begin && boilerplate(tail)) tail -= 1;
+        const end = tail < lastWindow ? tail + 1 : start + length;
+        const trimmed = end - begin;
+        if (trimmed < PASSAGE_WORDS) return [];
+        return contentWords(a.words, begin, trimmed) >= MIN_CONTENT_WORDS
+          ? [{start: begin, length: trimmed}]
+          : [];
+      });
     let runs = filtered(first, second);
     if (runs.length === 0) return;
     let topic = first;
@@ -548,10 +564,17 @@ export async function findCopiedPassages(discovered) {
     const link = corePage
       ? `{@link @astryxdesign/cli:generic:${page}}`
       : `{@link generic:${page}}`;
+    // A Core topic one of the package's topics replaces opens that
+    // replacement, which does not carry the passage, so no link reaches it.
+    const replacer =
+      kind === 'core'
+        ? mine.find(each => each.replaces?.toLowerCase() === page)
+        : undefined;
     // Two topics on one page (one extends the other, or both extend the same
     // topic) would link the page to itself: the copy goes instead.
-    const fix =
-      pageOf(topic) === page
+    const fix = replacer
+      ? `"${replacer.name}" replaces the Core topic "${owner.name}", so a link to it opens "${replacer.name}", which does not carry this text: reword the passage in "${topic.name}" in your own words, or move it into "${replacer.name}".`
+      : pageOf(topic) === page
         ? `"${topic.name}" and "${owner.name}" show on the same page ("${page}"): delete the passage from "${topic.name}", or, if its section overrides one there, drop the override so the original shows.`
         : `In "${topic.name}", replace that whole passage, from its first word to its last, code ticks included, with ${link}.`;
     found.push({

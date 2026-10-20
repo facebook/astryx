@@ -760,6 +760,23 @@ describe('integrationDocConflicts copied passages and extensions', () => {
     expect(issue.message).not.toContain('{@link');
   });
 
+  it('finds a copy after a lead-in three topics share', async () => {
+    const lead =
+      'Every package ships its integration docs as plain modules the CLI reads';
+    writeTopics([
+      {name: 'acme-menus', text: `${lead}. ${PASSAGE}`},
+      {name: 'acme-setup', text: `${lead}. ${PASSAGE} Then run setup.`},
+      {name: 'acme-other', text: `${lead}. Nothing else here is shared.`},
+    ]);
+
+    const found = copied(
+      await integrationDocConflicts(undefined, {cwd: tmpDir}),
+    );
+
+    expect(found).toHaveLength(1);
+    expect(found[0].text).toBe(PASSAGE);
+  });
+
   it("links to a package topic that replaces Core's by its own name", async () => {
     writeTopics([
       {name: 'theme', text: PASSAGE, replaces: 'theme'},
@@ -778,5 +795,28 @@ describe('integrationDocConflicts copied passages and extensions', () => {
         each.message.includes('with {@link generic:theme}.'),
       ),
     ).toBe(true);
+  });
+
+  it('prints no link to a Core topic one of the package topics replaces', async () => {
+    const [file] = builtinGuideFiles();
+    const coreDoc = /** @type {any} */ (await loadTopicModule(file));
+    const coreText = proseWords(coreDoc)
+      .slice(0, 30)
+      .map(each => each.word)
+      .join(' ');
+    writeTopics([
+      {name: 'acme-own', text: 'Our version.', replaces: coreDoc.name},
+      {name: 'acme-copy', text: coreText},
+    ]);
+
+    const found = copied(
+      await integrationDocConflicts(undefined, {cwd: tmpDir}),
+    ).filter((/** @type {any} */ each) => each.owner === coreDoc.name);
+
+    expect(found).toHaveLength(1);
+    expect(found[0].message).toContain(
+      `"acme-own" replaces the Core topic "${coreDoc.name}"`,
+    );
+    expect(found[0].message).not.toContain('{@link');
   });
 });
