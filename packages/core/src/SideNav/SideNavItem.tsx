@@ -634,6 +634,8 @@ export function SideNavItem({
           isSelected && navItemStyles.selected,
           isDisabled && navItemStyles.disabled,
         ),
+        // Spread after `rest`, so keep the caller's class beside these.
+        rest.className,
       ),
       ...pressable,
     };
@@ -752,8 +754,9 @@ export function SideNavItem({
 
   // The indent is a runtime value, so it reaches the element as an inline
   // style. These props are spread after `rest`, so fold the caller's `style`
-  // back in (caller wins) rather than letting the indent replace it.
-  const callerStyle = {style: rest.style};
+  // back in (caller wins) rather than letting the indent replace it, and the
+  // caller's `className` beside the row's own classes.
+  const callerStyle = {className: rest.className, style: rest.style};
 
   // Three shapes of the same row appearance:
   // - `rowProps` — split-action path (toggle, no actions): presentational
