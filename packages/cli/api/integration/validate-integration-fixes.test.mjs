@@ -1152,23 +1152,15 @@ describe('source_without_template_doc fixes hold when followed', () => {
     expect(await issuesOf(fixed)).toEqual([]);
   });
 
-  it('names a nested source by its path under the templates root', async () => {
+  it('never flags a helper in a subfolder of the templates root', async () => {
     const dir = writePackage({
       [MANIFEST]: manifest({templates: './templates'}),
-      'templates/blocks/Carousel.tsx': componentSource('Carousel'),
+      'templates/hero.doc.mjs': `export default {type: 'page', name: 'hero', displayName: 'Hero'};\n`,
+      'templates/hero.tsx': componentSource('Hero'),
+      'templates/hero/HeroCard.tsx': componentSource('HeroCard'),
     });
 
-    const message = only(await issuesOf(dir), 'source_without_template_doc');
-    expect(message).toContain(
-      'Template source "blocks/Carousel.tsx" has no same-stem metadata file Carousel.doc.mjs',
-    );
-
-    const fixed = follow(dir, {
-      write: {
-        'templates/blocks/Carousel.doc.mjs': `export default {type: 'block', name: 'Carousel', displayName: 'Carousel', aspectRatio: 1};\n`,
-      },
-    });
-    expect(await issuesOf(fixed)).toEqual([]);
+    expect(await issuesOf(dir)).toEqual([]);
   });
 
   it('accepts a released .template.mjs spec as the metadata', async () => {

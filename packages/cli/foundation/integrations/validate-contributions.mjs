@@ -302,7 +302,7 @@ async function checkTemplates(integration, issues) {
 }
 
 /**
- * Warn about a `.tsx` under the templates root with no same-stem template
+ * Warn about a `.tsx` directly in the templates root with no same-stem template
  * metadata: template discovery pairs sources with docs, so `astryx template`
  * never lists it. A PascalCase file directly in a shared components root is
  * left to the component check, which already warns about it.
@@ -314,16 +314,13 @@ function checkTemplateSourcesWithoutDoc(integration, issues) {
   const sharedComponents =
     integration.components != null &&
     path.resolve(integration.components) === path.resolve(root);
-  for (const relative of findTemplateSourceOnlyCandidates(root)) {
-    const file = path.posix.basename(relative);
-    if (sharedComponents && relative === file && /^[A-Z]/u.test(file)) {
-      continue;
-    }
+  for (const file of findTemplateSourceOnlyCandidates(root)) {
+    if (sharedComponents && /^[A-Z]/u.test(file)) continue;
     const stem = file.slice(0, -'.tsx'.length);
     issues.push(
       issueWarning(
         'source_without_template_doc',
-        `Template source "${relative}" has no same-stem metadata file ${stem}.doc.mjs, so \`astryx template\` never lists it. Fix: add ${stem}.doc.mjs beside it with type: 'page' or 'block'; \`astryx docs authoring integration-template-doc\` lists its fields. If it is not a template, move it out of the templates root.`,
+        `Template source "${file}" has no same-stem metadata file ${stem}.doc.mjs, so \`astryx template\` never lists it. Fix: add ${stem}.doc.mjs beside it with type: 'page' or 'block'; \`astryx docs authoring integration-template-doc\` lists its fields. If it is not a template, move it out of the templates root.`,
       ),
     );
   }
