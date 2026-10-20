@@ -163,11 +163,27 @@ message:     Rerun with --confirm-public to file this report.`,
         },
         {
           type: 'prose',
-          text: 'One handler anywhere in the app, from the app or from any package, turns this fallback off. So does a listed package that fails to load: the CLI cannot tell whether it has a handler, so the report fails for that package instead of going to another tracker.',
+          text: 'One handler anywhere in the app, from the app or from any package, turns the fallback off for every report. So does a listed package that fails to load: the CLI cannot tell whether it has a handler, so the report fails for that package instead of going to another tracker. See {@link command:gap-report}.',
         },
+      ],
+    },
+    {
+      id: 'choose-a-destination',
+      title: 'Let the person choose where a report goes',
+      content: [
         {
           type: 'prose',
-          text: "With handlers, a report about your package still reaches your `issuesUrl` after the handlers run, in the same way: a GitHub URL with `--confirm-public`, any other URL as `routed_only`. It is skipped when your own `gapReport` handler ran, when a handler's receipt URL is already inside your `issuesUrl`, and for reports about Core. See {@link command:gap-report}.",
+          text: 'When an app loads packages that name their own `issuesUrl`, a report can go to the default (the handlers, or the fallback above) or to one of those packages. `astryx gap-report --list-categories` and the receipt of a report filed without `--to` list every destination, with a line telling the agent to ask the person.',
+        },
+        {
+          type: 'list',
+          style: 'unordered',
+          items: [
+            'An agent asks the person where to file. It never picks a package destination on its own.',
+            "`--to <package>` carries the person's choice: the report goes only to that package's `issuesUrl`, under the same `--confirm-public` rule, and the handlers do not run.",
+            'Without a choice, leave out `--to`; the report goes to the default.',
+            'A `--to` that names no destination fails before anything is sent and lists the destinations.',
+          ],
         },
       ],
     },

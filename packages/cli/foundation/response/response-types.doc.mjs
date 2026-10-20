@@ -169,12 +169,13 @@ export const doc = {
     // gap reports
     {
       value: 'gap-report.categories',
-      description: 'The fixed gap category values and human-readable labels.',
+      description:
+        'The fixed gap category values and human-readable labels; when a loaded integration names its own issues URL, meta.destinations lists every destination ({to, default, issuesUrl}) and meta.ask tells an agent to ask the person.',
     },
     {
       value: 'gap-report.file',
       description:
-        'An aggregate receipt: overall status, the selected package, issuesUrl (or null), deliveries in handler order, each {handlerType: project | integration | fallback, handler, audience, status, url, message}, and filedCount/routedOnlyCount totals.',
+        'An aggregate receipt: overall status, the selected package, issuesUrl (or null), deliveries in handler order, each {handlerType: project | integration | fallback, handler, audience, status, url, message}, and filedCount/routedOnlyCount totals; without --to, when a loaded integration names its own issues URL, destinations and ask as on gap-report.categories.',
     },
 
     // template
