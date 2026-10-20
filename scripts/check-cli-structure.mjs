@@ -39,6 +39,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {runtimeStarExports} from './lib/api-index-star-exports.mjs';
+import {checkAreas} from './lib/check-areas.mjs';
 
 const REPO_ROOT = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -671,6 +672,10 @@ for (const name of apiExports) {
   }
 }
 
+// ── 6. Answer-picking areas  ─────────────────────
+const areaCheck = await checkAreas({cliRoot: CLI});
+errors.push(...areaCheck.errors);
+
 if (errors.length > 0) {
   console.error('❌ CLI structure violations:\n');
   for (const e of errors) console.error(`  ${e}`);
@@ -686,6 +691,7 @@ console.log(
     `   ${doctypeCount} doc-type(s), ${apiCount} api folder(s),`,
     `   ${inv22Count} handler(s) checked for INV22, ${clientHelperBoundaryCount} client helper boundary, ${inv21Count} api module(s) for INV21,`,
     `   ${inv23Count} handler(s) checked for INV23,`,
-    `   ${fr1Count} CommandDoc fn(s) checked for FR1, ${fr2Count} api export(s) for FR2.`,
+    `   ${fr1Count} CommandDoc fn(s) checked for FR1, ${fr2Count} api export(s) for FR2,`,
+    `   ${areaCheck.areas} answer-picking area(s) with ${areaCheck.nodes} node(s) checked.`,
   ].join('\n'),
 );

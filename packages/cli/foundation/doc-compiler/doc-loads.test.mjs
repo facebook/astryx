@@ -244,9 +244,17 @@ const RUNNERS = {
     runs: 'the generated record default theme, or the released package.json astryx.theme value when no record exists',
     sites: ['require(<computed>)'],
   },
+  'foundation/areas/testing.mjs': {
+    runs: "Node's network, DNS, and subprocess built-ins, by name, to stub them while a test runs, and syncBuiltinESMExports so module imports of them see the stubs",
+    sites: ['module.syncBuiltinESMExports ×2', 'require(<computed>)'],
+  },
   'foundation/config/project.mjs': {
     runs: 'astryx.config, through the config parser',
     sites: ['loadModuleWithParser(..., parseConfig)'],
+  },
+  'foundation/discovery/cli-self-docs.mjs': {
+    runs: "each answer-picking area's node registry (api/<subject>/nodes/index.mjs): a node's descriptor is its doc",
+    sites: ['import(<computed>)'],
   },
   'foundation/discovery/component-discovery.mjs': {
     runs: '@babel/parser, on first use, to read the members a family doc lists in its components without running the doc',

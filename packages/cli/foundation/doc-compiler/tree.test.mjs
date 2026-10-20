@@ -94,7 +94,6 @@ const routes = tree => [...tree.nodes.keys()];
 const problems = tree => tree.diagnostics.map(d => [d.code, d.message]);
 
 describe('buildDocsTree', () => {
-
   it('withdraws a namespace placed in a withdrawn namespace, and what is placed in it', () => {
     const CLI = '@astryxdesign/cli';
     const tree = buildDocsTree({
@@ -102,18 +101,38 @@ describe('buildDocsTree', () => {
         ns('tokens'),
         ns('alpha', {placement: {parent: 'namespace:tokens', slot: 'items'}}),
       ],
-      docs: [guide('deep', {placement: {parent: 'namespace:alpha', slot: 'items'}})],
+      docs: [
+        guide('deep', {placement: {parent: 'namespace:alpha', slot: 'items'}}),
+      ],
       topics: [
-        {provider: CLI, providerId: CLI, name: 'tokens', title: 'Tokens', summary: 'Tokens.', source: `${CLI}/tokens.doc.mjs`},
+        {
+          provider: CLI,
+          providerId: CLI,
+          name: 'tokens',
+          title: 'Tokens',
+          summary: 'Tokens.',
+          source: `${CLI}/tokens.doc.mjs`,
+        },
       ],
     });
     expect(tree.get('tokens')?.provider).toBe(CLI);
-    expect(routes(tree).filter(route => route.startsWith('tokens/'))).toEqual([]);
+    expect(routes(tree).filter(route => route.startsWith('tokens/'))).toEqual(
+      [],
+    );
     expect(problems(tree)).toEqual(
       expect.arrayContaining([
-        ['duplicate_route', expect.stringContaining('takes the route "tokens"')],
-        ['invalid_placement', 'Namespace "alpha" has no route: the namespace it is placed in was withdrawn.'],
-        ['invalid_placement', expect.stringContaining('names a namespace that has no route')],
+        [
+          'duplicate_route',
+          expect.stringContaining('takes the route "tokens"'),
+        ],
+        [
+          'invalid_placement',
+          'Namespace "alpha" has no route: the namespace it is placed in was withdrawn.',
+        ],
+        [
+          'invalid_placement',
+          expect.stringContaining('names a namespace that has no route'),
+        ],
       ]),
     );
   });
@@ -123,20 +142,41 @@ describe('buildDocsTree', () => {
       namespaces: [ns('tokens')],
       docs: [],
       topics: [
-        {provider: '@acme/a', providerId: '@acme/a', name: 'acme-tokens', title: 'Acme tokens', summary: 'Acme tokens.', source: '@acme/a:acme-tokens', aliases: ['tokens', 'old-tokens']},
+        {
+          provider: '@acme/a',
+          providerId: '@acme/a',
+          name: 'acme-tokens',
+          title: 'Acme tokens',
+          summary: 'Acme tokens.',
+          source: '@acme/a:acme-tokens',
+          aliases: ['tokens', 'old-tokens'],
+        },
       ],
     });
     expect(tree.get('tokens')).toBeUndefined();
     expect(tree.get('acme-tokens')?.provider).toBe('@acme/a');
     expect(problems(tree)).toEqual([
-      ['duplicate_route', expect.stringContaining('takes the route "tokens", which the topic "acme-tokens" also answers to')],
+      [
+        'duplicate_route',
+        expect.stringContaining(
+          'takes the route "tokens", which the topic "acme-tokens" also answers to',
+        ),
+      ],
     ]);
     // Every name it answers to is reserved, not only the last one it replaced.
     const older = buildDocsTree({
       namespaces: [ns('old-tokens')],
       docs: [],
       topics: [
-        {provider: '@acme/a', providerId: '@acme/a', name: 'acme-tokens', title: 'Acme tokens', summary: 'Acme tokens.', source: '@acme/a:acme-tokens', aliases: ['tokens', 'old-tokens']},
+        {
+          provider: '@acme/a',
+          providerId: '@acme/a',
+          name: 'acme-tokens',
+          title: 'Acme tokens',
+          summary: 'Acme tokens.',
+          source: '@acme/a:acme-tokens',
+          aliases: ['tokens', 'old-tokens'],
+        },
       ],
     });
     expect(older.get('old-tokens')).toBeUndefined();
@@ -153,7 +193,12 @@ describe('buildDocsTree', () => {
       summary: `The ${name} topic.`,
       source: `${provider}/${name}.doc.mjs`,
     });
-    const cliNs = {...ns('cli'), provider: CLI, providerId: CLI, source: `${CLI}/tree/cli.doc.mjs`};
+    const cliNs = {
+      ...ns('cli'),
+      provider: CLI,
+      providerId: CLI,
+      source: `${CLI}/tree/cli.doc.mjs`,
+    };
     // An integration's topics named `CLI` and `UNORGANIZED` claim the CLI's
     // namespace and the generated level; both are withdrawn.
     const tree = buildDocsTree({
@@ -167,18 +212,35 @@ describe('buildDocsTree', () => {
     expect(routes(tree)).not.toContain('UNORGANIZED');
     expect(problems(tree)).toEqual(
       expect.arrayContaining([
-        ['duplicate_route', expect.stringContaining('both have the route "CLI"')],
-        ['duplicate_route', expect.stringContaining('takes the route "UNORGANIZED", which the CLI\'s own docs keep')],
+        [
+          'duplicate_route',
+          expect.stringContaining('both have the route "CLI"'),
+        ],
+        [
+          'duplicate_route',
+          expect.stringContaining(
+            'takes the route "UNORGANIZED", which the CLI\'s own docs keep',
+          ),
+        ],
       ]),
     );
     expect(tree.getFolded('THEME')?.provider).toBe(CLI);
     // A CLI topic whose own name has capitals keeps its route against a
     // lowercase namespace, although namespaces go into the tree first.
-    const caps = buildDocsTree({namespaces: [ns('tokens')], docs: [], topics: [topic('Tokens', CLI)]});
+    const caps = buildDocsTree({
+      namespaces: [ns('tokens')],
+      docs: [],
+      topics: [topic('Tokens', CLI)],
+    });
     expect(caps.get('Tokens')?.provider).toBe(CLI);
     expect(caps.get('tokens')).toBeUndefined();
     expect(problems(caps)).toEqual([
-      ['duplicate_route', expect.stringContaining('takes the route "tokens", which the CLI\'s own docs keep')],
+      [
+        'duplicate_route',
+        expect.stringContaining(
+          'takes the route "tokens", which the CLI\'s own docs keep',
+        ),
+      ],
     ]);
   });
   it('builds three authored levels and a guide below them', () => {
@@ -495,7 +557,16 @@ describe("the CLI's own docs tree", () => {
     async () => {
       const tree = await loadDocsTree({fresh: true});
       expect(tree.diagnostics).toEqual([]);
-      expect(tree.roots().map(node => node.route)).toEqual(['cli', 'internationalization', 'layout', 'migration', 'styling', 'styling-libraries', 'tokens', 'typography']);
+      expect(tree.roots().map(node => node.route)).toEqual([
+        'cli',
+        'internationalization',
+        'layout',
+        'migration',
+        'styling',
+        'styling-libraries',
+        'tokens',
+        'typography',
+      ]);
       // Every slot child is a node one level below the namespace that places
       // it, and every node but the root is placed. Read from the tree, so a
       // restructure of the guides does not need this test edited.
@@ -528,7 +599,7 @@ describe("the CLI's own docs tree", () => {
       expect(
         tree.get('cli')?.slots.find(slot => slot.name === 'reference')
           ?.children,
-      ).toEqual(['cli/commands', 'cli/api']);
+      ).toEqual(['cli/commands', 'cli/api', 'cli/areas']);
       expect(tree.get('cli/api')?.slots[0].children).toEqual([
         'cli/api/functions',
         'cli/api/schemas',

@@ -17,6 +17,7 @@
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import {pathToFileURL} from 'node:url';
 import {CLI_ROOT} from '../fs/paths.mjs';
 import {readDocView} from '../doc-compiler/read.mjs';
 import {AUTHORING_SELF_DOCS, selfDocSection} from './authoring-self-docs.mjs';
@@ -25,6 +26,7 @@ import {
   oversizedDocSections,
 } from './docs-output-budget.mjs';
 import {routeSegment} from './docs-section-key.mjs';
+import {AREA_DOC_NAMESPACE, nodeDoc} from '../areas/node-docs.mjs';
 
 /** The directories, relative to the CLI root, that hold the CLI's own docs. */
 export const CLI_SELF_DOC_DIRS = [
@@ -46,8 +48,26 @@ const NAMESPACED_KINDS = new Set(['command', 'function', 'schema', 'enum']);
 export const CLI_DOC_NAMESPACES = {
   'cli/commands': {reader: 'tree'},
   'cli/api': {reader: 'tree'},
+  [AREA_DOC_NAMESPACE]: {reader: 'tree'},
   authoring: {reader: 'authoring'},
 };
+
+/**
+ * The registry of every answer-picking area, relative to the CLI root: each
+ * `api/<subject>/nodes/index.mjs`, sorted.
+ * @param {string} [root]
+ * @returns {string[]}
+ */
+export function discoverAreaRegistries(root = CLI_ROOT) {
+  const api = path.join(root, 'api');
+  if (!fs.existsSync(api)) return [];
+  return fs
+    .readdirSync(api, {withFileTypes: true})
+    .filter(entry => entry.isDirectory())
+    .map(entry => `api/${entry.name}/nodes/index.mjs`)
+    .filter(file => fs.existsSync(path.join(root, file)))
+    .sort();
+}
 
 /** Blocks a doc's notes may carry that a topic section can render. */
 const TOPIC_BLOCKS = new Set(['prose', 'list', 'code', 'heading', 'table']);
@@ -111,6 +131,23 @@ export async function loadCliSelfDocs(
     } catch (error) {
       failed.push({
         source,
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+  }
+  // Each answer-picking node's descriptor is its doc.
+  for (const registry of discoverAreaRegistries(root)) {
+    try {
+      const nodes = await import(pathToFileURL(path.join(root, registry)).href);
+      for (const node of Object.values(nodes)) {
+        loaded.push({
+          source: registry.replace(/index\.mjs$/, `${node.id}.mjs`),
+          doc: nodeDoc(node),
+        });
+      }
+    } catch (error) {
+      failed.push({
+        source: registry,
         error: error instanceof Error ? error.message : String(error),
       });
     }
@@ -318,7 +355,8 @@ function functionSection(fn, index) {
     // A Default column only when some parameter declares a default, so a
     // function with none keeps a three-column table.
     const defaults = params.some(
-      (/** @type {any} */ p) => typeof p.default === 'string' && p.default !== '',
+      (/** @type {any} */ p) =>
+        typeof p.default === 'string' && p.default !== '',
     );
     content.push({
       type: 'table',
