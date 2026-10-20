@@ -456,12 +456,10 @@ test('the scroll affordance is keyboard reachable exactly while it is visible', 
     .poll(async () => distanceFromBottom(root), {timeout: 5000})
     .toBeLessThan(2);
   await expect(pill).toHaveCSS('visibility', 'hidden');
-  expect(
-    await page
-      .locator(AFFORDANCE)
-      .evaluate(element => document.activeElement === element),
+  await expect(
+    page.locator(AFFORDANCE),
     'the affordance must relinquish focus when it hides',
-  ).toBe(false);
+  ).not.toBeFocused();
   expect(
     await affordanceAcceptsFocus(page, before),
     'after returning to the bottom the affordance must refuse focus again',
