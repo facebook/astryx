@@ -87,6 +87,22 @@
  */
 
 /**
+ * A code span in prose that is exactly `astryx docs <name>` for a doc that
+ * exists, where the doc's `{@link generic:<name>}` would be checked. Each is
+ * also a `stray_doc_pointer` warning, so `integration check --strict` fails on
+ * it (architecture:cli-surface DEC-8).
+ *
+ * @typedef {object} StrayPointer
+ * @property {string} topic the package topic that has it
+ * @property {string | null} section the title of the section it is in
+ * @property {string} file the doc file
+ * @property {number | null} line the file line that holds it, when found
+ * @property {string} pointer the written command, `astryx docs <name>`
+ * @property {string} link the link that replaces it
+ * @property {string} message the exact replacement
+ */
+
+/**
  * Each of the three authoring checks reports `validated`: false means no
  * integration manifest was found, so nothing was inspected and the empty
  * conflicts/findings list carries no information about the package.
@@ -118,7 +134,7 @@
 /**
  * @typedef {object} IntegrationDocConflictResponse
  * @property {'integration.doc-conflicts'} type
- * @property {{validated: boolean, name: string | null, version: string | null, findings: IntegrationDocFinding[], copiedPassages: CopiedPassage[], fluff: DocFluff[], issues: import('../../foundation/integrations/issue').AstryxIntegrationIssue[]}} data
+ * @property {{validated: boolean, name: string | null, version: string | null, findings: IntegrationDocFinding[], copiedPassages: CopiedPassage[], fluff: DocFluff[], strayPointers: StrayPointer[], issues: import('../../foundation/integrations/issue').AstryxIntegrationIssue[]}} data
  */
 
 export {};

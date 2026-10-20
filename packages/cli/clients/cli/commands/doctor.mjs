@@ -394,7 +394,10 @@ function printDocConflicts(data) {
     // issue is not printed twice.
     ...issueBlocks(
       data.issues.filter(
-        issue => issue.code !== 'copied_passage' && issue.code !== 'doc_fluff',
+        issue =>
+          issue.code !== 'copied_passage' &&
+          issue.code !== 'doc_fluff' &&
+          issue.code !== 'stray_doc_pointer',
       ),
     ),
   ];
@@ -464,6 +467,29 @@ function printDocConflicts(data) {
           'file',
           'line',
           'density',
+          'message',
+        ],
+      }),
+    );
+  }
+  const stray = data.strayPointers ?? [];
+  if (stray.length === 0) {
+    if (!data.issues.some(issue => issue.severity === 'error')) {
+      output.push(text('[ok] Every pointer to a doc is a link.'));
+    }
+  } else {
+    output.push(
+      text(
+        `[warn] ${stray.length} stray doc pointer(s) (stray_doc_pointer): a written \`astryx docs <name>\` where a link would be checked. Replace each with the link shown.`,
+      ),
+      records(stray, {
+        fields: [
+          'topic',
+          'section',
+          'file',
+          'line',
+          'pointer',
+          'link',
           'message',
         ],
       }),

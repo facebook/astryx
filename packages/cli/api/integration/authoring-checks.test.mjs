@@ -1038,3 +1038,50 @@ describe('integrationDocConflicts fluff', () => {
     expect(found[0].message).toContain('under the 50% floor');
   });
 });
+
+describe('integrationDocConflicts stray doc pointers', () => {
+  const stray = (/** @type {any} */ result) => result.data.strayPointers;
+
+  it('lists a written pointer to a doc with the link that replaces it, and warns', async () => {
+    writeTopics([
+      {name: 'acme-setup', text: 'Install it first.'},
+      {
+        name: 'acme-menus',
+        text: 'Set it up as `astryx docs acme-setup` says; the theme is in `astryx docs theme`.',
+      },
+    ]);
+
+    const result = await integrationDocConflicts(undefined, {cwd: tmpDir});
+    const [own, core, ...rest] = stray(result);
+
+    expect(rest).toEqual([]);
+    expect(own).toMatchObject({
+      topic: 'acme-menus',
+      section: 'Overview',
+      line: 1,
+      pointer: 'astryx docs acme-setup',
+      link: '{@link generic:acme-setup}',
+    });
+    expect(own.message).toContain(
+      'Replace `astryx docs acme-setup`, code ticks included, with {@link generic:acme-setup}',
+    );
+    expect(core.link).toBe('{@link @astryxdesign/cli:generic:theme}');
+    expect(result.data.issues).toEqual([
+      {code: 'stray_doc_pointer', severity: 'warning', message: own.message},
+      {code: 'stray_doc_pointer', severity: 'warning', message: core.message},
+    ]);
+  });
+
+  it('leaves a command for a doc that does not exist, and a walkthrough', async () => {
+    writeTopics([
+      {
+        name: 'acme-setup',
+        text: 'Run `astryx docs acme-nothing`, or `astryx docs acme-setup overview`.',
+      },
+    ]);
+
+    expect(
+      stray(await integrationDocConflicts(undefined, {cwd: tmpDir})),
+    ).toEqual([]);
+  });
+});

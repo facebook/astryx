@@ -264,6 +264,10 @@ const RUNNERS = {
     runs: 'a contributed topic, for its catalog fields: name, title, description, category, and relationships',
     sites: ['importDocModule'],
   },
+  'foundation/discovery/stray-pointers.mjs': {
+    runs: "the CLI's own guides, for their names, to tell which written `astryx docs <name>` points at a doc that exists",
+    sites: ['builtinGuideFiles'],
+  },
   'foundation/discovery/project-typescript.mjs': {
     runs: "the project's own typescript, for the author checks that read source and docs with it, and its package.json for the version of one they cannot use; beside TypeScript 7, which has no compiler API, the TypeScript 6 API package @typescript/typescript6",
     sites: [

@@ -3,7 +3,8 @@
 /**
  * Core's own guides pass the doc-quality checks `integration check --strict`
  * holds every integration to (architecture:cli-surface DEC-8): no two guides
- * repeat a passage word for word, and none pads its prose.
+ * repeat a passage word for word, none pads its prose, and every pointer to
+ * a doc is a link.
  */
 
 import {describe, expect, it} from 'vitest';
@@ -19,6 +20,10 @@ import {
   densityWords,
   fillerIn,
 } from '../foundation/discovery/doc-fluff.mjs';
+import {
+  pointersIn,
+  linkableStrings,
+} from '../foundation/discovery/stray-pointers.mjs';
 import {
   BOILERPLATE_TOPICS,
   MIN_CONTENT_WORDS,
@@ -105,5 +110,20 @@ describe("Core's guides", () => {
       }
     }
     expect(fluff, 'Cut the phrase, or write the shorter word.').toEqual([]);
+  });
+
+  it('point at other docs with links, not written commands', async () => {
+    const guides = await coreGuides();
+    const names = new Set(guides.map(guide => guide.name));
+    const stray = [];
+    for (const {name, doc} of guides) {
+      for (const {text} of linkableStrings(doc)) {
+        for (const target of pointersIn(text)) {
+          if (names.has(target))
+            stray.push(`${name}: \`astryx docs ${target}\``);
+        }
+      }
+    }
+    expect(stray, 'Write {@link generic:<name>} instead.').toEqual([]);
   });
 });

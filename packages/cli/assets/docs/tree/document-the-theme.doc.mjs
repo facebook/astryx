@@ -21,7 +21,7 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: "Give your theme a doc topic that extends the core `theme` topic, so an app that lists your package sees your theme at the end of `astryx docs theme`. Add it with `extends: 'theme'` ({@link generic:extend-or-replace}).",
+          text: "Give your theme a doc topic that extends the core `theme` topic, so an app that lists your package sees your theme at the end of {@link generic:theme}. Add it with `extends: 'theme'` ({@link generic:extend-or-replace}).",
         },
         {
           type: 'code',

@@ -17,6 +17,7 @@ import {
 import {comparePropDocs} from '../../foundation/discovery/prop-drift.mjs';
 import {findCopiedPassages} from '../../foundation/discovery/copied-passages.mjs';
 import {findFluff} from '../../foundation/discovery/doc-fluff.mjs';
+import {findStrayPointers} from '../../foundation/discovery/stray-pointers.mjs';
 
 /**
  * Each component doc's props compared with the component's TypeScript props,
@@ -77,4 +78,17 @@ export function integrationCopiedPassages(discovered) {
  */
 export function integrationFluff(discovered) {
   return findFluff(discovered);
+}
+
+/**
+ * Code spans in a package's prose that write `astryx docs <name>` for a doc
+ * that exists, where `{@link generic:<name>}` would be checked
+ * (architecture:cli-surface DEC-8). Reads the package's topics and the names
+ * of Core's docs.
+ *
+ * @param {Parameters<typeof findStrayPointers>[0]} discovered the package's
+ *   docs, as discoverIntegrationDocs returns them
+ */
+export function integrationStrayPointers(discovered) {
+  return findStrayPointers(discovered);
 }
