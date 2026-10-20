@@ -313,6 +313,67 @@ describe('FOCUSABLE_SELECTOR href matching', () => {
   });
 });
 
+function InnerTabTrap({isActive}: {isActive: boolean}) {
+  const {containerRef} = useFocusTrap<HTMLDivElement>({isActive});
+  return (
+    <div ref={containerRef} data-testid="tab-inner">
+      <button type="button">inner-first</button>
+      <button type="button">inner-last</button>
+    </div>
+  );
+}
+
+// An outer trap that activates first, then an inner trap inside its
+// container, as a popover opened from a control in a dialog does.
+function NestedTabTraps({
+  isInnerActive,
+  isInnerFirst = false,
+}: {
+  isInnerActive: boolean;
+  isInnerFirst?: boolean;
+}) {
+  const {containerRef} = useFocusTrap<HTMLDivElement>({isActive: true});
+  return (
+    <div ref={containerRef} data-testid="tab-outer">
+      {!isInnerFirst && <button type="button">outer-before</button>}
+      <InnerTabTrap isActive={isInnerActive} />
+      {isInnerFirst && <button type="button">outer-after</button>}
+    </div>
+  );
+}
+
+describe('useFocusTrap nested Tab', () => {
+  it('a trap nested in another wraps Tab from its last control in its own cycle', () => {
+    const {rerender} = render(<NestedTabTraps isInnerActive={false} />);
+    rerender(<NestedTabTraps isInnerActive />);
+    const last = screen.getByRole('button', {name: 'inner-last'});
+    last.focus();
+    fireEvent.keyDown(last, {key: 'Tab'});
+    expect(screen.getByRole('button', {name: 'inner-first'})).toHaveFocus();
+  });
+
+  it('a trap nested in another wraps Shift+Tab from its first control in its own cycle', () => {
+    const {rerender} = render(
+      <NestedTabTraps isInnerActive={false} isInnerFirst />,
+    );
+    rerender(<NestedTabTraps isInnerActive isInnerFirst />);
+    const first = screen.getByRole('button', {name: 'inner-first'});
+    first.focus();
+    fireEvent.keyDown(first, {key: 'Tab', shiftKey: true});
+    expect(screen.getByRole('button', {name: 'inner-last'})).toHaveFocus();
+  });
+
+  it('the outer trap keeps wrapping once the nested trap deactivates', () => {
+    const {rerender} = render(<NestedTabTraps isInnerActive={false} />);
+    rerender(<NestedTabTraps isInnerActive />);
+    rerender(<NestedTabTraps isInnerActive={false} />);
+    const last = screen.getByRole('button', {name: 'inner-last'});
+    last.focus();
+    fireEvent.keyDown(last, {key: 'Tab'});
+    expect(screen.getByRole('button', {name: 'outer-before'})).toHaveFocus();
+  });
+});
+
 describe('useFocusTrap Escape coordination', () => {
   it('calls onEscape for a single active trap', () => {
     const onEscape = vi.fn();

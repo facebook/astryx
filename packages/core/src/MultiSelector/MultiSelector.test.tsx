@@ -29,6 +29,7 @@ import {useRef, useState} from 'react';
 import {Icon} from '../Icon';
 import {DropdownMenu, DropdownMenuItem} from '../DropdownMenu';
 import {Popover} from '../Popover';
+import {getFocusableElements} from '../hooks/useFocusTrap';
 import {InternationalizationProvider} from '../i18n';
 import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
 import {__resetInteractionModalityForTest} from '../utils/interactionModality';
@@ -4819,12 +4820,22 @@ describe('MultiSelector footer', () => {
       expect(filters).toHaveAttribute('aria-expanded', 'true'),
     );
     const reset = screen.getByRole('button', {name: 'Reset', ...h});
-    act(() => reset.focus());
-    fireEvent.keyDown(reset, {key: 'Tab'});
-    // The picker's dialog walk leaves the key to the popover, whose own focus
-    // trap owns it: focus is not moved on to the search field, and the
-    // popover stays open.
-    expect(reset).toHaveFocus();
+    const popoverDialog = reset.closest<HTMLElement>('[role="dialog"]');
+    if (popoverDialog == null) {
+      throw new Error('the popover renders no dialog');
+    }
+    // The popover's own Tab stops, in order; its last stop is also the
+    // picker panel's last, since the footer ends the panel.
+    const stops = getFocusableElements(popoverDialog).filter(
+      element => element.tabIndex >= 0,
+    );
+    const last = stops[stops.length - 1];
+    act(() => last.focus());
+    fireEvent.keyDown(last, {key: 'Tab'});
+    // The picker leaves the key to the popover, whose own focus trap wraps
+    // it to the popover's first stop: focus is not moved on to the search
+    // field, and the popover stays open.
+    expect(stops[0]).toHaveFocus();
     expect(screen.getByRole('combobox', h)).not.toHaveFocus();
     expect(filters).toHaveAttribute('aria-expanded', 'true');
     expect(trigger).toHaveAttribute('aria-expanded', 'true');
