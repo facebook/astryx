@@ -44,6 +44,10 @@ export interface AstryxIntegration {
   };
   /** Where to file issues/feedback for this integration. */
   issuesUrl?: string;
+  /** Link to this integration's docs site, such as its home page. The CLI
+   *  accepts it as a known field; catalogs that list the package may show
+   *  it. */
+  docsiteUrl?: string;
 }
 
 /**

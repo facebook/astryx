@@ -83,9 +83,13 @@ export interface TreeListProps extends BaseProps<HTMLDivElement> {
 const styles = stylex.create({
   root: {
     position: 'relative',
+    // Contain the guides' and focused rows' `z-index` (TreeListBranches,
+    // TreeListItem) inside the tree, so they never climb over a sticky header
+    // or other positioned content outside the list.
+    isolation: 'isolate',
     // Per-level indentation step. Public, themeable lever: a theme can retune
     // the tree's indent metric (e.g. to `var(--spacing-5)`) via `defineTheme`
-    // on the `tree-list` target, and both the row margins (TreeListItem) and
+    // on the `tree-list` target, and both the row indents (TreeListItem) and
     // the guide-line offsets (TreeListBranches) read it so they stay aligned.
     '--tree-list-indent': spacingVars['--spacing-4'],
     // Vertical gap between adjacent rows. Public, themeable lever (default

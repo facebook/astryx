@@ -17,8 +17,11 @@
  *   foundation/discovery/docs-discovery, which the catalog comes from.
  */
 
+import * as path from 'node:path';
 import {Project} from '../../foundation/config/project.mjs';
 import {DocsCatalog} from '../../foundation/discovery/docs-discovery.mjs';
+import {checkDocTypes} from '../../foundation/discovery/doc-types.mjs';
+import {integrationDocFiles} from '../../foundation/discovery/integration-doc-files.mjs';
 import {
   linkReferenceTopic,
   lowerReferenceTopic,
@@ -53,6 +56,17 @@ import {
   selfDocSection,
 } from '../../foundation/discovery/authoring-self-docs.mjs';
 import {CLI_PROVIDER_ID} from '../../foundation/identity/providers.mjs';
+import {
+  CORE_PACKAGE,
+  discoverOwnedComponents,
+  discoverValidIntegrationComponents,
+} from '../../foundation/discovery/component-discovery.mjs';
+import {loadComponentDoc} from '../../foundation/discovery/component-loader.mjs';
+import {
+  discoverCoreTemplates,
+  discoverIntegrationTemplatesForOne,
+} from '../../foundation/discovery/template-adapter.mjs';
+import {findCoreDir} from '../../foundation/fs/paths.mjs';
 import {AstryxError} from '../error.mjs';
 import {ERROR_CODES} from '../../foundation/response/error-codes.mjs';
 
@@ -495,10 +509,203 @@ async function docFinder(catalog, fromProvider) {
         };
       }
     }
+    if (CONTRIBUTED_KINDS.has(parsed.kind)) {
+      const link = await contributedDocLink(
+        catalog,
+        provider,
+        parsed.kind,
+        parsed.name,
+      );
+      if (link)
+        return {link: {target, ...link}, kind: parsed.kind, typed: null};
+    }
+    const searchType =
+      parsed.kind === 'component'
+        ? 'component'
+        : parsed.kind === 'page' || parsed.kind === 'block'
+          ? 'template'
+          : 'doc';
     return {
-      problem: `"${target}" names no doc. Find it with \`astryx search ${parsed.name} --type doc\`, then name it as \`[<provider>:]<kind>:<name>\`.`,
+      problem: `"${target}" names no doc. Find it with \`astryx search ${parsed.name} --type ${searchType}\`, then name it as \`[<provider>:]<kind>:<name>\`.`,
     };
   };
+}
+
+/** The doc kinds no docs tree holds: components and templates. */
+const CONTRIBUTED_KINDS = new Set(['component', 'page', 'block']);
+
+/**
+ * The link to a component, page, or block doc (spec:AST-047 FR9). No docs tree
+ * holds these, so a link finds them among the component and template records
+ * the catalog carries, the ones `astryx component` and `astryx template` open,
+ * and reads as that command. A component is named by its export name, a
+ * template by its id; anything but Core's names its package.
+ * @param {DocsCatalog} catalog
+ * @param {string} provider normalized provider id
+ * @param {string} kind `component`, `page`, or `block`
+ * @param {string} name
+ * @returns {Promise<Omit<import('../../foundation/doc-compiler/links.mjs').DocLink, 'target'> | null>}
+ */
+async function contributedDocLink(catalog, provider, kind, name) {
+  const contributions = await catalog.contributions();
+  if (!contributions) return null;
+  const sameProvider = (/** @type {string} */ providerId) => {
+    try {
+      return normalizeProviderId(providerId) === provider;
+    } catch {
+      return false;
+    }
+  };
+  if (kind === 'component') {
+    const record = contributions.components.find(
+      component =>
+        component.name === name && sameProvider(component.providerId),
+    );
+    if (!record) return null;
+    /** @type {any} */
+    let doc = null;
+    try {
+      doc = record.docPath ? await loadComponentDoc(record.docPath) : null;
+    } catch {
+      // The component checks report a doc that does not load; the link
+      // still opens the component.
+    }
+    const entry =
+      doc?.name === name
+        ? doc
+        : doc?.components?.find(
+            (/** @type {any} */ each) => each.name === name,
+          );
+    // Bare, Core's name opens Core's component unless another package ships
+    // the same name or replaces it (spec:AST-035 FR11); then the link selects
+    // Core, as it always selects any other package.
+    const selectPackage =
+      record.package !== CORE_PACKAGE ||
+      contributions.components.some(
+        other =>
+          other.package !== CORE_PACKAGE &&
+          (other.name === name || other.replaces === name),
+      );
+    return {
+      id: createDocId(provider, 'component', name),
+      route: null,
+      title: entry?.displayName ?? name,
+      summary: entry?.description ?? doc?.description ?? '',
+      command: `astryx component ${name}${selectPackage ? ` --package ${record.package}` : ''}`,
+    };
+  }
+  const template = contributions.templates.find(
+    each =>
+      each.type === kind && each.id === name && sameProvider(each.providerId),
+  );
+  if (!template) return null;
+  // The same for a Core template: another package's template of its kind
+  // with its id, or one that replaces it, takes the bare id.
+  const selectPackage =
+    template.package !== CORE_PACKAGE ||
+    contributions.templates.some(
+      other =>
+        other.package !== CORE_PACKAGE &&
+        other.type === template.type &&
+        (other.id === name || other.replaces === name),
+    );
+  return {
+    id: createDocId(provider, template.type, name),
+    route: null,
+    title: template.displayName ?? template.name,
+    summary: template.description ?? '',
+    command: `astryx template ${name} --type ${template.type}${selectPackage ? ` --package ${template.package}` : ''}`,
+  };
+}
+
+/**
+ * The component and template docs one integration package's links can name:
+ * Core's and its own, as `doctor integration docs` checks it before any app
+ * configures it.
+ * @param {any} integration a loaded integration: its name, provider id, roots,
+ *   and package directory
+ * @returns {Promise<import('../../foundation/discovery/docs-discovery.mjs').LinkableContributions>}
+ */
+async function packageContributions(integration) {
+  const own = integration.providerId ?? integration.name;
+  /** @type {import('../../foundation/discovery/docs-discovery.mjs').LinkableComponent[]} */
+  const components = [];
+  const coreDir = findCoreDir(integration.__packageDir ?? process.cwd());
+  if (coreDir) {
+    try {
+      for (const record of discoverOwnedComponents(coreDir, [])) {
+        components.push({
+          providerId: CORE_PACKAGE,
+          package: CORE_PACKAGE,
+          name: record.name,
+          docPath: record.docPath,
+        });
+      }
+    } catch {
+      // The components check reports a Core it cannot read.
+    }
+  }
+  if (integration.components) {
+    try {
+      const {components: records} =
+        await discoverValidIntegrationComponents(integration);
+      for (const record of records) {
+        components.push({
+          providerId: own,
+          package: integration.name,
+          name: record.name,
+          docPath: record.docPath,
+          // Declared: this package alone cannot tell whether an app applies
+          // it, so a link to the Core name it names selects Core.
+          ...(typeof record.replaces === 'string'
+            ? {replaces: record.replaces}
+            : {}),
+        });
+      }
+    } catch {
+      // `validate` reports components that do not load.
+    }
+  }
+  /** @type {import('../../foundation/discovery/docs-discovery.mjs').LinkableTemplate[]} */
+  const templates = [];
+  /** @param {any} template @param {string} providerId @param {string} pkg */
+  const addTemplate = (template, providerId, pkg) => {
+    if (template.type !== 'page' && template.type !== 'block') return;
+    templates.push({
+      providerId,
+      package: pkg,
+      type: template.type,
+      id: template.dirName,
+      name: template.name,
+      ...(template.displayName == null
+        ? {}
+        : {displayName: template.displayName}),
+      ...(template.description == null
+        ? {}
+        : {description: template.description}),
+      ...(typeof template.replaces === 'string'
+        ? {replaces: template.replaces}
+        : {}),
+    });
+  };
+  try {
+    for (const template of await discoverCoreTemplates()) {
+      addTemplate(template, CORE_PACKAGE, CORE_PACKAGE);
+    }
+  } catch {
+    // Core templates that do not load leave nothing to link to.
+  }
+  if (integration.templates) {
+    try {
+      const {templates: records} =
+        await discoverIntegrationTemplatesForOne(integration);
+      for (const template of records)
+        addTemplate(template, own, integration.name);
+    } catch {
+      // `validate` reports templates that do not load.
+    }
+  }
+  return {components, templates};
 }
 
 /**
@@ -701,6 +908,7 @@ export async function docsLinkProblems(
  */
 export async function packageDocsProblems(integration, discovered) {
   const catalog = DocsCatalog.fromBuiltins();
+  catalog.setContributions(() => packageContributions(integration));
   for (const record of discovered.records) catalog.add(record);
   catalog.addTreeInputs({
     namespaces: discovered.namespaces.map(input => ({...input, rank: 1})),
@@ -794,6 +1002,7 @@ async function namespaceReferenceTarget(catalog, route, lang) {
  */
 export async function packageReferenceProblems(integration, discovered) {
   const catalog = DocsCatalog.fromBuiltins();
+  catalog.setContributions(() => packageContributions(integration));
   for (const record of discovered.records) catalog.add(record);
   catalog.addTreeInputs({
     namespaces: discovered.namespaces.map(input => ({...input, rank: 1})),
@@ -1124,4 +1333,38 @@ export async function resolveTopicDocs(topic, options = {}) {
   const {catalog, entry} = found;
   const node = await lowerTopic(catalog, entry, effectiveLang);
   return {catalog, node, lang: effectiveLang, entry};
+}
+
+/**
+ * Each doc one integration package ships, checked against the published
+ * authoring type for its kind with the project's own TypeScript (spec:AST-039
+ * FR13). Without TypeScript the report says nothing was checked.
+ * @param {any} integration a loaded integration
+ * @param {string} cwd
+ * @returns {Promise<import('../../foundation/discovery/doc-types.mjs').DocTypesReport & {fixtures?: number}>}
+ */
+export async function integrationDocTypes(integration, cwd) {
+  const packageDir = /** @type {{__packageDir?: string}} */ (integration)
+    .__packageDir;
+  const {files, unread, fixtures} = await integrationDocFiles(integration);
+  const checked = await checkDocTypes(files, {
+    packageDir: packageDir ?? cwd,
+    resolveFrom: [cwd, packageDir],
+  });
+  // Test fixtures no reader serves don't ship as docs: only counted.
+  const report =
+    checked.status === 'checked' && fixtures > 0
+      ? {...checked, fixtures}
+      : checked;
+  if (report.status !== 'checked' || unread.length === 0) return report;
+  // A root its reader cannot read serves no doc; say so rather than skip it.
+  const rel = (/** @type {string} */ file) =>
+    path.relative(packageDir ?? cwd, file).split(path.sep).join('/') || '.';
+  return {
+    ...report,
+    unchecked: [
+      ...report.unchecked,
+      ...unread.map(entry => ({doc: rel(entry.path), reason: entry.reason})),
+    ].sort((a, b) => a.doc.localeCompare(b.doc)),
+  };
 }

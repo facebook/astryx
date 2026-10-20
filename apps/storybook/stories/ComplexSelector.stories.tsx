@@ -13,6 +13,7 @@
  */
 
 import type {Meta, StoryObj} from '@storybook/react';
+import {expect, userEvent, waitFor, within} from 'storybook/test';
 import {useEffect, useMemo, useRef, useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
@@ -52,6 +53,9 @@ const meta: Meta<typeof ComplexSelector> = {
           'A high-level selector shell for rich custom content. The component owns the field, trigger, popover, focus restore, and async changeAction flow while consumers render the content. Its sm, md, and lg triggers use the 28px, 32px, and 36px element-height tokens. Custom content should use Astryx focus hooks where appropriate and be evaluated against WCAG 2.2.',
       },
     },
+  },
+  argTypes: {
+    variant: {control: 'radio', options: ['input', 'secondary', 'ghost']},
   },
 };
 
@@ -397,6 +401,9 @@ const styles = stylex.create({
     padding: spacingVars['--spacing-1'],
     borderRadius: radiusVars['--radius-container'],
     backgroundColor: colorVars['--color-background-muted'],
+  },
+  toolbarDemoIntrinsic: {
+    width: 'max-content',
   },
   toolbarContent: {
     width: 280,
@@ -759,6 +766,94 @@ export const CategoryTreeSelector: Story = {
 };
 
 type ViewDensity = 'Comfortable' | 'Compact';
+
+export const SecondaryVariant: Story = {
+  name: 'Secondary toolbar trigger',
+  render: () => {
+    const [density, setDensity] = useState<ViewDensity>('Comfortable');
+
+    return (
+      <div {...stylex.props(styles.toolbarDemo, styles.toolbarDemoIntrinsic)}>
+        <Button
+          label="Reset view"
+          variant="secondary"
+          size="sm"
+          onClick={() => setDensity('Comfortable')}
+        />
+        <ComplexSelector<ViewDensity>
+          label="View density"
+          isLabelHidden
+          value={density}
+          onChange={setDensity}
+          triggerLabel={`Density: ${density}`}
+          variant="secondary"
+          size="sm"
+          width={190}
+          startIcon="viewColumns"
+          alignment="end"
+          contentXstyle={styles.toolbarContent}>
+          {(selectedDensity, onChange, close) => (
+            <VStack gap={3}>
+              <Text type="supporting" color="secondary">
+                Choose how densely rows are displayed.
+              </Text>
+              <HStack gap={2}>
+                {(['Comfortable', 'Compact'] as const).map(option => (
+                  <Button
+                    key={option}
+                    label={option}
+                    size="sm"
+                    variant={
+                      selectedDensity === option ? 'primary' : 'secondary'
+                    }
+                    onClick={() => {
+                      onChange(option);
+                      close();
+                    }}
+                  />
+                ))}
+              </HStack>
+            </VStack>
+          )}
+        </ComplexSelector>
+        <Button label="Share" variant="secondary" size="sm" />
+      </div>
+    );
+  },
+  play: async ({canvasElement}) => {
+    await document.fonts.ready;
+    const canvas = within(canvasElement);
+    const root = canvasElement.querySelector<HTMLElement>(
+      '.astryx-complex-selector[data-variant="secondary"]',
+    );
+    if (root == null) {
+      throw new Error('Secondary ComplexSelector root not found');
+    }
+    const widthBefore = root.getBoundingClientRect().width;
+    expect(widthBefore).toBeCloseTo(190, 0);
+
+    const trigger = canvas.getByRole('button', {name: 'View density'});
+    await userEvent.click(trigger);
+    const dialog = within(document.body).getByRole('dialog', {
+      name: 'View density',
+    });
+    await userEvent.click(
+      within(dialog).getByRole('button', {name: 'Compact'}),
+    );
+    await waitFor(() =>
+      expect(root.getBoundingClientRect().width).toBeCloseTo(widthBefore, 0),
+    );
+    trigger.blur();
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'A compact toolbar composition where ComplexSelector uses the same neutral-filled treatment as adjacent secondary buttons.',
+      },
+    },
+  },
+};
 
 export const ControlledToolbarTrigger: Story = {
   name: 'Controlled toolbar trigger',

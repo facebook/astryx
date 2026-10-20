@@ -6,10 +6,12 @@
  * @file hooks.ts
  * @input Uses React hooks, MultiSelectorOptionData type
  * @output Exports useMultiCombobox hook
- * @position Internal hook; used by MultiSelector.tsx
+ * @position Public hook, exported from the MultiSelector entry point; used by
+ *   MultiSelector.tsx
  *
  * SYNC: When modified, update:
  * - /packages/core/src/MultiSelector/index.ts
+ * - /packages/core/src/MultiSelector/useMultiCombobox.doc.mjs
  */
 
 import {useCallback, useRef, useState} from 'react';

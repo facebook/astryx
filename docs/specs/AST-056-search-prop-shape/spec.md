@@ -252,10 +252,9 @@ copying.
   person on screen is not reading.
 - **AR2 — The query input has an accessible name that is not its placeholder.**
   A placeholder is placeholder text and MUST NOT be the input's only
-  accessible name. The component supplies the name — `Selector` and
-  `MultiSelector` use a localized "Search options" today — and a component
-  that falls back to the placeholder, as `CommandPaletteInput` does and its own
-  comment flags, MUST gain a real name as part of adopting this record.
+  accessible name. The component supplies the name: a localized "Search
+  options" in `Selector` and `MultiSelector`, and a localized "Search commands"
+  in `CommandPaletteInput`.
 
 ### Platform support
 
@@ -264,11 +263,11 @@ copying.
 - Unsupported behavior: none. A component that cannot satisfy FR3's
   required/optional rule does not partially adopt the prop; it keeps its
   current API until the rule is settled for it.
-- Browser evidence: this record contracts prop shape and announcement, not
-  layout or paint, so every requirement here is provable in jsdom. AR1's
-  announcement is a live-region assertion, not a pixel claim. Adopting
-  components keep whatever real-browser evidence their own records already
-  require.
+- Browser evidence: DOM live-region assertions prove the rendered content source,
+  but they do not prove what assistive technology announces or when. Any adopter
+  that changes announcement content or timing follows `spec:AST-009`: name the
+  applicable real-AT matrix and keep the first affected stable release blocked
+  until the required durable receipts pass or a current exception applies.
 
 ## Migration and compatibility
 
