@@ -4876,6 +4876,105 @@ describe('MultiSelector footer', () => {
     expect(trigger).toHaveAttribute('aria-expanded', 'true');
   });
 
+  it("a caller's own trigger opens the same dialog: it says so, focus moves in, Tab wraps through the footer, and Escape returns focus to it", async () => {
+    const user = userEvent.setup();
+    render(
+      <MultiSelector
+        label="Labels"
+        options={OPTIONS}
+        value={[]}
+        onChange={() => {}}
+        footer={<button type="button">Manage labels</button>}
+        renderTrigger={props => (
+          <button type="button" {...props}>
+            Pick labels
+          </button>
+        )}
+      />,
+    );
+    const opener = screen.getByRole('button', {name: 'Pick labels'});
+    expect(opener).toHaveAttribute('aria-haspopup', 'dialog');
+    await user.click(opener);
+    const dialog = screen.getByRole('dialog', {name: 'Labels', ...h});
+    expect(dialog).toHaveAttribute('aria-modal', 'true');
+    const controlled = document.getElementById(
+      opener.getAttribute('aria-controls') ?? '',
+    );
+    expect(controlled?.contains(dialog)).toBe(true);
+    const listbox = screen.getByRole('listbox', {name: 'Labels', ...h});
+    await waitFor(() => expect(listbox).toHaveFocus());
+
+    await user.keyboard('{Tab}');
+    expect(door()).toHaveFocus();
+    await user.keyboard('{Tab}');
+    expect(listbox).toHaveFocus();
+    await user.keyboard('{Shift>}{Tab}{/Shift}');
+    expect(door()).toHaveFocus();
+    expect(opener).toHaveAttribute('aria-expanded', 'true');
+
+    await user.keyboard('{Escape}');
+    expect(opener).toHaveAttribute('aria-expanded', 'false');
+    await waitFor(() => expect(opener).toHaveFocus());
+  });
+
+  it('with option actions the list is a grid inside the dialog: its actions take no Tab stop, and the arrows still reach them', async () => {
+    const user = userEvent.setup();
+    const edit = vi.fn();
+    const onChange = vi.fn();
+    render(
+      <MultiSelector
+        label="Labels"
+        options={[
+          {
+            value: 'bug',
+            label: 'Bug',
+            action: (
+              <button
+                type="button"
+                onClick={() => {
+                  edit('bug');
+                }}>
+                Edit Bug
+              </button>
+            ),
+          },
+          {value: 'feature', label: 'Feature'},
+        ]}
+        value={[]}
+        onChange={onChange}
+        hasSearch
+        footer={<button type="button">Manage labels</button>}
+      />,
+    );
+    const trigger = screen.getByRole('button', {name: 'Labels'});
+    // The footer makes the popup a dialog, with the grid inside it.
+    expect(trigger).toHaveAttribute('aria-haspopup', 'dialog');
+    await user.click(trigger);
+    const dialog = screen.getByRole('dialog', {name: 'Labels', ...h});
+    const grid = screen.getByRole('grid', h);
+    expect(dialog.contains(grid)).toBe(true);
+    expect(grid.contains(door())).toBe(false);
+    const search = screen.getByRole('combobox', h);
+    expect(search).toHaveAttribute('aria-controls', grid.id);
+    await waitFor(() => expect(search).toHaveFocus());
+
+    // A row's action is reached with the arrows, never with Tab.
+    await user.keyboard('{Tab}');
+    expect(door()).toHaveFocus();
+    await user.keyboard('{Tab}');
+    expect(search).toHaveFocus();
+
+    await user.keyboard('{PageUp}');
+    const bug = screen.getByRole('row', {name: 'Bug', ...h});
+    expect(search).toHaveAttribute('aria-activedescendant', bug.id);
+    await user.keyboard('{ArrowRight}');
+    expect(search).toHaveAttribute('aria-activedescendant', bug.children[1].id);
+    await user.keyboard('{Enter}');
+    expect(edit).toHaveBeenCalledWith('bug');
+    expect(onChange).not.toHaveBeenCalled();
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+  });
+
   it('a press inside the footer toggles nothing and keeps the panel open', async () => {
     const user = userEvent.setup();
     const onChange = vi.fn();
