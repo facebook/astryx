@@ -474,7 +474,7 @@ for any word its description happens to use.
 ### DEC-10 — A theme module may load its own styles
 
 **Reference:** `spec:AST-050/DEC-10`
-**Decider:** `josephfarina` (proposed), `2026-10-19`
+**Decider:** `josephfarina`, `2026-10-20`
 
 A package can make importing a theme's module the whole integration: the module
 imports the theme's stylesheet and font stylesheet, then re-exports the built
