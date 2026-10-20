@@ -285,6 +285,11 @@ interface StandaloneBottomSheetProps extends BottomSheetSharedProps {
 }
 
 interface SwitcherBottomSheetProps extends BottomSheetSharedProps {
+  /**
+   * @deprecated `BottomSheetSwitcher` is deprecated; give each step its own
+   * standalone sheet with `isOpen` instead. Keeps working until a future
+   * minor release removes the switcher.
+   */
   sheetId: string;
   isOpen?: never;
   onOpenChange?: never;

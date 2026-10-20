@@ -207,6 +207,13 @@ function alignmentOffsetForElements(
   return Math.max(0, enteringTop - retainedElement.getBoundingClientRect().top);
 }
 
+/**
+ * @deprecated Write each step as its own `BottomSheet` with `isOpen`, driven
+ * by one state value that names the open step; closing the top sheet and
+ * opening the next in the same update runs the same replace handoff (see
+ * BottomSheet, "Replacing a sheet"). Keeps working as released until a future
+ * minor release removes it.
+ */
 export interface BottomSheetSwitcherProps extends BaseProps<HTMLDialogElement> {
   /** Ref forwarded to the shared native dialog. */
   ref?: React.Ref<HTMLDialogElement>;
@@ -240,6 +247,21 @@ export interface BottomSheetSwitcherProps extends BaseProps<HTMLDialogElement> {
  * Coordinates a set of BottomSheets so zero or one is active at a time inside
  * one shared native dialog. During a handoff the previous panel stays visible
  * and inert beneath the entering panel, then fades after motion completes.
+ *
+ * @deprecated Write each step as its own `BottomSheet` with `isOpen`, driven
+ * by one state value that names the open step:
+ *
+ * ```
+ * const [step, setStep] = useState(null);
+ * <BottomSheet isOpen={step === 'details'} onOpenChange={o => !o && setStep(null)} label="Details">…</BottomSheet>
+ * <BottomSheet isOpen={step === 'confirm'} onOpenChange={o => !o && setStep(null)} label="Confirm">…</BottomSheet>
+ * ```
+ *
+ * Closing the top sheet and opening the next in the same update runs the
+ * same replace handoff, with no `sheetId` and no switcher. The switcher keeps
+ * working as released until a future minor release removes it; a
+ * `hasScrim={false}` flow is the one case it still covers alone, because
+ * non-modal sheets replace with a plain exit and entrance.
  *
  * @example
  * ```

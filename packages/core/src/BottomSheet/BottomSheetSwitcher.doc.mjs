@@ -142,7 +142,7 @@ export const docs = {
     },
   },
   description:
-    'Coordinates multiple BottomSheets as a mutually exclusive flow. One activeSheet ID selects the only interactive sheet; during a handoff, the new sheet enters above the inert previous sheet. If the new sheet is shorter, the previous sheet simultaneously moves down until their top edges align, then fades after both transforms complete. The switcher owns one shared native <dialog>: modal flows call showModal() once for one top-layer boundary and one ::backdrop across the whole flow, while no-scrim flows use a non-modal show() shell. Its ref and shared DOM props target that dialog.',
+    'Deprecated: write each step as its own BottomSheet with isOpen, controlled by one state value that names the open step. Closing the top sheet and opening the next in the same update runs the same replace handoff (see BottomSheet, Replacing a sheet), with no sheetId and no switcher. BottomSheetSwitcher keeps working as released until a future minor release removes it. The one flow it still covers alone is hasScrim={false}: non-modal sheets replace with a plain exit and entrance, not the handoff. Coordinates multiple BottomSheets as a mutually exclusive flow. One activeSheet ID selects the only interactive sheet; during a handoff, the new sheet enters above the inert previous sheet. If the new sheet is shorter, the previous sheet simultaneously moves down until their top edges align, then fades after both transforms complete. The switcher owns one shared native <dialog>: modal flows call showModal() once for one top-layer boundary and one ::backdrop across the whole flow, while no-scrim flows use a non-modal show() shell. Its ref and shared DOM props target that dialog.',
   props: [
     {
       name: 'ref',
@@ -186,17 +186,17 @@ export const docs = {
   usage: {
     anatomy,
     description:
-      "Coordinates a multi-step bottom-sheet flow in one shared dialog; set activeSheet to a nested BottomSheet's sheetId to open or switch steps, and to null to close.\n\nStacking. A scrim flow is one level in the stack of open sheets (see BottomSheet, Stacking). Open it while a standalone sheet is open and the flow sits on top of that sheet, which recedes and is blocked; open a standalone sheet while the flow is open, from a step's content or from anywhere else, and that sheet sits on top while the whole flow recedes as one. Switching the step in place never changes the flow's position. Escape, the scrim, a swipe, and a platform close request reach only the top level: the flow's onActiveSheetChange(null) when the flow is on top, the standalone sheet's onOpenChange(false) when that sheet is. A standalone sheet rendered inside a step's content is presented only while that step is the active one, and closes when the flow switches step or closes. Only the bottom level's backdrop dims the page. A no-scrim flow stays out of the stack.",
+      "Deprecated: write each step as its own BottomSheet with isOpen, controlled by one state value that names the open step. Closing the top sheet and opening the next in the same update runs the same replace handoff (see BottomSheet, Replacing a sheet), with no sheetId and no switcher. BottomSheetSwitcher keeps working as released until a future minor release removes it. The one flow it still covers alone is hasScrim={false}: non-modal sheets replace with a plain exit and entrance, not the handoff. Set activeSheet to a nested BottomSheet's sheetId to open or switch steps, and to null to close.\n\nStacking. A scrim flow is one level in the stack of open sheets (see BottomSheet, Stacking). Open it while a standalone sheet is open and the flow sits on top of that sheet, which recedes and is blocked; open a standalone sheet while the flow is open, from a step's content or from anywhere else, and that sheet sits on top while the whole flow recedes as one. Switching the step in place never changes the flow's position. Escape, the scrim, a swipe, and a platform close request reach only the top level: the flow's onActiveSheetChange(null) when the flow is on top, the standalone sheet's onOpenChange(false) when that sheet is. A standalone sheet rendered inside a step's content is presented only while that step is the active one, and closes when the flow switches step or closes. Only the bottom level's backdrop dims the page. A no-scrim flow stays out of the stack.",
     bestPractices: [
       {
         guidance: true,
         description:
-          'Use when each step depends on the previous one and only one step needs attention at a time.',
+          'Prefer one standalone BottomSheet per step with one state value naming the open step; the replace handoff is the same and nothing has to be nested under a switcher.',
       },
       {
         guidance: true,
         description:
-          'Give every child a unique sheetId and non-empty label, choose its purpose to match dismissal requirements, and follow the WAI-ARIA Dialog (Modal) pattern for scrim-backed flows: https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/.',
+          'If a flow still uses the switcher, give every child a unique sheetId and non-empty label, choose its purpose to match dismissal requirements, and follow the WAI-ARIA Dialog (Modal) pattern for scrim-backed flows: https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/.',
       },
       {
         guidance: false,
@@ -212,7 +212,29 @@ export const docs = {
   },
   examples: [
     {
-      label: 'Three-step flow',
+      label: 'Replacement: the same three-step flow as standalone sheets',
+      code: `const [step, setStep] = useState(null);
+
+<>
+  <Button label="Start" onClick={() => setStep('details')} />
+  <BottomSheet isOpen={step === 'details'} onOpenChange={o => !o && setStep(null)} label="Details" height="hug">
+    <SetupDetails />
+    <Button label="Continue" onClick={() => setStep('preferences')} />
+  </BottomSheet>
+  <BottomSheet isOpen={step === 'preferences'} onOpenChange={o => !o && setStep(null)} label="Preferences" height="hug">
+    <Preferences />
+    <Button label="Back" onClick={() => setStep('details')} />
+    <Button label="Continue" onClick={() => setStep('confirm')} />
+  </BottomSheet>
+  <BottomSheet isOpen={step === 'confirm'} onOpenChange={o => !o && setStep(null)} label="Confirm" height="hug">
+    <Confirmation />
+    <Button label="Back" onClick={() => setStep('preferences')} />
+    <Button label="Done" onClick={() => setStep(null)} />
+  </BottomSheet>
+</>`,
+    },
+    {
+      label: 'Three-step flow (deprecated switcher)',
       code: `const [activeSheet, setActiveSheet] = useState(null);
 
 <>
@@ -243,21 +265,21 @@ export const docs = {
 /** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description:
-    'controller with one shared native dialog for mutually exclusive multi-step BottomSheets; a scrim flow is one level of the bottom-sheet stack (stacks over or under standalone sheets in open order, recedes as a whole, switching steps keeps its place)',
+    'deprecated: use one standalone BottomSheet per step with one state value naming the open step (same replace handoff, no sheetId); keeps working until a future minor removes it. controller with one shared native dialog for mutually exclusive multi-step BottomSheets; a scrim flow is one level of the bottom-sheet stack (stacks over or under standalone sheets in open order, recedes as a whole, switching steps keeps its place)',
   usage: {
     anatomy,
     description:
-      "Coordinates a multi-step bottom-sheet flow in one shared dialog; set activeSheet to a nested BottomSheet's sheetId to open or switch steps, and to null to close. A scrim flow stacks with standalone sheets as one level; a standalone sheet inside a step closes when the step is left.",
+      "Deprecated: write each step as a standalone BottomSheet with isOpen driven by one state value; a same-update close and open is the same replace handoff. Still works: set activeSheet to a nested BottomSheet's sheetId to open or switch steps, and to null to close. A scrim flow stacks with standalone sheets as one level; a standalone sheet inside a step closes when the step is left.",
     bestPractices: [
       {
         guidance: true,
         description:
-          'Use when each step depends on the previous one and only one step needs attention at a time.',
+          'Prefer one standalone BottomSheet per step with one state value naming the open step; the replace handoff is the same and nothing has to be nested under a switcher.',
       },
       {
         guidance: true,
         description:
-          'Give every child a unique sheetId and non-empty label, choose its purpose to match dismissal requirements, and follow the WAI-ARIA Dialog (Modal) pattern for scrim-backed flows: https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/.',
+          'If a flow still uses the switcher, give every child a unique sheetId and non-empty label, choose its purpose to match dismissal requirements, and follow the WAI-ARIA Dialog (Modal) pattern for scrim-backed flows: https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/.',
       },
       {
         guidance: false,
