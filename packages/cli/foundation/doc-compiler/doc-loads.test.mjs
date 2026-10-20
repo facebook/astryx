@@ -252,6 +252,10 @@ const RUNNERS = {
     runs: '@babel/parser, on first use, to read the members a family doc lists in its components without running the doc',
     sites: ['require(@babel/parser)'],
   },
+  'foundation/discovery/copied-passages.mjs': {
+    runs: "the CLI's own guides and the package's topics, to compare their prose for passages two topics repeat",
+    sites: ['builtinGuideFiles', 'loadTopicModule'],
+  },
   'foundation/discovery/docs-discovery.mjs': {
     runs: 'a contributed topic, for its catalog fields: name, title, description, category, and relationships',
     sites: ['importDocModule'],

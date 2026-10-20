@@ -49,6 +49,22 @@
  */
 
 /**
+ * A passage two topics repeat word for word: two of the package's own topics,
+ * or one of them and a Core topic (never the Core topic it replaces). Only
+ * prose counts, and only a run of 20 or more identical words, so each entry
+ * is a real copy. Listed for the author to fix; it never fails a check.
+ *
+ * @typedef {object} CopiedPassage
+ * @property {string} topic the package topic that repeats the passage
+ * @property {string | null} section the title of the section the passage starts in
+ * @property {string} otherTopic the topic that also has it
+ * @property {'package' | 'core'} otherOwner whether that topic is the package's own or Core's
+ * @property {number} words the length of the longest shared run, in words
+ * @property {number} passages how many separate runs the two topics share
+ * @property {string} message what is repeated, and the fix: one owner, a link from the other
+ */
+
+/**
  * Each of the three authoring checks reports `validated`: false means no
  * integration manifest was found, so nothing was inspected and the empty
  * conflicts/findings list carries no information about the package.
@@ -80,7 +96,7 @@
 /**
  * @typedef {object} IntegrationDocConflictResponse
  * @property {'integration.doc-conflicts'} type
- * @property {{validated: boolean, name: string | null, version: string | null, findings: IntegrationDocFinding[], issues: import('../../foundation/integrations/issue').AstryxIntegrationIssue[]}} data
+ * @property {{validated: boolean, name: string | null, version: string | null, findings: IntegrationDocFinding[], copiedPassages: CopiedPassage[], issues: import('../../foundation/integrations/issue').AstryxIntegrationIssue[]}} data
  */
 
 export {};

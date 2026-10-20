@@ -48,7 +48,7 @@ export const docs = {
             ],
             [
               '`npx astryx doctor integration docs`',
-              'Your docs tree, every link, and topic names against Core',
+              'Your docs tree, every link, and topic names against Core. It also lists, as information, any passage two topics repeat word for word',
               'A topic takes a Core topic name without `replaces` or `extends`, a doc is invalid (`invalid_doc`), or a namespace or placement fails, which hides the doc (`invalid_doc_graph`)',
               'A link names no doc (`invalid_doc_graph`)',
             ],

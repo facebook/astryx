@@ -22,7 +22,7 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'Run `doctor integration docs` in your package to check the docs tree, every link, and overlaps with Core topics. Pass a package name to check an installed package.',
+          text: 'Run `doctor integration docs` in your package to check the docs tree, every link, and overlaps with Core topics, and to list any passage two topics repeat. Pass a package name to check an installed package.',
         },
         {
           type: 'code',
@@ -32,7 +32,11 @@ export const docs = {
         {
           type: 'code',
           lang: 'text',
-          code: 'Checking integration docs: @acme/astryx-widgets@1.0.0\n\n[ok] The docs tree and every link in these docs check out.\n\n[ok] No doc topics overlap with Core.',
+          code: 'Checking integration docs: @acme/astryx-widgets@1.0.0\n\n[ok] The docs tree and every link in these docs check out.\n\n[ok] No doc topics overlap with Core.\n[ok] No topic copies a passage from another.',
+        },
+        {
+          type: 'prose',
+          text: 'Write each fact in one topic. When two of your topics, or one of yours and a Core topic, repeat 20 or more words of prose word for word, the check lists the pair as `[info]`, with the fix: keep the passage in one topic and link to it from the other ({@link generic:links}). Code and examples are not compared, and a topic may carry the text of the Core topic it replaces. The list never fails the check.',
         },
         {
           type: 'prose',

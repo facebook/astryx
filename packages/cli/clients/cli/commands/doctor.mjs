@@ -358,7 +358,8 @@ function printComponentConflicts(data) {
   // An [ok] after a failed check reads as a pass: say nothing it could not check.
   const failed = data.issues.some(issue => issue.severity === 'error');
   if (data.conflicts.length === 0) {
-    if (!failed) output.push(text('[ok] No component names conflict with Core.'));
+    if (!failed)
+      output.push(text('[ok] No component names conflict with Core.'));
   } else {
     output.push(
       records(data.conflicts, {
@@ -412,6 +413,19 @@ function printDocConflicts(data) {
       }),
     );
   }
+  const copied = data.copiedPassages ?? [];
+  if (copied.length === 0) {
+    if (!data.issues.some(issue => issue.severity === 'error')) {
+      output.push(text('[ok] No topic copies a passage from another.'));
+    }
+  } else {
+    output.push(
+      text(
+        `[info] ${copied.length} copied passage(s): two topics say the same thing word for word. Keep each in one topic and link to it from the other.`,
+      ),
+      records(copied, {fields: ['topic', 'otherTopic', 'words', 'message']}),
+    );
+  }
   emit(...output);
 }
 
@@ -455,7 +469,7 @@ async function runIntegrationValidation(program, pkg) {
         noPackage
           ? 'Nothing was validated: no package.json found. Run this command inside a package directory.'
           : 'Nothing was validated: no astryx.integration.* found next to package.json. ' +
-            'To validate an installed integration: astryx doctor integration validate <package>',
+              'To validate an installed integration: astryx doctor integration validate <package>',
       ),
     );
   } else printIntegrationValidation(result.data);

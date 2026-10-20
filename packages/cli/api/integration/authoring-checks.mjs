@@ -40,6 +40,7 @@ import {
   discoverIntegrationTemplatesForOne,
 } from '../../foundation/discovery/template-adapter.mjs';
 import {expandedTemplateConflictSchemaActive} from '../../foundation/discovery/template-conflict-release.mjs';
+import {findCopiedPassages} from '../../foundation/discovery/copied-passages.mjs';
 import {
   validateInstalledIntegration,
   validateLocalIntegration,
@@ -323,10 +324,12 @@ export async function integrationDocConflicts(pkg, options = {}) {
   const version = resolved.found ? (resolved.version ?? null) : null;
   const issues = [...resolved.issues];
 
+  /** @type {import('./authoring-checks.type.mjs').CopiedPassage[]} */
+  const copiedPassages = [];
   if (!resolved.integration?.docs || name == null) {
     return {
       type: 'integration.doc-conflicts',
-      data: {validated, name, version, findings: [], issues},
+      data: {validated, name, version, findings: [], copiedPassages, issues},
     };
   }
 
@@ -416,10 +419,15 @@ export async function integrationDocConflicts(pkg, options = {}) {
     )) {
       issues.push({code: 'invalid_doc_reference', severity: 'error', message});
     }
+
+    // One fact has one owner: a passage two topics repeat goes stale in one
+    // of them. Listed, not an issue, so it never fails a build that passes
+    // today.
+    copiedPassages.push(...(await findCopiedPassages(discovered)));
   }
 
   return {
     type: 'integration.doc-conflicts',
-    data: {validated, name, version, findings, issues},
+    data: {validated, name, version, findings, copiedPassages, issues},
   };
 }

@@ -118,6 +118,23 @@ export function discoverBuiltinTopics() {
 }
 
 /**
+ * The CLI's own guide files: every flat topic and every doc in its docs tree,
+ * without the dense, translated, and draft variants.
+ *
+ * @returns {string[]}
+ */
+export function builtinGuideFiles() {
+  const files = Object.values(discoverBuiltinTopics());
+  const tree = path.join(BUILTIN_DOCS_DIR, 'tree');
+  if (fs.existsSync(tree)) {
+    for (const file of fs.readdirSync(tree).sort()) {
+      if (BUILTIN_TOPIC_FILE_RE.test(file)) files.push(path.join(tree, file));
+    }
+  }
+  return files;
+}
+
+/**
  * Load a topic doc from disk. A `.ts` doc is loaded through jiti, the rest
  * natively; both the historical `export const docs` and the stamped
  * `export default` forms are accepted, because core authors the first and the
@@ -384,7 +401,11 @@ export function problemsInNamespace(doc) {
     }
   }
   const slots = doc?.slots;
-  if (slots == null || typeof slots !== 'object' || Object.keys(slots).length === 0) {
+  if (
+    slots == null ||
+    typeof slots !== 'object' ||
+    Object.keys(slots).length === 0
+  ) {
     problems.push('slots: expected at least one slot');
     return problems;
   }
@@ -392,7 +413,10 @@ export function problemsInNamespace(doc) {
     if (typeof slot?.title !== 'string' || slot.title === '') {
       problems.push(`slots.${name}.title: expected a non-empty string`);
     }
-    if (!Array.isArray(slot?.accepts?.kinds) || slot.accepts.kinds.length === 0) {
+    if (
+      !Array.isArray(slot?.accepts?.kinds) ||
+      slot.accepts.kinds.length === 0
+    ) {
       problems.push(`slots.${name}.accepts.kinds: expected at least one kind`);
     }
   }

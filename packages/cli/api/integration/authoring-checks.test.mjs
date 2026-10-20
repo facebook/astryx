@@ -19,6 +19,11 @@ import {discoverOwnedComponents} from '../../foundation/discovery/component-disc
 import {discoverBuiltinTopics} from '../../foundation/discovery/docs-discovery.mjs';
 import {findCoreDir} from '../../foundation/fs/paths.mjs';
 import {
+  builtinGuideFiles,
+  loadTopicModule,
+} from '../../foundation/discovery/docs-discovery.mjs';
+import {proseWords} from '../../foundation/discovery/copied-passages.mjs';
+import {
   integrationComponentConflicts,
   integrationDocConflicts,
   integrationTemplateConflicts,
@@ -98,6 +103,43 @@ function writeDocIntegration({name, replaces, extendsTopic}) {
     `export default {type: 'generic', name: ${JSON.stringify(name)}, title: 'Fixture', description: 'Fixture topic.'${relationship}, sections: [{title: 'Overview', content: [{type: 'prose', text: 'Fixture.'}]}]};\n`,
   );
 }
+
+/**
+ * A docs-only package with one generic topic per entry: its prose, and
+ * optionally a code block and the Core topic it replaces.
+ * @param {{name: string, text: string, code?: string, replaces?: string}[]} topics
+ */
+function writeTopics(topics) {
+  fs.writeFileSync(
+    path.join(tmpDir, 'package.json'),
+    JSON.stringify({name: '@acme/widgets', version: '1.2.3'}),
+  );
+  fs.writeFileSync(
+    path.join(tmpDir, 'astryx.integration.mjs'),
+    `export default {docs: './docs'};\n`,
+  );
+  fs.mkdirSync(path.join(tmpDir, 'docs'), {recursive: true});
+  for (const {name, text, code, replaces} of topics) {
+    const blocks = [{type: 'prose', text}];
+    if (code != null) blocks.push({type: 'code', lang: 'text', code});
+    const doc = {
+      type: 'generic',
+      name,
+      title: 'Fixture',
+      description: 'Fixture topic.',
+      ...(replaces == null ? {} : {replaces}),
+      sections: [{title: 'Overview', content: blocks}],
+    };
+    fs.writeFileSync(
+      path.join(tmpDir, 'docs', `${name}.doc.mjs`),
+      `export default ${JSON.stringify(doc)};\n`,
+    );
+  }
+}
+
+const PASSAGE =
+  'Themes cannot style the layer that holds a menu or a popover, so a menu ' +
+  'keeps the default surface color until the next release adds a token for it.';
 
 beforeEach(() => {
   tmpDir = fs.mkdtempSync(
@@ -560,5 +602,72 @@ describe('integrationDocConflicts', () => {
         coreTopic,
       }),
     ]);
+  });
+});
+
+describe('integrationDocConflicts copied passages', () => {
+  const copied = (/** @type {any} */ result) => result.data.copiedPassages;
+
+  it('lists a passage two of the package topics repeat, without an issue', async () => {
+    writeTopics([
+      {name: 'acme-setup', text: `Read this first. ${PASSAGE}`},
+      {name: 'acme-menus', text: `${PASSAGE} See the theme guide.`},
+    ]);
+
+    const result = await integrationDocConflicts(undefined, {cwd: tmpDir});
+    const [issue, ...rest] = copied(result);
+    expect(result.data.issues).toEqual([]);
+
+    expect(rest).toEqual([]);
+    expect(issue).toMatchObject({
+      topic: 'acme-menus',
+      otherTopic: 'acme-setup',
+      otherOwner: 'package',
+      section: 'Overview',
+      words: PASSAGE.split(' ').length,
+      passages: 1,
+    });
+    expect(issue.message).toContain('"acme-menus"');
+    expect(issue.message).toContain('"acme-setup"');
+    expect(issue.message).toContain(`${PASSAGE.split(' ').length} words`);
+    expect(issue.message).toContain('{@link generic:<topic>}');
+  });
+
+  it('reports a passage copied from a Core topic, except into the topic that replaces it', async () => {
+    const [file] = builtinGuideFiles();
+    const coreDoc = /** @type {any} */ (await loadTopicModule(file));
+    const coreText = proseWords(coreDoc)
+      .slice(0, 30)
+      .map(each => each.word)
+      .join(' ');
+
+    writeTopics([{name: 'acme-copy', text: coreText}]);
+    const [issue] = copied(
+      await integrationDocConflicts(undefined, {cwd: tmpDir}),
+    );
+    expect(issue.otherOwner).toBe('core');
+    expect(issue.message).toContain(`the Core topic "${coreDoc.name}"`);
+    expect(issue.message).toContain(`{@link generic:${coreDoc.name}}`);
+
+    fs.rmSync(path.join(tmpDir, 'docs'), {recursive: true, force: true});
+    writeTopics([{name: 'acme-own', text: coreText, replaces: coreDoc.name}]);
+    expect(
+      copied(await integrationDocConflicts(undefined, {cwd: tmpDir})).filter(
+        (/** @type {any} */ each) => each.message.includes(`"${coreDoc.name}"`),
+      ),
+    ).toEqual([]);
+  });
+
+  it('leaves out short shared phrases and code', async () => {
+    const short = PASSAGE.split(' ').slice(0, 15).join(' ');
+    writeTopics([
+      {name: 'acme-a', text: PASSAGE},
+      {name: 'acme-b', text: short},
+      {name: 'acme-c', text: 'Run it.', code: PASSAGE},
+    ]);
+
+    expect(
+      copied(await integrationDocConflicts(undefined, {cwd: tmpDir})),
+    ).toEqual([]);
   });
 });
