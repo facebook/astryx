@@ -17,6 +17,7 @@ import {
   MIN_CONTENT_WORDS,
   PASSAGE_WORDS,
   contentWords,
+  trimBoilerplate,
   proseWords,
   sharedPassages,
 } from '../foundation/discovery/copied-passages.mjs';
@@ -54,15 +55,19 @@ describe("Core's guides", () => {
     for (let a = 0; a < guides.length; a++) {
       for (let b = a + 1; b < guides.length; b++) {
         const {words} = guides[a];
-        for (const {start, length} of sharedPassages(words, guides[b].words)) {
-          const key = words
-            .slice(start, start + PASSAGE_WORDS)
-            .map(each => each.word)
-            .join(' ');
-          if (
-            contentWords(words, start, length) >= MIN_CONTENT_WORDS &&
-            (sharing.get(key)?.size ?? 0) < BOILERPLATE_TOPICS
-          ) {
+        const boilerplate = (/** @type {number} */ at) =>
+          (sharing.get(
+            words
+              .slice(at, at + PASSAGE_WORDS)
+              .map(each => each.word)
+              .join(' '),
+          )?.size ?? 0) >= BOILERPLATE_TOPICS;
+        for (const shared of sharedPassages(words, guides[b].words)) {
+          // The same trimming findCopiedPassages applies.
+          const run = trimBoilerplate(shared, boilerplate);
+          if (!run) continue;
+          const {start, length} = run;
+          if (contentWords(words, start, length) >= MIN_CONTENT_WORDS) {
             copies.push(
               `${guides[a].name} and ${guides[b].name}: "${words
                 .slice(start, start + length)

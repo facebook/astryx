@@ -760,6 +760,61 @@ describe('integrationDocConflicts copied passages and extensions', () => {
     expect(issue.message).not.toContain('{@link');
   });
 
+  it('finds the line of the string that holds the copy, whatever it opens with', async () => {
+    writeTopics([{name: 'acme-menus', text: PASSAGE}]);
+    fs.writeFileSync(
+      path.join(tmpDir, 'docs', 'acme-setup.doc.mjs'),
+      [
+        'export default {',
+        "  type: 'generic',",
+        "  name: 'acme-setup',",
+        "  title: 'Fixture',",
+        "  description: 'Fixture topic.',",
+        "  sections: [{title: 'Overview', content: [",
+        "    {type: 'prose', text: '`acme` (the CLI) opens here, as {@link generic:acme-menus} says.'},",
+        `    {type: 'prose', text: '\`acme\` (the CLI) opens here: ${PASSAGE}'},`,
+        '  ]}],',
+        '};',
+        '',
+      ].join('\n'),
+    );
+
+    const [issue] = copied(
+      await integrationDocConflicts(undefined, {cwd: tmpDir}),
+    );
+
+    expect(issue).toMatchObject({topic: 'acme-setup', line: 8});
+  });
+
+  it('counts no function word toward which topic a passage fits', async () => {
+    writeTopics([
+      {name: 'acme-getting-started', text: `${PASSAGE} Then run setup.`},
+      {name: 'acme-menus', text: PASSAGE},
+    ]);
+    // Titles that share only function words with the passage.
+    for (const [name, title] of [
+      ['acme-getting-started', 'Get started with the widgets'],
+      ['acme-menus', 'Menus'],
+    ]) {
+      const file = path.join(tmpDir, 'docs', `${name}.doc.mjs`);
+      fs.writeFileSync(
+        file,
+        fs
+          .readFileSync(file, 'utf8')
+          .replace('"title":"Fixture"', `"title":"${title}"`),
+      );
+    }
+
+    const [issue] = copied(
+      await integrationDocConflicts(undefined, {cwd: tmpDir}),
+    );
+
+    expect(issue).toMatchObject({
+      owner: 'acme-menus',
+      topic: 'acme-getting-started',
+    });
+  });
+
   it('finds a copy after a lead-in three topics share', async () => {
     const lead =
       'Every package ships its integration docs as plain modules the CLI reads';

@@ -109,6 +109,99 @@ export function passageWords(text) {
 }
 
 /**
+ * Every word of a doc file, in order, with its 1-based line. Words are runs of
+ * letters and digits, so punctuation, code ticks, quotes and escapes in the
+ * source neither join nor split them.
+ *
+ * @param {string} source
+ * @returns {{word: string, line: number}[]}
+ */
+export function fileWords(source) {
+  /** @type {{word: string, line: number}[]} */
+  const words = [];
+  source.split('\n').forEach((line, at) => {
+    for (const match of line.matchAll(/[A-Za-z0-9]+/g)) {
+      words.push({word: match[0].toLowerCase(), line: at + 1});
+    }
+  });
+  return words;
+}
+
+/**
+ * The words of a string the way {@link fileWords} reads a file, each with its
+ * offset in the string.
+ *
+ * @param {string} text
+ * @returns {{word: string, at: number}[]}
+ */
+export function textWords(text) {
+  return [...text.matchAll(/[A-Za-z0-9]+/g)].map(match => ({
+    word: match[0].toLowerCase(),
+    at: /** @type {number} */ (match.index),
+  }));
+}
+
+/**
+ * Where a string's whole run of words starts among a file's words, looking
+ * from `from` on, or -1.
+ *
+ * @param {{word: string}[]} file
+ * @param {{word: string}[]} words
+ * @param {number} [from]
+ * @returns {number}
+ */
+export function locateWords(file, words, from = 0) {
+  if (words.length === 0) return -1;
+  outer: for (let i = from; i + words.length <= file.length; i++) {
+    for (let k = 0; k < words.length; k++) {
+      if (file[i + k].word !== words[k].word) continue outer;
+    }
+    return i;
+  }
+  return -1;
+}
+
+/**
+ * The file line of the character at offset `at` of a string whose words start
+ * at `index` among the file's words.
+ *
+ * @param {{line: number}[]} file
+ * @param {number} index
+ * @param {{at: number}[]} words the string's words
+ * @param {number} at
+ * @returns {number | null}
+ */
+export function lineAtOffset(file, index, words, at) {
+  let k = words.findIndex(word => word.at + 1 > at);
+  if (k < 0) k = words.length - 1;
+  return file[index + k]?.line ?? null;
+}
+
+/**
+ * A shared run with the boilerplate trimmed off its ends, judged window by
+ * window: every word a leading boilerplate window covers, and every word from
+ * the first trailing one on. A lead-in many topics open with thus never hides
+ * the copy after it. Null when less than {@link PASSAGE_WORDS} words are left.
+ *
+ * @param {{start: number, length: number}} run
+ * @param {(at: number) => boolean} boilerplate whether the window of
+ *   {@link PASSAGE_WORDS} words starting at `at` is boilerplate
+ * @returns {{start: number, length: number} | null}
+ */
+export function trimBoilerplate({start, length}, boilerplate) {
+  const lastWindow = start + length - PASSAGE_WORDS;
+  let lead = start;
+  while (lead <= lastWindow && boilerplate(lead)) lead += 1;
+  const begin = lead > start ? lead - 1 + PASSAGE_WORDS : start;
+  let tail = lastWindow;
+  while (tail >= begin && boilerplate(tail)) tail -= 1;
+  const end = tail < lastWindow ? tail + 1 : start + length;
+  return end - begin < PASSAGE_WORDS
+    ? null
+    : {start: begin, length: end - begin};
+}
+
+/**
  * The words of one string as passageWords reads them, each with where it sits
  * in the string as written, so a passage can be quoted with its case,
  * punctuation and code ticks.
@@ -414,10 +507,14 @@ export async function findCopiedPassages(discovered) {
     // A plural matches its singular: a "menus" topic fits a passage on a menu.
     const stem = (/** @type {string} */ word) =>
       word.length > 3 && word.endsWith('s') ? word.slice(0, -1) : word;
+    // Function words ("the", "with") fit every passage, so only content
+    // words count, as contentWords counts them.
     const label = new Set(
       passageWords(
         `${topic.name.replace(/-/g, ' ')} ${topic.title ?? ''} ${section ?? ''}`,
-      ).map(stem),
+      )
+        .filter(word => !FUNCTION_WORDS.has(word))
+        .map(stem),
     );
     return new Set(words.map(stem).filter(word => label.has(word))).size;
   };
@@ -431,19 +528,26 @@ export async function findCopiedPassages(discovered) {
     if (!topic.file || !topic.doc) return null;
     const text = proseStrings(topic.doc)[topic.words[start].block - 1]?.text;
     if (!text) return null;
-    // The longest plain run of the string, which the file holds as written.
-    const plain = (text.match(/[A-Za-z0-9 ,.;:()-]{12,}/g) ?? []).sort(
-      (a, b) => b.length - a.length,
-    )[0];
-    if (!plain) return null;
-    let lines;
+    let source;
     try {
-      lines = fs.readFileSync(topic.file, 'utf8').split('\n');
+      source = fs.readFileSync(topic.file, 'utf8');
     } catch {
       return null;
     }
-    const at = lines.findIndex(line => line.includes(plain));
-    return at < 0 ? null : at + 1;
+    const file = fileWords(source);
+    const words = textWords(text);
+    const index = locateWords(file, words);
+    if (index < 0) return null;
+    // The passage starts at the string's word the run's first word opens.
+    let first = start;
+    while (
+      first > 0 &&
+      topic.words[first - 1].block === topic.words[start].block
+    ) {
+      first -= 1;
+    }
+    const span = wordSpans(text)[start - first];
+    return span ? lineAtOffset(file, index, words, span.start) : null;
   };
   /**
    * A passage as written: the words of the run, from the string it is in.
@@ -481,21 +585,13 @@ export async function findCopiedPassages(discovered) {
         // Boilerplate is judged window by window: the leading and trailing
         // 10-word windows three or more topics share are trimmed, so a
         // lead-in many topics open with does not hide the copy after it.
-        const boilerplate = (/** @type {number} */ at) =>
-          topicsSharing(a.words, at) >= BOILERPLATE_TOPICS;
-        const lastWindow = start + length - PASSAGE_WORDS;
-        // Every word a leading boilerplate window covers is boilerplate, and
-        // so is every word from the first trailing one on.
-        let lead = start;
-        while (lead <= lastWindow && boilerplate(lead)) lead += 1;
-        const begin = lead > start ? lead - 1 + PASSAGE_WORDS : start;
-        let tail = lastWindow;
-        while (tail >= begin && boilerplate(tail)) tail -= 1;
-        const end = tail < lastWindow ? tail + 1 : start + length;
-        const trimmed = end - begin;
-        if (trimmed < PASSAGE_WORDS) return [];
-        return contentWords(a.words, begin, trimmed) >= MIN_CONTENT_WORDS
-          ? [{start: begin, length: trimmed}]
+        const run = trimBoilerplate(
+          {start, length},
+          at => topicsSharing(a.words, at) >= BOILERPLATE_TOPICS,
+        );
+        return run &&
+          contentWords(a.words, run.start, run.length) >= MIN_CONTENT_WORDS
+          ? [run]
           : [];
       });
     let runs = filtered(first, second);
