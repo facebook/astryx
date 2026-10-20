@@ -246,9 +246,12 @@ and remains available through explicit Core package selection.
   alias or a non-semver protocol resolves like any other. A config entry keeps
   precedence over the same package autolinked, and a dependency whose manifest
   fails to load is dropped rather than raised as the consuming project's issue.
-  Integrations installed for the computer (`spec:AST-081` FR12) load only
-  outside a project, from the packages installed beside the global copy, so
-  inside a project only what the project declares contributes.
+  Integrations installed for the computer (`spec:AST-081` FR12) contribute
+  only outside a project, from the packages installed beside the global copy.
+  Inside a project they contribute nothing: `discover` and `doctor` load the
+  manifest of each one the project does not install only to list as available
+  the ones whose peer range admits the answering release and whose manifest
+  loads.
 - **INV15 — Integration authoring writes one complete, discoverable contribution.**
   `integration add <kind> <name>` and its typed per-kind APIs share one receipt
   contract. A dry run reports the same planned paths without writing. A real run
