@@ -72,7 +72,7 @@ import {useFocusReturnVisibility} from '../hooks/useFocusReturnVisibility';
 import {focusForLastInput} from '../utils/focusReturn';
 import {useMenuOverflow} from './useMenuOverflow';
 import {MenuRegionsContext} from './menuRegionsContext';
-import {getFocusableElements} from '../hooks/useFocusTrap';
+import {moveRegionsTab} from './menuRegionStops';
 import {useDevWarning} from '../hooks/useDevWarning';
 import {useMenuDrillIn} from './useMenuDrillIn';
 import {resolveMenuWidth} from './menuWidth';
@@ -111,102 +111,6 @@ const MENU_BLOCK_CAP = '300px';
 const MENU_MAX_BLOCK_SIZE = `min(${MENU_BLOCK_CAP}, ${layerViewportInset.maxBlockSize})`;
 const MENU_MAX_BLOCK_SIZE_FALLBACK = `min(${MENU_BLOCK_CAP}, ${layerViewportInset.maxBlockSizeFallback})`;
 const MENU_TRIGGER_OPEN_BACKGROUND = `linear-gradient(${colorVars['--color-overlay-pressed']}, ${colorVars['--color-overlay-pressed']})`;
-
-/**
- * The elements Tab reaches inside a header or footer region, in order. Hidden
- * controls (`hidden`, `display: none`, `visibility: hidden`, inert or
- * aria-hidden subtrees) are not reachable, judged by the popover focus trap's
- * own test so the two never disagree about where Tab can go.
- */
-/**
- * Collapse each named radio group to the one Tab stop a browser gives it: the
- * focused radio, else the checked one, else the first radio moving forward or
- * the last moving backward. The stop takes the group's first position.
- */
-function collapseRadioGroups(
-  elements: HTMLElement[],
-  active: Element | null,
-  isBackward: boolean,
-): HTMLElement[] {
-  const groups = new Map<string, HTMLInputElement[]>();
-  const groupKey = (el: HTMLElement): string | null =>
-    el instanceof HTMLInputElement &&
-    el.getAttribute('type') === 'radio' &&
-    el.name !== ''
-      ? `${el.form?.id ?? ''}\u0000${el.name}`
-      : null;
-  for (const el of elements) {
-    const key = groupKey(el);
-    if (key != null) {
-      const members = groups.get(key) ?? [];
-      members.push(el as HTMLInputElement);
-      groups.set(key, members);
-    }
-  }
-  const placed = new Set<string>();
-  const result: HTMLElement[] = [];
-  for (const el of elements) {
-    const key = groupKey(el);
-    if (key == null) {
-      result.push(el);
-      continue;
-    }
-    if (placed.has(key)) {
-      continue;
-    }
-    placed.add(key);
-    const members = groups.get(key) ?? [];
-    const stop =
-      members.find(radio => radio === active) ??
-      members.find(radio => radio.checked) ??
-      (isBackward ? members[members.length - 1] : members[0]);
-    result.push(stop);
-  }
-  return result;
-}
-
-function tabbablesIn(region: HTMLElement | null): HTMLElement[] {
-  if (region == null) {
-    return [];
-  }
-  return getFocusableElements(region).filter(
-    element => element.tabIndex >= 0 && !isInsideHiddenWrapper(element, region),
-  );
-}
-
-/**
- * Whether a `display: none` ancestor between the element and its region hides
- * it — a control in a wrapper hidden at some widths, say. The trap's test reads
- * only the element's own display.
- */
-function isInsideHiddenWrapper(
-  element: HTMLElement,
-  region: HTMLElement,
-): boolean {
-  if (typeof window === 'undefined' || !window.getComputedStyle) {
-    return false;
-  }
-  for (
-    let node = element.parentElement;
-    node != null && node !== region.parentElement;
-    node = node.parentElement
-  ) {
-    if (window.getComputedStyle(node).display === 'none') {
-      return true;
-    }
-  }
-  return false;
-}
-
-/**
- * Move focus to a Tab stop in the dialog. Reports whether focus actually
- * arrived, so a caller can fall back to the menu instead of stranding focus on
- * the page.
- */
-function focusRegionControl(element: HTMLElement): boolean {
-  element.focus();
-  return element.ownerDocument.activeElement === element;
-}
 
 const styles = stylex.create({
   triggerOpen: {
@@ -1271,44 +1175,13 @@ function DropdownMenuPopover({
   // second time.
   const moveDialogTab = useCallback(
     (e: React.KeyboardEvent, isFromFlyout = false) => {
-      const menu = listRef.current;
-      if (menu == null) {
-        return;
-      }
-      e.preventDefault();
-      e.stopPropagation();
-      // A named radio group is one stop, as the browser's own Tab order has it.
-      const cycle = collapseRadioGroups(
-        [
-          ...tabbablesIn(headerRef.current),
-          menu,
-          ...tabbablesIn(footerRef.current),
-        ],
-        document.activeElement,
-        e.shiftKey,
+      moveRegionsTab(
+        e,
+        listRef.current,
+        headerRef.current,
+        footerRef.current,
+        isFromFlyout,
       );
-      if (cycle.length === 1) {
-        // Nothing else to reach: focus stays in the menu. From a flyout that
-        // has just closed itself, that is the menu's own stop.
-        if (isFromFlyout) {
-          menu.focus();
-        }
-        return;
-      }
-      const active = document.activeElement;
-      const menuIndex = cycle.indexOf(menu);
-      // A row, or a row of an open flyout, counts as the menu's stop.
-      let index = menu.contains(active)
-        ? menuIndex
-        : cycle.findIndex(el => el === active || el.contains(active));
-      if (index < 0) {
-        index = menuIndex;
-      }
-      const step = e.shiftKey ? -1 : 1;
-      const next = cycle[(index + step + cycle.length) % cycle.length];
-      if (!focusRegionControl(next)) {
-        menu.focus();
-      }
     },
     [listRef],
   );
