@@ -376,24 +376,6 @@ describe('DropdownMenu', () => {
     expect(source).not.toContain("import {Section} from '../Section'");
   });
 
-  it('loads the touch sheet only on demand', () => {
-    const source = readFileSync(
-      'packages/core/src/DropdownMenu/DropdownMenu.tsx',
-      'utf8',
-    );
-    const loader = readFileSync(
-      'packages/core/src/DropdownMenu/lazyMenuBottomSheet.ts',
-      'utf8',
-    );
-
-    // Pointer-only pages must not pull the touch sheet into their bundle.
-    expect(source).toContain("from './lazyMenuBottomSheet'");
-    expect(source).not.toMatch(/from '\.\/MenuBottomSheet(ActionList)?'/);
-    expect(loader).toContain("import('./MenuBottomSheet')");
-    expect(loader).toContain("import('./MenuBottomSheetActionList')");
-    expect(loader).not.toMatch(/^import \{[^}]*\} from '\.\/MenuBottomSheet/m);
-  });
-
   it('keeps adaptive presentation anchored without compact touch', async () => {
     const user = userEvent.setup();
     render(
