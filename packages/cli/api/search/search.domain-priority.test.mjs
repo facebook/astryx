@@ -278,6 +278,21 @@ describe('search domain priority — real docs and components', () => {
   );
 
   it(
+    'opens the guide that answers a declared phrase, not one that only mentions it',
+    async () => {
+      const [layers] = (await search('cascade layers', {cwd})).data.results;
+      expect(layers).toMatchObject({
+        domain: 'doc',
+        name: 'migration/migration-setup',
+      });
+      const [keyboard] = (await search('keyboard navigation', {cwd})).data
+        .results;
+      expect(keyboard?.name).not.toBe('migration/migration-verification');
+    },
+    SLOW,
+  );
+
+  it(
     'keeps a component above docs that match only by a heading, with scores unchanged',
     async () => {
       const results = (await search('font size', {cwd})).data.results;
