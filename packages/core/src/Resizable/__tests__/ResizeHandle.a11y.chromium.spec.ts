@@ -89,6 +89,11 @@ async function runState(
 test('every window-splitter expectation is exercised by a ResizeHandle state', async ({
   page,
 }) => {
+  // One test mounts and checks every binding state in turn: about 20s on an
+  // idle machine, three times that when the contract run shares a runner's
+  // cores, so the default 60s ran out mid-loop on whichever state it reached.
+  // Budget it like the other whole-inventory sweeps (Button, Checkbox).
+  test.setTimeout(3 * 60 * 1000);
   const cdp = await page.context().newCDPSession(page);
   const results: BindingResult[] = [];
   for (const state of RESIZE_HANDLE_BINDING_STATES) {

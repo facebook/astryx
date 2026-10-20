@@ -128,6 +128,10 @@ Membership follows public responsibility, not an import of Button or a rendered
   event prevents the Action. Standalone ToggleButton runs `onPressedChange`
   synchronously before `pressedChangeAction` and skips the Action when the callback
   calls `preventDefault()`. The Action also runs when no callback is supplied.
+  A caller `onClick` on a standalone ToggleButton runs before `onPressedChange`
+  and `pressedChangeAction`. When that `onClick` calls `preventDefault()`, the
+  activation requests no next state and neither runs; otherwise the toggle
+  proceeds. A caller `onClick` never replaces the toggle request.
   Without `pressedChangeAction`, callback-only activation MUST remain synchronous
   and report no Action-pending feedback. A fire-once action deduplicates activation
   while pending; an explicitly interruptible persistent action may accept a new

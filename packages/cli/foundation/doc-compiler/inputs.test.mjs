@@ -91,7 +91,6 @@ describe('collectDocInputs over what this repo ships', () => {
       'Chat',
       'ChatComposerTokenElement',
       'ContextMenuItem',
-      'Heading',
       'Indicator',
       'Layer',
       'NavMenu',

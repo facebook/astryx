@@ -88,6 +88,13 @@ describe('CommandPaletteItem', () => {
     expect(screen.getByRole('option')).toBeInTheDocument();
   });
 
+  it('carries the stable item theme target', () => {
+    render(<CommandPaletteItem value="test">Item</CommandPaletteItem>);
+    expect(screen.getByRole('option')).toHaveClass(
+      'astryx-command-palette-item',
+    );
+  });
+
   it('calls onSelect when clicked', () => {
     const handleSelect = vi.fn();
     render(

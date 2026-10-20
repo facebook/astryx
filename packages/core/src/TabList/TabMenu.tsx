@@ -37,7 +37,7 @@ import {useListFocus} from '../hooks/useListFocus';
 import {useTabListContext} from './TabListContext';
 import type {TabListSize} from './TabListContext';
 import {tabScope} from './tab.markers.stylex';
-import {mergeProps} from '../utils';
+import {composeEventHandlers, mergeProps} from '../utils';
 import {useMergedRefs} from '../hooks/useMergedRefs';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
@@ -51,9 +51,9 @@ export interface TabMenuOption {
   icon?: ReactNode | IconType;
 }
 
-export interface TabMenuProps extends Pick<
+export interface TabMenuProps extends Omit<
   BaseProps<HTMLButtonElement>,
-  'xstyle' | 'className' | 'style'
+  'role' | 'tabIndex' | 'aria-haspopup' | 'aria-expanded' | 'aria-controls'
 > {
   ref?: React.Ref<HTMLButtonElement>;
   /**
@@ -263,6 +263,8 @@ export function TabMenu({
   xstyle,
   className,
   style,
+  onClick,
+  ...rest
 }: TabMenuProps) {
   const tabListCtx = useTabListContext();
   const menuId = useId();
@@ -346,6 +348,7 @@ export function TabMenu({
   return (
     <>
       <button
+        {...rest}
         ref={setButtonRef}
         type="button"
         aria-haspopup="menu"
@@ -353,7 +356,7 @@ export function TabMenu({
         aria-controls={menuId}
         data-tab-menu=""
         tabIndex={hasSelectedOption ? 0 : -1}
-        onClick={handleToggle}
+        onClick={composeEventHandlers(handleToggle, onClick)}
         {...mergeProps(
           themeProps('tab-menu'),
           focusOutlineProps.focusVisible(

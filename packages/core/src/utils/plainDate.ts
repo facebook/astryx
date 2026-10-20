@@ -185,17 +185,35 @@ function getTimezoneOffsetMS(timezoneID: string, instant: number): number {
   );
 }
 
+const DAY_MS = 24 * 60 * 60 * 1000;
+
 export function plainDateToInstant(
   date: PlainDate,
   timezoneID: string,
   hour = 0,
   minute = 0,
 ): number {
-  const utcGuess = utcTime(date.year, date.month - 1, date.day, hour, minute);
-  const firstOffset = getTimezoneOffsetMS(timezoneID, utcGuess);
-  const firstInstant = utcGuess - firstOffset;
-  const secondOffset = getTimezoneOffsetMS(timezoneID, firstInstant);
-  return utcGuess - secondOffset;
+  // The wall time read as if it were UTC; subtracting an offset gives a
+  // candidate instant.
+  const wallTime = utcTime(date.year, date.month - 1, date.day, hour, minute);
+  // The offsets in effect a day either side cover any transition that can make
+  // this wall time skipped or repeated.
+  const offsetBefore = getTimezoneOffsetMS(timezoneID, wallTime - DAY_MS);
+  const offsetAfter = getTimezoneOffsetMS(timezoneID, wallTime + DAY_MS);
+  // AST-067 (Temporal's "compatible" disambiguation): a wall time that happens
+  // twice resolves to its earlier occurrence, and one that never happens is
+  // read in the offset before the transition, which moves it forward by the
+  // length of the gap.
+  const candidates = [offsetBefore, offsetAfter]
+    .map(offset => wallTime - offset)
+    .filter(
+      (instant, index) =>
+        getTimezoneOffsetMS(timezoneID, instant) ===
+        (index === 0 ? offsetBefore : offsetAfter),
+    );
+  return candidates.length > 0
+    ? Math.min(...candidates)
+    : wallTime - offsetBefore;
 }
 
 export function plainDateFromInstant(
@@ -264,11 +282,21 @@ export function plainDateSetEndOfWeekExclusive(
 }
 
 export function plainDateGetWeekNumber(pd: PlainDate): number {
-  const d = plainDateToDate(pd);
-  const dayNum = d.getDay() || 7;
-  d.setDate(d.getDate() + 4 - dayNum);
-  const yearStart = plainDateToDate({year: d.getFullYear(), month: 1, day: 1});
-  return Math.ceil(((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
+  // ISO week number: ceil(day-of-year of the week's Thursday / 7). Computed
+  // entirely on UTC anchors — the same DST immunity plainDateDiffDays relies
+  // on — because mixing local-time instants leaks the host zone's DST offset
+  // into the day count. When Jan 1 is a Friday (so every Thursday's day-of-year
+  // is an exact multiple of 7), a one-hour offset from a zone whose DST ends
+  // after New Year rounds a whole week up: Sydney, Auckland and Santiago users
+  // saw week 15 for the week that is ISO week 14. utcTime keeps years 1-99
+  // as given, like the other Calendar date helpers.
+  const msPerDay = 24 * 60 * 60 * 1000;
+  const utcMidnight = utcTime(pd.year, pd.month - 1, pd.day);
+  const dayNum = new Date(utcMidnight).getUTCDay() || 7;
+  const thursday = utcMidnight + (4 - dayNum) * msPerDay;
+  const yearStart = utcTime(new Date(thursday).getUTCFullYear(), 0, 1);
+  const dayOfYear = (thursday - yearStart) / msPerDay + 1;
+  return Math.ceil(dayOfYear / 7);
 }
 
 // e.g. "Wednesday, May 21, 2026" (locale-dependent)

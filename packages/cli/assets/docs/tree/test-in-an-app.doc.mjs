@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file `astryx docs cli/integrations/test-in-an-app`: install the packed
+ * @file `astryx docs cli/integrations/ship/test-in-an-app`: install the packed
  * package in an app and run the commands its users run.
  */
 
@@ -63,11 +63,11 @@ export const docs = {
             ],
             [
               '`template --list --package`',
-              'An `acme-dashboard` entry with `package: @acme/astryx-widgets`',
+              'An `acme-dashboard` entry whose `package` is `@acme/astryx-widgets`',
             ],
             [
               '`theme list --package`',
-              '`- ocean (maintained, @acme/astryx-widgets)`',
+              'An `ocean` entry whose `package` is `@acme/astryx-widgets`',
             ],
             ['`docs acme`', 'Your section, with guides such as `deploying`'],
             [
