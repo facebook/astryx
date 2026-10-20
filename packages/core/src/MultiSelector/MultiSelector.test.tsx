@@ -27,6 +27,7 @@ import {
 } from './MultiSelector';
 import {useRef, useState} from 'react';
 import {Icon} from '../Icon';
+import {DropdownMenu, DropdownMenuItem} from '../DropdownMenu';
 import {InternationalizationProvider} from '../i18n';
 import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
 import {__resetInteractionModalityForTest} from '../utils/interactionModality';
@@ -4758,6 +4759,34 @@ describe('MultiSelector footer', () => {
     expect(trigger).toHaveAttribute('aria-expanded', 'false');
   });
 
+  it('an Escape inside a menu a footer control opens closes only that menu', async () => {
+    const user = userEvent.setup();
+    render(
+      <MultiSelector
+        label="Labels"
+        options={OPTIONS}
+        value={[]}
+        onChange={() => {}}
+        hasSearch
+        footer={
+          <DropdownMenu button={{label: 'More'}}>
+            <DropdownMenuItem label="Manage labels" onClick={() => {}} />
+          </DropdownMenu>
+        }
+      />,
+    );
+    const trigger = screen.getByRole('button', {name: 'Labels'});
+    await user.click(trigger);
+    const more = screen.getByRole('button', {name: /More/, ...h});
+    await user.click(more);
+    const row = screen.getByRole('menuitem', {name: 'Manage labels', ...h});
+    await waitFor(() => expect(more).toHaveAttribute('aria-expanded', 'true'));
+    act(() => row.focus());
+    await user.keyboard('{Escape}');
+    await waitFor(() => expect(more).toHaveAttribute('aria-expanded', 'false'));
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+  });
+
   it('without search, focus moves into the listbox, which owns the keys, and the trigger reports no option', async () => {
     const user = userEvent.setup();
     const onChange = vi.fn();
@@ -4773,7 +4802,11 @@ describe('MultiSelector footer', () => {
     const trigger = screen.getByRole('combobox', {name: 'Labels'});
     expect(trigger).toHaveAttribute('aria-haspopup', 'dialog');
     await user.click(trigger);
-    const listbox = screen.getByRole('listbox', h);
+    // The listbox takes focus itself, so it is named by the label, not by the
+    // trigger's text.
+    const listbox = screen.getByRole('listbox', {name: 'Labels', ...h});
+    expect(listbox).toHaveAttribute('aria-label', 'Labels');
+    expect(listbox).not.toHaveAttribute('aria-labelledby');
     await waitFor(() => expect(listbox).toHaveFocus());
     expect(listbox).toHaveAttribute('tabindex', '0');
     await user.keyboard('{ArrowDown}');

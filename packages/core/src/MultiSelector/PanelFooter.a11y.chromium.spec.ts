@@ -116,6 +116,9 @@ test('without search, focus moves into the listbox, which owns the keys, and Tab
   const listbox = page.getByRole('listbox');
   const door = page.getByRole('button', {name: 'Manage labels'});
   await expect(listbox).toBeFocused();
+  // Named by the label, as the dialog is, not by the trigger's text, and
+  // still after a pick changes that text.
+  await expect(listbox).toHaveAccessibleName('Labels');
   await expect(trigger).not.toHaveAttribute('aria-activedescendant');
 
   // The listbox reports the highlighted option and Enter toggles it.
@@ -127,6 +130,7 @@ test('without search, focus moves into the listbox, which owns the keys, and Tab
     'aria-selected',
     'true',
   );
+  await expect(listbox).toHaveAccessibleName('Labels');
 
   await page.keyboard.press('Tab');
   await expect(door).toBeFocused();
