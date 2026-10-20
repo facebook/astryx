@@ -1072,6 +1072,44 @@ describe('integrationDocConflicts stray doc pointers', () => {
     ]);
   });
 
+  it('names a namespace doc by its kind', async () => {
+    writeTopics([
+      {name: 'acme-setup', text: 'Lay it out as `astryx docs layout` says.'},
+    ]);
+
+    const [hit] = stray(
+      await integrationDocConflicts(undefined, {cwd: tmpDir}),
+    );
+
+    expect(hit.link).toBe('{@link @astryxdesign/cli:namespace:layout}');
+  });
+
+  it('finds the line in the string that holds the pointer, not in the summary or code', async () => {
+    writeTopics([]);
+    fs.writeFileSync(
+      path.join(tmpDir, 'docs', 'acme-lines.doc.mjs'),
+      [
+        'export default {',
+        "  type: 'generic',",
+        "  name: 'acme-lines',",
+        "  title: 'Fixture',",
+        "  description: 'Read `astryx docs theme` first.',",
+        "  sections: [{title: 'Overview', content: [",
+        "    {type: 'code', lang: 'bash', code: 'astryx docs theme'},",
+        "    {type: 'prose', text: 'The colors your package sets show up in `astryx docs theme` for every app.'},",
+        '  ]}],',
+        '};',
+        '',
+      ].join('\n'),
+    );
+
+    const found = stray(
+      await integrationDocConflicts(undefined, {cwd: tmpDir}),
+    );
+
+    expect(found.map((/** @type {any} */ each) => each.line)).toEqual([8]);
+  });
+
   it('leaves a command for a doc that does not exist, and a walkthrough', async () => {
     writeTopics([
       {

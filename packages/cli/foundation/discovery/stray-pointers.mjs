@@ -22,20 +22,26 @@ import {loadQuietly} from './copied-passages.mjs';
  */
 const POINTER = /`astryx docs ([a-z0-9][a-z0-9-]*)`/g;
 
-/** @type {Promise<Set<string>> | undefined} */
-let coreNames;
+/** @type {Promise<Map<string, string>> | undefined} */
+let coreKinds;
 
-/** @returns {Promise<Set<string>>} the names of the CLI's own docs */
-function loadCoreNames() {
-  coreNames ??= (async () => {
-    const names = new Set();
+/**
+ * The CLI's own docs by name, each with the kind a link names it by: a
+ * namespace doc as `namespace`, a topic or guide as `generic`.
+ * @returns {Promise<Map<string, string>>}
+ */
+function loadCoreKinds() {
+  coreKinds ??= (async () => {
+    const kinds = new Map();
     for (const file of builtinGuideFiles()) {
       const doc = await loadQuietly(file);
-      if (typeof doc?.name === 'string') names.add(doc.name);
+      if (typeof doc?.name === 'string') {
+        kinds.set(doc.name, doc.type === 'namespace' ? 'namespace' : 'generic');
+      }
     }
-    return names;
+    return kinds;
   })();
-  return coreNames;
+  return coreKinds;
 }
 
 /**
@@ -101,7 +107,7 @@ export function pointersIn(text) {
 /**
  * Each stray pointer in a package's topics.
  *
- * @param {{records: {name: string, path: string}[], guides?: {name: string, ref?: {topicFile?: string}}[]}} discovered
+ * @param {{records: {name: string, path: string}[], guides?: {name: string, ref?: {topicFile?: string}}[], namespaces?: {doc?: {name?: string}}[]}} discovered
  * @returns {Promise<import('../../api/integration/authoring-checks.type.mjs').StrayPointer[]>}
  */
 export async function findStrayPointers(discovered) {
@@ -115,8 +121,13 @@ export async function findStrayPointers(discovered) {
       file: guide.ref?.topicFile,
     })),
   ];
-  const own = new Set(topics.map(topic => topic.name));
-  const core = await loadCoreNames();
+  /** @type {Map<string, string>} */
+  const own = new Map(topics.map(topic => [topic.name, 'generic']));
+  for (const namespace of discovered.namespaces ?? []) {
+    const name = namespace?.doc?.name;
+    if (typeof name === 'string' && !own.has(name)) own.set(name, 'namespace');
+  }
+  const core = await loadCoreKinds();
   /** @type {import('../../api/integration/authoring-checks.type.mjs').StrayPointer[]} */
   const found = [];
   for (const topic of topics) {
@@ -129,27 +140,38 @@ export async function findStrayPointers(discovered) {
     } catch {
       // No line numbers; the finding still names the section.
     }
-    // Each pointer takes the next line that holds its command: from the line
-    // after the previous string's last pointer, and within one string from
-    // its previous pointer's line, so two pointers to one doc get their own.
-    let from = 0;
     for (const {text, section} of linkableStrings(doc)) {
-      let within = from;
+      // The string's longest plain run is written in the file as it reads,
+      // so it finds the line where the string starts; each pointer is on
+      // that line or a later one of the same string.
+      const plain = (text.match(/[A-Za-z0-9 ,.;:()-]{12,}/g) ?? []).sort(
+        (a, b) => b.length - a.length,
+      )[0];
+      const start = plain ? lines.findIndex(line => line.includes(plain)) : -1;
+      const end = start < 0 ? -1 : start + text.split('\n').length + 2;
+      let within = start;
       for (const target of pointersIn(text)) {
         const link = own.has(target)
-          ? `{@link generic:${target}}`
+          ? `{@link ${own.get(target)}:${target}}`
           : core.has(target)
-            ? `{@link @astryxdesign/cli:generic:${target}}`
+            ? `{@link @astryxdesign/cli:${core.get(target)}:${target}}`
             : null;
         if (!link) continue;
         const command = `astryx docs ${target}`;
-        const at = lines.findIndex(
-          (line, index) => index >= within && line.includes(command),
-        );
-        const line = at < 0 ? null : at + 1;
-        if (at >= 0) {
-          within = at;
-          from = at + 1;
+        let line = null;
+        for (
+          let at = Math.max(within, 0);
+          start >= 0 && at < Math.min(lines.length, end);
+          at++
+        ) {
+          if (
+            lines[at].includes(`\`${command}\``) ||
+            lines[at].includes(`\\\`${command}\\\``)
+          ) {
+            line = at + 1;
+            within = at;
+            break;
+          }
         }
         const where = [
           section ? `section "${section}"` : null,
