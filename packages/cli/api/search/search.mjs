@@ -139,6 +139,9 @@ import {setResultCoverage} from './coverage.mjs';
  * @property {string[]} [aliases] - Other names the candidate answers to, scored
  *   with the same name signals: a theme's display name.
  * @property {string[]} [keywords]
+ * @property {string[]} [_declared] - A doc's own declared keywords: what its
+ *   author lists in `keywords`, without the code terms and table cells its
+ *   other keywords add.
  * @property {string[]} [weakKeywords]
  * @property {string} [description]
  * @property {string[]} [prose]
@@ -555,14 +558,15 @@ export function domainPriority(term, tokens, candidate, hit) {
     }
     // A query of two or more words that is one of the doc's own declared
     // keywords, read as words whatever the plural, is the author naming the
-    // doc for that phrase: `code review` on a guide that declares it. One
-    // word is left out, because a doc's keywords include the code terms its
-    // text mentions. A section's keywords are its headings and code terms,
-    // so they don't count.
+    // doc for that phrase: `code review` on a guide that declares it. Only
+    // what the author declared counts: the code terms and table cells a
+    // doc's other keywords add (`missing_field`) name what it mentions, not
+    // what it is for. One word is left out too, and a section declares
+    // nothing.
     if (
       phraseWords(term).length >= 2 &&
       candidate._section == null &&
-      (candidate.keywords ?? []).some(k => samePhrase(term, String(k)))
+      (candidate._declared ?? []).some(k => samePhrase(term, String(k)))
     ) {
       return 1;
     }
@@ -1523,6 +1527,10 @@ async function gatherDocs(cwd) {
         ...defined,
         ...codeTerms({content}),
       ],
+      _declared: [
+        ...(Array.isArray(selfDoc?.keywords) ? selfDoc.keywords : []),
+        ...(Array.isArray(node.keywords) ? node.keywords : []),
+      ],
       description: node.summary || '',
       prose: sectionProse({title: node.title, content}),
       titles: [node.title],
@@ -1659,6 +1667,7 @@ function topicCandidates(
         ...(doc?.title || title ? [doc?.title || title] : []),
         ...(Array.isArray(doc?.keywords) ? doc.keywords : []),
       ],
+      _declared: Array.isArray(doc?.keywords) ? doc.keywords : [],
       description: doc?.description || summary,
       prose: split
         ? sections.map(section => section.title).filter(Boolean)

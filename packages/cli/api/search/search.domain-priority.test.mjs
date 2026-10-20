@@ -92,6 +92,7 @@ describe('search domain priority — the rule', () => {
       name: 'guides/quality',
       titles: ['Is my code good?'],
       keywords: ['code review', 'review my code'],
+      _declared: ['code review', 'review my code'],
     };
     expect(priority('code review', guide)).toBe(1);
     expect(priority('Code Reviews', guide)).toBe(1);
@@ -106,6 +107,24 @@ describe('search domain priority — the rule', () => {
     expect(priority('code review', section)).toBe(0);
   });
 
+  it("gives a doc no priority for a code term or table cell it didn't declare", () => {
+    // A typed doc's keywords hold the first column of its tables and the code
+    // terms its text mentions; `missing_field` reads as two words.
+    const reference = {
+      domain: 'doc',
+      name: 'cli/api/functions/validate-integration',
+      titles: ['validateIntegration'],
+      keywords: ['validate-integration', 'missing_field', 'file required'],
+      _declared: [],
+      _topic: 'cli/api/functions/validate-integration',
+    };
+    expect(priority('missing field', reference)).toBe(0);
+    expect(priority('file required', reference)).toBe(0);
+    expect(
+      priority('missing field', {...reference, _declared: ['missing field']}),
+    ).toBe(1);
+  });
+
   it('keeps a component the query names exactly above a doc that declares it', async () => {
     const tokens = tokenizeQuery('empty state');
     const component = {domain: 'component', name: 'EmptyState'};
@@ -113,6 +132,7 @@ describe('search domain priority — the rule', () => {
       domain: 'doc',
       name: 'illustrations',
       keywords: ['empty state'],
+      _declared: ['empty state'],
     };
     const c = scoreQuery('empty state', tokens, component);
     const d = scoreQuery('empty state', tokens, doc);
@@ -242,6 +262,17 @@ describe('search domain priority — real docs and components', () => {
           .slice(0, 3)
           .some(r => r.domain === 'component' && r.name === 'Text'),
       ).toBe(true);
+    },
+    SLOW,
+  );
+
+  it(
+    'keeps a component above a reference doc whose table or code terms hold the phrase',
+    async () => {
+      for (const q of ['missing field', 'file required']) {
+        const [top] = (await search(q, {cwd})).data.results;
+        expect(top, q).toMatchObject({domain: 'component', name: 'Field'});
+      }
     },
     SLOW,
   );
