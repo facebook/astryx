@@ -522,7 +522,9 @@ export async function loadProjectContext(cwd, extraIntegrationSpecs = []) {
   const extras =
     extraSpecs.length === 0
       ? []
-      : await loadIntegrations(extraSpecs, {resolveProviders: false});
+      : // Resolved from the project, as --integration names a package it
+        // installed, not from whichever folder the process started in.
+        await loadIntegrations(extraSpecs, {cwd, resolveProviders: false});
   const {integrations, ledger} = resolveProviders(
     [
       ...candidates,

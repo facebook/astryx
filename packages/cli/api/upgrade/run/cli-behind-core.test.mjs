@@ -12,12 +12,14 @@
  * through a link.
  */
 
-import {describe, it, expect, beforeEach, afterEach} from 'vitest';
+import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
 import {execFileSync, spawnSync} from 'node:child_process';
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import {upgrade} from '../upgrade.mjs';
+import {logCliBehindCore} from '../status/status.mjs';
+import {logger} from '../../logger.mjs';
 import {CLI_ROOT} from '../../../foundation/fs/paths.mjs';
 import {
   commandInFolder,
@@ -168,6 +170,15 @@ describe('a CLI older than the installed Core', {timeout: SLOW}, () => {
   it('repeats the invocation in the pinned command', async () => {
     installCore(NEWER_CORE);
     write('my src/index.tsx', TYPEAHEAD_SOURCE);
+    // An installed integration the run names, so --integration is repeated.
+    write(
+      'node_modules/@acme/widgets/package.json',
+      JSON.stringify({name: '@acme/widgets', version: '1.0.0'}),
+    );
+    write(
+      'node_modules/@acme/widgets/astryx.integration.mjs',
+      'export default {};\n',
+    );
 
     const res = await upgrade(
       {
@@ -175,7 +186,9 @@ describe('a CLI older than the installed Core', {timeout: SLOW}, () => {
         path: 'my src',
         codemod: 'only-this',
         skipCodemod: ['first', 'second'],
+        integration: ['@acme/widgets'],
         force: true,
+        installDeps: true,
       },
       {cwd: dir},
     );
@@ -192,7 +205,10 @@ describe('a CLI older than the installed Core', {timeout: SLOW}, () => {
         'first',
         '--skip-codemod',
         'second',
+        '--integration',
+        '@acme/widgets',
         '--force',
+        '--install-deps',
       ),
     );
   });
@@ -393,5 +409,30 @@ describe('a CLI that covers the range', {timeout: SLOW}, () => {
 
     expect(res.data.status).toBe('no_codemods');
     expect('cliBehindCore' in res.data).toBe(false);
+  });
+});
+
+describe('logCliBehindCore: the warning names the shell its command is written for', () => {
+  it.each([
+    ['win32', 'Run it in PowerShell with the CLI that matches your Core:'],
+    ['linux', 'Run it with the CLI that matches your Core:'],
+    ['darwin', 'Run it with the CLI that matches your Core:'],
+  ])('on %s', (platform, ending) => {
+    const warn = vi.spyOn(logger, 'warn').mockImplementation(() => {});
+    try {
+      logCliBehindCore(
+        {cliVersion: '0.7.0', command: 'cd x; npx y'},
+        '0.8.0',
+        platform,
+      );
+      expect(warn.mock.calls.map(([line]) => String(line))).toEqual([
+        expect.stringMatching(
+          new RegExp(`${ending.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&')}$`, 'u'),
+        ),
+        '  cd x; npx y',
+      ]);
+    } finally {
+      warn.mockRestore();
+    }
   });
 });

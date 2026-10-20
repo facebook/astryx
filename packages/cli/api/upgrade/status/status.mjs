@@ -51,9 +51,11 @@ export function statusUpToDate({from, to, agentDocs, registryCompositions}) {
  * the warning says so.
  * @param {import('../upgrade.type.mjs').CliBehindCore} cliBehindCore
  * @param {string} to the installed Core version
+ * @param {string} [platform] the `process.platform` the command was printed
+ *   for, as `quoteCommandArgument` and `commandInFolder` take it
  */
-export function logCliBehindCore({cliVersion, command}, to) {
-  const shell = process.platform === 'win32' ? ' in PowerShell' : '';
+export function logCliBehindCore({cliVersion, command}, to, platform = process.platform) {
+  const shell = platform === 'win32' ? ' in PowerShell' : '';
   logger.warn(
     `This CLI (${cliVersion}) is older than the installed @astryxdesign/core (${to}): ` +
       `it has no codemods for releases after ${cliVersion}, so it cannot finish this upgrade. ` +

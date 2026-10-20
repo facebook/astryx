@@ -647,6 +647,15 @@ describe('quoteCommandArgument', () => {
     expect(quoteCommandArgument('C:\\it\'s `x` "q"', 'win32')).toBe(
       "'C:\\it''s `x` \"q\"'",
     );
+    // PowerShell also ends a single-quoted string at ‘ ’ ‚ and ‛.
+    expect(
+      quoteCommandArgument('C:\\Users\\jo\\OneDrive - Macy’s\\app', 'win32'),
+    ).toBe("'C:\\Users\\jo\\OneDrive - Macy’’s\\app'");
+    expect(quoteCommandArgument('‘a’ ‚b‛', 'win32')).toBe("'‘‘a’’ ‚‚b‛‛'");
+    // A POSIX shell reads them literally inside single quotes.
+    expect(quoteCommandArgument('/home/jo/Macy’s app', 'linux')).toBe(
+      "'/home/jo/Macy’s app'",
+    );
   });
 });
 
@@ -670,7 +679,7 @@ describe('commandInFolder', () => {
     'runs in the folder with every argument unchanged, pasted into /bin/sh elsewhere',
     () => {
       const root = makeTmpDir();
-      const project = path.join(root, 'it\'s $5 %x% !y `z` "q" [1]');
+      const project = path.join(root, 'it\'s Macy’s ‘q’ $5 %x% !y `z` "q" [1]');
       fs.mkdirSync(project);
       const args = [path.join(project, 'src'), 'a$b c', "it's", '@scope/pkg@1'];
       const command = commandInFolder(
@@ -701,7 +710,7 @@ describe('commandInFolder', () => {
   describe.runIf(PWSH)('in PowerShell, where it is installed', () => {
     it('runs in the folder with every argument unchanged', () => {
       const root = makeTmpDir();
-      const project = path.join(root, 'it\'s $5 %x% !y `z` "q" [1]');
+      const project = path.join(root, 'it\'s Macy’s ‘q’ $5 %x% !y `z` "q" [1]');
       fs.mkdirSync(project);
       const args = [path.join(project, 'src'), 'a$b c', "it's", '@scope/pkg@1'];
       const command = commandInFolder(

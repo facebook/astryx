@@ -521,7 +521,8 @@ export function formatCliCommand(command, targetDir) {
  * `\`) stays bare. Any other value gets single quotes, inside which both
  * shells read `$`, backticks, `%`, `!`, spaces and double quotes literally. An
  * embedded single quote is written `'\''` for a POSIX shell and doubled for
- * PowerShell.
+ * PowerShell, which also ends a single-quoted string at the typographic
+ * quotes `‘ ’ ‚ ‛`, so those are doubled too (`Macy’s` → `'Macy’’s'`).
  *
  * @param {string} value
  * @param {string} [platform] the `process.platform` the command is printed for
@@ -531,7 +532,7 @@ export function quoteCommandArgument(value, platform = process.platform) {
   const text = String(value);
   if (platform === 'win32') {
     if (/^[A-Za-z0-9@/._:\\-]+$/u.test(text)) return text;
-    return `'${text.replace(/'/gu, "''")}'`;
+    return `'${text.replace(/['\u2018\u2019\u201A\u201B]/gu, quote => quote + quote)}'`;
   }
   if (/^[A-Za-z0-9@/._-]+$/u.test(text)) return text;
   return `'${text.replace(/'/gu, `'\\''`)}'`;
