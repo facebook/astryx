@@ -16,6 +16,7 @@ export const doc = {
     'Reports a missing component, variant, layout, styling, accessibility, API, or documentation capability to the package that owns it: the --package you name, else the integration whose component replaces it, else the one package that provides the component, else Core. ' +
     'Every configured handler receives the report: the project config handler first, then each integration handler in config order. Public handlers run only with --confirm-public; internal handlers always run. A failing handler does not stop the others. ' +
     "With no handler it files a GitHub issue for the owning package, only with --confirm-public (without it nothing is sent), or returns the package's issues URL when that is not on GitHub. " +
+    "With handlers, a report about an integration that sets its own issues URL also goes there the same way, unless that integration's own handler ran or a handler already filed it there. " +
     'The report records whether an agent or a person ran it.',
   fn: 'gapReport',
   args: [
@@ -55,7 +56,7 @@ export const doc = {
       flag: '--confirm-public',
       param: 'options.confirmPublic',
       description:
-        'Allow public delivery: public handlers run, and with no handler it files a GitHub issue with your gh login',
+        'Allow public delivery: public handlers run, and a GitHub issues URL gets an issue filed with your gh login',
     },
     {
       flag: '--list-categories',

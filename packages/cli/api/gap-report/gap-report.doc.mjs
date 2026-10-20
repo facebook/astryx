@@ -19,6 +19,7 @@ export const doc = {
     'Sends a gap report to every configured handler: the project config handler first, then each integration handler in config order. ' +
     'Each handler has 30 s to finish, and its output goes to stderr. Public handlers run only with confirmPublic; internal handlers always run. ' +
     "With no handler, it files a GitHub issue for the owning package only with confirmPublic (without it nothing is sent), or returns the package's issues URL when that is not on GitHub. " +
+    "With handlers, a report about an integration that sets its own issues URL also goes there the same way, unless that integration's own handler ran or a handler already filed it there. " +
     'The report records whether an agent or a person ran it, and the response lists each handler outcome in order.',
   importPath: '@astryxdesign/cli/api',
   signature:
@@ -67,7 +68,7 @@ export const doc = {
       name: 'options.confirmPublic',
       type: 'boolean',
       description:
-        'Allow public delivery: public handlers run, and with no handler a GitHub issue is filed through the gh CLI.',
+        'Allow public delivery: public handlers run, and a GitHub issues URL gets an issue filed through the gh CLI.',
       default: 'false',
     },
     {

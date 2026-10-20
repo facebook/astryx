@@ -163,7 +163,11 @@ message:     Rerun with --confirm-public to file this report.`,
         },
         {
           type: 'prose',
-          text: 'One handler anywhere in the app, from the app or from any package, turns the fallback off for every report. So does a listed package that fails to load: the CLI cannot tell whether it has a handler, so the report fails for that package instead of going to another tracker. See {@link command:gap-report}.',
+          text: 'One handler anywhere in the app, from the app or from any package, turns this fallback off. So does a listed package that fails to load: the CLI cannot tell whether it has a handler, so the report fails for that package instead of going to another tracker.',
+        },
+        {
+          type: 'prose',
+          text: "With handlers, a report about your package still reaches your `issuesUrl` after the handlers run, in the same way: a GitHub URL with `--confirm-public`, any other URL as `routed_only`. It is skipped when your own `gapReport` handler ran, when a handler's receipt URL is already inside your `issuesUrl`, and for reports about Core. See {@link command:gap-report}.",
         },
       ],
     },

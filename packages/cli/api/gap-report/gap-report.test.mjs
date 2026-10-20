@@ -1022,6 +1022,194 @@ console.log('https://github.com/acme/widgets/issues/42');
   });
 });
 
+describe('gapReport target route beside handlers', () => {
+  /** A shared internal handler that is not the target package's own. */
+  function addSharedHandler(handleBody) {
+    addIntegration({
+      name: '@test/shared',
+      audience: 'internal',
+      ...(handleBody ? {handleBody} : {}),
+    });
+  }
+
+  it('also routes to the target integration GitHub issuesUrl, only with consent', async () => {
+    addSharedHandler("return {status: 'filed', message: 'shared'};");
+    addIntegration({
+      name: '@test/widgets',
+      handler: false,
+      component: 'Widget',
+      issuesUrl: 'https://github.com/acme/widgets/issues',
+    });
+    configure(['@test/shared', '@test/widgets']);
+    const argsFile = stubGh();
+
+    const pending = await gapReport('Widget', {
+      ...reportOptions,
+      cwd: projectDir,
+    });
+    expect(pending.data.package).toBe('@test/widgets');
+    expect(pending.data.deliveries).toEqual([
+      expect.objectContaining({
+        handlerType: 'integration',
+        handler: '@test/shared',
+        status: 'filed',
+      }),
+      {
+        handlerType: 'fallback',
+        handler: 'github',
+        audience: 'public',
+        status: 'consent_required',
+        url: null,
+        message: PUBLIC_CONFIRMATION_MESSAGE,
+      },
+    ]);
+    expect(pending.data.status).toBe('filed');
+    expect(fs.existsSync(argsFile)).toBe(false);
+
+    const filed = await gapReport('Widget', {
+      ...reportOptions,
+      confirmPublic: true,
+      cwd: projectDir,
+    });
+    expect(filed.data.deliveries).toHaveLength(2);
+    expect(filed.data.deliveries[1]).toMatchObject({
+      handlerType: 'fallback',
+      handler: 'github',
+      status: 'filed',
+    });
+    const args = JSON.parse(fs.readFileSync(argsFile, 'utf8'));
+    expect(args.slice(0, 4)).toEqual([
+      'issue',
+      'create',
+      '--repo',
+      'acme/widgets',
+    ]);
+    expect(filed.data.filedCount).toBe(2);
+  });
+
+  it('routes a non-GitHub target issuesUrl as routed_only after the handlers', async () => {
+    addSharedHandler();
+    addIntegration({
+      name: '@test/widgets',
+      handler: false,
+      issuesUrl: 'https://tracker.example/widgets',
+    });
+    configure(['@test/shared', '@test/widgets']);
+
+    const result = await gapReport('General', {
+      ...reportOptions,
+      package: '@test/widgets',
+      cwd: projectDir,
+    });
+
+    expect(result.data.deliveries.map(d => d.handler)).toEqual([
+      '@test/shared',
+      'issuesUrl',
+    ]);
+    expect(result.data.deliveries[1]).toMatchObject({
+      handlerType: 'fallback',
+      status: 'routed_only',
+      url: 'https://tracker.example/widgets',
+    });
+    expect(result.data.status).toBe('filed');
+    expect(result.data.routedOnlyCount).toBe(1);
+  });
+
+  it('adds no route for a Core target', async () => {
+    addSharedHandler();
+    configure(['@test/shared'], {
+      issuesUrl: 'https://github.com/acme/core/issues',
+    });
+    const argsFile = stubGh();
+
+    const result = await gapReport('General', {
+      ...reportOptions,
+      confirmPublic: true,
+      cwd: projectDir,
+    });
+
+    expect(result.data.package).toBe('@astryxdesign/core');
+    expect(result.data.deliveries).toHaveLength(1);
+    expect(fs.existsSync(argsFile)).toBe(false);
+  });
+
+  it('adds no route when the target package has its own handler', async () => {
+    addSharedHandler();
+    addIntegration({
+      name: '@test/widgets',
+      audience: 'internal',
+      issuesUrl: 'https://tracker.example/widgets',
+    });
+    configure(['@test/shared', '@test/widgets']);
+
+    const result = await gapReport('General', {
+      ...reportOptions,
+      package: '@test/widgets',
+      cwd: projectDir,
+    });
+
+    expect(result.data.deliveries.map(d => d.handler)).toEqual([
+      '@test/shared',
+      '@test/widgets',
+    ]);
+  });
+
+  it('adds no route when a handler already filed inside that issuesUrl', async () => {
+    addSharedHandler(
+      "return {status: 'filed', url: 'https://tracker.example/widgets/issues/7'};",
+    );
+    addIntegration({
+      name: '@test/widgets',
+      handler: false,
+      issuesUrl: 'https://tracker.example/widgets',
+    });
+    configure(['@test/shared', '@test/widgets']);
+
+    const result = await gapReport('General', {
+      ...reportOptions,
+      package: '@test/widgets',
+      cwd: projectDir,
+    });
+
+    expect(result.data.deliveries).toHaveLength(1);
+  });
+
+  it('still routes when a handler filed under a sibling path', async () => {
+    addSharedHandler(
+      "return {status: 'filed', url: 'https://tracker.example/widgets-legacy/issues/7'};",
+    );
+    addIntegration({
+      name: '@test/widgets',
+      handler: false,
+      issuesUrl: 'https://tracker.example/widgets',
+    });
+    configure(['@test/shared', '@test/widgets']);
+
+    const result = await gapReport('General', {
+      ...reportOptions,
+      package: '@test/widgets',
+      cwd: projectDir,
+    });
+
+    expect(result.data.deliveries).toHaveLength(2);
+    expect(result.data.deliveries[1].status).toBe('routed_only');
+  });
+
+  it('adds no route when the target integration has no issuesUrl', async () => {
+    addSharedHandler();
+    addIntegration({name: '@test/widgets', handler: false});
+    configure(['@test/shared', '@test/widgets']);
+
+    const result = await gapReport('General', {
+      ...reportOptions,
+      package: '@test/widgets',
+      cwd: projectDir,
+    });
+
+    expect(result.data.deliveries).toHaveLength(1);
+  });
+});
+
 describe('gapReport target selection', () => {
   it('routes to the unique component owner', async () => {
     addIntegration({

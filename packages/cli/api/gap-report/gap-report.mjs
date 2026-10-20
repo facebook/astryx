@@ -608,6 +608,95 @@ async function runGithubFallback(target, report, github) {
 }
 
 /**
+ * Route a report to the target's issuesUrl: a GitHub issues URL is filed with
+ * `gh` only with consent; any other URL is returned as routed_only. Used by the
+ * zero-handler fallback (FR8) and the target route beside handlers (FR13).
+ *
+ * @param {ReportTarget & {issuesUrl: string}} target
+ * @param {{component: string, categoryLabel: string, intention: string, detail?: string, source: string, timestamp: string}} report
+ * @param {boolean} confirmPublic
+ * @returns {Promise<import('./gap-report.type.mjs').GapReportDelivery>}
+ */
+async function deliverToIssuesUrl(target, report, confirmPublic) {
+  const github = githubRoute(target.issuesUrl);
+  if (github != null && !confirmPublic) {
+    return {
+      handlerType: 'fallback',
+      handler: 'github',
+      audience: 'public',
+      status: 'consent_required',
+      url: null,
+      message: PUBLIC_CONFIRMATION_MESSAGE,
+    };
+  }
+  if (github) {
+    const outcome = await runGithubFallback(target, report, github);
+    return {
+      handlerType: 'fallback',
+      handler: 'github',
+      audience: 'public',
+      ...outcome,
+    };
+  }
+  return {
+    handlerType: 'fallback',
+    handler: 'issuesUrl',
+    audience: null,
+    status: 'routed_only',
+    url: target.issuesUrl,
+    message:
+      'No automatic handler is available; open the routed URL to file this report.',
+  };
+}
+
+/**
+ * Whether a handler delivery's URL lies inside the issues URL: same origin,
+ * and the same path or a path below it.
+ * @param {string} url
+ * @param {string} issuesUrl
+ * @returns {boolean}
+ */
+function isInside(url, issuesUrl) {
+  try {
+    const inner = new URL(url);
+    const outer = new URL(issuesUrl);
+    if (inner.origin !== outer.origin) return false;
+    const base = outer.pathname.replace(/\/+$/u, '');
+    return inner.pathname === base || inner.pathname.startsWith(`${base}/`);
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Whether the target integration's own issuesUrl still needs the report after
+ * the handlers ran (spec:AST-031/FR13). Not for Core, whose reports the
+ * handlers already receive; not when the target's own handler ran; not when a
+ * handler delivery already points inside that issuesUrl.
+ *
+ * @param {ReportTarget} target
+ * @param {HandlerEntry[]} entries
+ * @param {import('./gap-report.type.mjs').GapReportDelivery[]} deliveries
+ * @returns {target is ReportTarget & {issuesUrl: string}}
+ */
+function needsTargetRoute(target, entries, deliveries) {
+  if (target.package === CORE_PACKAGE || !target.issuesUrl) return false;
+  if (
+    entries.some(
+      entry =>
+        entry.handlerType === 'integration' &&
+        entry.handlerName === target.package,
+    )
+  ) {
+    return false;
+  }
+  const issuesUrl = target.issuesUrl;
+  return !deliveries.some(
+    delivery => delivery.url != null && isInside(delivery.url, issuesUrl),
+  );
+}
+
+/**
  * Compute the aggregate status from the deliveries.
  * @param {import('./gap-report.type.mjs').GapReportDelivery[]} deliveries
  * @returns {import('./gap-report.type.mjs').GapReportAggregateStatus}
@@ -731,6 +820,14 @@ export async function gapReport(component, options = {}) {
 
   /** @type {import('./gap-report.type.mjs').GapReportDelivery[]} */
   const deliveries = [];
+  const routeReport = {
+    component: resolvedComponent,
+    categoryLabel: categoryEntry.label,
+    intention,
+    detail,
+    source,
+    timestamp,
+  };
 
   if (entries.length > 0) {
     deliveries.push(
@@ -738,6 +835,17 @@ export async function gapReport(component, options = {}) {
         confirmPublic: options.confirmPublic === true,
       })),
     );
+    // The package the report is about also receives it at its own issuesUrl,
+    // unless that place already has it (spec:AST-031/FR13).
+    if (needsTargetRoute(target, entries, deliveries)) {
+      deliveries.push(
+        await deliverToIssuesUrl(
+          target,
+          routeReport,
+          options.confirmPublic === true,
+        ),
+      );
+    }
   } else {
     if (!target.issuesUrl) {
       throw new AstryxError(
@@ -747,46 +855,13 @@ export async function gapReport(component, options = {}) {
       );
     }
 
-    const github = githubRoute(target.issuesUrl);
-    if (github != null && options.confirmPublic !== true) {
-      deliveries.push({
-        handlerType: 'fallback',
-        handler: 'github',
-        audience: 'public',
-        status: 'consent_required',
-        url: null,
-        message: PUBLIC_CONFIRMATION_MESSAGE,
-      });
-    } else if (github) {
-      const outcome = await runGithubFallback(
-        target,
-        {
-          component: resolvedComponent,
-          categoryLabel: categoryEntry.label,
-          intention,
-          detail,
-          source,
-          timestamp,
-        },
-        github,
-      );
-      deliveries.push({
-        handlerType: 'fallback',
-        handler: 'github',
-        audience: 'public',
-        ...outcome,
-      });
-    } else {
-      deliveries.push({
-        handlerType: 'fallback',
-        handler: 'issuesUrl',
-        audience: null,
-        status: 'routed_only',
-        url: target.issuesUrl,
-        message:
-          'No automatic handler is available; open the routed URL to file this report.',
-      });
-    }
+    deliveries.push(
+      await deliverToIssuesUrl(
+        /** @type {ReportTarget & {issuesUrl: string}} */ (target),
+        routeReport,
+        options.confirmPublic === true,
+      ),
+    );
   }
 
   const filedCount = deliveries.filter(d => d.status === 'filed').length;
