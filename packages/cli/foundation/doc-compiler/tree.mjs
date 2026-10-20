@@ -20,13 +20,20 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {CLI_ROOT} from '../fs/paths.mjs';
-import {loadCliSelfDocs} from '../discovery/cli-self-docs.mjs';
+import {
+  discoverCliSelfDocSources,
+  loadCliSelfDocs,
+} from '../discovery/cli-self-docs.mjs';
+import {AREA_DOC_NAMESPACE} from '../areas/node-docs.mjs';
 import {routeSegment} from '../discovery/docs-section-key.mjs';
 import {diagnostic, sortDiagnostics} from './diagnostics.mjs';
 import {readDocView} from './read.mjs';
 import {packageSource} from './source.mjs';
 import {createDocId} from '../identity/provider-identity.mjs';
 import {CLI_PROVIDER_ID} from '../identity/providers.mjs';
+
+/** The `cli/areas` namespace doc, relative to the CLI root. */
+export const AREAS_NAMESPACE_FILE = 'foundation/areas/areas-namespace.mjs';
 
 export {routeSegment};
 
@@ -771,12 +778,13 @@ export function cliRootNamespaceNames(dir = TREE_DOCS_DIR) {
  * assets/docs/tree, and, unless left out, every typed self-doc with its
  * `namespace` group. A file that fails to load or parse is a diagnostic, never
  * a thrown error.
- * @param {{selfDocs?: boolean, dir?: string}} [options]
+ * @param {{selfDocs?: boolean, dir?: string, selfDocsRoot?: string}} [options]
  * @returns {Promise<{namespaces: TreeNamespaceInput[], docs: TreeDocInput[], diagnostics: CompilerDiagnostic[]}>}
  */
 export async function loadTreeInputs({
   selfDocs = true,
   dir = TREE_DOCS_DIR,
+  selfDocsRoot = CLI_ROOT,
 } = {}) {
   /** @type {TreeNamespaceInput[]} */
   const namespaces = [];
@@ -855,7 +863,25 @@ export async function loadTreeInputs({
     }
   }
   if (selfDocs) {
-    const {loaded} = await loadCliSelfDocs();
+    const {loaded} = await loadCliSelfDocs(
+      discoverCliSelfDocSources(selfDocsRoot),
+      selfDocsRoot,
+    );
+    if (loaded.some(({doc}) => doc.namespace === AREA_DOC_NAMESPACE)) {
+      // The areas level exists only once an area is registered.
+      const file = path.join(CLI_ROOT, AREAS_NAMESPACE_FILE);
+      namespaces.push({
+        provider: CLI_PROVIDER,
+        providerId: CLI_PROVIDER_ID,
+        source: packageSource(file),
+        doc: await readDocView(file, {
+          root: 'tree',
+          provider: CLI_PROVIDER,
+          loader: 'native',
+          strict: true,
+        }),
+      });
+    }
     for (const {source, doc} of loaded) {
       docs.push({
         provider: CLI_PROVIDER,

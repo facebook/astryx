@@ -7,6 +7,7 @@ import {fileURLToPath, pathToFileURL} from 'node:url';
 import {afterAll, describe, expect, it} from 'vitest';
 import {loadCliSelfDocs} from '../discovery/cli-self-docs.mjs';
 import {cliDocSection} from '../discovery/cli-self-docs.mjs';
+import {buildDocsTree, loadTreeInputs} from '../doc-compiler/tree.mjs';
 import {defineDispatcher, defineSearcher} from './areas.mjs';
 import {nodeDoc} from './node-docs.mjs';
 
@@ -98,5 +99,59 @@ export const node = defineSearcher({
       type: 'prose',
       text: 'Finds names. A searcher in the demo area.',
     });
+  });
+});
+
+describe('the areas level in astryx docs cli', () => {
+  const kit = pathToFileURL(
+    path.join(path.dirname(fileURLToPath(import.meta.url)), 'areas.mjs'),
+  ).href;
+  const withArea = fs.mkdtempSync(path.join(os.tmpdir(), 'area-tree-one-'));
+  const noArea = fs.mkdtempSync(path.join(os.tmpdir(), 'area-tree-none-'));
+  afterAll(() => {
+    fs.rmSync(withArea, {recursive: true, force: true});
+    fs.rmSync(noArea, {recursive: true, force: true});
+  });
+  fs.mkdirSync(path.join(withArea, 'api/demo/nodes'), {recursive: true});
+  fs.writeFileSync(
+    path.join(withArea, 'api/demo/nodes/main.mjs'),
+    `import {defineSearcher} from '${kit}';
+export const node = defineSearcher({
+  id: 'main', area: 'demo', summary: 'Finds names.',
+  handles: [{input: 'a', expect: {names: ['a']}}],
+  declines: [{input: '', note: 'empty'}],
+  weights: null, tests: 'main.test.mjs', run: q => (q ? {names: [q]} : null),
+});
+`,
+  );
+  fs.writeFileSync(
+    path.join(withArea, 'api/demo/nodes/index.mjs'),
+    "export {node as main} from './main.mjs';\n",
+  );
+
+  /** @param {string} cliRoot */
+  const build = async cliRoot => {
+    const inputs = await loadTreeInputs({selfDocsRoot: cliRoot});
+    const tree = buildDocsTree(inputs);
+    return {
+      tree,
+      diagnostics: [...inputs.diagnostics, ...tree.diagnostics],
+      reference:
+        tree.get('cli')?.slots.find(slot => slot.name === 'reference')
+          ?.children ?? [],
+    };
+  };
+
+  it('is absent while no area is registered', async () => {
+    const {tree, reference} = await build(noArea);
+    expect(reference).not.toContain('cli/areas');
+    expect(tree.get('cli/areas')).toBeUndefined();
+  });
+
+  it('appears with each node once an area is registered', async () => {
+    const {tree, reference, diagnostics} = await build(withArea);
+    expect(reference).toContain('cli/areas');
+    expect(tree.get('cli/areas/demo-main')?.title).toBe('demo / main');
+    expect(diagnostics).toEqual([]);
   });
 });

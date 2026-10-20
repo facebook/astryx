@@ -672,7 +672,7 @@ for (const name of apiExports) {
   }
 }
 
-// ── 6. Answer-picking areas  ─────────────────────
+// ── 6. Answer-picking areas ─────────────────────
 const areaCheck = await checkAreas({cliRoot: CLI});
 errors.push(...areaCheck.errors);
 
