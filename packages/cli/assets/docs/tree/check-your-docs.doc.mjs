@@ -44,7 +44,7 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: 'Point at another doc with a link, `{@link generic:<name>}`, never by writing `astryx docs <name>` in prose. The CLI prints the link as that same command, and doctor checks that the doc exists. The check lists each written pointer to a doc that exists as a `stray_doc_pointer` warning, with the link to write instead. A command with more words, or one in a code block, is a walkthrough and is not listed.',
+          text: "Point at another doc with a link, never by writing `astryx docs <name>` in prose: `{@link generic:<name>}` for one of your package's topics, or `{@link @astryxdesign/cli:generic:<name>}` for a Core doc (`namespace:` for a Core namespace). The CLI prints the link as the command that opens the doc, and doctor checks that the doc exists. The check lists each written pointer to a doc that exists as a `stray_doc_pointer` warning, with the link to write instead. A command with more words, or one in a code block, is a walkthrough and is not listed.",
         },
         {
           type: 'prose',

@@ -1042,6 +1042,33 @@ describe('integrationDocConflicts fluff', () => {
 describe('integrationDocConflicts stray doc pointers', () => {
   const stray = (/** @type {any} */ result) => result.data.strayPointers;
 
+  it('places a pointer-only list item on its own line, not an earlier summary or code block', async () => {
+    writeTopics([{name: 'acme-menus', text: 'Menus.'}]);
+    fs.writeFileSync(
+      path.join(tmpDir, 'docs', 'acme-setup.doc.mjs'),
+      [
+        'export default {',
+        "  type: 'generic',",
+        "  name: 'acme-setup',",
+        "  title: 'Fixture',",
+        "  summary: 'See `astryx docs acme-menus`.',",
+        "  description: 'Fixture topic.',",
+        "  sections: [{title: 'Overview', content: [",
+        "    {type: 'code', lang: 'bash', code: 'astryx docs acme-menus'},",
+        "    {type: 'list', style: 'unordered', items: ['`astryx docs acme-menus`']},",
+        '  ]}],',
+        '};',
+        '',
+      ].join('\n'),
+    );
+
+    const found = stray(
+      await integrationDocConflicts(undefined, {cwd: tmpDir}),
+    ).filter((/** @type {any} */ each) => each.topic === 'acme-setup');
+
+    expect(found.map((/** @type {any} */ each) => each.line)).toEqual([9]);
+  });
+
   it('lists a written pointer to a doc with the link that replaces it, and warns', async () => {
     writeTopics([
       {name: 'acme-setup', text: 'Install it first.'},

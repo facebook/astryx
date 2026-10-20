@@ -3,7 +3,7 @@
 /**
  * @file Stray doc pointers (architecture:cli-surface DEC-8): a code span in
  * prose that is exactly `astryx docs <name>` for a doc that exists. The doc's
- * `{@link generic:<name>}` prints the same command and is checked by doctor's
+ * `{@link}` prints the command that opens the doc and is checked by doctor's
  * link check, so a written command is a pointer nothing checks.
  *
  * @input the docs a package ships, as discoverIntegrationDocs returns them
@@ -111,6 +111,37 @@ export function pointersIn(text) {
 }
 
 /**
+ * Where a string's words start among a file's words, from `from` on. A
+ * one-line string the file holds as a quoted literal is found at that
+ * literal, so a list item that is only `astryx docs theme` is not placed at a
+ * summary or code block that writes the same words.
+ *
+ * @param {string[]} lines the file's lines
+ * @param {{word: string, line: number}[]} file the file's words
+ * @param {string} text
+ * @param {{word: string}[]} words the string's words
+ * @param {number} from
+ * @returns {number}
+ */
+function locateString(lines, file, text, words, from) {
+  /** @type {number[]} */
+  const starts = [];
+  for (let at = locateWords(file, words); at >= 0;) {
+    starts.push(at);
+    at = locateWords(file, words, at + 1);
+  }
+  if (starts.length === 0) return -1;
+  const literals = text.includes('\n')
+    ? []
+    : [`'${text}'`, `"${text}"`, `'${text.replace(/'/g, "\\'")}'`];
+  const quoted = starts.filter(at =>
+    literals.some(literal => lines[file[at].line - 1]?.includes(literal)),
+  );
+  const pool = quoted.length > 0 ? quoted : starts;
+  return pool.find(at => at >= from) ?? pool[0];
+}
+
+/**
  * Each stray pointer in a package's topics.
  *
  * @param {{records: {name: string, path: string}[], guides?: {name: string, ref?: {topicFile?: string}}[], namespaces?: {doc?: {name?: string}}[]}} discovered
@@ -142,8 +173,12 @@ export async function findStrayPointers(discovered) {
     if (!doc) continue;
     /** @type {{word: string, line: number}[]} */
     let source = [];
+    /** @type {string[]} */
+    let lines = [];
     try {
-      source = fileWords(fs.readFileSync(topic.file, 'utf8'));
+      const raw = fs.readFileSync(topic.file, 'utf8');
+      source = fileWords(raw);
+      lines = raw.split('\n');
     } catch {
       // No line numbers; the finding still names the section.
     }
@@ -152,8 +187,7 @@ export async function findStrayPointers(discovered) {
     let cursor = 0;
     for (const {text, section} of linkableStrings(doc)) {
       const words = textWords(text);
-      let index = locateWords(source, words, cursor);
-      if (index < 0) index = locateWords(source, words);
+      const index = locateString(lines, source, text, words, cursor);
       if (index >= 0) cursor = index + words.length;
       for (const match of text.matchAll(POINTER)) {
         const target = match[1];
@@ -188,7 +222,7 @@ export async function findStrayPointers(discovered) {
           link,
           message:
             `"${topic.name}"${where ? ` (${where})` : ''} points at a doc with the written command \`${command}\`. ` +
-            `Replace \`${command}\`, code ticks included, with ${link}: the CLI prints the same command, and doctor checks the link.`,
+            `Replace \`${command}\`, code ticks included, with ${link}: the CLI prints the command that opens the doc, and doctor checks the link.`,
         });
       }
     }

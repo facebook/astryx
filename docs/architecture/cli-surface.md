@@ -206,11 +206,13 @@ and remains available through explicit Core package selection.
   reporting each as an error from the same findings the default run reports
   (INV32). An item a comparison lists as unchecked,
   such as a prop type it cannot read, does not fail `--strict`. `--strict` also
-  fails on two exact doc faults the `docs` check finds in prose (DEC-8): a
+  fails on three doc faults the `docs` check finds in prose (DEC-8): a
   copied passage, where two topics repeat 10 or more words word for word (a
   run of mostly function words, or one that three or more topics share, is not
-  a copy), and fluff, a listed padding phrase or a topic whose share of content
-  words is under the published floor. Its exit codes and JSON shape are a compatibility
+  a copy); fluff, a listed padding phrase or a topic whose share of content
+  words is under the published floor; and a stray pointer, a code span that is
+  exactly `astryx docs <name>` for a doc that exists, where a `{@link}` to that
+  doc would be checked. Its exit codes and JSON shape are a compatibility
   contract for the builds that run it, from the first stable release that
   ships `integration check`: from then on, a new check, or a new failure code,
   MAY join it only in a minor release that names the addition, and a change
@@ -733,7 +735,7 @@ checked, which `--strict` does not fail. The one exception is the doc-quality
 findings of DEC-8.
 Rejected: reporting a doubtful item as a warning (`--strict` fails it).
 
-### DEC-8 — The strict check fails on copied passages and fluff in docs
+### DEC-8 — The strict check fails on copied passages, fluff and stray pointers in docs
 
 **Decider:** `josephfarina`, `2026-10-20`
 
@@ -746,7 +748,11 @@ topics share) and a listed padding phrase (outside code and quotes) are exact
 matches. The density floor is a threshold, not a contradiction. The phrase
 list and the floor are published in the check's docs, and every finding
 names the phrase, or the measured density and the floor, so its fix is
-mechanical. Each is a warning, so `integration check --strict` fails on it and
+mechanical. A stray pointer (a code span in prose that is exactly
+`astryx docs <name>` for a doc that exists) is exact as well: the `{@link}`
+that replaces it prints the command that opens the doc, and doctor's link
+check then fails it when the doc goes away. A command with more words, or one
+in a code block, is a walkthrough, not a pointer. Each is a warning, so `integration check --strict` fails on it and
 an agent that runs the build fixes it, while `doctor integration docs` keeps
 exit 0. `integration check` first ships with these rules, so no build that
 passed before can newly fail.
@@ -794,7 +800,7 @@ the destination.
 | INV32     | `test/cli-strict-guard.test.mjs` lists every command offering `--strict` and every command whose exit depends on warnings; `api/integration/check/check.test.mjs` compares a strict run with the default run       | A second command offers `--strict`, a command exits 1 on a warning alone without `--strict`, or a strict run reports a finding the default run does not or outside the command's issue format. |
 | INV33     | `foundation/discovery/prop-drift.test.mjs`, `foundation/discovery/type-text.test.mjs`, `clients/cli/commands/doctor-integration.test.mjs`, `test/core-prop-docs.test.mjs` | A removed or renamed prop or a changed union passes unreported, a missing compiler reads as a pass, or a table that leaves out `ref`, `key`, `xstyle`, `className`, `style`, `data-testid`, or an `@internal` prop draws a warning. |
 | INV34     | `foundation/discovery/doc-types.test.mjs`, `clients/cli/commands/doctor-integration.test.mjs`, `test/core-doc-types.test.mjs` | An unknown, missing, or mistyped field passes unreported, or a missing compiler reads as a pass. |
-| INV35     | `api/integration/check/check.test.mjs`, `clients/cli/commands/integration-check.test.mjs`, `test/integration-check-failures.test.mjs`, `api/search/search.integration-check.test.mjs`, `foundation/discovery/prop-drift.test.mjs`, `foundation/discovery/type-match.test.mjs`, `foundation/discovery/doc-types.test.mjs`, `api/integration/authoring-checks.test.mjs` | The default exit differs from a check's own, a warning or a skipped comparison passes `--strict`, text and JSON exit differently, a new failing finding is added without the list changing, a search for ci does not find the command first, a finding is reported on a doc the code does not contradict (for a type, one TypeScript accepts), or a copied passage or a fluff finding passes `--strict`, or a function-word run or shared boilerplate is reported as a copy. |
+| INV35     | `api/integration/check/check.test.mjs`, `clients/cli/commands/integration-check.test.mjs`, `test/integration-check-failures.test.mjs`, `api/search/search.integration-check.test.mjs`, `foundation/discovery/prop-drift.test.mjs`, `foundation/discovery/type-match.test.mjs`, `foundation/discovery/doc-types.test.mjs`, `api/integration/authoring-checks.test.mjs`, `foundation/discovery/stray-pointers.test.mjs` | The default exit differs from a check's own, a warning or a skipped comparison passes `--strict`, text and JSON exit differently, a new failing finding is added without the list changing, a search for ci does not find the command first, a finding is reported on a doc the code does not contradict (for a type, one TypeScript accepts), or a copied passage or a fluff finding passes `--strict`, or a function-word run or shared boilerplate is reported as a copy. |
 | INV36 | `api/gap-report/gap-report.test.mjs`, `clients/cli/commands/gap-report.test.mjs` | A run without `--to` reaches an `issuesUrl` the handlers did not choose, `--to` runs a handler or files on GitHub without `--confirm-public`, an unknown `--to` sends anything, or the destinations list or its line telling the agent to ask the person is missing while a destination exists. |
 | INV37 | `api/integration/validate-integration.test.mjs`, `api/integration/validate-integration-fixes.test.mjs`, `api/integration/pack-check.test.mjs` | A top-level source with no doc passes `--strict` (a dotted template id such as `landing.page` included), or a test, spec or story file or a subfolder helper is flagged. |
 
