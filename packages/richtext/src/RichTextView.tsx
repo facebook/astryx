@@ -39,6 +39,7 @@ import {TableScrollRegionPlugin} from './TableScrollRegionPlugin';
 import {TableColumnFloorPlugin} from './TableColumnFloorPlugin';
 import {CodeBlockHeaderPlugin} from './CodeBlockHeaderPlugin';
 import {CodeSyntaxPlugin} from './CodeSyntaxPlugin';
+import {BlockDirectionPlugin} from './BlockDirectionPlugin';
 import {MarkdownExtensionsPlugin} from './MarkdownExtensionsPlugin';
 import type {RichTextMarkdownExtension} from './markdownExtensions';
 import {TaskCheckboxPlugin} from './TaskCheckboxPlugin';
@@ -325,6 +326,7 @@ export function RichTextView({
             in tab order. */}
         <CodeBlockHeaderPlugin />
         <CodeSyntaxPlugin />
+        <BlockDirectionPlugin />
         {markdownExtensions != null && markdownExtensions.length > 0 ? (
           <MarkdownExtensionsPlugin
             extensions={markdownExtensions}

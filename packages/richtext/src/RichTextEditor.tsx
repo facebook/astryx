@@ -74,6 +74,7 @@ import {TextSemanticsExtension} from './textSemantics';
 import {TableColumnFloorPlugin} from './TableColumnFloorPlugin';
 import {CodeBlockHeaderPlugin} from './CodeBlockHeaderPlugin';
 import {CodeSyntaxPlugin} from './CodeSyntaxPlugin';
+import {BlockDirectionPlugin} from './BlockDirectionPlugin';
 import {MarkdownExtensionsPlugin} from './MarkdownExtensionsPlugin';
 import type {RichTextMarkdownExtension} from './markdownExtensions';
 import {TaskCheckboxPlugin} from './TaskCheckboxPlugin';
@@ -692,6 +693,7 @@ export const RichTextEditor = function RichTextEditor({
               />
               <HistoryPlugin />
               <ListPlugin />
+              <BlockDirectionPlugin />
               <TaskCheckboxPlugin isReadOnly={isReadOnly || isDisabled} />
               <LinkPlugin />
               {/* Tab keeps its editor meaning inside a table (indent, and
