@@ -376,9 +376,12 @@ function projectCore(project) {
   for (const field of OWN_DEPENDENCY_FIELDS) {
     const spec = manifest?.pkg?.[field]?.['@astryxdesign/core'];
     if (typeof spec !== 'string') continue;
-    const exact = spec.trim().replace(/^=\s*/u, '');
+    // A space after an operator (`~ 0.6.8`, `>= 0.6.8 < 0.7.0`) is allowed by
+    // node-semver; join each operator to its version before reading the spec.
+    const range = spec.trim().replace(/([<>]=?|=|\^|~)\s+/gu, '$1');
+    const exact = range.replace(/^=/u, '');
     if (isValidSemver(exact)) return {version: exact};
-    return isSemverRange(spec) ? {range: spec.trim()} : {};
+    return isSemverRange(range) ? {range} : {};
   }
   return null;
 }
