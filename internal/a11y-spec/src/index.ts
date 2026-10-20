@@ -172,3 +172,4 @@ export {
   type LinkCurrentToken,
   type LinkStateFacts,
 } from './patterns/link';
+export {TOOLBAR_PATTERN, type ToolbarStateFacts} from './patterns/toolbar';

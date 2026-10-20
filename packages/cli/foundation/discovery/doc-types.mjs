@@ -41,6 +41,7 @@ import * as path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {
   resolveProjectTypeScript,
+  TYPESCRIPT_FIX,
   unusableTypeScriptReason,
 } from './project-typescript.mjs';
 
@@ -91,8 +92,7 @@ import {
  */
 
 /** The line both surfaces print when the compiler is missing. */
-export const DOC_TYPES_TYPESCRIPT_MISSING_REASON =
-  'TypeScript is not installed in this project, so docs were not checked against the authoring types. Install typescript and run this check again.';
+export const DOC_TYPES_TYPESCRIPT_MISSING_REASON = `TypeScript is not installed in this project, so docs were not checked against the authoring types. ${TYPESCRIPT_FIX}`;
 
 const AUTHORING = '@astryxdesign/cli/authoring';
 const AUTHORING_TYPES = path.resolve(
@@ -933,7 +933,7 @@ export async function checkDocTypes(files, options) {
   if (major < needMajor || (major === needMajor && minor < needMinor)) {
     return {
       status: 'skipped',
-      reason: `TypeScript ${version} cannot check ${hasJs ? 'a JavaScript doc' : 'a doc'} against its type (that needs TypeScript ${needMajor}.${needMinor} or later), so docs were not checked. Upgrade typescript and run this check again.`,
+      reason: `TypeScript ${version} cannot check ${hasJs ? 'a JavaScript doc' : 'a doc'} against its type (that needs TypeScript ${needMajor}.${needMinor} or later), so docs were not checked. ${TYPESCRIPT_FIX}`,
       docs: 0,
       findings: [],
       unchecked: [],

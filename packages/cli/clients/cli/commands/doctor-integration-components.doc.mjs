@@ -20,7 +20,9 @@ export const doc = {
     'Core component is an error. In a package without that range they are warnings, ' +
     'with a warning for each such component, naming the range to declare. ' +
     "Then it compares each component doc's props with the component's TypeScript " +
-    "props, using the project's own `typescript`, and warns about a documented prop " +
+    "props, using the project's own `typescript` (or, where `typescript` is missing or " +
+    'has no JavaScript compiler API, as TypeScript 7 does, the `@typescript/typescript6` ' +
+    'it installs), and warns about a documented prop ' +
     'the code lacks, a prop the package declares that the doc omits, a wrong ' +
     '`required`, and a type that does not match where both sides read exactly ' +
     '(it lists every other documented type as not compared, with the reason). ' +

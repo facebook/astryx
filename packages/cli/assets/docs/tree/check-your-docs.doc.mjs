@@ -120,7 +120,7 @@ fix:      Remove \`summary\`: SingleComponentDoc has no field \`summary\`.`,
           items: [
             "The folder decides the type: `ComponentDoc` in your components root, `IntegrationTemplateDoc` in your templates root, `ThemeDoc` in your themes root, and in your docs root the type the doc's `type` names. Keep the `@type` comment above each doc's export too, so your editor shows the same problems as you type.",
             'Every finding is a warning, so the exit code stays 0. With `--json`, they are in `data.docTypes.findings`.',
-            'It uses the `typescript` your package installs. Without it, it prints `[skip] Docs not type-checked` and the reason.',
+            'It uses the `typescript` your package installs. Where `typescript` is missing or has no JavaScript compiler API, as TypeScript 7 does, it uses `@typescript/typescript6`, the TypeScript 6 API package, if your package installs it. Without either, it prints `[skip] Docs not type-checked` and the reason.',
             'Every field of every doc type is in `astryx docs authoring`.',
           ],
         },

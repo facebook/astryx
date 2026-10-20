@@ -47,6 +47,7 @@ import {loadComponentDoc} from './component-loader.mjs';
 import {readPackageTsconfig} from './package-tsconfig.mjs';
 import {
   resolveProjectTypeScript,
+  TYPESCRIPT_FIX,
   unusableTypeScriptReason,
 } from './project-typescript.mjs';
 import {judgeType} from './type-match.mjs';
@@ -158,8 +159,7 @@ const outside = (name, code) =>
 const HOOK_NAME = /^use[A-Z0-9]/;
 
 /** The line both surfaces print when the compiler is missing. */
-export const TYPESCRIPT_MISSING_REASON =
-  'TypeScript is not installed in this project, so documented props were not compared with the code. Install typescript and run this check again.';
+export const TYPESCRIPT_MISSING_REASON = `TypeScript is not installed in this project, so documented props were not compared with the code. ${TYPESCRIPT_FIX}`;
 
 /**
  * @template T

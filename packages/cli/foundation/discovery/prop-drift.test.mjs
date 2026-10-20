@@ -59,6 +59,37 @@ function withTypeScript() {
 }
 
 /**
+ * TypeScript 7 (no JavaScript compiler API) with the TypeScript 6 API package
+ * beside it, which re-exports a real TypeScript.
+ */
+function withTypeScript7AndItsTypeScript6Api() {
+  const ts7 = path.join(pkg, 'node_modules', 'typescript');
+  fs.mkdirSync(ts7, {recursive: true});
+  fs.writeFileSync(
+    path.join(ts7, 'package.json'),
+    JSON.stringify({
+      name: 'typescript',
+      version: '7.0.2',
+      exports: {'./package.json': './package.json'},
+    }),
+  );
+  const ts6 = path.join(pkg, 'node_modules', '@typescript', 'typescript6');
+  fs.mkdirSync(ts6, {recursive: true});
+  fs.writeFileSync(
+    path.join(ts6, 'package.json'),
+    JSON.stringify({
+      name: '@typescript/typescript6',
+      version: '6.0.2',
+      main: 'index.js',
+    }),
+  );
+  fs.writeFileSync(
+    path.join(ts6, 'index.js'),
+    `module.exports = require(${JSON.stringify(TYPESCRIPT_DIR)});\n`,
+  );
+}
+
+/**
  * Write `components/<name>.tsx` and its doc; returns its prop table, which
  * also carries the component record (name, docPath, sourcePath).
  * @param {string} name
@@ -176,7 +207,8 @@ describe('comparePropTables', () => {
     expect(await compare([component('Badge', source, doc)])).toMatchObject({
       findings: [],
       typesCompared: 0,
-      typesSkipped: `TypeScript 4.7.4 is older than 4.8, the oldest the type comparison reads`,
+      typesSkipped:
+        'TypeScript 4.7.4 is older than 4.8, the oldest the type comparison reads; install TypeScript 5.0 through 6 (`npm install -D typescript@6`), or on TypeScript 7 add `@typescript/typescript6`, to judge them',
     });
   });
 
@@ -2179,6 +2211,23 @@ export const Hoc = withName((props: {label?: string}) => null);`;
     ]);
   });
 
+  it("compares with TypeScript 7's TypeScript 6 API package when the project has one", async () => {
+    const badge = component(
+      'Badge',
+      'export function Badge(props: {label: string}) { return null; }\n',
+      {props: [prop('label', 'number')]},
+    );
+    withTypeScript7AndItsTypeScript6Api();
+
+    const report = await compare([badge]);
+
+    expect(report.status).toBe('checked');
+    // The comparison ran: the documented `number` is judged against `string`.
+    expect(
+      report.findings.map(f => `${f.component}.${f.prop} ${f.kind}`),
+    ).toContain('Badge.label type_mismatch');
+  });
+
   it('skips with a reason, and compares nothing, without a TypeScript it can use', async () => {
     const badge = component(
       'Badge',
@@ -2196,6 +2245,7 @@ export const Hoc = withName((props: {label?: string}) => null);`;
     });
 
     expect(await compare([badge])).toEqual(skipped(TYPESCRIPT_MISSING_REASON));
+    expect(TYPESCRIPT_MISSING_REASON).toContain('npm install -D typescript@6');
     // TypeScript 7 has no JavaScript compiler API to load.
     const dir = path.join(pkg, 'node_modules', 'typescript');
     fs.mkdirSync(dir, {recursive: true});
@@ -2207,7 +2257,10 @@ export const Hoc = withName((props: {label?: string}) => null);`;
         exports: {'./package.json': './package.json'},
       }),
     );
-    expect(await compare([badge])).toEqual(
+    const report = await compare([badge]);
+    expect(report.reason).toContain('TypeScript 7.0.0');
+    expect(report.reason).toContain('npm install -D @typescript/typescript6');
+    expect(report).toEqual(
       skipped(
         unusableTypeScriptReason(
           '7.0.0',
