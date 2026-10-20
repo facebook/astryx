@@ -1447,8 +1447,8 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
 
   // With the caller's own trigger no Field renders, so a status message has
   // its home in the open panel: under the search row, or above the list
-  // without one. Mounting with the open panel lets FieldStatus announce it
-  // when the person can see it.
+  // without one. It mounts with the open panel, so FieldStatus routes it to
+  // its live region while the panel shows.
   const statusType = status?.type;
   const statusMessage = status?.message;
   const panelStatus = useMemo(

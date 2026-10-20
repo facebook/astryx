@@ -4575,7 +4575,7 @@ describe('MultiSelector renderTrigger — panel status', () => {
     expect(screen.getByRole('listbox', h).contains(message)).toBe(false);
   });
 
-  it('announces an error set while the panel is open, and a warning does not mark the field invalid', async () => {
+  it('routes an error set while the panel is open to the assertive live region, and a warning does not mark the field invalid', async () => {
     const user = userEvent.setup();
     const trigger = (props: MultiSelectorRenderTriggerProps) => (
       <button type="button" {...props}>
