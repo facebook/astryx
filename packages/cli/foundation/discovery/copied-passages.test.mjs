@@ -6,6 +6,7 @@ import {
   PASSAGE_WORDS,
   contentWords,
   passageWords,
+  wordSpans,
   proseWords,
   sharedPassages,
 } from './copied-passages.mjs';
@@ -91,5 +92,24 @@ describe('contentWords', () => {
     expect(contentWords(run, 0, run.length)).toBe(1);
     const fact = words('Name each codemod folder after the Core version.');
     expect(contentWords(fact, 0, fact.length)).toBe(5);
+  });
+});
+
+describe('wordSpans', () => {
+  it('reads the words passageWords reads, with where each sits as written', () => {
+    const text = 'Run `astryx docs`, then {@link generic:theme} *now*.';
+    const spans = wordSpans(text);
+    expect(spans.map(span => span.word)).toEqual(passageWords(text));
+    expect(text.slice(spans[1].start, spans[2].end)).toBe('`astryx docs`');
+  });
+});
+
+describe('passageWords and pointers', () => {
+  it('reads a link and a written docs command as no words', () => {
+    expect(
+      passageWords(
+        'See {@link generic:theme} or `astryx docs theme` (Share it).',
+      ),
+    ).toEqual(['see', 'or', 'share', 'it', '.']);
   });
 });

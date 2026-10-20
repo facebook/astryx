@@ -61,6 +61,7 @@
  * @property {number | null} line the file line where the passage starts in `topic`, or null
  * @property {string} otherTopic the topic that also has it
  * @property {string} owner the topic that should keep the text: a Core topic, or of two package topics the one it fits
+ * @property {string} text the passage as `topic` writes it: what to replace
  * @property {'package' | 'core'} otherOwner whether that topic is the package's own or Core's
  * @property {number} words the length of the longest shared run, in words
  * @property {number} passages how many separate runs the two topics share

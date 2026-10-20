@@ -435,6 +435,7 @@ function printDocConflicts(data) {
           'otherTopic',
           'otherOwner',
           'owner',
+          'text',
           'words',
           'passages',
           'message',

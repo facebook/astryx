@@ -633,8 +633,13 @@ describe('integrationDocConflicts copied passages', () => {
       passages: 1,
     });
     expect(issue.message).toContain(`${PASSAGE.split(' ').length} words`);
+    expect(issue.text).toBe(PASSAGE);
+    expect(issue.message).toContain(`«${PASSAGE}»`);
     expect(issue.message).toContain(
-      'Keep the text in "acme-menus"; in "acme-setup", replace the passage with {@link generic:acme-menus}.',
+      '"acme-menus" keeps it: its name, title or section fits the passage.',
+    );
+    expect(issue.message).toContain(
+      'In "acme-setup", replace that whole passage, from its first word to its last, code ticks included, with {@link generic:acme-menus}.',
     );
   });
 
@@ -654,7 +659,7 @@ describe('integrationDocConflicts copied passages', () => {
     expect(issue.message).toContain(`the Core topic "${coreDoc.name}"`);
     expect(issue.owner).toBe(coreDoc.name);
     expect(issue.message).toContain(
-      `replace the passage with {@link @astryxdesign/cli:generic:${coreDoc.name}}.`,
+      `code ticks included, with {@link @astryxdesign/cli:generic:${coreDoc.name}}.`,
     );
 
     fs.rmSync(path.join(tmpDir, 'docs'), {recursive: true, force: true});

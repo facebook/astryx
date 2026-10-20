@@ -86,6 +86,13 @@ const SKIP_KEYS = new Set([
 const SKIP_BLOCKS = new Set(['code', 'example', 'reference']);
 
 /**
+ * Pointers to other docs, which are not prose: a `{@link …}` and a written
+ * `astryx docs <name>` command. Two topics pointing at the same section say
+ * no fact twice.
+ */
+const POINTERS = /\{@link [^}]*\}|`astryx docs [^`]*`/g;
+
+/**
  * The words a passage is compared by: lowercase, with links and Markdown
  * emphasis set aside.
  *
@@ -95,10 +102,33 @@ const SKIP_BLOCKS = new Set(['code', 'example', 'reference']);
 export function passageWords(text) {
   return text
     .toLowerCase()
-    .replace(/\{@link [^}]*\}/g, ' ')
+    .replace(POINTERS, ' ')
     .replace(/[`*]/g, '')
     .split(/[^a-z0-9'@./-]+/)
     .filter(Boolean);
+}
+
+/**
+ * The words of one string as passageWords reads them, each with where it sits
+ * in the string as written, so a passage can be quoted with its case,
+ * punctuation and code ticks.
+ *
+ * @param {string} text
+ * @returns {{word: string, start: number, end: number}[]}
+ */
+export function wordSpans(text) {
+  const masked = text
+    .toLowerCase()
+    .replace(POINTERS, pointer => ' '.repeat(pointer.length));
+  /** @type {{word: string, start: number, end: number}[]} */
+  const spans = [];
+  for (const match of masked.matchAll(/[a-z0-9'@./`*-]+/g)) {
+    const word = match[0].replace(/[`*]/g, '');
+    if (!word) continue;
+    const start = /** @type {number} */ (match.index);
+    spans.push({word, start, end: start + match[0].length});
+  }
+  return spans;
 }
 
 /**
@@ -372,12 +402,15 @@ export async function findCopiedPassages(discovered) {
    * @param {string | null} section
    */
   const fit = (topic, words, section) => {
+    // A plural matches its singular: a "menus" topic fits a passage on a menu.
+    const stem = (/** @type {string} */ word) =>
+      word.length > 3 && word.endsWith('s') ? word.slice(0, -1) : word;
     const label = new Set(
       passageWords(
         `${topic.name.replace(/-/g, ' ')} ${topic.title ?? ''} ${section ?? ''}`,
-      ),
+      ).map(stem),
     );
-    return new Set(words.filter(word => label.has(word))).size;
+    return new Set(words.map(stem).filter(word => label.has(word))).size;
   };
   /**
    * The file line where a passage starts, found from the prose string it is
@@ -404,6 +437,25 @@ export async function findCopiedPassages(discovered) {
     return at < 0 ? null : at + 1;
   };
   /**
+   * A passage as written: the words of the run, from the string it is in.
+   * @param {GuideWords} topic
+   * @param {number} start
+   * @param {number} length
+   * @returns {string | null}
+   */
+  const writtenText = (topic, start, length) => {
+    if (!topic.doc) return null;
+    const {block} = topic.words[start];
+    const text = proseStrings(topic.doc)[block - 1]?.text;
+    if (!text) return null;
+    let first = start;
+    while (first > 0 && topic.words[first - 1].block === block) first -= 1;
+    const spans = wordSpans(text);
+    const from = spans[start - first];
+    const to = spans[start - first + length - 1];
+    return from && to ? text.slice(from.start, to.end) : null;
+  };
+  /**
    * One entry for a pair: the topic that should keep the text (a Core topic,
    * or of two package topics the one the passage fits), and the exact change
    * for the other.
@@ -425,6 +477,7 @@ export async function findCopiedPassages(discovered) {
     if (runs.length === 0) return;
     let topic = first;
     let owner = second;
+    let why = 'Core keeps the text it shares';
     if (kind === 'package') {
       const words = first.words
         .slice(runs[0].start, runs[0].start + runs[0].length)
@@ -444,12 +497,22 @@ export async function findCopiedPassages(discovered) {
         owner = first;
         runs = otherRuns;
       }
+      why =
+        firstFit === secondFit
+          ? `"${owner.name}" keeps it: neither topic's name, title or section fits it better, so the one whose name sorts first does`
+          : `"${owner.name}" keeps it: its name, title or section fits the passage`;
     }
     const [{start, length}] = runs;
-    const excerpt = topic.words
-      .slice(start, start + Math.min(length, 12))
-      .map(each => each.word)
-      .join(' ');
+    const written =
+      writtenText(topic, start, length) ??
+      topic.words
+        .slice(start, start + length)
+        .map(each => each.word)
+        .join(' ');
+    const excerpt =
+      written.length <= 240
+        ? written
+        : `${written.slice(0, 120)} … ${written.slice(-80)}`;
     const section = topic.words[start].section;
     const line = lineOf(topic, start);
     const where = [
@@ -473,11 +536,12 @@ export async function findCopiedPassages(discovered) {
       otherTopic: owner.name,
       otherOwner: kind,
       owner: owner.name,
+      text: written,
       words: length,
       passages: runs.length,
       message:
-        `"${topic.name}"${where ? ` (${where})` : ''} repeats ${length} words of ${named} word for word${more}: "${excerpt}…". ` +
-        `Keep the text in "${owner.name}"; in "${topic.name}", replace the passage with ${link}.`,
+        `"${topic.name}"${where ? ` (${where})` : ''} repeats ${length} words of ${named} word for word${more}: «${excerpt}». ` +
+        `${why}. In "${topic.name}", replace that whole passage, from its first word to its last, code ticks included, with ${link}.`,
     });
   };
   const own = indexGuides(mine);
