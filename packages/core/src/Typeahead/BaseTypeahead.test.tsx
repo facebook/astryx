@@ -3,7 +3,7 @@
 /**
  * @file BaseTypeahead.test.tsx
  * @input BaseTypeahead public props and a synchronous SearchSource
- * @output Combobox contract tests, including stale source refresh on reopen
+ * @output Combobox contract tests, including stale source refresh on focus and reopen
  * @position Colocated verification for BaseTypeahead
  */
 
@@ -207,6 +207,104 @@ describe('BaseTypeahead', () => {
       screen.queryByRole('option', {name: 'Result', hidden: true}),
     ).not.toBeInTheDocument();
     expect(input).toHaveFocus();
+  });
+
+  it.each([
+    ['a click', 'click'],
+    ['keyboard focus', 'tab'],
+  ] as const)(
+    'bootstraps the replacement source when %s refocuses the input',
+    async (_label, refocus) => {
+      const user = userEvent.setup();
+      const originalSource: SearchSource<SearchableItem> = {
+        search: () => [],
+        bootstrap: () => [resultItem],
+      };
+      const updatedBootstrap = vi.fn(() => [
+        {id: '2', label: 'Updated result'},
+      ]);
+      const updatedSource: SearchSource<SearchableItem> = {
+        search: () => [],
+        bootstrap: updatedBootstrap,
+      };
+      const renderField = (searchSource: SearchSource<SearchableItem>) => (
+        <>
+          <BaseTypeahead
+            searchSource={searchSource}
+            value={null}
+            onChange={() => {}}
+            hasEntriesOnFocus
+          />
+          <button type="button">Sort</button>
+        </>
+      );
+      const {rerender} = render(renderField(originalSource));
+      const input = screen.getByRole('combobox');
+      const sortButton = screen.getByRole('button', {name: 'Sort'});
+
+      await user.click(input);
+      await waitFor(() => {
+        expect(input).toHaveAttribute('aria-expanded', 'true');
+      });
+
+      // Focus moves to another control, which then hands the field a new
+      // source (a sort or filter change rebuilding the caller's source).
+      await user.click(sortButton);
+      expect(input).not.toHaveFocus();
+      expect(input).toHaveAttribute('aria-expanded', 'false');
+      rerender(renderField(updatedSource));
+
+      if (refocus === 'click') {
+        await user.click(input);
+      } else {
+        await user.tab({shift: true});
+      }
+      expect(input).toHaveFocus();
+      await waitFor(() => {
+        expect(input).toHaveAttribute('aria-expanded', 'true');
+        expect(
+          screen.getByRole('option', {name: 'Updated result', hidden: true}),
+        ).toBeInTheDocument();
+      });
+      expect(
+        screen.queryByRole('option', {name: 'Result', hidden: true}),
+      ).not.toBeInTheDocument();
+      expect(updatedBootstrap).toHaveBeenCalledTimes(1);
+    },
+  );
+
+  it('re-shows cached results without bootstrapping again when the source is unchanged', async () => {
+    const user = userEvent.setup();
+    const bootstrap = vi.fn(() => [resultItem]);
+    const source: SearchSource<SearchableItem> = {search: () => [], bootstrap};
+    render(
+      <>
+        <BaseTypeahead
+          searchSource={source}
+          value={null}
+          onChange={() => {}}
+          hasEntriesOnFocus
+        />
+        <button type="button">Sort</button>
+      </>,
+    );
+    const input = screen.getByRole('combobox');
+
+    await user.click(input);
+    await waitFor(() => {
+      expect(input).toHaveAttribute('aria-expanded', 'true');
+    });
+    await user.click(screen.getByRole('button', {name: 'Sort'}));
+    expect(input).toHaveAttribute('aria-expanded', 'false');
+
+    await user.click(input);
+    await waitFor(() => {
+      expect(input).toHaveAttribute('aria-expanded', 'true');
+    });
+    expect(
+      screen.getByRole('option', {name: 'Result', hidden: true}),
+    ).toBeInTheDocument();
+    expect(bootstrap).toHaveBeenCalledTimes(1);
   });
 
   it('counts grapheme clusters when enforcing minQueryLength', async () => {

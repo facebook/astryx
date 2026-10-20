@@ -25,13 +25,13 @@ export const docs = {
           type: 'code',
           lang: 'tsx',
           label: 'Wire the generated module once',
-          code: "import {Theme} from '@astryxdesign/core';\nimport {themes, defaultThemeSlug} from './astryx-themes';\n\nfunction App() {\n  return (\n    <Theme theme={themes[defaultThemeSlug]}>\n      <YourApp />\n    </Theme>\n  );\n}",
+          code: "import {Theme} from '@astryxdesign/core/theme';\nimport {themes, defaultThemeSlug} from './astryx-themes';\n\nfunction App() {\n  return (\n    <Theme theme={themes[defaultThemeSlug]}>\n      <YourApp />\n    </Theme>\n  );\n}",
         },
         {
           type: 'code',
           lang: 'tsx',
           label: 'Switch among added themes',
-          code: "import {useState} from 'react';\nimport {Theme} from '@astryxdesign/core';\nimport {themes, type ThemeSlug} from './astryx-themes';\n\nconst [slug, setSlug] = useState<ThemeSlug>('neutral');\nconst app = <Theme theme={themes[slug]}><YourApp /></Theme>;",
+          code: "import {useState} from 'react';\nimport {Theme} from '@astryxdesign/core/theme';\nimport {themes, type ThemeSlug} from './astryx-themes';\n\nconst [slug, setSlug] = useState<ThemeSlug>('neutral');\nconst app = <Theme theme={themes[slug]}><YourApp /></Theme>;",
         },
         {
           type: 'prose',

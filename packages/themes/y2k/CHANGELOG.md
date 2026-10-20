@@ -1,5 +1,35 @@
 # @xds/theme-y2k
 
+# 0.7.1
+
+#### Fixes
+
+- Stone, Y2K, and Gothic set `CodeBlock`'s diff row slots in their own syntax palettes, so a reader of a diff on those themes gets added and removed rows whose code, line numbers, and `+`/`-` glyphs stay readable: every syntax token keeps at least 4.5:1 on the tinted rows in Stone (light and dark) and Y2K (light and dark), and in Gothic the rows take a deep green and a deep red at the background's own luminance, so every token keeps the contrast it has on the plain background. Line numbers and glyphs on changed rows use each theme's own green and red. The CLI's bundled copies of the three themes (`astryx theme eject`) carry the same palettes. (#7428)
+- A `secondary` Selector, MultiSelector, or ComplexSelector now matches the theme's secondary Button: under butter, chocolate, gothic, stone, and y2k it takes that Button's border, fill, text color, and hover instead of the default borderless neutral fill, so a toolbar mixing secondary buttons and selectors reads as one set of controls. Disabled and read-only triggers keep a still fill on hover, as a disabled Button does, and a Selector or MultiSelector inside an InputGroup keeps the group's neutral fill and edges. The default theme is unchanged, the selector docs now say `secondary` follows the theme's secondary Button, and themes added with the CLI get the same parity. (#7548)
+
+#### Contributors
+
+Thanks to everyone who contributed to this release:
+
+- @cixzhang
+
+---
+
+# 0.7.0
+
+#### Breaking Changes
+
+- matcha's and y2k's spacing steps are rem (`--spacing-2: 0.75rem`), so their gaps and padding follow the reader's root font size like the core scale. Every step is the same pixel value at the default 16px root; a reader with a larger root font size now sees proportionally larger spacing on these themes. The CLI's copies of both theme templates and the annotated theme template's spacing example change the same way. (#7374)
+  Migration: nothing to change to take the new behaviour. To keep fixed pixel spacing on one of these themes, extend it and override the steps in px, which is honoured as written: `defineTheme({name: 'app', extends: matchaTheme, tokens: {'--spacing-2': '12px'}})`.
+
+#### Contributors
+
+Thanks to everyone who contributed to this release:
+
+- @cixzhang
+
+---
+
 # 0.6.8
 
 ---

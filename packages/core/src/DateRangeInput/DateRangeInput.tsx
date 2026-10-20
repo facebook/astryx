@@ -16,7 +16,14 @@
  * - /packages/cli/assets/templates/blocks/components/DateRangeInput/ (showcase blocks)
  */
 
-import {useId, useCallback, useMemo, useOptimistic, useTransition} from 'react';
+import {
+  useId,
+  useCallback,
+  useMemo,
+  useOptimistic,
+  useRef,
+  useTransition,
+} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
   plainDateFromISO,
@@ -68,6 +75,7 @@ import {
 import type {SizeValue} from '../utils/types';
 import {useSize} from '../SizeContext/SizeContext';
 import {useInputStatusIcon} from '../hooks/useInputStatusIcon';
+import {useMergedRefs} from '../hooks/useMergedRefs';
 import {useResolvedRequired} from '../hooks/useResolvedRequired';
 import {themeProps} from '../utils/themeProps';
 import {focusOutlineStyles} from '../utils/focusOutline.stylex';
@@ -624,10 +632,20 @@ export function DateRangeInput({
     [fireChange, popover],
   );
 
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const triggerButtonRef = useMergedRefs<HTMLButtonElement>(triggerRef, ref);
+
   const handleClear = useCallback(
     (e: React.MouseEvent) => {
       e.stopPropagation();
       fireChange(null);
+      // A keyboard activation (detail 0) leaves focus on the clear button,
+      // which unmounts once the range is null and would drop focus to <body>;
+      // hand it to the trigger. A pointer press never focuses the button, so
+      // there is no focus to repair.
+      if (e.detail === 0) {
+        triggerRef.current?.focus();
+      }
     },
     [fireChange],
   );
@@ -713,7 +731,7 @@ export function DateRangeInput({
         </button>
         <button
           {...controlProps}
-          ref={ref}
+          ref={triggerButtonRef}
           id={id}
           type="button"
           onClick={chainEventHandlers(handleToggle, onClickProp)}

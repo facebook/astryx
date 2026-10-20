@@ -5,13 +5,14 @@
 /**
  * @file MultiSelector.tsx
  * @input Uses React, StyleX, usePopover, useTooltip, CheckboxInput, Field, Badge, Icon, InputGroupContext
- * @output Exports MultiSelector component
+ * @output Exports MultiSelector with input, secondary, and ghost trigger variants
  * @position Core implementation; consumed by index.ts
  *
  * SYNC: When modified, update:
  * - /packages/core/src/MultiSelector/MultiSelector.doc.mjs
  * - /packages/core/src/MultiSelector/MultiSelector.test.tsx
  * - /packages/core/src/MultiSelector/index.ts
+ * - /apps/storybook/stories/MultiSelector.stories.tsx
  * - /apps/storybook/stories/InputGroup.stories.tsx
  * - /packages/cli/assets/templates/blocks/components/MultiSelector/ (showcase blocks)
  */
@@ -49,6 +50,7 @@ import type {IndicatorPosition} from '../Indicator';
 import {Badge} from '../Badge';
 import {
   colorVars,
+  focusVars,
   sizeVars,
   spacingVars,
   radiusVars,
@@ -73,7 +75,10 @@ import {
 import {useMultiCombobox} from './hooks';
 import {getInputARIA, isImeKeyEvent, mergeProps} from '../utils';
 import {devWarn, warnOnce} from '../utils/devWarning';
-import {FOCUS_OUTLINE_PARTS} from '../utils/focusOutline.stylex';
+import {
+  getInteractionModality,
+  useInteractionModalityTracking,
+} from '../utils/interactionModality';
 import {useAnnounce} from '../hooks/useAnnounce';
 import {FOCUSABLE_SELECTOR} from '../hooks/focusableSelector';
 import {useAnnounceRenderedText} from '../hooks/useAnnounceRenderedText';
@@ -234,6 +239,31 @@ const styles = stylex.create({
       default: 'scale(1)',
       // A mouse press; under a coarse pointer the touch press model writes
       // `data-astryx-press` instead (see interactionOverlay.stylex.ts).
+      ':active': {
+        default: 'scale(0.98)',
+        '@media (pointer: coarse)': 'scale(1)',
+      },
+      '[data-astryx-press="on"]': 'scale(0.98)',
+    },
+  },
+  // Keep the input-family width contract while reusing ghost's borderless paint
+  // and the neutral resting fill used by secondary buttons.
+  triggerSecondary: {
+    borderWidth: 0,
+    backgroundColor: colorVars['--color-neutral'],
+    boxShadow: {
+      default: 'none',
+      ':hover:not(:focus-within):where(:not(:disabled,[aria-disabled="true"]))':
+        {
+          '@media (hover: hover)': 'none',
+        },
+      ':focus-within': 'none',
+    },
+    fontWeight: fontWeightVars['--font-weight-medium'],
+    transitionProperty:
+      'background-image, background-color, color, opacity, transform',
+    transform: {
+      default: 'scale(1)',
       ':active': {
         default: 'scale(0.98)',
         '@media (pointer: coarse)': 'scale(1)',
@@ -410,11 +440,15 @@ const styles = stylex.create({
     flexShrink: 0,
     borderRadius: radiusVars['--radius-element'],
   },
+  // The standard ring, from the focus tokens themselves: inside
+  // `stylex.create` StyleX resolves an imported `defineVars` group, and a
+  // plain object such as `FOCUS_OUTLINE_PARTS` compiles to variables nothing
+  // defines.
   actionCellActive: {
-    outlineWidth: FOCUS_OUTLINE_PARTS.outlineWidth,
-    outlineStyle: FOCUS_OUTLINE_PARTS.outlineStyle,
-    outlineColor: FOCUS_OUTLINE_PARTS.outlineColor,
-    outlineOffset: FOCUS_OUTLINE_PARTS.outlineOffset,
+    outlineWidth: focusVars['--focus-outline-width'],
+    outlineStyle: focusVars['--focus-outline-style'],
+    outlineColor: focusVars['--focus-outline-color'],
+    outlineOffset: focusVars['--focus-outline-offset'],
   },
 
   // Empty state
@@ -494,7 +528,7 @@ const STATUS_BUTTON_LABEL_KEY: Record<MultiSelectorStatusType, string> = {
 
 export type MultiSelectorSize = 'sm' | 'md' | 'lg';
 
-export type MultiSelectorVariant = 'input' | 'ghost';
+export type MultiSelectorVariant = 'input' | 'secondary' | 'ghost';
 
 export type MultiSelectorPresentation = AdaptivePresentation;
 
@@ -736,7 +770,9 @@ export interface MultiSelectorProps<
   /**
    * Visual style of the selector trigger.
    * - 'input': bordered input-style trigger for forms
-   * - 'ghost': borderless trigger matching ghost buttons, for toolbars
+   * - 'secondary': matches the theme's secondary buttons (borderless and
+   *   neutral-filled by default)
+   * - 'ghost': borderless, transparent trigger matching ghost buttons
    * @default 'input'
    */
   variant?: MultiSelectorVariant;
@@ -750,7 +786,7 @@ export interface MultiSelectorProps<
    * - 'attached': message overlaps directly below the bordered input (input variant only)
    * - 'detached': message floats below as a separate element with spacing
    * - 'tooltip': message is exposed from the on-field status icon
-   * @default 'attached' for input selectors; 'detached' for ghost selectors
+   * @default 'attached' for input selectors; 'detached' for secondary and ghost selectors
    */
   statusVariant?: FieldStatusVariant;
 
@@ -1114,7 +1150,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
     emptySearchTextFromProps ?? t('@astryx.multiSelector.emptySearchResults');
   const size = useSize(sizeProp, 'md');
   const effectiveStatusVariant =
-    variant === 'ghost' && statusVariant === 'attached'
+    variant !== 'input' && statusVariant === 'attached'
       ? 'detached'
       : statusVariant;
   const isEffectivelyReadOnly = isReadOnly && !isDisabled;
@@ -1569,6 +1605,14 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
     (e: React.MouseEvent) => {
       e.stopPropagation(); // Don't open dropdown
       clearValues();
+      // A keyboard activation (detail 0) leaves focus on the clear button,
+      // which unmounts once the value is empty and would drop focus to <body>;
+      // hand it to the trigger. A pointer press never focuses the button, so
+      // there is no focus to repair, and moving it would pull focus out of an
+      // open list's search input.
+      if (e.detail === 0) {
+        triggerRef.current?.focus();
+      }
     },
     [clearValues],
   );
@@ -1716,8 +1760,8 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
     getActionCellId,
     activeDescendantId,
     onTriggerClick,
-    onKeyDown,
-    onItemMouseEnter,
+    onKeyDown: onComboboxKeyDown,
+    onItemMouseEnter: onComboboxItemMouseEnter,
   } = useMultiCombobox({
     selectableItems: sortedItems,
     isDisabled: isDisabled || isEffectivelyReadOnly,
@@ -1747,6 +1791,29 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
       [getActionCellIdForActivate],
     ),
   });
+
+  // A hover moves the highlight too, but the focus ring follows the shared
+  // interaction modality (architecture:interaction-modality INV1): it is read
+  // whenever a key or the pointer moves the highlight, so an action cell
+  // highlighted after pointer input keeps the hover treatment and no ring.
+  useInteractionModalityTracking();
+  const [isKeyboardHighlight, setIsKeyboardHighlight] = useState(
+    () => getInteractionModality() === 'keyboard',
+  );
+  const onKeyDown = useCallback(
+    (event: React.KeyboardEvent<HTMLElement>) => {
+      onComboboxKeyDown(event);
+      setIsKeyboardHighlight(getInteractionModality() === 'keyboard');
+    },
+    [onComboboxKeyDown],
+  );
+  const onItemMouseEnter = useCallback(
+    (...args: Parameters<typeof onComboboxItemMouseEnter>) => {
+      onComboboxItemMouseEnter(...args);
+      setIsKeyboardHighlight(getInteractionModality() === 'keyboard');
+    },
+    [onComboboxItemMouseEnter],
+  );
 
   // The trigger button owns its click so a consumer `onClick`, which lands on
   // the button, composes after the built-in toggle. A press elsewhere in the
@@ -2081,6 +2148,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
                   styles.actionCell,
                   isHighlighted &&
                     highlightedCell === 'action' &&
+                    isKeyboardHighlight &&
                     styles.actionCellActive,
                 )}>
                 {isSelectAll || isCreate ? null : item.action}
@@ -2095,6 +2163,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
     [
       isGrid,
       highlightedCell,
+      isKeyboardHighlight,
       getActionCellId,
       renderOption,
       indicatorPosition,
@@ -2465,25 +2534,28 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
             inputWrapperStyles.base,
             styles.triggerContainer,
             sizeStyles[size],
+            variant === 'secondary' && styles.triggerSecondary,
             variant === 'ghost' && styles.triggerGhost,
-            variant === 'ghost' && interactionOverlayStyles.backgroundImage,
-            variant === 'ghost' && focusOutlineStyles.focusWithin,
+            variant !== 'input' && interactionOverlayStyles.backgroundImage,
+            variant !== 'input' && focusOutlineStyles.focusWithin,
             surface.isTriggerFocusRingSuppressed &&
               selectorPresentationStyles.pointerRestoredFocus,
             isDisabled && inputWrapperStyles.disabled,
             isEffectivelyReadOnly && styles.triggerReadOnly,
-            variant === 'ghost' && isDisabled && styles.triggerGhostDisabled,
-            variant === 'ghost' &&
+            variant !== 'input' && isDisabled && styles.triggerGhostDisabled,
+            variant !== 'input' &&
               isEffectivelyReadOnly &&
               styles.triggerGhostReadOnly,
             optimisticValue.length === 0 && styles.triggerPlaceholder,
-            variant !== 'ghost' &&
+            variant === 'input' &&
               status &&
               inputStatusBorderStyles[status.type],
-            variant !== 'ghost' &&
+            variant === 'input' &&
               status &&
               !isDisabled &&
               inputStatusHoverShadowStyles[status.type],
+            // Grouped secondary triggers keep their neutral fill but take the
+            // group's row height, connected edge radii, and focus stacking.
             variant !== 'ghost' && inputGroup && groupStyles.inGroup,
             controlXstyle,
           ),

@@ -4,7 +4,7 @@
 
 /**
  * @file BottomSheet.tsx
- * @input Uses React, StyleX, core hooks, shared layer dismissal, named BottomSheetPanel, BottomSheetSwitcherContext
+ * @input Uses React, StyleX, core hooks, shared layer dismissal, the shared interaction modality, named BottomSheetPanel, BottomSheetSwitcherContext
  * @output Exports BottomSheet component and BottomSheetProps
  * @position Public BottomSheet router plus private standalone/switcher hosts
  *
@@ -46,6 +46,8 @@ import {colorVars, durationVars, easeVars} from '../theme/tokens.stylex';
 import {useDevWarning, useScrollLock} from '../hooks';
 import {LayerDepthProvider} from '../Layer/LayerDepthContext';
 import {useLayerDismissal} from '../Layer/useLayerDismissal';
+import {focusForLastInput} from '../utils/focusReturn';
+import {useInteractionModalityTracking} from '../utils/interactionModality';
 import {
   BottomSheetPanel,
   type BottomSheetPanelMotion,
@@ -320,12 +322,20 @@ function StandaloneBottomSheet({
         dialog.close();
       }
       setIsPresented(false);
-      (finalFocusRef?.current ?? triggerRef.current)?.focus();
+      // The returned focus shows the focus-visible ring only after keyboard
+      // input (`architecture:interaction-modality` INV1). The native close
+      // may already have restored focus to the target with a ring; the helper
+      // clears it first.
+      const returnTarget = finalFocusRef?.current ?? triggerRef.current;
+      if (returnTarget != null) {
+        focusForLastInput(returnTarget);
+      }
       triggerRef.current = null;
     },
     [finalFocusRef, isOpen],
   );
 
+  useInteractionModalityTracking();
   useScrollLock(shouldPresent && hasScrim);
   useDevWarning(
     'BottomSheet',

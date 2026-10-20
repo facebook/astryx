@@ -161,6 +161,24 @@ export async function resolveComponentReplacements(
       typeof name === 'string' ? byTarget.get(name) : undefined,
   };
 
+  // A first read under file names alone settles the common case, no
+  // declaration anywhere, without reading the names docs document.
+  let declares = false;
+  for (const integration of loadedIntegrations) {
+    if (declares || !integration?.components || integration.__loadError)
+      continue;
+    try {
+      const {components} = await discoverValidIntegrationComponents(
+        integration,
+        {documentedNames: false},
+      );
+      declares = components.some(record => record.replaces !== undefined);
+    } catch {
+      // Read again below, where a root that cannot be read is skipped.
+    }
+  }
+  if (!declares) return result;
+
   /** @type {Declaration[]} */
   const declarations = [];
   /** @type {Array<{name: string, package: string}>} */

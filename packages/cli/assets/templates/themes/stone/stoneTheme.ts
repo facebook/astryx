@@ -56,8 +56,59 @@ const stoneSyntax = defineSyntaxTheme({
     property: ['#4e6357', '#94b2a0'], // Teal T40 / T70
     punctuation: ['#5e5e5e', '#ababb0'], // Stone Neutral T40 / T70
     background: ['#f3f3f5', '#171719'],
+    // Diff rows: the muted green/red at 25% in light and 20% in dark keep
+    // every token at or above 4.5:1 on the tint; the markers are the tinted
+    // text tokens (8.1:1 light, 8.8:1 dark on their tints).
+    added: ['#d0e9ce40', '#b4cdb233'],
+    removed: ['#f9dcd740', '#dcc0bc33'],
+    'added-marker': ['#374c36', '#d0e9ce'],
+    'removed-marker': ['#58413e', '#f9dcd7'],
   },
 });
+
+/**
+ * The secondary Button treatment. Selector, MultiSelector, and ComplexSelector
+ * reuse it for their `secondary` trigger so every secondary control in this
+ * theme matches (AST-079 FR2).
+ */
+const SECONDARY_BUTTON = {
+  backgroundColor: 'transparent',
+  borderWidth: '1.5px',
+  borderStyle: 'solid',
+  borderColor: 'var(--color-border-emphasized)',
+  ':hover': {
+    backgroundColor: 'var(--color-neutral)',
+  },
+} as const;
+
+/**
+ * The secondary Button treatment on Selector and MultiSelector triggers
+ * (AST-079 FR2). Inside an InputGroup a trigger keeps the neutral fill and the
+ * group's edges instead (FR6). The hover stays off disabled and read-only
+ * triggers, which carry `data-disabled` and `data-readonly`.
+ */
+const SECONDARY_SELECTOR = {
+  ':not(.astryx-input-group *)': {
+    backgroundColor: SECONDARY_BUTTON.backgroundColor,
+    borderWidth: SECONDARY_BUTTON.borderWidth,
+    borderStyle: SECONDARY_BUTTON.borderStyle,
+    borderColor: SECONDARY_BUTTON.borderColor,
+  },
+  ':hover:not([data-disabled], [data-readonly], .astryx-input-group *)':
+    SECONDARY_BUTTON[':hover'],
+} as const;
+
+/**
+ * The secondary Button treatment on ComplexSelector triggers (AST-079 FR2), with
+ * the hover kept off a disabled trigger, whose inner button is disabled.
+ */
+const SECONDARY_COMPLEX_SELECTOR = {
+  backgroundColor: SECONDARY_BUTTON.backgroundColor,
+  borderWidth: SECONDARY_BUTTON.borderWidth,
+  borderStyle: SECONDARY_BUTTON.borderStyle,
+  borderColor: SECONDARY_BUTTON.borderColor,
+  ':hover:not(:has(> :disabled))': SECONDARY_BUTTON[':hover'],
+} as const;
 
 export const stoneTheme = defineTheme({
   name: 'stone',
@@ -262,15 +313,7 @@ export const stoneTheme = defineTheme({
       base: {
         borderRadius: 'var(--radius-full)',
       },
-      'variant:secondary': {
-        backgroundColor: 'transparent',
-        borderWidth: '1.5px',
-        borderStyle: 'solid',
-        borderColor: 'var(--color-border-emphasized)',
-        ':hover': {
-          backgroundColor: 'var(--color-neutral)',
-        },
-      },
+      'variant:secondary': SECONDARY_BUTTON,
       'variant:destructive': {
         backgroundColor: 'var(--color-background-red)',
         color: 'var(--color-text-red)',
@@ -389,8 +432,12 @@ export const stoneTheme = defineTheme({
     'number-input': INPUT_STATUS_VARS,
     'date-input': INPUT_STATUS_VARS,
     'time-input': INPUT_STATUS_VARS,
-    selector: INPUT_STATUS_VARS,
-    'multi-selector': INPUT_STATUS_VARS,
+    selector: {...INPUT_STATUS_VARS, 'variant:secondary': SECONDARY_SELECTOR},
+    'multi-selector': {
+      ...INPUT_STATUS_VARS,
+      'variant:secondary': SECONDARY_SELECTOR,
+    },
+    'complex-selector': {'variant:secondary': SECONDARY_COMPLEX_SELECTOR},
     typeahead: INPUT_STATUS_VARS,
     tokenizer: INPUT_STATUS_VARS,
 

@@ -34,6 +34,30 @@ const chocolateSyntax = defineSyntaxTheme({
   },
 });
 
+/**
+ * The secondary Button treatment. Selector, MultiSelector, and ComplexSelector
+ * reuse it for their `secondary` trigger so every secondary control in this
+ * theme matches (AST-079 FR2).
+ */
+const SECONDARY_BUTTON = {
+  borderWidth: '1px',
+  borderStyle: 'solid',
+  borderColor: 'var(--color-border-emphasized)',
+} as const;
+
+/**
+ * The secondary Button treatment on Selector and MultiSelector triggers
+ * (AST-079 FR2). Inside an InputGroup a trigger keeps the neutral fill and the
+ * group's edges instead (FR6).
+ */
+const SECONDARY_SELECTOR = {
+  ':not(.astryx-input-group *)': {
+    borderWidth: SECONDARY_BUTTON.borderWidth,
+    borderStyle: SECONDARY_BUTTON.borderStyle,
+    borderColor: SECONDARY_BUTTON.borderColor,
+  },
+} as const;
+
 export const chocolateTheme = defineTheme({
   name: 'chocolate',
 
@@ -219,12 +243,12 @@ export const chocolateTheme = defineTheme({
       base: {
         borderRadius: 'var(--radius-full)',
       },
-      'variant:secondary': {
-        borderWidth: '1px',
-        borderStyle: 'solid',
-        borderColor: 'var(--color-border-emphasized)',
-      },
+      'variant:secondary': SECONDARY_BUTTON,
     },
+    // Secondary selector triggers match the secondary Button (AST-079 FR2).
+    selector: {'variant:secondary': SECONDARY_SELECTOR},
+    'multi-selector': {'variant:secondary': SECONDARY_SELECTOR},
+    'complex-selector': {'variant:secondary': SECONDARY_BUTTON},
 
     card: {
       base: {

@@ -9,7 +9,7 @@
  * SYNC: When Dialog.tsx changes, update tests to match new behavior
  */
 
-import {useState} from 'react';
+import {useState, type SyntheticEvent} from 'react';
 import {readFileSync} from 'node:fs';
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import type {MockInstance} from 'vitest';
@@ -110,6 +110,52 @@ beforeEach(() => {
 });
 
 describe('Dialog', () => {
+  it('restores focus to the opener when content mounts in the open commit', () => {
+    function Harness({
+      open,
+      onOpenChange,
+    }: {
+      open: boolean;
+      onOpenChange: (v: boolean) => void;
+    }) {
+      return (
+        <>
+          <button type="button" onClick={() => onOpenChange(true)}>
+            Open
+          </button>
+          <Dialog isOpen={open} onOpenChange={onOpenChange}>
+            {open ? (
+              <div>
+                <DialogHeader title="Review" />
+                <p>Body</p>
+              </div>
+            ) : null}
+          </Dialog>
+        </>
+      );
+    }
+
+    let open = false;
+    const setOpen = (v: boolean) => {
+      open = v;
+    };
+    const harness = render(<Harness open={open} onOpenChange={setOpen} />);
+    const opener = screen.getByRole('button', {name: 'Open'});
+    opener.focus();
+
+    fireEvent.click(opener);
+    harness.rerender(<Harness open={open} onOpenChange={setOpen} />);
+
+    // The freshly mounted header title is the focused screen reader anchor
+    // while the dialog is open...
+    expect(document.activeElement).toBe(screen.getByText('Review'));
+
+    // ...but closing restores the element that opened the dialog, not the
+    // (now unmounted) title.
+    harness.rerender(<Harness open={false} onOpenChange={setOpen} />);
+    expect(document.activeElement).toBe(opener);
+  });
+
   it('renders when isOpen is true', () => {
     render(
       <Dialog isOpen={true} onOpenChange={() => {}}>
@@ -1028,6 +1074,32 @@ describe('Dialog', () => {
       </Dialog>,
     );
     expect(screen.getByTestId('custom-dialog')).toBeInTheDocument();
+  });
+
+  it('runs backdrop dismissal before a consumer onClick', () => {
+    const callOrder: string[] = [];
+    const onClick = vi.fn((event: SyntheticEvent) => {
+      event.preventDefault();
+      callOrder.push('consumer');
+    });
+    const onOpenChange = vi.fn(() => {
+      callOrder.push('dialog');
+    });
+    render(
+      <Dialog
+        isOpen={true}
+        onOpenChange={onOpenChange}
+        onClick={onClick}
+        data-testid="click-dialog">
+        Content
+      </Dialog>,
+    );
+
+    fireEvent.click(screen.getByTestId('click-dialog'));
+
+    expect(onClick).toHaveBeenCalledTimes(1);
+    expect(onOpenChange).toHaveBeenCalledWith(false);
+    expect(callOrder).toEqual(['dialog', 'consumer']);
   });
 
   it('does not forward native open prop to dialog element', () => {

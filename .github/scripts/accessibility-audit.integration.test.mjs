@@ -24,6 +24,8 @@ const originalLoad = Module._load;
 let requestedUrl = '';
 let reads = 0;
 let selectorResolved = false;
+// The layout-settle step waits two frames before sampling geometry.
+global.requestAnimationFrame = callback => setTimeout(callback, 0);
 
 function scenarioState() {
   const scenario = process.env.A11Y_TEST_SCENARIO;
@@ -55,6 +57,7 @@ function evaluateInFixture(fn, arg) {
       selector === '#storybook-root'
         ? {childElementCount: state.content ? 1 : 0, textContent: ''}
         : null,
+    querySelectorAll: () => [],
   };
   try {
     return fn(arg);
@@ -78,6 +81,7 @@ const page = {
     return {};
   },
   evaluate: async (fn, arg) => evaluateInFixture(fn, arg),
+  waitForTimeout: async () => {},
   close: async () => {},
 };
 const context = {newPage: async () => page, close: async () => {}};

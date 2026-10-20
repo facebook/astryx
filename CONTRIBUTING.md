@@ -650,6 +650,13 @@ This wrapper:
 3. **Captures the contributor(s)** — defaults to your `gh`/git identity, so credit is recorded at authoring time (not reconstructed from the release bot's commit).
 4. **Derives the semver bump from the category** — a `[breaking]` change bumps the minor; `[experimental]` and every other category bump the patch (see below).
 
+Choose `[breaking]` only when a valid consumer of the latest stable release must
+change source or configuration to keep a supported functional contract working,
+or loses a stable public surface. A change only to existing content's appearance,
+spacing, typography, layout styling, or visual default uses `[fix]` or `[feat]`
+even when its pixels change. Its release note names the old and new appearance
+and how to keep the old look when a supported escape exists.
+
 It writes a normal `.changeset/<id>.md` — commit it with your PR. The body looks like:
 
 ```md
@@ -690,12 +697,16 @@ Changeset it adds or edits names that package:
   dependency or peer ranges.
 
 Stories, the sandbox, tests, fixtures, snapshots, spec records, generated
-CHANGELOGs, private and canary-only packages (`lab`, `charts`, `richtext`,
-`vega`), the docsite app, CI, and repository tooling never reach a consumer and
+CHANGELOGs, private and canary-only packages (`lab`, `charts`, `vega`), the
+docsite app, CI, and repository tooling never reach a consumer and
 need no Changeset. The failure names the package and the command to run, for
 example `pnpm changeset:new --packages @astryxdesign/cli --category docs`. Run
 the check locally with
 `node scripts/release/changeset-coverage.mjs pr --base origin/main --explain`.
+
+Translation updates and new languages need no Changeset; changes to English
+source messages or keys still do. Removing a released language import path
+follows the [breaking-change policy](docs/specs/AST-017/spec.md).
 
 The same check compares the CLI's machine-readable ids with the latest
 release: response `type` values, response fields, golden JSON fields, and
@@ -711,10 +722,12 @@ slugs and docs routes, are data and may change.
 
 - **Main declares the next version.** The fixed group's version in main's
   `package.json` files is the next planned release. Before a cut, an owner may
-  raise or lower it while it stays strictly above newest stable. While an
-  untagged cut is active, main may stay equal to that cut or rise, but cannot be
-  lowered below it. After the tag, ordinary PRs must be strictly above stable;
-  trusted merge-back is the only equality exception and publishes no canary.
+  raise or lower it while it stays strictly above newest stable. Required
+  pull-request lint does not compare that declaration with stable or an active
+  cut. The canary publisher publishes only while one plain fixed-group
+  declaration is above newest stable, skips equality, and fails below-stable or
+  split declarations. Trusted merge-back leaves main's declaration untouched;
+  a separate owner change declares the next plan after the release.
 - **0.x: the category states the tier a change needs.** A `[breaking]`
   Changeset declares `minor` and is admitted only while main already declares
   the next minor. `[experimental]` and every other category declare `patch`.

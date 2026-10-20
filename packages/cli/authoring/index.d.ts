@@ -28,6 +28,7 @@ export type {HookDoc} from './doctypes/types.js'; //         useToast.doc.mjs
 export type {FunctionDoc} from './doctypes/types.js'; //     search.doc.mjs (hook | api)
 export type {ReferenceDoc} from './doctypes/types.js'; //    theming.doc.mjs
 export type {TemplateDoc} from './doctypes/types.js'; //     Foo.doc.mjs
+export type {IntegrationTemplateDoc} from './doctypes/types.js'; // an integration's Foo.doc.mjs
 export type {SchemaDoc} from './doctypes/types.js'; //       config.doc.mjs (object shape)
 export type {CommandDoc} from './doctypes/types.js'; //      search.doc.mjs (CLI command)
 export type {EnumDoc} from './doctypes/types.js'; //         error-codes.doc.mjs (vocabulary)

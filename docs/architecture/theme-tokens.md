@@ -149,7 +149,20 @@ does not silently change authoring, runtime, compiler, or component contracts.
 - `packages/core/src/theme/tokens.stylex.ts` owns core token names, defaults, and
   StyleX variables.
 - `packages/core/src/theme/domainTokens/` and
-  `packages/core/src/theme/syntax/tokens.ts` own domain vocabularies.
+  `packages/core/src/theme/syntax/tokens.ts` own domain vocabularies. The
+  syntax vocabulary is nineteen slots: thirteen token colours, the code
+  background, the three diff row paints, and the two diff marker colours.
+  `--color-syntax-added` and `--color-syntax-removed` default to
+  `--color-success-muted` and `--color-error-muted` at 25% strength
+  (`color-mix` with transparent); `--color-syntax-diff-header` defaults to
+  `--color-background-muted` in the default syntax theme and, in a defined
+  syntax theme that leaves it unset, to `transparent` (the header row sits on
+  that theme's own syntax background with its `punctuation` text); `--color-syntax-added-marker` and
+  `--color-syntax-removed-marker` (the line number and the glyph of a
+  changed row) default to `--color-text-green` and `--color-text-red` in the
+  default syntax theme, and in a defined syntax theme that leaves them unset
+  they take that theme's `--color-syntax-punctuation`. The added and removed
+  row paints keep their defaults in every theme that does not set them.
 - `packages/core/src/theme/defineTheme.ts` aggregates token types/defaults for
   validation and authoring; it does not become a second token source.
 - `packages/core/src/theme/tokens.ts` owns server-safe references and resolution.

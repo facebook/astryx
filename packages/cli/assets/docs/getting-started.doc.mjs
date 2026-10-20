@@ -86,7 +86,7 @@ export const docs = {
           type: 'code',
           lang: 'tsx',
           label: 'App root',
-          code: `import {Theme} from '@astryxdesign/core';
+          code: `import {Theme} from '@astryxdesign/core/theme';
 import {themes, defaultThemeSlug} from './astryx-themes';
 
 <Theme theme={themes[defaultThemeSlug]}><App /></Theme>`,
@@ -119,14 +119,14 @@ import {themes, defaultThemeSlug} from './astryx-themes';
       content: [
         {
           type: 'prose',
-          text: 'Components are imported from per-category subpath entrypoints. This keeps bundles small and makes intent clear.',
+          text: 'Import each component from its own entry, the path `astryx component <Name>` prints. This keeps bundles small and makes intent clear.',
         },
         {
           type: 'code',
           lang: 'tsx',
           label: 'app/page.tsx',
           code: `import {Button} from '@astryxdesign/core/Button';
-import {VStack} from '@astryxdesign/core/Layout';
+import {VStack} from '@astryxdesign/core/VStack';
 
 export default function Page() {
   return (
@@ -184,16 +184,6 @@ const overrides = stylex.create({
               'Next.js + Tailwind',
               'Next.js + Tailwind bridge',
               '[apps/example-nextjs-tailwind](https://github.com/facebook/astryx/tree/main/apps/example-nextjs-tailwind)',
-            ],
-            [
-              'Next.js Source',
-              'Next.js importing from source',
-              '[apps/example-nextjs-source](https://github.com/facebook/astryx/tree/main/apps/example-nextjs-source)',
-            ],
-            [
-              'Vite',
-              'Vite',
-              '[apps/example-vite](https://github.com/facebook/astryx/tree/main/apps/example-vite)',
             ],
             [
               'Vite + Tailwind',

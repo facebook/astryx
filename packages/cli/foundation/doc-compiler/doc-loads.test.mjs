@@ -195,8 +195,10 @@ const RUNNERS = {
     runs: SELF_DOCS,
     sites: [
       'import ../../../api/integration/integrationAdd.doc.mjs',
+      'import ../../../api/integration/integrationCheck.doc.mjs',
       'import ../../../api/integration/integrationPackCheck.doc.mjs',
       'import ./integration-add.doc.mjs',
+      'import ./integration-check.doc.mjs',
       'import ./integration-pack.doc.mjs',
       'import ./integration-verify.doc.mjs',
       'import ./integration.doc.mjs',
@@ -246,12 +248,24 @@ const RUNNERS = {
     runs: 'astryx.config, through the config parser',
     sites: ['loadModuleWithParser(..., parseConfig)'],
   },
+  'foundation/discovery/component-discovery.mjs': {
+    runs: '@babel/parser, on first use, to read the members a family doc lists in its components without running the doc',
+    sites: ['require(@babel/parser)'],
+  },
   'foundation/discovery/docs-discovery.mjs': {
     runs: 'a contributed topic, for its catalog fields: name, title, description, category, and relationships',
     sites: ['importDocModule'],
   },
+  'foundation/discovery/project-typescript.mjs': {
+    runs: "the project's own typescript, for the author checks that read source and docs with it, and its package.json for the version of one they cannot use; beside TypeScript 7, which has no compiler API, the TypeScript 6 API package @typescript/typescript6",
+    sites: [
+      'require(<computed>)',
+      'require(typescript)',
+      'require(typescript/package.json)',
+    ],
+  },
   'foundation/discovery/template-adapter.mjs': {
-    runs: '@babel/parser, to find the fixture references in template source; and a template doc that does not validate, to read the replacement it declares',
+    runs: '@babel/parser, to find the fixture references and page-local bindings in template source; and a template doc that does not validate, to read the replacement it declares',
     sites: ['importDocModule', 'require(@babel/parser)'],
   },
   'foundation/discovery/theme-discovery.mjs': {
