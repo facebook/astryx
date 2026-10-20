@@ -1042,9 +1042,6 @@ function hasDeclaredAction(options: MultiSelectorOptionType[]): boolean {
   return false;
 }
 
-// Case-insensitive substring match for a single option. The one predicate used
-// by both the flat filter (count + keyboard nav) and the grouped renderer, so
-// what is shown while searching stays in lockstep with the announced count.
 /**
  * Whether a `display: none` ancestor between the element and its container
  * hides it: a footer control in a wrapper hidden at some widths, say. The
@@ -1066,6 +1063,9 @@ function isHiddenWithin(element: HTMLElement, container: HTMLElement): boolean {
   return false;
 }
 
+// Case-insensitive substring match for a single option. The one predicate used
+// by both the flat filter (count + keyboard nav) and the grouped renderer, so
+// what is shown while searching stays in lockstep with the announced count.
 function normalizeLabel(label: string): string {
   return label.toLowerCase();
 }
