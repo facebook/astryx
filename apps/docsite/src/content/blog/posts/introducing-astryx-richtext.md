@@ -7,6 +7,7 @@ draft: false
 authors:
   - 'cixzhang'
   - 'potatowagon'
+  - 'ernest'
 tags:
   - 'Release'
   - 'Components'
@@ -85,10 +86,6 @@ Markdown plugins you wrote for Astryx `Markdown` with `createMarkdownPlugin` wor
 ## Accessibility you do not have to build
 
 Screen readers announce the editor properly: they read out the field's label and say it is a multi-line text box, so someone using one knows what they are typing into. The whole toolbar works from the keyboard — arrow keys move between the buttons, no mouse needed — and Tab gets you out of the editor instead of typing a tab character and trapping you, which is how many rich text editors behave. Checkboxes in task lists can be checked from the keyboard, and screen readers call them checkboxes. Button tooltips, the link dialog and the editor's announcements come from the Astryx message catalog, so you translate them the same way as the rest of Astryx.
-
-## Thank you
-
-Thank you to [@ernestt](https://github.com/ernestt), who helped make RichText possible.
 
 ## Get started
 
