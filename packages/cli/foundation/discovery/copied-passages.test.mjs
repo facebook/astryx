@@ -110,6 +110,15 @@ describe('passageWords and pointers', () => {
       passageWords(
         'See {@link generic:theme} or `astryx docs theme` (Share it).',
       ),
-    ).toEqual(['see', 'or', 'share', 'it', '.']);
+    ).toEqual(['see', 'or', 'share', 'it']);
+  });
+
+  it('counts no punctuation-only token as a word', () => {
+    expect(
+      passageWords('Set the theme first, see {@link generic:theme}.'),
+    ).toEqual(['set', 'the', 'theme', 'first', 'see']);
+    expect(
+      wordSpans('Read it - then {@link generic:theme}.').map(s => s.word),
+    ).toEqual(['read', 'it', 'then']);
   });
 });

@@ -786,6 +786,19 @@ describe('integrationDocConflicts copied passages and extensions', () => {
     expect(issue).toMatchObject({topic: 'acme-setup', line: 8});
   });
 
+  it('does not list a 9-word sentence that ends in a link', async () => {
+    const sentence =
+      'Theme tokens control every surface color, as explained in {@link generic:acme-theme}.';
+    writeTopics([
+      {name: 'acme-colors', text: `Colors first. ${sentence}`},
+      {name: 'acme-menus', text: `Menus next. ${sentence}`},
+    ]);
+
+    expect(
+      copied(await integrationDocConflicts(undefined, {cwd: tmpDir})),
+    ).toEqual([]);
+  });
+
   it('counts no function word toward which topic a passage fits', async () => {
     writeTopics([
       {name: 'acme-getting-started', text: `${PASSAGE} Then run setup.`},

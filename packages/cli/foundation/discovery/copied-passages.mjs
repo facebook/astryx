@@ -94,7 +94,8 @@ const POINTERS = /\{@link [^}]*\}|`astryx docs [^`]*`/g;
 
 /**
  * The words a passage is compared by: lowercase, with links and Markdown
- * emphasis set aside.
+ * emphasis set aside. A token with no letter or digit (the `.` after a link)
+ * is not a word.
  *
  * @param {string} text
  * @returns {string[]}
@@ -105,7 +106,7 @@ export function passageWords(text) {
     .replace(POINTERS, ' ')
     .replace(/[`*]/g, '')
     .split(/[^a-z0-9'@./-]+/)
-    .filter(Boolean);
+    .filter(word => /[a-z0-9]/.test(word));
 }
 
 /**
@@ -217,7 +218,7 @@ export function wordSpans(text) {
   const spans = [];
   for (const match of masked.matchAll(/[a-z0-9'@./`*-]+/g)) {
     const word = match[0].replace(/[`*]/g, '');
-    if (!word) continue;
+    if (!/[a-z0-9]/.test(word)) continue;
     const start = /** @type {number} */ (match.index);
     spans.push({word, start, end: start + match[0].length});
   }
