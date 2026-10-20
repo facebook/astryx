@@ -80,6 +80,90 @@ describe('validate-integration API', () => {
     expect(errors).toBe(0);
   });
 
+  it('warns, with a fix and the file, on docs no reader can serve', async () => {
+    const pkgDir = path.join(tmpDir, 'pkg');
+    writePackage(pkgDir, {
+      manifest: `export default { docs: './docs' };\n`,
+    });
+    fs.mkdirSync(path.join(pkgDir, 'docs'), {recursive: true});
+    fs.writeFileSync(
+      path.join(pkgDir, 'docs', 'ghost.doc.zh.mjs'),
+      "export default {title: 'ghost'};\n",
+    );
+
+    const result = await validateLocalIntegration(pkgDir);
+
+    expect(byCode(result.issues, 'orphan_doc_overlay')).toEqual([
+      expect.objectContaining({
+        severity: 'warning',
+        file: 'docs/ghost.doc.zh.mjs',
+        fix: expect.stringContaining('Delete docs/ghost.doc.zh.mjs'),
+      }),
+    ]);
+  });
+
+  it("passes a topic that replaces another integration's topic the project loads, and flags a typo of a Core topic", async () => {
+    const pkgDir = path.join(tmpDir, 'pkg');
+    writePackage(pkgDir, {
+      manifest: `export default { docs: './docs' };\n`,
+    });
+    const pkgJson = path.join(pkgDir, 'package.json');
+    fs.writeFileSync(
+      pkgJson,
+      JSON.stringify({
+        ...JSON.parse(fs.readFileSync(pkgJson, 'utf8')),
+        dependencies: {'@other/kit': '1.0.0'},
+      }),
+    );
+    const other = path.join(pkgDir, 'node_modules', '@other', 'kit');
+    fs.mkdirSync(path.join(other, 'docs'), {recursive: true});
+    fs.writeFileSync(
+      path.join(other, 'package.json'),
+      JSON.stringify({name: '@other/kit', version: '1.0.0'}),
+    );
+    fs.writeFileSync(
+      path.join(other, 'astryx.integration.mjs'),
+      "export default {docs: './docs'};\n",
+    );
+    /** @param {string} name @param {string} [replaces] */
+    const topicDoc = (name, replaces) =>
+      `export const docs = ${JSON.stringify({
+        type: 'generic',
+        name,
+        title: name,
+        description: `About ${name}.`,
+        ...(replaces ? {replaces} : {}),
+        sections: [{title: 'One', content: [{type: 'prose', text: name}]}],
+      })};\n`;
+    // `theem` is one letter from Core's `theme`, so only the topic the other
+    // integration contributes makes it a real target.
+    fs.writeFileSync(
+      path.join(other, 'docs', 'theem.doc.mjs'),
+      topicDoc('theem'),
+    );
+    fs.mkdirSync(path.join(pkgDir, 'docs'), {recursive: true});
+    fs.writeFileSync(
+      path.join(pkgDir, 'docs', 'ours.doc.mjs'),
+      topicDoc('ours', 'theem'),
+    );
+
+    const clean = await validateLocalIntegration(pkgDir);
+    expect(byCode(clean.issues, 'unknown_topic_target')).toEqual([]);
+
+    fs.rmSync(path.join(pkgDir, 'node_modules'), {
+      recursive: true,
+      force: true,
+    });
+    const typo = await validateLocalIntegration(pkgDir);
+    expect(byCode(typo.issues, 'unknown_topic_target')).toEqual([
+      expect.objectContaining({
+        severity: 'warning',
+        file: 'docs/ours.doc.mjs',
+        fix: "In docs/ours.doc.mjs, change replaces: 'theem' to replaces: 'theme'.",
+      }),
+    ]);
+  }, 60_000);
+
   it('reports an unknown manifest key as a warning, and still loads the rest', async () => {
     // The manifest used to be parsed with a strict schema, so a single unknown
     // key failed the parse — and an integration whose manifest fails to parse
@@ -593,7 +677,10 @@ describe('integration diagnostics are read-only', () => {
       'components/Orphan.doc.mjs',
       "export default {type: 'component', name: 'Orphan', props: []};\n",
     );
-    write('templates/dash.doc.mjs', "export default {type: 'page', name: 'Dash'};\n");
+    write(
+      'templates/dash.doc.mjs',
+      "export default {type: 'page', name: 'Dash'};\n",
+    );
     write(
       'docs/theme.doc.mjs',
       "export default {type: 'generic', name: 'theme', title: 'Theme', description: 'x', sections: [{title: 'A', content: [{type: 'prose', text: 'x'}]}]};\n",
@@ -614,7 +701,9 @@ describe('integration diagnostics are read-only', () => {
       path.join(consumer, 'package.json'),
       JSON.stringify({name: 'consumer'}),
     );
-    writeDiagnosedPackage(path.join(consumer, 'node_modules', '@acme', 'widgets'));
+    writeDiagnosedPackage(
+      path.join(consumer, 'node_modules', '@acme', 'widgets'),
+    );
     const before = {pkg: snapshot(pkgDir), consumer: snapshot(consumer)};
 
     const local = await validateIntegration(undefined, {cwd: pkgDir});
@@ -631,9 +720,13 @@ describe('integration diagnostics are read-only', () => {
     }
 
     expect(summarizeIssues(local.data.issues).errors).toBeGreaterThan(0);
-    expect(byCode(local.data.issues, 'unreachable_contribution')).toHaveLength(1);
+    expect(byCode(local.data.issues, 'unreachable_contribution')).toHaveLength(
+      1,
+    );
     expect(summarizeIssues(installed.data.issues).errors).toBeGreaterThan(0);
-    expect({pkg: snapshot(pkgDir), consumer: snapshot(consumer)}).toEqual(before);
+    expect({pkg: snapshot(pkgDir), consumer: snapshot(consumer)}).toEqual(
+      before,
+    );
   });
 });
 
@@ -655,7 +748,9 @@ describe('validated separates "checked and clean" from "never checked"', () => {
     expect(validate.data.issues).toEqual([]);
 
     const templates = await integrationTemplateConflicts(undefined, {cwd: dir});
-    const components = await integrationComponentConflicts(undefined, {cwd: dir});
+    const components = await integrationComponentConflicts(undefined, {
+      cwd: dir,
+    });
     const docs = await integrationDocConflicts(undefined, {cwd: dir});
     expect(templates.data.validated).toBe(false);
     expect(components.data.validated).toBe(false);
@@ -671,7 +766,9 @@ describe('validated separates "checked and clean" from "never checked"', () => {
     expect(validate.data.name).toBe('@acme/widgets');
 
     const templates = await integrationTemplateConflicts(undefined, {cwd: dir});
-    const components = await integrationComponentConflicts(undefined, {cwd: dir});
+    const components = await integrationComponentConflicts(undefined, {
+      cwd: dir,
+    });
     const docs = await integrationDocConflicts(undefined, {cwd: dir});
     expect(templates.data.validated).toBe(true);
     expect(components.data.validated).toBe(true);
@@ -743,8 +840,12 @@ describe('unreadable folders are reported, never fatal', () => {
       expect(
         byCode(result.issues, 'unreadable_root').map(issue => issue.message),
       ).toEqual([
-        expect.stringMatching(/^Declared codemods root cannot be read \(EACCES\)/),
-        expect.stringMatching(/^Declared themes root cannot be read \(EACCES\)/),
+        expect.stringMatching(
+          /^Declared codemods root cannot be read \(EACCES\)/,
+        ),
+        expect.stringMatching(
+          /^Declared themes root cannot be read \(EACCES\)/,
+        ),
       ]);
     },
   );

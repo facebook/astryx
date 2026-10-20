@@ -256,6 +256,10 @@ const RUNNERS = {
     runs: "the CLI's own guides and the package's topics, to compare their prose for passages two topics repeat",
     sites: ['builtinGuideFiles', 'loadTopicModule'],
   },
+  'foundation/discovery/doc-consistency.mjs': {
+    runs: "a package's component docs and topics, to read the props, overlays, sections, and replaces/extends they declare",
+    sites: ['importDocModule ×2'],
+  },
   'foundation/discovery/docs-discovery.mjs': {
     runs: 'a contributed topic, for its catalog fields: name, title, description, category, and relationships',
     sites: ['importDocModule'],

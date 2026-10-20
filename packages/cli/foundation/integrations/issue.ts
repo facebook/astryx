@@ -15,4 +15,8 @@ export interface AstryxIntegrationIssue {
   code: string;
   severity: 'warning' | 'error';
   message: string;
+  /** What to change, ready to paste, when the check knows it. */
+  fix?: string;
+  /** The file the issue is in, relative to the package. */
+  file?: string;
 }
