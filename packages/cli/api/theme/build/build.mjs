@@ -27,6 +27,10 @@
  * files; an internal callback lets the CLI make only the process status fail.
  * Human progress is emitted through the shared `logger` (silent by default), so
  * the CLI keeps its exact output while a programmatic caller stays quiet.
+ * Every output a build writes, explicit or beside the theme file, stays inside
+ * `cwd` (`ERR_PATH_TRAVERSAL` otherwise). Check mode writes nothing, so it
+ * compares outputs outside `cwd` read-only; only a relative `out` path that
+ * escapes `cwd` is refused there too.
  *
  * The installed `@astryxdesign/core` is an independently versioned optional
  * peer, so it can be older than the CLI. A theme that uses only baseline
@@ -36,6 +40,10 @@
  * missing. That check is scoped to the adaptation capability — it is not a
  * general compatibility scheme for every export an arbitrary older core might
  * lack.
+ *
+ * Core is imported on first use, never when this module loads: the CLI loads
+ * this module for every command, and Core's root entry pulls in all of Core
+ * and React.
  *
  * With `{check: true}`, it compiles the same outputs in memory but writes
  * nothing: it compares each generated file against what is on disk (ignoring
@@ -54,7 +62,10 @@ import {isBuiltin} from 'node:module';
 import {fileURLToPath, pathToFileURL} from 'node:url';
 import {parse} from '@babel/parser';
 import {createJiti} from 'jiti';
-import {getCliInvocation} from '../../../foundation/env/package-manager.mjs';
+import {
+  formatCliCommand,
+  getCliInvocation,
+} from '../../../foundation/env/package-manager.mjs';
 import {
   CLI_ROOT,
   findCoreDir,
@@ -91,6 +102,8 @@ import {resolveIconImports} from './icon-imports.mjs';
 // action). A built, resolvable `@astryxdesign/core` is a hard requirement.
 // A built, resolvable `@astryxdesign/core` is a hard requirement. These are
 // populated from a dynamic import (a runtime boundary), so `any` is intentional.
+// That import runs the first time a build needs Core (see `loadCliCore`), not
+// when this module loads.
 //
 // The CLI and core are independently versioned optional peers, so this import
 // can succeed against a core OLDER than the CLI. Only the exports every theme
@@ -120,27 +133,6 @@ import {resolveIconImports} from './icon-imports.mjs';
  */
 /** @type {any} */ let _coreRootModule = null;
 /** @type {any} */ let _coreImportError = null;
-try {
-  const coreTheme = await import('@astryxdesign/core/theme');
-  _coreThemeModule = coreTheme;
-  _defineTheme = coreTheme.defineTheme;
-  _generateThemeRulesSplit = coreTheme.generateThemeRulesSplit;
-  _generateOnMediaCSS = coreTheme.generateOnMediaCSS;
-  _generateAdaptationCSS = coreTheme.generateAdaptationCSS;
-  try {
-    _coreRootModule = await import('@astryxdesign/core');
-  } catch {
-    // A core without a usable root entry still builds themes; interception
-    // falls back to the theme namespace for the root specifier.
-  }
-} catch (e) {
-  // Capture the reason so the theme action can surface a precise, actionable
-  // error. We don't throw here: this module is imported eagerly by the CLI
-  // entrypoint for every command, and a throw at load time would break
-  // unrelated commands (the entry wraps loads in try/catch and degrades the
-  // command to a stub). The hard failure happens when `theme build` runs.
-  _coreImportError = e;
-}
 
 /**
  * The bindings one Core provides: the namespaces interception spreads, the
@@ -157,19 +149,65 @@ try {
  */
 
 /**
- * The bindings exactly as the CLI's own import left them, kept so each build
- * can choose between them and the project's installed Core.
- * @type {CoreBindings}
+ * Import the CLI's own Core: the `@astryxdesign/core` this module resolves.
+ * Never throws. A failed import is kept as `importError`, so the build can
+ * surface a precise, actionable error when it runs.
+ * @returns {Promise<CoreBindings>}
  */
-const _cliCore = {
-  themeModule: _coreThemeModule,
-  rootModule: _coreRootModule,
-  importError: _coreImportError,
-  defineTheme: _defineTheme,
-  generateThemeRulesSplit: _generateThemeRulesSplit,
-  generateOnMediaCSS: _generateOnMediaCSS,
-  generateAdaptationCSS: _generateAdaptationCSS,
-};
+async function importCliCore() {
+  /** @type {CoreBindings} */
+  const core = {
+    themeModule: null,
+    rootModule: null,
+    importError: null,
+    defineTheme: null,
+    generateThemeRulesSplit: null,
+    generateOnMediaCSS: null,
+    generateAdaptationCSS: null,
+  };
+  try {
+    const coreTheme = await import('@astryxdesign/core/theme');
+    core.themeModule = coreTheme;
+    core.defineTheme = coreTheme.defineTheme;
+    core.generateThemeRulesSplit = coreTheme.generateThemeRulesSplit;
+    core.generateOnMediaCSS = coreTheme.generateOnMediaCSS;
+    core.generateAdaptationCSS = coreTheme.generateAdaptationCSS;
+    try {
+      core.rootModule = await import('@astryxdesign/core');
+    } catch {
+      // A core without a usable root entry still builds themes; interception
+      // falls back to the theme namespace for the root specifier.
+    }
+  } catch (e) {
+    // Capture the reason so the theme action can surface a precise, actionable
+    // error. The hard failure happens when `theme build` runs.
+    core.importError = e;
+  }
+  return core;
+}
+
+/**
+ * The CLI's own Core, imported once, the first time a build needs it. The CLI
+ * loads this module for every command, and Core's root entry loads all of Core
+ * and React, so an import at module load would make every command
+ * (`--version` included) pay for that whenever a Core resolves.
+ * @type {Promise<CoreBindings> | null}
+ */
+let _cliCorePromise = null;
+
+/**
+ * The CLI's own Core, kept so each build can choose between it and the
+ * project's installed Core. The first call also points the build at it, so a
+ * step that runs before any build has chosen a Core reads the CLI's own.
+ * @returns {Promise<CoreBindings>}
+ */
+function loadCliCore() {
+  _cliCorePromise ??= importCliCore().then(core => {
+    setCore(core);
+    return core;
+  });
+  return _cliCorePromise;
+}
 
 /**
  * Point the build at one Core: the module-level bindings every step reads.
@@ -240,6 +278,25 @@ function realOrSelf(file) {
 }
 
 /**
+ * `target` spelled through real directories: the deepest ancestor that exists
+ * is resolved through its symlinks, and the missing rest is appended as given.
+ * @param {string} target absolute path
+ * @returns {string}
+ */
+function realLocation(target) {
+  /** @type {string[]} */
+  const missing = [];
+  let existing = target;
+  while (!fs.existsSync(existing)) {
+    const parent = path.dirname(existing);
+    if (parent === existing) break;
+    missing.unshift(path.basename(existing));
+    existing = parent;
+  }
+  return path.join(realOrSelf(existing), ...missing);
+}
+
+/**
  * The Core the project at `cwd` installed, when it differs from the one the
  * CLI's own import found and loads. The app's `<Theme>` runs on the app's
  * Core, so building with it keeps the CSS identical; and a CLI run one-off
@@ -248,13 +305,14 @@ function realOrSelf(file) {
  * repository, a bare directory), the same Core, or one that does not load.
  *
  * @param {string} cwd
+ * @param {CoreBindings} cliCore - The CLI's own Core, from {@link loadCliCore}.
  * @returns {Promise<CoreBindings | null>}
  */
-async function loadProjectCore(cwd) {
+async function loadProjectCore(cwd, cliCore) {
   const dir = findInstalledPackage(cwd, '@astryxdesign/core');
   const themeFile = dir ? importTarget(dir, './theme') : null;
   if (!dir || !themeFile) return null;
-  if (_cliCore.themeModule) {
+  if (cliCore.themeModule) {
     try {
       const own = fileURLToPath(
         import.meta.resolve('@astryxdesign/core/theme'),
@@ -301,9 +359,10 @@ const _projectCores = new Map();
  * @param {string} cwd
  */
 async function selectCore(cwd) {
+  const cliCore = await loadCliCore();
   if (!_projectCores.has(cwd))
-    _projectCores.set(cwd, await loadProjectCore(cwd));
-  setCore(_projectCores.get(cwd) ?? _cliCore);
+    _projectCores.set(cwd, await loadProjectCore(cwd, cliCore));
+  setCore(_projectCores.get(cwd) ?? cliCore);
 }
 
 /**
@@ -471,6 +530,127 @@ function checkedBuildOutputs(writes, cwd) {
   return writes
     .filter(write => !write.allowMissingInCheck || fs.existsSync(write.dest))
     .map(write => path.relative(cwd, write.dest));
+}
+
+/** Remedies that end a confinement error, by where the output path came from. */
+const OUT_REMEDY = 'Pass an --out path inside it.';
+const SOURCE_REMEDY =
+  'Without --out the outputs go beside the theme file, so run the build from a directory that contains the theme file, or pass an --out path inside the working directory.';
+const FAMILY_REMEDY =
+  "Family outputs go beside the family's root theme file, so run the build from a directory that contains it.";
+
+/**
+ * Refuse an output outside `root`: every write is confined, whether `out` names
+ * the path or it defaults to the theme file's directory (architecture:cli-surface
+ * INV10). Both sides are compared by real location, so an absolute path that
+ * reaches the working directory through a symlink is inside it, and a symlink
+ * inside it that leads elsewhere is not.
+ * @param {string} dest absolute output path
+ * @param {string} root the directory writes stay inside: the working directory
+ * @param {string} remedy what to do instead; ends the error message
+ * @param {string} [shown] the path as the caller wrote it, for the message
+ */
+function confineOutput(dest, root, remedy, shown = dest) {
+  try {
+    assertWithin(realLocation(dest), realOrSelf(path.resolve(root)), {
+      allowAbsolute: true,
+      label: 'output path',
+    });
+  } catch (err) {
+    if (!(err instanceof PathSafetyError)) throw err;
+    throw new AstryxError(
+      err.code === ERROR_CODES.ERR_PATH_TRAVERSAL
+        ? `Output path "${shown}" is outside the working directory (${root}). ${remedy}`
+        : err.message,
+      undefined,
+      ERROR_CODES.ERR_PATH_TRAVERSAL,
+    );
+  }
+}
+
+/** @param {Array<{dest: string}>} writes @param {string} root @param {string} remedy */
+function confineOutputs(writes, root, remedy) {
+  for (const write of writes) confineOutput(write.dest, root, remedy);
+}
+
+/** @param {string} dest absolute output path @param {string} root @returns {boolean} whether a build at `root` refuses to write `dest` */
+function refusedOutput(dest, root) {
+  try {
+    confineOutput(dest, root, '');
+    return false;
+  } catch (err) {
+    if (
+      err instanceof AstryxError &&
+      err.code === ERROR_CODES.ERR_PATH_TRAVERSAL
+    )
+      return true;
+    throw err;
+  }
+}
+
+/** @param {string[]} dirs absolute directories @returns {string | null} the deepest directory containing all of them, or null across roots */
+function commonDirectory(dirs) {
+  let common = dirs[0];
+  for (const dir of dirs.slice(1)) {
+    while (
+      path.relative(common, dir).startsWith('..') ||
+      path.isAbsolute(path.relative(common, dir))
+    ) {
+      const parent = path.dirname(common);
+      if (parent === common) return null;
+      common = parent;
+    }
+  }
+  return common;
+}
+
+/** @param {string} value @returns {string} `value` as one shell word */
+function shellWord(value) {
+  if (/^[A-Za-z0-9@%+=:,./_-]+$/.test(value)) return value;
+  return `'${value.replace(/'/g, `'\\''`)}'`;
+}
+
+/**
+ * How a stale check report ends when outputs sit outside the write root. A
+ * build there refuses them, and each output's `Source:` header records the
+ * directory its build ran from, so the build and the check both run from the
+ * nearest directory that contains every theme file and output.
+ * @param {Array<{dest: string}>} writes
+ * @param {string[]} sources absolute theme files the build reads
+ * @param {string} root the directory a build here keeps its writes inside
+ * @param {(relative: (file: string) => string) => string[]} args the arguments after `theme build`, given each path relative to the directory to run from
+ * @returns {string[] | null} report lines, or null when every output is inside `root`
+ */
+function outsideCheckRemedy(writes, sources, root, args) {
+  if (!writes.some(write => refusedOutput(write.dest, root))) return null;
+  const real = (/** @type {string} */ file) => realLocation(path.resolve(file));
+  const dir = commonDirectory([
+    ...sources.map(file => path.dirname(real(file))),
+    ...writes.map(write => path.dirname(real(write.dest))),
+  ]);
+  if (!dir) {
+    return [
+      'These outputs are outside the working directory, so a build here refuses them. Build and check them from one directory that contains the theme files and the outputs.',
+    ];
+  }
+  const command = (/** @type {string[]} */ extra) =>
+    formatCliCommand(
+      [
+        'theme',
+        'build',
+        ...args(file => path.relative(dir, real(file))),
+        ...extra,
+      ]
+        .map(shellWord)
+        .join(' '),
+      dir,
+    );
+  return [
+    'These outputs are outside the working directory, so a build here refuses them, and each output records the directory it was built from. Build and check them from a directory that contains them:',
+    `  cd ${shellWord(dir)}`,
+    `  ${command([])}`,
+    `  ${command(['--check'])}`,
+  ];
 }
 
 /** @param {Array<{dest: string, content: string}>} writes */
@@ -1694,6 +1874,8 @@ export async function validateThemePrivateInputs(
     );
   }
 
+  // The CLI's own Core, unless a build in this process already chose one.
+  await loadCliCore();
   const interception = interceptCore(_coreThemeModule, _coreRootModule);
   let theme;
   try {
@@ -2309,9 +2491,10 @@ function validateHeadingTypeAugmentationSupport(themeDef) {
  * `logger` (silent by default).
  *
  * @param {string} file - Theme file path, resolved against `cwd`.
- * @param {{out?: string, check?: boolean, iconsSpecifier?: string, __prepareFamily?: boolean, __familyLoader?: any, __familyInterception?: any, __onPrivateVarError?: () => void}} [options] -
+ * @param {{out?: string, check?: boolean, iconsSpecifier?: string, __prepareFamily?: boolean, __familyLoader?: any, __familyInterception?: any, __onPrivateVarError?: () => void, __writeRoot?: string}} [options] -
  *   `out` overrides the output CSS path; `check` compares against on-disk outputs
- *   instead of writing. `iconsSpecifier` overrides the icon registry import
+ *   instead of writing. `__writeRoot` replaces `cwd` as the directory every
+ *   output must stay inside, for a CLI-internal scratch build. `iconsSpecifier` overrides the icon registry import
  *   specifier in the generated module (e.g. `./icons.mjs`); when omitted, the
  *   direct registry specifiers from the theme source are emitted unchanged.
  * @param {{cwd?: string}} [ctx]
@@ -2756,24 +2939,17 @@ async function themeBuildInternal(
   // Derive the default CSS name from the theme name so .css/.js/.d.ts
   // share one scheme; an explicit --out still wins.
   const baseName = themeDef.name;
+  // Every write stays inside cwd. A CLI-internal caller that renders into a
+  // scratch directory it creates and removes names that directory instead.
+  const writeRoot = options.__writeRoot ?? cwd;
   let outPath;
   if (options.out) {
     outPath = path.resolve(cwd, options.out);
-    // Guard: relative paths must not escape cwd via `../`. Absolute paths are
-    // trusted (the user explicitly controls where output goes, like gcc -o).
-    if (!path.isAbsolute(options.out)) {
-      try {
-        assertWithin(options.out, cwd, {label: 'output path'});
-      } catch (err) {
-        if (err instanceof PathSafetyError) {
-          throw new AstryxError(
-            err.message,
-            undefined,
-            ERROR_CODES.ERR_PATH_TRAVERSAL,
-          );
-        }
-        throw err;
-      }
+    // A build keeps the explicit output inside the write root, relative or
+    // absolute. Check mode writes nothing, so it refuses only a relative path
+    // that escapes cwd.
+    if (!options.check || !path.isAbsolute(options.out)) {
+      confineOutput(outPath, writeRoot, OUT_REMEDY, options.out);
     }
   } else {
     outPath = path.join(path.dirname(filePath), `${baseName}.css`);
@@ -2870,6 +3046,13 @@ async function themeBuildInternal(
     writes.push({dest: variantDtsPath, content: variantContent});
   }
 
+  // Every output a build writes stays inside cwd, including the defaults
+  // beside the theme file. Check mode writes nothing, so it compares outputs
+  // outside cwd read-only.
+  if (!options.check) {
+    confineOutputs(writes, writeRoot, options.out ? OUT_REMEDY : SOURCE_REMEDY);
+  }
+
   // Check mode: compare generated content against what's on disk instead of
   // writing. A file is "stale" if it's missing or its content differs once the
   // volatile @generated `Command:` line is ignored. Returns a
@@ -2888,7 +3071,10 @@ async function themeBuildInternal(
           `  ${s.reason === 'missing' ? 'missing' : 'stale'}: ${s.path}`,
         );
       }
-      logger.error(`\n  Rebuild with: ${buildCommand}`);
+      // prettier-ignore
+      const remedy = outsideCheckRemedy(writes, [filePath], writeRoot, relative => [relative(filePath), ...(options.out ? ['--out', relative(outPath)] : []), ...(options.iconsSpecifier ? ['--icons-specifier', options.iconsSpecifier] : [])]);
+      if (remedy) logger.error(`\n  ${remedy.join('\n  ')}`);
+      else logger.error(`\n  Rebuild with: ${buildCommand}`);
     }
     return {
       type: 'theme.build.check',
@@ -3001,7 +3187,7 @@ function printBuildTrailer(trailer) {
   logger.log(`
 Install in your app (paths are relative to a file in src/; adjust if yours lives elsewhere):
 
-  import { Theme } from '@astryxdesign/core';
+  import { Theme } from '@astryxdesign/core/theme';
   import { ${trailer.exportName} } from '${trailer.jsImport}';
   import '${trailer.cssImport}';
 
@@ -3011,7 +3197,7 @@ Install in your app (paths are relative to a file in src/; adjust if yours lives
 
 Or with a <link> tag:
 
-  import { Theme } from '@astryxdesign/core';
+  import { Theme } from '@astryxdesign/core/theme';
   import { ${trailer.exportName} } from '${trailer.jsImport}';
 
   <link rel="stylesheet" href="${trailer.cssImport}" />
@@ -3037,7 +3223,7 @@ export function printBatchTrailer(trailers) {
   logger.log(`
 Install in your app (paths are relative to a file in src/; adjust if yours lives elsewhere):
 
-  import { Theme } from '@astryxdesign/core';
+  import { Theme } from '@astryxdesign/core/theme';
   import { ${first.exportName} } from '${first.jsImport}';
   import '${first.cssImport}';
 
@@ -3047,7 +3233,7 @@ Install in your app (paths are relative to a file in src/; adjust if yours lives
 
 Or with a <link> tag:
 
-  import { Theme } from '@astryxdesign/core';
+  import { Theme } from '@astryxdesign/core/theme';
   import { ${first.exportName} } from '${first.jsImport}';
 
   <link rel="stylesheet" href="${first.cssImport}" />
@@ -3414,6 +3600,8 @@ export async function themeBuildFamily(
     js: path.relative(cwd, jsPath),
     dts: path.relative(cwd, dtsPath),
   };
+  // A family build's outputs stay inside cwd too; check mode only reads them.
+  if (!options.check) confineOutputs(writes, cwd, FAMILY_REMEDY);
   if (options.check) {
     const stale = staleBuildOutputs(writes, cwd);
     const upToDate = stale.length === 0;
@@ -3430,7 +3618,10 @@ export async function themeBuildFamily(
           `  ${entry.reason === 'missing' ? 'missing' : 'stale'}: ${entry.path}`,
         );
       }
-      logger.error(`\n  Rebuild with: ${buildCommand}`);
+      // prettier-ignore
+      const remedy = outsideCheckRemedy(writes, members.map(member => member.filePath), cwd, relative => ['--family', ...members.map(member => relative(member.filePath)), '--family-key', baseName, ...(options.iconsSpecifier ? ['--icons-specifier', options.iconsSpecifier] : [])]);
+      if (remedy) logger.error(`\n  ${remedy.join('\n  ')}`);
+      else logger.error(`\n  Rebuild with: ${buildCommand}`);
     }
     return {
       type: 'theme.build.check',

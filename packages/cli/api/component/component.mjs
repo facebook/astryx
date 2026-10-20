@@ -19,9 +19,11 @@ import {
   requireCoreDir,
   loadIntegrationsSafely,
   resolveOwners,
+  scopeIntegrationMember,
   classifyScope,
   assertUnambiguousOwners,
   resolveLegacyExternalDoc,
+  legacyExternalKeeps,
   resolveCoreSourcePath,
   resolveUnscopedDoc,
   loadComponentDoc,
@@ -29,6 +31,7 @@ import {
   ComponentAmbiguityError,
   installedComponentPackageVersion,
   resolveComponentReplacement,
+  unscopedComponentOwners,
 } from './_adapter.mjs';
 import {componentList} from './list/list.mjs';
 import {componentDetail} from './detail/detail.mjs';
@@ -427,7 +430,13 @@ export async function component(name, options = {}) {
       if (blocks) {
         return componentDetailBlocks(dirName, cwd, owner.package);
       }
-      const docs = await loadComponentDoc(owner.docPath, docOpts);
+      const loaded = await loadComponentDoc(owner.docPath, docOpts);
+      // A family member an integration lists under its own name reads as that
+      // member, the way a Core sub-component does below.
+      const docs =
+        scoped.kind === 'integration'
+          ? scopeIntegrationMember(loaded, owner, dirName)
+          : loaded;
       if (props) return componentDetailProps(docs, owner.package);
       return componentDetail(docs, owner, dirName, coreDir);
     }
@@ -481,12 +490,14 @@ export async function component(name, options = {}) {
     });
   }
 
+  // The owner rule runs first, over valid and invalid owners alike.
+  const ruled = unscopedComponentOwners(owners);
   // Invalid integration metadata does not create ambiguity against a valid
-  // owner. Keep raw owners only when no doc owner is valid, so an integration-
+  // owner. Keep ruled owners only when no doc owner is valid, so an integration-
   // only component still exposes its source and returns ERR_INVALID_DOC for
   // detail instead of degrading to an unrelated unknown-component error.
   const validOwners = [];
-  for (const owner of owners) {
+  for (const owner of ruled) {
     if (owner.package === CORE_PACKAGE) {
       validOwners.push(owner);
       continue;
@@ -498,7 +509,12 @@ export async function component(name, options = {}) {
       // Project/Doctor report invalid metadata; it is not an effective owner.
     }
   }
-  const effectiveOwners = validOwners.length > 0 ? validOwners : owners;
+  const loadable = validOwners.length > 0 ? validOwners : ruled;
+  // A legacy docs package's exact doc keeps its name over an export name a doc
+  // records, as Core and file-named owners do.
+  const effectiveOwners = legacyExternalKeeps(cwd, dirName, loadable)
+    ? []
+    : loadable;
 
   // ── Ambiguity: owned by MORE THAN ONE valid package, no --package ──
   assertUnambiguousOwners(effectiveOwners, dirName);
@@ -516,7 +532,8 @@ export async function component(name, options = {}) {
       // Integration components don't carry showcases — fail without scanning.
       return componentDetailShowcase(dirName, {cwd, name, resolve: false, ownerPackage: owner.package});
     }
-    const docs = await loadComponentDoc(owner.docPath, docOpts);
+    const loaded = await loadComponentDoc(owner.docPath, docOpts);
+    const docs = scopeIntegrationMember(loaded, owner, dirName);
     if (props) return componentDetailProps(docs, owner.package);
     return componentDetail(docs, owner, dirName, coreDir);
   }

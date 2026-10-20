@@ -31,6 +31,7 @@ import type {InputStatus} from '../Field/types';
 import {useTooltip} from '../Tooltip';
 import {useResolvedRequired} from '../hooks/useResolvedRequired';
 import {composeEventHandlers, mergeProps} from '../utils';
+import {joinAriaIDs} from '../utils/inputAria';
 import {
   type FieldInputBaseProps,
   useFieldInputStyling,
@@ -216,6 +217,7 @@ export function RadioList({
   htmlName,
   children,
   onFocus,
+  'aria-labelledby': ariaLabelledByProp,
   'aria-describedby': ariaDescribedByProp,
   ...restProps
 }: RadioListProps) {
@@ -399,7 +401,8 @@ export function RadioList({
           disabledMessageTooltip.ref(el);
         }}
         role="radiogroup"
-        aria-labelledby={labelID}
+        // A caller aria-labelledby names the group together with its label.
+        aria-labelledby={joinAriaIDs(labelID, ariaLabelledByProp)}
         onFocus={composeEventHandlers(handleFocus, onFocus)}
         aria-describedby={
           [

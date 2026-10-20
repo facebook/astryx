@@ -697,12 +697,16 @@ Changeset it adds or edits names that package:
   dependency or peer ranges.
 
 Stories, the sandbox, tests, fixtures, snapshots, spec records, generated
-CHANGELOGs, private and canary-only packages (`lab`, `charts`, `richtext`,
-`vega`), the docsite app, CI, and repository tooling never reach a consumer and
+CHANGELOGs, private and canary-only packages (`lab`, `charts`, `vega`), the
+docsite app, CI, and repository tooling never reach a consumer and
 need no Changeset. The failure names the package and the command to run, for
 example `pnpm changeset:new --packages @astryxdesign/cli --category docs`. Run
 the check locally with
 `node scripts/release/changeset-coverage.mjs pr --base origin/main --explain`.
+
+Translation updates and new languages need no Changeset; changes to English
+source messages or keys still do. Removing a released language import path
+follows the [breaking-change policy](docs/specs/AST-017/spec.md).
 
 The same check compares the CLI's machine-readable ids with the latest
 release: response `type` values, response fields, golden JSON fields, and

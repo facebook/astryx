@@ -6,8 +6,8 @@ id: architecture:cli-surface
 authority: current
 archive_reason: null
 superseded_by: null
-approved_by: cixzhang
-approved_at: 2026-09-13
+approved_by: josephfarina
+approved_at: 2026-10-20
 owners: [josephfarina]
 applies_to: [packages/cli]
 verified_by:
@@ -19,6 +19,9 @@ verified_by:
     clients/cli/error-envelope-code.test.mjs,
     foundation/response/error-codes.test.mjs,
     foundation/agent-docs/agent-docs.test.mjs,
+    foundation/agent-docs/agent-docs.path-safety.test.mjs,
+    clients/cli/commands/init.behavior.test.mjs,
+    api/init/remove/remove.test.mjs,
     foundation/integrations/autolink.test.mjs,
     foundation/integrations/manifest-writer.test.mjs,
     foundation/integrations/contribution-inventory.test.mjs,
@@ -121,11 +124,86 @@ and remains available through explicit Core package selection.
 - **INV8 — Exit codes do not depend on the output mode.** The same condition
   exits the same way with and without `--json`, so a command works as a gate
   without parsing stdout.
+- **INV32 — Warnings fail a command only under `--strict`.** Without
+  `--strict`, a command exits 1 for an error, never for a finding it reports
+  as a warning, so a warning cannot turn a passing build red. A condition a
+  command's own mode exists to detect, such as stale outputs under
+  `theme build --check`, is an error, not a warning. A command that can gate a
+  build on its warnings offers `--strict`, which changes only how the same
+  findings end the run: it reads exactly the data the default run reports and
+  adds no check, reports each warning, and each check that did not run, as an
+  error in the command's own issue format with the finding's own code, and
+  exits 1, the same way in text and JSON (INV8). A command offers `--strict`
+  only through a record that names it; `astryx integration check`
+  (`spec:AST-039` FR14) is the one that does (DEC-4).
+- **INV33 — Documented component props agree with the source.**
+  `astryx doctor integration components` MUST compare every prop table a
+  component descriptor documents with the props of the export it describes, read
+  with the TypeScript the project installs. It MUST warn about a documented prop
+  the code lacks, a prop the package's own source declares that the table omits,
+  a `required` flag the code contradicts, and a documented type that does not
+  match the code under the loose comparison the command documents. It MUST NOT
+  warn that a table omits `ref`, the React-reserved `key`, the internal and
+  styling props the published `ComponentPropDoc` type tells authors to skip
+  (`xstyle`, `className`, `style`, and `data-testid`), or a prop its declaration
+  marks `@internal`. It MUST list a documented type it cannot judge as unchecked
+  rather than report a match or a mismatch. Without the project's TypeScript it
+  MUST say that the comparison was skipped and why, and MUST NOT report a pass.
+- **INV34 — Every descriptor satisfies its published authoring type.**
+  `astryx doctor integration validate` MUST check each descriptor an
+  integration's roots hold, and each translation a descriptor carries, against
+  the type `@astryxdesign/cli/authoring` publishes for that kind in an
+  integration, as the TypeScript the project installs checks a value written
+  with that type. It MUST warn about every unknown field, missing required
+  field, and value outside its field's type, naming the field and the change
+  that fixes it, including a field the compiler reaches only once an earlier
+  unknown field is gone. A value the loader accepts and the CLI reads MUST
+  satisfy that type. Where an integration may author more than Core's type for a
+  kind allows, such as any template `category`, `@astryxdesign/cli/authoring`
+  MUST publish an additional integration type for that kind, and Core's type
+  MUST stay unchanged. Without the project's TypeScript it MUST say that the
+  descriptors were not type-checked and why, and MUST NOT report a pass.
+- **INV35 — One command checks an integration, and can gate its build.** The
+  `astryx integration check` command, which takes no package argument, MUST run
+  the `validate`, `components`, `templates`, and `docs` checks against the
+  integration package in the current folder, report each check's own result and
+  a summary, and exit 1 exactly when one of those checks would exit 1 on its
+  own. With `--strict` it MUST also exit 1 on any warning and on any check, or
+  comparison within a check, that did not run, such as a package with no
+  integration manifest or a comparison that needs the project's TypeScript,
+  reporting each as an error from the same findings the default run reports
+  (INV32). An item a comparison lists as unchecked,
+  such as a prop type it cannot read, does not fail `--strict`. Its exit codes
+  and JSON shape are a compatibility contract for the builds that run it: a new
+  check, or a new failure code, MAY join it only in a minor release that names
+  the addition. A name a patch release adds to Core or the CLI (a component,
+  template, or topic) MAY raise a conflict with a package's own name. Each
+  `doctor integration` subcommand, exit code, and JSON MUST stay unchanged.
+  Because builds fail on its findings, it MUST NOT report a finding the
+  package's code does not contradict: a check that cannot judge an item lists
+  it as not checked instead (DEC-7). A change that can fail a build that
+  passes today, including a stricter rule for an existing finding, MAY ship
+  only in a minor release that names it.
 - **INV9 — A command that cannot support `--json` is rejected before any side
   effect**, not part-way through the work.
 - **INV10 — Every write is confined.** Output paths pass `assertWithin`, which
   canonicalises symlinks and rejects a NUL byte; an escape is
   `ERR_PATH_TRAVERSAL`. Bounded inputs are capped rather than trusted.
+- **INV10a — Refusing a write outside its confined root is a compatible fix.**
+  When a current record already confines the writes of a CLI operation (a
+  command or its programmatic API) to a root, a change that makes the operation
+  refuse a write outside that root, before writing anything, is a compatible
+  `[fix]` and patch-eligible under the `spec:AST-017` release process. This
+  holds for every route the write takes (a traversal segment, an absolute path,
+  a symlink, or a default location derived from an input outside the root), and
+  even when the latest stable release accepted the input and its documentation
+  did not forbid the write: a write outside the confined root is not a supported
+  workflow, so a caller that relied on it is not a released victim. The
+  Changeset cites the confinement rule the released behavior violated, names
+  each input that is now refused and how it fails, and gives the migration.
+  Inputs whose writes stay inside the root keep working. Refusing one of them,
+  moving outputs instead of refusing, or confining an operation that no current
+  record confines is classified like any other change.
 - **INV11 — A broken integration degrades a command run, it does not fail
   it.** The `Project` seam loads each integration independently and records
   the failure, and the command's own work proceeds without that integration's
@@ -149,6 +227,46 @@ and remains available through explicit Core package selection.
   render configured integration `agentDocs` through the existing `Project`
   seam. Upgrade compares complete block bytes even when Core is unchanged and,
   when codemods or hooks run, writes the prepared block only after they succeed.
+- **INV31 — Agent docs reach every agent from the project's own files.** By
+  default, init writes the agent-docs block so that every agent CLI reads at
+  least one copy, whether it starts at the project root or in a folder below
+  it, from files the project commits (DEC-2). `--agent` and `--agent-docs-path`
+  name the files instead; an `--agent` preset still never leaves a copy in both
+  Claude Code files.
+  - `AGENTS.md` at the project root holds the block. Init creates it when it is
+    missing.
+  - The project's Claude Code file holds a full copy: root `CLAUDE.md`, else
+    `.claude/CLAUDE.md`. It holds the copy even when it imports `AGENTS.md`,
+    because Claude Code does not follow an import of a file above the folder it
+    starts in. While root `CLAUDE.md` holds a copy, `.claude/CLAUDE.md` holds
+    none. Init creates no Claude Code file, and a Claude Code file that is
+    `AGENTS.md` under another name holds no second copy.
+  - `GEMINI.md` holds a one-line managed import of `AGENTS.md`. Init creates
+    it when it is missing, and adds no import to a `GEMINI.md` that already
+    imports `AGENTS.md` the way Gemini CLI reads imports. Settings that point
+    Gemini CLI at `AGENTS.md` do not replace the import, because Gemini CLI
+    reads a project's settings only when it starts at the project root.
+  - Every other agent file the project has holds a full copy, unless it imports
+    `AGENTS.md`. When an agent file imports an agent file other than
+    `AGENTS.md`, or two agent files are one file, the project keeps its own
+    layout: every agent file that imports no other agent file holds a copy.
+  - A managed import counts as a copy only while `AGENTS.md` holds the block.
+    Doctor fails when it does not.
+  - Init writes at the project root: the nearest folder at or above the
+    working folder whose `package.json` declares an `@astryxdesign` package,
+    else the nearest folder with a `package.json`, else the working folder.
+    The search stops at a repository root and never counts the home folder. A
+    path given with `--agent-docs-path` stays relative to the working folder.
+  - No mode writes agent docs into the home folder, or into a settings folder
+    in it, a folder of the home folder whose name starts with a dot, outside a
+    project. A folder inside a settings folder belongs to a project when it,
+    or a folder above it below the settings folder, has a `package.json`; the
+    settings folder itself never does. Init reports the folder it refused and
+    still succeeds, and removing a block there stays allowed.
+  - Upgrade refreshes every copy where it is and moves none.
+  - `--remove-agents` removes the block at the project root and in the working
+    folder. Every file it would change resolves inside its own folder, or it
+    changes nothing.
 - **INV14 — An installed integration is discoverable without configuration, and
   autolinking it can only add.** A dependency the project DECLARES in
   package.json, and that ships a root `astryx.integration.*` manifest, is
@@ -253,7 +371,14 @@ and remains available through explicit Core package selection.
   locates roots and integration-level capabilities but never catalogs items:
   there is no catalog file under a root and no per-item map or list in the
   manifest (`spec:AST-039/FR11`). A released alternate reader is an isolated
-  compatibility path, not a second authoring convention.
+  compatibility path, not a second authoring convention. A component
+  descriptor's `name` is the runtime export it documents: discovery records
+  the component under that name when its same-stem source exports it and not
+  the stem, and records each full entry a descriptor lists in `components`
+  under its own name when the module the descriptor imports exports it
+  (`spec:AST-039/FR4`). A name recorded only this way never takes an unscoped
+  lookup that Core, a legacy docs package, or a component named after its
+  source answers: that owner keeps it unless a declared replacement claims it.
 - **INV25 — Every CLI doc names the group that reads it.** Each command, API
   function, schema, and enum doc the CLI ships declares a `namespace`. The docs
   tree adopts `cli/commands` and `cli/api` docs, one route each under
@@ -321,8 +446,12 @@ updated in the same pull request when it moves an invariant:
   package.json mutation policy, or public subpath spelling;
 - changing what `integration verify` executes, resolves, or proves about
   the tarball;
+- adding `--strict`, or any other way to fail on warnings, to a command
+  (INV32);
 - changing local, configured, or autolinked integration precedence;
-- changing an integration item descriptor, the theme directory boundary, or the consumer copy contract.
+- changing an integration item descriptor, the theme directory boundary, or the consumer copy contract;
+- changing which files hold the agent-docs block, how init finds the project
+  root, where it refuses to write agent docs, or where it removes them (INV31).
 
 `pnpm check:cli-structure` enforces the layout. The contract tests listed in
 `verified_by` enforce the envelope, the exit codes, the error codes, and the
@@ -351,7 +480,8 @@ non-interactive guarantee.
 - `foundation/discovery/theme-discovery.mjs` and `api/theme` — typed integration
   theme descriptor discovery, package-aware selection, source copy, and build.
 - `foundation/agent-docs` — the shared expected-block renderer and managed-file
-  writer used by init and upgrade.
+  writer used by init and upgrade, and the layout that decides which files hold
+  the block (INV31).
 - `api/index.mjs` — the public programmatic API, `@astryxdesign/cli/api`, which
   re-exports every subject's functions.
 - `api/<subject>/…` — the scriptable functions the commands wrap, laid out as
@@ -384,6 +514,84 @@ on a broken integration (a read or a build stops for a problem it can work
 around); counting only the integrations that happened to load (a package set
 aside or replaced by the package being authored would vanish from the count).
 
+### DEC-2 — Every agent gets the agent docs, and an extra copy beats none
+
+**Decider:** `josephfarina`, `2026-10-14`
+
+Agent CLIs read different files. Codex CLI reads only `AGENTS.md`; Claude Code
+reads its own files, and `AGENTS.md` only when the project has none; Gemini CLI
+reads `GEMINI.md`; Copilot CLI reads `AGENTS.md`, `CLAUDE.md` and `GEMINI.md`
+together. No placement gives every agent exactly one copy in every project, so
+the agent docs give each agent at least one, from files the project commits,
+and accept extra copies where agents share files (INV31). Rejected: keeping
+the Claude Code copy only in `.claude/CLAUDE.md`, which many projects keep out
+of version control, so that a fresh clone has none.
+
+### DEC-3 — Refusing a write outside its confined root is a fix
+
+**Decider:** `josephfarina`, `2026-10-15`
+
+A write outside the confined root lands wherever its path points, with the
+caller's file permissions, and can replace a file the caller never named as an
+output: source, configuration, or another project's files. Agents run the CLI
+unattended and pass generated paths, so one wrong path loses work with nothing
+to undo. Holding the refusal for a minor, or warning while the write still
+happens, keeps that exposure open to protect a use the confinement already
+forbids, so the refusal ships as a `[fix]` (INV10a). The boundary is narrow:
+the confinement is already current, the refusal comes before any write, the
+Changeset names each refused input and its migration, and writes inside the
+root keep working.
+
+Rejected: a patch warning with the refusal held for a minor (the warning prints
+after the file is replaced); and letting every current invariant outrank
+released documentation (any correction could then claim the patch tier).
+
+### DEC-4 — A command fails on warnings only when its caller asks, with `--strict`
+
+**Decider:** `josephfarina`, `2026-10-16`
+
+A warning that changes an exit code turns every build that runs the command
+red as soon as a release adds a check or a finding, so no command fails on a
+warning by default. A package that wants its build held to its warnings asks
+for it with `--strict`, which reports the same findings as errors in the
+format its failures already use: a strict run never knows something the
+default run does not, and reading a strict failure needs nothing new.
+Rejected: a command that fails on warnings by default (a CLI upgrade turns
+green builds red); a gate flag or command with another name for each case
+(each one a new contract to keep).
+
+### DEC-5 — Integration doc checks are command contracts
+
+**Decider:** `josephfarina`, `2026-10-18`
+
+INV33, INV34 and INV35 state the prop and descriptor-type checks that
+`doctor integration` runs and the `integration check` command that builds run.
+They are command contracts beside INV32, so this record governs them, and
+`spec:AST-039` FR12, FR13 and FR14 point here.
+Rejected: governing them only from `spec:AST-039` (a draft record does not
+govern).
+
+### DEC-6 — Integration authoring guidance requires the strict check in every build
+
+**Decider:** `josephfarina`, `2026-10-19`
+
+Integration authoring guidance requires each integration package to run
+`astryx integration check --strict` in its own build; the CLI flag stays
+opt-in (DEC-4).
+Rejected: guidance that leaves the check optional (packages ship drift their
+users find first).
+
+### DEC-7 — The integration check reports only what the code contradicts
+
+**Decider:** `josephfarina`, `2026-10-19`
+
+Every integration runs `integration check --strict` in its build (DEC-6), so a
+false finding fails a package for a fault it does not have, and its only way
+out, dropping `--strict`, also drops the check for every real fault. A check
+that cannot tell whether the code contradicts a doc lists the item as not
+checked, which `--strict` does not fail.
+Rejected: reporting a doubtful item as a warning (`--strict` fails it).
+
 ## Verification
 
 | Invariant | Evidence                                                                                                                                                   | Failure signal                                                                                                                                  |
@@ -408,6 +616,11 @@ aside or replaced by the package being authored would vanish from the count).
 | INV25     | `foundation/discovery/cli-self-docs.test.mjs`, `api/doctor/doctor.test.mjs`                                                                                | A CLI doc with no namespace, a namespace no topic reads, or no section in its topic passes doctor.                                              |
 | INV28     | `test/inv28-package-provenance.test.mjs`, `clients/cli/commands/text-json-parity.test.mjs`, `cli-api-types-verify`                                         | A result about one artifact has no envelope `package`, a listed artifact has no `package`, or text omits the package the envelope names.        |
 | INV29     | `api/doctor/doctor.test.mjs` (configured-integrations: not installed, no manifest, manifest throws; self-named authored package, direct and through a symlinked `node_modules` or `cwd`; provider-conflict set-aside; an astryx.config that imports but cannot load the project → failed `config` check)| A configured integration that cannot load leaves `doctor` at exit 0, or an installed-but-unnamed one fails it                                   |
+| INV31     | `foundation/agent-docs/agent-docs.test.mjs`, `foundation/agent-docs/agent-docs.path-safety.test.mjs`, `clients/cli/commands/init.behavior.test.mjs`, `api/init/remove/remove.test.mjs`, `clients/cli/commands/doctor.test.mjs` | A layout test finds the block missing from a file INV31 names or present in a file it excludes, a managed import of a block-less `AGENTS.md` passes doctor, agent docs land in the home folder or in a settings folder outside a project, or `--remove-agents` leaves a block at the project root or in the working folder. |
+| INV32     | `test/cli-strict-guard.test.mjs` lists every command offering `--strict` and every command whose exit depends on warnings; `api/integration/check/check.test.mjs` compares a strict run with the default run       | A second command offers `--strict`, a command exits 1 on a warning alone without `--strict`, or a strict run reports a finding the default run does not or outside the command's issue format. |
+| INV33     | `foundation/discovery/prop-drift.test.mjs`, `foundation/discovery/type-text.test.mjs`, `clients/cli/commands/doctor-integration.test.mjs`, `test/core-prop-docs.test.mjs` | A removed or renamed prop or a changed union passes unreported, a missing compiler reads as a pass, or a table that leaves out `ref`, `key`, `xstyle`, `className`, `style`, `data-testid`, or an `@internal` prop draws a warning. |
+| INV34     | `foundation/discovery/doc-types.test.mjs`, `clients/cli/commands/doctor-integration.test.mjs`, `test/core-doc-types.test.mjs` | An unknown, missing, or mistyped field passes unreported, or a missing compiler reads as a pass. |
+| INV35     | `api/integration/check/check.test.mjs`, `clients/cli/commands/integration-check.test.mjs`, `test/integration-check-failures.test.mjs`, `api/search/search.integration-check.test.mjs`, `foundation/discovery/prop-drift.test.mjs`, `foundation/discovery/type-match.test.mjs`, `foundation/discovery/doc-types.test.mjs` | The default exit differs from a check's own, a warning or a skipped comparison passes `--strict`, text and JSON exit differently, a new failing finding is added without the list changing, a search for ci does not find the command first, or a finding is reported on a doc the code does not contradict (for a type, one TypeScript accepts). |
 
 ## Open questions
 
