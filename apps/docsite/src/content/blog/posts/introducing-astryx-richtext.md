@@ -6,6 +6,7 @@ type: 'update'
 draft: false
 authors:
   - 'cixzhang'
+  - 'potatowagon'
 tags:
   - 'Release'
   - 'Components'
@@ -87,7 +88,7 @@ Screen readers announce the editor properly: they read out the field's label and
 
 ## Thank you
 
-Thank you to [@potatowagon](https://github.com/potatowagon) and [@ernestt](https://github.com/ernestt), who helped make RichText possible.
+Thank you to [@ernestt](https://github.com/ernestt), who helped make RichText possible.
 
 ## Get started
 
