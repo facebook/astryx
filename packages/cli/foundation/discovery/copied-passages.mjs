@@ -261,7 +261,7 @@ export function sharedPassages(mine, other, size = PASSAGE_WORDS) {
 }
 
 /**
- * @typedef {{name: string, title?: string, file?: string, doc?: unknown, words: {word: string, section: string | null, block: number}[], replaces: string | null}} GuideWords
+ * @typedef {{name: string, title?: string, file?: string, doc?: unknown, words: {word: string, section: string | null, block: number}[], replaces: string | null, extendsTopic?: string | null}} GuideWords
  */
 
 /**
@@ -360,7 +360,7 @@ function loadCoreGuides() {
  * Core topic it replaces (a replacement takes that topic's place, so it may
  * carry its text).
  *
- * @param {{records: {name: string, path: string, replaces?: string | null}[], guides?: {name: string, ref?: {topicFile?: string}}[]}} discovered
+ * @param {{records: {name: string, path: string, replaces?: string | null, extendsTopic?: string | null}[], guides?: {name: string, ref?: {topicFile?: string}}[]}} discovered
  *   the package's docs, as discoverIntegrationDocs returns them
  * @returns {Promise<import('../../api/integration/authoring-checks.type.mjs').CopiedPassage[]>}
  */
@@ -370,11 +370,13 @@ export async function findCopiedPassages(discovered) {
       name: record.name,
       file: record.path,
       replaces: record.replaces ?? null,
+      extendsTopic: record.extendsTopic ?? null,
     })),
     ...(discovered.guides ?? []).map(guide => ({
       name: guide.name,
       file: guide.ref?.topicFile,
       replaces: null,
+      extendsTopic: null,
     })),
   ];
   /** @type {GuideWords[]} */
@@ -392,6 +394,7 @@ export async function findCopiedPassages(discovered) {
   }
   if (mine.length === 0) return [];
   const core = await loadCoreGuides();
+  const coreNames = new Set(core.guides.map(guide => guide.name));
   /** @type {import('../../api/integration/authoring-checks.type.mjs').CopiedPassage[]} */
   const found = [];
   /**
@@ -525,10 +528,19 @@ export async function findCopiedPassages(discovered) {
       runs.length > 1 ? `, and ${runs.length - 1} more passage(s)` : '';
     const named =
       kind === 'core' ? `the Core topic "${owner.name}"` : `"${owner.name}"`;
+    // An extension has no page of its own: its sections show on the page of
+    // the topic it extends, so a link to its text names that topic.
+    const page = owner.extendsTopic ?? owner.name;
     const link =
-      kind === 'core'
-        ? `{@link @astryxdesign/cli:generic:${owner.name}}`
-        : `{@link generic:${owner.name}}`;
+      kind === 'core' || coreNames.has(page)
+        ? `{@link @astryxdesign/cli:generic:${page}}`
+        : `{@link generic:${page}}`;
+    // A topic that extends its owner shows on the owner's page, so a link
+    // there points at itself: the copy goes instead.
+    const fix =
+      topic.extendsTopic === owner.name
+        ? `"${topic.name}" extends "${owner.name}", so its sections show on that page: delete the passage from "${topic.name}", or, if its section overrides one of "${owner.name}", drop the override so the original shows.`
+        : `In "${topic.name}", replace that whole passage, from its first word to its last, code ticks included, with ${link}.`;
     found.push({
       topic: topic.name,
       section,
@@ -540,8 +552,8 @@ export async function findCopiedPassages(discovered) {
       words: length,
       passages: runs.length,
       message:
-        `"${topic.name}"${where ? ` (${where})` : ''} repeats ${length} words of ${named} word for word${more}: «${excerpt}». ` +
-        `${why}. In "${topic.name}", replace that whole passage, from its first word to its last, code ticks included, with ${link}.`,
+        `"${topic.name}"${where ? ` (${where})` : ''} repeats ${length} words of ${named} word for word${more}: "${excerpt}". ` +
+        `${why}. ${fix}`,
     });
   };
   const own = indexGuides(mine);

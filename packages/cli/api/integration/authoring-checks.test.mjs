@@ -119,7 +119,7 @@ function writeTopics(topics) {
     `export default {docs: './docs'};\n`,
   );
   fs.mkdirSync(path.join(tmpDir, 'docs'), {recursive: true});
-  for (const {name, text, code, replaces} of topics) {
+  for (const {name, text, code, replaces, extendsTopic} of topics) {
     const blocks = [{type: 'prose', text}];
     if (code != null) blocks.push({type: 'code', lang: 'text', code});
     const doc = {
@@ -128,6 +128,7 @@ function writeTopics(topics) {
       title: 'Fixture',
       description: 'Fixture topic.',
       ...(replaces == null ? {} : {replaces}),
+      ...(extendsTopic == null ? {} : {extends: extendsTopic}),
       sections: [{title: 'Overview', content: blocks}],
     };
     fs.writeFileSync(
@@ -634,7 +635,7 @@ describe('integrationDocConflicts copied passages', () => {
     });
     expect(issue.message).toContain(`${PASSAGE.split(' ').length} words`);
     expect(issue.text).toBe(PASSAGE);
-    expect(issue.message).toContain(`«${PASSAGE}»`);
+    expect(issue.message).toContain(`"${PASSAGE}"`);
     expect(issue.message).toContain(
       '"acme-menus" keeps it: its name, title or section fits the passage.',
     );
@@ -706,5 +707,42 @@ describe('integrationDocConflicts copied passages', () => {
     expect(
       copied(await integrationDocConflicts(undefined, {cwd: tmpDir})),
     ).toEqual([]);
+  });
+});
+
+describe('integrationDocConflicts copied passages and extensions', () => {
+  const copied = (/** @type {any} */ result) => result.data.copiedPassages;
+
+  it('links to the page an extension shows on, not to the extension', async () => {
+    writeTopics([
+      {name: 'acme-menus', text: PASSAGE, extendsTopic: 'theme'},
+      {name: 'acme-setup', text: `${PASSAGE} Then run setup.`},
+    ]);
+
+    const [issue] = copied(
+      await integrationDocConflicts(undefined, {cwd: tmpDir}),
+    );
+
+    expect(issue).toMatchObject({topic: 'acme-setup', owner: 'acme-menus'});
+    expect(issue.message).toContain(
+      'with {@link @astryxdesign/cli:generic:theme}.',
+    );
+  });
+
+  it('says to delete a copy in a topic that extends its owner', async () => {
+    writeTopics([
+      {name: 'acme-base', text: PASSAGE},
+      {name: 'acme-more', text: PASSAGE, extendsTopic: 'acme-base'},
+    ]);
+
+    const [issue] = copied(
+      await integrationDocConflicts(undefined, {cwd: tmpDir}),
+    );
+
+    expect(issue).toMatchObject({topic: 'acme-more', owner: 'acme-base'});
+    expect(issue.message).toContain(
+      '"acme-more" extends "acme-base", so its sections show on that page: delete the passage from "acme-more"',
+    );
+    expect(issue.message).not.toContain('{@link');
   });
 });
