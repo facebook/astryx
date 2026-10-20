@@ -12,15 +12,34 @@ describe('fillerIn', () => {
   it('finds padding phrases in order, the longest one only', () => {
     expect(
       fillerIn(
-        'In order to start, it is worth noting that you simply run it. Note that it builds.',
+        'In order to start, it is worth noting that you basically run it. Note that it builds.',
       ),
-    ).toEqual(['in order to', 'it is worth noting', 'simply', 'note that']);
+    ).toEqual(['in order to', 'it is worth noting', 'basically', 'note that']);
   });
 
   it('leaves inline code, quotes, a noun "note", and ambiguous words alone', () => {
     expect(
       fillerIn(
-        'Run `simply --in order to`. Cut "in order to" and “simply”. Add a note that explains it. Copy just this one file; it really is the source.',
+        'Run `basically --in order to`. Cut "in order to" and “basically”. Add a note that explains it. Copy just this one file; it really is the source.',
+      ),
+    ).toEqual([]);
+  });
+
+  it('sets aside single-quoted text, but not an apostrophe', () => {
+    expect(
+      fillerIn(
+        "Avoid ‘basically’ and ‘obviously’. Don't write 'it is worth noting that' in a guide.",
+      ),
+    ).toEqual([]);
+    expect(fillerIn("Don't pad: it's important to note the order.")).toEqual([
+      "it's important to note",
+    ]);
+  });
+
+  it('lists no phrase that carries meaning in a correct sentence', () => {
+    expect(
+      fillerIn(
+        'It is not simply a wrapper. Every app gets a theme whether or not anyone picks one. Keep in mind the order. Feel free to skip it.',
       ),
     ).toEqual([]);
   });

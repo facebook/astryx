@@ -745,64 +745,6 @@ describe('integrationDocConflicts copied passages and extensions', () => {
     );
     expect(issue.message).not.toContain('{@link');
   });
-});
-
-describe('integrationDocConflicts fluff', () => {
-  const fluff = (/** @type {any} */ result) => result.data.fluff;
-
-  it('lists each padding phrase with its line and what to write instead', async () => {
-    writeTopics([
-      {
-        name: 'acme-setup',
-        text: 'In order to start, run the setup command once.',
-      },
-    ]);
-
-    const result = await integrationDocConflicts(undefined, {cwd: tmpDir});
-    const [hit, ...rest] = fluff(result);
-
-    expect(rest).toEqual([]);
-    expect(result.data.issues).toEqual([
-      {code: 'doc_fluff', severity: 'warning', message: hit.message},
-    ]);
-    expect(hit).toMatchObject({
-      topic: 'acme-setup',
-      kind: 'phrase',
-      phrase: 'in order to',
-      section: 'Overview',
-      line: 1,
-      density: null,
-    });
-    expect(hit.message).toContain('Write "to" instead.');
-  });
-
-  it('lists a long topic that is mostly glue, and not a dense one', async () => {
-    const glue = Array.from(
-      {length: 12},
-      () =>
-        'So that is why it is the one that you would want to use if you can.',
-    ).join(' ');
-    const dense = Array.from(
-      {length: 8},
-      (_, i) =>
-        `Name codemod folder ${i} after the Core version whose upgrade runs it.`,
-    ).join(' ');
-    writeTopics([
-      {name: 'acme-glue', text: glue},
-      {name: 'acme-dense', text: dense},
-    ]);
-
-    const found = fluff(
-      await integrationDocConflicts(undefined, {cwd: tmpDir}),
-    );
-
-    expect(found.map((/** @type {any} */ each) => each.topic)).toEqual([
-      'acme-glue',
-    ]);
-    expect(found[0]).toMatchObject({kind: 'density', phrase: null});
-    expect(found[0].density).toBeLessThan(0.5);
-    expect(found[0].message).toContain("Core's guides have a median of");
-  });
 
   it('compares pages without regard to case, and for two extensions of one page', async () => {
     writeTopics([
@@ -944,5 +886,95 @@ describe('integrationDocConflicts fluff', () => {
       `"acme-own" replaces the Core topic "${coreDoc.name}"`,
     );
     expect(found[0].message).not.toContain('{@link');
+  });
+});
+
+describe('integrationDocConflicts fluff', () => {
+  const fluff = (/** @type {any} */ result) => result.data.fluff;
+
+  it('lists each padding phrase with its line and what to write instead', async () => {
+    writeTopics([
+      {
+        name: 'acme-setup',
+        text: 'In order to start, run the setup command once.',
+      },
+    ]);
+
+    const result = await integrationDocConflicts(undefined, {cwd: tmpDir});
+    const [hit, ...rest] = fluff(result);
+
+    expect(rest).toEqual([]);
+    expect(result.data.issues).toEqual([
+      {code: 'doc_fluff', severity: 'warning', message: hit.message},
+    ]);
+    expect(hit).toMatchObject({
+      topic: 'acme-setup',
+      kind: 'phrase',
+      phrase: 'in order to',
+      section: 'Overview',
+      line: 1,
+      density: null,
+    });
+    expect(hit.message).toContain('Write "to" instead.');
+  });
+
+  it('finds each line within its own string, not in code or another field', async () => {
+    writeTopics([]);
+    fs.writeFileSync(
+      path.join(tmpDir, 'docs', 'acme-lines.doc.mjs'),
+      [
+        'export default {',
+        "  type: 'generic',",
+        "  name: 'acme-lines',",
+        "  title: 'Fixture',",
+        "  description: 'Build the package in order to publish it.',",
+        "  sections: [{title: 'Overview', content: [",
+        "    {type: 'code', lang: 'text', code: 'in order to build'},",
+        "    {type: 'prose', text: 'Note that the build runs once per package and writes its output.'},",
+        "    {type: 'prose', text: 'Run the build in order to refresh the generated files for the docs.'},",
+        '  ]}],',
+        '};',
+        '',
+      ].join('\n'),
+    );
+
+    const found = fluff(
+      await integrationDocConflicts(undefined, {cwd: tmpDir}),
+    ).map((/** @type {any} */ each) => [each.phrase, each.line]);
+
+    expect(found).toEqual([
+      ['in order to', 5],
+      ['note that', 8],
+      ['in order to', 9],
+    ]);
+  });
+
+  it('lists a long topic that is mostly glue, and not a dense one', async () => {
+    const glue = Array.from(
+      {length: 12},
+      () =>
+        'So that is why it is the one that you would want to use if you can.',
+    ).join(' ');
+    const dense = Array.from(
+      {length: 8},
+      (_, i) =>
+        `Name codemod folder ${i} after the Core version whose upgrade runs it.`,
+    ).join(' ');
+    writeTopics([
+      {name: 'acme-glue', text: glue},
+      {name: 'acme-dense', text: dense},
+    ]);
+
+    const found = fluff(
+      await integrationDocConflicts(undefined, {cwd: tmpDir}),
+    );
+
+    expect(found.map((/** @type {any} */ each) => each.topic)).toEqual([
+      'acme-glue',
+    ]);
+    expect(found[0]).toMatchObject({kind: 'density', phrase: null});
+    expect(found[0].density).toBeLessThan(0.5);
+    expect(found[0].message).toContain("Core's guides have a median of");
+    expect(found[0].message).toContain('under the 50% floor');
   });
 });

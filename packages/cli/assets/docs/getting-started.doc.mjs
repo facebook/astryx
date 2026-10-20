@@ -25,7 +25,7 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: 'Then give it a look. Every app gets a theme whether anyone picks one, so it is worth one question at setup rather than revisiting screens later that were built around the wrong look:',
+          text: 'Then give it a look. Every app gets a theme whether or not anyone picks one, so it is worth one question at setup rather than revisiting screens later that were built around the wrong look:',
         },
         {
           type: 'code',

@@ -23,8 +23,9 @@ import {
 /**
  * Padding phrases: each can be cut, or replaced by a shorter word, without
  * losing meaning. Only phrases that are padding in every use are listed;
- * words such as "just" or "really", which often mean "only" or "in fact",
- * are not.
+ * words such as "just", "simply" or "really", and phrases such as "whether or
+ * not" or "keep in mind", which carry meaning in a correct sentence ("not
+ * simply a wrapper", "regardless of whether"), are not.
  */
 export const FILLER_PHRASES = [
   "it's important to note",
@@ -36,7 +37,6 @@ export const FILLER_PHRASES = [
   'it should be noted',
   'please note',
   'note that',
-  'keep in mind',
   'as mentioned above',
   'as mentioned earlier',
   'as mentioned before',
@@ -47,13 +47,10 @@ export const FILLER_PHRASES = [
   'due to the fact that',
   'for the purpose of',
   'at this point in time',
-  'whether or not',
   'in other words',
-  'simply',
   'basically',
   'essentially',
   'obviously',
-  'feel free to',
 ];
 
 /** What to write instead, where a phrase is not simply cut. */
@@ -62,7 +59,6 @@ const INSTEAD = {
   'due to the fact that': 'because',
   'for the purpose of': 'to or for',
   'at this point in time': 'now',
-  'whether or not': 'whether',
 };
 
 /** A guide shorter than this many prose words is not scored for density. */
@@ -103,8 +99,11 @@ export function fillerIn(text) {
   // are set aside along with inline code.
   const prose = text
     .replace(/`[^`]*`/g, ' ')
-    .replace(/"[^"]*"|“[^”]*”/g, ' ')
-    .replace(/’/g, "'");
+    .replace(/"[^"]*"|“[^”]*”|‘[^’]*’/g, ' ')
+    .replace(/’/g, "'")
+    // A single-quoted span opens and closes beside a non-letter, so the
+    // apostrophe in "don't" or "it's" opens nothing.
+    .replace(/(?<![A-Za-z])'[^']*'(?![A-Za-z])/g, ' ');
   /** @type {{phrase: string, at: number}[]} */
   const found = [];
   for (const {phrase, pattern} of PATTERNS) {
@@ -138,15 +137,16 @@ export function density(words) {
 }
 
 /**
- * The 1-based line of a doc file that holds the phrase, or null when the
- * phrase is split across lines or the file cannot be read.
+ * The 1-based line of a doc file that holds the phrase, looked for from the
+ * line where its own string starts, or null when that cannot be found.
  *
  * @param {string} file
+ * @param {string} text the prose string the phrase is in
  * @param {string} phrase
  * @param {Map<string, string[]>} cache
  * @returns {number | null}
  */
-function lineOf(file, phrase, cache) {
+function lineOf(file, text, phrase, cache) {
   let lines = cache.get(file);
   if (!lines) {
     try {
@@ -156,12 +156,21 @@ function lineOf(file, phrase, cache) {
     }
     cache.set(file, lines);
   }
-  const pattern = phrasePattern(phrase === 'note that' ? 'note that ' : phrase);
-  const at = lines.findIndex(line => {
-    pattern.lastIndex = 0;
-    return pattern.test(line.replace(/\\u2019|’/g, "'"));
-  });
-  return at < 0 ? null : at + 1;
+  // The string's longest plain run is written in the file as it reads, so it
+  // finds where the string starts; the phrase is on that line or a later one
+  // of the same string.
+  const plain = (text.match(/[A-Za-z0-9 ,.;:()-]{12,}/g) ?? []).sort(
+    (a, b) => b.length - a.length,
+  )[0];
+  const from = plain ? lines.findIndex(line => line.includes(plain)) : -1;
+  if (from < 0) return null;
+  const escaped = phrase.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const pattern = new RegExp(`(?<![a-z])${escaped}(?![a-z])`, 'i');
+  const span = text.split('\n').length + 2;
+  for (let at = from; at < Math.min(lines.length, from + span); at++) {
+    if (pattern.test(lines[at].replace(/\\u2019|’/g, "'"))) return at + 1;
+  }
+  return null;
 }
 
 /**
@@ -210,7 +219,7 @@ export async function findFluff(discovered) {
     if (!doc || !file) continue;
     for (const {text, section} of proseStrings(doc)) {
       for (const phrase of fillerIn(text)) {
-        const line = lineOf(file, phrase, lines);
+        const line = lineOf(file, text, phrase, lines);
         const where = section ? ` (section "${section}")` : '';
         const instead = /** @type {Record<string, string>} */ (INSTEAD)[phrase];
         found.push({
@@ -245,7 +254,7 @@ export async function findFluff(discovered) {
       density: Math.round(score * 100) / 100,
       message:
         `"${name}" is mostly glue: ${Math.round(score * 100)}% of its ${words.length} prose words carry content, ` +
-        `where Core's guides have a median of ${Math.round(median * 100)}%. ` +
+        `under the ${Math.round(MIN_DENSITY * 100)}% floor (Core's guides have a median of ${Math.round(median * 100)}%). ` +
         'Cut filler and restated context until each sentence states one thing.',
     });
   }
