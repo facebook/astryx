@@ -1368,16 +1368,12 @@ describe('DropdownMenu items', () => {
   });
 });
 
-// jsdom lays nothing out, so a row gap is read from StyleX classes: a class
-// name hashes one property and its value, and the same declaration yields the
-// same class wherever it is written (the dev build adds a debug name, which
-// does not start with `x` and a hash).
+// jsdom lays nothing out, so which gap declaration wins is read from StyleX
+// classes: a class name hashes one property and its value, and the same
+// declaration yields the same class wherever it is written (the dev build adds
+// a debug name, which does not start with `x` and a hash). The rendered gap
+// itself is measured in real Chromium (MenuGroupRowGap.a11y.chromium.spec.ts).
 const menuRowRhythm = stylex.create({
-  column: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: spacingVars['--spacing-0-5'],
-  },
   gap: {gap: spacingVars['--spacing-0-5']},
 });
 function atomicClasses(style: stylex.StyleXStyles): string[] {
@@ -1386,39 +1382,8 @@ function atomicClasses(style: stylex.StyleXStyles): string[] {
     .className!.split(' ')
     .filter(token => /^x[a-z0-9]+$/.test(token));
 }
-function expectMenuRowRhythm(element: HTMLElement) {
-  const classes = atomicClasses(menuRowRhythm.column);
-  expect(classes).toHaveLength(3);
-  for (const token of classes) {
-    expect(element).toHaveClass(token);
-  }
-}
 
 describe('DropdownMenu sections', () => {
-  it("a section keeps the menu's row gap between its heading and rows", async () => {
-    const user = userEvent.setup();
-    render(
-      <DropdownMenu
-        button={{label: 'File'}}
-        items={[
-          {label: 'Rename'},
-          {
-            type: 'section',
-            title: 'Create',
-            items: [{label: 'New file'}, {label: 'New folder'}],
-          },
-          {label: 'Delete'},
-        ]}
-      />,
-    );
-    await user.click(screen.getByRole('button', {name: /File/}));
-    // The rows around the section are spaced by the menu's own column.
-    expectMenuRowRhythm(screen.getByRole('menu', {hidden: true}));
-    expectMenuRowRhythm(
-      screen.getByRole('group', {name: 'Create', hidden: true}),
-    );
-  });
-
   it('renders section with title', () => {
     render(
       <DropdownMenu
@@ -1616,26 +1581,6 @@ describe('DropdownMenuItem host attributes', () => {
 });
 
 describe('DropdownMenuGroup (compound mode)', () => {
-  it("keeps the menu's row gap between its heading, rows and dividers, as a radio group does", async () => {
-    const user = userEvent.setup();
-    render(
-      <DropdownMenu button={{label: 'Version'}}>
-        <DropdownMenuItem label="Rename" onClick={() => {}} />
-        <DropdownMenuGroup title="Version history">
-          <DropdownMenuItem label="Restore" onClick={() => {}} />
-          <DropdownMenuDivider />
-          <DropdownMenuItem label="Compare" onClick={() => {}} />
-        </DropdownMenuGroup>
-        <DropdownMenuItem label="Delete" onClick={() => {}} />
-      </DropdownMenu>,
-    );
-    await user.click(screen.getByRole('button', {name: /Version/}));
-    expectMenuRowRhythm(screen.getByRole('menu', {hidden: true}));
-    expectMenuRowRhythm(
-      screen.getByRole('group', {name: 'Version history', hidden: true}),
-    );
-  });
-
   it("a caller's xstyle still wins over the group's own layout", async () => {
     const user = userEvent.setup();
     const flush = stylex.create({group: {gap: 0}});
