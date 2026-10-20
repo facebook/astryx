@@ -2435,6 +2435,37 @@ jobs:
           retention-days: 30
           if-no-files-found: error
 
+      # FieldLabel owns native and group labelling, hidden text, optionality,
+      # descriptions, and delegated icon/tooltip presentation. Its audit lane
+      # keeps those states bound to exact-head themes, direction, and viewport.
+      - name: Run FieldLabel audit browser evidence
+        if: ${{ !cancelled() && github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, '[Component Audit] FieldLabel:') }}
+        env:
+          ASTRYX_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          status=0
+          node .github/scripts/accessibility-audit.js \
+            --storybook-dir apps/storybook/dist \
+            --output field-label-a11y-report.json \
+            --components FieldLabel \
+            --baseline .github/a11y-baseline.json \
+            --fail-on-new || status=1
+          pnpm exec playwright test \
+            packages/core/src/Field/__tests__/FieldLabelAudit.a11y.chromium.spec.ts \
+            --project chromium || status=1
+          exit "$status"
+
+      - name: Upload FieldLabel audit evidence
+        if: always() && github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, '[Component Audit] FieldLabel:')
+        uses: actions/upload-artifact@v7
+        with:
+          name: field-label-audit-evidence-${{ needs.build-storybook.outputs.short_hash }}
+          path: |
+            field-label-a11y-report.json
+            field-label-audit-evidence/
+          retention-days: 30
+          if-no-files-found: error
+
       # Component-owned metadata fixtures retain exact-head browser receipts on
       # audit PRs, including failed pre-fix cases for before/after comparison.
       - name: Run ChatMessageMetadata audit browser evidence
