@@ -81,11 +81,11 @@ A RichText document matches the same document rendered by Astryx `Markdown`: sam
 
 RichText is built on [Lexical](https://lexical.dev), the extensible text editing framework. Add your own nodes, Markdown transformers and Lexical plugins directly; `onChange` gives you Lexical editor state. RichText supports one Lexical minor at a time: 0.52 today, declared as `^0.52.0` peer dependencies, so your app installs Lexical rather than RichText bundling its own copy.
 
-Markdown plugins you wrote for Astryx `Markdown` with `createMarkdownPlugin` work in the editor too: adopt one with `createRichTextExtension`, and its nodes render as `Markdown` renders them and edit as one unit.
+Markdown plugins you wrote with `createMarkdownPlugin` to add syntax to Astryx `Markdown` work in the editor too: adopt one with `createRichTextExtension`, and its nodes render as `Markdown` renders them and edit as one unit. A plugin that transforms the whole document is refused with a `RichTextExtensionError`.
 
 ## Accessibility you do not have to build
 
-Screen readers announce the editor properly: they read out the field's label and say it is a multi-line text box, so someone using one knows what they are typing into. The whole toolbar works from the keyboard — arrow keys move between the buttons, no mouse needed — and Tab gets you out of the editor instead of typing a tab character and trapping you, which is how many rich text editors behave. Checkboxes in task lists can be checked from the keyboard, and screen readers call them checkboxes. Button tooltips, the link dialog and the editor's announcements come from the Astryx message catalog, so you translate them the same way as the rest of Astryx.
+Screen readers announce the editor properly: they read out the field's label and say it is a multi-line text box, so someone using one knows what they are typing into. The whole toolbar works from the keyboard — arrow keys move between the buttons, no mouse needed — and Tab indents as it does in a word processor, while Escape, then Tab moves focus out of the editor. Screen readers announce that hint, so keyboard users never get stuck. Checkboxes in task lists can be checked from the keyboard, and screen readers call them checkboxes. Button tooltips, the link dialog and the editor's announcements come from the Astryx message catalog, so you translate them the same way as the rest of Astryx.
 
 ## Get started
 
