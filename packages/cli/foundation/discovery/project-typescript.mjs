@@ -51,11 +51,19 @@ export function resolveProjectTypeScript(dirs) {
 }
 
 /**
+ * What to do when the project's TypeScript is missing or cannot be used: a
+ * version every check here reads, 5.0 (the oldest that checks a JavaScript
+ * doc) through 6 (the newest with a JavaScript compiler API).
+ */
+export const TYPESCRIPT_FIX =
+  'Install TypeScript 5.0 through 6 (`npm install -D typescript@6`) and run this check again.';
+
+/**
  * Why a check that needs the compiler did not run, when the TypeScript
- * installed has no JavaScript compiler API.
+ * installed has no JavaScript compiler API, and what to do.
  * @param {string} version
  * @param {string} outcome what was not done, such as `docs were not checked`
  */
 export function unusableTypeScriptReason(version, outcome) {
-  return `TypeScript ${version} is installed in this project, but it has no JavaScript compiler API (\`createProgram\`) to read types with, so ${outcome}.`;
+  return `TypeScript ${version} is installed in this project, but it has no JavaScript compiler API (\`createProgram\`) to read types with (TypeScript 7 ships none), so ${outcome}. ${TYPESCRIPT_FIX}`;
 }

@@ -117,6 +117,10 @@ describe('checkDocTypes', () => {
 
       const report = await check([['components/Badge.doc.mjs', 'components']]);
 
+      // The reason names the version and the fix, so a --strict failure
+      // says what to install.
+      expect(report.reason).toContain('TypeScript 7.0.0');
+      expect(report.reason).toContain('npm install -D typescript@6');
       expect(report).toEqual({
         status: 'skipped',
         reason: unusableTypeScriptReason('7.0.0', 'docs were not checked'),

@@ -176,7 +176,8 @@ describe('comparePropTables', () => {
     expect(await compare([component('Badge', source, doc)])).toMatchObject({
       findings: [],
       typesCompared: 0,
-      typesSkipped: `TypeScript 4.7.4 is older than 4.8, the oldest the type comparison reads`,
+      typesSkipped:
+        'TypeScript 4.7.4 is older than 4.8, the oldest the type comparison reads; install TypeScript 5.0 through 6 (`npm install -D typescript@6`) to judge them',
     });
   });
 
@@ -2196,6 +2197,7 @@ export const Hoc = withName((props: {label?: string}) => null);`;
     });
 
     expect(await compare([badge])).toEqual(skipped(TYPESCRIPT_MISSING_REASON));
+    expect(TYPESCRIPT_MISSING_REASON).toContain('npm install -D typescript@6');
     // TypeScript 7 has no JavaScript compiler API to load.
     const dir = path.join(pkg, 'node_modules', 'typescript');
     fs.mkdirSync(dir, {recursive: true});
@@ -2207,7 +2209,10 @@ export const Hoc = withName((props: {label?: string}) => null);`;
         exports: {'./package.json': './package.json'},
       }),
     );
-    expect(await compare([badge])).toEqual(
+    const report = await compare([badge]);
+    expect(report.reason).toContain('TypeScript 7.0.0');
+    expect(report.reason).toContain('npm install -D typescript@6');
+    expect(report).toEqual(
       skipped(
         unusableTypeScriptReason(
           '7.0.0',
