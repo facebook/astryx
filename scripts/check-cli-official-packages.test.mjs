@@ -2,7 +2,7 @@
 
 /**
  * @file Drift guard for the official package list the CLI carries for
- * `astryx discover` (spec:AST-051 FR10).
+ * `astryx discover` (spec:AST-051 FR11).
  *
  * `scripts/generate-cli-official-packages.mjs` builds the list from the
  * packages the release workflow publishes, with the CLI's own readers. This

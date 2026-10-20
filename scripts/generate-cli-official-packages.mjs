@@ -3,7 +3,7 @@
 
 /**
  * @file Writes the official package list that `astryx discover` reads before
- * every other source (spec:AST-051 FR10) to
+ * every other source (spec:AST-051 FR11) to
  * `packages/cli/assets/discover/official-packages.json`.
  *
  * A package is official when the release workflow publishes it and it adds at

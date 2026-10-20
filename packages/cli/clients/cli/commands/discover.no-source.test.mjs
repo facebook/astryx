@@ -2,7 +2,7 @@
 
 /**
  * @file `astryx discover` and the official list the CLI carries
- * (spec:AST-051 FR10), in projects with no discover source of their own.
+ * (spec:AST-051 FR11), in projects with no discover source of their own.
  *
  * A fresh app sees the official Astryx packages it could add, and a declared
  * official theme counts as installed. In a project that loads no integration

@@ -66,7 +66,7 @@ const DEPENDENCY_FIELDS = [
  */
 
 /**
- * An official package as this CLI lists it (spec:AST-051 FR10), with what its
+ * An official package as this CLI lists it (spec:AST-051 FR11), with what its
  * add command pins (FR2): the project's Core version, the Core range the
  * project declares, or the latest release; with none, it pins nothing.
  * @typedef {DiscoverPackage & {pin?: string}} OfficialPackage
@@ -620,7 +620,7 @@ async function callOwnSources(project, request = {}, options = {}) {
 
 /**
  * Call every discover source (see {@link callOwnSources}), then read the
- * official list (spec:AST-051 FR10). The list comes last, so a source keeps
+ * official list (spec:AST-051 FR11). The list comes last, so a source keeps
  * its entry for an official package, or for any package of the same
  * integration (FR7); the list adds the official packages no source covers.
  * The result stays in source order; discover puts official packages first
@@ -685,7 +685,7 @@ export function officialFirst(items, official, nameOf) {
 }
 
 /**
- * The official list this CLI carries (spec:AST-051 FR10). The file holds no
+ * The official list this CLI carries (spec:AST-051 FR11). The file holds no
  * versions; each entry takes them from this CLI and the project:
  *
  * - Its latest release is the newest release this CLI knows: its own version
