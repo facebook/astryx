@@ -51,7 +51,7 @@
 /**
  * A passage two topics repeat word for word: two of the package's own topics,
  * or one of them and a Core topic (never the Core topic it replaces). Only
- * prose counts, and only a run of 20 or more identical words, so each entry
+ * prose counts, and only a run of 10 or more identical words, so each entry
  * is a real copy. Listed for the author to fix; it never fails a check.
  *
  * @typedef {object} CopiedPassage

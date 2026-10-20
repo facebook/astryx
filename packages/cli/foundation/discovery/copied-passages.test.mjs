@@ -10,7 +10,7 @@ import {
 } from './copied-passages.mjs';
 
 const words = (/** @type {string} */ text) =>
-  passageWords(text).map(word => ({word, section: null}));
+  passageWords(text).map(word => ({word, section: null, block: 1}));
 
 describe('passageWords', () => {
   it('sets aside case, links, and Markdown emphasis', () => {
@@ -40,12 +40,12 @@ describe('proseWords', () => {
       ],
     };
     expect(proseWords(doc)).toEqual([
-      {word: 'intro', section: null},
-      {word: 'words.', section: null},
-      {word: 'install', section: 'Setup'},
-      {word: 'it.', section: 'Setup'},
-      {word: 'first', section: 'Setup'},
-      {word: 'step.', section: 'Setup'},
+      {word: 'intro', section: null, block: 1},
+      {word: 'words.', section: null, block: 1},
+      {word: 'install', section: 'Setup', block: 2},
+      {word: 'it.', section: 'Setup', block: 2},
+      {word: 'first', section: 'Setup', block: 3},
+      {word: 'step.', section: 'Setup', block: 3},
     ]);
   });
 });
@@ -60,6 +60,17 @@ describe('sharedPassages', () => {
     expect(
       sharedPassages(words(`a b ${passage} c`), words(`x ${passage} y`)),
     ).toEqual([{start: 2, length: PASSAGE_WORDS + 5}]);
+  });
+
+  it('never runs a passage from one string into the next', () => {
+    const half = Math.ceil(PASSAGE_WORDS / 2);
+    const first = passage.split(' ').slice(0, half).join(' ');
+    const second = passage.split(' ').slice(half, PASSAGE_WORDS).join(' ');
+    const split = [
+      ...passageWords(first).map(word => ({word, section: null, block: 1})),
+      ...passageWords(second).map(word => ({word, section: null, block: 2})),
+    ];
+    expect(sharedPassages(split, words(`${first} ${second}`))).toEqual([]);
   });
 
   it('ignores a run shorter than the passage size', () => {

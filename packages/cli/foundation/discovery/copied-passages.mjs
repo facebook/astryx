@@ -13,7 +13,7 @@
 import {builtinGuideFiles, loadTopicModule} from './docs-discovery.mjs';
 
 /** The shortest run of identical words reported as a copy. */
-export const PASSAGE_WORDS = 20;
+export const PASSAGE_WORDS = 10;
 
 /** Fields that hold identifiers or code rather than prose. */
 const SKIP_KEYS = new Set([
@@ -61,21 +61,27 @@ export function passageWords(text) {
 
 /**
  * Each prose word of a doc, in order, with the title of the section it is in
- * (null before the first section).
+ * (null before the first section) and the number of the string it came from.
+ * A passage never runs from one string into the next, so two fields that
+ * happen to sit side by side are not read as one sentence.
  *
  * @param {unknown} doc an authored doc object
- * @returns {{word: string, section: string | null}[]}
+ * @returns {{word: string, section: string | null, block: number}[]}
  */
 export function proseWords(doc) {
-  /** @type {{word: string, section: string | null}[]} */
+  /** @type {{word: string, section: string | null, block: number}[]} */
   const words = [];
+  let block = 0;
   /**
    * @param {unknown} value
    * @param {string | null} section
    */
   const walk = (value, section) => {
     if (typeof value === 'string') {
-      for (const word of passageWords(value)) words.push({word, section});
+      block++;
+      for (const word of passageWords(value)) {
+        words.push({word, section, block});
+      }
       return;
     }
     if (Array.isArray(value)) {
@@ -105,11 +111,21 @@ export function proseWords(doc) {
 }
 
 /**
- * The runs of at least `size` words that both docs have, longest first, each
- * as its start in `mine` and its length.
+ * Whether the `size` words from `at` all come from one string.
+ * @param {{block?: number}[]} words
+ * @param {number} at
+ * @param {number} size
+ */
+function inOneString(words, at, size) {
+  return words[at].block === words[at + size - 1].block;
+}
+
+/**
+ * The runs of at least `size` words that both docs have, each inside one
+ * string of each doc, longest first, as its start in `mine` and its length.
  *
- * @param {{word: string}[]} mine
- * @param {{word: string}[]} other
+ * @param {{word: string, block?: number}[]} mine
+ * @param {{word: string, block?: number}[]} other
  * @param {number} [size]
  * @returns {{start: number, length: number}[]}
  */
@@ -119,6 +135,7 @@ export function sharedPassages(mine, other, size = PASSAGE_WORDS) {
   /** @type {Map<string, number[]>} */
   const starts = new Map();
   for (let i = 0; i + size <= theirs.length; i++) {
+    if (!inOneString(other, i, size)) continue;
     const key = theirs.slice(i, i + size).join(' ');
     const list = starts.get(key);
     if (list) list.push(i);
@@ -129,7 +146,9 @@ export function sharedPassages(mine, other, size = PASSAGE_WORDS) {
   const runs = [];
   let i = 0;
   while (i + size <= words.length) {
-    const found = starts.get(words.slice(i, i + size).join(' '));
+    const found = inOneString(mine, i, size)
+      ? starts.get(words.slice(i, i + size).join(' '))
+      : undefined;
     if (!found) {
       i++;
       continue;
@@ -140,6 +159,8 @@ export function sharedPassages(mine, other, size = PASSAGE_WORDS) {
       while (
         i + length < words.length &&
         j + length < theirs.length &&
+        mine[i + length].block === mine[i].block &&
+        other[j + length].block === other[j].block &&
         words[i + length] === theirs[j + length]
       ) {
         length++;
@@ -153,18 +174,19 @@ export function sharedPassages(mine, other, size = PASSAGE_WORDS) {
 }
 
 /**
- * @typedef {{name: string, words: {word: string, section: string | null}[], replaces: string | null}} GuideWords
+ * @typedef {{name: string, words: {word: string, section: string | null, block: number}[], replaces: string | null}} GuideWords
  */
 
 /**
- * Each run of {@link PASSAGE_WORDS} words a doc has, as one string.
- * @param {{word: string}[]} words
+ * Each run of {@link PASSAGE_WORDS} words inside one string of a doc, joined.
+ * @param {{word: string, block: number}[]} words
  * @returns {Set<string>}
  */
 function windows(words) {
   /** @type {Set<string>} */
   const keys = new Set();
   for (let i = 0; i + PASSAGE_WORDS <= words.length; i++) {
+    if (!inOneString(words, i, PASSAGE_WORDS)) continue;
     keys.add(
       words
         .slice(i, i + PASSAGE_WORDS)
@@ -200,7 +222,7 @@ function indexGuides(guides) {
 
 /**
  * The indexes of the guides that share at least one run with `words`.
- * @param {{word: string}[]} words
+ * @param {{word: string, block: number}[]} words
  * @param {IndexedGuides} indexed
  * @returns {number[]}
  */
@@ -288,7 +310,7 @@ export async function findCopiedPassages(discovered) {
     if (runs.length === 0) return;
     const [{start, length}] = runs;
     const excerpt = topic.words
-      .slice(start, start + 12)
+      .slice(start, start + Math.min(length, 12))
       .map(each => each.word)
       .join(' ');
     const section = topic.words[start].section;

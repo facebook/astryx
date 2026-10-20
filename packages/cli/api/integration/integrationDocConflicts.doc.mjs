@@ -15,7 +15,7 @@ export const doc = {
     'Loads one local or installed integration and classifies Core doc overlaps as ' +
     'intentional replacements, intentional extensions, or accidental same-name ' +
     'conflicts that need an explicit relationship or a rename. `copiedPassages` lists each ' +
-    'pair of topics that repeat 20 or more words of prose word for word: two of the ' +
+    'pair of topics that repeat 10 or more words of prose word for word: two of the ' +
     "package's topics, or one of them and a Core topic other than the one it replaces. " +
     'Code and examples are not compared. The list never fails the check.',
   importPath: '@astryxdesign/cli/api',

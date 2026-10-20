@@ -658,8 +658,8 @@ describe('integrationDocConflicts copied passages', () => {
     ).toEqual([]);
   });
 
-  it('leaves out short shared phrases and code', async () => {
-    const short = PASSAGE.split(' ').slice(0, 15).join(' ');
+  it('leaves out a shared phrase under 10 words, and code', async () => {
+    const short = PASSAGE.split(' ').slice(0, 9).join(' ');
     writeTopics([
       {name: 'acme-a', text: PASSAGE},
       {name: 'acme-b', text: short},
