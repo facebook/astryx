@@ -259,7 +259,31 @@ function wordForms(w) {
   if (w.length > 3 && w.endsWith('s')) forms.add(w.slice(0, -1));
   if (w.length > 4 && w.endsWith('es')) forms.add(w.slice(0, -2));
   if (w.length > 4 && w.endsWith('ies')) forms.add(w.slice(0, -3) + 'y');
+  // A verb form keeps its verb: "spacing" and "sized" lost a final e
+  // ("space", "size"), and "dragging" doubled a consonant ("drag").
+  for (const suf of ['ing', 'ed']) {
+    if (w.length < suf.length + 3 || !w.endsWith(suf)) continue;
+    const base = w.slice(0, -suf.length);
+    forms.add(base);
+    forms.add(`${base}e`);
+    if (/([b-df-hj-np-tv-z])\1$/.test(base)) forms.add(base.slice(0, -1));
+  }
   return forms;
+}
+
+/**
+ * The singulars a lowercase word may have when it ends in a plural suffix:
+ * "tokens" is "token", "boxes" is "box", "entries" is "entry".
+ * @param {string} w
+ * @returns {string[]}
+ */
+function singulars(w) {
+  /** @type {string[]} */
+  const out = [];
+  if (w.length > 3 && w.endsWith('s')) out.push(w.slice(0, -1));
+  if (w.length > 4 && w.endsWith('es')) out.push(w.slice(0, -2));
+  if (w.length > 4 && w.endsWith('ies')) out.push(w.slice(0, -3) + 'y');
+  return out;
 }
 
 /**
@@ -302,7 +326,142 @@ function wordsOf(text) {
 function startsAWordOf(term, text) {
   if (term.length < 4) return false;
   if (term.length / String(text).length < 0.5) return false;
-  return wordsOf(text).some(w => w.startsWith(term) || sameWord(term, w));
+  // The term or its singular may start the word: "tokens" starts
+  // "tokenizer" through "token". A singular needs five letters, so "stats"
+  // does not start "status".
+  const starts = [term, ...singulars(term).filter(f => f.length >= 5)];
+  return wordsOf(text).some(
+    w => starts.some(f => w.startsWith(f)) || sameWord(term, w),
+  );
+}
+
+/**
+ * A query with its camelCase and PascalCase identifiers spelled as words, so
+ * `SidebarToggle` reads "sidebar toggle" and `useTablePaginationState` "use
+ * table pagination state". Plain words, and identifiers joined with `_` or `-`, are
+ * unchanged: a joined token that matches nothing stays unmatched.
+ * @param {string} query - The query as typed, before lowercasing.
+ * @returns {string} Lowercased.
+ */
+export function spellIdentifiers(query) {
+  return String(query)
+    .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+    .replace(/([A-Z])([A-Z][a-z])/g, '$1 $2')
+    .toLowerCase();
+}
+
+/**
+ * A name or keyword with its separators removed, lowercased: `Side Nav`,
+ * `side-nav`, and `SideNav` all join to `sidenav`.
+ * @param {string} text
+ * @returns {string}
+ */
+function joined(text) {
+  return String(text)
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '');
+}
+
+/**
+ * The strongest hit a run of two or more adjacent query words has when it is
+ * read as one joined word, and the query words it covers. Readers type a
+ * compound name as separate words (`table header cell` is TableHeaderCell,
+ * `number field` the keyword `numberfield`), and no single word of the run
+ * matches on its own.
+ *
+ * - 100: the run joins to a component, hook, or template name, or its plural
+ *   (`table header cells` is TableHeaderCell), or a hook name without its
+ *   `use` prefix (`table sticky columns` is useTableStickyColumns).
+ * - 90: the run joins to a one-word keyword (`number field` is
+ *   `numberfield`).
+ * - 95: the run joins to most of a name, cut short (`dropdown menu radio` is
+ *   DropdownMenuRadioItem); 92: it is a name's leading words, covering at least half
+ *   of it (`top nav mega` is TopNavMegaMenu); 70: it is two or more adjacent
+ *   words of a name that cover at least half of it (`header cell` in
+ *   TableHeaderCell), the same coverage a word prefix needs. These three
+ *   are for components and hooks only.
+ *
+ * A doc's name is a route or key, so docs are left out.
+ * @param {string[]} words - The query's words, stopwords included.
+ * @param {Candidate} candidate
+ * @returns {{score: number, reason: string, covered: Set<string>} | null}
+ *   `covered` holds the run's words and every stretch of them joined.
+ */
+export function compoundHit(words, candidate) {
+  if (candidate.domain === 'doc' || words.length < 2) return null;
+  const names = [candidate.name, ...(candidate.aliases ?? [])].filter(Boolean);
+  // Part of a name counts only for a component or hook. A template's name
+  // starts with the component it shows (`ProgressBarShowcase`), so part of it
+  // names the component, not the template.
+  const partial =
+    candidate.domain === 'component' || candidate.domain === 'hook';
+  // One-word lowercase keywords: a keyword an author declares for a reader
+  // to type, joined (`numberfield`). A capitalized one names another entry (a
+  // block's `componentsUsed`), which matches by its own name, and a keyword of
+  // several words is a phrase, matched as one.
+  const keywords = (candidate.keywords ?? []).filter(k =>
+    /^[a-z0-9]+$/.test(String(k)),
+  );
+  /** @type {{score: number, reason: string, covered: Set<string>} | null} */
+  let best = null;
+  for (let len = words.length; len >= 2; len--) {
+    for (let i = 0; i + len <= words.length; i++) {
+      const run = words.slice(i, i + len);
+      const word = run.join('');
+      let score = 0;
+      let reason = '';
+      for (const name of names) {
+        const nameJoined = joined(name);
+        const nameWords = wordsOf(name);
+        if (
+          nameJoined === word ||
+          pluralOf(word, nameJoined) ||
+          (candidate.domain === 'hook' && nameJoined === `use${word}`)
+        ) {
+          if (score < 100) [score, reason] = [100, `name ${name} spelled`];
+        } else if (!partial) {
+          continue;
+        } else if (
+          nameJoined.startsWith(word) &&
+          word.length / nameJoined.length >= 0.75
+        ) {
+          // Most of the name, cut short: `dropdown menu radio` is
+          // DropdownMenuRadioItem.
+          if (score < 95) [score, reason] = [95, `name ${name} spelled`];
+        } else if (
+          word.length / nameJoined.length >= 0.5 &&
+          run.every(
+            (w, j) => nameWords[j + (nameWords[0] === 'use' ? 1 : 0)] === w,
+          )
+        ) {
+          // The name's leading words: `top nav mega` is TopNavMegaMenu.
+          if (score < 92)
+            [score, reason] = [92, `name ${name} starts "${run.join(' ')}"`];
+        } else if (
+          word.length / nameJoined.length >= 0.5 &&
+          nameWords.some((_, k) => run.every((w, j) => nameWords[k + j] === w))
+        ) {
+          if (score < 70)
+            [score, reason] = [70, `name ${name} holds "${run.join(' ')}"`];
+        }
+      }
+      if (score < 90 && keywords.includes(word)) {
+        [score, reason] = [90, `keyword "${run.join(' ')}" spelled`];
+      }
+      if (score > (best?.score ?? 0)) {
+        // Each word of the run, and each identifier typed as several of its
+        // words joined (`dropdownMenu` in `dropdownMenu checkbox`).
+        const covered = new Set();
+        for (let a = 0; a < run.length; a++) {
+          for (let b = a + 1; b <= run.length; b++) {
+            covered.add(run.slice(a, b).join(''));
+          }
+        }
+        best = {score, reason, covered};
+      }
+    }
+  }
+  return best;
 }
 
 /**
@@ -541,7 +700,13 @@ const STRONG_TOKEN_SCORE = 70;
  *   candidate's scoreQuery result.
  * @returns {0 | 1 | 2}
  */
-export function domainPriority(term, tokens, candidate, hit) {
+export function domainPriority(
+  term,
+  tokens,
+  candidate,
+  hit,
+  queryWords = phraseWords(term),
+) {
   const words = [term, ...tokens];
   if (candidate.domain === 'doc') {
     const topic = String(candidate._topic ?? candidate.name).toLowerCase();
@@ -600,6 +765,9 @@ export function domainPriority(term, tokens, candidate, hit) {
     return 0;
   }
   if (hit.score >= FULL_COVERAGE_SCORE) return 1;
+  if ((compoundHit(queryWords, candidate)?.score ?? 0) >= STRONG_TOKEN_SCORE) {
+    return 1;
+  }
   const fuzzy = tokens.length <= 1;
   return words.some(
     w =>
@@ -722,7 +890,7 @@ export function titleInQuery(term, titles) {
  *   on coverage — cannot recover that from the score, because a single strong
  *   hit and a broad weak one land on the same number.
  */
-export function scoreQuery(term, tokens, candidate) {
+export function scoreQuery(term, tokens, candidate, words = phraseWords(term)) {
   const total = Math.max(tokens.length, 1);
   // A whole-phrase hit answered the whole query by definition.
   const asFull = (/** @type {{score: number, reason: string}} */ hit) => ({
@@ -731,8 +899,9 @@ export function scoreQuery(term, tokens, candidate) {
     total,
   });
   // Typo tolerance is for one-word lookups. In a multi-word query a near miss
-  // is usually a different word, not a typo.
-  const fuzzy = tokens.length <= 1;
+  // is usually a different word, not a typo. One typed identifier is one
+  // word, whatever words it spells.
+  const fuzzy = tokens.length <= 1 || !/\s/.test(term);
   const full = scoreCandidate(term, candidate, {fuzzy});
   // A query of several words keeps its phrase tiers below even when stopwords
   // leave one content word: "make an integration" is still the phrase an
@@ -789,8 +958,17 @@ export function scoreQuery(term, tokens, candidate) {
   let tokenSum = 0;
   /** @type {string[]} */
   const hitTerms = [];
+  // Adjacent words that join into a name or keyword answer each word they
+  // join, as strongly as the joined word matches (see compoundHit).
+  const compound = compoundHit(words, candidate);
   for (const tok of tokens) {
-    const h = bestForToken(tok, candidate, {fuzzy});
+    let h = bestForToken(tok, candidate, {fuzzy});
+    if (
+      compound?.covered.has(joined(tok)) &&
+      compound.score > (h?.score ?? 0)
+    ) {
+      h = compound;
+    }
     if (h && h.score >= MIN_TOKEN_SCORE) {
       if (h.score > strongest) strongest = h.score;
       matched++;
@@ -934,6 +1112,15 @@ export function scoreCandidate(
       nameLower === term.replace(/\s+/g, '');
     if (nameLower === term || leafLower === term || spelled) {
       consider(100, 'exact name');
+    } else if (
+      (domain === 'component' || domain === 'hook') &&
+      /\s/.test(term) &&
+      nameLower.startsWith(term.replace(/\s+/g, '')) &&
+      term.replace(/\s+/g, '').length / nameLower.length >= 0.75
+    ) {
+      // Most of the name typed as words, cut short: `complex select` is
+      // ComplexSelector, ahead of a one-word keyword elsewhere.
+      consider(95, `name "${candidateName}" spelled`);
     } else if (pluralOf(nameLower, term) || pluralOf(term, nameLower)) {
       // One point under the exact spelling, so the doc named `tokens` still
       // outranks the Token component for `tokens`.
@@ -957,9 +1144,18 @@ export function scoreCandidate(
   }
 
   // ── Keyword signals ─────────────────────────────────────────────
+  const termJoined = joined(term);
   for (const kw of keywords) {
     const kwLower = String(kw).toLowerCase();
-    if (kwLower === term) {
+    // A one-word keyword typed as separate words is the keyword: `number
+    // field` is `numberfield`. Only a
+    // lowercase keyword, one an author declares for a reader to type: a
+    // capitalized one names another entry (a block's `componentsUsed`). A
+    // doc's keywords include code terms, matched as written.
+    if (
+      kwLower === term ||
+      (domain !== 'doc' && /\s/.test(term) && String(kw) === termJoined)
+    ) {
       consider(90, `keyword "${kw}"`);
       continue;
     }
@@ -994,9 +1190,12 @@ export function scoreCandidate(
   // Match the term's stem as a whole word, tolerating plural/gerund suffixes
   // so "chart" matches "charts" and "filter" matches "filtering".
   if (term.length >= 3) {
-    const root = stem(term);
-    const escaped = root.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const re = new RegExp(`\\b${escaped}(s|es|ing|ed|ies)?\\b`);
+    // Any form of the term, with any common suffix: `spacing` finds
+    // "space" and "spaces", `sortable` finds "sorting".
+    const roots = [...new Set([stem(term), ...wordForms(term)])]
+      .filter(f => f.length >= 3)
+      .map(f => f.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+    const re = new RegExp(`\\b(?:${roots.join('|')})(s|es|ing|ed|ies)?\\b`);
     if (description && re.test(description.toLowerCase())) {
       consider(50, `description mentions "${term}"`);
     } else {
@@ -1927,7 +2126,14 @@ async function searchOnce(query, options) {
   }
 
   const term = String(query).trim().toLowerCase();
-  const tokens = tokenizeQuery(term);
+  // A query that is one identifier counts as the words it spells
+  // (`SidebarToggle`), and still matches whole as typed. In a
+  // query of several words, each identifier stays one term (`ChatComposer
+  // ChatLayout` names two components), and its words still join into names
+  // (see compoundHit).
+  const spelled = spellIdentifiers(String(query).trim());
+  const tokens = tokenizeQuery(/\s/.test(term) ? term : spelled);
+  const words = phraseWords(spelled);
 
   // `astryx docs` reads docs without @astryxdesign/core, and `astryx theme
   // list` reads themes without it (bundled themes need no project), so a
@@ -1967,7 +2173,7 @@ async function searchOnce(query, options) {
   /** @type {{result: any, priority: 0 | 1 | 2}[]} */
   const ranked = [];
   for (const candidate of all) {
-    const hit = scoreQuery(term, tokens, candidate);
+    const hit = scoreQuery(term, tokens, candidate, words);
     if (hit)
       ranked.push({
         result: toResult(
@@ -1977,7 +2183,7 @@ async function searchOnce(query, options) {
           hit.matched,
           hit.total,
         ),
-        priority: domainPriority(term, tokens, candidate, hit),
+        priority: domainPriority(term, tokens, candidate, hit, words),
       });
   }
 

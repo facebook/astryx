@@ -863,3 +863,91 @@ describe('search — usage guidance is indexed, a tier below description', () =>
     expect(hit?.score).toBe(45);
   });
 });
+
+describe('search leaf — compound names, other names, and word forms', () => {
+  it('finds a compound name typed as separate words inside a longer query', async () => {
+    const {data} = await search('table header cell with sort arrow', {cwd});
+    expect(
+      data.results.slice(0, 3).map(r => r.name),
+    ).toContain('TableHeaderCell');
+  }, SLOW);
+
+  it('finds a one-word keyword typed as separate words', async () => {
+    // MetadataList declares `keyvalue`.
+    const {data} = await search('key value pairs', {cwd});
+    expect(data.results[0]).toMatchObject({
+      domain: 'component',
+      name: 'MetadataList',
+    });
+  }, SLOW);
+
+  it('finds a hook named by its words without the `use` prefix', async () => {
+    const {data} = await search('persisted table column settings', {cwd});
+    expect(data.results[0]).toMatchObject({
+      domain: 'hook',
+      name: 'useTableColumnSettings',
+    });
+  }, SLOW);
+
+  it('reads a camelCase identifier as the words it spells', async () => {
+    const {data} = await search('useTablePaginationState', {cwd});
+    expect(data.results[0]).toMatchObject({
+      domain: 'hook',
+      name: 'useTablePagination',
+    });
+  }, SLOW);
+
+  it('keeps each identifier of a multi-word query whole', async () => {
+    const {data} = await search('ChatMessageList ChatComposer', {cwd});
+    expect(data.results.slice(0, 2).map(r => r.name).sort()).toEqual([
+      'ChatComposer',
+      'ChatMessageList',
+    ]);
+  }, SLOW);
+
+  it("finds a component by another library's name for it", async () => {
+    for (const [q, name] of [
+      ['ScrollArea viewport', 'ScrollableArea'],
+      ['toggle group of buttons', 'ToggleButtonGroup'],
+      ['circular progress for uploads', 'Spinner'],
+    ]) {
+      const {data} = await search(q, {cwd});
+      expect(data.results[0], q).toMatchObject({domain: 'component', name});
+    }
+  }, SLOW);
+
+  it('finds Icon by a glyph name', async () => {
+    for (const q of ['cog', 'lightning bolt']) {
+      const {data} = await search(q, {cwd});
+      expect(data.results[0], q).toMatchObject({
+        domain: 'component',
+        name: 'Icon',
+      });
+    }
+  }, SLOW);
+
+  it('matches a verb form against its verb', () => {
+    // "spacing" lost the final e of "space".
+    expect(
+      scoreCandidate('spacing', {domain: 'component', name: 'Gap', keywords: ['space']}),
+    ).toMatchObject({score: 88});
+    expect(
+      scoreCandidate('dragging', {domain: 'component', name: 'Gap', keywords: ['drag']}),
+    ).toMatchObject({score: 88});
+  });
+
+  it('lets a plural start a longer word through its singular', () => {
+    expect(
+      scoreCandidate('chips', {domain: 'component', name: 'Chipset'}),
+    ).toMatchObject({score: 60});
+    // A four-letter singular is too short: "stats" does not start "statusbar".
+    expect(
+      scoreCandidate('stats', {domain: 'component', name: 'Statusbar'}),
+    ).toBeNull();
+  });
+
+  it('leaves an identifier joined with _ unmatched when nothing has it', async () => {
+    const {data} = await search('qqzz_no_match_here', {cwd});
+    expect(data.results).toEqual([]);
+  }, SLOW);
+});
