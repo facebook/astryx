@@ -273,7 +273,12 @@ describe('ContextMenu', () => {
     );
 
     fireEvent.contextMenu(screen.getByText('Right-click me'));
-    await user.click(screen.getByRole('button', {name: 'Move to project'}));
+    // The sheet is lazy: its first render suspends once even when the module
+    // is already loaded, so wait for the row rather than relying on an
+    // earlier case to have rendered a sheet.
+    await user.click(
+      await screen.findByRole('button', {name: 'Move to project'}),
+    );
 
     const submenuHeading = screen.getByRole('heading', {
       name: 'Move to project',
