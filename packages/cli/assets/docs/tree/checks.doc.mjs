@@ -32,7 +32,7 @@ export const docs = {
               '`npx astryx doctor integration validate`',
               'The manifest loads, each root holds contributions the CLI can read, and each doc matches its authoring type',
               'A declared root is missing (`missing_root`), a contribution does not load (`invalid_doc`, `invalid_component`, `invalid_theme`), or two templates in the package replace one Core id (`ambiguous_template_replacement`)',
-              "The manifest has a key this CLI does not know (`unknown_manifest_key`), or a doc field does not match the doc's authoring type: a field the type does not have, a missing required field, or a value outside the field's type. It checks docs with your installed `typescript`; without it, it prints `[skip] Docs not type-checked`. With no `astryx.integration.mjs` it prints a hint and exits 0",
+              "The manifest has a key this CLI does not know (`unknown_manifest_key`), or a doc field does not match the doc's authoring type: a field the type does not have, a missing required field, or a value outside the field's type. It checks docs with your installed `typescript`, or, where that is missing or has no JavaScript compiler API (TypeScript 7), with an installed `@typescript/typescript6`; without either, it prints `[skip] Docs not type-checked`. With no `astryx.integration.mjs` it prints a hint and exits 0",
             ],
             [
               '`npx astryx doctor integration components`',

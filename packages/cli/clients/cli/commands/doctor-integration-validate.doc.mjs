@@ -16,7 +16,9 @@ export const doc = {
     'installed package resolved by name. It schema-checks the manifest, verifies ' +
     'every declared contribution root, and reports every finding. Safe as a CI gate. ' +
     'It then checks every doc the package ships under its roots against the ' +
-    "published authoring type for its kind, with the project's own `typescript`, and " +
+    "published authoring type for its kind, with the project's own `typescript` (or, " +
+    'where `typescript` is missing or has no JavaScript compiler API, as TypeScript 7 ' +
+    'does, the `@typescript/typescript6` it installs), and ' +
     'warns about each field that does not match, naming the field and a fix. A doc ' +
     'it cannot fully check is listed with the reason, and test fixtures under ' +
     '`__tests__` in the components or docs root are counted, not checked. Without ' +

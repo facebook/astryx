@@ -49,7 +49,7 @@ export const docs = {
             'Start with `"exports": {}`: each component and template you add then writes the public import that `integration verify` resolves.',
             'Run the CLI as `npx astryx`, which runs the `@astryxdesign/cli` you installed as a devDependency.',
             'Component commands read Core, so they need `@astryxdesign/core` installed.',
-            "The checks compare your docs with your code through TypeScript's JavaScript compiler API, so they need `typescript` 5.0 through 6 installed. TypeScript 7 does not ship that API, and with it the checks skip those comparisons.",
+            "The checks compare your docs with your code through TypeScript's JavaScript compiler API, which `typescript` 5.0 through 6 has. TypeScript 7 does not ship that API: on TypeScript 7, also install `@typescript/typescript6`, its TypeScript 6 API package, and the checks use it.",
           ],
         },
         {
