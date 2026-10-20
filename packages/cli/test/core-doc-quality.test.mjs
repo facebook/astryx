@@ -3,7 +3,7 @@
 /**
  * Core's own guides pass the doc-quality checks `integration check --strict`
  * holds every integration to (architecture:cli-surface DEC-8): no two guides
- * repeat a passage word for word.
+ * repeat a passage word for word, and none pads its prose.
  */
 
 import {describe, expect, it} from 'vitest';
@@ -13,22 +13,29 @@ import {
   loadTopicModule,
 } from '../foundation/discovery/docs-discovery.mjs';
 import {
+  DENSITY_MIN_WORDS,
+  MIN_DENSITY,
+  density,
+  fillerIn,
+} from '../foundation/discovery/doc-fluff.mjs';
+import {
   BOILERPLATE_TOPICS,
   MIN_CONTENT_WORDS,
   PASSAGE_WORDS,
   contentWords,
   trimBoilerplate,
   proseWords,
+  proseStrings,
   sharedPassages,
 } from '../foundation/discovery/copied-passages.mjs';
 
-/** @returns {Promise<{name: string, words: ReturnType<typeof proseWords>}[]>} */
+/** @returns {Promise<{name: string, doc: unknown, words: ReturnType<typeof proseWords>}[]>} */
 async function coreGuides() {
   const guides = [];
   for (const file of builtinGuideFiles()) {
     const doc = /** @type {any} */ (await loadTopicModule(file));
     if (typeof doc?.name === 'string') {
-      guides.push({name: doc.name, words: proseWords(doc)});
+      guides.push({name: doc.name, doc, words: proseWords(doc)});
     }
   }
   return guides;
@@ -82,5 +89,18 @@ describe("Core's guides", () => {
       copies,
       'Keep the fact in the guide that owns it and link to it from the other.',
     ).toEqual([]);
+  });
+
+  it('use no padding phrase and keep their density above the floor', async () => {
+    const fluff = [];
+    for (const {name, doc, words} of await coreGuides()) {
+      for (const {text} of proseStrings(doc)) {
+        for (const phrase of fillerIn(text)) fluff.push(`${name}: "${phrase}"`);
+      }
+      if (words.length >= DENSITY_MIN_WORDS && density(words) < MIN_DENSITY) {
+        fluff.push(`${name}: density ${density(words).toFixed(2)}`);
+      }
+    }
+    expect(fluff, 'Cut the phrase, or write the shorter word.').toEqual([]);
   });
 });
