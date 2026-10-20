@@ -87,16 +87,12 @@ this record says otherwise.
   `ERR_INVALID_OPTION`. `--limit <n>` caps search results (default 20) and the
   response reports the total when it cut the list. An unknown kind or a limit
   that is not a positive integer MUST fail with `ERR_INVALID_OPTION`.
-- **FR6 — Sources are invocation functions with one owning provider.** A source is
-  an async function that receives `{signal, package?, version?}` and resolves to
-  a catalog; `package` asks for one package with every version, and `version`
-  asks for that version's items. A project MAY set one as the `discover` field
-  of `astryx.config`, and each loaded integration MAY export one as its
-  `discover` named export. A programmatic host MAY replace that named export
-  only for an integration the active package set serves; the replacement uses
-  the same function contract, occupies that integration's place in source
-  order, and keeps that integration's package identity. It MUST NOT replace a
-  project-installed integration's source. Every source is called, the project's
+- **FR6 — Sources are functions a project or integration provides.** A source is
+  an async function that receives `{signal, package?, version?}` and resolves
+  to a catalog; `package` asks for one package with every version, and
+  `version` asks for that version's items. A project MAY set one as the
+  `discover` field of `astryx.config`, and each loaded integration MAY export
+  one as its `discover` named export. Every source is called, the project's
   first and then each integration's in load order, and the same function runs
   once. A source that throws, exceeds 30 seconds (signalled on `signal`), or
   returns an invalid catalog fails alone: the others still count, and discover
@@ -150,24 +146,23 @@ source, packages}`. `source` has `name`, `generatedAt`, and `complete`. Each
   saved copy (INV21); the saved copy's path passes `assertWithin` under the
   cache directory (INV10).
 - `spec:AST-031`: `discover` is a second named-export feature, without the
-  consent gate (FR6). A host replacement keeps that integration-owned feature's
-  identity and source-order position.
+  consent gate (FR6).
 - Consumer docs: `cli/integrations` gains the `discover` named export and config
   field, and `astryx docs authoring` gains the `discover-source` section.
 
 ## Verification
 
-| Contract | Verification                            | Representative states                                                                                                                            | Mutation or failure expectation                                                                                                             |
-| -------- | --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| FR1      | list leaf, catalog view, command tests  | installed only; available only; both; latest known; alias of an installed package; declared dependency                                           | an available package is missing, an alias or declared package is offered, or latest is absent                                               |
-| FR2      | detail leaf and command tests           | installed; not installed; `@version`; prerelease; unpublished version; alias                                                                     | a version is dropped, the default is wrong, the add command runs, or an alias is offered                                                    |
-| FR3      | item leaf and dispatcher tests          | installed component; installed template; listed item; unknown item                                                                               | an installed component loses its doc, or a listed item is not found                                                                         |
-| FR4      | search leaf and command tests           | components, templates, docs, packages; installed and available; title and summary matches; an exact installed name; a single match               | a kind is not searched, installed state is wrong, a weak match ranks first, or a free-text query returns a doc instead of the list          |
-| FR5      | dispatcher, leaf, and command tests     | each kind; `--installed`; `--available`; both; `--limit`; bad values                                                                             | a filter is ignored, the pair is accepted, or a bad value passes                                                                            |
-| FR6      | adapter source and hosted-runtime tests | project and two integrations; shared function; host replacement for a served integration; project-installed source; throw; timeout; invalid data | a failure hides other sources, a function runs twice, order changes, a host replaces a project-installed source, or the signal never aborts |
-| FR7      | catalog schema tests                    | unknown field; unknown kind; `schemaVersion: 2`; duplicate package across sources; misordered versions                                           | an unknown field fails, another version is accepted, the later source wins, or versions keep the source order                               |
-| FR8      | adapter saved-copy and command tests    | fresh answer; failure with a saved copy; failure with none; another request                                                                      | a stale copy hides a fresh answer, the saved date is missing, or a project file is written                                                  |
-| FR9      | existing discover JSON tests            | each response type with and without a source                                                                                                     | an existing field changes type or meaning                                                                                                   |
+| Contract | Verification                           | Representative states                                                                                                              | Mutation or failure expectation                                                                                                    |
+| -------- | -------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| FR1      | list leaf, catalog view, command tests | installed only; available only; both; latest known; alias of an installed package; declared dependency                             | an available package is missing, an alias or declared package is offered, or latest is absent                                      |
+| FR2      | detail leaf and command tests          | installed; not installed; `@version`; prerelease; unpublished version; alias                                                       | a version is dropped, the default is wrong, the add command runs, or an alias is offered                                           |
+| FR3      | item leaf and dispatcher tests         | installed component; installed template; listed item; unknown item                                                                 | an installed component loses its doc, or a listed item is not found                                                                |
+| FR4      | search leaf and command tests          | components, templates, docs, packages; installed and available; title and summary matches; an exact installed name; a single match | a kind is not searched, installed state is wrong, a weak match ranks first, or a free-text query returns a doc instead of the list |
+| FR5      | dispatcher, leaf, and command tests    | each kind; `--installed`; `--available`; both; `--limit`; bad values                                                               | a filter is ignored, the pair is accepted, or a bad value passes                                                                   |
+| FR6      | adapter source tests                   | project and two integrations; a shared function; a throw; a timeout; invalid data                                                  | a failure hides other sources, a function runs twice, order changes, or the signal never aborts                                    |
+| FR7      | catalog schema tests                   | unknown field; unknown kind; `schemaVersion: 2`; duplicate package across sources; misordered versions                             | an unknown field fails, another version is accepted, the later source wins, or versions keep the source order                      |
+| FR8      | adapter saved-copy and command tests   | fresh answer; failure with a saved copy; failure with none; another request                                                        | a stale copy hides a fresh answer, the saved date is missing, or a project file is written                                         |
+| FR9      | existing discover JSON tests           | each response type with and without a source                                                                                       | an existing field changes type or meaning                                                                                          |
 
 ## Decision log
 
@@ -189,12 +184,9 @@ package manager from discover.
 **Decider:** `josephfarina`, `2026-09-30`
 
 A project or an integration provides a source as a function, and discover
-merges every source. A programmatic host may replace the source of an
-integration it serves from an active package set, without changing that
-integration's identity or replacing a project-installed source. A catalog host
-that needs sign-in works through the function, which runs with the credentials
-its host already has, and a project can add or replace what it reads without a
-CLI release.
+merges every source. A catalog host that needs sign-in works through the
+function, which runs with the credentials its host already has, and a project
+can add or replace what it reads without a CLI release.
 
 Rejected: a catalog URL built into the CLI, which ties the public CLI to one
 host; a source given as a URL for the CLI to fetch, which cannot sign in to a
