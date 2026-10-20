@@ -14,6 +14,8 @@
  * The separate prefixes ensure atomic classes don't collide between
  * layers, which would break theme overrides. Generated replacement CSS is
  * parsed by the host PostCSS instance so consumers do not load a second copy.
+ * The library pass reads no Babel config file, so the app's own Babel config
+ * never transforms Astryx source; the product pass still loads it.
  */
 
 const path = require('node:path');
@@ -102,6 +104,11 @@ function createPlugin() {
     // Two babel configs — different classNamePrefix
     const libraryBabelConfig = {
       babelrc: false,
+      // Astryx source needs only the StyleX plugin. Without this, Babel also
+      // loads the app's root config (`next/babel` in the documented setup),
+      // and its preset-env rewrites package source the app cannot change,
+      // such as `\p{…}` regular expressions, before StyleX reads it.
+      configFile: false,
       parserOpts: {plugins: ['typescript', 'jsx']},
       plugins: withClassNamePrefix(babelPlugins, libraryPrefix),
     };
