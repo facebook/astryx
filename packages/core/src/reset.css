@@ -209,15 +209,23 @@
 
   /*
    * Form elements should inherit font styles from their parent rather
-   * than using the browser's default font stack. `letter-spacing` is not
-   * part of `font`, and the browser sets it to `normal` on these elements.
+   * than using the browser's default font stack.
    */
   :where(button, input, optgroup, select, textarea) {
     font: inherit;
-    letter-spacing: inherit;
     color: inherit;
     margin: 0;
     padding: 0;
+  }
+
+  /*
+   * `letter-spacing` is not part of `font`, and the browser sets it to
+   * `normal` on these controls, so they take their parent's too. `select`
+   * keeps the browser's spacing: Firefox does not widen a select for its
+   * letter-spacing, so a tracked label would be clipped.
+   */
+  :where(button, input, textarea) {
+    letter-spacing: inherit;
   }
 
   /*
