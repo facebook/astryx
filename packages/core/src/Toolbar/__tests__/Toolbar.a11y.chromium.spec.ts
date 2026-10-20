@@ -3,7 +3,7 @@
 /**
  * @file Toolbar.a11y.chromium.spec.ts
  * @input Built toolbar stories and TOOLBAR_PATTERN in real Chromium
- * @output Browser evidence for every toolbar expectation across Toolbar's representative states
+ * @output Browser evidence for every toolbar expectation across Toolbar's representative states, and a paint check that each state's controls sit on the axis and in the direction it declares
  * @position Chromium lane of the Toolbar binding
  */
 
@@ -102,6 +102,53 @@ test('every toolbar expectation is exercised by a Toolbar state', async ({
   }
   expect(neverExercised(results)).toEqual([]);
 });
+
+/**
+ * The contract reads `orientation` and `direction` as facts the binding
+ * declares. This checks the painted page agrees: the second control sits
+ * below the first in a vertical state, and after it in reading order — to
+ * its right, or its left under right-to-left — in a horizontal one.
+ */
+for (const state of TOOLBAR_BINDING_STATES) {
+  test(`Toolbar [${state.id}] paints its controls on the declared axis and direction`, async ({
+    page,
+  }) => {
+    const {related} = await mountState(page, state);
+    const first = await related['first-control'].boundingBox();
+    const second = await related['second-control'].boundingBox();
+    if (first == null || second == null) {
+      throw new Error(`state "${state.id}" has an unpainted control`);
+    }
+    const firstMiddle = {
+      x: first.x + first.width / 2,
+      y: first.y + first.height / 2,
+    };
+    const secondMiddle = {
+      x: second.x + second.width / 2,
+      y: second.y + second.height / 2,
+    };
+    if (state.facts.orientation === 'vertical') {
+      expect(second.y, 'second control below the first').toBeGreaterThanOrEqual(
+        first.y + first.height,
+      );
+    } else {
+      expect(
+        Math.abs(secondMiddle.y - firstMiddle.y),
+        'controls share a row',
+      ).toBeLessThan(first.height / 2);
+      if (state.facts.direction === 'rtl') {
+        expect(secondMiddle.x, 'second control left of the first').toBeLessThan(
+          firstMiddle.x,
+        );
+      } else {
+        expect(
+          secondMiddle.x,
+          'second control right of the first',
+        ).toBeGreaterThan(firstMiddle.x);
+      }
+    }
+  });
+}
 
 for (const state of TOOLBAR_BINDING_STATES) {
   test(`Toolbar [${state.id}] — ${state.summary}`, async ({page}) => {
