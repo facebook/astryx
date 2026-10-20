@@ -741,8 +741,42 @@ describe('integrationDocConflicts copied passages and extensions', () => {
 
     expect(issue).toMatchObject({topic: 'acme-more', owner: 'acme-base'});
     expect(issue.message).toContain(
-      '"acme-more" extends "acme-base", so its sections show on that page: delete the passage from "acme-more"',
+      '"acme-more" and "acme-base" show on the same page ("acme-base"): delete the passage from "acme-more"',
     );
     expect(issue.message).not.toContain('{@link');
+  });
+
+  it('compares pages without regard to case, and for two extensions of one page', async () => {
+    writeTopics([
+      {name: 'acme-colors', text: PASSAGE, extendsTopic: 'Theme'},
+      {name: 'acme-menus', text: PASSAGE, extendsTopic: 'theme'},
+    ]);
+
+    const [issue] = copied(
+      await integrationDocConflicts(undefined, {cwd: tmpDir}),
+    );
+
+    expect(issue.message).toContain('show on the same page ("theme")');
+    expect(issue.message).not.toContain('{@link');
+  });
+
+  it("links to a package topic that replaces Core's by its own name", async () => {
+    writeTopics([
+      {name: 'theme', text: PASSAGE, replaces: 'theme'},
+      {name: 'acme-setup', text: `${PASSAGE} Then run setup.`},
+    ]);
+
+    const found = copied(
+      await integrationDocConflicts(undefined, {cwd: tmpDir}),
+    );
+
+    for (const each of found) {
+      expect(each.message).not.toContain('@astryxdesign/cli:generic:theme');
+    }
+    expect(
+      found.some((/** @type {any} */ each) =>
+        each.message.includes('with {@link generic:theme}.'),
+      ),
+    ).toBe(true);
   });
 });

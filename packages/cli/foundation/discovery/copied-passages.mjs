@@ -394,7 +394,13 @@ export async function findCopiedPassages(discovered) {
   }
   if (mine.length === 0) return [];
   const core = await loadCoreGuides();
-  const coreNames = new Set(core.guides.map(guide => guide.name));
+  const coreNames = new Set(core.guides.map(guide => guide.name.toLowerCase()));
+  const packageNames = new Set(mine.map(each => each.name.toLowerCase()));
+  /**
+   * The page a topic's sections show on: its own, or the one it extends.
+   * @param {GuideWords} each
+   */
+  const pageOf = each => (each.extendsTopic ?? each.name).toLowerCase();
   /** @type {import('../../api/integration/authoring-checks.type.mjs').CopiedPassage[]} */
   const found = [];
   /**
@@ -529,17 +535,24 @@ export async function findCopiedPassages(discovered) {
     const named =
       kind === 'core' ? `the Core topic "${owner.name}"` : `"${owner.name}"`;
     // An extension has no page of its own: its sections show on the page of
-    // the topic it extends, so a link to its text names that topic.
-    const page = owner.extendsTopic ?? owner.name;
-    const link =
-      kind === 'core' || coreNames.has(page)
-        ? `{@link @astryxdesign/cli:generic:${page}}`
-        : `{@link generic:${page}}`;
-    // A topic that extends its owner shows on the owner's page, so a link
-    // there points at itself: the copy goes instead.
+    // the topic it extends, so a link to its text names that topic. Topic
+    // names resolve without regard to case, as the docs catalog reads them.
+    const page = pageOf(owner);
+    // The page is Core's only when the owner is a Core guide, or an extension
+    // of a Core topic that no package topic of the same name replaces.
+    const corePage =
+      kind === 'core' ||
+      (owner.extendsTopic != null &&
+        coreNames.has(page) &&
+        !packageNames.has(page));
+    const link = corePage
+      ? `{@link @astryxdesign/cli:generic:${page}}`
+      : `{@link generic:${page}}`;
+    // Two topics on one page (one extends the other, or both extend the same
+    // topic) would link the page to itself: the copy goes instead.
     const fix =
-      topic.extendsTopic === owner.name
-        ? `"${topic.name}" extends "${owner.name}", so its sections show on that page: delete the passage from "${topic.name}", or, if its section overrides one of "${owner.name}", drop the override so the original shows.`
+      pageOf(topic) === page
+        ? `"${topic.name}" and "${owner.name}" show on the same page ("${page}"): delete the passage from "${topic.name}", or, if its section overrides one there, drop the override so the original shows.`
         : `In "${topic.name}", replace that whole passage, from its first word to its last, code ticks included, with ${link}.`;
     found.push({
       topic: topic.name,
