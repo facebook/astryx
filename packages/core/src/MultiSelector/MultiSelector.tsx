@@ -1952,16 +1952,27 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
     },
     [onKeyDown, hasFooter, surface.isOpen, moveDialogTab],
   );
-  // Escape closes the panel from the footer as from anywhere else in it, and
-  // Tab moves on through the dialog's stops.
-  // Escape is left to the shared dismissal stack, so an Escape inside a layer
-  // a footer control opens (a menu, which React bubbles through its portal)
-  // closes only that layer.
+  // Tab from a footer control moves on through the dialog's stops. Escape is
+  // left to the shared dismissal stack, so an Escape inside a layer a footer
+  // control opens (a menu, which React bubbles through its portal) closes only
+  // that layer. A Tab from such a layer is that layer's too: it comes from
+  // outside the footer's DOM (through the portal), or from a popover or
+  // dialog rendered inside the footer.
   const handleFooterKeyDown = useCallback(
     (event: React.KeyboardEvent<HTMLDivElement>) => {
-      if (event.key === 'Tab') {
-        moveDialogTab(event);
+      if (event.key !== 'Tab') {
+        return;
       }
+      const footer = footerRef.current;
+      const target = event.target instanceof Element ? event.target : null;
+      if (footer == null || target == null || !footer.contains(target)) {
+        return;
+      }
+      const layer = target.closest('[popover], dialog, [role="dialog"]');
+      if (layer != null && footer.contains(layer)) {
+        return;
+      }
+      moveDialogTab(event);
     },
     [moveDialogTab],
   );

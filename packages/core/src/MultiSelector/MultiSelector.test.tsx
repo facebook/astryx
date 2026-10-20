@@ -28,6 +28,7 @@ import {
 import {useRef, useState} from 'react';
 import {Icon} from '../Icon';
 import {DropdownMenu, DropdownMenuItem} from '../DropdownMenu';
+import {Popover} from '../Popover';
 import {InternationalizationProvider} from '../i18n';
 import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
 import {__resetInteractionModalityForTest} from '../utils/interactionModality';
@@ -4784,6 +4785,48 @@ describe('MultiSelector footer', () => {
     act(() => row.focus());
     await user.keyboard('{Escape}');
     await waitFor(() => expect(more).toHaveAttribute('aria-expanded', 'false'));
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  it('a Tab inside a popover a footer control opens stays with that popover', async () => {
+    const user = userEvent.setup();
+    render(
+      <MultiSelector
+        label="Labels"
+        options={OPTIONS}
+        value={[]}
+        onChange={() => {}}
+        hasSearch
+        footer={
+          <Popover
+            label="Label filters"
+            content={
+              <>
+                <button type="button">Apply</button>
+                <button type="button">Reset</button>
+              </>
+            }>
+            <button type="button">Filters</button>
+          </Popover>
+        }
+      />,
+    );
+    const trigger = screen.getByRole('button', {name: 'Labels'});
+    await user.click(trigger);
+    const filters = screen.getByRole('button', {name: 'Filters', ...h});
+    await user.click(filters);
+    await waitFor(() =>
+      expect(filters).toHaveAttribute('aria-expanded', 'true'),
+    );
+    const reset = screen.getByRole('button', {name: 'Reset', ...h});
+    act(() => reset.focus());
+    fireEvent.keyDown(reset, {key: 'Tab'});
+    // The picker's dialog walk leaves the key to the popover, whose own focus
+    // trap owns it: focus is not moved on to the search field, and the
+    // popover stays open.
+    expect(reset).toHaveFocus();
+    expect(screen.getByRole('combobox', h)).not.toHaveFocus();
+    expect(filters).toHaveAttribute('aria-expanded', 'true');
     expect(trigger).toHaveAttribute('aria-expanded', 'true');
   });
 
