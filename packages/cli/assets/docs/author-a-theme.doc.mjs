@@ -24,7 +24,7 @@ export const docs = {
       id: 'palette',
       title: 'Generate a palette',
       content: [
-        {type: 'prose', text: 'A theme needs dozens of related colors for backgrounds, borders, text, and states, in both light and dark mode. Rather than pick each by hand, name a few seed colors and generate the rest.'},
+        {type: 'prose', text: 'Name a few seed colors and generate every shade a theme needs, light and dark; {@link generic:generate-a-palette} explains what a palette holds.'},
         {type: 'code', lang: 'json', label: 'Minimal palette config (palette.config.json)', code: '{"families": [{"id": "ocean", "seed": "#0074e2"}]}'},
         {type: 'code', lang: 'bash', label: 'Generate and preview', code: '# Print the palette without writing files\nastryx theme palette generate palette.config.json\n\n# Write palette + receipt, and open a visual preview\nastryx theme palette generate palette.config.json \\\n  --out src/themes/ocean/tokens/ocean.palette.ts \\\n  --preview preview.html'},
         {type: 'prose', text: "The command writes a `.ts` file exporting 21 shades (stops 0–100) for both light and dark, plus a `.receipt.json` to regenerate later. Point your theme's tokens at the palette, then run defineTheme (see below)."},

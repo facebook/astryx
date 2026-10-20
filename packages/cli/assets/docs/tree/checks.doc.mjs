@@ -78,7 +78,7 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'Every integration runs `integration check --strict` in its own build, so every build keeps your docs, types, and links in sync; this is required, not optional. Run `integration verify` before you publish. Install devDependencies first, because the components check needs Core, and `tsc --noEmit` needs `typescript` and a `tsconfig.json`. In package.json:',
+          text: 'Every integration runs `integration check --strict` in its own build, so every build keeps your docs, types, and links in sync; this is required, not optional. Fix every copied passage the docs check lists ({@link generic:check-your-docs}): from the next minor release, the strict check fails on them. Run `integration verify` before you publish. Install devDependencies first, because the components check needs Core, and `tsc --noEmit` needs `typescript` and a `tsconfig.json`. In package.json:',
         },
         {
           type: 'code',

@@ -658,6 +658,30 @@ describe('integrationDocConflicts copied passages', () => {
     ).toEqual([]);
   });
 
+  it('leaves out boilerplate that three topics share', async () => {
+    writeTopics([
+      {name: 'acme-fonts', text: PASSAGE},
+      {name: 'acme-icons', text: PASSAGE},
+      {name: 'acme-media', text: PASSAGE},
+    ]);
+
+    expect(
+      copied(await integrationDocConflicts(undefined, {cwd: tmpDir})),
+    ).toEqual([]);
+  });
+
+  it('leaves out a run of function words, which states no fact', async () => {
+    const glue = 'and it is in the way that you can do it for them';
+    writeTopics([
+      {name: 'acme-a', text: `Start here. ${glue} first.`},
+      {name: 'acme-b', text: `Then ${glue} again.`},
+    ]);
+
+    expect(
+      copied(await integrationDocConflicts(undefined, {cwd: tmpDir})),
+    ).toEqual([]);
+  });
+
   it('leaves out a shared phrase under 10 words, and code', async () => {
     const short = PASSAGE.split(' ').slice(0, 9).join(' ');
     writeTopics([

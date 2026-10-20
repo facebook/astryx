@@ -15,6 +15,46 @@ import {builtinGuideFiles, loadTopicModule} from './docs-discovery.mjs';
 /** The shortest run of identical words reported as a copy. */
 export const PASSAGE_WORDS = 10;
 
+/**
+ * A copy carries at least this many distinct content words, so a run of
+ * glue words ("and it is in the way that you can…") is a phrase, not a fact.
+ */
+export const MIN_CONTENT_WORDS = 4;
+
+/**
+ * A run that this many topics share is boilerplate, such as a lead-in every
+ * guide of a series opens with, not a copy of one topic's fact.
+ */
+export const BOILERPLATE_TOPICS = 3;
+
+/** English function words, which say nothing about what a passage states. */
+const FUNCTION_WORDS = new Set(
+  (
+    'a about above after again all also an and any are as at be because been before being below between both but by ' +
+    'can could did do does doing down during each either else every few for from further had has have having he her here ' +
+    'him his how i if in into is it its itself just may me might more most must my no nor not now of off on once only or ' +
+    'other our out over own same she should so some such than that the their them then there these they this those through ' +
+    'to too under until up us very was we were what when where which while who whom why will with would you your'
+  ).split(' '),
+);
+
+/**
+ * The number of distinct content words in a run: words that are not function
+ * words, with surrounding punctuation set aside.
+ *
+ * @param {{word: string}[]} words
+ * @param {number} start
+ * @param {number} length
+ */
+export function contentWords(words, start, length) {
+  const found = new Set();
+  for (const {word} of words.slice(start, start + length)) {
+    const bare = word.replace(/^[^a-z0-9@]+|[^a-z0-9]+$/g, '');
+    if (bare && !FUNCTION_WORDS.has(bare)) found.add(bare);
+  }
+  return found.size;
+}
+
 /** Fields that hold identifiers or code rather than prose. */
 const SKIP_KEYS = new Set([
   'aliases',
@@ -306,7 +346,11 @@ export async function findCopiedPassages(discovered) {
    * @param {'package' | 'core'} owner
    */
   const compare = (topic, other, owner) => {
-    const runs = sharedPassages(topic.words, other.words);
+    const runs = sharedPassages(topic.words, other.words).filter(
+      ({start, length}) =>
+        contentWords(topic.words, start, length) >= MIN_CONTENT_WORDS &&
+        topicsSharing(topic.words, start) < BOILERPLATE_TOPICS,
+    );
     if (runs.length === 0) return;
     const [{start, length}] = runs;
     const excerpt = topic.words
@@ -336,6 +380,21 @@ export async function findCopiedPassages(discovered) {
     });
   };
   const own = indexGuides(mine);
+  /**
+   * How many topics, the package's and Core's, have the run that starts here.
+   * @param {{word: string}[]} words
+   * @param {number} start
+   */
+  const topicsSharing = (words, start) => {
+    const key = words
+      .slice(start, start + PASSAGE_WORDS)
+      .map(each => each.word)
+      .join(' ');
+    return (
+      new Set(own.index.get(key) ?? []).size +
+      new Set(core.index.get(key) ?? []).size
+    );
+  };
   mine.forEach((topic, i) => {
     for (const at of candidates(topic.words, own)) {
       if (at > i) compare(topic, mine[at], 'package');

@@ -4,6 +4,7 @@ import {describe, expect, it} from 'vitest';
 
 import {
   PASSAGE_WORDS,
+  contentWords,
   passageWords,
   proseWords,
   sharedPassages,
@@ -81,5 +82,14 @@ describe('sharedPassages', () => {
     expect(
       sharedPassages(words(`a ${short} b`), words(`c ${short} d`)),
     ).toEqual([]);
+  });
+});
+
+describe('contentWords', () => {
+  it('counts distinct words that are not function words', () => {
+    const run = words('and it is in the way that you can do it for them');
+    expect(contentWords(run, 0, run.length)).toBe(1);
+    const fact = words('Name each codemod folder after the Core version.');
+    expect(contentWords(fact, 0, fact.length)).toBe(5);
   });
 });

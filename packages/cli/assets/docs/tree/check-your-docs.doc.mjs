@@ -36,7 +36,7 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: 'Write each fact in one topic. When two of your topics, or one of yours and a Core topic, repeat 10 or more words of prose word for word, the check lists the pair as `[info]`, with the fix: keep the passage in one topic and link to it from the other ({@link generic:links}). Code and examples are not compared, and a topic may carry the text of the Core topic it replaces. The list never fails the check.',
+          text: 'Write each fact in one topic. When two of your topics, or one of yours and a Core topic, repeat 10 or more words of prose word for word, the check lists the pair as `[info]`, with the fix: keep the passage in one topic and link to it from the other ({@link generic:links}). Code and examples are not compared, and a topic may carry the text of the Core topic it replaces. A run of mostly function words, or one that three or more topics share (a series lead-in), is not listed. The list does not fail the check today; from the next minor release a listed pair fails `integration check --strict`, so fix each one now.',
         },
         {
           type: 'prose',
