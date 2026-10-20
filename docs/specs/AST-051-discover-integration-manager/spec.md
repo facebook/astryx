@@ -7,7 +7,7 @@ authority: current
 archive_reason: null
 superseded_by: null
 approved_by: josephfarina
-approved_at: 2026-10-19
+approved_at: 2026-10-20
 phase: accepted
 owners: [josephfarina]
 affects_architecture: [architecture:cli-surface]
