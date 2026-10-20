@@ -2,8 +2,8 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file Writes the official package list that `astryx discover` reads before
- * every other source (spec:AST-051 FR11) to
+ * @file Writes the official package list that `astryx discover` reads after
+ * every other source (spec:AST-051 FR11 and DEC-5) to
  * `packages/cli/assets/discover/official-packages.json`.
  *
  * A package is official when the release workflow publishes it and it adds at
@@ -12,9 +12,11 @@
  * `canaryOnly` package goes to `canary` only. What a package adds comes from
  * the CLI's own readers: the integration loader and contribution inventory for
  * an integration, and the theme descriptor reader for a theme package. The list
- * holds no versions; every entry takes the CLI's own version when discover
- * reads it. Run from the repo root and commit the result; `--check` exits 1
- * when the committed list is stale.
+ * holds no versions: when discover reads it, each entry lists the CLI's own
+ * version and the project's installed Core version, and pins the project's
+ * Core version, else the Core range it declares, else the latest release. Run
+ * from the repo root and commit the result; `--check` exits 1 when the
+ * committed list is stale.
  */
 
 import * as fs from 'node:fs';

@@ -745,12 +745,16 @@ export function officialList({
             ),
           ),
         ].sort(newerFirst);
+        // The project's Core version, else the plain range it declares, else
+        // the latest release (spec:AST-051 FR11): a Core declared as
+        // `workspace:*`, a `file:` path or a dist-tag, and not installed,
+        // still gets a pin.
         pin =
           core == null
             ? canaryCli
               ? undefined
               : cli
-            : (core.version ?? core.range);
+            : (core.version ?? core.range ?? entryLatest ?? undefined);
       }
       packages.push({
         package: pkg.package,

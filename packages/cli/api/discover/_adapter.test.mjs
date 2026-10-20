@@ -488,9 +488,9 @@ describe('officialList', () => {
       ['^0.6.8', '^0.6.8', [['0.7.1', false]]],
       ['>=0.6.8 <0.8.0', '>=0.6.8 <0.8.0', [['0.7.1', false]]],
       ['0.6.x || ^0.7.0', '0.6.x || ^0.7.0', [['0.7.1', false]]],
-      ['workspace:*', undefined, [['0.7.1', false]]],
-      ['file:../core', undefined, [['0.7.1', false]]],
-      ['latest', undefined, [['0.7.1', false]]],
+      ['workspace:*', '0.7.1', [['0.7.1', false]]],
+      ['file:../core', '0.7.1', [['0.7.1', false]]],
+      ['latest', '0.7.1', [['0.7.1', false]]],
     ]) {
       fs.writeFileSync(
         path.join(cacheDir, 'package.json'),
