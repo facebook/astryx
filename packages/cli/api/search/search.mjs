@@ -259,11 +259,12 @@ function wordForms(w) {
   if (w.length > 3 && w.endsWith('s')) forms.add(w.slice(0, -1));
   if (w.length > 4 && w.endsWith('es')) forms.add(w.slice(0, -2));
   if (w.length > 4 && w.endsWith('ies')) forms.add(w.slice(0, -3) + 'y');
-  // A verb form keeps its verb: "spacing" and "sized" lost a final e
-  // ("space", "size"), and "dragging" doubled a consonant ("drag").
-  for (const suf of ['ing', 'ed']) {
-    if (w.length < suf.length + 3 || !w.endsWith(suf)) continue;
-    const base = w.slice(0, -suf.length);
+  // A gerund keeps its verb: "spacing" lost a final e ("space"), and
+  // "dragging" doubled a consonant ("drag"). A past participle does not: it
+  // usually describes a state ("archived notes"), not the action a catalog
+  // word names.
+  if (w.length >= 6 && w.endsWith('ing')) {
+    const base = w.slice(0, -3);
     forms.add(base);
     forms.add(`${base}e`);
     if (/([b-df-hj-np-tv-z])\1$/.test(base)) forms.add(base.slice(0, -1));
