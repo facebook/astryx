@@ -651,7 +651,9 @@ async function deliverToIssuesUrl(target, report, confirmPublic) {
 
 /**
  * Whether a handler delivery's URL lies inside the issues URL: same origin,
- * and the same path or a path below it.
+ * and the same path or a path below it. A GitHub issues URL counts as its
+ * repository's `/issues` path, so `.../issues/new` covers the issues filed
+ * there.
  * @param {string} url
  * @param {string} issuesUrl
  * @returns {boolean}
@@ -661,7 +663,10 @@ function isInside(url, issuesUrl) {
     const inner = new URL(url);
     const outer = new URL(issuesUrl);
     if (inner.origin !== outer.origin) return false;
-    const base = outer.pathname.replace(/\/+$/u, '');
+    const github = githubRoute(issuesUrl);
+    const base = github
+      ? `/${github.repo}/issues`
+      : outer.pathname.replace(/\/+$/u, '');
     return inner.pathname === base || inner.pathname.startsWith(`${base}/`);
   } catch {
     return false;
@@ -671,21 +676,29 @@ function isInside(url, issuesUrl) {
 /**
  * Whether the target integration's own issuesUrl still needs the report after
  * the handlers ran (spec:AST-031/FR13). Not for Core, whose reports the
- * handlers already receive; not when the target's own handler ran; not when a
- * handler delivery already points inside that issuesUrl.
+ * handlers already receive; not when the target's own handler is in the
+ * effective set, in its own slot or re-exported by the project config; not
+ * when a handler delivery already points inside that issuesUrl. Exported only
+ * for focused contract tests; it is not part of the package API.
  *
  * @param {ReportTarget} target
  * @param {HandlerEntry[]} entries
  * @param {import('./gap-report.type.mjs').GapReportDelivery[]} deliveries
+ * @param {Project} project
  * @returns {target is ReportTarget & {issuesUrl: string}}
  */
-function needsTargetRoute(target, entries, deliveries) {
+export function needsTargetRoute(target, entries, deliveries, project) {
   if (target.package === CORE_PACKAGE || !target.issuesUrl) return false;
+  const ownHandle = project.loadedIntegrations.find(
+    integration => integration.name === target.package,
+  )?.__gapReport?.handle;
   if (
     entries.some(
       entry =>
-        entry.handlerType === 'integration' &&
-        entry.handlerName === target.package,
+        entry.kind === 'handler' &&
+        ((ownHandle != null && entry.handler.handle === ownHandle) ||
+          (entry.handlerType === 'integration' &&
+            entry.handlerName === target.package)),
     )
   ) {
     return false;
@@ -837,7 +850,7 @@ export async function gapReport(component, options = {}) {
     );
     // The package the report is about also receives it at its own issuesUrl,
     // unless that place already has it (spec:AST-031/FR13).
-    if (needsTargetRoute(target, entries, deliveries)) {
+    if (needsTargetRoute(target, entries, deliveries, project)) {
       deliveries.push(
         await deliverToIssuesUrl(
           target,

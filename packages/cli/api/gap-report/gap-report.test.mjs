@@ -12,6 +12,7 @@ import {
   collectGapReportHandlers,
   deliverGapReportHandlers,
   gapReport,
+  needsTargetRoute,
 } from './gap-report.mjs';
 
 let projectDir;
@@ -1152,6 +1153,90 @@ describe('gapReport target route beside handlers', () => {
       '@test/shared',
       '@test/widgets',
     ]);
+  });
+
+  it('adds no route when the project config re-exports the target handler', async () => {
+    const sharedDir = path.join(projectDir, 'widgets-handler');
+    fs.mkdirSync(sharedDir, {recursive: true});
+    const handlerFile = path.join(sharedDir, 'handler.mjs');
+    fs.writeFileSync(
+      handlerFile,
+      "export const handle = async () => ({status: 'filed', message: 'widgets'});\n",
+    );
+    const dir = packageDir('@test/widgets');
+    fs.mkdirSync(dir, {recursive: true});
+    fs.writeFileSync(
+      path.join(dir, 'package.json'),
+      JSON.stringify({name: '@test/widgets', version: '1.0.0'}),
+    );
+    fs.writeFileSync(
+      path.join(dir, 'astryx.integration.mjs'),
+      `import {handle} from ${JSON.stringify(handlerFile)};\nexport const gapReport = {audience: 'internal', handle};\nexport default {issuesUrl: 'https://tracker.example/widgets'};\n`,
+    );
+    fs.writeFileSync(
+      path.join(projectDir, 'astryx.config.mjs'),
+      `import {handle} from ${JSON.stringify(handlerFile)};\nexport default {integrations: ['@test/widgets'], gapReport: {audience: 'internal', handle}};\n`,
+    );
+
+    const result = await gapReport('General', {
+      ...reportOptions,
+      package: '@test/widgets',
+      cwd: projectDir,
+    });
+
+    expect(result.data.deliveries.map(d => d.handlerType)).not.toContain(
+      'fallback',
+    );
+  });
+
+  it('treats the target handler deduplicated into the project slot as its own', () => {
+    const handle = async () => ({status: 'filed'});
+    const target = {
+      package: '@test/widgets',
+      version: '1.0.0',
+      issuesUrl: 'https://tracker.example/widgets',
+    };
+    const project = /** @type {any} */ ({
+      loadedIntegrations: [
+        {name: '@test/widgets', __gapReport: {audience: 'internal', handle}},
+      ],
+    });
+    const projectSlot = /** @type {any} */ ({
+      kind: 'handler',
+      handlerType: 'project',
+      handlerName: 'project',
+      handler: {audience: 'internal', handle},
+    });
+    const otherHandler = /** @type {any} */ ({
+      ...projectSlot,
+      handler: {audience: 'internal', handle: async () => ({status: 'filed'})},
+    });
+
+    expect(needsTargetRoute(target, [projectSlot], [], project)).toBe(false);
+    expect(needsTargetRoute(target, [otherHandler], [], project)).toBe(true);
+  });
+
+  it('adds no route when a handler filed in the GitHub repository of an issues/new URL', async () => {
+    addSharedHandler(
+      "return {status: 'filed', url: 'https://github.com/acme/widgets/issues/9'};",
+    );
+    addIntegration({
+      name: '@test/widgets',
+      handler: false,
+      issuesUrl: 'https://github.com/acme/widgets/issues/new',
+    });
+    configure(['@test/shared', '@test/widgets']);
+    const argsFile = stubGh();
+
+    const result = await gapReport('General', {
+      ...reportOptions,
+      package: '@test/widgets',
+      confirmPublic: true,
+      cwd: projectDir,
+    });
+
+    expect(result.data.deliveries).toHaveLength(1);
+    expect(fs.existsSync(argsFile)).toBe(false);
   });
 
   it('adds no route when a handler already filed inside that issuesUrl', async () => {
