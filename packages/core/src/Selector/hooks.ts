@@ -187,8 +187,7 @@ interface UseComboboxOptions<T extends ComboboxOption> {
   hasSearch?: boolean;
   onOpen: () => unknown;
   onClose: () => void;
-  /** Called with the picked option's value and the option itself. */
-  onSelect?: (value: string, item: T) => void;
+  onSelect?: (value: string) => void;
   /**
    * Clear the current value. When provided, pressing Delete or Backspace on the
    * closed trigger clears the selection — a keyboard equivalent of the clear
@@ -321,7 +320,7 @@ export function useCombobox<T extends ComboboxOption = SelectorOptionData>({
       if (item.disabled) {
         return;
       }
-      onSelect?.(item.value, item);
+      onSelect?.(item.value);
       closeAndReset();
     },
     [onSelect, closeAndReset],
@@ -537,7 +536,9 @@ export function useCombobox<T extends ComboboxOption = SelectorOptionData>({
         return;
       }
       const enabledIndices = getEnabledIndices();
-      if (!isOpen) {
+      // A multi-line field whose open list has no options renders no listbox
+      // and reports itself collapsed, so it keeps every key, as when hidden.
+      if (!isOpen || (field !== 'input' && !isListboxShown)) {
         // A single-line field has no caret work for ArrowDown, so it shows the
         // hidden list; a multi-line field keeps its arrows for the caret.
         if (
@@ -600,6 +601,7 @@ export function useCombobox<T extends ComboboxOption = SelectorOptionData>({
       getEnabledIndices,
       isOpen,
       field,
+      isListboxShown,
       selectableItems,
       onOpen,
       highlightedIndex,
