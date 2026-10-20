@@ -1202,7 +1202,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
     null,
   );
 
-  const [, startTransition] = useTransition();
+  const [isChangePending, startTransition] = useTransition();
   const [optimisticValue, setOptimisticValue] = useOptimistic(value);
   const isBusy = isLoading || optimisticValue !== value;
 
@@ -1724,19 +1724,23 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
   // option and accepting the value are one update. The search keeps the typed
   // text until the caller accepts (below), so a name the caller refuses stays
   // in the field to be corrected instead of having to be typed again (WCAG
-  // 3.3.7). A second pick of the same text while the first is unanswered is
-  // ignored.
-  const [pendingCreate, setPendingCreate] = useState<string | null>(null);
+  // 3.3.7). While a change action is in flight, a second pick of a text
+  // already picked is ignored.
+  const [pendingCreates, setPendingCreates] = useState<ReadonlyArray<string>>(
+    [],
+  );
   const commitCreate = useCallback(
     (query: string) => {
-      if (query === pendingCreate) {
+      if (isChangePending && pendingCreates.includes(query)) {
         return;
       }
       const newValue = optimisticValue.includes(query)
         ? optimisticValue
         : [...optimisticValue, query];
       onChange(newValue, {type: 'create', query});
-      setPendingCreate(query);
+      setPendingCreates(current =>
+        current.includes(query) ? current : [...current, query],
+      );
       if (changeAction) {
         startTransition(async () => {
           setOptimisticValue(newValue);
@@ -1745,7 +1749,8 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
       }
     },
     [
-      pendingCreate,
+      isChangePending,
+      pendingCreates,
       optimisticValue,
       onChange,
       changeAction,
@@ -1754,37 +1759,48 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
     ],
   );
 
-  // A creation is answered once `value` carries the new entry (accepted: the
-  // search clears so the option the caller added is visible, and the creation
-  // is announced) or once it does not and no change action is still in
-  // flight (refused: the typed text stays, and nothing claims a creation).
+  // A picked creation is accepted once `value` carries it, whenever that is:
+  // in the same update, in a transition the caller starts, or when a change
+  // action settles. Each accepted creation is announced, and the search clears
+  // if it still holds that text, so the option the caller added shows. A pick
+  // the caller has not accepted waits while the search still holds its text
+  // or a change action is in flight; otherwise it is dropped, unannounced.
   // State derived from props is adjusted while rendering, as for `isGrid`.
-  const [createdOption, setCreatedOption] = useState<{label: string} | null>(
-    null,
-  );
-  if (pendingCreate != null) {
-    if (value.includes(pendingCreate)) {
-      setPendingCreate(null);
-      setCreatedOption({label: pendingCreate});
-      if (searchQuery.trim() === pendingCreate) {
-        setSearchQuery('');
+  const [createdBatch, setCreatedBatch] = useState<{
+    labels: ReadonlyArray<string>;
+  } | null>(null);
+  if (pendingCreates.length > 0) {
+    const query = searchQuery.trim();
+    const accepted = pendingCreates.filter(entry => value.includes(entry));
+    const remaining = pendingCreates.filter(
+      entry => !value.includes(entry) && (isChangePending || entry === query),
+    );
+    if (remaining.length !== pendingCreates.length) {
+      setPendingCreates(remaining);
+      if (accepted.length > 0) {
+        setCreatedBatch({labels: accepted});
+        if (accepted.includes(query)) {
+          setSearchQuery('');
+        }
       }
-    } else if (optimisticValue === value) {
-      setPendingCreate(null);
     }
   }
-  const announcedCreationRef = useRef<{label: string} | null>(null);
+  // Synchronizes the shared polite live region (`useAnnounce`) with the
+  // creations the caller accepted: each batch is announced once, as one
+  // message, so a second creation never cuts off the first.
+  const announcedBatchRef = useRef<{labels: ReadonlyArray<string>} | null>(
+    null,
+  );
   useEffect(() => {
-    if (
-      createdOption != null &&
-      announcedCreationRef.current !== createdOption
-    ) {
-      announcedCreationRef.current = createdOption;
+    if (createdBatch != null && announcedBatchRef.current !== createdBatch) {
+      announcedBatchRef.current = createdBatch;
       announce(
-        t('@astryx.multiSelector.optionCreated', {label: createdOption.label}),
+        createdBatch.labels
+          .map(label => t('@astryx.multiSelector.optionCreated', {label}))
+          .join(' '),
       );
     }
-  }, [createdOption, announce, t]);
+  }, [createdBatch, announce, t]);
 
   // Route toggle: select-all sentinel → handleSelectAll, the create row →
   // commitCreate, everything else → handleToggle

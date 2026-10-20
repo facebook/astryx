@@ -25,7 +25,7 @@ import {
   type MultiSelectorHandle,
   type MultiSelectorChange,
 } from './MultiSelector';
-import {useRef, useState} from 'react';
+import {startTransition, useRef, useState} from 'react';
 import {Icon} from '../Icon';
 import {InternationalizationProvider} from '../i18n';
 import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
@@ -4001,6 +4001,11 @@ describe('MultiSelector hasCreate', () => {
       screen.getByRole('option', {name: 'Create "Urgent"', ...h}),
     );
     expect(onChange).toHaveBeenCalledTimes(2);
+    // Settle the second action: an async transition left pending would hold
+    // every later transition in this file.
+    await act(async () => {
+      refuse();
+    });
   });
 
   it('with a change action, clears the search and announces once the caller accepts', async () => {
@@ -4040,6 +4045,107 @@ describe('MultiSelector hasCreate', () => {
     await waitFor(() => {
       expect(politeRegion()?.textContent).toBe('Urgent created');
     });
+  });
+
+  it('a caller that accepts inside a transition gets the search cleared and the creation announced', async () => {
+    const user = userEvent.setup();
+    function Labels() {
+      const [options, setOptions] = useState(OPTIONS);
+      const [value, setValue] = useState<string[]>([]);
+      return (
+        <MultiSelector
+          label="Labels"
+          options={options}
+          value={value}
+          onChange={(next, change) => {
+            startTransition(() => {
+              if (change?.type === 'create') {
+                const {query} = change;
+                setOptions(current => [
+                  ...current,
+                  {value: query, label: query},
+                ]);
+              }
+              setValue(next);
+            });
+          }}
+          hasSearch
+          hasCreate
+        />
+      );
+    }
+    render(<Labels />);
+    await user.click(screen.getByRole('button', {name: 'Labels'}));
+    const search = screen.getByRole('combobox', h);
+    await user.type(search, 'Urgent');
+    await user.click(
+      screen.getByRole('option', {name: 'Create "Urgent"', ...h}),
+    );
+    await waitFor(() => expect(search).toHaveValue(''));
+    await waitFor(() => {
+      expect(politeRegion()?.textContent).toBe('Urgent created');
+    });
+  });
+
+  it('with a change action, announces each creation the caller accepts, two picked while one is in flight', async () => {
+    const user = userEvent.setup();
+    const releases: (() => void)[] = [];
+    function Labels() {
+      const [options, setOptions] = useState(OPTIONS);
+      const [value, setValue] = useState<string[]>([]);
+      return (
+        <MultiSelector
+          label="Labels"
+          options={options}
+          value={value}
+          onChange={() => {}}
+          changeAction={async next => {
+            await new Promise<void>(resolve => {
+              releases.push(resolve);
+            });
+            setOptions(current => [
+              ...current,
+              ...next
+                .filter(
+                  entry => !current.some(option => option.value === entry),
+                )
+                .map(entry => ({value: entry, label: entry})),
+            ]);
+            setValue(next);
+          }}
+          hasSearch
+          hasCreate
+        />
+      );
+    }
+    render(<Labels />);
+    await user.click(screen.getByRole('button', {name: 'Labels'}));
+    const search = screen.getByRole('combobox', h);
+    await user.type(search, 'Urgent');
+    await user.click(
+      screen.getByRole('option', {name: 'Create "Urgent"', ...h}),
+    );
+    await user.clear(search);
+    await user.type(search, 'Blocked');
+    await user.click(
+      screen.getByRole('option', {name: 'Create "Blocked"', ...h}),
+    );
+    expect(releases).toHaveLength(2);
+
+    await act(async () => {
+      releases[0]();
+    });
+    await waitFor(() => {
+      expect(politeRegion()?.textContent).toBe('Urgent created');
+    });
+    expect(search).toHaveValue('Blocked');
+    await act(async () => {
+      releases[1]();
+    });
+    await waitFor(() => {
+      expect(politeRegion()?.textContent).toBe('Blocked created');
+    });
+    expect(search).toHaveValue('');
   });
 
   it('is off by default', async () => {

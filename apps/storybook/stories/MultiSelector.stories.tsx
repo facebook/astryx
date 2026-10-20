@@ -876,6 +876,46 @@ export const CreateFromQuery: Story = {
   },
 };
 
+/**
+ * A caller that refuses some creations: a name longer than 12 characters is
+ * left out of `value`, so the typed text stays to be corrected and nothing
+ * announces a creation. A name the caller accepts is announced once, and the
+ * search clears.
+ */
+export const CreateRefused: Story = {
+  name: 'Create, refused or accepted',
+  render: () => {
+    const [options, setOptions] = useState([
+      {value: 'bug', label: 'Bug'},
+      {value: 'feature', label: 'Feature'},
+      {value: 'docs', label: 'Docs'},
+    ]);
+    const [value, setValue] = useState<string[]>([]);
+    return (
+      <MultiSelector
+        label="Labels"
+        options={options}
+        value={value}
+        onChange={(next, change) => {
+          if (change?.type === 'create') {
+            if (change.query.length > 12) {
+              return;
+            }
+            setOptions(current => [
+              ...current,
+              {value: change.query, label: change.query},
+            ]);
+          }
+          setValue(next);
+        }}
+        hasSearch
+        hasCreate
+        isDefaultOpen
+      />
+    );
+  },
+};
+
 export const RowActions: Story = {
   render: () => {
     const [value, setValue] = useState<string[]>(['feature']);
