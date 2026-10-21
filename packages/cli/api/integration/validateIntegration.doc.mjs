@@ -23,11 +23,27 @@ export const doc = {
     'declared contribution root exists, and runs the codemod/template/component/' +
     'docs/theme validators, returning every finding as an AstryxIntegrationIssue. A missing ' +
     'local manifest is guidance (name null, no issues), not an error, so callers ' +
-    'can stay exit-0 in a non-integration directory.',
+    'can stay exit-0 in a non-integration directory. It also checks every doc the ' +
+    'package ships under its roots (component, template, docs topic, theme, and translation, served or not) against ' +
+    "the published authoring type for its kind, as `tsc` would, with the project's " +
+    'own `typescript` (or, where `typescript` is missing or has no JavaScript compiler ' +
+    'API, as TypeScript 7 does, the `@typescript/typescript6` it installs): an unknown ' +
+    'field, a missing required field, or a value outside ' +
+    "a field's type is a warning in `docTypes` naming the field and a fix. A test " +
+    'fixture under `__tests__` in the components or docs root is counted, not checked. ' +
+    'Without TypeScript, `docTypes` is `skipped` with a reason.',
   importPath: '@astryxdesign/cli/api',
   signature:
     'validateIntegration(pkg?: string, options?: ValidateIntegrationOptions): Promise<ValidateIntegrationResponse>',
-  keywords: ['integration', 'validate', 'manifest', 'lint', 'check'],
+  keywords: [
+    'integration',
+    'validate',
+    'manifest',
+    'lint',
+    'check',
+    'types',
+    'typecheck',
+  ],
   params: [
     {
       name: 'pkg',
@@ -46,7 +62,7 @@ export const doc = {
     {
       type: 'integration.validate',
       description:
-        'The result envelope: `data.validated`, false only when no integration manifest was found — nothing was checked, so the empty `data.issues` means "not looked at", not "healthy"; `data.name` and `data.version` of the validated package (both null when `data.validated` is false; `data.name` is `(local package)` when the local package.json has no readable name), plus `data.issues`, an AstryxIntegrationIssue[] of {code, severity: `warning` | `error`, message}.',
+        'The result envelope: `data.validated`, false when nothing was validated — with no `package.json` at all, `data.issues` carries one `no_package` error-severity issue so the command exits 1; with a `package.json` but no integration manifest, `data.issues` is empty, which means "not looked at", not "healthy"; `data.name` and `data.version` of the validated package (both null when `data.validated` is false; `data.name` is `(local package)` when the local package.json has no readable name), plus `data.issues`, an AstryxIntegrationIssue[] of {code, severity: `warning` | `error`, message, fix?, file?, line?}: `fix` is the change that resolves the issue, and `file` and `line` where it is, relative to the package, when the check knows them; and `data.notes` when there are any: {code, message} information that fails nothing, such as `invalid_cli_command` for a `cliCommand` that was ignored as malformed, and the package layout findings added after the last minor release, each with its fix in the message: `duplicate_component_doc`, `symlinked_root`, `unreadable_file`, `invalid_package_json` (no `name` or `version`), `no_provider_id`, and `source_without_component_doc` for a doc whose file name differs from its source only in letter case where the two still pair; they become warnings in the next minor release. When the manifest loads, `data.docTypes` holds the doc type check: `status` (`checked` | `skipped`), `reason` when skipped, `typescript`, `docs` (doc values checked), `findings` ({doc, line, export, type, field, problem: `unknown_field` | `missing_field` | `wrong_type`, severity: `warning`, message, fix}), `unchecked` ({doc, reason}: a doc that could not be fully checked, or a root its reader cannot read), and `fixtures` when the components or docs root holds test fixture docs under `__tests__`: how many, none of them checked.',
     },
   ],
   examples: [

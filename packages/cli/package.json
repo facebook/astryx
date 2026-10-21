@@ -1,6 +1,6 @@
 {
   "name": "@astryxdesign/cli",
-  "version": "0.6.6",
+  "version": "0.7.2",
   "displayName": "CLI",
   "description": "Scaffold projects, browse templates, generate themes, and get agent-ready docs from the command line.",
   "author": "Meta Open Source",
@@ -42,6 +42,10 @@
       "types": "./api/index.d.mts",
       "import": "./api/index.mjs"
     },
+    "./host": {
+      "types": "./host/index.d.ts",
+      "import": "./host/index.mjs"
+    },
     "./authoring": {
       "types": "./authoring/index.d.ts",
       "import": "./authoring/index.mjs"
@@ -81,14 +85,15 @@
     "assets",
     "authoring",
     "foundation",
+    "host",
     "scripts/postinstall.mjs",
     "CHANGELOG.md"
   ],
   "scripts": {
     "astryx": "node clients/cli/bin/astryx.mjs",
     "postinstall": "node scripts/postinstall.mjs",
-    "test": "vitest run --root ../.. packages/cli",
-    "test:watch": "vitest --root ../.. packages/cli",
+    "test": "cd ../.. && vitest run packages/cli",
+    "test:watch": "cd ../.. && vitest packages/cli",
     "typecheck:template-docs": "tsc --project tsconfig.template-docs.json",
     "typecheck:json-api": "tsc --project tsconfig.json-api.json",
     "typecheck:strict": "tsc --project tsconfig.strict.json",
@@ -110,7 +115,7 @@
     "jscodeshift": "^17.3.0",
     "node-diff3": "3.2.1",
     "postcss": "^8.5.23",
-    "postcss-selector-parser": "^7.1.5",
+    "postcss-selector-parser": "^7.1.6",
     "recast": "0.23.21",
     "zod": "^4.4.3"
   },

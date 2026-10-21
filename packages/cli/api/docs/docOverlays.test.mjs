@@ -171,4 +171,18 @@ describe('the reported defect: docs tokens --dense (#2182)', () => {
     expect(titles).not.toContain('Dark mode');
     expect(titles).toContain('深色模式');
   });
+
+  it('teaches committed palette references in every theme-doc variant', async () => {
+    for (const options of [{}, {dense: true}, {zh: true}]) {
+      const result = await docs('theme', null, options);
+      const rendered = JSON.stringify(result.data.sections);
+      expect(rendered).toContain(
+        'astryx theme palette generate palette.config.json --out palette.generated.ts',
+      );
+      expect(rendered).toContain(
+        "import {palette} from './palette.generated';",
+      );
+      expect(rendered).toContain('palette.neutral.light[100]');
+    }
+  });
 });

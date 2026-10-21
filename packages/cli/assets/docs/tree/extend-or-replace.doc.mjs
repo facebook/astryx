@@ -1,9 +1,9 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file `astryx docs cli/integrations/docs/extend-or-replace`: take over an
- * existing topic with `replaces`, merge sections into one with `extends`, and
- * check overlaps with Core topics.
+ * @file `astryx docs cli/integrations/building-blocks/docs/extend-or-replace`:
+ * take over an existing topic with `replaces`, merge sections into one with
+ * `extends`, and check overlaps with Core topics.
  */
 
 /** @type {import('@astryxdesign/cli/authoring').ReferenceDoc} */
@@ -26,7 +26,7 @@ export const docs = {
         {
           type: 'code',
           lang: 'bash',
-          code: 'npx astryx integration add doc acme-getting-started --replaces getting-started\n# The old name now opens your topic\nnpx astryx docs getting-started',
+          code: 'astryx integration add doc acme-getting-started --replaces getting-started\n# The old name now opens your topic\nastryx docs getting-started',
         },
         {
           type: 'code',
@@ -46,12 +46,12 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'Set `extends` to merge sections into an existing topic instead of owning it. A section with the same key replaces the base section, and a new section is added at the end.',
+          text: 'Set `extends` to merge sections into an existing topic instead of owning it. A section replaces the base section it matches, and a section that matches none is added at the end.',
         },
         {
           type: 'code',
           lang: 'bash',
-          code: 'npx astryx integration add doc acme-theming --extends theme\nnpx astryx docs theme --index',
+          code: 'astryx integration add doc acme-theming --extends theme\nastryx docs theme --index',
         },
         {
           type: 'code',
@@ -63,7 +63,7 @@ export const docs = {
           type: 'list',
           style: 'unordered',
           items: [
-            "A section's key is its `id`, or a key made from its title. Read the base topic's keys with `--index`.",
+            "Read the base topic's keys with `--index`, and give a section that replaces one that key as its `id`. A section without an `id` matches only a base section with exactly its title, or one whose `id` is the key its title makes, so `Integration Themes` is added beside a base `Integration themes` that has no `id`.",
             "The topic keeps the base's title and description, and readers open it by the base's name.",
             'Replace the `Overview` placeholder that `integration add` writes, or it is added to the base topic.',
             "Extend a topic to correct or add to it. A copy made with `replaces` stops getting the owner's fixes.",
@@ -82,12 +82,12 @@ export const docs = {
         {
           type: 'code',
           lang: 'bash',
-          code: 'npx astryx doctor integration docs',
+          code: 'astryx doctor integration docs',
         },
         {
           type: 'code',
           lang: 'text',
-          code: 'severity:     [info]\ntopic:        acme-getting-started\nrelationship: replaces\ncoreTopic:    getting-started\nmessage:      Intentional override: "acme-getting-started" replaces the Core topic "getting-started".\n\nseverity:     [fail]\ntopic:        tokens\nrelationship: accidental\ncoreTopic:    tokens\nmessage:      Accidental conflict: "tokens" is already a Core topic. Rename it, declare replaces: \'tokens\' to take it over, or declare extends: \'tokens\' to merge sections.',
+          code: 'severity:     [info]\ntopic:        acme-getting-started\nrelationship: replaces\ncoreTopic:    getting-started\nmessage:      Intentional override: "acme-getting-started" replaces the Core topic "getting-started".\n\nseverity:     [fail]\ntopic:        color\nrelationship: accidental\ncoreTopic:    color\nmessage:      Accidental conflict: "color" is already a Core topic. Rename it, declare replaces: \'color\' to take it over, or declare extends: \'color\' to merge sections.',
         },
         {
           type: 'list',
@@ -96,6 +96,16 @@ export const docs = {
             'An intentional overlap prints as `[info]`. An accidental one fails with exit code 1.',
             'A topic that sets both fails as `invalid_doc`, and so does a placed guide that sets either one.',
           ],
+        },
+      ],
+    },
+    {
+      id: 'global-mode',
+      title: 'In global mode',
+      content: [
+        {
+          type: 'prose',
+          text: 'In global mode: a doc that extends or replaces a topic from a package installed for the computer applies in folders outside any project; inside a project, only those from packages the project installs apply. See {@link namespace:global} and {@link generic:global-integrations}.',
         },
       ],
     },

@@ -16,7 +16,6 @@ import {describe, expect, it} from 'vitest';
 const SCRIPTS_DIR = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(SCRIPTS_DIR, '../..');
 const SCRIPT = path.join(SCRIPTS_DIR, 'accessibility-audit.js');
-let nextPort = 40000 + (process.pid % 10000);
 
 const BROWSER_MOCK = String.raw`
 const Module = require('node:module');
@@ -24,6 +23,8 @@ const originalLoad = Module._load;
 let requestedUrl = '';
 let reads = 0;
 let selectorResolved = false;
+// The layout-settle step waits two frames before sampling geometry.
+global.requestAnimationFrame = callback => setTimeout(callback, 0);
 
 function scenarioState() {
   const scenario = process.env.A11Y_TEST_SCENARIO;
@@ -55,6 +56,7 @@ function evaluateInFixture(fn, arg) {
       selector === '#storybook-root'
         ? {childElementCount: state.content ? 1 : 0, textContent: ''}
         : null,
+    querySelectorAll: () => [],
   };
   try {
     return fn(arg);
@@ -65,7 +67,15 @@ function evaluateInFixture(fn, arg) {
 }
 
 const page = {
-  goto: async url => { requestedUrl = url; },
+  // A real request, so a run only passes when the audit opens the port its
+  // server actually holds.
+  goto: async url => {
+    requestedUrl = url;
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error('fixture server answered ' + response.status + ' for ' + url);
+    }
+  },
   addStyleTag: async () => {},
   waitForSelector: async (selector, options) => {
     if (process.env.A11Y_TEST_SCENARIO === 'selector-missing') {
@@ -78,6 +88,7 @@ const page = {
     return {};
   },
   evaluate: async (fn, arg) => evaluateInFixture(fn, arg),
+  waitForTimeout: async () => {},
   close: async () => {},
 };
 const context = {newPage: async () => page, close: async () => {}};
@@ -109,6 +120,7 @@ function runFixture(
   indexContent,
   components = 'core/Button',
   readySelector = null,
+  stories = null,
 ) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'a11y-cli-fixture-'));
   const storybook = path.join(dir, 'storybook');
@@ -118,7 +130,6 @@ function runFixture(
   fs.writeFileSync(path.join(storybook, 'index.json'), indexContent);
   fs.writeFileSync(path.join(storybook, 'iframe.html'), '<!doctype html>');
   fs.writeFileSync(mock, BROWSER_MOCK);
-  const port = nextPort++;
   try {
     const result = spawnSync(
       process.execPath,
@@ -130,11 +141,14 @@ function runFixture(
         output,
         '--components',
         components,
+        // Any fixed port may already be held by another process's socket, so
+        // let the OS assign a free one.
         '--port',
-        String(port),
+        '0',
         ...(readySelector == null
           ? []
           : ['--ready-selector', readySelector]),
+        ...(stories == null ? [] : ['--stories', stories]),
       ],
       {
         cwd: REPO_ROOT,
@@ -168,6 +182,23 @@ const VALID_INDEX = JSON.stringify({
   },
 });
 
+const FOCUSED_INDEX = JSON.stringify({
+  entries: {
+    'core-button--fixture': {
+      id: 'core-button--fixture',
+      title: 'Core/Button',
+      name: 'Fixture',
+      type: 'story',
+    },
+    'core-button--other': {
+      id: 'core-button--other',
+      title: 'Core/Button',
+      name: 'Other',
+      type: 'story',
+    },
+  },
+});
+
 const PATTERN_INDEX = JSON.stringify({
   entries: {
     'a11y-button-pattern--clickable-card-disabled': {
@@ -180,6 +211,16 @@ const PATTERN_INDEX = JSON.stringify({
 });
 
 describe.sequential('accessibility-audit CLI readiness', () => {
+  it('serves the stories on a port the OS assigns', () => {
+    const result = runFixture('delayed', VALID_INDEX);
+    expect(result.status).toBe(0);
+    const served = /Storybook server running on http:\/\/localhost:(\d+)/.exec(
+      result.stdout,
+    );
+    expect(Number(served?.[1])).toBeGreaterThan(0);
+    expect(result.report.auditedStoryKeys).toHaveLength(1);
+  });
+
   it('waits through a delayed valid Storybook root and writes audited evidence', () => {
     const result = runFixture('delayed', VALID_INDEX);
     expect(result.status).toBe(0);
@@ -196,6 +237,36 @@ describe.sequential('accessibility-audit CLI readiness', () => {
     );
     expect(result.status).toBe(0);
     expect(result.report.readySelector).toBe('[role="menu"]');
+  });
+
+  it('audits only the requested owned story', () => {
+    const result = runFixture(
+      'delayed',
+      FOCUSED_INDEX,
+      'core/Button',
+      null,
+      'core-button--fixture',
+    );
+    expect(result.status).toBe(0);
+    expect(result.report.requestedStories).toEqual(['core-button--fixture']);
+    expect(result.report.auditedStories.map(story => story.storyId)).toEqual([
+      'core-button--fixture',
+    ]);
+  });
+
+  it('fails closed when a requested story is not owned by the component', () => {
+    const result = runFixture(
+      'delayed',
+      FOCUSED_INDEX,
+      'core/Button',
+      null,
+      'core-link--missing',
+    );
+    expect(result.status).not.toBe(0);
+    expect(result.stderr).toContain(
+      'Requested stories did not resolve in the selected component scope: core-link--missing',
+    );
+    expect(result.report).toBeNull();
   });
 
   it('fails closed when a focused readiness selector stays absent', () => {

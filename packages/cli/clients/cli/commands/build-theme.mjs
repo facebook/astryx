@@ -6,9 +6,11 @@
  * Thin CLI wrapper. The `build` compiler lives in the programmatic API
  * (../../api/theme/build/build.mjs); `list`/`add` delegate to the
  * ../../api/theme/list/list.mjs and ../../api/theme/add/add.mjs leaves. This
- * file only parses options, injects a logger, renders human output, and maps
- * AstryxError → cliError. Watch mode (a human-interactive, long-running loop)
- * stays here because it re-invokes `theme build` as a child process.
+ * file only parses options, injects a logger, renders human output, maps
+ * AstryxError → cliError, and turns reported private-variable errors into exit 1
+ * after preserving the build output. Watch mode (a human-interactive,
+ * long-running loop) stays here because it re-invokes `theme build` as a child
+ * process.
  *
  * The command surface (group + subcommand descriptions, args, flags) is sourced
  * from the colocated CommandDocs via `defineCommand`; this file supplies only
@@ -32,6 +34,7 @@ import * as path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {spawn} from 'node:child_process';
 import {getCliInvocation} from '../../../foundation/env/package-manager.mjs';
+import {isOutsideProject} from '../../../foundation/env/project-scope.mjs';
 import {jsonOut} from '../../../foundation/response/json.mjs';
 import {
   emit,
@@ -62,7 +65,6 @@ import {
   themePaletteGenerate,
 } from '../../../api/theme/palette/generate/generate.mjs';
 import {
-  importSpecifier,
   printBatchTrailer,
   printCompactTrailer,
   themeBuild,
@@ -111,9 +113,11 @@ function resolveCliBin() {
  * @param {{out?: string, iconsSpecifier?: string, detail?: string}} options -
  *   Parsed command options that affect generated output, plus the detail
  *   level the user chose.
+ * @param {(child: import('node:child_process').ChildProcess) => void} [onSpawn] -
+ *   Receives the child, so a watcher that stops can stop it too.
  * @returns {Promise<number>}
  */
-function runThemeBuildOnceChild(file, options) {
+function runThemeBuildOnceChild(file, options, onSpawn) {
   const cliBin = resolveCliBin();
   // A detail level the user chose applies to every rebuild.
   const args = options.detail
@@ -127,6 +131,7 @@ function runThemeBuildOnceChild(file, options) {
       stdio: 'inherit',
       env: process.env,
     });
+    onSpawn?.(child);
     child.on('close', code => resolve(code ?? 0));
     child.on('error', () => resolve(1));
   });
@@ -138,7 +143,9 @@ function runThemeBuildOnceChild(file, options) {
  * Rebuilds are serialized: one at a time, in the order the changes arrived, so
  * the log stays readable. Each rebuild runs in a child process so a build error
  * (which the single-build path reports via a hard exit) is contained and the
- * watcher keeps running.
+ * watcher keeps running. Stopping ends the watch at once: queued changes are
+ * dropped, the signal reaches a rebuild in progress, as Ctrl-C in a terminal
+ * reaches the whole process group, and "Stopped watching." is the last line.
  *
  * @param {Array<{file: string, filePath: string}>} entries - The theme file
  *   arguments as the user passed them, with their resolved absolute paths.
@@ -158,6 +165,11 @@ async function runThemeBuildWatch(entries, options) {
   }
 
   let building = false;
+  let stopped = false;
+  /** @type {import('node:child_process').ChildProcess | null} */
+  let rebuildChild = null;
+  /** @type {Promise<void> | null} */
+  let rebuildDone = null;
   /** @type {Set<{file: string, filePath: string}>} */
   const queued = new Set();
   /** @type {Map<string, ReturnType<typeof setTimeout>>} */
@@ -165,6 +177,7 @@ async function runThemeBuildWatch(entries, options) {
 
   /** @param {{file: string, filePath: string}} entry */
   const rebuild = async entry => {
+    if (stopped) return;
     if (building) {
       // Coalesce changes that land mid-build into a single follow-up run.
       queued.add(entry);
@@ -172,8 +185,16 @@ async function runThemeBuildWatch(entries, options) {
     }
     building = true;
     emit(text(`\nChange detected — rebuilding ${rel(entry.filePath)}...`));
-    await runThemeBuildOnceChild(entry.file, options);
+    const done = runThemeBuildOnceChild(entry.file, options, child => {
+      rebuildChild = child;
+    });
+    rebuildDone = done.then(() => {});
+    await done;
+    rebuildChild = null;
+    rebuildDone = null;
     building = false;
+    // A stop during this build has already ended the watch.
+    if (stopped) return;
     emit(text(watchingLine));
     const next = queued.values().next();
     if (!next.done) {
@@ -204,14 +225,28 @@ async function runThemeBuildWatch(entries, options) {
   emit(text(watchingLine));
 
   await new Promise((/** @type {(value?: void) => void} */ resolve) => {
-    const stop = () => {
+    let stopping = false;
+    /** @param {NodeJS.Signals} signal */
+    const stop = async signal => {
+      // A second interrupt while stopping (a terminal's Ctrl-C and the same
+      // signal passed on by the copy that started the run) changes nothing.
+      if (stopping) return;
+      stopping = true;
+      stopped = true;
+      queued.clear();
       for (const d of debounces.values()) clearTimeout(d);
       for (const w of watchers) w.close();
+      // A rebuild in progress would otherwise keep the process alive after
+      // "Stopped watching.". In a terminal, Ctrl-C already reached it.
+      rebuildChild?.kill(signal);
+      await rebuildDone;
       emit(text('\nStopped watching.'));
+      process.removeListener('SIGINT', stop);
+      process.removeListener('SIGTERM', stop);
       resolve();
     };
-    process.once('SIGINT', stop);
-    process.once('SIGTERM', stop);
+    process.on('SIGINT', stop);
+    process.on('SIGTERM', stop);
   });
 }
 
@@ -230,8 +265,8 @@ async function warnOnThemeIntegrationIssues(json) {
 }
 
 /**
- * Print `theme add --list`. Its JSON stays the released `theme.list`; its text
- * names the commands of the current lifecycle stage (AST-050 FR12).
+ * Print cleanup-stage `theme add --list`. Its JSON stays the released
+ * `theme.list`; its text names the cleanup commands (AST-050 FR12).
  * @param {import('../../../api/theme/theme.type.mjs').ThemeListEntry[]} themes
  */
 function printThemeAddList(themes) {
@@ -254,12 +289,22 @@ function printThemeAddList(themes) {
         return theme.description ? [head, theme.description] : head;
       }),
     ),
-    text(
-      `Import one: ${run} theme add <slug> --import [--package <package>]\n` +
-        `Fork source: ${run} theme eject <slug> [target-path]`,
-    ),
+    text(themeNextSteps(run)),
     more,
   );
+}
+
+/**
+ * What to do with a listed theme. Outside a project there is no app to add one
+ * to, so only the fork step is named (spec AST-081 FR3).
+ * @param {string} run the CLI invocation
+ * @returns {string}
+ */
+function themeNextSteps(run) {
+  const fork = `Fork source: ${run} theme eject <slug> [target-path]`;
+  return isOutsideProject()
+    ? fork
+    : `Import one: ${run} theme add <slug> [--package <package>]\n${fork}`;
 }
 
 /**
@@ -296,10 +341,7 @@ function printThemeList(themes, unmigratedCopies = []) {
           default: (/** @type {boolean} */ value) => (value ? 'yes' : 'no'),
         },
       }),
-      text(
-        `Import one: ${run} theme add <slug> --import [--package <package>]\n` +
-          `Fork source: ${run} theme eject <slug> [target-path]`,
-      ),
+      text(themeNextSteps(run)),
       more,
     );
   }
@@ -368,7 +410,7 @@ function printThemeApp(result) {
   emit(
     text('Wire the generated module once in the app root:'),
     code(
-      "import {Theme} from '@astryxdesign/core';\n" +
+      "import {Theme} from '@astryxdesign/core/theme';\n" +
         `import {themes, defaultThemeSlug} from './${stem}';\n\n` +
         '<Theme theme={themes[defaultThemeSlug]}>\n  <App />\n</Theme>',
     ),
@@ -633,6 +675,10 @@ export function registerTheme(program) {
       // [ok]/[warn] lines, and the install instructions are all emitted from
       // inside themeBuild via the shared logger.
       logger.setSilent(json);
+      let privateVarError = false;
+      const onPrivateVarError = () => {
+        privateVarError = true;
+      };
 
       if (options.family) {
         try {
@@ -642,11 +688,15 @@ export function registerTheme(program) {
               familyKey: /** @type {string} */ (options.familyKey),
               check: options.check,
               iconsSpecifier: options.iconsSpecifier,
+              __onPrivateVarError: onPrivateVarError,
             },
             {cwd: process.cwd()},
           );
           if (json) jsonOut(result);
-          if (result.type === 'theme.build.check' && !result.data.upToDate) {
+          if (
+            privateVarError ||
+            (result.type === 'theme.build.check' && !result.data.upToDate)
+          ) {
             process.exitCode = 1;
           }
           return NO_RESULT_SET;
@@ -674,6 +724,7 @@ export function registerTheme(program) {
             out: options.out,
             check: options.check,
             iconsSpecifier: options.iconsSpecifier,
+            __onPrivateVarError: onPrivateVarError,
           };
           let result;
           if (report) {
@@ -753,10 +804,10 @@ export function registerTheme(program) {
         );
       }
 
-      // In --check mode a stale/missing output is a failure: exit non-zero
-      // (after emitting the receipt) so CI can gate on it. The receipt is
-      // already printed above (shared logger or --json envelope).
-      if (options.check && stale) {
+      // Private-variable diagnostics are build failures even though the released
+      // output and generated files stay unchanged. Stale --check output is also
+      // a failure after its receipt has been emitted.
+      if (privateVarError || (options.check && stale)) {
         process.exitCode = 1;
       }
 
@@ -801,15 +852,14 @@ export function registerTheme(program) {
     },
   });
 
-  defineCommand(theme, themeAddCommand, {
+  const themeAddCli = defineCommand(theme, themeAddCommand, {
     fn: themeAddFn,
     action: async (
       /** @type {string | undefined} */ slug,
-      /** @type {string | undefined} */ targetPath,
-      /** @type {{list?: boolean, overwrite?: boolean, import?: boolean, package?: string}} */ options,
+      /** @type {{list?: boolean, import?: boolean, package?: string}} */ options,
     ) => {
       const json = program.opts().json || false;
-      /** @type {import('../../../api/theme/theme.type.mjs').ThemeListResponse | import('../../../api/theme/theme.type.mjs').ThemeAddResponse | import('../../../api/theme/theme.type.mjs').ThemeAppResponse} */
+      /** @type {import('../../../api/theme/theme.type.mjs').ThemeListResponse | import('../../../api/theme/theme.type.mjs').ThemeAppResponse} */
       let result;
       try {
         result =
@@ -819,8 +869,6 @@ export function registerTheme(program) {
                 package: options.package,
               })
             : await themeAdd(slug, {
-                targetPath,
-                overwrite: options.overwrite,
                 import: options.import,
                 cwd: process.cwd(),
                 package: options.package,
@@ -848,44 +896,12 @@ export function registerTheme(program) {
         printThemeAddList(result.data);
         return answered;
       }
-      if (result.type === 'theme.app') {
-        printThemeApp(result);
-        return answered;
-      }
-
-      const {
-        displayName,
-        outputDir,
-        entry,
-        exportName,
-        files,
-        package: owner,
-      } = result.data;
-      const entryModule = importSpecifier(
-        outputDir,
-        entry.replace(/\.tsx?$/, ''),
-      );
-      emit(
-        text(`[ok] Added ${displayName} theme from ${owner} to ${outputDir}/`),
-        list(files.map(file => `${outputDir}/${file}`)),
-        text(
-          'Use it in your app (import path is relative to a file in src/ — adjust if yours lives elsewhere):',
-        ),
-        code(
-          "import { Theme } from '@astryxdesign/core';\n" +
-            `import { ${exportName} } from '${entryModule}';\n\n` +
-            `<Theme theme={${exportName}}>\n  <App />\n</Theme>`,
-        ),
-        text(
-          `This is your copy of the ${displayName} theme — edit ${entry} to make it your own.`,
-        ),
-      );
-      console.error(
-        `Warning: \`theme add\` source copying is deprecated (DEP-0005). Run \`${getCliInvocation()} theme eject ${result.data.slug}\` to fork source or \`${getCliInvocation()} theme add ${result.data.slug} --import\` to use the built theme.`,
-      );
+      printThemeApp(result);
       return answered;
     },
   });
+  // Reject the removed target-path argument in Commander's standard parse path.
+  themeAddCli.allowExcessArguments(false);
 
   defineCommand(theme, themeRemoveCommand, {
     fn: themeRemoveFn,
@@ -1062,22 +1078,11 @@ export function registerTheme(program) {
       emit(
         section(
           'Theming targets',
-          `${targets.length} across ${componentCount} component${componentCount === 1 ? '' : 's'}\n(key - component - props - states - className - deprecatedFor)`,
+          `${targets.length} across ${componentCount} component${componentCount === 1 ? '' : 's'}\n(key - component - props - states - className)`,
         ),
         records(targets, {
-          fields: [
-            'key',
-            'component',
-            'props',
-            'states',
-            'className',
-            'deprecatedFor',
-          ],
+          fields: ['key', 'component', 'props', 'states', 'className'],
           layout: 'inline',
-          format: {
-            deprecatedFor: (/** @type {string|null} */ v) =>
-              v ? `deprecated; use ${v}` : '',
-          },
         }),
         text(
           [

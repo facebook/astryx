@@ -39,6 +39,12 @@ const port = Number(getArg('port') || 6010);
 // whole cost of promoting its play function into required CI.
 const TARGETS = [
   {
+    component: 'Item',
+    story: 'core-item--align-first-line',
+    guards:
+      'under align="first-line" every start and end slot centers on the label\'s first line (wrapped, clamped, dense, spacious, avatar, interactive, RTL, ListItem, RadioListItem) and never rises into the row padding',
+  },
+  {
     component: 'Selector',
     story: 'core-selector--size-variants',
     guards:
@@ -48,6 +54,18 @@ const TARGETS = [
     component: 'MultiSelector',
     story: 'core-multiselector--sizes',
     guards: 'compact trigger variants match their size tokens',
+  },
+  {
+    component: 'MultiSelector',
+    story: 'core-multiselector--secondary-variant',
+    guards:
+      'the secondary trigger keeps its explicit 180px inline size while selected labels change',
+  },
+  {
+    component: 'ComplexSelector',
+    story: 'core-complexselector--secondary-variant',
+    guards:
+      'the secondary trigger keeps its explicit 190px inline size while the selected value changes',
   },
   {
     component: 'Code',
@@ -73,6 +91,41 @@ const TARGETS = [
     guards:
       'ChartTooltip stays continuously open across content-bearing points in ' +
       'nested Theme/MediaTheme scope above a native modal with nonzero geometry',
+  },
+  {
+    component: 'ChartTheming',
+    story: 'lab-charttheming-colorpicker--end-user-choices',
+    guards:
+      'Automatic, theme, custom, mode switching, and Reset update the selected chart color',
+  },
+  {
+    component: 'ChartTheming',
+    story: 'lab-charttheming-recharts--theme-tokens',
+    guards:
+      'Recharts resolves theme-aware resting colors and a same-series active-state tint in the browser',
+  },
+  {
+    component: 'ChartTheming',
+    story: 'lab-charttheming-recharts--runtime-theme-switch',
+    guards:
+      'Recharts keeps its SVG and focused chart surface while authored data colors switch modes',
+  },
+  {
+    component: 'ChartTheming',
+    story: 'lab-charttheming-recharts--square-bars',
+    guards:
+      'A chart can opt its bar geometry out of the theme radius without mutating the theme',
+  },
+  {
+    component: 'ChartTheming',
+    story: 'lab-charttheming-canvas--runtime-theme-switch',
+    guards: 'Canvas redraws concrete theme colors on the same drawing surface',
+  },
+  {
+    component: 'ChartTheming',
+    story: 'lab-charttheming-vega--serialized-canvas-config',
+    guards:
+      'Vega receives serialized concrete values and explicitly rebuilds its View when config changes',
   },
   {
     component: 'ChatToolCalls',
@@ -195,6 +248,76 @@ const TARGETS = [
     },
   ]),
   {
+    component: 'FormLayout (phone)',
+    story: 'core-formlayout--horizontal-labels',
+    viewport: {width: 390, height: 844},
+    guards:
+      'below the 480px collapse, horizontal-labels controls fill the column, including a Selector with a short value',
+  },
+  {
+    component: 'FormLayout',
+    story: 'core-formlayout--horizontal-labels',
+    viewport: {width: 481, height: 844},
+    guards: 'just above the collapse, labels stay beside their controls',
+  },
+  {
+    component: 'FormLayout audit (phone)',
+    story: 'core-formlayout--audit-matrix',
+    viewport: {width: 320, height: 844},
+    guards:
+      'all arrangements stay in the 320px viewport, horizontal columns retain order, horizontal-labels collapses, and required-default ARIA remains truthful',
+  },
+  {
+    component: 'FormLayout audit (boundary)',
+    story: 'core-formlayout--audit-matrix',
+    viewport: {width: 481, height: 844},
+    guards:
+      'at 481px horizontal-labels remains a two-column grid while every arrangement stays in the viewport',
+  },
+  {
+    component: 'FormLayout audit (RTL phone)',
+    story: 'core-formlayout--audit-matrix',
+    direction: 'rtl',
+    viewport: {width: 320, height: 844},
+    guards:
+      'logical horizontal order mirrors under RTL while the collapsed horizontal-label layout stays in the phone viewport',
+  },
+  {
+    component: 'FormLayout audit (RTL wide)',
+    story: 'core-formlayout--audit-matrix',
+    direction: 'rtl',
+    guards:
+      'logical horizontal order mirrors under RTL and wide horizontal-label pairs retain inline-start placement',
+  },
+  {
+    component: 'Grid',
+    story: 'core-grid--grid-span-with-long-content',
+    guards:
+      'a full-width GridSpan holding a Tokenizer with a long token stays within its 500px host',
+  },
+  {
+    component: 'Grid audit (phone)',
+    story: 'core-grid--audit-matrix',
+    viewport: {width: 320, height: 900},
+    guards:
+      'fixed tracks retain logical order, capped responsive tracks collapse to one, and every grid stays inside the phone viewport',
+  },
+  {
+    component: 'Grid audit (wide)',
+    story: 'core-grid--audit-matrix',
+    viewport: {width: 800, height: 900},
+    guards:
+      'capped responsive tracks reach three columns, auto-fit expands beyond auto-fill, and full span covers the explicit grid',
+  },
+  {
+    component: 'Grid audit (RTL)',
+    story: 'core-grid--audit-matrix',
+    direction: 'rtl',
+    viewport: {width: 800, height: 900},
+    guards:
+      'the rendered RTL wrapper mirrors fixed-track item order while responsive and span geometry remain bounded',
+  },
+  {
     component: 'TabList',
     story: 'core-tablist--full-bleed-geometry',
     guards:
@@ -286,8 +409,11 @@ function recordStoryOutcome() {
 async function probe(page, target) {
   await page.addInitScript(recordStoryOutcome);
   const pointerQuery = target.hasTouch ? '&storyPlayPointer=coarse' : '';
+  const globalsQuery = target.direction
+    ? `&globals=direction:${target.direction}`
+    : '';
   await page.goto(
-    `http://localhost:${port}/iframe.html?id=${target.story}&viewMode=story${pointerQuery}`,
+    `http://localhost:${port}/iframe.html?id=${target.story}&viewMode=story${pointerQuery}${globalsQuery}`,
     {waitUntil: 'domcontentloaded', timeout: 30000},
   );
   await page.waitForFunction(
@@ -295,7 +421,25 @@ async function probe(page, target) {
     null,
     {timeout: 30000},
   );
-  return page.evaluate(() => window.__storyOutcome);
+  return page.evaluate(expectedDirection => {
+    const outcome = window.__storyOutcome;
+    if (expectedDirection != null) {
+      const directionRoot = document.querySelector('#storybook-root [dir]');
+      if (directionRoot == null) {
+        outcome.errors.push(
+          `direction mismatch — expected ${expectedDirection}, but the story direction wrapper is missing`,
+        );
+      } else {
+        const actualDirection = getComputedStyle(directionRoot).direction;
+        if (actualDirection !== expectedDirection) {
+          outcome.errors.push(
+            `direction mismatch — expected ${expectedDirection}, received ${actualDirection}`,
+          );
+        }
+      }
+    }
+    return outcome;
+  }, target.direction ?? null);
 }
 
 async function run() {

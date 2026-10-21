@@ -45,8 +45,15 @@
         "reason": "description mentions \"zorblax\"",
         "description": "A zorblax blue.",
         "displayName": "Ocean",
-        "command": "astryx theme add --import ocean"
+        "command": "astryx theme add ocean"
       }
     ]
+  },
+  "meta": {
+    "answeredBy": {
+      "cli": "<cli version>",
+      "core": "<cli version>",
+      "copy": "project"
+    }
   }
 }

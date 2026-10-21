@@ -195,23 +195,13 @@ const RUNNERS = {
     runs: SELF_DOCS,
     sites: [
       'import ../../../api/integration/integrationAdd.doc.mjs',
+      'import ../../../api/integration/integrationCheck.doc.mjs',
       'import ../../../api/integration/integrationPackCheck.doc.mjs',
       'import ./integration-add.doc.mjs',
+      'import ./integration-check.doc.mjs',
       'import ./integration-pack.doc.mjs',
       'import ./integration-verify.doc.mjs',
       'import ./integration.doc.mjs',
-    ],
-  },
-  'clients/cli/commands/layout.mjs': {
-    runs: SELF_DOCS,
-    sites: [
-      'import ../../../api/layout/layoutCheck.doc.mjs',
-      'import ../../../api/layout/layoutExpand.doc.mjs',
-      'import ../../../api/layout/layoutGrammar.doc.mjs',
-      'import ./layout-check.doc.mjs',
-      'import ./layout-expand.doc.mjs',
-      'import ./layout-grammar.doc.mjs',
-      'import ./layout.doc.mjs',
     ],
   },
   'clients/cli/commands/search.mjs': {
@@ -258,12 +248,44 @@ const RUNNERS = {
     runs: 'astryx.config, through the config parser',
     sites: ['loadModuleWithParser(..., parseConfig)'],
   },
+  'foundation/fs/file-protection.mjs': {
+    runs: 'the ignore matcher (CommonJS), loaded when a resolver first reads an ignore file',
+    sites: ['require(ignore)'],
+  },
+  'foundation/discovery/component-discovery.mjs': {
+    runs: '@babel/parser, on first use, to read the members a family doc lists in its components without running the doc',
+    sites: ['require(@babel/parser)'],
+  },
+  'foundation/discovery/copied-passages.mjs': {
+    runs: "the CLI's own guides and the package's topics, to compare their prose for passages two topics repeat",
+    sites: ['builtinGuideFiles', 'loadTopicModule'],
+  },
+  'foundation/discovery/doc-consistency.mjs': {
+    runs: "a package's component docs and topics, to read the props, overlays, sections, and replaces/extends they declare",
+    sites: ['importDocModule ×2'],
+  },
+  'foundation/discovery/doc-fluff.mjs': {
+    runs: "the CLI's own guides, to measure the median share of content words a topic's density is compared with",
+    sites: ['builtinGuideFiles'],
+  },
   'foundation/discovery/docs-discovery.mjs': {
     runs: 'a contributed topic, for its catalog fields: name, title, description, category, and relationships',
     sites: ['importDocModule'],
   },
+  'foundation/discovery/stray-pointers.mjs': {
+    runs: "the CLI's own guides, for their names, to tell which written `astryx docs <name>` points at a doc that exists",
+    sites: ['builtinGuideFiles'],
+  },
+  'foundation/discovery/project-typescript.mjs': {
+    runs: "the project's own typescript, for the author checks that read source and docs with it, and its package.json for the version of one they cannot use; beside TypeScript 7, which has no compiler API, the TypeScript 6 API package @typescript/typescript6",
+    sites: [
+      'require(<computed>)',
+      'require(typescript)',
+      'require(typescript/package.json)',
+    ],
+  },
   'foundation/discovery/template-adapter.mjs': {
-    runs: '@babel/parser, to find the fixture references in template source; and a template doc that does not validate, to read the replacement it declares',
+    runs: '@babel/parser, to find the fixture references and page-local bindings in template source; and a template doc that does not validate, to read the replacement it declares',
     sites: ['importDocModule', 'require(@babel/parser)'],
   },
   'foundation/discovery/theme-discovery.mjs': {
@@ -300,6 +322,26 @@ const RUNNERS = {
   'foundation/integrations/integrations.mjs': {
     runs: "each installed integration's manifest",
     sites: ['importUserModule'],
+  },
+  'foundation/release/cache.mjs': {
+    runs: 'npm (under npm-guard.mjs), to install and look up CLI releases in the per-user cache; each installed release once, to check it starts and reports its version; and ps (tasklist on Windows), to confirm the process a stale lock records is node or npm before ending it',
+    sites: ['child_process.spawnSync ×5'],
+  },
+  'foundation/release/npm-guard.mjs': {
+    runs: 'npm, in a process group of its own that it ends at the time limit, on Ctrl-C, or when the run that started it goes away',
+    sites: ['child_process.spawn'],
+  },
+  'foundation/release/global-state.mjs': {
+    runs: "the background check of the registry's `latest` release, the agent-text step, and the step that installs the global copy's own Core into the release cache, each detached",
+    sites: ['child_process.spawn'],
+  },
+  'foundation/release/handoff.mjs': {
+    runs: "the CLI release that answers a project's run, when it is not this copy",
+    sites: ['child_process.spawn'],
+  },
+  'host/index.mjs': {
+    runs: "another release's host entry, from one of the host's package sets, when that release answers a hosted run",
+    sites: ['import(<computed>)'],
   },
   'scripts/generate-cli-readme.mjs': {
     runs: '`astryx manifest` and the error-code and response-type docs, to write the README tables (build time, not shipped)',

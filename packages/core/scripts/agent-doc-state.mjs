@@ -107,15 +107,75 @@ export function isAstryxInitialized(targetDir = process.cwd()) {
 }
 
 /**
- * The one-line next-step both postinstall nudges print. Kept here so layer 1
- * (core) and layer 2 (cli) can never word it differently.
+ * Does an agent working in `startDir` already have the Astryx prompt in reach?
  *
- * Scoped package form (`@astryxdesign/cli`) — always resolves to us, even before
- * the CLI is installed. Bare `npx astryx` would fetch an unrelated look-alike
+ * Coding agents read the agent docs between the repository root and the folder
+ * they work in. So inside a git repository, init's block in any folder from
+ * `startDir` up to the repository root counts: a workspace package of a
+ * monorepo initialized at its root is set up. Outside a repository only
+ * `startDir` itself is checked, as {@link isAstryxInitialized} does. Both the
+ * per-command nudge and the postinstall nudges ask this.
+ *
+ * @param {string} [startDir=process.cwd()]
+ * @returns {boolean}
+ */
+export function isAstryxPromptInReach(startDir = process.cwd()) {
+  const start = path.resolve(startDir);
+  const repositoryRoot = findRepositoryRoot(start);
+  if (!repositoryRoot) return isAstryxInitialized(start);
+  for (let dir = start; ; dir = path.dirname(dir)) {
+    if (isAstryxInitialized(dir)) return true;
+    if (dir === repositoryRoot) return false;
+  }
+}
+
+/**
+ * The nearest folder at or above `start` that holds `.git` (a folder, or the
+ * file a worktree uses), or null outside a repository.
+ * @param {string} start
+ * @returns {string | null}
+ */
+function findRepositoryRoot(start) {
+  for (let dir = start; ; ) {
+    if (fs.existsSync(path.join(dir, '.git'))) return dir;
+    const parent = path.dirname(dir);
+    if (parent === dir) return null;
+    dir = parent;
+  }
+}
+
+/**
+ * The invocation the setup nudge falls back to when the CLI's picker
+ * (`getCliInvocation`) cannot be loaded. Scoped package form
+ * (`@astryxdesign/cli`) — always resolves to us, even before the CLI is
+ * installed. npx with the unscoped name would fetch an unrelated look-alike
  * package (see PR #4151).
  */
-export const SETUP_NUDGE =
-  '\nNext step: run `npx @astryxdesign/cli init` to finish setup and install the Astryx agent prompt.\n\n';
+export const SETUP_INVOCATION = 'npx @astryxdesign/cli';
+
+/**
+ * The one-line next-step every setup layer prints. Kept here so layer 1
+ * (core), layer 2 (cli postinstall) and layer 3 (each command) can never word
+ * it differently. Each layer passes the stem from the CLI's picker when it can
+ * load it.
+ *
+ * @param {string} [invocation] the CLI invocation stem, e.g. `pnpm exec astryx`
+ * @param {{before?: string | null}} [options] `before`: a command to run
+ *   first, such as the one that adds the CLI to a project that has none
+ * @returns {string}
+ */
+export function setupNudge(
+  invocation = SETUP_INVOCATION,
+  {before = null} = {},
+) {
+  const run = before
+    ? `\`${before}\`, then \`${invocation} init\``
+    : `\`${invocation} init\``;
+  return `\nNext step: run ${run} to finish setup and install the Astryx agent prompt.\n\n`;
+}
+
+/** The nudge with the fallback invocation. */
+export const SETUP_NUDGE = setupNudge();
 
 /**
  * Pure decision: should a postinstall print the setup nudge? Shared by BOTH

@@ -10,6 +10,11 @@ import * as fs from 'node:fs';
 import {createRequire} from 'node:module';
 import * as path from 'node:path';
 import {fileURLToPath} from 'node:url';
+import {listDir, pathExists} from './listing-cache.mjs';
+import {ERROR_CODES} from '../response/error-codes.mjs';
+import {carriedCore, runChoice} from '../release/run-context.mjs';
+import {findDeclaringPackage} from '../release/project.mjs';
+import {hostedRun, recordResolved} from '../runtime/package-root.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -17,10 +22,160 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 export const CLI_ROOT = path.resolve(__dirname, '..', '..');
 
 /**
- * Find packages/core directory by walking up from startDir.
- * Also checks node_modules/@astryxdesign/core for installed usage.
+ * The Core a command answers from: the project's (see
+ * {@link findProjectCoreDir}), else, when a copy other than the project's own
+ * CLI answers, the Core that copy carries (spec AST-081 FR3): the
+ * `@astryxdesign/core` of its own release, beside it or in the per-user
+ * release cache. Never fetches; {@link requireCoreDir} does.
+ *
+ * Commands that judge or change a project (`doctor`, `swizzle`, `upgrade`)
+ * read {@link findProjectCoreDir} instead, so a carried Core never passes a
+ * project check or lands in a folder that installed none.
+ *
+ * @param {string} [startDir]
+ * @returns {string | null}
  */
 export function findCoreDir(startDir = process.cwd()) {
+  const own = findProjectCoreDir(startDir);
+  return own
+    ? noteCore(own, 'project')
+    : noteCore(carriedCoreFor(startDir).dir);
+}
+
+/**
+ * Note the Core a hosted run reads, for the record its host entry returns
+ * (architecture:cli-surface INV30). Does nothing outside a hosted run.
+ * @template {string | null} T
+ * @param {T} dir
+ * @param {'project'} [source] where it came from, when the caller knows
+ * @returns {T}
+ */
+function noteCore(dir, source) {
+  if (dir && hostedRun()) {
+    let version;
+    try {
+      version = JSON.parse(
+        fs.readFileSync(path.join(dir, 'package.json'), 'utf8'),
+      ).version;
+    } catch {
+      version = null;
+    }
+    recordResolved('@astryxdesign/core', version, dir, source);
+  }
+  return dir;
+}
+
+/**
+ * Why a command that reads Core cannot run, when the answering release's own
+ * Core is needed and cannot be installed: outside a project, or in a project
+ * with nothing installed (spec AST-081 FR3).
+ * @param {{unavailable: string | null, version?: string, reason?: string}} found
+ * @param {boolean} inProject
+ * @returns {string}
+ */
+export function unavailableCoreMessage(found, inProject) {
+  const unwritable = /cannot be written/.test(found.unavailable ?? '');
+  if (inProject) {
+    const core = found.version ? `Core ${found.version}` : 'its Core';
+    const why = found.reason ? ` (${found.reason})` : '';
+    return `This project has no Core installed, and ${core} could not be downloaded${why}. Install the project's dependencies${unwritable ? ', or make that folder writable' : ''}, then run again.`;
+  }
+  return `${found.unavailable}. Outside a project, commands that read Core use the Core of the release that answers; ${unwritable ? 'make that folder writable and run again' : 'run again when the package registry can be reached'}.`;
+}
+
+/**
+ * Like {@link findCoreDir}, but a copy that carries no Core installs its
+ * release's Core into the per-user cache first. Throws ERR_CORE_NOT_FOUND
+ * when there is no Core to answer from, and ERR_VERSIONS_UNAVAILABLE when the
+ * carried Core is needed and cannot be installed.
+ *
+ * @param {string} [startDir]
+ * @returns {string}
+ */
+export function requireCoreDir(startDir = process.cwd()) {
+  const found = findProjectCoreDir(startDir) ?? carriedCoreFor(startDir, true);
+  if (typeof found === 'string') return noteCore(found, 'project');
+  if (found.unavailable) {
+    throw codedError(
+      unavailableCoreMessage(found, runChoice(startDir).inProject),
+      ERROR_CODES.ERR_VERSIONS_UNAVAILABLE,
+    );
+  }
+  if (found.dir) return noteCore(found.dir);
+  throw codedError(
+    'Could not find @astryxdesign/core package',
+    ERROR_CODES.ERR_CORE_NOT_FOUND,
+  );
+}
+
+/**
+ * An Error carrying a stable error code, which the JSON envelope and every
+ * command's error output read the way they read an API error's.
+ * @param {string} message
+ * @param {string} code
+ * @returns {Error & {code: string}}
+ */
+function codedError(message, code) {
+  return Object.assign(new Error(message), {code});
+}
+
+/**
+ * The carried Core alone, for a caller that already looked for the project's
+ * Core its own way: the folder, or null when the copy answering in `startDir`
+ * is the project's own CLI or carries none.
+ * @param {string} startDir
+ * @param {{fetch?: boolean}} [options]
+ * @returns {string | null}
+ */
+export function findCarriedCoreDir(startDir, {fetch = false} = {}) {
+  return carriedCoreFor(startDir, fetch).dir;
+}
+
+/**
+ * The carried Core for a run in `startDir`, when the copy answering there is
+ * not the project's own CLI.
+ * @param {string} startDir
+ * @param {boolean} [fetch]
+ * @returns {{dir: string | null, unavailable: string | null, version?: string, reason?: string}}
+ */
+function carriedCoreFor(startDir, fetch = false) {
+  const carried = carriedCore({fetch: false});
+  if (!carried.dir && !fetch) return carried;
+  if (runChoice(startDir).copy === 'project') {
+    return {dir: null, unavailable: null};
+  }
+  return carried.dir ? carried : carriedCore({fetch: true});
+}
+
+/**
+ * Find packages/core directory by walking up from startDir.
+ * Also checks node_modules/@astryxdesign/core for installed usage.
+ *
+ * The project's Core only: in the folder or four above it, the reach every
+ * released version used, else from the folder of the package.json that makes
+ * the folder part of a project, however deep the folder is.
+ *
+ * @param {string} [startDir]
+ * @returns {string | null}
+ */
+export function findProjectCoreDir(startDir = process.cwd()) {
+  const near = findNearbyCoreDir(startDir);
+  if (near) return near;
+  // A folder deeper than that reach still belongs to the project the walk to
+  // its package.json finds, so its Core is looked up from there too (spec
+  // AST-081, a folder's project): never the carried Core in its place.
+  const declaring = findDeclaringPackage(startDir);
+  return declaring && declaring.dir !== path.resolve(startDir)
+    ? findNearbyCoreDir(declaring.dir)
+    : null;
+}
+
+/**
+ * The Core installed in `startDir` or one of the four folders above it.
+ * @param {string} startDir
+ * @returns {string | null}
+ */
+function findNearbyCoreDir(startDir) {
   let dir = startDir;
 
   for (let i = 0; i < 5; i++) {
@@ -152,7 +307,7 @@ export function discoverExternalPackages(startDir = process.cwd()) {
   if (!nodeModulesDir) return externals;
 
   /** @param {string} searchDir */
-  const scanDir = (searchDir) => {
+  const scanDir = searchDir => {
     if (!fs.existsSync(searchDir)) return;
     const entries = fs.readdirSync(searchDir, {withFileTypes: true});
 
@@ -231,17 +386,18 @@ export function listComponents(coreDir) {
  * @returns {boolean}
  */
 export function existsCaseExact(targetPath, rootDir) {
-  if (!fs.existsSync(targetPath)) return false;
+  if (!pathExists(targetPath)) return false;
 
   const rel = path.relative(rootDir, targetPath);
   if (rel === '') return true;
-  if (path.isAbsolute(rel) || rel === '..' || rel.startsWith(`..${path.sep}`)) return false;
+  if (path.isAbsolute(rel) || rel === '..' || rel.startsWith(`..${path.sep}`))
+    return false;
 
   let dir = rootDir;
   for (const segment of rel.split(path.sep)) {
     let entries;
     try {
-      entries = fs.readdirSync(dir);
+      entries = listDir(dir);
     } catch {
       return false;
     }

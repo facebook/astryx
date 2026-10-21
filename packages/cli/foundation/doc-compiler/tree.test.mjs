@@ -171,6 +171,13 @@ describe('buildDocsTree', () => {
         ['duplicate_route', expect.stringContaining('takes the route "UNORGANIZED", which the CLI\'s own docs keep')],
       ]),
     );
+    // It names both docs as their authors know them, never by artifact id,
+    // and says what to change.
+    const taken = problems(tree).find(([, message]) => message.includes('route "CLI"'))?.[1];
+    expect(taken).toBe(
+      `The topic "CLI" from ${P} and Astryx's own namespace "cli" both have the route "CLI", so \`astryx docs CLI\` cannot open both. Fix: rename "CLI" (its \`name\` and its file), such as \`name: 'kit-cli'\`.`,
+    );
+    expect(taken).not.toContain('astryx:artifact');
     expect(tree.getFolded('THEME')?.provider).toBe(CLI);
     // A CLI topic whose own name has capitals keeps its route against a
     // lowercase namespace, although namespaces go into the tree first.
@@ -495,7 +502,7 @@ describe("the CLI's own docs tree", () => {
     async () => {
       const tree = await loadDocsTree({fresh: true});
       expect(tree.diagnostics).toEqual([]);
-      expect(tree.roots().map(node => node.route)).toEqual(['cli', 'internationalization', 'layout', 'migration', 'styling', 'styling-libraries', 'tokens', 'typography']);
+      expect(tree.roots().map(node => node.route)).toEqual(['cli', 'global', 'internationalization', 'layout', 'migration', 'styling', 'styling-libraries', 'tokens', 'typography']);
       // Every slot child is a node one level below the namespace that places
       // it, and every node but the root is placed. Read from the tree, so a
       // restructure of the guides does not need this test edited.

@@ -4,7 +4,9 @@ import {describe, it, expect, beforeEach, afterEach} from 'vitest';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as os from 'node:os';
-import {findCoreDir, findProjectRoot, listComponents, discoverExternalPackages, existsCaseExact, findInstalledPackage} from './paths.mjs';
+import {findCoreDir, findProjectCoreDir, findProjectRoot, listComponents, discoverExternalPackages, existsCaseExact, findInstalledPackage} from './paths.mjs';
+import {CLI_ROOT} from './paths.mjs';
+import {linkThisCliAsProjectCli} from '../../test-utils/release-fixtures.mjs';
 
 let tmpDir;
 
@@ -39,6 +41,13 @@ describe('findCoreDir', () => {
   });
 
   it('returns null when nothing found', () => {
+    expect(findProjectCoreDir(tmpDir)).toBeNull();
+  });
+
+  it('falls back to the carried Core outside a project, and only there', () => {
+    // This copy's carried Core is the workspace Core beside it.
+    expect(findCoreDir(tmpDir)).toBe(path.resolve(CLI_ROOT, '..', 'core'));
+    linkThisCliAsProjectCli(tmpDir);
     expect(findCoreDir(tmpDir)).toBeNull();
   });
 });

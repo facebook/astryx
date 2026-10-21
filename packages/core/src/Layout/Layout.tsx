@@ -336,6 +336,7 @@ export function Layout({
   xstyle,
   className,
   style,
+  ...restProps
 }: LayoutProps) {
   const isFill = height === 'fill';
   // Children are a shorthand for the content slot; an explicit `content` prop
@@ -364,6 +365,7 @@ export function Layout({
   const tree = (
     <LayoutSlotsContext value={slotsValue}>
       <div
+        {...restProps}
         ref={ref}
         {...mergeProps(
           themeProps('layout', {height}),

@@ -190,7 +190,7 @@ const styles = stylex.create({
     '::after': {
       content: '""',
       position: 'absolute',
-      inset: '-14px',
+      inset: '-4px',
     },
   },
 });

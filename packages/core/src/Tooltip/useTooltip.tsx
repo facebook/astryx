@@ -352,6 +352,17 @@ export function useTooltip(options: TooltipOptions = {}): TooltipReturn {
     }, delay);
   }, [isEnabled, isOpen, clearTimeouts, showLayer, delay]);
 
+  // A show scheduled while the triggers were enabled must not outlive them:
+  // disabling also detaches the leave listener that would have cancelled it,
+  // so the timer would open a tooltip that nothing ever closes. Only the
+  // pending show is dropped; a pending hide still runs.
+  useEffect(() => {
+    if (!isEnabled && showTimeoutRef.current) {
+      clearTimeout(showTimeoutRef.current);
+      showTimeoutRef.current = null;
+    }
+  }, [isEnabled]);
+
   // Schedule hide with delay (suppressed when isOpen is true).
   // A small hover bridge (when hideDelay is 0) lets the pointer travel from the
   // trigger onto the tooltip surface without the tooltip vanishing — required
@@ -386,15 +397,28 @@ export function useTooltip(options: TooltipOptions = {}): TooltipReturn {
     scheduleShow();
   }, [isTouchPointerRef, scheduleShow]);
 
-  const handleMouseLeave = useCallback(() => {
-    // On touch the synthesized mouseleave arrives with the next tap elsewhere,
-    // which the outside-tap dismissal already handles — and handling it here
-    // too would close the tooltip behind the tap-open bookkeeping's back.
-    if (isTouchPointerRef.current) {
-      return;
-    }
-    scheduleHide();
-  }, [isTouchPointerRef, scheduleHide]);
+  const handleMouseLeave = useCallback(
+    (event: Event) => {
+      // On touch the synthesized mouseleave arrives with the next tap elsewhere,
+      // which the outside-tap dismissal already handles — and handling it here
+      // too would close the tooltip behind the tap-open bookkeeping's back.
+      if (isTouchPointerRef.current) {
+        return;
+      }
+      // Leaving straight onto the tooltip: the surface's onMouseEnter already
+      // ran, because React dispatches it from the mouseout that precedes this
+      // mouseleave, so a hide scheduled now would never be cancelled. The
+      // surface's own mouse leave schedules the hide instead.
+      const next = (event as MouseEvent).relatedTarget as Node | null;
+      const surface =
+        next == null ? null : next.ownerDocument?.getElementById(layerId);
+      if (surface != null && surface.contains(next)) {
+        return;
+      }
+      scheduleHide();
+    },
+    [isTouchPointerRef, layerId, scheduleHide],
+  );
 
   const handleFocusIn = useCallback(
     (e: Event) => {

@@ -30,7 +30,12 @@ export const doc = {
     {
       value: 'init.remove',
       description:
-        'Confirmation that the managed agent-docs block was removed (`data.removed: true`) — returned when --remove-agents is set.',
+        'The removal receipt — returned when --remove-agents is set: `data.removed` is true when a managed agent-docs block was found and removed, and false when there was none to remove.',
+    },
+    {
+      value: 'init.user',
+      description:
+        'The computer-level agent text receipt — returned when --user is set: `data.files`, one `{path, action, reason?}` per path acted on, the skill file first and then each link to its folder (action `written` | `linked` | `unchanged` | `removed` | `absent` | `kept`; `reason` only on `kept`: `edited` when a person changed the text, `not-astryx` when Astryx did not write it), `data.command` (the command the text names), and `data.warnings`.',
     },
     // component
     {
@@ -50,11 +55,13 @@ export const doc = {
     },
     {
       value: 'component.detail.props',
-      description: "Just one component's props table (ComponentPropDoc[]). The envelope's package names the npm package that owns the component.",
+      description:
+        "Just one component's props table (ComponentPropDoc[]). The envelope's package names the npm package that owns the component.",
     },
     {
       value: 'component.detail.source',
-      description: "One component's source file, as {component, source}. The envelope's package names the npm package that owns the component.",
+      description:
+        "One component's source file, as {component, source}. The envelope's package names the npm package that owns the component.",
     },
     {
       value: 'component.detail.showcase',
@@ -86,7 +93,7 @@ export const doc = {
     {
       value: 'docs.detail.section',
       description:
-        'One ReferenceSection of a topic, found by key or title, with token-ref blocks inlined, plus links ({up, previous, next}: the commands that open its topic index and the sections before and after it). The envelope\'s package names the npm package that wrote the section.',
+        "One ReferenceSection of a topic, found by key or title, with token-ref blocks inlined, plus links ({up, previous, next}: the commands that open its topic index and the sections before and after it). The envelope's package names the npm package that wrote the section.",
     },
     {
       value: 'docs.node',
@@ -110,7 +117,7 @@ export const doc = {
     {
       value: 'discover.list',
       description:
-        'The integrations the project loads (name, category, components, version, a list per other kind they add, and latest when a source knows it); with a discover source, meta.available lists what the project could add and meta.sources reports each source; when empty it carries meta.configured to tell "nothing configured" from "nothing discovered".',
+        'What the project has, the integrations it loads and the official packages it declares, official packages first (name, category, components, version, a list per other kind they add, and latest when a source knows it); meta.available lists what the project could add, the official packages first, each with the command that adds it, and meta.sources reports each source, the official list last; when it lists no integration it carries meta.configured to tell "nothing configured" from "nothing discovered".',
     },
     {
       value: 'discover.detail',
@@ -137,7 +144,7 @@ export const doc = {
     {
       value: 'search',
       description:
-        'The echoed query, `matchCount` (total matches, before `limit`), and results, a ranked SearchResultEntry[] bounded by `limit`: each {domain, name, package, score, reason, description, command} (package is the npm package that owns the result), plus import (components, hooks), title, parent (the command that opens the level above), and, for a hit on one section, section (docs), or displayName and kind (templates).',
+        'The echoed query, `matchCount` (total matches, before `limit`), and results, a ranked SearchResultEntry[] bounded by `limit`: each {domain, name, package, score, reason, description, command} (package is the npm package that owns the result), plus import (components, hooks), title, parent (the command that opens the level above), and, for a hit on one section, section (docs), or displayName and kind (templates). When a search with no `type` could not obtain @astryxdesign/core, `meta.partial` is {skipped, reason}: the domains it skipped (component, hook, template) and why.',
     },
 
     // build
@@ -161,18 +168,19 @@ export const doc = {
     {
       value: 'swizzle.copy',
       description:
-        'An eject receipt: component name, owning package, output directory, files-copied count, the written file names, whether any file uses StyleX, and, when the owner has an issues URL, feedback ({issuesUrl, ghCommand?}): where to report the gap that led to swizzling. The envelope\'s package names the same owning package.',
+        "An eject receipt: component name, owning package, output directory, files-copied count, the written file names, whether any file uses StyleX, and, when the owner has an issues URL, feedback ({issuesUrl, ghCommand?}): where to report the gap that led to swizzling. The envelope's package names the same owning package.",
     },
 
     // gap reports
     {
       value: 'gap-report.categories',
-      description: 'The fixed gap category values and human-readable labels.',
+      description:
+        'The fixed gap category values and human-readable labels; when a loaded integration names its own issues URL, meta.destinations lists every destination ({to, default, issuesUrl}) and meta.ask tells an agent to ask the person.',
     },
     {
       value: 'gap-report.file',
       description:
-        'An aggregate receipt: overall status, the selected package, issuesUrl (or null), deliveries in handler order, each {handlerType: project | integration | fallback, handler, audience, status, url, message}, and filedCount/routedOnlyCount totals.',
+        'An aggregate receipt: overall status, the selected package, issuesUrl (or null), deliveries in handler order, each {handlerType: project | integration | fallback, handler, audience, status, url, message}, and filedCount/routedOnlyCount totals; without --to, when a loaded integration names its own issues URL, destinations and ask as on gap-report.categories.',
     },
 
     // template
@@ -194,7 +202,7 @@ export const doc = {
     {
       value: 'template.copy',
       description:
-        'A scaffold receipt: template id, output directory, written file name, file count, demoMediaReplaced (how many Astryx demo media references were replaced with placeholders), notes (setup notes naming what the template needs that the project lacks — missing packages, missing StyleX compiler; empty when satisfied), missingPackages (external package names the template imports that are not in the project), and installCommand (a ready-to-run install command with the detected package manager and workspace version ranges; null when nothing is missing). The envelope\'s package names the npm package that owns the template.',
+        "A scaffold receipt: template id, output directory, written file name, file count, demoMediaReplaced (how many Astryx demo media references were replaced with placeholders), notes (setup notes naming what the template needs that the project lacks — missing packages, missing StyleX compiler; empty when satisfied), missingPackages (external package names the template imports that are not in the project), and installCommand (a ready-to-run install command with the detected package manager and workspace version ranges; null when nothing is missing, or when several lockfiles leave the package manager undetermined). The envelope's package names the npm package that owns the template.",
     },
 
     {
@@ -207,7 +215,7 @@ export const doc = {
     {
       value: 'hook.list',
       description:
-        'The hook catalog grouped by category: `detail` (the level: names | compact | full) and `components`, the grouped map of hook names, brief entries, or a full HookDoc per entry. The envelope\'s package is @astryxdesign/core, the only package that ships hooks.',
+        "The hook catalog grouped by category: `detail` (the level: names | compact | full) and `components`, the grouped map of hook names, brief entries, or a full HookDoc per entry. The envelope's package is @astryxdesign/core, the only package that ships hooks.",
     },
     {
       value: 'hook.detail',
@@ -242,11 +250,6 @@ export const doc = {
         'Every bundled, installed package, and local theme as a ThemeListEntry[]. Each entry has slug, displayName, description, maintained, owner package or local root, source, added, and default fields. Optional meta.unmigratedCopies names earlier descriptor-less copies, their missing descriptor, and the upgrade command; those copies are not data entries.',
     },
     {
-      value: 'theme.add',
-      description:
-        'The released source-copy receipt: slug, displayName, maintained flag, owner package, outputDir, source entry, exportName, and files. Its additive meta.deprecations entry names DEP-0005 and the source-fork/import replacements.',
-    },
-    {
       value: 'theme.app',
       description:
         'The app theme record after add, remove, or use. It includes every added theme and its built imports, the default slug, generated module path, and the command change. After add, the envelope package names the npm package that owns the added theme; a local theme has none.',
@@ -264,7 +267,7 @@ export const doc = {
     {
       value: 'theme.targets',
       description:
-        'The whole themeable surface: the echoed filter, componentCount, and targets, one per theming target — {key, className, component, props, states, deprecatedFor?}, where props and states are its legal override keys and deprecatedFor names the canonical replacement key.',
+        'The whole themeable surface: the echoed filter, componentCount, and targets, one per theming target — {key, className, component, props, states}, where props and states are its legal override keys.',
     },
     {
       value: 'theme.palette.generate',
@@ -286,19 +289,19 @@ export const doc = {
     {
       value: 'upgrade.status',
       description:
-        'A short-circuit outcome with no codemods run (up_to_date, no_codemods, or config_fixable), each carrying the agent-docs summary.',
+        'A short-circuit outcome with no codemods run (up_to_date, no_codemods, or config_fixable), each carrying the agent-docs summary. no_codemods and config_fixable carry cliBehindCore ({cliVersion, command}) when the installed Core is newer than the CLI, which then has no codemods for the releases after its own version.',
     },
     {
       value: 'upgrade.run',
       description:
-        'The run receipt: from/to versions, codemod count, integrations processed, the agent-docs summary, sourcePathFound (false when the resolved source directory does not exist, so no source file was read), and (apply mode) filesChanged, transformsApplied, and per-codemod errors.',
+        'The run receipt: from/to versions, codemod count, integrations processed, the agent-docs summary, sourcePathFound (false when the resolved source directory does not exist, so no source file was read), and (apply mode) filesChanged, transformsApplied, and per-codemod errors. When the installed Core is newer than the CLI, it also carries cliBehindCore ({cliVersion, command}): codemods for the releases after cliVersion did not run.',
     },
 
     // manifest
     {
       value: 'manifest',
       description:
-        'The CLI capability manifest: name, version, apiVersion, description, globalOptions, commands (each name, description, arguments, options, json, aliases?, responseTypes?, examples?, exitCodes? as [{code, when}], subcommands?), jsonSupported, and the flat responseTypes index.',
+        "The CLI capability manifest: name, version, apiVersion, description, globalOptions, commands (each name, description, arguments, options, json, aliases?, responseTypes?, examples?, exitCodes? as [{code, when}], outsideProject? (same, refuse, or own; absent on a group), subcommands?), jsonSupported, globalMode ({docs, summary}: what a run may do beyond its command, such as the hand-off to the project's own CLI, the daily update check, and the agent skill file, and the docs topic that explains it), and the flat responseTypes index.",
     },
 
     // help and version, which no single command owns
@@ -330,12 +333,12 @@ export const doc = {
     {
       value: 'integration.pack-check',
       description:
-        'The packed-package check: name, version, packable, tarball {filename, fileCount, size, unpackedSize} or null, inventory {manifest, roots [{kind, path, expectedFiles, missingFiles, complete}], expectedFiles, packedFiles}, contributions {local, packed}, each null or {themes [{slug, exportName}], components, templates [{id, type, name}], codemods [{version, id}], docs, agentDocsAppend}, and issues [{code, severity, message}].',
+        'The packed-package check: name, version, packable, tarball {filename, fileCount, size, unpackedSize} or null, inventory {manifest, roots [{kind, path, expectedFiles, missingFiles, complete}], expectedFiles, packedFiles}, contributions {local, packed}, each null or {themes [{slug, exportName}], components, templates [{id, type, name}], codemods [{version, id}], docs, agentDocsAppend}, and issues [{code, severity, message, fix?, file?, line?}] (the issues validation finds in the source and, prefixed packed_, in the packed tree, with the fix and the place when the check knows them).',
     },
     {
       value: 'integration.validate',
       description:
-        'The validation result: validated (false when no integration manifest was found, so nothing was checked and the empty issues list proves nothing), the package name and version (both null when validated is false) plus issues, an AstryxIntegrationIssue[] of {code, severity: warning | error, message}.',
+        'The validation result: validated (false when nothing was validated: with no package.json the issues list carries one no_package error so the command exits 1, and with a package.json but no integration manifest the issues list is empty and proves nothing), the package name and version (both null when validated is false) plus issues, an AstryxIntegrationIssue[] of {code, severity: warning | error, message, fix?, file?, line?} (fix: the change that resolves it; file and line: where, relative to the package), and notes when there are any: {code, message} information that fails nothing, such as invalid_cli_command for a malformed cliCommand, and the package layout findings added after the last minor release, each with its fix in the message (duplicate_component_doc, symlinked_root, unreadable_file, invalid_package_json, no_provider_id, source_without_component_doc where a doc and its source still pair), until they become warnings in the next minor release. When the manifest loads, docTypes checks each doc against its published authoring type: status (checked | skipped), reason, typescript, docs, findings (all warnings, each naming the field and a fix), unchecked, and fixtures (test fixture docs not checked).',
     },
     {
       value: 'integration.template-conflicts',
@@ -345,29 +348,17 @@ export const doc = {
     {
       value: 'integration.component-conflicts',
       description:
-        'validated (false when no integration manifest was found, so nothing was inspected), the integration identity, structural issues, and non-blocking conflicts where an integration component name is also owned by Core; each conflict includes the exact package-qualified command.',
+        'validated (false when no integration manifest was found, so nothing was inspected), the integration identity, structural issues, and non-blocking conflicts where an integration component name is also owned by Core; each conflict includes the exact package-qualified command. When the manifest loads and declares a components root, propDrift compares documented props with the TypeScript props: status (checked | skipped), reason, typescript, components, typesCompared, typesSkipped, findings (all warnings; a default_mismatch carries docDefault, codeDefault, and a fix), unchecked, typesNotCompared, and propsNotChecked.',
     },
     {
       value: 'integration.doc-conflicts',
       description:
-        'validated (false when no integration manifest was found, so nothing was inspected), the integration identity, structural issues, and Core doc overlaps. Each finding includes `severity` (`info` | `error`) and `relationship` (`replaces` | `extends` | `accidental`).',
-    },
-
-    // layout (XLE/XLO)
-    {
-      value: 'layout.expand',
-      description:
-        'The expansion: parsed form, generated TSX code, componentsUsed, states (count of useState hooks scaffolded), todos, blocksReferenced (each {name, mode}), warnings, written (the output path, or null when nothing was written), and demoMediaReplaced (count of demo media placeholders). Carries `meta.deprecations` with DEP-0006 and its replacement commands.',
+        'validated (false when no integration manifest was found, so nothing was inspected), the integration identity, structural issues, and Core doc overlaps. Each finding includes `severity` (`info` | `error`) and `relationship` (`replaces` | `extends` | `accidental`). copiedPassages lists each pair of topics that repeat 10 or more words of prose word for word: topic, section, otherTopic, otherOwner (package | core), words, passages, owner (the topic that should keep the text), text (the passage as the topic writes it), line (where the copy starts in the topic to change, or null), and message (the exact replacement); each is also a copied_passage warning in issues. fluff lists padding phrases and low-density topics: topic, kind (phrase | density), phrase, section, file (relative to the package root), line, density, and message (what to cut or write instead); each is also a doc_fluff warning in issues. strayPointers lists each code span that is exactly `astryx docs <name>` for a doc that exists, in the prose, description or summary of a topic or the text fields of a component doc: topic (the topic or component doc), kind (topic | component), section, field (the field outside any section, such as description or usage.bestPractices[0].description, else null), file (relative to the package root), line, pointer (the written command), link (the {@link} that replaces it), and message; each is also a stray_doc_pointer warning in issues.',
     },
     {
-      value: 'layout.check',
+      value: 'integration.check',
       description:
-        'The validation result: a valid flag, the detected form, errors (each with line/col, message, formatted text, and suggestions), warnings, and the expression re-printed in both canonical surfaces (compact and outline). Carries `meta.deprecations` with DEP-0006 and its replacement commands.',
-    },
-    {
-      value: 'layout.grammar',
-      description:
-        "The XLE/XLO grammar cheatsheet: a text field with the full reference plus an aliases map (short name → canonical component) generated from this install's registry. Carries `meta.deprecations` with DEP-0006 and its replacement commands.",
+        'Every source check of an integration package in one result: validated (false when no integration manifest was found, so nothing was checked), the package name and version, strict, and checks, one entry per check (validate, components, templates, docs), each with check, errors, warnings, skipped, failed, and response, the envelope that check returns on its own. The totals are errors, warnings, and skipped; unchecked counts what the checks could not compare. With --strict, failures lists each warning and each piece of skipped work again as an error, in the issue format the checks use; it is empty without --strict. failed decides the exit code.',
     },
   ],
 };

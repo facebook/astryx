@@ -36,7 +36,7 @@ export const doc = {
     {
       value: 'ERR_INVALID_OPTION',
       description:
-        'An unknown option was passed, --json was given to a command without JSON output, or layout --form got a value other than compact, outline, or auto.',
+        'An unknown option was passed, --json was given to a command without JSON output.',
     },
     {
       value: 'ERR_INVALID_ARGUMENT',
@@ -276,6 +276,18 @@ export const doc = {
       value: 'ERR_SIGNAL_TERMINATED',
       description:
         'Recorded in the debug log, never printed: the process was ended by a signal (Ctrl-C, SIGTERM) before the command reached a terminal path.',
+    },
+
+    // Global mode
+    {
+      value: 'ERR_VERSIONS_UNAVAILABLE',
+      description:
+        'Nothing could answer this run, and nothing was written: the project\'s own CLI could not start and nothing else could answer, or the Core a command needs outside a project could not be installed.',
+    },
+    {
+      value: 'ERR_PROJECT_REQUIRED',
+      description:
+        'The command needs a project (an app with Astryx installed, or an integration package) and was run outside one. Nothing was written.',
     },
   ],
 };

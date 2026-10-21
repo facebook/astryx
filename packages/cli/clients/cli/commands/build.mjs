@@ -101,7 +101,7 @@ export function registerBuild(program) {
       // throws ERR_INVALID_ARGUMENT, so we pass NaN through rather than
       // pre-rejecting with a generic code here (parity with `search`).
       const limit =
-        options.limit != null ? Number.parseInt(options.limit, 10) : 60;
+        options.limit != null ? Number(options.limit) : 60;
 
       /** @type {import('../../../api/build/build.type.mjs').BuildKitResponse} */
       let result;

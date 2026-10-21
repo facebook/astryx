@@ -14,8 +14,9 @@
  *   alongside plain items.
  *
  * One component, not three. The row itself adopts DropdownMenuItem semantics
- * (label / icon / description / isDisabled) and its children become the
- * flyout's content. This mirrors how SideNavItem / TreeListItem promote a
+ * (label / icon / description / isDisabled, host attributes, DOM handlers and
+ * a ref on the row) and its children become the flyout's content. This
+ * mirrors how SideNavItem / TreeListItem promote a
  * normal row into a nested surface when given children, rather than the Radix
  * Sub / SubTrigger / SubContent split. Data-driven menus never touch this
  * component directly — renderDropdownItems renders it from a nested `items`
@@ -49,6 +50,7 @@
  */
 
 import React, {
+  use,
   useCallback,
   useEffect,
   useId,
@@ -62,6 +64,7 @@ import {createPortal} from 'react-dom';
 import * as stylex from '@stylexjs/stylex';
 import {Icon, renderIconSlot, type IconType} from '../Icon';
 import {Spinner} from '../Spinner';
+import {MenuRegionsContext} from './menuRegionsContext';
 import {Item} from '../Item';
 import {useLayer} from '../Layer/useLayer';
 import {layerAnimations} from '../Layer/layerAnimations.stylex';
@@ -82,7 +85,8 @@ import {
   typographyVars,
   typeScaleVars,
 } from '../theme/tokens.stylex';
-import {mergeProps, rtlStyles} from '../utils';
+import {composeEventHandlers, mergeProps, rtlStyles} from '../utils';
+import {useMergedRefs} from '../hooks/useMergedRefs';
 import {themeProps} from '../utils/themeProps';
 import type {BaseProps} from '../BaseProps';
 import {
@@ -93,7 +97,9 @@ import {
 } from './menuItemRoles';
 import {
   DropdownMenuContext,
+  DropdownMenuRootOpenContext,
   useDropdownMenuContext,
+  useDropdownMenuRootOpen,
   type DropdownMenuContextValue,
 } from './DropdownMenuContext';
 import {focusMenuItemOnHover} from './menuItemHover';
@@ -162,8 +168,8 @@ const flyoutStyles = stylex.create({
     flexDirection: 'column',
     gap: spacingVars['--spacing-0-5'],
     maxInlineSize: stylex.firstThatWorks(
-      layerViewportInset.maxInlineSize,
-      layerViewportInset.maxInlineSizeFallback,
+      `calc(${layerViewportInset.maxInlineSize})`,
+      `calc(${layerViewportInset.maxInlineSizeFallback})`,
     ),
     maxHeight: stylex.firstThatWorks(
       MENU_MAX_BLOCK_SIZE,
@@ -190,11 +196,11 @@ const flyoutStyles = stylex.create({
     overscrollBehavior: 'contain',
   },
   // Scroll ownership by the browser's own signal; see DropdownMenu.
-  touchNone: {
-    touchAction: 'none',
+  touchPinchZoom: {
+    touchAction: 'pinch-zoom',
   },
-  touchPanY: {
-    touchAction: 'pan-y',
+  touchPanYPinchZoom: {
+    touchAction: 'pan-y pinch-zoom',
     overscrollBehavior: 'contain',
   },
   popoverViewport: {
@@ -241,9 +247,9 @@ const drillInStyles = stylex.create({
 export type DropdownMenuSubMenuPresentation =
   'flyout' | 'drill-in' | 'adaptive';
 
-interface DropdownMenuSubMenuBaseProps extends Pick<
+interface DropdownMenuSubMenuBaseProps extends Omit<
   BaseProps,
-  'xstyle' | 'className' | 'style'
+  'role' | 'tabIndex'
 > {
   /** Icon to display before the label on the trigger row. */
   icon?: ReactNode | IconType;
@@ -283,6 +289,11 @@ interface DropdownMenuSubMenuBaseProps extends Pick<
   'data-testid'?: string;
   /** Test id for the flyout menu. */
   menuDataTestId?: string;
+  /**
+   * Ref forwarded to the trigger row — the element carrying `role="menuitem"`
+   * and `aria-haspopup="menu"`.
+   */
+  ref?: React.Ref<HTMLElement>;
 }
 
 export interface DropdownMenuSubMenuProps extends DropdownMenuSubMenuBaseProps {
@@ -336,15 +347,27 @@ export function DropdownMenuSubMenu(
     style,
     'data-testid': testId,
     menuDataTestId,
+    ref,
+    id: idProp,
+    onMouseEnter,
+    onMouseLeave,
+    onPointerMove,
+    onClick,
+    onKeyDown,
+    // Host attributes and DOM handlers for the trigger row.
+    ...rest
   } = props;
 
   const t = useTranslator();
   const menuCtx = useDropdownMenuContext();
+  const rootHasRegions = use(MenuRegionsContext);
   const menuSize = menuCtx?.menuSize ?? 'md';
   const canOpen = !isDisabled;
 
   const contentId = useId();
-  const triggerId = useId();
+  const generatedTriggerId = useId();
+  // A caller's `id` names the row; the flyout stays labelled by it.
+  const triggerId = idProp ?? generatedTriggerId;
   const triggerRef = useRef<HTMLDivElement | null>(null);
 
   // Drill-in: the root keeps a view stack; this row pushes its
@@ -430,13 +453,17 @@ export function DropdownMenuSubMenu(
   // Hover intent and the shared hover→click guard only: this level owns its own
   // click handling, roving focus and typeahead. popover="manual", so the
   // invoker wiring other consumers need does not apply. A drill-in row has no
-  // hover: a finger drives it, and a press opens it.
+  // hover: a finger drives it, and a press opens it. Hover is also gated on
+  // the root menu being open, so a hover-open scheduled before the menu
+  // closed from elsewhere is cancelled instead of firing into the hidden
+  // menu (#6893).
+  const isRootMenuOpen = useDropdownMenuRootOpen();
   const {triggerProps, contentProps, confirmHoverOpen} =
     useMenuHover<HTMLDivElement>({
       show: showLayer,
       hide: hideLayer,
       isOpen: isFlyoutOpen,
-      isEnabled: canOpen && !isDrillIn,
+      isEnabled: canOpen && !isDrillIn && isRootMenuOpen,
       // The safe triangle toward the flyout's near edge is built from the
       // flyout this component renders, not the hook's own list ref.
       flyoutRef: menuRef,
@@ -524,17 +551,26 @@ export function DropdownMenuSubMenu(
 
   // Single ref for the trigger row: store it for focus management AND wire it
   // as the flyout's positioning anchor (CSS anchor positioning).
+  // Depends on the layer's anchor ref alone, which is stable: the layer
+  // object changes with its open state, and a new callback here would re-run a
+  // caller's ref as the flyout opens.
+  const layerRef = layer.ref;
   const setTriggerEl = useCallback(
     (el: HTMLDivElement | null) => {
       triggerRef.current = el;
-      layer.ref(el);
+      layerRef(el);
     },
-    [layer],
+    [layerRef],
   );
+  // The caller's ref reaches the same row.
+  const triggerRowRef = useMergedRefs<HTMLElement>(setTriggerEl, ref);
 
   const handleTriggerClick = useCallback(
     (event: React.MouseEvent) => {
       if (isDisabled) {
+        // As a disabled DropdownMenuItem does: the click is spent, so a
+        // caller's onClick composed after this one does not run.
+        event.preventDefault();
         return;
       }
       if (isDrillIn) {
@@ -569,6 +605,18 @@ export function DropdownMenuSubMenu(
       focusFirst,
       menuRef,
     ],
+  );
+
+  // The row's toggle runs first, then a caller's `onClick`. Item reports the
+  // click as a generic element event; its root is the row's HTMLElement.
+  const handleRowClick = useCallback(
+    (event: React.MouseEvent) => {
+      composeEventHandlers<React.MouseEvent<HTMLElement>>(
+        handleTriggerClick,
+        onClick,
+      )(event as React.MouseEvent<HTMLElement>);
+    },
+    [handleTriggerClick, onClick],
   );
 
   const handleTriggerKeyDown = useCallback(
@@ -616,6 +664,13 @@ export function DropdownMenuSubMenu(
   // stopPropagation needed — each level self-filters.
   const handleContentKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
+      // In a menu with a header or footer, Tab leaves the whole flyout stack:
+      // every open level closes as the key bubbles past it — this one's own
+      // rows or a deeper level's — and the root menu moves focus to a region.
+      if (e.key === 'Tab' && rootHasRegions) {
+        close({focusTrigger: false});
+        return;
+      }
       if (!ownsEvent(e)) {
         return;
       }
@@ -663,7 +718,7 @@ export function DropdownMenuSubMenu(
       }
       listNavKeyDown(e);
     },
-    [ownsEvent, close, listNavKeyDown, typeahead, menuRef],
+    [ownsEvent, close, listNavKeyDown, typeahead, menuRef, rootHasRegions],
   );
 
   // Re-provide the menu context so nested items behave exactly like top-level
@@ -721,7 +776,7 @@ export function DropdownMenuSubMenu(
       : flyoutStyles.popoverCustomWidth(resolvedMenuWidth.value)
     : flyoutStyles.popover;
 
-  const nestedContent = (
+  const nestedRows = (
     <DropdownMenuContext value={nestedMenuContext}>
       {isDrillIn && (
         <DropdownMenuItem
@@ -741,11 +796,23 @@ export function DropdownMenuSubMenu(
       {children}
     </DropdownMenuContext>
   );
+  // Nested rows live in this level's flyout, a layer of their own where the
+  // layer-scoped signal resets; re-provide it so their pending hover intent
+  // dies with the root menu too.
+  const nestedContent = (
+    <DropdownMenuRootOpenContext value={isRootMenuOpen}>
+      {nestedRows}
+    </DropdownMenuRootOpenContext>
+  );
 
   return (
     <>
       <Item
-        ref={el => setTriggerEl(el as HTMLDivElement | null)}
+        // Host attributes and handlers first: the row's role, tab stop, popup
+        // state and wiring are set after them, and its own handlers run
+        // before the caller's.
+        {...rest}
+        ref={triggerRowRef}
         id={triggerId}
         role="menuitem"
         tabIndex={isDisabled ? undefined : -1}
@@ -754,9 +821,15 @@ export function DropdownMenuSubMenu(
         aria-controls={isOpen ? contentId : undefined}
         aria-disabled={isDisabled || undefined}
         data-testid={testId}
-        onMouseEnter={triggerProps.onMouseEnter}
-        onMouseLeave={triggerProps.onMouseLeave}
-        onPointerMove={handlePointerMove}
+        onMouseEnter={composeEventHandlers(
+          triggerProps.onMouseEnter,
+          onMouseEnter,
+        )}
+        onMouseLeave={composeEventHandlers(
+          triggerProps.onMouseLeave,
+          onMouseLeave,
+        )}
+        onPointerMove={composeEventHandlers(handlePointerMove, onPointerMove)}
         startContent={
           icon
             ? renderIconSlot(icon, {size: 'sm', color: 'secondary'})
@@ -765,8 +838,8 @@ export function DropdownMenuSubMenu(
         label={label}
         description={description}
         endContent={endAffordance}
-        onClick={handleTriggerClick}
-        onKeyDown={handleTriggerKeyDown}
+        onClick={handleRowClick}
+        onKeyDown={composeEventHandlers(handleTriggerKeyDown, onKeyDown)}
         isDisabled={isDisabled}
         xstyle={[
           triggerStyles.root,
@@ -825,7 +898,9 @@ export function DropdownMenuSubMenu(
                 themeProps('dropdown-menu'),
                 stylex.props(
                   flyoutStyles.menu,
-                  hasOverflow ? flyoutStyles.touchPanY : flyoutStyles.touchNone,
+                  hasOverflow
+                    ? flyoutStyles.touchPanYPinchZoom
+                    : flyoutStyles.touchPinchZoom,
                   hasOverflow && flyoutStyles.scrollable,
                 ),
               )}>

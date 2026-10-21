@@ -21,6 +21,14 @@ export const docs = {
   usage: {
     description:
       'Wraps your app to set the active locale and (optionally) merge additional translation catalogs + per-locale overrides. Astryx components inside the subtree resolve their strings against this context. If no provider is present, components fall back to the shipped English defaults.',
+    anatomy: [
+      {
+        name: 'Provider boundary',
+        required: true,
+        description:
+          'A nonvisual context boundary that supplies locale, message catalogs, overrides, and direction to descendant Astryx components. It renders no DOM element.',
+      },
+    ],
     bestPractices: [
       {
         guidance: true,

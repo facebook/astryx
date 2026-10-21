@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * Astryx CLI integration for the canary-only Rich Text package.
+ * Astryx CLI integration for the Rich Text package.
  * Package identity and version come from package.json.
  */
 export default {

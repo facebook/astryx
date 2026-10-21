@@ -42,15 +42,17 @@ import {
   LEGACY_MARKER_END,
   discoverAgentDocs,
   isAstryxInitialized,
+  isAstryxPromptInReach,
 } from './agent-doc-state.mjs';
 
 // The agent-doc locations, markers, and the setup-state predicates
-// (discoverAgentDocs, isAstryxInitialized) are the ONE canonical contract. They
-// live in the dependency-free leaf ./agent-doc-state.mjs so the postinstall
-// nudge (enforcement layer 2) can load them safely at install time. Re-exported
-// here so existing importers (init/upgrade commands, the layer-3 nudge in
-// clients/cli/index.mjs, tests) keep their `from './agent-docs.mjs'` paths.
-export {discoverAgentDocs, isAstryxInitialized};
+// (discoverAgentDocs, isAstryxInitialized, isAstryxPromptInReach) are the ONE
+// canonical contract. They live in the dependency-free leaf
+// ./agent-doc-state.mjs so the postinstall nudge (enforcement layer 2) can load
+// them safely at install time. Re-exported here so existing importers
+// (init/upgrade commands, the layer-3 nudge in clients/cli/index.mjs, tests)
+// keep their `from './agent-docs.mjs'` paths.
+export {discoverAgentDocs, isAstryxInitialized, isAstryxPromptInReach};
 
 const MAX_PROJECT_AGENT_DOC_LINES = 32;
 const MANAGED_MARKER_TEXT = /(?:ASTRYX|XDS):(START|END)/u;
@@ -377,7 +379,7 @@ export function detectStylingSystem(targetDir) {
  * among them. An agent cannot ask for a topic it was never told about, and
  * `getting-started` is the one it should reach for first.
  *
- * @param {string} version
+ * @param {string | null} version the Core version
  * @param {{coreDir?: string|null, invocation?: string, stylingSystem?: 'stylex'|'tailwind'|'css', zh?: boolean, lang?: string, topics?: string[], agentDocs?: Array<{package: string, append: readonly string[]}>}} [options]
  * @returns {string}
  */
@@ -418,9 +420,9 @@ export function generateCompressedIndex(
       // Best-effort: component count is cosmetic; fall back to the default.
     }
   }
-
-  // Header — state the CLI prefix once; commands below are shown as `astryx <cmd>`.
   lines.push(`Astryx v${version} · ${componentCount} components`);
+
+  // State the CLI prefix once; commands below are shown as `astryx <cmd>`.
   lines.push(
     `CLI: run every command as \`${run} <cmd>\` (shown below as \`astryx ...\`).`,
   );
@@ -458,7 +460,7 @@ export function generateCompressedIndex(
   } else {
     lines.push("- Style with component props first, then tokens (var(--color-*|--spacing-*|--radius-*)). No raw hex/px. No StyleX/Tailwind compiler here — don't use xstyle/utility classes directly. Some templates use StyleX and need a compiler plugin; see `astryx docs styling-overview`.");
   }
-  lines.push('- Palettes and custom colors go through the theme, never :root overrides. See `astryx docs theme`.');
+  lines.push('- Palettes and custom colors go through the theme, never :root overrides. Run `astryx theme add <slug>` to import; `theme eject <slug>` only forks source. See `astryx docs theme`.');
   // Self-check — post-generation pass. Validated via vibe tests (internal/vibe-tests/
   // prompt-purity-test): on complex multi-step UIs the rules above alone still leave raw
   // CSS in ~11-13% of runs; a re-read-and-fix pass cuts that ~4x at negligible token cost.
@@ -773,6 +775,7 @@ function assertTargetsWithin(targetDir, relPaths) {
 /**
  * Remove Astryx section from all known agent doc files.
  * @param {string} targetDir
+ * @returns {string[]} the project-relative files a block was removed from.
  * @throws {PathSafetyError} `ERR_PATH_TRAVERSAL` when a file it would change
  *   resolves outside `targetDir`; nothing is changed.
  */
@@ -789,11 +792,14 @@ export function removeAgentDocs(targetDir) {
     throw new PathSafetyError(err.message, ERROR_CODES.ERR_PATH_TRAVERSAL);
   }
 
+  /** @type {string[]} */
+  const removedFrom = [];
   for (const p of allPaths) {
     const filePath = path.join(targetDir, p);
     // Delete if empty for files we created (AGENTS.md, .claude/CLAUDE.md)
     const deleteIfEmpty = p === AGENTS_MD || p === CLAUDE_DIR_MD;
     if (removeXdsBlock(filePath, {deleteIfEmpty})) {
+      removedFrom.push(p);
       if (!fs.existsSync(filePath)) {
         humanLog(`[ok] Removed empty ${p}`);
       } else {
@@ -801,6 +807,7 @@ export function removeAgentDocs(targetDir) {
       }
     }
   }
+  return removedFrom;
 }
 
 /**

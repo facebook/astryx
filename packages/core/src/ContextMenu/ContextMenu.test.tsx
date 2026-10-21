@@ -8,7 +8,9 @@
  * SYNC: When ContextMenu.tsx changes, update tests to match new behavior
  */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
+import {useRef, useState} from 'react';
+import {createPortal} from 'react-dom';
+import {describe, it, expect, vi, beforeAll, beforeEach} from 'vitest';
 import {render, screen, fireEvent, act, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {readFileSync} from 'node:fs';
@@ -23,6 +25,37 @@ import {
 } from './index';
 import {DropdownMenuItem} from '../DropdownMenu/DropdownMenuItem';
 import {Divider} from '../Divider';
+import {useLayerDismissal} from '../Layer/useLayerDismissal';
+import {warmMenuBottomSheet} from '../DropdownMenu/__tests__/warmMenuBottomSheet';
+
+// The touch sheet is loaded lazily; resolve its modules once up front, so
+// ContextMenu's own lazy sheet renders within the cases' waitFor.
+beforeAll(warmMenuBottomSheet, 20000);
+
+function NestedDismissibleLayer({onDismiss}: {onDismiss: () => void}) {
+  const [isOpen, setIsOpen] = useState(true);
+  const containerRef = useRef<HTMLButtonElement>(null);
+
+  useLayerDismissal({
+    isActive: isOpen,
+    onDismiss: () => {
+      setIsOpen(false);
+      onDismiss();
+    },
+    getContainer: () => containerRef.current,
+  });
+
+  // Portaled outside the menu's DOM, so only the layer depth ContextMenu
+  // provides can rank it above the menu.
+  return isOpen
+    ? createPortal(
+        <button ref={containerRef} type="button">
+          Nested layer
+        </button>,
+        document.body,
+      )
+    : null;
+}
 
 beforeEach(() => {
   HTMLDialogElement.prototype.showModal = vi.fn(function (
@@ -149,6 +182,56 @@ describe('ContextMenu', () => {
     expect(HTMLElement.prototype.showPopover).toHaveBeenCalled();
   });
 
+  it('composes the consumer context-menu handler with menu opening', () => {
+    const onContextMenu = vi.fn();
+    render(
+      <ContextMenu items={[{label: 'Item 1'}]} onContextMenu={onContextMenu}>
+        <div>Right-click me</div>
+      </ContextMenu>,
+    );
+
+    fireEvent.contextMenu(screen.getByText('Right-click me'));
+    expect(onContextMenu).toHaveBeenCalledOnce();
+    expect(HTMLElement.prototype.showPopover).toHaveBeenCalledOnce();
+  });
+
+  it('keeps component-owned opening when a consumer prevents default', () => {
+    render(
+      <ContextMenu
+        items={[{label: 'Item 1'}]}
+        onContextMenu={event => event.preventDefault()}>
+        <div>Right-click me</div>
+      </ContextMenu>,
+    );
+
+    fireEvent.contextMenu(screen.getByText('Right-click me'));
+    expect(HTMLElement.prototype.showPopover).toHaveBeenCalledOnce();
+  });
+
+  it('lets a nested layer consume Escape before the context menu', () => {
+    const onNestedDismiss = vi.fn();
+    render(
+      <ContextMenu
+        menuContent={<NestedDismissibleLayer onDismiss={onNestedDismiss} />}>
+        <div>Right-click me</div>
+      </ContextMenu>,
+    );
+
+    fireEvent.contextMenu(screen.getByText('Right-click me'));
+    const nestedLayer = screen.getByRole('button', {
+      name: 'Nested layer',
+      hidden: true,
+    });
+    nestedLayer.focus();
+    fireEvent.keyDown(nestedLayer, {key: 'Escape'});
+
+    expect(onNestedDismiss).toHaveBeenCalledOnce();
+    expect(HTMLElement.prototype.hidePopover).not.toHaveBeenCalled();
+
+    fireEvent.keyDown(document, {key: 'Escape'});
+    expect(HTMLElement.prototype.hidePopover).toHaveBeenCalledOnce();
+  });
+
   it('opens the real menu content in a BottomSheet when requested', async () => {
     render(
       <ContextMenu
@@ -190,7 +273,12 @@ describe('ContextMenu', () => {
     );
 
     fireEvent.contextMenu(screen.getByText('Right-click me'));
-    await user.click(screen.getByRole('button', {name: 'Move to project'}));
+    // The sheet is lazy: its first render suspends once even when the module
+    // is already loaded, so wait for the row rather than relying on an
+    // earlier case to have rendered a sheet.
+    await user.click(
+      await screen.findByRole('button', {name: 'Move to project'}),
+    );
 
     const submenuHeading = screen.getByRole('heading', {
       name: 'Move to project',
@@ -388,6 +476,60 @@ describe('ContextMenu', () => {
         vi.advanceTimersByTime(500);
       });
       expect(HTMLElement.prototype.showPopover).toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('composes consumer touch handlers with long-press detection', () => {
+    vi.useFakeTimers();
+    try {
+      const onTouchStart = vi.fn();
+      render(
+        <ContextMenu
+          items={[{label: 'Item 1'}]}
+          data-testid="ctx"
+          onTouchStart={onTouchStart}>
+          <div>Long-press me</div>
+        </ContextMenu>,
+      );
+
+      fireEvent.touchStart(screen.getByTestId('ctx'), {
+        touches: [{clientX: 20, clientY: 20}],
+      });
+      expect(onTouchStart).toHaveBeenCalledOnce();
+
+      act(() => {
+        vi.advanceTimersByTime(500);
+      });
+      expect(HTMLElement.prototype.showPopover).toHaveBeenCalledOnce();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('clears a pending long-press when a consumer prevents default on touch end', () => {
+    vi.useFakeTimers();
+    try {
+      render(
+        <ContextMenu
+          items={[{label: 'Item 1'}]}
+          data-testid="ctx"
+          onTouchEnd={event => event.preventDefault()}>
+          <div>Long-press me</div>
+        </ContextMenu>,
+      );
+
+      const trigger = screen.getByTestId('ctx');
+      fireEvent.touchStart(trigger, {
+        touches: [{clientX: 20, clientY: 20}],
+      });
+      fireEvent.touchEnd(trigger);
+
+      act(() => {
+        vi.advanceTimersByTime(500);
+      });
+      expect(HTMLElement.prototype.showPopover).not.toHaveBeenCalled();
     } finally {
       vi.useRealTimers();
     }
@@ -658,7 +800,7 @@ describe('ContextMenu compound mode', () => {
   });
 
   describe('cursor anchor positioning (#3465)', () => {
-    // The menu is anchored to a zero-size element placed at the cursor point
+    // The menu is anchored to a 1px element placed at the cursor point
     // *inside the trigger*, so it is positioned relative to the trigger's
     // context (scroll-follow + auto-flip) rather than the viewport.
     function getCursorAnchor(trigger: HTMLElement): HTMLElement {
@@ -669,7 +811,7 @@ describe('ContextMenu compound mode', () => {
       return anchor;
     }
 
-    it('renders a zero-size cursor anchor inside the trigger', () => {
+    it('renders a 1px cursor anchor inside the trigger', () => {
       render(
         <ContextMenu items={[{label: 'Item 1'}]} data-testid="ctx">
           <div>Right-click me</div>
@@ -680,6 +822,9 @@ describe('ContextMenu compound mode', () => {
       // Carries an anchor-name so the menu can be anchored to it via CSS
       // anchor positioning (context mode), not fixed viewport coordinates.
       expect(anchor.style.anchorName).toMatch(/^--astryx-layer-/);
+      // Owns a box: WebKit counts an empty anchor box inside a scroll
+      // container as clipped, and `position-visibility` hides the menu.
+      expect(anchor).toHaveStyle({width: '1px', height: '1px'});
     });
 
     it('places the cursor anchor at the pointer position relative to the trigger', () => {
@@ -725,7 +870,37 @@ describe('ContextMenu compound mode', () => {
       fireEvent.contextMenu(trigger, {clientX: 0, clientY: 0, detail: 0});
       const anchor = getCursorAnchor(trigger);
       expect(anchor.style.left).toBe('0px');
-      expect(anchor.style.top).toBe('20px');
+      // The 1px anchor steps back into the trigger's last pixel row, so its
+      // bottom edge (where the menu starts) is still the trigger's bottom.
+      expect(anchor.style.top).toBe('19px');
+    });
+
+    it('keeps the anchor inside the trigger at its end edges, and nowhere else', () => {
+      render(
+        <ContextMenu items={[{label: 'Item 1'}]} data-testid="ctx">
+          <div>Right-click me</div>
+        </ContextMenu>,
+      );
+      const trigger = screen.getByTestId('ctx');
+      trigger.getBoundingClientRect = () =>
+        ({
+          left: 100,
+          top: 50,
+          right: 300,
+          bottom: 150,
+          width: 200,
+          height: 100,
+        }) as DOMRect;
+      const anchor = getCursorAnchor(trigger);
+      // A point on the trigger's end edges steps back by the anchor's pixel.
+      fireEvent.contextMenu(trigger, {clientX: 300, clientY: 150, detail: 1});
+      expect(anchor.style.left).toBe('199px');
+      expect(anchor.style.top).toBe('99px');
+      // A point past the trigger (content overflowing it) stays at the
+      // pointer, as does a point on the trigger's start edges.
+      fireEvent.contextMenu(trigger, {clientX: 320, clientY: 50, detail: 1});
+      expect(anchor.style.left).toBe('220px');
+      expect(anchor.style.top).toBe('0px');
     });
   });
 });
@@ -1070,7 +1245,6 @@ describe('ContextMenuGroup', () => {
     // Three public surfaces alias this component at once. An alias that
     // re-exports without the semantics would pass a render test and fail a
     // screen reader.
-    const user = userEvent.setup();
     render(
       <ContextMenu
         menuContent={
