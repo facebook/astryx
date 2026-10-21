@@ -96,7 +96,7 @@ export const docs = {
       name: 'items',
       type: 'ContextMenuOption[]',
       description:
-        'Data-driven menu entries. Pass exactly one of `items` or `menuContent`. Each entry is one of: an action item `{label, onClick?, icon?, isDisabled?, variant?, items?}` (nested `items` open a flyout in popover presentation and drill into a new view in bottom-sheet presentation; variant `"destructive"` renders it in the error color), a divider `{type: "divider"}`, or a section `{type: "section", title?, items: [...action items]}`.',
+        'Data-driven menu entries. Pass exactly one of `items` or `menuContent`. Each entry is one of: an action item `{label, onClick?, icon?, isDisabled?, variant?, items?, header?, footer?}` (nested `items` open a flyout in popover presentation and drill into a new view in bottom-sheet presentation, and `header` and `footer` then sit above and below the rows they open, as on `DropdownMenuSubMenu`; variant `"destructive"` renders it in the error color), a divider `{type: "divider"}`, or a section `{type: "section", title?, items: [...action items]}`.',
     },
     {
       name: 'menuContent',

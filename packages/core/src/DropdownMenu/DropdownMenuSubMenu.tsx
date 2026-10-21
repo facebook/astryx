@@ -519,7 +519,7 @@ export function DropdownMenuSubMenu(
   const surfaceHost = rootSurface?.host.getElement() ?? null;
   useDevWarning(
     'DropdownMenuSubMenu',
-    'header and footer show only inside a DropdownMenu or a ContextMenu; this menu has no place outside its rows for them, so they are not rendered.',
+    "header and footer show only in a DropdownMenu or in a ContextMenu's pointer menu; this menu has no place outside its rows for them, so they are not rendered.",
     wantsRegions && !rootHostsSurfaces,
   );
   const frameId = useId();
