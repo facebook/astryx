@@ -118,6 +118,18 @@ const styles = stylex.create({
       ':is(:disabled,[aria-disabled="true"])': 'default',
     },
   },
+  // An aria-disabled button gets no system disabled paint in forced colors;
+  // GrayText is the platform's disabled affordance there.
+  triggerDisabled: {
+    borderColor: {
+      default: null,
+      '@media (forced-colors: active)': 'GrayText',
+    },
+    color: {
+      default: null,
+      '@media (forced-colors: active)': 'GrayText',
+    },
+  },
   triggerPlaceholder: {
     color: colorVars['--color-text-secondary'],
   },
@@ -156,6 +168,12 @@ const styles = stylex.create({
     cursor: {
       default: 'pointer',
       ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
+  },
+  rowDisabled: {
+    color: {
+      default: null,
+      '@media (forced-colors: active)': 'GrayText',
     },
   },
   rowLabel: {
@@ -386,7 +404,7 @@ export function MobileTokenizer<T extends SearchableItem>({
           setRenderedItemCount(LIST_RENDER_BATCH_SIZE);
           setActiveSheet('manage');
         }}
-        {...stylex.props(styles.trigger)}>
+        {...stylex.props(styles.trigger, isDisabled && styles.triggerDisabled)}>
         {value.length > 0 ? (
           value.map(item => (
             <Token key={item.id} label={item.label} isDisabled={isDisabled} />
@@ -514,7 +532,10 @@ export function MobileTokenizer<T extends SearchableItem>({
                             handleAdd(item);
                           }
                         }}
-                        {...stylex.props(styles.row)}>
+                        {...stylex.props(
+                          styles.row,
+                          rowDisabled && styles.rowDisabled,
+                        )}>
                         <span {...stylex.props(styles.rowLabel)}>
                           <Text type="body">{item.label}</Text>
                         </span>

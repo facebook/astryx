@@ -216,6 +216,16 @@ const styles = stylex.create({
       default: 0.45,
       '@media (forced-colors: active)': 1,
     },
+    // Opacity does not survive forced colors, and an aria-disabled button gets
+    // no system disabled paint; GrayText is the platform's disabled affordance.
+    borderColor: {
+      default: null,
+      '@media (forced-colors: active)': 'GrayText',
+    },
+    color: {
+      default: null,
+      '@media (forced-colors: active)': 'GrayText',
+    },
   },
   avatarRail: {
     display: 'inline-flex',

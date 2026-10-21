@@ -209,6 +209,36 @@ describe('CommentComposer', () => {
     expect(onUploadImages).not.toHaveBeenCalled();
   });
 
+  it('does not open the image chooser from the error banner while busy', async () => {
+    const onUploadImages = vi.fn();
+    const props = {
+      value: 'Draft',
+      onChange: () => {},
+      onSubmit: () => {},
+      onUploadImages,
+    };
+    const view = render(<CommentComposer {...props} />);
+    const input = document.querySelector('input[type="file"]');
+    if (!(input instanceof HTMLInputElement)) {
+      throw new Error('File input not found');
+    }
+    const openChooser = vi.spyOn(input, 'click').mockImplementation(() => {});
+    await act(async () => {
+      fireEvent.change(input, {
+        target: {
+          files: [new File(['%PDF'], 'doc.pdf', {type: 'application/pdf'})],
+        },
+      });
+    });
+    view.rerender(<CommentComposer {...props} isSubmitting />);
+    fireEvent.click(screen.getByRole('button', {name: 'Choose images'}));
+    expect(openChooser).not.toHaveBeenCalled();
+
+    view.rerender(<CommentComposer {...props} />);
+    fireEvent.click(screen.getByRole('button', {name: 'Choose images'}));
+    expect(openChooser).toHaveBeenCalledTimes(1);
+  });
+
   it('refuses files that are not images', async () => {
     const onUploadImages = vi.fn();
     render(
