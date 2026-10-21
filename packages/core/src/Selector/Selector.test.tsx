@@ -322,8 +322,6 @@ describe('Selector', () => {
     fireEvent.click(option, {detail: 1});
     rerender(field(true));
 
-    // The disabled trigger's focus ring, matched by its StyleX hash (the last
-    // token; the dev build prefixes a debug name).
     const ring = stylex
       .props(
         stylex.create({

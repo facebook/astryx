@@ -642,8 +642,8 @@ interface SelectorPropsBase<
    * The selected value stays visible, focusable, and included in form
    * submission, and retains its combobox identity with `aria-readonly`. The
    * selection surface and editing affordances are removed.
-   * Unlike `isDisabled`, a read-only selector is not dimmed and stays in the
-   * tab order. `isDisabled` takes precedence when both are set.
+   * Unlike `isDisabled`, a read-only selector is not dimmed and keeps its
+   * value in form submission. `isDisabled` takes precedence when both are set.
    * @default false
    */
   isReadOnly?: boolean;
@@ -655,8 +655,8 @@ interface SelectorPropsBase<
    * so the reason is discoverable by keyboard and assistive technology.
    * Activation stays blocked.
    *
-   * Use this instead of wrapping a disabled selector in `Tooltip` — disabled
-   * controls don't emit the pointer events an external tooltip needs.
+   * Use this instead of wrapping a disabled selector in `Tooltip`, so the
+   * reason is attached to the trigger itself.
    *
    * @example
    * ```

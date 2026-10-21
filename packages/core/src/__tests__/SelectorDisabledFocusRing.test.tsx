@@ -14,8 +14,7 @@ import {colorVars} from '../theme/tokens.stylex';
 import {Selector} from '../Selector';
 import {MultiSelector} from '../MultiSelector';
 
-// jsdom does not match `:has(...:focus-visible)`; StyleX hashes each
-// declaration, so the ring's atomic class is the last token of this probe.
+// jsdom cannot match `:focus-visible`: compare the ring's StyleX class hash.
 const probe = stylex.create({
   ring: {
     boxShadow: {

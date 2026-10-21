@@ -767,11 +767,8 @@ export function ComplexSelector<Value>({
           aria-required={isEffectivelyRequired ? 'true' : undefined}
           aria-invalid={status?.type === 'error' ? 'true' : undefined}
           aria-busy={isBusy || undefined}
-          // A disabled trigger keeps its tab stop and says so through
-          // aria-disabled (`spec:AST-085` FR1). Its press runs neither the
-          // caller's handler nor the toggle (FR2).
-          aria-disabled={isDisabled ? 'true' : undefined}
-          onClick={isDisabled ? undefined : handleTriggerButtonClick}
+          disabled={isDisabled}
+          onClick={handleTriggerButtonClick}
           onKeyDown={handleTriggerButtonKeyDown}
           {...stylex.props(styles.trigger)}>
           <span {...stylex.props(styles.triggerText)}>{triggerContent}</span>

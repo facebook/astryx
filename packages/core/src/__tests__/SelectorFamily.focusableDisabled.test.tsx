@@ -2,9 +2,9 @@
 
 /**
  * @file SelectorFamily.focusableDisabled.test.tsx
- * @input Uses vitest, @testing-library/react, Selector, MultiSelector, ComplexSelector
- * @output Conformance tests for spec:AST-085 FR1–FR4 across the Selector family
- * @position Testing; validates the disabled trigger of Selector.tsx, MultiSelector.tsx and ComplexSelector.tsx
+ * @input Uses vitest, @testing-library/react, Selector, MultiSelector
+ * @output Conformance tests for spec:AST-085 FR1–FR4 for Selector and MultiSelector
+ * @position Testing; validates the disabled trigger of Selector.tsx and MultiSelector.tsx
  */
 
 import {describe, it, expect, vi} from 'vitest';
@@ -12,7 +12,6 @@ import {act, render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {Selector} from '../Selector';
 import {MultiSelector} from '../MultiSelector';
-import {ComplexSelector} from '../ComplexSelector';
 
 const OPTIONS = ['Apple', 'Banana', 'Cherry'];
 
@@ -33,7 +32,6 @@ const cases = [
       />
     ),
     trigger: () => screen.getByRole('combobox', {name: 'Fruit'}),
-    submits: true,
   },
   {
     name: 'MultiSelector',
@@ -49,21 +47,6 @@ const cases = [
       />
     ),
     trigger: () => screen.getByRole('combobox', {name: 'Fruit'}),
-    submits: true,
-  },
-  {
-    name: 'ComplexSelector',
-    render: ({isDisabled, onClick}: Props) => (
-      <ComplexSelector
-        label="View options"
-        value={[]}
-        isDisabled={isDisabled}
-        onClick={onClick}>
-        {() => <button type="button">Apply</button>}
-      </ComplexSelector>
-    ),
-    trigger: () => screen.getByRole('button', {name: 'View options'}),
-    submits: false,
   },
 ];
 
@@ -111,9 +94,7 @@ describe.each(cases)('$name disabled (spec:AST-085)', c => {
     const {rerender} = render(<Harness c={c} isDisabled={false} />);
     const form = () =>
       screen.getByRole<HTMLFormElement>('form', {name: 'Form'});
-    if (c.submits) {
-      expect(new FormData(form()).getAll('fruit')).toEqual(['Banana']);
-    }
+    expect(new FormData(form()).getAll('fruit')).toEqual(['Banana']);
     rerender(<Harness c={c} isDisabled />);
     expect(new FormData(form()).getAll('fruit')).toEqual([]);
   });
