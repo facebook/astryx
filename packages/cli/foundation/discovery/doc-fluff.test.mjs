@@ -84,6 +84,11 @@ describe('fillerAt', () => {
         each => each.thatAfter,
       ),
     ).toEqual([false]);
+    expect(
+      fillerAt('As noted above that flag is required.').map(
+        each => each.thatAfter,
+      ),
+    ).toEqual([false]);
   });
 });
 

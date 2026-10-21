@@ -12,12 +12,12 @@
 
 import fs from 'node:fs';
 
+import {builtinGuideFiles} from './docs-discovery.mjs';
 import {
   contentWords,
   fileWords,
   lineAtOffset,
   locateWords,
-  loadCoreGuides,
   loadQuietly,
   proseStrings,
   passageWords,
@@ -145,10 +145,11 @@ export function fillerAt(text) {
         found.push({
           phrase,
           at,
-          // Only a note or noting phrase leads into a "that" clause the
-          // reader cuts with it; "Obviously that works" keeps its "that".
+          // Only a phrase that ends in note or noting leads into a "that"
+          // clause the reader cuts with it; "Obviously that works" and "As
+          // noted above that flag" keep their "that".
           thatAfter:
-            /\bnot(?:e|ed|ing)\b/.test(phrase) &&
+            /\bnot(?:e|ed|ing)$/.test(phrase) &&
             !phrase.endsWith('that') &&
             /^\s+that\b/i.test(prose.slice(at + phrase.length)),
         });
@@ -226,11 +227,16 @@ export function densityWords(doc) {
  * @returns {Promise<number>}
  */
 export async function coreDensityMedian() {
-  const {guides} = await loadCoreGuides();
-  const scores = guides
-    .filter(guide => guide.words.length >= DENSITY_MIN_WORDS)
-    .map(guide => density(guide.words))
-    .sort((a, b) => a - b);
+  // Core's guides are measured the way a package's topics are.
+  /** @type {number[]} */
+  const scores = [];
+  for (const file of builtinGuideFiles()) {
+    const doc = await loadQuietly(file);
+    if (typeof doc?.name !== 'string') continue;
+    const words = densityWords(doc);
+    if (words.length >= DENSITY_MIN_WORDS) scores.push(density(words));
+  }
+  scores.sort((a, b) => a - b);
   return scores.length === 0 ? 0 : scores[Math.floor(scores.length / 2)];
 }
 

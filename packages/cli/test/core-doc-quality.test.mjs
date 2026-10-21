@@ -16,6 +16,7 @@ import {
   DENSITY_MIN_WORDS,
   MIN_DENSITY,
   density,
+  densityWords,
   fillerIn,
 } from '../foundation/discovery/doc-fluff.mjs';
 import {
@@ -93,10 +94,12 @@ describe("Core's guides", () => {
 
   it('use no padding phrase and keep their density above the floor', async () => {
     const fluff = [];
-    for (const {name, doc, words} of await coreGuides()) {
+    for (const {name, doc} of await coreGuides()) {
       for (const {text} of proseStrings(doc)) {
         for (const phrase of fillerIn(text)) fluff.push(`${name}: "${phrase}"`);
       }
+      // Measured as the check measures a package's topics.
+      const words = densityWords(doc);
       if (words.length >= DENSITY_MIN_WORDS && density(words) < MIN_DENSITY) {
         fluff.push(`${name}: density ${density(words).toFixed(2)}`);
       }

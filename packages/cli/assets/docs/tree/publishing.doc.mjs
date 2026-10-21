@@ -14,7 +14,7 @@ export const docs = {
   category: 'guide',
   keywords: ['publish an integration', 'npm publish', 'release'],
   description:
-    'Publish your package to npm under the right release tag, and check it before and after.',
+    'Publish your package to npm under the right release tag, checking it before and after.',
   sections: [
     {
       id: 'check-before-you-publish',
@@ -79,7 +79,7 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: 'To let apps try a release first, publish it under `next`, then point `latest` at it when it is ready.',
+          text: 'To let apps try a release first, publish it under `next`, then point `latest` at it once ready.',
         },
         {
           type: 'code',
