@@ -210,13 +210,18 @@ depends only on runtimes it can maintain.
     reference sets the ceiling a candidate is scored against.
   - **Devices:** real hardware running release builds, on the oldest and newest
     supported OS version of each platform, including a lower-end device.
-  - **Captures:** every scenario step is captured as a screenshot on the device,
-    and every scenario as a screen recording, for each candidate, the reference,
-    and the web rendering of the same scenario, in light and dark and at the
-    largest text size. Visual scores are judged from these captures, never from
+  - **Captures:** every scenario step is captured as a screenshot on the
+    device, every behavior, such as a sheet opening and dismissing, a
+    navigation transition, a gesture, scrolling, press feedback, and the
+    keyboard appearing, as a short video, and every scenario as a screen
+    recording. Captures are taken for each candidate, the reference, and the web
+    rendering of the same scenario, in light and dark and at the largest text
+    size. Visual and motion scores are judged from these captures, never from
     source code or style values.
   - **Experience:** conformance to platform conventions and to the core
-    contract (FR3), judged per scenario step.
+    contract (FR3), judged per scenario step, and behavior and motion, judged
+    per behavior video for timing, gesture response, and interruptibility
+    against the reference.
   - **Brand preservation:** how recognizably the theme's identity, its color,
     typography, shape, spacing, and icons, carries to the platform while the
     screen stays native-first, judged against the web rendering of the same
