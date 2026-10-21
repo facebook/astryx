@@ -19,6 +19,7 @@
  */
 
 import path from 'node:path';
+import {findRunnerCommands} from '../../foundation/discovery/runner-commands.mjs';
 import {getCliInvocation} from '../../foundation/env/package-manager.mjs';
 import {
   packageComponentLinkProblems,
@@ -404,6 +405,8 @@ export async function integrationDocConflicts(pkg, options = {}) {
     typeof packageDir === 'string'
       ? path.relative(packageDir, file).split(path.sep).join('/')
       : file;
+  /** @type {import('./authoring-checks.type.mjs').RunnerCommand[]} */
+  const runnerCommands = [];
   if (!resolved.integration?.docs || name == null) {
     // A package that ships components and no topics still has component docs
     // a written pointer can sit in.
@@ -430,6 +433,7 @@ export async function integrationDocConflicts(pkg, options = {}) {
         copiedPassages,
         fluff,
         strayPointers,
+        runnerCommands,
         issues,
       },
     };
@@ -576,6 +580,19 @@ export async function integrationDocConflicts(pkg, options = {}) {
     for (const {message} of strayPointers) {
       issues.push({code: 'stray_doc_pointer', severity: 'warning', message});
     }
+    // Docs write bare `astryx` commands and the CLI shows each with the
+    // reader's runner, so a written runner is a warning
+    // (architecture:cli-surface DEC-8): `integration check --strict` fails on
+    // it, and `doctor integration docs` keeps its exit code.
+    runnerCommands.push(
+      ...(await findRunnerCommands(discovered)).map(each => ({
+        ...each,
+        file: fromPackage(each.file),
+      })),
+    );
+    for (const {message} of runnerCommands) {
+      issues.push({code: 'runner_command', severity: 'warning', message});
+    }
   }
 
   return {
@@ -588,6 +605,7 @@ export async function integrationDocConflicts(pkg, options = {}) {
       copiedPassages,
       fluff,
       strayPointers,
+      runnerCommands,
       issues,
     },
   };

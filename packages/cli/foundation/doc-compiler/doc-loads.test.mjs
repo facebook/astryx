@@ -272,6 +272,10 @@ const RUNNERS = {
     runs: 'a contributed topic, for its catalog fields: name, title, description, category, and relationships',
     sites: ['importDocModule'],
   },
+  'foundation/discovery/runner-commands.mjs': {
+    runs: "the package's topics, to find each Astryx command written with a package runner",
+    sites: ['loadTopicModule'],
+  },
   'foundation/discovery/stray-pointers.mjs': {
     runs: "the CLI's own guides, for their names, to tell which written `astryx docs <name>` points at a doc that exists",
     sites: ['builtinGuideFiles'],

@@ -398,14 +398,15 @@ function printDocConflicts(data) {
     section(
       `Checking integration docs: ${integrationLabel(data) ?? '(local package)'}`,
     ),
-    // A copied passage or fluff is listed below with its detail, so its
-    // issue is not printed twice.
+    // A copied passage, fluff, stray pointer or runner command is listed
+    // below with its detail, so its issue is not printed twice.
     ...issueBlocks(
       data.issues.filter(
         issue =>
           issue.code !== 'copied_passage' &&
           issue.code !== 'doc_fluff' &&
-          issue.code !== 'stray_doc_pointer',
+          issue.code !== 'stray_doc_pointer' &&
+          issue.code !== 'runner_command',
       ),
     ),
   ];
@@ -500,6 +501,23 @@ function printDocConflicts(data) {
           'link',
           'message',
         ],
+      }),
+    );
+  }
+  const runners = data.runnerCommands ?? [];
+  if (runners.length === 0) {
+    if (!data.issues.some(issue => issue.severity === 'error')) {
+      output.push(
+        text('[ok] Every command is written bare, as `astryx <command>`.'),
+      );
+    }
+  } else {
+    output.push(
+      text(
+        `[warn] ${runners.length} command(s) written with a package runner (runner_command). Write each as \`astryx <command>\`; the CLI adds the reader's runner.`,
+      ),
+      records(runners, {
+        fields: ['topic', 'section', 'line', 'command', 'message'],
       }),
     );
   }

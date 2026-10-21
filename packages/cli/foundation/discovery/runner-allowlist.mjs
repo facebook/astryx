@@ -13,10 +13,8 @@
  *   command, except in `runnerExamples`, where `npx @astryxdesign/cli …` and a
  *   project's runner may (still never the unscoped name through npx).
  *
- * TODO(doctor-runner-check): the Doctor lane's integration-docs runner check
- * (foundation/discovery/runner-commands.mjs) becomes the single rule; then the
- * repo test runs that check over Core's and the CLI's own docs with this
- * allowlist.
+ * The matcher is runnerCommandsIn (foundation/discovery/runner-commands.mjs),
+ * the rule `doctor integration docs` holds integrations to.
  *
  * @input  nothing
  * @output the allowlist
