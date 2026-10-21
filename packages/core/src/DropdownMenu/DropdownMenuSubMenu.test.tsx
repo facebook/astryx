@@ -1729,11 +1729,13 @@ describe('DropdownMenuSubMenu header and footer', () => {
     onPick,
     rootHeader,
     menuMaxHeight,
+    header = <input aria-label="Filter labels" />,
   }: {
     onCreate?: () => void;
     onPick?: (label: string) => void;
     rootHeader?: React.ReactNode;
     menuMaxHeight?: number;
+    header?: React.ReactNode;
   } = {}) {
     return (
       <DropdownMenu
@@ -1743,7 +1745,7 @@ describe('DropdownMenuSubMenu header and footer', () => {
         <DropdownMenuItem label="Rename" onClick={() => {}} />
         <DropdownMenuSubMenu
           label="Labels"
-          header={<input aria-label="Filter labels" />}
+          header={header}
           footer={
             <button type="button" onClick={onCreate}>
               Create label
@@ -1839,48 +1841,33 @@ describe('DropdownMenuSubMenu header and footer', () => {
   });
 
   it('an Escape a control in the region already handled closes only that control: a menu in the header, a field that clears itself', async () => {
-    const user = userEvent.setup();
-    function SortedLabels() {
+    // A field that clears itself on Escape claims the key.
+    function ClearingField() {
       const [query, setQuery] = useState('bu');
       return (
-        <DropdownMenu button={{label: 'Session'}}>
-          <DropdownMenuItem label="Rename" onClick={() => {}} />
-          <DropdownMenuSubMenu
-            label="Labels"
-            header={
-              <>
-                <input
-                  aria-label="Filter labels"
-                  value={query}
-                  onChange={e => setQuery(e.target.value)}
-                  onKeyDown={e => {
-                    // A field that clears itself on Escape claims the key.
-                    if (e.key === 'Escape' && query !== '') {
-                      e.preventDefault();
-                      setQuery('');
-                    }
-                  }}
-                />
-                <DropdownMenu button={{label: 'Sort'}}>
-                  <DropdownMenuItem label="By name" onClick={() => {}} />
-                </DropdownMenu>
-              </>
-            }>
-            <DropdownMenuItem label="Bug" onClick={() => {}} />
-          </DropdownMenuSubMenu>
-        </DropdownMenu>
+        <input
+          aria-label="Filter labels"
+          value={query}
+          onChange={e => setQuery(e.target.value)}
+          onKeyDown={e => {
+            if (e.key === 'Escape' && query !== '') {
+              e.preventDefault();
+              setQuery('');
+            }
+          }}
+        />
       );
     }
-    render(<SortedLabels />);
-    const trigger = screen.getByRole('button', {name: /Session/});
-    await user.click(trigger);
-    await waitFor(() =>
-      expect(trigger).toHaveAttribute('aria-expanded', 'true'),
-    );
-    const row = screen.getByRole('menuitem', {name: /Labels/, ...h});
-    fireEvent.click(row, {detail: 1});
-    await screen.findByRole('dialog', {name: /Labels/, ...h});
-    expect(row).toHaveAttribute('aria-expanded', 'true');
+    const {user, trigger, row} = await openLabels({
+      header: (
+        <>
+          <ClearingField />
+          <DropdownMenu button={{label: 'Sort'}}>
+            <DropdownMenuItem label="By name" onClick={() => {}} />
+          </DropdownMenu>
+        </>
+      ),
+    });
 
     // The header's own menu takes the first Escape and closes; the sub-menu
     // and the root menu stay open.
@@ -1895,15 +1882,14 @@ describe('DropdownMenuSubMenu header and footer', () => {
     expect(trigger).toHaveAttribute('aria-expanded', 'true');
 
     // A field that clears itself on Escape keeps that Escape too.
-    const filter = screen.getByRole('textbox', {name: 'Filter labels', ...h});
-    act(() => filter.focus());
-    fireEvent.keyDown(filter, {key: 'Escape'});
-    expect(filter).toHaveValue('');
-    expect(filter).toHaveFocus();
+    act(() => field().focus());
+    fireEvent.keyDown(field(), {key: 'Escape'});
+    expect(field()).toHaveValue('');
+    expect(field()).toHaveFocus();
     expect(row).toHaveAttribute('aria-expanded', 'true');
 
     // The next Escape, which nothing in the region claims, returns to the row.
-    fireEvent.keyDown(filter, {key: 'Escape'});
+    fireEvent.keyDown(field(), {key: 'Escape'});
     await waitFor(() => expect(row).toHaveAttribute('aria-expanded', 'false'));
     expect(trigger).toHaveAttribute('aria-expanded', 'true');
   });
@@ -1963,33 +1949,76 @@ describe('DropdownMenuSubMenu header and footer', () => {
     expect(create()).toHaveFocus();
   });
 
-  it('a pointer leaving the flyout does not close it while focus is inside', async () => {
+  // Opens the Labels flyout by hover (timers faked), puts focus on `focusIn`,
+  // and moves the pointer off until the hide delay has run out: the flyout
+  // stays open while focus is inside.
+  function hoverOpenAndLeave(
+    focusIn: () => HTMLElement,
+    header?: React.ReactNode,
+  ) {
+    render(<LabelsMenu header={header} />);
+    fireEvent.click(screen.getByRole('button', {name: /Session/}));
+    const row = screen.getByRole('menuitem', {name: /Labels/, ...h});
+    fireEvent.mouseEnter(row);
+    act(() => {
+      vi.advanceTimersByTime(500);
+    });
+    act(() => focusIn().focus());
+    fireEvent.mouseLeave(screen.getByRole('dialog', {name: /Labels/, ...h}));
+    fireEvent.mouseLeave(row);
+    act(() => {
+      vi.advanceTimersByTime(1000);
+    });
+    expect(row).toHaveAttribute('aria-expanded', 'true');
+    return row;
+  }
+
+  it('a flyout the pointer left stays open while focus moves inside it, and closes once focus leaves it', async () => {
     vi.useFakeTimers({toFake: ['setTimeout', 'clearTimeout']});
     try {
-      render(<LabelsMenu />);
-      fireEvent.click(screen.getByRole('button', {name: /Session/}));
-      const row = screen.getByRole('menuitem', {name: /Labels/, ...h});
-      fireEvent.mouseEnter(row);
+      const row = hoverOpenAndLeave(field);
+      await act(async () => create().focus());
       act(() => {
-        vi.advanceTimersByTime(500);
+        vi.advanceTimersByTime(0);
       });
       expect(row).toHaveAttribute('aria-expanded', 'true');
-      const dialog = screen.getByRole('dialog', {name: /Labels/, ...h});
-      act(() => field().focus());
-      fireEvent.mouseLeave(dialog);
-      fireEvent.mouseLeave(row);
+      // Focus leaving closes it, with no further pointer movement, once the
+      // move has completed.
+      await act(async () =>
+        screen.getByRole('menuitem', {name: 'Rename', ...h}).focus(),
+      );
       act(() => {
-        vi.advanceTimersByTime(1000);
-      });
-      expect(row).toHaveAttribute('aria-expanded', 'true');
-      // With focus outside it, the same leave closes it.
-      act(() => row.focus());
-      fireEvent.mouseEnter(dialog);
-      fireEvent.mouseLeave(dialog);
-      act(() => {
-        vi.advanceTimersByTime(1000);
+        vi.advanceTimersByTime(0);
       });
       expect(row).toHaveAttribute('aria-expanded', 'false');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('a flyout the pointer left stays open while the browser moves focus between its header controls, as an arrow in a radio group does', async () => {
+    vi.useFakeTimers({toFake: ['setTimeout', 'clearTimeout']});
+    try {
+      const radio = (name: string) => screen.getByRole('radio', {name, ...h});
+      const row = hoverOpenAndLeave(
+        () => radio('Any label'),
+        <RadioList label="Match" value="any" onChange={() => {}}>
+          <RadioListItem label="Any label" value="any" />
+          <RadioListItem label="All labels" value="all" />
+        </RadioList>,
+      );
+      // The browser's own move, in its order: the blur, a microtask
+      // checkpoint, then the focus on the next radio.
+      fireEvent.focusOut(radio('Any label'));
+      await act(async () => {
+        await Promise.resolve();
+      });
+      act(() => radio('All labels').focus());
+      act(() => {
+        vi.advanceTimersByTime(0);
+      });
+      expect(row).toHaveAttribute('aria-expanded', 'true');
+      expect(radio('All labels')).toHaveFocus();
     } finally {
       vi.useRealTimers();
     }
@@ -2018,97 +2047,6 @@ describe('DropdownMenuSubMenu header and footer', () => {
       rerender(<LabelsMenu rootHeader={rootHeader} />);
       const dialog = await screen.findByRole('dialog', {name: /Labels/, ...h});
       expect(popover).toContainElement(dialog);
-    }
-  });
-
-  it('a flyout with regions that the pointer left while focus was inside closes once focus leaves it', async () => {
-    vi.useFakeTimers({toFake: ['setTimeout', 'clearTimeout']});
-    try {
-      render(<LabelsMenu />);
-      fireEvent.click(screen.getByRole('button', {name: /Session/}));
-      const row = screen.getByRole('menuitem', {name: /Labels/, ...h});
-      fireEvent.mouseEnter(row);
-      act(() => {
-        vi.advanceTimersByTime(500);
-      });
-      const dialog = screen.getByRole('dialog', {name: /Labels/, ...h});
-      act(() => field().focus());
-      fireEvent.mouseLeave(dialog);
-      act(() => {
-        vi.advanceTimersByTime(1000);
-      });
-      expect(row).toHaveAttribute('aria-expanded', 'true');
-      // Focus moving inside the flyout keeps it open.
-      await act(async () => create().focus());
-      act(() => {
-        vi.advanceTimersByTime(0);
-      });
-      expect(row).toHaveAttribute('aria-expanded', 'true');
-      // Focus leaving it closes it, with no further pointer movement, once
-      // the move has completed.
-      const rename = screen.getByRole('menuitem', {name: 'Rename', ...h});
-      await act(async () => rename.focus());
-      act(() => {
-        vi.advanceTimersByTime(0);
-      });
-      expect(row).toHaveAttribute('aria-expanded', 'false');
-    } finally {
-      vi.useRealTimers();
-    }
-  });
-
-  function MatchMenu() {
-    const [match, setMatch] = useState('any');
-    return (
-      <DropdownMenu button={{label: 'Filters'}}>
-        <DropdownMenuItem label="Reset" onClick={() => {}} />
-        <DropdownMenuSubMenu
-          label="Labels"
-          header={
-            <RadioList label="Match" value={match} onChange={setMatch}>
-              <RadioListItem label="Any label" value="any" />
-              <RadioListItem label="All labels" value="all" />
-            </RadioList>
-          }>
-          <DropdownMenuItem label="Bug" onClick={() => {}} />
-        </DropdownMenuSubMenu>
-      </DropdownMenu>
-    );
-  }
-
-  it('a flyout the pointer left stays open while the browser moves focus between its header controls, as an arrow in a radio group does', async () => {
-    vi.useFakeTimers({toFake: ['setTimeout', 'clearTimeout']});
-    try {
-      render(<MatchMenu />);
-      fireEvent.click(screen.getByRole('button', {name: /Filters/}));
-      const row = screen.getByRole('menuitem', {name: /Labels/, ...h});
-      fireEvent.mouseEnter(row);
-      act(() => {
-        vi.advanceTimersByTime(500);
-      });
-      const dialog = screen.getByRole('dialog', {name: /Labels/, ...h});
-      const anyLabel = screen.getByRole('radio', {name: 'Any label', ...h});
-      const allLabels = screen.getByRole('radio', {name: 'All labels', ...h});
-      act(() => anyLabel.focus());
-      fireEvent.mouseLeave(dialog);
-      act(() => {
-        vi.advanceTimersByTime(1000);
-      });
-      expect(row).toHaveAttribute('aria-expanded', 'true');
-      // The browser's own move, in its order: the blur, a microtask
-      // checkpoint, then the focus on the next radio.
-      fireEvent.focusOut(anyLabel);
-      await act(async () => {
-        await Promise.resolve();
-      });
-      act(() => allLabels.focus());
-      act(() => {
-        vi.advanceTimersByTime(0);
-      });
-      expect(row).toHaveAttribute('aria-expanded', 'true');
-      expect(allLabels).toHaveFocus();
-    } finally {
-      vi.useRealTimers();
     }
   });
 
@@ -2189,35 +2127,6 @@ describe('DropdownMenuSubMenu header and footer', () => {
     await waitFor(() => expect(sort).toHaveAttribute('aria-expanded', 'false'));
   });
 
-  it("data mode passes a nested item's header and footer to its sub-menu", async () => {
-    const user = userEvent.setup();
-    render(
-      <DropdownMenu
-        button={{label: 'Session'}}
-        items={[
-          {label: 'Rename'},
-          {
-            label: 'Labels',
-            header: <input aria-label="Filter labels" />,
-            footer: <button type="button">Create label</button>,
-            items: [{label: 'Bug'}, {label: 'Feature'}],
-          },
-        ]}
-      />,
-    );
-    await user.click(screen.getByRole('button', {name: /Session/}));
-    fireEvent.click(screen.getByRole('menuitem', {name: /Labels/, ...h}), {
-      detail: 1,
-    });
-    const dialog = await screen.findByRole('dialog', {name: /Labels/, ...h});
-    expect(dialog).toContainElement(field());
-    expect(dialog).toContainElement(create());
-    // A leaf row carries no header or footer of its own.
-    expect(
-      screen.getByRole('menuitem', {name: 'Rename', ...h}),
-    ).not.toHaveAttribute('header');
-  });
-
   it('a press from a menu row released on a row of the flyout acts on it, as in any flyout', async () => {
     const onPick = vi.fn();
     const {trigger} = await openLabels({onPick});
@@ -2262,42 +2171,6 @@ describe('DropdownMenuSubMenu header and footer', () => {
     await waitFor(() => expect(row).toHaveAttribute('aria-expanded', 'true'));
     expect(row).toHaveAttribute('aria-haspopup', 'menu');
     expect(screen.queryByRole('dialog', h)).toBeNull();
-  });
-
-  it("the bottom sheet keeps the menu's own header and footer at every level, and says so in development", async () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
-    try {
-      const user = userEvent.setup();
-      render(
-        <DropdownMenu
-          button={{label: 'Session'}}
-          presentation="bottom-sheet"
-          header={<input aria-label="Search actions" />}
-          items={[
-            {
-              label: 'Labels',
-              header: <input aria-label="Filter labels" />,
-              footer: <button type="button">Create label</button>,
-              items: [{label: 'Bug'}],
-            },
-          ]}
-        />,
-      );
-      await user.click(screen.getByRole('button', {name: /Session/}));
-      await screen.findByRole('dialog', {name: 'Session'});
-      await user.click(screen.getByRole('button', {name: /Labels/}));
-      await screen.findByRole('button', {name: /Bug/});
-      expect(
-        screen.getByRole('textbox', {name: 'Search actions'}),
-      ).toBeInTheDocument();
-      expect(screen.queryByRole('textbox', {name: 'Filter labels'})).toBeNull();
-      expect(screen.queryByRole('button', {name: 'Create label'})).toBeNull();
-      expect(warn).toHaveBeenCalledWith(
-        expect.stringContaining('the bottom sheet shows the menu'),
-      );
-    } finally {
-      warn.mockRestore();
-    }
   });
 
   describe('on a phone', () => {

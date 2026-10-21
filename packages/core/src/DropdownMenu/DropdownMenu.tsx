@@ -328,18 +328,6 @@ export interface DropdownMenuItemData extends Pick<
    * "type" is needed. Data-mode parity for the compound DropdownMenuSubMenu API.
    */
   items?: DropdownMenuOption[];
-  /**
-   * With `items`: content above the sub-menu's rows, as `header` on
-   * `DropdownMenuSubMenu` (a filter field, say). The bottom sheet keeps the
-   * menu's own header at every level. Ignored on a row without `items`.
-   */
-  header?: ReactNode;
-  /**
-   * With `items`: content below the sub-menu's rows, as `footer` on
-   * `DropdownMenuSubMenu`. The bottom sheet keeps the menu's own footer at
-   * every level. Ignored on a row without `items`.
-   */
-  footer?: ReactNode;
 }
 
 /**
@@ -666,14 +654,6 @@ function DropdownMenuBottomSheet({
   }
   const currentSubmenu = submenuPath.at(-1);
   const currentItems = currentSubmenu?.items ?? items;
-  // The sheet keeps the menu's own header and footer at every level.
-  useDevWarning(
-    'DropdownMenu',
-    "the bottom sheet shows the menu's own header and footer at every level; a sub-menu item's header and footer show only in the popover.",
-    currentSubmenu != null &&
-      (isRenderable(currentSubmenu.header) ||
-        isRenderable(currentSubmenu.footer)),
-  );
   const currentTitle = currentSubmenu?.label ?? button.label;
   const sheetLabel =
     typeof currentTitle === 'string' ? currentTitle : button.label;
