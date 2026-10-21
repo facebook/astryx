@@ -61,6 +61,30 @@ ruleTester.run('no-hardcoded-i18n-string', noHardcodedI18nStringRule, {
       code: "announce('Copied');",
       filename: 'CodeBlock.stories.tsx',
     },
+    // --- Formatter/helper returns ---
+    {code: "function formatLabel(count) { return t('items.count', {count}); }"},
+    {code: "const getStatusText = () => t('status.ready');"},
+    {code: 'function formatValue(value) { return value; }'},
+    {code: 'const formatCount = count => `${count}`;'},
+    {code: "function getIdentifier() { return 'Internal value'; }"},
+    {
+      code: "function formatLabel() { function callback() { return 'Not its return'; } return label; }",
+    },
+    {code: "const formatLabel = () => { return () => 'Not its return'; };"},
+    {code: 'function formatColor(r, g, b) { return `rgb(${r}, ${g}, ${b})`; }'},
+    {code: 'const formatShadow = value => `0 0 ${value}px black`;'},
+    {code: "function getStyleString() { return 'display: flex; gap: 4px'; }"},
+    {code: 'const formatLength = size => `${size}px`;'},
+    {
+      code: "function formatLabel() { return 'No results'; }",
+      filename: 'Labels.test.ts',
+    },
+    {
+      code: "const getStatusText = () => 'Ready';",
+      filename: 'Labels.stories.tsx',
+    },
+    {code: "function formatLabel() { return 'READY_STATE'; }"},
+    {code: "function formatLabel() { return '/assets/icon.svg'; }"},
     // --- Pre-existing surfaces still behave ---
     {code: "<button aria-label={t('dialog.close')}>x</button>"},
   ],
@@ -117,6 +141,40 @@ ruleTester.run('no-hardcoded-i18n-string', noHardcodedI18nStringRule, {
     {
       code: "announce(emptyText ?? 'No results found');",
       errors: [{messageId: 'hardcodedCallArg'}],
+    },
+    // --- Formatter/helper returns ---
+    ...[
+      'function formatLabel(count) { return `${count} chars`; }',
+      "function formatFileSize(bytes) { return bytes + ' B'; }",
+      'const formatLabel = count => `${count} chars`;',
+      'const formatLabel = function(count) { return `${count} chars`; };',
+      "function getStatusString() { return 'Ready'; }",
+      "const getStatusText = () => 'Ready';",
+      "function getKeyLabel() { return 'Control'; }",
+      "function getErrorMessage() { return 'Try again'; }",
+      'const helpers = {formatLabel(count) { return `${count} chars`; }};',
+      "class Helpers { getStatusText() { return 'Ready'; } }",
+      "function formatLabel(count) { return (count + ' chars') as string; }",
+      "function formatLabel(count) { return `${count}${' chars'}`; }",
+      'function formatLabel(count) { return label ?? `${count} chars`; }',
+      "function formatLabel() { return label || 'No results'; }",
+      "function formatLabel() { return 'No ' + 'results'; }",
+      "function outer() { function formatLabel() { return 'Ready'; } }",
+    ].map(code => ({code, errors: [{messageId: 'hardcodedReturn'}]})),
+    {
+      code: "function formatLabel(count) { return count > 1 ? `${count} lines` : 'One line'; }",
+      errors: [{messageId: 'hardcodedReturn'}, {messageId: 'hardcodedReturn'}],
+    },
+    // Non-CSS copy must not be exempted merely for mentioning a CSS term.
+    {
+      code: "function formatColorLabel() { return 'Choose a color'; }",
+      errors: [{messageId: 'hardcodedReturn'}],
+    },
+    // The callee allowlist must not exempt formatter returns.
+    {
+      code: "function formatLabel() { return 'Copied'; }",
+      options: [{allowedCalleeStrings: ['Copied']}],
+      errors: [{messageId: 'hardcodedReturn'}],
     },
     // --- Pre-existing surfaces still behave ---
     {

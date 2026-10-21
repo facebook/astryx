@@ -34,6 +34,13 @@
  *      literals reached through a ternary or an `||`/`??` fallback and the
  *      literal chunks of an interpolated template are flagged too;
  *      identifiers and t(...) results are allowed.
+ *   5. Returns from format* and get*String/Text/Label/Message helpers, including
+ *      expression-bodied arrows. Helper names are a heuristic, not data-flow
+ *      analysis. Obvious CSS serializer names (color, style, shadow, transform,
+ *      gradient, length, angle, RGB/HSL/hex) are excluded; text-sink suffixes
+ *      such as formatColorLabel remain checked. Nested callbacks are not the
+ *      enclosing helper's returns. Concatenations and TypeScript assertions
+ *      are walked along with templates and fallbacks.
  *
  * Ignores:
  *   - Test files (*.test.*, __tests__/**)
@@ -111,15 +118,15 @@ const ARIA_TEXT_ATTRS = new Set([
  * one of these is flagged.
  */
 const SUFFIX_PATTERNS = [
-  /Label$/,      // saveButtonLabel, cancelLabel, previousLabel, ...
-  /Text$/,       // emptySearchText, helperText, errorText, ...
-  /Placeholder$/,// searchPlaceholder, timePlaceholder, ...
-  /Title$/,      // dialogTitle, ...
-  /Message$/,    // disabledMessage, errorMessage, ...
-  /Tooltip$/,    // ...
-  /Hint$/,       // ...
-  /Description$/,// ...
-  /Summary$/,    // ...
+  /Label$/, // saveButtonLabel, cancelLabel, previousLabel, ...
+  /Text$/, // emptySearchText, helperText, errorText, ...
+  /Placeholder$/, // searchPlaceholder, timePlaceholder, ...
+  /Title$/, // dialogTitle, ...
+  /Message$/, // disabledMessage, errorMessage, ...
+  /Tooltip$/, // ...
+  /Hint$/, // ...
+  /Description$/, // ...
+  /Summary$/, // ...
 ];
 
 function isUserFacingName(name) {
@@ -154,7 +161,11 @@ function looksUserFacing(value) {
     return false;
   }
   // All-caps enum constant like `IS_ANY_OF`
-  if (value === value.toUpperCase() && /[A-Z_]/.test(value) && !/\s/.test(value)) {
+  if (
+    value === value.toUpperCase() &&
+    /[A-Z_]/.test(value) &&
+    !/\s/.test(value)
+  ) {
     return false;
   }
   // Single lowercase word (identifier-shaped: `contains`, `email`, `foo123`)
@@ -225,10 +236,43 @@ function reportUserFacingLiteralsIn(expr, name, context, isDefault, opts = {}) {
           if (report(quasi, raw)) return;
         }
       }
+      for (const expression of expr.expressions) {
+        reportUserFacingLiteralsIn(expression, name, context, isDefault, opts);
+      }
+      return;
+    case 'BinaryExpression':
+      if (expr.operator === '+') {
+        reportUserFacingLiteralsIn(expr.left, name, context, isDefault, opts);
+        reportUserFacingLiteralsIn(expr.right, name, context, isDefault, opts);
+      }
+      return;
+    case 'TSAsExpression':
+    case 'TSTypeAssertion':
+    case 'TSNonNullExpression':
+    case 'TSSatisfiesExpression':
+      reportUserFacingLiteralsIn(
+        expr.expression,
+        name,
+        context,
+        isDefault,
+        opts,
+      );
       return;
     case 'ConditionalExpression':
-      reportUserFacingLiteralsIn(expr.consequent, name, context, isDefault, opts);
-      reportUserFacingLiteralsIn(expr.alternate, name, context, isDefault, opts);
+      reportUserFacingLiteralsIn(
+        expr.consequent,
+        name,
+        context,
+        isDefault,
+        opts,
+      );
+      reportUserFacingLiteralsIn(
+        expr.alternate,
+        name,
+        context,
+        isDefault,
+        opts,
+      );
       return;
     case 'LogicalExpression':
       // Only the right side can be a fallback/default string; the left is a
@@ -240,6 +284,47 @@ function reportUserFacingLiteralsIn(expr, name, context, isDefault, opts = {}) {
     default:
       return;
   }
+}
+
+function isFormatterName(name) {
+  if (typeof name !== 'string') return false;
+  if (
+    !/^format[A-Z_]|^get(?:[A-Z].*)?(?:String|Text|Label|Message)$/.test(name)
+  ) {
+    return false;
+  }
+  // These names describe CSS output, not interface copy. A text-sink suffix
+  // still wins: formatColorLabel is not a color serializer.
+  return !/(?:CSS|Css|Style|Styles|Color|Shadow|Transform|Gradient|Length|Angle|RGB|Rgb|HSL|Hsl|Hex)(?:String)?$/.test(
+    name,
+  );
+}
+
+function getFunctionName(node) {
+  const parent = node.parent;
+  if (
+    parent?.type === 'VariableDeclarator' &&
+    parent.id.type === 'Identifier'
+  ) {
+    return parent.id.name;
+  }
+  if (
+    (parent?.type === 'Property' || parent?.type === 'MethodDefinition') &&
+    !parent.computed
+  ) {
+    return parent.key.type === 'Identifier'
+      ? parent.key.name
+      : parent.key.value;
+  }
+  return node.id?.name;
+}
+
+function isFunction(node) {
+  return (
+    node.type === 'FunctionDeclaration' ||
+    node.type === 'FunctionExpression' ||
+    node.type === 'ArrowFunctionExpression'
+  );
 }
 
 const rule = {
@@ -254,14 +339,17 @@ const rule = {
     messages: {
       hardcodedString:
         'Hardcoded user-facing string {{value}} in `{{name}}`. ' +
-        'Route through `t(\'<namespace>.<component>.<key>\')` via `useTranslator()` so it can be localized.',
+        "Route through `t('<namespace>.<component>.<key>')` via `useTranslator()` so it can be localized.",
       hardcodedDefault:
         'Hardcoded default {{value}} for prop `{{name}}`. ' +
         'Use the alias-and-resolve pattern: `{{name}}: {{name}}FromProps` in the destructure, then ' +
-        '`const {{name}} = {{name}}FromProps ?? t(\'<namespace>.<component>.<key>\');` inside the body.',
+        "`const {{name}} = {{name}}FromProps ?? t('<namespace>.<component>.<key>');` inside the body.",
+      hardcodedReturn:
+        'Hardcoded user-facing string {{value}} returned by `{{name}}()`. ' +
+        'Use one catalog message via the provider-bound translator instead of constructing English text.',
       hardcodedCallArg:
         'Hardcoded user-facing string {{value}} passed to `{{name}}()`. ' +
-        'Route through `t(\'<namespace>.<component>.<key>\')` via `useTranslator()` so it can be localized.',
+        "Route through `t('<namespace>.<component>.<key>')` via `useTranslator()` so it can be localized.",
     },
     schema: [
       {
@@ -289,13 +377,29 @@ const rule = {
     const allowedCalleeStrings = new Set(options.allowedCalleeStrings ?? []);
 
     return {
+      ReturnStatement(node) {
+        let owner = node.parent;
+        while (owner && !isFunction(owner)) owner = owner.parent;
+        const name = owner && getFunctionName(owner);
+        if (!isFormatterName(name)) return;
+        reportUserFacingLiteralsIn(node.argument, name, context, false, {
+          messageId: 'hardcodedReturn',
+        });
+      },
+
+      ArrowFunctionExpression(node) {
+        if (node.body.type === 'BlockStatement') return;
+        const name = getFunctionName(node);
+        if (!isFormatterName(name)) return;
+        reportUserFacingLiteralsIn(node.body, name, context, false, {
+          messageId: 'hardcodedReturn',
+        });
+      },
+
       // 1. JSX attribute string literals:  <X label="Cancel">
       JSXAttribute(node) {
         if (!node.name || node.name.type === 'JSXNamespacedName') return;
-        const name =
-          node.name.type === 'JSXIdentifier'
-            ? node.name.name
-            : null;
+        const name = node.name.type === 'JSXIdentifier' ? node.name.name : null;
         if (!isUserFacingName(name)) return;
 
         // 1. Bare string-literal attribute: <X label="Cancel">
@@ -334,8 +438,8 @@ const rule = {
           node.key.type === 'Identifier'
             ? node.key.name
             : node.key.type === 'Literal'
-            ? node.key.value
-            : null;
+              ? node.key.value
+              : null;
         if (!isUserFacingName(name)) return;
         if (
           node.value.type !== 'Literal' ||
@@ -366,8 +470,8 @@ const rule = {
           property.key.type === 'Identifier'
             ? property.key.name
             : property.key.type === 'Literal'
-            ? property.key.value
-            : null;
+              ? property.key.value
+              : null;
         if (!isUserFacingName(name)) return;
         reportUserFacingLiteralsIn(
           node.right,

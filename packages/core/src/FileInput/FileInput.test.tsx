@@ -511,6 +511,57 @@ describe('FileInput', () => {
   });
 
   describe('validation', () => {
+    it.each([
+      {
+        maxSize: 512,
+        sizeKey: 'bytes',
+        message: '{size, number} octets',
+        expected: '512 octets',
+      },
+      {
+        maxSize: 1536,
+        sizeKey: 'kilobytes',
+        message: '{size, number, ::precision-fixed/1} ko',
+        expected: '1,5 ko',
+      },
+      {
+        maxSize: 1572864,
+        sizeKey: 'megabytes',
+        message: '{size, number, ::precision-fixed/1} Mo',
+        expected: '1,5 Mo',
+      },
+    ])(
+      'localizes the $sizeKey size in validation feedback',
+      ({maxSize, sizeKey, message, expected}) => {
+        const handleChange = vi.fn();
+        render(
+          <InternationalizationProvider
+            locale="fr"
+            overrides={{
+              fr: {
+                '@astryx.fileInput.errorMaxSize':
+                  '{maxSize} maximum pour {fileName}',
+                [`@astryx.fileInput.fileSize.${sizeKey}`]: message,
+              },
+            }}>
+            <FileInput
+              label="Upload"
+              value={null}
+              onChange={handleChange}
+              maxSize={maxSize}
+            />
+          </InternationalizationProvider>,
+        );
+        fireEvent.change(fileInputEl(), {
+          target: {files: [createFile('big.txt', maxSize + 1)]},
+        });
+        expect(
+          screen.getByText(`${expected} maximum pour big.txt`),
+        ).toBeInTheDocument();
+        expect(handleChange).toHaveBeenCalledWith(null);
+      },
+    );
+
     it('rejects files exceeding maxSize', () => {
       const handleChange = vi.fn();
       render(
