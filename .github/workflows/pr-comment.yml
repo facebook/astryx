@@ -541,6 +541,6 @@ jobs:
               state: failed ? 'failure' : 'success',
               target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
               description: failed
-                ? 'The PR report could not be published. See the run.'
-                : 'The PR report is up to date.',
+                ? 'A PR report step failed or was cancelled. See the run.'
+                : 'No PR report step failed.',
             });

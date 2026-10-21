@@ -78,7 +78,7 @@ come from an earlier attempt of that run, never a later one.
 image sizes, re-encodes PNGs, and renders escaped HTML from default-branch code.
 It does not execute artifact HTML, run a browser, compare pixels again, change
 a baseline, or create another visual status. Its only status is `PR Comment` on
-the pull request head, which says whether the report was published.
+the pull request head, which says whether a report step failed.
 
 Deployment previews, `a11y-weekly.yml`, `rtl-weekly.yml`, and
 `vibe-screenshots.yml` remain separate because they do not run visual regression.
