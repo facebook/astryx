@@ -860,6 +860,85 @@ describe('ContextMenu compound mode', () => {
     );
   });
 
+  it("paints a drilled-in sub-menu's view under the menu's theme target and the caller's styling", async () => {
+    render(
+      <ContextMenu
+        label="Row actions"
+        className="caller-menu"
+        style={{outlineColor: 'rgb(255, 0, 0)'}}
+        menuContent={
+          <DropdownMenuSubMenu
+            label="Labels"
+            presentation="drill-in"
+            header={<input aria-label="Filter labels" />}>
+            <DropdownMenuItem label="Bug" onClick={() => {}} />
+          </DropdownMenuSubMenu>
+        }>
+        <div>Right-click me</div>
+      </ContextMenu>,
+    );
+    fireEvent.contextMenu(screen.getByText('Right-click me'));
+    fireEvent.click(
+      screen.getByRole('menuitem', {name: /Labels/, hidden: true}),
+      {detail: 1},
+    );
+    const dialog = await screen.findByRole('dialog', {
+      name: /Labels/,
+      hidden: true,
+    });
+    // The view shows in the menu's place, outside the menu, on a surface that
+    // carries what the menu carries.
+    const surface = dialog.closest<HTMLElement>('.astryx-context-menu');
+    expect(surface).not.toBeNull();
+    expect(surface).not.toHaveAttribute('role', 'menu');
+    expect(surface).toHaveClass('caller-menu');
+    expect(surface?.style.outlineColor).toBe('rgb(255, 0, 0)');
+  });
+
+  it('shows a sub-menu with a header or footer as its rows alone in the bottom sheet, and says why in development', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      render(
+        <ContextMenu
+          presentation="bottom-sheet"
+          label="Row actions"
+          menuContent={
+            <>
+              <DropdownMenuItem label="Rename" onClick={() => {}} />
+              <DropdownMenuSubMenu
+                label="Labels"
+                header={<input aria-label="Filter labels" />}
+                footer={<button type="button">Create label</button>}>
+                <DropdownMenuItem label="Bug" onClick={() => {}} />
+              </DropdownMenuSubMenu>
+            </>
+          }>
+          <div>Right-click me</div>
+        </ContextMenu>,
+      );
+      fireEvent.contextMenu(screen.getByText('Right-click me'));
+      // The sheet is lazy: wait for its rows.
+      const row = await screen.findByRole('menuitem', {
+        name: /Labels/,
+        hidden: true,
+      });
+      // The sheet renders no surface host, so no region can sit outside its
+      // menu, and none renders inside it.
+      expect(row).toHaveAttribute('aria-haspopup', 'menu');
+      expect(
+        screen.queryByRole('textbox', {name: 'Filter labels', hidden: true}),
+      ).toBeNull();
+      expect(
+        screen.queryByRole('dialog', {name: /Labels/, hidden: true}),
+      ).toBeNull();
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringContaining('DropdownMenuSubMenu: header and footer'),
+      );
+    } finally {
+      warn.mockRestore();
+    }
+  });
+
   it('renders menuContent as menu items', () => {
     render(
       <ContextMenu

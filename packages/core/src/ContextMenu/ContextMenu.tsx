@@ -174,16 +174,22 @@ const styles = stylex.create({
   // Where a sub-menu with a header or footer renders its surface: beside the
   // menu, never inside it. It owns no box until such a sub-menu's drilled-in
   // view shows there; then the menu steps aside (see `menu`) and the host
-  // paints the menu's surface in its place.
+  // paints the menu's surface in its place, under the menu's theme target and
+  // the caller's styling.
   surfaceHost: {
+    boxSizing: 'border-box',
+    '--_dropdown-menu-radius': radiusVars['--radius-container'],
+    borderRadius: 'var(--_dropdown-menu-radius)',
+    backgroundColor: colorVars['--color-background-popover'],
+    boxShadow: shadowVars['--shadow-low'],
+  },
+  // Applied after the caller's styling, so the host owns no box until a view
+  // shows.
+  surfaceHostDisplay: {
     display: {
       default: 'contents',
       ':has(> [data-astryx-submenu-regions="view"]:not([hidden]))': 'block',
     },
-    boxSizing: 'border-box',
-    borderRadius: radiusVars['--radius-container'],
-    backgroundColor: colorVars['--color-background-popover'],
-    boxShadow: shadowVars['--shadow-low'],
   },
 
   popoverCustomWidth: (width: string | number) => ({
@@ -779,7 +785,10 @@ export function ContextMenu({
         style,
       )}>
       <DropdownMenuContext value={contextValue}>
-        <DropdownMenuSurfaceContext value={surfaceValue}>
+        {/* The bottom sheet renders no surface host: a sub-menu with a header
+            or footer shows its rows alone there. */}
+        <DropdownMenuSurfaceContext
+          value={usesBottomSheet ? null : surfaceValue}>
           <DropdownMenuRootOpenContext value={isOpen}>
             {resolvedMenuContent}
           </DropdownMenuRootOpenContext>
@@ -907,7 +916,16 @@ export function ContextMenu({
             {renderedMenu}
             <div
               ref={attachSurfaceHost}
-              {...stylex.props(styles.surfaceHost)}
+              {...mergeProps(
+                themeProps('context-menu'),
+                stylex.props(
+                  styles.surfaceHost,
+                  xstyle,
+                  styles.surfaceHostDisplay,
+                ),
+                className,
+                style,
+              )}
             />
           </LayerDepthProvider>,
           {
