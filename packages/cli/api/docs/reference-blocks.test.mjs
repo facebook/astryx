@@ -276,9 +276,7 @@ describe('a reference block in a topic section', () => {
       expect(status).toBe(0);
       expect(stdout).toMatch(/^Field +\| Type +\| Required +\| Description/m);
       expect(stdout).toMatch(/^components +\| string +\| no +\| /m);
-      expect(stdout).toContain(
-        'From Astryx Integration: `astryx docs authoring integration`',
-      );
+      expect(stdout).toContain(' docs authoring integration`');
     },
     SLOW,
   );

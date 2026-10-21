@@ -2,15 +2,52 @@
 
 /** @file Environment adapter for app-theme doctor evidence. */
 
+import {isOutsideProject} from '../../foundation/env/project-scope.mjs';
+import {answeredBy} from '../../foundation/release/run-context.mjs';
+import {
+  knownLatestRelease,
+  lastCheckFailure,
+  stateLockHolder,
+} from '../../foundation/release/global-state.mjs';
+import {
+  addCliCommand,
+  alignCliAndCore,
+  globalBehind,
+  globalUpgradeCommand,
+  lastNoticeSkip,
+  projectLag,
+} from '../../foundation/release/notices.mjs';
+import {
+  coreVersionOf,
+  isGlobalCopy,
+  projectRootOf,
+} from '../../foundation/release/choose.mjs';
+import {readReleaseFacts} from '../../foundation/release/project.mjs';
+import {detectPackageManager} from '../../foundation/env/package-manager.mjs';
+import {astryxCommandsOnSearchPath} from '../../foundation/env/search-path.mjs';
+import {readDeclaredDependencies} from '../../foundation/integrations/autolink.mjs';
+import {
+  displayHomePath,
+  inspectComputerAgentText,
+} from '../../foundation/agent-docs/computer-agent-text.mjs';
+import {computerAgentTextSettings} from '../../foundation/env/user-settings.mjs';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import {Project} from '../../foundation/config/project.mjs';
+import {
+  Project,
+  availableComputerIntegrations,
+  computerIntegrationCandidates,
+} from '../../foundation/config/project.mjs';
 import {
   discoverUnmigratedThemeCopies,
   themeImportPackage,
 } from '../../foundation/discovery/theme-discovery.mjs';
 import {resolveThemeImports} from '../../foundation/discovery/theme-imports.mjs';
-import {findCoreDir, findInstalledPackage} from '../../foundation/fs/paths.mjs';
+import {
+  CLI_ROOT,
+  findProjectCoreDir,
+  findInstalledPackage,
+} from '../../foundation/fs/paths.mjs';
 export {
   isLocalThemeOwner,
   planThemeAppWrite,
@@ -104,7 +141,7 @@ export function listProjectSourceFiles(root, generatedModule) {
 
 /** @param {string} projectDir */
 export async function discoverDoctorThemes(projectDir) {
-  const project = await Project.load(projectDir);
+  const project = await Project.load(projectDir, {core: 'project'});
   return project.themes();
 }
 
@@ -124,7 +161,7 @@ export function discoverDoctorUnmigratedCopies(projectDir) {
 
 /** @param {string} projectDir */
 export function findDoctorCoreDir(projectDir) {
-  return findCoreDir(projectDir);
+  return findProjectCoreDir(projectDir);
 }
 
 /** @param {string} projectDir @param {string} packageName */
@@ -187,4 +224,186 @@ export function readPackageJson(file) {
   } catch {
     return null;
   }
+}
+
+/**
+ * The integrations installed for the computer, and, outside a project, which
+ * of them the folder loads (spec AST-081 FR12): those it uses, and the names
+ * of the integrations the folder loads itself, whose copies win.
+ * @param {string} cwd
+ * @returns {Promise<{computerIntegrations: import('../../foundation/integrations/computer-integrations.mjs').ComputerIntegrationCandidate[], loadedComputerIntegrations: string[], folderIntegrations: string[]}>}
+ */
+export async function computerIntegrationsOutside(cwd) {
+  const computerIntegrations = computerIntegrationCandidates(cwd);
+  if (computerIntegrations.length === 0) {
+    return {
+      computerIntegrations,
+      loadedComputerIntegrations: [],
+      folderIntegrations: [],
+    };
+  }
+  try {
+    const project = await Project.load(cwd, {core: 'project'});
+    /** @type {Array<{name: string, __computer?: boolean, __loadError?: string}>} */
+    const loaded = project.loadedIntegrations;
+    return {
+      computerIntegrations,
+      loadedComputerIntegrations: loaded
+        .filter(i => i.__computer && !i.__loadError)
+        .map(i => i.name),
+      folderIntegrations: loaded.filter(i => !i.__computer).map(i => i.name),
+    };
+  } catch {
+    return {
+      computerIntegrations,
+      loadedComputerIntegrations: [],
+      folderIntegrations: [],
+    };
+  }
+}
+
+/**
+ * Inside a project: the integrations installed for the computer it could add
+ * (spec AST-081 FR12), leaving out every package it loads or declares.
+ * @param {string} cwd
+ * @param {string[]} loadedNames the integrations the project loads
+ * @returns {Promise<import('../../foundation/integrations/computer-integrations.mjs').ComputerIntegrationCandidate[]>}
+ */
+export async function computerIntegrationsToAdd(cwd, loadedNames) {
+  const installed = new Set([...loadedNames, ...declaredPackageNames(cwd)]);
+  return availableComputerIntegrations(cwd, installed);
+}
+
+/**
+ * The package names the folder's package.json declares, nearest first.
+ * @param {string} cwd
+ * @returns {string[]}
+ */
+function declaredPackageNames(cwd) {
+  for (let dir = path.resolve(cwd); ;) {
+    if (fs.existsSync(path.join(dir, 'package.json'))) {
+      return readDeclaredDependencies(dir).map(d => d.name);
+    }
+    const parent = path.dirname(dir);
+    if (parent === dir) return [];
+    dir = parent;
+  }
+}
+
+/**
+ * The computer-level agent text's setting and its state on disk.
+ * @returns {{settings: import('../../foundation/env/user-settings.mjs').ComputerAgentTextSettings, entries: Array<{path: string, state: import('../../foundation/agent-docs/computer-agent-text.mjs').ComputerAgentTextState, link?: true}>}}
+ */
+export function computerAgentTextState() {
+  const settings = computerAgentTextSettings();
+  return {settings, entries: inspectComputerAgentText({links: settings.links})};
+}
+
+export {displayHomePath};
+
+/**
+ * The release facts doctor reports, read here so the checks stay pure
+ * (spec AST-081 FR5, FR6, FR10; architecture:cli-surface INV21): who
+ * answered, the newest release the computer knows of, how far the global copy
+ * or the project is behind, and every `astryx` on the search path with the
+ * command that upgrades it.
+ * @param {string} cwd
+ * @param {{project: boolean}} options
+ * @returns {{answeredBy: {cli: string, core: string | null, copy: string}, latest: string | null, globalBehind: ReturnType<typeof globalBehind> | null, projectLag: ReturnType<typeof projectLag> | null, lastNoticeSkip: ReturnType<typeof lastNoticeSkip>, lastCheckFailure: ReturnType<typeof lastCheckFailure>, stateLock: ReturnType<typeof stateLockHolder>, searchPathCommands: Array<import('../../foundation/env/search-path.mjs').SearchPathCommand & {upgrade: string | null}>}}
+ */
+export function releaseFacts(cwd, {project}) {
+  const answered = answeredBy(cwd);
+  return {
+    answeredBy: answered,
+    latest: knownLatestRelease(),
+    lastNoticeSkip: lastNoticeSkip(),
+    lastCheckFailure: lastCheckFailure(),
+    stateLock: stateLockHolder(),
+    globalBehind:
+      !project && isGlobalCopy(CLI_ROOT)
+        ? globalBehind({self: {version: answered.cli, root: CLI_ROOT}})
+        : null,
+    // The project's version is its own CLI's, or, with none, its Core's:
+    // installed, else locked, else declared, as the daily notice reads it.
+    projectLag: project
+      ? projectLag({
+          cwd,
+          current:
+            (answered.copy === 'starting' && projectCoreVersion(cwd)) ||
+            answered.cli,
+        })
+      : null,
+    searchPathCommands: astryxCommandsOnSearchPath().map(row => ({
+      ...row,
+      upgrade: row.cliRoot ? globalUpgradeCommand(row.cliRoot) : null,
+    })),
+  };
+}
+
+/** Whether `cwd` is outside every project. */
+export function outsideProject(/** @type {string} */ cwd) {
+  return isOutsideProject(cwd);
+}
+
+/**
+ * The commands that bring a project's own CLI and Core to one release, with
+ * the project's package manager: Core up to the CLI, then its codemods, when
+ * the CLI is newer; else the CLI to the Core's release.
+ * @param {string} cwd
+ * @param {string} cli
+ * @param {string} core
+ * @returns {string}
+ */
+export function alignCommand(cwd, cli, core) {
+  return alignCliAndCore({cwd, cli, core});
+}
+
+/**
+ * The Core release the project at `cwd` names: installed, else locked, else
+ * declared; the version the daily hint and notice compare against (spec
+ * AST-081 FR2). Null outside a project or when it names none.
+ * @param {string} cwd
+ * @returns {string | null}
+ */
+export function projectCoreVersion(cwd) {
+  return coreVersionOf(readReleaseFacts(cwd));
+}
+
+/**
+ * Whether the project at `cwd` installs its own CLI (spec AST-081 FR2).
+ * @param {string} cwd
+ * @returns {boolean}
+ */
+export function projectHasOwnCli(cwd) {
+  return Boolean(readReleaseFacts(cwd).cli);
+}
+
+/**
+ * The command that adds the CLI at `version` with the project's package
+ * manager.
+ * @param {string} cwd
+ * @param {string} version
+ * @returns {string}
+ */
+export function addCliCommandFor(cwd, version) {
+  return addCliCommand(projectRootOf(readReleaseFacts(cwd)) ?? cwd, version);
+}
+
+/**
+ * The command that adds a package with the folder's package manager, read
+ * from its lockfiles and `packageManager` field.
+ * @param {string} cwd
+ * @returns {(name: string) => string}
+ */
+export function installCommandFor(cwd) {
+  const pm = detectPackageManager(cwd);
+  const verb =
+    pm === 'pnpm'
+      ? 'pnpm add'
+      : pm === 'yarn'
+        ? 'yarn add'
+        : pm === 'bun'
+          ? 'bun add'
+          : 'npm install';
+  return name => `${verb} ${name}`;
 }

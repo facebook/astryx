@@ -43,7 +43,7 @@ import type {InputStatus} from '../Field/types';
 import {Spinner} from '../Spinner';
 import {useTooltip} from '../Tooltip';
 import {mergeProps, mergeRefs, rtlStyles} from '../utils';
-import {switchScope} from './switch.markers.stylex';
+import {switchFocusScope, switchScope} from './switch.markers.stylex';
 import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
 import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
@@ -265,12 +265,12 @@ const styles = stylex.create({
   trackFocus: {
     outline: {
       default: 'none',
-      [stylex.when.ancestor(':has(:focus-visible)', switchScope)]:
+      [stylex.when.ancestor(':has(:focus-visible)', switchFocusScope)]:
         `${focusVars['--focus-outline-width']} ${focusVars['--focus-outline-style']} ${focusVars['--focus-outline-color']}`,
     },
     outlineOffset: {
       default: null,
-      [stylex.when.ancestor(':has(:focus-visible)', switchScope)]:
+      [stylex.when.ancestor(':has(:focus-visible)', switchFocusScope)]:
         focusVars['--focus-outline-offset'],
     },
   },
@@ -637,17 +637,13 @@ export function Switch({
         id={id}
         type="checkbox"
         role="switch"
-        // Withhold the name while disabled: with a disabledMessage the
-        // input stays focusable (not natively disabled), and a disabled
-        // control must not submit.
+        // Withhold the name while disabled: the input stays focusable (not
+        // natively disabled), and a disabled control must not submit.
         name={isDisabled ? undefined : htmlName}
         checked={isOn}
-        // With a disabledMessage the switch keeps focusability via aria-disabled
-        // so the reason is focus-discoverable; toggling is still blocked by the
-        // isDisabled guard in onChange below.
-        disabled={isDisabled && !showsDisabledMessage}
-        aria-disabled={showsDisabledMessage ? 'true' : undefined}
-        form={showsDisabledMessage ? '' : undefined}
+        // Focusable but detached from the form while disabled (spec:AST-085).
+        aria-disabled={isDisabled ? 'true' : undefined}
+        form={isDisabled ? '' : undefined}
         required={isRequired}
         aria-required={isEffectivelyRequired ? 'true' : undefined}
         onChange={e => {
@@ -693,7 +689,7 @@ export function Switch({
             styles.track,
             trackSizeStyles[size],
             isOn ? styles.trackOn : styles.trackOff,
-            !isDisabled && styles.trackFocus,
+            styles.trackFocus,
             isDisabled && styles.trackDisabled,
             isDisabled && !isOn && styles.trackDisabledOff,
           ),
@@ -747,7 +743,9 @@ export function Switch({
         className,
         style,
       )}
-      {...rest}>
+      {...rest}
+      // Native `disabled` suppressed clicks on the switch (spec:AST-085 FR2).
+      onClick={isDisabled ? undefined : rest.onClick}>
       <div
         ref={el => {
           // Interaction (hover/focus) listeners for the disabled-message
@@ -764,6 +762,7 @@ export function Switch({
           isLabelHidden && styles.containerLabelHidden,
           labelSpacing === 'spread' && styles.containerSpread,
           !isDisabled && switchScope,
+          switchFocusScope,
           // The touch press's strength and release live on the row the
           // controller writes to; the track and thumb inherit and paint it.
           !isDisabled && interactionOverlayStyles.pressedAlpha,

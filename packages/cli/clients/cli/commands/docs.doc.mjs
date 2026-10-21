@@ -63,6 +63,7 @@ export const doc = {
     {label: 'One API function', cli: 'astryx docs cli/api/functions/search'},
     {label: 'A whole guide', cli: 'astryx docs cli/integrations/quick-start --full'},
   ],
+  outsideProject: 'same',
   exitCodes: [
     {code: 0, when: 'success'},
     {

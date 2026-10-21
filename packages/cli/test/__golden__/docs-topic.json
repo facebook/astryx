@@ -39,5 +39,12 @@
       "up": "astryx docs unorganized",
       "previous": "astryx docs working-with-ai"
     }
+  },
+  "meta": {
+    "answeredBy": {
+      "cli": "<cli version>",
+      "core": "<cli version>",
+      "copy": "project"
+    }
   }
 }

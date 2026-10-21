@@ -17,6 +17,15 @@
     "reason": "The Core/Field stories use block-flow labels, controls, descriptions, and status text without directional icons, side-specific placement, order, scrolling, dragging, overlays, or keyboard behavior."
   },
   {
+    "component": "core/FieldLabel",
+    "reason": "FieldLabel owns a horizontal flex label row inside an optional block-flow label/description group. Inline spacing and hidden positioning use logical or direction-neutral properties. Its built-in info icon is radially symmetric and its tooltip uses block-axis placement above the label; caller-supplied label icons retain caller ownership. The component has no side-specific placement, reordering, horizontal scroll or drag action, or horizontal keyboard behavior. The exact-head story covers native, group, hidden, description, optionality, disabled, icon, and tooltip-trigger states without adding a component-owned RTL dimension.",
+    "evidence": {
+      "apps/storybook/stories/FieldLabel.stories.tsx": "sha256:22ea61ef92c7242241fe49715714e2802592534c9466c42a3f3787773e176d0c",
+      "packages/core/src/Field/FieldLabel.tsx": "sha256:e1473a8a0d255536bab7719342cf27a1dbcfbf6792f00782f4ca1606abb28ff0",
+      "packages/core/src/Field/index.ts": "sha256:4e7788b82f7987a991ac62a1f519989027abb639353a1da3884dd9e2a09e98f4"
+    }
+  },
+  {
     "component": "core/EmptyState",
     "reason": "EmptyState is a centered block-flow status region. Its icon, text group, and action group stack only on the block axis; spacing is block-axis or logical, and text is centered. The component owns no directional glyph, contextual separator, side-specific placement or ordering, horizontal scrolling or dragging, overlay, or directional keyboard behavior. Caller-supplied icons and action controls retain their own RTL ownership."
   },
@@ -369,6 +378,15 @@
   {
     "component": "lab/Comments",
     "reason": "Comments is a block-axis timeline of CommentThread rows and activity events inside the core ChatLayout and ChatMessageList, with the composer docked on the block axis. It adds no horizontal positioning, directional glyphs, or arrow-key behavior of its own: rows, rails, and dividers use logical properties, and the load-earlier control and error Banners are centered or full width."
+  },
+  {
+    "component": "core/DropdownMenuGroup",
+    "reason": "DropdownMenuGroup owns a block-axis set of menu rows and an optional heading with symmetric logical inline padding. It renders no directional glyph, physical inline placement, reordered content, horizontal scrolling or dragging, side-placed overlay, or horizontal keyboard behavior of its own; DropdownMenu owns menu placement and row navigation. The exact-head audit still renders RTL frames to confirm inherited direction without adding a component-owned RTL dimension.",
+    "evidence": {
+      "apps/storybook/stories/DropdownMenuGroup.stories.tsx": "sha256:57927e1c41ededf5b0105c2eefab5bf79fc21ceca084f47251aac0057781aec5",
+      "packages/core/src/DropdownMenu/DropdownMenuGroup.tsx": "sha256:b0baa04f2440927fc38b3c73bab9c0c0a210341a60cc6b59e5450148736b3d20",
+      "packages/core/src/DropdownMenu/index.ts": "sha256:59bf02be4a577cbecf3ad7e981e2577602375892f74548593aa9b998cae733fa"
+    }
   },
   {
     "component": "core/DropdownMenuDivider",

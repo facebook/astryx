@@ -56,7 +56,7 @@ export default function validateDataTokenOwnership(file, api) {
       ROOT_DATA_DECLARATION.test(file.source)
     ) {
       throw new Error(
-        'This generated theme CSS still emits canonical data defaults at :root. Rebuild it with `astryx theme build`; defaults now come from compiled dataVars consumers.',
+        'This generated theme CSS still emits canonical data defaults at :root. Rebuild it with `astryx theme build`; defaults come from source-compiled dataVars consumers or @astryxdesign/core/astryx.css in prebuilt mode.',
       );
     }
     const uncommented = file.source.replace(CSS_COMMENT, comment =>
@@ -66,7 +66,7 @@ export default function validateDataTokenOwnership(file, api) {
     if (cssMatch) {
       const line = uncommented.slice(0, cssMatch.index).split('\n').length;
       throw new Error(
-        `Raw var(${cssMatch[1]}) without a fallback at line ${line} needs manual migration: compiled dataVars output is not guaranteed in this stylesheet, so add an explicit fallback or style the element from code that imports dataVars from @astryxdesign/core/theme/dataTokens.stylex.`,
+        `Raw var(${cssMatch[1]}) without a fallback at line ${line} needs an availability check: load @astryxdesign/core/astryx.css in prebuilt mode, ensure a source-compiled dataVars consumer retains the group, or add an explicit fallback. CSS-capable code imports dataVars from @astryxdesign/core/theme/dataTokens.stylex.`,
       );
     }
     return undefined;
@@ -95,7 +95,7 @@ export default function validateDataTokenOwnership(file, api) {
   if (found) {
     const {token, line} = found;
     throw new Error(
-      `Direct var(${token})${line == null ? '' : ` at line ${line}`} needs manual migration: CSS-capable code imports dataVars from @astryxdesign/core/theme/dataTokens.stylex; Canvas and other non-CSS APIs use resolveThemeToken() or useTheme().token().`,
+      `Direct var(${token})${line == null ? '' : ` at line ${line}`} needs manual migration: CSS-capable code imports dataVars from @astryxdesign/core/theme/dataTokens.stylex and, in prebuilt mode, loads @astryxdesign/core/astryx.css; Canvas and other non-CSS APIs use resolveThemeToken() or useTheme().token().`,
     );
   }
   return undefined;

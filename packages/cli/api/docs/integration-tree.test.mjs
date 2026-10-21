@@ -569,4 +569,26 @@ describe('integration docs in the docs tree', () => {
     expect(check.status).toBe('warn');
     expect(check.message).toContain('both have the route "cli"');
   }, SLOW);
+
+  it('says what to write for a link that names a doc by its bare name, and when no doc has that name', async () => {
+    scaffold({
+      ...kit(),
+      'bare.doc.mjs': guide('bare', {
+        sections: [
+          {
+            title: 'Overview',
+            content: [{type: 'prose', text: 'Read {@link deploy}, then {@link nosuchtopic}.'}],
+          },
+        ],
+      }),
+    });
+    const result = await integrationDocConflicts('@acme/kit', {cwd: tmpDir});
+    const graph = result.data.issues.filter(issue => issue.code === 'invalid_doc_graph').map(issue => issue.message);
+    expect(graph).toEqual(
+      expect.arrayContaining([
+        expect.stringContaining('"deploy" is a topic: write `{@link generic:deploy}`.'),
+        expect.stringContaining('no topic is named "nosuchtopic"'),
+      ]),
+    );
+  }, SLOW);
 });

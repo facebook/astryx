@@ -130,7 +130,7 @@ const groups = [
     file: DATA_TOKENS_SRC,
     title: 'Data Visualization Tokens',
     description:
-      'Colors for charts and graphs: one categorical accent per series, a neutral for labels and reference lines, and sequential ramps from 5 (darkest) to 1 (lightest) for ordered scales and heatmaps. Import dataVars from @astryxdesign/core/theme/dataTokens.stylex for CSS-capable code. Retaining any member emits the complete 56-variable group; an unused graph emits none.',
+      'Colors for charts and graphs: one categorical accent per series, a neutral for labels and reference lines, and sequential ramps from 5 (darkest) to 1 (lightest) for ordered scales and heatmaps. Import dataVars from @astryxdesign/core/theme/dataTokens.stylex for CSS-capable code. Source compilation emits the complete 56-variable group when any member is retained and none for an unused graph. Prebuilt CSS consumers load @astryxdesign/core/astryx.css, which defines the complete group for the already-compiled dataVars entry.',
     headers: ['Token', 'Light', 'Dark'],
     formatRow: lightDarkRow,
   },
@@ -364,8 +364,7 @@ const usageDoc = {
   title: 'Usage in StyleX',
   placement: {parent: 'namespace:tokens', slot: 'guides', order},
   category: 'foundations',
-  description:
-    'How to import and use token variables in StyleX styles.',
+  description: 'How to import and use token variables in StyleX styles.',
   sections: [
     {
       title: 'Usage in StyleX',
@@ -422,13 +421,21 @@ const isCheck = process.argv.includes('--check');
 
 /** @type {Array<{path: string, output: string, label: string}>} */
 const allFiles = [
-  {path: namespacePath, output: namespaceOutput, label: 'tree/tokens.doc.mjs (namespace)'},
+  {
+    path: namespacePath,
+    output: namespaceOutput,
+    label: 'tree/tokens.doc.mjs (namespace)',
+  },
   ...childFiles.map(f => ({
     path: f.path,
     output: f.output,
     label: `tree/${f.slug}.doc.mjs (${f.tokenCount} tokens)`,
   })),
-  {path: usagePath, output: usageOutput, label: `tree/${usageSlug}.doc.mjs (usage)`},
+  {
+    path: usagePath,
+    output: usageOutput,
+    label: `tree/${usageSlug}.doc.mjs (usage)`,
+  },
 ];
 
 // A generated tokens guide no category writes any more (a renamed or removed
@@ -453,7 +460,10 @@ const orphans = [
     .map(file => resolve(TREE_DIR, file))
     .filter(filePath => {
       const base = filePath.replace(/\.doc\.(?:dense|zh)\.mjs$/, '.doc.mjs');
-      return orphanGuides.includes(base) || !treeFiles.includes(base.slice(TREE_DIR.length + 1));
+      return (
+        orphanGuides.includes(base) ||
+        !treeFiles.includes(base.slice(TREE_DIR.length + 1))
+      );
     }),
 ];
 
@@ -470,17 +480,23 @@ if (isCheck) {
     try {
       existing = readFileSync(filePath, 'utf-8');
     } catch {
-      console.error(`✗ ${label} does not exist. Run: node scripts/generate-token-docs.mjs`);
+      console.error(
+        `✗ ${label} does not exist. Run: node scripts/generate-token-docs.mjs`,
+      );
       failed = true;
       continue;
     }
     if (existing !== output) {
-      console.error(`✗ ${label} is out of date. Run: node scripts/generate-token-docs.mjs`);
+      console.error(
+        `✗ ${label} is out of date. Run: node scripts/generate-token-docs.mjs`,
+      );
       failed = true;
     }
   }
   if (failed) process.exit(1);
-  console.log(`✓ All token docs are up to date (${totalTokens} tokens, ${allFiles.length} files)`);
+  console.log(
+    `✓ All token docs are up to date (${totalTokens} tokens, ${allFiles.length} files)`,
+  );
 } else {
   for (const {path: filePath, output} of allFiles) {
     writeFileSync(filePath, output);

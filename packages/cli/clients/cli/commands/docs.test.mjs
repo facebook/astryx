@@ -113,7 +113,7 @@ describe('progressive reads', () => {
     expect(stdout).toMatch(/^principles +\S/m);
     expect(widest(stdout)).toBeLessThanOrEqual(120);
     // The repo root has no `astryx` bin, so the CLI names the scoped package.
-    expect(stdout).toMatch(/Usage: \S+(?: dlx)? (?:astryx|@astryxdesign\/cli) docs <topic>/);
+    expect(stdout).toMatch(/Usage: \S+(?: dlx)? (?:astryx|@astryxdesign\/cli(?:@\S+)?) docs <topic>/);
   }, SLOW);
 
   it("prints a topic's section index with the keys to read by", async () => {
@@ -255,7 +255,7 @@ describe('the docs tree, one level at a time', () => {
     const {status, stdout} = await runCli(['docs', 'cli/api/functions/search']);
     expect(status).toBe(0);
     expect(stdout).toMatch(/^## search\(\)/m);
-    expect(stdout).toContain('Read it with `astryx docs cli/commands/search`.');
+    expect(stdout).toMatch(/Read it with `.+ docs cli\/commands\/search`\./);
     expect(stdout).toMatch(/Up: .*docs cli\/api\/functions$/m);
   }, SLOW);
 

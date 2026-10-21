@@ -113,6 +113,7 @@ describe('error codes: shipped set', () => {
     'ERR_NO_SOURCE',
     'ERR_PALETTE_GENERATION',
     'ERR_PATH_TRAVERSAL',
+    'ERR_PROJECT_REQUIRED',
     'ERR_SIGNAL_TERMINATED',
     'ERR_THEME_INVALID',
     'ERR_THEME_LOAD',
@@ -133,6 +134,7 @@ describe('error codes: shipped set', () => {
     'ERR_UNKNOWN_THEME',
     'ERR_UNKNOWN_TOPIC',
     'ERR_VERSION_DETECT',
+    'ERR_VERSIONS_UNAVAILABLE',
     'ERR_WRITE_FAILED',
   ];
 

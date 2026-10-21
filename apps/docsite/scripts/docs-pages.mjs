@@ -55,6 +55,15 @@ export const GUIDE_NAMESPACE_PAGES = new Map([
 ]);
 
 /**
+ * Older slugs of a root namespace's page, which redirect to it: global mode
+ * was `cli/global`, and before that the `cli/install-once` guide.
+ * @type {Map<string, string[]>}
+ */
+export const ROOT_PAGE_ALIASES = new Map([
+  ['global', ['cli-global', 'cli-install-once']],
+]);
+
+/**
  * Flat topics whose full text the site shows on another topic's page. The
  * theme split (before namespaces) left `theme` as a short overview and moved
  * its text to two flat topics, so the theme page shows those two in order in
@@ -116,6 +125,43 @@ export function withoutResolvedTokens(sections) {
       if (block?.type !== 'token-ref') return block;
       const {resolved: _resolved, ...authored} = block;
       return authored;
+    }),
+  }));
+}
+
+/**
+ * Doc text with its CLI commands shown the way a reader runs them. Docs write
+ * commands as bare `astryx ...`; the CLI prefixes them when it prints a doc,
+ * and the docsite does the same with its own door name. `show(text, lang)`
+ * prefixes the commands in one piece of text: prose and list items (`lang`
+ * null), or one code block's body in its language. A table cell that is a
+ * whole command is prefixed too, the way `astryx docs` prints it.
+ * @param {any[]} sections
+ * @param {(text: string, lang?: string | null) => string} show
+ * @param {string} stem the invocation `show` prefixes with
+ */
+export function withCliCommands(sections, show, stem) {
+  /** @param {string} cell */
+  const cell = cell =>
+    /^astryx(\s|$)/.test(cell ?? '')
+      ? `${stem}${cell.slice('astryx'.length)}`
+      : show(cell ?? '');
+  return sections.map(section => ({
+    ...section,
+    content: (section.content ?? []).map(block => {
+      switch (block?.type) {
+        case 'prose':
+        case 'heading':
+          return {...block, text: show(block.text ?? '')};
+        case 'code':
+          return {...block, code: show(block.code ?? '', block.lang ?? '')};
+        case 'list':
+          return {...block, items: (block.items ?? []).map(item => show(item))};
+        case 'table':
+          return {...block, rows: (block.rows ?? []).map(row => row.map(cell))};
+        default:
+          return block;
+      }
     }),
   }));
 }

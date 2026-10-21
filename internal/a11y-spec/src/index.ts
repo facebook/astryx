@@ -177,3 +177,5 @@ export {
   type TableSortDirection,
   type TableStateFacts,
 } from './patterns/table';
+export {TOOLBAR_PATTERN, type ToolbarStateFacts} from './patterns/toolbar';
+export {TOOLTIP_PATTERN, type TooltipStateFacts} from './patterns/tooltip';

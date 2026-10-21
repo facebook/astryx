@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file `astryx docs cli/integrations/templates/build-the-template/package-and-test/verify-packed-template`:
+ * @file `astryx docs cli/integrations/building-blocks/templates/build-the-template/package-and-test/verify-packed-template`:
  * what `integration verify` checks for templates, and what it leaves to the
  * app test.
  */
@@ -27,7 +27,7 @@ export const docs = {
         {
           type: 'code',
           lang: 'bash',
-          code: 'npx astryx integration verify',
+          code: 'astryx integration verify',
         },
         {
           type: 'prose',
@@ -67,7 +67,7 @@ export const docs = {
             'Whether the copied file type-checks in every supported app toolchain.',
             'Whether package-owned CSS, fonts, icons, images, or media load in a browser.',
             'Whether layout, color modes, keyboard and pointer input, and real content work.',
-            'Whether a template id collides with Core, or whether a `replaces` target exists. Run `npx astryx doctor integration templates` for those.',
+            'Whether a template id collides with Core, or whether a `replaces` target exists. Run `astryx doctor integration templates` for those.',
             'How the template scores on quality.',
           ],
         },

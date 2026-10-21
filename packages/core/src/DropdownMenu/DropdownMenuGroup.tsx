@@ -53,7 +53,8 @@ export interface DropdownMenuGroupProps extends Pick<
 > {
   /**
    * Heading shown above the group's rows and used as the group's accessible
-   * name (`aria-labelledby`). Omit it for an unnamed group.
+   * name (`aria-labelledby`). Omit it for an unnamed group. Keep this content
+   * non-interactive; controls belong in DropdownMenu's `header` or `footer`.
    */
   title?: ReactNode;
   /** The rows of the group: menu items, selectable items, sub-menus. */
@@ -65,9 +66,10 @@ export interface DropdownMenuGroupProps extends Pick<
 /**
  * A titled group of menu rows.
  *
- * Renders `role="group"` named by its heading. The heading is plain text, not
- * a `menuitem`, so it is never a stop in the menu's arrow-key order and
- * typeahead never lands on it. The compound peer of
+ * Renders `role="group"` named by its heading. The heading is not a
+ * `menuitem`, so arrow-key navigation and typeahead skip it. Keep heading
+ * content non-interactive; place controls in DropdownMenu's `header` or
+ * `footer`. The compound peer of
  * `{type: 'section', title, items}` in the `items` data API.
  *
  * @example

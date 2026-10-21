@@ -37,6 +37,8 @@ const componentDoc = name =>
   `export default {type: 'component', name: '${name}', displayName: '${name}', usage: {description: '${name}.'}, props: []};\n`;
 /** @param {string} name */
 const componentSource = name => `export function ${name}() { return null; }\n`;
+const templateSource = name =>
+  `export default function ${name}() { return null; }\n`;
 /** @param {string} name */
 const topic = name =>
   `export default ${JSON.stringify({
@@ -1125,6 +1127,71 @@ describe('source_without_component_doc fixes hold when followed', () => {
       'components/Secret.doc.mjs':
         "export default {\n  type: 'component',\n  name: 'Secret',\n  hidden: true,\n};\n",
       'components/Secret.tsx': componentSource('Secret'),
+    });
+
+    expect(await issuesOf(dir)).toEqual([]);
+  });
+});
+
+describe('source_without_template_doc fixes hold when followed', () => {
+  it('adds the named doc, which resolves the warning', async () => {
+    const dir = writePackage({
+      [MANIFEST]: manifest({templates: './templates'}),
+      'templates/hero.tsx': templateSource('Hero'),
+      'templates/hero.test.tsx': templateSource('HeroTest'),
+    });
+
+    const message = only(await issuesOf(dir), 'source_without_template_doc');
+    expect(message).toBe(
+      "Template source \"hero.tsx\" has no same-stem metadata file hero.doc.mjs, so `astryx template` never lists it. Fix: add hero.doc.mjs beside it with type: 'page' or 'block'; `astryx docs authoring integration-template-doc` lists its fields. If it is not a template, move it out of the templates root.",
+    );
+
+    const fixed = follow(dir, {
+      write: {
+        'templates/hero.doc.mjs': `export default {type: 'page', name: 'hero', displayName: 'Hero'};\n`,
+      },
+    });
+    expect(await issuesOf(fixed)).toEqual([]);
+  });
+
+  it('checks a dotted template id, but no test, spec or story file', async () => {
+    const dir = writePackage({
+      [MANIFEST]: manifest({templates: './templates'}),
+      'templates/landing.page.tsx': templateSource('LandingPage'),
+      'templates/hero.test.tsx': templateSource('HeroTest'),
+      'templates/hero.spec.tsx': templateSource('HeroSpec'),
+      'templates/hero.stories.tsx': templateSource('HeroStories'),
+    });
+
+    const message = only(await issuesOf(dir), 'source_without_template_doc');
+    expect(message).toContain(
+      'Template source "landing.page.tsx" has no same-stem metadata file landing.page.doc.mjs',
+    );
+
+    const fixed = follow(dir, {
+      write: {
+        'templates/landing.page.doc.mjs': `export default {type: 'page', name: 'landing.page', displayName: 'Landing'};\n`,
+      },
+    });
+    expect(await issuesOf(fixed)).toEqual([]);
+  });
+
+  it('never flags a helper in a subfolder of the templates root', async () => {
+    const dir = writePackage({
+      [MANIFEST]: manifest({templates: './templates'}),
+      'templates/hero.doc.mjs': `export default {type: 'page', name: 'hero', displayName: 'Hero'};\n`,
+      'templates/hero.tsx': templateSource('Hero'),
+      'templates/hero/HeroCard.tsx': templateSource('HeroCard'),
+    });
+
+    expect(await issuesOf(dir)).toEqual([]);
+  });
+
+  it('accepts a released .template.mjs spec as the metadata', async () => {
+    const dir = writePackage({
+      [MANIFEST]: manifest({templates: './templates'}),
+      'templates/hero.tsx': templateSource('Hero'),
+      'templates/hero.template.mjs': `export default {type: 'page', name: 'hero', displayName: 'Hero'};\n`,
     });
 
     expect(await issuesOf(dir)).toEqual([]);

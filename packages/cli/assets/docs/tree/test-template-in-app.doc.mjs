@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file `astryx docs cli/integrations/templates/build-the-template/package-and-test/test-template-in-app`:
+ * @file `astryx docs cli/integrations/building-blocks/templates/build-the-template/package-and-test/test-template-in-app`:
  * copy the packed template into a clean app, build it, and render it the way
  * apps will.
  */
@@ -38,14 +38,14 @@ export const docs = {
           type: 'code',
           lang: 'bash',
           code: `# Confirm discovery and metadata
-npx astryx --json template --list --package @acme/astryx-widgets
+astryx --json template --list --package @acme/astryx-widgets
 
 # Inspect source without writing
-npx astryx template acme-dashboard --package @acme/astryx-widgets
+astryx template acme-dashboard --package @acme/astryx-widgets
 
 # Copy a page and a block to their real app locations
-npx astryx template acme-dashboard --package @acme/astryx-widgets src/app/acme-dashboard
-npx astryx template acme-stat-card --package @acme/astryx-widgets src/components`,
+astryx template acme-dashboard --package @acme/astryx-widgets src/app/acme-dashboard
+astryx template acme-stat-card --package @acme/astryx-widgets src/components`,
         },
         {
           type: 'list',

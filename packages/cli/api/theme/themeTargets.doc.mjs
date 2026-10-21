@@ -62,6 +62,10 @@ export const doc = {
       code: 'ERR_CORE_NOT_FOUND',
       when: '@astryxdesign/core cannot be resolved from cwd',
     },
+    {
+      code: 'ERR_VERSIONS_UNAVAILABLE',
+      when: 'outside a project, or in a project with nothing installed, the Core of the release that answers is not beside it or cached, and cannot be installed into the per-user cache (offline, a registry without it, or an unwritable cache)',
+    },
     {code: 'ERR_UNKNOWN_COMPONENT', when: 'a filter matches no target'},
   ],
   examples: [
