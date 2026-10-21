@@ -37,6 +37,8 @@ const componentDoc = name =>
   `export default {type: 'component', name: '${name}', displayName: '${name}', usage: {description: '${name}.'}, props: []};\n`;
 /** @param {string} name */
 const componentSource = name => `export function ${name}() { return null; }\n`;
+const templateSource = name =>
+  `export default function ${name}() { return null; }\n`;
 /** @param {string} name */
 const topic = name =>
   `export default ${JSON.stringify({
@@ -1135,8 +1137,8 @@ describe('source_without_template_doc fixes hold when followed', () => {
   it('adds the named doc, which resolves the warning', async () => {
     const dir = writePackage({
       [MANIFEST]: manifest({templates: './templates'}),
-      'templates/hero.tsx': componentSource('Hero'),
-      'templates/hero.test.tsx': componentSource('HeroTest'),
+      'templates/hero.tsx': templateSource('Hero'),
+      'templates/hero.test.tsx': templateSource('HeroTest'),
     });
 
     const message = only(await issuesOf(dir), 'source_without_template_doc');
@@ -1156,8 +1158,8 @@ describe('source_without_template_doc fixes hold when followed', () => {
     const dir = writePackage({
       [MANIFEST]: manifest({templates: './templates'}),
       'templates/hero.doc.mjs': `export default {type: 'page', name: 'hero', displayName: 'Hero'};\n`,
-      'templates/hero.tsx': componentSource('Hero'),
-      'templates/hero/HeroCard.tsx': componentSource('HeroCard'),
+      'templates/hero.tsx': templateSource('Hero'),
+      'templates/hero/HeroCard.tsx': templateSource('HeroCard'),
     });
 
     expect(await issuesOf(dir)).toEqual([]);
@@ -1166,7 +1168,7 @@ describe('source_without_template_doc fixes hold when followed', () => {
   it('accepts a released .template.mjs spec as the metadata', async () => {
     const dir = writePackage({
       [MANIFEST]: manifest({templates: './templates'}),
-      'templates/hero.tsx': componentSource('Hero'),
+      'templates/hero.tsx': templateSource('Hero'),
       'templates/hero.template.mjs': `export default {type: 'page', name: 'hero', displayName: 'Hero'};\n`,
     });
 
