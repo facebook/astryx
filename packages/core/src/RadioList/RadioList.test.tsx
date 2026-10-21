@@ -382,7 +382,7 @@ describe('RadioList', () => {
       expect(radios[2]).toHaveFocus();
     });
 
-    it('keeps a disabled first radio as the deterministic tab stop', () => {
+    it('skips disabled radios when choosing the deterministic tab stop', () => {
       render(
         <>
           <button type="button">before</button>
@@ -395,15 +395,13 @@ describe('RadioList', () => {
         </>,
       );
       const outside = screen.getByText('before');
-      const optionA = screen.getByLabelText('Option A');
+      const optionB = screen.getByLabelText('Option B');
       const optionC = screen.getByLabelText('Option C');
-      // A disabled radio keeps the focus order it has when enabled
-      // (spec:AST-085 FR1), so entry from outside normalizes to Option A.
+      // A middle enabled radio (C) entered from outside is normalized to the
+      // first *enabled* radio (B) — the disabled Option A is skipped.
       outside.focus();
       optionC.focus();
-      expect(optionA).toHaveFocus();
-      expect(optionA).toHaveAttribute('aria-disabled', 'true');
-      expect(optionA).not.toHaveAttribute('disabled');
+      expect(optionB).toHaveFocus();
     });
   });
 
@@ -473,54 +471,6 @@ describe('RadioList', () => {
       expect(onChange).not.toHaveBeenCalled();
     });
   });
-  describe('focusable disabled options', () => {
-    it('keeps a disabled option focusable and inert', () => {
-      const onChange = vi.fn();
-      const onClick = vi.fn();
-      render(
-        <RadioList label="Preference" value="a" onChange={onChange}>
-          <RadioListItem label="Option A" value="a" />
-          <RadioListItem
-            label="Option B"
-            value="b"
-            isDisabled
-            onClick={onClick}
-          />
-        </RadioList>,
-      );
-      const optionB = screen.getByLabelText('Option B');
-      expect(optionB).not.toHaveAttribute('disabled');
-      expect(optionB).toHaveAttribute('aria-disabled', 'true');
-      // Row clicks are delegated to the input, so click it directly.
-      fireEvent.click(optionB);
-      expect(onChange).not.toHaveBeenCalled();
-      expect(onClick).not.toHaveBeenCalled();
-      expect(optionB).not.toBeChecked();
-      expect(screen.getByLabelText('Option A')).toBeChecked();
-    });
-
-    it('does not submit a checked option that is disabled on its own', () => {
-      const {container} = render(
-        <form>
-          <RadioList
-            label="Preference"
-            htmlName="pref"
-            value="b"
-            onChange={() => {}}>
-            <RadioListItem label="Option A" value="a" />
-            <RadioListItem label="Option B" value="b" isDisabled />
-          </RadioList>
-        </form>,
-      );
-      const form = container.querySelector('form')!;
-      expect(new FormData(form).get('pref')).toBeNull();
-      // The enabled option stays in the form's radio group.
-      expect(screen.getByLabelText<HTMLInputElement>('Option A').form).toBe(
-        form,
-      );
-    });
-  });
-
   describe('form participation', () => {
     it('submits the selected value under htmlName', () => {
       const {container} = render(

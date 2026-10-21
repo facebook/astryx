@@ -179,7 +179,12 @@ const styles = stylex.create({
   dropzoneDisabled: {
     cursor: 'default',
     opacity: 0.5,
-    borderColor: colorVars['--color-border-emphasized'],
+    // Keeps the :focus-within border: a focused disabled trigger still shows
+    // focus (spec:AST-085 FR6).
+    borderColor: {
+      default: colorVars['--color-border-emphasized'],
+      ':focus-within': colorVars['--color-accent'],
+    },
   },
   compact: {
     boxSizing: 'border-box',
@@ -221,7 +226,12 @@ const styles = stylex.create({
   compactDisabled: {
     cursor: 'default',
     opacity: 0.5,
-    borderColor: colorVars['--color-border-emphasized'],
+    // Keeps the :focus-within border: a focused disabled trigger still shows
+    // focus (spec:AST-085 FR6).
+    borderColor: {
+      default: colorVars['--color-border-emphasized'],
+      ':focus-within': colorVars['--color-accent'],
+    },
   },
   hiddenInput: {
     position: 'absolute',

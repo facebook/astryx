@@ -627,12 +627,14 @@ describe('Switch', () => {
     it('stays focusable via aria-disabled when disabled without a reason', async () => {
       const user = userEvent.setup();
       const onChange = vi.fn();
+      const onClick = vi.fn();
       render(
         <form>
           <Switch
             label="Enable notifications"
             value={false}
             onChange={onChange}
+            onClick={onClick}
             htmlName="notifications"
             isRequired
             isDisabled
@@ -646,7 +648,9 @@ describe('Switch', () => {
       expect(control).toHaveFocus();
       await user.keyboard(' ');
       await user.click(control);
+      await user.click(screen.getByText('Enable notifications'));
       expect(onChange).not.toHaveBeenCalled();
+      expect(onClick).not.toHaveBeenCalled();
       expect(control).not.toBeChecked();
       const form = control.closest('form')!;
       expect(form.checkValidity()).toBe(true);

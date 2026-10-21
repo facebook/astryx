@@ -260,10 +260,13 @@ export function RadioListItem({
   const labelID = useId();
   const descriptionID = useId();
   const isDisabled = context.isDisabled || isItemDisabled;
+  // When the whole group is disabled with a disabledMessage, radios stay
+  // focusable via aria-disabled (instead of native `disabled`) so the group's
+  // reason tooltip is keyboard-discoverable. Per-item disabling is unaffected
+  // and always uses the native disabled attribute.
+  const keepsFocusableForMessage =
+    context.hasDisabledMessage && !isItemDisabled;
   const isChecked = context.value === value;
-  // Leave the form only when this radio could submit or the whole group is
-  // disabled: detaching one radio splits the native group (an extra Tab stop).
-  const detachesFromForm = isDisabled && (context.isDisabled || isChecked);
   // One predicate for both the rendered element and the aria-describedby that
   // points at it. A ReactNode description can be `false` or `''`, which render
   // nothing — a `!= null` check would leave the link dangling.
@@ -276,7 +279,7 @@ export function RadioListItem({
   // See CheckboxInput: the ring goes on the indicator's own element, because
   // the native input is visually hidden and only the indicator knows its shape.
   const indicatorRef = useRef<HTMLSpanElement>(null);
-  const {focusProps} = useIndicatorFocusRing(indicatorRef);
+  const {focusProps} = useIndicatorFocusRing(indicatorRef, isDisabled);
 
   // The radio is the row's single keyboard control and action. The row is an
   // enlarged click/tap target that delegates surface clicks — the description
@@ -303,9 +306,12 @@ export function RadioListItem({
         name={context.name}
         value={value}
         checked={isChecked}
-        aria-disabled={isDisabled ? 'true' : undefined}
-        // Excluded from submission like a natively disabled radio (FR3).
-        form={detachesFromForm ? '' : undefined}
+        disabled={isDisabled && !keepsFocusableForMessage}
+        aria-disabled={keepsFocusableForMessage ? 'true' : undefined}
+        // A focusable-disabled radio is not natively disabled, so detach it
+        // from the form instead: it keeps its name (grouping) but is excluded
+        // from submission, matching a natively disabled control.
+        form={keepsFocusableForMessage ? '' : undefined}
         required={context.isRequired}
         onChange={() => {
           if (isDisabled) {
@@ -316,8 +322,7 @@ export function RadioListItem({
         // A consumer onClick rides on the radio input itself, so it fires for
         // both direct control clicks and row-surface clicks the row delegates
         // to the input — the same routing CheckboxListItem uses.
-        // Native `disabled` suppressed onClick (spec:AST-085 FR2).
-        onClick={isDisabled ? undefined : onClick}
+        onClick={onClick}
         // The radio names itself from the visible label element, which works
         // for a rich label as well as a plain string. `aria-label` replaces
         // that name rather than adding to it, so the two are mutually
