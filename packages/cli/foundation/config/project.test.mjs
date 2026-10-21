@@ -291,6 +291,32 @@ describe('Project.load', () => {
   });
 });
 
+describe('Project.issues and a near-miss manifest key', () => {
+  it.each([
+    [
+      'alone, while the loaded integration fills providerId from the package name',
+      {providerID: '@acme/widgets'},
+      'Fix: rename "providerID" to "providerId" in astryx.integration.mjs.',
+    ],
+    [
+      'beside the key it suggests',
+      {providerID: '@acme/widgets', providerId: '@acme/widgets'},
+      'Fix: remove "providerID" from astryx.integration.mjs; it already sets "providerId".',
+    ],
+  ])(
+    'reads the keys the manifest declares: providerID %s',
+    async (_label, unknownKeys, fix) => {
+      scaffold({unknownKeys});
+      const project = await Project.load(tmpDir);
+      const keys = (await project.issues()).filter(
+        issue => issue.code === 'unknown_manifest_key',
+      );
+      expect(keys).toHaveLength(1);
+      expect(keys[0].message).toContain(fix);
+    },
+  );
+});
+
 describe('Project.load and the cliCommand an integration declares', () => {
   it('records it, so the picker prints commands with it', async () => {
     scaffold({cliCommand: 'acme astryx'});
