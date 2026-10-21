@@ -210,12 +210,18 @@ depends only on runtimes it can maintain.
     reference sets the ceiling a candidate is scored against.
   - **Devices:** real hardware running release builds, on the oldest and newest
     supported OS version of each platform, including a lower-end device.
+  - **Captures:** every scenario step is captured as a screenshot on the device,
+    and every scenario as a screen recording, for each candidate, the reference,
+    and the web rendering of the same scenario, in light and dark and at the
+    largest text size. Visual scores are judged from these captures, never from
+    source code or style values.
   - **Experience:** conformance to platform conventions and to the core
     contract (FR3), judged per scenario step.
   - **Brand preservation:** how recognizably the theme's identity, its color,
     typography, shape, spacing, and icons, carries to the platform while the
     screen stays native-first, judged against the web rendering of the same
-    theme, plus checks that the theme's resolved values are honored.
+    theme, plus pixel checks on the captures against the theme's resolved
+    values.
   - **Performance:** time to first content, frame pacing and dropped frames
     during each scenario, input-to-response latency, memory, and the size the
     approach adds to an app.
@@ -342,7 +348,7 @@ depends only on runtimes it can maintain.
 | FR9      | Documentation and CLI output checks                                                                                                | core only; each platform selection; native package absent                                                                                                                                              | Output for one platform lists another platform's prop, or a prop is unmarked                                                                                                               |
 | FR10     | `defineNativeTheme` unit and type tests, plus a resolution test per platform                                                       | durable `material` only; entry with and without a range; overlapping entries; platform `components`; native theme extension; a token in native configuration; platform term outside its entry or range | A token can be set, a platform term type-checks outside its entry or range, an entry applies outside its platform or range, overlap order is ignored, or extension drops members           |
 | FR11     | FR12 experience scores per scenario step, oldest and newest supported OS                                                           | navigation, sheet, menu, picker, switch, text entry, scrolling, keyboard shortcut, large text; a capability newer than the running OS                                                                  | A step draws a custom control where the platform provides one, misses the touch-target minimum, ignores the text-size setting, or breaks on the oldest supported OS                        |
-| FR12     | Scenario replay on candidates and reference, on real release builds and devices                                                    | each scenario on each candidate and the toolkit reference; oldest and newest supported OS; a lower-end device per platform                                                                             | A candidate is scored without the reference, on a debug build, on emulation only, on one OS version, or on a different scenario set                                                        |
+| FR12     | Scenario replay on candidates and reference, on real release builds and devices                                                    | each scenario on each candidate and the toolkit reference; oldest and newest supported OS; a lower-end device per platform                                                                             | A candidate is scored without the reference, on a debug build, on emulation only, on one OS version, or on a different scenario set, or a visual score is given without device captures    |
 | FR13     | Dependency manifest audit of each native platform package                                                                          | platform SDK; first-party project; a React Native out-of-tree desktop platform; third-party optional integration; third-party fork                                                                     | A third-party library or fork is required to install, build, or render on the platform                                                                                                     |
 | FR14     | Compiler and render output comparison, core dependency graph check, and a web type surface diff                                    | each maintained theme with and without the native package installed; runtime-mounted and built CSS; components; web types before and after                                                             | Any byte of CSS, mounted rules, or rendered web markup differs, core depends on native, or a web prop disappears outside a planned minor                                                   |
 | FR15     | Package metadata and release-channel checks                                                                                        | native package manifest; a stable release; a canary release                                                                                                                                            | The native package is publishable as a stable release before a platform is supported                                                                                                       |
