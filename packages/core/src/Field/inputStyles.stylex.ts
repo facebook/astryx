@@ -67,17 +67,18 @@ export const inputWrapperStyles = stylex.create({
   disabled: {
     cursor: 'default',
     opacity: 0.5,
-    // A disabled control does not react to hover, but while the disabled
-    // control itself holds focus the field shows the base focus ring
-    // (`spec:AST-085` FR6). A focused companion control in the field, such as
-    // a status tooltip button, keeps its own indicator instead.
+    // A disabled control does not react to hover, but while the field's own
+    // disabled control (a direct child) holds focus the field shows the base
+    // focus ring (`spec:AST-085` FR6). A focused companion control, such as a
+    // status tooltip button or a nested toolbar button, keeps its own
+    // indicator instead.
     borderColor: {
       default: colorVars['--color-border-emphasized'],
-      ':has([aria-disabled="true"]:focus)': colorVars['--color-accent'],
+      ':has(> [aria-disabled="true"]:focus)': colorVars['--color-accent'],
     },
     boxShadow: {
       default: 'none',
-      ':has([aria-disabled="true"]:focus)': `inset 0px 0px 0px 2px ${colorVars['--color-accent-muted']}`,
+      ':has(> [aria-disabled="true"]:focus)': `inset 0px 0px 0px 2px ${colorVars['--color-accent-muted']}`,
     },
   },
 });
