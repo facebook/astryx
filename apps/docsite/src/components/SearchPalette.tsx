@@ -15,28 +15,20 @@ interface SearchPaletteProps {
 }
 
 /**
- * The site's search: `astryx search`, run in the browser on the catalog the
- * CLI exported when the site was built, so it answers what the CLI answers
- * (lib/cliSearch.worker.ts).
+ * The site's search: `astryx search`, run by the site's search API
+ * (app/api/search/route.ts), so it answers what the CLI answers.
  */
 export function SearchPalette({isOpen, onOpenChange}: SearchPaletteProps) {
   const router = useRouter();
 
-  const searchSource = useMemo(
-    () =>
-      createCliSearchSource(
-        () =>
-          new Worker(new URL('../lib/cliSearch.worker.ts', import.meta.url), {
-            type: 'module',
-          }),
-      ),
-    [],
-  );
+  const searchSource = useMemo(() => createCliSearchSource(), []);
 
   const handleValueChange = useCallback(
     (id: string) => {
       const result = searchSource.item(id)?.auxiliaryData;
-      if (!result) {return;}
+      if (!result) {
+        return;
+      }
       trackSearch({
         target: 'select',
         item: result.name,

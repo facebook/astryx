@@ -131,13 +131,3 @@ export function loadSearchData() {
   }
   return searchData;
 }
-
-/**
- * This CLI's own package version, which an exported search catalog records.
- * @returns {string}
- */
-export function cliPackageVersion() {
-  return JSON.parse(
-    readFileSync(new URL('../../package.json', import.meta.url), 'utf8'),
-  ).version;
-}

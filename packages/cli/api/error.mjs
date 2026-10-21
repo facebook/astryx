@@ -12,12 +12,31 @@
  */
 
 import {ERROR_CODES} from '../foundation/response/error-codes.mjs';
-import {AstryxError} from '../foundation/response/astryx-error.mjs';
 import * as path from 'node:path';
 
-// The class lives in a browser-safe module, so code that runs in a browser
-// (the site's search, `@astryxdesign/cli/search`) throws the same class.
-export {AstryxError};
+export class AstryxError extends Error {
+  /** @type {import('../foundation/response/base').Suggestion[] | undefined} */
+  suggestions;
+
+  /**
+   * Stable, machine-readable error code (error-codes.mjs). Consumers branch
+   * on this, never on the message text.
+   * @type {string}
+   */
+  code;
+
+  /**
+   * @param {string} message
+   * @param {import('../foundation/response/base').Suggestion[]} [suggestions]
+   * @param {string} [code] - Stable error code. Defaults to ERR_UNKNOWN.
+   */
+  constructor(message, suggestions, code) {
+    super(message);
+    this.name = 'AstryxError';
+    this.code = code || ERROR_CODES.ERR_UNKNOWN;
+    if (Array.isArray(suggestions) && suggestions.length) this.suggestions = suggestions;
+  }
+}
 
 /**
  * The error for a write that failed on the filesystem: no permission, a

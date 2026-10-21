@@ -1,47 +1,36 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file The site's search panel answers what `astryx search` answers.
+ * @file The site's search answers what `astryx search` answers.
  *
- * The panel runs the CLI's own search (`@astryxdesign/cli/search`) on
- * public/search-index.json (scripts/generate-search-index.mjs). These tests
- * hold it to the CLI: for a fixed list of public, made-up queries, the
- * panel's results are the results `astryx search --json` prints from this
- * site's project, in the same order; the index comes from the CLI this site
- * builds with; every result opens a page the site has; and the panel keeps
- * the CLI's order.
+ * The search panel asks the site's search API (app/api/search/route.ts),
+ * which calls the CLI's `search()`. These tests hold it to the CLI: for a
+ * fixed list of public, made-up queries, the API's results are the results
+ * `astryx search --json` prints from this site's project, in the same order;
+ * every result opens a page the site has; and the panel keeps the CLI's order.
  */
 
 import {execFile} from 'node:child_process';
-import fs from 'node:fs';
 import path from 'node:path';
 import {promisify} from 'node:util';
 import {describe, expect, it} from 'vitest';
-import {searchCatalog} from '@astryxdesign/cli/search';
-import type {
-  GatheredSearchCatalog,
-  SearchResponse,
-} from '@astryxdesign/cli/search';
+import type {SearchResponse} from '@astryxdesign/cli/api';
+import {GET} from '../app/api/search/route';
 import {searchResultHref} from '../lib/searchLinks.mjs';
 import type {SearchLinkTables} from '../lib/searchLinks.mjs';
 import {createCliSearchSource, toSearchItem} from '../lib/cliSearchSource';
 import type {SiteSearchResult} from '../lib/cliSearchTypes';
-import {
-  SEARCH_INDEX_FILE,
-  checkSearchIndex,
-  cliPackageVersion,
-} from '../../scripts/lib/search-index.mjs';
 import docsiteConfig from '../../astryx.config.mjs';
 import {docTopics, docRedirects} from '../generated/docsRegistry';
 import {packages} from '../generated/packageRegistry';
 import admittedRecord from '../generated/integrationPackages.json';
+import linkTables from '../generated/searchLinks.json';
 
 const run = promisify(execFile);
 const ROOT = path.resolve(import.meta.dirname, '../..');
 const ASTRYX = path.join(ROOT, 'node_modules', '.bin', 'astryx');
-const index = JSON.parse(
-  fs.readFileSync(path.join(ROOT, SEARCH_INDEX_FILE), 'utf-8'),
-) as {catalog: GatheredSearchCatalog; links: SearchLinkTables};
+const links = linkTables as SearchLinkTables;
+const SLOW = 120_000;
 
 /** Public, made-up queries across every domain. */
 const QUERIES = [
@@ -59,16 +48,23 @@ const QUERIES = [
   'chart',
 ];
 
-// The panel searches the packages this build documents. On canary that is
+/** What the site's API answers for a query. */
+async function api(query: string) {
+  const response = await GET(
+    new Request(`http://site/api/search?q=${encodeURIComponent(query)}`),
+  );
+  expect(response.status).toBe(200);
+  return (await response.json()) as SearchResponse & {
+    data: {results: SiteSearchResult[]};
+  };
+}
+
+// The API answers for the packages this build documents. On canary that is
 // every configured integration, the same set `astryx search` reads here.
 const documentsEveryIntegration =
   docsiteConfig.integrations.length === admittedRecord.packages.length;
 
-describe('search panel = astryx search', () => {
-  it('is built from the CLI this site builds with', () => {
-    expect(() => checkSearchIndex(index, cliPackageVersion())).not.toThrow();
-  });
-
+describe('site search = astryx search', () => {
   it.skipIf(!documentsEveryIntegration)(
     'answers each query with the results `astryx search --json` prints',
     async () => {
@@ -82,16 +78,32 @@ describe('search panel = astryx search', () => {
         }),
       );
       for (const [i, query] of QUERIES.entries()) {
-        const panel = await searchCatalog(query, {}, index.catalog);
-        expect(panel.data.results.length, query).toBeGreaterThan(0);
-        expect(panel.data, query).toEqual(printed[i].data);
+        const {data} = await api(query);
+        expect(data.results.length, query).toBeGreaterThan(0);
+        const {results: siteResults, ...rest} = data;
+        const results = siteResults as SiteSearchResult[];
+        const {results: cliResults, ...cliRest} = printed[i].data;
+        expect(rest, query).toEqual(cliRest);
+        expect(
+          results.map(({href: _href, ...result}) => result),
+          query,
+        ).toEqual(cliResults);
       }
     },
-    120_000,
+    SLOW,
   );
+
+  it('refuses an empty or overlong query', async () => {
+    for (const q of ['', '   ', 'x'.repeat(201)]) {
+      const response = await GET(
+        new Request(`http://site/api/search?q=${encodeURIComponent(q)}`),
+      );
+      expect(response.status).toBe(400);
+    }
+  });
 });
 
-describe('search panel links', () => {
+describe('site search links', () => {
   const pages = new Set([
     ...docTopics.map(topic => topic.topic),
     ...packages
@@ -100,78 +112,124 @@ describe('search panel links', () => {
       .map(name => name.replace('@astryxdesign/', '')),
   ]);
   const redirectTargets = new Set(Object.values(docRedirects));
-  const components = new Set(index.links.components);
-  const templates = new Set(index.links.templates);
+  const components = new Set(links.components);
+  const templates = new Set(links.templates);
 
   /** Whether the site serves this path. */
   const served = (href: string): boolean => {
     if (['/components', '/templates', '/themes', '/docs'].includes(href)) {
       return true;
     }
-    if (redirectTargets.has(href)) {return true;}
+    if (redirectTargets.has(href)) {
+      return true;
+    }
     const [pathname] = href.split('#');
     const [, area, slug] = pathname.split('/');
-    if (area === 'components') {return components.has(slug);}
-    if (area === 'templates') {return templates.has(slug);}
-    if (area === 'docs') {return pages.has(slug);}
+    if (area === 'components') {
+      return components.has(slug);
+    }
+    if (area === 'templates') {
+      return templates.has(slug);
+    }
+    if (area === 'docs') {
+      return pages.has(slug);
+    }
     return false;
   };
 
-  it('opens a page the site has for every result of every query', async () => {
-    for (const query of QUERIES) {
-      const {data} = await searchCatalog(query, {}, index.catalog);
-      for (const result of data.results) {
-        const href = searchResultHref(result, index.links);
-        expect(
-          served(href),
-          `${query}: ${result.domain} ${result.name} -> ${href}`,
-        ).toBe(true);
+  it(
+    'opens a page the site has for every result of every query',
+    async () => {
+      for (const query of QUERIES) {
+        for (const result of (await api(query)).data.results) {
+          expect(
+            served(result.href),
+            `${query}: ${result.domain} ${result.name} -> ${result.href}`,
+          ).toBe(true);
+        }
       }
+    },
+    SLOW,
+  );
+
+  it("opens a section at its own guide's anchor when a page repeats its key", () => {
+    // A namespace page holds several guides' sections, and section keys are
+    // unique only within a guide. Group the guide-keyed entries by page and
+    // key: each guide's copy must open its own anchor.
+    const byKey = new Map<string, {starts: Set<string>; hrefs: Set<string>}>();
+    for (const [key, href] of Object.entries(links.anchors)) {
+      const [guide, section] = key.split('#');
+      const page = href.split('#')[0];
+      const target = links.redirects[guide];
+      if (!target || target.split('#')[0] !== page) {
+        continue;
+      }
+      const group = `${page} ${section}`;
+      if (!byKey.has(group)) {
+        byKey.set(group, {starts: new Set(), hrefs: new Set()});
+      }
+      // A namespace with no text of its own starts where its first guide does.
+      byKey.get(group)!.starts.add(target);
+      byKey.get(group)!.hrefs.add(href);
+    }
+    const repeated = [...byKey.entries()].filter(([, v]) => v.starts.size > 1);
+    expect(
+      repeated.length,
+      'a page that repeats a section key',
+    ).toBeGreaterThan(0);
+    for (const [group, {starts, hrefs}] of repeated) {
+      expect(hrefs.size, group).toBe(starts.size);
     }
   });
 
   it('opens a doc section at its anchor', () => {
     const href = searchResultHref(
       {domain: 'doc', name: 'author-a-theme', section: 'palette'},
-      index.links,
+      links,
     );
     expect(href).toMatch(/^\/docs\/theme#/);
   });
 });
 
 describe('search panel order', () => {
-  it('keeps the CLI order: no groups, one item per result', async () => {
-    const {data} = await searchCatalog('button', {}, index.catalog);
-    const results = data.results.map(result => ({
-      ...result,
-      href: searchResultHref(result, index.links),
-    })) as SiteSearchResult[];
-    const posted: unknown[] = [];
-    const worker = {
-      onmessage: null as ((event: MessageEvent) => void) | null,
-      postMessage(message: {type: string; id?: number}) {
-        posted.push(message);
-        if (message.type === 'search') {
-          queueMicrotask(() =>
-            worker.onmessage?.({
-              data: {id: message.id, results},
-            } as MessageEvent),
-          );
-        }
-      },
-    };
-    const source = createCliSearchSource(() => worker as unknown as Worker);
-    expect(source.bootstrap()).toEqual([]);
-    expect(posted).toEqual([{type: 'load'}]);
-    const items = await source.search('button');
-    expect(items.map(item => item.auxiliaryData.name)).toEqual(
-      results.map(result => result.name),
-    );
-    expect(new Set(items.map(item => item.id)).size).toBe(items.length);
-    for (const item of items) {
-      expect(item.auxiliaryData).not.toHaveProperty('group');
-      expect(source.item(item.id)).toBe(item);
-    }
-    expect(toSearchItem(results[0], 0).label).toBeTruthy();
+  it(
+    'keeps the CLI order: no groups, one item per result',
+    async () => {
+      const {data} = await api('button');
+      const urls: string[] = [];
+      const source = createCliSearchSource(async url => {
+        urls.push(url);
+        return new Response(JSON.stringify({data}));
+      });
+      expect(source.bootstrap()).toEqual([]);
+      const items = await source.search('button');
+      expect(urls).toEqual(['/api/search?q=button']);
+      expect(items.map(item => item.auxiliaryData.name)).toEqual(
+        data.results.map(result => result.name),
+      );
+      expect(new Set(items.map(item => item.id)).size).toBe(items.length);
+      for (const item of items) {
+        expect(item.auxiliaryData).not.toHaveProperty('group');
+        expect(source.item(item.id)).toBe(item);
+      }
+      expect(toSearchItem(data.results[0], 0).label).toBeTruthy();
+    },
+    SLOW,
+  );
+
+  it('sends only the last query typed', async () => {
+    const urls: string[] = [];
+    const source = createCliSearchSource(async (url, init) => {
+      urls.push(url);
+      if (init.signal?.aborted) {
+        throw new Error('aborted');
+      }
+      return new Response(JSON.stringify({data: {results: []}}));
+    });
+    const first = source.search('bu');
+    const second = source.search('button');
+    expect(await first).toEqual([]);
+    await second;
+    expect(urls).toEqual(['/api/search?q=button']);
   });
 });

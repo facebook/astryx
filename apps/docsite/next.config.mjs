@@ -38,6 +38,21 @@ const stagesStaticApps =
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   cacheComponents: true,
+  // The search API (app/api/search) runs `astryx search` itself: it loads the
+  // CLI from node_modules at run time, so the CLI and the docs, templates and
+  // components it reads from disk are traced into that function.
+  outputFileTracingIncludes: {
+    '/api/search': [
+      './node_modules/@astryxdesign/**/*',
+      '../../packages/cli/**/*',
+      '../../packages/core/**/*',
+      '../../packages/lab/**/*',
+      '../../packages/charts/**/*',
+      '../../packages/richtext/**/*',
+      '../../packages/vega/**/*',
+      './astryx.config.mjs',
+    ],
+  },
   // Sandbox exports trailing-slash directories; Next's automatic slash
   // redirect runs before rewrites. Vercel deployments preserve those URLs;
   // local builds keep the docsite's existing canonical redirects.

@@ -25,13 +25,13 @@ const [
   {GET: getLlmsTxt},
   {GET: getRss},
   {POST: postMcp},
+  {GET: getSearch},
   {CURRENT_TARGET},
   {components},
   {blocks},
   {templates},
   {docTopics},
   {blogPosts},
-  {packages},
   {showcaseRegistry},
   {exampleRegistry},
   {shadcnRegistryIsPreview, shadcnRegistryOrigin},
@@ -42,13 +42,13 @@ const [
   import('../app/llms.txt/route'),
   import('../app/rss.xml/route'),
   import('../app/mcp/route'),
+  import('../app/api/search/route'),
   import('../lib/docsVersions'),
   import('../generated/componentRegistry'),
   import('../generated/blockRegistry'),
   import('../generated/templateRegistry'),
   import('../generated/docsRegistry'),
   import('../generated/blogRegistry'),
-  import('../generated/packageRegistry'),
   import('../generated/showcaseRegistry'),
   import('../generated/exampleRegistry'),
   import('../generated/shadcnRegistry'),
@@ -191,22 +191,6 @@ describeHiddenProduction('hidden production ShadCN discovery', () => {
       href: entry.href,
       label: entry.displayName,
     }));
-    // The search panel runs the CLI's search on this index. Like the MCP
-    // search below, it may name ShadCN only inside the CLI's own docs (the
-    // migration guide); it never points at the registry.
-    const searchIndex = JSON.parse(
-      fs.readFileSync(path.join(root, 'public', 'search-index.json'), 'utf8'),
-    ) as {catalog: {all: Array<Record<string, unknown>>}; links: unknown};
-    expectNoRegistryDiscovery(searchIndex, 'global search');
-    for (const entry of searchIndex.catalog.all) {
-      if (/shadcn/i.test(JSON.stringify(entry))) {
-        expect(entry, 'global search promotes ShadCN').toMatchObject({
-          domain: 'doc',
-          _package: '@astryxdesign/cli',
-        });
-      }
-    }
-
     expectNoShadcnPromotion(
       docTopics.map(topic => ({topic: topic.topic, title: topic.title})),
       'docs navigation',
@@ -216,6 +200,26 @@ describeHiddenProduction('hidden production ShadCN discovery', () => {
       'blog indexes',
     );
     expectNoShadcnPromotion(sidebar, 'component navigation');
+  });
+
+  it('keeps the site search (astryx search) free of registry promotion', async () => {
+    // Like the MCP search below, it may name ShadCN only inside the CLI's own
+    // docs (the migration guide); it never points at the registry.
+    const response = await getSearch(
+      new Request('http://site/api/search?q=shadcn%20registry%20install'),
+    );
+    const {data} = (await response.json()) as {
+      data: {results: Array<Record<string, unknown>>};
+    };
+    expectNoRegistryDiscovery(data, 'site search');
+    for (const result of data.results) {
+      if (/shadcn/i.test(JSON.stringify(result))) {
+        expect(result).toMatchObject({
+          domain: 'doc',
+          package: '@astryxdesign/cli',
+        });
+      }
+    }
   });
 
   it('keeps sitemap, RSS, and llms.txt clean', async () => {

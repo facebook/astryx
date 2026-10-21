@@ -20,8 +20,8 @@
  * @typedef {object} SearchLinkTables
  * @property {string[]} pages - Every doc page slug.
  * @property {Record<string, string>} redirects - Slug -> where its text is shown.
- * @property {Record<string, string>} anchors - `<page>#<section key>` -> the
- *   anchor of that section on the page.
+ * @property {Record<string, string>} anchors - `<guide slug>#<section key>`
+ *   (or `<page>#<section key>`) -> the path of that section, with its anchor.
  * @property {string[]} components - Component and hook names with a page.
  * @property {string[]} templates - Page template slugs with a page.
  * @property {Record<string, string>} blocks - Block name -> the page that shows it.
@@ -50,11 +50,47 @@
 export function searchLinkTables(site) {
   /** @type {Record<string, string>} */
   const anchors = {};
+  // A namespace page (and a merged page) holds the sections of several
+  // guides, and a section key is unique only within its guide. Each guide's
+  // slug redirects to its first section, so the redirects give each guide's
+  // range of sections on the page: a section is keyed by the guide that owns
+  // it, `<guide slug>#<section key>`, the way search names it.
+  /** @type {Map<string, Array<[number, string]>>} page -> [first section index, guide slug] */
+  const starts = new Map();
+  const pageAnchors = new Map(
+    site.docTopics.map(page => [
+      page.topic,
+      site.sectionAnchors(/** @type {any} */ (page.sections ?? [])),
+    ]),
+  );
+  for (const [slug, target] of Object.entries(site.docRedirects)) {
+    const match = /^\/docs\/([^#]+)#(.+)$/.exec(target);
+    if (!match) continue;
+    const index = pageAnchors.get(match[1])?.indexOf(match[2]) ?? -1;
+    if (index < 0) continue;
+    if (!starts.has(match[1])) starts.set(match[1], []);
+    starts.get(match[1])?.push([index, slug]);
+  }
   for (const page of site.docTopics) {
-    const ids = site.sectionAnchors(/** @type {any} */ (page.sections ?? []));
+    const ids = pageAnchors.get(page.topic) ?? [];
+    const guides = (starts.get(page.topic) ?? []).sort((a, b) => a[0] - b[0]);
     (page.sections ?? []).forEach((section, i) => {
-      const key = `${page.topic}#${section.id}`;
-      if (section.id && !Object.hasOwn(anchors, key)) anchors[key] = ids[i];
+      if (!section.id) return;
+      // The guides whose range holds this section: the latest start at or
+      // before it (two slugs can share a start: a namespace with no text of
+      // its own and its first guide).
+      const at = guides.filter(([start]) => start <= i);
+      const owner = at.length ? at[at.length - 1][0] : -1;
+      const keys = [
+        `${page.topic}#${section.id}`,
+        ...at
+          .filter(([start]) => start === owner)
+          .map(([, slug]) => `${slug}#${section.id}`),
+      ];
+      for (const key of keys) {
+        if (!Object.hasOwn(anchors, key))
+          anchors[key] = `/docs/${page.topic}#${ids[i]}`;
+      }
     });
   }
   const components = new Set(site.components);
@@ -148,13 +184,16 @@ export function searchResultHref(result, tables) {
     case 'theme':
       return '/themes';
     case 'doc': {
+      if (result.section) {
+        // The section where its own guide shows it, else on its page.
+        const own = `${result.name.replaceAll('/', '-')}#${result.section}`;
+        if (Object.hasOwn(tables.anchors, own)) return tables.anchors[own];
+      }
       const page = docPage(result.name, tables);
       if (!result.section) return page;
       const slug = page.replace(/^\/docs\/?/, '').replace(/#.*$/, '');
       const key = `${slug}#${result.section}`;
-      return Object.hasOwn(tables.anchors, key)
-        ? `/docs/${slug}#${tables.anchors[key]}`
-        : page;
+      return Object.hasOwn(tables.anchors, key) ? tables.anchors[key] : page;
     }
     default:
       return '/';

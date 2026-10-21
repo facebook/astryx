@@ -5,7 +5,7 @@
  * candidate becomes, and the components a search read.
  */
 
-import {AstryxError} from '../../foundation/response/astryx-error.mjs';
+import {AstryxError} from '../error.mjs';
 import {ERROR_CODES} from '../../foundation/response/error-codes.mjs';
 import {setResultCoverage} from './coverage.mjs';
 import {SEARCH_DOMAINS} from './_query.mjs';
