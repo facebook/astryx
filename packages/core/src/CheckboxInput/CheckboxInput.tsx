@@ -474,6 +474,9 @@ export function CheckboxInput({
             aria-required={isEffectivelyRequired ? 'true' : undefined}
             onChange={e => {
               if (isDisabled || isBusy || isReadOnly) {
+                // Activation clears the native mixed state; React restores
+                // only `checked`, so restore `indeterminate` too.
+                e.target.indeterminate = isIndeterminate;
                 return;
               }
               const checked = e.target.checked;

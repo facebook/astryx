@@ -896,6 +896,9 @@ export function FileInput({
           // Detached from its form while disabled, so selected files are not
           // submitted and `required` does not block submission (FR3).
           form={isDisabled ? '' : undefined}
+          // A label or description click activates this input directly; cancel
+          // it so a disabled input never opens the picker (FR2).
+          onClick={isDisabled ? event => event.preventDefault() : rest.onClick}
           onChange={handleInputChange}
           // The visually-hidden native input is never focused (tabIndex={-1});
           // its describedby/required/invalid live on the trigger button.

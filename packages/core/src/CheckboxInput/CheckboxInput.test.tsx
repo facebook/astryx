@@ -619,6 +619,25 @@ describe('CheckboxInput', () => {
       expect(form.checkValidity()).toBe(true);
       expect([...new FormData(form).keys()]).toEqual([]);
     });
+
+    it('keeps a disabled indeterminate checkbox mixed after Space or a click', async () => {
+      const user = userEvent.setup();
+      render(
+        <CheckboxInput
+          label="Select all"
+          value="indeterminate"
+          onChange={() => {}}
+          isDisabled
+        />,
+      );
+      const checkbox = screen.getByRole<HTMLInputElement>('checkbox');
+      expect(checkbox.indeterminate).toBe(true);
+      await user.tab();
+      await user.keyboard(' ');
+      fireEvent.click(checkbox);
+      expect(checkbox.indeterminate).toBe(true);
+      expect(checkbox).not.toBeChecked();
+    });
   });
   describe('form participation', () => {
     it('submits under htmlName when checked', () => {

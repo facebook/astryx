@@ -269,6 +269,9 @@ describe('FileInput', () => {
     expect(openPicker).not.toHaveBeenCalled();
     expect(input.form).toBeNull();
     expect(trigger.closest('form')!.checkValidity()).toBe(true);
+    // A label click activates the hidden input directly; it is canceled so
+    // the picker never opens (fireEvent returns false when prevented).
+    expect(fireEvent.click(input)).toBe(false);
   });
 
   it('sets aria-invalid when status type is error', () => {
