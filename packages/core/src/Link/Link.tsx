@@ -50,6 +50,24 @@ import {usePressFeedback} from '../hooks/usePressFeedback';
 import {useTranslator} from '../i18n';
 
 /**
+ * Keeps an aria-disabled control inert (spec:AST-085 FR2). Native `disabled`
+ * dispatched no click at all; without it, Enter and Space still synthesize one
+ * that native listeners on the element (a wrapping Popover's trigger) receive,
+ * so cancel those keys, and keep pointer clicks from reaching ancestors.
+ */
+const disabledHandlers = {
+  onClick(event: React.MouseEvent) {
+    event.preventDefault();
+    event.stopPropagation();
+  },
+  onKeyDown(event: React.KeyboardEvent) {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+    }
+  },
+};
+
+/**
  * Base link styles
  */
 const styles = stylex.create({
@@ -174,9 +192,8 @@ export interface LinkProps extends BaseProps<
   /**
    * Whether the link is disabled.
    * A disabled link renders as a plain anchor without an href (and without
-   * target/rel/onClick), so it cannot be focused or activated — no
-   * navigation and no onClick, even via programmatic focus or assistive
-   * technology activation.
+   * target/rel/onClick), so it cannot navigate or run onClick. It keeps a tab
+   * stop and is announced as a disabled link.
    * @default false
    */
   isDisabled?: boolean;
@@ -262,15 +279,6 @@ export interface LinkProps extends BaseProps<
    * Link content (required).
    */
   children: ReactNode;
-}
-
-/**
- * Click handler for disabled links. The disabled anchor renders without an
- * href, so there is no navigation to block in practice; preventDefault is a
- * defensive guard against synthetic/programmatic clicks.
- */
-function preventDefaultClick(event: React.MouseEvent<HTMLAnchorElement>): void {
-  event.preventDefault();
 }
 
 /**
@@ -363,9 +371,7 @@ export function Link({
       <button
         ref={ref as React.Ref<HTMLButtonElement>}
         type="button"
-        // A disabled button stays focusable (spec:AST-085 FR1); without
-        // native `disabled`, the click guard keeps it inert (FR2).
-        onClick={isDisabled ? undefined : onClick}
+        onClick={onClick}
         {...(isDisabled ? undefined : pressable)}
         aria-label={label || undefined}
         aria-disabled={isDisabled || undefined}
@@ -386,7 +392,9 @@ export function Link({
           className,
           style,
         )}
-        {...props}>
+        {...props}
+        // Focusable while disabled (spec:AST-085 FR1), but inert (FR2).
+        {...(isDisabled ? disabledHandlers : null)}>
         {sharedContent}
       </button>
     );
@@ -400,7 +408,6 @@ export function Link({
     linkElement = (
       <a
         ref={ref as React.Ref<HTMLAnchorElement>}
-        onClick={preventDefaultClick}
         role="link"
         aria-label={label || undefined}
         aria-disabled={true}
@@ -418,7 +425,8 @@ export function Link({
           className,
           style,
         )}
-        {...props}>
+        {...props}
+        {...disabledHandlers}>
         {sharedContent}
       </a>
     );

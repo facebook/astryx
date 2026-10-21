@@ -42,6 +42,24 @@ import {usePressFeedback} from '../hooks/usePressFeedback';
 import {useTranslator} from '../i18n';
 import type {TokenColorMap} from './index';
 
+/**
+ * Keeps an aria-disabled control inert (spec:AST-085 FR2). Native `disabled`
+ * dispatched no click at all; without it, Enter and Space still synthesize one
+ * that native listeners on the element (a wrapping Popover's trigger) receive,
+ * so cancel those keys, and keep pointer clicks from reaching ancestors.
+ */
+const disabledHandlers = {
+  onClick(event: React.MouseEvent) {
+    event.preventDefault();
+    event.stopPropagation();
+  },
+  onKeyDown(event: React.KeyboardEvent) {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+    }
+  },
+};
+
 // =============================================================================
 // Types
 // =============================================================================
@@ -319,12 +337,11 @@ export function Token({
       aria-label={t('@astryx.token.remove', {label})}
       onClick={e => {
         e.stopPropagation();
-        if (!isDisabled) {
-          onRemove(e);
-        }
+        onRemove(e);
       }}
-      // Focusable while disabled (spec:AST-085 FR1); the guard keeps it inert.
+      // Focusable while disabled (spec:AST-085 FR1), but inert (FR2).
       aria-disabled={isDisabled || undefined}
+      {...(isDisabled ? disabledHandlers : null)}
       {...focusOutlineProps.focusVisible(styles.removeButton)}>
       <Icon icon="close" size="xsm" color="inherit" />
     </button>
@@ -457,8 +474,9 @@ export function Token({
         {icon}
         <button
           type="button"
-          onClick={isDisabled ? undefined : effectiveOnClick}
+          onClick={effectiveOnClick}
           aria-disabled={isDisabled || undefined}
+          {...(isDisabled ? disabledHandlers : null)}
           {...stylex.props(styles.invisibleButton)}>
           <span
             {...stylex.props(

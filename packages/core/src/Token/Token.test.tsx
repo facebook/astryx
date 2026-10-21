@@ -273,9 +273,13 @@ describe('Token accessibility', () => {
     for (const button of buttons) {
       expect(button).not.toHaveAttribute('disabled');
       expect(button).toHaveAttribute('aria-disabled', 'true');
+      // A wrapping Popover listens for clicks on the button itself.
+      const nativeClick = vi.fn();
+      button.addEventListener('click', nativeClick);
       await user.tab();
       expect(button).toHaveFocus();
-      await user.keyboard('{Enter}');
+      await user.keyboard('{Enter} ');
+      expect(nativeClick).not.toHaveBeenCalled();
       fireEvent.click(button);
     }
     expect(handleClick).not.toHaveBeenCalled();

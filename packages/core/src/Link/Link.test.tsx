@@ -69,9 +69,12 @@ describe('Link', () => {
     const button = screen.getByRole('button');
     expect(button).not.toHaveAttribute('disabled');
     expect(button).toHaveAttribute('aria-disabled', 'true');
+    const nativeClick = vi.fn();
+    button.addEventListener('click', nativeClick);
     await user.tab();
     expect(button).toHaveFocus();
     await user.keyboard('{Enter} ');
+    expect(nativeClick).not.toHaveBeenCalled();
     fireEvent.click(button);
     expect(onClick).not.toHaveBeenCalled();
   });
