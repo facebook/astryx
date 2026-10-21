@@ -137,6 +137,8 @@ export function runnerCommandsIn(text) {
 function allStrings(doc) {
   /** @type {{text: string, section: string | null}[]} */
   const strings = [];
+  // A doc that refers back to itself is walked once.
+  const visited = new WeakSet();
   /**
    * @param {unknown} value
    * @param {string | null} section
@@ -144,9 +146,13 @@ function allStrings(doc) {
   const walk = (value, section) => {
     if (typeof value === 'string') {
       strings.push({text: value, section});
-    } else if (Array.isArray(value)) {
-      for (const item of value) walk(item, section);
     } else if (value != null && typeof value === 'object') {
+      if (visited.has(value)) return;
+      visited.add(value);
+      if (Array.isArray(value)) {
+        for (const item of value) walk(item, section);
+        return;
+      }
       const record = /** @type {Record<string, unknown>} */ (value);
       for (const [key, field] of Object.entries(record)) {
         if (key === 'sections' && Array.isArray(field)) {
@@ -232,6 +238,8 @@ export async function findRunnerCommands(discovered) {
     }
     let cursor = {line: 0, column: 0};
     for (const {text, section} of allStrings(doc)) {
+      const commands = runnerCommandsIn(text);
+      if (commands.length === 0) continue;
       // A one-line string's own literal places it, wherever the walk reached
       // it (a section in a constant above the doc object, say); else the
       // cursor search, in file order.
@@ -244,7 +252,7 @@ export async function findRunnerCommands(discovered) {
       const literal =
         after >= 0 || text.includes('\n') ? after : lines.findIndex(holds);
       let from = literal >= 0 ? {line: literal, column: 0} : cursor;
-      for (const {written, bare, download} of runnerCommandsIn(text)) {
+      for (const {written, bare, download} of commands) {
         const place = locate(lines, written, from);
         if (place) {
           from = {line: place.line, column: place.column + written.length};

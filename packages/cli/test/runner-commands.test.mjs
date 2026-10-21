@@ -5,7 +5,7 @@
  * run the unscoped name through npx (RUNNER_COMMAND_ALLOWLIST says where a
  * runner is allowed, and why).
  *
- * The matcher is the one `doctor integration docs` holds integrations to
+ * The matcher is the one `doctor integration validate` holds integrations to
  * (runnerCommandsIn). Core's own docs are held one step further: outside the
  * named runner examples they do not write the scoped `npx @astryxdesign/cli`
  * either, because the docsite and the CLI add the runner.

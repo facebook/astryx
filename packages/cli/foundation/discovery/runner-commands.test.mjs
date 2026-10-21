@@ -1,11 +1,16 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {describe, expect, it} from 'vitest';
 
-import {CLI_COMMANDS, runnerCommandsIn} from './runner-commands.mjs';
+import {
+  CLI_COMMANDS,
+  findRunnerCommands,
+  runnerCommandsIn,
+} from './runner-commands.mjs';
 
 const COMMAND_DOCS = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -77,6 +82,35 @@ describe('runnerCommandsIn', () => {
       {written: 'npx -y astryx doctor', bare: 'astryx doctor', download: true},
       {written: 'npx --yes astryx', bare: 'astryx', download: true},
     ]);
+  });
+});
+
+describe('findRunnerCommands', () => {
+  it('reads a topic that refers back to itself once, without crashing', async () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'runner-self-'));
+    const file = path.join(dir, 'acme-setup.doc.mjs');
+    fs.writeFileSync(
+      file,
+      [
+        'const section = {',
+        "  title: 'Overview',",
+        "  content: [{type: 'prose', text: 'Run `yarn astryx docs` first.'}],",
+        '};',
+        "const doc = {type: 'generic', name: 'acme-setup', sections: [section]};",
+        'section.self = section;',
+        'doc.again = doc;',
+        'export default doc;',
+        '',
+      ].join('\n'),
+    );
+
+    const found = await findRunnerCommands({
+      records: [{name: 'acme-setup', path: file}],
+    });
+
+    expect(
+      found.map(({command, section, line}) => ({command, section, line})),
+    ).toEqual([{command: 'yarn astryx docs', section: 'Overview', line: 3}]);
   });
 });
 

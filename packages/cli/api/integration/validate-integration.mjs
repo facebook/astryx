@@ -37,8 +37,7 @@ import {assertWithin} from '../../foundation/fs/path-safety.mjs';
 import {normalizeProviderId} from '../../foundation/identity/provider-identity.mjs';
 import {integrationDocTypes} from '../docs/_adapter.mjs';
 import {integrationDocConsistency} from '../../foundation/discovery/doc-consistency.mjs';
-import {discoverIntegrationDocs} from '../../foundation/discovery/docs-discovery.mjs';
-import {findRunnerCommands} from '../../foundation/discovery/runner-commands.mjs';
+import {integrationRunnerCommands} from './_adapter.mjs';
 import {
   THEME_SLUG_RE,
   unreadThemeFolders,
@@ -648,19 +647,13 @@ export async function validateInstalledIntegration(spec, cwd = process.cwd()) {
 /**
  * The runner-command notes for a package's topics: each Astryx command a topic
  * writes with a package runner, where the doc file is, and the bare command to
- * write. A topic that does not load is reported by the other checks.
+ * write.
  * @param {any} integration a loaded integration
  * @returns {Promise<Array<{code: string, message: string}>>}
  */
 async function runnerCommandNotes(integration) {
-  let discovered;
-  try {
-    discovered = await discoverIntegrationDocs(integration);
-  } catch {
-    return [];
-  }
   const packageDir = integration.__packageDir;
-  return (await findRunnerCommands(discovered)).map(each => ({
+  return (await integrationRunnerCommands(integration)).map(each => ({
     code: 'runner_command',
     message:
       typeof packageDir === 'string'

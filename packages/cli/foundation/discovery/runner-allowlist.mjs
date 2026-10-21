@@ -14,7 +14,7 @@
  *   project's runner may (still never the unscoped name through npx).
  *
  * The matcher is runnerCommandsIn (foundation/discovery/runner-commands.mjs),
- * the rule `doctor integration docs` holds integrations to.
+ * the rule `doctor integration validate` holds integrations to.
  *
  * @input  nothing
  * @output the allowlist
