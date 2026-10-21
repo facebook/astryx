@@ -1821,9 +1821,11 @@ describe('Selector', () => {
       expect(screen.getByRole('combobox')).toHaveFocus();
     });
 
-    it('trigger is not focusable when disabled', () => {
+    it('trigger keeps its tab stop when disabled (spec:AST-085 FR1)', () => {
       render(<Selector label="Fruit" options={OPTIONS} isDisabled />);
-      expect(screen.getByRole('combobox')).toHaveAttribute('tabIndex', '-1');
+      const trigger = screen.getByRole('combobox');
+      expect(trigger).toHaveAttribute('tabIndex', '0');
+      expect(trigger).toHaveAttribute('aria-disabled', 'true');
     });
 
     it('opens the listbox with ArrowDown from a focused trigger', async () => {
@@ -2715,11 +2717,12 @@ describe('Selector', () => {
       expect(onChange).not.toHaveBeenCalled();
     });
 
-    it('remains non-focusable when disabled without a reason', () => {
+    it('stays focusable when disabled without a reason (spec:AST-085 FR1)', () => {
       render(<Selector label="Fruit" options={OPTIONS} isDisabled />);
       const trigger = screen.getByRole('combobox');
-      expect(trigger).toBeDisabled();
-      expect(trigger).toHaveAttribute('tabIndex', '-1');
+      expect(trigger).not.toHaveAttribute('disabled');
+      expect(trigger).toHaveAttribute('aria-disabled', 'true');
+      expect(trigger).toHaveAttribute('tabIndex', '0');
     });
   });
   describe('isReadOnly', () => {

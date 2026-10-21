@@ -1874,6 +1874,9 @@ export function Selector<T extends SelectorOptionType>(
 
   const triggerSharedProps: React.HTMLAttributes<HTMLElement> = {
     ...rest,
+    // A disabled trigger stays focusable, so it must not run a caller's
+    // press handler either (`spec:AST-085` FR2).
+    onClick: isDisabled ? undefined : rest.onClick,
     id: triggerId,
     // A caller's description is kept alongside the field's own.
     'aria-describedby':
@@ -1892,7 +1895,7 @@ export function Selector<T extends SelectorOptionType>(
       onFocus?.(event);
       surface.onTriggerFocus(event);
     },
-    tabIndex: isDisabled && !showsDisabledMessage ? -1 : 0,
+    tabIndex: 0,
     ...stylex.props(
       styles.trigger,
       isEffectivelyReadOnly && styles.triggerReadOnly,
@@ -1991,22 +1994,15 @@ export function Selector<T extends SelectorOptionType>(
               ? getItemId(highlightedIndex)
               : undefined
           }
-          // With a disabledMessage the trigger keeps focusability via
-          // aria-disabled so the reason is focus-discoverable; activation is
-          // still blocked by the isDisabled guards in useCombobox.
-          disabled={isDisabled && !showsDisabledMessage}
-          aria-disabled={showsDisabledMessage ? 'true' : undefined}>
+          // A disabled trigger keeps its tab stop and says so through
+          // aria-disabled (`spec:AST-085` FR1); the isDisabled guards in
+          // useCombobox block every way of opening it.
+          aria-disabled={isDisabled ? 'true' : undefined}>
           {valueContent}
         </button>
-        {htmlName != null && (
-          <input
-            type="hidden"
-            name={htmlName}
-            value={value ?? ''}
-            // Disabled native controls are excluded from form submission;
-            // mirror that for the hidden carrier.
-            disabled={isDisabled}
-          />
+        {/* A disabled selector submits no value (`spec:AST-085` FR3). */}
+        {htmlName != null && !isDisabled && (
+          <input type="hidden" name={htmlName} value={value ?? ''} />
         )}
         {isBusy && <Spinner size="sm" />}
         {hasClear && value != null && !isDisabled && !isEffectivelyReadOnly && (

@@ -2428,8 +2428,12 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
       onFocus?.(event);
       surface.onTriggerFocus(event);
     },
-    onClick: composeEventHandlers(handleTriggerButtonClick, onClick),
-    tabIndex: isDisabled && !showsDisabledMessage ? -1 : 0,
+    // A disabled trigger stays focusable, so it must not run a caller's
+    // press handler either (`spec:AST-085` FR2).
+    onClick: isDisabled
+      ? undefined
+      : composeEventHandlers(handleTriggerButtonClick, onClick),
+    tabIndex: 0,
     ...stylex.props(
       styles.trigger,
       isEffectivelyReadOnly && styles.triggerReadOnly,
@@ -2496,14 +2500,9 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
       <>
         {renderTrigger(triggerProps)}
         {htmlName != null &&
+          !isDisabled &&
           value.map(v => (
-            <input
-              key={v}
-              type="hidden"
-              name={htmlName}
-              value={v}
-              disabled={isDisabled}
-            />
+            <input key={v} type="hidden" name={htmlName} value={v} />
           ))}
         {selectionSurface}
       </>
@@ -2598,26 +2597,19 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
               ? activeDescendantId
               : undefined
           }
-          // With a disabledMessage the trigger keeps focusability via
-          // aria-disabled so the reason is focus-discoverable; activation is
-          // still blocked by the isDisabled guards in useMultiCombobox.
-          disabled={isDisabled && !showsDisabledMessage}
-          aria-disabled={showsDisabledMessage ? 'true' : undefined}>
+          // A disabled trigger keeps its tab stop and says so through
+          // aria-disabled (`spec:AST-085` FR1); the isDisabled guards in
+          // useMultiCombobox block every way of opening it.
+          aria-disabled={isDisabled ? 'true' : undefined}>
           <span {...stylex.props(styles.triggerContent)}>
             {renderTriggerContent()}
           </span>
         </button>
+        {/* A disabled selector submits no value (`spec:AST-085` FR3). */}
         {htmlName != null &&
+          !isDisabled &&
           value.map(v => (
-            <input
-              key={v}
-              type="hidden"
-              name={htmlName}
-              value={v}
-              // Disabled native controls are excluded from form submission;
-              // mirror that for the hidden carriers.
-              disabled={isDisabled}
-            />
+            <input key={v} type="hidden" name={htmlName} value={v} />
           ))}
         {isBusy && <Spinner size="sm" />}
         {hasClear &&
