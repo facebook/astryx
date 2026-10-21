@@ -105,6 +105,8 @@ announcement channel.
 - While a native modal dialog is open, the shared channel on the page body is
   not exposed to assistive technology until `spec:AST-003` admits it to modal
   hosting. Owners rehosted above the modal use their own containers (FR10).
+  Until then, an owner rendered inside a native modal announces through a
+  persistent region inside that modal (FR3) rather than the body-level channel.
 - Browser evidence: DOM and accessibility-tree checks prove routing (FR1–FR5,
   FR7–FR10). Spoken timing, order, and repetition (FR6 on real AT) require
   `spec:AST-009` FR4 evidence.
@@ -133,8 +135,9 @@ announcement channel.
   Comments history loaders): each composes a Spinner with
   `role="status"` inside the busy control. Under FR8 that Spinner is silent and
   each control announces its own busy state through the channel. Switch
-  already does; CommandPalette announces only typed-query loading, so its load on
-  opening or clearing the query still needs an announcement.
+  already does. CommandPalette opens as a native modal, so it announces each busy
+  start, including its load on opening or clearing the query, through a
+  persistent region inside its dialog (FR3).
 - ChatMessageList: its top loading Spinner is a `role="status"` child of the
   log. Under FR4 and FR8 it is silent, and ChatMessageList announces its loading
   through the channel.
@@ -166,7 +169,7 @@ announcement channel.
 | FR5      | Channel routing tests                                                   | Error, warning, success, loading                                                                                                                             | Routing an error to polite, or a success to assertive, fails                                                 |
 | FR6      | StrictMode and rerender tests on the channel spy                        | Busy start, repeated rerender, same-value update, new occasion                                                                                               | Two announcements for one occasion, or none for a new one, fails                                             |
 | FR7      | Accessibility-tree check of the visible message                         | FieldStatus attached/detached, toast card                                                                                                                    | Hiding the visible text or a word mismatch fails                                                             |
-| FR8      | Shared test: no live role inside a busy owner; channel spy on the owner | Busy TextInput, Selector, Switch thumb, ChatMessageList loader                                                                                               | A composed indicator with a live role or its own announcement, or a busy owner that announces nothing, fails |
+| FR8      | Shared test: no live role inside a busy owner; channel spy on the owner | Busy TextInput, Selector, Switch thumb, ChatMessageList loader, busy CommandPalette (region inside its dialog)                                               | A composed indicator with a live role or its own announcement, or a busy owner that announces nothing, fails |
 | FR9      | `useAnnounce` tests                                                     | First use, many components, region removed, server render                                                                                                    | A second region pair, or stale text after the clear delay, fails                                             |
 | FR10     | Accessibility-tree check with a Dialog open                             | Info and error toast shown over an open Dialog                                                                                                               | A toast that reaches only the body-level channel, or no exposed live container, fails                        |
 | FR6 (AT) | `spec:AST-009` real-AT receipt                                          | Toast, busy Switch, chat notice                                                                                                                              | Missing, repeated, or out-of-order speech fails                                                              |
