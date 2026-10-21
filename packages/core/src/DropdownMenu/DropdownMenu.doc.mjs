@@ -219,7 +219,13 @@ export const docs = {
       name: 'menuWidth',
       type: 'number | string',
       description:
-        'Minimum width for the popover presentation. Length values may grow for content; intrinsic and CSS-wide keywords select the preferred inline size. Every form is capped to the available viewport space. Defaults to matching the trigger width up to that cap.',
+        "Minimum width for the popover presentation. Length values may grow for content; intrinsic and CSS-wide keywords select the preferred inline size. Every form is capped to the available viewport space. Defaults to matching the anchor width up to that cap: the trigger's, or the anchorRef element's.",
+    },
+    {
+      name: 'anchorRef',
+      type: 'React.RefObject<HTMLElement | null>',
+      description:
+        "External ref to use as the menu's anchor, as on Popover. The popover presentation is placed against this element, with placement and alignment read against it, and takes its width by default, instead of the trigger's: a menu that lines up with a toolbar or a search row wider than its control. The trigger keeps focus and focus return, the press model, the keyboard opens and the menu's name. The ref is read whenever the menu renders, every open included, as on Popover: while it is empty (an element rendered only in some layouts, or a component that does not forward its ref), the trigger is the anchor, and an element that mounts while the menu is open is followed at the menu's next render. One that unmounts while the menu is open leaves it with no anchor until then, and the menu no longer slides to stay inside the viewport until it closes. Ignored by bottom-sheet presentation.",
     },
     {
       name: 'menuMaxHeight',
