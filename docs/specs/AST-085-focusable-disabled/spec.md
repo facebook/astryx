@@ -60,8 +60,10 @@ non-operable control. No component renders the native `disabled` attribute.
 - **FR5 — Disabled state is announced.** The disabled state is exposed to
   assistive technology on the focusable element itself, together with its
   accessible name and any description or disabled reason.
-- **FR6 — Disabled stays visibly inert.** Disabled paint applies whenever
-  `aria-disabled="true"` is present. Hover, pressed, and drag affordances MUST
+- **FR6 — Disabled stays visibly inert.** Disabled paint applies to the
+  disabled state. A control that is busy but not disabled keeps its pending
+  treatment (`family:buttons` FR4), even though it also exposes
+  `aria-disabled`. Hover, pressed, and drag affordances MUST
   NOT appear. The focus indicator still appears under keyboard modality
   (`architecture:interaction-modality` INV1, INV5).
 - **FR7 — Group disablement follows the same rule.** Members disabled by a group
@@ -81,6 +83,12 @@ non-operable control. No component renders the native `disabled` attribute.
   "follows `spec:AST-085`". Button already does this for busy and tooltip cases.
 - `family:input-fields` FR4 is satisfied for every member. "Focusable enough"
   becomes "focusable".
+- `component:DateRangeInput` AR3 and its disabled-preset state, and
+  `component:Tokenizer`'s disabled state and verification, follow this record
+  instead of native `disabled`.
+- Draft records for ClickableCard, BaseTypeahead, CheckboxInput, ChatComposer,
+  and CommentPin describe native `disabled` as observed behavior; they change
+  with conformance work.
 - `spec:AST-011` FR5 stays true: disabled focus, submission, and paint still win
   over read-only.
 - Components that render native `disabled` today switch to the FR1 shape. Text

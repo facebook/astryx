@@ -166,23 +166,23 @@ pending.
 
 ### Representative states
 
-| State                                      | Required invariant                                                                                                                                         | Allowed variation                                                                        |
-| ------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| Empty field                                | The mounted inner input is the opening control; a full-width menu stays aligned to the outer field.                                                        | Placeholder and bootstrap results may vary.                                              |
-| Focus bootstrap, choices remain            | A committed selection is removed from the displayed cohort; the input and popup remain active on the next valid remaining choice.                          | Internal cohort storage and projection may vary.                                         |
-| Focus bootstrap, selected choice was last  | The nearest preceding remaining choice becomes active without changing the displayed order.                                                                | Option identity representation may vary.                                                 |
-| Focus bootstrap, no choices or max reached | The popup closes and no active descendant remains; pending work cannot reopen it.                                                                          | Source cancellation mechanism may vary.                                                  |
-| Source pending or replaced                 | Busy semantics identify pending work; stale work cannot add choices or reopen a terminal popup.                                                            | A settled current cohort may be retained internally.                                     |
-| Disabled                                   | No choice can be committed; an open popup closes and clears its active descendant while disabled-reason focusability remains available where configured.   | Native-disabled or focusable-disabled representation follows current Tokenizer behavior. |
-| One or many tokens                         | The same input remains after tokens and moves with wrapping; full-width placement does not follow that movement.                                           | Token labels, wrapping rows, and custom content may vary.                                |
-| At `maxEntries`                            | The input identity remains mounted but its zero-width/hidden box is unusable as geometry; opening falls back to the outer field.                           | Search remains unavailable under current behavior.                                       |
-| Token removal or clear                     | Input identity survives and current refocus behavior remains.                                                                                              | Token count and input position change.                                                   |
-| `unfocusedInline`                          | Blurred OverflowList and focused direct-token layouts resolve the same live input identity; a collapsed input is not used as geometry.                     | Visible token count may vary with width.                                                 |
-| `unfocusedLayer`, focused                  | The live wrapper/input may be reparented into the context layer without descriptor churn.                                                                  | Corrective portal location may vary.                                                     |
-| `unfocusedLayer`, unfocused                | The hidden-layer input is unusable for a new open; the ordinary-flow outer-field fallback is used.                                                         | Placeholder token count may vary.                                                        |
-| Default or custom token edit               | The actual activated token/control is captured before edit state changes; if no usable descendant control exists, input then outer-field fallback applies. | Custom token markup may vary.                                                            |
-| LTR or RTL                                 | Physical proximity selects an edge only for a narrower surface; logical start wins ties and full-width placement.                                          | Collision may move the final rendered surface.                                           |
-| SSR, hydration, or unmount                 | No server geometry read occurs; first client open prepares normally; unmount clears identities and pending show work.                                      | Hydration timing may vary.                                                               |
+| State                                      | Required invariant                                                                                                                                         | Allowed variation                                         |
+| ------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
+| Empty field                                | The mounted inner input is the opening control; a full-width menu stays aligned to the outer field.                                                        | Placeholder and bootstrap results may vary.               |
+| Focus bootstrap, choices remain            | A committed selection is removed from the displayed cohort; the input and popup remain active on the next valid remaining choice.                          | Internal cohort storage and projection may vary.          |
+| Focus bootstrap, selected choice was last  | The nearest preceding remaining choice becomes active without changing the displayed order.                                                                | Option identity representation may vary.                  |
+| Focus bootstrap, no choices or max reached | The popup closes and no active descendant remains; pending work cannot reopen it.                                                                          | Source cancellation mechanism may vary.                   |
+| Source pending or replaced                 | Busy semantics identify pending work; stale work cannot add choices or reopen a terminal popup.                                                            | A settled current cohort may be retained internally.      |
+| Disabled                                   | No choice can be committed; an open popup closes and clears its active descendant while disabled-reason focusability remains available where configured.   | The disabled representation follows `spec:AST-085`.       |
+| One or many tokens                         | The same input remains after tokens and moves with wrapping; full-width placement does not follow that movement.                                           | Token labels, wrapping rows, and custom content may vary. |
+| At `maxEntries`                            | The input identity remains mounted but its zero-width/hidden box is unusable as geometry; opening falls back to the outer field.                           | Search remains unavailable under current behavior.        |
+| Token removal or clear                     | Input identity survives and current refocus behavior remains.                                                                                              | Token count and input position change.                    |
+| `unfocusedInline`                          | Blurred OverflowList and focused direct-token layouts resolve the same live input identity; a collapsed input is not used as geometry.                     | Visible token count may vary with width.                  |
+| `unfocusedLayer`, focused                  | The live wrapper/input may be reparented into the context layer without descriptor churn.                                                                  | Corrective portal location may vary.                      |
+| `unfocusedLayer`, unfocused                | The hidden-layer input is unusable for a new open; the ordinary-flow outer-field fallback is used.                                                         | Placeholder token count may vary.                         |
+| Default or custom token edit               | The actual activated token/control is captured before edit state changes; if no usable descendant control exists, input then outer-field fallback applies. | Custom token markup may vary.                             |
+| LTR or RTL                                 | Physical proximity selects an edge only for a narrower surface; logical start wins ties and full-width placement.                                          | Collision may move the final rendered surface.            |
+| SSR, hydration, or unmount                 | No server geometry read occurs; first client open prepares normally; unmount clears identities and pending show work.                                      | Hydration timing may vary.                                |
 
 ### Transformation and precedence order
 
@@ -282,8 +282,8 @@ consumer docs, and Changeset together. Exact-head browser evidence must exercise
    next remaining option active.
 2. The fallback when the committed option was last, plus terminal closure for no
    remaining choice and `maxEntries`.
-3. Escape, Tab or outside focus departure, transition to native-disabled and
-   focusable-disabled states, and pending or stale source settlement without a
+3. Escape, Tab or outside focus departure, transition to the disabled state,
+   and pending or stale source settlement without a
    later reopen.
 4. The unchanged path when `hasEntriesOnFocus` is off and direct single-select
    BaseTypeahead selection still closes.

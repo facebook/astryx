@@ -90,12 +90,12 @@ preset-list anatomy and its additive theming surface.
 
 ### Representative states
 
-| State             | Required invariant                                                                                                                          | Allowed variation       |
-| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------- |
-| No presets        | No preset group or preset-button target renders.                                                                                            | Calendar configuration  |
-| Presets, no match | Every button carries the preset target with no selected state.                                                                              | Preset count and labels |
-| Applied preset    | The matching button carries `aria-current="true"` and the target's selected state.                                                          | Selected range          |
-| Disabled preset   | A preset that violates an endpoint date constraint or a range-span constraint is natively disabled and carries the target's disabled state. | Constraint source       |
+| State             | Required invariant                                                                                                                                    | Allowed variation       |
+| ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------- |
+| No presets        | No preset group or preset-button target renders.                                                                                                      | Calendar configuration  |
+| Presets, no match | Every button carries the preset target with no selected state.                                                                                        | Preset count and labels |
+| Applied preset    | The matching button carries `aria-current="true"` and the target's selected state.                                                                    | Selected range          |
+| Disabled preset   | A preset that violates an endpoint date constraint or a range-span constraint is disabled per `spec:AST-085` and carries the target's disabled state. | Constraint source       |
 
 ### Transformation and precedence order
 
@@ -120,8 +120,8 @@ No new performance or resource constraint is introduced.
 - **AR2 — Current state.** The applied preset remains exposed with
   `aria-current="true"`; theme state reflection is additive.
 - **AR3 — Disabled state.** A preset that violates an endpoint date constraint or
-  a range-span constraint remains natively disabled; theme state reflection does
-  not replace that behavior.
+  a range-span constraint is disabled and stays focusable (`spec:AST-085`); theme
+  state reflection does not replace that behavior.
 
 ## Design relationships
 
