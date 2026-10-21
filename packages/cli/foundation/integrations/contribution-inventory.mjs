@@ -520,8 +520,11 @@ const TEMPLATE_DOC_SUFFIXES = [
   '.template.js',
 ];
 
-/** A `.tsx` whose stem has no further dot: not `x.test.tsx` or `x.stories.tsx`. */
-const PLAIN_TSX = /^([^.]+)\.tsx$/u;
+/** A `.tsx` source and its stem, which may hold a dot (`landing.page`). */
+const TSX_SOURCE = /^(.+)\.tsx$/u;
+
+/** A test, spec or story stem: never a template. */
+const NOT_A_TEMPLATE = /\.(?:test|spec|stories)$/u;
 
 /**
  * Find `.tsx` files directly in a templates root that have no same-stem
@@ -539,10 +542,8 @@ export function findTemplateSourceOnlyCandidates(templatesRoot) {
   const candidates = [];
   for (const entry of fs.readdirSync(templatesRoot, {withFileTypes: true})) {
     if (!entry.isFile() && !entry.isSymbolicLink()) continue;
-    // A template id may hold a dot (`landing.page`); only test, spec and
-    // story files are not templates.
-    const match = entry.name.match(/^(.+)\.tsx$/u);
-    if (!match || /\.(?:test|spec|stories)$/u.test(match[1])) continue;
+    const match = entry.name.match(TSX_SOURCE);
+    if (!match || NOT_A_TEMPLATE.test(match[1])) continue;
     const paired = TEMPLATE_DOC_SUFFIXES.some(suffix =>
       fs.existsSync(path.join(templatesRoot, `${match[1]}${suffix}`)),
     );
