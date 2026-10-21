@@ -85,8 +85,7 @@ announcement channel.
   the shown words.
 - **FR8 — Indicators inside an owner are silent.** A visual indicator composed
   inside a component that owns the task, such as a Spinner in a busy control,
-  announces nothing and carries no live role. The owning component announces
-  its busy state through the channel once per busy start (FR6).
+  announces nothing and carries no live role. The owning component announces its busy state once per busy start (FR6), through the channel or through a persistent region that FR3 allows.
   A standalone indicator is its own owner and follows FR2.
 - **FR9 — One shared channel per document.** The channel is one polite and one
   assertive region per document. They are created empty, stay mounted for the
@@ -133,10 +132,11 @@ announcement channel.
   DropdownMenuSubMenu, Thumbnail, and the lab EmojiPicker, Schedule, and
   Comments history loaders): each composes a Spinner with
   `role="status"` inside the busy control. Under FR8 that Spinner is silent and
-  each control announces its own busy state through the channel; Switch
-  already does.
+  each control announces its own busy state through the channel; Switch and
+  CommandPaletteInput already do.
 - ChatMessageList: its top loading Spinner is a `role="status"` child of the
-  log. Under FR4 and FR8 it is silent.
+  log. Under FR4 and FR8 it is silent, and ChatMessageList announces its loading
+  through the channel.
 - EmptyState, the ChatComposer status bar, and the chat trigger menu's loading
   row: each mounts a live role together with its text. Under FR2 the message
   goes through the channel and the element carries no live role.
