@@ -80,7 +80,7 @@
  * @property {'phrase' | 'density'} kind
  * @property {string | null} phrase the padding phrase, for `kind: 'phrase'`
  * @property {string | null} section the title of the section it is in
- * @property {string} file the doc file
+ * @property {string} file the doc file, relative to the package root
  * @property {number | null} line the file line that holds the phrase, when one line does
  * @property {number | null} density the share of content words, for `kind: 'density'`
  * @property {string} message what to cut or write instead
@@ -95,7 +95,7 @@
  * @typedef {object} StrayPointer
  * @property {string} topic the package topic that has it
  * @property {string | null} section the title of the section it is in
- * @property {string} file the doc file
+ * @property {string} file the doc file, relative to the package root
  * @property {number | null} line the file line that holds it, when found
  * @property {string} pointer the written command, `astryx docs <name>`
  * @property {string} link the link that replaces it

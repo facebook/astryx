@@ -18,6 +18,7 @@
  * @position Public integration-authoring API over private discovery adapters.
  */
 
+import path from 'node:path';
 import {getCliInvocation} from '../../foundation/env/package-manager.mjs';
 import {
   packageDocsProblems,
@@ -447,12 +448,29 @@ export async function integrationDocConflicts(pkg, options = {}) {
     }
     // Docs should be dense: padding phrases and mostly-glue topics, listed
     // and warned about the same way (DEC-8).
-    fluff.push(...(await integrationFluff(discovered)));
+    // Like the other findings' `doc`, a fluff or stray-pointer `file` is
+    // relative to the package root.
+    const packageDir = /** @type {any} */ (resolved.integration).__packageDir;
+    const fromPackage = (/** @type {string} */ file) =>
+      typeof packageDir === 'string'
+        ? path.relative(packageDir, file).split(path.sep).join('/')
+        : file;
+    fluff.push(
+      ...(await integrationFluff(discovered)).map(each => ({
+        ...each,
+        file: fromPackage(each.file),
+      })),
+    );
     for (const {message} of fluff) {
       issues.push({code: 'doc_fluff', severity: 'warning', message});
     }
     // A pointer to a doc is a link, so doctor checks it (DEC-8).
-    strayPointers.push(...(await integrationStrayPointers(discovered)));
+    strayPointers.push(
+      ...(await integrationStrayPointers(discovered)).map(each => ({
+        ...each,
+        file: fromPackage(each.file),
+      })),
+    );
     for (const {message} of strayPointers) {
       issues.push({code: 'stray_doc_pointer', severity: 'warning', message});
     }
