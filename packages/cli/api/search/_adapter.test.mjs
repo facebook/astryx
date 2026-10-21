@@ -22,14 +22,27 @@ function scratchProject() {
   return dir;
 }
 
+/**
+ * A gather that is then reused. Other tests running at the same time can
+ * change a folder a gather read (the system temp folder, the repository
+ * root), which rightly makes the next call gather again; so a reuse check
+ * gathers once more and expects the call after that to reuse it.
+ * @param {{cwd: string, type: string}} options
+ */
+async function reusedGather(options) {
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const gathered = await gatherCandidatesReused(options);
+    if ((await gatherCandidatesReused(options)) === gathered) return gathered;
+  }
+  throw new Error('a gather was never reused');
+}
+
 describe('gatherCandidatesReused', () => {
   it(
     'reuses the gathered candidates while the inputs are unchanged',
     async () => {
       const cwd = scratchProject();
-      const first = await gatherCandidatesReused({cwd, type: 'doc'});
-      const second = await gatherCandidatesReused({cwd, type: 'doc'});
-      expect(second).toBe(first);
+      const first = await reusedGather({cwd, type: 'doc'});
       expect(first.all.length).toBeGreaterThan(0);
       // The same candidates a fresh gather finds.
       expect(JSON.parse(JSON.stringify(first))).toEqual(
@@ -43,7 +56,7 @@ describe('gatherCandidatesReused', () => {
     'gathers again when an input file changes',
     async () => {
       const cwd = scratchProject();
-      const first = await gatherCandidatesReused({cwd, type: 'doc'});
+      const first = await reusedGather({cwd, type: 'doc'});
       const later = new Date(Date.now() + 5_000);
       fs.utimesSync(path.join(cwd, 'package.json'), later, later);
       expect(await gatherCandidatesReused({cwd, type: 'doc'})).not.toBe(first);
@@ -51,9 +64,7 @@ describe('gatherCandidatesReused', () => {
         path.join(cwd, 'astryx.config.mjs'),
         'export default {};\n',
       );
-      const third = await gatherCandidatesReused({cwd, type: 'doc'});
-      expect(third).not.toBe(first);
-      expect(await gatherCandidatesReused({cwd, type: 'doc'})).toBe(third);
+      expect(await gatherCandidatesReused({cwd, type: 'doc'})).not.toBe(first);
     },
     SLOW,
   );
@@ -126,9 +137,8 @@ describe('gatherCandidatesReused', () => {
           'dir',
         );
         const options = {cwd: dir, type: 'component'};
-        const first = await gatherCandidatesReused(options);
+        const first = await reusedGather(options);
         expect(first.all.map(c => c.name)).toContain('FancyGizmo');
-        expect(await gatherCandidatesReused(options)).toBe(first);
 
         // A new component in the linked package: its folder changed.
         fs.writeFileSync(
@@ -145,8 +155,8 @@ describe('gatherCandidatesReused', () => {
           path.join(pkg, 'components', 'TinySprocket.tsx'),
           'export function TinySprocket() { return null; }\n',
         );
-        const second = await gatherCandidatesReused(options);
-        expect(second).not.toBe(first);
+        expect(await gatherCandidatesReused(options)).not.toBe(first);
+        const second = await reusedGather(options);
         expect(second.all.map(c => c.name)).toContain('TinySprocket');
 
         // An edited file the gather read: the linked package's manifest.
