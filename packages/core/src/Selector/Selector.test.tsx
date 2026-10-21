@@ -36,7 +36,7 @@ import {InternationalizationProvider} from '../i18n';
 import {defineTheme} from '../theme/defineTheme';
 import {Theme} from '../theme/Theme';
 import {generateThemeCSS} from '../theme/generateThemeRules';
-import {spacingVars} from '../theme/tokens.stylex';
+import {colorVars, spacingVars} from '../theme/tokens.stylex';
 import {selectorPresentationStyles} from './selectorPresentation.stylex';
 import {groupStyles} from '../InputGroup/groupStyles';
 
@@ -301,6 +301,47 @@ describe('Selector', () => {
     expect(trigger.parentElement).toHaveClass(
       stylex.props(selectorPresentationStyles.pointerRestoredFocus).className!,
     );
+  });
+
+  it('keeps pointer-restored focus free of the field ring once disabled (spec:AST-085 FR6)', async () => {
+    const field = (isDisabled: boolean) => (
+      <Selector
+        label="Fruit"
+        options={OPTIONS}
+        onChange={() => {}}
+        presentation="bottom-sheet"
+        isDisabled={isDisabled}
+      />
+    );
+    const {rerender} = render(field(false));
+    const trigger = screen.getByRole('combobox');
+    fireEvent.pointerDown(trigger, {pointerType: 'touch'});
+    fireEvent.click(trigger, {detail: 1});
+    const option = await screen.findByRole('option', {name: /Banana/});
+    fireEvent.pointerDown(option, {pointerType: 'touch'});
+    fireEvent.click(option, {detail: 1});
+    rerender(field(true));
+
+    // The input wrapper's focus ring, matched by its StyleX hash (the last
+    // token; the dev build prefixes a debug name).
+    const ring = stylex
+      .props(
+        stylex.create({
+          ring: {
+            boxShadow: {
+              default: null,
+              ':focus-within': `inset 0px 0px 0px 2px ${colorVars['--color-accent-muted']}`,
+            },
+          },
+        }).ring,
+      )
+      .className!.split(' ')
+      .pop()!;
+    const wrapper = screen.getByRole('combobox').parentElement!;
+    expect(wrapper).toHaveClass(
+      stylex.props(selectorPresentationStyles.pointerRestoredFocus).className!,
+    );
+    expect(wrapper).not.toHaveClass(ring);
   });
 
   it('uses content-hugging height without extra bottom content padding', () => {

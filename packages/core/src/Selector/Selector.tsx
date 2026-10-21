@@ -1923,6 +1923,9 @@ export function Selector<T extends SelectorOptionType>(
           }),
           stylex.props(
             inputWrapperStyles.base,
+            // Before the variant and pointer-restore styles, so a disabled
+            // trigger keeps their ring rules while showing focus (AST-085 FR6).
+            isDisabled && inputWrapperStyles.disabled,
             styles.triggerContainer,
             sizeStyles[size],
             variant === 'ghost' && styles.triggerGhost,
@@ -1931,7 +1934,6 @@ export function Selector<T extends SelectorOptionType>(
             variant !== 'input' && focusOutlineStyles.focusWithin,
             surface.isTriggerFocusRingSuppressed &&
               selectorPresentationStyles.pointerRestoredFocus,
-            isDisabled && inputWrapperStyles.disabled,
             isEffectivelyReadOnly && styles.triggerReadOnly,
             variant !== 'input' && isDisabled && styles.triggerGhostDisabled,
             variant !== 'input' &&

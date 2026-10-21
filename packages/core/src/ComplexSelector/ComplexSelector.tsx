@@ -730,6 +730,9 @@ export function ComplexSelector<Value>({
           }),
           stylex.props(
             inputWrapperStyles.base,
+            // Before the variant styles, so a disabled trigger keeps their
+            // ring rules while showing focus (AST-085 FR6).
+            isDisabled && inputWrapperStyles.disabled,
             styles.triggerContainer,
             styles[size],
             // The ring belongs to the wrapper (the focusable `<button>` sits
@@ -740,7 +743,6 @@ export function ComplexSelector<Value>({
             variant === 'secondary' && styles.triggerSecondary,
             variant === 'ghost' && styles.triggerGhost,
             variant !== 'input' && interactionOverlayStyles.backgroundImage,
-            isDisabled && inputWrapperStyles.disabled,
             variant !== 'input' && isDisabled && styles.triggerGhostDisabled,
             isDisabled && styles.disabled,
             triggerLabel == null && styles.placeholder,

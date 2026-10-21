@@ -2532,6 +2532,9 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
           }),
           stylex.props(
             inputWrapperStyles.base,
+            // Before the variant and pointer-restore styles, so a disabled
+            // trigger keeps their ring rules while showing focus (AST-085 FR6).
+            isDisabled && inputWrapperStyles.disabled,
             styles.triggerContainer,
             sizeStyles[size],
             variant === 'secondary' && styles.triggerSecondary,
@@ -2540,7 +2543,6 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
             variant !== 'input' && focusOutlineStyles.focusWithin,
             surface.isTriggerFocusRingSuppressed &&
               selectorPresentationStyles.pointerRestoredFocus,
-            isDisabled && inputWrapperStyles.disabled,
             isEffectivelyReadOnly && styles.triggerReadOnly,
             variant !== 'input' && isDisabled && styles.triggerGhostDisabled,
             variant !== 'input' &&
