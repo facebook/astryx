@@ -1631,6 +1631,16 @@ jobs:
             --project chromium \
             --output tooltip-hover-bridge-output
 
+      # A DropdownMenuRadioGroup's indicatorPosition puts every row's radio mark
+      # on the edge it names, as Selector's does, while the rows stay
+      # menuitemradio. Where the mark paints only exists in a real engine.
+      - name: Run DropdownMenu radio mark position contract
+        run: |
+          pnpm exec playwright test \
+            packages/core/src/DropdownMenu/__tests__/DropdownMenuRadioPosition.a11y.chromium.spec.ts \
+            --project chromium \
+            --output dropdown-menu-radio-position-output
+
       # A Token's remove target is enlarged past its 16px X, and only a real
       # engine hit-tests it: a press on the end of the value beside the X must
       # run the token's own action, and a press just outside the X must remove.
