@@ -17,8 +17,15 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {spawnSync} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
-import {validateLocalIntegration} from './validate-integration.mjs';
-import {integrationCheck} from './check/check.mjs';
+import {
+  validateIntegration,
+  validateLocalIntegration,
+} from './validate-integration.mjs';
+import {
+  integrationCheck,
+  strictIssues,
+  summarizeCheck,
+} from './check/check.mjs';
 
 const CLI = fileURLToPath(
   new URL('../../clients/cli/bin/astryx.mjs', import.meta.url),
@@ -105,20 +112,21 @@ async function issuesOf(dir) {
 }
 
 /**
- * The layout findings validate lists without counting (its `layout` report).
+ * The notes validate lists beside its issues, which count nowhere: the layout
+ * findings added after the last minor release, each with its fix.
  * @param {string} dir
+ * @returns {Promise<Array<{code: string, message: string}>>}
  */
 async function listedOf(dir) {
-  return (await validateLocalIntegration(dir)).listed ?? [];
+  return (await validateIntegration(undefined, {cwd: dir})).data.notes ?? [];
 }
 
 /**
- * Issues and listed findings together: what a followed fix must clear.
+ * Issues and notes together: what a followed fix must clear.
  * @param {string} dir
  */
 async function allOf(dir) {
-  const result = await validateLocalIntegration(dir);
-  return [...result.issues, ...(result.listed ?? [])];
+  return [...(await issuesOf(dir)), ...(await listedOf(dir))];
 }
 
 /**
@@ -224,7 +232,7 @@ describe('component doc files', () => {
 });
 
 describe('a hidden doc beside a source whose name differs only in case', () => {
-  it('lists, without an issue, a hidden doc whose name differs from its source only in case', async () => {
+  it('keeps the source warning 0.7.2 gives where the hidden doc does not pair, as on Linux', async () => {
     const dir = writePackage({
       [MANIFEST]: manifest({components: './components'}),
       'components/Acmewidget.doc.mjs': componentDoc('AcmeWidget').replace(
@@ -234,15 +242,14 @@ describe('a hidden doc beside a source whose name differs only in case', () => {
       'components/AcmeWidget.tsx': componentSource('AcmeWidget'),
     });
 
-    expect(await issuesOf(dir)).toEqual([]);
-    expect(await listedOf(dir)).toEqual([
-      {
-        code: 'source_without_component_doc',
-        severity: 'warning',
-        message:
-          'Hidden component doc "Acmewidget.doc.mjs" and its source "AcmeWidget.tsx" differ only in letter case. They pair on a case-insensitive disk (macOS, Windows) but not on Linux, where CI and most installs run. Fix: rename Acmewidget.doc.mjs to AcmeWidget.doc.mjs.',
-      },
+    const issues = await issuesOf(dir);
+    expect(issues.map(issue => [issue.code, issue.severity])).toEqual([
+      ['source_without_component_doc', 'warning'],
     ]);
+    expect(issues[0].message).toMatch(
+      /^Component source "AcmeWidget\.tsx" has no same-stem metadata file AcmeWidget\.doc\.mjs, so Astryx ignores it\. Fix: /u,
+    );
+    expect(await listedOf(dir)).toEqual([]);
   });
 });
 
@@ -339,19 +346,14 @@ describe('package.json', () => {
         check.response.data.issues.map(issue => [issue.code, issue.severity]),
       ).toEqual([['invalid_component', 'error']]);
     }
-    const validate = /** @type {any} */ (result.data.checks[0].response.data);
-    expect(validate.layout).toEqual({
-      status: 'checked',
-      findings: [
-        {
-          code: 'invalid_package_json',
-          severity: 'info',
-          message:
-            'package.json has no "name", so npm cannot pack or publish the package, and a project that installs it has no name to select it by. Fix: add "name": "@your-scope/your-package" to package.json.',
-          fix: 'add "name": "@your-scope/your-package" to package.json.',
-        },
-      ],
-    });
+    const validate = result.data.checks[0].response.data;
+    expect('notes' in validate ? validate.notes : undefined).toEqual([
+      {
+        code: 'invalid_package_json',
+        message:
+          'package.json has no "name", so npm cannot pack or publish the package, and a project that installs it has no name to select it by. Fix: add "name": "@your-scope/your-package" to package.json.',
+      },
+    ]);
     expect(result.data.failed).toBe(true);
   });
 
@@ -688,6 +690,32 @@ describe('unreadable files and theme names', () => {
 });
 
 describe('layout findings 0.7.2 did not fail on', () => {
+  it('never fails --strict on a note: notes count nowhere', () => {
+    /** @type {any} */
+    const response = {
+      type: 'integration.validate',
+      data: {
+        validated: true,
+        name: '@acme/kit',
+        version: '1.0.0',
+        issues: [],
+        notes: [
+          {code: 'duplicate_component_doc', message: 'Two docs. Fix: one.'},
+        ],
+      },
+    };
+    expect(strictIssues('validate', response)).toEqual({
+      warnings: [],
+      skipped: [],
+    });
+    expect(summarizeCheck(response)).toEqual({
+      errors: 0,
+      warnings: 0,
+      skipped: [],
+      failed: false,
+    });
+  });
+
   const asRoot = process.getuid?.() === 0;
 
   /** @type {Array<[string, () => string]>} */
@@ -736,18 +764,6 @@ describe('layout findings 0.7.2 did not fail on', () => {
           {version: '1.0.0'},
         ),
     ],
-    [
-      'a hidden doc whose name differs from its source only in case',
-      () =>
-        writePackage({
-          [MANIFEST]: manifest({components: './components'}),
-          'components/Acmewidget.doc.mjs': componentDoc('AcmeWidget').replace(
-            "type: 'component',",
-            "type: 'component',\n  hidden: true,",
-          ),
-          'components/AcmeWidget.tsx': componentSource('AcmeWidget'),
-        }),
-    ],
     ...(asRoot
       ? []
       : /** @type {Array<[string, () => string]>} */ ([
@@ -767,7 +783,7 @@ describe('layout findings 0.7.2 did not fail on', () => {
   ];
 
   it.each(layouts)(
-    'lists %s in the layout report and passes integration check --strict',
+    'lists %s as a note and passes integration check --strict',
     async (_label, make) => {
       const dir = make();
       try {
@@ -777,10 +793,10 @@ describe('layout findings 0.7.2 did not fail on', () => {
         const validate = /** @type {any} */ (
           result.data.checks[0].response.data
         );
-        expect(validate.layout.findings.length).toBeGreaterThan(0);
-        for (const finding of validate.layout.findings) {
-          expect(finding.severity).toBe('info');
-          expect(finding.message).toContain(`Fix: ${finding.fix}`);
+        expect(validate.notes.length).toBeGreaterThan(0);
+        for (const note of validate.notes) {
+          expect(Object.keys(note).sort()).toEqual(['code', 'message']);
+          expect(note.message).toContain('Fix: ');
         }
       } finally {
         const file = path.join(dir, 'components', 'AcmeWidget.tsx');
@@ -789,7 +805,7 @@ describe('layout findings 0.7.2 did not fail on', () => {
     },
   );
 
-  it('prints layout findings as [info] lines and counts none of them', () => {
+  it('prints the notes and counts none of them', () => {
     const dir = writePackage({
       [MANIFEST]: manifest({components: './components'}),
       'components/AcmeWidget.doc.mjs': componentDoc('AcmeWidget'),
@@ -804,7 +820,7 @@ describe('layout findings 0.7.2 did not fail on', () => {
     );
     expect(run.status, run.stderr).toBe(0);
     expect(run.stdout).toContain(
-      '[info] duplicate_component_doc: Component "AcmeWidget" has 2 docs:',
+      'note (duplicate_component_doc): Component "AcmeWidget" has 2 docs:',
     );
     expect(run.stdout).toContain('Summary: 0 errors, 0 warnings');
   });

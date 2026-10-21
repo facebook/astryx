@@ -460,6 +460,8 @@ async function checkComponents(integration, issues) {
       }
       issues.push(issueError('invalid_component', `${error.message} ${fix}`));
     }
+    /** @type {Set<string>} sources a case-only rename is reported for */
+    const reportedSources = new Set();
     for (const [docPath, source] of files.caseMismatch) {
       const doc = path.basename(docPath);
       const renamed = `${source.slice(0, -'.tsx'.length)}${doc.slice(docStemOf(doc).length)}`;
@@ -467,16 +469,22 @@ async function checkComponents(integration, issues) {
       const linux = `They pair on a case-insensitive disk (macOS, Windows) but not on Linux, where CI and most installs run`;
       const fix = `Fix: rename ${doc} to ${renamed}.`;
       // Where discovery still pairs the doc with its source (a
-      // case-insensitive disk), or the doc is hidden and lists nothing, the
-      // component works here: a warning, as validate exited 0 for it before.
-      if (componentDiscovery.isHiddenComponentDoc(docPath)) {
+      // case-insensitive disk), the component works here: listed, as
+      // validate passed it before. A hidden doc that does not pair leaves its
+      // source without a doc, which the source check below reports as it
+      // always has (architecture:cli-surface INV37).
+      const pairs = componentDiscovery.integrationSourceForDoc(docPath) != null;
+      const hidden = componentDiscovery.isHiddenComponentDoc(docPath);
+      if (hidden && !pairs) continue;
+      reportedSources.add(path.join(path.dirname(docPath), source));
+      if (hidden) {
         issues.push(
           issueListed(
             'source_without_component_doc',
             `Hidden component doc "${shown}" and its source "${source}" differ only in letter case. ${linux}. ${fix}`,
           ),
         );
-      } else if (componentDiscovery.integrationSourceForDoc(docPath) != null) {
+      } else if (pairs) {
         issues.push(
           issueListed(
             'source_without_component_doc',
@@ -520,9 +528,7 @@ async function checkComponents(integration, issues) {
         continue;
       }
       // A doc whose name differs only in case is reported above.
-      if (files.caseMismatchSources.has(path.join(root, `${name}.tsx`))) {
-        continue;
-      }
+      if (reportedSources.has(path.join(root, `${name}.tsx`))) continue;
       issues.push(
         issueWarning(
           'source_without_component_doc',
@@ -555,8 +561,6 @@ function docStemOf(file) {
 function componentDocFiles(root) {
   /** @type {Map<string, string>} doc path -> the source's real file name */
   const caseMismatch = new Map();
-  /** @type {Set<string>} */
-  const caseMismatchSources = new Set();
   /** @type {Array<{read: string, ignored: string[]}>} */
   const duplicates = [];
   /** @param {string} dir */
@@ -594,7 +598,6 @@ function componentDocFiles(root) {
         )
       ) {
         caseMismatch.set(full, other);
-        caseMismatchSources.add(path.join(dir, other));
       }
     }
     for (const docs of byStem.values()) {
@@ -611,7 +614,7 @@ function componentDocFiles(root) {
     }
   };
   walk(root);
-  return {caseMismatch, caseMismatchSources, duplicates};
+  return {caseMismatch, duplicates};
 }
 
 /**

@@ -84,9 +84,10 @@ export {validateLoadedIntegration, isListedIssue};
  * @property {Issue[]} issues
  * @property {Array<{code: string, message: string}>} [notes] Information that
  *   fails nothing, such as `invalid_cli_command` (a malformed `cliCommand`).
- * @property {Issue[]} [listed] Layout findings validate lists in its `layout`
- *   report without counting them: added after the last minor release, they
- *   may not fail `--strict` until the next (architecture:cli-surface INV35).
+ * @property {Issue[]} [listed] Layout findings added after the last minor
+ *   release: validate lists them as notes, which count nowhere, since they
+ *   may not fail `--strict` until the next (architecture:cli-surface INV35);
+ *   `integration verify` still fails on a package.json npm cannot pack.
  * @property {import('../../foundation/integrations/integrations.mjs').LoadedIntegration} [integration]
  */
 
@@ -664,15 +665,19 @@ export async function validateIntegration(pkg, options = {}) {
   const docTypes = integration
     ? await integrationDocTypes(integration, cwd)
     : undefined;
-  const notes = result.found ? (result.notes ?? []) : [];
-  // Layout findings added after the last minor release: listed with their
-  // fix, never counted (architecture:cli-surface INV35).
-  const layout = result.found
-    ? {
-        status: /** @type {const} */ ('checked'),
-        findings: (result.listed ?? []).map(layoutFinding),
-      }
-    : undefined;
+  // Notes fail nothing: a malformed `cliCommand`, and the layout findings
+  // added after the last minor release, each with its fix in the message,
+  // which may not fail `--strict` until the next (architecture:cli-surface
+  // INV35).
+  const notes = result.found
+    ? [
+        ...(result.notes ?? []),
+        ...(result.listed ?? []).map(issue => ({
+          code: issue.code,
+          message: issue.message,
+        })),
+      ]
+    : [];
   return {
     type: 'integration.validate',
     data: {
@@ -694,30 +699,7 @@ export async function validateIntegration(pkg, options = {}) {
           : result.issues,
       ...(notes.length > 0 ? {notes} : {}),
       ...(docTypes ? {docTypes} : {}),
-      ...(layout ? {layout} : {}),
     },
-  };
-}
-
-/**
- * A listed issue as a `layout` finding: its code, message, fix and location,
- * at `info` severity, which nothing counts.
- * @param {Issue} issue
- * @returns {import('./validate-integration.type.mjs').LayoutFinding}
- */
-function layoutFinding(issue) {
-  const fix =
-    issue.fix ??
-    (issue.message.includes('Fix: ')
-      ? issue.message.slice(issue.message.lastIndexOf('Fix: ') + 'Fix: '.length)
-      : undefined);
-  return {
-    code: issue.code,
-    severity: 'info',
-    message: issue.message,
-    ...(fix != null ? {fix} : {}),
-    ...(issue.file != null ? {file: issue.file} : {}),
-    ...(issue.line != null ? {line: issue.line} : {}),
   };
 }
 
