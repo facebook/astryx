@@ -212,6 +212,10 @@ depends only on runtimes it can maintain.
     supported OS version of each platform, including a lower-end device.
   - **Experience:** conformance to platform conventions and to the core
     contract (FR3), judged per scenario step.
+  - **Brand preservation:** how recognizably the theme's identity, its color,
+    typography, shape, spacing, and icons, carries to the platform while the
+    screen stays native-first, judged against the web rendering of the same
+    theme, plus checks that the theme's resolved values are honored.
   - **Performance:** time to first content, frame pacing and dropped frames
     during each scenario, input-to-response latency, memory, and the size the
     approach adds to an app.
