@@ -32,6 +32,7 @@ import {
   installedComponentPackageVersion,
   resolveComponentReplacement,
   unscopedComponentOwners,
+  linkComponentResponse,
 } from './_adapter.mjs';
 import {componentList} from './list/list.mjs';
 import {componentDetail} from './detail/detail.mjs';
@@ -257,6 +258,23 @@ async function componentBatch(selectors, options, coreDir) {
  * )>}
  */
 export async function component(name, options = {}) {
+  // Every read resolves the links in the doc text it returns (spec:AST-047
+  // FR9); a batch's results are each a read of their own.
+  return /** @type {any} */ (
+    await linkComponentResponse(
+      await componentRead(name, options),
+      options.cwd ?? process.cwd(),
+    )
+  );
+}
+
+/**
+ * {@link component}, with each `{@link}` in its doc text as written.
+ * @param {string|string[]} [name]
+ * @param {Parameters<typeof component>[1]} [options]
+ * @returns {ReturnType<typeof component>}
+ */
+async function componentRead(name, options = {}) {
   const {
     cwd = process.cwd(),
     list = false,
@@ -357,7 +375,7 @@ export async function component(name, options = {}) {
       requireInstalledSelectorVersion(target, coreDir, loadedIntegrations);
     }
     if (target.name !== name || target.package !== packageScope) {
-      return component(target.name, {...options, package: target.package});
+      return componentRead(target.name, {...options, package: target.package});
     }
     name = target.name;
   }
@@ -396,7 +414,10 @@ export async function component(name, options = {}) {
         dirName,
       );
       if (replacement?.package === packageScope) {
-        return component(replacement.name, {...options, package: packageScope});
+        return componentRead(replacement.name, {
+          ...options,
+          package: packageScope,
+        });
       }
     }
     const scoped = classifyScope(packageScope, {
@@ -424,8 +445,17 @@ export async function component(name, options = {}) {
       // a showcase, so skip discovery entirely.
       if (showcase) {
         return scoped.kind === 'core'
-          ? componentDetailShowcase(dirName, {cwd, name, ownerPackage: owner.package})
-          : componentDetailShowcase(dirName, {cwd, name, resolve: false, ownerPackage: owner.package});
+          ? componentDetailShowcase(dirName, {
+              cwd,
+              name,
+              ownerPackage: owner.package,
+            })
+          : componentDetailShowcase(dirName, {
+              cwd,
+              name,
+              resolve: false,
+              ownerPackage: owner.package,
+            });
       }
       if (blocks) {
         return componentDetailBlocks(dirName, cwd, owner.package);
@@ -443,7 +473,12 @@ export async function component(name, options = {}) {
 
     // Legacy `pkg.astryx.docs` external package.
     if (showcase) {
-      return componentDetailShowcase(dirName, {cwd, name, packageScope, ownerPackage: packageScope});
+      return componentDetailShowcase(dirName, {
+        cwd,
+        name,
+        packageScope,
+        ownerPackage: packageScope,
+      });
     }
     const extDocPath = resolveLegacyExternalDoc(scoped.ext, dirName);
     if (extDocPath) {
@@ -484,7 +519,7 @@ export async function component(name, options = {}) {
     dirName,
   );
   if (replacement) {
-    return component(replacement.name, {
+    return componentRead(replacement.name, {
       ...options,
       package: replacement.package,
     });
@@ -526,11 +561,19 @@ export async function component(name, options = {}) {
   ) {
     const owner = effectiveOwners[0];
     if (source) {
-      return componentDetailSource(dirName, owner.sourcePath, {name, ownerPackage: owner.package});
+      return componentDetailSource(dirName, owner.sourcePath, {
+        name,
+        ownerPackage: owner.package,
+      });
     }
     if (showcase) {
       // Integration components don't carry showcases — fail without scanning.
-      return componentDetailShowcase(dirName, {cwd, name, resolve: false, ownerPackage: owner.package});
+      return componentDetailShowcase(dirName, {
+        cwd,
+        name,
+        resolve: false,
+        ownerPackage: owner.package,
+      });
     }
     const loaded = await loadComponentDoc(owner.docPath, docOpts);
     const docs = scopeIntegrationMember(loaded, owner, dirName);
@@ -548,7 +591,11 @@ export async function component(name, options = {}) {
     );
   }
   if (showcase) {
-    return componentDetailShowcase(dirName, {cwd, name, ownerPackage: CORE_PACKAGE});
+    return componentDetailShowcase(dirName, {
+      cwd,
+      name,
+      ownerPackage: CORE_PACKAGE,
+    });
   }
 
   const resolved = await resolveUnscopedDoc(dirName, {coreDir, cwd, name});
@@ -565,7 +612,10 @@ export async function component(name, options = {}) {
   const sub = scopeSubComponent(docs, dirName, coreDir);
   if (sub) {
     if (props)
-      return componentDetailProps({props: sub.matchingComponent.props}, resolved.resolvedOwnerPackage);
+      return componentDetailProps(
+        {props: sub.matchingComponent.props},
+        resolved.resolvedOwnerPackage,
+      );
     return componentDetail(
       sub.scoped,
       {

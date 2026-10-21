@@ -794,6 +794,28 @@ describe('TopNavMegaMenu — drawer mode', () => {
     expect(screen.getByRole('link', {name: 'Analytics'})).toBeInTheDocument();
   });
 
+  it('clips the drawer section only while it is collapsed', async () => {
+    // The ring paints outside the item, so a permanent clip would cut it off.
+    const user = userEvent.setup();
+    render(
+      <TopNavRenderContext value="drawer">
+        <TopNavMegaMenu
+          label="Products"
+          items={<TopNavMegaMenuItem title="Analytics" href="/analytics" />}
+        />
+      </TopNavRenderContext>,
+    );
+    const trigger = screen.getByRole('button', {name: 'Products'});
+    const section = document.getElementById(
+      trigger.getAttribute('aria-controls') ?? '',
+    )!;
+    expect(getComputedStyle(section).overflow).toBe('hidden');
+    expect(getComputedStyle(section.firstElementChild!).overflow).toBe('');
+
+    await user.click(trigger);
+    expect(getComputedStyle(section).overflow).toBe('visible');
+  });
+
   it('renders featured content when expanded', async () => {
     const user = userEvent.setup();
 

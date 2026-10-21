@@ -6,7 +6,7 @@ export const docs = {
   name: 'Timestamp',
   displayName: 'Timestamp',
   category: 'Content',
-  keywords: ['date', 'time', 'datetime', 'relative', 'ago', 'clock', 'format', 'duration'],
+  keywords: ['date', 'time', 'datetime', 'relative', 'ago', 'clock', 'format', 'duration', 'relativetime'],
   playground: {
     // `value` is required but has no semantic default, so the properties-tab
     // preview fell back to the literal string "value" — which

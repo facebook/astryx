@@ -34,6 +34,8 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {assertWithin} from '../../foundation/fs/path-safety.mjs';
+import {integrationDocTypes} from '../docs/_adapter.mjs';
+import {integrationDocConsistency} from '../../foundation/discovery/doc-consistency.mjs';
 import {
   THEME_SLUG_RE,
   unreadThemeFolders,
@@ -54,11 +56,13 @@ import {
 // The on-disk contribution validators live in foundation: Project and
 // integration-warnings need them too, and foundation must not depend on api.
 import {
+  INVALID_CLI_COMMAND,
   validateLoadedIntegration,
   issueError as error,
   issueWarning as warning,
   rootProblem,
 } from '../../foundation/integrations/validate-contributions.mjs';
+import {formatCliCommand} from '../../foundation/env/package-manager.mjs';
 
 export {validateLoadedIntegration};
 
@@ -74,6 +78,8 @@ export {validateLoadedIntegration};
  * @property {string} [manifestFile] Absolute path to the loaded manifest.
  * @property {'no_package_json'} [reason] Why nothing was validated (internal).
  * @property {Issue[]} issues
+ * @property {Array<{code: string, message: string}>} [notes] Information that
+ *   fails nothing, such as `invalid_cli_command` (a malformed `cliCommand`).
  * @property {import('../../foundation/integrations/integrations.mjs').LoadedIntegration} [integration]
  */
 
@@ -123,7 +129,7 @@ function unreadThemeFolderIssues(packageDir, loaded) {
     let fix;
     if (THEME_SLUG_RE.test(name)) {
       const stem = `${name.replace(/-([a-z0-9])/gu, (_, character) => character.toUpperCase())}Theme`;
-      fix = `if it is a theme, add ${stem}.ts and ${stem}.doc.mjs to it (\`astryx integration add theme ${name}\` writes both) and move its code into ${stem}.ts; if not, ${hide}.`;
+      fix = `if it is a theme, add ${stem}.ts and ${stem}.doc.mjs to it (\`${formatCliCommand(`integration add theme ${name}`, packageDir)}\` writes both) and move its code into ${stem}.ts; if not, ${hide}.`;
     } else {
       fix = `${hide}; a theme folder needs a lower-kebab name.`;
     }
@@ -282,11 +288,14 @@ async function validateAtPackageDir(
   let unknownKeys;
   /** @type {string | undefined} */
   let agentDocsError;
+  /** @type {string | undefined} */
+  let cliCommandError;
   try {
-    ({manifest, unknownKeys, agentDocsError} = await loadManifest(
-      manifestFile,
-      `Integration manifest (${path.basename(manifestFile)})`,
-    ));
+    ({manifest, unknownKeys, agentDocsError, cliCommandError} =
+      await loadManifest(
+        manifestFile,
+        `Integration manifest (${path.basename(manifestFile)})`,
+      ));
   } catch (err) {
     issues.push(error('invalid_manifest', /** @type {any} */ (err).message));
     return result;
@@ -318,6 +327,8 @@ async function validateAtPackageDir(
     themes: resolveRoot(manifest.themes),
     issuesUrl: manifest.issuesUrl,
     agentDocs: manifest.agentDocs,
+    cliCommand: manifest.cliCommand,
+    __cliCommandError: cliCommandError,
     __agentDocsError: agentDocsError,
     __unknownKeys: unknownKeys,
     __spec: identity.name,
@@ -328,9 +339,35 @@ async function validateAtPackageDir(
 
   // Roots + contribution checks are shared with validateLoadedIntegration so
   // the everyday-command nudge runs the exact same validators.
-  issues.push(...(await validateLoadedIntegration(loaded)));
+  // A malformed `cliCommand` is an info note beside the issues, not an issue:
+  // `integration check --strict` fails on any warning, and a new failure code
+  // joins only in a minor release (architecture:cli-surface INV35). Doctor's
+  // project check still warns about it.
+  for (const issue of await validateLoadedIntegration(loaded)) {
+    if (issue.code === INVALID_CLI_COMMAND) {
+      (result.notes ??= []).push({code: issue.code, message: issue.message});
+    } else {
+      issues.push(issue);
+    }
+  }
   if (loaded.themes && !rootProblem(loaded.themes))
     issues.push(...unreadThemeFolderIssues(packageDir, loaded));
+  // What the docs say that no reader serves: a prop listed twice, an
+  // overlay's text for a prop the doc lacks, an empty or unreachable section,
+  // and an overlay of no topic.
+  issues.push(
+    ...(await integrationDocConsistency(
+      {
+        components:
+          loaded.components && !rootProblem(loaded.components)
+            ? loaded.components
+            : undefined,
+        docs:
+          loaded.docs && !rootProblem(loaded.docs) ? loaded.docs : undefined,
+      },
+      packageDir,
+    )),
+  );
   if (scanUnreachable) {
     issues.push(
       ...(await findUnreachableContributionIssues(packageDir, loaded)),
@@ -461,6 +498,13 @@ export async function validateIntegration(pkg, options = {}) {
   const result = pkg
     ? await validateInstalledIntegration(pkg, cwd)
     : await validateLocalIntegration(cwd);
+  // Each doc the package ships, against the published authoring type for its
+  // kind, read with the project's own compiler. Findings are warnings only.
+  const integration = result.found ? result.integration : undefined;
+  const docTypes = integration
+    ? await integrationDocTypes(integration, cwd)
+    : undefined;
+  const notes = result.found ? (result.notes ?? []) : [];
   return {
     type: 'integration.validate',
     data: {
@@ -469,9 +513,19 @@ export async function validateIntegration(pkg, options = {}) {
       validated: result.found,
       name: result.found ? (result.name ?? null) : null,
       version: result.found ? (result.version ?? null) : null,
-      issues: result.reason === 'no_package_json'
-        ? [{code: 'no_package', severity: 'error', message: 'No package.json found. Run this command inside a package directory.'}]
-        : result.issues,
+      issues:
+        result.reason === 'no_package_json'
+          ? [
+              {
+                code: 'no_package',
+                severity: 'error',
+                message:
+                  'No package.json found. Run this command inside a package directory.',
+              },
+            ]
+          : result.issues,
+      ...(notes.length > 0 ? {notes} : {}),
+      ...(docTypes ? {docTypes} : {}),
     },
   };
 }

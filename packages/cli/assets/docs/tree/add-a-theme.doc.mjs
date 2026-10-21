@@ -26,7 +26,7 @@ export const docs = {
         {
           type: 'code',
           lang: 'bash',
-          code: 'npx astryx integration add theme ocean',
+          code: 'astryx integration add theme ocean',
         },
         {
           type: 'code',
@@ -44,7 +44,7 @@ Declare theme root ./themes in astryx.integration.mjs.
         },
         {
           type: 'prose',
-          text: "`oceanTheme.ts` exports `oceanTheme`, a `defineTheme` source. `oceanTheme.doc.mjs` describes it with `type: 'theme'`, `name`, `displayName`, `description`, and `maintained`; `theme list` shows its `name`, `description`, and `maintained`. The command also declares `./themes/ocean` and `./themes/ocean.css` package exports. Every descriptor field is in {@link generic:authoring}.",
+          text: '`oceanTheme.ts` exports `oceanTheme`, a `defineTheme` source, and `oceanTheme.doc.mjs` is the descriptor that `theme list` reads. The command also declares `./themes/ocean` and `./themes/ocean.css` package exports. Every field is in {@link schema:theme-doc}.',
         },
         {
           type: 'prose',
@@ -63,7 +63,7 @@ Declare theme root ./themes in astryx.integration.mjs.
         {
           type: 'code',
           lang: 'bash',
-          code: 'npx astryx integration add theme ocean --from neutral',
+          code: 'astryx integration add theme ocean --from neutral',
         },
         {
           type: 'prose',
@@ -82,6 +82,16 @@ Declare theme root ./themes in astryx.integration.mjs.
         {
           type: 'prose',
           text: 'A package can ship more than one theme. Run `integration add theme` once per slug; each theme gets its own folder and descriptor, and `theme list` shows them all.',
+        },
+      ],
+    },
+    {
+      id: 'global-mode',
+      title: 'In global mode',
+      content: [
+        {
+          type: 'prose',
+          text: 'In global mode: when users install your package for their computer, beside the global CLI, your themes are listed in folders outside any project, where `theme add` lists but writes nothing; inside a project, only if the project installs your package. See {@link namespace:global} and {@link generic:global-integrations}.',
         },
       ],
     },

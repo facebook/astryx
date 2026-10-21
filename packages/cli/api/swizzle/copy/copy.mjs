@@ -115,7 +115,7 @@ function buildFeedback(component, issuesUrl) {
  */
 async function loadConfigSafely(cwd) {
   try {
-    const project = await Project.load(cwd);
+    const project = await Project.load(cwd, {core: 'project'});
     return {
       loadedIntegrations: project.loadedIntegrations,
       issuesUrl: project.config.issuesUrl,

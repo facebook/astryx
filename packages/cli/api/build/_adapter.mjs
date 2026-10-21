@@ -20,7 +20,7 @@ import fs from 'node:fs';
 
 import {discoverTemplates} from '../template/template.mjs';
 import {componentKeywords} from '../search/search.mjs';
-import {findCoreDir} from '../../foundation/fs/paths.mjs';
+import {findCoreDir, requireCoreDir} from '../../foundation/fs/paths.mjs';
 import {analyzeTemplateNeeds} from '../../foundation/discovery/template-needs.mjs';
 
 /**
@@ -176,4 +176,15 @@ export function templateSetupNotes(template, cwd) {
     // Best-effort: a read failure does not break the recommendation.
     return [];
   }
+}
+
+/**
+ * The Core a build answers from: the project's, else the release's own,
+ * installed into the per-user cache first when needed (a network install
+ * and an npm subprocess; spec AST-081 FR3). Throws as requireCoreDir does.
+ * @param {string} cwd
+ * @returns {string}
+ */
+export function requireBuildCoreDir(cwd) {
+  return requireCoreDir(cwd);
 }

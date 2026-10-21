@@ -12,7 +12,9 @@
  * This script:
  * 1. Runs Babel with the StyleX plugin over the target package's source files
  * 2. Collects all StyleX rules
- * 3. Outputs a combined stylesheet that registers the Astryx layer order and
+ * 3. Fails when the stylesheet reads a StyleX-generated variable that nothing
+ *    declares (see undefinedStyleXVariables)
+ * 4. Outputs a combined stylesheet that registers the Astryx layer order and
  *    places all rules in @layer astryx-base
  *
  * Dist consumers import the full stylesheet, e.g.:
@@ -323,6 +325,51 @@ export function composePackageStylesheet(banner, css) {
   return `/* ${banner} */\n/* Auto-generated. Do not edit manually. */\n\n${ASTRYX_LAYER_ORDER}\n\n@layer astryx-base {\n${body}\n}\n`;
 }
 
+/**
+ * The StyleX-generated custom properties a stylesheet reads that neither it
+ * nor its provider's stylesheet declares. StyleX names a variable it
+ * generates `--x<hash>`. One that is read but never declared is a value that
+ * compiled to a variable no rule sets, so every browser drops the declaration
+ * or takes its fallback. That happens when a style reads, from a `.stylex.ts`
+ * module, a value StyleX cannot inline in that position: a plain exported
+ * object or string, or a `defineConsts` member passed to `firstThatWorks` on
+ * its own. The dynamic-style variables StyleX sets inline (`--x-<property>`)
+ * are not generated names and are never reported.
+ */
+export function undefinedStyleXVariables(css, providerCss = '') {
+  const declared = new Set(
+    [...`${css}\n${providerCss}`.matchAll(/(--x[a-z0-9]+)\s*:/g)].map(
+      match => match[1],
+    ),
+  );
+  const read = new Set(
+    [...css.matchAll(/var\(\s*(--x[a-z0-9]+)\s*[,)]/g)].map(match => match[1]),
+  );
+  return [...read].filter(name => !declared.has(name)).sort();
+}
+
+/** The rules of `css` that read `name`, for the failure message. */
+function rulesReading(css, name) {
+  return [...css.matchAll(/[^{}]+\{[^{}]*\}/g)]
+    .map(match => match[0].trim())
+    .filter(rule => rule.includes(`var(${name}`));
+}
+
+/**
+ * The provider package's built stylesheet, or `null` when it has not been
+ * built: a satellite may read a variable group only the provider declares.
+ */
+async function readProviderCss(provider) {
+  try {
+    return await fs.readFile(
+      path.resolve(provider.dist, provider.outFile),
+      'utf8',
+    );
+  } catch {
+    return null;
+  }
+}
+
 async function main() {
   const target = parseTarget();
   const allRules = await collectStyleXCSS(target);
@@ -335,6 +382,31 @@ async function main() {
   await fs.mkdir(target.dist, {recursive: true});
 
   const combinedCSS = stylexBabelPlugin.processStylexRules(allRules, false);
+
+  const providerCss = target.provider
+    ? await readProviderCss(target.provider)
+    : '';
+  if (providerCss === null) {
+    console.warn(
+      `${target.provider.outFile} is not built yet, so StyleX variables ${target.outFile} reads are not checked.`,
+    );
+  } else {
+    const missing = undefinedStyleXVariables(combinedCSS, providerCss);
+    if (missing.length > 0) {
+      const detail = missing
+        .flatMap(name => rulesReading(combinedCSS, name))
+        .map(rule => `  ${rule}`)
+        .join('\n');
+      console.error(
+        `${target.outFile} reads StyleX variables nothing declares: ${missing.join(', ')}.\n` +
+          `A style reads, from a .stylex.ts module, a value StyleX cannot inline there:\n` +
+          `a plain exported object or string (compose defineVars tokens instead), or a\n` +
+          `defineConsts member passed to firstThatWorks on its own (wrap it in calc()).\n` +
+          detail,
+      );
+      process.exit(1);
+    }
+  }
 
   const outPath = path.resolve(target.dist, target.outFile);
   await fs.writeFile(

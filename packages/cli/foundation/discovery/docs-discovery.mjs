@@ -118,6 +118,23 @@ export function discoverBuiltinTopics() {
 }
 
 /**
+ * The CLI's own guide files: every flat topic and every doc in its docs tree,
+ * without the dense, translated, and draft variants.
+ *
+ * @returns {string[]}
+ */
+export function builtinGuideFiles() {
+  const files = Object.values(discoverBuiltinTopics());
+  const tree = path.join(BUILTIN_DOCS_DIR, 'tree');
+  if (fs.existsSync(tree)) {
+    for (const file of fs.readdirSync(tree).sort()) {
+      if (BUILTIN_TOPIC_FILE_RE.test(file)) files.push(path.join(tree, file));
+    }
+  }
+  return files;
+}
+
+/**
  * Load a topic doc from disk. A `.ts` doc is loaded through jiti, the rest
  * natively; both the historical `export const docs` and the stamped
  * `export default` forms are accepted, because core authors the first and the
@@ -384,7 +401,11 @@ export function problemsInNamespace(doc) {
     }
   }
   const slots = doc?.slots;
-  if (slots == null || typeof slots !== 'object' || Object.keys(slots).length === 0) {
+  if (
+    slots == null ||
+    typeof slots !== 'object' ||
+    Object.keys(slots).length === 0
+  ) {
     problems.push('slots: expected at least one slot');
     return problems;
   }
@@ -392,7 +413,10 @@ export function problemsInNamespace(doc) {
     if (typeof slot?.title !== 'string' || slot.title === '') {
       problems.push(`slots.${name}.title: expected a non-empty string`);
     }
-    if (!Array.isArray(slot?.accepts?.kinds) || slot.accepts.kinds.length === 0) {
+    if (
+      !Array.isArray(slot?.accepts?.kinds) ||
+      slot.accepts.kinds.length === 0
+    ) {
       problems.push(`slots.${name}.accepts.kinds: expected at least one kind`);
     }
   }
@@ -634,6 +658,38 @@ function findMergeTarget(sections, section) {
 }
 
 /**
+ * A component a link can name: its owner's provider id, package, and name,
+ * and the doc file that describes it.
+ * @typedef {object} LinkableComponent
+ * @property {string} providerId
+ * @property {string} package
+ * @property {string} name
+ * @property {string | null} docPath
+ * @property {string} [replaces] the Core component whose name it answers to
+ *   in unqualified lookups (spec:AST-035 FR11)
+ */
+
+/**
+ * A page or block template a link can name, by the id `astryx template` takes.
+ * @typedef {object} LinkableTemplate
+ * @property {string} providerId
+ * @property {string} package
+ * @property {'page' | 'block'} type
+ * @property {string} id
+ * @property {string} name
+ * @property {string} [displayName]
+ * @property {string} [description]
+ * @property {string} [replaces] the Core template id it answers to in
+ *   unqualified lookups
+ */
+
+/**
+ * The component and template docs links can name (spec:AST-047 FR9). No docs
+ * tree holds them, so a catalog carries the records the project reads.
+ * @typedef {{components: LinkableComponent[], templates: LinkableTemplate[]}} LinkableContributions
+ */
+
+/**
  * Every topic a project can read, and the relationships between them.
  *
  * Insertion order is the read order: the built-in topics in discovery order,
@@ -644,6 +700,10 @@ function findMergeTarget(sections, section) {
 export class DocsCatalog {
   /** @type {Map<string, DocsTopicEntry>} */
   #topics = new Map();
+  /** @type {(() => Promise<LinkableContributions>) | null} */
+  #contributions = null;
+  /** @type {Promise<LinkableContributions> | null} */
+  #contributionsLoaded = null;
   /** @type {Map<string, string>} old topic name → the name that replaced it */
   #aliases = new Map();
   /** @type {Array<{namespaces: import('../doc-compiler/tree.mjs').TreeNamespaceInput[], guides: import('../doc-compiler/tree.mjs').TreeDocInput[]}>} */
@@ -685,6 +745,27 @@ export class DocsCatalog {
    */
   get treeInputs() {
     return this.#treeInputs;
+  }
+
+  /**
+   * Say where links find component, page, and block docs: the records
+   * `astryx component` and `astryx template` read, loaded on first use.
+   * @param {() => Promise<LinkableContributions>} load
+   */
+  setContributions(load) {
+    this.#contributions = load;
+    this.#contributionsLoaded = null;
+  }
+
+  /**
+   * The component and template docs links can name, or null when nothing set
+   * them, so no link to one resolves.
+   * @returns {Promise<LinkableContributions | null>}
+   */
+  contributions() {
+    if (!this.#contributions) return Promise.resolve(null);
+    this.#contributionsLoaded ??= this.#contributions();
+    return this.#contributionsLoaded;
   }
 
   /**

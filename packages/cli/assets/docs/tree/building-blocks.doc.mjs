@@ -25,6 +25,10 @@ export const docs = {
   blocks: [
     {
       type: 'prose',
+      text: 'In global mode: every kind your package adds also applies outside projects when users install it for their computer, beside the global CLI; inside a project, only if the project installs it. See {@link namespace:global} and {@link generic:global-integrations}.',
+    },
+    {
+      type: 'prose',
       text: 'These are everything you can add to an integration. Mix them however you like. You are not limited to any one thing.',
     },
     {

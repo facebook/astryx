@@ -1047,7 +1047,7 @@ function isWithin(folder, file) {
  * @param {string} name
  * @returns {string | null}
  */
-function folderSourceFor(folder, name) {
+export function folderSourceFor(folder, name) {
   /** @type {string[]} */
   const files = [];
   /** @param {string} dirPath */
@@ -1242,7 +1242,7 @@ export function forEachIntegrationDoc(componentsDir, visit) {
  * @param {string} docPath absolute path to a `{Name}.doc.{ts,mjs,js}` file
  * @returns {string|null}
  */
-function integrationSourceForDoc(docPath) {
+export function integrationSourceForDoc(docPath) {
   const dir = path.dirname(docPath);
   const base = path.basename(docPath).replace(/\.doc\.(ts|mjs|js)$/, '');
   const candidate = path.join(dir, `${base}.tsx`);

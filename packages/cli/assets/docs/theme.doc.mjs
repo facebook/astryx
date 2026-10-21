@@ -23,7 +23,7 @@ export const docs = {
           type: 'code',
           lang: 'tsx',
           label: 'Wire the generated module once',
-          code: "import {Theme} from '@astryxdesign/core';\nimport {themes, defaultThemeSlug} from './astryx-themes';\n\nfunction App() {\n  return (\n    <Theme theme={themes[defaultThemeSlug]}>\n      <YourApp />\n    </Theme>\n  );\n}",
+          code: "import {Theme} from '@astryxdesign/core/theme';\nimport {themes, defaultThemeSlug} from './astryx-themes';\n\nfunction App() {\n  return (\n    <Theme theme={themes[defaultThemeSlug]}>\n      <YourApp />\n    </Theme>\n  );\n}",
         },
       ],
     },
@@ -59,7 +59,7 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: "Use [light, dark] tuples in token values for automatic mode switching. Use mode='system' (default) on Theme to follow OS preference. Full guide: {@link generic:use-a-theme}.",
+          text: 'Light, dark, and system modes: {@link generic:use-a-theme}.',
         },
         {
           type: 'code',

@@ -277,5 +277,17 @@ export const doc = {
       description:
         'Recorded in the debug log, never printed: the process was ended by a signal (Ctrl-C, SIGTERM) before the command reached a terminal path.',
     },
+
+    // Global mode
+    {
+      value: 'ERR_VERSIONS_UNAVAILABLE',
+      description:
+        'Nothing could answer this run, and nothing was written: the project\'s own CLI could not start and nothing else could answer, or the Core a command needs outside a project could not be installed.',
+    },
+    {
+      value: 'ERR_PROJECT_REQUIRED',
+      description:
+        'The command needs a project (an app with Astryx installed, or an integration package) and was run outside one. Nothing was written.',
+    },
   ],
 };

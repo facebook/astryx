@@ -10,6 +10,7 @@ import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import {fileURLToPath} from 'node:url';
+import {CLI_VERSION} from '../../../test-utils/release-fixtures.mjs';
 
 const CLI = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -44,7 +45,7 @@ function seed({hook = false} = {}) {
   write('package.json', JSON.stringify({name: 'consumer', private: true}));
   write(
     'node_modules/@astryxdesign/core/package.json',
-    JSON.stringify({name: '@astryxdesign/core', version: '0.6.0'}),
+    JSON.stringify({name: '@astryxdesign/core', version: CLI_VERSION}),
   );
   write('.gitattributes', 'generated/** linguist-generated=true\n');
   const source =
@@ -122,7 +123,7 @@ describe('upgrade protected-file contract', () => {
     write('package.json', JSON.stringify({name: 'consumer', private: true}));
     write(
       'node_modules/@astryxdesign/core/package.json',
-      JSON.stringify({name: '@astryxdesign/core', version: '0.1.3'}),
+      JSON.stringify({name: '@astryxdesign/core', version: CLI_VERSION}),
     );
     write(
       'astryx.config.mjs',

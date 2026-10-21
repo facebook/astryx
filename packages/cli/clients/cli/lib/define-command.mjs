@@ -180,8 +180,8 @@ export function defineCommand(parent, doc, {fn, action} = {}) {
  */
 export function addDocHelp(cmd, doc) {
   addExitCodesHelp(cmd, doc.exitCodes);
-  // Rendered when help is shown, so the run prefix (npx astryx, pnpm astryx,
-  // ...) is looked up then, not on every start.
+  // Rendered when help is shown, so the run prefix (pnpm exec astryx, yarn
+  // astryx, ...) is looked up then, not on every start.
   cmd.addHelpText('after', () => {
     const examples = (doc.examples ?? []).flatMap(({label, cli}) => [
       ...(label ? [`  # ${label}`] : []),

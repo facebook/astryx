@@ -24,7 +24,10 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {isValidSemver} from '../env/semver.mjs';
-import {findSourceOnlyCandidates} from './contribution-inventory.mjs';
+import {
+  findSourceOnlyCandidates,
+  findTemplateSourceOnlyCandidates,
+} from './contribution-inventory.mjs';
 import {
   CODEMOD_FILE_RE,
   CODEMOD_SKIP_DIRS,
@@ -55,6 +58,9 @@ import {discoverIntegrationThemes} from '../discovery/theme-discovery.mjs';
 
 /** Stable issue code for an invalid optional agent-doc contribution. */
 export const INVALID_AGENT_DOCS = 'invalid_agent_docs';
+
+/** Stable issue code for a `cliCommand` that was ignored as invalid. */
+export const INVALID_CLI_COMMAND = 'invalid_cli_command';
 
 /** Stable issue code for a package whose provider ID is already claimed. */
 export const DUPLICATE_PROVIDER = 'duplicate_provider';
@@ -295,6 +301,32 @@ async function checkTemplates(integration, issues) {
       issueError('invalid_template', /** @type {any} */ (err).message),
     );
   }
+  checkTemplateSourcesWithoutDoc(integration, issues);
+}
+
+/**
+ * Warn about a `.tsx` directly in the templates root with no same-stem template
+ * metadata: template discovery pairs sources with docs, so `astryx template`
+ * never lists it. A PascalCase file directly in a shared components root is
+ * left to the component check, which already warns about it.
+ * @param {LoadedIntegration} integration loaded-integration-shaped object
+ * @param {Issue[]} issues
+ */
+function checkTemplateSourcesWithoutDoc(integration, issues) {
+  const root = /** @type {string} */ (integration.templates);
+  const sharedComponents =
+    integration.components != null &&
+    path.resolve(integration.components) === path.resolve(root);
+  for (const file of findTemplateSourceOnlyCandidates(root)) {
+    if (sharedComponents && /^[A-Z]/u.test(file)) continue;
+    const stem = file.slice(0, -'.tsx'.length);
+    issues.push(
+      issueWarning(
+        'source_without_template_doc',
+        `Template source "${file}" has no same-stem metadata file ${stem}.doc.mjs, so \`astryx template\` never lists it. Fix: add ${stem}.doc.mjs beside it with type: 'page' or 'block'; \`astryx docs authoring integration-template-doc\` lists its fields. If it is not a template, move it out of the templates root.`,
+      ),
+    );
+  }
 }
 
 /**
@@ -449,6 +481,14 @@ export async function validateLoadedIntegration(loaded) {
   checkUnknownKeys(loaded, issues);
   if (loaded.__agentDocsError) {
     issues.push(issueError(INVALID_AGENT_DOCS, loaded.__agentDocsError));
+  }
+  if (loaded.__cliCommandError) {
+    issues.push(
+      issueWarning(
+        INVALID_CLI_COMMAND,
+        `${loaded.__cliCommandError}. The command is ignored; printed commands use the package-manager prefix.`,
+      ),
+    );
   }
   checkRoots(
     {

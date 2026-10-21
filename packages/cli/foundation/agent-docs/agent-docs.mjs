@@ -42,15 +42,17 @@ import {
   LEGACY_MARKER_END,
   discoverAgentDocs,
   isAstryxInitialized,
+  isAstryxPromptInReach,
 } from './agent-doc-state.mjs';
 
 // The agent-doc locations, markers, and the setup-state predicates
-// (discoverAgentDocs, isAstryxInitialized) are the ONE canonical contract. They
-// live in the dependency-free leaf ./agent-doc-state.mjs so the postinstall
-// nudge (enforcement layer 2) can load them safely at install time. Re-exported
-// here so existing importers (init/upgrade commands, the layer-3 nudge in
-// clients/cli/index.mjs, tests) keep their `from './agent-docs.mjs'` paths.
-export {discoverAgentDocs, isAstryxInitialized};
+// (discoverAgentDocs, isAstryxInitialized, isAstryxPromptInReach) are the ONE
+// canonical contract. They live in the dependency-free leaf
+// ./agent-doc-state.mjs so the postinstall nudge (enforcement layer 2) can load
+// them safely at install time. Re-exported here so existing importers
+// (init/upgrade commands, the layer-3 nudge in clients/cli/index.mjs, tests)
+// keep their `from './agent-docs.mjs'` paths.
+export {discoverAgentDocs, isAstryxInitialized, isAstryxPromptInReach};
 
 const MAX_PROJECT_AGENT_DOC_LINES = 32;
 const MANAGED_MARKER_TEXT = /(?:ASTRYX|XDS):(START|END)/u;
@@ -377,7 +379,7 @@ export function detectStylingSystem(targetDir) {
  * among them. An agent cannot ask for a topic it was never told about, and
  * `getting-started` is the one it should reach for first.
  *
- * @param {string} version
+ * @param {string | null} version the Core version
  * @param {{coreDir?: string|null, invocation?: string, stylingSystem?: 'stylex'|'tailwind'|'css', zh?: boolean, lang?: string, topics?: string[], agentDocs?: Array<{package: string, append: readonly string[]}>}} [options]
  * @returns {string}
  */
@@ -418,9 +420,9 @@ export function generateCompressedIndex(
       // Best-effort: component count is cosmetic; fall back to the default.
     }
   }
-
-  // Header — state the CLI prefix once; commands below are shown as `astryx <cmd>`.
   lines.push(`Astryx v${version} · ${componentCount} components`);
+
+  // State the CLI prefix once; commands below are shown as `astryx <cmd>`.
   lines.push(
     `CLI: run every command as \`${run} <cmd>\` (shown below as \`astryx ...\`).`,
   );

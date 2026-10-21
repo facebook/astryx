@@ -20,7 +20,7 @@
  * @property {number} score - Relevance score (higher is better).
  * @property {string} reason - Human-readable reason the candidate matched (e.g. `keyword "button"`).
  * @property {string} description - One-line description, when available.
- * @property {string} command - Follow-up command to act on this result (e.g. `astryx component Button`, or `astryx theme add neutral` for a theme).
+ * @property {string} command - Follow-up command to act on this result (e.g. `astryx component Button`, or `astryx theme add neutral` for a theme; `astryx theme eject neutral` outside a project).
  * @property {string} [import] - Import path — present for component and hook results.
  * @property {string} [title] - Doc title — present for doc results.
  * @property {string} [section] - Section key — present when a doc result is one section of a topic; `command` reads only that section.
@@ -38,6 +38,11 @@
  * @property {string} data.query
  * @property {number} data.matchCount - How many candidates matched the query in total, before `limit` was applied. `results` is the bounded slice of that set, so `matchCount > results.length` means the answer was capped.
  * @property {SearchResultEntry[]} data.results
+ * @property {{partial?: {skipped: SearchDomain[], reason: string}}} [meta] -
+ *   `partial`, when an open search could not get the Core that components,
+ *   hooks, and templates are read from (such as outside a project, offline,
+ *   before the release's Core was downloaded): the domains it skipped and why.
+ *   The results are the docs and themes.
  */
 
 /**

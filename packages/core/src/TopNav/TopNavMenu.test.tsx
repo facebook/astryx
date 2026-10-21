@@ -243,6 +243,25 @@ describe('TopNavMenu — drawer focus ring', () => {
     await user.click(screen.getByRole('button', {name: /Products/}));
     expectSharedFocusRing(screen.getByRole('link', {name: /Analytics/}));
   });
+
+  it('clips the drawer section only while it is collapsed', async () => {
+    // The ring paints outside the item, so a permanent clip would cut it off.
+    const user = userEvent.setup();
+    render(
+      <TopNavRenderContext value="drawer">
+        <TopNavMenu label="Products" items={mockItems} />
+      </TopNavRenderContext>,
+    );
+    const trigger = screen.getByRole('button', {name: /Products/});
+    const section = document.getElementById(
+      trigger.getAttribute('aria-controls') ?? '',
+    )!;
+    expect(getComputedStyle(section).overflow).toBe('hidden');
+    expect(getComputedStyle(section.firstElementChild!).overflow).toBe('');
+
+    await user.click(trigger);
+    expect(getComputedStyle(section).overflow).toBe('visible');
+  });
 });
 
 describe('TopNavMenu — drawer collapsed section', () => {

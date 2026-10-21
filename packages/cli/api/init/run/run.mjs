@@ -19,6 +19,7 @@ import * as fs from 'node:fs';
 import {CLI_ROOT} from '../../../foundation/fs/paths.mjs';
 import {PathSafetyError, assertWithin} from '../../../foundation/fs/path-safety.mjs';
 import {getCliInvocation} from '../../../foundation/env/package-manager.mjs';
+import {isOutsideProject} from '../../../foundation/env/project-scope.mjs';
 import {
   installAgentDocs,
   renderAgentDocsBlock,
@@ -39,7 +40,7 @@ const VALID_AGENTS = ['claude', 'cursor', 'codex', 'hermes', 'muse', 'all'];
  * installed built themes and imports their production and font stylesheets. The
  * app imports that module once and passes its default to <Theme>.
  *
- * @param {string} invocation install-aware CLI invocation stem (e.g. `npx astryx`, `pnpm exec astryx`, or `npx @astryxdesign/cli` for one-off runs)
+ * @param {string} invocation install-aware CLI invocation stem (e.g. `pnpm exec astryx`, `yarn astryx`, or `npx @astryxdesign/cli` for one-off runs)
  * @returns {string[]} ordered list of human-facing lines
  */
 export function getNextSteps(invocation) {
@@ -50,11 +51,11 @@ export function getNextSteps(invocation) {
     `       (run \`${invocation} doctor\` to verify)`,
     "    2. Import base styles: import '@astryxdesign/core/reset.css'",
     "       and import '@astryxdesign/core/astryx.css'",
-    "    3. Import components: import { Button } from '@astryxdesign/core'",
+    "    3. Import components: import { Button } from '@astryxdesign/core/Button'",
     '    4. Add and wire a theme:',
     '       npm install @astryxdesign/theme-neutral',
     `       ${invocation} theme add neutral`,
-    "       import { Theme } from '@astryxdesign/core'",
+    "       import { Theme } from '@astryxdesign/core/theme'",
     "       import { themes, defaultThemeSlug } from './astryx-themes'",
     '       <Theme theme={themes[defaultThemeSlug]}>...</Theme>',
     `       Extend an imported theme to customize it. Run \`${invocation} theme eject <slug>\` only to fork source.`,
@@ -140,8 +141,11 @@ function applyTheme(cwd, invocation, data) {
     data.themeTemplate = 'failed';
     logger.error('Could not write the theme template.');
   }
+  // Outside a project there is no app to add a theme to (spec AST-081 FR3).
   logger.log(
-    `  Edit the blank template for a new theme, or run \`${invocation} theme add <slug>\` to import an installed built theme (\`${invocation} theme list\` to browse). Extend an imported theme for ordinary customization; use \`${invocation} theme eject <slug>\` only to fork source.`,
+    isOutsideProject(cwd)
+      ? `  Edit the blank template for a new theme, or run \`${invocation} theme eject <slug>\` to start from the source of a built theme (\`${invocation} theme list\` to browse).`
+      : `  Edit the blank template for a new theme, or run \`${invocation} theme add <slug>\` to import an installed built theme (\`${invocation} theme list\` to browse). Extend an imported theme for ordinary customization; use \`${invocation} theme eject <slug>\` only to fork source.`,
   );
 }
 
@@ -276,7 +280,10 @@ export async function run(options = {}, {cwd = process.cwd()} = {}) {
   }
 
   // No flags: TTY-free default — install the AI agent cheat sheet with NO
-  // prompts, then print the getting-started guidance.
+  // prompts, then print the getting-started guidance. Outside a project the
+  // steps would set up a project the folder does not have, so they are left
+  // out (spec AST-081 FR3).
+  const outside = isOutsideProject(cwd);
   /** @type {import('../init.type.mjs').InitRunData} */
   const data = {
     mode: 'default',
@@ -288,13 +295,17 @@ export async function run(options = {}, {cwd = process.cwd()} = {}) {
     themeTemplatePath: null,
     template: null,
     templatePath: null,
-    nextSteps: true,
+    nextSteps: !outside,
   };
   await applyAgents(cwd, options, invocation, data);
   logger.log('');
   logger.log(
     `  Tip: \`${invocation} init --all\` also points you to the theme and page-building workflows.`,
   );
+  if (outside) {
+    logger.log('');
+    return {type: 'init.run', data};
+  }
   for (const line of getNextSteps(invocation)) logger.log(line);
   return {type: 'init.run', data};
 }

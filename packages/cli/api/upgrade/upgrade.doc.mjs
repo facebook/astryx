@@ -22,7 +22,10 @@ export const doc = {
     'loaded, so they can repair an invalid config. Also updates copied compositions from ' +
     'their install receipts: unchanged files are updated, non-overlapping edits are merged, ' +
     'and conflicts are left untouched. `list` only lists codemods; `registry` only updates ' +
-    'copied compositions.',
+    'copied compositions. Core codemods ship inside the CLI, so a CLI older than the installed ' +
+    'Core has none for the releases after its own version: the result then carries ' +
+    '`cliBehindCore` with the command that runs the same upgrade on the matching CLI.' +
+    " In global mode: in a project, the CLI runs `upgrade` with the project's own CLI, whichever astryx command started it (in a project with no CLI of its own, the one you started); this function runs the codemods of the package it is imported from. With `cwd` outside a project, `list` lists this release's codemods, `registry` finds no copied compositions, and a migration writes nothing and fails with `ERR_VERSION_DETECT`. See {@link namespace:global} and {@link generic:who-answers}.",
   importPath: '@astryxdesign/cli/api',
   signature:
     'upgrade(options?: UpgradeOptions, ctx?: {cwd?: string}): Promise<UpgradeListResponse | UpgradeRegistryResponse | UpgradeStatusResponse | UpgradeRunResponse>',
@@ -118,12 +121,12 @@ export const doc = {
     {
       type: 'upgrade.status',
       description:
-        'A short-circuit outcome (no codemods executed): `up_to_date` (`from` is at/after the installed target and no `force`), `no_codemods` (none apply to the range), or `config_fixable` (dry-run preview that a pending config codemod would repair an invalid astryx.config). up_to_date and no_codemods carry the agent-docs summary and, when receipts are found, the copied-composition summary; config_fixable carries configError, configCodemods, suggestedCommand, message, note, and the agent-docs summary.',
+        'A short-circuit outcome (no codemods executed): `up_to_date` (`from` is at/after the installed target and no `force`), `no_codemods` (none apply to the range), or `config_fixable` (dry-run preview that a pending config codemod would repair an invalid astryx.config). up_to_date and no_codemods carry the agent-docs summary and, when receipts are found, the copied-composition summary; config_fixable carries configError, configCodemods, suggestedCommand, message, note, and the agent-docs summary. When the installed Core is newer than the CLI, no_codemods and config_fixable also carry cliBehindCore ({cliVersion, command}): this CLI has no codemods for the releases after cliVersion, and command runs the same upgrade with the CLI release that matches the installed Core.',
     },
     {
       type: 'upgrade.run',
       description:
-        'The terminal run receipt: from, to, codemods (count), integrations, agentDocs, agentDocsRefreshed, registryCompositions (when receipts are found), sourcePathFound (false when the resolved `path` does not exist, so nothing was scanned), filesChanged, transformsApplied, modifiedFiles, protectedFiles, declinedCandidates, errors, and complete. When a protected file still requires a change, complete is false and errorCode is ERR_CODEMOD_PROTECTED; the CLI exits nonzero while preserving the structured receipt.',
+        'The terminal run receipt: from, to, codemods (count), integrations, agentDocs, agentDocsRefreshed, registryCompositions (when receipts are found), sourcePathFound (false when the resolved `path` does not exist, so nothing was scanned), filesChanged, transformsApplied, modifiedFiles, protectedFiles, declinedCandidates, errors, and complete. When a protected file still requires a change, complete is false and errorCode is ERR_CODEMOD_PROTECTED; the CLI exits nonzero while preserving the structured receipt. When the installed Core is newer than the CLI, it also carries cliBehindCore ({cliVersion, command}): codemods for the releases after cliVersion did not run, and command runs the same upgrade with the matching CLI.',
     },
   ],
   throws: [

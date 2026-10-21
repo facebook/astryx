@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file `astryx docs cli/integrations/publishing`: publish an integration to
+ * @file `astryx docs cli/integrations/ship/publishing`: publish an integration to
  * npm, use release tags, and check the package before and after.
  */
 
@@ -14,7 +14,7 @@ export const docs = {
   category: 'guide',
   keywords: ['publish an integration', 'npm publish', 'release'],
   description:
-    'Publish your package to npm under the right release tag, and check it before and after.',
+    'Publish your package to npm under the right release tag, checking it before and after.',
   sections: [
     {
       id: 'check-before-you-publish',
@@ -27,7 +27,7 @@ export const docs = {
         {
           type: 'code',
           lang: 'bash',
-          code: 'npx astryx doctor integration validate && npx astryx doctor integration components && npx astryx doctor integration templates && npx astryx doctor integration docs && npx astryx integration verify\nnpm publish --dry-run --access public',
+          code: 'astryx doctor integration validate && astryx doctor integration components && astryx doctor integration templates && astryx doctor integration docs && astryx integration verify\nnpm publish --dry-run --access public',
         },
         {
           type: 'code',
@@ -59,7 +59,7 @@ export const docs = {
           items: [
             'List only the roots you ship, and always `astryx.integration.mjs`. npm adds package.json, and a README and LICENSE when you have them.',
             'Each later `integration add` appends its root to the list.',
-            '`integration verify` fails when a root is missing from the list: `Declared templates root "templates" has 0 of 2 expected files in the pack list. Add "templates" to "files" in package.json.`',
+            '`integration verify` fails when a root is missing from the list, and names the root to add to `files` (the message is in {@link generic:troubleshooting}).',
           ],
         },
       ],
@@ -79,7 +79,7 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: 'To let apps try a release first, publish it under `next`, then point `latest` at it when it is ready.',
+          text: 'To let apps try a release first, publish it under `next`, then point `latest` at it once ready.',
         },
         {
           type: 'code',
@@ -99,7 +99,7 @@ export const docs = {
         {
           type: 'code',
           lang: 'bash',
-          code: 'mkdir check-release && cd check-release\nnpm init -y\nnpm install @astryxdesign/core @astryxdesign/cli @acme/astryx-widgets@1.0.0\nnpx astryx component AcmeCarousel\nnpx astryx doctor integration validate @acme/astryx-widgets',
+          code: 'mkdir check-release && cd check-release\nnpm init -y\nnpm install @astryxdesign/core @astryxdesign/cli @acme/astryx-widgets@1.0.0\nastryx component AcmeCarousel\nastryx doctor integration validate @acme/astryx-widgets',
         },
         {
           type: 'prose',

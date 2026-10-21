@@ -1383,6 +1383,16 @@ jobs:
             --project chromium \
             --output menu-header-footer-output
 
+      # A Token's remove target is enlarged past its 16px X, and only a real
+      # engine hit-tests it: a press on the end of the value beside the X must
+      # run the token's own action, and a press just outside the X must remove.
+      - name: Run Token remove target contract
+        run: |
+          pnpm exec playwright test \
+            packages/core/src/Token/__tests__/TokenRemoveTarget.a11y.chromium.spec.ts \
+            --project chromium \
+            --output token-remove-target-output
+
       # The RichTextEditor "Markdown parity" stories render one Markdown
       # document with core Markdown and RichTextEditor and measure where each
       # block lands; geometry, the read/edit switch and the scroll anchor only
@@ -1677,6 +1687,56 @@ jobs:
         with:
           name: menu-contract-evidence-${{ needs.build-storybook.outputs.short_hash }}
           path: menu-contract/
+          retention-days: 30
+          if-no-files-found: warn
+
+      # The toolbar contract's role and name, the controls inside it, the single
+      # Tab stop, and the arrow (wrap, RTL, vertical) and Home/End movement are
+      # accessibility-tree and real-browser facts that jsdom cannot observe. Run
+      # the contract's own fixture proof and the Toolbar binding whenever
+      # Toolbar source, the binding's stories, or the contract changes. Its own
+      # --output directory; the JSON report is the head-bound record, uploaded
+      # next.
+      - name: Run Toolbar accessibility contract
+        id: toolbar-contract
+        if: ${{ !cancelled() && github.event_name == 'pull_request' }}
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PLAYWRIGHT_JSON_OUTPUT_FILE: toolbar-contract/report.json
+        run: |
+          should_run=false
+          # Toolbar and the contract are matched by file name.
+          # The helper comes from the base, since an older PR head lacks it.
+          # Exit 1 means out of scope; 0 in scope; 2 unknown, so run.
+          scope=2
+          helper="$(mktemp)"
+          if git fetch --quiet --no-tags --depth=1 origin "$BASE_SHA" \
+            && git show "$BASE_SHA:.github/scripts/pr-scope-touches.sh" > "$helper"; then
+            scope=0
+            bash "$helper" "$BASE_SHA" \
+              '^(internal/a11y-spec/src/patterns/toolbar\.|packages/core/src/Toolbar/|apps/storybook/stories/ToolbarA11y)' || scope=$?
+          fi
+          if [ "$scope" != 1 ]; then
+            should_run=true
+          fi
+          echo "should_run=${should_run}" >> "$GITHUB_OUTPUT"
+          if [ "$should_run" != true ]; then
+            echo "Toolbar and the toolbar contract are not in PR scope; skipping toolbar evidence."
+            exit 0
+          fi
+          pnpm exec playwright test \
+            internal/a11y-spec/src/patterns/toolbar.chromium.spec.ts \
+            packages/core/src/Toolbar/__tests__/Toolbar.a11y.chromium.spec.ts \
+            --project chromium \
+            --reporter list,json \
+            --output toolbar-contract-output
+
+      - name: Upload Toolbar accessibility contract evidence
+        if: ${{ !cancelled() && steps.toolbar-contract.outputs.should_run == 'true' }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: toolbar-contract-evidence-${{ needs.build-storybook.outputs.short_hash }}
+          path: toolbar-contract/
           retention-days: 30
           if-no-files-found: warn
 
@@ -2435,6 +2495,37 @@ jobs:
           retention-days: 30
           if-no-files-found: error
 
+      # FieldLabel owns native and group labelling, hidden text, optionality,
+      # descriptions, and delegated icon/tooltip presentation. Its audit lane
+      # keeps those states bound to exact-head themes, direction, and viewport.
+      - name: Run FieldLabel audit browser evidence
+        if: ${{ !cancelled() && github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, '[Component Audit] FieldLabel:') }}
+        env:
+          ASTRYX_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          status=0
+          node .github/scripts/accessibility-audit.js \
+            --storybook-dir apps/storybook/dist \
+            --output field-label-a11y-report.json \
+            --components FieldLabel \
+            --baseline .github/a11y-baseline.json \
+            --fail-on-new || status=1
+          pnpm exec playwright test \
+            packages/core/src/Field/__tests__/FieldLabelAudit.a11y.chromium.spec.ts \
+            --project chromium || status=1
+          exit "$status"
+
+      - name: Upload FieldLabel audit evidence
+        if: always() && github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, '[Component Audit] FieldLabel:')
+        uses: actions/upload-artifact@v7
+        with:
+          name: field-label-audit-evidence-${{ needs.build-storybook.outputs.short_hash }}
+          path: |
+            field-label-a11y-report.json
+            field-label-audit-evidence/
+          retention-days: 30
+          if-no-files-found: error
+
       # Component-owned metadata fixtures retain exact-head browser receipts on
       # audit PRs, including failed pre-fix cases for before/after comparison.
       - name: Run ChatMessageMetadata audit browser evidence
@@ -2548,6 +2639,39 @@ jobs:
           path: |
             chat-tokenized-text-a11y-report.json
             test-results/chat-tokenized-text-audit-evidence/
+          retention-days: 30
+          if-no-files-found: error
+
+      # DropdownMenuGroup is a hidden compound subcomponent, so the dedicated
+      # story and sensor lane keep named and unnamed group semantics, heading
+      # paint, target placement, keyboard exclusion, theme, direction, and
+      # narrow layout bound to the exact pull-request head.
+      - name: Run DropdownMenuGroup audit browser evidence
+        if: ${{ !cancelled() && github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, '[Component Audit] DropdownMenuGroup:') }}
+        env:
+          ASTRYX_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          status=0
+          node .github/scripts/accessibility-audit.js \
+            --storybook-dir apps/storybook/dist \
+            --output dropdown-menu-group-a11y-report.json \
+            --components DropdownMenuGroup \
+            --ready-selector '[role="menu"]' \
+            --baseline .github/a11y-baseline.json \
+            --fail-on-new || status=1
+          pnpm exec playwright test \
+            packages/core/src/DropdownMenu/__tests__/DropdownMenuGroupAudit.a11y.chromium.spec.ts \
+            --project chromium || status=1
+          exit "$status"
+
+      - name: Upload DropdownMenuGroup audit evidence
+        if: always() && github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, '[Component Audit] DropdownMenuGroup:')
+        uses: actions/upload-artifact@v7
+        with:
+          name: dropdown-menu-group-audit-evidence-${{ needs.build-storybook.outputs.short_hash }}
+          path: |
+            dropdown-menu-group-a11y-report.json
+            dropdown-menu-group-audit-evidence/
           retention-days: 30
           if-no-files-found: error
 

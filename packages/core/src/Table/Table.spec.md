@@ -24,7 +24,12 @@ verified_by:
     packages/core/src/theme/themingTargets.test.ts,
     scripts/check-knowledge.mjs,
   ]
-modules: [module:Table/useTableRowStatus, module:Table/useTableColumnResize]
+modules:
+  [
+    module:Table/useTableActivation,
+    module:Table/useTableRowStatus,
+    module:Table/useTableColumnResize,
+  ]
 families: []
 design_specs: []
 architecture:

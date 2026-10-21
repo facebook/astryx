@@ -14,7 +14,7 @@
 // unsupported runtimes this guard protects against.
 //
 // Sibling package modules (e.g. `cli/`, `lib/`) are resolved by this bin's REAL
-// path. When the CLI is installed as a package, `npx astryx` runs this file
+// path. When the CLI is installed as a package, the package manager runs this file
 // through the `node_modules/.bin/astryx` symlink, and some Node versions resolve
 // relative specifiers from the symlink's directory rather than the real package
 // — breaking bare `../…` imports with a cryptic ERR_MODULE_NOT_FOUND.
@@ -53,10 +53,24 @@ if (!isNodeVersionSupported(process.versions.node)) {
   process.exit(1);
 }
 
+// Global mode: choose the release that answers this folder and, when it is
+// not this copy, hand the run to it before anything the project provides (its
+// astryx.config, integrations, or Core) is loaded. Returns only when this copy
+// answers. See foundation/release/handoff.mjs and spec AST-081 FR2 and FR9.
+const {startRun} = await importSrc('../../foundation/release/handoff.mjs');
+await startRun({
+  cliRoot: join(binDir, '..', '..', '..'),
+  argv: process.argv.slice(2),
+});
+
 // Imports that transitively load `styleText` must happen AFTER the gate above,
 // so they are dynamically imported here rather than at the top of the module.
-const {program, loadProjectDebugHandler, handleVersionJsonPreflight} =
-  await importSrc('index.mjs');
+const {
+  program,
+  loadProjectDebugHandler,
+  loadProjectForHelp,
+  handleVersionJsonPreflight,
+} = await importSrc('index.mjs');
 const {isJsonMode, toErrorEnvelope} = await importSrc('../../foundation/response/json.mjs');
 const {handleCommanderError} = await importSrc('lib/json-shim.mjs');
 const {setOutcome} = await importSrc('../../foundation/debug/index.mjs');
@@ -107,6 +121,9 @@ process.on('uncaughtException', handleFatal);
 // Pick up the project's `debug` function before parsing, so parse errors and
 // `--help` — which short-circuit before any hook runs — are reported too.
 await loadProjectDebugHandler();
+// Help prints its commands while Commander parses, so a help run reads the
+// project's declared `cliCommand` here.
+await loadProjectForHelp();
 
 // `--version --json` answers and exits without Commander, so it runs here —
 // after the handler exists, or the run would go unrecorded.

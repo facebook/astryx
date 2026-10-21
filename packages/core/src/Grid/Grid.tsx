@@ -455,6 +455,7 @@ export function Grid({
   return (
     <div
       ref={ref}
+      {...props}
       {...mergeProps(
         themeProps('grid', {columns: columnsVariant, gap, align, justify}),
         stylex.props(
@@ -470,8 +471,7 @@ export function Grid({
         ),
         className,
         {...style, ...inlineStyle},
-      )}
-      {...props}>
+      )}>
       {children}
     </div>
   );

@@ -16,6 +16,11 @@
         "package": "@astryxdesign/cli"
       },
       {
+        "topic": "global",
+        "description": "Install Astryx once on your computer and use it in any folder. Each project still runs its own version of Astryx, so a global install never changes what a project gets.",
+        "package": "@astryxdesign/cli"
+      },
+      {
         "topic": "internationalization",
         "description": "Set the active locale, load catalogs, coexist with your own i18n library, handle RTL, and test translations.",
         "package": "@astryxdesign/cli"
@@ -55,6 +60,11 @@
         "description": "Every topic that no section places yet. Each keeps its own name; open one by it.",
         "package": "@astryxdesign/cli"
       }
-    ]
+    ],
+    "answeredBy": {
+      "cli": "<cli version>",
+      "core": "<cli version>",
+      "copy": "project"
+    }
   }
 }

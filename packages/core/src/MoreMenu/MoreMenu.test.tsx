@@ -9,11 +9,15 @@
  * SYNC: When MoreMenu.tsx changes, update tests to match new behavior
  */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
+import {describe, it, expect, vi, beforeAll, beforeEach} from 'vitest';
 import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {MoreMenu} from './MoreMenu';
 import {DropdownMenu} from '../DropdownMenu/DropdownMenu';
+import {warmMenuBottomSheet} from '../DropdownMenu/__tests__/warmMenuBottomSheet';
+
+// DropdownMenu's touch sheet is loaded lazily; resolve it once up front.
+beforeAll(warmMenuBottomSheet, 20000);
 
 // Mock showPopover and hidePopover methods since they're not implemented in jsdom
 beforeEach(() => {

@@ -36,7 +36,7 @@ const KNOWN_TOPICS = new Set(docTopics.map(d => d.topic));
  */
 const docTopic: CodeLinkifier = code => {
   const match =
-    /^(?:npx )?astryx docs(?:\s+([a-z][\w-]*(?:\/[a-z][\w-]*)*))?(?:\s.*)?$/.exec(
+    /^(?:npx (?:@astryxdesign\/cli(?:@\S+)?|astryx)|astryx) docs(?:\s+([a-z][\w-]*(?:\/[a-z][\w-]*)*))?(?:\s.*)?$/.exec(
       code,
     );
   if (!match) {

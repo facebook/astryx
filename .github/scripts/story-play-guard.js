@@ -261,6 +261,35 @@ const TARGETS = [
     guards: 'just above the collapse, labels stay beside their controls',
   },
   {
+    component: 'FormLayout audit (phone)',
+    story: 'core-formlayout--audit-matrix',
+    viewport: {width: 320, height: 844},
+    guards:
+      'all arrangements stay in the 320px viewport, horizontal columns retain order, horizontal-labels collapses, and required-default ARIA remains truthful',
+  },
+  {
+    component: 'FormLayout audit (boundary)',
+    story: 'core-formlayout--audit-matrix',
+    viewport: {width: 481, height: 844},
+    guards:
+      'at 481px horizontal-labels remains a two-column grid while every arrangement stays in the viewport',
+  },
+  {
+    component: 'FormLayout audit (RTL phone)',
+    story: 'core-formlayout--audit-matrix',
+    direction: 'rtl',
+    viewport: {width: 320, height: 844},
+    guards:
+      'logical horizontal order mirrors under RTL while the collapsed horizontal-label layout stays in the phone viewport',
+  },
+  {
+    component: 'FormLayout audit (RTL wide)',
+    story: 'core-formlayout--audit-matrix',
+    direction: 'rtl',
+    guards:
+      'logical horizontal order mirrors under RTL and wide horizontal-label pairs retain inline-start placement',
+  },
+  {
     component: 'Grid',
     story: 'core-grid--grid-span-with-long-content',
     guards:
@@ -358,8 +387,11 @@ function recordStoryOutcome() {
 async function probe(page, target) {
   await page.addInitScript(recordStoryOutcome);
   const pointerQuery = target.hasTouch ? '&storyPlayPointer=coarse' : '';
+  const globalsQuery = target.direction
+    ? `&globals=direction:${target.direction}`
+    : '';
   await page.goto(
-    `http://localhost:${port}/iframe.html?id=${target.story}&viewMode=story${pointerQuery}`,
+    `http://localhost:${port}/iframe.html?id=${target.story}&viewMode=story${pointerQuery}${globalsQuery}`,
     {waitUntil: 'domcontentloaded', timeout: 30000},
   );
   await page.waitForFunction(
@@ -367,7 +399,25 @@ async function probe(page, target) {
     null,
     {timeout: 30000},
   );
-  return page.evaluate(() => window.__storyOutcome);
+  return page.evaluate(expectedDirection => {
+    const outcome = window.__storyOutcome;
+    if (expectedDirection != null) {
+      const directionRoot = document.querySelector('#storybook-root [dir]');
+      if (directionRoot == null) {
+        outcome.errors.push(
+          `direction mismatch — expected ${expectedDirection}, but the story direction wrapper is missing`,
+        );
+      } else {
+        const actualDirection = getComputedStyle(directionRoot).direction;
+        if (actualDirection !== expectedDirection) {
+          outcome.errors.push(
+            `direction mismatch — expected ${expectedDirection}, received ${actualDirection}`,
+          );
+        }
+      }
+    }
+    return outcome;
+  }, target.direction ?? null);
 }
 
 async function run() {

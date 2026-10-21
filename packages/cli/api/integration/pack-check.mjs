@@ -40,6 +40,7 @@ import {
 } from '../../foundation/discovery/docs-discovery.mjs';
 import {discoverIntegrationThemes} from '../../foundation/discovery/theme-discovery.mjs';
 import {inspectPackageExport} from '../../foundation/discovery/package-exports.mjs';
+import {parse as parseModule} from '@babel/parser';
 import {moduleExportsName} from '../../foundation/discovery/module-exports.mjs';
 import {
   ThemeImportError,
@@ -68,6 +69,7 @@ import {
   collectIdentities,
   compareIdentities,
 } from '../../foundation/integrations/contribution-inventory.mjs';
+import {formatCliCommand} from '../../foundation/env/package-manager.mjs';
 
 /**
  * @typedef {import('../../foundation/integrations/issue').AstryxIntegrationIssue} Issue
@@ -574,6 +576,7 @@ async function validateIncompleteThemeExports(
     path.join(os.tmpdir(), `astryx-theme-${localTheme.slug}-`),
   );
   const expectedCss = path.join(expectedDir, `${localTheme.slug}.css`);
+  let expectedModule = path.join(expectedDir, `${localTheme.slug}.js`);
   try {
     if (outputs.some(output => output.kind !== 'font stylesheet')) {
       // The scratch directory is the write root; the package stays the cwd,
@@ -583,6 +586,12 @@ async function validateIncompleteThemeExports(
       if (receipt == null || receipt.type !== 'theme.build') {
         throw new Error('the theme build produced no complete receipt');
       }
+      expectedModule = builtModuleFile(
+        receipt,
+        packageDir,
+        expectedDir,
+        localTheme.slug,
+      );
     }
     for (const output of outputs) {
       const localFile = /** @type {string} */ (output.inspected.target);
@@ -599,9 +608,7 @@ async function validateIncompleteThemeExports(
         continue;
       }
       const expectedFile =
-        output.kind === 'module'
-          ? path.join(expectedDir, `${localTheme.slug}.js`)
-          : expectedCss;
+        output.kind === 'module' ? expectedModule : expectedCss;
       const expected = normalizeThemeVerifyForCompare(
         fs.readFileSync(expectedFile, 'utf-8'),
       );
@@ -617,7 +624,7 @@ async function validateIncompleteThemeExports(
             output.kind === 'module'
               ? 'theme_module_stale'
               : 'theme_stylesheet_stale',
-            `Theme "${localTheme.slug}" ${output.kind} does not match ${sourceRelative}. This incomplete export remains packable, but run \`astryx theme build ${sourceRelative}\` before adding its matching export.`,
+            `Theme "${localTheme.slug}" ${output.kind} does not match ${sourceRelative}. This incomplete export remains packable, but run \`${formatCliCommand(`theme build ${sourceRelative}`, packageDir)}\` before adding its matching export.`,
           ),
         );
       }
@@ -636,13 +643,257 @@ async function validateIncompleteThemeExports(
     issues.push(
       error(
         'theme_build_failed',
-        `Theme "${localTheme.slug}" could not be rebuilt from ${sourceRelative}: ${err instanceof Error ? err.message : String(err)} Run \`astryx theme build ${sourceRelative}\` before packing.`,
+        `Theme "${localTheme.slug}" could not be rebuilt from ${sourceRelative}: ${err instanceof Error ? err.message : String(err)} Run \`${formatCliCommand(`theme build ${sourceRelative}`, packageDir)}\` before packing.`,
       ),
     );
   } finally {
     fs.rmSync(expectedDir, {recursive: true, force: true});
   }
   return issues;
+}
+
+/**
+ * The module a scratch `theme build` wrote. Its file is named by the theme's
+ * own name, which can differ from the slug the package exports it under. A
+ * receipt that names no file inside the scratch directory falls back to the
+ * slug.
+ * @param {any} receipt
+ * @param {string} cwd the directory the build ran in
+ * @param {string} expectedDir
+ * @param {string} slug
+ * @returns {string}
+ */
+function builtModuleFile(receipt, cwd, expectedDir, slug) {
+  const written = receipt?.data?.outputs?.js;
+  if (typeof written === 'string') {
+    const file = path.resolve(cwd, written);
+    const relative = path.relative(expectedDir, file);
+    if (relative && !relative.startsWith('..') && !path.isAbsolute(relative)) {
+      return file;
+    }
+  }
+  return path.join(expectedDir, `${slug}.js`);
+}
+
+/**
+ * The `.js` file a relative module specifier names from `fromFile`, the
+ * extension `theme build` gives the built module: the exact path, the path
+ * with `.js`, or its `index.js`.
+ * @param {string} specifier
+ * @param {string} fromFile
+ * @returns {string | null}
+ */
+function resolveRelativeJsModule(specifier, fromFile) {
+  if (!specifier.startsWith('./') && !specifier.startsWith('../')) return null;
+  const base = path.resolve(path.dirname(fromFile), specifier);
+  const candidates = [base, `${base}.js`, path.join(base, 'index.js')];
+  return (
+    candidates.find(candidate => {
+      try {
+        return candidate.endsWith('.js') && fs.statSync(candidate).isFile();
+      } catch {
+        return false;
+      }
+    }) ?? null
+  );
+}
+
+/** @param {string} file */
+function realFile(file) {
+  try {
+    return fs.realpathSync(file);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * The file a stylesheet import names: a relative path from the module, or a
+ * subpath of the package itself, resolved through its own exports.
+ * @param {string} specifier
+ * @param {string} moduleFile
+ * @param {{name?: string}} pkg
+ * @param {string} packageDir
+ * @returns {string | null}
+ */
+function resolveStylesheetImport(specifier, moduleFile, pkg, packageDir) {
+  if (specifier.startsWith('./') || specifier.startsWith('../')) {
+    const file = path.resolve(path.dirname(moduleFile), specifier);
+    try {
+      return fs.statSync(file).isFile() ? realFile(file) : null;
+    } catch {
+      return null;
+    }
+  }
+  if (typeof pkg.name !== 'string' || !specifier.startsWith(`${pkg.name}/`)) {
+    return null;
+  }
+  const exported = inspectPackageExport(
+    pkg,
+    packageDir,
+    `.${specifier.slice(pkg.name.length)}`,
+  );
+  return exported.exported && exported.target
+    ? realFile(exported.target)
+    : null;
+}
+
+/**
+ * The theme binding of a built module: the name of its `export const`.
+ * @param {string} file
+ * @returns {string | null}
+ */
+function builtThemeBinding(file) {
+  try {
+    const ast = parseModule(fs.readFileSync(file, 'utf-8'), {
+      sourceType: 'module',
+      plugins: ['importAttributes'],
+    });
+    for (const node of ast.program.body) {
+      if (
+        node.type === 'ExportNamedDeclaration' &&
+        node.declaration?.type === 'VariableDeclaration'
+      ) {
+        const id = node.declaration.declarations[0]?.id;
+        return id?.type === 'Identifier' ? id.name : null;
+      }
+    }
+  } catch {
+    // An unreadable module has no binding to match.
+  }
+  return null;
+}
+
+/** @param {any} node */
+function exportedName(node) {
+  return node?.name ?? node?.value;
+}
+
+/**
+ * Check a `.js` or `.mjs` theme module that is not the built module itself.
+ * It is accepted when it only loads the theme's own styles and re-exports the
+ * built module: each statement imports the theme's exported stylesheet or font
+ * stylesheet for its side effects, except one, which re-exports from a `.js`
+ * file that matches the built module either everything or only its theme,
+ * under the theme's export name. Returns null for any other file and for a module that
+ * re-exports nothing, and otherwise whether it is accepted. A
+ * rejection gives the reason, or, when only the re-exported module is stale,
+ * that module's specifier with `rebuild` set.
+ *
+ * @param {string} moduleFile
+ * @param {string} expected the built module, normalized for comparison
+ * @param {{exportName: string, stylesheetFile: string, fontStylesheetFile?: string, pkg: {name?: string}, packageDir: string}} theme
+ * @returns {{ok: true} | {ok: false, reason: string, rebuild: boolean} | null}
+ */
+function ownStylesEntry(moduleFile, expected, theme) {
+  if (!/\.m?js$/u.test(moduleFile)) return null;
+  let ast;
+  try {
+    ast = parseModule(fs.readFileSync(moduleFile, 'utf-8'), {
+      sourceType: 'module',
+      plugins: ['importAttributes'],
+    });
+  } catch {
+    return null;
+  }
+  const body = ast.program.body;
+  const reexports = body.filter(
+    (/** @type {any} */ node) =>
+      node.type === 'ExportAllDeclaration' ||
+      (node.type === 'ExportNamedDeclaration' && node.source != null),
+  );
+  if (reexports.length === 0) return null;
+  /** @param {string} reason @param {boolean} [rebuild] */
+  const reject = (reason, rebuild = false) => ({
+    ok: /** @type {const} */ (false),
+    reason,
+    rebuild,
+  });
+  if (reexports.length > 1) return reject('it has more than one re-export');
+  if ((ast.program.directives ?? []).length > 0) {
+    return reject('it has a directive');
+  }
+  const ownStylesheets = new Set(
+    [theme.stylesheetFile, theme.fontStylesheetFile]
+      .filter(file => file != null)
+      .map(file => realFile(/** @type {string} */ (file))),
+  );
+  const imported = new Set();
+  for (const node of body) {
+    if (node === reexports[0]) continue;
+    const line = node.loc?.start.line;
+    if (node.type !== 'ImportDeclaration') {
+      return reject(
+        `line ${line} is neither a stylesheet import nor the re-export`,
+      );
+    }
+    const specifier = node.source.value;
+    if (
+      node.importKind === 'type' ||
+      node.specifiers.length > 0 ||
+      (node.attributes ?? []).length > 0 ||
+      node.phase != null
+    ) {
+      return reject(`its import of ${specifier} is not a side-effect import`);
+    }
+    const file = resolveStylesheetImport(
+      specifier,
+      moduleFile,
+      theme.pkg,
+      theme.packageDir,
+    );
+    if (!file || !ownStylesheets.has(file)) {
+      return reject(
+        `${specifier} is not the theme's own stylesheet or font stylesheet`,
+      );
+    }
+    if (imported.has(file)) return reject(`it imports ${specifier} twice`);
+    imported.add(file);
+  }
+  const reexport = /** @type {any} */ (reexports[0]);
+  const from = reexport.source.value;
+  /** @type {string | null} */
+  let reexported = null;
+  if (
+    reexport.exportKind === 'type' ||
+    (reexport.attributes ?? []).length > 0
+  ) {
+    return reject(`its re-export from ${from} is not a plain re-export`);
+  }
+  if (reexport.type === 'ExportAllDeclaration') {
+    if (reexport.exported != null) {
+      return reject(`it re-exports ${from} as a namespace`);
+    }
+  } else {
+    const specifiers = reexport.specifiers ?? [];
+    if (
+      specifiers.length !== 1 ||
+      specifiers[0].type !== 'ExportSpecifier' ||
+      specifiers[0].exportKind === 'type' ||
+      exportedName(specifiers[0].exported) !== theme.exportName
+    ) {
+      return reject(`it re-exports names other than ${theme.exportName}`);
+    }
+    reexported = exportedName(specifiers[0].local);
+  }
+  const target = resolveRelativeJsModule(from, moduleFile);
+  if (!target) {
+    return reject(`its re-export from ${from} does not name a .js module`);
+  }
+  if (
+    normalizeThemeVerifyForCompare(fs.readFileSync(target, 'utf-8')) !==
+    expected
+  ) {
+    return reject(from, true);
+  }
+  // `theme build` names the theme's export after the theme's own name, which
+  // can differ from its slug, so a named re-export may give that export the
+  // slug's export name. It must be the theme, not another export of the built
+  // module, such as its icon registry.
+  if (reexported != null && reexported !== builtThemeBinding(target)) {
+    return reject(`it re-exports ${reexported}, which is not the built theme`);
+  }
+  return {ok: /** @type {const} */ (true)};
 }
 
 /**
@@ -711,7 +962,7 @@ async function validatePackedThemeExports(
       issues.push(
         warning(
           'theme_exports_missing',
-          `Theme "${localTheme.slug}" has no declared built exports. The package remains source-compatible. To make it importable, run \`astryx theme build ${sourceRelative}\` and export "./themes/${localTheme.slug}" plus "./themes/${localTheme.slug}.css" from package.json; \`astryx integration add theme ${localTheme.slug}\` creates those exports for a new theme.`,
+          `Theme "${localTheme.slug}" has no declared built exports. The package remains source-compatible. To make it importable, run \`${formatCliCommand(`theme build ${sourceRelative}`, localIntegration.__packageDir)}\` and export "./themes/${localTheme.slug}" plus "./themes/${localTheme.slug}.css" from package.json; \`${formatCliCommand(`integration add theme ${localTheme.slug}`, localIntegration.__packageDir)}\` creates those exports for a new theme.`,
         ),
       );
       continue;
@@ -751,7 +1002,7 @@ async function validatePackedThemeExports(
           err instanceof ThemeImportError
             ? 'theme_import_unresolvable'
             : 'theme_import_invalid',
-          `${message} Run \`astryx theme build ${sourceRelative}\` before packing.`,
+          `${message} Run \`${formatCliCommand(`theme build ${sourceRelative}`, localIntegration.__packageDir)}\` before packing.`,
         ),
       );
       continue;
@@ -772,12 +1023,17 @@ async function validatePackedThemeExports(
         issues.push(
           error(
             'theme_build_failed',
-            `Theme "${localTheme.slug}" did not produce a complete build. Run \`astryx theme build ${sourceRelative}\` before packing.`,
+            `Theme "${localTheme.slug}" did not produce a complete build. Run \`${formatCliCommand(`theme build ${sourceRelative}`, localIntegration.__packageDir)}\` before packing.`,
           ),
         );
         continue;
       }
-      const expectedModule = path.join(expectedDir, `${localTheme.slug}.js`);
+      const expectedModule = builtModuleFile(
+        receipt,
+        localIntegration.__packageDir,
+        expectedDir,
+        localTheme.slug,
+      );
       /** @type {Array<{kind: string, expected: string, local: string, packed: string, staleCode: string, packedCode: string}>} */
       const buildOutputs = [
         {
@@ -797,6 +1053,20 @@ async function validatePackedThemeExports(
           packedCode: 'packed_theme_stylesheet_changed',
         },
       ];
+      const localEntry = {
+        exportName: localTheme.exportName,
+        stylesheetFile: localImports.stylesheetFile,
+        fontStylesheetFile: localImports.fontStylesheetFile,
+        pkg: integrationPackageMetadata(localIntegration),
+        packageDir: localIntegration.__packageDir,
+      };
+      const packedEntry = {
+        exportName: packedTheme.exportName,
+        stylesheetFile: packedImports.stylesheetFile,
+        fontStylesheetFile: packedImports.fontStylesheetFile,
+        pkg: integrationPackageMetadata(packedIntegration),
+        packageDir: packedIntegration.__packageDir,
+      };
       for (const output of buildOutputs) {
         const expected = normalizeThemeVerifyForCompare(
           fs.readFileSync(output.expected, 'utf-8'),
@@ -807,15 +1077,31 @@ async function validatePackedThemeExports(
         const packed = normalizeThemeVerifyForCompare(
           fs.readFileSync(output.packed, 'utf-8'),
         );
-        if (expected !== local) {
+        // A module that is not the built module may still be an entry that
+        // loads the theme's own styles and re-exports the built module.
+        const localWrapper =
+          output.kind === 'module' && expected !== local
+            ? ownStylesEntry(output.local, expected, localEntry)
+            : null;
+        const packedWrapper =
+          output.kind === 'module' && expected !== packed
+            ? ownStylesEntry(output.packed, expected, packedEntry)
+            : null;
+        const localMatches = expected === local || localWrapper?.ok === true;
+        const packedMatches = expected === packed || packedWrapper?.ok === true;
+        if (!localMatches) {
           issues.push(
             error(
               output.staleCode,
-              `Theme "${localTheme.slug}" ${output.kind} does not match ${sourceRelative}. Run \`astryx theme build ${sourceRelative}\` before packing.`,
+              localWrapper && !localWrapper.ok && !localWrapper.rebuild
+                ? `Theme "${localTheme.slug}" module is not the module \`${formatCliCommand(`theme build ${sourceRelative}`, localIntegration.__packageDir)}\` writes and does not only wrap it: ${localWrapper.reason}. A module that wraps the built module may only import the theme's own stylesheet and font stylesheet for their side effects and re-export from the built module either everything or only its theme, as ${localTheme.exportName}.`
+                : localWrapper && !localWrapper.ok
+                  ? `Theme "${localTheme.slug}" module re-exports ${localWrapper.reason}, which does not match ${sourceRelative}. Run \`${formatCliCommand(`theme build ${sourceRelative}`, localIntegration.__packageDir)}\` before packing.`
+                  : `Theme "${localTheme.slug}" ${output.kind} does not match ${sourceRelative}. Run \`${formatCliCommand(`theme build ${sourceRelative}`, localIntegration.__packageDir)}\` before packing.`,
             ),
           );
         }
-        if (local !== packed) {
+        if (local !== packed || (localMatches && !packedMatches)) {
           issues.push(
             error(
               output.packedCode,
@@ -843,7 +1129,7 @@ async function validatePackedThemeExports(
       issues.push(
         error(
           'theme_build_failed',
-          `Theme "${localTheme.slug}" could not be rebuilt from ${sourceRelative}: ${err instanceof Error ? err.message : String(err)} Run \`astryx theme build ${sourceRelative}\` before packing.`,
+          `Theme "${localTheme.slug}" could not be rebuilt from ${sourceRelative}: ${err instanceof Error ? err.message : String(err)} Run \`${formatCliCommand(`theme build ${sourceRelative}`, localIntegration.__packageDir)}\` before packing.`,
         ),
       );
     } finally {
@@ -1254,6 +1540,10 @@ export async function integrationPackCheck(options = {}) {
         code: `packed_${issue.code}`,
         severity: issue.severity,
         message: `Packed: ${issue.message}`,
+        // The packed tree keeps the package's own paths.
+        ...(issue.fix != null ? {fix: issue.fix} : {}),
+        ...(issue.file != null ? {file: issue.file} : {}),
+        ...(issue.line != null ? {line: issue.line} : {}),
       });
     }
 

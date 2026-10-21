@@ -158,7 +158,7 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: 'If a swizzled component renders with no styles and no error, a missing compiler is almost always why. See the StyleX Build Setup section of {@link generic:tokens-and-setup} for bundler config examples.',
+          text: 'If a swizzled component fails at runtime with a `stylex.create` error, the app is missing a StyleX compiler: see the StyleX Build Setup section of {@link generic:tokens-and-setup}.',
         },
       ],
     },

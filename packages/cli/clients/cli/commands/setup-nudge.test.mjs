@@ -16,8 +16,23 @@ import {describe, it, expect, beforeEach, afterEach} from 'vitest';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as os from 'node:os';
-import {isAstryxInitialized} from '../../../foundation/agent-docs/agent-docs.mjs';
+import {fileURLToPath} from 'node:url';
+import {
+  isAstryxInitialized,
+  isAstryxPromptInReach,
+} from '../../../foundation/agent-docs/agent-docs.mjs';
 import {runCli} from '../../../test-utils/run-cli.mjs';
+
+/** This source checkout: the tests run the CLI from it. */
+const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../../..');
+
+/** Is `dir` inside a git repository? The temp folder normally is not. */
+function insideRepository(dir) {
+  for (let d = path.resolve(dir); ; d = path.dirname(d)) {
+    if (fs.existsSync(path.join(d, '.git'))) return true;
+    if (path.dirname(d) === d) return false;
+  }
+}
 
 const MARKER = '<!-- ASTRYX:START -->';
 const NUDGE = /finish setup and install the Astryx agent prompt/;
@@ -61,13 +76,65 @@ describe('isAstryxInitialized — centralized setup check (one place)', () => {
   });
 });
 
+// Agents read the agent docs between the repository root and the folder they
+// work in, so a monorepo initialized at its root is set up in every package.
+describe('isAstryxPromptInReach — up to the repository root', () => {
+  it('finds init\'s block at the repository root from a workspace package', () => {
+    fs.mkdirSync(path.join(tmp, '.git'));
+    write('AGENTS.md', MARKER);
+    write('packages/app/package.json', '{"name":"app"}');
+    expect(isAstryxPromptInReach(path.join(tmp, 'packages/app'))).toBe(true);
+  });
+
+  it('treats a worktree .git file as the repository root', () => {
+    write('.git', 'gitdir: /elsewhere\n');
+    write('CLAUDE.md', MARKER);
+    write('packages/app/package.json', '{"name":"app"}');
+    expect(isAstryxPromptInReach(path.join(tmp, 'packages/app'))).toBe(true);
+  });
+
+  it('does not look above the repository root', () => {
+    write('AGENTS.md', MARKER);
+    fs.mkdirSync(path.join(tmp, 'repo/.git'), {recursive: true});
+    write('repo/pkg/package.json', '{"name":"pkg"}');
+    expect(isAstryxPromptInReach(path.join(tmp, 'repo/pkg'))).toBe(false);
+  });
+
+  it.skipIf(insideRepository(os.tmpdir()))(
+    'checks only the folder itself outside a repository',
+    () => {
+      write('AGENTS.md', MARKER);
+      write('pkg/package.json', '{"name":"pkg"}');
+      expect(isAstryxPromptInReach(tmp)).toBe(true);
+      expect(isAstryxPromptInReach(path.join(tmp, 'pkg'))).toBe(false);
+    },
+  );
+});
+
 describe('enforcement layer 3 — per-command setup nudge', () => {
-  const asProject = () => write('package.json', '{"name":"t"}');
+  const asProject = () =>
+    write('package.json', '{"name":"t","dependencies":{"@astryxdesign/core":"*"}}');
 
   it('nudges on stderr after a command when not set up', async () => {
     asProject();
     const r = await runCli(['docs', 'tokens'], tmp);
     expect(r.stderr).toMatch(NUDGE);
+  });
+
+  it("in a project with only Core of another release, names adding the CLI at Core's version first, as the daily hint does", async () => {
+    write(
+      'package.json',
+      '{"name":"t","dependencies":{"@astryxdesign/core":"0.0.1"}}',
+    );
+    write(
+      'node_modules/@astryxdesign/core/package.json',
+      '{"name":"@astryxdesign/core","version":"0.0.1"}',
+    );
+    write('package-lock.json', '{}');
+    const r = await runCli(['docs', 'tokens'], tmp);
+    expect(r.stderr).toContain(
+      'Next step: run `npm install @astryxdesign/cli@0.0.1`, then `npx astryx init` to finish setup and install the Astryx agent prompt.',
+    );
   });
 
   it('is suppressed in --json (machine mode stays clean), stdout valid JSON', async () => {
@@ -89,6 +156,11 @@ describe('enforcement layer 3 — per-command setup nudge', () => {
     expect((await runCli(['docs', 'tokens'], tmp)).stderr).not.toMatch(NUDGE);
   });
 
+  it('is quiet outside a project (a package.json that declares no Astryx package)', async () => {
+    write('package.json', '{"name":"t"}');
+    expect((await runCli(['docs', 'tokens'], tmp)).stderr).not.toMatch(NUDGE);
+  });
+
   it('is quiet in an integration package, which is not an app', async () => {
     asProject();
     write('astryx.integration.mjs', 'export default {};\n');
@@ -98,5 +170,33 @@ describe('enforcement layer 3 — per-command setup nudge', () => {
   it('does not nudge for the installer command itself', async () => {
     asProject();
     expect((await runCli(['init'], tmp)).stderr).not.toMatch(NUDGE);
+  });
+
+  it('is quiet in a workspace package when init\'s block is at the repository root', async () => {
+    fs.mkdirSync(path.join(tmp, '.git'));
+    write('AGENTS.md', MARKER);
+    write('packages/app/package.json', '{"name":"app","dependencies":{"@astryxdesign/core":"*"}}');
+    const r = await runCli(['docs', 'tokens'], path.join(tmp, 'packages/app'));
+    expect(r.stderr).not.toMatch(NUDGE);
+  });
+
+  it('still nudges in a workspace package with no block up to the repository root', async () => {
+    fs.mkdirSync(path.join(tmp, '.git'));
+    write('AGENTS.md', 'project notes, no astryx block');
+    write('packages/app/package.json', '{"name":"app","dependencies":{"@astryxdesign/core":"*"}}');
+    const r = await runCli(['docs', 'tokens'], path.join(tmp, 'packages/app'));
+    expect(r.stderr).toMatch(NUDGE);
+  });
+
+  // The tests run the CLI from this checkout, so a project inside it is the
+  // contributor flow. The same project in the temp folder nudges (above).
+  it('is quiet inside the source checkout the CLI runs from', async () => {
+    const inside = fs.mkdtempSync(path.join(REPO, '.astryx-setup-nudge-'));
+    try {
+      fs.writeFileSync(path.join(inside, 'package.json'), '{"name":"t","dependencies":{"@astryxdesign/core":"*"}}');
+      expect((await runCli(['docs', 'tokens'], inside)).stderr).not.toMatch(NUDGE);
+    } finally {
+      fs.rmSync(inside, {recursive: true, force: true});
+    }
   });
 });

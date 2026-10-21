@@ -21,7 +21,9 @@ export const doc = {
     'agent-docs block when Core or configured integration guidance changes. ' +
     'Dry-run by default. --apply writes codemod and receipt changes, runs hooks, then refreshes agent docs. ' +
     'Anything a post-codemod hook prints goes to stderr, so stdout carries only the result. ' +
-    'ShadCN-copied compositions are checked automatically during a normal upgrade, or alone with --registry.',
+    'ShadCN-copied compositions are checked automatically during a normal upgrade, or alone with --registry. ' +
+    'Outside a project, --list lists the codemods this release ships and --registry finds no copied compositions to update; ' +
+    'a migration writes nothing and fails with ERR_VERSION_DETECT, because no installed Core names its target.',
   fn: 'upgrade',
   options: [
     {
@@ -102,6 +104,7 @@ export const doc = {
     },
     {label: 'Apply a migration', cli: 'astryx upgrade --from 0.1.0 --apply'},
   ],
+  outsideProject: 'own',
   exitCodes: [
     {code: 0, when: 'success, including complete dry-run previews'},
     {
@@ -116,6 +119,24 @@ export const doc = {
   ],
   related: ['init', 'doctor'],
   notes: [
+    {
+      type: 'prose',
+      text: "In global mode: in a project, upgrade runs the codemods of the project's own CLI, whichever astryx command you start; in a project with no CLI of its own, the astryx command you started runs them, so install the CLI at the new Core's version first (`astryx doctor` prints the command). Outside a project, `--list` lists this version's codemods, `--registry` finds no copied compositions, and a migration writes nothing and stops with `ERR_VERSION_DETECT`. See {@link namespace:global} and {@link generic:who-answers}.",
+    },
+    {type: 'heading', level: 3, text: 'A CLI older than your Core'},
+    {
+      type: 'prose',
+      text:
+        'Core codemods ship inside the CLI, so a CLI older than the installed @astryxdesign/core has none for ' +
+        'the releases after its own version. upgrade then says it cannot finish, never reports your code as up to date, ' +
+        'and prints the same upgrade pinned to the CLI release that matches your Core, such as ' +
+        '`cd <project> && npx @astryxdesign/cli@<core-version> upgrade --from <old-version> --path <source-dir> --apply`. ' +
+        'It changes to the folder this run used and names the directory it scanned as an absolute path, both with ' +
+        'symbolic links resolved, so pasted from any folder it upgrades the same code. It is written for a POSIX shell (sh, bash, zsh), or for PowerShell on Windows, ' +
+        'with each argument quoted for that shell; cmd.exe is not a target. The codemods this CLI has still run. ' +
+        'It exits 0, so a script checks the JSON: the result carries `cliBehindCore` with `cliVersion` (the newest release ' +
+        'this CLI has codemods for) and `command`.',
+    },
     {type: 'heading', level: 3, text: 'Protected files'},
     {
       type: 'prose',

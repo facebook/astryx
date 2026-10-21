@@ -21,6 +21,7 @@ import {docs} from '../docs/docs.mjs';
 import {auditCliSelfDocs} from '../../foundation/discovery/cli-self-docs.mjs';
 import {
   doctor,
+  checkCliCommand,
   checkAuthoringDocs,
   checkCliDocs,
   checkDocsTree,
@@ -31,6 +32,8 @@ import {
   checkVersionAlignment,
   checkPackageManager,
 } from './doctor.mjs';
+import {formatCliCommand} from '../../foundation/env/package-manager.mjs';
+import {Project} from '../../foundation/config/project.mjs';
 
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../..');
 const cwd = REPO;
@@ -86,6 +89,30 @@ describe('doctor leaf', () => {
   }, SLOW);
 });
 
+describe('doctor never reads the carried Core (spec AST-081 FR3)', () => {
+  it('loads the project to read only its installed Core, in a project with nothing installed', async () => {
+    const dir = mkProject({
+      'package.json': JSON.stringify({
+        name: 'fresh-clone',
+        dependencies: {'@astryxdesign/core': '^0.7.0'},
+      }),
+    });
+    const load = vi.spyOn(Project, 'load');
+    const coreDir = vi.spyOn(Project.prototype, 'coreDir');
+    try {
+      await doctor({cwd: dir});
+      // Doctor's own project reads only the installed Core, and no Core a
+      // project read during the run is the carried one.
+      expect(load.mock.calls.some(([, options]) => options?.core === 'project')).toBe(true);
+      expect(coreDir).toHaveBeenCalled();
+      for (const result of coreDir.mock.results) expect(result.value).toBeNull();
+    } finally {
+      load.mockRestore();
+      coreDir.mockRestore();
+    }
+  });
+});
+
 describe('integration issue check', () => {
   it('surfaces cross-package replacement warnings', () => {
     const check = checkIntegrationIssues({
@@ -110,7 +137,7 @@ describe('integration issue check', () => {
 describe('doctor leaf — degradation & error paths', () => {
   it('does not crash on multiple config files; reports a config FAIL', async () => {
     const dir = mkProject({
-      'package.json': '{"name":"x"}',
+      'package.json': '{"name":"x","dependencies":{"@astryxdesign/core":"*"}}',
       'astryx.config.mjs': 'export default {};',
       'astryx.config.js': 'export default {};',
     });
@@ -123,7 +150,7 @@ describe('doctor leaf — degradation & error paths', () => {
 
   it('reports a config FAIL (not a crash) when astryx.config.mjs throws on import', async () => {
     const dir = mkProject({
-      'package.json': '{"name":"x"}',
+      'package.json': '{"name":"x","dependencies":{"@astryxdesign/core":"*"}}',
       'astryx.config.mjs': 'throw new Error("boom");\nexport default {};',
     });
     const r = await doctor({cwd: dir});
@@ -134,7 +161,7 @@ describe('doctor leaf — degradation & error paths', () => {
 
   it('flags a non-object config default export as FAIL', async () => {
     const dir = mkProject({
-      'package.json': '{"name":"x"}',
+      'package.json': '{"name":"x","dependencies":{"@astryxdesign/core":"*"}}',
       'astryx.config.mjs': 'export default 42;',
     });
     const r = await doctor({cwd: dir});
@@ -187,6 +214,102 @@ describe('doctor — checkVersionAlignment', () => {
     expect(['pass', 'warn']).toContain(c.status);
     expect(c.message).not.toMatch(/NaN|undefined/);
     if (c.fix) expect(c.fix).not.toMatch(/NaN|undefined/);
+  });
+});
+
+describe("doctor — the project's own CLI and Core on different releases", () => {
+  const cli = JSON.parse(
+    fs.readFileSync(new URL('../../package.json', import.meta.url), 'utf8'),
+  ).version;
+  /** @param {string} core */
+  const at = core => {
+    const dir = mkProject({
+      'package-lock.json': '{}',
+      'node_modules/@astryxdesign/core/package.json': JSON.stringify({
+        name: '@astryxdesign/core',
+        version: core,
+      }),
+    });
+    return checkVersionAlignment({
+      cwd: dir,
+      coreDir: path.join(dir, 'node_modules/@astryxdesign/core'),
+      nodeVersion: '',
+      configPath: null,
+      configTheme: null,
+    });
+  };
+
+  it('warns on any difference, patch included, and names the align command', () => {
+    const older = at('0.0.1');
+    expect(older.status).toBe('warn');
+    expect(older.message).toContain(
+      `This project's CLI ${cli} answers it, but its Core is 0.0.1`,
+    );
+    expect(older.fix).toBe(
+      `To align them, run: npm install @astryxdesign/core@${cli}, then npx astryx upgrade --from 0.0.1 --apply.`,
+    );
+    const newer = at('99.0.0');
+    expect(newer.fix).toBe(
+      'To align them, run: npm install @astryxdesign/cli@99.0.0.',
+    );
+    expect(at(cli).status).toBe('pass');
+  });
+
+  it('in a project with no CLI of its own, warns that the started copy answered and names the command that adds the CLI at Core', () => {
+    const dir = mkProject({
+      'package-lock.json': '{}',
+      'node_modules/@astryxdesign/core/package.json': JSON.stringify({
+        name: '@astryxdesign/core',
+        version: '0.0.1',
+      }),
+    });
+    const c = checkVersionAlignment({
+      cwd: dir,
+      coreDir: path.join(dir, 'node_modules/@astryxdesign/core'),
+      nodeVersion: '',
+      configPath: null,
+      configTheme: null,
+      ownCli: false,
+    });
+    expect(c.status).toBe('warn');
+    expect(c.message).toBe(
+      `This project has no Astryx CLI installed; CLI ${cli}, the one you started, answered while its Core is 0.0.1.`,
+    );
+    expect(c.fix).toBe('To match, run: npm install @astryxdesign/cli@0.0.1.');
+  });
+});
+
+describe('checkCliCommand', () => {
+  it('is informational when no integration declares a command', () => {
+    const dir = mkProject({'pnpm-lock.yaml': ''});
+    const c = checkCliCommand({cwd: dir, integrations: [{name: '@acme/a'}]});
+    expect(c).toMatchObject({id: 'cli-command', status: 'info'});
+  });
+
+  it('passes and names the command and who declared it', () => {
+    const c = checkCliCommand({
+      cwd: mkProject({}),
+      integrations: [{name: '@acme/a', cliCommand: 'acme astryx'}],
+    });
+    expect(c).toMatchObject({id: 'cli-command', status: 'pass'});
+    expect(c.message).toContain('`acme astryx`');
+    expect(c.message).toContain('@acme/a');
+  });
+
+  it('warns when integrations declare different commands', () => {
+    const dir = mkProject({'pnpm-lock.yaml': ''});
+    const c = checkCliCommand({
+      cwd: dir,
+      integrations: [
+        {name: '@acme/a', cliCommand: 'acme astryx'},
+        {name: '@acme/b', cliCommand: 'other astryx'},
+      ],
+    });
+    expect(c).toMatchObject({id: 'cli-command', status: 'warn'});
+    expect(c.message).toContain('@acme/a (`acme astryx`)');
+    expect(c.message).toContain('@acme/b (`other astryx`)');
+    expect(c.message).toContain('pnpm dlx @astryxdesign/cli');
+    expect(c.fix).toContain('cliCommand');
   });
 });
 
@@ -353,6 +476,49 @@ describe('checkImplicitIntegrations', () => {
     expect(c.message).toContain('named in astryx.config');
   });
 
+  // A package with no astryx.config that loads its own manifest: there is no
+  // config file, so the message must not say anything is named in one.
+  it("names the package's own manifest instead of a config that does not exist", () => {
+    const c = checkImplicitIntegrations({
+      integrations: [autolinked({__autolinked: false, __local: true, name: '@acme/kit'})],
+    });
+    expect(c.status).toBe('info');
+    expect(c.message).toBe(
+      "None — the only loaded integration is this package's own manifest (@acme/kit).",
+    );
+    expect(c.message).not.toContain('astryx.config');
+  });
+
+  // An own manifest that failed to load keeps a `__local` record carrying
+  // `__loadError`; it loaded nothing, so it is never named as loaded.
+  it("does not name the package's own manifest as loaded when it failed to load", () => {
+    const failed = autolinked({
+      __autolinked: false,
+      __local: true,
+      name: '@acme/kit',
+      __loadError: 'astryx.integration.mjs threw: boom',
+    });
+    const alone = checkImplicitIntegrations({integrations: [failed]});
+    expect(alone.status).toBe('info');
+    expect(alone.message).toBe('None loaded.');
+    const beside = checkImplicitIntegrations({
+      integrations: [autolinked({__autolinked: false}), failed],
+    });
+    expect(beside.message).toBe('None — every loaded integration is named in astryx.config.');
+  });
+
+  it('names both when configured integrations load beside the own manifest', () => {
+    const c = checkImplicitIntegrations({
+      integrations: [
+        autolinked({__autolinked: false}),
+        autolinked({__autolinked: false, __local: true, name: '@acme/kit'}),
+      ],
+    });
+    expect(c.message).toBe(
+      "None — every loaded integration is named in astryx.config or is this package's own manifest (@acme/kit).",
+    );
+  });
+
   it('names the package, the field, and what it contributes', () => {
     // Roots count only when they exist, so this one gives them real folders.
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'astryx-implicit-'));
@@ -486,7 +652,7 @@ describe('checkAuthoringDocs', () => {
   it('passes when every authoring self-doc is reachable and fits one read', async () => {
     const c = await checkAuthoringDocs();
     expect(c).toMatchObject({id: 'authoring-docs', status: 'pass'});
-    expect(c.message).toContain('astryx docs authoring');
+    expect(c.message).toContain(formatCliCommand('docs authoring'));
   }, SLOW);
 });
 
@@ -514,7 +680,7 @@ describe('checkCliDocs', () => {
         id: 'cli-docs',
         label: 'CLI docs',
         status: 'pass',
-        message: `All ${audit.docs} CLI docs are readable: ${audit.tree} in the \`astryx docs cli\` tree and ${audit.authoring} in \`astryx docs authoring\`.`,
+        message: `All ${audit.docs} CLI docs are readable: ${audit.tree} in the \`${formatCliCommand('docs cli')}\` tree and ${audit.authoring} in \`${formatCliCommand('docs authoring')}\`.`,
       });
     },
     SLOW,
@@ -548,7 +714,7 @@ describe('checkCliDocs', () => {
         label: 'CLI docs',
         status: 'fail',
         message:
-          '2 problems: api/alpha/alpha.doc.mjs has no namespace, so no `astryx docs` topic reads it; clients/cli/commands/beta.doc.mjs has namespace "cli", which no `astryx docs` topic reads',
+          `2 problems: api/alpha/alpha.doc.mjs has no namespace, so no \`${formatCliCommand('docs')}\` topic reads it; clients/cli/commands/beta.doc.mjs has namespace "cli", which no \`${formatCliCommand('docs')}\` topic reads`,
         fix: CLI_DOCS_FIX,
       });
     },
@@ -624,7 +790,7 @@ describe('checkDocsTree', () => {
 describe('checkAuthoringDocs against the public authoring surface', () => {
   const NAMESPACE = 'doctypes/namespace/namespace.doc.mjs';
   const NAMESPACE_TYPES =
-    'NamespaceDoc, NamespaceProviderScope, NamespaceSlotAcceptance, NamespaceSlot, NamespaceAdoptionSource, NamespaceAdoptionRule from doctypes/namespace/type.ts have no doc in `astryx docs authoring`';
+    `NamespaceDoc, NamespaceProviderScope, NamespaceSlotAcceptance, NamespaceSlot, NamespaceAdoptionSource, NamespaceAdoptionRule from doctypes/namespace/type.ts have no doc in \`${formatCliCommand('docs authoring')}\``;
   const SURFACE_FIX =
     'Put a self-doc beside each module whose types @astryxdesign/cli/authoring exports and list it in AUTHORING_SELF_DOCS; export what each listed self-doc documents, or remove that self-doc.';
 
@@ -654,7 +820,7 @@ describe('checkAuthoringDocs against the public authoring surface', () => {
         id: 'authoring-docs',
         label: 'Authoring docs',
         status: 'pass',
-        message: `All ${AUTHORING_SELF_DOCS.length} authoring schemas are readable in \`astryx docs authoring\`.`,
+        message: `All ${AUTHORING_SELF_DOCS.length} authoring schemas are readable in \`${formatCliCommand('docs authoring')}\`.`,
       });
     },
     SLOW,
@@ -683,7 +849,7 @@ describe('checkAuthoringDocs against the public authoring surface', () => {
       });
       expect(c.status).toBe('fail');
       expect(c.message).toBe(
-        `2 problems: ${NAMESPACE} is not in \`astryx docs authoring\`; ${NAMESPACE_TYPES}: ${NAMESPACE} is not listed in AUTHORING_SELF_DOCS`,
+        `2 problems: ${NAMESPACE} is not in \`${formatCliCommand('docs authoring')}\`; ${NAMESPACE_TYPES}: ${NAMESPACE} is not listed in AUTHORING_SELF_DOCS`,
       );
     },
     SLOW,
@@ -781,7 +947,7 @@ describe('checkAuthoringDocs against the public authoring surface', () => {
       expect(c.fix).toBe(SURFACE_FIX);
       expect(c.message).toMatch(
         new RegExp(
-          `^[A-Za-z, ]+ from ${escape(module)} have no doc in \`astryx docs authoring\`: no self-doc sits beside ${escape(module)}$`,
+          `^[A-Za-z, ]+ from ${escape(module)} have no doc in \`${escape(formatCliCommand('docs authoring'))}\`: no self-doc sits beside ${escape(module)}$`,
         ),
       );
       for (const name of names) {
@@ -824,7 +990,7 @@ describe('checkAuthoringDocs against the public authoring surface', () => {
         expect(await checkAuthoringDocs()).toMatchObject({
           status: 'fail',
           message:
-            '`astryx docs authoring` could not be read: no built-in docs',
+            `\`${formatCliCommand('docs authoring')}\` could not be read: no built-in docs`,
           fix: SURFACE_FIX,
         });
       } finally {
@@ -845,7 +1011,7 @@ describe('checkAuthoringDocs against the public authoring surface', () => {
       const c = await checkAuthoringDocs(undefined, {root});
       expect(c.status).toBe('fail');
       expect(c.message).toContain(
-        '@astryxdesign/cli/authoring exports no types, so nothing was compared with `astryx docs authoring`',
+        `@astryxdesign/cli/authoring exports no types, so nothing was compared with \`${formatCliCommand('docs authoring')}\``,
       );
     },
     SLOW,
@@ -1055,7 +1221,7 @@ describe('doctor says why it skipped and what it checked', () => {
       expect(by.config.message).toMatch(
         /^astryx\.config\.mjs loads, but the CLI could not load the project from it: .*integrations/,
       );
-      expect(by.config.fix).toContain('astryx docs authoring config');
+      expect(by.config.fix).toContain(' docs authoring config`');
       for (const id of ['implicit-integrations', 'provider-identity']) {
         expect(by[id].message).toMatch(
           /^Skipped — the project configuration could not be read: .*integrations/,
@@ -1182,7 +1348,7 @@ describe('a configured integration that cannot load fails the gate', () => {
         /^1 of 1 integration named in astryx\.config could not be loaded, so it contributes nothing: @acme\/widgets \(/,
       );
       expect(check.message).toMatch(reason);
-      expect(check.fix).toContain('astryx doctor integration validate <package>');
+      expect(check.fix).toContain(' doctor integration validate <package>`');
       expect(summary.fail).toBe(1);
     },
     SLOW,

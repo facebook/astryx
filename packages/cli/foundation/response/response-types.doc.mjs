@@ -32,6 +32,11 @@ export const doc = {
       description:
         'The removal receipt — returned when --remove-agents is set: `data.removed` is true when a managed agent-docs block was found and removed, and false when there was none to remove.',
     },
+    {
+      value: 'init.user',
+      description:
+        'The computer-level agent text receipt — returned when --user is set: `data.files`, one `{path, action, reason?}` per path acted on, the skill file first and then each link to its folder (action `written` | `linked` | `unchanged` | `removed` | `absent` | `kept`; `reason` only on `kept`: `edited` when a person changed the text, `not-astryx` when Astryx did not write it), `data.command` (the command the text names), and `data.warnings`.',
+    },
     // component
     {
       value: 'component.list',
@@ -112,7 +117,7 @@ export const doc = {
     {
       value: 'discover.list',
       description:
-        'The integrations the project loads (name, category, components, version, a list per other kind they add, and latest when a source knows it); with a discover source, meta.available lists what the project could add and meta.sources reports each source; when empty it carries meta.configured to tell "nothing configured" from "nothing discovered".',
+        'What the project has, the integrations it loads and the official packages it declares, official packages first (name, category, components, version, a list per other kind they add, and latest when a source knows it); meta.available lists what the project could add, the official packages first, each with the command that adds it, and meta.sources reports each source, the official list last; when it lists no integration it carries meta.configured to tell "nothing configured" from "nothing discovered".',
     },
     {
       value: 'discover.detail',
@@ -139,7 +144,7 @@ export const doc = {
     {
       value: 'search',
       description:
-        'The echoed query, `matchCount` (total matches, before `limit`), and results, a ranked SearchResultEntry[] bounded by `limit`: each {domain, name, package, score, reason, description, command} (package is the npm package that owns the result), plus import (components, hooks), title, parent (the command that opens the level above), and, for a hit on one section, section (docs), or displayName and kind (templates).',
+        'The echoed query, `matchCount` (total matches, before `limit`), and results, a ranked SearchResultEntry[] bounded by `limit`: each {domain, name, package, score, reason, description, command} (package is the npm package that owns the result), plus import (components, hooks), title, parent (the command that opens the level above), and, for a hit on one section, section (docs), or displayName and kind (templates). When a search with no `type` could not obtain @astryxdesign/core, `meta.partial` is {skipped, reason}: the domains it skipped (component, hook, template) and why.',
     },
 
     // build
@@ -169,12 +174,13 @@ export const doc = {
     // gap reports
     {
       value: 'gap-report.categories',
-      description: 'The fixed gap category values and human-readable labels.',
+      description:
+        'The fixed gap category values and human-readable labels; when a loaded integration names its own issues URL, meta.destinations lists every destination ({to, default, issuesUrl}) and meta.ask tells an agent to ask the person.',
     },
     {
       value: 'gap-report.file',
       description:
-        'An aggregate receipt: overall status, the selected package, issuesUrl (or null), deliveries in handler order, each {handlerType: project | integration | fallback, handler, audience, status, url, message}, and filedCount/routedOnlyCount totals.',
+        'An aggregate receipt: overall status, the selected package, issuesUrl (or null), deliveries in handler order, each {handlerType: project | integration | fallback, handler, audience, status, url, message}, and filedCount/routedOnlyCount totals; without --to, when a loaded integration names its own issues URL, destinations and ask as on gap-report.categories.',
     },
 
     // template
@@ -283,19 +289,19 @@ export const doc = {
     {
       value: 'upgrade.status',
       description:
-        'A short-circuit outcome with no codemods run (up_to_date, no_codemods, or config_fixable), each carrying the agent-docs summary.',
+        'A short-circuit outcome with no codemods run (up_to_date, no_codemods, or config_fixable), each carrying the agent-docs summary. no_codemods and config_fixable carry cliBehindCore ({cliVersion, command}) when the installed Core is newer than the CLI, which then has no codemods for the releases after its own version.',
     },
     {
       value: 'upgrade.run',
       description:
-        'The run receipt: from/to versions, codemod count, integrations processed, the agent-docs summary, sourcePathFound (false when the resolved source directory does not exist, so no source file was read), and (apply mode) filesChanged, transformsApplied, and per-codemod errors.',
+        'The run receipt: from/to versions, codemod count, integrations processed, the agent-docs summary, sourcePathFound (false when the resolved source directory does not exist, so no source file was read), and (apply mode) filesChanged, transformsApplied, and per-codemod errors. When the installed Core is newer than the CLI, it also carries cliBehindCore ({cliVersion, command}): codemods for the releases after cliVersion did not run.',
     },
 
     // manifest
     {
       value: 'manifest',
       description:
-        'The CLI capability manifest: name, version, apiVersion, description, globalOptions, commands (each name, description, arguments, options, json, aliases?, responseTypes?, examples?, exitCodes? as [{code, when}], subcommands?), jsonSupported, and the flat responseTypes index.',
+        "The CLI capability manifest: name, version, apiVersion, description, globalOptions, commands (each name, description, arguments, options, json, aliases?, responseTypes?, examples?, exitCodes? as [{code, when}], outsideProject? (same, refuse, or own; absent on a group), subcommands?), jsonSupported, globalMode ({docs, summary}: what a run may do beyond its command, such as the hand-off to the project's own CLI, the daily update check, and the agent skill file, and the docs topic that explains it), and the flat responseTypes index.",
     },
 
     // help and version, which no single command owns
@@ -327,12 +333,12 @@ export const doc = {
     {
       value: 'integration.pack-check',
       description:
-        'The packed-package check: name, version, packable, tarball {filename, fileCount, size, unpackedSize} or null, inventory {manifest, roots [{kind, path, expectedFiles, missingFiles, complete}], expectedFiles, packedFiles}, contributions {local, packed}, each null or {themes [{slug, exportName}], components, templates [{id, type, name}], codemods [{version, id}], docs, agentDocsAppend}, and issues [{code, severity, message}].',
+        'The packed-package check: name, version, packable, tarball {filename, fileCount, size, unpackedSize} or null, inventory {manifest, roots [{kind, path, expectedFiles, missingFiles, complete}], expectedFiles, packedFiles}, contributions {local, packed}, each null or {themes [{slug, exportName}], components, templates [{id, type, name}], codemods [{version, id}], docs, agentDocsAppend}, and issues [{code, severity, message, fix?, file?, line?}] (the issues validation finds in the source and, prefixed packed_, in the packed tree, with the fix and the place when the check knows them).',
     },
     {
       value: 'integration.validate',
       description:
-        'The validation result: validated (false when nothing was validated: with no package.json the issues list carries one no_package error so the command exits 1, and with a package.json but no integration manifest the issues list is empty and proves nothing), the package name and version (both null when validated is false) plus issues, an AstryxIntegrationIssue[] of {code, severity: warning | error, message}.',
+        'The validation result: validated (false when nothing was validated: with no package.json the issues list carries one no_package error so the command exits 1, and with a package.json but no integration manifest the issues list is empty and proves nothing), the package name and version (both null when validated is false) plus issues, an AstryxIntegrationIssue[] of {code, severity: warning | error, message, fix?, file?, line?} (fix: the change that resolves it; file and line: where, relative to the package), and notes when there are any: {code, message} information that fails nothing, such as invalid_cli_command for a malformed cliCommand. When the manifest loads, docTypes checks each doc against its published authoring type: status (checked | skipped), reason, typescript, docs, findings (all warnings, each naming the field and a fix), unchecked, and fixtures (test fixture docs not checked).',
     },
     {
       value: 'integration.template-conflicts',
@@ -342,12 +348,17 @@ export const doc = {
     {
       value: 'integration.component-conflicts',
       description:
-        'validated (false when no integration manifest was found, so nothing was inspected), the integration identity, structural issues, and non-blocking conflicts where an integration component name is also owned by Core; each conflict includes the exact package-qualified command.',
+        'validated (false when no integration manifest was found, so nothing was inspected), the integration identity, structural issues, and non-blocking conflicts where an integration component name is also owned by Core; each conflict includes the exact package-qualified command. When the manifest loads and declares a components root, propDrift compares documented props with the TypeScript props: status (checked | skipped), reason, typescript, components, typesCompared, typesSkipped, findings (all warnings; a default_mismatch carries docDefault, codeDefault, and a fix), unchecked, typesNotCompared, and propsNotChecked.',
     },
     {
       value: 'integration.doc-conflicts',
       description:
-        'validated (false when no integration manifest was found, so nothing was inspected), the integration identity, structural issues, and Core doc overlaps. Each finding includes `severity` (`info` | `error`) and `relationship` (`replaces` | `extends` | `accidental`).',
+        'validated (false when no integration manifest was found, so nothing was inspected), the integration identity, structural issues, and Core doc overlaps. Each finding includes `severity` (`info` | `error`) and `relationship` (`replaces` | `extends` | `accidental`). copiedPassages lists each pair of topics that repeat 10 or more words of prose word for word: topic, section, otherTopic, otherOwner (package | core), words, passages, owner (the topic that should keep the text), text (the passage as the topic writes it), line (where the copy starts in the topic to change, or null), and message (the exact replacement); each is also a copied_passage warning in issues. fluff lists padding phrases and low-density topics: topic, kind (phrase | density), phrase, section, file (relative to the package root), line, density, and message (what to cut or write instead); each is also a doc_fluff warning in issues. strayPointers lists each code span that is exactly `astryx docs <name>` for a doc that exists, in the prose, description or summary of a topic or the text fields of a component doc: topic (the topic or component doc), kind (topic | component), section, field (the field outside any section, such as description or usage.bestPractices[0].description, else null), file (relative to the package root), line, pointer (the written command), link (the {@link} that replaces it), and message; each is also a stray_doc_pointer warning in issues.',
+    },
+    {
+      value: 'integration.check',
+      description:
+        'Every source check of an integration package in one result: validated (false when no integration manifest was found, so nothing was checked), the package name and version, strict, and checks, one entry per check (validate, components, templates, docs), each with check, errors, warnings, skipped, failed, and response, the envelope that check returns on its own. The totals are errors, warnings, and skipped; unchecked counts what the checks could not compare. With --strict, failures lists each warning and each piece of skipped work again as an error, in the issue format the checks use; it is empty without --strict. failed decides the exit code.',
     },
   ],
 };
