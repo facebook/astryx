@@ -23,3 +23,11 @@ describe('butter touch + narrow type pin', () => {
     );
   });
 });
+
+describe('butter secondary ComplexSelector', () => {
+  it('keeps the hover fill off a disabled trigger in either form', () => {
+    expect(generateThemeCSS(butterTheme).component).toMatch(
+      /:hover:not\(:has\(> ?:is\(:disabled, ?\[aria-disabled="true"\]\)\)\)/,
+    );
+  });
+});
