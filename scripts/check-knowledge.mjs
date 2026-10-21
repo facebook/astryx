@@ -132,6 +132,8 @@ export function parseKnowledgeDocument(content, filePath = '<document>') {
 }
 
 const REVIEW_APPLICABILITY_MARKER = 'review-applicability:v1';
+const PATH_APPLICABILITY_MARKER = 'path-applicability:v1';
+const PATH_PATTERN_CHARACTERS = /^[A-Za-z0-9_.@*?/-]+$/;
 export const GLOBAL_REVIEW_TRIGGERS = new Set([
   'accessibility',
   'behavior',
@@ -205,19 +207,17 @@ export function extractKnowledgeClaims(content) {
   return claims;
 }
 
-export function parseReviewApplicabilityBlock(
-  content,
-  filePath = '<knowledge record>',
-) {
-  const marker = /<!--\s*review-applicability:v1\s*-->/g;
+function parseOverlayBlock(content, markerName, filePath) {
+  const marker = new RegExp(
+    `<!--\\s*${markerName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*-->`,
+    'g',
+  );
   const markers = [...content.matchAll(marker)];
   if (markers.length === 0) return {config: null, problems: []};
   if (markers.length > 1) {
     return {
       config: null,
-      problems: [
-        `${filePath}: duplicate ${REVIEW_APPLICABILITY_MARKER} blocks.`,
-      ],
+      problems: [`${filePath}: duplicate ${markerName} blocks.`],
     };
   }
 
@@ -227,7 +227,7 @@ export function parseReviewApplicabilityBlock(
     return {
       config: null,
       problems: [
-        `${filePath}: ${REVIEW_APPLICABILITY_MARKER} must be followed by one JSON code block.`,
+        `${filePath}: ${markerName} must be followed by one JSON code block.`,
       ],
     };
   }
@@ -242,7 +242,7 @@ export function parseReviewApplicabilityBlock(
     return {
       config: null,
       problems: [
-        `${filePath}: ${REVIEW_APPLICABILITY_MARKER} repeats JSON field ${JSON.stringify(duplicates[0])}.`,
+        `${filePath}: ${markerName} repeats JSON field ${JSON.stringify(duplicates[0])}.`,
       ],
     };
   }
@@ -253,10 +253,17 @@ export function parseReviewApplicabilityBlock(
     return {
       config: null,
       problems: [
-        `${filePath}: ${REVIEW_APPLICABILITY_MARKER} is not valid JSON (${error.message}).`,
+        `${filePath}: ${markerName} is not valid JSON (${error.message}).`,
       ],
     };
   }
+}
+
+export function parseReviewApplicabilityBlock(
+  content,
+  filePath = '<knowledge record>',
+) {
+  return parseOverlayBlock(content, REVIEW_APPLICABILITY_MARKER, filePath);
 }
 
 export function validateReviewApplicability(
@@ -325,6 +332,125 @@ export function validateReviewApplicability(
     }
   }
   return problems;
+}
+
+function pathPatternExpression(pattern) {
+  let expression = '';
+  const segments = pattern.split('/');
+  segments.forEach((segment, index) => {
+    const last = index === segments.length - 1;
+    if (segment === '**') {
+      expression += last ? '.*' : '(?:[^/]+/)*';
+      return;
+    }
+    expression += segment
+      .split('')
+      .map(character => {
+        if (character === '*') return '[^/]*';
+        if (character === '?') return '[^/]';
+        return character.replace(/[.+^${}()|[\]\\]/g, '\\$&');
+      })
+      .join('');
+    if (!last) expression += '/';
+  });
+  return new RegExp(`^${expression}$`);
+}
+
+/**
+ * True when a repository-relative path matches a path-applicability pattern.
+ * `**` spans any number of whole segments, `*` any run within one segment,
+ * and `?` one character within a segment. Matching is case-sensitive.
+ */
+export function matchesPathPattern(pattern, filePath) {
+  return pathPatternExpression(pattern).test(filePath);
+}
+
+export function parsePathApplicabilityBlock(
+  content,
+  filePath = '<knowledge record>',
+) {
+  return parseOverlayBlock(content, PATH_APPLICABILITY_MARKER, filePath);
+}
+
+/**
+ * Validate a `path-applicability:v1` block. When `repositoryFiles` is given,
+ * every pattern must match at least one of them, so a pattern cannot go stale
+ * silently after a move or rename.
+ */
+export function validatePathApplicability(
+  config,
+  filePath = '<knowledge record>',
+  repositoryFiles = null,
+) {
+  if (config == null) return [];
+  const where = `${filePath}: ${PATH_APPLICABILITY_MARKER}`;
+  if (!exactKeys(config, ['paths'])) {
+    return [`${where} requires exactly paths.`];
+  }
+  if (!Array.isArray(config.paths) || config.paths.length === 0) {
+    return [`${where} requires a non-empty paths list.`];
+  }
+  const problems = [];
+  const seen = new Set();
+  for (const pattern of config.paths) {
+    if (typeof pattern !== 'string' || pattern.length === 0) {
+      problems.push(`${where} has a non-string or empty pattern.`);
+      continue;
+    }
+    const label = `${where} pattern ${JSON.stringify(pattern)}`;
+    if (seen.has(pattern)) {
+      problems.push(`${label} is repeated.`);
+      continue;
+    }
+    seen.add(pattern);
+    if (!PATH_PATTERN_CHARACTERS.test(pattern)) {
+      problems.push(
+        `${label} may use only letters, digits, _ . @ - / and the wildcards * ** ?.`,
+      );
+      continue;
+    }
+    const segments = pattern.split('/');
+    if (
+      pattern.startsWith('/') ||
+      segments.some(
+        segment => segment === '' || segment === '.' || segment === '..',
+      )
+    ) {
+      problems.push(
+        `${label} must be repository-relative with no empty, "." or ".." segments.`,
+      );
+      continue;
+    }
+    if (segments.some(segment => segment.includes('**') && segment !== '**')) {
+      problems.push(`${label} may use ** only as a whole segment.`);
+      continue;
+    }
+    if (pattern === '**') {
+      problems.push(`${label} covers the whole repository; name the paths.`);
+      continue;
+    }
+    if (
+      repositoryFiles &&
+      !repositoryFiles.some(candidate => matchesPathPattern(pattern, candidate))
+    ) {
+      problems.push(`${label} matches no repository file.`);
+    }
+  }
+  return problems;
+}
+
+function repositoryFileList(root) {
+  try {
+    return execFileSync('git', ['-C', root, 'ls-files', '-z'], {
+      encoding: 'utf8',
+      maxBuffer: 256 * 1024 * 1024,
+      stdio: ['ignore', 'pipe', 'ignore'],
+    })
+      .split('\0')
+      .filter(Boolean);
+  } catch {
+    return null;
+  }
 }
 
 function isKnowledgeRecordPath(filePath) {
@@ -1626,6 +1752,7 @@ export async function validateKnowledgeRoot(root = DEFAULT_ROOT) {
   const ids = new Map();
   const records = [];
   const delegations = [];
+  const repositoryFiles = repositoryFileList(root);
 
   for (const [kind, kindSchema] of Object.entries(schema.kinds)) {
     const kindVersion = latestKindVersions.get(kind);
@@ -1684,6 +1811,15 @@ export async function validateKnowledgeRoot(root = DEFAULT_ROOT) {
     const filePath = path.relative(root, absolutePath);
     const content = fs.readFileSync(absolutePath, 'utf8');
     const document = parseKnowledgeDocument(content, filePath);
+    const pathApplicability = parsePathApplicabilityBlock(content, filePath);
+    problems.push(
+      ...pathApplicability.problems,
+      ...validatePathApplicability(
+        pathApplicability.config,
+        filePath,
+        repositoryFiles,
+      ),
+    );
     const reviewApplicability = parseReviewApplicabilityBlock(
       content,
       filePath,
@@ -1827,10 +1963,23 @@ export async function validateKnowledgeRoot(root = DEFAULT_ROOT) {
     }
   }
 
+  if (repositoryFiles) {
+    const {loadKnowledgeIndex, findUnreachedRecords} =
+      await import('./specs-for-file.mjs');
+    for (const record of findUnreachedRecords(
+      loadKnowledgeIndex(root),
+      repositoryFiles,
+    )) {
+      problems.push(
+        `${record.path}: current record ${record.id} is not reached from any repository path that is not itself a record (INV25). Link it through placement, applies_to, verified_by, a membership or consumer-doc id, a cited spec number, or a path-applicability:v1 block.`,
+      );
+    }
+  }
+
   return problems;
 }
 
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
+async function main() {
   const problems = await validateKnowledgeRoot();
   const baseIndex = process.argv.indexOf('--base');
   if (baseIndex !== -1) {
@@ -1849,4 +1998,13 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
     process.exit(1);
   }
   console.log('Knowledge templates and records are aligned.');
+}
+
+// Not a top-level await: validation imports scripts/specs-for-file.mjs, which
+// imports this module back, and that import must find it fully evaluated.
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  main().catch(error => {
+    console.error(error);
+    process.exit(1);
+  });
 }
