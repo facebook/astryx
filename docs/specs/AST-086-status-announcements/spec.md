@@ -66,10 +66,11 @@ announcement channel.
 - **FR3 — Live roles only on persistent containers.** A component MAY own a
   live role only on an element that stays mounted while its content changes.
   It MUST NOT mount that element already holding the text to announce.
-- **FR4 — A live container owns its children.** Content added inside a mounted
-  live container is delivered by that container. A child MUST NOT add its own
-  live role or announce the same content through the channel. The container's
-  urgency applies, including to an error added inside it.
+- **FR4 — A live container owns content added inside it.** Content added inside
+  a mounted live container is delivered by that container, at its urgency. An
+  element added with that content MUST NOT carry its own live role or announce
+  the same content through the channel. A persistent component region that FR3
+  allows, such as Button's loading region, keeps its own role.
 - **FR5 — Urgency.** Outside a live container, errors and time-critical
   failures use the assertive channel. All other status messages use the polite
   channel. Inside a mounted live container, FR4 applies.
