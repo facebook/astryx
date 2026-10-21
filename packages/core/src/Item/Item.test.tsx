@@ -382,12 +382,31 @@ describe('Item', () => {
     expect(screen.getByTestId('item')).toHaveAttribute('aria-disabled', 'true');
   });
 
-  it('disables the invisible button when isDisabled', () => {
+  it('keeps a disabled invisible button focusable and inert', async () => {
+    const user = userEvent.setup();
+    const onClick = vi.fn();
     const {container} = render(
-      <Item label="Disabled" onClick={() => {}} isDisabled />,
+      <Item label="Disabled" onClick={onClick} isDisabled />,
     );
-    const button = container.querySelector('button');
-    expect(button).toBeDisabled();
+    const button = container.querySelector('button')!;
+    expect(button).not.toHaveAttribute('disabled');
+    expect(button).toHaveAttribute('aria-disabled', 'true');
+    await user.tab();
+    expect(button).toHaveFocus();
+    await user.keyboard('{Enter} ');
+    fireEvent.click(button);
+    expect(onClick).not.toHaveBeenCalled();
+  });
+
+  it('keeps a disabled link focusable with no live destination', async () => {
+    const user = userEvent.setup();
+    render(<Item label="Disabled link" href="/settings" isDisabled />);
+    const link = screen.getByRole('link', {name: 'Disabled link'});
+    expect(link).not.toHaveAttribute('href');
+    expect(link).toHaveAttribute('aria-disabled', 'true');
+    await user.tab();
+    expect(link).toHaveFocus();
+    expect(fireEvent.click(link)).toBe(false);
   });
 
   it('does not fire onClick when disabled item is clicked', async () => {

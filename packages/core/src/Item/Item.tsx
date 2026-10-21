@@ -538,6 +538,12 @@ const densityStyles = stylex.create({
 // Component
 // =============================================================================
 
+function preventDisabledLinkClick(
+  event: React.MouseEvent<HTMLAnchorElement>,
+): void {
+  event.preventDefault();
+}
+
 /**
  * A universal item primitive that unifies the "start content + label +
  * description + end content" layout pattern. Use as a building block for list items,
@@ -763,11 +769,15 @@ export function Item({
         </span>
       ) : href != null && !isLinkRoot ? (
         <LinkComponent
-          href={href}
-          target={target}
-          rel={rel}
+          // A disabled link drops its href so nothing navigates, and keeps a
+          // Tab stop and the link role (spec:AST-085 FR1, FR2, FR5).
+          href={isDisabled ? undefined : href}
+          target={isDisabled ? undefined : target}
+          rel={isDisabled ? undefined : rel}
+          role={isDisabled ? 'link' : undefined}
+          onClick={isDisabled ? preventDisabledLinkClick : undefined}
           aria-disabled={isDisabled || undefined}
-          tabIndex={isDisabled ? -1 : undefined}
+          tabIndex={isDisabled ? 0 : undefined}
           {...stylex.props(
             styles.invisibleAnchor,
             isInline && styles.inlineContent,
@@ -778,8 +788,8 @@ export function Item({
       ) : onClick != null ? (
         <button
           type="button"
-          onClick={onClick}
-          disabled={isDisabled}
+          onClick={isDisabled ? undefined : onClick}
+          aria-disabled={isDisabled || undefined}
           {...stylex.props(
             styles.invisibleButton,
             isInline && styles.inlineContent,

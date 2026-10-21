@@ -10,7 +10,7 @@
 
 import {createElement, type ReactNode} from 'react';
 import {describe, expect, it, vi} from 'vitest';
-import {act, render, screen, waitFor} from '@testing-library/react';
+import {act, fireEvent, render, screen, waitFor} from '@testing-library/react';
 import {Item} from './Item';
 import type {ItemSwipeLayerProps} from './ItemSwipeLayer';
 
@@ -70,5 +70,34 @@ describe('Item and the swipe layer', () => {
     // followed by the out-of-flow panel, with no wrapper for either.
     expect(panel?.parentElement).toBe(row);
     expect(row.childElementCount).toBe(2);
+  });
+
+  it('keeps a disabled swipe action focusable and inert', async () => {
+    const onActivate = vi.fn();
+    render(
+      <Item
+        label="Inbox"
+        data-testid="row"
+        swipeActions={{
+          trailing: [
+            {label: 'Delete', onActivate, isDisabled: true},
+            {label: 'Archive', onActivate: () => {}},
+          ],
+        }}
+      />,
+    );
+    const row = screen.getByTestId('row');
+    const action = await waitFor(() => {
+      const found = Array.from(row.querySelectorAll('button')).find(
+        button => button.textContent === 'Delete',
+      );
+      expect(found).toBeDefined();
+      return found!;
+    });
+    // spec:AST-085 FR1/FR2: no native disabled, exposed as disabled, inert.
+    expect(action).not.toHaveAttribute('disabled');
+    expect(action).toHaveAttribute('aria-disabled', 'true');
+    fireEvent.click(action);
+    expect(onActivate).not.toHaveBeenCalled();
   });
 });

@@ -363,12 +363,12 @@ export function Link({
       <button
         ref={ref as React.Ref<HTMLButtonElement>}
         type="button"
-        onClick={onClick}
+        // A disabled button stays focusable (spec:AST-085 FR1); without
+        // native `disabled`, the click guard keeps it inert (FR2).
+        onClick={isDisabled ? undefined : onClick}
         {...(isDisabled ? undefined : pressable)}
         aria-label={label || undefined}
         aria-disabled={isDisabled || undefined}
-        tabIndex={isDisabled ? -1 : undefined}
-        disabled={isDisabled}
         {...mergeProps(
           themeProps('link', {color}),
           focusOutlineProps.focusVisible(
@@ -391,19 +391,20 @@ export function Link({
       </button>
     );
   } else if (isDisabled) {
-    // A disabled link renders as a plain <a> with no href: an href-less
-    // anchor is not focusable and exposes no link affordance, so programmatic
-    // focus + Enter, AT activation commands, and middle-click cannot navigate
-    // or fire the consumer onClick. The router LinkComponent is deliberately
-    // skipped — a disabled link performs no navigation, and custom router
-    // links may require a live href. target/rel are omitted with the href.
+    // A disabled link renders as an <a> with no href, so nothing can navigate
+    // and the consumer onClick never fires. It keeps a Tab stop and the link
+    // role so keyboard and screen-reader users still find it (spec:AST-085
+    // FR1, FR5). The router LinkComponent is deliberately skipped — a disabled
+    // link performs no navigation, and custom router links may require a live
+    // href. target/rel are omitted with the href.
     linkElement = (
       <a
         ref={ref as React.Ref<HTMLAnchorElement>}
         onClick={preventDefaultClick}
+        role="link"
         aria-label={label || undefined}
         aria-disabled={true}
-        tabIndex={-1}
+        tabIndex={0}
         {...mergeProps(
           themeProps('link', {color}),
           focusOutlineProps.focusVisible(

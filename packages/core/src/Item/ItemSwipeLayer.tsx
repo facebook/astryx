@@ -298,8 +298,10 @@ export default function ItemSwipeLayer({
               <button
                 key={entry.id ?? entry.label}
                 type="button"
-                disabled={entry.isDisabled === true}
+                // Focusable while disabled (spec:AST-085 FR1), but inert.
+                aria-disabled={entry.isDisabled === true || undefined}
                 onClick={() =>
+                  entry.isDisabled !== true &&
                   swipe.activateEntry(() => {
                     void entry.onActivate();
                     return entry.hasRemoval === true;

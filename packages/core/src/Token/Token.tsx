@@ -319,9 +319,12 @@ export function Token({
       aria-label={t('@astryx.token.remove', {label})}
       onClick={e => {
         e.stopPropagation();
-        onRemove(e);
+        if (!isDisabled) {
+          onRemove(e);
+        }
       }}
-      disabled={isDisabled}
+      // Focusable while disabled (spec:AST-085 FR1); the guard keeps it inert.
+      aria-disabled={isDisabled || undefined}
       {...focusOutlineProps.focusVisible(styles.removeButton)}>
       <Icon icon="close" size="xsm" color="inherit" />
     </button>
@@ -454,8 +457,8 @@ export function Token({
         {icon}
         <button
           type="button"
-          onClick={effectiveOnClick}
-          disabled={isDisabled}
+          onClick={isDisabled ? undefined : effectiveOnClick}
+          aria-disabled={isDisabled || undefined}
           {...stylex.props(styles.invisibleButton)}>
           <span
             {...stylex.props(

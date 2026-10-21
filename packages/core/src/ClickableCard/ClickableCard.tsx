@@ -380,7 +380,8 @@ export function ClickableCard({
           role={isDisabled ? 'link' : undefined}
           aria-label={label}
           aria-disabled={isDisabled || undefined}
-          tabIndex={isDisabled ? -1 : 0}
+          // A disabled card keeps its Tab stop (spec:AST-085 FR1).
+          tabIndex={0}
           {...stylex.props(styles.srOnly)}
         />
       ) : (
@@ -388,8 +389,9 @@ export function ClickableCard({
           ref={interactiveRef as React.Ref<HTMLButtonElement>}
           type="button"
           aria-label={label}
-          disabled={isDisabled}
-          onClick={onClickProp}
+          aria-disabled={isDisabled || undefined}
+          // Focusable while disabled (FR1); the guard keeps it inert (FR2).
+          onClick={isDisabled ? undefined : onClickProp}
           {...stylex.props(styles.srOnly)}
         />
       )}
