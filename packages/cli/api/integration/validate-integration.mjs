@@ -450,7 +450,7 @@ async function validateAtPackageDir(
   // `exports`, docs, examples and template imports.
   const publicImports = await publicImportIssues(packageDir, loaded);
   issues.push(...publicImports.issues);
-  // Each finding is a note until the next minor makes it a warning.
+  // Its findings are warnings; notes stays empty.
   if (publicImports.notes.length > 0)
     (result.notes ??= []).push(...publicImports.notes);
   result.publicImports = publicImports.report;

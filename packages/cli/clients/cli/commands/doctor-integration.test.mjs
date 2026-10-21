@@ -677,7 +677,7 @@ describe('doctor integration — command', () => {
     }
   });
 
-  it('validate prints the public-import findings as listed only, and still exits 0', async () => {
+  it('validate prints the public-import findings as warnings, and still exits 0', async () => {
     writeIntegration({id: 'hero', name: 'Hero', type: 'block'});
     fs.writeFileSync(
       path.join(tmpDir, 'package.json'),
@@ -694,9 +694,10 @@ describe('doctor integration — command', () => {
     ]);
 
     const output = logCalls.join('\n');
-    expect(output).toContain('note (template_import_not_exported):');
+    expect(output).toContain('template_import_not_exported');
+    expect(output).not.toContain('note (template_import_not_exported)');
     expect(output).toContain('Fix:');
-    expect(output).toContain('[ok] No integration issues found.');
+    expect(output).not.toContain('[ok] No integration issues found.');
     expect(process.exitCode).toBeUndefined();
   });
 

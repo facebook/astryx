@@ -117,10 +117,10 @@ afterEach(() => {
   fs.rmSync(dir, {recursive: true, force: true});
 });
 
-/** The public-import findings, listed as notes on validate's result. */
+/** The public-import findings: warnings on validate's result. */
 async function found() {
   const result = await validateLocalIntegration(dir);
-  return (result.notes ?? []).filter(note => CODES.has(note.code));
+  return result.issues.filter(issue => CODES.has(issue.code));
 }
 
 async function codes() {
@@ -228,7 +228,7 @@ describe('public imports: clean packages', () => {
     );
     const result = await validateIntegration(undefined, {cwd: dir});
     expect(
-      (result.data.notes ?? []).filter(i => i.code.includes('_not_exported')),
+      result.data.issues.filter(i => i.code.includes('_not_exported')),
     ).toEqual([]);
     expect(result.data.publicImports?.unchecked).toEqual([
       expect.objectContaining({
@@ -272,13 +272,13 @@ describe('public imports: component doc import', () => {
     pkg(p => delete p.exports['./components/AcmeWidget']);
     const issues = await found();
     const issue = issues.find(i => i.code === 'component_import_not_exported');
-    expect(issue).not.toHaveProperty('severity');
+    expect(issue?.severity).toBe('warning');
     expect(issue?.message).toContain(
       '"./components/AcmeWidget": "./components/AcmeWidget.tsx"',
     );
   });
 
-  it('lists its findings only: neither validate nor --strict counts or fails on them', async () => {
+  it('adds only warnings: validate keeps its exit, only --strict fails', async () => {
     pkg(p => {
       delete p.exports['./components/AcmeWidget'];
     });
@@ -288,15 +288,12 @@ describe('public imports: component doc import', () => {
     );
     const issues = await found();
     expect(issues.length).toBeGreaterThan(2);
-    expect(issues.every(i => !('severity' in i))).toBe(true);
-    const validated = await validateLocalIntegration(dir);
-    expect(validated.issues.filter(issue => CODES.has(issue.code))).toEqual([]);
+    expect(issues.every(i => i.severity === 'warning')).toBe(true);
     const plain = await integrationCheck({cwd: dir});
     expect(plain.data.errors).toBe(0);
-    expect(plain.data.warnings).toBe(0);
+    expect(plain.data.failed).toBe(false);
     const strict = await integrationCheck({cwd: dir, strict: true});
-    expect(strict.data.failed).toBe(false);
-    expect(strict.data.failures).toEqual([]);
+    expect(strict.data.failed).toBe(true);
   });
 
   it('flags a require-only condition', async () => {
@@ -710,9 +707,7 @@ describe('which Core and which package', () => {
         cwd: path.join(root, 'packages/widgets'),
       });
       expect(
-        (result.data.notes ?? []).filter(
-          i => i.code === 'template_private_import',
-        ),
+        result.data.issues.filter(i => i.code === 'template_private_import'),
       ).toEqual([]);
       expect(result.data.publicImports?.unchecked).toEqual([
         expect.objectContaining({
@@ -740,14 +735,16 @@ describe('which Core and which package', () => {
         reason: expect.stringContaining('no "name"'),
       }),
     );
-    // Nothing from the public-import check fails `integration check
-    // --strict`: no skip, no warning (other checks may report the missing
-    // name themselves).
+    // From the public-import check, `integration check --strict` fails only
+    // on the warning it could judge; the unchecked imports never fail it.
     const {warnings, skipped} = strictIssues('validate', result);
     expect(
-      [...warnings, ...skipped].filter(
-        each => CODES.has(each.code) || each.code === 'public_imports_skipped',
-      ),
-    ).toEqual([]);
+      [...warnings, ...skipped]
+        .filter(
+          each =>
+            CODES.has(each.code) || each.code === 'public_imports_skipped',
+        )
+        .map(each => each.code),
+    ).toEqual(['template_import_outside_root']);
   });
 });
