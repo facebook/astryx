@@ -1919,6 +1919,24 @@ describe('integrationPackCheck', () => {
     expect(sourceWarnings[0].message).toContain('stray.tsx');
   });
 
+  it('fails on a package.json npm cannot pack, which validate only warns about', async () => {
+    writePackage({files: ['astryx.integration.mjs', 'themes']});
+    const packageFile = path.join(tmpDir, 'package.json');
+    const pkg = JSON.parse(fs.readFileSync(packageFile, 'utf-8'));
+    delete pkg.name;
+    fs.writeFileSync(packageFile, `${JSON.stringify(pkg, null, 2)}\n`);
+
+    const result = await integrationPackCheck({cwd: tmpDir});
+
+    expect(result.data.packable).toBe(false);
+    expect(
+      result.data.issues.map(issue => [issue.code, issue.severity]),
+    ).toEqual([
+      ['invalid_package_json', 'error'],
+      ['pack_failed', 'error'],
+    ]);
+  });
+
   it('cleans up its scratch consumer when npm pack fails', async () => {
     writePackage({
       files: ['astryx.integration.mjs', 'themes'],

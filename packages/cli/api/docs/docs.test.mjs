@@ -123,7 +123,13 @@ describe('docs() dispatcher routing', () => {
       kind: 'namespace',
       package: '@astryxdesign/cli',
       breadcrumb: [{route: 'cli', title: 'Astryx CLI'}],
-      content: [],
+      // Its one block points to the host entry's guide.
+      content: [
+        {
+          type: 'prose',
+          text: expect.stringContaining('`astryx docs cli/host-entry`'),
+        },
+      ],
     });
     expect(r.data.slots.flatMap(slot => slot.children.map(c => c.route))).toEqual([
       'cli/api/functions',

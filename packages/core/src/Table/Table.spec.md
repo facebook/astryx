@@ -27,7 +27,9 @@ verified_by:
 modules:
   [
     module:Table/useTableActivation,
+    module:Table/useTableInfiniteScroll,
     module:Table/useTableRowStatus,
+    module:Table/useTableVirtualization,
     module:Table/useTableColumnResize,
   ]
 families: []

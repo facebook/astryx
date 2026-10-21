@@ -95,7 +95,8 @@ own ranking and output, and template owners own what each template is.
   next best page templates, at most two, each with its scaffold command.
 - **FR8 — The kit fills the template.** Build MUST list the blocks that fill
   the start before the components, and name the always-on frame and
-  foundation components.
+  foundation components. The order of the listed blocks follows
+  `spec:AST-083`.
 - **FR9 — An existing page is kept.** Build's text output MUST tell a builder
   who is changing a page they already have to keep it and use only the blocks
   and components.

@@ -74,7 +74,8 @@
     "dev:sandbox": "pnpm -F @astryxdesign/core build && pnpm -F @astryxdesign/sandbox dev",
     "dev:sandbox:source": "pnpm generate:i18n-runtime && ASTRYX_SOURCE=1 pnpm -F @astryxdesign/sandbox dev",
     "npm:prune-canaries": "node scripts/npm/prune-canaries.mjs",
-    "check:knowledge": "node scripts/check-knowledge.mjs"
+    "check:knowledge": "node scripts/check-knowledge.mjs",
+    "specs:for": "node scripts/specs-for-file.mjs"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.12.1",

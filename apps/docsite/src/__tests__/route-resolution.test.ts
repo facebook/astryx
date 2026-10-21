@@ -90,8 +90,9 @@ describe('route resolution', () => {
 
   it('lists the guides the sidebar listed before the splits, plus new topics only', () => {
     // The Guide section as it was before the CLI integration guide and the
-    // other topics were split into short guides. `styling-overview` is a
-    // topic added since; `global` is the Global mode page.
+    // other topics were split into short guides. `styling-overview` and
+    // `cli-host-entry` are topics added since; `global` is the Global mode
+    // page.
     const sidebarGuides = docTopics
       .filter(d => d.category === 'guide' && d.topic !== 'getting-started')
       .map(d => d.topic)
@@ -101,6 +102,7 @@ describe('route resolution', () => {
         'authoring',
         'browser-support',
         'cli-component-lookups',
+        'cli-host-entry',
         'cli-integrations',
         'cli-writing-docs',
         'global',

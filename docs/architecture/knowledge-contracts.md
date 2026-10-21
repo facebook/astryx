@@ -20,6 +20,7 @@ applies_to:
 verified_by:
   [
     scripts/check-knowledge.test.mjs,
+    scripts/specs-for-file.test.mjs,
     .github/scripts/change-scope.test.mjs,
     .github/scripts/component-design-decisions.test.mjs,
     .github/scripts/lib/classify-visual.test.mjs,
@@ -47,8 +48,11 @@ deciding_specs: []
       "INV18",
       "INV20",
       "INV21",
+      "INV25",
+      "INV26",
       "DEC-9",
-      "DEC-10"
+      "DEC-10",
+      "DEC-12"
     ]
   }
 }
@@ -98,6 +102,19 @@ changed code or theme source
   → architecture or system decision only when referenced
   → mapped tests and audit evidence
 ```
+
+A lookup can also start from any repository path. `pnpm specs:for <path>`
+lists every current record linked to that path, the system specs that decided
+those records, and the global claims the path's component triggers route. It
+follows only links that records and files declare:
+
+- placement: the record itself, the component, module, or theme record whose
+  canonical location contains the path;
+- path fields: `applies_to`, `verified_by`, and `path-applicability:v1` patterns;
+- names: family `members`, design `components`, and `affects_consumer_docs` ids
+  naming the path's component or consumer-doc topic;
+- citations: a system-spec number such as `AST-030` written in the file;
+- inheritance: the references a linked record relies on.
 
 A current record may cite a previous human decision. When the new case is within
 that decision's stated scope, the reviewer applies it without asking again.
@@ -282,6 +299,43 @@ Every record is either:
   eligibility report. [AST-030](../specs/AST-030/spec.md) FR12 owns shared
   visual-regression execution and baseline adoption. This placement rule does
   not add a capture owner or require permanent archiving of every CI run.
+
+### Path discovery
+
+- **INV25 — Every current record is reachable from a path.** Each current record
+  is linked from at least one repository path that is not itself a knowledge
+  record, through placement, a path field, a name, a citation, inheritance, or
+  a deciding link. A path-first lookup reports a path with no linked record as
+  unrouted. It never infers a link from a file name, extension, or directory
+  name.
+- **INV26 — Path applicability locates a record; claims still decide.** A record
+  whose rules apply to paths that no other link reaches declares them in one
+  `path-applicability:v1` block. A matching path lists the record. The match
+  does not widen any claim beyond its stated scope (INV14), does not make the
+  record outrank a narrower owner (INV9), and does not require behavior to live
+  in the named files (INV18). Every pattern matches at least one tracked file.
+
+## Path applicability
+
+Use this optional block when a record governs paths that its placement, path
+fields, names, and inherited links do not reach. A record that is already
+reached from every path it governs stays unmarked.
+
+<!-- path-applicability-example:v1 -->
+
+```json
+{
+  "paths": ["apps/docsite/**", "packages/**/*.doc.mjs"]
+}
+```
+
+In an opted-in record, replace the example marker with `path-applicability:v1`.
+Patterns are repository-relative and case-sensitive. `**` is a whole segment
+that spans any number of segments, `*` matches within one segment, and `?`
+matches one character within a segment. Patterns use only letters, digits,
+`_ . @ - /`, and those wildcards. A bare `**` is rejected. The checked-in
+validator rejects malformed blocks, unsafe or repeated patterns, and patterns
+that match no tracked file.
 
 ## Global review applicability
 
@@ -619,7 +673,11 @@ this flow passes the historical review benchmark and is enforced on pull request
   canonical record; `docs/themes/README.md` is guidance and an index only.
 - `docs/schemas/knowledge/` defines required structure.
 - `scripts/check-knowledge.mjs` validates templates, records, approval metadata,
-  and optional component/module design-decision tables.
+  optional component/module design-decision tables, `path-applicability:v1`
+  blocks, and INV25 reachability.
+- `scripts/specs-for-file.mjs` (`pnpm specs:for`) resolves the records linked to
+  a path. `--unrouted` lists tracked paths with no linked current record;
+  `--unreached` lists current records no path reaches.
 - `.github/scripts/component-design-decisions.cjs` classifies current
   component/module changes as no DD change, DD-only, or mixed from trusted base
   and head bytes. DD-only requires unchanged path, kind, authority, and every byte
@@ -863,6 +921,23 @@ Rejected: counting any app approval on the pull request, because an approval of
 an earlier head or one followed by a request for changes would keep the gate
 clear.
 
+### DEC-12 — Records declare the paths they govern in an optional overlay
+
+**Reference:** `architecture:knowledge-contracts/DEC-12`
+**Decider:** `cixzhang`, `2026-10-21`
+
+A record that governs paths no other link reaches declares glob patterns in an
+optional `path-applicability:v1` block, beside `review-applicability:v1`. The
+overlay is independently versioned, so opting in does not change a record
+kind's required shape or migrate other records. A path-first lookup lists a
+matched record; claim scope, precedence, and implementation freedom are
+unchanged.
+
+Rejected: a required `applies_to` field on every kind, because it would migrate
+every active record to declare paths most already reach through placement or
+inheritance. Rejected: regular expressions, because a reviewer cannot read
+their reach at a glance and they over-match silently.
+
 ## Verification
 
 | Invariant                         | Evidence                                                                                                                                                                                                     | Failure signal                                                                                                                                                                                                                                                |
@@ -881,9 +956,10 @@ clear.
 | INV21, DEC-10                     | `.github/scripts/component-design-decisions.test.mjs`, `.github/scripts/review-signal-decision.test.mjs`, `.github/scripts/spec-owner-decision.test.mjs`, and `.github/scripts/lib/classify-visual.test.mjs` | A malformed/local DD escapes validation, stale approval clears a new head, owner routing loses mixed-change gates, or executable/API/unknown runtime code is misclassified as appearance-only                                                                 |
 | DEC-11                            | `.github/scripts/review-signal-decision.test.mjs`, `.github/scripts/review-clear-workflow.test.mjs`, and `.github/scripts/review-signal-workflow.test.mjs`                                                   | An app approval clears a read-only or fork author or an earlier head; a later app request for changes or dismissal leaves the gate clear; an app approval overrides an ENGOWNER request for changes; or an unset app or unreadable permission clears the gate |
 
-| Invariant   | Evidence                                                                                                                                 | Failure signal                                                                                                                                                                         |
-| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| INV22–INV24 | Contributor/reviewer evidence inventory; public-link and byte verification; retained remote refs; unchanged fixture/baseline/media paths | Disposable captures enter the source tree, cleanup loses a referenced image, a temporary branch is called durable, or storage changes overwrite an owner's proof or retention contract |
+| Invariant            | Evidence                                                                                                                                 | Failure signal                                                                                                                                                                                                   |
+| -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| INV22–INV24          | Contributor/reviewer evidence inventory; public-link and byte verification; retained remote refs; unchanged fixture/baseline/media paths | Disposable captures enter the source tree, cleanup loses a referenced image, a temporary branch is called durable, or storage changes overwrite an owner's proof or retention contract                           |
+| INV25, INV26, DEC-12 | `scripts/specs-for-file.test.mjs`, `scripts/check-knowledge.test.mjs`, and `pnpm check:knowledge`                                        | A current record is reached by no tracked non-record path, a lookup infers a link from a name, a pattern matches nothing or the whole repository, or a pattern match widens a claim or outranks a narrower owner |
 
 Evidence placement is enforced by contributors and reviewers. The local
 `docs/pr-assets/` ignore prevents accidental staging; it is not a blocking CI

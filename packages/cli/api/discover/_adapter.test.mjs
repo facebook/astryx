@@ -21,6 +21,10 @@ import {
   withDeclaredOfficial,
 } from './_adapter.mjs';
 import {parseDiscoverCatalog} from '../../authoring/discover/parse.mjs';
+import {
+  _resetHostedRun,
+  activateHostedRun,
+} from '../../foundation/runtime/package-root.mjs';
 
 /** No official packages, so a test sees only its own sources after it. */
 const NO_OFFICIAL = {packages: []};
@@ -228,6 +232,44 @@ describe('callSources', () => {
 
     const otherRequest = await callSources(p, {package: '@a/one'}, options);
     expect(otherRequest.sources[0].status).toBe('failed');
+  });
+
+  it("keeps a host's saved copies per host, so one tool never answers with another's", async () => {
+    let online = true;
+    const source = async () => {
+      if (!online) throw new Error('offline');
+      return catalog('Acme catalog', [pkg('@acme/one')]);
+    };
+    const options = {cacheDir, official: NO_OFFICIAL};
+    try {
+      activateHostedRun({
+        discoverSources: [source],
+        startingRoot: '/tools/acme',
+      });
+      await callSources(undefined, {}, options);
+      online = false;
+      const sameHost = await callSources(undefined, {}, options);
+      expect(sameHost.sources[0]).toMatchObject({
+        name: 'Acme catalog',
+        from: 'the host',
+        status: 'saved',
+      });
+
+      _resetHostedRun();
+      activateHostedRun({
+        discoverSources: [source],
+        startingRoot: '/tools/other',
+      });
+      const otherHost = await callSources(undefined, {}, options);
+      expect(otherHost.sources[0]).toMatchObject({
+        from: 'the host',
+        status: 'failed',
+        error: 'offline',
+      });
+      expect(otherHost.packages).toEqual([]);
+    } finally {
+      _resetHostedRun();
+    }
   });
 
   it('keeps the saved copy in the cache directory, not in the project', async () => {

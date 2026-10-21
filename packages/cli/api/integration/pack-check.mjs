@@ -26,6 +26,7 @@ import {fileURLToPath} from 'node:url';
 import {spawnSync} from 'node:child_process';
 import {assertWithin} from '../../foundation/fs/path-safety.mjs';
 import {resolvePackageDir} from '../../foundation/integrations/integrations.mjs';
+import {rootProblem} from '../../foundation/integrations/validate-contributions.mjs';
 import {
   componentReplacesCliProblem,
   docsTreeCliProblem,
@@ -1265,7 +1266,17 @@ export async function integrationPackCheck(options = {}) {
   // ── Phase 1: structure validation ──
   const localResult = await validateLocalIntegration(cwd);
   /** @type {Issue[]} */
-  const issues = [...localResult.issues];
+  const issues = [
+    ...localResult.issues,
+    // Validate lists these layout findings without counting them. A
+    // package.json npm cannot pack is what fails the pack here, as it did
+    // before they were named; the rest stay warnings, which fail nothing.
+    ...(localResult.found ? (localResult.listed ?? []) : []).map(issue =>
+      issue.code === 'invalid_package_json'
+        ? {...issue, severity: /** @type {const} */ ('error')}
+        : issue,
+    ),
+  ];
 
   if (!localResult.found || !localResult.integration) {
     return emptyReceipt(pkgName, [
@@ -1314,6 +1325,8 @@ export async function integrationPackCheck(options = {}) {
     );
   }
   for (const root of fileInv.roots) {
+    // A root that is not a readable folder has its own issue.
+    if (rootProblem(/** @type {string} */ (loaded[root.kind]))) continue;
     if (root.files.length === 0) {
       issues.push(
         error(
