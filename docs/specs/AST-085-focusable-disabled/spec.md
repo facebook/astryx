@@ -16,16 +16,35 @@ affects_contributing: []
 affects_consumer_docs:
   [
     Button,
+    ButtonGroup,
     IconButton,
     ClickableCard,
     Collapsible,
-    TextInput,
-    TextArea,
+    CheckboxInput,
+    CheckboxList,
+    DateInput,
+    DateRangeInput,
+    DateTimeInput,
+    FileInput,
+    MultiSelector,
     NumberInput,
+    PowerSearch,
+    RadioList,
+    RichTextEditor,
+    SegmentedControl,
+    Selector,
+    Slider,
+    Switch,
+    TextArea,
+    TextInput,
+    TimeInput,
+    Tokenizer,
+    Typeahead,
+    BaseTypeahead,
+    CommentPin,
     useInteractiveRole,
     useIndicatorFocusRing,
-    RichTextEditor,
-    CommentPin,
+    useMenuPress,
   ]
 ---
 
@@ -72,7 +91,9 @@ non-operable control. No component renders the native `disabled` attribute.
   destination.
 - **FR5 — Disabled state is announced.** The disabled state is exposed to
   assistive technology on the focusable element itself, together with its
-  accessible name and any description or disabled reason.
+  accessible name and any description or disabled reason. When a focused
+  control becomes disabled, the change is exposed on that element; whether it is
+  spoken follows `spec:AST-009`.
 - **FR6 — Disabled stays visibly inert.** Disabled paint applies to the
   disabled state. A control that is busy but not disabled keeps its pending
   treatment (`family:buttons` FR4), even though it also exposes
@@ -104,10 +125,14 @@ non-operable control. No component renders the native `disabled` attribute.
   its disabled-thumb tests are pending conformance.
 - `component:Selector`: a disabled trigger with a reason keeps its Tab stop, as
   every disabled trigger now does.
-- Consumer docs for Button, IconButton, ClickableCard, Collapsible, TextInput,
-  TextArea, NumberInput, RichTextEditor, CommentPin, `useInteractiveRole`, and
-  `useIndicatorFocusRing` describe disabled controls as natively disabled, not
-  focusable, or out of the tab order; they change with conformance work.
+- Consumer docs that describe disabled controls as natively disabled, not
+  focusable, out of the tab order, dropping focus, or swallowing the events an
+  external Tooltip needs change with conformance work. The record's
+  `affects_consumer_docs` list names each one.
+- `BaseTypeahead`'s public `isFocusableDisabled` has no remaining effect: every
+  disabled input is focusable (FR1), and Enter cannot select while disabled
+  (FR2). It stays accepted until a public-API change under `spec:AST-002`
+  removes it.
 - `useIndicatorFocusRing`: its `isDisabled` input suppresses the keyboard focus
   ring. Under FR6 a focused disabled control still shows it.
 - `family:buttons` and `component:Tokenizer` tests that assert native disabled
@@ -115,6 +140,8 @@ non-operable control. No component renders the native `disabled` attribute.
 - Draft records for ClickableCard, BaseTypeahead, CheckboxInput, ChatComposer,
   and CommentPin describe native `disabled` as observed behavior; they change
   with conformance work.
+- `spec:AST-011` DEC-1's rejected line no longer says disabled values leave the
+  tab order.
 - `spec:AST-011` FR5 stays true: disabled focus, submission, and paint still win
   over read-only.
 - Components that render native `disabled` today switch to the FR1 shape. Text
