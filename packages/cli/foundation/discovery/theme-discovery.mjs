@@ -22,6 +22,7 @@ import * as path from 'node:path';
 import {lowerDoc} from '../doc-compiler/compile.mjs';
 import {packageSource} from '../doc-compiler/source.mjs';
 import {CLI_ROOT} from '../fs/paths.mjs';
+import {formatCliCommand} from '../env/package-manager.mjs';
 import {LOCAL_THEME_ROOT} from '../config/theme-state.mjs';
 import {assertWithin, PathSafetyError} from '../fs/path-safety.mjs';
 
@@ -999,7 +1000,7 @@ function builtThemeSourceFix(sourceDir, sources, doc, exportName) {
   if (built.length === 0 || source.length !== 1) return null;
   const extension = source[0].slice(exportName.length);
   const stem = `${exportName}Theme`;
-  return `Fix: ${built.map(file => `"${file}"`).join(', ')} is the module \`astryx theme build\` writes, which takes the theme's name; rename ${source[0]} to ${stem}${extension} and ${doc} to ${stem}${THEME_DOC_SUFFIX}, export \`${stem}\` from it, and build again.`;
+  return `Fix: ${built.map(file => `"${file}"`).join(', ')} is the module \`${formatCliCommand('theme build', sourceDir)}\` writes, which takes the theme's name; rename ${source[0]} to ${stem}${extension} and ${doc} to ${stem}${THEME_DOC_SUFFIX}, export \`${stem}\` from it, and build again.`;
 }
 
 /** A module named for the theme it exports, such as `oceanTheme.ts`. */
@@ -1284,14 +1285,15 @@ export function discoverThemeDirectory(
           : evidence.includes('/')
             ? `; "${evidence}" is in a subfolder`
             : ` beside "${evidence}"`;
+      const themeDoc = formatCliCommand('docs authoring theme-doc', sourceDir);
       const fix =
         docs.length > 1
           ? `Fix: keep the one descriptor that shares its stem with the theme's source and delete the rest.`
           : evidence.includes('/')
             ? `Fix: move "${evidence}" up into ${slug}/, beside where its descriptor goes.`
             : THEME_SOURCE_RE.test(evidence)
-              ? `Fix: add ${evidence.replace(/\.[^.]+$/u, '')}${THEME_DOC_SUFFIX} beside it with type: 'theme' and name: '${slug}'; \`astryx docs authoring theme-doc\` lists its fields.`
-              : `Fix: add a descriptor that shares its stem with the theme's source, with type: 'theme' and name: '${slug}'; \`astryx docs authoring theme-doc\` lists its fields.`;
+              ? `Fix: add ${evidence.replace(/\.[^.]+$/u, '')}${THEME_DOC_SUFFIX} beside it with type: 'theme' and name: '${slug}'; \`${themeDoc}\` lists its fields.`
+              : `Fix: add a descriptor that shares its stem with the theme's source, with type: 'theme' and name: '${slug}'; \`${themeDoc}\` lists its fields.`;
       throw new Error(
         `${theme} must contain exactly one same-stem .doc.mjs descriptor; found ${docs.length}${detail}. ${fix}`,
       );

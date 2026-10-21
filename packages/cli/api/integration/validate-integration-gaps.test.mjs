@@ -17,6 +17,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {validateLocalIntegration} from './validate-integration.mjs';
 import {integrationCheck} from './check/check.mjs';
+import {formatCliCommand} from '../../foundation/env/package-manager.mjs';
 
 let tmpDir;
 let copies = 0;
@@ -279,7 +280,7 @@ describe('template and theme pairing', () => {
 
     const message = only(await issuesOf(dir), 'invalid_theme');
     expect(message).toBe(
-      'Theme "ocean" for @acme/kit must contain exactly one same-stem .doc.mjs descriptor; found 0 beside "oceanTheme.ts". Fix: add oceanTheme.doc.mjs beside it with type: \'theme\' and name: \'ocean\'; `astryx docs authoring theme-doc` lists its fields.',
+      `Theme "ocean" for @acme/kit must contain exactly one same-stem .doc.mjs descriptor; found 0 beside "oceanTheme.ts". Fix: add oceanTheme.doc.mjs beside it with type: 'theme' and name: 'ocean'; \`${formatCliCommand('docs authoring theme-doc', path.join(dir, 'themes', 'ocean'))}\` lists its fields.`,
     );
     const fixed = follow(dir, {
       write: {'themes/ocean/oceanTheme.doc.mjs': themeDoc},
@@ -302,7 +303,7 @@ describe('template and theme pairing', () => {
     });
 
     expect(only(await issuesOf(dir), 'invalid_theme')).toBe(
-      'Theme "brand" for @acme/kit must contain exactly one same-stem source for brand.doc.mjs; found 2: "brand.js", "brand.ts". Fix: "brand.js" is the module `astryx theme build` writes, which takes the theme\'s name; rename brand.ts to brandTheme.ts and brand.doc.mjs to brandTheme.doc.mjs, export `brandTheme` from it, and build again.',
+      `Theme "brand" for @acme/kit must contain exactly one same-stem source for brand.doc.mjs; found 2: "brand.js", "brand.ts". Fix: "brand.js" is the module \`${formatCliCommand('theme build', path.join(dir, 'themes', 'brand'))}\` writes, which takes the theme's name; rename brand.ts to brandTheme.ts and brand.doc.mjs to brandTheme.doc.mjs, export \`brandTheme\` from it, and build again.`,
     );
 
     const fixed = follow(dir, {
@@ -746,6 +747,22 @@ describe('the manifest', () => {
     expect(message).toBe(
       'This CLI does not know the manifest key "component", so it is ignored. Did you mean `components`? Fix: rename "component" to "components" in astryx.integration.mjs. If it is a key from a newer Astryx CLI instead, upgrading @astryxdesign/cli picks it up.',
     );
+  });
+
+  it('says to remove a near-miss key when the manifest already sets the key it suggests', async () => {
+    const dir = writePackage({
+      [MANIFEST]: manifest({components: './components', component: './x'}),
+      'components/AcmeWidget.doc.mjs': componentDoc('AcmeWidget'),
+      'components/AcmeWidget.tsx': componentSource('AcmeWidget'),
+    });
+
+    expect(only(await issuesOf(dir), 'unknown_manifest_key')).toBe(
+      'This CLI does not know the manifest key "component", so it is ignored. Did you mean `components`? Fix: remove "component" from astryx.integration.mjs; it already sets "components". If it is a key from a newer Astryx CLI instead, upgrading @astryxdesign/cli picks it up.',
+    );
+    const fixed = follow(dir, {
+      write: {[MANIFEST]: manifest({components: './components'})},
+    });
+    expect(await issuesOf(fixed)).toEqual([]);
   });
 
   it('keeps the newer-CLI explanation for a key that is no near miss', async () => {
