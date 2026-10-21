@@ -291,6 +291,21 @@ const styles = stylex.create({
       '[data-astryx-press="on"]': 'scale(0.98)',
     },
   },
+  // A disabled input-variant trigger keeps its tab stop (`spec:AST-085` FR1),
+  // and the shared disabled wrapper style drops the field focus ring, so the
+  // trigger shows keyboard focus here instead (FR6). It keys on the trigger
+  // itself, a direct child, so a focused status button keeps its own outline.
+  triggerDisabledFocus: {
+    borderColor: {
+      default: colorVars['--color-border-emphasized'],
+      ':has(> [aria-disabled="true"]:focus-visible)':
+        colorVars['--color-accent'],
+    },
+    boxShadow: {
+      default: 'none',
+      ':has(> [aria-disabled="true"]:focus-visible)': `inset 0px 0px 0px 2px ${colorVars['--color-accent-muted']}`,
+    },
+  },
   triggerGhostDisabled: {
     backgroundImage: 'none',
     transform: {
@@ -1935,6 +1950,10 @@ export function Selector<T extends SelectorOptionType>(
             surface.isTriggerFocusRingSuppressed &&
               selectorPresentationStyles.pointerRestoredFocus,
             isDisabled && inputWrapperStyles.disabled,
+            variant === 'input' &&
+              isDisabled &&
+              !surface.isTriggerFocusRingSuppressed &&
+              styles.triggerDisabledFocus,
             isEffectivelyReadOnly && styles.triggerReadOnly,
             variant !== 'input' && isDisabled && styles.triggerGhostDisabled,
             variant !== 'input' &&

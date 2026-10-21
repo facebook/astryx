@@ -10,27 +10,18 @@
 import {describe, it, expect, vi} from 'vitest';
 import {act, render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import * as React from 'react';
 import {Selector} from '../Selector';
 import {MultiSelector} from '../MultiSelector';
 import {ComplexSelector} from '../ComplexSelector';
 
 const OPTIONS = ['Apple', 'Banana', 'Cherry'];
 
-type Case = {
-  name: string;
-  render: (props: {
-    isDisabled: boolean;
-    onClick?: () => void;
-  }) => React.ReactElement;
-  trigger: () => HTMLElement;
-  submits: boolean;
-};
+type Props = {isDisabled: boolean; onClick?: () => void};
 
-const cases: Case[] = [
+const cases = [
   {
     name: 'Selector',
-    render: ({isDisabled, onClick}) => (
+    render: ({isDisabled, onClick}: Props) => (
       <Selector
         label="Fruit"
         htmlName="fruit"
@@ -46,7 +37,7 @@ const cases: Case[] = [
   },
   {
     name: 'MultiSelector',
-    render: ({isDisabled, onClick}) => (
+    render: ({isDisabled, onClick}: Props) => (
       <MultiSelector
         label="Fruit"
         htmlName="fruit"
@@ -62,7 +53,7 @@ const cases: Case[] = [
   },
   {
     name: 'ComplexSelector',
-    render: ({isDisabled, onClick}) => (
+    render: ({isDisabled, onClick}: Props) => (
       <ComplexSelector
         label="View options"
         value={[]}
@@ -76,19 +67,11 @@ const cases: Case[] = [
   },
 ];
 
-function Harness({
-  c,
-  isDisabled,
-  onClick,
-}: {
-  c: Case;
-  isDisabled: boolean;
-  onClick?: () => void;
-}) {
+function Harness({c, ...props}: Props & {c: (typeof cases)[number]}) {
   return (
     <form aria-label="Form">
       <button type="button">Before</button>
-      {c.render({isDisabled, onClick})}
+      {c.render(props)}
       <button type="button">After</button>
     </form>
   );
@@ -126,7 +109,8 @@ describe.each(cases)('$name disabled (spec:AST-085)', c => {
 
   it('FR3: submits no value while disabled', () => {
     const {rerender} = render(<Harness c={c} isDisabled={false} />);
-    const form = () => screen.getByRole('form', {name: 'Form'});
+    const form = () =>
+      screen.getByRole<HTMLFormElement>('form', {name: 'Form'});
     if (c.submits) {
       expect(new FormData(form()).getAll('fruit')).toEqual(['Banana']);
     }
