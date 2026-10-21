@@ -18,7 +18,7 @@
  *   Tab order and the pointer decision are what jsdom cannot exercise.
  */
 
-import {devices, expect, test, type Page} from '@playwright/test';
+import {devices, expect, test, type Locator, type Page} from '@playwright/test';
 import {
   DEFAULT_STORYBOOK_DIR,
   serveStorybook,
@@ -49,6 +49,14 @@ async function isInsideAMenu(page: Page, testName: string): Promise<boolean> {
   return page
     .getByRole('dialog', {name: testName})
     .evaluate(el => el.parentElement?.closest('[role="menu"]') != null);
+}
+
+async function bounds(locator: Locator) {
+  const rect = await locator.boundingBox();
+  if (rect == null) {
+    throw new Error('no rendered bounds');
+  }
+  return rect;
 }
 
 test.describe('on a laptop (fine pointer)', () => {
@@ -164,8 +172,7 @@ test.describe('the press model', () => {
     const dialog = page.getByRole('dialog', {name: 'Labels'});
     await expect(dialog).toBeVisible();
     const feature = dialog.getByRole('menuitemcheckbox', {name: 'Feature'});
-    const from = (await row.boundingBox())!;
-    const to = (await feature.boundingBox())!;
+    const [from, to] = await Promise.all([row, feature].map(bounds));
     await page.mouse.move(from.x + from.width / 2, from.y + from.height / 2);
     await page.mouse.down();
     await page.mouse.move(from.x + from.width - 4, from.y + from.height / 2, {
