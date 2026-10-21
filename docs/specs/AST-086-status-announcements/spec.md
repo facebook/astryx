@@ -53,9 +53,7 @@ announcement channel.
 - **FR2 — Transient messages use the shared channel.** When the element that
   shows a message mounts, unmounts, or is replaced together with its text, the
   owner announces through the shared announcement channel. The new element
-  MUST NOT carry a live role or `aria-live`. A globally hosted owner that
-  `spec:AST-003` rehosts above native modals (FR16, FR18) MAY instead announce
-  through its own persistent live container, which moves with it.
+  MUST NOT carry a live role or `aria-live`.
 - **FR3 — Live roles only on persistent containers.** A component MAY own a
   live role only on an element that stays mounted while its content changes.
   It MUST NOT mount that element already holding the text to announce.
@@ -80,6 +78,11 @@ announcement channel.
   assertive region per document. They are created empty, stay mounted for the
   document's lifetime, and clear their text shortly after each announcement so
   stale text does not linger. `useAnnounce` is the public way to reach it.
+- **FR10 — Modal-hosted owners keep their own channel.** While the shared
+  channel is not admitted to modal hosting, a globally hosted owner that
+  `spec:AST-003` rehosts above native modals (FR16, FR18) announces through its
+  own persistent polite and assertive containers, which move with it. FR3, FR5,
+  and FR6 apply to those containers.
 
 ### Platform support
 
@@ -88,7 +91,7 @@ announcement channel.
   no-op and renders nothing.
 - While a native modal dialog is open, the shared channel on the page body is
   not exposed to assistive technology until `spec:AST-003` admits it to modal
-  hosting. Owners rehosted above the modal use their own container (FR2).
+  hosting. Owners rehosted above the modal use their own containers (FR10).
 - Browser evidence: DOM and accessibility-tree checks prove routing (FR1–FR5,
   FR7–FR9). Spoken timing, order, and repetition (FR6 on real AT) require
   `spec:AST-009` FR4 evidence.
@@ -100,7 +103,7 @@ announcement channel.
   for the document-owned channel (FR9). INV2 and INV3 already require FR6.
 - Toast: the viewport announces each toast through the body-level channel, and
   each visible card also carries `role="status"`/`role="alert"` with
-  `aria-live`. Under FR1 and FR2 the viewport's own persistent live container,
+  `aria-live`. Under FR1 and FR10 the viewport's own persistent live containers,
   which `spec:AST-003` rehosts above native modals, is the one owner, and the
   card drops its live role. A toast shown over a Dialog stays announced.
 - Switch: busy is announced through the channel, and the thumb Spinner also
@@ -134,16 +137,17 @@ announcement channel.
 
 ## Verification
 
-| Contract | Verification                                         | Representative states                                          | Mutation or failure expectation                                     |
-| -------- | ---------------------------------------------------- | -------------------------------------------------------------- | ------------------------------------------------------------------- |
-| FR1, FR4 | Shared test: one live owner per announced message    | Toast shown; busy Switch; system notice inside a chat log      | Adding a live role to a second element fails                        |
-| FR2, FR3 | Shared test: no live element mounts holding its text | Conditional status, toast card, standalone Spinner             | Mounting `role="status"` with text fails                            |
-| FR5      | Channel routing tests                                | Error, warning, success, loading                               | Routing an error to polite, or a success to assertive, fails        |
-| FR6      | StrictMode and rerender tests on the channel spy     | Busy start, repeated rerender, same-value update, new occasion | Two announcements for one occasion, or none for a new one, fails    |
-| FR7      | Accessibility-tree check of the visible message      | FieldStatus attached/detached, toast card                      | Hiding the visible text or a word mismatch fails                    |
-| FR8      | Shared test: no live role inside a busy owner        | Busy TextInput, Selector, Switch thumb, ChatMessageList loader | A composed indicator with a live role or its own announcement fails |
-| FR9      | `useAnnounce` tests                                  | First use, many components, region removed, server render      | A second region pair, or stale text after the clear delay, fails    |
-| FR6 (AT) | `spec:AST-009` real-AT receipt                       | Toast, busy Switch, chat notice                                | Missing, repeated, or out-of-order speech fails                     |
+| Contract | Verification                                         | Representative states                                          | Mutation or failure expectation                                                       |
+| -------- | ---------------------------------------------------- | -------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| FR1, FR4 | Shared test: one live owner per announced message    | Toast shown; busy Switch; system notice inside a chat log      | Adding a live role to a second element fails                                          |
+| FR2, FR3 | Shared test: no live element mounts holding its text | Conditional status, toast card, standalone Spinner             | Mounting `role="status"` with text fails                                              |
+| FR5      | Channel routing tests                                | Error, warning, success, loading                               | Routing an error to polite, or a success to assertive, fails                          |
+| FR6      | StrictMode and rerender tests on the channel spy     | Busy start, repeated rerender, same-value update, new occasion | Two announcements for one occasion, or none for a new one, fails                      |
+| FR7      | Accessibility-tree check of the visible message      | FieldStatus attached/detached, toast card                      | Hiding the visible text or a word mismatch fails                                      |
+| FR8      | Shared test: no live role inside a busy owner        | Busy TextInput, Selector, Switch thumb, ChatMessageList loader | A composed indicator with a live role or its own announcement fails                   |
+| FR9      | `useAnnounce` tests                                  | First use, many components, region removed, server render      | A second region pair, or stale text after the clear delay, fails                      |
+| FR10     | Accessibility-tree check with a Dialog open          | Info and error toast shown over an open Dialog                 | A toast that reaches only the body-level channel, or no exposed live container, fails |
+| FR6 (AT) | `spec:AST-009` real-AT receipt                       | Toast, busy Switch, chat notice                                | Missing, repeated, or out-of-order speech fails                                       |
 
 ## Decision log
 
