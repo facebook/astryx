@@ -538,7 +538,11 @@ export function MobileTokenizer<T extends SearchableItem>({
                           rowDisabled && styles.rowDisabled,
                         )}>
                         <span {...stylex.props(styles.rowLabel)}>
-                          <Text type="body">{item.label}</Text>
+                          <Text
+                            type="body"
+                            color={rowDisabled ? 'inherit' : undefined}>
+                            {item.label}
+                          </Text>
                         </span>
                         <CheckboxIndicator
                           state={isSelected ? 'checked' : 'unchecked'}
