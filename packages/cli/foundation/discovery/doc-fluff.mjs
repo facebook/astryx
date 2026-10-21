@@ -20,7 +20,7 @@ import {
   loadCoreGuides,
   loadQuietly,
   proseStrings,
-  proseWords,
+  passageWords,
   textWords,
 } from './copied-passages.mjs';
 
@@ -94,6 +94,33 @@ const PATTERNS = FILLER_PHRASES.map(phrase => ({
 }));
 
 /**
+ * A prose string with what is not prose blanked out, length kept: `{@link}`
+ * pointers, inline code, and quoted text. A quoted phrase is mentioned, not
+ * used ("cut 'in order to'").
+ *
+ * @param {string} text
+ * @returns {string}
+ */
+export function maskProse(text) {
+  // A quoted phrase is mentioned, not used ("cut 'in order to'"), so quotes
+  // are set aside along with inline code. Each mask keeps the text's length,
+  // so an offset in the masked text is an offset in the text.
+  const blank = (/** @type {string} */ span) => ' '.repeat(span.length);
+  return (
+    text
+      // A pointer names a doc, and its target is no prose ("{@link
+      // generic:obviously-fast}").
+      .replace(/\{@link\s[^}]*\}/g, blank)
+      .replace(/`[^`]*`/g, blank)
+      .replace(/"[^"]*"|“[^”]*”|‘[^’]*’/g, blank)
+      .replace(/’/g, "'")
+      // A single-quoted span opens and closes beside a non-letter, so the
+      // apostrophe in "don't" or "it's" opens nothing.
+      .replace(/(?<![A-Za-z])'[^']*'(?![A-Za-z])/g, blank)
+  );
+}
+
+/**
  * Each padding phrase in a text, outside inline code and quotes, in order,
  * with its offset in the text.
  *
@@ -104,20 +131,7 @@ const PATTERNS = FILLER_PHRASES.map(phrase => ({
  * @returns {{phrase: string, at: number, thatAfter: boolean}[]}
  */
 export function fillerAt(text) {
-  // A quoted phrase is mentioned, not used ("cut 'in order to'"), so quotes
-  // are set aside along with inline code. Each mask keeps the text's length,
-  // so an offset in the masked text is an offset in the text.
-  const blank = (/** @type {string} */ span) => ' '.repeat(span.length);
-  const prose = text
-    // A pointer names a doc, and its target is no prose ("{@link
-    // generic:obviously-fast}").
-    .replace(/\{@link\s[^}]*\}/g, blank)
-    .replace(/`[^`]*`/g, blank)
-    .replace(/"[^"]*"|“[^”]*”|‘[^’]*’/g, blank)
-    .replace(/’/g, "'")
-    // A single-quoted span opens and closes beside a non-letter, so the
-    // apostrophe in "don't" or "it's" opens nothing.
-    .replace(/(?<![A-Za-z])'[^']*'(?![A-Za-z])/g, blank);
+  const prose = maskProse(text);
   /** @type {{phrase: string, at: number, thatAfter: boolean}[]} */
   const found = [];
   for (const {phrase, pattern} of PATTERNS) {
@@ -131,7 +145,10 @@ export function fillerAt(text) {
         found.push({
           phrase,
           at,
+          // Only a note or noting phrase leads into a "that" clause the
+          // reader cuts with it; "Obviously that works" keeps its "that".
           thatAfter:
+            /\bnot(?:e|ed|ing)\b/.test(phrase) &&
             !phrase.endsWith('that') &&
             /^\s+that\b/i.test(prose.slice(at + phrase.length)),
         });
@@ -187,6 +204,19 @@ export function floorTo(value, places) {
  */
 export function sharePercent(share) {
   return `${floorTo(share * 100, 1).toFixed(1)}%`;
+}
+
+/**
+ * The words a topic's density is measured on: its prose, without what the
+ * phrase check also leaves unread (links, inline code, quoted text).
+ *
+ * @param {unknown} doc
+ * @returns {{word: string}[]}
+ */
+export function densityWords(doc) {
+  return proseStrings(doc).flatMap(({text}) =>
+    passageWords(maskProse(text)).map(word => ({word})),
+  );
 }
 
 /**
@@ -269,7 +299,7 @@ export async function findFluff(discovered) {
         });
       }
     }
-    const words = proseWords(doc);
+    const words = densityWords(doc);
     if (words.length < DENSITY_MIN_WORDS) continue;
     const score = density(words);
     if (score >= MIN_DENSITY) continue;

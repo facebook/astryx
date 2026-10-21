@@ -912,6 +912,7 @@ describe('integrationDocConflicts fluff', () => {
       kind: 'phrase',
       phrase: 'in order to',
       section: 'Overview',
+      file: expect.stringMatching(/acme-setup\.doc\.mjs$/),
       line: 1,
       density: null,
     });

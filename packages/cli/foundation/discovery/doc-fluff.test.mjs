@@ -4,6 +4,7 @@ import {describe, expect, it} from 'vitest';
 
 import {
   density,
+  densityWords,
   fillerAt,
   fillerIn,
   floorTo,
@@ -77,6 +78,40 @@ describe('fillerAt', () => {
     expect(
       fillerAt('Basically, the cache is shared.').map(each => each.thatAfter),
     ).toEqual([false]);
+    // Only a note or noting phrase leads a clause the reader cuts.
+    expect(
+      fillerAt('Obviously that works only in a browser.').map(
+        each => each.thatAfter,
+      ),
+    ).toEqual([false]);
+  });
+});
+
+describe('densityWords', () => {
+  it('measures prose only, not quoted text, inline code or links', () => {
+    const doc = {
+      sections: [
+        {
+          title: 'Overview',
+          content: [
+            {
+              type: 'prose',
+              text: 'Theme tokens set colors. Write "it is in the" or `of the` as {@link generic:theme} shows.',
+            },
+          ],
+        },
+      ],
+    };
+    expect(densityWords(doc).map(each => each.word)).toEqual([
+      'theme',
+      'tokens',
+      'set',
+      'colors.',
+      'write',
+      'or',
+      'as',
+      'shows.',
+    ]);
   });
 });
 
