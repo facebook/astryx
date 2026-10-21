@@ -255,13 +255,13 @@ export interface DateInputProps extends Omit<
 
   /**
    * Explains why the input is disabled. When set together with
-   * `isDisabled`, the input shows a tooltip with this text on hover and
-   * keyboard focus, and the field stays focusable (via `aria-disabled`)
+   * `isDisabled`, the field shows a tooltip with this text on hover and
+   * keyboard focus, and the input and calendar button are described by it,
    * so the reason is discoverable by keyboard and assistive technology.
    * Typing and calendar activation stay blocked.
    *
-   * Use this instead of wrapping a disabled input in `Tooltip` — disabled
-   * controls don't emit the pointer events an external tooltip needs.
+   * Use this instead of wrapping a disabled input in `Tooltip`, so the
+   * reason is tied to the field.
    *
    * @example
    * ```
@@ -747,6 +747,12 @@ function PointerDateField({
     if (pendingInput === null) {
       return;
     }
+    // A field that became disabled or busy while it held a draft keeps its
+    // value (spec:AST-085 FR2); the draft is dropped.
+    if (isEffectivelyDisabled) {
+      setPendingInput(null);
+      return;
+    }
 
     if (!pendingInput.trim()) {
       if (value !== undefined) {
@@ -764,7 +770,14 @@ function PointerDateField({
       }
     }
     setPendingInput(null);
-  }, [pendingInput, value, fireChange, isDateDisabled, locale]);
+  }, [
+    pendingInput,
+    isEffectivelyDisabled,
+    value,
+    fireChange,
+    isDateDisabled,
+    locale,
+  ]);
 
   // Handle blur - validate, check constraints, and clear pending input
   const handleBlur = useCallback(() => {
@@ -839,6 +852,11 @@ function PointerDateField({
         type="button"
         onClick={handleToggle}
         aria-disabled={isEffectivelyDisabled || undefined}
+        // The button is a focusable tab stop while disabled too, so it carries
+        // the disabled reason the input carries (spec:AST-085 FR5).
+        aria-describedby={
+          showsDisabledMessage ? disabledMessageTooltip.describedBy : undefined
+        }
         aria-label={
           popover.isOpen
             ? t('@astryx.dateInput.toggleCalendarClose')

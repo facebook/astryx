@@ -932,6 +932,43 @@ describe('DateInput', () => {
       expect(input).toHaveAttribute('readonly');
     });
 
+    it('links the reason tooltip from the calendar button too (AST-085 FR5)', () => {
+      render(
+        <DateInput
+          label="Date"
+          isDisabled
+          disabledMessage="You need the Editor role"
+        />,
+      );
+      const tooltip = screen.getByRole('tooltip', h);
+      expect(
+        getButton('Open calendar').getAttribute('aria-describedby'),
+      ).toContain(tooltip.id);
+    });
+
+    it('drops a draft instead of committing it when the field becomes disabled (AST-085 FR2)', async () => {
+      const user = userEvent.setup();
+      const onChange = vi.fn();
+      const {rerender} = render(
+        <DateInput label="Date" value="2026-03-10" onChange={onChange} />,
+      );
+      const input = screen.getByRole('combobox');
+      await user.click(input);
+      await user.clear(input);
+      rerender(
+        <DateInput
+          label="Date"
+          value="2026-03-10"
+          onChange={onChange}
+          isDisabled
+        />,
+      );
+      expect(input).toHaveFocus();
+      await user.keyboard('{Enter}');
+      await user.tab();
+      expect(onChange).not.toHaveBeenCalled();
+    });
+
     it('links the reason tooltip from the input via aria-describedby', () => {
       render(
         <DateInput

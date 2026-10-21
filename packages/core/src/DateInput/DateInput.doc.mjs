@@ -276,7 +276,7 @@ export const docs = {
       {
         guidance: false,
         description:
-          'Wrap a disabled DateInput in Tooltip to explain why it is disabled; disabled triggers swallow the hover events the wrapper needs. Use the disabledMessage prop instead.',
+          'Wrap a disabled DateInput in Tooltip to explain why it is disabled. Use the disabledMessage prop instead, which ties the reason to the field.',
       },
     ],
     anatomy: [
@@ -369,7 +369,7 @@ export const docsZh = {
       {
         guidance: false,
         description:
-          'Wrap a disabled DateInput in Tooltip to explain why it is disabled; disabled triggers swallow the hover events the wrapper needs. Use the disabledMessage prop instead.',
+          'Wrap a disabled DateInput in Tooltip to explain why it is disabled. Use the disabledMessage prop instead, which ties the reason to the field.',
       },
     ],
   },
@@ -622,7 +622,7 @@ export const docsDense = {
       {
         guidance: false,
         description:
-          'Wrap a disabled DateInput in Tooltip to explain why it is disabled; disabled triggers swallow the hover events the wrapper needs. Use the disabledMessage prop instead.',
+          'Wrap a disabled DateInput in Tooltip to explain why it is disabled. Use the disabledMessage prop instead, which ties the reason to the field.',
       },
     ],
   },
@@ -634,7 +634,7 @@ export const docsDense = {
     isRequired: 'mark field required',
     isDisabled: 'disable input+calendar',
     disabledMessage:
-      'reason shown in a tooltip on hover/focus when disabled; keeps field focusable via aria-disabled',
+      'reason shown in a tooltip on hover/focus when disabled; describes the input and calendar button',
     value: 'selected date YYYY-MM-DD',
     onChange: 'callback on date change',
     changeAction: 'async action after onChange; drives optimistic UI',
