@@ -445,7 +445,7 @@ async function judgeBlockComponents(integration) {
         .map(name => ({field: 'componentsUsed', name})),
     ];
     if (fields.length === 0) continue;
-    const imported = importedNames(template.filePath, integration.name);
+    const imported = importedNames(template.filePath, integration);
     for (const {field, name} of fields) {
       if (own.has(name) || imported.names.has(name)) continue;
       if (coreHas(name)) continue;
@@ -530,15 +530,14 @@ function renderlessSource(source) {
 }
 
 /**
- * Whether an import source is one whose components this check sees: the
- * package itself, Core, a library that renders none, or a relative helper
- * (followed and read in full on its own).
+ * Whether an import source is one whose components this check sees: Core, a
+ * library that renders none, or a relative helper (followed and read in full
+ * on its own). The package's own name is followed like a helper too.
  * @param {string} source
- * @param {string | undefined} packageName
  */
-function knownSource(source, packageName) {
+function knownSource(source) {
   if (source.startsWith('.')) return true;
-  return [...KNOWN_SOURCES, ...(packageName ? [packageName] : [])].some(
+  return KNOWN_SOURCES.some(
     known => source === known || source.startsWith(`${known}/`),
   );
 }
@@ -556,14 +555,17 @@ function knownSource(source, packageName) {
  * `require()`, a dynamic `import()`, an `export *` from another package, and
  * a local module it cannot read. So does any `default` binding (`import X`,
  * `{default as X}`, `export {default as X} from`) and any import from a
- * package other than this one, Core, or a library that renders no component
- * (see KNOWN_SOURCES). Type-only imports render nothing and are skipped, as
- * is a namespace import of a library that renders no component.
+ * package other than Core or a library that renders no component (see
+ * KNOWN_SOURCES). An import of the package's own name is followed like a
+ * relative helper, through its package.json `exports`. Type-only imports
+ * render nothing and are skipped, as is a namespace or default import of a
+ * library that renders no component.
  * @param {string} file
- * @param {string | undefined} packageName the package's own name
+ * @param {LoadedIntegration} integration
  * @returns {{names: Set<string>, unread: string[]}}
  */
-function importedNames(file, packageName) {
+function importedNames(file, integration) {
+  const packageName = integration.name;
   /** @type {Set<string>} */
   const names = new Set();
   /** @type {string[]} */
@@ -611,7 +613,12 @@ function importedNames(file, packageName) {
         continue;
       }
       const source = String(/** @type {any} */ (node).source.value);
-      if (!knownSource(source, packageName)) {
+      // The package's own name: read like a relative helper, below.
+      const own =
+        typeof packageName === 'string' &&
+        packageName !== '' &&
+        (source === packageName || source.startsWith(`${packageName}/`));
+      if (!own && !knownSource(source)) {
         unread.push(
           `${shown} imports from "${source}", another package whose components may render ones this check does not see.`,
         );
@@ -627,7 +634,10 @@ function importedNames(file, packageName) {
             );
             continue;
           }
-          if (specifier.type === 'ImportDefaultSpecifier') {
+          if (
+            specifier.type === 'ImportDefaultSpecifier' &&
+            !renderlessSource(source)
+          ) {
             // A default may be any component, under any name.
             unread.push(
               `${shown} imports the default of "${source}" as ${specifier.local.name}, which may be any component.`,
@@ -678,7 +688,7 @@ function importedNames(file, packageName) {
           }
           names.add(exported);
         }
-      } else if (!source.startsWith('.')) {
+      } else if (!source.startsWith('.') && !own) {
         // `export * from` another package passes on names this check
         // does not list.
         unread.push(
@@ -691,7 +701,32 @@ function importedNames(file, packageName) {
           `${shown} re-exports "${source}" as a whole, whose component names this check does not read.`,
         );
       }
-      if (!source.startsWith('.')) continue;
+      if (!source.startsWith('.') && !own) continue;
+      if (own) {
+        const resolved = componentDiscovery.ownPackageModule(
+          integration,
+          source,
+        );
+        /** @type {boolean} */
+        let isFile;
+        try {
+          isFile = resolved != null && fs.statSync(resolved).isFile();
+        } catch {
+          isFile = false;
+        }
+        if (
+          resolved &&
+          isFile &&
+          LOCAL_MODULE_EXTENSIONS.includes(path.extname(resolved))
+        ) {
+          visit(resolved);
+        } else {
+          unread.push(
+            `${shown} imports "${source}", this package's own name, which resolves to no source this check can read.`,
+          );
+        }
+        continue;
+      }
       const base = path.resolve(path.dirname(current), source);
       const target = [
         base,
@@ -843,25 +878,18 @@ function defaultBinding(file) {
 }
 
 /**
- * A finding a report lists with its fix but nothing counts: `info` severity,
- * which `integration check` and `--strict` leave alone.
- * @typedef {{file: string, name: string, code: string, severity: 'info', message: string}} ListedFinding
+ * A note: information beside validate's issues that fails nothing, with the
+ * fix in its message.
+ * @typedef {{code: string, message: string}} Note
  */
 
 /**
  * @param {string} code
- * @param {string} base the folder `file` is relative to
- * @param {{docPath: string, name: string, message: string}} entry
- * @returns {ListedFinding}
+ * @param {{message: string}} finding
+ * @returns {Note}
  */
-function listedFinding(code, base, entry) {
-  return {
-    file: slash(path.relative(base, entry.docPath)),
-    name: entry.name,
-    code,
-    severity: 'info',
-    message: entry.message,
-  };
+function note(code, finding) {
+  return {code, message: finding.message};
 }
 
 /**
@@ -871,25 +899,28 @@ function listedFinding(code, base, entry) {
  * package nor Core has, when the template reaches components through
  * anything but named imports and re-exports from the package, Core, or
  * helpers read in full (see importedNames), or when Core is not installed to
- * look it up in. A name judged unknown is an `unknown_block_component`
- * finding, listed with its fix at `info` severity: `integration check` counts
- * it nowhere and `--strict` does not fail on it.
+ * look it up in; its findings are always empty. A name judged unknown is an
+ * `unknown_block_component` note, with its fix in the message: validate
+ * lists notes beside its issues, and nothing counts them, so `--strict` does
+ * not fail on it until the next minor release (architecture:cli-surface
+ * INV35).
  * @param {LoadedIntegration} integration
- * @returns {Promise<{status: 'checked', findings: ListedFinding[], unchecked: Array<{file: string, name: string, reason: string}>}>}
+ * @returns {Promise<{report: {status: 'checked', findings: [], unchecked: Array<{file: string, name: string, reason: string}>}, notes: Note[]}>}
  */
-export async function blockComponentsReport(integration) {
+export async function blockComponentsCheck(integration) {
   const {findings, unchecked} = await judgeBlockComponents(integration);
   const base = integration.__packageDir ?? integration.templates ?? '';
   return {
-    status: 'checked',
-    findings: findings.map(entry =>
-      listedFinding('unknown_block_component', base, entry),
-    ),
-    unchecked: unchecked.map(entry => ({
-      file: slash(path.relative(base, entry.docPath)),
-      name: entry.name,
-      reason: entry.reason,
-    })),
+    report: {
+      status: 'checked',
+      findings: [],
+      unchecked: unchecked.map(entry => ({
+        file: slash(path.relative(base, entry.docPath)),
+        name: entry.name,
+        reason: entry.reason,
+      })),
+    },
+    notes: findings.map(entry => note('unknown_block_component', entry)),
   };
 }
 
@@ -1219,14 +1250,15 @@ async function judgeComponentDocNames(
  * The component doc names the check could not judge, shaped like the doc type
  * report so `integration check` counts them as not compared: each doc whose
  * `name` differs from the name it is listed under and whose source's exports
- * cannot all be read without running it. A name the module its printed
- * import names provably lacks is a `doc_name_mismatch` finding, listed with
- * its fix at `info` severity: `integration check` counts it nowhere and
- * `--strict` does not fail on it.
+ * cannot all be read without running it; its findings are always empty. A
+ * name the module its printed import names provably lacks is a
+ * `doc_name_mismatch` note, with its fix in the message: validate lists
+ * notes beside its issues, and nothing counts them, so `--strict` does not
+ * fail on it until the next minor release (architecture:cli-surface INV35).
  * @param {LoadedIntegration} integration
- * @returns {Promise<{status: 'checked', findings: ListedFinding[], unchecked: Array<{file: string, name: string, reason: string}>}>}
+ * @returns {Promise<{report: {status: 'checked', findings: [], unchecked: Array<{file: string, name: string, reason: string}>}, notes: Note[]}>}
  */
-export async function componentDocNamesReport(integration) {
+export async function componentDocNamesCheck(integration) {
   /** @type {Array<{docPath: string, name: string, message: string}>} */
   const findings = [];
   /** @type {Array<{docPath: string, name: string, reason: string}>} */
@@ -1252,15 +1284,16 @@ export async function componentDocNamesReport(integration) {
   }
   const base = integration.__packageDir ?? root ?? '';
   return {
-    status: 'checked',
-    findings: findings.map(entry =>
-      listedFinding('doc_name_mismatch', base, entry),
-    ),
-    unchecked: unchecked.map(entry => ({
-      file: slash(path.relative(base, entry.docPath)),
-      name: entry.name,
-      reason: entry.reason,
-    })),
+    report: {
+      status: 'checked',
+      findings: [],
+      unchecked: unchecked.map(entry => ({
+        file: slash(path.relative(base, entry.docPath)),
+        name: entry.name,
+        reason: entry.reason,
+      })),
+    },
+    notes: findings.map(entry => note('doc_name_mismatch', entry)),
   };
 }
 
