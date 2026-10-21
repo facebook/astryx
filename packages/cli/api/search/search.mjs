@@ -15,11 +15,18 @@
  */
 
 import {withListingCache} from '../../foundation/fs/listing-cache.mjs';
-import {gatherCandidates, loadSearchData} from './_adapter.mjs';
+import {
+  cliPackageVersion,
+  gatherCandidates,
+  loadSearchData,
+} from './_adapter.mjs';
 import {rankLexical} from './_lexical.mjs';
 import {checkSearchArgs} from './_result.mjs';
-import {runTree} from '../../foundation/route/route.mjs';
-import {SEARCH_TREE} from './tree.mjs';
+import {
+  SEARCH_CATALOG_FORMAT,
+  linkKey,
+  rankCatalog,
+} from './search-catalog.mjs';
 import {linkSearchResponse} from '../component/_adapter.mjs';
 
 // The domains a search covers (the command handler lists them), and what
@@ -53,11 +60,10 @@ export async function search(query, options = {}) {
       /** @type {import('./search.type.mjs').SearchResponse} */ (
         await linkSearchResponse(
           /** @type {import('./search.type.mjs').SearchResponse} */ (
-            await runTree(
-              SEARCH_TREE,
-              {query, options},
-              {...(await gatherCandidates(options)), data: loadSearchData()},
-            )
+            await rankCatalog(query, options, {
+              ...(await gatherCandidates(options)),
+              data: loadSearchData(),
+            })
           ),
           options.cwd ?? process.cwd(),
         )
@@ -81,4 +87,62 @@ export async function searchCore(query, options = {}) {
       options.cwd ?? process.cwd(),
     ),
   );
+}
+
+/**
+ * Everything `search()` ranks for one project, as plain JSON, so a site can
+ * search with no disk: pass it to `searchCatalog()` (the CLI's browser
+ * entry, `cli/search`), which answers as `search()` does from `cwd`.
+ *
+ * @param {{cwd?: string, type?: 'component'|'hook'|'doc'|'template'|'theme'}} [options]
+ * @returns {Promise<import('./search-catalog.mjs').GatheredSearchCatalog>}
+ */
+export async function gatherSearchCatalog(options = {}) {
+  checkSearchArgs('catalog', options);
+  const cwd = options.cwd ?? process.cwd();
+  return withListingCache(async () => {
+    const gathered = await gatherCandidates(options);
+    const position = new Map(gathered.all.map((c, i) => [c, i]));
+    /** @type {Record<string, string>} */
+    const linked = {};
+    for (const c of gathered.all) {
+      const {description} = c;
+      if (
+        c.domain !== 'component' ||
+        typeof description !== 'string' ||
+        !description.includes('{@link')
+      ) {
+        continue;
+      }
+      // Resolved as search() resolves a result's description, after ranking.
+      const read = await linkSearchResponse(
+        /** @type {import('./search.type.mjs').SearchResponse} */ ({
+          type: 'search',
+          data: {
+            query: '',
+            matchCount: 1,
+            results: [{domain: 'component', package: c._package, description}],
+          },
+        }),
+        cwd,
+      );
+      linked[linkKey(c._package, description)] = /** @type {string} */ (
+        read.data.results[0].description
+      );
+    }
+    return {
+      format: SEARCH_CATALOG_FORMAT,
+      version: cliPackageVersion(),
+      type: options.type ?? null,
+      all: gathered.all,
+      components: gathered.components.map(
+        c => /** @type {number} */ (position.get(c)),
+      ),
+      searchedComponents: gathered.searchedComponents,
+      outside: gathered.outside,
+      coreSkipped: gathered.coreSkipped,
+      data: loadSearchData(),
+      linked,
+    };
+  });
 }

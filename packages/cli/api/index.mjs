@@ -41,7 +41,7 @@ export {
   listThemes,
 } from './theme/theme.mjs';
 export {hook} from './hook/hook.mjs';
-export {search} from './search/search.mjs';
+export {search, gatherSearchCatalog} from './search/search.mjs';
 export {build} from './build/build.mjs';
 export {swizzle} from './swizzle/swizzle.mjs';
 export {gapReport} from './gap-report/gap-report.mjs';

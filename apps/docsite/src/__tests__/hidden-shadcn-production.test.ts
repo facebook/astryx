@@ -36,7 +36,6 @@ const [
   {exampleRegistry},
   {shadcnRegistryIsPreview, shadcnRegistryOrigin},
   {flattenComponentSidebarEntries},
-  {buildSearchPaletteItems},
 ] = await Promise.all([
   import('../app/robots'),
   import('../app/sitemap'),
@@ -54,7 +53,6 @@ const [
   import('../generated/exampleRegistry'),
   import('../generated/shadcnRegistry'),
   import('../components/componentSidebarData'),
-  import('../components/searchPaletteData'),
 ]);
 
 const FORBIDDEN_DISCOVERY_PATTERNS = [
@@ -193,17 +191,21 @@ describeHiddenProduction('hidden production ShadCN discovery', () => {
       href: entry.href,
       label: entry.displayName,
     }));
-    const search = buildSearchPaletteItems({
-      components,
-      packages,
-      docTopics,
-      templates,
-    }).map(item => ({
-      id: item.id,
-      label: item.label,
-      group: item.auxiliaryData.group,
-      keywords: item.auxiliaryData.keywords,
-    }));
+    // The search panel runs the CLI's search on this index. Like the MCP
+    // search below, it may name ShadCN only inside the CLI's own docs (the
+    // migration guide); it never points at the registry.
+    const searchIndex = JSON.parse(
+      fs.readFileSync(path.join(root, 'public', 'search-index.json'), 'utf8'),
+    ) as {catalog: {all: Array<Record<string, unknown>>}; links: unknown};
+    expectNoRegistryDiscovery(searchIndex, 'global search');
+    for (const entry of searchIndex.catalog.all) {
+      if (/shadcn/i.test(JSON.stringify(entry))) {
+        expect(entry, 'global search promotes ShadCN').toMatchObject({
+          domain: 'doc',
+          _package: '@astryxdesign/cli',
+        });
+      }
+    }
 
     expectNoShadcnPromotion(
       docTopics.map(topic => ({topic: topic.topic, title: topic.title})),
@@ -214,7 +216,6 @@ describeHiddenProduction('hidden production ShadCN discovery', () => {
       'blog indexes',
     );
     expectNoShadcnPromotion(sidebar, 'component navigation');
-    expectNoShadcnPromotion(search, 'global search');
   });
 
   it('keeps sitemap, RSS, and llms.txt clean', async () => {

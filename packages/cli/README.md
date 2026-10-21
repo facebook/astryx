@@ -409,6 +409,26 @@ It resolves with `{status, packages}`: the exit status the bin would exit with, 
 
 Like the bin, a run ends the process with its exit status, and the call never resolves, when it prints help or the version (`--help`, `-h`, `help`, `--version`, `-V`, `--version --json`), rejects the command line, reports an error it stops on (every error in `--json` mode included), meets an unexpected error, or hands the run to another CLI's bin: the project's own CLI when `declinedProjectCli` is absent, or a package set whose CLI ships no host entry. `astryx docs cli/host-entry` has the same guide.
 
+### Search in the browser
+
+A site can answer exactly what `astryx search` answers without reading the disk. At build time, gather the catalog search ranks with `gatherSearchCatalog()` from `@astryxdesign/cli/api`; in the browser, search it with `searchCatalog()` from `@astryxdesign/cli/search`, which runs the same ranking code as `search()` and imports nothing from Node. The Astryx docs site's search uses it.
+
+```javascript
+// At build time
+import {gatherSearchCatalog} from '@astryxdesign/cli/api';
+fs.writeFileSync(
+  'public/search-index.json',
+  JSON.stringify(await gatherSearchCatalog({cwd})),
+);
+
+// In the browser
+import {searchCatalog} from '@astryxdesign/cli/search';
+const catalog = await (await fetch('/search-index.json')).json();
+const {data} = await searchCatalog('date picker', {}, catalog);
+```
+
+For the same `cwd`, query, and options, the result equals `search()`'s. Gather the catalog again with every CLI release: a catalog records the CLI version and format that gathered it, and one of another format is refused. A catalog gathered for one `type` answers searches of that type only.
+
 ### Consumer utilities
 
 If you're spawning the CLI as a subprocess rather than importing the API directly:

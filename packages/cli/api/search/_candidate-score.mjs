@@ -35,7 +35,7 @@
  * "cable" is not "table".
  */
 
-import {levenshteinDistance} from '../../foundation/text/string-utils.mjs';
+import {levenshteinDistance} from '../../foundation/text/levenshtein.mjs';
 import {
   stem,
   wordForms,
