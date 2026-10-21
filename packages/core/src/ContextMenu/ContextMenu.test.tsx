@@ -1431,6 +1431,20 @@ describe('ContextMenu open focus', () => {
     await waitFor(() => expect(item('Cut')).toHaveFocus());
   });
 
+  it('an open before any input on the page, away from (0, 0), is a keyboard open: the input modality starts as keyboard', async () => {
+    render(
+      <ContextMenu items={ITEMS}>
+        <button type="button">Target</button>
+      </ContextMenu>,
+    );
+    fireEvent.contextMenu(screen.getByRole('button', {name: 'Target'}), {
+      clientX: 40,
+      clientY: 12,
+      detail: 0,
+    });
+    await waitFor(() => expect(item('Cut')).toHaveFocus());
+  });
+
   it('a keyboard open with every row disabled leaves focus, and its ring, on the invoking element', async () => {
     render(
       <ContextMenu
