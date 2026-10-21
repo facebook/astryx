@@ -27,7 +27,7 @@ export const docs = {
         {
           type: 'code',
           lang: 'bash',
-          code: 'npx astryx integration add codemod rename-delay --to 0.7.0',
+          code: 'astryx integration add codemod rename-delay --to 0.7.0',
         },
         {
           type: 'code',
@@ -116,9 +116,9 @@ export default {
           type: 'code',
           lang: 'bash',
           code: `# Preview each codemod and the files it would change
-npx astryx upgrade --from 0.6.3 --integration @acme/astryx-widgets
+astryx upgrade --from 0.6.3 --integration @acme/astryx-widgets
 # Write the changes
-npx astryx upgrade --from 0.6.3 --integration @acme/astryx-widgets --apply`,
+astryx upgrade --from 0.6.3 --integration @acme/astryx-widgets --apply`,
         },
         {
           type: 'code',
@@ -140,6 +140,16 @@ Applying integration codemods...
         {
           type: 'prose',
           text: "An integration manifest has no `hooks` field. Commands that run after codemods, such as a formatter, are the app's to set, in `hooks.postCodemod` in its `astryx.config`.",
+        },
+      ],
+    },
+    {
+      id: 'global-mode',
+      title: 'In global mode',
+      content: [
+        {
+          type: 'prose',
+          text: "In global mode: inside an app, `upgrade` runs with the release equal to the app's Core, whichever copy of the CLI the user starts, and only the codemods of integrations the app installs run. Outside a project, `upgrade` lists codemods and migrates nothing. See {@link namespace:global} and {@link command:upgrade}.",
         },
       ],
     },

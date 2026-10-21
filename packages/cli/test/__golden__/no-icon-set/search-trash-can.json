@@ -16,6 +16,16 @@
         "command": "astryx component Icon"
       },
       {
+        "domain": "component",
+        "name": "IconButton",
+        "package": "@astryxdesign/core",
+        "score": 45,
+        "reason": "guidance mentions \"trash\"",
+        "description": "A button that shows only an icon with no visible text. Use IconButton in toolbars, table rows, and compact UI where space is tight and the icon is universally understood.",
+        "import": "@astryxdesign/core/IconButton",
+        "command": "astryx component IconButton"
+      },
+      {
         "domain": "template",
         "name": "ButtonWithIcon",
         "package": "@astryxdesign/core",
@@ -25,17 +35,14 @@
         "displayName": "Button — Icon",
         "kind": "block",
         "command": "astryx template ButtonWithIcon --type block"
-      },
-      {
-        "domain": "component",
-        "name": "IconButton",
-        "package": "@astryxdesign/core",
-        "score": 45,
-        "reason": "guidance mentions \"trash\"",
-        "description": "A button that shows only an icon with no visible text. Use IconButton in toolbars, table rows, and compact UI where space is tight and the icon is universally understood.",
-        "import": "@astryxdesign/core/IconButton",
-        "command": "astryx component IconButton"
       }
     ]
+  },
+  "meta": {
+    "answeredBy": {
+      "cli": "0.7.2",
+      "core": "0.7.2",
+      "copy": "project"
+    }
   }
 }

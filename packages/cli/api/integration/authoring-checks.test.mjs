@@ -1103,7 +1103,8 @@ describe('integrationDocConflicts stray doc pointers', () => {
       await integrationDocConflicts(undefined, {cwd: tmpDir}),
     ).filter((/** @type {any} */ each) => each.topic === 'acme-setup');
 
-    expect(found.map((/** @type {any} */ each) => each.line)).toEqual([9]);
+    // The summary's own pointer is listed too, at its line.
+    expect(found.map((/** @type {any} */ each) => each.line)).toEqual([5, 9]);
   });
 
   it('lists a written pointer to a doc with the link that replaces it, and warns', async () => {
@@ -1149,7 +1150,7 @@ describe('integrationDocConflicts stray doc pointers', () => {
     expect(hit.link).toBe('{@link @astryxdesign/cli:namespace:layout}');
   });
 
-  it('finds the line in the string that holds the pointer, not in the summary or code', async () => {
+  it('finds each line in the string that holds the pointer, not in code', async () => {
     writeTopics([]);
     fs.writeFileSync(
       path.join(tmpDir, 'docs', 'acme-lines.doc.mjs'),
@@ -1172,7 +1173,8 @@ describe('integrationDocConflicts stray doc pointers', () => {
       await integrationDocConflicts(undefined, {cwd: tmpDir}),
     );
 
-    expect(found.map((/** @type {any} */ each) => each.line)).toEqual([8]);
+    // The description resolves links too, so its pointer is its own finding.
+    expect(found.map((/** @type {any} */ each) => each.line)).toEqual([5, 8]);
   });
 
   it('leaves a command for a doc that does not exist, and a walkthrough', async () => {
@@ -1186,5 +1188,146 @@ describe('integrationDocConflicts stray doc pointers', () => {
     expect(
       stray(await integrationDocConflicts(undefined, {cwd: tmpDir})),
     ).toEqual([]);
+  });
+});
+
+/**
+ * A package with one component doc and, optionally, one topic.
+ * @param {{usage: string, topicDescription?: string}} fixture
+ */
+function writeLinkedComponent({usage, topicDescription}) {
+  fs.writeFileSync(
+    path.join(tmpDir, 'package.json'),
+    JSON.stringify({name: '@acme/widgets', version: '1.2.3'}),
+  );
+  fs.writeFileSync(
+    path.join(tmpDir, 'astryx.integration.mjs'),
+    topicDescription == null
+      ? `export default {components: './components'};\n`
+      : `export default {components: './components', docs: './docs'};\n`,
+  );
+  fs.mkdirSync(path.join(tmpDir, 'components'), {recursive: true});
+  const doc = {
+    type: 'component',
+    name: 'AcmeButton',
+    displayName: 'Acme Button',
+    usage: {description: usage},
+    props: [],
+  };
+  fs.writeFileSync(
+    path.join(tmpDir, 'components', 'AcmeButton.doc.mjs'),
+    `export default ${JSON.stringify(doc, null, 2)};\n`,
+  );
+  fs.writeFileSync(
+    path.join(tmpDir, 'components', 'AcmeButton.tsx'),
+    'export function AcmeButton() { return null; }\n',
+  );
+  if (topicDescription == null) return;
+  fs.mkdirSync(path.join(tmpDir, 'docs'), {recursive: true});
+  const topic = {
+    type: 'generic',
+    name: 'acme-setup',
+    title: 'Fixture',
+    description: topicDescription,
+    sections: [
+      {title: 'Overview', content: [{type: 'prose', text: 'Install it.'}]},
+    ],
+  };
+  fs.writeFileSync(
+    path.join(tmpDir, 'docs', 'acme-setup.doc.mjs'),
+    `export default ${JSON.stringify(topic, null, 2)};\n`,
+  );
+}
+
+describe('links in component docs and topic descriptions', () => {
+  it("warns on a component doc's link that names no doc, and passes one to its own topic", async () => {
+    writeLinkedComponent({
+      usage:
+        'Set it up as {@link generic:acme-setup} says, theme it with {@link @astryxdesign/cli:generic:theme}, then {@link generic:acme-nothing}.',
+      topicDescription: 'Install Acme.',
+    });
+
+    const {data} = await integrationComponentConflicts(undefined, {
+      cwd: tmpDir,
+    });
+    const links = data.issues.filter(
+      (/** @type {any} */ issue) => issue.code === 'invalid_doc_graph',
+    );
+    expect(links).toEqual([
+      {
+        code: 'invalid_doc_graph',
+        severity: 'warning',
+        message: expect.stringMatching(
+          /^component AcmeButton \(usage\.description\): "generic:acme-nothing" names no doc\./,
+        ),
+      },
+    ]);
+  });
+
+  it("warns on a topic description's link that names no doc", async () => {
+    writeLinkedComponent({
+      usage: 'A button.',
+      topicDescription: 'Install Acme; see {@link generic:acme-nothing}.',
+    });
+
+    const {data} = await integrationDocConflicts(undefined, {cwd: tmpDir});
+    const links = data.issues.filter(
+      (/** @type {any} */ issue) => issue.code === 'invalid_doc_graph',
+    );
+    expect(links).toEqual([
+      {
+        code: 'invalid_doc_graph',
+        severity: 'warning',
+        message: expect.stringMatching(
+          /^acme-setup \(description\): "generic:acme-nothing" names no doc\./,
+        ),
+      },
+    ]);
+  });
+
+  it('lists a written pointer in a component doc, with the link that replaces it', async () => {
+    writeLinkedComponent({usage: 'Theme it as `astryx docs theme` says.'});
+
+    const {data} = await integrationDocConflicts(undefined, {cwd: tmpDir});
+    const [pointer, ...rest] = data.strayPointers;
+
+    expect(rest).toEqual([]);
+    expect(pointer).toMatchObject({
+      topic: 'AcmeButton',
+      kind: 'component',
+      section: null,
+      field: 'usage.description',
+      file: 'components/AcmeButton.doc.mjs',
+      pointer: 'astryx docs theme',
+      link: '{@link @astryxdesign/cli:generic:theme}',
+    });
+    expect(pointer.line).toEqual(expect.any(Number));
+    expect(pointer.message).toBe(
+      `component "AcmeButton" (field usage.description, line ${pointer.line}) points at a doc with the written command \`astryx docs theme\`. ` +
+        'Replace `astryx docs theme`, code ticks included, with {@link @astryxdesign/cli:generic:theme}: the CLI prints the command that opens the doc, and doctor checks the link.',
+    );
+    expect(data.issues).toContainEqual({
+      code: 'stray_doc_pointer',
+      severity: 'warning',
+      message: pointer.message,
+    });
+  });
+
+  it("lists a written pointer in a topic's description", async () => {
+    writeLinkedComponent({
+      usage: 'A button.',
+      topicDescription: 'Install Acme; theme it as `astryx docs theme` says.',
+    });
+
+    const {data} = await integrationDocConflicts(undefined, {cwd: tmpDir});
+
+    expect(data.strayPointers).toEqual([
+      expect.objectContaining({
+        topic: 'acme-setup',
+        kind: 'topic',
+        field: 'description',
+        link: '{@link @astryxdesign/cli:generic:theme}',
+      }),
+    ]);
   });
 });

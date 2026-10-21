@@ -56,6 +56,7 @@ export const doc = {
       cli: 'astryx experimental icon arrow --set outline --limit 3',
     },
   ],
+  outsideProject: 'same',
   exitCodes: [
     {code: 0, when: 'success (including zero matches)'},
     {

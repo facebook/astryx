@@ -599,6 +599,8 @@ function DrawerMegaMenu({
       {/* Animated expand/collapse container */}
       <div
         id={`${menuId}-items`}
+        aria-hidden={!isExpanded}
+        inert={!isExpanded ? true : undefined}
         {...stylex.props(
           styles.drawerItems,
           isExpanded && styles.drawerItemsExpanded,

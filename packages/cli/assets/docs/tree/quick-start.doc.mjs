@@ -47,7 +47,7 @@ export const docs = {
           items: [
             'Set `"type": "module"`: the `.js` files the CLI generates, such as a built theme, are ES modules, and Node fails to load them in a package marked `"type": "commonjs"`, which `npm init -y` writes on npm 11.',
             'Start with `"exports": {}`: each component and template you add then writes the public import that `integration verify` resolves.',
-            'Run the CLI as `npx astryx`, which runs the `@astryxdesign/cli` you installed as a devDependency.',
+            'Run the CLI as `astryx`, which runs the `@astryxdesign/cli` you installed as a devDependency.',
             'Component commands read Core, so they need `@astryxdesign/core` installed.',
             "The checks compare your docs with your code through TypeScript's JavaScript compiler API, which `typescript` 5.0 through 6 has. TypeScript 7 does not ship that API: on TypeScript 7, also install `@typescript/typescript6`, its TypeScript 6 API package, and the checks use it.",
           ],
@@ -64,7 +64,7 @@ export const docs = {
         {
           type: 'code',
           lang: 'bash',
-          code: 'npx astryx integration add component AcmeCarousel',
+          code: 'astryx integration add component AcmeCarousel',
         },
         {
           type: 'code',
@@ -82,7 +82,7 @@ export const docs = {
         {
           type: 'code',
           lang: 'bash',
-          code: 'npx astryx component AcmeCarousel',
+          code: 'astryx component AcmeCarousel',
         },
         {
           type: 'prose',
@@ -127,7 +127,7 @@ export const docs = {
         {
           type: 'code',
           lang: 'bash',
-          code: 'npx astryx integration verify\nnpm pack --pack-destination ..',
+          code: 'astryx integration verify\nnpm pack --pack-destination ..',
         },
         {
           type: 'code',
@@ -150,7 +150,7 @@ export const docs = {
         {
           type: 'code',
           lang: 'bash',
-          code: 'cd ..\nmkdir my-app && cd my-app\nnpm init -y\nnpm install @astryxdesign/core @astryxdesign/cli ../acme-astryx-widgets-1.0.0.tgz\nnpx astryx component AcmeCarousel',
+          code: 'cd ..\nmkdir my-app && cd my-app\nnpm init -y\nnpm install @astryxdesign/core @astryxdesign/cli ../acme-astryx-widgets-1.0.0.tgz\nastryx component AcmeCarousel',
         },
         {
           type: 'code',
@@ -281,6 +281,16 @@ export const docs = {
           type: 'reference',
           target: 'command:doctor integration',
           presentation: 'summary',
+        },
+      ],
+    },
+    {
+      id: 'global-mode',
+      title: 'In global mode',
+      content: [
+        {
+          type: 'prose',
+          text: 'In global mode: users can also install your package for their computer, beside the global CLI (`npm i -g @astryxdesign/cli your-package`). It then applies in folders outside any project, and inside a project only if the project installs it. See {@link namespace:global} and {@link generic:global-integrations}.',
         },
       ],
     },

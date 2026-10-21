@@ -83,12 +83,30 @@ export function integrationFluff(discovered) {
 /**
  * Code spans in a package's prose that write `astryx docs <name>` for a doc
  * that exists, where `{@link generic:<name>}` would be checked
- * (architecture:cli-surface DEC-8). Reads the package's topics and the names
- * of Core's docs.
+ * (architecture:cli-surface DEC-8). Reads the package's topics, its own
+ * component docs, and the names of Core's docs.
  *
  * @param {Parameters<typeof findStrayPointers>[0]} discovered the package's
  *   docs, as discoverIntegrationDocs returns them
+ * @param {any} [integration] the loaded integration, whose component docs are
+ *   read too
  */
-export function integrationStrayPointers(discovered) {
-  return findStrayPointers(discovered);
+export async function integrationStrayPointers(discovered, integration) {
+  /** @type {{name: string, file: string}[]} */
+  const components = [];
+  if (integration?.components) {
+    const seen = new Set();
+    try {
+      const {components: records} =
+        await discoverValidIntegrationComponents(integration);
+      for (const record of records) {
+        if (!record.docPath || seen.has(record.docPath)) continue;
+        seen.add(record.docPath);
+        components.push({name: record.name, file: record.docPath});
+      }
+    } catch {
+      // `validate` reports component docs that do not load.
+    }
+  }
+  return findStrayPointers({...discovered, components});
 }

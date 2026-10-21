@@ -40,9 +40,9 @@ export const docs = {
           type: 'code',
           lang: 'bash',
           code: `# Print the palette without writing files
-npx astryx theme palette generate themes/ocean/palette.config.json
+astryx theme palette generate themes/ocean/palette.config.json
 # Write the palette and its receipt
-npx astryx theme palette generate themes/ocean/palette.config.json \\
+astryx theme palette generate themes/ocean/palette.config.json \\
   --out themes/ocean/tokens/ocean.palette.ts`,
         },
         {

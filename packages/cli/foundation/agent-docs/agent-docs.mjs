@@ -379,7 +379,7 @@ export function detectStylingSystem(targetDir) {
  * among them. An agent cannot ask for a topic it was never told about, and
  * `getting-started` is the one it should reach for first.
  *
- * @param {string} version
+ * @param {string | null} version the Core version
  * @param {{coreDir?: string|null, invocation?: string, stylingSystem?: 'stylex'|'tailwind'|'css', zh?: boolean, lang?: string, topics?: string[], agentDocs?: Array<{package: string, append: readonly string[]}>}} [options]
  * @returns {string}
  */
@@ -420,9 +420,9 @@ export function generateCompressedIndex(
       // Best-effort: component count is cosmetic; fall back to the default.
     }
   }
-
-  // Header — state the CLI prefix once; commands below are shown as `astryx <cmd>`.
   lines.push(`Astryx v${version} · ${componentCount} components`);
+
+  // State the CLI prefix once; commands below are shown as `astryx <cmd>`.
   lines.push(
     `CLI: run every command as \`${run} <cmd>\` (shown below as \`astryx ...\`).`,
   );

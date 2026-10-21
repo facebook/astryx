@@ -22,7 +22,13 @@ afterEach(() => {
 
 /** @param {Parameters<typeof writeIconSetProject>[1]} options */
 async function iconCheckOf(options) {
-  const report = await runChecks({cwd: writeIconSetProject(tmp, options)});
+  const cwd = writeIconSetProject(tmp, options);
+  // A project declares Core, so doctor checks the project, not the computer.
+  const pkgFile = path.join(cwd, 'package.json');
+  const pkg = JSON.parse(fs.readFileSync(pkgFile, 'utf8'));
+  pkg.dependencies = {...pkg.dependencies, '@astryxdesign/core': '*'};
+  fs.writeFileSync(pkgFile, JSON.stringify(pkg, null, 2));
+  const report = await runChecks({cwd});
   return report.checks.find(check => check.id === 'icon-sets');
 }
 

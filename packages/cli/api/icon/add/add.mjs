@@ -48,6 +48,7 @@ import {
   THEME_MAP_NAME,
   writeDefinitionFile,
   writeIconSetData,
+  refuseOutsideProject,
 } from '../_adapter.mjs';
 
 /** The lowest score a definition match needs: an exact word or name. */
@@ -81,6 +82,7 @@ export function iconAdd(exportName, options) {
     weight,
     id: givenId,
   } = options ?? {};
+  refuseOutsideProject(cwd, 'experimental icon add', 'the icon-set package');
   return authoring(async () => {
     if (
       typeof exportName !== 'string' ||

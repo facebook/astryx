@@ -51,7 +51,7 @@ export const docs = {
     {
       type: 'code',
       lang: 'bash',
-      code: 'npx astryx component AcmeCarousel',
+      code: 'astryx component AcmeCarousel',
     },
   ],
 };

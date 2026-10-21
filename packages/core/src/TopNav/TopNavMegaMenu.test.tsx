@@ -769,6 +769,31 @@ describe('TopNavMegaMenu — drawer mode', () => {
     expect(handleClick).toHaveBeenCalledTimes(1);
   });
 
+  it('makes collapsed items inert and hidden from assistive technology', async () => {
+    const user = userEvent.setup();
+    render(
+      <TopNavRenderContext value="drawer">
+        <TopNavMegaMenu
+          label="Products"
+          items={<TopNavMegaMenuItem title="Analytics" href="/analytics" />}
+        />
+      </TopNavRenderContext>,
+    );
+    const trigger = screen.getByRole('button', {name: 'Products'});
+    const region = document.getElementById(
+      trigger.getAttribute('aria-controls') ?? '',
+    );
+
+    expect(region).toHaveAttribute('inert');
+    expect(region).toHaveAttribute('aria-hidden', 'true');
+    expect(screen.queryByRole('link', {name: 'Analytics'})).toBeNull();
+
+    await user.click(trigger);
+    expect(region).not.toHaveAttribute('inert');
+    expect(region).toHaveAttribute('aria-hidden', 'false');
+    expect(screen.getByRole('link', {name: 'Analytics'})).toBeInTheDocument();
+  });
+
   it('clips the drawer section only while it is collapsed', async () => {
     // The ring paints outside the item, so a permanent clip would cut it off.
     const user = userEvent.setup();

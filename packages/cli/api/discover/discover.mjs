@@ -27,6 +27,7 @@ export {OFFICIAL_SOURCE_NAME} from './_adapter.mjs';
 import {
   addCommand,
   callSources,
+  computerAvailableEntries,
   declaredDependencies,
   describeInstalled,
   discoverPackages,
@@ -222,18 +223,31 @@ export async function discover(query, options = {}) {
   if (!query || (integrations.length === 0 && !hasSources(project))) {
     const catalog = await catalogFor();
     const packages = installedFor(catalog);
+    // Inside a project, the integrations installed for the computer are
+    // available, never loaded (spec AST-081 FR12).
+    const computer = await computerAvailableEntries(
+      project,
+      packages,
+      declared,
+      add,
+    );
+    const fromSources = officialFirst(
+      availableEntries(catalog, packages, declared, {
+        officialDeclared: declarations.any,
+        install: installFor,
+      }),
+      official.packages,
+      entry => entry.name,
+    );
+    const named = new Set(fromSources.map(entry => entry.name));
     return list(withLatest(packages, catalog), {
       configured,
       type,
       only,
-      available: officialFirst(
-        availableEntries(catalog, packages, declared, {
-          officialDeclared: declarations.any,
-          install: installFor,
-        }),
-        official.packages,
-        entry => entry.name,
-      ),
+      available: [
+        ...fromSources,
+        ...computer.filter(entry => !named.has(entry.name)),
+      ],
       sources: catalog.sources,
     });
   }

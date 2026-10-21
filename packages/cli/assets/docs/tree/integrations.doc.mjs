@@ -26,11 +26,15 @@ export const docs = {
   blocks: [
     {
       type: 'prose',
+      text: 'In global mode: users can install your integration for their computer, beside the global CLI. It then applies in folders outside any project, and inside a project only if the project installs it. See {@link namespace:global} and {@link generic:global-integrations}.',
+    },
+    {
+      type: 'prose',
       text: 'An integration is a way to share things with Astryx users: a package you own and maintain, built on a framework Astryx gives you. Publish one, many, or any mix, and people install it in one step. It works with the Astryx CLI alongside Core. See each kind under {@link namespace:building-blocks}.',
     },
     {
       type: 'prose',
-      text: 'For example, ship a carousel as an integration. Any app that installs it can find it with `npx astryx search carousel`, and the CLI uses it like any Astryx Core component.',
+      text: 'For example, ship a carousel as an integration. Any app that installs it can find it with `astryx search carousel`, and the CLI uses it like any Astryx Core component.',
     },
     {
       type: 'prose',

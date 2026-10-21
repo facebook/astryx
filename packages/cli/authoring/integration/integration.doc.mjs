@@ -16,7 +16,7 @@ export const doc = {
     'The astryx.integration.* manifest that sits beside an integration ' +
     "package's package.json. It can preserve a stable provider identity across a package rename, " +
     "and points the CLI at the package's components, templates, codemods, doc topics, " +
-    'source themes, managed agent guidance, and issue tracker. Every field is optional.',
+    'source themes, managed agent guidance, issue tracker, and the command its users run the CLI with. Every field is optional.',
   appliesTo: 'astryx.integration.{ts,mjs,js}',
   fields: [
     {
@@ -99,6 +99,13 @@ export const doc = {
         "Link to this integration's docs site, such as its home page. Catalogs that list the package may show it.",
       example: "'https://widgets.acme.dev'",
     },
+    {
+      name: 'cliCommand',
+      type: 'string',
+      description:
+        'The command your users run the Astryx CLI with, when it is not their package manager, such as a wrapper your company ships. Every command the CLI prints in an app that loads your package starts with it, in place of `pnpm exec astryx` or `yarn astryx`: hints, errors, Doctor fixes, and doc text. One line, without a subcommand. If two loaded packages set different commands, neither is used and `astryx doctor` warns. An invalid value is ignored with an `invalid_cli_command` warning, and the rest of the manifest still loads. JSON output keeps commands bare.',
+      example: "'acme astryx'",
+    },
   ],
   examples: [
     {
@@ -119,6 +126,10 @@ export const doc = {
   notes: [
     {
       type: 'prose',
+      text: "In global mode: a manifest loads the same way when users install your package for their computer, beside the global CLI, and then applies in folders outside any project; inside a project, only if the project installs it. Peer ranges for `@astryxdesign/core` and `@astryxdesign/cli` are checked against the global CLI's release. See {@link namespace:global} and {@link generic:global-integrations}.",
+    },
+    {
+      type: 'prose',
       text:
         'The provider name defaults to the package name in package.json. ' +
         'During a rename, set `providerId` to the old package name so the IDs ' +
@@ -132,7 +143,12 @@ export const doc = {
         'trimmed, non-blank string of at most 240 Unicode code points with no ' +
         'line separators, control characters, NUL, or Astryx/XDS managed-marker ' +
         'text. The configured project may contain at most 32 integration lines ' +
-        'total.',
+        'total. Write each command in a line as a bare `astryx` command; the ' +
+        'managed block says once, before your lines, how the app starts the CLI.',
+    },
+    {
+      type: 'prose',
+      text: "Set `cliCommand` only when your users run the CLI with a command other than their package manager's, such as `acme astryx`. The CLI picks the command it prints in this order: the `cliCommand` of the loaded integrations when they name one command, then the command a host tool names, then the package manager's. Two different `cliCommand` values cancel out, and `astryx doctor` warns in its `cli-command` check. See `astryx docs cli/integrations/building-blocks/configuration/cli-command`.",
     },
     {
       type: 'prose',

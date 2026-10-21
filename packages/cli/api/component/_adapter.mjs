@@ -22,7 +22,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {ERROR_CODES} from '../../foundation/response/error-codes.mjs';
 import {
-  findCoreDir,
+  requireCoreDir as requireAnswerCoreDir,
   discoverExternalPackages,
 } from '../../foundation/fs/paths.mjs';
 import {
@@ -44,7 +44,12 @@ import {Project} from '../../foundation/config/project.mjs';
 import {loadComponentDoc as loadValidatedComponentDoc} from '../../foundation/discovery/component-loader.mjs';
 import {resolveComponentReplacements} from '../../foundation/discovery/component-replacement.mjs';
 import {searchComponents} from '../../foundation/text/string-utils.mjs';
-import {AstryxError} from '../error.mjs';
+import {AstryxError, coreDirOrThrow} from '../error.mjs';
+import {
+  componentLinkProvider,
+  linkComponentDoc,
+  loadDocsCatalog,
+} from '../docs/_adapter.mjs';
 
 export {CORE_PACKAGE, unscopedComponentOwners};
 
@@ -116,15 +121,7 @@ export {CORE_PACKAGE, unscopedComponentOwners};
  * @returns {string}
  */
 export function requireCoreDir(cwd) {
-  const coreDir = findCoreDir(cwd);
-  if (!coreDir) {
-    throw new AstryxError(
-      'Could not find @astryxdesign/core package',
-      undefined,
-      ERROR_CODES.ERR_CORE_NOT_FOUND,
-    );
-  }
-  return coreDir;
+  return coreDirOrThrow(requireAnswerCoreDir, cwd);
 }
 
 /**
@@ -668,4 +665,115 @@ export function scopeIntegrationMember(docs, owner, dirName) {
   if (docs.theming) scoped.theming = docs.theming;
   if (docs.import) scoped.import = docs.import;
   return scoped;
+}
+
+/**
+ * A search response with every inline `{@link <target>}` in a component
+ * result's description resolved to the command that opens the doc it names,
+ * as `astryx component` prints it (spec:AST-047 FR9). The response object is
+ * kept, with its results replaced.
+ * @template {{data: {results: any[]}}} R
+ * @param {R} response
+ * @param {string} cwd
+ * @returns {Promise<R>}
+ */
+export async function linkSearchResponse(response, cwd) {
+  const results = response.data.results;
+  if (
+    !results.some(
+      result =>
+        result?.domain === 'component' &&
+        typeof result.description === 'string' &&
+        result.description.includes('{@link'),
+    )
+  ) {
+    return response;
+  }
+  const linked = [];
+  for (const result of results) {
+    if (
+      result?.domain !== 'component' ||
+      typeof result.description !== 'string' ||
+      !result.description.includes('{@link')
+    ) {
+      linked.push(result);
+      continue;
+    }
+    const read = await linkComponentResponse(
+      {
+        type: 'component.detail',
+        package: result.package,
+        data: {description: result.description},
+      },
+      cwd,
+    );
+    linked.push({...result, description: read.data.description});
+  }
+  response.data = {...response.data, results: linked};
+  return response;
+}
+
+/**
+ * A component read with every inline `{@link <target>}` in its doc text
+ * resolved to the command that opens the doc it names (spec:AST-047 FR9), in
+ * the detail, its props projection, and each list entry. A Core component's
+ * links resolve against the CLI's own docs; an integration's against that
+ * integration's. A link that names no doc prints as written.
+ * @template {{type: string, package?: string, data?: any}} R
+ * @param {R} response
+ * @param {string} cwd
+ * @returns {Promise<R>}
+ */
+export async function linkComponentResponse(response, cwd) {
+  const {type} = response;
+  if (
+    type !== 'component.detail' &&
+    type !== 'component.detail.props' &&
+    type !== 'component.list'
+  ) {
+    return response;
+  }
+  if (!JSON.stringify(response.data ?? null).includes('{@link')) {
+    return response;
+  }
+  const catalog = await loadDocsCatalog(cwd);
+  /** @type {Map<string, string>} */
+  const declared = new Map();
+  for (const integration of await loadIntegrationsSafely(cwd)) {
+    const id = /** @type {any} */ (integration).providerId;
+    if (typeof id === 'string') declared.set(integration.name, id);
+  }
+  /**
+   * @param {any} doc
+   * @param {string | undefined} owner
+   */
+  const link = async (doc, owner) => {
+    if (typeof owner !== 'string') return doc;
+    try {
+      return (
+        await linkComponentDoc(
+          catalog,
+          componentLinkProvider(owner, declared.get(owner)),
+          doc,
+        )
+      ).doc;
+    } catch {
+      // An owner that is not a provider id links nothing; its text reads as
+      // written.
+      return doc;
+    }
+  };
+  if (type !== 'component.list') {
+    return {...response, data: await link(response.data, response.package)};
+  }
+  /** @type {Record<string, any[]>} */
+  const components = {};
+  for (const [group, entries] of Object.entries(
+    response.data.components ?? {},
+  )) {
+    const linked = [];
+    for (const entry of entries) linked.push(await link(entry, entry?.package));
+    components[group] = linked;
+  }
+  return {...response, data: {...response.data, components}};
 }

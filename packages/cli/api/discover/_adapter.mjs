@@ -19,9 +19,13 @@
 
 import {createHash} from 'node:crypto';
 import * as fs from 'node:fs';
-import * as os from 'node:os';
 import * as path from 'node:path';
-import {Project} from '../../foundation/config/project.mjs';
+import {
+  Project,
+  availableComputerIntegrations,
+} from '../../foundation/config/project.mjs';
+import {isOutsideProject} from '../../foundation/env/project-scope.mjs';
+import {hostedRun} from '../../foundation/runtime/package-root.mjs';
 import {scanAllPackages, findComponentInPackages} from './_package-scanner.mjs';
 import {loadDocs} from '../../foundation/discovery/component-loader.mjs';
 import {collectIdentities} from '../../foundation/integrations/contribution-inventory.mjs';
@@ -29,6 +33,7 @@ import {discoverIntegrationIconSets} from '../../foundation/discovery/icon-set-d
 import {detectPackageManager} from '../../foundation/env/package-manager.mjs';
 import {isValidSemver, semverCompare} from '../../foundation/env/semver.mjs';
 import {assertWithin} from '../../foundation/fs/path-safety.mjs';
+import {userCacheDir} from '../../foundation/env/user-dirs.mjs';
 import {CLI_ROOT, findInstalledPackage} from '../../foundation/fs/paths.mjs';
 import {
   DISCOVER_KINDS,
@@ -269,11 +274,57 @@ export async function describeInstalled(project, scanned) {
  * @returns {boolean}
  */
 export function hasSources(project) {
+  if (doorSources().length > 0) return true;
   if (project == null) return false;
   if (typeof project.config?.discover === 'function') return true;
   return project.loadedIntegrations.some(
     i => i.__discover != null || i.__discoverError != null,
   );
+}
+
+/** Where a discover source a host passed comes from (spec AST-081 FR1). */
+const DOOR_SOURCE = 'the host';
+
+/**
+ * The discover sources the host that started this run passed, if any.
+ * @returns {readonly DiscoverSource[]}
+ */
+function doorSources() {
+  return /** @type {readonly DiscoverSource[]} */ (
+    hostedRun()?.discoverSources ?? []
+  );
+}
+
+/** The source name of a package installed for the computer. */
+const COMPUTER_SOURCE = 'installed for this computer';
+
+/**
+ * The integrations installed for the computer that a project could add, as
+ * available entries with the project's install command (spec AST-081 FR12).
+ * Empty outside a project, where they load instead.
+ * @param {Project | undefined} project
+ * @param {Array<{name: string}>} installed
+ * @param {Set<string>} declared
+ * @param {(name: string, version?: string) => string} add
+ * @returns {Promise<import('./discover.type.mjs').DiscoverAvailableEntry[]>}
+ */
+export async function computerAvailableEntries(
+  project,
+  installed,
+  declared,
+  add,
+) {
+  const cwd = project?.cwd ?? process.cwd();
+  if (isOutsideProject(cwd)) return [];
+  const have = new Set([...installed.map(pkg => pkg.name), ...declared]);
+  return (await availableComputerIntegrations(cwd, have)).map(c => ({
+    name: c.name,
+    components: [],
+    ...(c.version ? {version: c.version} : {}),
+    ...(c.description ? {description: c.description} : {}),
+    source: COMPUTER_SOURCE,
+    install: add(c.name),
+  }));
 }
 
 /**
@@ -469,26 +520,13 @@ export function addCommand(project, {official = []} = {}) {
  * @returns {string}
  */
 export function defaultCacheDir() {
-  const home = os.homedir();
-  if (process.platform === 'win32') {
-    return path.join(
-      process.env.LOCALAPPDATA || path.join(home, 'AppData', 'Local'),
-      'astryx',
-      'Cache',
-    );
-  }
-  if (process.platform === 'darwin') {
-    return path.join(home, 'Library', 'Caches', 'astryx');
-  }
-  return path.join(
-    process.env.XDG_CACHE_HOME || path.join(home, '.cache'),
-    'astryx',
-  );
+  return userCacheDir();
 }
 
 /**
  * @param {string} cacheDir
- * @param {string} from
+ * @param {string} from the source's key: its `from` label, with the host for
+ *   a host's source
  * @param {{package?: string, version?: string}} request
  */
 function savedCopyPath(cacheDir, from, request) {
@@ -566,8 +604,9 @@ async function callSource(source, request, label, timeoutMs) {
 }
 
 /**
- * Call the project's own discover sources — the project's `discover` first,
- * then each integration's in load order — once per distinct function. A source that
+ * Call the discover sources — the project's `discover` first, then each
+ * integration's in load order, then each a host passed, named as the host's
+ * (spec AST-081 FR1, AST-051 FR6) — once per distinct function. A source that
  * throws, times out, or returns an invalid catalog falls back to its saved copy;
  * with none, it is reported and adds nothing. The others always count.
  *
@@ -581,14 +620,15 @@ async function callOwnSources(project, request = {}, options = {}) {
   const {cacheDir = defaultCacheDir(), timeoutMs = SOURCE_TIMEOUT_MS} = options;
   /** @type {CatalogResult} */
   const result = {sources: [], packages: []};
-  if (project == null) return result;
+  const fromDoor = doorSources();
+  if (project == null && fromDoor.length === 0) return result;
 
-  /** @type {Array<{from: string, source?: DiscoverSource, error?: string}>} */
+  /** @type {Array<{from: string, key?: string, source?: DiscoverSource, error?: string}>} */
   const origins = [];
-  if (typeof project.config?.discover === 'function') {
+  if (typeof project?.config?.discover === 'function') {
     origins.push({from: 'astryx.config', source: project.config.discover});
   }
-  for (const integration of project.loadedIntegrations) {
+  for (const integration of project?.loadedIntegrations ?? []) {
     if (integration.__discoverError) {
       origins.push({
         from: integration.name,
@@ -598,6 +638,15 @@ async function callOwnSources(project, request = {}, options = {}) {
       origins.push({from: integration.name, source: integration.__discover});
     }
   }
+  // Every tool that carries the CLI reports its sources as the host's, so
+  // their saved copies are kept per host, by the root that holds its CLI
+  // (spec:AST-051 FR8).
+  const host = hostedRun()?.startingRoot ?? '';
+  fromDoor.forEach((source, index) => {
+    const from =
+      fromDoor.length === 1 ? DOOR_SOURCE : `${DOOR_SOURCE} (${index + 1})`;
+    origins.push({from, key: `${from}\n${host}`, source});
+  });
 
   /** @type {Set<unknown>} */
   const called = new Set();
@@ -609,7 +658,7 @@ async function callOwnSources(project, request = {}, options = {}) {
         ...(request.version ? {version: request.version} : {}),
       }
     : {};
-  for (const {from, source, error} of origins) {
+  for (const {from, key = from, source, error} of origins) {
     if (source == null) {
       result.sources.push({name: from, from, status: 'failed', error});
       continue;
@@ -618,7 +667,7 @@ async function callOwnSources(project, request = {}, options = {}) {
     called.add(source);
 
     const label = `the discover source from ${from}`;
-    const file = savedCopyPath(cacheDir, from, ask);
+    const file = savedCopyPath(cacheDir, key, ask);
     /** @type {import('../../authoring/discover/type').DiscoverCatalog} */
     let catalog;
     try {

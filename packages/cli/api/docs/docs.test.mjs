@@ -11,6 +11,7 @@
 import {describe, it, expect} from 'vitest';
 import {docs} from './docs.mjs';
 import {AstryxError} from '../error.mjs';
+import {formatCliCommand} from '../../foundation/env/package-manager.mjs';
 
 const SLOW = 30_000;
 
@@ -132,6 +133,7 @@ describe('docs() dispatcher routing', () => {
       const res = await docs();
       expect(res.meta.namespaces.map(entry => entry.topic)).toEqual([
         'cli',
+        'global',
         'internationalization',
         'layout',
         'migration',
@@ -166,7 +168,9 @@ describe('docs() dispatcher routing', () => {
     async () => {
       const err = await docs('cli/api/functions/search', 'x').catch(e => e);
       expect(err.code).toBe('ERR_UNKNOWN_SECTION');
-      expect(err.message).toContain('astryx docs cli/api/functions/search');
+      expect(err.message).toContain(
+        formatCliCommand('docs cli/api/functions/search'),
+      );
       expect(err.suggestions.map(s => s.name)).toEqual([
         'cli/api/functions/search',
       ]);
@@ -185,7 +189,13 @@ describe('docs() dispatcher routing', () => {
         kind: 'namespace',
         package: '@astryxdesign/cli',
         breadcrumb: [{route: 'cli', title: 'Astryx CLI'}],
-        content: [],
+        // Its one block points to the host entry's guide.
+        content: [
+          {
+            type: 'prose',
+            text: expect.stringContaining('`astryx docs cli/host-entry`'),
+          },
+        ],
       });
       expect(
         r.data.slots.flatMap(slot => slot.children.map(c => c.route)),

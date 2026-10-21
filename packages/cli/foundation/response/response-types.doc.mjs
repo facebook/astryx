@@ -32,6 +32,11 @@ export const doc = {
       description:
         'The removal receipt — returned when --remove-agents is set: `data.removed` is true when a managed agent-docs block was found and removed, and false when there was none to remove.',
     },
+    {
+      value: 'init.user',
+      description:
+        'The computer-level agent text receipt — returned when --user is set: `data.files`, one `{path, action, reason?}` per path acted on, the skill file first and then each link to its folder (action `written` | `linked` | `unchanged` | `removed` | `absent` | `kept`; `reason` only on `kept`: `edited` when a person changed the text, `not-astryx` when Astryx did not write it), `data.command` (the command the text names), and `data.warnings`.',
+    },
     // component
     {
       value: 'component.list',
@@ -196,7 +201,7 @@ export const doc = {
     {
       value: 'search',
       description:
-        'The echoed query, `matchCount` (total matches, before `limit`), and results, a ranked SearchResultEntry[] bounded by `limit`: each {domain, name, package, score, reason, description, command} (package is the npm package that owns the result), plus import (components, hooks), title, parent (the command that opens the level above), and, for a hit on one section, section (docs), or displayName and kind (templates).',
+        'The echoed query, `matchCount` (total matches, before `limit`), and results, a ranked SearchResultEntry[] bounded by `limit`: each {domain, name, package, score, reason, description, command} (package is the npm package that owns the result), plus import (components, hooks), title, parent (the command that opens the level above), and, for a hit on one section, section (docs), or displayName and kind (templates). When a search with no `type` could not obtain @astryxdesign/core, `meta.partial` is {skipped, reason}: the domains it skipped (component, hook, template) and why.',
     },
 
     // build
@@ -353,7 +358,7 @@ export const doc = {
     {
       value: 'manifest',
       description:
-        'The CLI capability manifest: name, version, apiVersion, description, globalOptions, commands (each name, description, arguments, options, json, aliases?, responseTypes?, examples?, exitCodes? as [{code, when}], subcommands?), jsonSupported, and the flat responseTypes index.',
+        "The CLI capability manifest: name, version, apiVersion, description, globalOptions, commands (each name, description, arguments, options, json, aliases?, responseTypes?, examples?, exitCodes? as [{code, when}], outsideProject? (same, refuse, or own; absent on a group), subcommands?), jsonSupported, globalMode ({docs, summary}: what a run may do beyond its command, such as the hand-off to the project's own CLI, the daily update check, and the agent skill file, and the docs topic that explains it), and the flat responseTypes index.",
     },
 
     // help and version, which no single command owns
@@ -390,7 +395,7 @@ export const doc = {
     {
       value: 'integration.validate',
       description:
-        'The validation result: validated (false when nothing was validated: with no package.json the issues list carries one no_package error so the command exits 1, and with a package.json but no integration manifest the issues list is empty and proves nothing), the package name and version (both null when validated is false) plus issues, an AstryxIntegrationIssue[] of {code, severity: warning | error, message, fix?, file?, line?} (fix: the change that resolves it; file and line: where, relative to the package). When the manifest loads, docTypes checks each doc against its published authoring type: status (checked | skipped), reason, typescript, docs, findings (all warnings, each naming the field and a fix), unchecked, and fixtures (test fixture docs not checked). For the package being authored, olderCliNotes ({file, kind: template | namespace, message}) lists descriptors a CLI before 0.7.2 drops; it is present only when it has entries, and is never counted or fails a check. Experimental fields are documented on their own routes under `astryx docs cli/experimental`.',
+        'The validation result: validated (false when nothing was validated: with no package.json the issues list carries one no_package error so the command exits 1, and with a package.json but no integration manifest the issues list is empty and proves nothing), the package name and version (both null when validated is false) plus issues, an AstryxIntegrationIssue[] of {code, severity: warning | error, message, fix?, file?, line?} (fix: the change that resolves it; file and line: where, relative to the package), and notes when there are any: {code, message} information that fails nothing, such as invalid_cli_command for a malformed cliCommand. When the manifest loads, docTypes checks each doc against its published authoring type: status (checked | skipped), reason, typescript, docs, findings (all warnings, each naming the field and a fix), unchecked, and fixtures (test fixture docs not checked). For the package being authored, olderCliNotes ({file, kind: template | namespace, message}) lists descriptors a CLI before 0.7.2 drops; it is present only when it has entries, and is never counted or fails a check. Experimental fields are documented on their own routes under `astryx docs cli/experimental`.',
     },
     {
       value: 'integration.template-conflicts',
@@ -405,7 +410,7 @@ export const doc = {
     {
       value: 'integration.doc-conflicts',
       description:
-        'validated (false when no integration manifest was found, so nothing was inspected), the integration identity, structural issues, and Core doc overlaps. Each finding includes `severity` (`info` | `error`) and `relationship` (`replaces` | `extends` | `accidental`). copiedPassages lists each pair of topics that repeat 10 or more words of prose word for word: topic, section, otherTopic, otherOwner (package | core), words, passages, owner (the topic that should keep the text), text (the passage as the topic writes it), line (where the copy starts in the topic to change, or null), and message (the exact replacement); each is also a copied_passage warning in issues. fluff lists padding phrases and low-density topics: topic, kind (phrase | density), phrase, section, file (relative to the package root), line, density, and message (what to cut or write instead); each is also a doc_fluff warning in issues. strayPointers lists each code span in prose that is exactly `astryx docs <name>` for a doc that exists: topic, section, file (relative to the package root), line, pointer (the written command), link (the {@link} that replaces it), and message; each is also a stray_doc_pointer warning in issues.',
+        'validated (false when no integration manifest was found, so nothing was inspected), the integration identity, structural issues, and Core doc overlaps. Each finding includes `severity` (`info` | `error`) and `relationship` (`replaces` | `extends` | `accidental`). copiedPassages lists each pair of topics that repeat 10 or more words of prose word for word: topic, section, otherTopic, otherOwner (package | core), words, passages, owner (the topic that should keep the text), text (the passage as the topic writes it), line (where the copy starts in the topic to change, or null), and message (the exact replacement); each is also a copied_passage warning in issues. fluff lists padding phrases and low-density topics: topic, kind (phrase | density), phrase, section, file (relative to the package root), line, density, and message (what to cut or write instead); each is also a doc_fluff warning in issues. strayPointers lists each code span that is exactly `astryx docs <name>` for a doc that exists, in the prose, description or summary of a topic or the text fields of a component doc: topic (the topic or component doc), kind (topic | component), section, field (the field outside any section, such as description or usage.bestPractices[0].description, else null), file (relative to the package root), line, pointer (the written command), link (the {@link} that replaces it), and message; each is also a stray_doc_pointer warning in issues.',
     },
     {
       value: 'integration.check',

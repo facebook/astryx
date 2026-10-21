@@ -222,5 +222,12 @@
         "command": "astryx template ChatMessageMetadataFooter --type block"
       }
     ]
+  },
+  "meta": {
+    "answeredBy": {
+      "cli": "0.7.2",
+      "core": "0.7.2",
+      "copy": "project"
+    }
   }
 }

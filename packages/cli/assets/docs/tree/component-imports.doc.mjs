@@ -56,7 +56,7 @@ export const docs = {
         {
           type: 'code',
           lang: 'bash',
-          code: 'npx astryx integration verify',
+          code: 'astryx integration verify',
         },
         {
           type: 'list',
@@ -70,6 +70,16 @@ export const docs = {
         {
           type: 'prose',
           text: 'To import from the package root, set `import: \'@acme/astryx-widgets\'` and re-export the component from the file that `exports["."]` points to. See {@link command:integration verify}.',
+        },
+      ],
+    },
+    {
+      id: 'global-mode',
+      title: 'In global mode',
+      content: [
+        {
+          type: 'prose',
+          text: "In global mode: outside a project, imports the CLI prints name packages installed for the computer, which a new app must install before it can build them; inside a project, only packages the project installs are printed. See {@link namespace:global} and {@link generic:global-integrations}.",
         },
       ],
     },

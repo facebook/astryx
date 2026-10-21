@@ -43,6 +43,16 @@ import {
   resolvePackageDir,
 } from '../integrations/integrations.mjs';
 import {loadAutolinkCandidates} from '../integrations/autolink.mjs';
+import {
+  computerInstallRoots,
+  loadComputerIntegrations,
+  scanComputerIntegrations,
+} from '../integrations/computer-integrations.mjs';
+import {relativeWithin, samePath} from '../fs/path-compare.mjs';
+import {isOutsideProject} from '../env/project-scope.mjs';
+import {cliVersion} from '../release/run-context.mjs';
+import {isGlobalCopy} from '../release/choose.mjs';
+import {astryxCommandsOnSearchPath} from '../env/search-path.mjs';
 import {resolveProviders} from '../integrations/provider-resolution.mjs';
 import {
   setProject as setDebugProject,
@@ -55,7 +65,7 @@ import {
   discoverValidIntegrationComponents,
 } from '../discovery/component-discovery.mjs';
 import {resolveComponentReplacements} from '../discovery/component-replacement.mjs';
-import {findCoreDir} from '../fs/paths.mjs';
+import {CLI_ROOT, findCoreDir, findProjectCoreDir} from '../fs/paths.mjs';
 import {
   applyTemplateReplacements,
   effectiveTemplateDiscovery,
@@ -84,6 +94,11 @@ import {
   selectIntegrationCodemods,
 } from '../../assets/codemods/integration-discovery.mjs';
 import {validateLoadedIntegration} from '../integrations/validate-contributions.mjs';
+import {recordDeclaredCliCommands} from '../env/cli-command.mjs';
+import {
+  hostedRun,
+  recordResolvedIntegrations,
+} from '../runtime/package-root.mjs';
 import {
   InMemoryConfigCache,
   cacheKey,
@@ -104,6 +119,87 @@ function errorMessage(err) {
       ? /** @type {{message: unknown}} */ (err).message
       : undefined;
   return message == null ? String(err) : String(message);
+}
+
+/**
+ * The computer-level integrations (spec AST-081 FR12), read from package.json
+ * files only. Outside a project, those installed beside the running CLI;
+ * inside one, where the project's own CLI may be the copy that answers, those
+ * installed beside the CLI installed for the computer (see globalCliRoot).
+ * @param {string} [cwd]
+ * @returns {import('../integrations/computer-integrations.mjs').ComputerIntegrationCandidate[]}
+ */
+export function computerIntegrationCandidates(cwd = process.cwd()) {
+  try {
+    const outside = isOutsideProject(cwd);
+    const cliRoot = outside ? CLI_ROOT : globalCliRoot(cwd);
+    return cliRoot
+      ? scanComputerIntegrations({
+          cliRoot,
+          release: cliVersion(),
+          // Outside a project, the integrations a host approves load from the
+          // package set that serves the run too (cli-surface INV30).
+          approved: outside ? (hostedRun()?.integrations ?? []) : [],
+        })
+      : [];
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * The CLI package whose install root holds the computer-level integrations
+ * for a folder inside a project: this copy when it was installed outside the
+ * project (installed for the computer, or in a tool's package set), else the
+ * first `astryx` on the search path that is installed for the computer. A
+ * project's own CLI and a release from the per-user cache are neither.
+ * @param {string} cwd
+ * @returns {string | null}
+ */
+function globalCliRoot(cwd) {
+  let folder = path.resolve(cwd);
+  try {
+    folder = fs.realpathSync(folder);
+  } catch {
+    // A folder that cannot be resolved is compared as written.
+  }
+  const own = computerInstallRoots(CLI_ROOT);
+  if (
+    own.length > 0 &&
+    !own.some(
+      root => samePath(root, folder) || relativeWithin(root, folder) != null,
+    )
+  ) {
+    return CLI_ROOT;
+  }
+  for (const command of astryxCommandsOnSearchPath()) {
+    if (command.cliRoot && isGlobalCopy(command.cliRoot)) {
+      return command.cliRoot;
+    }
+  }
+  return null;
+}
+
+/**
+ * The computer-level integrations a project could add (spec AST-081 FR12):
+ * those it does not install, whose peer ranges admit the release that
+ * answers, and whose manifest loads.
+ * @param {string} cwd
+ * @param {Set<string>} installed package names the project loads or declares
+ * @returns {Promise<import('../integrations/computer-integrations.mjs').ComputerIntegrationCandidate[]>}
+ */
+export async function availableComputerIntegrations(cwd, installed) {
+  const candidates = computerIntegrationCandidates(cwd).filter(
+    c => !c.incompatible && !installed.has(c.name),
+  );
+  if (candidates.length === 0) return [];
+  const loaded = await loadComputerIntegrations(candidates);
+  const usable = new Set(
+    loaded.flatMap(entry =>
+      entry.integration && !entry.integration.__loadError ? [entry.spec] : [],
+    ),
+  );
+  return candidates.filter(c => usable.has(c.name));
 }
 
 /**
@@ -344,6 +440,12 @@ export class Project {
   #cache;
   /** @type {string} */
   #hash;
+  /**
+   * Which Core the project reads: `any`, its installed Core else the Core the
+   * answering release carries, or `project`, its installed Core only.
+   * @type {'any' | 'project'}
+   */
+  #core = 'any';
   /** @type {ProjectIntegrationIssue[]} */
   #issues = [];
   /**
@@ -366,6 +468,7 @@ export class Project {
    * @param {import('../integrations/integrations.mjs').LoadedIntegration[]} init.loadedIntegrations
    * @param {import('./config-cache.mjs').ConfigCache} init.cache
    * @param {string} init.hash config content hash
+   * @param {'any' | 'project'} [init.core] which Core it reads
    */
   constructor({
     cwd,
@@ -375,7 +478,9 @@ export class Project {
     loadedIntegrations,
     cache,
     hash,
+    core = 'any',
   }) {
+    this.#core = core;
     this.#cwd = cwd;
     this.#configPath = configPath;
     this.#config = config;
@@ -390,11 +495,18 @@ export class Project {
    * and loads the configured integrations. Discovery is NOT run here — it is
    * lazy and memoized on the returned instance.
    *
+   * `core: 'project'` reads only the project's installed Core, never the Core
+   * the answering release carries: the commands that judge or change a
+   * project (`doctor`, `swizzle`, `upgrade`) load it so (spec AST-081 FR3).
+   *
    * @param {string} [cwd]
-   * @param {{cache?: import('./config-cache.mjs').ConfigCache, fresh?: boolean}} [options]
+   * @param {{cache?: import('./config-cache.mjs').ConfigCache, fresh?: boolean, core?: 'any' | 'project'}} [options]
    * @returns {Promise<Project>}
    */
-  static async load(cwd = process.cwd(), {cache, fresh = false} = {}) {
+  static async load(
+    cwd = process.cwd(),
+    {cache, fresh = false, core = 'any'} = {},
+  ) {
     const resolvedCache = fresh
       ? new InMemoryConfigCache()
       : (cache ?? new InMemoryConfigCache());
@@ -451,6 +563,22 @@ export class Project {
       fresh,
     );
 
+    // Outside a project, the integrations installed beside the running CLI
+    // load too (spec AST-081 FR12); a package the folder already loads keeps
+    // its own copy. Inside a project they never load.
+    const computer = isOutsideProject(cwd)
+      ? await loadComputerIntegrations(computerIntegrationCandidates(cwd), {
+          fresh,
+          exclude: [
+            ...loadedIntegrations.map(integration => integration.name),
+            ...autolinked.flatMap(candidate =>
+              candidate.integration ? [candidate.integration.name] : [],
+            ),
+            ...(localIntegration ? [localIntegration.name] : []),
+          ],
+        })
+      : [];
+
     // Autolinked and local packages can claim a provider ID that a configured
     // package already holds, so identity is resolved once over the final set.
     const resolution = resolveProviders([
@@ -460,6 +588,7 @@ export class Project {
         spec: integration.__spec,
       })),
       ...autolinked,
+      ...computer,
       ...(localIntegration
         ? [
             {
@@ -471,6 +600,11 @@ export class Project {
         : []),
     ]);
     loadedIntegrations = resolution.integrations;
+    // A hosted run returns each package it resolved (cli-surface INV30).
+    recordResolvedIntegrations(loadedIntegrations);
+    // The picker (getCliInvocation) is synchronous, so the commands these
+    // integrations declare are recorded here, where they become known.
+    recordDeclaredCliCommands(projectDir, loadedIntegrations);
 
     // The debug recorder resolves its settings synchronously, long before any
     // command gets here, so this is where a project's `debug` block gets a
@@ -509,6 +643,7 @@ export class Project {
       loadedIntegrations,
       cache: resolvedCache,
       hash,
+      core,
     });
     PROVIDER_LEDGERS.set(project, resolution.ledger);
     return project;
@@ -650,6 +785,18 @@ export class Project {
   }
 
   /**
+   * The Core this project reads: its installed Core, else, unless it was
+   * loaded with `core: 'project'`, the Core the answering release carries
+   * (spec AST-081 FR3). Null when there is none.
+   * @returns {string | null}
+   */
+  coreDir() {
+    return this.#core === 'project'
+      ? findProjectCoreDir(this.#cwd)
+      : findCoreDir(this.#cwd);
+  }
+
+  /**
    * Core + integration component ownership records. Wraps
    * discoverOwnedComponents for core and discoverIntegrationComponents (via
    * discoverOwnedComponents) for integrations. Invalid component records are
@@ -660,7 +807,7 @@ export class Project {
    */
   async components() {
     return this.#memo('components', async () => {
-      const coreDir = findCoreDir(this.#cwd);
+      const coreDir = this.coreDir();
       /** @type {Array<{name: string, package: string, group: string|null, docPath: string|null, sourcePath: string|null, issuesUrl: string|undefined}>} */
       const records = [];
 
@@ -711,7 +858,7 @@ export class Project {
   async componentReplacements() {
     return this.#memo('componentReplacements', async () => {
       const replacements = await resolveComponentReplacements(
-        findCoreDir(this.#cwd),
+        this.coreDir(),
         this.#loadedIntegrations,
       );
       for (const finding of replacements.findings) {
@@ -929,7 +1076,7 @@ export class Project {
     const replacing = new Map();
     if (this.#loadedIntegrations.length > 0) {
       const {active} = await resolveComponentReplacements(
-        findCoreDir(this.#cwd),
+        this.coreDir(),
         this.#loadedIntegrations,
       );
       for (const each of active) {

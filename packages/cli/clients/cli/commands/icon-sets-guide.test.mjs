@@ -11,6 +11,7 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 import {afterAll, beforeAll, describe, expect, it} from 'vitest';
 import {runCli} from '../../../test-utils/run-cli.mjs';
+import {formatCliCommand} from '../../../foundation/env/package-manager.mjs';
 import {writeIconSetProject} from '../../../test-utils/icon-set-fixture.mjs';
 
 const GUIDE = 'cli/experimental/icon-sets';
@@ -66,10 +67,12 @@ describe('icon-set guide', () => {
     for (const phrase of [
       'Icon sets are experimental',
       'patch release',
-      'npx astryx experimental icon new-set outline',
-      'npx astryx experimental icon add Bin --from @acme/glyph-library --definition delete',
+      formatCliCommand('experimental icon new-set outline'),
+      formatCliCommand(
+        'experimental icon add Bin --from @acme/glyph-library --definition delete',
+      ),
       '--new-definition',
-      'astryx docs cli/experimental/icon-definitions',
+      formatCliCommand('docs cli/experimental/icon-definitions'),
       'icon_builtin_definition_missing',
       'Unmapped icon definitions (optional)',
       'unmappedDefinitions',

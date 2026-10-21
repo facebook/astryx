@@ -48,5 +48,12 @@
         "command": "astryx theme add ocean"
       }
     ]
+  },
+  "meta": {
+    "answeredBy": {
+      "cli": "<cli version>",
+      "core": "<cli version>",
+      "copy": "project"
+    }
   }
 }

@@ -20,4 +20,10 @@ export const docs = {
     guides: {title: 'Guides', accepts: {kinds: ['generic', 'namespace']}},
     reference: {title: 'Reference', accepts: {kinds: ['namespace']}},
   },
+  blocks: [
+    {
+      type: 'prose',
+      text: 'Use the CLI in any folder: install it once for your computer, and every project still gets the release that matches its Core. See {@link namespace:global}.',
+    },
+  ],
 };

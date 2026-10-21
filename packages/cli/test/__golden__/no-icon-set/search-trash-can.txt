@@ -7,6 +7,13 @@ import:      @astryxdesign/core/Icon
 description: Icons are small visual symbols that represent actions, objects, or concepts. They improve scannability and reinforce meaning alongside text. Supports both direct SVG components and semantic icon names that adapt to the active theme.
 command:     pnpm exec astryx component Icon
 
+name:        IconButton
+domain:      component
+package:     @astryxdesign/core
+import:      @astryxdesign/core/IconButton
+description: A button that shows only an icon with no visible text. Use IconButton in toolbars, table rows, and compact UI where space is tight and the icon is universally understood.
+command:     pnpm exec astryx component IconButton
+
 name:        ButtonWithIcon
 domain:      template
 package:     @astryxdesign/core
@@ -14,12 +21,5 @@ displayName: Button - Icon
 kind:        block
 description: Buttons with a leading icon that reinforces the label. Use when the icon helps the user identify the action faster, like a plus for "New" or a trash can for "Delete".
 command:     pnpm exec astryx template ButtonWithIcon --type block
-
-name:        IconButton
-domain:      component
-package:     @astryxdesign/core
-import:      @astryxdesign/core/IconButton
-description: A button that shows only an icon with no visible text. Use IconButton in toolbars, table rows, and compact UI where space is tight and the icon is universally understood.
-command:     pnpm exec astryx component IconButton
 
 More in packages you could add: pnpm exec astryx discover 'trash can'

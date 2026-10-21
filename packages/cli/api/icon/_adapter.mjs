@@ -15,6 +15,7 @@ import {Project} from '../../foundation/config/project.mjs';
 import {AstryxError} from '../error.mjs';
 import {ERROR_CODES} from '../../foundation/response/error-codes.mjs';
 import {IconSetAuthoringError} from '../../foundation/discovery/icon-set-writer.mjs';
+import {isOutsideProject} from '../../foundation/env/project-scope.mjs';
 
 export {
   iconRecord,
@@ -50,6 +51,36 @@ export {
   THEME_MAP_NAME,
 } from '../../foundation/discovery/icon-set-writer.mjs';
 export {exportValueKind} from '../../foundation/discovery/module-exports.mjs';
+
+/**
+ * Refuse a command that writes to a project or package when `cwd` is outside
+ * any project and no package.json is at or above it (spec AST-081 FR3): it
+ * writes nothing and says what it needs.
+ * @param {string} cwd
+ * @param {string} command the command, without `astryx`
+ * @param {string} where what to run it in
+ */
+export function refuseOutsideProject(cwd, command, where) {
+  // A folder with a package.json at or above it is a package being authored,
+  // even before it declares Astryx; that package's own checks answer there.
+  if (!isOutsideProject(cwd) || hasPackageJsonAbove(cwd)) return;
+  throw new AstryxError(
+    `astryx ${command} works only in a project. Run it in ${where}.`,
+    [],
+    ERROR_CODES.ERR_PROJECT_REQUIRED,
+  );
+}
+
+/**
+ * Is there a package.json in `dir` or a folder above it?
+ * @param {string} dir
+ */
+function hasPackageJsonAbove(dir) {
+  for (let at = path.resolve(dir); ; at = path.dirname(at)) {
+    if (fs.existsSync(path.join(at, 'package.json'))) return true;
+    if (path.dirname(at) === at) return false;
+  }
+}
 
 /**
  * Run one authoring step, turning its errors into AstryxErrors.

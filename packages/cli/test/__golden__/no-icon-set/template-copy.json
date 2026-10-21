@@ -10,11 +10,18 @@
     "demoMediaReplaced": 0,
     "notes": [
       "Install missing dependencies: pnpm add @heroicons/react@\"^2.2.0\"",
-      "This template uses StyleX. Your project needs a StyleX compiler plugin — see `astryx docs styling-overview` for setup steps."
+      "This template uses StyleX. Your project needs a StyleX compiler plugin — see `pnpm exec astryx docs styling-overview` for setup steps."
     ],
     "missingPackages": [
       "@heroicons/react"
     ],
     "installCommand": "pnpm add @heroicons/react@\"^2.2.0\""
+  },
+  "meta": {
+    "answeredBy": {
+      "cli": "0.7.2",
+      "core": "0.7.2",
+      "copy": "project"
+    }
   }
 }

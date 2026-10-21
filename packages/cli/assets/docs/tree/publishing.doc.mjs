@@ -27,7 +27,7 @@ export const docs = {
         {
           type: 'code',
           lang: 'bash',
-          code: 'npx astryx doctor integration validate && npx astryx doctor integration components && npx astryx doctor integration templates && npx astryx doctor integration docs && npx astryx integration verify\nnpm publish --dry-run --access public',
+          code: 'astryx doctor integration validate && astryx doctor integration components && astryx doctor integration templates && astryx doctor integration docs && astryx integration verify\nnpm publish --dry-run --access public',
         },
         {
           type: 'code',
@@ -99,7 +99,7 @@ export const docs = {
         {
           type: 'code',
           lang: 'bash',
-          code: 'mkdir check-release && cd check-release\nnpm init -y\nnpm install @astryxdesign/core @astryxdesign/cli @acme/astryx-widgets@1.0.0\nnpx astryx component AcmeCarousel\nnpx astryx doctor integration validate @acme/astryx-widgets',
+          code: 'mkdir check-release && cd check-release\nnpm init -y\nnpm install @astryxdesign/core @astryxdesign/cli @acme/astryx-widgets@1.0.0\nastryx component AcmeCarousel\nastryx doctor integration validate @acme/astryx-widgets',
         },
         {
           type: 'prose',

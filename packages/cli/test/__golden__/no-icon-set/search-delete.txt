@@ -1,4 +1,4 @@
-Results for "delete" (15)
+Results for "delete" (19)
 
 name:        AlertDialog
 domain:      component
@@ -12,6 +12,14 @@ AlertDialog passes its requested width through to Dialog, which clamps the surfa
 
 For cases where you want to show an alert without managing open state, use the `useImperativeAlertDialog` hook: call `alert.show(options)` and render `alert.element` in your tree.
 command:     pnpm exec astryx component AlertDialog
+
+name:        global/uninstall
+domain:      doc
+package:     @astryxdesign/cli
+title:       Global mode › Uninstall and reset
+description: Remove your global install, the agent guide it keeps, and the folders it uses, or reset them to start over.
+command:     pnpm exec astryx docs global/uninstall --index
+parent:      pnpm exec astryx docs global
 
 name:        Dialog
 domain:      component
@@ -37,6 +45,33 @@ title:       Astryx CLI › Commands › astryx theme template
 description: Write the annotated theme template into your project
 command:     pnpm exec astryx docs cli/commands/theme-template
 parent:      pnpm exec astryx docs cli/commands
+
+name:        global/computer-agent-guide
+section:     choose
+domain:      doc
+package:     @astryxdesign/cli
+title:       Global mode › The agent guide on your computer › Write it now, or turn it off
+description: `init --user` writes the file and the links now.
+command:     pnpm exec astryx docs global/computer-agent-guide choose
+parent:      pnpm exec astryx docs global/computer-agent-guide --index
+
+name:        global/uninstall
+section:     agent-guide
+domain:      doc
+package:     @astryxdesign/cli
+title:       Global mode › Uninstall and reset › First, remove the agent guide
+description: While the CLI is still installed, remove the agent guide from your home folder:
+command:     pnpm exec astryx docs global/uninstall agent-guide
+parent:      pnpm exec astryx docs global/uninstall --index
+
+name:        global/uninstall
+section:     reset
+domain:      doc
+package:     @astryxdesign/cli
+title:       Global mode › Uninstall and reset › Reset
+description: Delete either folder to reset it; Astryx recreates what it needs on the next run.
+command:     pnpm exec astryx docs global/uninstall reset
+parent:      pnpm exec astryx docs global/uninstall --index
 
 name:        migration/migration-setup
 section:     foundation-smoke-test

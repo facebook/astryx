@@ -97,7 +97,12 @@ This record owns the moves a read offers and how they appear in text and JSON.
   doc's `blocks`, which a later phase renders. A target without a
   provider names a doc of the provider that wrote the link: in a topic that
   merges sections from several providers, each section resolves against its
-  own. The CLI MUST resolve
+  own. A component doc's text fields (`description`, `summary`, `label`, at any
+  depth, an example's label included; never code or defaults) and a topic's description and
+  summary hold links too, and a component doc's bare target names a doc of
+  the component's provider, where a Core component's provider is the CLI's
+  docs, which hold Core's guides. A search hit's description reads the same.
+  The CLI MUST resolve
   every link when it reads a doc, and Doctor MUST warn on a link that is
   unresolved or ambiguous. A link names a doc identity, not a provider instance,
   so it survives version changes.

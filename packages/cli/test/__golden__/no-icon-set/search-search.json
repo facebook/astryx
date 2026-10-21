@@ -3,7 +3,7 @@
   "type": "search",
   "data": {
     "query": "search",
-    "matchCount": 98,
+    "matchCount": 107,
     "results": [
       {
         "domain": "doc",
@@ -211,16 +211,24 @@
         "parent": "astryx docs cli/integrations/building-blocks/templates/document-the-template/template-doc-overview --index"
       },
       {
-        "domain": "template",
-        "name": "theme-showcase",
-        "package": "@astryxdesign/core",
-        "score": 60,
-        "reason": "renders Search",
-        "description": "Several unrelated product surfaces rendered together on one canvas so a token change can be judged across contexts at once. A comparison harness rather than a layout to ship.",
-        "displayName": "Theme Showcase",
-        "kind": "page",
-        "command": "astryx template theme-showcase --type page"
+        "domain": "doc",
+        "name": "global/problems",
+        "package": "@astryxdesign/cli",
+        "score": 90,
+        "reason": "keyword \"search\"",
+        "description": "Outside a project, commands that read components (`component`, `search`, `template`, `build`, and the like) use your global version's Core. It ships beside the CLI only for some installs; otherwise your global install downloads it once…",
+        "section": "core-offline",
+        "title": "Global mode › Troubleshooting global mode › \"Core … could not be installed\" outside a project",
+        "command": "astryx docs global/problems core-offline",
+        "parent": "astryx docs global/problems --index"
       }
     ]
+  },
+  "meta": {
+    "answeredBy": {
+      "cli": "0.7.2",
+      "core": "0.7.2",
+      "copy": "project"
+    }
   }
 }

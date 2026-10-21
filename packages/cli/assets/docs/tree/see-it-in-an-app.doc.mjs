@@ -26,9 +26,9 @@ export const docs = {
         {
           type: 'code',
           lang: 'bash',
-          code: `npx astryx component AcmeCarousel
-npx astryx component --list
-npx astryx search carousel`,
+          code: `astryx component AcmeCarousel
+astryx component --list
+astryx search carousel`,
         },
         {
           type: 'code',
@@ -54,6 +54,16 @@ Cycles through slides one at a time. Use it for a small set of related cards.
         {
           type: 'prose',
           text: 'Install the packed package in a test app before publishing. Then run the same detail, list, and search commands there. See {@link generic:test-in-an-app}.',
+        },
+      ],
+    },
+    {
+      id: 'global-mode',
+      title: 'In global mode',
+      content: [
+        {
+          type: 'prose',
+          text: 'In global mode: to check your package in an app, install it in that app; a copy installed for your computer is not used inside a project. To check it outside projects, install it for your computer beside the CLI. See {@link namespace:global} and {@link generic:global-integrations}.',
         },
       ],
     },

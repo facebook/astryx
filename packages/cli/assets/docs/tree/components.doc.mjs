@@ -20,4 +20,10 @@ export const docs = {
       accepts: {kinds: ['generic', 'namespace']},
     },
   },
+  blocks: [
+    {
+      type: 'prose',
+      text: 'In global mode: components from an integration installed for the computer show up outside projects; inside a project, only components from integrations the project installs. See {@link namespace:global} and {@link generic:global-integrations}.',
+    },
+  ],
 };

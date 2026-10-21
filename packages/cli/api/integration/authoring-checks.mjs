@@ -21,10 +21,11 @@
 import path from 'node:path';
 import {getCliInvocation} from '../../foundation/env/package-manager.mjs';
 import {
+  packageComponentLinkProblems,
   packageDocsProblems,
   packageReferenceProblems,
 } from '../docs/_adapter.mjs';
-import {findCoreDir} from '../../foundation/fs/paths.mjs';
+import {findProjectCoreDir} from '../../foundation/fs/paths.mjs';
 import {
   discoverIntegrationComponents,
   discoverOwnedComponents,
@@ -50,6 +51,8 @@ import {
   validateInstalledIntegration,
   validateLocalIntegration,
 } from './validate-integration.mjs';
+import {rootProblem} from '../../foundation/integrations/validate-contributions.mjs';
+import {normalizeProviderId} from '../../foundation/identity/provider-identity.mjs';
 
 /** @param {string} value */
 export function shellArg(value) {
@@ -58,14 +61,60 @@ export function shellArg(value) {
 }
 
 /**
+ * The provider ID a package without a name is checked under: a valid bare
+ * package name no published package can hold (npm names are lowercase).
+ */
+const UNNAMED_PROVIDER = 'astryx-unnamed-local-package';
+
+/**
+ * A message as the package sees it: the stand-in provider ID gone, its docs
+ * named by their path in the package.
+ * @param {string} message
+ */
+function unnamedShown(message) {
+  return message
+    .split(`${UNNAMED_PROVIDER}/`)
+    .join('')
+    .split(UNNAMED_PROVIDER)
+    .join('this package');
+}
+
+/**
  * Resolve one local or installed integration for an authoring check.
  * @param {string | undefined} pkg
  * @param {string} cwd
  */
 async function resolveIntegration(pkg, cwd) {
-  return pkg
-    ? validateInstalledIntegration(pkg, cwd)
-    : validateLocalIntegration(cwd);
+  const resolved = pkg
+    ? await validateInstalledIntegration(pkg, cwd)
+    : await validateLocalIntegration(cwd);
+  const integration = resolved.found ? resolved.integration : undefined;
+  if (!integration) return resolved;
+  // A root that is not a readable folder is reported in the issues; the
+  // checks read nothing from it rather than fail on it.
+  /** @type {typeof integration & {__unnamed?: boolean}} */
+  const usable = {...integration};
+  // The provider ID readers key the package on: the manifest's providerId,
+  // else its name. A package with neither (validate warned about it) is
+  // still checked; the docs check names its docs under a stand-in ID.
+  try {
+    usable.providerId = normalizeProviderId(
+      integration.__declaredProviderId ?? integration.name,
+    );
+  } catch {
+    usable.__unnamed = true;
+  }
+  for (const kind of /** @type {const} */ ([
+    'components',
+    'templates',
+    'codemods',
+    'docs',
+    'themes',
+  ])) {
+    const root = usable[kind];
+    if (root != null && rootProblem(root)) usable[kind] = undefined;
+  }
+  return {...resolved, integration: usable};
 }
 
 /**
@@ -257,7 +306,20 @@ export async function integrationComponentConflicts(pkg, options = {}) {
   // the project's own compiler; without one the report says it was skipped.
   const propDrift = await integrationPropDrift(resolved.integration, cwd);
 
-  const coreDir = findCoreDir(cwd);
+  // A link in a component doc's text reads as the command that opens its doc,
+  // as one in a topic does; one that names no doc prints as written, so it is
+  // a warning (spec:AST-047 FR9). The package's own topics are linkable.
+  const ownDocs = resolved.integration.docs
+    ? await discoverIntegrationDocs(resolved.integration)
+    : null;
+  for (const {severity, message} of await packageComponentLinkProblems(
+    resolved.integration,
+    ownDocs,
+  )) {
+    issues.push({code: 'invalid_doc_graph', severity, message});
+  }
+
+  const coreDir = findProjectCoreDir(cwd);
   if (!coreDir) {
     issues.push({
       code: 'core_not_found',
@@ -335,7 +397,29 @@ export async function integrationDocConflicts(pkg, options = {}) {
   const fluff = [];
   /** @type {import('./authoring-checks.type.mjs').StrayPointer[]} */
   const strayPointers = [];
+  // Like the other findings' `doc`, a fluff or stray-pointer `file` is
+  // relative to the package root.
+  const packageDir = /** @type {any} */ (resolved.integration)?.__packageDir;
+  const fromPackage = (/** @type {string} */ file) =>
+    typeof packageDir === 'string'
+      ? path.relative(packageDir, file).split(path.sep).join('/')
+      : file;
   if (!resolved.integration?.docs || name == null) {
+    // A package that ships components and no topics still has component docs
+    // a written pointer can sit in.
+    if (name != null && resolved.integration?.components) {
+      strayPointers.push(
+        ...(
+          await integrationStrayPointers(
+            {records: [], guides: []},
+            resolved.integration,
+          )
+        ).map(each => ({...each, file: fromPackage(each.file)})),
+      );
+      for (const {message} of strayPointers) {
+        issues.push({code: 'stray_doc_pointer', severity: 'warning', message});
+      }
+    }
     return {
       type: 'integration.doc-conflicts',
       data: {
@@ -351,8 +435,20 @@ export async function integrationDocConflicts(pkg, options = {}) {
     };
   }
 
+  // The docs tree names a package's docs by its provider ID, which a
+  // package.json without a name does not give: its docs are checked under a
+  // stand-in ID, which no message names.
+  const unnamed = /** @type {{__unnamed?: boolean}} */ (resolved.integration)
+    .__unnamed;
+  const docsIntegration = unnamed
+    ? {
+        ...resolved.integration,
+        name: UNNAMED_PROVIDER,
+        providerId: UNNAMED_PROVIDER,
+      }
+    : resolved.integration;
   const [discovered, builtinTopics] = await Promise.all([
-    discoverIntegrationDocs(resolved.integration),
+    discoverIntegrationDocs(docsIntegration),
     Promise.resolve(discoverBuiltinTopics()),
   ]);
   const {records, errors} = discovered;
@@ -422,43 +518,50 @@ export async function integrationDocConflicts(pkg, options = {}) {
   // its docs (spec:AST-046, spec:AST-047).
   if (errors.length === 0) {
     for (const {severity, message} of await packageDocsProblems(
-      /** @type {{name: string}} */ (resolved.integration),
+      /** @type {{name: string}} */ (docsIntegration),
       discovered,
     )) {
-      issues.push({code: 'invalid_doc_graph', severity, message});
+      issues.push({
+        code: 'invalid_doc_graph',
+        severity,
+        message: unnamedShown(message),
+      });
     }
 
     // A reference block includes content rather than linking to it, so one
     // that cannot include what it names loses that content for every reader:
     // an error, where a link that names no doc still prints as written.
     for (const message of await packageReferenceProblems(
-      /** @type {{name: string}} */ (resolved.integration),
+      /** @type {{name: string}} */ (docsIntegration),
       discovered,
     )) {
-      issues.push({code: 'invalid_doc_reference', severity: 'error', message});
+      issues.push({
+        code: 'invalid_doc_reference',
+        severity: 'error',
+        message: unnamedShown(message),
+      });
     }
 
     // One fact has one owner: a passage two topics repeat goes stale in one
     // of them. Each is listed and is a warning (architecture:cli-surface
     // DEC-8), so `integration check --strict` fails until it is fixed;
     // `doctor integration docs` keeps its exit code, as it fails on errors.
-    copiedPassages.push(...(await integrationCopiedPassages(discovered)));
+    copiedPassages.push(
+      ...(await integrationCopiedPassages(discovered)).map(passage => ({
+        ...passage,
+        message: unnamedShown(passage.message),
+      })),
+    );
     for (const {message} of copiedPassages) {
       issues.push({code: 'copied_passage', severity: 'warning', message});
     }
     // Docs should be dense: padding phrases and mostly-glue topics, listed
     // and warned about the same way (DEC-8).
-    // Like the other findings' `doc`, a fluff or stray-pointer `file` is
-    // relative to the package root.
-    const packageDir = /** @type {any} */ (resolved.integration).__packageDir;
-    const fromPackage = (/** @type {string} */ file) =>
-      typeof packageDir === 'string'
-        ? path.relative(packageDir, file).split(path.sep).join('/')
-        : file;
     fluff.push(
       ...(await integrationFluff(discovered)).map(each => ({
         ...each,
         file: fromPackage(each.file),
+        message: unnamedShown(each.message),
       })),
     );
     for (const {message} of fluff) {
@@ -466,10 +569,9 @@ export async function integrationDocConflicts(pkg, options = {}) {
     }
     // A pointer to a doc is a link, so doctor checks it (DEC-8).
     strayPointers.push(
-      ...(await integrationStrayPointers(discovered)).map(each => ({
-        ...each,
-        file: fromPackage(each.file),
-      })),
+      ...(await integrationStrayPointers(discovered, resolved.integration)).map(
+        each => ({...each, file: fromPackage(each.file)}),
+      ),
     );
     for (const {message} of strayPointers) {
       issues.push({code: 'stray_doc_pointer', severity: 'warning', message});

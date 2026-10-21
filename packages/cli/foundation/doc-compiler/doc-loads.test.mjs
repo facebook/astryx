@@ -269,6 +269,10 @@ const RUNNERS = {
     runs: 'astryx.config, through the config parser',
     sites: ['loadModuleWithParser(..., parseConfig)'],
   },
+  'foundation/fs/file-protection.mjs': {
+    runs: 'the ignore matcher (CommonJS), loaded when a resolver first reads an ignore file',
+    sites: ['require(ignore)'],
+  },
   'foundation/discovery/component-discovery.mjs': {
     runs: '@babel/parser, on first use, to read the members a family doc lists in its components without running the doc',
     sites: ['require(@babel/parser)'],
@@ -343,6 +347,26 @@ const RUNNERS = {
   'foundation/integrations/integrations.mjs': {
     runs: "each installed integration's manifest",
     sites: ['importUserModule'],
+  },
+  'foundation/release/cache.mjs': {
+    runs: 'npm (under npm-guard.mjs), to install and look up CLI releases in the per-user cache; each installed release once, to check it starts and reports its version; and ps (tasklist on Windows), to confirm the process a stale lock records is node or npm before ending it',
+    sites: ['child_process.spawnSync ×5'],
+  },
+  'foundation/release/npm-guard.mjs': {
+    runs: 'npm, in a process group of its own that it ends at the time limit, on Ctrl-C, or when the run that started it goes away',
+    sites: ['child_process.spawn'],
+  },
+  'foundation/release/global-state.mjs': {
+    runs: "the background check of the registry's `latest` release, the agent-text step, and the step that installs the global copy's own Core into the release cache, each detached",
+    sites: ['child_process.spawn'],
+  },
+  'foundation/release/handoff.mjs': {
+    runs: "the CLI release that answers a project's run, when it is not this copy",
+    sites: ['child_process.spawn'],
+  },
+  'host/index.mjs': {
+    runs: "another release's host entry, from one of the host's package sets, when that release answers a hosted run",
+    sites: ['import(<computed>)'],
   },
   'scripts/generate-cli-readme.mjs': {
     runs: '`astryx manifest` and the error-code and response-type docs, to write the README tables (build time, not shipped)',

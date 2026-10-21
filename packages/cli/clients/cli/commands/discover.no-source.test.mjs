@@ -139,6 +139,7 @@ describe('astryx discover in a project with nothing of its own', () => {
         themes: ['neutral'],
       }),
     );
+    expect(result.meta.answeredBy).toEqual(expect.any(Object));
   });
 
   it('answers every query with the list, and says why in text', async () => {

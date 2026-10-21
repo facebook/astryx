@@ -51,6 +51,31 @@ function astryx(args, cwd = project) {
   };
 }
 
+/** Doctor checks that read the computer, not the project. */
+const COMPUTER_CHECKS = new Set([
+  'newest-release',
+  'cli-on-path',
+  'computer-integrations',
+]);
+
+/**
+ * A doctor JSON report with the computer's checks reduced to their ids, and
+ * the summary counting only the project's: those checks answer from this
+ * machine's cache and search path, which no golden can hold.
+ * @param {string} stdout
+ */
+function withoutComputerChecks(stdout) {
+  const report = JSON.parse(stdout);
+  const summary = {pass: 0, warn: 0, fail: 0, info: 0};
+  report.data.checks = report.data.checks.map((/** @type {any} */ check) => {
+    if (COMPUTER_CHECKS.has(check.id)) return {id: check.id};
+    summary[/** @type {keyof typeof summary} */ (check.status)] += 1;
+    return check;
+  });
+  report.data.summary = summary;
+  return `${JSON.stringify(report, null, 2)}\n`;
+}
+
 beforeAll(() => {
   // Inside the repo, so the project finds this checkout's Core.
   project = fs.mkdtempSync(path.join(REPO_ROOT, '.astryx-no-icon-set-'));
@@ -288,7 +313,7 @@ describe('with icon sets installed but no experimental.iconSet, stable output is
     const cwd = installed('doctor', '{nope');
     const res = astryx(['doctor', '--json'], cwd);
     expect(res.stdout).not.toMatch(/icon/i);
-    await expect(res.stdout).toMatchFileSnapshot(
+    await expect(withoutComputerChecks(res.stdout)).toMatchFileSnapshot(
       path.join(GOLDEN, 'doctor-installed-set.json'),
     );
   });

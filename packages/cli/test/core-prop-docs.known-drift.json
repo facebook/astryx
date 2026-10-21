@@ -32,7 +32,6 @@
   "src/DropdownMenu/DropdownMenuSubMenu.doc.mjs DropdownMenuSubMenu.label required_mismatch",
   "src/DropdownMenu/DropdownMenuSubMenu.doc.mjs DropdownMenuSubMenu.menuDataTestId not_in_doc",
   "src/FieldStatus/FieldStatus.doc.mjs FieldStatus.variant type_mismatch",
-  "src/Grid/Grid.doc.mjs Grid.rowHeight not_in_doc",
   "src/HoverCard/HoverCard.doc.mjs HoverCard.children required_mismatch",
   "src/Icon/Icon.doc.mjs Icon.color type_mismatch",
   "src/IconButton/IconButton.doc.mjs IconButton.as not_in_doc",

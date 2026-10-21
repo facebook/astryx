@@ -29,6 +29,19 @@ affects_consumer_docs: []
 }
 ```
 
+<!-- path-applicability:v1 -->
+
+```json
+{
+  "paths": [
+    ".github/workflows/**",
+    ".github/scripts/change-scope.*",
+    ".github/scripts/*routing*.test.mjs",
+    ".github/scripts/pr-scope-touches.*"
+  ]
+}
+```
+
 ## Intent
 
 Route pull-request checks from the repository surfaces a change can affect rather

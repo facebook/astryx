@@ -3,7 +3,7 @@
   "type": "search",
   "data": {
     "query": "delete",
-    "matchCount": 15,
+    "matchCount": 19,
     "results": [
       {
         "domain": "component",
@@ -14,6 +14,17 @@
         "description": "AlertDialog asks the user to confirm a destructive or irreversible action before it happens. Use it for things like deleting content, revoking access, or discarding unsaved changes.\n\nIt implements the WAI-ARIA APG [Alert Dialog pattern](https://www.w3.org/WAI/ARIA/apg/patterns/alertdialog/): `role=\"alertdialog\"`, a title linked by `aria-labelledby`, a consequence description linked by `aria-describedby`, focus moved into the dialog on open and returned to the trigger on close, and no dismissal by clicking outside. Escape cancels.\n\nAlertDialog passes its requested width through to Dialog, which clamps the surface to the container and dynamic viewport with token gutters. Generic Dialog footers should wrap, but Dialog does not own action semantics or order; consumer composition controls that. AlertDialog owns its confirmation semantics: above 640px, actions render horizontally and may move onto another row; at 640px and below, the destructive action appears above Cancel and both buttons fill the footer width. Button labels retain their standard single-line behavior. The breakpoint follows available width, not pointer or hover capability. The body scrolls when block space is constrained.\n\nFor cases where you want to show an alert without managing open state, use the `useImperativeAlertDialog` hook: call `alert.show(options)` and render `alert.element` in your tree.",
         "import": "@astryxdesign/core/AlertDialog",
         "command": "astryx component AlertDialog"
+      },
+      {
+        "domain": "doc",
+        "name": "global/uninstall",
+        "package": "@astryxdesign/cli",
+        "score": 70,
+        "reason": "keyword \"delete cache\"",
+        "description": "Remove your global install, the agent guide it keeps, and the folders it uses, or reset them to start over.",
+        "title": "Global mode › Uninstall and reset",
+        "command": "astryx docs global/uninstall --index",
+        "parent": "astryx docs global"
       },
       {
         "domain": "component",
@@ -46,6 +57,42 @@
         "title": "Astryx CLI › Commands › astryx theme template",
         "command": "astryx docs cli/commands/theme-template",
         "parent": "astryx docs cli/commands"
+      },
+      {
+        "domain": "doc",
+        "name": "global/computer-agent-guide",
+        "package": "@astryxdesign/cli",
+        "score": 50,
+        "reason": "docs mention \"delete\"",
+        "description": "`init --user` writes the file and the links now.",
+        "section": "choose",
+        "title": "Global mode › The agent guide on your computer › Write it now, or turn it off",
+        "command": "astryx docs global/computer-agent-guide choose",
+        "parent": "astryx docs global/computer-agent-guide --index"
+      },
+      {
+        "domain": "doc",
+        "name": "global/uninstall",
+        "package": "@astryxdesign/cli",
+        "score": 50,
+        "reason": "docs mention \"delete\"",
+        "description": "While the CLI is still installed, remove the agent guide from your home folder:",
+        "section": "agent-guide",
+        "title": "Global mode › Uninstall and reset › First, remove the agent guide",
+        "command": "astryx docs global/uninstall agent-guide",
+        "parent": "astryx docs global/uninstall --index"
+      },
+      {
+        "domain": "doc",
+        "name": "global/uninstall",
+        "package": "@astryxdesign/cli",
+        "score": 50,
+        "reason": "description mentions \"delete\"",
+        "description": "Delete either folder to reset it; Astryx recreates what it needs on the next run.",
+        "section": "reset",
+        "title": "Global mode › Uninstall and reset › Reset",
+        "command": "astryx docs global/uninstall reset",
+        "parent": "astryx docs global/uninstall --index"
       },
       {
         "domain": "doc",
@@ -167,5 +214,12 @@
         "command": "astryx component ToggleButton"
       }
     ]
+  },
+  "meta": {
+    "answeredBy": {
+      "cli": "0.7.2",
+      "core": "0.7.2",
+      "copy": "project"
+    }
   }
 }

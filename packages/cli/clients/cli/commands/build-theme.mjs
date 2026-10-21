@@ -34,6 +34,7 @@ import * as path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {spawn} from 'node:child_process';
 import {getCliInvocation} from '../../../foundation/env/package-manager.mjs';
+import {isOutsideProject} from '../../../foundation/env/project-scope.mjs';
 import {jsonOut} from '../../../foundation/response/json.mjs';
 import {
   emit,
@@ -224,10 +225,13 @@ async function runThemeBuildWatch(entries, options) {
   emit(text(watchingLine));
 
   await new Promise((/** @type {(value?: void) => void} */ resolve) => {
+    let stopping = false;
     /** @param {NodeJS.Signals} signal */
     const stop = async signal => {
-      process.removeListener('SIGINT', stop);
-      process.removeListener('SIGTERM', stop);
+      // A second interrupt while stopping (a terminal's Ctrl-C and the same
+      // signal passed on by the copy that started the run) changes nothing.
+      if (stopping) return;
+      stopping = true;
       stopped = true;
       queued.clear();
       for (const d of debounces.values()) clearTimeout(d);
@@ -237,10 +241,12 @@ async function runThemeBuildWatch(entries, options) {
       rebuildChild?.kill(signal);
       await rebuildDone;
       emit(text('\nStopped watching.'));
+      process.removeListener('SIGINT', stop);
+      process.removeListener('SIGTERM', stop);
       resolve();
     };
-    process.once('SIGINT', stop);
-    process.once('SIGTERM', stop);
+    process.on('SIGINT', stop);
+    process.on('SIGTERM', stop);
   });
 }
 
@@ -283,12 +289,22 @@ function printThemeAddList(themes) {
         return theme.description ? [head, theme.description] : head;
       }),
     ),
-    text(
-      `Import one: ${run} theme add <slug> [--package <package>]\n` +
-        `Fork source: ${run} theme eject <slug> [target-path]`,
-    ),
+    text(themeNextSteps(run)),
     more,
   );
+}
+
+/**
+ * What to do with a listed theme. Outside a project there is no app to add one
+ * to, so only the fork step is named (spec AST-081 FR3).
+ * @param {string} run the CLI invocation
+ * @returns {string}
+ */
+function themeNextSteps(run) {
+  const fork = `Fork source: ${run} theme eject <slug> [target-path]`;
+  return isOutsideProject()
+    ? fork
+    : `Import one: ${run} theme add <slug> [--package <package>]\n${fork}`;
 }
 
 /**
@@ -325,10 +341,7 @@ function printThemeList(themes, unmigratedCopies = []) {
           default: (/** @type {boolean} */ value) => (value ? 'yes' : 'no'),
         },
       }),
-      text(
-        `Import one: ${run} theme add <slug> [--package <package>]\n` +
-          `Fork source: ${run} theme eject <slug> [target-path]`,
-      ),
+      text(themeNextSteps(run)),
       more,
     );
   }

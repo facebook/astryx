@@ -478,7 +478,7 @@ export async function loadProjectContext(cwd, extraIntegrationSpecs = []) {
   // The CLI debug preflight may already have imported this config before core
   // CONFIG codemods run. Upgrade needs the bytes now on disk, not that module
   // cache entry; ordinary Project discovery remains cached by default.
-  const project = await Project.load(cwd, {fresh: true});
+  const project = await Project.load(cwd, {fresh: true, core: 'project'});
   const postCodemodHooks = project.config.hooks?.postCodemod ?? [];
   const configuredSpecs = new Set(project.integrations ?? []);
   // Configured packages come from Project, which has already resolved provider

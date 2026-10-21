@@ -168,6 +168,7 @@ export type {
   CommandArgDoc,
   CommandOptionDoc,
   CommandExampleDoc,
+  CommandOutsideProject,
   // enum
   EnumMemberDoc,
   // icon set

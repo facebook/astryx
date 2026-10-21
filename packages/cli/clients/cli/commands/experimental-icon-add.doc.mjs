@@ -94,6 +94,7 @@ export const doc = {
       cli: 'astryx experimental icon add Bin --from @acme/glyph-library/solid --id bin --appearance solid',
     },
   ],
+  outsideProject: 'refuse',
   exitCodes: [
     {
       code: 0,
@@ -105,4 +106,10 @@ export const doc = {
     },
   ],
   related: ['experimental icon map', 'integration add', 'integration check'],
+  notes: [
+    {
+      type: 'prose',
+      text: "In global mode: outside a project, with no package.json in the folder or above it, experimental icon add writes nothing and stops with `ERR_PROJECT_REQUIRED`; run it in the icon-set package. In a project, the project's version of Astryx runs it, whichever astryx command you start. See {@link namespace:global} and {@link generic:problems}.",
+    },
+  ],
 };

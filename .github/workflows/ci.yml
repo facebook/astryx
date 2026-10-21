@@ -1383,6 +1383,27 @@ jobs:
             --project chromium \
             --output menu-header-footer-output
 
+      # A pointer that crosses from a Tooltip's trigger onto the tooltip in one
+      # step must not lose it (WCAG 1.4.13 hoverable). The defect is in the
+      # order the engine dispatches mouseout and mouseleave on that step, which
+      # only a real engine produces.
+      - name: Run Tooltip hover bridge contract
+        run: |
+          pnpm exec playwright test \
+            packages/core/src/Tooltip/__tests__/TooltipHoverBridge.a11y.chromium.spec.ts \
+            --project chromium \
+            --output tooltip-hover-bridge-output
+
+      # A Token's remove target is enlarged past its 16px X, and only a real
+      # engine hit-tests it: a press on the end of the value beside the X must
+      # run the token's own action, and a press just outside the X must remove.
+      - name: Run Token remove target contract
+        run: |
+          pnpm exec playwright test \
+            packages/core/src/Token/__tests__/TokenRemoveTarget.a11y.chromium.spec.ts \
+            --project chromium \
+            --output token-remove-target-output
+
       # The RichTextEditor "Markdown parity" stories render one Markdown
       # document with core Markdown and RichTextEditor and measure where each
       # block lands; geometry, the read/edit switch and the scroll anchor only

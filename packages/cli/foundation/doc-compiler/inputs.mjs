@@ -110,7 +110,10 @@ export async function collectDocInputs(project) {
     list.add('components', record.name, record.package, record.docPath);
   }
 
-  const coreDir = findCoreDir(project.cwd);
+  const coreDir =
+    typeof project.coreDir === 'function'
+      ? project.coreDir()
+      : findCoreDir(project.cwd);
   if (coreDir != null) {
     for (const name of Object.values(discoverHooks(coreDir)).flat()) {
       const file = findHookDoc(coreDir, name);

@@ -162,12 +162,11 @@ description: Complex components are composed from smaller components. Each sub-c
 command:     pnpm exec astryx docs styling/styling-advanced compound-components
 parent:      pnpm exec astryx docs styling/styling-advanced --index
 
-name:        BannerDismissable
-domain:      template
+name:        ComplexSelector
+domain:      component
 package:     @astryxdesign/core
-displayName: Banner - Dismiss
-kind:        block
-description: Let the user close a banner after reading it. Use for maintenance notices, feature tips, or any non-critical message the user can acknowledge.
-command:     pnpm exec astryx template BannerDismissable --type block
+import:      @astryxdesign/core/ComplexSelector
+description: Use ComplexSelector when a selection needs richer custom content than a Selector option row. It is intentionally one component: ComplexSelector owns the field, trigger, popover, focus restore, and changeAction flow, while the content render prop owns the selector-specific accessible structure.
+command:     pnpm exec astryx component ComplexSelector
 
 More in packages you could add: pnpm exec astryx discover close

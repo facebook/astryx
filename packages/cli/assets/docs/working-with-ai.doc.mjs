@@ -36,7 +36,7 @@ export const docs = {
           type: 'code',
           lang: 'text',
           label: 'Paste this into your AI',
-          code: 'Install @astryxdesign/cli and run `npx @astryxdesign/cli init --features agents` to set up your Astryx context. Read the generated file.',
+          code: 'Install @astryxdesign/cli and run `astryx init --features agents` to set up your Astryx context. Read the generated file.',
         },
         {
           type: 'prose',
@@ -50,12 +50,16 @@ export const docs = {
           type: 'code',
           lang: 'bash',
           label: 'Manual options',
-          code: `npx @astryxdesign/cli init --features agents --agent claude    # CLAUDE.md if present, else .claude/CLAUDE.md
-npx @astryxdesign/cli init --features agents --agent cursor    # .cursorrules if present, else AGENTS.md
-npx @astryxdesign/cli init --features agents --agent codex     # AGENTS.md (Copilot, Codex, etc.)
-npx @astryxdesign/cli init --features agents --agent hermes    # .hermes.md or HERMES.md if present, else AGENTS.md
-npx @astryxdesign/cli init --features agents --agent muse      # AGENTS.md (Muse)
-npx @astryxdesign/cli init --features agents --agent all       # every agent file present, else AGENTS.md and .claude/CLAUDE.md`,
+          code: `astryx init --features agents --agent claude    # CLAUDE.md if present, else .claude/CLAUDE.md
+astryx init --features agents --agent cursor    # .cursorrules if present, else AGENTS.md
+astryx init --features agents --agent codex     # AGENTS.md (Copilot, Codex, etc.)
+astryx init --features agents --agent hermes    # .hermes.md or HERMES.md if present, else AGENTS.md
+astryx init --features agents --agent muse      # AGENTS.md (Muse)
+astryx init --features agents --agent all       # every agent file present, else AGENTS.md and .claude/CLAUDE.md`,
+        },
+        {
+          type: 'prose',
+          text: "For agents that work outside any one project, your global install keeps one short Astryx skill, `~/.agents/skills/astryx/SKILL.md`, linked into the skill folders agent tools read, such as `~/.claude/skills/astryx`. It tells agents Astryx is there and when to use it; `astryx init --user` writes it now or, with `--remove-agents`, turns it off. Inside a project, agents follow that project's own agent docs. See {@link generic:computer-agent-guide}.",
         },
       ],
     },
@@ -92,7 +96,7 @@ npx @astryxdesign/cli init --features agents --agent all       # every agent fil
           type: 'code',
           lang: 'bash',
           label: 'Install as a Cursor project rule',
-          code: `npx @astryxdesign/cli init --features agents --agent-docs-path .cursor/rules/astryx.mdc`,
+          code: `astryx init --features agents --agent-docs-path .cursor/rules/astryx.mdc`,
         },
         {
           type: 'prose',
@@ -117,7 +121,7 @@ npx @astryxdesign/cli init --features agents --agent all       # every agent fil
 2. How do you make a Dialog non-dismissible?
 3. What prop does Selector use for its items?
 
-If you don't know all three, run \`npx @astryxdesign/cli init --features agents\` to generate agent docs, then read the generated file.`,
+If you don't know all three, run \`astryx init --features agents\` to generate agent docs, then read the generated file.`,
         },
       ],
     },
@@ -239,6 +243,16 @@ astryx docs principles --dense`,
         {
           type: 'prose',
           text: 'Once connected, your AI tool can search for components by natural language (e.g. "dropdown menu", "success message") and retrieve full documentation without any manual CLI invocation. The server uses the same keyword index from component docs, so search quality improves automatically as component documentation is updated.',
+        },
+      ],
+    },
+    {
+      id: 'global-mode',
+      title: 'In global mode',
+      content: [
+        {
+          type: 'prose',
+          text: "In global mode: your global install keeps one Astryx skill in your home folder, linked into the folders agent tools read, so agents outside any project know Astryx is there; inside a project, its own agent docs come first. See {@link namespace:global} and {@link generic:computer-agent-guide}.",
         },
       ],
     },

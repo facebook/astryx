@@ -166,6 +166,29 @@ const ROOT_KINDS = /** @type {const} */ ([
   'iconSets',
 ]);
 
+/**
+ * The contribution files readers read under each declared root that is a
+ * readable folder, package-relative, without importing anything. A folder
+ * inside a root that cannot be listed is skipped.
+ * @param {{components?: string, templates?: string, codemods?: string, docs?: string, themes?: string, iconSets?: string}} loaded
+ * @param {string} pkgDir
+ * @returns {string[]}
+ */
+export function contributionFiles(loaded, pkgDir) {
+  /** @type {Set<string>} */
+  const files = new Set();
+  for (const kind of ROOT_KINDS) {
+    const root = loaded[kind];
+    if (!root || !isFolder(root)) continue;
+    try {
+      for (const file of ENUMERATORS[kind](root, pkgDir)) files.add(file);
+    } catch {
+      // An unreadable folder inside the root.
+    }
+  }
+  return [...files].sort();
+}
+
 // ── Public: static file inventory ────────────────────────────────
 
 /**
@@ -239,6 +262,19 @@ export function computeRequiredFiles(loaded) {
  */
 
 /**
+ * Whether `dir` is a folder to list. A declared root that is a file is
+ * reported by the root check; discovery finds nothing in it.
+ * @param {string} dir
+ */
+function isFolder(dir) {
+  try {
+    return fs.statSync(dir).isDirectory();
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Run the same discovery functions a consumer uses to collect every
  * contribution identity from a loaded integration.
  *
@@ -268,7 +304,7 @@ export async function collectIdentities(loaded) {
     }
   }
 
-  if (loaded.themes && fs.existsSync(loaded.themes)) {
+  if (loaded.themes && isFolder(loaded.themes)) {
     try {
       const themes = await discoverIntegrationThemes(
         /** @type {import('./integrations.mjs').LoadedIntegration} */ (loaded),
@@ -284,7 +320,7 @@ export async function collectIdentities(loaded) {
     }
   }
 
-  if (loaded.components && fs.existsSync(loaded.components)) {
+  if (loaded.components && isFolder(loaded.components)) {
     try {
       const records = discoverIntegrationComponents(loaded) ?? [];
       // A family doc backs several records: load it, and report it, once.
@@ -314,7 +350,7 @@ export async function collectIdentities(loaded) {
     }
   }
 
-  if (loaded.templates && fs.existsSync(loaded.templates)) {
+  if (loaded.templates && isFolder(loaded.templates)) {
     try {
       const {templates, errors: templateErrors} =
         await discoverIntegrationTemplatesForOne(loaded);
@@ -337,7 +373,7 @@ export async function collectIdentities(loaded) {
     }
   }
 
-  if (loaded.codemods && fs.existsSync(loaded.codemods)) {
+  if (loaded.codemods && isFolder(loaded.codemods)) {
     try {
       const byVersion = await discoverIntegrationCodemods([loaded]);
       /** @type {{version: string, id: string}[]} */
@@ -356,7 +392,7 @@ export async function collectIdentities(loaded) {
     }
   }
 
-  if (loaded.docs && fs.existsSync(loaded.docs)) {
+  if (loaded.docs && isFolder(loaded.docs)) {
     try {
       const {
         records,

@@ -11,7 +11,12 @@
 import * as path from 'node:path';
 import {AstryxError} from '../../error.mjs';
 import {ERROR_CODES} from '../../../foundation/response/error-codes.mjs';
-import {iconSetKey, loadIconProject, setConfigString} from '../_adapter.mjs';
+import {
+  iconSetKey,
+  loadIconProject,
+  refuseOutsideProject,
+  setConfigString,
+} from '../_adapter.mjs';
 import {closest, setsNamed} from '../_records.mjs';
 
 /**
@@ -36,6 +41,7 @@ export async function iconUse(selector, {cwd = process.cwd()} = {}) {
       ERROR_CODES.ERR_MISSING_ARGUMENT,
     );
   }
+  refuseOutsideProject(cwd, 'experimental icon use', 'the app project');
   const {projectDir, sets} = await loadIconProject(cwd);
   const named = setsNamed(sets, selector);
   if (named.length === 0) {

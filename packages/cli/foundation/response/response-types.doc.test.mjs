@@ -12,6 +12,7 @@ import * as path from 'node:path';
 import {describe, it, expect} from 'vitest';
 import {doc} from './response-types.doc.mjs';
 import {runCli} from '../../test-utils/run-cli.mjs';
+import {linkThisCliAsProjectCli} from '../../test-utils/release-fixtures.mjs';
 
 /** @param {string} type */
 const describedAs = type =>
@@ -110,6 +111,51 @@ describe('response-types EnumDoc names every field', () => {
       'search',
       new Set([...fieldsOf(mixed.data), ...fieldsOf(docsOnly.data)]),
     );
+  });
+
+  it('search, including meta.partial when Core cannot be obtained', async () => {
+    const empty = fs.mkdtempSync(path.join(os.tmpdir(), 'astryx-rt-partial-'));
+    // The project's own CLI answers and no Core is installed: an open search
+    // answers from docs and themes and says what it skipped.
+    linkThisCliAsProjectCli(empty);
+    try {
+      const res = await data(['search', 'button'], empty);
+      expect(res.meta.partial).toBeDefined();
+      expectNamed('search', ['meta', 'partial', ...fieldsOf(res.meta.partial)]);
+      for (const domain of res.meta.partial.skipped) {
+        expectNamed('search', [domain]);
+      }
+    } finally {
+      fs.rmSync(empty, {recursive: true, force: true});
+    }
+  });
+
+  it('init.user: every row field, action, and kept reason the receipt type declares', () => {
+    const types = fs.readFileSync(
+      new URL('../../api/init/init.type.mjs', import.meta.url),
+      'utf8',
+    );
+    /** The quoted members of the union a typedef or property declares. */
+    const union = (/** @type {RegExp} */ re) =>
+      [...(types.match(re)?.[1] ?? '').matchAll(/'([^']+)'/gu)].map(m => m[1]);
+    const actions = union(/@typedef \{([^}]*)\} InitUserAction/u);
+    const reasons = union(/@property \{([^}]*)\} \[reason\]/u);
+    expect(actions).toContain('linked');
+    expect(reasons.length).toBeGreaterThan(0);
+    const rowFields = [
+      ...types
+        .split('@typedef {object} InitUserFile')[1]
+        .split('*/')[0]
+        .matchAll(/@property \{[^}]*\} \[?(\w+)/gu),
+    ].map(m => m[1]);
+    expectNamed('init.user', [
+      'files',
+      'command',
+      'warnings',
+      ...rowFields,
+      ...actions,
+      ...reasons,
+    ]);
   });
 
   it('build.kit, including the hint a thin kit carries', async () => {

@@ -54,6 +54,7 @@ export const doc = {
       cli: 'astryx experimental icon new-set outline --dry-run --json',
     },
   ],
+  outsideProject: 'refuse',
   exitCodes: [
     {code: 0, when: 'the set is written or the dry run succeeds'},
     {
@@ -65,5 +66,11 @@ export const doc = {
     'experimental icon add',
     'experimental icon new-definition',
     'integration check',
+  ],
+  notes: [
+    {
+      type: 'prose',
+      text: "In global mode: outside a project, with no package.json in the folder or above it, experimental icon new-set writes nothing and stops with `ERR_PROJECT_REQUIRED`; run it in the integration package. In a project, the project's version of Astryx runs it, whichever astryx command you start. See {@link namespace:global} and {@link generic:problems}.",
+    },
   ],
 };

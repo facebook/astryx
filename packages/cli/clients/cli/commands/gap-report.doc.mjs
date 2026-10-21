@@ -83,6 +83,7 @@ export const doc = {
       cli: "astryx gap-report Button --category missing_variant --reason 'Need a compact size' --to @acme/widgets",
     },
   ],
+  outsideProject: 'same',
   exitCodes: [
     {
       code: 0,

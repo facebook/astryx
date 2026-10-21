@@ -17,6 +17,8 @@ export const doc = {
     "component command required to keep an intentional overlap. Each component's " +
     'replaces is checked too: its findings are issues, errors for a package that ' +
     'declares the CLI range that turns replacement on and warnings otherwise. ' +
+    "A `{@link}` in a component doc's text that names no doc is an `invalid_doc_graph` " +
+    'warning, since it prints as written. ' +
     "Each component doc's props are compared with the component's TypeScript props, " +
     "read with the project's own `typescript` (or, where `typescript` is missing or has no " +
     'JavaScript compiler API, as TypeScript 7 does, the `@typescript/typescript6` it ' +

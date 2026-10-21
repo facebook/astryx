@@ -112,12 +112,29 @@ describe('isAstryxPromptInReach — up to the repository root', () => {
 });
 
 describe('enforcement layer 3 — per-command setup nudge', () => {
-  const asProject = () => write('package.json', '{"name":"t"}');
+  const asProject = () =>
+    write('package.json', '{"name":"t","dependencies":{"@astryxdesign/core":"*"}}');
 
   it('nudges on stderr after a command when not set up', async () => {
     asProject();
     const r = await runCli(['docs', 'tokens'], tmp);
     expect(r.stderr).toMatch(NUDGE);
+  });
+
+  it("in a project with only Core of another release, names adding the CLI at Core's version first, as the daily hint does", async () => {
+    write(
+      'package.json',
+      '{"name":"t","dependencies":{"@astryxdesign/core":"0.0.1"}}',
+    );
+    write(
+      'node_modules/@astryxdesign/core/package.json',
+      '{"name":"@astryxdesign/core","version":"0.0.1"}',
+    );
+    write('package-lock.json', '{}');
+    const r = await runCli(['docs', 'tokens'], tmp);
+    expect(r.stderr).toContain(
+      'Next step: run `npm install @astryxdesign/cli@0.0.1`, then `npx astryx init` to finish setup and install the Astryx agent prompt.',
+    );
   });
 
   it('is suppressed in --json (machine mode stays clean), stdout valid JSON', async () => {
@@ -139,6 +156,11 @@ describe('enforcement layer 3 — per-command setup nudge', () => {
     expect((await runCli(['docs', 'tokens'], tmp)).stderr).not.toMatch(NUDGE);
   });
 
+  it('is quiet outside a project (a package.json that declares no Astryx package)', async () => {
+    write('package.json', '{"name":"t"}');
+    expect((await runCli(['docs', 'tokens'], tmp)).stderr).not.toMatch(NUDGE);
+  });
+
   it('is quiet in an integration package, which is not an app', async () => {
     asProject();
     write('astryx.integration.mjs', 'export default {};\n');
@@ -153,7 +175,7 @@ describe('enforcement layer 3 — per-command setup nudge', () => {
   it('is quiet in a workspace package when init\'s block is at the repository root', async () => {
     fs.mkdirSync(path.join(tmp, '.git'));
     write('AGENTS.md', MARKER);
-    write('packages/app/package.json', '{"name":"app"}');
+    write('packages/app/package.json', '{"name":"app","dependencies":{"@astryxdesign/core":"*"}}');
     const r = await runCli(['docs', 'tokens'], path.join(tmp, 'packages/app'));
     expect(r.stderr).not.toMatch(NUDGE);
   });
@@ -161,7 +183,7 @@ describe('enforcement layer 3 — per-command setup nudge', () => {
   it('still nudges in a workspace package with no block up to the repository root', async () => {
     fs.mkdirSync(path.join(tmp, '.git'));
     write('AGENTS.md', 'project notes, no astryx block');
-    write('packages/app/package.json', '{"name":"app"}');
+    write('packages/app/package.json', '{"name":"app","dependencies":{"@astryxdesign/core":"*"}}');
     const r = await runCli(['docs', 'tokens'], path.join(tmp, 'packages/app'));
     expect(r.stderr).toMatch(NUDGE);
   });
@@ -171,7 +193,7 @@ describe('enforcement layer 3 — per-command setup nudge', () => {
   it('is quiet inside the source checkout the CLI runs from', async () => {
     const inside = fs.mkdtempSync(path.join(REPO, '.astryx-setup-nudge-'));
     try {
-      fs.writeFileSync(path.join(inside, 'package.json'), '{"name":"t"}');
+      fs.writeFileSync(path.join(inside, 'package.json'), '{"name":"t","dependencies":{"@astryxdesign/core":"*"}}');
       expect((await runCli(['docs', 'tokens'], inside)).stderr).not.toMatch(NUDGE);
     } finally {
       fs.rmSync(inside, {recursive: true, force: true});

@@ -57,7 +57,7 @@ export const docs = {
         {
           type: 'code',
           lang: 'bash',
-          code: 'npx astryx experimental icon new-set outline',
+          code: 'astryx experimental icon new-set outline',
         },
         {
           type: 'prose',
@@ -76,7 +76,7 @@ export const docs = {
         {
           type: 'code',
           lang: 'bash',
-          code: 'npx astryx experimental icon add Bin --from @acme/glyph-library',
+          code: 'astryx experimental icon add Bin --from @acme/glyph-library',
         },
         {
           type: 'prose',
@@ -85,7 +85,7 @@ export const docs = {
         {
           type: 'code',
           lang: 'bash',
-          code: 'npx astryx experimental icon add Bin --from @acme/glyph-library --definition delete',
+          code: 'astryx experimental icon add Bin --from @acme/glyph-library --definition delete',
         },
         {
           type: 'prose',
@@ -98,7 +98,7 @@ export const docs = {
         {
           type: 'code',
           lang: 'bash',
-          code: "npx astryx experimental icon add RotateCw --from @acme/glyph-library --new-definition rotate --description 'Rotate an image or shape.' --words turn,spin",
+          code: "astryx experimental icon add RotateCw --from @acme/glyph-library --new-definition rotate --description 'Rotate an image or shape.' --words turn,spin",
         },
         {
           type: 'prose',
@@ -113,7 +113,7 @@ export const docs = {
         {
           type: 'code',
           lang: 'bash',
-          code: 'npx astryx experimental icon new-set outline --from @acme/glyph-library',
+          code: 'astryx experimental icon new-set outline --from @acme/glyph-library',
         },
         {
           type: 'prose',
@@ -317,10 +317,10 @@ export const brand = defineTheme({name: 'brand', icons: themeIcons});`,
         {
           type: 'code',
           lang: 'bash',
-          code: `npx astryx experimental icon delete              # ranked matches with import lines
-npx astryx experimental icon outline/bin         # one icon and every variant
-npx astryx experimental icon --list              # installed sets and their definition coverage
-npx astryx experimental icon use outline         # make it the project's icon set`,
+          code: `astryx experimental icon delete              # ranked matches with import lines
+astryx experimental icon outline/bin         # one icon and every variant
+astryx experimental icon --list              # installed sets and their definition coverage
+astryx experimental icon use outline         # make it the project's icon set`,
         },
         {
           type: 'prose',

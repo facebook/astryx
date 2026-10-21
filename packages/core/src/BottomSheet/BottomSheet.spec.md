@@ -15,6 +15,7 @@ verified_by:
     packages/core/src/BottomSheet/BottomSheet.test.tsx,
     packages/core/src/BottomSheet/BottomSheetPanel.test.tsx,
     packages/core/src/BottomSheet/BottomSheetKeyboard.test.tsx,
+    packages/core/src/BottomSheet/__tests__/BottomSheetNativeModal.a11y.browser.spec.ts,
     packages/core/src/BottomSheet/__tests__/BottomSheetKeyboard.a11y.browser.spec.ts,
     apps/storybook/stories/BottomSheet.stories.tsx,
     scripts/check-knowledge.mjs,
@@ -93,14 +94,17 @@ Consumer migration instructions belong in consumer docs and release notes.
 - The Content area's container padding, published per
   `architecture:container-padding`.
 - Standalone sheet presentation, including its optional native-dialog Scrim.
+- The native dialog every sheet renders, standalone or switcher-managed
+  (`component:BottomSheetSwitcher` DEC-1's decided structure).
 
 **Does not own / non-goals**
 
 - Caller-provided content rendered inside the Content area.
 - A separate target for Content area, Handle, or Scrim; none exists on current
   `main`.
-- A shared switcher dialog or scrim — owned by BottomSheetSwitcher when the sheet
-  participates in that host.
+- The presentation lifecycle of its dialog and the flow's scrim ownership when
+  the sheet participates in a BottomSheetSwitcher — owned by BottomSheetSwitcher
+  (`component:BottomSheetSwitcher` DEC-1's decided structure).
 - Shared layer hosting or dismissal policy.
 
 ## Public concepts
@@ -128,8 +132,10 @@ in `BottomSheet.doc.mjs`.
 - A standalone modal sheet renders Sheet panel, Content area, Handle, and Scrim.
 - A standalone non-modal sheet renders Sheet panel, Content area, and Handle
   without a Scrim.
-- A switcher-managed sheet renders the same panel anatomy while
-  BottomSheetSwitcher owns the shared dialog and optional Scrim.
+- A switcher-managed sheet renders the same panel anatomy in its own dialog while
+  BottomSheetSwitcher coordinates that dialog's lifecycle and the flow's one Scrim
+  (`component:BottomSheetSwitcher` DEC-1's decided structure, not shipped
+  anatomy).
 
 ### Transformation and precedence order
 
@@ -184,7 +190,7 @@ a decision that they must remain unthemeable.
   },
   "Scrim": {
     "none": {
-      "reason": "reachability-gap: No BottomSheet public target reaches the native dialog backdrop or switcher-owned scrim."
+      "reason": "reachability-gap: No BottomSheet public target reaches the native dialog backdrop, standalone or switcher-coordinated."
     }
   }
 }
@@ -210,7 +216,8 @@ a decision that they must remain unthemeable.
 | ------------------- | -------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------- | --------------------------------- |
 | FR1                 | `BottomSheet.test.tsx` render, content, Handle, and scrim behavior suites                          | Modal, non-modal, and switcher presentations                             | Removing a documented part fails existing content, structure, or dismissal assertions.                  | `audit:BottomSheet/anatomy`       |
 | FR2                 | Panel target assertion, source inspection, and theming target inventories                          | Sheet panel, Content area, Handle, and Scrim                             | Removing the panel target or documenting an unshipped child target fails evidence or inventory.         | `audit:BottomSheet/theming`       |
-| FR3, AR1–AR2        | `BottomSheetKeyboard.test.tsx`; `BottomSheetKeyboard.a11y.browser.spec.ts`; open Storybook stories | fitting/overflow, plain text, usable/unusable/dynamic descendants, focus | Missing/duplicate keyboard access, stale ownership, focus movement, or broken content-box layout fails. | `audit:BottomSheet/accessibility` |     | Layout evidence | `BottomSheetPanel.test.tsx` | Floating Handle and scrolling Content area | Reordering or merging the stable parts fails existing panel structure and style assertions. | `audit:BottomSheet/anatomy` |
+| FR3, AR1–AR2        | `BottomSheetKeyboard.test.tsx`; `BottomSheetKeyboard.a11y.browser.spec.ts`; open Storybook stories | fitting/overflow, plain text, usable/unusable/dynamic descendants, focus | Missing/duplicate keyboard access, stale ownership, focus movement, or broken content-box layout fails. | `audit:BottomSheet/accessibility` |
+| Layout evidence     | `BottomSheetPanel.test.tsx`                                                                        | Floating Handle and scrolling Content area                               | Reordering or merging the stable parts fails existing panel structure and style assertions.             | `audit:BottomSheet/anatomy`       |
 | FR4                 | `BottomSheetPanel.test.tsx` container padding tests; `derivedVarRegistry.test.ts`                  | default, `padding` prop, theme `padding`, lone padded Section child      | The published inset differs from the applied padding, or a lone padded Section changes geometry.        | `audit:BottomSheet/anatomy`       |
 | Theming anatomy map | `scripts/check-knowledge.mjs`                                                                      | Canonical anatomy and current target inventory                           | Missing, extra, prefixed, stale, or multiply assigned mappings fail repository validation.              | `audit:BottomSheet/theming`       |
 

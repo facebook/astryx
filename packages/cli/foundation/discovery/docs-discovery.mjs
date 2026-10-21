@@ -424,6 +424,19 @@ export function problemsInNamespace(doc) {
 }
 
 /**
+ * Whether `dir` is a folder to list. A declared root that is a file is
+ * reported by the root check; discovery finds nothing in it.
+ * @param {string} dir
+ */
+function isFolder(dir) {
+  try {
+    return fs.statSync(dir).isDirectory();
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Discover the topics contributed by a single loaded integration. Mirrors
  * `discoverIntegrationComponents`: walk the resolved root, take every
  * conventional doc file, and record what it declares. Unlike component
@@ -450,7 +463,7 @@ export async function discoverIntegrationDocs(integration) {
   const namespaces = [];
   /** @type {import('../doc-compiler/tree.mjs').TreeDocInput[]} */
   const guides = [];
-  if (!docsDir || !fs.existsSync(docsDir)) {
+  if (!docsDir || !isFolder(docsDir)) {
     return {records, errors, namespaces, guides};
   }
   const providerId = integration.providerId ?? integration.name;

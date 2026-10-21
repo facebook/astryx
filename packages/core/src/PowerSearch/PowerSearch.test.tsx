@@ -552,6 +552,68 @@ describe('PowerSearch', () => {
   });
 });
 
+describe('filter token focus', () => {
+  it('opens the editor with the mouse without opening search suggestions', async () => {
+    const user = userEvent.setup();
+    render(
+      <PowerSearch
+        config={config}
+        filters={[
+          {
+            field: 'status',
+            operator: 'is',
+            value: {type: 'enum', value: 'open'},
+          },
+        ]}
+        onChange={() => {}}
+      />,
+    );
+    const input = screen.getByRole('combobox', {name: 'Search'});
+
+    await user.pointer({
+      target: screen.getByText('Status: is'),
+      keys: '[MouseLeft>]',
+    });
+    expect(input).not.toHaveFocus();
+    expect(input).toHaveAttribute('aria-expanded', 'false');
+    expect(
+      screen.queryByRole('button', {name: 'Apply', hidden: true}),
+    ).toBeNull();
+
+    await user.pointer({keys: '[/MouseLeft]'});
+    expect(
+      await screen.findByRole('button', {name: 'Apply', hidden: true}),
+    ).toBeInTheDocument();
+  });
+
+  it('preserves search entry and token editing with the keyboard', async () => {
+    const user = userEvent.setup();
+    render(
+      <PowerSearch
+        config={config}
+        filters={[
+          {
+            field: 'status',
+            operator: 'is',
+            value: {type: 'enum', value: 'open'},
+          },
+        ]}
+        onChange={() => {}}
+      />,
+    );
+    await user.tab();
+    expect(screen.getByRole('combobox', {name: 'Search'})).toHaveFocus();
+
+    await user.tab({shift: true}); // Remove button
+    await user.tab({shift: true}); // Token label
+    expect(screen.getByRole('button', {name: 'Status: is'})).toHaveFocus();
+    await user.keyboard('{Enter}');
+    expect(
+      await screen.findByRole('button', {name: 'Apply', hidden: true}),
+    ).toBeInTheDocument();
+  });
+});
+
 describe('PowerSearch statusVariant forwarding', () => {
   it('defaults to attached (status renders with data-variant="attached")', () => {
     const {container} = render(

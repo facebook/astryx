@@ -47,7 +47,7 @@ export const docs = {
             ],
             [
               'Note: `integration pack --check` is deprecated.',
-              'The old name still runs the same check. Switch to `npx astryx integration verify`; the old name will be removed in a later release.',
+              'The old name still runs the same check. Switch to `astryx integration verify`; the old name will be removed in a later release.',
             ],
           ],
         },
@@ -59,7 +59,7 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: '`npx astryx integration verify` prints each failure as a `[fail]` line. Add `--json` to see its issue code, such as `component_export_missing`.',
+          text: '`astryx integration verify` prints each failure as a `[fail]` line. Add `--json` to see its issue code, such as `component_export_missing`.',
         },
         {
           type: 'table',
@@ -130,12 +130,12 @@ export const docs = {
               "Its doc still names its file. Set `name` to the export, such as `name: 'AcmeCarousel'` in `acme-carousel.doc.mjs`. A family member is listed only when the module its family doc imports exports it ({@link generic:component-family}).",
             ],
             [
-              "`npx astryx component Dialog` opens Core's `Dialog`, not yours.",
-              "A name that Core, a legacy docs package, or another package's file already has stays theirs. Run `npx astryx component Dialog --package @acme/astryx-widgets`, or give your component a name of its own.",
+              "`astryx component Dialog` opens Core's `Dialog`, not yours.",
+              "A name that Core, a legacy docs package, or another package's file already has stays theirs. Run `astryx component Dialog --package @acme/astryx-widgets`, or give your component a name of its own.",
             ],
             [
               '`Error: Template "dashboard" is ambiguous — narrow it with --type and/or --package.`',
-              "Your template id matches a Core id. Rename it, such as `acme-dashboard`, or set `replaces: 'dashboard'` to take its place. `npx astryx doctor integration templates` warns about this before you publish.",
+              "Your template id matches a Core id. Rename it, such as `acme-dashboard`, or set `replaces: 'dashboard'` to take its place. `astryx doctor integration templates` warns about this before you publish.",
             ],
             [
               '`invalid_doc_graph`: `placement.parent "namespace:nope" names no namespace; @acme/astryx-widgets declares "acme".`',
@@ -143,10 +143,18 @@ export const docs = {
             ],
             [
               'Error: Unknown topic "acme". The docs of @acme/astryx-widgets did not load; run `astryx doctor integration docs` in that package to see why.',
-              'One invalid doc hides all of your docs. Run `npx astryx doctor integration docs` in the package and fix the `invalid_doc` it names.',
+              'One invalid doc hides all of your docs. Run `astryx doctor integration docs` in the package and fix the `invalid_doc` it names.',
             ],
             [
-              '`npx astryx upgrade` runs none of your codemods',
+              '`cli-command` warns: `Loaded integrations declare different CLI commands`',
+              "Two packages the app loads set different `cliCommand` values, so the CLI prints the package manager's command. Agree on one command, or remove the package that does not belong. See {@link generic:cli-command}.",
+            ],
+            [
+              '`invalid_cli_command`',
+              'Your `cliCommand` is not one line of plain text of at most 120 characters, so it is ignored. Fix the value; the rest of the manifest still loads.',
+            ],
+            [
+              '`astryx upgrade` runs none of your codemods',
               'The app must list your package in `integrations` in `astryx.config`, or pass `--integration @acme/astryx-widgets`. It runs a codemod folder only when its version is after `--from` and at most the installed `@astryxdesign/core`.',
             ],
             [

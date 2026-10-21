@@ -86,35 +86,57 @@
         "message": "Detected package manager: pnpm (declared in <repo>/package.json)."
       },
       {
+        "id": "cli-command",
+        "label": "CLI command",
+        "status": "info",
+        "message": "No loaded integration declares a cliCommand, so printed commands start with `pnpm exec astryx`."
+      },
+      {
+        "id": "newest-release"
+      },
+      {
+        "id": "cli-on-path"
+      },
+      {
+        "id": "computer-integrations"
+      },
+      {
         "id": "authoring-docs",
         "label": "Authoring docs",
         "status": "pass",
-        "message": "All 19 authoring schemas are readable in `astryx docs authoring`."
+        "message": "All 19 authoring schemas are readable in `pnpm exec astryx docs authoring`."
       },
       {
         "id": "cli-docs",
         "label": "CLI docs",
         "status": "pass",
-        "message": "All 100 CLI docs are readable: 81 in the `astryx docs cli` tree and 19 in `astryx docs authoring`."
+        "message": "All 100 CLI docs are readable: 81 in the `pnpm exec astryx docs cli` tree and 19 in `pnpm exec astryx docs authoring`."
       },
       {
         "id": "docs-tree",
         "label": "Docs tree",
         "status": "pass",
-        "message": "The docs tree has 181 docs in 29 sections (9 at the top), each at one route."
+        "message": "The docs tree has 195 docs in 30 sections (10 at the top), each at one route."
       },
       {
         "id": "docs-progressive-disclosure",
         "label": "Documentation navigation and size",
         "status": "pass",
-        "message": "100 topics: every section index and section fits in one 32 KB read."
+        "message": "114 topics: every section index and section fits in one 32 KB read."
       }
     ],
     "summary": {
       "pass": 11,
       "warn": 2,
       "fail": 0,
-      "info": 4
+      "info": 5
+    }
+  },
+  "meta": {
+    "answeredBy": {
+      "cli": "0.7.2",
+      "core": "0.7.2",
+      "copy": "project"
     }
   }
 }

@@ -4809,6 +4809,22 @@ describe('Selector in a narrow row', () => {
     expect(root.getAttribute('style')).toContain('80');
     expect(getComputedStyle(root).minWidth).toBe('0');
   });
+
+  it('lets a narrow list shrink an option so its label can ellipsize', () => {
+    render(
+      <Selector
+        label="Project"
+        options={['An option with a deliberately long readable label']}
+        value={undefined}
+        onChange={() => {}}
+        isDefaultOpen
+      />,
+    );
+    const option = screen
+      .getByRole('option', {hidden: true})
+      .querySelector('.astryx-selector-option')!;
+    expect(getComputedStyle(option).minWidth).toBe('0');
+  });
 });
 
 describe('Selector and option actions (not adopted)', () => {

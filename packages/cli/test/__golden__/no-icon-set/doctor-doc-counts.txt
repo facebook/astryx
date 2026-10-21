@@ -1,4 +1,4 @@
-authoring-docs: All 19 authoring schemas are readable in `astryx docs authoring`.
-cli-docs: All 100 CLI docs are readable: 81 in the `astryx docs cli` tree and 19 in `astryx docs authoring`.
-docs-tree: The docs tree has 181 docs in 29 sections (9 at the top), each at one route.
-docs-progressive-disclosure: 100 topics: every section index and section fits in one 32 KB read.
+authoring-docs: All 19 authoring schemas are readable in `pnpm exec astryx docs authoring`.
+cli-docs: All 100 CLI docs are readable: 81 in the `pnpm exec astryx docs cli` tree and 19 in `pnpm exec astryx docs authoring`.
+docs-tree: The docs tree has 195 docs in 30 sections (10 at the top), each at one route.
+docs-progressive-disclosure: 114 topics: every section index and section fits in one 32 KB read.

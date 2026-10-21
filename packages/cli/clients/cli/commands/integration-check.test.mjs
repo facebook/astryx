@@ -265,11 +265,41 @@ describe('astryx integration check', () => {
       '"typecheck": "tsc --noEmit && astryx integration check --strict"',
     );
     expect(run.stdout).toContain(
-      'A new check or failure code joins only in a minor release, named in the release notes.',
+      'A new check or failure code joins only in a minor release, named in the release notes; until then, a malformed `cliCommand` is reported as a note (`invalid_cli_command`) that fails nothing.',
     );
     expect(run.stdout).toContain('integration verify');
     expect(run.stdout).toContain('against the package in the current folder');
     expect(run.stdout).not.toContain('[package]');
+  });
+
+  it('reports a malformed cliCommand as a note beside the issues, which --strict does not fail', async () => {
+    // A unique template id, so nothing else warns.
+    writePackage({
+      id: 'acme-notes-only-fixture',
+      extraManifest: ", cliCommand: ' acme astryx\\n'",
+    });
+
+    const json = await runCli(
+      ['--json', 'integration', 'check', '--strict'],
+      tmpDir,
+    );
+    const envelope = JSON.parse(json.stdout);
+    const validate = envelope.data.checks[0].response.data;
+    expect(validate.issues.map((/** @type {any} */ i) => i.code)).not.toContain(
+      'invalid_cli_command',
+    );
+    expect(validate.notes).toEqual([
+      {code: 'invalid_cli_command', message: expect.any(String)},
+    ]);
+    expect(envelope.data.failed).toBe(false);
+    expect(json.status).toBe(0);
+
+    const text = await runCli(['integration', 'check'], tmpDir);
+    expect(
+      text.stdout
+        .split('\n')
+        .filter(line => line.startsWith('note (invalid_cli_command): ')),
+    ).toHaveLength(1);
   });
 
   it('takes no package name: one passed is an error, not a check of the current folder', async () => {

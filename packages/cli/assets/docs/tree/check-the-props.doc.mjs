@@ -37,7 +37,7 @@ export const docs = {
         {
           type: 'code',
           lang: 'bash',
-          code: 'npx astryx doctor integration components',
+          code: 'astryx doctor integration components',
         },
         {
           type: 'code',

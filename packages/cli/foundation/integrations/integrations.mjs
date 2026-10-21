@@ -7,7 +7,8 @@
  * package declares a single conventional root manifest sibling to its
  * package.json — astryx.integration.{ts,mjs,js} — which contributes
  * components/templates/codemods/docs/themes roots (and the experimental
- * `experimental.iconSets` root) and an optional issuesUrl.
+ * `experimental.iconSets` root), an optional issuesUrl, and an optional
+ * cliCommand.
  * Stable provider identity and package metadata come from package.json, not the
  * manifest.
  *
@@ -25,6 +26,7 @@ import {normalizeProviderId} from '../identity/provider-identity.mjs';
 // the loader can isolate an invalid optional contribution from valid roots.
 import {
   parseAgentDocsField,
+  parseCliCommandField,
   parseIntegrationBase,
   unknownIntegrationKeys,
 } from '../../authoring/integration/schema.mjs';
@@ -53,9 +55,15 @@ import {resolveProviders} from './provider-resolution.mjs';
  * @property {string} [iconSets] the manifest's `experimental.iconSets` root
  * @property {string} [issuesUrl]
  * @property {{append?: readonly string[]}} [agentDocs]
+ * @property {string} [cliCommand] the command this package's users run the
+ *   CLI with; read by the picker in foundation/env (see cli-command.mjs)
+ * @property {string} [__cliCommandError] why a declared `cliCommand` was
+ *   ignored; the rest of the manifest still contributes
  * @property {string} [__agentDocsError] contribution-specific validation
  *   failure; other manifest contributions remain available
  * @property {string} __spec
+ * @property {string} [__declaredProviderId] the manifest's `providerId` as
+ *   written, kept by validation so it can tell whether the package has one
  * @property {string} __packageDir
  * @property {Record<string, unknown>|null} [__packageExports] the owning
  *   package's `exports` map, kept from the package.json this loader already
@@ -72,6 +80,9 @@ import {resolveProviders} from './provider-resolution.mjs';
  * @property {boolean} [__autolinked] loaded because the project declares the
  *   package as a dependency and it ships a manifest, with no astryx.config
  *   entry naming it — see foundation/integrations/autolink.mjs
+ * @property {boolean} [__computer] loaded because it is installed beside the
+ *   running CLI and the folder is outside a project (spec AST-081 FR12) — see
+ *   foundation/integrations/computer-integrations.mjs
  * @property {boolean} [__local] loaded from the package containing the current
  *   working directory, so an author sees the exact bytes they are editing
  * @property {string} [__dependencyField] for an autolinked integration, the
@@ -208,7 +219,7 @@ function parseDiscoverSourceExport(value, label) {
  * @param {string} file absolute manifest path
  * @param {string} [label] used in error messages
  * @param {{fresh?: boolean}} [options]
- * @returns {Promise<{manifest: import('../../authoring/integration/type').AstryxIntegration, unknownKeys: string[], debug?: import('../../authoring/debug/type').DebugEventHandler, gapReport?: import('../../authoring/gap-report/type').GapReportHandler, gapReportError?: string, discover?: import('../../authoring/discover/type').DiscoverSource, discoverError?: string, agentDocsError?: string}>}
+ * @returns {Promise<{manifest: import('../../authoring/integration/type').AstryxIntegration, unknownKeys: string[], debug?: import('../../authoring/debug/type').DebugEventHandler, gapReport?: import('../../authoring/gap-report/type').GapReportHandler, gapReportError?: string, discover?: import('../../authoring/discover/type').DiscoverSource, discoverError?: string, agentDocsError?: string, cliCommandError?: string}>}
  */
 export async function loadManifest(
   file,
@@ -243,8 +254,31 @@ export async function loadManifest(
     }
   }
 
+  /** @type {string | undefined} */
+  let cliCommand;
+  /** @type {string | undefined} */
+  let cliCommandError;
+  const rawCliCommand =
+    raw != null && typeof raw === 'object' && !Array.isArray(raw)
+      ? /** @type {{cliCommand?: unknown}} */ (raw).cliCommand
+      : undefined;
+  if (rawCliCommand !== undefined) {
+    try {
+      cliCommand = parseCliCommandField(
+        rawCliCommand,
+        `${label} field "cliCommand"`,
+      );
+    } catch (err) {
+      cliCommandError = err instanceof Error ? err.message : String(err);
+    }
+  }
+
   return {
-    manifest: agentDocs == null ? baseManifest : {...baseManifest, agentDocs},
+    manifest: {
+      ...baseManifest,
+      ...(agentDocs == null ? {} : {agentDocs}),
+      ...(cliCommand == null ? {} : {cliCommand}),
+    },
     unknownKeys: unknownIntegrationKeys(raw),
     debug:
       typeof mod?.debug === 'function'
@@ -257,6 +291,7 @@ export async function loadManifest(
     discover: discover.source,
     discoverError: discover.error,
     agentDocsError,
+    cliCommandError,
   };
 }
 
@@ -379,6 +414,8 @@ export async function loadLocalIntegration(packageDir, {fresh = false} = {}) {
   let discoverError;
   /** @type {string | undefined} */
   let agentDocsError;
+  /** @type {string | undefined} */
+  let cliCommandError;
   try {
     ({
       manifest,
@@ -389,6 +426,7 @@ export async function loadLocalIntegration(packageDir, {fresh = false} = {}) {
       discover: discoverSource,
       discoverError,
       agentDocsError,
+      cliCommandError,
     } = await loadManifest(manifestFile, `Integration ${spec}`, {fresh}));
   } catch (err) {
     return {
@@ -427,6 +465,8 @@ export async function loadLocalIntegration(packageDir, {fresh = false} = {}) {
     iconSets: resolveRoot(manifest.experimental?.iconSets),
     issuesUrl: manifest.issuesUrl,
     agentDocs: manifest.agentDocs,
+    cliCommand: manifest.cliCommand,
+    __cliCommandError: cliCommandError,
     __agentDocsError: agentDocsError,
     __unknownKeys: unknownKeys,
     __debug: debugHandler,
@@ -491,6 +531,8 @@ export async function loadIntegrations(
     let discoverError;
     /** @type {string | undefined} */
     let agentDocsError;
+    /** @type {string | undefined} */
+    let cliCommandError;
     try {
       ({
         manifest,
@@ -501,6 +543,7 @@ export async function loadIntegrations(
         discover: discoverSource,
         discoverError,
         agentDocsError,
+        cliCommandError,
       } = await loadManifest(manifestFile, `Integration ${spec}`, {fresh}));
     } catch (err) {
       // A manifest that throws on import or fails schema validation must NOT take
@@ -546,6 +589,8 @@ export async function loadIntegrations(
       iconSets: resolveRoot(manifest.experimental?.iconSets),
       issuesUrl: manifest.issuesUrl,
       agentDocs: manifest.agentDocs,
+      cliCommand: manifest.cliCommand,
+      __cliCommandError: cliCommandError,
       __agentDocsError: agentDocsError,
       __unknownKeys: unknownKeys,
       __debug: debugHandler,

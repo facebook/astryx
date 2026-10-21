@@ -1,4 +1,4 @@
-Results for "search" (20 of 98)
+Results for "search" (20 of 107)
 
 name:        cli/api/functions/search
 domain:      doc
@@ -148,12 +148,13 @@ description: The fields below apply to every page and block. The page, block, an
 command:     pnpm exec astryx docs cli/integrations/building-blocks/templates/document-the-template/template-doc-overview document-the-shared-fields
 parent:      pnpm exec astryx docs cli/integrations/building-blocks/templates/document-the-template/template-doc-overview --index
 
-name:        theme-showcase
-domain:      template
-package:     @astryxdesign/core
-displayName: Theme Showcase
-kind:        page
-description: Several unrelated product surfaces rendered together on one canvas so a token change can be judged across contexts at once. A comparison harness rather than a layout to ship.
-command:     pnpm exec astryx template theme-showcase --type page
+name:        global/problems
+section:     core-offline
+domain:      doc
+package:     @astryxdesign/cli
+title:       Global mode › Troubleshooting global mode › "Core ... could not be installed" outside a project
+description: Outside a project, commands that read components (`component`, `search`, `template`, `build`, and the like) use your global version's Core. It ships beside the CLI only for some installs; otherwise your global install downloads it once...
+command:     pnpm exec astryx docs global/problems core-offline
+parent:      pnpm exec astryx docs global/problems --index
 
 More in packages you could add: pnpm exec astryx discover search

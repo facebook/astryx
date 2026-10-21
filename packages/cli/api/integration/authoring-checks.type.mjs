@@ -93,8 +93,13 @@
  * it (architecture:cli-surface DEC-8).
  *
  * @typedef {object} StrayPointer
- * @property {string} topic the package topic that has it
+ * @property {string} topic the package topic, or component doc, that has it
+ * @property {'topic' | 'component'} kind whether it sits in a topic or a
+ *   component doc
  * @property {string | null} section the title of the section it is in
+ * @property {string | null} field the field it is in outside any section: a
+ *   topic's `description` or `summary`, or a component doc's field path, such
+ *   as `usage.bestPractices[0].description`
  * @property {string} file the doc file, relative to the package root
  * @property {number | null} line the file line that holds it, when found
  * @property {string} pointer the written command, `astryx docs <name>`

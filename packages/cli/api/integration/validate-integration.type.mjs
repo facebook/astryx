@@ -38,7 +38,9 @@
  * "healthy" — the two are otherwise byte-identical.
  * @typedef {object} ValidateIntegrationResponse
  * @property {'integration.validate'} type
- * @property {{validated: boolean, name: string | null, version: string | null, issues: import('../../foundation/integrations/issue').AstryxIntegrationIssue[], docTypes?: DocTypesReport, iconSets?: IconSetCoverage[], olderCliNotes?: OlderCliNote[]}} data
+ * @property {{validated: boolean, name: string | null, version: string | null, issues: import('../../foundation/integrations/issue').AstryxIntegrationIssue[], notes?: Array<{code: string, message: string}>, docTypes?: DocTypesReport, iconSets?: IconSetCoverage[], olderCliNotes?: OlderCliNote[]}} data
+ *   `notes`: information beside the issues that fails nothing, such as
+ *   `invalid_cli_command`, a `cliCommand` that was ignored as malformed
  */
 
 /**

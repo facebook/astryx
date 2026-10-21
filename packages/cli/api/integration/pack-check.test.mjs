@@ -17,6 +17,7 @@ import {
   integrationAddComponent,
   integrationAddTemplate,
 } from './add-contribution.mjs';
+import {formatCliCommand} from '../../foundation/env/package-manager.mjs';
 
 let tmpDir;
 
@@ -502,7 +503,7 @@ describe('a theme module that loads its own styles', () => {
       {
         code: 'theme_module_stale',
         severity: 'error',
-        message: `Theme "ocean" module is not the module \`astryx theme build themes/ocean/oceanTheme.ts\` writes and does not only wrap it: ${reason}. A module that wraps the built module may only import the theme's own stylesheet and font stylesheet for their side effects and re-export from the built module either everything or only its theme, as oceanTheme.`,
+        message: `Theme "ocean" module is not the module \`${formatCliCommand('theme build themes/ocean/oceanTheme.ts', tmpDir)}\` writes and does not only wrap it: ${reason}. A module that wraps the built module may only import the theme's own stylesheet and font stylesheet for their side effects and re-export from the built module either everything or only its theme, as oceanTheme.`,
       },
     ]);
   });
@@ -522,8 +523,7 @@ describe('a theme module that loads its own styles', () => {
       {
         code: 'theme_module_stale',
         severity: 'error',
-        message:
-          'Theme "ocean" module re-exports ../themes/ocean/ocean.js, which does not match themes/ocean/oceanTheme.ts. Run `astryx theme build themes/ocean/oceanTheme.ts` before packing.',
+        message: `Theme "ocean" module re-exports ../themes/ocean/ocean.js, which does not match themes/ocean/oceanTheme.ts. Run \`${formatCliCommand('theme build themes/ocean/oceanTheme.ts', tmpDir)}\` before packing.`,
       },
     ]);
   });
@@ -539,8 +539,7 @@ describe('a theme module that loads its own styles', () => {
       {
         code: 'theme_module_stale',
         severity: 'error',
-        message:
-          'Theme "ocean" module does not match themes/ocean/oceanTheme.ts. Run `astryx theme build themes/ocean/oceanTheme.ts` before packing.',
+        message: `Theme "ocean" module does not match themes/ocean/oceanTheme.ts. Run \`${formatCliCommand('theme build themes/ocean/oceanTheme.ts', tmpDir)}\` before packing.`,
       },
     ]);
   });
@@ -687,8 +686,7 @@ describe('integrationPackCheck', () => {
       {
         code: 'theme_exports_missing',
         severity: 'warning',
-        message:
-          'Theme "ocean" has no declared built exports. The package remains source-compatible. To make it importable, run `astryx theme build themes/ocean/oceanTheme.ts` and export "./themes/ocean" plus "./themes/ocean.css" from package.json; `astryx integration add theme ocean` creates those exports for a new theme.',
+        message: `Theme "ocean" has no declared built exports. The package remains source-compatible. To make it importable, run \`${formatCliCommand('theme build themes/ocean/oceanTheme.ts', tmpDir)}\` and export "./themes/ocean" plus "./themes/ocean.css" from package.json; \`${formatCliCommand('integration add theme ocean', tmpDir)}\` creates those exports for a new theme.`,
       },
     ]);
     const cli = runCliVerify();
@@ -859,8 +857,7 @@ describe('integrationPackCheck', () => {
       {
         code: 'theme_stylesheet_stale',
         severity: 'warning',
-        message:
-          'Theme "ocean" stylesheet does not match themes/ocean/oceanTheme.ts. This incomplete export remains packable, but run `astryx theme build themes/ocean/oceanTheme.ts` before adding its matching export.',
+        message: `Theme "ocean" stylesheet does not match themes/ocean/oceanTheme.ts. This incomplete export remains packable, but run \`${formatCliCommand('theme build themes/ocean/oceanTheme.ts', tmpDir)}\` before adding its matching export.`,
       },
     ]);
     const cli = runCliVerify();
@@ -893,8 +890,7 @@ describe('integrationPackCheck', () => {
       {
         code: 'theme_stylesheet_stale',
         severity: 'warning',
-        message:
-          'Theme "ocean" stylesheet does not match themes/ocean/oceanTheme.ts. This incomplete export remains packable, but run `astryx theme build themes/ocean/oceanTheme.ts` before adding its matching export.',
+        message: `Theme "ocean" stylesheet does not match themes/ocean/oceanTheme.ts. This incomplete export remains packable, but run \`${formatCliCommand('theme build themes/ocean/oceanTheme.ts', tmpDir)}\` before adding its matching export.`,
       },
     ]);
     const cli = runCliVerify();
@@ -967,14 +963,12 @@ describe('integrationPackCheck', () => {
       {
         code: 'theme_module_stale',
         severity: 'error',
-        message:
-          'Theme "ocean" module does not match themes/ocean/oceanTheme.ts. Run `astryx theme build themes/ocean/oceanTheme.ts` before packing.',
+        message: `Theme "ocean" module does not match themes/ocean/oceanTheme.ts. Run \`${formatCliCommand('theme build themes/ocean/oceanTheme.ts', tmpDir)}\` before packing.`,
       },
       {
         code: 'theme_stylesheet_stale',
         severity: 'error',
-        message:
-          'Theme "ocean" stylesheet does not match themes/ocean/oceanTheme.ts. Run `astryx theme build themes/ocean/oceanTheme.ts` before packing.',
+        message: `Theme "ocean" stylesheet does not match themes/ocean/oceanTheme.ts. Run \`${formatCliCommand('theme build themes/ocean/oceanTheme.ts', tmpDir)}\` before packing.`,
       },
     ]);
     const cli = runCliVerify();
@@ -1923,6 +1917,24 @@ describe('integrationPackCheck', () => {
     expect(sourceWarnings).toHaveLength(1);
     expect(sourceWarnings[0].severity).toBe('warning');
     expect(sourceWarnings[0].message).toContain('stray.tsx');
+  });
+
+  it('fails on a package.json npm cannot pack, which validate only warns about', async () => {
+    writePackage({files: ['astryx.integration.mjs', 'themes']});
+    const packageFile = path.join(tmpDir, 'package.json');
+    const pkg = JSON.parse(fs.readFileSync(packageFile, 'utf-8'));
+    delete pkg.name;
+    fs.writeFileSync(packageFile, `${JSON.stringify(pkg, null, 2)}\n`);
+
+    const result = await integrationPackCheck({cwd: tmpDir});
+
+    expect(result.data.packable).toBe(false);
+    expect(
+      result.data.issues.map(issue => [issue.code, issue.severity]),
+    ).toEqual([
+      ['invalid_package_json', 'error'],
+      ['pack_failed', 'error'],
+    ]);
   });
 
   it('cleans up its scratch consumer when npm pack fails', async () => {

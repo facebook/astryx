@@ -26,7 +26,7 @@ export const docs = {
         {
           type: 'code',
           lang: 'bash',
-          code: 'npx astryx integration add doc deploying --parent acme\n# Open your section\nnpx astryx docs acme',
+          code: 'astryx integration add doc deploying --parent acme\n# Open your section\nastryx docs acme',
         },
         {
           type: 'code',
@@ -69,7 +69,7 @@ export const docs = {
         {
           type: 'code',
           lang: 'bash',
-          code: 'npx astryx docs acme/deploying',
+          code: 'astryx docs acme/deploying',
         },
       ],
     },
@@ -84,7 +84,7 @@ export const docs = {
         {
           type: 'code',
           lang: 'bash',
-          code: 'npx astryx doctor integration docs',
+          code: 'astryx doctor integration docs',
         },
         {
           type: 'code',

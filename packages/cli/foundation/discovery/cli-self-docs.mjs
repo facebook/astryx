@@ -25,6 +25,7 @@ import {
   oversizedDocSections,
 } from './docs-output-budget.mjs';
 import {routeSegment} from './docs-section-key.mjs';
+import {formatCliCommand} from '../env/package-manager.mjs';
 
 /** The directories, relative to the CLI root, that hold the CLI's own docs. */
 export const CLI_SELF_DOC_DIRS = [
@@ -187,6 +188,19 @@ function sentence(text, more) {
   return more && text !== '' && !/[.!?:]$/.test(text) ? `${text}.` : text;
 }
 
+/**
+ * The line a command doc prints for what it does outside a project (spec
+ * AST-081 FR4). A group that only holds subcommands declares nothing and
+ * prints nothing.
+ * @type {Record<string, string>}
+ */
+const OUTSIDE_PROJECT_TEXT = {
+  same: "Outside a project (`same`): it answers as it would in a new project on this release, reading this release's Core, as it does in a project with nothing installed: the one installed beside the CLI, else one in the per-user cache, which a global install downloads in the background after a command run online (in CI, the first command that needs it downloads it).",
+  refuse:
+    'Outside a project (`refuse`): it writes nothing and fails, naming the app project or integration package it needs.',
+  own: 'Outside a project (`own`): it does what the description above says it does outside a project.',
+};
+
 /** @param {any[]} notes */
 function noteBlocks(notes) {
   return (notes ?? []).filter(note => TOPIC_BLOCKS.has(note?.type));
@@ -251,6 +265,8 @@ function commandSection(cmd, index) {
       rows: exitCodes.map((/** @type {any} */ e) => [String(e.code), e.when]),
     });
   }
+  const outside = OUTSIDE_PROJECT_TEXT[cmd.outsideProject];
+  if (outside) content.push({type: 'prose', text: outside});
   // Links name docs by identity; the route in each command is derived when
   // the doc is read (spec:AST-047 FR9).
   const subcommands = (cmd.subcommands ?? []).filter(
@@ -513,13 +529,13 @@ export async function auditCliSelfDocs({
       else {
         misfiled.push({
           source,
-          message: `${source} has namespace "authoring", but \`astryx docs authoring\` does not list it`,
+          message: `${source} has namespace "authoring", but \`${formatCliCommand('docs authoring')}\` does not list it`,
         });
       }
     } else if (inAuthoring) {
       misfiled.push({
         source,
-        message: `${source} is read in \`astryx docs authoring\`, but its namespace is "${namespace}"`,
+        message: `${source} is read in \`${formatCliCommand('docs authoring')}\`, but its namespace is "${namespace}"`,
       });
     } else {
       treeDocs.push(doc);

@@ -213,7 +213,8 @@ validate` MUST warn on a PascalCase `.tsx` at the top of the components root
   run of mostly function words, or one that three or more topics share, is not
   a copy); fluff, a listed padding phrase or a topic whose share of content
   words is under the published floor; and a stray pointer, a code span that is
-  exactly `astryx docs <name>` for a doc that exists, where a `{@link}` to that
+  exactly `astryx docs <name>` for a doc that exists, in a topic's prose,
+  description or summary or a component doc's text, where a `{@link}` to that
   doc would be checked. It also fails on doc structure a reader silently
   drops: a prop documented twice, an overlay key that names no prop, two
   sections with one key, an overlay beside no topic, and an empty section.
@@ -757,8 +758,9 @@ key that names no prop, two sections with one key, and an overlay beside no
 topic. The phrase
 list and the floor are published in the check's docs, and every finding
 names the phrase, or the measured density and the floor, so its fix is
-mechanical. A stray pointer (a code span in prose that is exactly
-`astryx docs <name>` for a doc that exists) is exact as well: the `{@link}`
+mechanical. A stray pointer (a code span that is exactly
+`astryx docs <name>` for a doc that exists, in a topic's prose, description
+or summary or a component doc's text) is exact as well: the `{@link}`
 that replaces it prints the command that opens the doc, and doctor's link
 check then fails it when the doc goes away. A command with more words, or one
 in a code block, is a walkthrough, not a pointer. Each is a warning, so `integration check --strict` fails on it and

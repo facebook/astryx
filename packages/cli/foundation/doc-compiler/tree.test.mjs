@@ -602,6 +602,7 @@ describe("the CLI's own docs tree", () => {
       expect(tree.diagnostics).toEqual([]);
       expect(tree.roots().map(node => node.route)).toEqual([
         'cli',
+        'global',
         'internationalization',
         'layout',
         'migration',

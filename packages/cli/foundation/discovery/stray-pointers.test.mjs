@@ -29,10 +29,11 @@ describe('pointersIn', () => {
 });
 
 describe('linkableStrings', () => {
-  it('reads prose, headings, list items and table cells, not the summary or code', () => {
+  it("reads a topic's description and summary, then prose, headings, list items and table cells, not code", () => {
     const strings = linkableStrings({
       name: 'acme',
       description: 'Read `astryx docs theme`.',
+      summary: 'In short.',
       sections: [
         {
           title: 'Use it',
@@ -47,11 +48,39 @@ describe('linkableStrings', () => {
       ],
     });
     expect(strings).toEqual([
-      {text: 'prose', section: 'Use it'},
-      {text: 'heading', section: 'Use it'},
-      {text: 'item', section: 'Use it'},
-      {text: 'head', section: 'Use it'},
-      {text: 'cell', section: 'Use it'},
+      {text: 'Read `astryx docs theme`.', section: null, field: 'description'},
+      {text: 'In short.', section: null, field: 'summary'},
+      {text: 'prose', section: 'Use it', field: null},
+      {text: 'heading', section: 'Use it', field: null},
+      {text: 'item', section: 'Use it', field: null},
+      {text: 'head', section: 'Use it', field: null},
+      {text: 'cell', section: 'Use it', field: null},
+    ]);
+  });
+
+  it("reads a component doc's text fields, not its names, types, defaults, or code", () => {
+    const strings = linkableStrings({
+      type: 'component',
+      name: 'AcmeButton',
+      displayName: 'Acme Button',
+      usage: {
+        description: 'usage',
+        bestPractices: [{guidance: true, description: 'practice'}],
+      },
+      props: [
+        {name: 'tone', type: 'string', default: "'a'", description: 'prop'},
+      ],
+      examples: [{label: 'example', code: 'astryx docs theme'}],
+    });
+    expect(strings).toEqual([
+      {text: 'usage', section: null, field: 'usage.description'},
+      {
+        text: 'practice',
+        section: null,
+        field: 'usage.bestPractices[0].description',
+      },
+      {text: 'prop', section: null, field: 'props[0].description'},
+      {text: 'example', section: null, field: 'examples[0].label'},
     ]);
   });
 });

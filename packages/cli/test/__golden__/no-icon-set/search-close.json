@@ -211,16 +211,22 @@
         "parent": "astryx docs styling/styling-advanced --index"
       },
       {
-        "domain": "template",
-        "name": "BannerDismissable",
+        "domain": "component",
+        "name": "ComplexSelector",
         "package": "@astryxdesign/core",
-        "score": 50,
-        "reason": "description mentions \"close\"",
-        "description": "Let the user close a banner after reading it. Use for maintenance notices, feature tips, or any non-critical message the user can acknowledge.",
-        "displayName": "Banner — Dismiss",
-        "kind": "block",
-        "command": "astryx template BannerDismissable --type block"
+        "score": 45,
+        "reason": "guidance mentions \"close\"",
+        "description": "Use ComplexSelector when a selection needs richer custom content than a Selector option row. It is intentionally one component: ComplexSelector owns the field, trigger, popover, focus restore, and changeAction flow, while the content render prop owns the selector-specific accessible structure.",
+        "import": "@astryxdesign/core/ComplexSelector",
+        "command": "astryx component ComplexSelector"
       }
     ]
+  },
+  "meta": {
+    "answeredBy": {
+      "cli": "0.7.2",
+      "core": "0.7.2",
+      "copy": "project"
+    }
   }
 }

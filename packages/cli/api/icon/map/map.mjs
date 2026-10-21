@@ -16,6 +16,7 @@ import {
   closestNames,
   findLocalIconSet,
   mappableDefinitions,
+  refuseOutsideProject,
   writeGeneratedIcons,
   writeIconSetData,
 } from '../_adapter.mjs';
@@ -32,6 +33,7 @@ import {
  */
 export function iconMap(definition, icon, options = {}) {
   const {cwd = process.cwd(), set: selector, remove = false} = options;
+  refuseOutsideProject(cwd, 'experimental icon map', 'the icon-set package');
   return authoring(async () => {
     if (typeof definition !== 'string' || definition.trim() === '') {
       throw new AstryxError(

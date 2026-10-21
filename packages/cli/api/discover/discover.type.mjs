@@ -73,9 +73,11 @@
  * @property {string} [description]
  * @property {string[]} [aliases] The integration's other package names.
  * @property {string} source The discover source that lists it; `Astryx` for
- *   the official list.
- * @property {string} [install] The package-manager command that adds it;
- *   discover prints it and never runs it.
+ *   the official list; `installed for this computer` for an integration
+ *   installed beside the CLI that the project does not install (spec AST-081
+ *   FR12).
+ * @property {string} [install] The package-manager command that adds it to
+ *   this project; discover prints it and never runs it.
  */
 
 /**

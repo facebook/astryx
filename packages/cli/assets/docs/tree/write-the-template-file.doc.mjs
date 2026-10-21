@@ -44,13 +44,13 @@ export const docs = {
           type: 'code',
           lang: 'bash',
           code: `# Page: src/app/account/page.tsx
-npx astryx template acme-account src/app/account
+astryx template acme-account src/app/account
 
 # Block: src/features/account/acme-stat-card.tsx
-npx astryx template acme-stat-card src/features/account
+astryx template acme-stat-card src/features/account
 
 # Exact destination for either kind
-npx astryx template acme-stat-card src/features/account/StatusCard.tsx`,
+astryx template acme-stat-card src/features/account/StatusCard.tsx`,
         },
         {
           type: 'prose',

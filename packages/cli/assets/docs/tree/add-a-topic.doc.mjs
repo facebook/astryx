@@ -27,7 +27,7 @@ export const docs = {
         {
           type: 'code',
           lang: 'bash',
-          code: 'npx astryx integration add doc deploying\n# Read it the way an app will\nnpx astryx docs deploying',
+          code: 'astryx integration add doc deploying\n# Read it the way an app will\nastryx docs deploying',
         },
         {
           type: 'code',
@@ -69,6 +69,38 @@ export const docs = {
           items: [
             'Replace the `Overview` placeholder `integration add` writes.',
             'Every field is in {@link schema:reference-doc}.',
+          ],
+        },
+      ],
+    },
+    {
+      id: 'write-commands-without-a-runner',
+      title: 'Write commands without a runner',
+      content: [
+        {
+          type: 'prose',
+          text: 'Start every CLI command in a doc with the word astryx alone, with no runner such as npx or pnpm exec in front. The CLI prefixes each one when it prints the doc, with the command the reader runs: `pnpm exec astryx` or `yarn astryx` from their package manager, or the `cliCommand` an integration sets. See {@link generic:cli-command}.',
+        },
+        {
+          type: 'code',
+          lang: 'javascript',
+          label: 'docs/deploying.doc.mjs',
+          code: "{type: 'prose', text: 'Check the app with `astryx doctor` before you ship.'},\n{type: 'code', lang: 'bash', code: 'astryx doctor'},",
+        },
+        {
+          type: 'code',
+          lang: 'text',
+          label:
+            "Read in an app whose integration sets cliCommand: 'acme astryx'",
+          code: 'Check the app with `acme astryx doctor` before you ship.\n\n```bash\nacme astryx doctor\n```',
+        },
+        {
+          type: 'list',
+          style: 'unordered',
+          items: [
+            'The CLI prefixes an inline code span that starts with the word astryx, a command at the start of a line, or after `&&`, `||`, `;` or `|`, in a `bash`, `sh`, `shell`, `zsh`, `console`, `text` or `markdown` code block or one with no language, and a table cell that holds only a command.',
+            'Code in other languages, such as a `js` example, and the word astryx in plain prose stay as written.',
+            '`--json` returns the doc as written, so a reader that shows it prefixes the commands itself.',
           ],
         },
       ],
@@ -140,6 +172,16 @@ export const docs = {
             'A topic with no `placement` is a flat topic: the docs list shows it under Topics, and readers open it by its name.',
             'For a section of your own in the docs tree, see {@link generic:sections-and-placement}.',
           ],
+        },
+      ],
+    },
+    {
+      id: 'global-mode',
+      title: 'In global mode',
+      content: [
+        {
+          type: 'prose',
+          text: 'In global mode: when users install your package for their computer, beside the global CLI, your doc topics show up in folders outside any project; inside a project, only if the project installs your package. See {@link namespace:global} and {@link generic:global-integrations}.',
         },
       ],
     },

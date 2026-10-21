@@ -54,6 +54,7 @@ export const doc = {
       cli: "astryx experimental icon new-definition rotate --description 'Rotate an image or shape.' --words turn,spin --icon rotate-cw",
     },
   ],
+  outsideProject: 'refuse',
   exitCodes: [
     {code: 0, when: 'the definition is written or the dry run succeeds'},
     {
@@ -62,4 +63,10 @@ export const doc = {
     },
   ],
   related: ['experimental icon map', 'experimental icon add'],
+  notes: [
+    {
+      type: 'prose',
+      text: "In global mode: outside a project, with no package.json in the folder or above it, experimental icon new-definition writes nothing and stops with `ERR_PROJECT_REQUIRED`; run it in the icon-set package. In a project, the project's version of Astryx runs it, whichever astryx command you start. See {@link namespace:global} and {@link generic:problems}.",
+    },
+  ],
 };

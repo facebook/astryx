@@ -13,6 +13,7 @@
 
 import fs from 'node:fs';
 
+import {textFields} from '../doc-compiler/links.mjs';
 import {builtinGuideFiles} from './docs-discovery.mjs';
 import {
   fileWords,
@@ -52,17 +53,32 @@ function loadCoreKinds() {
 }
 
 /**
- * The strings of a doc the compiler resolves links in: the text of prose and
- * heading blocks, list items, and table cells, in each section's content, with
- * the section's title. A summary or other field prints a link as written, so
- * it is not read.
+ * The strings of a doc the CLI resolves links in (spec:AST-047 FR9). In a
+ * topic: its description and summary, then the text of prose and heading
+ * blocks, list items, and table cells in each section's content, with the
+ * section's title. In a component doc (any doc with no sections): every text
+ * field, such as its description, usage, best practices, and each prop's and
+ * example's description, with the field's path. Code is never read.
  *
  * @param {unknown} doc an authored doc object
- * @returns {{text: string, section: string | null}[]}
+ * @returns {{text: string, section: string | null, field: string | null}[]}
  */
 export function linkableStrings(doc) {
-  /** @type {{text: string, section: string | null}[]} */
+  /** @type {{text: string, section: string | null, field: string | null}[]} */
   const strings = [];
+  if (doc == null || typeof doc !== 'object') return strings;
+  const top = /** @type {Record<string, any>} */ (doc);
+  if (!Array.isArray(top.sections)) {
+    for (const {field, text} of textFields(doc)) {
+      strings.push({text, section: null, field});
+    }
+    return strings;
+  }
+  for (const field of ['description', 'summary']) {
+    if (typeof top[field] === 'string') {
+      strings.push({text: top[field], section: null, field});
+    }
+  }
   /**
    * @param {unknown} value
    * @param {string | null} section
@@ -79,7 +95,9 @@ export function linkableStrings(doc) {
     if (!Array.isArray(record.content)) return;
     for (const block of record.content) {
       const add = (/** @type {unknown} */ text) => {
-        if (typeof text === 'string') strings.push({text, section: title});
+        if (typeof text === 'string') {
+          strings.push({text, section: title, field: null});
+        }
       };
       switch (block?.type) {
         case 'prose':
@@ -143,20 +161,23 @@ function locateString(lines, file, text, words, from) {
 }
 
 /**
- * Each stray pointer in a package's topics.
+ * Each stray pointer in a package's topics and component docs.
  *
- * @param {{records: {name: string, path: string}[], guides?: {name: string, ref?: {topicFile?: string}}[], namespaces?: {doc?: {name?: string}}[]}} discovered
+ * @param {{records: {name: string, path: string}[], guides?: {name: string, ref?: {topicFile?: string}}[], namespaces?: {doc?: {name?: string}}[], components?: {name: string, file: string}[]}} discovered
  * @returns {Promise<import('../../api/integration/authoring-checks.type.mjs').StrayPointer[]>}
  */
 export async function findStrayPointers(discovered) {
+  /** @type {{name: string, file: string | undefined, kind: 'topic' | 'component'}[]} */
   const topics = [
     ...discovered.records.map(record => ({
       name: record.name,
       file: record.path,
+      kind: /** @type {const} */ ('topic'),
     })),
     ...(discovered.guides ?? []).map(guide => ({
       name: guide.name,
       file: guide.ref?.topicFile,
+      kind: /** @type {const} */ ('topic'),
     })),
   ];
   /** @type {Map<string, string>} */
@@ -164,6 +185,13 @@ export async function findStrayPointers(discovered) {
   for (const namespace of discovered.namespaces ?? []) {
     const name = namespace?.doc?.name;
     if (typeof name === 'string' && !own.has(name)) own.set(name, 'namespace');
+  }
+  for (const component of discovered.components ?? []) {
+    topics.push({
+      name: component.name,
+      file: component.file,
+      kind: 'component',
+    });
   }
   const core = await loadCoreKinds();
   // A topic that extends another has no route of its own: a link to it names
@@ -210,10 +238,17 @@ export async function findStrayPointers(discovered) {
     } catch {
       // No line numbers; the finding still names the section.
     }
+    // A component doc is named by its own name: a family doc by the family.
+    const name =
+      topic.kind === 'component' && typeof doc.name === 'string'
+        ? doc.name
+        : topic.name;
+    const label =
+      topic.kind === 'component' ? `component "${name}"` : `"${name}"`;
     // Each string is found by its whole run of words, from where the last
     // one was found, so two strings that open alike keep their own lines.
     let cursor = 0;
-    for (const {text, section} of linkableStrings(doc)) {
+    for (const {text, section, field} of linkableStrings(doc)) {
       const words = textWords(text);
       const index = locateString(lines, source, text, words, cursor);
       if (index >= 0) cursor = index + words.length;
@@ -233,19 +268,22 @@ export async function findStrayPointers(discovered) {
               );
         const where = [
           section ? `section "${section}"` : null,
+          field ? `field ${field}` : null,
           line == null ? null : `line ${line}`,
         ]
           .filter(Boolean)
           .join(', ');
         found.push({
-          topic: topic.name,
+          topic: name,
+          kind: topic.kind,
           section,
+          field,
           file: topic.file,
           line,
           pointer: command,
           link,
           message:
-            `"${topic.name}"${where ? ` (${where})` : ''} points at a doc with the written command \`${command}\`. ` +
+            `${label}${where ? ` (${where})` : ''} points at a doc with the written command \`${command}\`. ` +
             `Replace \`${command}\`, code ticks included, with ${link}: the CLI prints the command that opens the doc, and doctor checks the link.`,
         });
       }

@@ -109,6 +109,11 @@
         "status": "fresh",
         "complete": true
       }
-    ]
+    ],
+    "answeredBy": {
+      "cli": "0.7.2",
+      "core": "0.7.2",
+      "copy": "project"
+    }
   }
 }

@@ -34,6 +34,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {assertWithin} from '../../foundation/fs/path-safety.mjs';
+import {normalizeProviderId} from '../../foundation/identity/provider-identity.mjs';
 import {integrationDocTypes} from '../docs/_adapter.mjs';
 import {
   iconSetCoverage,
@@ -61,11 +62,13 @@ import {
 // The on-disk contribution validators live in foundation: Project and
 // integration-warnings need them too, and foundation must not depend on api.
 import {
+  INVALID_CLI_COMMAND,
   validateLoadedIntegration,
   issueError as error,
   issueWarning as warning,
   rootProblem,
 } from '../../foundation/integrations/validate-contributions.mjs';
+import {formatCliCommand} from '../../foundation/env/package-manager.mjs';
 
 export {validateLoadedIntegration};
 
@@ -81,6 +84,8 @@ export {validateLoadedIntegration};
  * @property {string} [manifestFile] Absolute path to the loaded manifest.
  * @property {'no_package_json'} [reason] Why nothing was validated (internal).
  * @property {Issue[]} issues
+ * @property {Array<{code: string, message: string}>} [notes] Information that
+ *   fails nothing, such as `invalid_cli_command` (a malformed `cliCommand`).
  * @property {import('../../foundation/integrations/integrations.mjs').LoadedIntegration} [integration]
  * @property {import('../../foundation/discovery/icon-set-checks.mjs').IconSetCoverage[]} [iconSets]
  *   Which definitions each icon set leaves unmapped (spec:AST-084 FR15).
@@ -102,6 +107,14 @@ function findNearestPackageJson(cwd) {
     dir = parent;
   }
 }
+
+const ROOT_KINDS = /** @type {const} */ ([
+  'components',
+  'templates',
+  'codemods',
+  'docs',
+  'themes',
+]);
 
 const UNREACHABLE_SCAN_LIMIT = 5_000;
 const UNREACHABLE_SKIP_DIRS = new Set([
@@ -133,7 +146,7 @@ function unreadThemeFolderIssues(packageDir, loaded) {
     let fix;
     if (THEME_SLUG_RE.test(name)) {
       const stem = `${name.replace(/-([a-z0-9])/gu, (_, character) => character.toUpperCase())}Theme`;
-      fix = `if it is a theme, add ${stem}.ts and ${stem}.doc.mjs to it (\`astryx integration add theme ${name}\` writes both) and move its code into ${stem}.ts; if not, ${hide}.`;
+      fix = `if it is a theme, add ${stem}.ts and ${stem}.doc.mjs to it (\`${formatCliCommand(`integration add theme ${name}`, packageDir)}\` writes both) and move its code into ${stem}.ts; if not, ${hide}.`;
     } else {
       fix = `${hide}; a theme folder needs a lower-kebab name.`;
     }
@@ -152,27 +165,51 @@ function unreadThemeFolderIssues(packageDir, loaded) {
  *
  * @param {string} packageDir
  * @param {import('../../foundation/integrations/integrations.mjs').LoadedIntegration} loaded
+ * @param {string[]} [reported] folders whose files another issue already covers
  * @returns {Promise<Issue[]>}
  */
-async function findUnreachableContributionIssues(packageDir, loaded) {
+async function findUnreachableContributionIssues(
+  packageDir,
+  loaded,
+  reported = [],
+) {
+  // A root that is not a readable folder holds nothing: a fix must never
+  // send a file into it.
+  const usable = {...loaded};
+  for (const kind of ROOT_KINDS) {
+    const root = usable[kind];
+    if (root != null && rootProblem(root)) usable[kind] = undefined;
+  }
+  // Every declared root is skipped, readable or not: one that cannot be read
+  // has its own issue.
   const roots = /** @type {string[]} */ (
-    [
-      loaded.components,
-      loaded.templates,
-      loaded.codemods,
-      loaded.docs,
-      loaded.themes,
-    ].filter(Boolean)
+    ROOT_KINDS.map(kind => loaded[kind]).filter(Boolean)
   );
+  // A folder a symlinked root points at is read through that root.
+  const realRoots = roots.map(root => {
+    try {
+      return fs.realpathSync(root);
+    } catch {
+      return root;
+    }
+  });
   /** @type {Issue[]} */
   const issues = [];
-  const context = createFixContext(packageDir, loaded);
+  const context = createFixContext(packageDir, usable);
   let scanned = 0;
   let truncated = false;
 
   /** @param {string} dir */
   async function walk(dir) {
     if (roots.some(root => pathIsInside(dir, root))) return;
+    if (reported.some(folder => pathIsInside(dir, folder))) return;
+    let realDir = dir;
+    try {
+      realDir = fs.realpathSync(dir);
+    } catch {
+      // Unreadable: reported below.
+    }
+    if (realRoots.some(root => pathIsInside(realDir, root))) return;
     let entries;
     try {
       entries = fs
@@ -292,19 +329,49 @@ async function validateAtPackageDir(
   let unknownKeys;
   /** @type {string | undefined} */
   let agentDocsError;
+  /** @type {string | undefined} */
+  let cliCommandError;
   try {
-    ({manifest, unknownKeys, agentDocsError} = await loadManifest(
-      manifestFile,
-      `Integration manifest (${path.basename(manifestFile)})`,
-    ));
+    ({manifest, unknownKeys, agentDocsError, cliCommandError} =
+      await loadManifest(
+        manifestFile,
+        `Integration manifest (${path.basename(manifestFile)})`,
+      ));
   } catch (err) {
     issues.push(error('invalid_manifest', /** @type {any} */ (err).message));
     return result;
   }
 
-  /** @param {string | null | undefined} value */
-  const resolveRoot = (value, kind = 'contribution root') => {
+  /** @type {string[]} absolute roots inside the package */
+  const absoluteRoots = [];
+  /**
+   * @param {string | null | undefined} value
+   * @param {string} key the manifest key that declares it
+   */
+  const resolveRoot = (value, key, kind = 'contribution root') => {
     if (value == null) return undefined;
+    if (path.isAbsolute(value)) {
+      // An absolute root names this machine's disk, which no install shares,
+      // even when it happens to point inside the package.
+      const inside = path.relative(packageDir, value);
+      const relative =
+        inside === '' || (!inside.startsWith('..') && !path.isAbsolute(inside))
+          ? `./${inside.split(path.sep).join('/')}`.replace(/\/$/u, '')
+          : null;
+      // The code an absolute root has always carried, reworded.
+      result.issues.push(
+        error(
+          'root_outside_package',
+          `The ${key} root "${value}" is an absolute path, so Astryx reads nothing from it: a root is relative to the package, so it resolves the same wherever the package is installed.` +
+            (relative
+              ? ` Fix: set \`${key}: '${relative === './' ? '.' : relative}'\` in ${path.basename(manifestFile)}.`
+              : ` It also points outside the package. Fix: move the files into the package and set \`${key}\` to their folder relative to package.json, such as './${key}'.`),
+        ),
+      );
+      // Its files are reported through this issue, not one by one.
+      if (relative) absoluteRoots.push(path.resolve(value));
+      return undefined;
+    }
     try {
       return assertWithin(value, packageDir, {label: kind});
     } catch {
@@ -321,17 +388,23 @@ async function validateAtPackageDir(
   const loaded = {
     name: identity.name,
     version: identity.version,
-    components: resolveRoot(manifest.components),
-    templates: resolveRoot(manifest.templates),
-    codemods: resolveRoot(manifest.codemods),
-    docs: resolveRoot(manifest.docs),
-    themes: resolveRoot(manifest.themes),
-    iconSets: resolveRoot(manifest.experimental?.iconSets),
+    components: resolveRoot(manifest.components, 'components'),
+    templates: resolveRoot(manifest.templates, 'templates'),
+    codemods: resolveRoot(manifest.codemods, 'codemods'),
+    docs: resolveRoot(manifest.docs, 'docs'),
+    themes: resolveRoot(manifest.themes, 'themes'),
+    iconSets: resolveRoot(
+      manifest.experimental?.iconSets,
+      'experimental.iconSets',
+    ),
     issuesUrl: manifest.issuesUrl,
     agentDocs: manifest.agentDocs,
+    cliCommand: manifest.cliCommand,
+    __cliCommandError: cliCommandError,
     __agentDocsError: agentDocsError,
     __unknownKeys: unknownKeys,
     __spec: identity.name,
+    __declaredProviderId: manifest.providerId,
     __packageDir: packageDir,
     __manifestFile: manifestFile,
   };
@@ -339,7 +412,17 @@ async function validateAtPackageDir(
 
   // Roots + contribution checks are shared with validateLoadedIntegration so
   // the everyday-command nudge runs the exact same validators.
-  issues.push(...(await validateLoadedIntegration(loaded)));
+  // A malformed `cliCommand` is an info note beside the issues, not an issue:
+  // `integration check --strict` fails on any warning, and a new failure code
+  // joins only in a minor release (architecture:cli-surface INV35). Doctor's
+  // project check still warns about it.
+  for (const issue of await validateLoadedIntegration(loaded)) {
+    if (issue.code === INVALID_CLI_COMMAND) {
+      (result.notes ??= []).push({code: issue.code, message: issue.message});
+    } else {
+      issues.push(issue);
+    }
+  }
   if (loaded.themes && !rootProblem(loaded.themes))
     issues.push(...unreadThemeFolderIssues(packageDir, loaded));
   // The icon-set checks (AST-084 FR15): data against descriptor, module
@@ -367,7 +450,11 @@ async function validateAtPackageDir(
   );
   if (scanUnreachable) {
     issues.push(
-      ...(await findUnreachableContributionIssues(packageDir, loaded)),
+      ...(await findUnreachableContributionIssues(
+        packageDir,
+        loaded,
+        absoluteRoots,
+      )),
     );
   }
   // Authoring only: a template or namespace doc that sets `stability` is
@@ -409,7 +496,7 @@ export async function validateLocalIntegration(cwd = process.cwd()) {
     return {found: false, issues: []};
   }
 
-  /** @type {{name?: string, version?: string}} */
+  /** @type {{name?: string, version?: string, private?: boolean}} */
   let pkg;
   try {
     pkg = JSON.parse(fs.readFileSync(pkgJsonPath, 'utf-8'));
@@ -428,14 +515,103 @@ export async function validateLocalIntegration(cwd = process.cwd()) {
     };
   }
 
-  return validateAtPackageDir(
+  // npm publishes nothing without a name and a version, and the name is the
+  // provider ID every reader keys the package's contributions on.
+  // A package without one is still checked, under a placeholder name.
+  const fields = packageJsonFieldIssues(pkg, pkgJsonPath);
+  const name =
+    typeof pkg.name === 'string' && pkg.name !== ''
+      ? pkg.name
+      : '(local package)';
+  const result = await validateAtPackageDir(
     packageDir,
-    {
-      name: pkg.name ?? '(local package)',
-      version: pkg.version,
-    },
+    {name, version: pkg.version},
     {scanUnreachable: true},
   );
+  result.issues.unshift(
+    ...fields,
+    // Only a manifest that loaded says whether it declares a providerId; one
+    // that did not is reported as invalid_manifest.
+    ...(result.integration
+      ? providerIdIssues(
+          pkg.name,
+          result.integration.__declaredProviderId,
+          result.integration.__manifestFile,
+        )
+      : []),
+  );
+  return result;
+}
+
+/**
+ * Whether `name` is a bare npm package name, the form a provider ID takes.
+ * @param {string} name
+ */
+function isPackageName(name) {
+  try {
+    normalizeProviderId(name);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * A warning when no provider ID can be derived for the package: its
+ * package.json `name` is not a bare package name and its manifest declares
+ * no `providerId` that is one. Readers key the package's contributions on
+ * that ID; a missing name is its own warning.
+ * @param {unknown} name package.json `name`
+ * @param {unknown} declared the manifest's `providerId`
+ * @param {string} manifestFile
+ * @returns {Issue[]}
+ */
+function providerIdIssues(name, declared, manifestFile) {
+  if (typeof name !== 'string' || name === '') return [];
+  if (isPackageName(name)) return [];
+  if (typeof declared === 'string' && isPackageName(declared)) return [];
+  const manifest = path.basename(manifestFile);
+  return [
+    warning(
+      'no_provider_id',
+      `No provider ID can be derived for this package: package.json "name" ${JSON.stringify(name)} is not a bare package name (an optional @scope/ and a name, each starting with a lowercase letter or digit and holding only lowercase letters, digits, "-", ".", "_" and "~"), and ${manifest} declares no providerId that is one. Astryx files the package's components, templates and docs under that ID, so links to them and selecting the package cannot work. Fix: rename the package, such as "@your-scope/your-package", or set \`providerId: '@your-scope/your-package'\` in ${manifest}.`,
+    ),
+  ];
+}
+
+/**
+ * A warning for each field npm needs that package.json lacks.
+ * @param {{name?: unknown, version?: unknown, private?: unknown}} pkg
+ * @param {string} pkgJsonPath
+ * @returns {Issue[]}
+ */
+function packageJsonFieldIssues(pkg, pkgJsonPath) {
+  /** @type {Issue[]} */
+  const issues = [];
+  const shown = path.basename(pkgJsonPath);
+  // Warnings, so validate keeps the exit code it had for these packages;
+  // `integration verify`, which packs, reports them as errors.
+  if (typeof pkg.name !== 'string' || pkg.name === '') {
+    issues.push(
+      warning(
+        'invalid_package_json',
+        `${shown} has no "name", so npm cannot pack or publish the package, and a project that installs it has no name to select it by. Fix: add "name": "@your-scope/your-package" to ${shown}.`,
+      ),
+    );
+  }
+  // A private package is never published, so it needs no version.
+  if (
+    pkg.private !== true &&
+    (typeof pkg.version !== 'string' || pkg.version === '')
+  ) {
+    issues.push(
+      warning(
+        'invalid_package_json',
+        `${shown} has no "version", so npm cannot pack or publish the package. Fix: add "version": "0.1.0" to ${shown}.`,
+      ),
+    );
+  }
+  return issues;
 }
 
 /**
@@ -516,6 +692,7 @@ export async function validateIntegration(pkg, options = {}) {
   const docTypes = integration
     ? await integrationDocTypes(integration, cwd)
     : undefined;
+  const notes = result.found ? (result.notes ?? []) : [];
   return {
     type: 'integration.validate',
     data: {
@@ -535,6 +712,7 @@ export async function validateIntegration(pkg, options = {}) {
               },
             ]
           : result.issues,
+      ...(notes.length > 0 ? {notes} : {}),
       ...(docTypes ? {docTypes} : {}),
       // Additive, never counted: present only for a package with icon sets,
       // or with descriptors an older CLI drops.

@@ -164,6 +164,38 @@ manifest are generated from it, so an undocumented flag is an invisible flag.
 Give at least one example that an agent would actually run, including a `--json`
 one.
 
+## Global mode: every command works outside a project
+
+People install the CLI once for their computer and run it in any folder
+(`spec:AST-081`). So every command also has to work, or explain itself, in a
+folder that is not a project, and its docs have to say which.
+
+1. **Declare `outsideProject`** in the command doc: `same` (it answers as it
+   would in a new project), `refuse` (it writes nothing and fails before doing
+   any work, naming what it needs), or `own` (it does something else). A
+   command that only groups subcommands declares nothing.
+   `clients/cli/commands/outside-project.test.mjs` runs every command in an
+   empty folder and checks what it does against this value, and fails on a
+   command without one; an `own` command needs a test of its own there.
+2. **Add the note, for readers.** Every `refuse` and every `own` command
+   carries one prose note that starts `In global mode:`, says exactly what it
+   does outside a project (the error code and message it stops with, or what
+   it does instead), and links `{@link namespace:global}`.
+   `test/global-mode-notes.test.mjs` fails on a missing note, and
+   `test/global-mode-docs.test.mjs` checks that the error code a note names is
+   the one the command stops with. An API function whose result depends on
+   `cwd` being in a project carries the same sentence in its description.
+3. **Add a who-answers row** when a change touches which copy of the CLI
+   answers (an install layout, a door, a hand-off rule): one row in the global
+   and project table of `spec:AST-081` and its test in
+   `packages/cli/test/global-local.test.mjs`, named with the row's number
+   (`G12 …`); a test there fails on a gap in the row numbers.
+4. **Quote, never paraphrase, what the CLI prints.** A terminal line shown on a
+   global-mode page must be one the CLI prints; `test/global-mode-docs.test.mjs`
+   builds those lines from the CLI's own strings.
+
+The user-facing explanation lives in `astryx docs global`.
+
 ## Every integration item ships a typed doc
 
 A discoverable contribution is not done without a strongly typed
@@ -222,6 +254,9 @@ change.
 - [ ] The doc declares `outsideProject` (`same`, `refuse`, or `own`), and a test
       run outside a project matches it.
 - [ ] Marked as work in progress if it is not ready to be depended on.
+- [ ] The command doc declares `outsideProject`; a value other than `same`
+      has its `In global mode:` note and a test of what it does outside a
+      project.
 
 ## Common review smells
 

@@ -42,6 +42,7 @@ import {discoverIntegrationDocs} from '../../foundation/discovery/docs-discovery
 import {findIntegrationComponentDoc} from '../../foundation/discovery/component-discovery.mjs';
 import {parseAgentDocsField} from '../../authoring/integration/schema.mjs';
 import {integrationAddTheme} from './add-theme.mjs';
+import {refuseOutsideProject} from '../icon/_adapter.mjs';
 import {
   IconSetAuthoringError,
   checkNewDefinition,
@@ -1795,6 +1796,11 @@ export function integrationAddAgentDoc(line, options = {}) {
  */
 export async function iconNewSet(name, options = {}) {
   validateKindOptions('icon-set', options);
+  refuseOutsideProject(
+    options.cwd ?? process.cwd(),
+    'experimental icon new-set',
+    'the integration package',
+  );
   const {data} = await addIconSet(name, options);
   return {type: 'icon.newSet', data};
 }
@@ -1809,6 +1815,11 @@ export async function iconNewSet(name, options = {}) {
  */
 export async function iconNewDefinition(name, options = {}) {
   validateKindOptions('icon-definition', options);
+  refuseOutsideProject(
+    options.cwd ?? process.cwd(),
+    'experimental icon new-definition',
+    'the icon-set package',
+  );
   const {data} = await addIconDefinition(name, options);
   return {type: 'icon.newDefinition', data};
 }

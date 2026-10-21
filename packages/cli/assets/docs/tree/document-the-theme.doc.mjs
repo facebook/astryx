@@ -13,7 +13,7 @@ export const docs = {
   title: 'Document the theme',
   category: 'guide',
   description:
-    'Document a theme by extending the core theme topic, so an app reads it in `astryx docs theme`.',
+    'Document a theme by extending the core theme topic, so an app reads it in {@link generic:theme}.',
   sections: [
     {
       id: 'extend-the-theme-topic',
