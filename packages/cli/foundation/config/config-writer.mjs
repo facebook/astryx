@@ -11,6 +11,12 @@
  * config. A config whose default export is not a static object literal is
  * refused rather than rewritten.
  *
+ * Before any write the target is classified like every other consumer-file
+ * writer (spec:AST-040 FR2, FR8): a config reached through a symbolic link,
+ * marked generated or vendored, ignored, or otherwise protected is refused with
+ * `ERR_CODEMOD_PROTECTED` naming the protecting declaration, and an unreadable
+ * protection source fails with `ERR_CODEMOD_PROTECTION_SOURCE`.
+ *
  * @input A project directory, a field name, and its string value
  * @output The config file written and the value it replaced
  * @position packages/cli/foundation/config — read by `astryx experimental icon use`
@@ -24,7 +30,36 @@ import {
   findManifestObject,
   unwrapManifestExpression,
 } from '../integrations/manifest-writer.mjs';
+import {createFileProtectionResolver} from '../fs/file-protection.mjs';
 import {CONFIG_BASENAMES} from './project.mjs';
+
+/** A protected astryx.config the writer refused to touch. */
+export class ConfigProtectedError extends Error {
+  /**
+   * @param {string} file
+   * @param {import('../fs/file-protection.mjs').FileProtection[]} protections
+   */
+  constructor(file, protections) {
+    const declarations = protections.map(item => item.declaration).join('; ');
+    super(
+      `Could not update ${path.basename(file)}: it is protected by ${declarations}. Set the value at its source yourself.`,
+    );
+    this.name = 'ConfigProtectedError';
+    this.code = 'ERR_CODEMOD_PROTECTED';
+    this.file = file;
+    this.protections = protections;
+  }
+}
+
+/**
+ * Refuse to write `file` when the project protects it (spec:AST-040 FR2).
+ * @param {string} projectDir
+ * @param {string} file
+ */
+function assertWritable(projectDir, file) {
+  const protections = createFileProtectionResolver(projectDir).classify(file);
+  if (protections.length > 0) throw new ConfigProtectedError(file, protections);
+}
 
 /** @param {any} property @param {string} name */
 function propertyNamed(property, name) {
@@ -57,6 +92,7 @@ export function setConfigString(projectDir, key, value) {
   ).find(file => fs.existsSync(file));
   if (!existing) {
     const file = path.join(projectDir, 'astryx.config.mjs');
+    assertWritable(projectDir, file);
     const quoted = `'${value.replace(/\\/gu, '\\\\').replace(/'/gu, "\\'")}'`;
     // Each key on the path opens one nested object: `experimental: {`.
     const open = keys
@@ -74,6 +110,7 @@ export function setConfigString(projectDir, key, value) {
     );
     return {file, created: true, previous: null, changed: true};
   }
+  assertWritable(projectDir, existing);
   const source = fs.readFileSync(existing, 'utf-8');
   const j = jscodeshift.withParser('tsx');
   const ast = j(source);

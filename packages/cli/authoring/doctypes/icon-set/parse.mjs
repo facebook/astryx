@@ -331,6 +331,7 @@ const PROTO_KEY_ISSUE = {
  * @param {unknown} input
  * @param {string} [label]
  * @returns {IconSetDoc}
+ * @experimental May change or be removed in a patch release.
  */
 export function parseIconSet(input, label = 'icon set') {
   const result = iconSetDocSchema.safeParse(input);
@@ -353,6 +354,7 @@ export function parseIconSet(input, label = 'icon set') {
  * @param {unknown} input
  * @param {string} [label]
  * @returns {IconSetData}
+ * @experimental May change or be removed in a patch release.
  */
 export function parseIconSetData(input, label = 'icon set data') {
   const result = dataSchema.safeParse(input);

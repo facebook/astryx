@@ -72,7 +72,10 @@ function withoutComputerChecks(stdout) {
     // The Node version is the machine's, not the project's.
     if (check.id === 'node-version') {
       summary[/** @type {keyof typeof summary} */ (check.status)] += 1;
-      return {...check, message: check.message.replace(/v\d+\.\d+\.\d+/, 'v<node>')};
+      return {
+        ...check,
+        message: check.message.replace(/v\d+\.\d+\.\d+/, 'v<node>'),
+      };
     }
     summary[/** @type {keyof typeof summary} */ (check.status)] += 1;
     return check;
@@ -311,6 +314,43 @@ describe('with icon sets installed but no experimental.iconSet, stable output is
     const unknown = astryx(['discover', '--type', 'bogus', '--json'], cwd);
     await expect(unknown.stdout).toMatchFileSnapshot(
       path.join(GOLDEN, 'discover-type-bogus.json'),
+    );
+  });
+
+  // A source that lists a malformed icon-set entry: without the opt-in its
+  // fields are unknown and the entry is an unknown kind, so the source still
+  // counts and discover answers as the CLI without icon sets does.
+  it('a malformed icon-set entry in a source does not fail it', async () => {
+    const cwd = writeIconSetProject(path.join(root, 'malformed-source'), {
+      packages: [],
+    });
+    fs.writeFileSync(
+      path.join(cwd, 'astryx.config.mjs'),
+      `export default {
+  discover: async () => ({
+    schemaVersion: 1,
+    source: {name: 'acme', generatedAt: '2026-01-01T00:00:00.000Z', complete: true},
+    packages: [{
+      package: '@acme/glyphs',
+      integration: '@acme/glyphs',
+      aliases: [],
+      latest: '1.0.0',
+      versions: [{version: '1.0.0', publishedAt: '2026-01-01T00:00:00.000Z', prerelease: false, status: 'published'}],
+      contributions: [
+        {kind: 'theme', name: 'glyph-theme', definitions: [7]},
+        {kind: 'icon-set', name: 'outline', iconCount: -1, definitions: 'nope'},
+      ],
+    }],
+  }),
+};
+`,
+    );
+    fs.mkdirSync(path.join(cwd, 'node_modules', '.bin'), {recursive: true});
+    fs.writeFileSync(path.join(cwd, 'node_modules', '.bin', 'astryx'), '');
+    const res = astryx(['discover', '--json'], cwd);
+    expect(res.status).toBe(0);
+    await expect(res.stdout).toMatchFileSnapshot(
+      path.join(GOLDEN, 'discover-malformed-icon-set-source.json'),
     );
   });
 

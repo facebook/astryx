@@ -44,6 +44,14 @@ export const doc = {
       when: 'two installed packages ship a set with the name',
     },
     {code: 'ERR_WRITE_FAILED', when: 'the config cannot be updated safely'},
+    {
+      code: 'ERR_CODEMOD_PROTECTED',
+      when: 'the config is reached through a symbolic link, marked generated or vendored, or ignored; the error names the declaration that protects it',
+    },
+    {
+      code: 'ERR_CODEMOD_PROTECTION_SOURCE',
+      when: 'a protection declaration in the project cannot be read',
+    },
   ],
   examples: [{label: 'Use a set', code: "await iconUse('outline');"}],
   command: 'experimental icon use',

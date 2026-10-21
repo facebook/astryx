@@ -57,7 +57,8 @@ icon, and the CLI verifies it, writes the files, and checks the set.
   `spec:AST-017/FR21`–FR27:
   - the commands are `astryx experimental icon` and its subcommands, under the
     `experimental` command group; no stable command gains an icon-set
-    subcommand, kind, or option value;
+    subcommand or option value, and the one icon-set kind on a stable command
+    is discover's `icon-set`, read only with the opt-in (FR17, DEC-8);
   - configuration is `experimental.iconSet` in `astryx.config`, the project's
     opt-in, and `experimental.iconSets` in the integration manifest;
   - the docs live under `cli/experimental` (the guide and the
@@ -71,8 +72,11 @@ icon, and the CLI verifies it, writes the files, and checks the set.
   line), the manifest (apart from that group), the `astryx docs cli` listing
   (apart from the `experimental` namespace), `astryx template`, `astryx
 discover`, Doctor, and `integration check` and `verify` give the output they
-  give without this feature, whatever sets are installed. `astryx search`
-  never reads icon sets, with or without the opt-in.
+  give without this feature, whatever sets are installed: discover refuses
+  `--type icon-set` and ignores `icon-set` catalog items and their fields
+  exactly as it does any unknown kind or field. With the opt-in, `icon-set`
+  is a discover kind (FR17). `astryx search` never reads icon sets, with or
+  without the opt-in.
 
 ### What a set declares
 
@@ -227,7 +231,7 @@ discover`, Doctor, and `integration check` and `verify` give the output they
   `{file, kind, field, message}`) names each template or namespace doc that
   sets `stability`, and each template that declares `icons`, while the
   package's CLI peer range admits a release before 0.7.3; a note is never
-  counted and never fails a check.
+  counted and never fails a check (DEC-9).
 - **FR17 — Doctor and discover read sets only with the opt-in.** In a project
   that sets `experimental.iconSet`, Doctor's `icon-sets` check fails when it
   names a set that is not installed and warns when two packages ship that name
@@ -235,6 +239,8 @@ discover`, Doctor, and `integration check` and `verify` give the output they
   `--type icon-set`, catalog entries with `iconCount` and `definitions`, and
   `discover <package>/<set>`. Without the opt-in, Doctor has no such check and
   reports no icon-set issue, and discover treats `icon-set` as an unknown kind
+  and `iconCount` and `definitions` as unknown fields before it validates a
+  catalog, so a malformed icon-set item never fails a source
   (`spec:AST-051/FR7`).
 
 ### Supporting pieces
@@ -244,7 +250,8 @@ discover`, Doctor, and `integration check` and `verify` give the output they
   `[experimental]`, stable tables leave out a marked field or value, search
   leaves out a marked doc, and Doctor's doc counts leave marked docs out. A
   namespace's `source.packages: 'all'` adopts a doc group from every package
-  only on a CLI namespace marked experimental (the icon definitions).
+  only on a CLI namespace marked experimental (the icon definitions); DEC-7
+  owns that exception to `spec:AST-046/FR2`.
 
 ### Platform support
 
@@ -335,6 +342,42 @@ generated module and adapter make data-only libraries work the same way.
 The commands, keys, data file, and output may change in a patch release while
 real sets prove the design. Each surface uses its kind's experimental
 boundary, and a project that does not opt in sees the output it saw before.
+
+### DEC-7 — Experimental namespaces may adopt docs from every package
+
+**Reference:** `spec:AST-084/DEC-7`
+**Decider:** `josephfarina`, `2026-10-20`
+
+A set adds its own icon definitions, and they belong beside the Astryx ones,
+so a namespace's `source.packages: 'all'` adopts a doc group from every
+package. It is an experimental exception to `spec:AST-046/FR2`, read only on a
+CLI namespace marked `stability: 'experimental'`; every stable namespace
+adopts only its own package's docs, exactly as `spec:AST-046/FR2` says.
+
+Rejected: placing each set's definitions under its own package, which splits
+one vocabulary across as many namespaces as there are sets.
+
+### DEC-8 — `icon-set` is a seventh discover kind, behind the opt-in
+
+**Reference:** `spec:AST-084/DEC-8`
+**Decider:** `josephfarina`, `2026-10-20`
+
+A set is an item a package adds, so discover lists it like the six kinds of
+`spec:AST-051/FR5`, with the additive catalog fields `iconCount` and
+`definitions`. Only a project that sets `experimental.iconSet` reads them.
+Without it, `--type icon-set` fails with `ERR_INVALID_OPTION`, unknown-kind
+errors list the six kinds, and the kind and its fields are unknown under
+`spec:AST-051/FR7`, so the output matches a CLI without icon sets.
+
+### DEC-9 — `olderCliNotes` is additive and never fails
+
+**Reference:** `spec:AST-084/DEC-9`
+**Decider:** `josephfarina`, `2026-10-20`
+
+An author whose peer range admits an older CLI needs to know what that CLI
+drops, but the package is valid for the CLI that checks it. So validate adds
+the field `olderCliNotes`: it is never counted in a summary and never fails a
+check, with or without `--strict`.
 
 ## Open questions
 

@@ -29,7 +29,7 @@ export const doc = {
     },
     {
       code: 1,
-      when: 'the set is not installed, two packages ship it, or the config cannot be updated',
+      when: 'the set is not installed, two packages ship it, the config cannot be updated, or the config is protected (a symbolic link, or marked generated, vendored, or ignored: `ERR_CODEMOD_PROTECTED`, naming the declaration)',
     },
   ],
   related: ['experimental icon', 'template'],

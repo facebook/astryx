@@ -34,6 +34,8 @@ export {parseCommand} from './doctypes/command/parse.mjs';
 export {parseEnum} from './doctypes/enum/parse.mjs';
 export {parseNamespace} from './doctypes/namespace/parse.mjs';
 export {parseTheme} from './doctypes/theme/parse.mjs';
+/** @experimental Icon sets may change or be removed in a patch release. */
 export {parseIconSet, parseIconSetData} from './doctypes/icon-set/parse.mjs';
+/** @experimental Icon definitions may change or be removed in a patch release. */
 export {parseIconDefinition} from './doctypes/icon-definition/parse.mjs';
 export {parseLegacyDoc} from './doctypes/legacy.mjs';

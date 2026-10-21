@@ -69,6 +69,7 @@ const PROTO_KEY_ISSUE = {
  * @param {unknown} input
  * @param {string} [label]
  * @returns {IconDefinitionDoc}
+ * @experimental May change or be removed in a patch release.
  */
 export function parseIconDefinition(input, label = 'icon definition') {
   const result = iconDefinitionSchema.safeParse(input);

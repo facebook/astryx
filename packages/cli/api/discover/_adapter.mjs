@@ -541,13 +541,14 @@ function savedCopyPath(cacheDir, from, request) {
 /**
  * @param {string} file
  * @param {string} label
+ * @param {boolean} iconSets the project opts into icon sets
  */
-function readSavedCopy(file, label) {
+function readSavedCopy(file, label, iconSets) {
   try {
     const saved = JSON.parse(fs.readFileSync(file, 'utf8'));
     return {
       savedAt: String(saved.savedAt),
-      catalog: parseDiscoverCatalog(saved.catalog, label),
+      catalog: parseDiscoverCatalog(saved.catalog, label, {iconSets}),
     };
   } catch {
     return null;
@@ -577,8 +578,9 @@ function writeSavedCopy(file, catalog) {
  * @param {{package?: string, version?: string}} request
  * @param {string} label
  * @param {number} timeoutMs
+ * @param {boolean} iconSets the project opts into icon sets
  */
-async function callSource(source, request, label, timeoutMs) {
+async function callSource(source, request, label, timeoutMs, iconSets) {
   const controller = new AbortController();
   /** @type {ReturnType<typeof setTimeout> | undefined} */
   let timer;
@@ -597,7 +599,7 @@ async function callSource(source, request, label, timeoutMs) {
       ),
       timedOut,
     ]);
-    return parseDiscoverCatalog(answer, label);
+    return parseDiscoverCatalog(answer, label, {iconSets});
   } finally {
     clearTimeout(timer);
   }
@@ -622,6 +624,9 @@ async function callOwnSources(project, request = {}, options = {}) {
   const result = {sources: [], packages: []};
   const fromDoor = doorSources();
   if (project == null && fromDoor.length === 0) return result;
+  // Without the opt-in, icon-set items and fields are unknown before the
+  // catalog is checked, so one cannot fail a source (spec:AST-051 FR7).
+  const iconSets = optedIntoIconSets(project);
 
   /** @type {Array<{from: string, key?: string, source?: DiscoverSource, error?: string}>} */
   const origins = [];
@@ -671,7 +676,7 @@ async function callOwnSources(project, request = {}, options = {}) {
     /** @type {import('../../authoring/discover/type').DiscoverCatalog} */
     let catalog;
     try {
-      catalog = await callSource(source, ask, label, timeoutMs);
+      catalog = await callSource(source, ask, label, timeoutMs, iconSets);
       writeSavedCopy(file, catalog);
       result.sources.push({
         name: catalog.source.name,
@@ -682,7 +687,7 @@ async function callOwnSources(project, request = {}, options = {}) {
       });
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
-      const saved = readSavedCopy(file, label);
+      const saved = readSavedCopy(file, label, iconSets);
       if (saved == null) {
         result.sources.push({
           name: from,

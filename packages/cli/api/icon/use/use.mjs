@@ -69,10 +69,17 @@ export async function iconUse(selector, {cwd = process.cwd()} = {}) {
   try {
     written = setConfigString(projectDir, 'experimental.iconSet', selector);
   } catch (error) {
+    // A protected config, or an unreadable protection source, keeps the
+    // stable code every consumer-file writer uses (spec:AST-040 FR4, FR6).
+    const code = /** @type {{code?: unknown}} */ (error)?.code;
+    const stable = [
+      ERROR_CODES.ERR_CODEMOD_PROTECTED,
+      ERROR_CODES.ERR_CODEMOD_PROTECTION_SOURCE,
+    ].find(each => each === code);
     throw new AstryxError(
       error instanceof Error ? error.message : String(error),
       undefined,
-      ERROR_CODES.ERR_WRITE_FAILED,
+      stable ?? ERROR_CODES.ERR_WRITE_FAILED,
     );
   }
   return {

@@ -485,6 +485,48 @@ describe('experimental icon use', () => {
       expect.objectContaining({name: 'glyphs'}),
     );
   });
+
+  it('writes a plain existing config, keeping its other fields', async () => {
+    const app = writeIconSetProject(tmp);
+    const config = path.join(app, 'astryx.config.mjs');
+    fs.writeFileSync(config, 'export default {\n  integrations: [],\n};\n');
+    const used = await json(['experimental', 'icon', 'use', 'glyphs'], app);
+    expect(used.code).toBe(0);
+    expect(used.body.data).toMatchObject({created: false, changed: true});
+    const written = fs.readFileSync(config, 'utf-8');
+    expect(written).toContain('integrations: []');
+    expect(written).toMatch(/iconSet: 'glyphs'/);
+  });
+
+  it('refuses a config reached through a symbolic link, leaving its target untouched', async () => {
+    const app = writeIconSetProject(tmp);
+    const target = path.join(tmp, 'shared.config.mjs');
+    const before = 'export default {\n  integrations: [],\n};\n';
+    fs.writeFileSync(target, before);
+    fs.symlinkSync(target, path.join(app, 'astryx.config.mjs'));
+    const refused = await json(['experimental', 'icon', 'use', 'glyphs'], app);
+    expect(refused.code).toBe(1);
+    expect(refused.body.code).toBe('ERR_CODEMOD_PROTECTED');
+    expect(refused.body.error).toContain('symbolic link at astryx.config.mjs');
+    expect(fs.readFileSync(target, 'utf-8')).toBe(before);
+    expect(
+      fs.lstatSync(path.join(app, 'astryx.config.mjs')).isSymbolicLink(),
+    ).toBe(true);
+  });
+
+  it('refuses a generated config, naming the marker that protects it', async () => {
+    const app = writeIconSetProject(tmp);
+    const config = path.join(app, 'astryx.config.mjs');
+    const before = '// @generated\nexport default {\n  integrations: [],\n};\n';
+    fs.writeFileSync(config, before);
+    const refused = await json(['experimental', 'icon', 'use', 'glyphs'], app);
+    expect(refused.code).toBe(1);
+    expect(refused.body.code).toBe('ERR_CODEMOD_PROTECTED');
+    expect(refused.body.error).toContain(
+      '@generated in the leading comment block',
+    );
+    expect(fs.readFileSync(config, 'utf-8')).toBe(before);
+  });
 });
 
 describe('a library of icon data, through the adapter', () => {
