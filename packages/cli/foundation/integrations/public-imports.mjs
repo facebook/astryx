@@ -772,19 +772,6 @@ function isPackageName(name) {
   }
 }
 
-// ── Listed findings ─────────────────────────────────────────────────
-
-/**
- * A public-import finding, its fix inside the message; publicImportIssues
- * makes each a warning.
- * @param {string} code
- * @param {string} message
- * @returns {PublicImportNote}
- */
-function listed(code, message) {
-  return {code, message};
-}
-
 // ── Checks ──────────────────────────────────────────────────────────
 
 /**
@@ -856,7 +843,6 @@ function fixTarget(subpath, sourceTarget) {
 
 /** @typedef {import('../../api/integration/validate-integration.type.mjs').PublicImportUnchecked} PublicImportUnchecked */
 /** @typedef {import('../../api/integration/validate-integration.type.mjs').PublicImportsReport} PublicImportsReport */
-/** @typedef {{code: string, message: string}} PublicImportNote */
 
 /**
  * Judge an import of the package's own name.
@@ -927,10 +913,10 @@ function subpathExporting(ctx, name, preferred) {
  * A component doc's import specifier, and every example's imports.
  * @param {Context} ctx
  * @param {any} integration
- * @returns {Promise<PublicImportNote[]>}
+ * @returns {Promise<Issue[]>}
  */
 async function componentIssues(ctx, integration) {
-  /** @type {PublicImportNote[]} */
+  /** @type {Issue[]} */
   const issues = [];
   // Every component check compares imports with the package's own name.
   if (ctx.name == null) return issues;
@@ -993,7 +979,7 @@ async function componentIssues(ctx, integration) {
       (sourceTarget ? sourceTarget.replace(/\.[cm]?[jt]sx?$/u, '') : null);
     if (split && split.pkg !== ctx.name) {
       issues.push(
-        listed(
+        issueWarning(
           'component_import_other_package',
           `Component doc "${shownDoc}" ${gives}, which names package "${split.pkg}", not this package "${ctx.name}", so apps are told to import the component from somewhere it is not. Fix: set import: '${ctx.name}${suggested ? suggested.slice(1) : ''}' in the doc.`,
         ),
@@ -1052,7 +1038,7 @@ async function componentIssues(ctx, integration) {
             ? `set import: '${ctx.name}${there === '.' ? '' : there.slice(1)}' in the doc (that subpath exports it), or export "${name}" from the module "${specifier}" loads.`
             : `export "${name}" from the module "${specifier}" loads${perComponent ? `, or ${perComponent}` : ''}.`;
           issues.push(
-            listed(
+            issueWarning(
               'component_import_missing_name',
               `Component doc "${shownDoc}" ${gives}, but that module does not export "${name}", so apps that follow the doc get nothing. Fix: ${fix}`,
             ),
@@ -1064,7 +1050,7 @@ async function componentIssues(ctx, integration) {
             ? `set import: '${ctx.name}${declared.slice(1)}' (already exported), or `
             : '';
         issues.push(
-          listed(
+          issueWarning(
             'component_import_not_exported',
             `Component doc "${shownDoc}" ${gives}, but ${whyUndeclared(declaration, split.subpath)}, so apps cannot import the component from it. Fix: ${already}${split.subpath === '.' && perComponent ? `${perComponent}.` : exportsFix(ctx.exportsField, declaration.state, split.subpath, fixTarget(split.subpath, sourceTarget))}`,
           ),
@@ -1217,14 +1203,14 @@ async function componentIssues(ctx, integration) {
           });
         } else if (undeclared) {
           issues.push(
-            listed(
+            issueWarning(
               'example_import_not_exported',
               `Component doc "${shownDoc}" example ${label} imports "${statement.source}", but ${whyUndeclared(undeclared, parts.subpath)}, so the example fails when an app copies it. Fix: ${exampleFix(statement, parts.subpath, undeclared)}`,
             ),
           );
         } else if (missing && missing.length > 0) {
           issues.push(
-            listed(
+            issueWarning(
               'example_import_missing_name',
               `Component doc "${shownDoc}" example ${label} imports ${missing.map(n => `"${n}"`).join(', ')} from "${statement.source}", which does not export ${missing.length === 1 ? 'it' : 'them'}, so the example fails when an app copies it. Fix: ${missingNameFix(statement, parts.subpath, missing)}`,
             ),
@@ -1240,10 +1226,10 @@ async function componentIssues(ctx, integration) {
  * Template public imports and what each template source imports.
  * @param {Context} ctx
  * @param {any} integration
- * @returns {Promise<PublicImportNote[]>}
+ * @returns {Promise<Issue[]>}
  */
 async function templateIssues(ctx, integration) {
-  /** @type {PublicImportNote[]} */
+  /** @type {Issue[]} */
   const issues = [];
   const root = integration.templates;
   if (!root) return issues;
@@ -1266,7 +1252,7 @@ async function templateIssues(ctx, integration) {
     );
     if (ctx.name != null && declaration.state !== 'declared') {
       issues.push(
-        listed(
+        issueWarning(
           'template_import_not_exported',
           `Template "${id}" has public import "${ctx.name}${subpath.slice(1)}", but ${whyUndeclared(declaration, subpath)}, so it cannot be imported once published. Fix: ${exportsFix(ctx.exportsField, declaration.state, subpath, sourceTarget)}`,
         ),
@@ -1294,7 +1280,7 @@ async function templateIssues(ctx, integration) {
           ? 'anything that renders the template gets nothing'
           : `its public import "${ctx.name}${subpath.slice(1)}" and anything that renders the template get nothing`;
       issues.push(
-        listed(
+        issueWarning(
           'template_no_default_export',
           `Template "${id}" (${shown}) has no default export, so ${what}. Fix: ${fix}.`,
         ),
@@ -1306,7 +1292,7 @@ async function templateIssues(ctx, integration) {
         const target = path.resolve(path.dirname(file), spec);
         if (target !== root && !target.startsWith(root + path.sep)) {
           issues.push(
-            listed(
+            issueWarning(
               'template_import_outside_root',
               `Template "${id}" (${shown}) imports "${spec}", a path outside the templates root; \`astryx template\` copies only the template into an app, where that path does not exist. Fix: import it through the package's public name (e.g. '${ctx.name ?? '<package name>'}/…' declared in package.json "exports"), or move the code into the template.`,
             ),
@@ -1333,14 +1319,14 @@ async function templateIssues(ctx, integration) {
           });
         } else if (undeclared) {
           issues.push(
-            listed(
+            issueWarning(
               'template_private_import',
               `Template "${id}" (${shown}) imports "${spec}", but ${whyUndeclared(undeclared, parts.subpath)}, so the template breaks in an app. Fix: import from a subpath package.json "exports" declares, or add one for it.`,
             ),
           );
         } else if (missing && missing.length > 0) {
           issues.push(
-            listed(
+            issueWarning(
               'template_import_missing_name',
               `Template "${id}" (${shown}) imports ${missing.map(n => `"${n}"`).join(', ')} from "${spec}", which does not export ${missing.length === 1 ? 'it' : 'them'}, so the template breaks in an app. Fix: import a name that module exports, or export the name from it.`,
             ),
@@ -1370,7 +1356,7 @@ async function templateIssues(ctx, integration) {
               ? `'${CORE}/${top}'`
               : `a subpath Core's package.json "exports" declares`;
           issues.push(
-            listed(
+            issueWarning(
               'template_private_import',
               `Template "${id}" (${shown}) imports "${spec}", a path Core's package.json "exports" does not declare, so the template breaks in an app. Fix: import from ${hint}.`,
             ),
@@ -1387,7 +1373,7 @@ async function templateIssues(ctx, integration) {
  * of what could not be judged. `notes` stays empty.
  * @param {string} packageDir
  * @param {any} integration the loaded integration record
- * @returns {Promise<{issues: Issue[], notes: PublicImportNote[], report: PublicImportsReport}>}
+ * @returns {Promise<{issues: Issue[], notes: Issue[], report: PublicImportsReport}>}
  *   `notes` is always empty: kept so validate's call site stays one shape
  */
 export async function publicImportIssues(packageDir, integration) {
@@ -1453,9 +1439,5 @@ export async function publicImportIssues(packageDir, integration) {
     ...(await templateIssues(ctx, integration)),
   ];
   // Each finding is a warning, so `integration check --strict` fails on it.
-  return {
-    issues: findings.map(each => issueWarning(each.code, each.message)),
-    notes: [],
-    report,
-  };
+  return {issues: findings, notes: [], report};
 }
