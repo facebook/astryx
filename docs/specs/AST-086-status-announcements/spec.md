@@ -60,9 +60,11 @@ announcement channel.
   It MUST NOT mount that element already holding the text to announce.
 - **FR4 — A live container owns its children.** Content added inside a mounted
   live container is delivered by that container. A child MUST NOT add its own
-  live role or announce the same content through the channel.
-- **FR5 — Urgency.** Errors and time-critical failures use the assertive
-  channel. All other status messages use the polite channel.
+  live role or announce the same content through the channel. The container's
+  urgency applies, including to an error added inside it.
+- **FR5 — Urgency.** Outside a live container, errors and time-critical
+  failures use the assertive channel. All other status messages use the polite
+  channel. Inside a mounted live container, FR4 applies.
 - **FR6 — Once per occasion.** An occasion is one state transition or one user
   action. The owner announces once per occasion. Rerender, StrictMode replay,
   and an update to the same value do not repeat it. A new occasion with the
@@ -94,7 +96,7 @@ announcement channel.
   not exposed to assistive technology until `spec:AST-003` admits it to modal
   hosting. Owners rehosted above the modal use their own containers (FR10).
 - Browser evidence: DOM and accessibility-tree checks prove routing (FR1–FR5,
-  FR7–FR9). Spoken timing, order, and repetition (FR6 on real AT) require
+  FR7–FR10). Spoken timing, order, and repetition (FR6 on real AT) require
   `spec:AST-009` FR4 evidence.
 
 ## Current-state impact
@@ -131,7 +133,7 @@ announcement channel.
 - ChatTypingIndicator (lab): mounts with `role="status"` and text. It follows
   FR4 inside a live log, otherwise FR2.
 - Comments (lab): its error banners and progress label mount live roles
-  together with their text. Under FR2 they go through the channel.
+  together with their text. Inside a live log they follow FR4; otherwise FR2.
 - `spec:AST-037` FR9 (Timer adds no unsolicited live region) already conforms.
 - Consumer tests that query these elements by `status` or `alert` role change.
   Release notes name each affected component.
@@ -162,6 +164,8 @@ mount a live region already holding its text. Screen-reader users then hear a
 message twice or not at all. One owner and one shared, always-mounted channel
 removes both failures with a single rule, and matches the delivery
 `component:FieldStatus` already uses.
+Owners that `spec:AST-003` rehosts above native modals keep their own containers
+until the shared channel can be hosted there (FR10).
 
 Rejected: delivering transient messages through each component's own live
 region — the page gains many competing regions and two-owner duplicates recur.
