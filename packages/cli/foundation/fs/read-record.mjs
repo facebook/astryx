@@ -59,7 +59,10 @@ function installRecorder() {
   for (const name of RECORDED) {
     const original = fs[name];
     if (typeof original !== 'function') continue;
-    /** @param {...any} args */
+    /**
+     * @this {unknown}
+     * @param {...any} args
+     */
     const wrapped = function (...args) {
       const seen = reads.getStore();
       const target = args[0];
