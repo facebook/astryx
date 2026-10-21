@@ -16,7 +16,8 @@ export const doc = {
     'A same-name topic without `replaces` or `extends` is an accidental conflict ' +
     'and fails until the author declares the relationship or renames it. ' +
     'It also lists each pair of topics (two of the package, or one of them and a Core topic other than the one it replaces) ' +
-    'that repeat 10 or more words of prose word for word, as a `copied_passage` warning (exit 0; `integration check --strict` fails on it). See {@link generic:check-your-docs}.',
+    'that repeat 10 or more words of prose word for word, and each padding phrase and low-density topic, ' +
+    'each as a warning (`copied_passage`, `doc_fluff`; exit 0, and `integration check --strict` fails on it). See {@link generic:check-your-docs}.',
   fn: 'integrationDocConflicts',
   args: [
     {

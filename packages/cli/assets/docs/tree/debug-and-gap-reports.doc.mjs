@@ -23,7 +23,7 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'Export a `debug` function from `astryx.integration.mjs`, and the CLI calls it once for each command run in an app that loads your package.',
+          text: 'Export a `debug` function from `astryx.integration.mjs`; the CLI calls it once per command run in an app loading your package.',
         },
         {
           type: 'code',
@@ -52,11 +52,11 @@ export default {
         },
         {
           type: 'prose',
-          text: "An app records every command only when its `astryx.config` names `integrations` or `debug`, as listing your package does. Otherwise your handler runs only for commands that load the app's project, such as `component` and `docs`, and not for `--version` or a mistyped command. In an app whose config names neither word, each of those commands also prints a warning on stderr.",
+          text: "An app records every command only when its `astryx.config` names `integrations` or `debug`, as listing your package does. Otherwise your handler runs only for commands loading the app's project, such as `component` and `docs`, never for `--version` or a mistyped command. In an app whose config names neither word, those commands also print a stderr warning.",
         },
         {
           type: 'prose',
-          text: '`debug` is a named export, not a manifest field, so a CLI that does not know it ignores it and loads the rest of your manifest.',
+          text: '`debug` is a named export, not a manifest field, so an older CLI ignores it and loads the rest of your manifest.',
         },
       ],
     },
@@ -75,7 +75,7 @@ export default {
         },
         {
           type: 'prose',
-          text: 'From then on, your handler no longer runs in that app.',
+          text: 'Your handler then no longer runs in that app.',
         },
       ],
     },
@@ -150,7 +150,7 @@ message:     Rerun with --confirm-public to file this report.`,
       content: [
         {
           type: 'prose',
-          text: "When the app has no `gapReport` handler at all, the CLI routes the report to the target package's `issuesUrl` from its manifest instead.",
+          text: "With no `gapReport` handler in the app, the CLI routes the report to the target package's manifest `issuesUrl`.",
         },
         {
           type: 'list',
@@ -173,14 +173,14 @@ message:     Rerun with --confirm-public to file this report.`,
       content: [
         {
           type: 'prose',
-          text: 'When an app loads packages that name their own `issuesUrl`, a report can go to the default (the handlers, or the fallback above) or to one of those packages. `astryx gap-report --list-categories` and the receipt of a report filed without `--to` list every destination, with a line telling the agent to ask the person.',
+          text: 'When an app loads packages naming their own `issuesUrl`, a report can go to the default (the handlers, or the fallback above) or to one of those packages. `astryx gap-report --list-categories` and the receipt of a report filed without `--to` list every destination, with a line telling the agent to ask the person.',
         },
         {
           type: 'list',
           style: 'unordered',
           items: [
             'An agent asks the person where to file. It never picks a package destination on its own.',
-            "`--to <package>` carries the person's choice: the report goes only to that package's `issuesUrl`, under the same `--confirm-public` rule, and the handlers do not run.",
+            "`--to <package>` carries the person's choice: the report goes only to that package's `issuesUrl`, under the same `--confirm-public` rule, and no handler runs.",
             'Without a choice, leave out `--to`; the report goes to the default.',
             'A `--to` that names no destination fails before anything is sent and lists the destinations.',
           ],

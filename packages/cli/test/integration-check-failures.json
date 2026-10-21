@@ -4,7 +4,7 @@
     "validate": ["docTypes", "issues"],
     "components": ["conflicts", "issues", "propDrift"],
     "templates": ["conflicts", "issues"],
-    "docs": ["copiedPassages", "findings", "issues"]
+    "docs": ["copiedPassages", "findings", "fluff", "issues"]
   },
   "reports": {
     "docTypes": "doc_types_skipped",
@@ -18,6 +18,7 @@
     "copied_passage",
     "core_not_found",
     "default_mismatch",
+    "doc_fluff",
     "doc_types_skipped",
     "duplicate_doc",
     "duplicate_prop",

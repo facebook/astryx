@@ -260,6 +260,10 @@ const RUNNERS = {
     runs: "a package's component docs and topics, to read the props, overlays, sections, and replaces/extends they declare",
     sites: ['importDocModule ×2'],
   },
+  'foundation/discovery/doc-fluff.mjs': {
+    runs: "the CLI's own guides, to measure the median share of content words a topic's density is compared with",
+    sites: ['builtinGuideFiles'],
+  },
   'foundation/discovery/docs-discovery.mjs': {
     runs: 'a contributed topic, for its catalog fields: name, title, description, category, and relationships',
     sites: ['importDocModule'],
