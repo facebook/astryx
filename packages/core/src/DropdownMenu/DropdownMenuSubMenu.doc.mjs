@@ -71,7 +71,7 @@ export const docs = {
       name: 'header',
       type: 'ReactNode',
       description:
-        'Content above the sub-menu\'s rows and outside its menu, a field that filters them, say. It keeps its own keys and presses. With a header or footer the sub-menu\'s surface (the flyout, or the drilled-in view on a phone) is a modal dialog named by the row, beside the menu rather than inside it: the row says aria-haspopup="dialog", Tab and Shift+Tab move through the header, the rows and the footer and wrap, Escape returns to the row, and a pointer leaving the flyout closes it only once focus leaves too. A ContextMenu does not show it.',
+        "Content above the sub-menu's rows and outside its menu, a field that filters them, say. It keeps its own keys and presses. With a header or footer the sub-menu's surface (the flyout, or the drilled-in view on a phone) is a modal dialog named by the row, beside the menu rather than inside it: the row says aria-haspopup=\"dialog\", Tab and Shift+Tab move through the header, the rows and the footer and wrap, Escape returns to the row, and a pointer leaving the flyout closes it only once focus leaves too. In the bottom sheet, a data item's header shows above that level's actions in place of the menu's. A ContextMenu does not show it.",
     },
     {
       name: 'footer',

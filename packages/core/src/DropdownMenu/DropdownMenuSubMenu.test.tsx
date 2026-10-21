@@ -2127,6 +2127,35 @@ describe('DropdownMenuSubMenu header and footer', () => {
     await waitFor(() => expect(sort).toHaveAttribute('aria-expanded', 'false'));
   });
 
+  it("data mode passes a nested item's header and footer to its sub-menu", async () => {
+    const user = userEvent.setup();
+    render(
+      <DropdownMenu
+        button={{label: 'Session'}}
+        items={[
+          {label: 'Rename'},
+          {
+            label: 'Labels',
+            header: <input aria-label="Filter labels" />,
+            footer: <button type="button">Create label</button>,
+            items: [{label: 'Bug'}, {label: 'Feature'}],
+          },
+        ]}
+      />,
+    );
+    await user.click(screen.getByRole('button', {name: /Session/}));
+    fireEvent.click(screen.getByRole('menuitem', {name: /Labels/, ...h}), {
+      detail: 1,
+    });
+    const dialog = await screen.findByRole('dialog', {name: /Labels/, ...h});
+    expect(dialog).toContainElement(field());
+    expect(dialog).toContainElement(create());
+    // A leaf row carries no header or footer of its own.
+    expect(
+      screen.getByRole('menuitem', {name: 'Rename', ...h}),
+    ).not.toHaveAttribute('header');
+  });
+
   it('a press from a menu row released on a row of the flyout acts on it, as in any flyout', async () => {
     const onPick = vi.fn();
     const {trigger} = await openLabels({onPick});
@@ -2171,6 +2200,165 @@ describe('DropdownMenuSubMenu header and footer', () => {
     await waitFor(() => expect(row).toHaveAttribute('aria-expanded', 'true'));
     expect(row).toHaveAttribute('aria-haspopup', 'menu');
     expect(screen.queryByRole('dialog', h)).toBeNull();
+  });
+
+  it("the bottom sheet shows a level's own header and footer in place of the menu's, live, and the menu's elsewhere", async () => {
+    const user = userEvent.setup();
+    function SheetMenu() {
+      const [query, setQuery] = useState('');
+      const labels = ['Bug', 'Feature', 'Design'].filter(label =>
+        label.toLowerCase().includes(query.toLowerCase()),
+      );
+      return (
+        <DropdownMenu
+          button={{label: 'Session'}}
+          presentation="bottom-sheet"
+          header={<input aria-label="Search actions" />}
+          footer={<button type="button">Settings</button>}
+          items={[
+            {
+              label: 'Labels',
+              header: (
+                <input
+                  aria-label="Filter labels"
+                  value={query}
+                  onChange={event => setQuery(event.target.value)}
+                />
+              ),
+              footer: <button type="button">Create label</button>,
+              items: labels.map(label => ({label})),
+            },
+            {label: 'Move to', items: [{label: 'Inbox'}]},
+          ]}
+        />
+      );
+    }
+    render(<SheetMenu />);
+    await user.click(screen.getByRole('button', {name: /Session/}));
+    const sheet = await screen.findByRole('dialog', {name: 'Session'});
+    const rootRegions = () => [
+      screen.queryByRole('textbox', {name: 'Search actions'}),
+      screen.queryByRole('button', {name: 'Settings'}),
+    ];
+    expect(rootRegions().every(Boolean)).toBe(true);
+
+    await user.click(screen.getByRole('button', {name: /Labels/}));
+    const filter = await screen.findByRole('textbox', {name: 'Filter labels'});
+    expect(sheet).toContainElement(
+      screen.getByRole('button', {name: 'Create label'}),
+    );
+    expect(rootRegions().some(Boolean)).toBe(false);
+
+    // The level stays live: the controlled field shows what was typed and
+    // its rows filter.
+    await user.type(filter, 'fea');
+    expect(filter).toHaveValue('fea');
+    await waitFor(() =>
+      expect(screen.queryByRole('button', {name: /Bug/})).toBeNull(),
+    );
+    expect(screen.getByRole('button', {name: /Feature/})).toBeInTheDocument();
+
+    // Back to the root: its own regions return; a level without regions of
+    // its own keeps showing the menu's.
+    await user.click(screen.getByRole('button', {name: 'Back'}));
+    await waitFor(() => expect(rootRegions().every(Boolean)).toBe(true));
+    await user.click(screen.getByRole('button', {name: /Move to/}));
+    await waitFor(() =>
+      expect(screen.getByRole('button', {name: /Inbox/})).toBeInTheDocument(),
+    );
+    expect(rootRegions().every(Boolean)).toBe(true);
+    expect(screen.queryByRole('textbox', {name: 'Filter labels'})).toBeNull();
+  });
+
+  it("the bottom sheet opens each level's field empty, whatever was typed into the menu's or another level's", async () => {
+    const user = userEvent.setup();
+    render(
+      <DropdownMenu
+        button={{label: 'Session'}}
+        presentation="bottom-sheet"
+        header={<input aria-label="Search actions" />}
+        items={[
+          {
+            label: 'Labels',
+            header: <input aria-label="Filter labels" />,
+            items: [{label: 'Bug'}],
+          },
+          {
+            label: 'Tags',
+            header: <input aria-label="Filter tags" />,
+            items: [{label: 'Urgent'}],
+          },
+        ]}
+      />,
+    );
+    await user.click(screen.getByRole('button', {name: /Session/}));
+    await user.type(
+      await screen.findByRole('textbox', {name: 'Search actions'}),
+      'abc',
+    );
+    await user.click(screen.getByRole('button', {name: /Labels/}));
+    const labelsField = await screen.findByRole('textbox', {
+      name: 'Filter labels',
+    });
+    expect(labelsField).toHaveValue('');
+    await user.type(labelsField, 'xyz');
+    await user.click(screen.getByRole('button', {name: 'Back'}));
+    await user.click(await screen.findByRole('button', {name: /Tags/}));
+    expect(
+      await screen.findByRole('textbox', {name: 'Filter tags'}),
+    ).toHaveValue('');
+  });
+
+  it('the bottom sheet keeps the level that was opened when another row shares its label', async () => {
+    const user = userEvent.setup();
+    function SizesMenu({withIds}: {withIds: boolean}) {
+      const [count, setCount] = useState(0);
+      const header = (name: string) => (
+        <button type="button" onClick={() => setCount(c => c + 1)}>
+          {name} {count}
+        </button>
+      );
+      return (
+        <DropdownMenu
+          button={{label: 'Format'}}
+          presentation="bottom-sheet"
+          items={[
+            {
+              label: 'Size',
+              id: withIds ? 'text-size' : undefined,
+              header: header('Text sizes'),
+              items: [{label: 'Small text'}],
+            },
+            {
+              label: 'Size',
+              id: withIds ? 'image-size' : undefined,
+              header: header('Image sizes'),
+              items: [{label: 'Small image'}],
+            },
+          ]}
+        />
+      );
+    }
+    for (const withIds of [false, true]) {
+      const {unmount} = render(<SizesMenu withIds={withIds} />);
+      await user.click(screen.getByRole('button', {name: /Format/}));
+      await user.click(screen.getAllByRole('button', {name: /^Size/})[1]);
+      await screen.findByRole('button', {name: /Small image/});
+      // The header re-renders the menu with fresh items.
+      await user.click(screen.getByRole('button', {name: /Image sizes 0/}));
+      expect(
+        screen.getByRole('button', {name: /Small image/}),
+      ).toBeInTheDocument();
+      expect(screen.queryByRole('button', {name: /Small text/})).toBeNull();
+      // With an id the level is found again and stays live; without one it
+      // keeps the shape it was opened with.
+      expect(
+        screen.getByRole('button', {
+          name: withIds ? 'Image sizes 1' : 'Image sizes 0',
+        }),
+      ).toBeInTheDocument();
+      unmount();
+    }
   });
 
   describe('on a phone', () => {
