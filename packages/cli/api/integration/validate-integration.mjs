@@ -12,7 +12,7 @@
  *   - validateLocalIntegration(cwd)  — the package rooted at `cwd` (nearest
  *     package.json + sibling astryx.integration.{ts,mjs,js}).
  *   - validateInstalledIntegration(spec, cwd) — an installed package resolved
- *     from `cwd`/node_modules.
+ *     from the node_modules chain at or above `cwd`.
  *
  * Both return a { found, name, version, manifestFile, issues } result. `found`
  * is false only for the no-manifest local case, which is guidance (not an
@@ -52,7 +52,7 @@ import {
 import {
   findManifestPaths,
   loadManifest,
-  resolvePackageDir,
+  resolveInstalledIntegrationDir,
 } from '../../foundation/integrations/integrations.mjs';
 // The on-disk contribution validators live in foundation: Project and
 // integration-warnings need them too, and foundation must not depend on api.
@@ -595,20 +595,21 @@ function packageJsonFieldIssues(pkg, pkgJsonPath) {
 }
 
 /**
- * Validate an INSTALLED integration package resolved from `cwd`/node_modules.
+ * Validate an INSTALLED integration package: the nearest `node_modules/<spec>`
+ * at or above `cwd`, resolved the way the project loads it.
  * @param {string} spec package name
  * @param {string} [cwd]
  * @returns {Promise<ValidateResult>}
  */
 export async function validateInstalledIntegration(spec, cwd = process.cwd()) {
-  // resolvePackageDir throws (path-safety guard) on a spec with path segments,
+  // The resolver throws (path-safety guard) on a spec with path segments,
   // `..`, or an absolute path. Every other malformed input to this command
   // degrades into a diagnostic — so catch it here and return an issue instead
   // of letting the throw escape to a raw stack (human) / generic ERR_UNKNOWN
   // (--json).
   let packageDir;
   try {
-    packageDir = resolvePackageDir(spec, cwd);
+    packageDir = resolveInstalledIntegrationDir(spec, cwd);
   } catch (err) {
     return {
       found: true,

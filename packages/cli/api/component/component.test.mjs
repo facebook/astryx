@@ -135,6 +135,21 @@ describe('component list — components whose docs live in a family folder', () 
     });
   }, SLOW);
 
+  it('answers a Core-scoped lookup of a member with that member, as the unscoped lookup does', async () => {
+    for (const name of ['HStack', 'VStack']) {
+      const unscoped = await component(name, {cwd});
+      const scoped = await component(name, {
+        cwd,
+        package: '@astryxdesign/core',
+      });
+      expect(scoped.data.name).toBe(name);
+      expect(scoped.data.parentDoc).toBe('Stack');
+      expect(scoped.data.import).toBe(`@astryxdesign/core/${name}`);
+      expect(scoped.data.props).toEqual(unscoped.data.props);
+      expect(scoped.data.props.length).toBeGreaterThan(0);
+    }
+  }, SLOW);
+
   it('prints each one\'s own import path in the list, the detail, and search', async () => {
     // The path `component <Name>` prints is the one docs and examples teach:
     // the component's own entry point, never its family's (/Stack, /Text) or
