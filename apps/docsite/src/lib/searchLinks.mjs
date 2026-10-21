@@ -25,6 +25,8 @@
  * @property {string[]} components - Component and hook names with a page.
  * @property {string[]} templates - Page template slugs with a page.
  * @property {Record<string, string>} blocks - Block name -> the page that shows it.
+ * @property {Record<string, string>} titles - Doc page slug, or a key of
+ *   `anchors`, -> the title the site shows for it.
  */
 
 /**
@@ -37,7 +39,7 @@
 /**
  * The tables a result's link is read from.
  * @param {object} site
- * @param {Array<{topic: string, sections?: Array<{id?: string, title: string}>}>} site.docTopics
+ * @param {Array<{topic: string, title?: string, sections?: Array<{id?: string, title: string}>}>} site.docTopics
  * @param {Record<string, string>} site.docRedirects
  * @param {string[]} site.components
  * @param {string[]} site.templates
@@ -50,6 +52,8 @@
 export function searchLinkTables(site) {
   /** @type {Record<string, string>} */
   const anchors = {};
+  /** @type {Record<string, string>} */
+  const titles = {};
   // A namespace page (and a merged page) holds the sections of several
   // guides, and a section key is unique only within its guide. Each guide's
   // slug redirects to its first section, so the redirects give each guide's
@@ -74,6 +78,7 @@ export function searchLinkTables(site) {
   for (const page of site.docTopics) {
     const ids = pageAnchors.get(page.topic) ?? [];
     const guides = (starts.get(page.topic) ?? []).sort((a, b) => a[0] - b[0]);
+    titles[page.topic] = page.title ?? page.topic;
     (page.sections ?? []).forEach((section, i) => {
       if (!section.id) return;
       // The guides whose range holds this section: the latest start at or
@@ -88,6 +93,9 @@ export function searchLinkTables(site) {
           .map(([, slug]) => `${slug}#${section.id}`),
       ];
       for (const key of keys) {
+        if (!Object.hasOwn(titles, key)) {
+          titles[key] = `${page.title ?? page.topic} › ${section.title}`;
+        }
         if (!Object.hasOwn(anchors, key))
           anchors[key] = `/docs/${page.topic}#${ids[i]}`;
       }
@@ -121,6 +129,7 @@ export function searchLinkTables(site) {
     components: [...components].sort(),
     templates: [...templates].sort(),
     blocks,
+    titles,
   };
 }
 
@@ -160,7 +169,7 @@ function docPage(route, tables) {
 
 /**
  * The site path a search result opens.
- * @param {{domain: string, name: string, section?: string, kind?: string}} result
+ * @param {{domain: string, name: string, package?: string, section?: string, kind?: string}} result
  * @param {SearchLinkTables} tables
  * @returns {string}
  */
@@ -174,9 +183,18 @@ export function searchResultHref(result, tables) {
         : '/components';
     case 'template':
       if (result.kind === 'block') {
-        return Object.hasOwn(tables.blocks, result.name)
-          ? tables.blocks[result.name]
-          : '/templates';
+        // A Core block's page is keyed by its name; an integration's by
+        // `<package>-<name>`, as the site names its folder.
+        for (const key of [
+          result.name,
+          `${result.package ?? ''}-${result.name}`.replace(
+            /[^a-zA-Z0-9_-]/g,
+            '-',
+          ),
+        ]) {
+          if (Object.hasOwn(tables.blocks, key)) return tables.blocks[key];
+        }
+        return '/templates';
       }
       return templates.has(result.name)
         ? `/templates/${result.name}`
@@ -198,4 +216,32 @@ export function searchResultHref(result, tables) {
     default:
       return '/';
   }
+}
+
+/**
+ * The title the site shows for a doc result: its page's title, and the
+ * section's, as the sidebar and page outline name them. Other results keep
+ * the CLI's name.
+ * @param {{domain: string, name: string, section?: string, title?: string}} result
+ * @param {string} href - searchResultHref of the result.
+ * @param {SearchLinkTables} tables
+ * @returns {string | undefined}
+ */
+export function searchResultTitle(result, href, tables) {
+  if (result.domain !== 'doc') return undefined;
+  if (result.section) {
+    const own = `${result.name.replaceAll('/', '-')}#${result.section}`;
+    if (Object.hasOwn(tables.titles, own)) return tables.titles[own];
+  }
+  const slug = href.replace(/^\/docs\/?/, '').replace(/#.*$/, '');
+  if (
+    result.section &&
+    Object.hasOwn(tables.titles, `${slug}#${result.section}`)
+  ) {
+    return tables.titles[`${slug}#${result.section}`];
+  }
+  if (Object.hasOwn(tables.titles, slug)) return tables.titles[slug];
+  // A doc with no page of its own (an API or command reference) keeps the
+  // CLI's title, without the docs tree's placeholder level for unfiled docs.
+  return result.title?.replace(/^Unorganized › /, '');
 }

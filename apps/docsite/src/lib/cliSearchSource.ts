@@ -44,7 +44,7 @@ export function toSearchItem(
 ): CliSearchItem {
   const label =
     result.domain === 'doc'
-      ? (result.title ?? result.name)
+      ? (result.siteTitle ?? result.title ?? result.name)
       : (result.displayName ?? result.name);
   return {
     // Two results can open the same page (sections, blocks), so the id is

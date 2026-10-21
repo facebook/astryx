@@ -85,7 +85,9 @@ describe('site search = astryx search', () => {
         const {results: cliResults, ...cliRest} = printed[i].data;
         expect(rest, query).toEqual(cliRest);
         expect(
-          results.map(({href: _href, ...result}) => result),
+          results.map(
+            ({href: _href, siteTitle: _siteTitle, ...result}) => result,
+          ),
           query,
         ).toEqual(cliResults);
       }
@@ -181,6 +183,46 @@ describe('site search links', () => {
       expect(hrefs.size, group).toBe(starts.size);
     }
   });
+
+  it("opens an integration's example block on its component page", () => {
+    const blocks = Object.entries(links.blocks).filter(([key]) =>
+      key.startsWith('-astryxdesign-'),
+    );
+    expect(blocks.length).toBeGreaterThan(0);
+    for (const [key, page] of blocks) {
+      const [, pkg, name] = /^-astryxdesign-([a-z]+)-(.+)$/.exec(key)!;
+      expect(
+        searchResultHref(
+          {
+            domain: 'template',
+            kind: 'block',
+            name,
+            package: `@astryxdesign/${pkg}`,
+          },
+          links,
+        ),
+        key,
+      ).toBe(page);
+    }
+  });
+
+  it(
+    'titles doc results the way the site does, never with the docs-tree path',
+    async () => {
+      for (const query of [
+        'authoring',
+        'how do I theme my app',
+        'tokens spacing',
+      ]) {
+        for (const result of (await api(query)).data.results) {
+          if (result.domain !== 'doc') continue;
+          expect(result.siteTitle, `${query}: ${result.name}`).toBeTruthy();
+          expect(result.siteTitle).not.toMatch(/Unorganized/);
+        }
+      }
+    },
+    SLOW,
+  );
 
   it('opens a doc section at its anchor', () => {
     const href = searchResultHref(

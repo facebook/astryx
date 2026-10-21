@@ -123,7 +123,11 @@ for each bug.
   docs, and Docsite-authored content remain workspace-backed on both targets where
   the pipeline currently declares that boundary. A projection MUST NOT describe
   workspace-backed content as release-pinned merely because the build target is
-  `latest`.
+  `latest`. Site search is workspace-backed on both targets: it runs the CLI the
+  site builds with, over the workspace docs and packages that CLI reads, the same
+  source as the site's CLI reference pages. On `latest` it leaves out
+  integrations without published docs, and a result whose page is not published
+  links to the nearest published index page.
 - **FR6 — Canary status is projected once at the owning level.** A surface SHOULD
   group canary status at the package or category level when children share it,
   instead of repeating a marker on every item. The install command, search result,
@@ -424,7 +428,8 @@ choice, and using the compatibility origin for visual or test evidence.
 **Decider:** `josephfarina`, `2026-10-21`
 
 Maintainer decision: site search uses the CLI's search instead of a separate index
-derived from the registries. One ranking implementation means every search
+derived from the registries, and reads the workspace docs the site builds with on
+every target, so each search improvement reaches the live site. One ranking implementation means every search
 improvement reaches the site with no copy to keep in sync. A parity test holds the
 endpoint equal to `astryx search --json` for the site's project.
 

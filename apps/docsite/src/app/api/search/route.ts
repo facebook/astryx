@@ -13,7 +13,10 @@
  */
 
 import {search} from '@astryxdesign/cli/api';
-import {searchResultHref} from '../../../lib/searchLinks.mjs';
+import {
+  searchResultHref,
+  searchResultTitle,
+} from '../../../lib/searchLinks.mjs';
 import type {SearchLinkTables} from '../../../lib/searchLinks.mjs';
 import links from '../../../generated/searchLinks.json';
 import admitted from '../../../generated/integrationPackages.json';
@@ -46,22 +49,30 @@ export async function GET(request: Request): Promise<Response> {
       {status: 400},
     );
   }
-  // When this build leaves out an integration, ask for more and drop its
-  // results before cutting to the panel's 20; otherwise this is exactly
-  // `astryx search <query>`.
+  // When this build leaves out an integration, ask for every match, drop
+  // that integration's, then count and cut to the panel's 20; otherwise this
+  // is exactly `astryx search <query>`.
   const response = await search(query, {
     cwd: process.cwd(),
-    ...(FILTERED ? {limit: LIMIT * 4} : {}),
+    ...(FILTERED ? {limit: Number.MAX_SAFE_INTEGER} : {}),
   });
-  const results = response.data.results
-    .filter(result => result.package == null || DOCUMENTED.has(result.package))
-    .slice(0, LIMIT)
-    .map(result => ({
-      ...result,
-      href: searchResultHref(result, links as SearchLinkTables),
-    }));
+  const kept = FILTERED
+    ? response.data.results.filter(
+        result => result.package == null || DOCUMENTED.has(result.package),
+      )
+    : response.data.results;
+  const matchCount = FILTERED ? kept.length : response.data.matchCount;
+  const results = kept.slice(0, LIMIT).map(result => {
+    const href = searchResultHref(result, links as SearchLinkTables);
+    const siteTitle = searchResultTitle(
+      result,
+      href,
+      links as SearchLinkTables,
+    );
+    return {...result, href, ...(siteTitle ? {siteTitle} : {})};
+  });
   return Response.json(
-    {...response, data: {...response.data, results}},
+    {...response, data: {...response.data, matchCount, results}},
     {
       // A query's answer changes only when the site is rebuilt.
       headers: {'Cache-Control': 'public, max-age=300, s-maxage=86400'},
