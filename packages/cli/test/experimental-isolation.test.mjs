@@ -69,6 +69,11 @@ function withoutComputerChecks(stdout) {
   const summary = {pass: 0, warn: 0, fail: 0, info: 0};
   report.data.checks = report.data.checks.map((/** @type {any} */ check) => {
     if (COMPUTER_CHECKS.has(check.id)) return {id: check.id};
+    // The Node version is the machine's, not the project's.
+    if (check.id === 'node-version') {
+      summary[/** @type {keyof typeof summary} */ (check.status)] += 1;
+      return {...check, message: check.message.replace(/v\d+\.\d+\.\d+/, 'v<node>')};
+    }
     summary[/** @type {keyof typeof summary} */ (check.status)] += 1;
     return check;
   });

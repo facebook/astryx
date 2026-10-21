@@ -7,7 +7,7 @@
         "id": "node-version",
         "label": "Node.js version",
         "status": "pass",
-        "message": "Node v22.23.2 meets the minimum (>=22.13.0)."
+        "message": "Node v<node> meets the minimum (>=22.13.0)."
       },
       {
         "id": "core-installed",
