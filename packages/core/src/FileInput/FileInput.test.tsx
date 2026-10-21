@@ -512,6 +512,33 @@ describe('FileInput', () => {
 
   describe('validation', () => {
     it.each([
+      {maxSize: 0, expected: '0 B'},
+      {maxSize: 1023, expected: '1023 B'},
+      {maxSize: 1024, expected: '1.0 KB'},
+      {maxSize: 1048575, expected: '1024.0 KB'},
+      {maxSize: 1048576, expected: '1.0 MB'},
+      {maxSize: 1572864, expected: '1.5 MB'},
+    ])(
+      'preserves the English size boundary at $maxSize bytes',
+      ({maxSize, expected}) => {
+        render(
+          <FileInput
+            label="Upload"
+            value={null}
+            onChange={() => {}}
+            maxSize={maxSize}
+          />,
+        );
+        fireEvent.change(fileInputEl(), {
+          target: {files: [createFile('big.txt', maxSize + 1)]},
+        });
+        expect(
+          screen.getByText(`"big.txt" exceeds ${expected} limit`),
+        ).toBeInTheDocument();
+      },
+    );
+
+    it.each([
       {
         maxSize: 512,
         sizeKey: 'bytes',
@@ -521,13 +548,13 @@ describe('FileInput', () => {
       {
         maxSize: 1536,
         sizeKey: 'kilobytes',
-        message: '{size, number, ::precision-fixed/1} ko',
+        message: '{size, number, ::.0} ko',
         expected: '1,5 ko',
       },
       {
         maxSize: 1572864,
         sizeKey: 'megabytes',
-        message: '{size, number, ::precision-fixed/1} Mo',
+        message: '{size, number, ::.0} Mo',
         expected: '1,5 Mo',
       },
     ])(

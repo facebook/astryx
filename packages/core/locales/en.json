@@ -1292,11 +1292,11 @@
     "description": "File-size limit below 1024 bytes in FileInput validation feedback. {size} is a number of bytes. Localize the unit abbreviation; do not add digit grouping."
   },
   "@astryx.fileInput.fileSize.kilobytes": {
-    "defaultMessage": "{size, number, ::precision-fixed/1 group-off} KB",
+    "defaultMessage": "{size, number, :: .0 group-off} KB",
     "description": "File-size limit from 1024 bytes up to one megabyte in FileInput validation feedback. {size} is bytes divided by 1024, displayed to one decimal place without digit grouping. Localize the unit abbreviation."
   },
   "@astryx.fileInput.fileSize.megabytes": {
-    "defaultMessage": "{size, number, ::precision-fixed/1 group-off} MB",
+    "defaultMessage": "{size, number, :: .0 group-off} MB",
     "description": "File-size limit of at least one megabyte in FileInput validation feedback. {size} is bytes divided by 1048576, displayed to one decimal place without digit grouping. Localize the unit abbreviation."
   },
   "@astryx.fileInput.filesSelected": {

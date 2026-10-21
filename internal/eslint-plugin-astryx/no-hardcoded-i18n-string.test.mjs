@@ -2,9 +2,8 @@
 
 /**
  * @file no-hardcoded-i18n-string.test.mjs
- * @description Tests for the no-hardcoded-i18n-string ESLint rule, focused on
- * the call-argument surface (announce() live-region messages) plus a few
- * anchor cases for the pre-existing JSX-attribute surface.
+ * @description Tests for the no-hardcoded-i18n-string ESLint rule: formatter
+ * returns, announce() live-region messages, and JSX-attribute anchors.
  */
 
 import {RuleTester} from 'eslint';
@@ -64,6 +63,13 @@ ruleTester.run('no-hardcoded-i18n-string', noHardcodedI18nStringRule, {
     // --- Formatter/helper returns ---
     {code: "function formatLabel(count) { return t('items.count', {count}); }"},
     {code: "const getStatusText = () => t('status.ready');"},
+    {code: 'const formatRangeDisplay = (start, end) => `${start} – ${end}`;'},
+    {
+      code: 'function formatDevMessage(prefix, message) { return `${prefix}: ${message}`; }',
+    },
+    {
+      code: 'function formatShortcut(parts) { return `${parts[0]} + ${parts[1]}`; }',
+    },
     {code: 'function formatValue(value) { return value; }'},
     {code: 'const formatCount = count => `${count}`;'},
     {code: "function getIdentifier() { return 'Internal value'; }"},
@@ -144,6 +150,8 @@ ruleTester.run('no-hardcoded-i18n-string', noHardcodedI18nStringRule, {
     },
     // --- Formatter/helper returns ---
     ...[
+      "function format() { return 'No results'; }",
+      "function getString() { return 'No results'; }",
       'function formatLabel(count) { return `${count} chars`; }',
       "function formatFileSize(bytes) { return bytes + ' B'; }",
       'const formatLabel = count => `${count} chars`;',
