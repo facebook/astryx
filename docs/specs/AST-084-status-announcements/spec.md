@@ -11,9 +11,9 @@ approved_at: 2026-10-15
 phase: accepted
 owners: [cixzhang]
 affects_architecture: [architecture:react-component-runtime]
-affects_families: []
+affects_families: [family:input-fields]
 affects_contributing: []
-affects_consumer_docs: [hook:useAnnounce]
+affects_consumer_docs: [useAnnounce, ChatTypingIndicator]
 ---
 
 # Status announcement delivery system spec
@@ -97,8 +97,20 @@ announcement channel.
   mounts with `role="status"`. Under FR8 the thumb Spinner is silent. Under FR6
   StrictMode replay does not repeat the busy announcement.
 - Spinner (standalone): mounts with `role="status"` and its name. Under FR2 it
-  announces its label through the channel when it appears. Its non-live
-  exposure is decided by the Spinner record.
+  announces its label through the channel when it appears. The role and name it
+  exposes without a live role are outside this record.
+- `family:input-fields` members and other busy controls (TextInput, TextArea,
+  Selector, MultiSelector, ComplexSelector, Typeahead, Tokenizer, the date and
+  time inputs, FileInput, CheckboxInput, CommandPaletteInput,
+  DropdownMenuSubMenu, Thumbnail): each composes a Spinner with
+  `role="status"` inside the busy control. Under FR8 that Spinner is silent.
+- ChatMessageList: its top loading Spinner is a `role="status"` child of the
+  log. Under FR4 and FR8 it is silent.
+- EmptyState, the ChatComposer status bar, and the chat trigger menu's loading
+  row: each mounts a live role together with its text. Under FR2 the message
+  goes through the channel and the element carries no live role.
+- Button: its persistent loading region fits FR3, except when a Button first
+  renders loading and the region mounts holding its text.
 - ChatSystemMessage: forces `role="status"` inside the `role="log"` list. Under
   FR4 the log delivers it; dividers and dates are ordinary log content.
 - ChatTypingIndicator (lab): mounts with `role="status"` and text. It follows
@@ -109,15 +121,16 @@ announcement channel.
 
 ## Verification
 
-| Contract | Verification                                         | Representative states                                          | Mutation or failure expectation                                  |
-| -------- | ---------------------------------------------------- | -------------------------------------------------------------- | ---------------------------------------------------------------- |
-| FR1, FR4 | Shared test: one live owner per announced message    | Toast shown; busy Switch; system notice inside a chat log      | Adding a live role to a second element fails                     |
-| FR2, FR3 | Shared test: no live element mounts holding its text | Conditional status, toast card, standalone Spinner             | Mounting `role="status"` with text fails                         |
-| FR5      | Channel routing tests                                | Error, warning, success, loading                               | Routing an error to polite, or a success to assertive, fails     |
-| FR6      | StrictMode and rerender tests on the channel spy     | Busy start, repeated rerender, same-value update, new occasion | Two announcements for one occasion, or none for a new one, fails |
-| FR7      | Accessibility-tree check of the visible message      | FieldStatus attached/detached, toast card                      | Hiding the visible text or a word mismatch fails                 |
-| FR9      | `useAnnounce` tests                                  | First use, many components, region removed, server render      | A second region pair, or stale text after the clear delay, fails |
-| FR6 (AT) | `spec:AST-009` real-AT receipt                       | Toast, busy Switch, chat notice                                | Missing, repeated, or out-of-order speech fails                  |
+| Contract | Verification                                         | Representative states                                          | Mutation or failure expectation                                     |
+| -------- | ---------------------------------------------------- | -------------------------------------------------------------- | ------------------------------------------------------------------- |
+| FR1, FR4 | Shared test: one live owner per announced message    | Toast shown; busy Switch; system notice inside a chat log      | Adding a live role to a second element fails                        |
+| FR2, FR3 | Shared test: no live element mounts holding its text | Conditional status, toast card, standalone Spinner             | Mounting `role="status"` with text fails                            |
+| FR5      | Channel routing tests                                | Error, warning, success, loading                               | Routing an error to polite, or a success to assertive, fails        |
+| FR6      | StrictMode and rerender tests on the channel spy     | Busy start, repeated rerender, same-value update, new occasion | Two announcements for one occasion, or none for a new one, fails    |
+| FR7      | Accessibility-tree check of the visible message      | FieldStatus attached/detached, toast card                      | Hiding the visible text or a word mismatch fails                    |
+| FR8      | Shared test: no live role inside a busy owner        | Busy TextInput, Selector, Switch thumb, ChatMessageList loader | A composed indicator with a live role or its own announcement fails |
+| FR9      | `useAnnounce` tests                                  | First use, many components, region removed, server render      | A second region pair, or stale text after the clear delay, fails    |
+| FR6 (AT) | `spec:AST-009` real-AT receipt                       | Toast, busy Switch, chat notice                                | Missing, repeated, or out-of-order speech fails                     |
 
 ## Decision log
 
@@ -132,8 +145,8 @@ message twice or not at all. One owner and one shared, always-mounted channel
 removes both failures with a single rule, and matches the delivery
 `component:FieldStatus` already uses.
 
-Rejected: each component keeps its own always-mounted live region — the page
-gains many competing regions and the duplicate-owner failure recurs.
+Rejected: delivering transient messages through each component's own live
+region — the page gains many competing regions and two-owner duplicates recur.
 
 ## Open questions
 
