@@ -1102,6 +1102,7 @@ describe('integrationDocConflicts stray doc pointers', () => {
     expect(own).toMatchObject({
       topic: 'acme-menus',
       section: 'Overview',
+      file: 'docs/acme-menus.doc.mjs',
       line: 1,
       pointer: 'astryx docs acme-setup',
       link: '{@link generic:acme-setup}',
