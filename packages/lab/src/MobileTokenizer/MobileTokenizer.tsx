@@ -376,8 +376,11 @@ export function MobileTokenizer<T extends SearchableItem>({
         aria-haspopup="dialog"
         aria-expanded={activeSheet != null}
         aria-label={label}
-        disabled={isDisabled}
+        aria-disabled={isDisabled || undefined}
         onClick={() => {
+          if (isDisabled) {
+            return;
+          }
           setSelectedItemsAtOpen(value);
           lastLoadScrollHeightRef.current = null;
           setRenderedItemCount(LIST_RENDER_BATCH_SIZE);
@@ -500,10 +503,17 @@ export function MobileTokenizer<T extends SearchableItem>({
                         role="checkbox"
                         aria-checked={isSelected}
                         aria-label={item.label}
-                        disabled={rowDisabled}
-                        onClick={() =>
-                          isSelected ? handleRemove(item) : handleAdd(item)
-                        }
+                        aria-disabled={rowDisabled || undefined}
+                        onClick={() => {
+                          if (rowDisabled) {
+                            return;
+                          }
+                          if (isSelected) {
+                            handleRemove(item);
+                          } else {
+                            handleAdd(item);
+                          }
+                        }}
                         {...stylex.props(styles.row)}>
                         <span {...stylex.props(styles.rowLabel)}>
                           <Text type="body">{item.label}</Text>

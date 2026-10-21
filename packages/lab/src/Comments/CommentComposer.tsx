@@ -439,10 +439,12 @@ export function CommentComposerBase({
                     accept="image/*"
                     multiple
                     hidden
-                    disabled={isBusy}
                     onChange={event => {
                       const files = Array.from(event.currentTarget.files ?? []);
                       event.currentTarget.value = '';
+                      if (isBusy) {
+                        return;
+                      }
                       beginImageUpload(files);
                     }}
                   />

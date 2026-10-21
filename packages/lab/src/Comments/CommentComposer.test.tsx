@@ -185,6 +185,30 @@ describe('CommentComposer', () => {
     );
   });
 
+  it('keeps the image picker free of native disabled and refuses files while busy (AST-085 FR1, FR2)', async () => {
+    const onUploadImages = vi.fn();
+    render(
+      <CommentComposer
+        value="Draft"
+        onChange={() => {}}
+        onSubmit={() => {}}
+        onUploadImages={onUploadImages}
+        isSubmitting
+      />,
+    );
+    const input = document.querySelector('input[type="file"]');
+    if (!(input instanceof HTMLInputElement)) {
+      throw new Error('File input not found');
+    }
+    expect(input).not.toHaveAttribute('disabled');
+    const file = new File(['png'], 'chart.png', {type: 'image/png'});
+    await act(async () => {
+      fireEvent.change(input, {target: {files: [file]}});
+      await Promise.resolve();
+    });
+    expect(onUploadImages).not.toHaveBeenCalled();
+  });
+
   it('refuses files that are not images', async () => {
     const onUploadImages = vi.fn();
     render(

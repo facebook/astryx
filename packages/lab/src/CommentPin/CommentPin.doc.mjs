@@ -115,7 +115,7 @@ export const docs = {
       name: 'isDisabled',
       type: 'boolean',
       description:
-        'Disables activation with native button semantics. Useful for a pending anchor before its thread exists.',
+        'Blocks activation while the pin stays focusable and exposes `aria-disabled`. Useful for a pending anchor before its thread exists.',
       default: 'false',
     },
     {
@@ -149,7 +149,7 @@ export const docs = {
         category: 'Keyboard',
         criterion: '2.1.1 Keyboard',
         description:
-          'CommentPin is one native button. Tab reaches an enabled pin; Enter and Space activate it. A disabled pin uses native disabled semantics and is removed from sequential focus order.',
+          'CommentPin is one native button. Tab reaches every pin; Enter and Space activate an enabled one. A disabled pin keeps its place in the focus order, exposes `aria-disabled`, and does not activate.',
       },
       {
         name: 'Selected state and name',
@@ -294,7 +294,7 @@ export const docsZh = {
     isSelected: '标记是否为当前批注目标；再次激活已选中的标记时，宿主应清除选择（aria-pressed 切换语义）。',
     isDimmed: '其他标记被选中时降低此标记的视觉突出度，但不禁用操作；未选中任何标记时不应降低。',
     isResolved: '所代表的线程是否都已解决。',
-    isDisabled: '使用原生按钮语义禁用激活。',
+    isDisabled: '阻止激活，标记仍可聚焦并暴露 `aria-disabled`。',
     onClick: '由产品拥有的激活处理函数。',
     xstyle: '根按钮的 StyleX 布局样式；由宿主决定内容上方或边距中的位置。',
   },
@@ -321,7 +321,7 @@ export const docsDense = {
     isSelected: 'controlled active pin; solid 2px accent outline outside the pin + aria-pressed; host clears it when the selected pin is activated again',
     isDimmed: 'controlled de-emphasis for non-selected siblings only while another pin is selected; remains interactive',
     isResolved: 'controlled lower-prominence resolved state',
-    isDisabled: 'native disabled marker',
+    isDisabled: 'focusable, non-activating marker (aria-disabled)',
     onClick: 'host activation handler',
     xstyle: 'root layout/positioning styles; marker owns no coordinates',
   },

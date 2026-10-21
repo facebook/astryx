@@ -177,7 +177,7 @@ describe('CommentPin', () => {
       name: 'Resolved selected annotation',
     });
     expect(marker).toHaveAttribute('aria-pressed', 'true');
-    expect(marker).toBeDisabled();
+    expect(marker).toHaveAttribute('aria-disabled', 'true');
     expect(marker).toHaveAttribute('data-selected', 'selected');
     expect(marker).toHaveAttribute('data-resolved', 'resolved');
     expect(marker).toHaveAttribute('data-disabled', 'disabled');
@@ -245,7 +245,12 @@ describe('CommentPin', () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole('button', {name: 'Pending annotation'}));
+    const pin = screen.getByRole('button', {name: 'Pending annotation'});
+    expect(pin).not.toHaveAttribute('disabled');
+    expect(pin).toHaveAttribute('aria-disabled', 'true');
+    pin.focus();
+    expect(pin).toHaveFocus();
+    fireEvent.click(pin);
     expect(onClick).not.toHaveBeenCalled();
   });
 

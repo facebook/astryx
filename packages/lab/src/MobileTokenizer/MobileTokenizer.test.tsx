@@ -337,4 +337,47 @@ describe('MobileTokenizer (Lab, single-sheet flow)', () => {
       expect.objectContaining({type: 'remove'}),
     );
   });
+
+  it('keeps a disabled trigger focusable without opening the sheet (AST-085 FR1, FR2)', () => {
+    render(
+      <MobileTokenizer
+        label="Tags"
+        searchSource={source}
+        value={[ITEMS[0]]}
+        onChange={() => {}}
+        isDisabled
+      />,
+    );
+    const trigger = screen.getByRole('button', {name: /Tags/});
+    expect(trigger).not.toHaveAttribute('disabled');
+    expect(trigger).toHaveAttribute('aria-disabled', 'true');
+    trigger.focus();
+    expect(trigger).toHaveFocus();
+    fireEvent.click(trigger);
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    expect(
+      screen.queryByTestId('mobile-tokenizer-list'),
+    ).not.toBeInTheDocument();
+  });
+
+  it('keeps an unselectable row at the limit focusable but inert (AST-085 FR1, FR2)', async () => {
+    const spy = vi.fn();
+    render(
+      <MobileTokenizer
+        label="Tags"
+        searchSource={source}
+        value={[ITEMS[0]]}
+        maxEntries={1}
+        debounceMs={0}
+        onChange={spy}
+      />,
+    );
+    fireEvent.click(screen.getByRole('button', {name: /Tags/}));
+    const row = await screen.findByRole('checkbox', {name: 'Energizer'});
+    expect(row).not.toHaveAttribute('disabled');
+    expect(row).toHaveAttribute('aria-disabled', 'true');
+    fireEvent.click(row);
+    expect(spy).not.toHaveBeenCalled();
+    expect(row).toHaveAttribute('aria-checked', 'false');
+  });
 });

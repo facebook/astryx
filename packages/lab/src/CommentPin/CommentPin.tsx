@@ -337,6 +337,7 @@ export function CommentPin({
   isDimmed = false,
   isResolved = false,
   isDisabled = false,
+  onClick,
   ref,
   xstyle,
   className,
@@ -408,7 +409,18 @@ export function CommentPin({
       type="button"
       aria-label={label}
       aria-pressed={isSelected}
-      disabled={isDisabled}
+      aria-disabled={isDisabled || undefined}
+      onClick={event => {
+        if (isDisabled) {
+          // The disabled pin stays focusable (spec:AST-085 FR1), so the DOM
+          // still dispatches its click: keep it from the caller and from an
+          // ancestor's handler, as a natively disabled button would.
+          event.preventDefault();
+          event.stopPropagation();
+          return;
+        }
+        onClick?.(event);
+      }}
       {...mergeProps(
         themeProps('comment-pin', {
           grouped: isGrouped ? 'grouped' : null,
