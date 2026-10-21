@@ -8,6 +8,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const {classifyChanges} = require('./change-scope.cjs');
 const {
+  baseTouchedChangedPaths,
   carryCandidates,
   differingPaths,
   isApprovalMetadataOnlyChange,
@@ -61,13 +62,15 @@ function ownerCommandHelpMarker(headSha) {
 function ownerCommandHelpBody({verb, headSha, problem}) {
   return [
     ownerCommandHelpMarker(headSha),
-    `That \`/${verb}-spec\` comment did not change \`${GATE_STATUS_CONTEXT}\`: ${problem}.`,
+    `That \`/${verb}-spec\` comment did not decide \`${GATE_STATUS_CONTEXT}\` for the current head: ${problem}.`,
     '',
-    'The gate only accepts the exact current head, so post this instead:',
+    'To decide the current head, post this instead:',
     '',
     `    /${verb}-spec ${headSha}`,
     '',
-    'An approval stays in force through a rebase or a commit that only records it in the records; any other new commit needs the command again.',
+    verb === 'revoke'
+      ? 'A revoke of an earlier head still stops any earlier approval from carrying to this head.'
+      : 'An approval stays in force through a rebase or a commit that only records it in the records; any other new commit needs the command again.',
   ].join('\n');
 }
 
@@ -537,29 +540,38 @@ async function reconcileSpecOwnerGate({
 
   // A near-miss owner command used to do nothing at all, so an owner could
   // believe they had approved a head the gate never read. Answer it once per
-  // head with the exact command instead of leaving it silent.
-  if (context.eventName === 'issue_comment' && commentAuthor) {
+  // head with the exact command instead of leaving it silent. An approval of
+  // an earlier head that this run carries did decide the gate, so it gets no
+  // answer.
+  async function answerInexactCommand(carriedFrom = null) {
+    if (context.eventName !== 'issue_comment' || !commentAuthor) return;
     const intent = parseOwnerCommandIntent(context.payload.comment?.body);
     const problem = describeOwnerCommandProblem(intent, initialHead);
-    const marker = ownerCommandHelpMarker(initialHead);
-    if (problem && !comments.some(entry => entry.body?.includes(marker))) {
-      await github.rest.issues.createComment({
-        owner,
-        repo,
-        issue_number: pullNumber,
-        body: ownerCommandHelpBody({
-          verb: intent.verb,
-          headSha: initialHead,
-          problem,
-        }),
-      });
-      core.info(
-        `Answered an inexact ${intent.verb} command on ${initialHead}.`,
-      );
+    if (!problem) return;
+    if (
+      intent.verb === 'approve' &&
+      carriedFrom &&
+      intent.argument.toLowerCase() === carriedFrom
+    ) {
+      return;
     }
+    const marker = ownerCommandHelpMarker(initialHead);
+    if (comments.some(entry => entry.body?.includes(marker))) return;
+    await github.rest.issues.createComment({
+      owner,
+      repo,
+      issue_number: pullNumber,
+      body: ownerCommandHelpBody({
+        verb: intent.verb,
+        headSha: initialHead,
+        problem,
+      }),
+    });
+    core.info(`Answered an inexact ${intent.verb} command on ${initialHead}.`);
   }
 
   if (!scope.touchesKnowledgeRecords) {
+    await answerInexactCommand();
     await disableAutoMerge(pr);
     await removeLabel(env.REVIEW_LABEL);
     await setFinalStatus(
@@ -627,6 +639,13 @@ async function reconcileSpecOwnerGate({
   const carryChecks = new Map();
   async function carriedDecision(decision, owners) {
     if (decision.approved || decision.source !== null) return decision;
+    // A relayed decision is a status on the head it names, and the gate reads
+    // statuses for the current head only. A relayed revoke of an intermediate
+    // head would go unseen, so while relays are enabled nothing carries.
+    if (env.SPEC_DECISION_APP) {
+      core.info('Relayed owner decisions are enabled; no approval carries.');
+      return decision;
+    }
     for (const candidate of carryCandidates({
       reviews,
       comments,
@@ -653,15 +672,55 @@ async function reconcileSpecOwnerGate({
     return decision;
   }
 
+  async function compare(basehead) {
+    const {data} = await github.rest.repos.compareCommitsWithBasehead({
+      owner,
+      repo,
+      basehead,
+    });
+    return data;
+  }
+
+  let headMergeBase;
+  async function headMergeBaseSha() {
+    if (headMergeBase === undefined) {
+      try {
+        const data = await compare(`${pr.base.sha}...${initialHead}`);
+        headMergeBase = data.merge_base_commit?.sha ?? null;
+      } catch (error) {
+        core.info(`Could not compare the current head: ${error.message}`);
+        headMergeBase = null;
+      }
+    }
+    return headMergeBase;
+  }
+
+  // True when the base branch left every changed path alone between the
+  // approved head's merge base and the current head's.
+  async function isBaseQuietBetween(approvedBase, changedFiles) {
+    const headBase = await headMergeBaseSha();
+    if (!approvedBase || !headBase) return false;
+    if (approvedBase === headBase) return true;
+    let data;
+    try {
+      data = await compare(`${approvedBase}...${headBase}`);
+    } catch (error) {
+      core.info(`Could not compare merge bases: ${error.message}`);
+      return false;
+    }
+    if (data.status !== 'ahead') return false;
+    const baseFiles = data.files ?? [];
+    if (baseFiles.length >= 300) return false;
+    return !baseTouchedChangedPaths(changedFiles, baseFiles);
+  }
+
   async function isUnchangedSince(candidate) {
     let approvedFiles;
+    let approvedBase;
     try {
-      const {data} = await github.rest.repos.compareCommitsWithBasehead({
-        owner,
-        repo,
-        basehead: `${pr.base.sha}...${candidate.headSha}`,
-      });
+      const data = await compare(`${pr.base.sha}...${candidate.headSha}`);
       approvedFiles = data.files;
+      approvedBase = data.merge_base_commit?.sha ?? null;
     } catch (error) {
       core.info(
         `Could not compare approved head ${candidate.headSha.slice(0, 7)}: ${error.message}`,
@@ -673,6 +732,11 @@ async function reconcileSpecOwnerGate({
     if (!scope.complete || (approvedFiles?.length ?? 0) >= 300) return false;
     const differing = differingPaths(approvedFiles, files);
     if (differing === null) return false;
+    if (
+      !(await isBaseQuietBetween(approvedBase, [...approvedFiles, ...files]))
+    ) {
+      return false;
+    }
     for (const file of differing) {
       if (
         !file.filename.endsWith('.md') ||
@@ -706,6 +770,11 @@ async function reconcileSpecOwnerGate({
   specDecision = await carriedDecision(specDecision, engineeringOwners);
   designDecision = await carriedDecision(designDecision, designApprovers);
   themeDecision = await carriedDecision(themeDecision, themeApprovers);
+  await answerInexactCommand(
+    [specDecision, designDecision, themeDecision]
+      .map(decision => decision.carriedFrom)
+      .find(Boolean) ?? null,
+  );
 
   const approved =
     specDecision.approved && designDecision.approved && themeDecision.approved;

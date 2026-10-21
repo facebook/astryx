@@ -6,6 +6,7 @@ import {describe, expect, it} from 'vitest';
 const require = createRequire(import.meta.url);
 const {
   MAX_CANDIDATE_HEADS,
+  baseTouchedChangedPaths,
   carryCandidates,
   differingPaths,
   isApprovalMetadataOnlyChange,
@@ -176,6 +177,33 @@ describe('isApprovalMetadataOnlyChange', () => {
         approval,
       ),
     ).toBe(false);
+  });
+
+  it('rejects redating a Decider line that already has a date', () => {
+    const before = record({decided: '2026-09-01'});
+    expect(
+      isApprovalMetadataOnlyChange(before, record(recorded), approval),
+    ).toBe(false);
+  });
+
+  it('rejects reassigning a Decider line that names a person', () => {
+    const before = record().replace(
+      '`cixzhang`, `<pending>`',
+      '`czarandy`, `<pending>`',
+    );
+    expect(
+      isApprovalMetadataOnlyChange(before, record(recorded), approval),
+    ).toBe(false);
+  });
+
+  it('accepts a placeholder Decider gaining the approver and date', () => {
+    const before = record().replace(
+      '`cixzhang`, `<pending>`',
+      '`<person>`, `<YYYY-MM-DD>`',
+    );
+    expect(
+      isApprovalMetadataOnlyChange(before, record(recorded), approval),
+    ).toBe(true);
   });
 
   it('rejects unreadable content or an unknown approval', () => {
@@ -352,5 +380,37 @@ describe('carryCandidates', () => {
     expect(
       carryCandidates({reviews: [], comments, owners, headSha: current}),
     ).toHaveLength(MAX_CANDIDATE_HEADS);
+  });
+});
+
+describe('baseTouchedChangedPaths', () => {
+  const changed = [
+    {filename: 'docs/specs/AST-1/spec.md'},
+    {filename: 'docs/new.md', previous_filename: 'docs/old.md'},
+  ];
+
+  it('finds a base edit to a changed path', () => {
+    expect(
+      baseTouchedChangedPaths(changed, [
+        {filename: 'docs/specs/AST-1/spec.md'},
+      ]),
+    ).toBe(true);
+  });
+
+  it('finds a base edit to a renamed path on either side', () => {
+    expect(baseTouchedChangedPaths(changed, [{filename: 'docs/old.md'}])).toBe(
+      true,
+    );
+    expect(
+      baseTouchedChangedPaths(changed, [
+        {filename: 'docs/moved.md', previous_filename: 'docs/new.md'},
+      ]),
+    ).toBe(true);
+  });
+
+  it('ignores base edits to other paths', () => {
+    expect(baseTouchedChangedPaths(changed, [{filename: 'README.md'}])).toBe(
+      false,
+    );
   });
 });

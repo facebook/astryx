@@ -139,6 +139,18 @@ function differingPaths(approvedFiles, headFiles) {
   return differing;
 }
 
+/**
+ * True when the base branch changed any path the pull request changes between
+ * the approved head's merge base and the current one. A rebase that resolved
+ * such a path by keeping the pull request's bytes would silently revert the
+ * base branch's edit, so the same bytes no longer mean the same change.
+ */
+function baseTouchedChangedPaths(changedFiles, baseFiles) {
+  const paths = file => [file.filename, file.previous_filename].filter(Boolean);
+  const changed = new Set(changedFiles.flatMap(paths));
+  return baseFiles.some(file => paths(file).some(name => changed.has(name)));
+}
+
 function unquote(value) {
   return value.replace(/^(['"])(.*)\1$/, '$2');
 }
@@ -183,17 +195,25 @@ function isApprovalFieldChange(before, after, {approver, dates}) {
   }
 }
 
+const PLACEHOLDER = /^<[^>]+>$/;
+
+// Only an undecided Decider line may gain the approval: a placeholder date
+// becomes the approval date, and a placeholder person may become the approver.
+// A line that already names a real date or person records an earlier decision,
+// which recording this approval must never rewrite.
 function isDeciderDateChange(before, after, {approver, dates}) {
   const beforeMatch = before.match(DECIDER_LINE);
   const afterMatch = after.match(DECIDER_LINE);
   if (!beforeMatch || !afterMatch) return false;
   const [, fromPerson, fromDate] = beforeMatch;
   const [, toPerson, toDate] = afterMatch;
-  if (toPerson !== fromPerson && toPerson.toLowerCase() !== approver) {
+  if (!PLACEHOLDER.test(fromDate)) return false;
+  if (
+    toPerson !== fromPerson &&
+    !(PLACEHOLDER.test(fromPerson) && toPerson.toLowerCase() === approver)
+  ) {
     return false;
   }
-  const fromIsPlaceholder = /^<[^>]+>$/.test(fromDate);
-  if (!fromIsPlaceholder && !ISO_DATE.test(fromDate)) return false;
   return ISO_DATE.test(toDate) && dates.has(toDate);
 }
 
@@ -201,7 +221,8 @@ function isDeciderDateChange(before, after, {approver, dates}) {
  * True when `after` differs from `before` only by recording the given owner's
  * approval: frontmatter `authority: draft` to `current`, `phase: proposed` to
  * `accepted`, `approved_by` naming that owner, `approved_at` dated on the day
- * of the approval, and Decider lines gaining that date. Lines are compared one
+ * of the approval, and undecided Decider lines gaining that date (and the
+ * approver, when the line names no person yet). Lines are compared one
  * for one, so any added, removed, or other edited line is material.
  */
 function isApprovalMetadataOnlyChange(before, after, {approver, approvedAt}) {
@@ -230,6 +251,7 @@ function isApprovalMetadataOnlyChange(before, after, {approver, approvedAt}) {
 
 module.exports = {
   MAX_CANDIDATE_HEADS,
+  baseTouchedChangedPaths,
   carryCandidates,
   differingPaths,
   isApprovalMetadataOnlyChange,

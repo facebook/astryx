@@ -44,12 +44,16 @@ with their read-only token, so an approver uses an issue comment containing
 default branch and a new commit invalidates it, except as below.
 
 An approval stays in force on a later head when nothing the owner judged has
-changed: a rebase that leaves every changed file's bytes the same, or a commit
-that only records the approval in the records (`authority: draft` to
+changed: a rebase that leaves every changed file's bytes the same while the base
+branch changed none of those files between the two heads' merge bases, or a
+commit that only records the approval in the records (`authority: draft` to
 `current`, `phase: proposed` to `accepted`, `approved_by` naming the approver,
-`approved_at` and Decider dates within a day of the approval). Any other edit,
-added or removed line, or changed file needs a new approval. A decision on the
-new head, or any owner revoke or request for changes after the approval, wins.
+`approved_at` within a day of the approval, and Decider lines whose date is
+still a placeholder gaining that date). A Decider line that already has a date
+or person is never rewritten. Any other edit, added or removed line, or changed
+file needs a new approval. A decision on the new head, or any owner revoke or
+request for changes after the approval, wins. A ready attestation never carries,
+and while `SPEC_DECISION_APP` is set nothing carries (see below).
 The gate status names the head the approval was carried from.
 
 A review app may also relay an owner's decision, for owners who decide from
@@ -62,8 +66,10 @@ live head; with the variable unset, every relay is ignored. An accepted relay
 is published as the trusted status `spec-owner-decision/<owner>`, and the gate
 counts it exactly like that owner's `/approve-spec` or `/revoke-spec` command:
 it satisfies only the groups that owner may approve, the owner's latest
-decision wins, and a new commit invalidates it. A relayed decision is not
-carried to a later head.
+decision wins, and a new commit invalidates it. The gate reads relayed
+decisions only on the current head, so it cannot see a relayed revoke of an
+intermediate head; while the variable is set, no approval carries to a later
+head.
 
 Only that exact form decides the gate. The command must start the comment,
 lowercase and unindented, because the workflow trigger matches the raw comment
@@ -71,8 +77,10 @@ body — an indented or capitalized command never starts the workflow, so the
 parser refuses it too rather than counting a comment nobody's run ever saw. The
 SHA itself may be either casing. A command that names no commit, names
 something other than one full 40-character SHA, or names a superseded commit
-changes nothing — so the gate replies once per head with the exact command to
-copy, rather than leaving the owner believing they approved.
+does not decide the current head — so the gate replies once per head with the
+exact command to copy, rather than leaving the owner believing they approved. An
+approval of a superseded commit that carries to the current head, as above, gets
+no reply.
 
 The gate never re-decides a merged or closed head. A run that starts after the
 merge publishes nothing, and neither does a run yielding to a newer one.
@@ -92,7 +100,8 @@ someone in their own list. An engineering owner cannot attest their own head.
 
 The attestation does not grant auto-merge by itself. The existing gate may enable
 squash auto-merge only when every changed path is a recognized spec record,
-every required owner group has approved the exact head, and all branch checks
+every required owner group has approved the exact head (directly or carried as
+above), and all branch checks
 pass. Normative assets and indexes are outside that scope; adding any code path
 also prevents the spec-only auto-merge path.
 
