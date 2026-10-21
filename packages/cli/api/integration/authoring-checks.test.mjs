@@ -1463,6 +1463,49 @@ describe('validateIntegration runner-command notes', () => {
     ]);
   });
 
+  it('puts each copy of an identical one-line string on its own line', async () => {
+    fs.writeFileSync(
+      path.join(tmpDir, 'package.json'),
+      JSON.stringify({name: '@acme/widgets', version: '1.2.3'}),
+    );
+    fs.writeFileSync(
+      path.join(tmpDir, 'astryx.integration.mjs'),
+      `export default {docs: './docs'};\n`,
+    );
+    fs.mkdirSync(path.join(tmpDir, 'docs'), {recursive: true});
+    const block = {type: 'code', lang: 'bash', code: 'npx astryx doctor'};
+    const doc = {
+      type: 'generic',
+      name: 'acme-setup',
+      title: 'Fixture',
+      description: 'Fixture topic.',
+      sections: [
+        {title: 'First', content: [block]},
+        {title: 'Second', content: [block]},
+      ],
+    };
+    fs.writeFileSync(
+      path.join(tmpDir, 'docs', 'acme-setup.doc.mjs'),
+      `export default ${JSON.stringify(doc, null, 2)};\n`,
+    );
+    const lines = fs
+      .readFileSync(path.join(tmpDir, 'docs', 'acme-setup.doc.mjs'), 'utf8')
+      .split('\n');
+    const copies = lines.flatMap((line, at) =>
+      line.includes('"npx astryx doctor"') ? [at + 1] : [],
+    );
+
+    const {notes} = await runnerNotes();
+
+    expect(copies).toHaveLength(2);
+    expect(
+      notes.map((/** @type {any} */ each) => [each.section, each.line]),
+    ).toEqual([
+      ['First', copies[0]],
+      ['Second', copies[1]],
+    ]);
+  });
+
   it("places a section's command on its own line when the section sits in a constant above the doc", async () => {
     fs.writeFileSync(
       path.join(tmpDir, 'package.json'),

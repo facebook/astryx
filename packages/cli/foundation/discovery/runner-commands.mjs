@@ -246,12 +246,20 @@ export async function findRunnerCommands(discovered) {
       const forms = [`'${text}'`, `"${text}"`, JSON.stringify(text)];
       const holds = (/** @type {string} */ line) =>
         forms.some(form => line.includes(form));
+      // On the cursor's own line, only a copy at or after the cursor counts:
+      // the copy just matched still sits before it.
       const after = text.includes('\n')
         ? -1
-        : lines.findIndex((line, at) => at >= cursor.line && holds(line));
+        : lines.findIndex((line, at) =>
+            at > cursor.line
+              ? holds(line)
+              : at === cursor.line &&
+                forms.some(form => line.indexOf(form, cursor.column) >= 0),
+          );
       const literal =
         after >= 0 || text.includes('\n') ? after : lines.findIndex(holds);
-      let from = literal >= 0 ? {line: literal, column: 0} : cursor;
+      const column = after >= 0 && after === cursor.line ? cursor.column : 0;
+      let from = literal >= 0 ? {line: literal, column} : cursor;
       for (const {written, bare, download} of commands) {
         const place = locate(lines, written, from);
         if (place) {
