@@ -47,6 +47,11 @@ beforeAll(() => {
       '};',
       '',
     ].join('\n'),
+    // An installed Astryx package has a manifest; the plugin scans what each
+    // one publishes, so without it the module would count as app code.
+    'node_modules/@astryxdesign/core/package.json': JSON.stringify({
+      name: '@astryxdesign/core',
+    }),
     [LIBRARY_FILE]: [
       "import * as stylex from '@stylexjs/stylex';",
       "export const styles = stylex.create({box: {color: 'red'}});",
