@@ -447,6 +447,20 @@ function fixTarget(subpath, sourceTarget) {
 /** @typedef {{code: string, message: string}} PublicImportNote */
 
 /**
+ * Whether nothing a statement imports exists at run time: a statement-level
+ * `import type`, or named bindings that are each an inline `type`.
+ * @param {ImportStatement} statement
+ */
+function typeOnlyStatement(statement) {
+  if (statement.typeOnly) return true;
+  return (
+    !statement.namespace &&
+    statement.names.length > 0 &&
+    statement.names.every(binding => binding.typeOnly)
+  );
+}
+
+/**
  * Whether an import of the package's own name names a subpath `exports`
  * declares; the declaration when it does not.
  * @param {Context} ctx
@@ -456,10 +470,11 @@ function fixTarget(subpath, sourceTarget) {
  */
 function undeclaredOwnImport(ctx, statement, subpath) {
   const declaration = declarationIn(ctx.exportsField, ctx.packageDir, subpath);
-  // `import type` needs only a `types` target: TypeScript reads it, nothing
-  // loads it at run time.
+  // `import type`, or an import whose every binding is an inline `type`
+  // (TypeScript's default emit drops it), needs only a `types` target:
+  // TypeScript reads it, nothing loads it at run time.
   if (
-    statement.typeOnly &&
+    typeOnlyStatement(statement) &&
     declaration.state === 'not_importable' &&
     conditionNames(declaration.value).includes('types')
   ) {
