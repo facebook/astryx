@@ -5,7 +5,7 @@
  * @input The `Core/MultiSelector` PanelFooter, PanelFooterWithoutSearch and
  *   PanelFooterWithPopover stories in a built Storybook.
  * @output Real-engine proof that a panel with a footer is a modal dialog
- *   (`component:MultiSelector` FR11, AR1): the dialog's role, modality and
+ *   (`component:MultiSelector` FR12, AR1): the dialog's role, modality and
  *   name and the trigger's wiring; Tab and Shift+Tab cycle through the
  *   search field, the listbox when it takes a stop, and the footer, wrapping
  *   at both ends; focus moves into the listbox on open without search;
