@@ -1240,7 +1240,13 @@ export function createChromiumHarness(
         [viewport.width / 2, viewport.height - 2],
         [viewport.width - 2, viewport.height / 2],
       ] as const;
-      const watched = [locator, ...Object.values(options.related ?? {})];
+      // The pointer target is watched too: `hover` rests on it, and a binding's
+      // pointer target can differ from its semantic subject.
+      const watched = [
+        locator,
+        pointerLocator,
+        ...Object.values(options.related ?? {}),
+      ];
       for (const [x, y] of candidates) {
         const handles = (
           await Promise.all(watched.map(item => item.elementHandles()))

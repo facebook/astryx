@@ -209,6 +209,33 @@ test('hover rests the pointer on a subject and pointerAway moves it off every su
   await expect(page.locator('#log')).toHaveText('trigger+ trigger- tip+ tip-');
 });
 
+test('pointerAway skips a candidate point a related subject covers', async ({
+  page,
+}) => {
+  await page.setContent(`
+    <button id="trigger">Trigger</button>
+    <div id="corner" style="position:fixed;right:0;bottom:0;width:80px;height:80px">Corner</div>
+    <output id="log"></output>
+    <script>
+      const corner = document.getElementById('corner');
+      corner.addEventListener('mouseenter', () => { log.textContent += 'corner+ '; });
+      corner.addEventListener('mouseleave', () => { log.textContent += 'corner- '; });
+    </script>
+  `);
+  const cdp = await page.context().newCDPSession(page);
+  const harness = createChromiumHarness({
+    page,
+    subject: page.locator('#trigger'),
+    cdp,
+    related: {corner: page.locator('#corner')},
+  });
+
+  await harness.hover(await harness.related('corner'));
+  await harness.pointerAway();
+
+  await expect(page.locator('#log')).toHaveText('corner+ corner-');
+});
+
 test('pointerAway refuses when every candidate point is on a watched subject', async ({
   page,
 }) => {
