@@ -1372,6 +1372,17 @@ jobs:
             --project chromium \
             --output codeblock-overflow-stop-output
 
+      # A DropdownMenu with `anchorRef` is placed and sized against another
+      # element while its trigger keeps focus, the toggle, the press model and
+      # the menu's accessibility wiring. Placement, width, focus return and the
+      # accessibility tree only exist in a real engine.
+      - name: Run DropdownMenu anchorRef contract
+        run: |
+          pnpm exec playwright test \
+            packages/core/src/DropdownMenu/__tests__/DropdownMenuAnchorRef.a11y.chromium.spec.ts \
+            --project chromium \
+            --output dropdown-menu-anchor-ref-output
+
       # A DropdownMenu header and footer sit beside the menu, outside its
       # role="menu" element, and join one Tab sequence with it. Focus order,
       # the popover's focus trap, the keyboard-only ring and a finger tap on a
