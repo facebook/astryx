@@ -34,8 +34,8 @@
  *   states the rules); every other type is listed as not compared;
  * - `default_mismatch`: the doc's `default` and the literal default the
  *   component writes in its props parameter's destructuring (`size = 'md'`)
- *   differ, quotes and whitespace aside; a default that is not a literal on
- *   either side is not compared.
+ *   differ, quotes and whitespace aside; where both write a default and
+ *   either is not a literal, it is listed under `typesNotCompared`.
  *
  * @input Component records (name, docPath, sourcePath), or prop tables, the
  *   package root, and the directories to resolve `typescript` from.
@@ -96,8 +96,10 @@ import {
  * @property {string} doc the doc file, relative to the package root
  * @property {string} reason why: not a form the check judges exactly, a
  *   field the prop's variants give different types, a standard prop
- *   (`className`, `style`, …), or a prop declared outside the package
- * @property {string[]} props documented props whose types were not compared
+ *   (`className`, `style`, …), a prop declared outside the package, or a
+ *   default that is not a literal on one side
+ * @property {string[]} props documented props whose types, or defaults, were
+ *   not compared
  */
 
 /**
@@ -156,6 +158,15 @@ const SKIP_TAGS = new Set(['internal']);
 const NOT_EXACT = 'not a form the check judges exactly';
 /** A field documented with one variant's type, where they differ. */
 const VARIANTS = "the prop's variants give this field different types";
+
+/** A default the code writes that is not a literal (a constant, a call). */
+const NOT_LITERAL = Symbol('not a literal');
+
+/** Why a documented default was not compared with the code's. */
+const CODE_DEFAULT_NOT_LITERAL =
+  'its default in the code is not a literal, so the documented default was not compared';
+const DOC_DEFAULT_NOT_LITERAL =
+  "its documented default is not a literal, so it was not compared with the code's";
 /** @type {(name: string, code?: CodeProp) => string} why a prop is not judged */
 const outside = (name, code) =>
   code?.untraced
@@ -259,7 +270,7 @@ function ownFileTest(root) {
  * @param {import('./unresolved-references.mjs').UnresolvedReference | null} ambient
  *   what the program's other roots cannot resolve, which any component may
  *   use
- * @returns {{ok: true, props: Map<string, CodeProp>, accepts: (name: string) => any, defaults?: Map<string, string | number | boolean | null>} | {ok: false, reason: string}}
+ * @returns {{ok: true, props: Map<string, CodeProp>, accepts: (name: string) => any, defaults?: Map<string, string | number | boolean | null | symbol>} | {ok: false, reason: string}}
  */
 function readCodeProps(
   ts,
@@ -591,16 +602,16 @@ function readCodeProps(
 }
 
 /**
- * The literal defaults a component writes in its props parameter's
- * destructuring (`{size = 'md'}`), by prop name, each as its value: a
- * string, number, boolean, or null. A default that is not a literal (a
- * constant, a call, an object) is left out, so it is never compared.
+ * The defaults a component writes in its props parameter's destructuring
+ * (`{size = 'md'}`), by prop name, each as its value: a string, number,
+ * boolean, or null, or NOT_LITERAL for any other default (a constant, a call,
+ * an object), which is listed as not compared.
  * @param {any} ts
  * @param {any} symbol the component
- * @returns {Map<string, string | number | boolean | null>}
+ * @returns {Map<string, string | number | boolean | null | symbol>}
  */
 function literalDefaults(ts, symbol) {
-  /** @type {Map<string, string | number | boolean | null>} */
+  /** @type {Map<string, string | number | boolean | null | symbol>} */
   const out = new Map();
   /** @param {any} node @param {number} depth @returns {any} */
   const fnOf = (node, depth) => {
@@ -644,7 +655,7 @@ function literalDefaults(ts, symbol) {
       continue;
     }
     const value = literalValue(ts, element.initializer);
-    if (value !== undefined) out.set(key.text, value);
+    out.set(key.text, value === undefined ? NOT_LITERAL : value);
   }
   return out;
 }
@@ -2071,16 +2082,32 @@ export function comparePropTables(tables, options) {
           });
         }
         // A literal default the code writes in its props destructuring and a
-        // literal the doc writes must agree; anything else is not compared.
+        // literal the doc writes must agree; where both write a default and
+        // either is not a literal, the default is listed as not compared.
         const codeDefault = read.defaults?.get(propName);
-        const docDefault =
-          entries.length === 1 ? documentedDefault(raw.default) : undefined;
+        const docWrites =
+          entries.length === 1 &&
+          raw.default !== undefined &&
+          raw.default !== '';
+        const docDefault = docWrites
+          ? documentedDefault(raw.default)
+          : undefined;
+        if (codeDefault !== undefined && docWrites) {
+          if (codeDefault === NOT_LITERAL) {
+            skip(CODE_DEFAULT_NOT_LITERAL, propName);
+          } else if (docDefault === undefined) {
+            skip(DOC_DEFAULT_NOT_LITERAL, propName);
+          }
+        }
         if (
           codeDefault !== undefined &&
+          codeDefault !== NOT_LITERAL &&
           docDefault !== undefined &&
           codeDefault !== docDefault
         ) {
-          const shown = defaultText(codeDefault);
+          const shown = defaultText(
+            /** @type {string | number | boolean | null} */ (codeDefault),
+          );
           findings.push({
             ...base,
             kind: 'default_mismatch',

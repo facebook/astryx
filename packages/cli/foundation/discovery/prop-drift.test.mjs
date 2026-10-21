@@ -399,6 +399,28 @@ export const Forwarded = forwardRef(function Forwarded({variant = 'solid'}: {var
       'Widget.open default_mismatch',
       'Widget.size default_mismatch',
     ]);
+    // A default that is not a literal on either side is listed, not skipped.
+    expect(report.typesNotCompared).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          component: 'Widget',
+          reason: expect.stringContaining(
+            'default in the code is not a literal',
+          ),
+          props: ['label'],
+        }),
+        expect.objectContaining({
+          component: 'Widget',
+          reason: expect.stringContaining(
+            'documented default is not a literal',
+          ),
+          props: ['gap'],
+        }),
+      ]),
+    );
+    expect(report.typesNotCompared.flatMap(entry => entry.props)).not.toContain(
+      'mode',
+    );
     expect(report.findings.find(f => f.prop === 'size')).toMatchObject({
       severity: 'warning',
       message:

@@ -3,8 +3,8 @@
 /**
  * @file What an integration's docs say that no reader serves: a prop listed
  * twice, an overlay's text for a prop the doc lacks, an empty section, two
- * sections with one key, a replaces/extends target that is no topic, and an
- * overlay of no topic. Each is a warning with a fix.
+ * sections with one key, and an overlay of no topic. Each is a warning with a
+ * fix; a replaces/extends target is never reported.
  */
 
 import * as fs from 'node:fs';
@@ -69,7 +69,7 @@ describe('integrationDocConsistency', () => {
     );
     write(
       'docs/deploying.doc.mjs',
-      `export const docs = ${JSON.stringify(topic({replaces: 'theme'}))};\n`,
+      `export const docs = ${JSON.stringify(topic())};\n`,
     );
     write(
       'docs/deploying.doc.zh.mjs',
@@ -116,6 +116,36 @@ describe('integrationDocConsistency', () => {
     );
   });
 
+  it("matches an overlay key against each prop entry's whole name, as the overlay applies it", async () => {
+    write(
+      'components/Field.doc.mjs',
+      `export default ${JSON.stringify({
+        type: 'component',
+        name: 'Field',
+        props: [
+          {
+            name: 'value / onChange',
+            type: 'string / (v: string) => void',
+            description: 'Controlled pair.',
+          },
+          {name: 'label', type: 'string', description: 'Text.'},
+        ],
+      })};\nexport const docsZh = {propDescriptions: {'value / onChange': '受控', value: '值', label: '文本'}};\n`,
+    );
+
+    const issues = await check();
+
+    expect(issues).toEqual([
+      expect.objectContaining({
+        code: 'unknown_translated_prop',
+        message: expect.stringContaining(
+          'docsZh.propDescriptions names "value"',
+        ),
+        fix: 'In components/Field.doc.mjs, rename the key "value" in docsZh.propDescriptions to "value / onChange".',
+      }),
+    ]);
+  });
+
   it("checks a sub-component overlay's keys against that sub-component's props", async () => {
     write(
       'components/Group.doc.mjs',
@@ -137,7 +167,7 @@ describe('integrationDocConsistency', () => {
       expect.objectContaining({
         code: 'unknown_translated_prop',
         message: expect.stringContaining(
-          'docsZh.components[0].propDescriptions names "valu", but GroupItem',
+          'docsZh.components[0].propDescriptions names "valu", but no prop entry of GroupItem',
         ),
       }),
     ]);
@@ -166,61 +196,22 @@ describe('integrationDocConsistency', () => {
     expect(issues[0].fix).toContain('give sections[1] content');
     expect(issues[1]).toMatchObject({
       message:
-        'Topic "deploying": sections[0] "Overview" and sections[2] "overview!" both have the key "overview", so `astryx docs deploying overview` opens only sections[0].',
-      fix: "In docs/deploying.doc.mjs, give sections[2] its own title, or a distinct id such as id: 'overview-3'.",
+        'Topic "deploying": sections[0] "Overview" and sections[2] "overview!" both have the key "overview", so `astryx docs deploying overview` opens only sections[0]; sections[2] is served at "overview-2", a key no one wrote.',
+      fix: "In docs/deploying.doc.mjs, give sections[2] its own title, or write the key it is already served at: id: 'overview-2'.",
     });
   });
 
-  it('names a replaces or extends target that is a near miss of a Core or own topic', async () => {
+  it('never reports a replaces or extends target: it may be a topic of an integration the consumer installs', async () => {
     write(
       'docs/deploying.doc.mjs',
       `export const docs = ${JSON.stringify(topic({replaces: 'theem'}))};\n`,
     );
     write(
-      'docs/themes.doc.mjs',
-      `export const docs = ${JSON.stringify(topic({name: 'themes', extends: 'deployng'}))};\n`,
-    );
-
-    const issues = await check();
-
-    expect(issues.map(issue => [issue.code, issue.file])).toEqual([
-      ['unknown_topic_target', 'docs/deploying.doc.mjs'],
-      ['unknown_topic_target', 'docs/themes.doc.mjs'],
-    ]);
-    expect(issues[0]).toMatchObject({
-      severity: 'warning',
-      fix: "In docs/deploying.doc.mjs, change replaces: 'theem' to replaces: 'theme'.",
-    });
-    expect(issues[1].fix).toBe(
-      "In docs/themes.doc.mjs, change extends: 'deployng' to extends: 'deploying'.",
-    );
-  });
-
-  it("never flags a target that may be another integration's topic: one the project sees, a qualified one, or one near no known topic", async () => {
-    write(
-      'docs/deploying.doc.mjs',
-      `export const docs = ${JSON.stringify(topic({replaces: 'other-kit-guide'}))};\n`,
-    );
-    write(
-      'docs/themes.doc.mjs',
-      `export const docs = ${JSON.stringify(topic({name: 'themes', extends: 'theem'}))};\n`,
-    );
-    write(
       'docs/more.doc.mjs',
-      `export const docs = ${JSON.stringify(topic({name: 'more', replaces: 'no-such-core-topic'}))};\n`,
-    );
-    write(
-      'docs/qualified.doc.mjs',
-      `export const docs = ${JSON.stringify(topic({name: 'qualified', replaces: '@other/kit:theem'}))};\n`,
+      `export const docs = ${JSON.stringify(topic({name: 'more', extends: 'other-kit-guide'}))};\n`,
     );
 
-    const issues = await integrationDocConsistency(
-      {docs: path.join(pkg, 'docs')},
-      pkg,
-      {visibleTopic: name => ['other-kit-guide', 'theem'].includes(name)},
-    );
-
-    expect(issues).toEqual([]);
+    expect(await check()).toEqual([]);
   });
 
   it('names an overlay file beside no topic file', async () => {

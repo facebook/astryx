@@ -8,19 +8,15 @@
  * - `duplicate_prop`: a prop table lists one prop twice, so a reader sees it
  *   twice and the two entries can disagree;
  * - `unknown_translated_prop`: a `docsZh`/`docsDense` overlay's
- *   `propDescriptions` names a prop the doc does not list, so its text is
- *   dropped when the overlay is laid over the doc.
+ *   `propDescriptions` key matches no prop entry's `name` as written (an
+ *   overlay applies by the entry's whole name, `value / onChange` included),
+ *   so its text is dropped when the overlay is laid over the doc.
  *
  * Topics (the docs root):
  * - `empty_section`: a section with no content, which reads as a bare title;
  * - `duplicate_section_key`: two sections of one topic whose keys (their
- *   `id`, else the key their title derives) collide, so
- *   `astryx docs <topic> <section>` cannot open the one it was written for;
- * - `unknown_topic_target`: `replaces` or `extends` names no topic the
- *   project in the package folder sees (Core's, the package's own, or a loaded
- *   integration's) and is a near miss of a Core or own topic name. A name
- *   with no near miss may be an integration this tree does not install, so it
- *   is never reported;
+ *   `id`, else the key their title derives) collide, so the later one is
+ *   served only at a suffixed key nobody wrote; the fix names that key;
  * - `orphan_doc_overlay`: a `{topic}.doc.zh.mjs` or `{topic}.doc.dense.mjs`
  *   file beside no `{topic}.doc.mjs`, which ships and is never read.
  *
@@ -34,8 +30,7 @@
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import {discoverBuiltinTopics} from './docs-discovery.mjs';
-import {sectionKeyProblems} from './docs-section-key.mjs';
+import {sectionKeyProblems, withSectionKeys} from './docs-section-key.mjs';
 import {importDocModule} from '../doc-compiler/import.mjs';
 import {OVERLAY_LANGUAGES} from '../doc-compiler/read.mjs';
 
@@ -45,7 +40,7 @@ import {OVERLAY_LANGUAGES} from '../doc-compiler/read.mjs';
 
 /**
  * The codes this check raises.
- * @typedef {'duplicate_prop' | 'unknown_translated_prop' | 'empty_section' | 'duplicate_section_key' | 'unknown_topic_target' | 'orphan_doc_overlay'} DocConsistencyProblem
+ * @typedef {'duplicate_prop' | 'unknown_translated_prop' | 'empty_section' | 'duplicate_section_key' | 'orphan_doc_overlay'} DocConsistencyProblem
  */
 
 const TOPIC_SUFFIXES = ['.doc.ts', '.doc.mjs', '.doc.js'];
@@ -158,6 +153,9 @@ export function componentDocProblems(mod, file) {
   if (!doc || typeof doc !== 'object') return issues;
   const tables = propTablesOf(doc);
 
+  // A prop documented twice: a prop table agrees with the source one prop to
+  // one entry (architecture:cli-surface INV33), and a second entry is a field
+  // the descriptor's type does not mean (INV34).
   for (const {at, owner, props} of tables) {
     /** @type {Map<string, number>} */
     const first = new Map();
@@ -180,6 +178,9 @@ export function componentDocProblems(mod, file) {
     });
   }
 
+  // An overlay key that names no prop entry: a field of the translation that
+  // matches nothing, reported as an unknown field is (architecture:cli-surface
+  // INV34).
   for (const exportName of ['docsZh', 'docsDense']) {
     const overlay = mod?.[exportName];
     if (!overlay || typeof overlay !== 'object') continue;
@@ -211,14 +212,25 @@ export function componentDocProblems(mod, file) {
     }
     for (const {at, descriptions, props, owner} of checks) {
       if (!props || !descriptions || typeof descriptions !== 'object') continue;
-      const known = new Set(props.flatMap(namesOf));
+      // An overlay applies by the entry's whole name, as written.
+      const known = new Set(
+        props
+          .map(prop => (typeof prop?.name === 'string' ? prop.name : null))
+          .filter(name => name != null),
+      );
+      /** @type {Map<string, string>} each name an entry documents, to its whole name */
+      const wholeOf = new Map();
+      for (const prop of props) {
+        for (const each of namesOf(prop)) wholeOf.set(each, prop.name);
+      }
       for (const key of Object.keys(descriptions)) {
         if (known.has(key)) continue;
-        const near = closest(key, known);
+        const part = closest(key, [...wholeOf.keys(), ...known]);
+        const near = part == null ? undefined : (wholeOf.get(part) ?? part);
         issues.push(
           finding(
             'unknown_translated_prop',
-            `${at} names "${key}", but ${owner || 'the doc'} documents no prop "${key}", so that text is never shown.`,
+            `${at} names "${key}", but no prop entry of ${owner || 'the doc'} is named "${key}" (an overlay matches an entry's whole name), so that text is never shown.`,
             near
               ? `In ${file}, rename the key "${key}" in ${at} to "${near}".`
               : `In ${file}, remove "${key}" from ${at}, or document the prop "${key}" first.`,
@@ -265,12 +277,9 @@ function filesUnder(dir, test) {
  * Problems in one topic doc.
  * @param {any} doc
  * @param {string} file relative to the package
- * @param {{coreTopics: Map<string, string>, ownTopics: Map<string, string>, visible?: (name: string) => boolean}} known
- *   topic names, keyed without case; `visible`: whether a topic of that name
- *   is one the project in the package folder sees (another integration's)
  * @returns {Issue[]}
  */
-export function topicDocProblems(doc, file, known) {
+export function topicDocProblems(doc, file) {
   /** @type {Issue[]} */
   const issues = [];
   if (!doc || typeof doc !== 'object' || doc.type === 'namespace') {
@@ -278,6 +287,8 @@ export function topicDocProblems(doc, file, known) {
   }
   const name = String(doc.name ?? '');
   const sections = Array.isArray(doc.sections) ? doc.sections : [];
+  // A section with no content is fluff, the limiting case of the density
+  // floor (architecture:cli-surface DEC-8).
   sections.forEach((/** @type {any} */ section, /** @type {number} */ i) => {
     if (Array.isArray(section?.content) && section.content.length === 0) {
       const title =
@@ -292,6 +303,8 @@ export function topicDocProblems(doc, file, known) {
       );
     }
   });
+  // Two sections with one key: a key that resolves to a section no one wrote
+  // it for (architecture:cli-surface INV34).
   for (const problem of sectionKeyProblems(sections)) {
     const collision =
       /^sections\[(\d+)\]: the key "([^"]+)" is already used by sections\[(\d+)\]/.exec(
@@ -299,6 +312,12 @@ export function topicDocProblems(doc, file, known) {
       );
     if (!collision) continue;
     const [, later, key, earlier] = collision;
+    let served = `${key}-2`;
+    try {
+      served = withSectionKeys({sections}).sections[Number(later)].id ?? served;
+    } catch {
+      // Keep the first suffix withSectionKeys tries.
+    }
     const titleOf = (/** @type {string} */ i) =>
       typeof sections[Number(i)]?.title === 'string'
         ? ` "${sections[Number(i)].title}"`
@@ -306,35 +325,8 @@ export function topicDocProblems(doc, file, known) {
     issues.push(
       finding(
         'duplicate_section_key',
-        `Topic "${name}": sections[${earlier}]${titleOf(earlier)} and sections[${later}]${titleOf(later)} both have the key "${key}", so \`astryx docs ${name} ${key}\` opens only sections[${earlier}].`,
-        `In ${file}, give sections[${later}] its own title, or a distinct id such as id: '${key}-${Number(later) + 1}'.`,
-        file,
-      ),
-    );
-  }
-  // A target may be another integration's topic, which this package's own
-  // tree need not install, so only a near miss of a topic the check can see
-  // is reported: a correct package is never flagged.
-  for (const field of /** @type {const} */ (['replaces', 'extends'])) {
-    const target = doc[field];
-    if (typeof target !== 'string' || target === '') continue;
-    const folded = target.toLowerCase();
-    if (known.coreTopics.has(folded)) continue;
-    if (known.ownTopics.has(folded) && folded !== name.toLowerCase()) continue;
-    if (known.visible?.(target)) continue;
-    if (/[:/]/.test(target)) continue;
-    const near = closest(target, [
-      ...known.coreTopics.values(),
-      ...[...known.ownTopics.values()].filter(
-        topic => topic.toLowerCase() !== name.toLowerCase(),
-      ),
-    ]);
-    if (!near || near.toLowerCase() === folded) continue;
-    issues.push(
-      finding(
-        'unknown_topic_target',
-        `Topic "${name}" ${field} "${target}", which no topic this project can see is named; "${near}" is. A project without a topic named "${target}" drops "${name}".`,
-        `In ${file}, change ${field}: '${target}' to ${field}: '${near}'.`,
+        `Topic "${name}": sections[${earlier}]${titleOf(earlier)} and sections[${later}]${titleOf(later)} both have the key "${key}", so \`astryx docs ${name} ${key}\` opens only sections[${earlier}]; sections[${later}] is served at "${served}", a key no one wrote.`,
+        `In ${file}, give sections[${later}] its own title, or write the key it is already served at: id: '${served}'.`,
         file,
       ),
     );
@@ -346,16 +338,9 @@ export function topicDocProblems(doc, file, known) {
  * Check an integration's component docs and topics.
  * @param {{components?: string, docs?: string}} integration absolute roots
  * @param {string} packageDir
- * @param {{visibleTopic?: (name: string) => boolean}} [options]
- *   `visibleTopic`: whether the project in the package folder sees a topic of
- *   that name, as `astryx docs` lists them there
  * @returns {Promise<Issue[]>}
  */
-export async function integrationDocConsistency(
-  integration,
-  packageDir,
-  options = {},
-) {
+export async function integrationDocConsistency(integration, packageDir) {
   /** @type {Issue[]} */
   const issues = [];
   const rel = (/** @type {string} */ file) =>
@@ -396,35 +381,13 @@ export async function integrationDocConsistency(
         // Reported by docs discovery.
       }
     }
-    /** @type {Map<string, string>} */
-    const coreTopics = new Map(
-      Object.keys(discoverBuiltinTopics()).map(topic => [
-        topic.toLowerCase(),
-        topic,
-      ]),
-    );
-    /** @type {Map<string, string>} */
-    const ownTopics = new Map();
-    for (const {doc} of topics) {
-      if (
-        doc &&
-        typeof doc.name === 'string' &&
-        doc.type !== 'namespace' &&
-        doc.placement == null
-      ) {
-        ownTopics.set(doc.name.toLowerCase(), doc.name);
-      }
-    }
     for (const {file, doc} of topics) {
-      issues.push(
-        ...topicDocProblems(doc, rel(file), {
-          coreTopics,
-          ownTopics,
-          visible: options.visibleTopic,
-        }),
-      );
+      issues.push(...topicDocProblems(doc, rel(file)));
     }
 
+    // An overlay beside no topic file: a translation that resolves to nothing
+    // (architecture:cli-surface INV34; no current record governs topic overlay
+    // files on their own).
     // An overlay is read beside the topic file of its stem.
     for (const overlay of filesUnder(docsDir, name =>
       OVERLAY_LANGUAGES.some(lang => name.endsWith(`.doc.${lang}.mjs`)),

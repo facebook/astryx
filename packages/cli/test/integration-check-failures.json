@@ -62,7 +62,6 @@
     "type_mismatch",
     "unknown_field",
     "unknown_manifest_key",
-    "unknown_topic_target",
     "unknown_translated_prop",
     "unreachable_contribution",
     "unreachable_scan_truncated",

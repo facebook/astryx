@@ -189,7 +189,7 @@ function printIntegrationValidation(data) {
     ...(data.issues.length > 0
       ? [
           records(data.issues, {
-            fields: ['severity', 'code', 'message'],
+            fields: ['severity', 'code', 'message', 'fix', 'file'],
             format: {severity: statusToken},
           }),
         ]

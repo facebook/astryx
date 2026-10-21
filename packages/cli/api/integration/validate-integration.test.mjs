@@ -102,68 +102,6 @@ describe('validate-integration API', () => {
     ]);
   });
 
-  it("passes a topic that replaces another integration's topic the project loads, and flags a typo of a Core topic", async () => {
-    const pkgDir = path.join(tmpDir, 'pkg');
-    writePackage(pkgDir, {
-      manifest: `export default { docs: './docs' };\n`,
-    });
-    const pkgJson = path.join(pkgDir, 'package.json');
-    fs.writeFileSync(
-      pkgJson,
-      JSON.stringify({
-        ...JSON.parse(fs.readFileSync(pkgJson, 'utf8')),
-        dependencies: {'@other/kit': '1.0.0'},
-      }),
-    );
-    const other = path.join(pkgDir, 'node_modules', '@other', 'kit');
-    fs.mkdirSync(path.join(other, 'docs'), {recursive: true});
-    fs.writeFileSync(
-      path.join(other, 'package.json'),
-      JSON.stringify({name: '@other/kit', version: '1.0.0'}),
-    );
-    fs.writeFileSync(
-      path.join(other, 'astryx.integration.mjs'),
-      "export default {docs: './docs'};\n",
-    );
-    /** @param {string} name @param {string} [replaces] */
-    const topicDoc = (name, replaces) =>
-      `export const docs = ${JSON.stringify({
-        type: 'generic',
-        name,
-        title: name,
-        description: `About ${name}.`,
-        ...(replaces ? {replaces} : {}),
-        sections: [{title: 'One', content: [{type: 'prose', text: name}]}],
-      })};\n`;
-    // `theem` is one letter from Core's `theme`, so only the topic the other
-    // integration contributes makes it a real target.
-    fs.writeFileSync(
-      path.join(other, 'docs', 'theem.doc.mjs'),
-      topicDoc('theem'),
-    );
-    fs.mkdirSync(path.join(pkgDir, 'docs'), {recursive: true});
-    fs.writeFileSync(
-      path.join(pkgDir, 'docs', 'ours.doc.mjs'),
-      topicDoc('ours', 'theem'),
-    );
-
-    const clean = await validateLocalIntegration(pkgDir);
-    expect(byCode(clean.issues, 'unknown_topic_target')).toEqual([]);
-
-    fs.rmSync(path.join(pkgDir, 'node_modules'), {
-      recursive: true,
-      force: true,
-    });
-    const typo = await validateLocalIntegration(pkgDir);
-    expect(byCode(typo.issues, 'unknown_topic_target')).toEqual([
-      expect.objectContaining({
-        severity: 'warning',
-        file: 'docs/ours.doc.mjs',
-        fix: "In docs/ours.doc.mjs, change replaces: 'theem' to replaces: 'theme'.",
-      }),
-    ]);
-  }, 60_000);
-
   it('reports an unknown manifest key as a warning, and still loads the rest', async () => {
     // The manifest used to be parsed with a strict schema, so a single unknown
     // key failed the parse — and an integration whose manifest fails to parse

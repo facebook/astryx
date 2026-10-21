@@ -34,7 +34,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {assertWithin} from '../../foundation/fs/path-safety.mjs';
-import {integrationDocTypes, loadDocsCatalog} from '../docs/_adapter.mjs';
+import {integrationDocTypes} from '../docs/_adapter.mjs';
 import {integrationDocConsistency} from '../../foundation/discovery/doc-consistency.mjs';
 import {
   THEME_SLUG_RE,
@@ -134,21 +134,6 @@ function unreadThemeFolderIssues(packageDir, loaded) {
       `Folder "${shown}" holds modules but no <name>Theme source or .doc.mjs descriptor, so Astryx does not read it as a theme. Fix: ${fix}`,
     );
   });
-}
-
-/**
- * Whether the project in the package folder sees a topic of a name: every
- * topic `astryx docs` lists there, from Core and each integration it loads.
- * @param {string} packageDir
- * @returns {Promise<(name: string) => boolean>}
- */
-async function visibleTopics(packageDir) {
-  try {
-    const catalog = await loadDocsCatalog(packageDir);
-    return name => catalog.resolve(name) != null;
-  } catch {
-    return () => false;
-  }
 }
 
 /**
@@ -350,7 +335,7 @@ async function validateAtPackageDir(
     issues.push(...unreadThemeFolderIssues(packageDir, loaded));
   // What the docs say that no reader serves: a prop listed twice, an
   // overlay's text for a prop the doc lacks, an empty or unreachable section,
-  // a replaces/extends target that is no topic, an overlay of no topic.
+  // and an overlay of no topic.
   issues.push(
     ...(await integrationDocConsistency(
       {
@@ -362,12 +347,6 @@ async function validateAtPackageDir(
           loaded.docs && !rootProblem(loaded.docs) ? loaded.docs : undefined,
       },
       packageDir,
-      {
-        visibleTopic:
-          loaded.docs && !rootProblem(loaded.docs)
-            ? await visibleTopics(packageDir)
-            : undefined,
-      },
     )),
   );
   if (scanUnreachable) {

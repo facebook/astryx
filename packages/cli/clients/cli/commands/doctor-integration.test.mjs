@@ -210,6 +210,49 @@ describe('doctor integration — command', () => {
     expect(process.exitCode).toBeUndefined();
   });
 
+  it('validate prints the fix and the file an issue carries, and JSON carries the same issue', async () => {
+    writeDocIntegration({name: 'deploying'});
+    fs.writeFileSync(
+      path.join(tmpDir, 'docs', 'ghost.doc.zh.mjs'),
+      "export default {title: 'ghost'};\n",
+    );
+    process.chdir(tmpDir);
+
+    await createProgram().parseAsync([
+      'node',
+      'astryx',
+      'doctor',
+      'integration',
+      'validate',
+    ]);
+    const output = logCalls.join('\n');
+    expect(output).toContain('orphan_doc_overlay');
+    expect(output).toMatch(
+      /fix:\s+Delete docs\/ghost\.doc\.zh\.mjs, or add the topic it translates/,
+    );
+    expect(output).toMatch(/file:\s+docs\/ghost\.doc\.zh\.mjs/);
+
+    logCalls = [];
+    await createProgram().parseAsync([
+      'node',
+      'astryx',
+      '--json',
+      'doctor',
+      'integration',
+      'validate',
+    ]);
+    const parsed = JSON.parse(logCalls.join('\n'));
+    expect(parsed.data.issues).toEqual([
+      {
+        code: 'orphan_doc_overlay',
+        severity: 'warning',
+        message: expect.stringContaining('docs/ghost.doc.zh.mjs'),
+        fix: expect.stringContaining('Delete docs/ghost.doc.zh.mjs'),
+        file: 'docs/ghost.doc.zh.mjs',
+      },
+    ]);
+  });
+
   it('validate warns about each doc field that does not match its authoring type, and still exits 0', async () => {
     writeIntegration({id: 'hero', name: 'Hero', type: 'block'});
     process.chdir(tmpDir);
