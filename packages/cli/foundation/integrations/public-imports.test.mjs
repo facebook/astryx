@@ -599,14 +599,14 @@ describe('public imports: template sources', () => {
 });
 
 describe('template default export', () => {
-  it('lists a template source with no default export, naming the export to add', async () => {
+  it('warns on a template source with no default export, naming the export to add', async () => {
     write(
       'templates/account-card.tsx',
       'export function AccountCard() {\n  return <div>Account</div>;\n}\n',
     );
     const issues = await found();
     expect(issues.map(i => [i.code, i.severity])).toEqual([
-      ['template_no_default_export', 'info'],
+      ['template_no_default_export', 'warning'],
     ]);
     expect(issues[0].message).toContain('export default AccountCard;');
   });
@@ -709,9 +709,7 @@ describe('derived component imports', () => {
     });
     const result = await validateIntegration(undefined, {cwd: dir});
     expect(
-      (result.data.publicImports?.findings ?? []).filter(i =>
-        i.code.startsWith('component_import'),
-      ),
+      result.data.issues.filter(i => i.code.startsWith('component_import')),
     ).toEqual([]);
     expect(result.data.publicImports?.unchecked).toEqual([
       expect.objectContaining({
@@ -1017,9 +1015,7 @@ describe('export import declarations', () => {
     );
     const result = await validateIntegration(undefined, {cwd: dir});
     expect(
-      (result.data.publicImports?.findings ?? []).filter(
-        i => i.code === 'template_import_missing_name',
-      ),
+      result.data.issues.filter(i => i.code === 'template_import_missing_name'),
     ).toEqual([]);
     expect(
       result.data.publicImports?.unchecked.map(u => u.specifier),

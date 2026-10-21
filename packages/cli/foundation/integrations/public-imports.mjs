@@ -8,12 +8,13 @@
  * @output Findings, listed in the `publicImports` report and never counted
  *   (they fail `--strict` from the next minor), for: a component doc's
  *   `import` or a template's public import whose subpath package.json
- *   `exports` does not declare (or that names another package), or whose
- *   module does not export the component; a component example that imports
- *   an undeclared subpath or a name its package does not export; a template
- *   source with no default export, or one that imports a relative path
- *   outside the templates root, an undeclared subpath of its own package or
- *   of Core, or a name its package does not export.
+ *   `exports` does not declare (or that names another package); a component
+ *   example that imports an undeclared subpath; a template source that
+ *   imports a relative path outside the templates root or an undeclared
+ *   subpath of its own package or of Core. Warnings for: a component doc's
+ *   import whose module lacks the component; an example or template that
+ *   imports a name its package does not export; a template source with no
+ *   default export.
  * @position foundation/integrations, beside the other on-disk contribution
  *   validators; run by `astryx doctor integration validate` (and so by
  *   `integration check`) through api/integration/validate-integration.mjs.
@@ -34,6 +35,7 @@ import {
 } from '../discovery/component-discovery.mjs';
 import {loadComponentDoc} from '../discovery/component-loader.mjs';
 import {discoverIntegrationTemplatesForOne} from '../discovery/template-adapter.mjs';
+import {issueWarning} from './validate-contributions.mjs';
 import {
   allTargets,
   importable,
@@ -879,10 +881,10 @@ function subpathExporting(ctx, name, preferred) {
  * A component doc's import specifier, and every example's imports.
  * @param {Context} ctx
  * @param {any} integration
- * @returns {Promise<PublicImportFinding[]>}
+ * @returns {Promise<Array<Issue | PublicImportFinding>>}
  */
 async function componentIssues(ctx, integration) {
-  /** @type {PublicImportFinding[]} */
+  /** @type {Array<Issue | PublicImportFinding>} */
   const issues = [];
   // Every component check compares imports with the package's own name.
   if (ctx.name == null) return issues;
@@ -1004,7 +1006,7 @@ async function componentIssues(ctx, integration) {
             ? `set import: '${ctx.name}${there === '.' ? '' : there.slice(1)}' in the doc (that subpath exports it), or export "${name}" from the module "${specifier}" loads.`
             : `export "${name}" from the module "${specifier}" loads${perComponent ? `, or ${perComponent}` : ''}.`;
           issues.push(
-            listed(
+            issueWarning(
               'component_import_missing_name',
               `Component doc "${shownDoc}" ${gives}, but that module does not export "${name}", so apps that follow the doc get nothing. Fix: ${fix}`,
             ),
@@ -1176,7 +1178,7 @@ async function componentIssues(ctx, integration) {
           );
         } else if (missing && missing.length > 0) {
           issues.push(
-            listed(
+            issueWarning(
               'example_import_missing_name',
               `Component doc "${shownDoc}" example ${label} imports ${missing.map(n => `"${n}"`).join(', ')} from "${statement.source}", which does not export ${missing.length === 1 ? 'it' : 'them'}, so the example fails when an app copies it. Fix: ${missingNameFix(statement, parts.subpath, missing)}`,
             ),
@@ -1192,10 +1194,10 @@ async function componentIssues(ctx, integration) {
  * Template public imports and what each template source imports.
  * @param {Context} ctx
  * @param {any} integration
- * @returns {Promise<PublicImportFinding[]>}
+ * @returns {Promise<Array<Issue | PublicImportFinding>>}
  */
 async function templateIssues(ctx, integration) {
-  /** @type {PublicImportFinding[]} */
+  /** @type {Array<Issue | PublicImportFinding>} */
   const issues = [];
   const root = integration.templates;
   if (!root) return issues;
@@ -1244,7 +1246,7 @@ async function templateIssues(ctx, integration) {
         ? `add \`export default ${named};\` to ${shown}, or make ${named} the default export`
         : `export the template's component as the default export of ${shown} (\`export default function …\`)`;
       issues.push(
-        listed(
+        issueWarning(
           'template_no_default_export',
           `Template "${id}" (${shown}) has no default export, so its public import "${ctx.name}${subpath.slice(1)}" and anything that renders the template get nothing. Fix: ${fix}.`,
         ),
@@ -1290,7 +1292,7 @@ async function templateIssues(ctx, integration) {
           );
         } else if (missing && missing.length > 0) {
           issues.push(
-            listed(
+            issueWarning(
               'template_import_missing_name',
               `Template "${id}" (${shown}) imports ${missing.map(n => `"${n}"`).join(', ')} from "${spec}", which does not export ${missing.length === 1 ? 'it' : 'them'}, so the template breaks in an app. Fix: import a name that module exports, or export the name from it.`,
             ),
@@ -1396,10 +1398,20 @@ export async function publicImportIssues(packageDir, integration) {
       .filter(root => typeof root === 'string')
       .map(root => path.resolve(root)),
   };
-  report.findings.push(
+  const all = [
     ...(await componentIssues(ctx, integration)),
     ...(await templateIssues(ctx, integration)),
-  );
-  // Listed only: none is an issue, so none counts or fails a check.
-  return {issues: [], report};
+  ];
+  // Listed findings go in the report and count for nothing; the rest are
+  // warning issues.
+  /** @type {Issue[]} */
+  const issues = [];
+  for (const each of all) {
+    if (each.severity === 'info') {
+      report.findings.push(/** @type {PublicImportFinding} */ (each));
+    } else {
+      issues.push(/** @type {Issue} */ (each));
+    }
+  }
+  return {issues, report};
 }
