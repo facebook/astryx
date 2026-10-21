@@ -51,10 +51,13 @@ The CLI documents itself, so these commands print what the installed version doe
 
 When you don't know whether what you need is a component, a hook, a docs topic,
 or a template, search across all of them at once. Results are ranked by
-relevance: keyword and fuzzy matching (typos included) score each match, results
-keep the order of their score bands, and inside a band fixed weights decide the
-order, so a description match can lead a keyword match of the same band. Each
-result is tagged with its domain plus the follow-up command to run:
+relevance: keyword and fuzzy matching (typos included) score each match.
+Between score bands results keep the lexical order, whose domain priority can
+put a weaker component, hook, template, or theme above a stronger doc, and a
+query that is an entry's exact name answers with that entry first. Inside a
+band, fixed weights order the matches, so a description match can lead a
+keyword match in the same band. Each result is tagged with its domain plus the
+follow-up command to run:
 
 ```bash
 $ astryx search button
