@@ -1620,6 +1620,17 @@ jobs:
             --project chromium \
             --output hover-layer-touch-output
 
+      # A single-line text field in a DropdownMenu header hands ArrowDown on to
+      # the rows, and ArrowUp on the first row returns to it with what was
+      # typed intact. Real focus moves and the filtered rows only exist in a
+      # real engine.
+      - name: Run DropdownMenu header field arrows contract
+        run: |
+          pnpm exec playwright test \
+            packages/core/src/DropdownMenu/__tests__/MenuHeaderArrows.a11y.chromium.spec.ts \
+            --project chromium \
+            --output menu-header-arrows-output
+
       # A pointer that crosses from a Tooltip's trigger onto the tooltip in one
       # step must not lose it (WCAG 1.4.13 hoverable). The defect is in the
       # order the engine dispatches mouseout and mouseleave on that step, which
