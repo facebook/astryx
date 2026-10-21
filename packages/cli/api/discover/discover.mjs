@@ -88,6 +88,7 @@ function splitTarget(query) {
 
 /**
  * @param {{type?: unknown, installed?: boolean, available?: boolean, limit?: unknown}} options
+ * @param {readonly string[]} kinds the item kinds this project reads
  */
 function checkOptions({type, installed, available, limit}, kinds) {
   if (type != null && !kinds.includes(/** @type {string} */ (type))) {
