@@ -932,6 +932,13 @@ describe('DateInput', () => {
       expect(input).toHaveAttribute('readonly');
     });
 
+    it('does not call a caller onClick while disabled (AST-085 FR2)', () => {
+      const onClick = vi.fn();
+      render(<DateInput label="Date" isDisabled onClick={onClick} />);
+      fireEvent.click(screen.getByRole('combobox'));
+      expect(onClick).not.toHaveBeenCalled();
+    });
+
     it('links the reason tooltip from the calendar button too (AST-085 FR5)', () => {
       render(
         <DateInput

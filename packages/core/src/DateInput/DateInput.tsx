@@ -256,7 +256,7 @@ export interface DateInputProps extends Omit<
   /**
    * Explains why the input is disabled. When set together with
    * `isDisabled`, the field shows a tooltip with this text on hover and
-   * keyboard focus, and the input and calendar button are described by it,
+   * keyboard focus, and the field's focusable controls are described by it,
    * so the reason is discoverable by keyboard and assistive technology.
    * Typing and calendar activation stay blocked.
    *
@@ -891,7 +891,11 @@ function PointerDateField({
         value={displayValue}
         onChange={handleInputChange}
         onBlur={chainEventHandlers(handleBlur, onBlurProp)}
-        onClick={chainEventHandlers(handleInputClick, onClickProp)}
+        onClick={
+          isEffectivelyDisabled
+            ? undefined
+            : chainEventHandlers(handleInputClick, onClickProp)
+        }
         onKeyDown={chainEventHandlers(handleInputKeyDown, onKeyDownProp)}
         placeholder={placeholder}
         aria-disabled={isEffectivelyDisabled ? 'true' : undefined}

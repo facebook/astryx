@@ -620,6 +620,21 @@ describe('DateInput nativePicker', () => {
     expect(showPicker).not.toHaveBeenCalled();
   });
 
+  it('does not call a caller onClick while disabled (AST-085 FR2)', () => {
+    stubPointer(true);
+    const onClick = vi.fn();
+    render(
+      <DateInput
+        label="Date"
+        isDisabled
+        onClick={onClick}
+        onChange={() => {}}
+      />,
+    );
+    fireEvent.click(getInput());
+    expect(onClick).not.toHaveBeenCalled();
+  });
+
   it('ignores a change while disabled', () => {
     stubPointer(true);
     const onChange = vi.fn();

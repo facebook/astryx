@@ -565,6 +565,21 @@ describe('DateInput — field parity', () => {
     expect(screen.queryByRole('grid')).not.toBeInTheDocument();
   });
 
+  it('does not call a caller onClick while disabled (AST-085 FR2)', () => {
+    const onClick = vi.fn();
+    render(
+      <DateInput
+        nativePicker="never"
+        label="Ship date"
+        isDisabled
+        onClick={onClick}
+        onChange={() => {}}
+      />,
+    );
+    fireEvent.click(field());
+    expect(onClick).not.toHaveBeenCalled();
+  });
+
   it('stays focusable and explains itself when disabled with a reason', () => {
     render(
       <DateInput

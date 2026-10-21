@@ -631,6 +631,7 @@ export function NativeDateField({
       <span {...stylex.props(styles.slot)}>
         <input
           {...controlProps}
+          onClick={isEffectivelyDisabled ? undefined : controlProps.onClick}
           ref={mergedInputRef}
           id={id}
           type="date"

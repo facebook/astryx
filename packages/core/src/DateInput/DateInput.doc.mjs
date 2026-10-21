@@ -634,7 +634,7 @@ export const docsDense = {
     isRequired: 'mark field required',
     isDisabled: 'disable input+calendar',
     disabledMessage:
-      'reason shown in a tooltip on hover/focus when disabled; describes the input and calendar button',
+      "reason shown in a tooltip on hover/focus when disabled; describes the field's focusable controls",
     value: 'selected date YYYY-MM-DD',
     onChange: 'callback on date change',
     changeAction: 'async action after onChange; drives optimistic UI',
