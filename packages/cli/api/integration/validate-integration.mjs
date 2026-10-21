@@ -60,14 +60,17 @@ import {
   blockComponentsCheck,
   componentDocNamesCheck,
   INVALID_CLI_COMMAND,
+  isListedIssue,
+  issueListed as listed,
   validateLoadedIntegration,
+  validateLoadedIntegrationListed,
   issueError as error,
   issueWarning as warning,
   rootProblem,
 } from '../../foundation/integrations/validate-contributions.mjs';
 import {formatCliCommand} from '../../foundation/env/package-manager.mjs';
 
-export {validateLoadedIntegration};
+export {validateLoadedIntegration, isListedIssue};
 
 /**
  * @typedef {import('../../foundation/integrations/issue').AstryxIntegrationIssue} Issue
@@ -83,6 +86,10 @@ export {validateLoadedIntegration};
  * @property {Issue[]} issues
  * @property {Array<{code: string, message: string}>} [notes] Information that
  *   fails nothing, such as `invalid_cli_command` (a malformed `cliCommand`).
+ * @property {Issue[]} [listed] Layout findings added after the last minor
+ *   release: validate lists them as notes, which count nowhere, since they
+ *   may not fail `--strict` until the next (architecture:cli-surface INV35);
+ *   `integration verify` still fails on a package.json npm cannot pack.
  * @property {import('../../foundation/integrations/integrations.mjs').LoadedIntegration} [integration]
  */
 
@@ -406,7 +413,9 @@ async function validateAtPackageDir(
   // `integration check --strict` fails on any warning, and a new failure code
   // joins only in a minor release (architecture:cli-surface INV35). Doctor's
   // project check still warns about it.
-  for (const issue of await validateLoadedIntegration(loaded)) {
+  const contribution = await validateLoadedIntegrationListed(loaded);
+  (result.listed ??= []).push(...contribution.listed);
+  for (const issue of contribution.issues) {
     if (issue.code === INVALID_CLI_COMMAND) {
       (result.notes ??= []).push({code: issue.code, message: issue.message});
     } else {
@@ -496,7 +505,7 @@ export async function validateLocalIntegration(cwd = process.cwd()) {
     {name, version: pkg.version},
     {scanUnreachable: true},
   );
-  result.issues.unshift(
+  (result.listed ??= []).unshift(
     ...fields,
     // Only a manifest that loaded says whether it declares a providerId; one
     // that did not is reported as invalid_manifest.
@@ -540,7 +549,7 @@ function providerIdIssues(name, declared, manifestFile) {
   if (typeof declared === 'string' && isPackageName(declared)) return [];
   const manifest = path.basename(manifestFile);
   return [
-    warning(
+    listed(
       'no_provider_id',
       `No provider ID can be derived for this package: package.json "name" ${JSON.stringify(name)} is not a bare package name (an optional @scope/ and a name, each starting with a lowercase letter or digit and holding only lowercase letters, digits, "-", ".", "_" and "~"), and ${manifest} declares no providerId that is one. Astryx files the package's components, templates and docs under that ID, so links to them and selecting the package cannot work. Fix: rename the package, such as "@your-scope/your-package", or set \`providerId: '@your-scope/your-package'\` in ${manifest}.`,
     ),
@@ -557,11 +566,11 @@ function packageJsonFieldIssues(pkg, pkgJsonPath) {
   /** @type {Issue[]} */
   const issues = [];
   const shown = path.basename(pkgJsonPath);
-  // Warnings, so validate keeps the exit code it had for these packages;
-  // `integration verify`, which packs, reports them as errors.
+  // Listed, so validate and `--strict` keep the result they had for these
+  // packages; `integration verify`, which packs, reports them as errors.
   if (typeof pkg.name !== 'string' || pkg.name === '') {
     issues.push(
-      warning(
+      listed(
         'invalid_package_json',
         `${shown} has no "name", so npm cannot pack or publish the package, and a project that installs it has no name to select it by. Fix: add "name": "@your-scope/your-package" to ${shown}.`,
       ),
@@ -573,7 +582,7 @@ function packageJsonFieldIssues(pkg, pkgJsonPath) {
     (typeof pkg.version !== 'string' || pkg.version === '')
   ) {
     issues.push(
-      warning(
+      listed(
         'invalid_package_json',
         `${shown} has no "version", so npm cannot pack or publish the package. Fix: add "version": "0.1.0" to ${shown}.`,
       ),
@@ -661,9 +670,7 @@ export async function validateIntegration(pkg, options = {}) {
     ? await integrationDocTypes(integration, cwd)
     : undefined;
   // The component names docs and blocks give: those that cannot be judged
-  // are listed in their reports, and those judged wrong are notes, which
-  // fail nothing until the next minor release (architecture:cli-surface
-  // INV35).
+  // are listed in their reports, and those judged wrong are notes.
   const names = integration
     ? [
         await componentDocNamesCheck(integration),
@@ -672,8 +679,19 @@ export async function validateIntegration(pkg, options = {}) {
     : undefined;
   const docNames = names?.[0].report;
   const blockComponents = names?.[1].report;
+  // Notes fail nothing: a malformed `cliCommand`, and the findings added
+  // after the last minor release, each with its fix in the message, which
+  // may not fail `--strict` until the next (architecture:cli-surface INV35):
+  // the layout findings and the component names judged wrong.
   const notes = result.found
-    ? [...(result.notes ?? []), ...(names ?? []).flatMap(each => each.notes)]
+    ? [
+        ...(result.notes ?? []),
+        ...(result.listed ?? []).map(issue => ({
+          code: issue.code,
+          message: issue.message,
+        })),
+        ...(names ?? []).flatMap(each => each.notes),
+      ]
     : [];
   return {
     type: 'integration.validate',

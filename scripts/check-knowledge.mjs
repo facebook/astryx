@@ -640,6 +640,30 @@ function isFullConsumerDocEntry(entry) {
   );
 }
 
+/**
+ * Public names one consumer doc defines: its own `name` and its full
+ * `components` entries, as `componentRootDefinesPublicComponent` reads them.
+ * Anatomy parts and other nested `name` fields are not names.
+ */
+export function consumerDocPublicNames(docPath) {
+  let mod;
+  try {
+    mod = require(docPath);
+  } catch {
+    return [];
+  }
+  const doc = mod.docs ?? mod.default;
+  if (!doc) return [];
+  const names = new Set();
+  if (typeof doc.name === 'string') names.add(doc.name.replace(/^XDS/, ''));
+  for (const entry of doc.components ?? []) {
+    if (typeof entry?.name === 'string' && isFullConsumerDocEntry(entry)) {
+      names.add(entry.name.replace(/^XDS/, ''));
+    }
+  }
+  return [...names].sort();
+}
+
 function componentRootDefinesPublicComponent(componentRootPath, publicName) {
   for (const docPath of matchingFilesRecursively(
     componentRootPath,
