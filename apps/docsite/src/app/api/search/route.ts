@@ -12,7 +12,7 @@
  * every change to the CLI's search reaches the site. Nothing here ranks.
  */
 
-import type * as CliApi from '@astryxdesign/cli/api';
+import {search} from '@astryxdesign/cli/api';
 import {searchResultHref} from '../../../lib/searchLinks.mjs';
 import type {SearchLinkTables} from '../../../lib/searchLinks.mjs';
 import links from '../../../generated/searchLinks.json';
@@ -26,15 +26,6 @@ const DOCUMENTED = new Set([
   '@astryxdesign/cli',
   ...admitted.packages,
 ]);
-
-/**
- * The CLI's API, loaded by Node at run time rather than bundled: the CLI
- * reads its docs, templates and the installed packages from disk, as
- * `astryx search` does (next.config.mjs traces those files in).
- */
-let cli: Promise<typeof CliApi> | null = null;
-const loadCli = () =>
-  (cli ??= import(/* webpackIgnore: true */ '@astryxdesign/cli/api'));
 
 /** Whether this build leaves out an integration the site's project has. */
 const FILTERED = docsiteConfig.integrations.some(
@@ -55,7 +46,6 @@ export async function GET(request: Request): Promise<Response> {
       {status: 400},
     );
   }
-  const {search} = await loadCli();
   // When this build leaves out an integration, ask for more and drop its
   // results before cutting to the panel's 20; otherwise this is exactly
   // `astryx search <query>`.

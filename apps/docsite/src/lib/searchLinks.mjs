@@ -2,12 +2,12 @@
 
 /**
  * @file Where a search result opens on the site.
- * @input A result of the CLI's search (`@astryxdesign/cli/search`) and the
- *   site's link tables, built with the site by searchLinkTables().
+ * @input A result of the CLI's search (`search()` from `@astryxdesign/cli/api`)
+ *   and the site's link tables, built with the site by searchLinkTables().
  * @output The site path the result opens: a component, template, theme, or
  *   doc page, with the anchor of a doc section.
- * @position Shared by scripts/generate-search-index.mjs (builds the tables)
- *   and the search panel (reads them). Plain JS so both can import it.
+ * @position Shared by scripts/generate-data.mjs (builds the tables) and the
+ *   site's search API (reads them). Plain JS so both can import it.
  *
  * The CLI answers with docs-tree routes and section keys, but the site shows
  * each root namespace as one page with anchors, folds some topics into

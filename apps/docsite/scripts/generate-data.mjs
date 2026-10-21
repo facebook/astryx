@@ -2000,7 +2000,7 @@ export const docRedirects: Record<string, string> = ${JSON.stringify(docRedirect
  * The tables the search panel opens a CLI search result through
  * (src/lib/searchLinks.mjs): this build's doc pages, redirects, section
  * anchors, component and template pages, and the page each block shows on.
- * scripts/generate-search-index.mjs ships them beside the search catalog.
+ * The search API (app/api/search/route.ts) reads them.
  */
 function generateSearchLinks({
   docTopics,
