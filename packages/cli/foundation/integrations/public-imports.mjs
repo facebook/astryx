@@ -22,7 +22,9 @@
  * An `exports` target may point at build output that does not exist yet, so
  * only the declared subpath is judged here, never the target file. A name is
  * judged only when a declared target exists on disk and its export list can be
- * read completely; anything less is left to `integration verify`.
+ * read completely (a declaration file that loads another file, which may
+ * augment it with `declare module`, cannot be); anything less is left to
+ * `integration verify`.
  */
 
 import * as fs from 'node:fs';
@@ -486,6 +488,49 @@ function readExportNames(file, cache, stack) {
   return {...value, cycleTo};
 }
 
+const REFERENCE_DIRECTIVE_RE = /^\/\s*<reference\s/u;
+const DECLARE_MODULE_RE = /\bdeclare\s+module\s+['"]/u;
+
+/**
+ * Whether a declaration file's exports may be widened by a module
+ * augmentation: it has a `/// <reference …/>` directive, a side-effect import
+ * (`import './augment.js'`), a `declare module '…'` block of its own, or
+ * imports a local file that has one. TypeScript merges such a block into the
+ * module it names, so the file's own list may lack names apps can import.
+ * @param {any} ast
+ * @param {string} file
+ */
+function mayBeAugmented(ast, file) {
+  if (
+    (ast.comments ?? []).some(
+      (/** @type {any} */ c) =>
+        c.type === 'CommentLine' && REFERENCE_DIRECTIVE_RE.test(c.value),
+    )
+  ) {
+    return true;
+  }
+  for (const node of ast.program.body) {
+    if (
+      node.type === 'TSModuleDeclaration' &&
+      node.id?.type === 'StringLiteral'
+    ) {
+      return true;
+    }
+    if (node.type !== 'ImportDeclaration') continue;
+    if ((node.specifiers ?? []).length === 0) return true;
+    const source = String(node.source.value);
+    if (!source.startsWith('.')) continue;
+    const target = resolveRelative(source, file);
+    if (!target) continue;
+    try {
+      if (DECLARE_MODULE_RE.test(fs.readFileSync(target, 'utf-8'))) return true;
+    } catch {
+      // An unreadable import adds nothing it could be judged by.
+    }
+  }
+  return false;
+}
+
 /**
  * The exports one module itself declares, following local `export *` (each
  * through {@link readExportNames}); its declaration file is merged by the
@@ -534,6 +579,10 @@ function readOwnExportNames(file, cache, stack) {
   if (/\b(?:module\.exports|exports\.[\w$]+)\s*=/u.test(text)) {
     return done(false);
   }
+  // A declaration file that loads another file may have names added to it by
+  // a `declare module './x.js' {…}` augmentation there: its list is no
+  // longer complete, so no name it lacks is judged missing.
+  if (DECLARATION_RE.test(file) && mayBeAugmented(ast, file)) complete = false;
   // A declaration file that is a module exports every top-level declaration,
   // marked or not, unless it has an export list (`export {}`, `export {…}
   // from`), `export *`, `export =`, or a default export of an expression
@@ -722,39 +771,86 @@ function uncheckedReason(files, allPresent = true) {
   if (files.length === 0 || !allPresent) {
     return 'a file its package.json "exports" entry names does not exist yet (build output), so the names it imports were not checked';
   }
-  return "its module's export list cannot be read in full (CommonJS, an `export *` from another package, a parse error, or JavaScript with no declaration file for its types), so the names it imports were not checked";
+  return "its module's export list cannot be read in full (CommonJS, an `export *` from another package, a parse error, JavaScript with no declaration file for its types, or a declaration file that loads another file, which may add names to it with `declare module`), so the names it imports were not checked";
+}
+
+/**
+ * Whether `name` reads as a component: PascalCase, not ALL CAPS.
+ * @param {string} name
+ */
+function isComponentName(name) {
+  return /^[A-Z]/u.test(name) && /[a-z]/u.test(name);
 }
 
 /**
  * The export a template's default export should be: an exported function or
- * class declaration first, else a PascalCase name that is not ALL CAPS and
- * not only a type; null when there is none to suggest.
+ * class first, else an exported `const`, each only when its name is
+ * PascalCase (not ALL CAPS) and not only a type; null when there is none to
+ * suggest (a hook such as `useAccount`, a helper such as `formatBalance`, a
+ * constant such as `ACCOUNT_LIMIT`), and then the fix stays generic.
  * @param {string} text the template source
  * @param {{names: Set<string>, types: Set<string>}} exported
  * @returns {string | null}
  */
 function defaultExportCandidate(text, exported) {
+  let body;
   try {
-    for (const node of parseModuleText(text).program.body) {
-      const d = /** @type {any} */ (node).declaration;
-      if (
-        node.type === 'ExportNamedDeclaration' &&
-        (d?.type === 'FunctionDeclaration' || d?.type === 'ClassDeclaration') &&
-        d.id?.name
-      ) {
-        return d.id.name;
+    body = parseModuleText(text).program.body;
+  } catch {
+    return null;
+  }
+  /** @type {Map<string, 'callable' | 'const'>} top-level bindings by kind */
+  const local = new Map();
+  /** @param {any} d */
+  const record = d => {
+    if (
+      (d?.type === 'FunctionDeclaration' || d?.type === 'ClassDeclaration') &&
+      d.id?.name
+    ) {
+      local.set(d.id.name, 'callable');
+    } else if (d?.type === 'VariableDeclaration' && d.kind === 'const') {
+      for (const v of d.declarations ?? []) {
+        if (v.id?.type === 'Identifier') local.set(v.id.name, 'const');
       }
     }
-  } catch {
-    // An unparsable template falls back to the names below.
+  };
+  for (const node of body) {
+    record(node.type === 'ExportNamedDeclaration' ? node.declaration : node);
   }
+  /** @type {{name: string, kind: 'callable' | 'const'}[]} */
+  const candidates = [];
+  for (const node of body) {
+    if (node.type !== 'ExportNamedDeclaration') continue;
+    const n = /** @type {any} */ (node);
+    if (n.exportKind === 'type') continue;
+    const d = n.declaration;
+    /** @type {string[]} */
+    const names = d
+      ? d.id?.name
+        ? [d.id.name]
+        : (d.declarations ?? [])
+            .map((/** @type {any} */ v) => v.id?.name)
+            .filter(Boolean)
+      : n.source
+        ? []
+        : (n.specifiers ?? [])
+            .filter((/** @type {any} */ sp) => sp.exportKind !== 'type')
+            .filter(
+              (/** @type {any} */ sp) =>
+                (sp.exported?.name ?? sp.exported?.value) === sp.local?.name,
+            )
+            .map((/** @type {any} */ sp) => sp.local.name);
+    for (const name of names) {
+      const kind = local.get(name);
+      if (kind) candidates.push({name, kind});
+    }
+  }
+  const fits = (/** @type {{name: string}} */ c) =>
+    isComponentName(c.name) && !exported.types.has(c.name);
   return (
-    [...exported.names].find(
-      name =>
-        /^[A-Z]/u.test(name) &&
-        /[a-z]/u.test(name) &&
-        !exported.types.has(name),
-    ) ?? null
+    candidates.find(c => c.kind === 'callable' && fits(c))?.name ??
+    candidates.find(c => c.kind === 'const' && fits(c))?.name ??
+    null
   );
 }
 

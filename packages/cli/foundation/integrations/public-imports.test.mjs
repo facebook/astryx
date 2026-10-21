@@ -1316,6 +1316,39 @@ describe('declaration files follow TypeScript', () => {
     expect(await codes()).toEqual(['template_import_missing_name']);
   });
 
+  // A `declare module './widget.js'` block in a file widget.d.ts loads adds
+  // names widget.d.ts itself does not list.
+  const AUGMENT =
+    "import './widget.js';\ndeclare module './widget.js' {\n  interface AcmeWidgetSize {\n    value: string;\n  }\n}\nexport {};\n";
+  const LISTED =
+    'declare const AcmeWidget: () => null;\nexport {AcmeWidget};\n';
+
+  for (const [form, head] of [
+    ['a side-effect import', "import './augment.js';\n"],
+    ['a reference directive', '/// <reference path="./augment.d.ts" />\n'],
+  ]) {
+    it(`does not report a name added by augmentation in a file loaded through ${form}`, async () => {
+      write('dist/augment.d.ts', AUGMENT);
+      write('dist/widget.d.ts', `${head}${LISTED}`);
+      write(
+        'templates/account-card.tsx',
+        template('AcmeWidget, AcmeWidgetSize'),
+      );
+      const result = await validateIntegration(undefined, {cwd: dir});
+      expect(await codes()).toEqual([]);
+      expect(
+        result.data.publicImports?.unchecked.map(u => u.specifier),
+      ).toEqual(['@acme/widgets/widget']);
+    });
+  }
+
+  it('still reports a missing name when the declaration file loads nothing', async () => {
+    write('dist/augment.d.ts', AUGMENT);
+    write('dist/widget.d.ts', LISTED);
+    write('templates/account-card.tsx', template('AcmeWidget, AcmeWidgetSize'));
+    expect(await codes()).toEqual(['template_import_missing_name']);
+  });
+
   it('leaves a declaration file with no import or export (a global script) unchecked', async () => {
     write(
       'dist/widget.d.ts',
@@ -1396,6 +1429,28 @@ describe('the default-export fix names a value', () => {
     const [issue] = await found();
     expect(issue?.message).not.toContain('export default ACCOUNT_LIMIT');
     expect(issue?.message).toContain('`export default function …`');
+  });
+
+  it('names no hook, helper or type-only name, and falls back to the generic fix', async () => {
+    write(
+      'templates/account-card.tsx',
+      'export function useAccount() {\n  return null;\n}\nexport function formatBalance(n: number) {\n  return String(n);\n}\nexport const ACCOUNT_LIMIT = 3;\nexport type AccountCardProps = {title: string};\nexport interface AccountCardSize {\n  value: string;\n}\n',
+    );
+    const [issue] = await found();
+    expect(issue?.code).toBe('template_no_default_export');
+    expect(issue?.message).not.toContain('export default useAccount;');
+    expect(issue?.message).not.toContain('formatBalance');
+    expect(issue?.message).not.toContain('export default AccountCard');
+    expect(issue?.message).toContain('`export default function …`');
+  });
+
+  it('suggests a PascalCase const when no function or class fits', async () => {
+    write(
+      'templates/account-card.tsx',
+      'export function useAccount() {\n  return null;\n}\nexport const AccountCard = () => null;\n',
+    );
+    const [issue] = await found();
+    expect(issue?.message).toContain('export default AccountCard;');
   });
 
   it('names no public import when package.json has no name', async () => {
