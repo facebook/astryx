@@ -61,8 +61,10 @@ import {
 import {
   DropdownMenuContext,
   DropdownMenuRootOpenContext,
+  DropdownMenuSurfaceContext,
   type DropdownMenuContextValue,
   type DropdownMenuSurfaceHost,
+  type DropdownMenuSurfaceValue,
 } from './DropdownMenuContext';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import {useListFocus} from '../hooks/useListFocus';
@@ -1526,24 +1528,17 @@ function DropdownMenuPopover({
   const resolvedMaxHeight = menuMaxHeight == null ? null : `${menuMaxHeight}px`;
   // Context for compound items
   const contextValue = useMemo<DropdownMenuContextValue>(
+    () => ({closeMenu, menuSize, drillIn, menuLabel}),
+    [closeMenu, menuSize, drillIn, menuLabel],
+  );
+  // What a sub-menu with a header or footer needs, on an internal context.
+  const surfaceValue = useMemo<DropdownMenuSurfaceValue>(
     () => ({
-      closeMenu,
-      menuSize,
-      drillIn,
-      menuLabel,
-      surfaceHost,
-      surfaceOwnerId: menuId,
+      host: surfaceHost,
+      ownerId: menuId,
       menuMaxHeight: resolvedMaxHeight ?? undefined,
     }),
-    [
-      closeMenu,
-      menuSize,
-      drillIn,
-      menuLabel,
-      surfaceHost,
-      menuId,
-      resolvedMaxHeight,
-    ],
+    [surfaceHost, menuId, resolvedMaxHeight],
   );
 
   // Resolve menu content: data-driven items become components
@@ -1730,9 +1725,11 @@ function DropdownMenuPopover({
             )}>
             <MenuRegionsContext value={hasRegions}>
               <DropdownMenuContext value={contextValue}>
-                <DropdownMenuRootOpenContext value={isOpen}>
-                  {menuContent}
-                </DropdownMenuRootOpenContext>
+                <DropdownMenuSurfaceContext value={surfaceValue}>
+                  <DropdownMenuRootOpenContext value={isOpen}>
+                    {menuContent}
+                  </DropdownMenuRootOpenContext>
+                </DropdownMenuSurfaceContext>
               </DropdownMenuContext>
             </MenuRegionsContext>
           </div>,

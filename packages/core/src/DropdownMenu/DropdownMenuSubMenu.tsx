@@ -114,6 +114,7 @@ import {
 import {
   DropdownMenuContext,
   DropdownMenuRootOpenContext,
+  DropdownMenuSurfaceContext,
   useDropdownMenuContext,
   useDropdownMenuRootOpen,
   type DropdownMenuContextValue,
@@ -502,18 +503,19 @@ export function DropdownMenuSubMenu(
 
   const t = useTranslator();
   const menuCtx = useDropdownMenuContext();
+  const rootSurface = use(DropdownMenuSurfaceContext);
   const rootHasRegions = use(MenuRegionsContext);
   const menuSize = menuCtx?.menuSize ?? 'md';
   const canOpen = !isDisabled;
   // With a header or footer the sub-menu's surface holds controls that are not
   // menu items, so it is a modal dialog around the sub-menu's menu, rendered
   // into the root's surface host: outside every menu element. A root that
-  // renders no host (`surfaceHost` undefined, as in ContextMenu) has nowhere
+  // renders no host (no surface context, as in ContextMenu) has nowhere
   // outside its menu to put them, so the sub-menu shows its rows alone there.
   const wantsRegions = isRenderable(header) || isRenderable(footer);
-  const rootHostsSurfaces = menuCtx?.surfaceHost !== undefined;
+  const rootHostsSurfaces = rootSurface != null;
   const hasRegions = wantsRegions && rootHostsSurfaces;
-  const surfaceHost = menuCtx?.surfaceHost?.getElement() ?? null;
+  const surfaceHost = rootSurface?.host.getElement() ?? null;
   useDevWarning(
     'DropdownMenuSubMenu',
     'header and footer show only inside a DropdownMenu; this menu has no place outside its rows for them, so they are not rendered.',
@@ -1016,9 +1018,6 @@ export function DropdownMenuSubMenu(
       },
       drillIn,
       menuLabel: stringLabel,
-      surfaceHost: menuCtx?.surfaceHost,
-      surfaceOwnerId: menuCtx?.surfaceOwnerId,
-      menuMaxHeight: menuCtx?.menuMaxHeight,
     }),
     [menuSize, close, menuCtx, drillIn, stringLabel],
   );
@@ -1057,24 +1056,28 @@ export function DropdownMenuSubMenu(
       : flyoutStyles.popoverCustomWidth(resolvedMenuWidth.value)
     : flyoutStyles.popover;
 
+  // The flyout is a layer of its own, where layer-scoped contexts reset:
+  // nested rows get this level's menu context and the root's surface again.
   const nestedRows = (
     <DropdownMenuContext value={nestedMenuContext}>
-      {isDrillIn && (
-        <DropdownMenuItem
-          icon={
-            <Icon
-              icon="chevronLeft"
-              size="sm"
-              color="secondary"
-              xstyle={rtlStyles.mirror}
-            />
-          }
-          label={backLabel}
-          hasCloseOnSelect={false}
-          onClick={() => close({focusTrigger: true})}
-        />
-      )}
-      {children}
+      <DropdownMenuSurfaceContext value={rootSurface}>
+        {isDrillIn && (
+          <DropdownMenuItem
+            icon={
+              <Icon
+                icon="chevronLeft"
+                size="sm"
+                color="secondary"
+                xstyle={rtlStyles.mirror}
+              />
+            }
+            label={backLabel}
+            hasCloseOnSelect={false}
+            onClick={() => close({focusTrigger: true})}
+          />
+        )}
+        {children}
+      </DropdownMenuSurfaceContext>
     </DropdownMenuContext>
   );
   // A level with its own header or footer tells the levels below it, so Tab
@@ -1100,8 +1103,8 @@ export function DropdownMenuSubMenu(
   // nested there, as a flyout inside the root's menu is. Only this menu does:
   // a picker placed in its header or footer stays its own press root.
   const surfaceOwnerProps =
-    hasRegions && menuCtx?.surfaceOwnerId != null
-      ? {[MENU_PRESS_SURFACE_ATTR]: menuCtx.surfaceOwnerId}
+    hasRegions && rootSurface != null
+      ? {[MENU_PRESS_SURFACE_ATTR]: rootSurface.ownerId}
       : undefined;
 
   // With a header or footer, the dialog that holds them and the sub-menu's
@@ -1137,8 +1140,8 @@ export function DropdownMenuSubMenu(
           )
         : stylex.props(
             regionStyles.frame,
-            menuCtx?.menuMaxHeight != null &&
-              dynamicRegionStyles.viewMaxHeight(menuCtx.menuMaxHeight),
+            rootSurface?.menuMaxHeight != null &&
+              dynamicRegionStyles.viewMaxHeight(rootSurface.menuMaxHeight),
             frameProps.hidden === true && regionStyles.hidden,
           ))}>
       {isRenderable(header) && (

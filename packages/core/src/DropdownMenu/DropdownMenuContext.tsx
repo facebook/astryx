@@ -47,7 +47,7 @@ export interface DropdownMenuDrillIn {
   host: HTMLElement | null;
   /**
    * Show a sub-menu's view in place of the current rows. A view with a header
-   * or footer renders into the root's `surfaceHost` instead of `host`.
+   * or footer renders into the root's surface host instead of `host`.
    */
   push: (viewId: string) => void;
   /** Return to the rows the shown view replaced. */
@@ -66,43 +66,42 @@ export interface DropdownMenuContextValue {
    * row reads "Back to <this>".
    */
   menuLabel?: string;
-  /**
-   * An element the root renders inside its popover but outside every
-   * `role="menu"` element. A sub-menu with a header or footer renders its
-   * surface there (its flyout layer, or its drilled-in view), so the
-   * controls it hosts are never inside a menu. While such a view shows
-   * there, the root's menu and regions step aside, by a style rule that
-   * reads the host. Absent under a root that provides none; the surface then
-   * renders in place.
-   * @internal
-   */
-  surfaceHost?: DropdownMenuSurfaceHost;
-  /**
-   * The root menu's `id`. A sub-menu's own menu rendered in `surfaceHost`
-   * names it (`data-astryx-menu-press-surface`), so the press model counts
-   * that menu, and only it, as nested in the root.
-   * @internal
-   */
-  surfaceOwnerId?: string;
-  /**
-   * The root's resolved `menuMaxHeight`, a CSS length, when it lifts the
-   * default 300px cap. A sub-menu's drilled-in view with a header or footer
-   * takes the root menu's place, so it caps there too.
-   * @internal
-   */
-  menuMaxHeight?: string;
 }
 
 /**
- * The root's surface host (see `surfaceHost`). The root owns the element
- * through a ref; this object is new whenever a new element attaches, so a
- * sub-menu re-renders into it.
- * @internal
+ * The root's surface host. The root owns the element through a ref; this
+ * object is new whenever a new element attaches, so a sub-menu re-renders
+ * into it.
  */
 export interface DropdownMenuSurfaceHost {
   /** The host element, or `null` before it attaches. */
   getElement: () => HTMLElement | null;
 }
+
+/** What a sub-menu with a header or footer needs from the root. Internal. */
+export interface DropdownMenuSurfaceValue {
+  /**
+   * An element inside the root's popover but outside every `role="menu"`
+   * element, where such a sub-menu renders its surface (its flyout layer, or
+   * its drilled-in view, while which the root's menu and regions step aside).
+   */
+  host: DropdownMenuSurfaceHost;
+  /**
+   * The root menu's `id`, which a sub-menu's menu in the host names so the
+   * press model counts it, and only it, as nested in the root.
+   */
+  ownerId: string;
+  /** The root's resolved `menuMaxHeight`, which a drilled-in view caps at. */
+  menuMaxHeight?: string;
+}
+
+/**
+ * The root's surface; `null` under a root with none (ContextMenu). Internal,
+ * off the public menu context, and layer-scoped, so each flyout re-provides it.
+ */
+export const DropdownMenuSurfaceContext =
+  createLayerScopedContext<DropdownMenuSurfaceValue | null>(null);
+DropdownMenuSurfaceContext.displayName = 'DropdownMenuSurfaceContext';
 
 /**
  * Whether the root menu of this layer tree is open; internal companion to
