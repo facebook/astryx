@@ -9,7 +9,7 @@
  */
 
 import {describe, expect, it} from 'vitest';
-import {pickBlocks} from './blocks.mjs';
+import {pickBlocks, stemOf} from './blocks.mjs';
 
 /** @type {import('./blocks.mjs').BlockPickerWeights} */
 const WORDS = {
@@ -132,5 +132,36 @@ describe('pickBlocks', () => {
     const copy = [...own];
     pickBlocks('sales chart', signals(own), WORDS);
     expect(own).toEqual(copy);
+  });
+
+  it('stems plurals the same way as their singular', () => {
+    for (const [word, stem] of [
+      ['tables', 'table'],
+      ['table', 'table'],
+      ['files', 'file'],
+      ['images', 'image'],
+      ['notes', 'note'],
+      ['class', 'class'],
+      ['classes', 'class'],
+      ['boxes', 'box'],
+      ['switches', 'switch'],
+      ['categories', 'category'],
+    ])
+      expect(stemOf(word)).toBe(stem);
+  });
+
+  it('never adds a block that shares only a function word with the request', () => {
+    const searched = /** @type {[string, number, number, number][]} */ ([
+      ['TableBasic', 96, 1, 3],
+      ['CardStat', 90, 1, 3],
+    ]);
+    const sig = {
+      kitBlocks: ['TableBasic', 'ListPlain'],
+      searched,
+      foreign: [],
+      blockText: new Map([['CardStat', 'Stat card Each card under a header.']]),
+    };
+    const picks = pickBlocks('each row under which', sig, WORDS);
+    expect(picks).not.toContain('CardStat');
   });
 });

@@ -10,6 +10,7 @@
  *   calls it with the block picker's list.
  */
 
+import {firstSentence} from '../../../foundation/text/string-utils.mjs';
 import {FOUNDATION, FRAME} from './signals.mjs';
 
 /**
@@ -77,8 +78,8 @@ export function kitAnswer(signals, blocks = signals.kitBlocks) {
         }
       : undefined;
 
-  return {
-    type: 'build.kit',
+  const answer = (/** @type {typeof named} */ list) => ({
+    type: /** @type {const} */ ('build.kit'),
     data: {
       query: signals.query,
       // Distinguishes "search found nothing" from a weak-but-non-empty result
@@ -88,11 +89,95 @@ export function kitAnswer(signals, blocks = signals.kitBlocks) {
       directMatch: signals.directMatch,
       start: signals.start,
       pages: signals.pages,
-      blocks: named,
+      blocks: list,
       domain: signals.domain,
       frame: FRAME,
       foundation: FOUNDATION,
       hint,
     },
-  };
+  });
+
+  // An added block must not make the answer longer than build's own, as JSON
+  // or as text: trim the added blocks' descriptions, never which blocks are
+  // listed.
+  const fitted = fitDescriptions(named, signals.blocks, {
+    json: list => bytes(answer(list)),
+    text: textSize,
+  });
+  return answer(fitted);
+}
+
+/** @param {unknown} value */
+const bytes = value => Buffer.byteLength(JSON.stringify(value));
+
+/**
+ * What the blocks add to the text answer, which prints each block's name,
+ * package, and the first sentence of its description.
+ * @param {{name: string, package?: string, description?: string}[]} list
+ */
+const textSize = list =>
+  list.reduce(
+    (n, b) =>
+      n +
+      Buffer.byteLength(
+        `${b.name}${b.package ?? ''}${firstSentence(b.description ?? '')}`,
+      ),
+    0,
+  );
+
+/**
+ * A description cut to at most `keep` characters at a word boundary, with an
+ * ellipsis; empty when nothing fits.
+ * @param {string} description
+ * @param {number} keep
+ */
+function cutTo(description, keep) {
+  if (keep <= 0) return '';
+  const cut = description.slice(0, keep);
+  const at = cut.lastIndexOf(' ');
+  return `${(at > 0 ? cut.slice(0, at) : cut).trimEnd()}…`;
+}
+
+/**
+ * The listed blocks with the added blocks' descriptions shortened, last block
+ * first, until neither the JSON nor the text answer is longer than with
+ * build's own blocks. Build's own entries are never changed.
+ * @template {{name: string, package?: string, description?: string}} B
+ * @param {B[]} list
+ * @param {B[]} own build's own entries
+ * @param {{json: (list: B[]) => number, text: (list: B[]) => number}} size
+ * @returns {B[]}
+ */
+function fitDescriptions(list, own, size) {
+  const limit = {json: size.json(own), text: size.text(own)};
+  let out = list;
+  /** The bytes over each limit; 0 when within. */
+  const over = (/** @type {B[]} */ l) => ({
+    text: Math.max(0, size.text(l) - limit.text),
+    json: Math.max(0, size.json(l) - limit.json),
+  });
+  for (let k = out.length - 1; k >= 0; k--) {
+    const b = out[k];
+    if (own.includes(b) || !b.description) continue;
+    let o = over(out);
+    // Cut the description until both answers fit, or it is gone. A byte count
+    // can exceed a character count (the ellipsis, other non-ASCII), so cut
+    // again by whatever is left over.
+    let description = b.description;
+    while ((o.text > 0 || o.json > 0) && description) {
+      const first = firstSentence(description);
+      const keep = Math.min(
+        o.text > 0 ? first.length - o.text - 1 : description.length,
+        o.json > 0 ? description.length - o.json - 1 : description.length,
+        description.length - 1,
+      );
+      const cut = cutTo(description, keep);
+      // Each pass must shorten it; a cut that cannot is the end of it.
+      description = cut.length < description.length ? cut : '';
+      const d = description;
+      out = out.map((x, i) => (i === k ? {...x, description: d} : x));
+      o = over(out);
+    }
+  }
+  return out;
 }

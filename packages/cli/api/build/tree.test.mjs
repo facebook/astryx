@@ -176,6 +176,10 @@ describe('build tree', () => {
         if (mine) expect(mine).toEqual(b);
       }
       expect(answer.data.blocks.map(b => b.name)).toEqual(blocks);
+      // Never longer than build's own answer for the same request.
+      expect(Buffer.byteLength(JSON.stringify(answer))).toBeLessThanOrEqual(
+        Buffer.byteLength(JSON.stringify(own)),
+      );
     });
   }
 });

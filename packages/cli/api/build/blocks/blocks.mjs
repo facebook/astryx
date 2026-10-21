@@ -31,7 +31,7 @@
  * kit never lists more blocks than build's own.
  */
 
-import {pluralOf} from '../../search/_query.mjs';
+import {pluralOf, STOPWORDS} from '../../search/_query.mjs';
 import {wordsOf} from '../../search/_words.mjs';
 
 /**
@@ -107,27 +107,55 @@ function linearScores(request, weights) {
 /** How many of search's block results are candidates. */
 const SEARCH_POOL = 100;
 
-/** Words too common to tie a block to a request. */
-const STOP = new Set(
-  (
+/**
+ * Generic English function words: never a reason to tie a block to a request.
+ */
+const FUNCTION_WORDS = (
+  'about above across after against along already also always among any ' +
+  'anyone anything around because before behind below beneath beside ' +
+  'besides between beyond both but despite down during each either else ' +
+  'enough even ever every except few following here how however if inside ' +
+  'instead just least less lot many may maybe might more most much must ' +
+  'near neither no none nor not nothing now off often once only onto ' +
+  'other others out outside over own past quite rather same several shall ' +
+  'should since so still such than then there these they those though ' +
+  'through throughout thus till together too toward towards under ' +
+  'underneath unless unlike until up upon very was were what whatever ' +
+  'when whenever whether which whichever while who whom whose why will ' +
+  'within without would yet'
+).split(' ');
+
+/**
+ * Words too common to tie a block to a request: search's own stopwords, the
+ * function words, and words every build request or block shares.
+ */
+const STOP = new Set([
+  ...STOPWORDS,
+  ...FUNCTION_WORDS,
+  ...(
     'a an the and or of for to in on with by at from as is are be this that ' +
     'it its my our your their me we you i into via per each all any some page ' +
     'app screen ui view build make create need want like show shows showing ' +
     'using use one two new add list item items basic simple showcase example ' +
     'default variant'
   ).split(' '),
-);
+]);
 
 /**
- * A word with a plural or verb ending removed (words over four letters).
+ * A word with a plural or verb ending removed (words over four letters):
+ * "-ies" becomes "-y"; "-es" goes only after s, x, z, ch, or sh ("classes" ->
+ * "class", "boxes" -> "box"); otherwise a final "s" goes, but never after
+ * another "s" ("tables" -> "table", "class" stays); then "-ing" or "-ed".
  * @param {string} w
  * @returns {string}
  */
-function stemOf(w) {
-  for (const end of ['ing', 'ies', 'es', 's', 'ed']) {
-    if (w.length > 4 && w.endsWith(end))
-      return w.slice(0, -end.length) + (end === 'ies' ? 'y' : '');
-  }
+export function stemOf(w) {
+  if (w.length <= 4) return w;
+  if (w.endsWith('ies')) return `${w.slice(0, -3)}y`;
+  if (/(?:s|x|z|ch|sh)es$/.test(w)) return w.slice(0, -2);
+  if (w.endsWith('s') && !w.endsWith('ss')) return w.slice(0, -1);
+  if (w.endsWith('ing')) return w.slice(0, -3);
+  if (w.endsWith('ed')) return w.slice(0, -2);
   return w;
 }
 
