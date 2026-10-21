@@ -13,7 +13,8 @@ owners: [cixzhang]
 affects_architecture: [architecture:react-component-runtime]
 affects_families: [family:input-fields]
 affects_contributing: []
-affects_consumer_docs: [useAnnounce, Toast, ChatTypingIndicator, Comments]
+affects_consumer_docs:
+  [useAnnounce, Toast, ChatSystemMessage, ChatTypingIndicator, Comments]
 ---
 
 # Status announcement delivery system spec
@@ -52,7 +53,9 @@ announcement channel.
 - **FR2 — Transient messages use the shared channel.** When the element that
   shows a message mounts, unmounts, or is replaced together with its text, the
   owner announces through the shared announcement channel. The new element
-  MUST NOT carry a live role or `aria-live`.
+  MUST NOT carry a live role or `aria-live`. A globally hosted owner that
+  `spec:AST-003` rehosts above native modals (FR16, FR18) MAY instead announce
+  through its own persistent live container, which moves with it.
 - **FR3 — Live roles only on persistent containers.** A component MAY own a
   live role only on an element that stays mounted while its content changes.
   It MUST NOT mount that element already holding the text to announce.
@@ -83,6 +86,9 @@ announcement channel.
 - Supported feature/engine floor: the package's supported browsers.
 - Unsupported behavior: without a document (server render), announcing is a
   no-op and renders nothing.
+- While a native modal dialog is open, the shared channel on the page body is
+  not exposed to assistive technology until `spec:AST-003` admits it to modal
+  hosting. Owners rehosted above the modal use their own container (FR2).
 - Browser evidence: DOM and accessibility-tree checks prove routing (FR1–FR5,
   FR7–FR9). Spoken timing, order, and repetition (FR6 on real AT) require
   `spec:AST-009` FR4 evidence.
@@ -92,9 +98,11 @@ announcement channel.
 - `component:FieldStatus` already conforms: AR1 and AR2 match FR2, FR5, and FR7.
 - `architecture:react-component-runtime` INV5 gains the authority it requires
   for the document-owned channel (FR9). INV2 and INV3 already require FR6.
-- Toast: the viewport already announces each toast through the channel. Each
-  visible card also carries `role="status"`/`role="alert"` with `aria-live`;
-  under FR1 the card drops them.
+- Toast: the viewport announces each toast through the body-level channel, and
+  each visible card also carries `role="status"`/`role="alert"` with
+  `aria-live`. Under FR1 and FR2 the viewport's own persistent live container,
+  which `spec:AST-003` rehosts above native modals, is the one owner, and the
+  card drops its live role. A toast shown over a Dialog stays announced.
 - Switch: busy is announced through the channel, and the thumb Spinner also
   mounts with `role="status"`. Under FR8 the thumb Spinner is silent. Under FR6
   StrictMode replay does not repeat the busy announcement.
