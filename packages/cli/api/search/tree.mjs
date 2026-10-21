@@ -1,10 +1,11 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file How search answers: a root classifier reads the query's words and
- * guesses the domain it wants (tree.weights.json), and hands it to that
- * domain's topic searcher when it is sure enough; otherwise the main searcher
- * keeps it. Adding a topic searcher is one file and one line here.
+ * @file How search answers: a query that names a doc topic goes to the
+ * doc-topic searcher by rule, before any vote. Otherwise a root classifier
+ * reads the query's words and guesses the domain it wants
+ * (tree.weights.json), and hands it to that domain's topic searcher when it is
+ * sure enough; otherwise the main searcher keeps it. Adding a topic searcher is one file and one line here.
  * @input {query, options} and the gathered catalog with its static data
  * @output the search response
  * @position api/search; search.mjs runs it with the shared route helper
@@ -13,6 +14,7 @@
 import {routeKit} from '../../foundation/route/route.mjs';
 import {routerTokens} from './_query-words.mjs';
 import {doc} from './_doc-searcher.mjs';
+import {docTopic, namedTopic} from './_doc-topic-searcher.mjs';
 import {main} from './_main-searcher.mjs';
 import {template} from './_template-searcher.mjs';
 
@@ -30,6 +32,12 @@ const root = defineClassifier({
   id: 'root',
   summary:
     'Guesses the domain a query wants from its words and hands it to that topic searcher, else to the main searcher.',
+  rules: [
+    {
+      id: docTopic.id,
+      when: (request, catalog) => namedTopic(request.query, catalog) != null,
+    },
+  ],
   searchers: {doc: doc.id, template: template.id},
   fallback: main.id,
   floor: 0.4,
@@ -37,4 +45,10 @@ const root = defineClassifier({
   weights: catalog => catalog.data.router,
 });
 
-export const SEARCH_TREE = defineTree('root', [root, main, doc, template]);
+export const SEARCH_TREE = defineTree('root', [
+  root,
+  main,
+  doc,
+  template,
+  docTopic,
+]);

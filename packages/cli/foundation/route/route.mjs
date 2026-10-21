@@ -107,6 +107,9 @@
  *   The request's tokens.
  * @property {(ctx: Context) => ClassifierWeights} weights The shipped weights,
  *   which the command's adapter put in the context.
+ * @property {{id: string, when: (request: Request, ctx: Context) => boolean}[]} [rules]
+ *   Deterministic routes checked before the vote, in order: the first rule
+ *   whose `when` holds hands the request to its searcher.
  */
 
 /**
@@ -150,14 +153,22 @@ export function classify(weights, tokens) {
  * @returns {Dispatcher<Request, Context>}
  */
 export function defineClassifier(spec) {
-  const {searchers, fallback} = spec;
+  const {searchers, fallback, rules = []} = spec;
   return defineDispatcher({
     id: spec.id,
     summary: spec.summary,
-    children: [...new Set([fallback, ...Object.values(searchers)])],
+    children: [
+      ...new Set([
+        fallback,
+        ...rules.map(r => r.id),
+        ...Object.values(searchers),
+      ]),
+    ],
     floor: spec.floor,
     fallback,
     route: (request, ctx, override) => {
+      const rule = rules.find(r => r.when(request, ctx));
+      if (rule) return {ids: [rule.id], confidence: 1};
       const weights =
         /** @type {ClassifierWeights | null} */ (override) ?? spec.weights(ctx);
       const p = classify(weights, spec.features(request, ctx));
