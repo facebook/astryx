@@ -105,8 +105,9 @@ announcement channel.
 - While a native modal dialog is open, the shared channel on the page body is
   not exposed to assistive technology until `spec:AST-003` admits it to modal
   hosting. Owners rehosted above the modal use their own containers (FR10).
-  Until then, an owner rendered inside a native modal announces through a
-  persistent region inside that modal (FR3) rather than the body-level channel.
+  Until then, a busy owner rendered inside a native modal announces its busy
+  state through a persistent region inside that modal (FR3, FR8). Other
+  delivery inside native modals is outside this record.
 - Browser evidence: DOM and accessibility-tree checks prove routing (FR1–FR5,
   FR7–FR10). Spoken timing, order, and repetition (FR6 on real AT) require
   `spec:AST-009` FR4 evidence.
