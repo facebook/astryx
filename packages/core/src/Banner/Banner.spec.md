@@ -161,7 +161,8 @@ inside a mounted live container, that container delivers them
 (`spec:AST-086` FR4);
 a Banner mounted together with its message is not a reliable announcement.
 `role="alert"` remains available as an explicit native role, but is reserved for
-genuinely urgent content that should interrupt current speech.
+genuinely urgent content that should interrupt current speech; it is not used on
+a Banner added inside a mounted live container.
 
 Dismissal focus handoff, disclosure controls, and accessible control names remain
 unchanged.
@@ -251,7 +252,8 @@ Banner status selects color and icon only. It does not assign `role="status"` or
 `role="alert"`. Async outcomes announce through `useAnnounce` from the transition
 handler so the message reaches a persistent live region rather than one mounted
 with its content; inside a mounted live container, `spec:AST-086` FR4 applies. An explicit native role remains available through BaseProps for
-a persistent semantic mirror or the rare genuinely urgent alert.
+a persistent semantic mirror or the rare genuinely urgent alert, except on a
+Banner added inside a mounted live container.
 
 Rejected: deriving alert urgency from `warning` or `error`. Severity and urgency
 are independent, and a static error present on first paint is not an event that

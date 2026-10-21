@@ -70,7 +70,8 @@ announcement channel.
   a mounted live container is delivered by that container, at its urgency. An
   element added with that content MUST NOT carry its own live role or announce
   the same content through the channel. A persistent component region that FR3
-  allows, such as Button's loading region, keeps its own role.
+  allows, such as Button's loading region or an input's invalid-entry region,
+  keeps its own role and delivers its own content at its own urgency.
 - **FR5 — Urgency.** Outside a live container, errors and time-critical
   failures use the assertive channel. All other status messages use the polite
   channel. Inside a mounted live container, FR4 applies.
@@ -137,7 +138,11 @@ announcement channel.
   row: each mounts a live role together with its text. Under FR2 the message
   goes through the channel and the element carries no live role.
 - Button: its persistent loading region fits FR3, except when a Button first
-  renders loading and the region mounts holding its text.
+  renders loading and the region mounts holding its text. Inside a live
+  container it keeps its role and urgency (FR4).
+- DateInput, DateTimeInput, TimeInput, and NumberInput: their persistent
+  assertive invalid-entry regions fit FR3 and, inside a live container, keep
+  their role and urgency (FR4).
 - ChatSystemMessage: forces `role="status"` inside the `role="log"` list. Under
   FR4 the log delivers it; dividers and dates are ordinary log content.
 - ChatTypingIndicator (lab): mounts with `role="status"` and text. It follows
@@ -150,17 +155,17 @@ announcement channel.
 
 ## Verification
 
-| Contract | Verification                                         | Representative states                                                                            | Mutation or failure expectation                                                                            |
-| -------- | ---------------------------------------------------- | ------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------- |
-| FR1, FR4 | Shared test: one live owner per announced message    | Toast shown; busy Switch; system notice, FieldStatus error, and failure Banner inside a chat log | A live role on a second element, or a channel announcement of content added inside a live container, fails |
-| FR2, FR3 | Shared test: no live element mounts holding its text | Conditional status, toast card, standalone Spinner                                               | Mounting `role="status"` with text fails                                                                   |
-| FR5      | Channel routing tests                                | Error, warning, success, loading                                                                 | Routing an error to polite, or a success to assertive, fails                                               |
-| FR6      | StrictMode and rerender tests on the channel spy     | Busy start, repeated rerender, same-value update, new occasion                                   | Two announcements for one occasion, or none for a new one, fails                                           |
-| FR7      | Accessibility-tree check of the visible message      | FieldStatus attached/detached, toast card                                                        | Hiding the visible text or a word mismatch fails                                                           |
-| FR8      | Shared test: no live role inside a busy owner        | Busy TextInput, Selector, Switch thumb, ChatMessageList loader                                   | A composed indicator with a live role or its own announcement fails                                        |
-| FR9      | `useAnnounce` tests                                  | First use, many components, region removed, server render                                        | A second region pair, or stale text after the clear delay, fails                                           |
-| FR10     | Accessibility-tree check with a Dialog open          | Info and error toast shown over an open Dialog                                                   | A toast that reaches only the body-level channel, or no exposed live container, fails                      |
-| FR6 (AT) | `spec:AST-009` real-AT receipt                       | Toast, busy Switch, chat notice                                                                  | Missing, repeated, or out-of-order speech fails                                                            |
+| Contract | Verification                                         | Representative states                                                                                                                                        | Mutation or failure expectation                                                                            |
+| -------- | ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------- |
+| FR1, FR4 | Shared test: one live owner per announced message    | Toast shown; busy Switch; system notice, FieldStatus error, and failure Banner inside a chat log; busy Button and invalid DateInput inside a chat log (pass) | A live role on a second element, or a channel announcement of content added inside a live container, fails |
+| FR2, FR3 | Shared test: no live element mounts holding its text | Conditional status, toast card, standalone Spinner                                                                                                           | Mounting `role="status"` with text fails                                                                   |
+| FR5      | Channel routing tests                                | Error, warning, success, loading                                                                                                                             | Routing an error to polite, or a success to assertive, fails                                               |
+| FR6      | StrictMode and rerender tests on the channel spy     | Busy start, repeated rerender, same-value update, new occasion                                                                                               | Two announcements for one occasion, or none for a new one, fails                                           |
+| FR7      | Accessibility-tree check of the visible message      | FieldStatus attached/detached, toast card                                                                                                                    | Hiding the visible text or a word mismatch fails                                                           |
+| FR8      | Shared test: no live role inside a busy owner        | Busy TextInput, Selector, Switch thumb, ChatMessageList loader                                                                                               | A composed indicator with a live role or its own announcement fails                                        |
+| FR9      | `useAnnounce` tests                                  | First use, many components, region removed, server render                                                                                                    | A second region pair, or stale text after the clear delay, fails                                           |
+| FR10     | Accessibility-tree check with a Dialog open          | Info and error toast shown over an open Dialog                                                                                                               | A toast that reaches only the body-level channel, or no exposed live container, fails                      |
+| FR6 (AT) | `spec:AST-009` real-AT receipt                       | Toast, busy Switch, chat notice                                                                                                                              | Missing, repeated, or out-of-order speech fails                                                            |
 
 ## Decision log
 
