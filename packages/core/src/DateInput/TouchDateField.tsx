@@ -166,10 +166,7 @@ const sizeStyles = stylex.create({
 });
 
 const styles = stylex.create({
-  // A disabled field stays focusable (spec:AST-085 FR1), and the shared
-  // disabled wrapper style drops the focus ring. While this field's own input
-  // holds focus, show the base focus ring again (FR6). Listed right after the
-  // shared disabled style; the defaults repeat that style's values.
+  // Same as DateInput's: the focus ring for a focused disabled field.
   disabledFocusRing: {
     borderColor: {
       default: colorVars['--color-border-emphasized'],

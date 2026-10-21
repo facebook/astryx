@@ -79,10 +79,8 @@ import {
 import {useDevWarning} from '../hooks/useDevWarning';
 
 const styles = stylex.create({
-  // A disabled field stays focusable (spec:AST-085 FR1), and the shared
-  // disabled wrapper style drops the focus ring. While this field's own input
-  // holds focus, show the base focus ring again (FR6). Listed right after the
-  // shared disabled style; the defaults repeat that style's values.
+  // The shared disabled style drops the focus ring; restore it while this
+  // field's own input holds focus (spec:AST-085 FR6). Defaults repeat it.
   disabledFocusRing: {
     borderColor: {
       default: colorVars['--color-border-emphasized'],
@@ -747,8 +745,7 @@ function PointerDateField({
     if (pendingInput === null) {
       return;
     }
-    // A field that became disabled or busy while it held a draft keeps its
-    // value (spec:AST-085 FR2); the draft is dropped.
+    // Disabled or busy: keep the value, drop the draft (spec:AST-085 FR2).
     if (isEffectivelyDisabled) {
       setPendingInput(null);
       return;
@@ -852,8 +849,7 @@ function PointerDateField({
         type="button"
         onClick={handleToggle}
         aria-disabled={isEffectivelyDisabled || undefined}
-        // The button is a focusable tab stop while disabled too, so it carries
-        // the disabled reason the input carries (spec:AST-085 FR5).
+        // A tab stop while disabled too, so it carries the reason (FR5).
         aria-describedby={
           showsDisabledMessage ? disabledMessageTooltip.describedBy : undefined
         }
