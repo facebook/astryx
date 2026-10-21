@@ -236,6 +236,34 @@ test('pointerAway skips a candidate point a related subject covers', async ({
   await expect(page.locator('#log')).toHaveText('corner+ corner-');
 });
 
+test('pointerAway skips a candidate point the subject pointer target covers', async ({
+  page,
+}) => {
+  await page.setContent(`
+    <label id="target" style="position:fixed;right:0;bottom:0;width:120px;height:60px">
+      <input id="box" type="checkbox"> Remember me
+    </label>
+    <output id="log"></output>
+    <script>
+      const target = document.getElementById('target');
+      target.addEventListener('mouseenter', () => { log.textContent += 'target+ '; });
+      target.addEventListener('mouseleave', () => { log.textContent += 'target- '; });
+    </script>
+  `);
+  const cdp = await page.context().newCDPSession(page);
+  const harness = createChromiumHarness({
+    page,
+    subject: page.locator('#box'),
+    pointerTarget: page.locator('#target'),
+    cdp,
+  });
+
+  await harness.hover(await harness.subject());
+  await harness.pointerAway();
+
+  await expect(page.locator('#log')).toHaveText('target+ target-');
+});
+
 test('pointerAway refuses when every candidate point is on a watched subject', async ({
   page,
 }) => {
