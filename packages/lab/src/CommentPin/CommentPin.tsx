@@ -216,14 +216,18 @@ const styles = stylex.create({
       default: 0.45,
       '@media (forced-colors: active)': 1,
     },
-    // Opacity does not survive forced colors, and an aria-disabled button gets
-    // no system disabled paint; GrayText is the platform's disabled affordance.
+  },
+  // Opacity does not survive forced colors, and an aria-disabled button gets no
+  // system disabled paint; GrayText is the platform's disabled affordance. The
+  // defaults repeat `root`'s, since StyleX merges per property. Selected and
+  // resolved pins author their own forced colors, so this applies without them.
+  disabledForcedColors: {
     borderColor: {
-      default: null,
+      default: 'transparent',
       '@media (forced-colors: active)': 'GrayText',
     },
     color: {
-      default: null,
+      default: colorVars['--color-text-secondary'],
       '@media (forced-colors: active)': 'GrayText',
     },
   },
@@ -448,6 +452,10 @@ export function CommentPin({
           isDimmed && !isSelected && styles.dimmed,
           isSelected && styles.selected,
           isDisabled && styles.disabled,
+          isDisabled &&
+            !isSelected &&
+            !isResolved &&
+            styles.disabledForcedColors,
           xstyle,
         ),
         className,

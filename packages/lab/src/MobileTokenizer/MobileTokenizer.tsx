@@ -119,10 +119,11 @@ const styles = stylex.create({
     },
   },
   // An aria-disabled button gets no system disabled paint in forced colors;
-  // GrayText is the platform's disabled affordance there.
+  // GrayText is the platform's disabled affordance there. Defaults repeat the
+  // base values, since StyleX merges per property.
   triggerDisabled: {
     borderColor: {
-      default: null,
+      default: colorVars['--color-border'],
       '@media (forced-colors: active)': 'GrayText',
     },
     color: {
@@ -172,7 +173,7 @@ const styles = stylex.create({
   },
   rowDisabled: {
     color: {
-      default: null,
+      default: colorVars['--color-text-primary'],
       '@media (forced-colors: active)': 'GrayText',
     },
   },
