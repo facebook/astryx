@@ -12,7 +12,11 @@ import {act, render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {ComplexSelector} from './ComplexSelector';
 
-function Harness(props: {isDisabled: boolean; onClick?: () => void}) {
+function Harness(props: {
+  isDisabled: boolean;
+  onClick?: () => void;
+  onKeyDown?: () => void;
+}) {
   return (
     <>
       <button type="button">Before</button>
@@ -39,11 +43,18 @@ describe('ComplexSelector disabled (spec:AST-085)', () => {
     expect(screen.getByRole('button', {name: 'After'})).toHaveFocus();
   });
 
-  it('FR2: no press or key opens it, and a caller press handler does not run', async () => {
+  it('FR2: no press or key opens it or reaches a caller or ancestor handler', async () => {
     const user = userEvent.setup();
     const onClick = vi.fn();
-    render(<Harness isDisabled onClick={onClick} />);
+    const onKeyDown = vi.fn();
+    const onAncestorClick = vi.fn();
+    render(
+      <div onClick={onAncestorClick}>
+        <Harness isDisabled onClick={onClick} onKeyDown={onKeyDown} />
+      </div>,
+    );
     await user.click(trigger());
+    await user.click(trigger().parentElement!);
     trigger().focus();
     for (const key of ['{Enter}', ' ', '{ArrowDown}']) {
       await user.keyboard(key);
@@ -51,6 +62,8 @@ describe('ComplexSelector disabled (spec:AST-085)', () => {
     expect(trigger()).toHaveAttribute('aria-expanded', 'false');
     expect(screen.queryByRole('dialog')).toBeNull();
     expect(onClick).not.toHaveBeenCalled();
+    expect(onKeyDown).not.toHaveBeenCalled();
+    expect(onAncestorClick).not.toHaveBeenCalled();
   });
 
   it('FR4: keeps focus when it becomes disabled while focused', () => {
