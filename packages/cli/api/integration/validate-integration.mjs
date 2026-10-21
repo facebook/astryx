@@ -57,8 +57,8 @@ import {
 // The on-disk contribution validators live in foundation: Project and
 // integration-warnings need them too, and foundation must not depend on api.
 import {
-  blockComponentsCheck,
-  componentDocNamesCheck,
+  blockComponentsReport,
+  componentDocNamesReport,
   INVALID_CLI_COMMAND,
   validateLoadedIntegration,
   issueError as error,
@@ -488,9 +488,7 @@ export async function validateLocalIntegration(cwd = process.cwd()) {
   // A package without one is still checked, under a placeholder name.
   const fields = packageJsonFieldIssues(pkg, pkgJsonPath);
   const name =
-    typeof pkg.name === 'string' && pkg.name !== ''
-      ? pkg.name
-      : '(local package)';
+    typeof pkg.name === 'string' && pkg.name !== '' ? pkg.name : '(local package)';
   const result = await validateAtPackageDir(
     packageDir,
     {name, version: pkg.version},
@@ -660,21 +658,15 @@ export async function validateIntegration(pkg, options = {}) {
   const docTypes = integration
     ? await integrationDocTypes(integration, cwd)
     : undefined;
-  // The component names docs and blocks give: those that cannot be judged
-  // are listed in their reports, and those judged wrong are notes, which
-  // fail nothing until the next minor release (architecture:cli-surface
-  // INV35).
-  const names = integration
-    ? [
-        await componentDocNamesCheck(integration),
-        await blockComponentsCheck(integration),
-      ]
+  // The component doc names that could not be judged: listed, never failed.
+  const docNames = integration
+    ? await componentDocNamesReport(integration)
     : undefined;
-  const docNames = names?.[0].report;
-  const blockComponents = names?.[1].report;
-  const notes = result.found
-    ? [...(result.notes ?? []), ...(names ?? []).flatMap(each => each.notes)]
-    : [];
+  // The block component names that could not be judged: listed, never failed.
+  const blockComponents = integration
+    ? await blockComponentsReport(integration)
+    : undefined;
+  const notes = result.found ? (result.notes ?? []) : [];
   return {
     type: 'integration.validate',
     data: {

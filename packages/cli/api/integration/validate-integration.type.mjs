@@ -40,9 +40,7 @@
  * @property {'integration.validate'} type
  * @property {{validated: boolean, name: string | null, version: string | null, issues: import('../../foundation/integrations/issue').AstryxIntegrationIssue[], notes?: Array<{code: string, message: string}>, docTypes?: DocTypesReport, docNames?: DocNamesReport, blockComponents?: BlockComponentsReport}} data
  *   `notes`: information beside the issues that fails nothing, such as
- *   `invalid_cli_command`, a `cliCommand` that was ignored as malformed, and
- *   `doc_name_mismatch` and `unknown_block_component`, each with its fix in
- *   the message, until they become warnings in the next minor release
+ *   `invalid_cli_command`, a `cliCommand` that was ignored as malformed
  */
 
 /**
@@ -59,10 +57,8 @@
 /**
  * Each component doc whose `name` differs from the name it is listed under,
  * judged against its source. Present when the manifest loads. A name the
- * module its printed import names provably does not export is a
- * `doc_name_mismatch` note beside the issues, with its fix in the message
- * (it becomes a warning in the next minor release), so `findings` is always
- * empty; `unchecked` lists each doc whose source's
+ * source provably does not export is a `doc_name_mismatch` issue, so
+ * `findings` is always empty; `unchecked` lists each doc whose source's
  * exports could not all be read (a re-export from another package, `export
  * =`, a destructured binding, a namespace): `file` (the doc, package-relative),
  * `name` (what the doc says), and `reason`.
@@ -74,9 +70,7 @@
  * Each component name a template gives in `exampleFor` or `componentsUsed`
  * that could not be judged. Present when the manifest loads. A name neither
  * the package nor Core has, and the template does not import, is an
- * `unknown_block_component` note beside the issues, with its fix in the
- * message (it becomes a warning in the next minor release), so `findings` is
- * always empty;
+ * `unknown_block_component` issue, so `findings` is always empty;
  * `unchecked` lists each name that cannot be judged: one the template may
  * reach through anything other than named imports and re-exports from
  * Core, React, StyleX, local helpers or the package's own entry (an import from another
