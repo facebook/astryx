@@ -55,6 +55,17 @@ const nextConfig = {
       './node_modules/@astryxdesign/{lab,charts,richtext,vega}/{src,blocks,docs,dist}/**/*',
     ],
   },
+  // Packages the CLI imports for other commands but a search never loads
+  // (bundlers, compilers, browsers, test runners), and built output it never
+  // reads. Leaving them out keeps the search function small; the parity test
+  // and a traced-files-only build hold it to `astryx search`.
+  outputFileTracingExcludes: {
+    '/api/search': [
+      '../../node_modules/.pnpm/{esbuild,@esbuild+*,typescript,playwright,playwright-core,vite,rolldown,@rolldown+*,flow-parser,esprima,tsx,vitest,@vitest+*,chai,@testing-library+*}@*/**',
+      '../../packages/*/dist/**',
+      './src/**',
+    ],
+  },
   // Sandbox exports trailing-slash directories; Next's automatic slash
   // redirect runs before rewrites. Vercel deployments preserve those URLs;
   // local builds keep the docsite's existing canonical redirects.
