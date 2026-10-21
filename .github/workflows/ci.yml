@@ -1383,6 +1383,17 @@ jobs:
             --project chromium \
             --output menu-header-footer-output
 
+      # A sub-menu with a header or footer is a modal dialog beside the root's
+      # menu, outside every role="menu" element. Its Tab order, a header radio
+      # group the browser moves focus in after the pointer leaves, the
+      # press-drag pick and the phone drill-in only exist in a real engine.
+      - name: Run DropdownMenu sub-menu header and footer contract
+        run: |
+          pnpm exec playwright test \
+            packages/core/src/DropdownMenu/__tests__/SubMenuHeaderFooter.a11y.chromium.spec.ts \
+            --project chromium \
+            --output submenu-header-footer-output
+
       # A pointer that crosses from a Tooltip's trigger onto the tooltip in one
       # step must not lose it (WCAG 1.4.13 hoverable). The defect is in the
       # order the engine dispatches mouseout and mouseleave on that step, which
