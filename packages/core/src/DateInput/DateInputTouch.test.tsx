@@ -561,6 +561,7 @@ describe('DateInput — field parity', () => {
     expect(field()).toHaveFocus();
     fireEvent.click(field());
     fireEvent.keyDown(field(), {key: 'Enter'});
+    expect(field()).toHaveAttribute('aria-expanded', 'false');
     expect(screen.queryByRole('grid')).not.toBeInTheDocument();
   });
 
