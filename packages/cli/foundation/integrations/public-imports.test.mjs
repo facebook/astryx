@@ -735,14 +735,16 @@ describe('which Core and which package', () => {
         reason: expect.stringContaining('no "name"'),
       }),
     );
-    // Nothing from the public-import check fails `integration check
-    // --strict`: no skip, no warning (other checks may report the missing
-    // name themselves).
+    // From the public-import check, `integration check --strict` fails only
+    // on the warning it could judge; the unchecked imports never fail it.
     const {warnings, skipped} = strictIssues('validate', result);
     expect(
-      [...warnings, ...skipped].filter(
-        each => CODES.has(each.code) || each.code === 'public_imports_skipped',
-      ),
-    ).toEqual([]);
+      [...warnings, ...skipped]
+        .filter(
+          each =>
+            CODES.has(each.code) || each.code === 'public_imports_skipped',
+        )
+        .map(each => each.code),
+    ).toEqual(['template_import_outside_root']);
   });
 });
