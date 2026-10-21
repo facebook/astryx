@@ -16,7 +16,8 @@ export const ALLOWED_PARENT_ORIGINS: readonly string[] = [
   'https://astryx-canary.vercel.app',
 ];
 export const INTERNAL_DOCS_ORIGIN = 'https://astryx.internalmeta.com';
-export const ACCESS_CHECK_MESSAGE_TYPE = 'astryx:access-check:v1';
+export const ACCESS_CHECK_ORIGIN = 'https://codebunny.internalmeta.com';
+export const ACCESS_CHECK_MESSAGE_TYPE = 'codebunny:access-check:v1';
 
 const listeners = new Set<() => void>();
 let attempted = false;
@@ -38,8 +39,8 @@ function startCheck() {
     return;
   }
 
-  // Mirror the companion endpoint's exact deployment allowlist. Never probe
-  // arbitrary preview/hash domains or send a different origin on their behalf.
+  // The probe and docs destination are independent origins. Match only the
+  // probe's exact parent allowlist, never arbitrary preview/hash domains.
   const parentOrigin = window.location.origin;
   if (!ALLOWED_PARENT_ORIGINS.includes(parentOrigin)) {
     return;
@@ -52,7 +53,7 @@ function startCheck() {
   frame.setAttribute('sandbox', 'allow-scripts allow-same-origin');
   frame.title = 'Astryx documentation reachability check';
   frame.referrerPolicy = 'no-referrer';
-  frame.src = `${INTERNAL_DOCS_ORIGIN}/embed/access-check?parent_origin=${encodeURIComponent(parentOrigin)}`;
+  frame.src = `${ACCESS_CHECK_ORIGIN}/embed/access-check?parent_origin=${encodeURIComponent(parentOrigin)}`;
 
   let loaded = false;
   let received = false;
@@ -72,7 +73,7 @@ function startCheck() {
   };
   const onMessage = (event: MessageEvent) => {
     if (
-      event.origin !== INTERNAL_DOCS_ORIGIN ||
+      event.origin !== ACCESS_CHECK_ORIGIN ||
       event.source !== frame.contentWindow ||
       event.data?.type !== ACCESS_CHECK_MESSAGE_TYPE ||
       event.data?.reachable !== true

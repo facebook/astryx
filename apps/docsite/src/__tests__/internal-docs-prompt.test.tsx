@@ -36,7 +36,8 @@ declare const jsdom: {reconfigure(options: {url: string}): void};
 let Prompt: typeof InternalDocsPrompt;
 let href: typeof internalDocsHref;
 const internalOrigin = 'https://astryx.internalmeta.com';
-const message = {type: 'astryx:access-check:v1', reachable: true};
+const probeOrigin = 'https://codebunny.internalmeta.com';
+const message = {type: 'codebunny:access-check:v1', reachable: true};
 
 beforeEach(async () => {
   vi.resetModules();
@@ -76,7 +77,7 @@ function frame() {
 function send(
   target: HTMLIFrameElement,
   data: unknown = message,
-  origin = internalOrigin,
+  origin = probeOrigin,
   source: MessageEventSource | null = target.contentWindow,
 ) {
   act(() => {
@@ -137,7 +138,7 @@ describe('InternalDocsPrompt', () => {
     );
     expect(target.referrerPolicy).toBe('no-referrer');
     expect(target.src).toBe(
-      `${internalOrigin}/embed/access-check?parent_origin=https%3A%2F%2Fastryx.atmeta.com`,
+      `${probeOrigin}/embed/access-check?parent_origin=https%3A%2F%2Fastryx.atmeta.com`,
     );
     fireEvent.load(target);
     expect(prompt()).toBeNull();
@@ -205,8 +206,9 @@ describe('InternalDocsPrompt', () => {
 
   it.each([
     'https://evil.example',
-    'https://astryx.internalmeta.com.evil.example',
-    'http://astryx.internalmeta.com',
+    'https://codebunny.internalmeta.com.evil.example',
+    'http://codebunny.internalmeta.com',
+    'https://astryx.internalmeta.com',
     'null',
   ])('ignores messages from the wrong origin: %s', async origin => {
     await mount();
@@ -222,6 +224,7 @@ describe('InternalDocsPrompt', () => {
     null,
     {},
     {type: 'wrong', reachable: true},
+    {type: 'astryx:access-check:v1', reachable: true},
     {type: message.type, reachable: false},
     {type: message.type, reachable: 'true'},
     {type: message.type, reachable: 1},
@@ -237,7 +240,7 @@ describe('InternalDocsPrompt', () => {
     await mount();
     const target = frame();
     fireEvent.load(target);
-    send(target, message, internalOrigin, window);
+    send(target, message, probeOrigin, window);
     expect(prompt()).toBeNull();
   });
 

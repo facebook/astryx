@@ -18,6 +18,7 @@ const deployments = [
   {name: 'canary', origin: 'https://astryx-canary.vercel.app'},
 ];
 const internalOrigin = 'https://astryx.internalmeta.com';
+const probeOrigin = 'https://codebunny.internalmeta.com';
 const promptName = 'Internal Astryx documentation';
 
 test.afterEach(async ({page}) => {
@@ -50,7 +51,7 @@ async function serveReachability(page: Page, origin: string) {
   const gate = new Promise<void>(resolve => {
     allowReply = resolve;
   });
-  await page.route(`${internalOrigin}/embed/access-check?**`, async route => {
+  await page.route(`${probeOrigin}/embed/access-check?**`, async route => {
     requests++;
     expect(
       new URL(route.request().url()).searchParams.get('parent_origin'),
@@ -65,7 +66,7 @@ async function serveReachability(page: Page, origin: string) {
         'Referrer-Policy': 'no-referrer',
         'X-Content-Type-Options': 'nosniff',
       },
-      body: `<!doctype html><html><body><script>window.parent.postMessage({type:'astryx:access-check:v1',reachable:true},${JSON.stringify(origin)});</script></body></html>`,
+      body: `<!doctype html><html><body><script>window.parent.postMessage({type:'codebunny:access-check:v1',reachable:true},${JSON.stringify(origin)});</script></body></html>`,
     });
   });
   return {requests: () => requests, allowReply};
@@ -190,7 +191,7 @@ for (const {name, origin} of deployments) {
 test('unreachable visitors never see a prompt', async ({page, baseURL}) => {
   const origin = deployments[0].origin;
   await servePublicOrigin(page, baseURL, origin);
-  await page.route(`${internalOrigin}/**`, route => route.abort());
+  await page.route(`${probeOrigin}/**`, route => route.abort());
   await page.goto(`${origin}/docs/getting-started`);
   await expect(
     page.getByRole('heading', {name: 'Getting Started', exact: true}),
