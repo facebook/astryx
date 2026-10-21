@@ -51,9 +51,10 @@ const memo = new WeakMap();
 /**
  * The doc-topic order for a query, or null when it would move nothing. The
  * topic is the named topic the lexical ranker lists first (several topics can
- * share a name). Entries of another kind that matched only in passing (a
- * prose or description mention) and sit ahead of the topic's last own entry
- * step behind it; everything else keeps the lexical order. The response holds
+ * share a name). When everything up to the topic's last own entry is either
+ * the topic's own or an entry of another kind that matched only in passing (a
+ * prose or description mention), the passing mentions step behind the
+ * topic's last own entry; otherwise nothing moves. The response holds
  * every lexical match.
  * @param {{query: string, options: {type?: string}}} request
  * @param {import('./_adapter.mjs').SearchCatalog} catalog
@@ -81,7 +82,14 @@ export function topicOrder(request, catalog) {
       r.domain !== 'doc' && /mentions/.test(String(r.reason ?? ''));
     const last = all.map(own).lastIndexOf(true);
     const head = all.slice(0, last + 1);
-    if (topic != null && head.some(passing)) {
+    // The rule holds only when everything up to the topic's last own entry is
+    // the topic's own or a passing mention of another kind, so only the
+    // topic's own entries ever pass a mention (spec:AST-083 FR2's exception).
+    if (
+      topic != null &&
+      head.some(passing) &&
+      head.every(r => own(r) || passing(r))
+    ) {
       answer = /** @type {import('./search.type.mjs').SearchResponse} */ ({
         ...lexical,
         data: {

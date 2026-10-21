@@ -55,6 +55,20 @@ describe('doc-topic searcher', () => {
     }
   }, 60_000);
 
+  for (const query of ['Setup', 'Fonts', 'reference']) {
+    it(`moves nothing for "${query}", whose topic sits among other entries`, async () => {
+      /** @type {string[]} */
+      const steps = [];
+      await runTree(
+        SEARCH_TREE,
+        {query, options: {cwd}},
+        {...(await gatherCandidates({cwd})), data: loadSearchData()},
+        {tuning: {onTrace: s => steps.push(s.id)}},
+      );
+      expect(steps).not.toContain('doc-topic');
+    }, 60_000);
+  }
+
   it('leaves a query that names no doc topic to the classifier', async () => {
     /** @type {string[]} */
     const steps = [];
