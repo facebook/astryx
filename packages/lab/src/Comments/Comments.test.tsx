@@ -402,9 +402,7 @@ describe('Comments rendering', () => {
   it('removes the fading New badge from layout when its animation ends', () => {
     render(
       <Sized>
-        <Comments
-          comments={[{...COMMENTS[0], isUnread: true, replies: []}]}
-        />
+        <Comments comments={[{...COMMENTS[0], isUnread: true, replies: []}]} />
       </Sized>,
     );
     const badge = document.querySelector('[data-comment-unread-badge="true"]');
@@ -867,11 +865,7 @@ describe('Comments threads', () => {
     const onReact = vi.fn().mockResolvedValue(undefined);
     render(
       <Sized>
-        <Comments
-          comments={COMMENTS}
-          currentUser={VIEWER}
-          onReact={onReact}
-        />
+        <Comments comments={COMMENTS} currentUser={VIEWER} onReact={onReact} />
       </Sized>,
     );
     const article = articleByAuthor('Avery Kim');
@@ -896,11 +890,7 @@ describe('Comments threads', () => {
       .mockResolvedValue(undefined);
     render(
       <Sized>
-        <Comments
-          comments={COMMENTS}
-          currentUser={VIEWER}
-          onReact={onReact}
-        />
+        <Comments comments={COMMENTS} currentUser={VIEWER} onReact={onReact} />
       </Sized>,
     );
     await click(

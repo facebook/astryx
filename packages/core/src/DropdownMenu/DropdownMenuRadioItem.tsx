@@ -27,6 +27,7 @@ import {renderIconSlot, type IconType} from '../Icon';
 import {useIndicator} from '../Indicator';
 import {Item} from '../Item';
 import {useDropdownMenuContext} from './DropdownMenuContext';
+import {focusOutlineStyles} from '../utils/focusOutline.stylex';
 import {focusMenuItemOnHover} from './menuItemHover';
 import {colorVars, spacingVars} from '../theme/tokens.stylex';
 import {mergeProps, themeProps} from '../utils';
@@ -41,12 +42,15 @@ const styles = stylex.create({
     backgroundColor: {
       default: 'transparent',
       ':focus': colorVars['--color-overlay-hover'],
+      // The overlay is forced to Canvas in high-contrast modes. Keep the
+      // row's content under user-agent control and mark focus with a system
+      // outline instead, so text, icons, and markers stay perceptible.
     },
     cursor: {
       default: 'pointer',
       ':is(:disabled,[aria-disabled="true"])': 'default',
     },
-    outline: 'none',
+    outlineOffset: '-2px',
   },
   disabled: {
     opacity: 0.5,
@@ -97,9 +101,10 @@ export interface DropdownMenuRadioItemProps extends Omit<
    */
   icon?: ReactNode | IconType;
   /**
-   * Whether this individual radio item is disabled. Disabled items stay
-   * focusable (via `aria-disabled`) so they remain discoverable by keyboard
-   * and assistive technology, but selection is blocked.
+   * Whether this individual radio item is disabled. A disabled item stays in
+   * the accessibility tree as disabled (`aria-disabled`) but takes no focus:
+   * the arrow keys, typeahead, and the pointer highlight skip it, and
+   * selection is blocked.
    * @default false
    */
   isDisabled?: boolean;
@@ -194,7 +199,12 @@ export function DropdownMenuRadioItem({
       endContent={endContent}
       onClick={handleClick}
       isDisabled={isDisabled}
-      xstyle={[styles.root, isDisabled && styles.disabled, xstyle]}
+      xstyle={[
+        focusOutlineStyles.focusVisible,
+        styles.root,
+        isDisabled && styles.disabled,
+        xstyle,
+      ]}
       {...mergeProps(themeProps('dropdown-menu-item', {size: menuSize}), {
         className,
         style,

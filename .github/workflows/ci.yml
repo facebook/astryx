@@ -1383,6 +1383,37 @@ jobs:
             --project chromium \
             --output menu-header-footer-output
 
+      # DropdownMenu's audit drives its own stories through every rendered
+      # state — keyboard and pointer opens, hovered, pressed, disabled,
+      # destructive, selectable, nested, sheet, overflow, narrow and coarse,
+      # forced colors — and banks receipted frames bound to the exact head.
+      - name: Run DropdownMenu audit browser evidence
+        if: github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, '[Component Audit] DropdownMenu:')
+        env:
+          ASTRYX_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          node .github/scripts/accessibility-audit.js \
+            --storybook-dir apps/storybook/dist \
+            --output dropdown-menu-a11y-report.json \
+            --components DropdownMenu \
+            --baseline .github/a11y-baseline.json \
+            --fail-on-new
+          pnpm exec playwright test \
+            packages/core/src/DropdownMenu/__tests__/DropdownMenuAudit.a11y.chromium.spec.ts \
+            --project chromium \
+            --output dropdown-menu-audit-output
+
+      - name: Upload DropdownMenu audit evidence
+        if: always() && github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, '[Component Audit] DropdownMenu:')
+        uses: actions/upload-artifact@v7
+        with:
+          name: dropdown-menu-audit-evidence-${{ needs.build-storybook.outputs.short_hash }}
+          path: |
+            dropdown-menu-a11y-report.json
+            test-results/dropdown-menu-audit-evidence/
+          retention-days: 30
+          if-no-files-found: error
+
       # The RichTextEditor "Markdown parity" stories render one Markdown
       # document with core Markdown and RichTextEditor and measure where each
       # block lands; geometry, the read/edit switch and the scroll anchor only
