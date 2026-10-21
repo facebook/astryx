@@ -575,23 +575,30 @@ function isAstryxWorkspaceMember(dir) {
 
 /**
  * The folders a read lookup searches, nearest first: `startDir` and the
- * `reach - 1` folders above it, as released versions did, then on up to the
- * workspace root of the Astryx project `startDir` belongs to, if any.
+ * `reach - 1` folders above it, as released versions did; then the root of
+ * the Astryx project `startDir` belongs to, if any, and the folders from it up
+ * to its workspace root. Past the reach the search starts at the project root,
+ * so a folder between the two that installs packages but declares no Astryx
+ * package (a tool inside the project) never answers for the project.
  *
  * @param {string} startDir
  * @param {number} reach
  * @returns {Generator<string>}
  */
 function* readFolders(startDir, reach) {
-  const project = findAstryxProject(startDir);
-  const bound = project == null ? null : workspaceBound(project);
-  let searched = 0;
-  let pastBound = bound == null;
+  /** @type {Set<string>} */
+  const searched = new Set();
   for (const dir of foldersUpFrom(startDir)) {
-    if (pastBound && searched >= reach) return;
+    if (searched.size >= reach) break;
+    searched.add(dir);
     yield dir;
-    searched++;
-    if (dir === bound) pastBound = true;
+  }
+  const project = findAstryxProject(startDir);
+  if (project == null) return;
+  const bound = workspaceBound(project);
+  for (const dir of foldersUpFrom(project)) {
+    if (!searched.has(dir)) yield dir;
+    if (dir === bound) return;
   }
 }
 

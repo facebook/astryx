@@ -273,19 +273,17 @@ validate` MUST warn on a PascalCase `.tsx` at the top of the components root
   Inputs whose writes stay inside the root keep working. Refusing one of them,
   moving outputs instead of refusing, or confining an operation that no current
   record confines is classified like any other change.
-- **INV10b — An upgrade acts on the project it runs in; running it below that
-  project was never a separate root.** `astryx upgrade` operates on the project
+- **INV10b — An upgrade acts on the project it runs in; a folder below that
+  project is never a separate root.** `astryx upgrade` operates on the project
   `spec:AST-040` FR9 finds: the nearest folder at or above where it runs whose
   `package.json` declares an Astryx package, or that an Astryx workspace lists.
   A folder that installs `@astryxdesign/core` but declares no Astryx package
   and is not a listed workspace member is not a supported upgrade root: an
   upgrade run there that migrates only that folder leaves the rest of the
   project on the old release, so a caller who relied on it is not a released
-  victim (`spec:AST-017` FR54). Moving such a run to the project above it is a
-  compatible `[fix]` and patch-eligible. The Changeset names the scenario and
-  the migration: to keep a sub-folder its own project, declare an Astryx
-  package in that folder's `package.json`. A run in a folder that declares one
-  keeps operating on that folder.
+  victim (`spec:AST-017` FR54). Acting on the project above such a folder is a
+  compatible `[fix]` and patch-eligible. A folder that declares an Astryx
+  package is its own project, so a run there operates on that folder.
 - **INV11 — A broken integration degrades a command run, it does not fail
   it.** The `Project` seam loads each integration independently and records
   the failure, and the command's own work proceeds without that integration's
@@ -807,20 +805,17 @@ the destination.
 
 **Decider:** `josephfarina`, `2026-10-21`
 
-The release before this one upgraded whatever folder it ran in. Run from a
-project's `src` or from a nested package that installs Core without declaring
-Astryx, it read no configuration, refreshed no agent docs, and migrated only
-part of the source, leaving the project half on each release with nothing to
-say so. `spec:AST-040` FR9 makes the project the unit of an upgrade, and a
-folder that installs Core without declaring it is a hoisted install or a stray
-`node_modules`, not an app of its own, so following FR9 there ships as a
-`[fix]` (INV10b). The boundary is narrow: a folder that declares an Astryx
-package keeps its own upgrade, and the Changeset gives the migration.
+An upgrade that acts on one folder of a project reads none of the project's
+configuration, refreshes none of its agent docs, and migrates only part of
+its source, leaving the project half on each release with nothing to say so.
+`spec:AST-040` FR9 makes the project the unit of an upgrade, and a folder that
+installs Core without declaring it is a hoisted install or a stray
+`node_modules`, not an app of its own, so following FR9 there is a `[fix]`
+(INV10b). The boundary is narrow: a folder that declares an Astryx package
+keeps its own upgrade.
 
-Rejected: holding the correction for a minor (every patch until then keeps
-producing half-migrated projects); and treating every folder with an installed
-Core as a project (a workspace member then migrates against a Core its
-workspace does not use).
+Rejected: treating every folder with an installed Core as a project (a
+workspace member then migrates against a Core its workspace does not use).
 
 ## Verification
 
@@ -832,7 +827,7 @@ workspace does not use).
 | INV4      | `clients/cli/formatters/index.test.mjs`, type tests                                                                                                                                                                                                                                                                                                                   | `emit` accepts a bare string, or output varies between pipe and TTY.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 | INV6      | `pnpm check:cli-structure`                                                                                                                                                                                                                                                                                                                                            | A command's file or its doc is missing, or sits at the wrong path.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | INV8      | `clients/cli/cli-exit-codes.test.mjs`                                                                                                                                                                                                                                                                                                                                 | The same condition exits differently with and without `--json`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
-| INV10b    | `api/upgrade/run/run.test.mjs` (a folder that installs Core without declaring it upgrades the project above it; a member its workspace lists and one that declares Astryx keep their own), `clients/cli/commands/upgrade.subfolder-path.test.mjs` |
+| INV10b | `api/upgrade/run/run.test.mjs` (a folder that installs Core without declaring it upgrades the project above it; a member its workspace lists and one that declares Astryx keep their own), `clients/cli/commands/upgrade.subfolder-path.test.mjs` | A folder that installs Core without declaring Astryx upgrades only itself, or a declaring folder or a listed member upgrades the project above it. |
 | INV14     | `foundation/integrations/autolink.test.mjs`, `foundation/config/project.test.mjs`                                                                                                                                                                                                                                                                                     | An undeclared package contributes, or configured/local precedence changes.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
 | INV15     | `api/integration/add-contribution.test.mjs`, `clients/cli/commands/integration-authoring.test.mjs`                                                                                                                                                                                                                                                                    | Dry-run/write paths differ, a writer clobbers bytes, or the new contribution is not discoverable.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | INV16     | `foundation/integrations/manifest-writer.test.mjs`, `api/integration/add-contribution.test.mjs`                                                                                                                                                                                                                                                                       | A writer invents package policy, replaces an author entry, or local bytes lose precedence.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |

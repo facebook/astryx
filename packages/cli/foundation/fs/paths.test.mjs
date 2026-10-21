@@ -173,6 +173,23 @@ describe('findCoreDir', () => {
     expect(findCoreDir(deep)).toBe(nmCore);
   });
 
+  // Past the reach the search starts at the project root: a tool folder
+  // between them that installs its own Core but declares nothing never
+  // answers for the project, as `upgrade` targets the project's Core.
+  it('answers the project\'s Core, not a tool folder\'s, from deep inside the tool', () => {
+    const app = path.join(tmpDir, 'app');
+    writeProject(app, DECLARES_CORE);
+    const projectCore = install(app, '@astryxdesign/core', '0.7.0');
+    const tool = path.join(app, 'tools', 'codegen');
+    writePackage(tool, 'codegen');
+    install(tool, '@astryxdesign/core', '0.9.0');
+    const deep = path.join(tool, 'src', 'a', 'b', 'c', 'd', 'e');
+    fs.mkdirSync(deep, {recursive: true});
+
+    expect(findProjectCoreDir(deep)).toBe(projectCore);
+    expect(findInstalledPackage(path.join(deep, 'f'), '@astryxdesign/core')).toBe(projectCore);
+  });
+
   // Node loads the hoisted copy whatever the member declares: an override or
   // resolution can force it, and a peer range can be stale. Reads answer from
   // the copy that loads.
