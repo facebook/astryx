@@ -76,32 +76,6 @@ export function issueWarning(code, message) {
   return {code, severity: 'warning', message};
 }
 
-/** Issues `issueListed` made: listed in validate's `layout` report only. */
-const LISTED = new WeakSet();
-
-/**
- * A layout finding added after the last minor release: validate lists it, in
- * its `layout` report, but it is never an issue, so nothing counts it and
- * `integration check --strict` does not fail on it. A new failing finding
- * joins only in a minor release (architecture:cli-surface INV35).
- * @param {string} code
- * @param {string} message
- * @returns {Issue}
- */
-export function issueListed(code, message) {
-  const issue = issueWarning(code, message);
-  LISTED.add(issue);
-  return issue;
-}
-
-/**
- * Whether `issueListed` made this issue.
- * @param {Issue} issue
- */
-export function isListedIssue(issue) {
-  return LISTED.has(issue);
-}
-
 /**
  * Report the manifest keys this CLI does not know.
  *
@@ -206,7 +180,7 @@ function checkRoots(resolved, issues, packageDir) {
           ? 'replace the link with a real folder holding its files'
           : `replace the link with the folder itself (move ${target}/ to ${shown}/), or set \`${kind}: './${realRoot}'\` in ${manifestName(resolved)}`;
         issues.push(
-          issueListed(
+          issueWarning(
             'symlinked_root',
             `Declared ${kind} root "${slash(path.relative(packageDir, root))}" is reached through the symlink "${shown}" (to "${target}"). Astryx follows it locally, but npm pack does not follow a symlinked folder, so the published package ships none of these files. Fix: ${fix}.`,
           ),
@@ -471,14 +445,14 @@ async function checkComponents(integration, issues) {
       // component works here: a warning, as validate exited 0 for it before.
       if (componentDiscovery.isHiddenComponentDoc(docPath)) {
         issues.push(
-          issueListed(
+          issueWarning(
             'source_without_component_doc',
             `Hidden component doc "${shown}" and its source "${source}" differ only in letter case. ${linux}. ${fix}`,
           ),
         );
       } else if (componentDiscovery.integrationSourceForDoc(docPath) != null) {
         issues.push(
-          issueListed(
+          issueWarning(
             'source_without_component_doc',
             `Component doc "${shown}" and its source "${source}" differ only in letter case. ${linux}, so there the component is missing. ${fix}`,
           ),
@@ -496,7 +470,7 @@ async function checkComponents(integration, issues) {
       const readName = path.basename(read);
       const ignoredNames = ignored.map(file => path.basename(file));
       issues.push(
-        issueListed(
+        issueWarning(
           'duplicate_component_doc',
           `Component "${docStemOf(readName)}" has ${ignored.length + 1} docs: ${[readName, ...ignoredNames].join(', ')}. Astryx reads ${readName} and ignores ${ignoredNames.join(' and ')}. Fix: delete ${ignoredNames.join(' and ')}, moving anything only ${ignored.length === 1 ? 'it says' : 'they say'} into ${readName}.`,
         ),
@@ -676,7 +650,7 @@ function checkUnreadableFiles(integration, issues) {
     } catch (err) {
       const code = String(/** @type {any} */ (err)?.code ?? 'unknown error');
       issues.push(
-        issueListed(
+        issueWarning(
           'unreadable_file',
           `Could not read "${shown}" (${code}), so Astryx cannot check it and npm pack fails on it. Fix: make it readable (chmod a+r ${shown}), or delete it if it does not belong in the package.`,
         ),
@@ -710,29 +684,6 @@ async function runContributionChecks(integration, issues) {
  * @returns {Promise<Issue[]>}
  */
 export async function validateLoadedIntegration(loaded) {
-  return (await validateLoadedIntegrationListed(loaded)).issues;
-}
-
-/**
- * Every contribution check, split: `issues` as validateLoadedIntegration
- * returns them, and `listed`, the layout findings validate lists in its
- * `layout` report without counting them.
- * @param {LoadedIntegration} loaded
- * @returns {Promise<{issues: Issue[], listed: Issue[]}>}
- */
-export async function validateLoadedIntegrationListed(loaded) {
-  const all = await allLoadedIntegrationIssues(loaded);
-  return {
-    issues: all.filter(issue => !LISTED.has(issue)),
-    listed: all.filter(issue => LISTED.has(issue)),
-  };
-}
-
-/**
- * @param {LoadedIntegration} loaded
- * @returns {Promise<Issue[]>}
- */
-async function allLoadedIntegrationIssues(loaded) {
   /** @type {Issue[]} */
   const issues = [];
   if (!loaded || typeof loaded !== 'object') return issues;

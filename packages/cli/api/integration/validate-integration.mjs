@@ -58,17 +58,14 @@ import {
 // integration-warnings need them too, and foundation must not depend on api.
 import {
   INVALID_CLI_COMMAND,
-  isListedIssue,
-  issueListed as listed,
   validateLoadedIntegration,
-  validateLoadedIntegrationListed,
   issueError as error,
   issueWarning as warning,
   rootProblem,
 } from '../../foundation/integrations/validate-contributions.mjs';
 import {formatCliCommand} from '../../foundation/env/package-manager.mjs';
 
-export {validateLoadedIntegration, isListedIssue};
+export {validateLoadedIntegration};
 
 /**
  * @typedef {import('../../foundation/integrations/issue').AstryxIntegrationIssue} Issue
@@ -84,9 +81,6 @@ export {validateLoadedIntegration, isListedIssue};
  * @property {Issue[]} issues
  * @property {Array<{code: string, message: string}>} [notes] Information that
  *   fails nothing, such as `invalid_cli_command` (a malformed `cliCommand`).
- * @property {Issue[]} [listed] Layout findings validate lists in its `layout`
- *   report without counting them: added after the last minor release, they
- *   may not fail `--strict` until the next (architecture:cli-surface INV35).
  * @property {import('../../foundation/integrations/integrations.mjs').LoadedIntegration} [integration]
  */
 
@@ -410,9 +404,7 @@ async function validateAtPackageDir(
   // `integration check --strict` fails on any warning, and a new failure code
   // joins only in a minor release (architecture:cli-surface INV35). Doctor's
   // project check still warns about it.
-  const contribution = await validateLoadedIntegrationListed(loaded);
-  (result.listed ??= []).push(...contribution.listed);
-  for (const issue of contribution.issues) {
+  for (const issue of await validateLoadedIntegration(loaded)) {
     if (issue.code === INVALID_CLI_COMMAND) {
       (result.notes ??= []).push({code: issue.code, message: issue.message});
     } else {
@@ -500,7 +492,7 @@ export async function validateLocalIntegration(cwd = process.cwd()) {
     {name, version: pkg.version},
     {scanUnreachable: true},
   );
-  (result.listed ??= []).unshift(
+  result.issues.unshift(
     ...fields,
     // Only a manifest that loaded says whether it declares a providerId; one
     // that did not is reported as invalid_manifest.
@@ -544,7 +536,7 @@ function providerIdIssues(name, declared, manifestFile) {
   if (typeof declared === 'string' && isPackageName(declared)) return [];
   const manifest = path.basename(manifestFile);
   return [
-    listed(
+    warning(
       'no_provider_id',
       `No provider ID can be derived for this package: package.json "name" ${JSON.stringify(name)} is not a bare package name (an optional @scope/ and a name, each starting with a lowercase letter or digit and holding only lowercase letters, digits, "-", ".", "_" and "~"), and ${manifest} declares no providerId that is one. Astryx files the package's components, templates and docs under that ID, so links to them and selecting the package cannot work. Fix: rename the package, such as "@your-scope/your-package", or set \`providerId: '@your-scope/your-package'\` in ${manifest}.`,
     ),
@@ -561,11 +553,11 @@ function packageJsonFieldIssues(pkg, pkgJsonPath) {
   /** @type {Issue[]} */
   const issues = [];
   const shown = path.basename(pkgJsonPath);
-  // Listed, so validate and `--strict` keep the result they had for these
-  // packages; `integration verify`, which packs, reports them as errors.
+  // Warnings, so validate keeps the exit code it had for these packages;
+  // `integration verify`, which packs, reports them as errors.
   if (typeof pkg.name !== 'string' || pkg.name === '') {
     issues.push(
-      listed(
+      warning(
         'invalid_package_json',
         `${shown} has no "name", so npm cannot pack or publish the package, and a project that installs it has no name to select it by. Fix: add "name": "@your-scope/your-package" to ${shown}.`,
       ),
@@ -577,7 +569,7 @@ function packageJsonFieldIssues(pkg, pkgJsonPath) {
     (typeof pkg.version !== 'string' || pkg.version === '')
   ) {
     issues.push(
-      listed(
+      warning(
         'invalid_package_json',
         `${shown} has no "version", so npm cannot pack or publish the package. Fix: add "version": "0.1.0" to ${shown}.`,
       ),
@@ -665,14 +657,6 @@ export async function validateIntegration(pkg, options = {}) {
     ? await integrationDocTypes(integration, cwd)
     : undefined;
   const notes = result.found ? (result.notes ?? []) : [];
-  // Layout findings added after the last minor release: listed with their
-  // fix, never counted (architecture:cli-surface INV35).
-  const layout = result.found
-    ? {
-        status: /** @type {const} */ ('checked'),
-        findings: (result.listed ?? []).map(layoutFinding),
-      }
-    : undefined;
   return {
     type: 'integration.validate',
     data: {
@@ -694,30 +678,7 @@ export async function validateIntegration(pkg, options = {}) {
           : result.issues,
       ...(notes.length > 0 ? {notes} : {}),
       ...(docTypes ? {docTypes} : {}),
-      ...(layout ? {layout} : {}),
     },
-  };
-}
-
-/**
- * A listed issue as a `layout` finding: its code, message, fix and location,
- * at `info` severity, which nothing counts.
- * @param {Issue} issue
- * @returns {import('./validate-integration.type.mjs').LayoutFinding}
- */
-function layoutFinding(issue) {
-  const fix =
-    issue.fix ??
-    (issue.message.includes('Fix: ')
-      ? issue.message.slice(issue.message.lastIndexOf('Fix: ') + 'Fix: '.length)
-      : undefined);
-  return {
-    code: issue.code,
-    severity: 'info',
-    message: issue.message,
-    ...(fix != null ? {fix} : {}),
-    ...(issue.file != null ? {file: issue.file} : {}),
-    ...(issue.line != null ? {line: issue.line} : {}),
   };
 }
 
