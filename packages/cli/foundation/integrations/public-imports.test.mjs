@@ -121,9 +121,20 @@ afterEach(() => {
   fs.rmSync(dir, {recursive: true, force: true});
 });
 
+/**
+ * The public-import findings, listed or warned, each message rejoined with
+ * its fix.
+ */
 async function found() {
   const result = await validateLocalIntegration(dir);
-  return result.issues.filter(issue => CODES.has(issue.code));
+  return [...result.issues, ...(result.publicImports?.findings ?? [])]
+    .filter(finding => CODES.has(finding.code))
+    .map(finding => ({
+      ...finding,
+      message: finding.fix
+        ? `${finding.message} Fix: ${finding.fix}`
+        : finding.message,
+    }));
 }
 
 async function codes() {
@@ -194,7 +205,9 @@ describe('public imports: clean packages', () => {
     );
     const result = await validateIntegration(undefined, {cwd: dir});
     expect(
-      result.data.issues.filter(i => i.code.includes('_not_exported')),
+      (result.data.publicImports?.findings ?? []).filter(i =>
+        i.code.includes('_not_exported'),
+      ),
     ).toEqual([]);
     expect(result.data.publicImports?.unchecked).toEqual([
       expect.objectContaining({
@@ -238,28 +251,31 @@ describe('public imports: component doc import', () => {
     pkg(p => delete p.exports['./components/AcmeWidget']);
     const issues = await found();
     const issue = issues.find(i => i.code === 'component_import_not_exported');
-    expect(issue?.severity).toBe('warning');
+    expect(issue?.severity).toBe('info');
     expect(issue?.message).toContain(
       '"./components/AcmeWidget": "./components/AcmeWidget.tsx"',
     );
   });
 
-  it('adds only warnings: validate keeps its exit, only --strict fails', async () => {
+  it('lists its findings only: neither validate nor --strict counts or fails on them', async () => {
     pkg(p => {
       delete p.exports['./components/AcmeWidget'];
     });
     write(
       'templates/account-card.tsx',
-      "import {X} from '../components/AcmeWidget';\nexport function A() {\n  return <X />;\n}\n",
+      "import {X} from '../components/AcmeWidget';\nexport default function A() {\n  return <X />;\n}\n",
     );
     const issues = await found();
     expect(issues.length).toBeGreaterThan(2);
-    expect(issues.every(i => i.severity === 'warning')).toBe(true);
+    expect(issues.every(i => i.severity === 'info')).toBe(true);
+    const validated = await validateLocalIntegration(dir);
+    expect(validated.issues.filter(issue => CODES.has(issue.code))).toEqual([]);
     const plain = await integrationCheck({cwd: dir});
     expect(plain.data.errors).toBe(0);
-    expect(plain.data.failed).toBe(false);
+    expect(plain.data.warnings).toBe(0);
     const strict = await integrationCheck({cwd: dir, strict: true});
-    expect(strict.data.failed).toBe(true);
+    expect(strict.data.failed).toBe(false);
+    expect(strict.data.failures).toEqual([]);
   });
 
   it('flags a require-only condition', async () => {
@@ -1113,7 +1129,9 @@ describe('which Core and which package', () => {
         cwd: path.join(root, 'packages/widgets'),
       });
       expect(
-        result.data.issues.filter(i => i.code === 'template_private_import'),
+        (result.data.publicImports?.findings ?? []).filter(
+          i => i.code === 'template_private_import',
+        ),
       ).toEqual([]);
       expect(result.data.publicImports?.unchecked).toEqual([
         expect.objectContaining({
@@ -1126,7 +1144,7 @@ describe('which Core and which package', () => {
     }
   });
 
-  it('with no package name, runs only the checks that need none and reports the rest skipped', async () => {
+  it('with no package name, runs only the checks that need none and lists the rest as not checked', async () => {
     pkg(p => delete p.name);
     write(
       'templates/account-card.tsx',
@@ -1134,13 +1152,16 @@ describe('which Core and which package', () => {
     );
     const result = await validateIntegration(undefined, {cwd: dir});
     expect(await codes()).toEqual(['template_import_outside_root']);
-    expect(result.data.publicImports).toMatchObject({
-      status: 'skipped',
-      reason: expect.stringContaining('no "name"'),
-    });
-    // What `integration check --strict` fails on from validate: the skip.
-    const {skipped} = strictIssues('validate', result);
-    expect(skipped.map(each => each.code)).toEqual(['public_imports_skipped']);
+    expect(result.data.publicImports?.status).toBe('checked');
+    expect(result.data.publicImports?.unchecked).toContainEqual(
+      expect.objectContaining({
+        file: 'package.json',
+        reason: expect.stringContaining('no "name"'),
+      }),
+    );
+    // Nothing from it fails `integration check --strict`: no skip, no warning.
+    const {warnings, skipped} = strictIssues('validate', result);
+    expect([...warnings, ...skipped]).toEqual([]);
   });
 });
 

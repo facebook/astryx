@@ -5,13 +5,16 @@
  * import is importable, read without a build.
  *
  * @input A package directory and its loaded integration record.
- * @output Warnings for: a template source with no default export; a
- *   component doc's `import` or a template's public import whose subpath
- *   package.json `exports` does not declare (or that names another package);
- *   a component example that imports an undeclared subpath or a name the
- *   package does not export; a template source that imports a relative path
- *   outside the templates root, an undeclared subpath of its own package or
- *   of Core, or a name its package does not export.
+ * @output Findings, listed in the `publicImports` report and never counted
+ *   (they fail `--strict` from the next minor), for: a component doc's
+ *   `import` or a template's public import whose subpath package.json
+ *   `exports` does not declare (or that names another package); a component
+ *   example that imports an undeclared subpath; a template source that
+ *   imports a relative path outside the templates root or an undeclared
+ *   subpath of its own package or of Core. Warnings for: a component doc's
+ *   import whose module lacks the component; an example or template that
+ *   imports a name its package does not export; a template source with no
+ *   default export.
  * @position foundation/integrations, beside the other on-disk contribution
  *   validators; run by `astryx doctor integration validate` (and so by
  *   `integration check`) through api/integration/validate-integration.mjs.
@@ -714,6 +717,28 @@ function uncheckedReason(files, allPresent = true) {
   return "its module's export list cannot be read in full (CommonJS, an `export *` from another package, a parse error, or JavaScript with no declaration file for its types), so the names it imports were not checked";
 }
 
+// ── Listed findings ─────────────────────────────────────────────────
+
+/**
+ * A public-import finding, listed in the report and never counted: it
+ * becomes a failing warning in the next minor release (a new failure code
+ * joins only in a minor). The message's ` Fix: …` tail is its fix.
+ * @param {string} code
+ * @param {string} message
+ * @returns {PublicImportFinding}
+ */
+function listed(code, message) {
+  const at = message.indexOf(' Fix: ');
+  return at === -1
+    ? {code, severity: 'info', message}
+    : {
+        code,
+        severity: 'info',
+        message: message.slice(0, at),
+        fix: message.slice(at + ' Fix: '.length),
+      };
+}
+
 // ── Checks ──────────────────────────────────────────────────────────
 
 /**
@@ -785,6 +810,7 @@ function fixTarget(subpath, sourceTarget) {
 
 /** @typedef {import('../../api/integration/validate-integration.type.mjs').PublicImportUnchecked} PublicImportUnchecked */
 /** @typedef {import('../../api/integration/validate-integration.type.mjs').PublicImportsReport} PublicImportsReport */
+/** @typedef {import('../../api/integration/validate-integration.type.mjs').PublicImportFinding} PublicImportFinding */
 
 /**
  * Judge an import of the package's own name.
@@ -855,10 +881,10 @@ function subpathExporting(ctx, name, preferred) {
  * A component doc's import specifier, and every example's imports.
  * @param {Context} ctx
  * @param {any} integration
- * @returns {Promise<Issue[]>}
+ * @returns {Promise<Array<Issue | PublicImportFinding>>}
  */
 async function componentIssues(ctx, integration) {
-  /** @type {Issue[]} */
+  /** @type {Array<Issue | PublicImportFinding>} */
   const issues = [];
   // Every component check compares imports with the package's own name.
   if (ctx.name == null) return issues;
@@ -921,7 +947,7 @@ async function componentIssues(ctx, integration) {
       (sourceTarget ? sourceTarget.replace(/\.[cm]?[jt]sx?$/u, '') : null);
     if (split && split.pkg !== ctx.name) {
       issues.push(
-        issueWarning(
+        listed(
           'component_import_other_package',
           `Component doc "${shownDoc}" ${gives}, which names package "${split.pkg}", not this package "${ctx.name}", so apps are told to import the component from somewhere it is not. Fix: set import: '${ctx.name}${suggested ? suggested.slice(1) : ''}' in the doc.`,
         ),
@@ -992,7 +1018,7 @@ async function componentIssues(ctx, integration) {
             ? `set import: '${ctx.name}${declared.slice(1)}' (already exported), or `
             : '';
         issues.push(
-          issueWarning(
+          listed(
             'component_import_not_exported',
             `Component doc "${shownDoc}" ${gives}, but ${whyUndeclared(declaration, split.subpath)}, so apps cannot import the component from it. Fix: ${already}${split.subpath === '.' && perComponent ? `${perComponent}.` : exportsFix(ctx.exportsField, declaration.state, split.subpath, fixTarget(split.subpath, sourceTarget))}`,
           ),
@@ -1145,7 +1171,7 @@ async function componentIssues(ctx, integration) {
           });
         } else if (undeclared) {
           issues.push(
-            issueWarning(
+            listed(
               'example_import_not_exported',
               `Component doc "${shownDoc}" example ${label} imports "${statement.source}", but ${whyUndeclared(undeclared, parts.subpath)}, so the example fails when an app copies it. Fix: ${exampleFix(statement, parts.subpath, undeclared)}`,
             ),
@@ -1168,10 +1194,10 @@ async function componentIssues(ctx, integration) {
  * Template public imports and what each template source imports.
  * @param {Context} ctx
  * @param {any} integration
- * @returns {Promise<Issue[]>}
+ * @returns {Promise<Array<Issue | PublicImportFinding>>}
  */
 async function templateIssues(ctx, integration) {
-  /** @type {Issue[]} */
+  /** @type {Array<Issue | PublicImportFinding>} */
   const issues = [];
   const root = integration.templates;
   if (!root) return issues;
@@ -1194,7 +1220,7 @@ async function templateIssues(ctx, integration) {
     );
     if (ctx.name != null && declaration.state !== 'declared') {
       issues.push(
-        issueWarning(
+        listed(
           'template_import_not_exported',
           `Template "${id}" has public import "${ctx.name}${subpath.slice(1)}", but ${whyUndeclared(declaration, subpath)}, so it cannot be imported once published. Fix: ${exportsFix(ctx.exportsField, declaration.state, subpath, sourceTarget)}`,
         ),
@@ -1232,7 +1258,7 @@ async function templateIssues(ctx, integration) {
         const target = path.resolve(path.dirname(file), spec);
         if (target !== root && !target.startsWith(root + path.sep)) {
           issues.push(
-            issueWarning(
+            listed(
               'template_import_outside_root',
               `Template "${id}" (${shown}) imports "${spec}", a path outside the templates root; \`astryx template\` copies only the template into an app, where that path does not exist. Fix: import it through the package's public name (e.g. '${ctx.name ?? '<package name>'}/…' declared in package.json "exports"), or move the code into the template.`,
             ),
@@ -1259,7 +1285,7 @@ async function templateIssues(ctx, integration) {
           });
         } else if (undeclared) {
           issues.push(
-            issueWarning(
+            listed(
               'template_private_import',
               `Template "${id}" (${shown}) imports "${spec}", but ${whyUndeclared(undeclared, parts.subpath)}, so the template breaks in an app. Fix: import from a subpath package.json "exports" declares, or add one for it.`,
             ),
@@ -1296,7 +1322,7 @@ async function templateIssues(ctx, integration) {
               ? `'${CORE}/${top}'`
               : `a subpath Core's package.json "exports" declares`;
           issues.push(
-            issueWarning(
+            listed(
               'template_private_import',
               `Template "${id}" (${shown}) imports "${spec}", a path Core's package.json "exports" does not declare, so the template breaks in an app. Fix: import from ${hint}.`,
             ),
@@ -1319,23 +1345,25 @@ export async function publicImportIssues(packageDir, integration) {
   /** @type {PublicImportsReport} */
   const report = {status: 'checked', findings: [], unchecked: []};
   const pkg = readJson(path.join(packageDir, 'package.json'));
+  // What cannot run is listed as not checked, never a skip `--strict` would
+  // fail on.
   if (!isRecord(pkg)) {
-    return {
-      issues: [],
-      report: {
-        status: 'skipped',
-        reason: 'package.json could not be read, so no import was checked',
-        findings: [],
-        unchecked: [],
-      },
-    };
+    report.unchecked.push({
+      file: 'package.json',
+      specifier: '',
+      reason: 'package.json could not be read, so no import was checked',
+    });
+    return {issues: [], report};
   }
   const name =
     typeof pkg.name === 'string' && pkg.name !== '' ? pkg.name : null;
   if (name == null) {
-    report.status = 'skipped';
-    report.reason =
-      'package.json has no "name", so imports of the package\'s own name were not checked; only template imports outside the templates root and of Core were';
+    report.unchecked.push({
+      file: 'package.json',
+      specifier: '',
+      reason:
+        'package.json has no "name", so imports of the package\'s own name were not checked; only template imports outside the templates root and of Core were',
+    });
   }
   // The Core installed beside the package, which its templates' imports
   // resolve against; never the CLI's own copy, which may be another release.
@@ -1370,9 +1398,20 @@ export async function publicImportIssues(packageDir, integration) {
       .filter(root => typeof root === 'string')
       .map(root => path.resolve(root)),
   };
-  const issues = [
+  const all = [
     ...(await componentIssues(ctx, integration)),
     ...(await templateIssues(ctx, integration)),
   ];
+  // Listed findings go in the report and count for nothing; the rest are
+  // warning issues.
+  /** @type {Issue[]} */
+  const issues = [];
+  for (const each of all) {
+    if (each.severity === 'info') {
+      report.findings.push(/** @type {PublicImportFinding} */ (each));
+    } else {
+      issues.push(/** @type {Issue} */ (each));
+    }
+  }
   return {issues, report};
 }
