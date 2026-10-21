@@ -165,6 +165,33 @@ export async function findStrayPointers(discovered) {
     if (typeof name === 'string' && !own.has(name)) own.set(name, 'namespace');
   }
   const core = await loadCoreKinds();
+  // A topic that extends another has no route of its own: a link to it names
+  // the page it shows on, the topic it extends.
+  /** @type {Map<string, string>} */
+  const extendsOf = new Map();
+  for (const topic of topics) {
+    if (!topic.file) continue;
+    const doc = /** @type {any} */ (await loadQuietly(topic.file));
+    if (typeof doc?.extends === 'string')
+      extendsOf.set(topic.name, doc.extends);
+  }
+  /** @param {string} target */
+  const linkFor = target => {
+    const page = extendsOf.get(target);
+    if (page != null) {
+      if (own.has(page) && !extendsOf.has(page)) {
+        return `{@link ${own.get(page)}:${page}}`;
+      }
+      return core.has(page)
+        ? `{@link @astryxdesign/cli:${core.get(page)}:${page}}`
+        : null;
+    }
+    return own.has(target)
+      ? `{@link ${own.get(target)}:${target}}`
+      : core.has(target)
+        ? `{@link @astryxdesign/cli:${core.get(target)}:${target}}`
+        : null;
+  };
   /** @type {import('../../api/integration/authoring-checks.type.mjs').StrayPointer[]} */
   const found = [];
   for (const topic of topics) {
@@ -191,11 +218,7 @@ export async function findStrayPointers(discovered) {
       if (index >= 0) cursor = index + words.length;
       for (const match of text.matchAll(POINTER)) {
         const target = match[1];
-        const link = own.has(target)
-          ? `{@link ${own.get(target)}:${target}}`
-          : core.has(target)
-            ? `{@link @astryxdesign/cli:${core.get(target)}:${target}}`
-            : null;
+        const link = linkFor(target);
         if (!link) continue;
         const command = `astryx docs ${target}`;
         const line =

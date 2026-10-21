@@ -1042,6 +1042,23 @@ describe('integrationDocConflicts fluff', () => {
 describe('integrationDocConflicts stray doc pointers', () => {
   const stray = (/** @type {any} */ result) => result.data.strayPointers;
 
+  it('links a pointer to an extension topic to the page it extends', async () => {
+    writeTopics([
+      {name: 'acme-theme', text: 'Acme colors.', extendsTopic: 'theme'},
+      {name: 'acme-menus', text: 'Colors are in `astryx docs acme-theme`.'},
+    ]);
+
+    const [hit, ...rest] = stray(
+      await integrationDocConflicts(undefined, {cwd: tmpDir}),
+    );
+
+    expect(rest).toEqual([]);
+    expect(hit).toMatchObject({
+      topic: 'acme-menus',
+      link: '{@link @astryxdesign/cli:generic:theme}',
+    });
+  });
+
   it('places a pointer-only list item on its own line, not an earlier summary or code block', async () => {
     writeTopics([{name: 'acme-menus', text: 'Menus.'}]);
     fs.writeFileSync(
