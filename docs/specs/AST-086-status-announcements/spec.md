@@ -39,6 +39,8 @@ announcement channel.
 - Modal alerts that take focus, such as AlertDialog. They are not status
   messages.
 - Spoken output on a specific screen reader. `spec:AST-009` owns that evidence.
+- Where the channel is hosted while a native modal makes the rest of the page
+  inert. `spec:AST-003` (FR15, FR18, FR20) owns hosting.
 - Equivalent internal implementations remain valid when they satisfy this
   contract.
 
@@ -75,10 +77,6 @@ announcement channel.
   assertive region per document. They are created empty, stay mounted for the
   document's lifetime, and clear their text shortly after each announcement so
   stale text does not linger. `useAnnounce` is the public way to reach it.
-- **FR10 — The channel reaches people inside a modal.** While a modal dialog
-  makes the rest of the document inert, announcements still reach assistive
-  technology. The channel delivers them from inside the active modal or from
-  another host that stays in the accessibility tree.
 
 ### Platform support
 
@@ -91,7 +89,7 @@ announcement channel.
 
 ## Current-state impact
 
-- `component:FieldStatus` already conforms. AR1 and AR2 link to FR2, FR5, FR7.
+- `component:FieldStatus` already conforms: AR1 and AR2 match FR2, FR5, and FR7.
 - `architecture:react-component-runtime` INV5 gains the authority it requires
   for the document-owned channel (FR9). INV2 and INV3 already require FR6.
 - Toast: the viewport already announces each toast through the channel. Each
@@ -106,7 +104,8 @@ announcement channel.
 - `family:input-fields` members and other busy controls (TextInput, TextArea,
   Selector, MultiSelector, ComplexSelector, Typeahead, Tokenizer, the date and
   time inputs, FileInput, CheckboxInput, CommandPaletteInput,
-  DropdownMenuSubMenu, Thumbnail): each composes a Spinner with
+  DropdownMenuSubMenu, Thumbnail, and the lab EmojiPicker, Schedule, and
+  Comments history loaders): each composes a Spinner with
   `role="status"` inside the busy control. Under FR8 that Spinner is silent.
 - ChatMessageList: its top loading Spinner is a `role="status"` child of the
   log. Under FR4 and FR8 it is silent.
@@ -121,9 +120,6 @@ announcement channel.
   FR4 inside a live log, otherwise FR2.
 - Comments (lab): its error banners and progress label mount live roles
   together with their text. Under FR2 they go through the channel.
-- `useAnnounce`: its regions sit on `document.body`, which a native modal makes
-  inert. Under FR10 announcements made while Dialog, Drawer, or BottomSheet is
-  open still reach assistive technology.
 - `spec:AST-037` FR9 (Timer adds no unsolicited live region) already conforms.
 - Consumer tests that query these elements by `status` or `alert` role change.
   Release notes name each affected component.
@@ -139,7 +135,6 @@ announcement channel.
 | FR7      | Accessibility-tree check of the visible message      | FieldStatus attached/detached, toast card                      | Hiding the visible text or a word mismatch fails                    |
 | FR8      | Shared test: no live role inside a busy owner        | Busy TextInput, Selector, Switch thumb, ChatMessageList loader | A composed indicator with a live role or its own announcement fails |
 | FR9      | `useAnnounce` tests                                  | First use, many components, region removed, server render      | A second region pair, or stale text after the clear delay, fails    |
-| FR10     | Accessibility-tree check while a modal is open       | Announcement from inside Dialog, Drawer, and BottomSheet       | An announcement that lands in an inert region fails                 |
 | FR6 (AT) | `spec:AST-009` real-AT receipt                       | Toast, busy Switch, chat notice                                | Missing, repeated, or out-of-order speech fails                     |
 
 ## Decision log
