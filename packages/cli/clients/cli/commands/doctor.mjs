@@ -199,6 +199,10 @@ function printIntegrationValidation(data) {
     ...(data.notes ?? []).map(note =>
       text(`note (${note.code}): ${note.message}`),
     ),
+    // Listed, never counted: these fail nothing until the next minor release.
+    ...(data.layout?.findings ?? []).map(finding =>
+      text(`[info] ${finding.code}: ${finding.message}`),
+    ),
     text(
       `Summary: ${errors} error${errors === 1 ? '' : 's'}, ` +
         `${warnings} warning${warnings === 1 ? '' : 's'}`,

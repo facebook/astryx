@@ -1,13 +1,14 @@
 {
   "checks": ["validate", "components", "templates", "docs"],
   "results": {
-    "validate": ["docTypes", "issues"],
+    "validate": ["docTypes", "issues", "layout"],
     "components": ["conflicts", "issues", "propDrift"],
     "templates": ["conflicts", "issues"],
     "docs": ["copiedPassages", "findings", "fluff", "issues", "strayPointers"]
   },
   "reports": {
     "docTypes": "doc_types_skipped",
+    "layout": "layout_skipped",
     "propDrift": "prop_drift_skipped"
   },
   "codes": [
@@ -20,7 +21,6 @@
     "default_mismatch",
     "doc_fluff",
     "doc_types_skipped",
-    "duplicate_component_doc",
     "duplicate_doc",
     "duplicate_prop",
     "duplicate_provider",
@@ -44,6 +44,7 @@
     "invalid_template",
     "invalid_template_replacement",
     "invalid_theme",
+    "layout_skipped",
     "missing_component_replacement_target",
     "missing_field",
     "missing_manifest",
@@ -51,7 +52,6 @@
     "missing_template_replacement_target",
     "multiple_manifests",
     "no_package",
-    "no_provider_id",
     "not_in_code",
     "not_in_doc",
     "orphan_doc_overlay",
@@ -64,7 +64,6 @@
     "source_without_component_doc",
     "source_without_template_doc",
     "stray_doc_pointer",
-    "symlinked_root",
     "template_id_conflict",
     "type_mismatch",
     "unknown_field",
@@ -73,7 +72,6 @@
     "unreachable_contribution",
     "unreachable_scan_truncated",
     "unread_theme_folder",
-    "unreadable_file",
     "unreadable_folder",
     "unreadable_root",
     "wrong_type"

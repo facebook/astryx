@@ -38,9 +38,32 @@
  * "healthy" — the two are otherwise byte-identical.
  * @typedef {object} ValidateIntegrationResponse
  * @property {'integration.validate'} type
- * @property {{validated: boolean, name: string | null, version: string | null, issues: import('../../foundation/integrations/issue').AstryxIntegrationIssue[], notes?: Array<{code: string, message: string}>, docTypes?: DocTypesReport}} data
+ * @property {{validated: boolean, name: string | null, version: string | null, issues: import('../../foundation/integrations/issue').AstryxIntegrationIssue[], notes?: Array<{code: string, message: string}>, docTypes?: DocTypesReport, layout?: LayoutReport}} data
  *   `notes`: information beside the issues that fails nothing, such as
  *   `invalid_cli_command`, a `cliCommand` that was ignored as malformed
+ */
+
+/**
+ * Package layout findings added after the last minor release, listed with
+ * their fix: two docs for one component, a root reached through a symlink,
+ * a contribution file that cannot be read, a package.json without `name` or
+ * `version`, no provider ID, and a doc whose file name differs from its
+ * source only in letter case where the two still pair. Present when the
+ * manifest is found. Every finding is `info`: never an issue, never counted,
+ * and `integration check --strict` does not fail on it; they become failing
+ * warnings in the next minor release.
+ *
+ * @typedef {{status: 'checked', findings: LayoutFinding[]}} LayoutReport
+ */
+
+/**
+ * @typedef {object} LayoutFinding
+ * @property {string} code
+ * @property {'info'} severity
+ * @property {string} message
+ * @property {string} [fix]
+ * @property {string} [file]
+ * @property {number} [line]
  */
 
 /**

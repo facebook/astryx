@@ -49,7 +49,7 @@ afterEach(() => {
 });
 
 describe('a doc whose name differs from its source only in case, on a case-insensitive disk', () => {
-  it('warns source_without_component_doc with the rename, without failing validate', async () => {
+  it('lists source_without_component_doc with the rename, without an issue', async () => {
     fs.writeFileSync(
       path.join(tmpDir, 'package.json'),
       JSON.stringify({name: '@acme/kit', version: '1.0.0'}),
@@ -68,8 +68,9 @@ describe('a doc whose name differs from its source only in case, on a case-insen
       'export function AcmeWidget() { return null; }\n',
     );
 
-    const {issues} = await validateLocalIntegration(tmpDir);
-    expect(issues).toEqual([
+    const {issues, listed} = await validateLocalIntegration(tmpDir);
+    expect(issues).toEqual([]);
+    expect(listed).toEqual([
       {
         code: 'source_without_component_doc',
         severity: 'warning',
