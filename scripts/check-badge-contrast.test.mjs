@@ -104,7 +104,12 @@ function parseHex(hex) {
 function flatten(top, base) {
   if (top.a >= 1) return top;
   const mix = (t, b) => Math.round(t * top.a + b * (1 - top.a));
-  return {r: mix(top.r, base.r), g: mix(top.g, base.g), b: mix(top.b, base.b), a: 1};
+  return {
+    r: mix(top.r, base.r),
+    g: mix(top.g, base.g),
+    b: mix(top.b, base.b),
+    a: 1,
+  };
 }
 
 function luminance({r, g, b}) {
@@ -154,7 +159,11 @@ function badgePairs() {
 
       for (let modeIndex = 0; modeIndex < MODES.length; modeIndex++) {
         const fgHex = resolve(block.color ?? baseColor, theme, modeIndex);
-        const bgHex = resolve(block.backgroundColor ?? baseBg, theme, modeIndex);
+        const bgHex = resolve(
+          block.backgroundColor ?? baseBg,
+          theme,
+          modeIndex,
+        );
         if (!fgHex || !bgHex) continue; // not expressible as a flat pair
 
         const surface = surfaceOf(theme, modeIndex);
@@ -180,10 +189,9 @@ const THEMES_WITH_BADGE_BLOCK = ['butter', 'gothic', 'neutral', 'stone', 'y2k'];
 /**
  * Pre-existing shortfalls this guard records rather than silently tolerates.
  *
- * Both themes pin these fills to brand values ("pinned to the brand colors
- * from the spec"), so moving them is a design call, not a bug fix. The guard
- * asserts the set matches exactly, so a new shortfall fails the build and a
- * fixed one fails until it's deleted from this list.
+ * Butter pins these fills to brand values, so moving them is a design call,
+ * not a bug fix. The guard asserts the set matches exactly, so a new shortfall
+ * fails the build and a fixed one fails until it is deleted from this list.
  */
 const KNOWN_GAPS = [
   'butter/dark variant:error',
@@ -192,8 +200,6 @@ const KNOWN_GAPS = [
   'butter/light variant:error',
   'butter/light variant:info',
   'butter/light variant:neutral',
-  'gothic/dark variant:warning',
-  'gothic/light variant:warning',
 ];
 
 describe('Badge label contrast', () => {
@@ -234,17 +240,19 @@ describe('Badge label contrast', () => {
   it('meets WCAG AA (4.5:1) for every badge variant in both colour schemes', () => {
     const failures = rows
       .filter(r => r.ratio < AA_NORMAL)
-      .map(
-        r =>
-          `${label(r)} — ${r.fg} on ${r.bg} = ${r.ratio.toFixed(2)}:1`,
-      );
+      .map(r => `${label(r)} — ${r.fg} on ${r.bg} = ${r.ratio.toFixed(2)}:1`);
 
-    const unexpected = failures.filter(f => !KNOWN_GAPS.includes(f.split(' — ')[0]));
+    const unexpected = failures.filter(
+      f => !KNOWN_GAPS.includes(f.split(' — ')[0]),
+    );
     expect(unexpected).toEqual([]);
   });
 
   it('keeps the known-gap list exact, so a fixed pair cannot linger', () => {
-    const failing = rows.filter(r => r.ratio < AA_NORMAL).map(label).sort();
+    const failing = rows
+      .filter(r => r.ratio < AA_NORMAL)
+      .map(label)
+      .sort();
     expect(failing).toEqual(KNOWN_GAPS);
   });
 });
