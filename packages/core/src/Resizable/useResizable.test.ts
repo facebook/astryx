@@ -158,14 +158,23 @@ describe('useResizable persistence', () => {
     act(() => result.current.resize(300));
     act(() => result.current.props._onResizeStart());
     act(() => result.current.props._onResizeMove(-270));
-
     expect(result.current.isCollapsed).toBe(true);
-    expect(readStored()).toEqual({size: 300, isCollapsed: true});
 
     // A continued drag below the threshold must not clobber the saved width.
     act(() => result.current.props._onResizeMove(-275));
+    act(() => result.current.props._onResizeEnd());
+    expect(readStored()).toEqual({size: 300, isCollapsed: true});
+
     act(() => result.current.expand());
     expect(result.current.size).toBe(300);
+  });
+
+  it('keeps the size a region was dragged to when it unmounts mid-drag', () => {
+    const {result, unmount} = renderHook(() => useResizable(BASE_CONFIG));
+    act(() => result.current.props._onResizeStart());
+    act(() => result.current.props._onResizeMove(40));
+    unmount();
+    expect(readStored()).toEqual({size: 300, isCollapsed: false});
   });
 
   it('does not touch storage without an autoSaveId', () => {

@@ -742,10 +742,14 @@ function useSingleResizable(config: UseResizableSingleConfig): ResizableRegion {
   // otherwise move the bound under the pointer; the new basis applies once the
   // gesture ends.
   const gestureBasisRef = useRef<number | null>(null);
-  // Only forces the render that releases the frozen basis when a gesture ends.
+  // Only forces the render that ends a gesture: it releases the frozen basis,
+  // and its persistence effect writes the size the gesture settled on.
   const [gestureTick, setGestureTick] = useState(0);
   void gestureTick;
   const basis = gestureBasisRef.current ?? liveBasis;
+  // The frozen basis also marks a gesture in flight, from `_onResizeStart`
+  // until `_onResizeEnd` or `_onResizeCancel`.
+  const isGestureActive = gestureBasisRef.current != null;
 
   const didWarnMinRef = useRef(false);
   const didWarnMaxRef = useRef(false);
@@ -922,15 +926,45 @@ function useSingleResizable(config: UseResizableSingleConfig): ResizableRegion {
     }
   }, [resolvedMin, resolvedMax]);
 
+  // The write a gesture in flight is holding back, kept for a region that
+  // unmounts before the gesture ends.
+  const pendingWriteRef = useRef<{
+    key: string;
+    state: PersistedResizableState;
+  } | null>(null);
+
   useEffect(() => {
     // Nothing is written while the basis is still the temporary stand-in. The
     // size on such a render is a placeholder, and persisting it overwrites the
     // real saved size with a value derived from a basis that was never real
     // (AST-010 Platform support, FR9).
-    if (autoSaveId && isBasisMeasured) {
-      persistState(autoSaveId, {size, isCollapsed});
+    if (!autoSaveId || !isBasisMeasured) {
+      pendingWriteRef.current = null;
+      return;
     }
-  }, [size, isCollapsed, autoSaveId, isBasisMeasured]);
+    // Nor while a gesture is in flight. A drag commits a new size on every
+    // pointer move, and each write reaches every other open document of the
+    // origin as a `storage` event. The render that ends the gesture, completed
+    // or cancelled, writes the size it settled on once.
+    if (isGestureActive) {
+      pendingWriteRef.current = {key: autoSaveId, state: {size, isCollapsed}};
+      return;
+    }
+    pendingWriteRef.current = null;
+    persistState(autoSaveId, {size, isCollapsed});
+  }, [size, isCollapsed, autoSaveId, isBasisMeasured, isGestureActive]);
+
+  // A region that unmounts mid-gesture never renders the gesture's end, so the
+  // size it was dragged to is written on the way out.
+  useEffect(
+    () => () => {
+      const pending = pendingWriteRef.current;
+      if (pending != null) {
+        persistState(pending.key, pending.state);
+      }
+    },
+    [],
+  );
 
   const collapse = useCallback(() => {
     // The already-collapsed guard keeps a repeated call from re-notifying a
@@ -1035,7 +1069,8 @@ function useSingleResizable(config: UseResizableSingleConfig): ResizableRegion {
   }, []);
 
   const onResizeEnd = useCallback(() => {
-    // Sizes are already committed during move; only the basis is held.
+    // Sizes are already committed during move; the basis is held, and the
+    // render that releases it writes the final size to storage.
     releaseGestureBasis();
   }, [releaseGestureBasis]);
 
@@ -1043,7 +1078,8 @@ function useSingleResizable(config: UseResizableSingleConfig): ResizableRegion {
   // capture, a handle unmounted mid-drag — is still over. It does not signal a
   // resize end (that is #5297's contract, and the sizes were committed during
   // move anyway), but the basis it froze has to come back, or every later
-  // percentage bound stays pinned to the container size at grab time.
+  // percentage bound stays pinned to the container size at grab time, and the
+  // size it reached has to reach storage.
   const onResizeCancel = releaseGestureBasis;
 
   // The maximum a handle REPORTS (End uses only a configured maximum). A
