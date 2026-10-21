@@ -44,6 +44,14 @@ affects_consumer_docs: [docsite]
 }
 ```
 
+<!-- path-applicability:v1 -->
+
+```json
+{
+  "paths": ["apps/docsite/**"]
+}
+```
+
 ## Intent
 
 People using the Astryx Docsite should see truthful projections of the owning
