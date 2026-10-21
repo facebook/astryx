@@ -118,7 +118,7 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'Start with {@link generic:is-my-code-good} for the shared Astryx quality criteria.',
+          text: 'Start with {@link generic:is-my-code-good}: it owns the shared Astryx quality criteria. This rubric adds template weights, counting rules, and template-only checks, and each category that scores a shared criterion names it.',
         },
         {
           type: 'prose',
@@ -145,11 +145,11 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'Count every JSX opening tag in the copied `.tsx` source. An Astryx element is a component imported from `@astryxdesign/core` or from a public component export of the integration package. A raw HTML element is any lowercase intrinsic JSX tag. Count occurrences, not only unique tag names.',
+          text: 'This category scores the Astryx components criterion in {@link generic:is-my-code-good}. Count every JSX opening tag in the copied `.tsx` source. An Astryx element is a component imported from `@astryxdesign/core` or from a public component export of the integration package. A raw HTML element is any lowercase intrinsic JSX tag. Count occurrences, not only unique tag names.',
         },
         {
           type: 'prose',
-          text: 'Do not count fragments or a PascalCase helper defined in the same file. Inspect that helper and count the raw HTML inside it. For each raw element, decide whether it is necessary because Astryx has no equivalent, or unnecessary because an Astryx component can replace it.',
+          text: 'Do not count fragments or a PascalCase helper defined in the same file. Inspect that helper and count the raw HTML inside it. For each raw element, decide with that guide whether it is necessary because Astryx has no equivalent, or unnecessary because an Astryx component can replace it.',
         },
         {
           type: 'table',
@@ -162,35 +162,6 @@ export const docs = {
             ['6-10', '8'],
             ['11-20', '4'],
             ['21 or more', '0'],
-          ],
-        },
-        {
-          type: 'table',
-          headers: ['Raw HTML use', 'Astryx replacement'],
-          rows: [
-            [
-              '`div` for layout',
-              '`VStack`, `HStack`, `Card`, `Section`, or `Center`',
-            ],
-            ['`div` for a grid', '`Grid`'],
-            ['`span` or `p` for text', '`Text`'],
-            ['`h1` through `h6`', '`Heading level={N}`'],
-            ['`button`', '`Button` or `IconButton`'],
-            ['`a`', '`Link`'],
-            ['In-page `nav` or `aside`', '`LayoutPanel` in the start slot'],
-            [
-              '`header` or `main`',
-              '`LayoutHeader` or `LayoutContent` in `Layout`',
-            ],
-            ['`ul`, `ol`, or `li`', '`List` and `ListItem`'],
-            [
-              '`input`, `textarea`, or `select`',
-              'The matching Astryx form control',
-            ],
-            ['`table`, `tr`, or `td`', '`Table`'],
-            ['`hr`', '`Divider`'],
-            ['`dialog`', '`Dialog`'],
-            ['`details` or `summary`', '`Collapsible`'],
           ],
         },
         {
@@ -210,7 +181,7 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'Count raw icon markup in the copied file. {@link generic:template-icons} shows how to render icons through Astryx instead.',
+          text: 'This category scores the Icons criterion in {@link generic:is-my-code-good}. Count raw icon markup in the copied file. {@link generic:template-icons} shows how to render icons through Astryx instead.',
         },
         {
           type: 'list',
@@ -239,7 +210,7 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'Prefer Astryx component props and design tokens. Count individual CSS properties inside `stylex.create` and inline `style` objects. Count each `className` and `stylex.props` use once. Do not count Astryx props such as `gap`, `padding`, `variant`, `size`, `color`, `level`, `columns`, `contentPadding`, or `height`.',
+          text: 'This category scores the Styling criterion in {@link generic:is-my-code-good}. Count individual CSS properties inside `stylex.create` and inline `style` objects. Count each `className` and `stylex.props` use once. Do not count Astryx props such as `gap`, `padding`, `variant`, `size`, `color`, `level`, `columns`, `contentPadding`, or `height`.',
         },
         {
           type: 'table',
@@ -268,7 +239,7 @@ export const docs = {
           type: 'list',
           style: 'ordered',
           items: [
-            'Use `Layout` or `Center` as the page root. A template whose category starts with `Shell -` uses `AppShell` because global chrome is its purpose.',
+            'Choose the page root with the Layout criterion in {@link generic:is-my-code-good}. In a template, only a category that starts with `Shell -` owns global chrome, so it uses `AppShell`; every other page template uses `Layout` or `Center`.',
             'Outside a `Shell -` template, leave global navigation to the host app. Put in-page navigation in a `LayoutPanel` and page headings in `LayoutHeader`.',
             'Use `Grid` with `columns={{minWidth: 280}}` for responsive collections. Do not fix the column count or rebuild the grid in raw CSS.',
             'Use `Center` for centered content instead of custom flexbox workarounds.',
@@ -393,7 +364,7 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'Inspect every image reference in the copied file against {@link generic:template-images-media}.',
+          text: 'This category scores the Images and assets criterion in {@link generic:is-my-code-good}. Inspect every image reference in the copied file against {@link generic:template-images-media}.',
         },
         {
           type: 'table',
@@ -421,7 +392,7 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'Award 2 points for each condition. Grade the copied file, not only the package source.',
+          text: 'This category scores the Code health criterion in {@link generic:is-my-code-good}, plus conditions only a template has. Award 2 points for each condition. Grade the copied file, not only the package source.',
         },
         {
           type: 'table',
