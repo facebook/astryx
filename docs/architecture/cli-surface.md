@@ -177,8 +177,9 @@ and remains available through explicit Core package selection.
   validate` MUST warn on a PascalCase `.tsx` at the top of the components root
   with no same-stem component doc (`source_without_component_doc`), and on a
   `.tsx` at the top of the templates root with no same-stem template doc
-  (`source_without_template_doc`). Test and story files and subfolders are
-  skipped, and a helper belongs in a subfolder.
+  (`source_without_template_doc`). Test, spec and story files (`.test`,
+  `.spec` and `.stories` stems) and subfolders are skipped, and a helper
+  belongs in a subfolder.
 - **INV35 — One command checks an integration, and can gate its build.** The
   `astryx integration check` command, which takes no package argument, MUST run
   the `validate`, `components`, `templates`, and `docs` checks against the
@@ -722,7 +723,7 @@ the destination.
 | INV34     | `foundation/discovery/doc-types.test.mjs`, `clients/cli/commands/doctor-integration.test.mjs`, `test/core-doc-types.test.mjs` | An unknown, missing, or mistyped field passes unreported, or a missing compiler reads as a pass. |
 | INV35     | `api/integration/check/check.test.mjs`, `clients/cli/commands/integration-check.test.mjs`, `test/integration-check-failures.test.mjs`, `api/search/search.integration-check.test.mjs`, `foundation/discovery/prop-drift.test.mjs`, `foundation/discovery/type-match.test.mjs`, `foundation/discovery/doc-types.test.mjs`, `api/integration/authoring-checks.test.mjs` | The default exit differs from a check's own, a warning or a skipped comparison passes `--strict`, text and JSON exit differently, a new failing finding is added without the list changing, a search for ci does not find the command first, a finding is reported on a doc the code does not contradict (for a type, one TypeScript accepts), or a copied passage or a fluff finding passes `--strict`, or a function-word run or shared boilerplate is reported as a copy. |
 | INV36 | `api/gap-report/gap-report.test.mjs`, `clients/cli/commands/gap-report.test.mjs` | A run without `--to` reaches an `issuesUrl` the handlers did not choose, `--to` runs a handler or files on GitHub without `--confirm-public`, an unknown `--to` sends anything, or the destinations list or its line telling the agent to ask the person is missing while a destination exists. |
-| INV37 | `api/integration/validate-integration.test.mjs`, `api/integration/validate-integration-fixes.test.mjs`, `api/integration/pack-check.test.mjs` | A top-level source with no doc passes `--strict`, or a test file, story file, or subfolder helper is flagged. |
+| INV37 | `api/integration/validate-integration.test.mjs`, `api/integration/validate-integration-fixes.test.mjs`, `api/integration/pack-check.test.mjs` | A top-level source with no doc passes `--strict` (a dotted template id such as `landing.page` included), or a test, spec or story file or a subfolder helper is flagged. |
 
 ## Open questions
 

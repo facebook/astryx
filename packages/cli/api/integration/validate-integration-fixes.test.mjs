@@ -1154,6 +1154,28 @@ describe('source_without_template_doc fixes hold when followed', () => {
     expect(await issuesOf(fixed)).toEqual([]);
   });
 
+  it('checks a dotted template id, but no test, spec or story file', async () => {
+    const dir = writePackage({
+      [MANIFEST]: manifest({templates: './templates'}),
+      'templates/landing.page.tsx': templateSource('LandingPage'),
+      'templates/hero.test.tsx': templateSource('HeroTest'),
+      'templates/hero.spec.tsx': templateSource('HeroSpec'),
+      'templates/hero.stories.tsx': templateSource('HeroStories'),
+    });
+
+    const message = only(await issuesOf(dir), 'source_without_template_doc');
+    expect(message).toContain(
+      'Template source "landing.page.tsx" has no same-stem metadata file landing.page.doc.mjs',
+    );
+
+    const fixed = follow(dir, {
+      write: {
+        'templates/landing.page.doc.mjs': `export default {type: 'page', name: 'landing.page', displayName: 'Landing'};\n`,
+      },
+    });
+    expect(await issuesOf(fixed)).toEqual([]);
+  });
+
   it('never flags a helper in a subfolder of the templates root', async () => {
     const dir = writePackage({
       [MANIFEST]: manifest({templates: './templates'}),

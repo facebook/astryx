@@ -319,8 +319,11 @@ export async function collectIdentities(loaded) {
 
   if (loaded.docs && fs.existsSync(loaded.docs)) {
     try {
-      const {records, guides, errors: docErrors} =
-        await discoverIntegrationDocs(loaded);
+      const {
+        records,
+        guides,
+        errors: docErrors,
+      } = await discoverIntegrationDocs(loaded);
       for (const docError of docErrors) {
         errors.push({kind: 'docs', message: docError.message});
       }
@@ -536,8 +539,10 @@ export function findTemplateSourceOnlyCandidates(templatesRoot) {
   const candidates = [];
   for (const entry of fs.readdirSync(templatesRoot, {withFileTypes: true})) {
     if (!entry.isFile() && !entry.isSymbolicLink()) continue;
-    const match = entry.name.match(PLAIN_TSX);
-    if (!match) continue;
+    // A template id may hold a dot (`landing.page`); only test, spec and
+    // story files are not templates.
+    const match = entry.name.match(/^(.+)\.tsx$/u);
+    if (!match || /\.(?:test|spec|stories)$/u.test(match[1])) continue;
     const paired = TEMPLATE_DOC_SUFFIXES.some(suffix =>
       fs.existsSync(path.join(templatesRoot, `${match[1]}${suffix}`)),
     );
