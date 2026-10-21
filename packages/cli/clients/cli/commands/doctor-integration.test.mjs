@@ -231,6 +231,7 @@ describe('doctor integration — command', () => {
       /fix:\s+Delete docs\/ghost\.doc\.zh\.mjs, or add the topic it translates/,
     );
     expect(output).toMatch(/file:\s+docs\/ghost\.doc\.zh\.mjs/);
+    expect(output).toMatch(/line:\s+1\b/);
 
     logCalls = [];
     await createProgram().parseAsync([
@@ -249,6 +250,7 @@ describe('doctor integration — command', () => {
         message: expect.stringContaining('docs/ghost.doc.zh.mjs'),
         fix: expect.stringContaining('Delete docs/ghost.doc.zh.mjs'),
         file: 'docs/ghost.doc.zh.mjs',
+        line: 1,
       },
     ]);
   });
@@ -1103,12 +1105,13 @@ describe('doctor integration — command', () => {
         "{name: 'elevation', type: 'number', description: 'Shadow.'}",
         "{name: 'size', type: 'string', description: 'Size.'}",
         "{name: 'meta', type: '{id: string; extra?: number}', description: 'Data.'}",
+        "{name: 'gap', type: 'number', description: 'Gap.', default: '8'}",
       ].join(', ')}]};\n`,
     );
     // `key` is a prop a doc never needs, though the component declares it.
     fs.writeFileSync(
       path.join(tmpDir, 'components', 'AcmeBadge.tsx'),
-      "export function AcmeBadge(props: {label: string; tone?: 'neutral' | 'info'; size?: number; meta?: {id: string}; key?: string}) { return null; }\n",
+      "export function AcmeBadge({gap = 4}: {label: string; tone?: 'neutral' | 'info'; size?: number; meta?: {id: string}; gap?: number; key?: string}) { return null; }\n",
     );
     fs.writeFileSync(
       path.join(tmpDir, 'components', 'AcmeLonely.doc.mjs'),
@@ -1137,6 +1140,7 @@ describe('doctor integration — command', () => {
 
     expect(report.findings.map(f => `${f.prop} ${f.kind}`)).toEqual([
       'elevation not_in_code',
+      'gap default_mismatch',
       'label required_mismatch',
       'size type_mismatch',
       'tone not_in_doc',

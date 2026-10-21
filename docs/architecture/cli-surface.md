@@ -179,7 +179,9 @@ and remains available through explicit Core package selection.
   integration's roots hold, and each translation a descriptor carries, against
   the type `@astryxdesign/cli/authoring` publishes for that kind in an
   integration, as the TypeScript the project installs checks a value written
-  with that type. It MUST warn about every unknown field, missing required
+  with that type; a component or hook translation MAY carry `name` and
+  `displayName`, which are ignored at render. It MUST warn about every unknown
+  field, missing required
   field, and value outside its field's type, naming the field and the change
   that fixes it, including a field the compiler reaches only once an earlier
   unknown field is gone. A value the loader accepts and the CLI reads MUST
@@ -203,7 +205,10 @@ and remains available through explicit Core package selection.
   copied passage, where two topics repeat 10 or more words word for word (a
   run of mostly function words, or one that three or more topics share, is not
   a copy), and fluff, a listed padding phrase or a topic whose share of content
-  words is under the published floor. Its exit codes and JSON shape are a compatibility
+  words is under the published floor; it also fails on doc structure a reader
+  silently drops: a prop documented twice, an overlay key that names no prop,
+  two sections with one key, an overlay beside no topic, and an empty section.
+  Its exit codes and JSON shape are a compatibility
   contract for the builds that run it, from the first stable release that
   ships `integration check`: from then on, a new check, or a new failure code,
   MAY join it only in a minor release that names the addition, and a change
@@ -737,7 +742,10 @@ the one exception to DEC-7. A copied passage (a run of identical words, after
 the filters for function-word runs and for boilerplate that three or more
 topics share) and a listed padding phrase (outside code and quotes) are exact
 matches. The density floor is a threshold, not a contradiction, and a section
-with no content is fluff, its limiting case. The phrase
+with no content is fluff, its limiting case. Doc structure a reader silently
+drops fails `--strict` as doc quality too: a prop documented twice, an overlay
+key that names no prop, two sections with one key, and an overlay beside no
+topic. The phrase
 list and the floor are published in the check's docs, and every finding
 names the phrase, or the measured density and the floor, so its fix is
 mechanical. Each is a warning, so `integration check --strict` fails on it and

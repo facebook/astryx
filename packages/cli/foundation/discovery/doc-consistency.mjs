@@ -50,10 +50,57 @@ const TOPIC_SUFFIXES = ['.doc.ts', '.doc.mjs', '.doc.js'];
  * @param {string} message
  * @param {string} fix
  * @param {string} file relative to the package
+ * @param {number} [line] 1-based, where the check can locate it
  * @returns {Issue}
  */
-function finding(code, message, fix, file) {
-  return {code, severity: 'warning', message, fix, file};
+function finding(code, message, fix, file, line) {
+  return {
+    code,
+    severity: 'warning',
+    message,
+    fix,
+    file,
+    ...(line != null ? {line} : {}),
+  };
+}
+
+/**
+ * The 1-based line of the `nth` match of `pattern` in `text` at or after
+ * `from`, or undefined.
+ * @param {string} text
+ * @param {RegExp} pattern a global pattern
+ * @param {number} [nth]
+ * @param {number} [from]
+ * @returns {number | undefined}
+ */
+function lineOf(text, pattern, nth = 0, from = 0) {
+  if (!text) return undefined;
+  const matches = [...text.slice(from).matchAll(pattern)];
+  const match = matches[Math.min(nth, matches.length - 1)];
+  if (match?.index == null) return undefined;
+  return text.slice(0, from + match.index).split('\n').length;
+}
+
+/** @param {string} file */
+function readText(file) {
+  try {
+    return fs.readFileSync(file, 'utf8');
+  } catch {
+    return '';
+  }
+}
+
+/** @param {string} value */
+function escapeRe(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/**
+ * A pattern for `name: '<value>'` in any quote style.
+ * @param {string} value
+ */
+function namePattern(value) {
+  return new RegExp(`\\bname['"]?\\s*:\\s*(['"\`])${escapeRe(value)}\\1`, 'g');
 }
 
 /**
@@ -144,23 +191,28 @@ function editDistance(a, b) {
  * Problems in one component doc module.
  * @param {Record<string, any>} mod
  * @param {string} file relative to the package
+ * @param {string} [text] the file's source, to locate each finding's line
  * @returns {Issue[]}
  */
-export function componentDocProblems(mod, file) {
+export function componentDocProblems(mod, file, text = '') {
   /** @type {Issue[]} */
   const issues = [];
   const doc = mod?.default ?? mod?.docs;
   if (!doc || typeof doc !== 'object') return issues;
   const tables = propTablesOf(doc);
 
-  // A prop documented twice: a prop table agrees with the source one prop to
-  // one entry (architecture:cli-surface INV33), and a second entry is a field
-  // the descriptor's type does not mean (INV34).
+  // A prop documented twice: doc structure the reader silently drops
+  // (architecture:cli-surface DEC-8).
+  /** @type {Map<string, number>} entries of each name seen so far, file-wide */
+  const seenNames = new Map();
   for (const {at, owner, props} of tables) {
     /** @type {Map<string, number>} */
     const first = new Map();
     props.forEach((/** @type {any} */ prop, /** @type {number} */ i) => {
       for (const name of namesOf(prop)) {
+        const whole = typeof prop.name === 'string' ? prop.name : name;
+        const nth = seenNames.get(whole) ?? 0;
+        seenNames.set(whole, nth + 1);
         const earlier = first.get(name);
         if (earlier == null) {
           first.set(name, i);
@@ -172,15 +224,15 @@ export function componentDocProblems(mod, file) {
             `${owner ? `${owner}'s ` : ''}prop "${name}" is documented twice: ${at}[${earlier}] and ${at}[${i}].`,
             `In ${file}, delete ${at}[${i}] (the second "${name}" entry), keeping what it adds in ${at}[${earlier}].`,
             file,
+            lineOf(text, namePattern(whole), nth),
           ),
         );
       }
     });
   }
 
-  // An overlay key that names no prop entry: a field of the translation that
-  // matches nothing, reported as an unknown field is (architecture:cli-surface
-  // INV34).
+  // An overlay key that names no prop entry: doc structure the reader
+  // silently drops (architecture:cli-surface DEC-8).
   for (const exportName of ['docsZh', 'docsDense']) {
     const overlay = mod?.[exportName];
     if (!overlay || typeof overlay !== 'object') continue;
@@ -210,6 +262,10 @@ export function componentDocProblems(mod, file) {
         },
       );
     }
+    const exportAt = Math.max(
+      0,
+      text.search(new RegExp(`\\b${exportName}\\b\\s*=`)),
+    );
     for (const {at, descriptions, props, owner} of checks) {
       if (!props || !descriptions || typeof descriptions !== 'object') continue;
       // An overlay applies by the entry's whole name, as written.
@@ -235,6 +291,12 @@ export function componentDocProblems(mod, file) {
               ? `In ${file}, rename the key "${key}" in ${at} to "${near}".`
               : `In ${file}, remove "${key}" from ${at}, or document the prop "${key}" first.`,
             file,
+            lineOf(
+              text,
+              new RegExp(`(['"\`]?)${escapeRe(key)}\\1\\s*:`, 'g'),
+              0,
+              exportAt,
+            ),
           ),
         );
       }
@@ -277,9 +339,10 @@ function filesUnder(dir, test) {
  * Problems in one topic doc.
  * @param {any} doc
  * @param {string} file relative to the package
+ * @param {string} [text] the file's source, to locate each finding's line
  * @returns {Issue[]}
  */
-export function topicDocProblems(doc, file) {
+export function topicDocProblems(doc, file, text = '') {
   /** @type {Issue[]} */
   const issues = [];
   if (!doc || typeof doc !== 'object' || doc.type === 'namespace') {
@@ -289,8 +352,10 @@ export function topicDocProblems(doc, file) {
   const sections = Array.isArray(doc.sections) ? doc.sections : [];
   // A section with no content is fluff, the limiting case of the density
   // floor (architecture:cli-surface DEC-8).
+  let empties = 0;
   sections.forEach((/** @type {any} */ section, /** @type {number} */ i) => {
     if (Array.isArray(section?.content) && section.content.length === 0) {
+      const nth = empties++;
       const title =
         typeof section.title === 'string' ? ` "${section.title}"` : '';
       issues.push(
@@ -299,12 +364,13 @@ export function topicDocProblems(doc, file) {
           `Topic "${name}" section${title} (sections[${i}]) has no content, so it reads as a bare title.`,
           `In ${file}, give sections[${i}] content, such as content: [{type: 'prose', text: '…'}], or delete the section.`,
           file,
+          lineOf(text, /\bcontent['"]?\s*:\s*\[\s*\]/g, nth),
         ),
       );
     }
   });
-  // Two sections with one key: a key that resolves to a section no one wrote
-  // it for (architecture:cli-surface INV34).
+  // Two sections with one key: doc structure the reader silently drops
+  // (architecture:cli-surface DEC-8).
   for (const problem of sectionKeyProblems(sections)) {
     const collision =
       /^sections\[(\d+)\]: the key "([^"]+)" is already used by sections\[(\d+)\]/.exec(
@@ -312,12 +378,31 @@ export function topicDocProblems(doc, file) {
       );
     if (!collision) continue;
     const [, later, key, earlier] = collision;
+    // A later section that writes its own `id` is an invalid doc, which docs
+    // discovery reports (sectionKeyErrors); only a derived key is served at a
+    // suffix.
+    if (sections[Number(later)]?.id != null) continue;
     let served = `${key}-2`;
     try {
       served = withSectionKeys({sections}).sections[Number(later)].id ?? served;
     } catch {
       // Keep the first suffix withSectionKeys tries.
     }
+    const laterTitle = sections[Number(later)]?.title;
+    const laterLine =
+      typeof laterTitle === 'string'
+        ? lineOf(
+            text,
+            new RegExp(
+              `\\btitle['"]?\\s*:\\s*(['"\`])${escapeRe(laterTitle)}\\1`,
+              'g',
+            ),
+            sections
+              .slice(0, Number(later))
+              .filter((/** @type {any} */ each) => each?.title === laterTitle)
+              .length,
+          )
+        : undefined;
     const titleOf = (/** @type {string} */ i) =>
       typeof sections[Number(i)]?.title === 'string'
         ? ` "${sections[Number(i)].title}"`
@@ -328,6 +413,7 @@ export function topicDocProblems(doc, file) {
         `Topic "${name}": sections[${earlier}]${titleOf(earlier)} and sections[${later}]${titleOf(later)} both have the key "${key}", so \`astryx docs ${name} ${key}\` opens only sections[${earlier}]; sections[${later}] is served at "${served}", a key no one wrote.`,
         `In ${file}, give sections[${later}] its own title, or write the key it is already served at: id: '${served}'.`,
         file,
+        laterLine,
       ),
     );
   }
@@ -363,7 +449,7 @@ export async function integrationDocConsistency(integration, packageDir) {
       // A doc that does not load is reported by the checks that load it.
       continue;
     }
-    issues.push(...componentDocProblems(mod, rel(docPath)));
+    issues.push(...componentDocProblems(mod, rel(docPath), readText(docPath)));
   }
 
   const docsDir = integration.docs;
@@ -382,12 +468,11 @@ export async function integrationDocConsistency(integration, packageDir) {
       }
     }
     for (const {file, doc} of topics) {
-      issues.push(...topicDocProblems(doc, rel(file)));
+      issues.push(...topicDocProblems(doc, rel(file), readText(file)));
     }
 
-    // An overlay beside no topic file: a translation that resolves to nothing
-    // (architecture:cli-surface INV34; no current record governs topic overlay
-    // files on their own).
+    // An overlay beside no topic file: doc structure the reader silently drops
+    // (architecture:cli-surface DEC-8).
     // An overlay is read beside the topic file of its stem.
     for (const overlay of filesUnder(docsDir, name =>
       OVERLAY_LANGUAGES.some(lang => name.endsWith(`.doc.${lang}.mjs`)),
@@ -419,6 +504,7 @@ export async function integrationDocConsistency(integration, packageDir) {
             ? `Rename ${rel(overlay)} to ${rel(path.join(dir, `${near}.doc.${lang}.mjs`))}, the overlay of ${near}.doc.mjs.`
             : `Delete ${rel(overlay)}, or add the topic it translates as ${rel(path.join(dir, `${stem}.doc.mjs`))}.`,
           rel(overlay),
+          1,
         ),
       );
     }

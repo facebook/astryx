@@ -201,6 +201,26 @@ describe('integrationDocConsistency', () => {
     });
   });
 
+  it('leaves a collision whose later section writes its own id to docs discovery, which reports it as an invalid doc', async () => {
+    write(
+      'docs/deploying.doc.mjs',
+      `export const docs = ${JSON.stringify(
+        topic({
+          sections: [
+            {title: 'Overview', content: [{type: 'prose', text: 'One.'}]},
+            {
+              id: 'overview',
+              title: 'More',
+              content: [{type: 'prose', text: 'Two.'}],
+            },
+          ],
+        }),
+      )};\n`,
+    );
+
+    expect(await check()).toEqual([]);
+  });
+
   it('never reports a replaces or extends target: it may be a topic of an integration the consumer installs', async () => {
     write(
       'docs/deploying.doc.mjs',
@@ -238,5 +258,90 @@ describe('integrationDocConsistency', () => {
         fix: 'Delete docs/ghost.doc.zh.mjs, or add the topic it translates as docs/ghost.doc.mjs.',
       }),
     ]);
+  });
+
+  it('names the file, the line, and a paste-ready fix for each finding', async () => {
+    write(
+      'components/Widget.doc.mjs',
+      [
+        'export default {',
+        "  type: 'component',",
+        "  name: 'Widget',",
+        '  props: [',
+        "    {name: 'label', type: 'string', description: 'Text.'},",
+        "    {name: 'size', type: 'string', description: 'Size.'},",
+        "    {name: 'label', type: 'string', description: 'Again.'},",
+        '  ],',
+        '};',
+        'export const docsZh = {',
+        '  propDescriptions: {',
+        "    size: '尺寸',",
+        "    labell: '文本',",
+        '  },',
+        '};',
+        '',
+      ].join('\n'),
+    );
+    write(
+      'docs/deploying.doc.mjs',
+      [
+        'export const docs = {',
+        "  type: 'generic',",
+        "  name: 'deploying',",
+        "  title: 'Deploying',",
+        "  description: 'How to deploy.',",
+        '  sections: [',
+        "    {title: 'Overview', content: [{type: 'prose', text: 'One.'}]},",
+        "    {title: 'Empty', content: []},",
+        "    {title: 'Overview', content: [{type: 'prose', text: 'Two.'}]},",
+        '  ],',
+        '};',
+        '',
+      ].join('\n'),
+    );
+    write('docs/ghost.doc.zh.mjs', "export default {title: 'ghost'};\n");
+
+    const issues = await check();
+    const at = issues.map(({code, file, line, fix}) => ({
+      code,
+      file,
+      line,
+      fix,
+    }));
+
+    expect(at).toEqual([
+      {
+        code: 'duplicate_prop',
+        file: 'components/Widget.doc.mjs',
+        line: 7,
+        fix: 'In components/Widget.doc.mjs, delete props[2] (the second "label" entry), keeping what it adds in props[0].',
+      },
+      {
+        code: 'unknown_translated_prop',
+        file: 'components/Widget.doc.mjs',
+        line: 13,
+        fix: 'In components/Widget.doc.mjs, rename the key "labell" in docsZh.propDescriptions to "label".',
+      },
+      {
+        code: 'empty_section',
+        file: 'docs/deploying.doc.mjs',
+        line: 8,
+        fix: "In docs/deploying.doc.mjs, give sections[1] content, such as content: [{type: 'prose', text: '…'}], or delete the section.",
+      },
+      {
+        code: 'duplicate_section_key',
+        file: 'docs/deploying.doc.mjs',
+        line: 9,
+        fix: "In docs/deploying.doc.mjs, give sections[2] its own title, or write the key it is already served at: id: 'overview-2'.",
+      },
+      {
+        code: 'orphan_doc_overlay',
+        file: 'docs/ghost.doc.zh.mjs',
+        line: 1,
+        fix: 'Delete docs/ghost.doc.zh.mjs, or add the topic it translates as docs/ghost.doc.mjs.',
+      },
+    ]);
+    // The duplicate section's key is in its message, beside its line.
+    expect(issues[3].message).toContain('both have the key "overview"');
   });
 });

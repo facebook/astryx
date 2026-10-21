@@ -19,4 +19,6 @@ export interface AstryxIntegrationIssue {
   fix?: string;
   /** The file the issue is in, relative to the package. */
   file?: string;
+  /** The 1-based line in `file`, when the check can locate it. */
+  line?: number;
 }
