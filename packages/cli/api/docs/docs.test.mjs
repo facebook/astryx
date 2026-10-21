@@ -246,10 +246,9 @@ describe('docs() dispatcher routing', () => {
   }, SLOW);
 
   it("the guide's old flat name is gone, and its error names the new route", async () => {
-    await expect(docs('cli-integrations')).rejects.toMatchObject({
-      code: 'ERR_UNKNOWN_TOPIC',
-      suggestions: [expect.objectContaining({name: 'authoring'})],
-    });
+    const error = await docs('cli-integrations').catch(e => e);
+    expect(error.code).toBe('ERR_UNKNOWN_TOPIC');
+    expect(error.suggestions[0]).toMatchObject({name: 'authoring'});
     expect((await docs()).data.map(entry => entry.topic)).not.toContain(
       'cli-integrations',
     );

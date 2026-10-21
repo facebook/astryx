@@ -210,9 +210,12 @@ and references from other packages are an open question (OQ2).
   - Every section of the topic lands in exactly one guide, with its title, its
     `id`, and the key a reader addresses it by unchanged; when regrouping would
     change a section's derived key, the section's `id` pins the old key. No
-    section is dropped, merged into another, or copied into two guides. No two
-    guides below the namespace share a section key, so a section read names one
-    guide (FR6).
+    section is dropped, merged into another, or copied into two guides. No
+    guide below the namespace shares a key with one of the topic's own
+    sections, so every section read that worked on the topic still names one
+    guide (FR6). Guides placed below the namespace from elsewhere MAY share
+    other keys with each other; a namespace read of such a key fails as FR6
+    states and names those guides.
   - Each guide answers one task or one decision a reader brings, and its title
     and summary name it. A guide is not a fragment cut at a size, and each
     meets the size budget of FR8.

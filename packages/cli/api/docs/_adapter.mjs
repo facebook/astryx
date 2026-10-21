@@ -1581,14 +1581,6 @@ function movedRoute(topic, tree) {
  */
 export async function unknownTopicError(topic, catalog) {
   const tree = await projectTree(catalog);
-  const moved = movedRoute(topic, tree);
-  if (moved) {
-    return new AstryxError(
-      `Unknown topic "${String(topic)}". It moved to "${moved.route}"${notLoaded(catalog)}`,
-      [{name: moved.route, reason: moved.summary}],
-      ERROR_CODES.ERR_UNKNOWN_TOPIC,
-    );
-  }
   /** @type {Array<{name: string, reason: string}>} */
   let suggestions = [];
   if (typeof topic === 'string' && topic.includes('/')) {
@@ -1611,8 +1603,7 @@ export async function unknownTopicError(topic, catalog) {
   }
   if (suggestions.length === 0 && typeof topic === 'string') {
     // The docs whose own name it is (`doctor` is cli/commands/doctor), or whose
-    // route it spells with hyphens (`cli-integrations`, the guide's name before
-    // it moved to authoring).
+    // route it spells with hyphens (`cli-host-entry` is cli/host-entry).
     const wanted = topic.toLowerCase();
     suggestions = [...tree.nodes.values()]
       .filter(
@@ -1630,6 +1621,19 @@ export async function unknownTopicError(topic, catalog) {
         .map(root => ({name: root.route, reason: 'docs namespace'})),
       ...catalog.names().map(name => ({name, reason: 'available topic'})),
     ];
+  }
+  // A route that moved names where it went, ahead of the usual suggestions
+  // (spec:AST-046 FR9, FR6).
+  const moved = movedRoute(topic, tree);
+  if (moved) {
+    return new AstryxError(
+      `Unknown topic "${String(topic)}". It moved to "${moved.route}"${notLoaded(catalog)}`,
+      [
+        {name: moved.route, reason: moved.summary},
+        ...suggestions.filter(entry => entry.name !== moved.route),
+      ],
+      ERROR_CODES.ERR_UNKNOWN_TOPIC,
+    );
   }
   return new AstryxError(
     `Unknown topic "${String(topic)}"${notLoaded(catalog)}`,

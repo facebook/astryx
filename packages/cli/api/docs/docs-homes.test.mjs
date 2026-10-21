@@ -95,22 +95,31 @@ describe('every Core doc has a named home', () => {
           'authoring/field-reference',
         ]),
       );
-      // A field reference section still opens from the namespace, as
-      // `astryx docs authoring <name>` always has.
-      for (const name of ['integration', 'config', 'codemod', 'component-doc']) {
-        const section = await docs('authoring', name);
-        expect(section.type, name).toBe('docs.detail.section');
+      // Every field reference section still opens from the namespace by its
+      // key, as `astryx docs authoring <name>` did on the topic (FR13).
+      const reference = await docs('authoring/field-reference', undefined, {
+        index: true,
+      });
+      const keys = reference.data.sections.map(section => section.id);
+      expect(keys.length).toBeGreaterThan(15);
+      for (const key of keys) {
+        const section = await docs('authoring', key);
+        expect(section.type, key).toBe('docs.detail.section');
+        expect(section.data.id, key).toBe(key);
       }
       for (const [old, now] of [
         ['cli/integrations', 'authoring'],
         ['cli/integrations/quick-start', 'authoring/quick-start'],
         ['cli/integrations/ship/publishing', 'authoring/ship/publishing'],
       ]) {
-        await expect(docs(old)).rejects.toMatchObject({
+        const error = await docs(old).catch(e => e);
+        expect(error).toMatchObject({
           code: 'ERR_UNKNOWN_TOPIC',
           message: expect.stringContaining(`It moved to "${now}"`),
-          suggestions: [expect.objectContaining({name: now})],
         });
+        // The new route comes first, ahead of the suggestions any unknown
+        // route gets (FR6).
+        expect(error.suggestions[0]).toMatchObject({name: now});
       }
     },
     SLOW,
