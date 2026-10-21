@@ -40,7 +40,8 @@
  * @property {'integration.validate'} type
  * @property {{validated: boolean, name: string | null, version: string | null, issues: import('../../foundation/integrations/issue').AstryxIntegrationIssue[], notes?: Array<{code: string, message: string}>, docTypes?: DocTypesReport}} data
  *   `notes`: information beside the issues that fails nothing, such as
- *   `invalid_cli_command`, a `cliCommand` that was ignored as malformed
+ *   `invalid_cli_command`, a `cliCommand` that was ignored as malformed, and
+ *   `runner_command`, an Astryx command a topic writes with a package runner
  */
 
 /**

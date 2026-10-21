@@ -18,9 +18,7 @@ export const doc = {
     'It also lists each pair of topics (two of the package, or one of them and a Core topic other than the one it replaces) ' +
     'that repeat 10 or more words of prose word for word, each padding phrase and low-density topic, ' +
     'and each written `astryx docs <name>` that should be a link, ' +
-    'each as a warning (`copied_passage`, `doc_fluff`, `stray_doc_pointer`; exit 0, and `integration check --strict` fails on it). ' +
-    'A command written with a package runner (a project runner such as `pnpm exec` before a command, or the unscoped name after `npx`) is listed in `runnerCommands` with its line, as information that changes no exit: write `astryx <command>`; ' +
-    "the CLI shows it with the reader's runner. See {@link generic:check-your-docs}.",
+    'each as a warning (`copied_passage`, `doc_fluff`, `stray_doc_pointer`; exit 0, and `integration check --strict` fails on it). See {@link generic:check-your-docs}.',
   fn: 'integrationDocConflicts',
   args: [
     {

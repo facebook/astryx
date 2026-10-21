@@ -37,6 +37,8 @@ import {assertWithin} from '../../foundation/fs/path-safety.mjs';
 import {normalizeProviderId} from '../../foundation/identity/provider-identity.mjs';
 import {integrationDocTypes} from '../docs/_adapter.mjs';
 import {integrationDocConsistency} from '../../foundation/discovery/doc-consistency.mjs';
+import {discoverIntegrationDocs} from '../../foundation/discovery/docs-discovery.mjs';
+import {findRunnerCommands} from '../../foundation/discovery/runner-commands.mjs';
 import {
   THEME_SLUG_RE,
   unreadThemeFolders,
@@ -486,7 +488,9 @@ export async function validateLocalIntegration(cwd = process.cwd()) {
   // A package without one is still checked, under a placeholder name.
   const fields = packageJsonFieldIssues(pkg, pkgJsonPath);
   const name =
-    typeof pkg.name === 'string' && pkg.name !== '' ? pkg.name : '(local package)';
+    typeof pkg.name === 'string' && pkg.name !== ''
+      ? pkg.name
+      : '(local package)';
   const result = await validateAtPackageDir(
     packageDir,
     {name, version: pkg.version},
@@ -631,6 +635,30 @@ export async function validateInstalledIntegration(spec, cwd = process.cwd()) {
 }
 
 /**
+ * The runner-command notes for a package's topics: each Astryx command a topic
+ * writes with a package runner, where the doc file is, and the bare command to
+ * write. A topic that does not load is reported by the other checks.
+ * @param {any} integration a loaded integration
+ * @returns {Promise<Array<{code: string, message: string}>>}
+ */
+async function runnerCommandNotes(integration) {
+  let discovered;
+  try {
+    discovered = await discoverIntegrationDocs(integration);
+  } catch {
+    return [];
+  }
+  const packageDir = integration.__packageDir;
+  return (await findRunnerCommands(discovered)).map(each => ({
+    code: 'runner_command',
+    message:
+      typeof packageDir === 'string'
+        ? `${path.relative(packageDir, each.file).split(path.sep).join('/')}: ${each.message}`
+        : each.message,
+  }));
+}
+
+/**
  * Unified entry: validate the LOCAL integration (no `pkg`) or an INSTALLED one
  * (`pkg` given) and return the `integration.validate` envelope. The no-manifest
  * local case is guidance, not an error — it comes back with `validated: false`,
@@ -656,7 +684,13 @@ export async function validateIntegration(pkg, options = {}) {
   const docTypes = integration
     ? await integrationDocTypes(integration, cwd)
     : undefined;
-  const notes = result.found ? (result.notes ?? []) : [];
+  const notes = result.found ? [...(result.notes ?? [])] : [];
+  // Each Astryx command a topic writes with a package runner, as a
+  // `runner_command` note with its fix: information that fails nothing, as
+  // `invalid_cli_command` is, until a minor release names it.
+  if (integration?.docs) {
+    notes.push(...(await runnerCommandNotes(integration)));
+  }
   return {
     type: 'integration.validate',
     data: {

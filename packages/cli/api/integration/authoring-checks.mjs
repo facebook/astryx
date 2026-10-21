@@ -19,7 +19,6 @@
  */
 
 import path from 'node:path';
-import {findRunnerCommands} from '../../foundation/discovery/runner-commands.mjs';
 import {getCliInvocation} from '../../foundation/env/package-manager.mjs';
 import {
   packageComponentLinkProblems,
@@ -405,8 +404,6 @@ export async function integrationDocConflicts(pkg, options = {}) {
     typeof packageDir === 'string'
       ? path.relative(packageDir, file).split(path.sep).join('/')
       : file;
-  /** @type {import('./authoring-checks.type.mjs').RunnerCommand[]} */
-  const runnerCommands = [];
   if (!resolved.integration?.docs || name == null) {
     // A package that ships components and no topics still has component docs
     // a written pointer can sit in.
@@ -433,7 +430,6 @@ export async function integrationDocConflicts(pkg, options = {}) {
         copiedPassages,
         fluff,
         strayPointers,
-        runnerCommands,
         issues,
       },
     };
@@ -580,15 +576,6 @@ export async function integrationDocConflicts(pkg, options = {}) {
     for (const {message} of strayPointers) {
       issues.push({code: 'stray_doc_pointer', severity: 'warning', message});
     }
-    // Docs write bare `astryx` commands and the CLI shows each with the
-    // reader's runner. A command written with a runner is listed with its
-    // line and fix; it is not an issue, so no exit changes on it.
-    runnerCommands.push(
-      ...(await findRunnerCommands(discovered)).map(each => ({
-        ...each,
-        file: fromPackage(each.file),
-      })),
-    );
   }
 
   return {
@@ -601,7 +588,6 @@ export async function integrationDocConflicts(pkg, options = {}) {
       copiedPassages,
       fluff,
       strayPointers,
-      runnerCommands,
       issues,
     },
   };

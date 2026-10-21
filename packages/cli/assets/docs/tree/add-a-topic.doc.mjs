@@ -79,7 +79,7 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'Start every CLI command in a doc with the word astryx alone, with no runner such as npx or pnpm exec in front. The CLI prefixes each one when it prints the doc, with the command the reader runs: `pnpm exec astryx` or `yarn astryx` from their package manager, or the `cliCommand` an integration sets. See {@link generic:cli-command}. `doctor integration docs` lists each command written with a runner, with its line and the bare command to write. An install step, which runs before the CLI is installed, is the one exception: write the scoped package name, `@astryxdesign/cli`, after the download runner. The unscoped name after a download runner is always listed, because it fetches an unrelated package.',
+          text: 'Start every CLI command in a doc with the word astryx alone, with no runner such as npx or pnpm exec in front. The CLI prefixes each one when it prints the doc, with the command the reader runs: `pnpm exec astryx` or `yarn astryx` from their package manager, or the `cliCommand` an integration sets. See {@link generic:cli-command}. `doctor integration validate` (and so `integration check`) lists each command written with a runner as a `runner_command` note, with its file, line and the bare command to write. A note fails nothing. An install step, which runs before the CLI is installed, is the one exception: write the scoped package name, `@astryxdesign/cli`, after the download runner. The unscoped name after a download runner is always listed, because it fetches an unrelated package.',
         },
         {
           type: 'code',

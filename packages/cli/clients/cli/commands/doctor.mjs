@@ -398,8 +398,8 @@ function printDocConflicts(data) {
     section(
       `Checking integration docs: ${integrationLabel(data) ?? '(local package)'}`,
     ),
-    // A copied passage, fluff or stray pointer is listed below with its
-    // detail, so its issue is not printed twice.
+    // A copied passage or fluff is listed below with its detail, so its
+    // issue is not printed twice.
     ...issueBlocks(
       data.issues.filter(
         issue =>
@@ -500,23 +500,6 @@ function printDocConflicts(data) {
           'link',
           'message',
         ],
-      }),
-    );
-  }
-  const runners = data.runnerCommands ?? [];
-  if (runners.length === 0) {
-    if (!data.issues.some(issue => issue.severity === 'error')) {
-      output.push(
-        text('[ok] No topic writes an Astryx command with a package runner.'),
-      );
-    }
-  } else {
-    output.push(
-      text(
-        `[info] ${runners.length} command(s) written with a package runner. Write each as \`astryx <command>\`; the CLI adds the reader's runner.`,
-      ),
-      records(runners, {
-        fields: ['topic', 'section', 'line', 'command', 'message'],
       }),
     );
   }

@@ -23,9 +23,7 @@ export const doc = {
     "exists, in a topic's prose, description or summary or a component doc's text fields, " +
     'with the `{@link}` that replaces it. ' +
     'Each entry of these lists is also a warning (`copied_passage`, `doc_fluff`, `stray_doc_pointer`), so ' +
-    '`integration check --strict` fails on it; the check itself still fails only on errors. ' +
-    '`runnerCommands` lists each command a topic writes with a package runner, with its line and the bare command to write; ' +
-    'it is information only, so no exit changes on it.',
+    '`integration check --strict` fails on it; the check itself still fails only on errors.',
   importPath: '@astryxdesign/cli/api',
   signature:
     'integrationDocConflicts(pkg?: string, options?: IntegrationAuthoringOptions): Promise<IntegrationDocConflictResponse>',
@@ -42,7 +40,7 @@ export const doc = {
     {
       type: 'integration.doc-conflicts',
       description:
-        '`validated` (false when no integration manifest was found, so nothing was inspected), integration identity, structural issues, classified Core doc relationships, `copiedPassages`, `fluff`, `strayPointers`, and `runnerCommands`.',
+        '`validated` (false when no integration manifest was found, so nothing was inspected), integration identity, structural issues, classified Core doc relationships, `copiedPassages`, `fluff`, and `strayPointers`.',
     },
   ],
   examples: [

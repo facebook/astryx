@@ -87,23 +87,6 @@
  */
 
 /**
- * An Astryx command a topic writes with a package runner in front: a project
- * runner before a command, or the unscoped name after a download runner,
- * which fetches an unrelated package. Docs write the bare `astryx <command>`;
- * the CLI shows it with the reader's runner. The scoped package name after a
- * download runner, for install steps, is not listed. A listed command is
- * not an issue: no check warns or fails on it.
- *
- * @typedef {object} RunnerCommand
- * @property {string} topic
- * @property {string | null} section the title of the section it is in
- * @property {string} file the doc file, relative to the package root
- * @property {number | null} line the file line that holds it, when one line does
- * @property {string} command the command as written
- * @property {string} message the bare command to write instead
- */
-
-/**
  * A code span in prose that is exactly `astryx docs <name>` for a doc that
  * exists, where the doc's `{@link generic:<name>}` would be checked. Each is
  * also a `stray_doc_pointer` warning, so `integration check --strict` fails on
@@ -156,7 +139,7 @@
 /**
  * @typedef {object} IntegrationDocConflictResponse
  * @property {'integration.doc-conflicts'} type
- * @property {{validated: boolean, name: string | null, version: string | null, findings: IntegrationDocFinding[], copiedPassages: CopiedPassage[], fluff: DocFluff[], strayPointers: StrayPointer[], runnerCommands: RunnerCommand[], issues: import('../../foundation/integrations/issue').AstryxIntegrationIssue[]}} data
+ * @property {{validated: boolean, name: string | null, version: string | null, findings: IntegrationDocFinding[], copiedPassages: CopiedPassage[], fluff: DocFluff[], strayPointers: StrayPointer[], issues: import('../../foundation/integrations/issue').AstryxIntegrationIssue[]}} data
  */
 
 export {};

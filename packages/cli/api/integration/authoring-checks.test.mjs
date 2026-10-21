@@ -14,6 +14,7 @@ vi.mock('../../foundation/discovery/template-conflict-release.mjs', () => ({
 }));
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import {validateIntegration} from './validate-integration.mjs';
 import {discoverCoreTemplates} from '../../foundation/discovery/template-adapter.mjs';
 import {discoverOwnedComponents} from '../../foundation/discovery/component-discovery.mjs';
 import {discoverBuiltinTopics} from '../../foundation/discovery/docs-discovery.mjs';
@@ -1332,7 +1333,29 @@ describe('links in component docs and topic descriptions', () => {
   });
 });
 
-describe('integrationDocConflicts runner commands', () => {
+describe('validateIntegration runner-command notes', () => {
+  /** The runner-command notes, read back into their parts. */
+  async function runnerNotes() {
+    const {data} = await validateIntegration(undefined, {cwd: tmpDir});
+    const notes = (data.notes ?? [])
+      .filter((/** @type {any} */ note) => note.code === 'runner_command')
+      .map((/** @type {any} */ note) => {
+        const m =
+          /^(\S+): "([^"]+)"(?: \(section "([^"]+)"\))? writes `([^`]+)`(?: \(line (\d+)\))?\./.exec(
+            note.message,
+          );
+        return {
+          file: m?.[1],
+          topic: m?.[2],
+          section: m?.[3] ?? null,
+          command: m?.[4],
+          line: m?.[5] ? Number(m[5]) : null,
+          message: note.message,
+        };
+      });
+    return {data, notes};
+  }
+
   function writeTopic(/** @type {string} */ text) {
     fs.writeFileSync(
       path.join(tmpDir, 'package.json'),
@@ -1367,8 +1390,8 @@ describe('integrationDocConflicts runner commands', () => {
   it('lists a runner command with its line and fix, and raises no issue', async () => {
     writeTopic('Check it with `pnpm exec astryx doctor` first.');
 
-    const result = await integrationDocConflicts(undefined, {cwd: tmpDir});
-    const [hit, ...rest] = result.data.runnerCommands;
+    const {data, notes} = await runnerNotes();
+    const [hit, ...rest] = notes;
 
     expect(rest).toEqual([]);
     expect(hit).toMatchObject({
@@ -1379,8 +1402,10 @@ describe('integrationDocConflicts runner commands', () => {
       command: 'pnpm exec astryx doctor',
     });
     expect(hit.message).toContain('Write `astryx doctor`');
-    // Listed only: no issue, so no exit changes on it.
-    expect(result.data.issues).toEqual([]);
+    // A note only: no issue, so no exit changes on it.
+    expect(
+      data.issues.map((/** @type {any} */ issue) => issue.code),
+    ).not.toContain('runner_command');
   });
 
   it('puts each copy of a repeated command on its own line', async () => {
@@ -1423,10 +1448,10 @@ describe('integrationDocConflicts runner commands', () => {
     const lineHolding = (/** @type {string} */ text) =>
       lines.findIndex(line => line.includes(text)) + 1;
 
-    const result = await integrationDocConflicts(undefined, {cwd: tmpDir});
+    const {notes} = await runnerNotes();
 
     expect(
-      result.data.runnerCommands.map((/** @type {any} */ each) => [
+      notes.map((/** @type {any} */ each) => [
         each.section,
         each.line,
         each.command,
@@ -1464,13 +1489,10 @@ describe('integrationDocConflicts runner commands', () => {
       ].join('\n'),
     );
 
-    const result = await integrationDocConflicts(undefined, {cwd: tmpDir});
+    const {notes} = await runnerNotes();
 
     expect(
-      result.data.runnerCommands.map((/** @type {any} */ each) => [
-        each.section,
-        each.line,
-      ]),
+      notes.map((/** @type {any} */ each) => [each.section, each.line]),
     ).toEqual(
       expect.arrayContaining([
         [null, 7],
@@ -1482,8 +1504,7 @@ describe('integrationDocConflicts runner commands', () => {
   it('lists nothing for bare commands and the scoped install step', async () => {
     writeTopic('Check it with `astryx doctor` first.');
 
-    const result = await integrationDocConflicts(undefined, {cwd: tmpDir});
-    expect(result.data.runnerCommands).toEqual([]);
-    expect(result.data.issues).toEqual([]);
+    const {notes} = await runnerNotes();
+    expect((await runnerNotes()).notes).toEqual([]);
   });
 });

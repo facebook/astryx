@@ -189,11 +189,23 @@ function locate(lines, written, cursor) {
 }
 
 /**
+ * An Astryx command a topic writes with a package runner in front.
+ *
+ * @typedef {object} RunnerCommand
+ * @property {string} topic
+ * @property {string | null} section the title of the section it is in
+ * @property {string} file the doc file
+ * @property {number | null} line the file line that holds it, when found
+ * @property {string} command the command as written
+ * @property {string} message the bare command to write instead
+ */
+
+/**
  * Runner commands in a package's topics.
  *
  * @param {{records: {name: string, path: string}[], guides?: {name: string, ref?: {topicFile?: string}}[]}} discovered
  *   the package's docs, as discoverIntegrationDocs returns them
- * @returns {Promise<import('../../api/integration/authoring-checks.type.mjs').RunnerCommand[]>}
+ * @returns {Promise<RunnerCommand[]>}
  */
 export async function findRunnerCommands(discovered) {
   const topics = [
@@ -206,7 +218,7 @@ export async function findRunnerCommands(discovered) {
       file: guide.ref?.topicFile,
     })),
   ];
-  /** @type {import('../../api/integration/authoring-checks.type.mjs').RunnerCommand[]} */
+  /** @type {RunnerCommand[]} */
   const found = [];
   for (const {name, file} of topics) {
     const doc = file ? await loadQuietly(file) : null;

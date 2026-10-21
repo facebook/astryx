@@ -440,7 +440,7 @@ describe('a stray doc pointer', () => {
   });
 });
 describe('a command written with a runner', () => {
-  it('is listed by doctor integration docs, and integration check --strict still passes', async () => {
+  it('is a note in doctor integration validate, and integration check --strict still passes', async () => {
     fs.writeFileSync(
       path.join(tmpDir, 'package.json'),
       JSON.stringify({name: '@acme/widgets', version: '1.2.3'}),
@@ -467,21 +467,23 @@ describe('a command written with a runner', () => {
       `export default ${JSON.stringify(doc)};\n`,
     );
 
-    const doctor = await runCli(['doctor', 'integration', 'docs'], tmpDir);
+    const doctor = await runCli(['doctor', 'integration', 'validate'], tmpDir);
     expect(doctor.status).toBe(0);
-    expect(doctor.stdout).toContain('written with a package runner');
-
-    expect(doctor.stdout).toContain('[info] 1 command(s)');
+    expect(doctor.stdout).toContain(
+      'note (runner_command): docs/acme-setup.doc.mjs:',
+    );
+    expect(doctor.stdout).toContain('Write `astryx doctor`');
 
     const strict = await runCli(
       ['--json', 'integration', 'check', '--strict'],
       tmpDir,
     );
     expect(strict.status).toBe(0);
-    const docs = JSON.parse(strict.stdout).data.checks.find(
-      (/** @type {any} */ each) => each.check === 'docs',
+    const validate = JSON.parse(strict.stdout).data.checks.find(
+      (/** @type {any} */ each) => each.check === 'validate',
     ).response.data;
-    expect(docs.runnerCommands).toHaveLength(1);
-    expect(docs.issues).toEqual([]);
+    expect(validate.notes.map((/** @type {any} */ note) => note.code)).toEqual([
+      'runner_command',
+    ]);
   });
 });
