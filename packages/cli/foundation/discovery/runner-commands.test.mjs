@@ -71,6 +71,12 @@ describe('runnerCommandsIn', () => {
       {written: 'npx astryx', bare: 'astryx', download: true},
     ]);
     expect(runnerCommandsIn('pnpm\nastryx docs')).toEqual([]);
+    expect(
+      runnerCommandsIn('Run `npx -y astryx doctor` or `npx --yes astryx`.'),
+    ).toEqual([
+      {written: 'npx -y astryx doctor', bare: 'astryx doctor', download: true},
+      {written: 'npx --yes astryx', bare: 'astryx', download: true},
+    ]);
   });
 });
 

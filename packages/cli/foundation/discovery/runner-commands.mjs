@@ -14,7 +14,8 @@
  *   CLI's commands follows on the same line (`pnpm exec astryx docs`). Named
  *   alone, or before a word that is not a command (`yarn astryx runs the
  *   copy…`), it is left alone.
- * - A runner and what follows it are read within one line.
+ * - A runner and what follows it are read within one line; flags between a
+ *   download runner and the name are read past.
  * - The scoped package (`npx @astryxdesign/cli init`) never counts: it is the
  *   one form that runs before the CLI is installed, for install steps.
  * - Other tools' commands (`npx prettier`) never count.
@@ -84,7 +85,7 @@ const alternatives = words =>
 const NAME_END = '(?![\\w@/-]|\\.\\w)';
 
 const DOWNLOAD_COMMAND = new RegExp(
-  `(?<![\\w@/.-])(?:${alternatives(DOWNLOAD_RUNNERS)})${BLANK}astryx(?:@[\\w^~-]+(?:\\.[\\w^~-]+)*)?${NAME_END}(?:${BLANK}(${alternatives(CLI_COMMANDS)})(?![\\w-]))?`,
+  `(?<![\\w@/.-])(?:${alternatives(DOWNLOAD_RUNNERS)})(?:${BLANK}--?[a-z][\\w-]*)*${BLANK}astryx(?:@[\\w^~-]+(?:\\.[\\w^~-]+)*)?${NAME_END}(?:${BLANK}(${alternatives(CLI_COMMANDS)})(?![\\w-]))?`,
   'g',
 );
 const PROJECT_COMMAND = new RegExp(
@@ -219,10 +220,28 @@ export async function findRunnerCommands(discovered) {
     }
     let cursor = {line: 0, column: 0};
     for (const {text, section} of allStrings(doc)) {
+      // A one-line string's own literal places it, wherever the walk reached
+      // it (a section in a constant above the doc object, say); else the
+      // cursor search, in file order.
+      const forms = [`'${text}'`, `"${text}"`, JSON.stringify(text)];
+      const holds = (/** @type {string} */ line) =>
+        forms.some(form => line.includes(form));
+      const after = text.includes('\n')
+        ? -1
+        : lines.findIndex((line, at) => at >= cursor.line && holds(line));
+      const literal =
+        after >= 0 || text.includes('\n') ? after : lines.findIndex(holds);
+      let from = literal >= 0 ? {line: literal, column: 0} : cursor;
       for (const {written, bare, download} of runnerCommandsIn(text)) {
-        const place = locate(lines, written, cursor);
+        const place = locate(lines, written, from);
         if (place) {
-          cursor = {line: place.line, column: place.column + written.length};
+          from = {line: place.line, column: place.column + written.length};
+          if (
+            place.line > cursor.line ||
+            (place.line === cursor.line && place.column >= cursor.column)
+          ) {
+            cursor = from;
+          }
         }
         const line = place ? place.line + 1 : null;
         const where = section ? ` (section "${section}")` : '';

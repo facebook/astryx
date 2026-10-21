@@ -507,7 +507,7 @@ function printDocConflicts(data) {
   if (runners.length === 0) {
     if (!data.issues.some(issue => issue.severity === 'error')) {
       output.push(
-        text('[ok] Every command is written bare, as `astryx <command>`.'),
+        text('[ok] No topic writes an Astryx command with a package runner.'),
       );
     }
   } else {

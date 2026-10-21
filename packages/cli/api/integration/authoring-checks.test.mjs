@@ -1438,6 +1438,47 @@ describe('integrationDocConflicts runner commands', () => {
     ]);
   });
 
+  it("places a section's command on its own line when the section sits in a constant above the doc", async () => {
+    fs.writeFileSync(
+      path.join(tmpDir, 'package.json'),
+      JSON.stringify({name: '@acme/widgets', version: '1.2.3'}),
+    );
+    fs.writeFileSync(
+      path.join(tmpDir, 'astryx.integration.mjs'),
+      `export default {docs: './docs'};\n`,
+    );
+    fs.mkdirSync(path.join(tmpDir, 'docs'), {recursive: true});
+    fs.writeFileSync(
+      path.join(tmpDir, 'docs', 'acme-setup.doc.mjs'),
+      [
+        "const install = {title: 'Install', content: [{type: 'prose', text: 'Run `npx astryx doctor`.'}]};",
+        '',
+        'export default {',
+        "  type: 'generic',",
+        "  name: 'acme-setup',",
+        "  title: 'Fixture',",
+        "  description: 'Install first: `npx astryx doctor`.',",
+        '  sections: [install],',
+        '};',
+        '',
+      ].join('\n'),
+    );
+
+    const result = await integrationDocConflicts(undefined, {cwd: tmpDir});
+
+    expect(
+      result.data.runnerCommands.map((/** @type {any} */ each) => [
+        each.section,
+        each.line,
+      ]),
+    ).toEqual(
+      expect.arrayContaining([
+        [null, 7],
+        ['Install', 1],
+      ]),
+    );
+  });
+
   it('lists nothing for bare commands and the scoped install step', async () => {
     writeTopic('Check it with `astryx doctor` first.');
 
