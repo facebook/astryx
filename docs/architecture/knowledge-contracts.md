@@ -28,6 +28,8 @@ verified_by:
     .github/scripts/review-signal-decision.test.mjs,
     .github/scripts/review-signal-workflow.test.mjs,
     .github/scripts/spec-owner-decision.test.mjs,
+    .github/scripts/spec-approval-carry.test.mjs,
+    .github/scripts/spec-owner-reconcile.test.mjs,
   ]
 deciding_specs: []
 ---
@@ -954,15 +956,15 @@ edit. Recording the approval qualifies when, line for line, a knowledge record
 differs only in its frontmatter `authority` moving from `draft` to `current`,
 `phase` moving from `proposed` to `accepted`, `approved_by` naming the
 approving owner, `approved_at` dated within a day of the approval, and Decider
-lines whose date is still a placeholder gaining that date (and the approving
-owner, when the line names no person yet). A Decider line that already has a
+lines whose date is still a placeholder and whose person is the approving owner,
+or still a placeholder, gaining that date and that owner. A Decider line that already has a
 date is never rewritten, and a named person is never replaced. Any other added,
 removed, or edited line, a different set of changed paths, or any other byte
 change needs a new decision. The carried approval satisfies only the groups its
 owner may approve, and wherever a record requires exact-head owner approval, an
 approval carried this way counts for that head. A decision on the new head, and
-any owner revoke, request for changes, or dismissal of the owner's own approval
-after the approval, wins over it. A comparison the gate cannot complete carries
+any later owner revoke, request for changes, or dismissal of an owner's approving
+review, wins over it. A comparison the gate cannot complete carries
 nothing. A DESIGNOWNER's ready
 attestation never carries, and while relayed owner decisions are enabled nothing
 carries, because the gate cannot see a relayed revoke of an intermediate head.

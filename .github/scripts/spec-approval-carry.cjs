@@ -248,10 +248,10 @@ function isApprovalFieldChange(before, after, {approver, dates}) {
 
 const PLACEHOLDER = /^<[^>]+>$/;
 
-// Only an undecided Decider line may gain the approval: a placeholder date
-// becomes the approval date, and a placeholder person may become the approver.
-// A line that already names a real date or person records an earlier decision,
-// which recording this approval must never rewrite.
+// Only an undecided Decider line that is the approver's own may gain the
+// approval: a placeholder date becomes the approval date, and a placeholder
+// person may become the approver. A line that already names a real date, or
+// names another person, is not this approver's decision to date.
 function isDeciderDateChange(before, after, {approver, dates}) {
   const beforeMatch = before.match(DECIDER_LINE);
   const afterMatch = after.match(DECIDER_LINE);
@@ -259,12 +259,8 @@ function isDeciderDateChange(before, after, {approver, dates}) {
   const [, fromPerson, fromDate] = beforeMatch;
   const [, toPerson, toDate] = afterMatch;
   if (!PLACEHOLDER.test(fromDate)) return false;
-  if (
-    toPerson !== fromPerson &&
-    !(PLACEHOLDER.test(fromPerson) && toPerson.toLowerCase() === approver)
-  ) {
-    return false;
-  }
+  if (toPerson.toLowerCase() !== approver) return false;
+  if (toPerson !== fromPerson && !PLACEHOLDER.test(fromPerson)) return false;
   return ISO_DATE.test(toDate) && dates.has(toDate);
 }
 

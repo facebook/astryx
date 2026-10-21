@@ -36,7 +36,7 @@ function record({
     'schema_version: 4',
     'template_version: 1',
     'kind: system-spec',
-    'id: spec:AST-066',
+    'id: spec:AST-900',
     `authority: ${authority}`,
     'archive_reason: null',
     'superseded_by: null',
@@ -194,6 +194,18 @@ describe('isApprovalMetadataOnlyChange', () => {
     expect(
       isApprovalMetadataOnlyChange(before, record(recorded), approval),
     ).toBe(false);
+  });
+
+  it('rejects dating a placeholder Decider line that names someone else', () => {
+    const before = record().replace(
+      '`cixzhang`, `<pending>`',
+      '`czarandy`, `<pending>`',
+    );
+    const after = record(recorded).replace(
+      '`cixzhang`, `2026-10-20`',
+      '`czarandy`, `2026-10-20`',
+    );
+    expect(isApprovalMetadataOnlyChange(before, after, approval)).toBe(false);
   });
 
   it('accepts a placeholder Decider gaining the approver and date', () => {
