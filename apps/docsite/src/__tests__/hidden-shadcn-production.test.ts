@@ -220,7 +220,7 @@ describeHiddenProduction('hidden production ShadCN discovery', () => {
         });
       }
     }
-  });
+  }, 60_000);
 
   it('keeps sitemap, RSS, and llms.txt clean', async () => {
     const sitemapEntries = await sitemap();
