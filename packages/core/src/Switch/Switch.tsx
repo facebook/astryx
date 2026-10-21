@@ -43,7 +43,7 @@ import type {InputStatus} from '../Field/types';
 import {Spinner} from '../Spinner';
 import {useTooltip} from '../Tooltip';
 import {mergeProps, mergeRefs, rtlStyles} from '../utils';
-import {switchScope} from './switch.markers.stylex';
+import {switchFocusScope, switchScope} from './switch.markers.stylex';
 import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
 import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
@@ -265,12 +265,12 @@ const styles = stylex.create({
   trackFocus: {
     outline: {
       default: 'none',
-      [stylex.when.ancestor(':has(:focus-visible)', switchScope)]:
+      [stylex.when.ancestor(':has(:focus-visible)', switchFocusScope)]:
         `${focusVars['--focus-outline-width']} ${focusVars['--focus-outline-style']} ${focusVars['--focus-outline-color']}`,
     },
     outlineOffset: {
       default: null,
-      [stylex.when.ancestor(':has(:focus-visible)', switchScope)]:
+      [stylex.when.ancestor(':has(:focus-visible)', switchFocusScope)]:
         focusVars['--focus-outline-offset'],
     },
   },
@@ -595,8 +595,10 @@ export function Switch({
 
   const isOn = optimisticValue === true;
 
-  // Disabled-reason tooltip. Its listeners attach to the switch row (which
-  // already exists); the input stays focusable via aria-disabled.
+  // Disabled-reason tooltip. Disabled controls swallow pointer events, so the
+  // tooltip listeners attach to the switch row (which already exists) and the
+  // native checkbox stays perceivable via aria-disabled instead of the disabled
+  // attribute. Toggling is blocked by the isDisabled guard in onChange.
   const showsDisabledMessage = isDisabled && !!disabledMessage;
   const disabledMessageTooltip = useTooltip({
     placement: 'above',
@@ -639,9 +641,7 @@ export function Switch({
         // natively disabled), and a disabled control must not submit.
         name={isDisabled ? undefined : htmlName}
         checked={isOn}
-        // A disabled switch stays focusable via aria-disabled (spec:AST-085
-        // FR1) and is detached from its form so it neither submits nor blocks
-        // submission (FR3); toggling is blocked by the onChange guard (FR2).
+        // Focusable but detached from the form while disabled (spec:AST-085).
         aria-disabled={isDisabled ? 'true' : undefined}
         form={isDisabled ? '' : undefined}
         required={isRequired}
@@ -689,7 +689,7 @@ export function Switch({
             styles.track,
             trackSizeStyles[size],
             isOn ? styles.trackOn : styles.trackOff,
-            !isDisabled && styles.trackFocus,
+            styles.trackFocus,
             isDisabled && styles.trackDisabled,
             isDisabled && !isOn && styles.trackDisabledOff,
           ),
@@ -760,6 +760,7 @@ export function Switch({
           isLabelHidden && styles.containerLabelHidden,
           labelSpacing === 'spread' && styles.containerSpread,
           !isDisabled && switchScope,
+          switchFocusScope,
           // The touch press's strength and release live on the row the
           // controller writes to; the track and thumb inherit and paint it.
           !isDisabled && interactionOverlayStyles.pressedAlpha,

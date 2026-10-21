@@ -487,9 +487,11 @@ export function FileInput({
   // successful attach needs an explicit announcement here.
   const announce = useAnnounce();
 
-  // Disabled-reason tooltip. Its listeners attach to the visible container;
-  // the trigger stays focusable via aria-disabled, and opening the picker is
-  // blocked by the isDisabled guards in the handlers.
+  // Disabled-reason tooltip. Disabled controls swallow pointer events, so the
+  // tooltip listeners attach to the visible container (which stays hoverable)
+  // and the trigger stays perceivable via aria-disabled instead of the native
+  // disabled attribute. Opening the picker is blocked by the isDisabled guards
+  // in the handlers.
   const showsDisabledMessage = isDisabled && !!disabledMessage;
   const disabledMessageTooltip = useTooltip({
     placement: 'above',
@@ -855,9 +857,7 @@ export function FileInput({
         <VisuallyHidden>
           <button
             type="button"
-            // A disabled trigger keeps its Tab stop via aria-disabled
-            // (spec:AST-085 FR1); opening the picker is blocked by the
-            // isDisabled guards in the handlers.
+            // A disabled trigger keeps its Tab stop (spec:AST-085 FR1).
             tabIndex={0}
             aria-disabled={isDisabled ? 'true' : undefined}
             onClick={handleClick}

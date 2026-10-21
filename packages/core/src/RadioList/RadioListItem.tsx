@@ -261,10 +261,8 @@ export function RadioListItem({
   const descriptionID = useId();
   const isDisabled = context.isDisabled || isItemDisabled;
   const isChecked = context.value === value;
-  // A disabled radio stays focusable via aria-disabled instead of native
-  // `disabled` (spec:AST-085 FR1). It leaves the form only when it could
-  // submit (it is checked) or when the whole group is disabled: detaching one
-  // radio of an enabled group would split the group and add a Tab stop.
+  // Leave the form only when this radio could submit or the whole group is
+  // disabled: detaching one radio splits the native group (an extra Tab stop).
   const detachesFromForm = isDisabled && (context.isDisabled || isChecked);
   // One predicate for both the rendered element and the aria-describedby that
   // points at it. A ReactNode description can be `false` or `''`, which render
@@ -278,7 +276,6 @@ export function RadioListItem({
   // See CheckboxInput: the ring goes on the indicator's own element, because
   // the native input is visually hidden and only the indicator knows its shape.
   const indicatorRef = useRef<HTMLSpanElement>(null);
-  // A focused disabled radio still shows the ring (spec:AST-085 FR6).
   const {focusProps} = useIndicatorFocusRing(indicatorRef);
 
   // The radio is the row's single keyboard control and action. The row is an
@@ -307,8 +304,7 @@ export function RadioListItem({
         value={value}
         checked={isChecked}
         aria-disabled={isDisabled ? 'true' : undefined}
-        // Not natively disabled, so a disabled radio that could submit is
-        // detached from the form instead, matching native exclusion (FR3).
+        // Excluded from submission like a natively disabled radio (FR3).
         form={detachesFromForm ? '' : undefined}
         required={context.isRequired}
         onChange={() => {
@@ -320,8 +316,7 @@ export function RadioListItem({
         // A consumer onClick rides on the radio input itself, so it fires for
         // both direct control clicks and row-surface clicks the row delegates
         // to the input — the same routing CheckboxListItem uses.
-        // Native `disabled` suppressed clicks, so a caller's onClick must not
-        // fire either (FR2); checking is blocked by the onChange guard.
+        // Native `disabled` suppressed onClick (spec:AST-085 FR2).
         onClick={isDisabled ? undefined : onClick}
         // The radio names itself from the visible label element, which works
         // for a rich label as well as a plain string. `aria-label` replaces

@@ -371,7 +371,6 @@ export function CheckboxInput({
   // `opacity: 0`, and only the indicator's own element can shape the outline
   // to match it. See useIndicatorFocusRing.
   const indicatorRef = useRef<HTMLSpanElement>(null);
-  // A focused disabled checkbox still shows the ring (spec:AST-085 FR6).
   const {focusProps} = useIndicatorFocusRing(indicatorRef);
 
   const isIndeterminate = optimisticValue === 'indeterminate';
@@ -467,10 +466,8 @@ export function CheckboxInput({
             // Detached from its form while disabled, so it neither submits nor
             // blocks submission through `required` (spec:AST-085 FR3).
             form={isDisabled ? '' : undefined}
-            // Native `disabled` suppressed clicks, so a caller's onClick must
-            // not fire either (FR2). Toggling is blocked by onChange below;
-            // canceling the click instead would desync React's controlled
-            // checked state.
+            // Native `disabled` suppressed onClick (FR2); preventDefault here
+            // would desync React's controlled checked state.
             onClick={isDisabled ? undefined : rest.onClick}
             readOnly={isReadOnly}
             required={isRequired}

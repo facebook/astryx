@@ -572,9 +572,9 @@ export function Slider({ref, ...props}: SliderProps) {
 
   // Disabled-reason tooltip. This is a *separate* useTooltip instance from the
   // per-thumb value bubble (the `<Tooltip>` component below): it anchors to the
-  // track container and fires on hover/focus of the whole control. The thumb
-  // stays focusable via aria-disabled while pointer/keyboard handlers
-  // early-return on isDisabled.
+  // track container and fires on hover/focus of the whole control. Disabled
+  // controls swallow pointer events, so the thumb stays perceivable via
+  // aria-disabled while pointer/keyboard handlers early-return on isDisabled.
   const showsDisabledMessage = isDisabled && !!disabledMessage;
   const disabledMessageTooltip = useTooltip({
     placement: 'above',
@@ -957,8 +957,7 @@ export function Slider({ref, ...props}: SliderProps) {
         ref={!isRange ? ref : undefined}
         id={!isRange ? id : undefined}
         role="slider"
-        // A disabled thumb keeps its Tab stop (spec:AST-085 FR1); value changes
-        // stay blocked by the isDisabled guards in the pointer/keyboard handlers.
+        // A disabled thumb keeps its Tab stop (spec:AST-085 FR1).
         tabIndex={0}
         aria-valuemin={ariaValueMin}
         aria-valuemax={ariaValueMax}
@@ -995,8 +994,7 @@ export function Slider({ref, ...props}: SliderProps) {
               : rtlStyles.centerInline('50%'),
             !isDisabled && styles.thumbHover,
             !isDisabled && draggingThumb === thumbIndex && styles.thumbPressed,
-            !isDisabled &&
-              keyboardFocusThumb === thumbIndex &&
+            keyboardFocusThumb === thumbIndex &&
               focusOutlineStyles.focusVisible,
             isDisabled && styles.thumbDisabled,
           ),
@@ -1091,8 +1089,7 @@ export function Slider({ref, ...props}: SliderProps) {
           }),
           stylex.props(styles.sliderRow),
         )}>
-        {/* A disabled slider submits no value (spec:AST-085 FR3), so its
-            hidden carriers are not rendered rather than natively disabled. */}
+        {/* A disabled slider submits no value (spec:AST-085 FR3). */}
         {htmlName != null &&
           !isDisabled &&
           values.map((v, i) => (
