@@ -83,21 +83,22 @@ Each subject has one scripted interaction that every arm replays.
 
 ### Metrics
 
-| Area            | Measure                        | How                                                                                              | Unit                  |
-| --------------- | ------------------------------ | ------------------------------------------------------------------------------------------------ | --------------------- |
-| Gate            | Required runtimes              | Dependency manifest against FR13                                                                 | pass/fail             |
-| Gate            | Screen-reader parity           | VoiceOver, TalkBack, Narrator task script                                                        | pass/fail             |
-| Gate            | Completeness                   | Every subject renders every state                                                                | pass/fail             |
-| Experience      | Platform feel                  | Blind reviewer rating of recordings against the reference, plus a platform-conventions checklist | score, % of checklist |
-| Experience      | Time to adopt a new OS feature | Days from OS release to shipping it in the arm (for example, Liquid Glass)                       | days                  |
-| Performance     | Startup to first content       | Release build, cold start, median of runs                                                        | ms                    |
-| Performance     | Smoothness                     | Dropped frames during the scripted interaction                                                   | % frames              |
-| Performance     | Input latency                  | Touch or key to visible response                                                                 | ms                    |
-| Performance     | Memory and size                | Peak memory during the script; app download size                                                 | MB                    |
-| Maintenance     | Change cost                    | Time to ship one real Astryx change on the arm (a new prop, a new token)                         | hours                 |
-| Developer speed | Iteration                      | Edit to visible on device                                                                        | seconds               |
-| Developer speed | Sharing                        | Share of app code reused across platforms                                                        | % lines               |
-| Fidelity        | Match to web                   | Content, states, and theme values matching the web template                                      | % checks              |
+| Area            | Measure                        | How                                                                                                                                                                                                  | Unit                  |
+| --------------- | ------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------- |
+| Gate            | Required runtimes              | Dependency manifest against FR13                                                                                                                                                                     | pass/fail             |
+| Gate            | Screen-reader parity           | VoiceOver, TalkBack, Narrator task script                                                                                                                                                            | pass/fail             |
+| Gate            | Completeness                   | Every subject renders every state                                                                                                                                                                    | pass/fail             |
+| Experience      | Platform feel                  | Blind reviewer rating of recordings against the reference, plus a platform-conventions checklist                                                                                                     | score, % of checklist |
+| Experience      | Time to adopt a new OS feature | Days from OS release to shipping it in the arm (for example, Liquid Glass)                                                                                                                           | days                  |
+| Performance     | Startup to first content       | Release build, cold start, median of runs                                                                                                                                                            | ms                    |
+| Performance     | Smoothness                     | Dropped frames during the scripted interaction                                                                                                                                                       | % frames              |
+| Performance     | Input latency                  | Touch or key to visible response                                                                                                                                                                     | ms                    |
+| Performance     | Memory and size                | Peak memory during the script; app download size                                                                                                                                                     | MB                    |
+| Maintenance     | Change cost                    | Time to ship one real Astryx change on the arm (a new prop, a new token)                                                                                                                             | hours                 |
+| Developer speed | Iteration                      | Edit to visible on device                                                                                                                                                                            | seconds               |
+| Developer speed | Sharing                        | Share of app code reused across platforms                                                                                                                                                            | % lines               |
+| Design          | Brand preservation             | Blind designer review of whether the brand is recognizable from the web version while the screen still feels native, plus checks that the theme's color, type, shape, spacing, and icons are honored | score, % token checks |
+| Fidelity        | Match to web                   | Content and states matching the web template                                                                                                                                                         | % checks              |
 
 ### Judging
 
