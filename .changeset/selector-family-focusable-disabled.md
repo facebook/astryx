@@ -2,6 +2,6 @@
 '@astryxdesign/core': patch
 ---
 
-[fix] A disabled `Selector` or `MultiSelector` keeps its place in the tab order. Its trigger no longer renders the native `disabled` attribute or `tabIndex={-1}`; it exposes `aria-disabled="true"` instead, so keyboard and screen-reader users can reach it and hear that it is unavailable. A focused disabled trigger shows a keyboard focus ring, dimmed with the rest of the disabled control. A disabled trigger still opens nothing, ignores presses and keys, and does not run a caller's `onClick`. A disabled selector still submits no form value, and it keeps focus when it becomes disabled while focused.
+[fix] A disabled `Selector` or `MultiSelector` keeps its place in the tab order, so keyboard and screen-reader users can reach it and hear that it is unavailable (WCAG 2.2 SC 2.1.1 Keyboard and 4.1.2 Name, Role, Value; `spec:AST-085` FR1–FR4). Before, its trigger rendered the native `disabled` attribute and `tabIndex={-1}`, so Tab skipped it and a focused trigger lost focus when disabled; now it exposes `aria-disabled="true"`, keeps focus, still opens nothing, ignores presses and keys, does not run a caller's `onClick`, and submits no form value. A focused disabled trigger shows a keyboard focus ring, dimmed with the rest of the control (SC 2.4.7 Focus Visible; `spec:AST-085` FR6).
 
 @cixzhang
