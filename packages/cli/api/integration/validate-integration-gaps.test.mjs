@@ -116,6 +116,20 @@ async function issuesOf(dir) {
 }
 
 /**
+ * Issues plus the name findings validate lists without counting
+ * (`docNames.findings`, `blockComponents.findings`).
+ * @param {string} dir
+ */
+async function allOf(dir) {
+  const {data} = await validateIntegration(undefined, {cwd: dir});
+  return [
+    ...data.issues,
+    ...(data.docNames?.findings ?? []),
+    ...(data.blockComponents?.findings ?? []),
+  ];
+}
+
+/**
  * The one issue with this code, which the test is about.
  * @param {Array<{code: string, message: string}>} issues
  * @param {string} code
@@ -151,16 +165,17 @@ const writeNamed = files =>
   });
 
 describe('a name that differs from its file name', () => {
-  it('warns about a component doc whose name is not the name it is listed under', async () => {
+  it('lists a component doc whose name is not the name it is listed under, without an issue', async () => {
     const dir = writeNamed({
       [MANIFEST]: manifest({components: './components'}),
       'components/AcmeWidget.doc.mjs': namedDoc('AcmeWidget', 'AcmeWidgets'),
       'components/AcmeWidget.tsx': componentSource('AcmeWidget'),
     });
 
-    const issues = await issuesOf(dir);
+    expect(await issuesOf(dir)).toEqual([]);
+    const issues = await allOf(dir);
     expect(issues.map(issue => issue.code)).toEqual(['doc_name_mismatch']);
-    expect(issues[0].severity).toBe('warning');
+    expect(issues[0].severity).toBe('info');
     expect(issues[0].message).toBe(
       'Component doc "AcmeWidget.doc.mjs" sets name: \'AcmeWidgets\', but components/AcmeWidget.tsx, the module its import names, does not export AcmeWidgets, so Astryx lists the component as "AcmeWidget" (its file name), and `astryx component AcmeWidget` prints `import {AcmeWidgets}`. Fix: set name: \'AcmeWidget\' in AcmeWidget.doc.mjs.',
     );
@@ -170,7 +185,7 @@ describe('a name that differs from its file name', () => {
         'components/AcmeWidget.doc.mjs': namedDoc('AcmeWidget', 'AcmeWidget'),
       },
     });
-    expect(await issuesOf(fixed)).toEqual([]);
+    expect(await allOf(fixed)).toEqual([]);
   });
 
   it.each([
@@ -214,9 +229,7 @@ describe('a name that differs from its file name', () => {
       });
 
       const {data} = await validateIntegration(undefined, {cwd: dir});
-      expect(
-        data.issues.filter(issue => issue.code === 'doc_name_mismatch'),
-      ).toEqual([]);
+      expect(data.docNames?.findings ?? []).toEqual([]);
       expect(data.docNames).toEqual({
         status: 'checked',
         findings: [],
@@ -300,7 +313,7 @@ describe('a name that differs from its file name', () => {
         'namespace Impl {\n  export const AcmeWidgets = () => null;\n}\nexport function AcmeWidget() { return null; }\n',
     });
 
-    expect(only(await issuesOf(dir), 'doc_name_mismatch')).toContain(
+    expect(only(await allOf(dir), 'doc_name_mismatch')).toContain(
       'components/AcmeWidget.tsx, the module its import names, does not export AcmeWidgets',
     );
   });
@@ -313,7 +326,7 @@ describe('a name that differs from its file name', () => {
       'components/impl.tsx': componentSource('AcmeWidget'),
     });
 
-    expect(only(await issuesOf(dir), 'doc_name_mismatch')).toContain(
+    expect(only(await allOf(dir), 'doc_name_mismatch')).toContain(
       "sets name: 'AcmeWidgets'",
     );
   });
@@ -325,7 +338,7 @@ describe('a name that differs from its file name', () => {
       'components/acme-widget.tsx': componentSource('AcmeWidget'),
     });
 
-    const message = only(await issuesOf(dir), 'doc_name_mismatch');
+    const message = only(await allOf(dir), 'doc_name_mismatch');
     expect(message).toBe(
       'Component doc "acme-widget.doc.mjs" sets name: \'AcmeWidgets\', but components/acme-widget.tsx, the module its import names, does not export AcmeWidgets, so Astryx lists the component as "acme-widget" (its file name), and `astryx component acme-widget` prints `import {AcmeWidgets}`. Fix: set name: \'AcmeWidget\' in acme-widget.doc.mjs, the component components/acme-widget.tsx exports.',
     );
@@ -334,7 +347,7 @@ describe('a name that differs from its file name', () => {
         'components/acme-widget.doc.mjs': namedDoc('acme-widget', 'AcmeWidget'),
       },
     });
-    expect(await issuesOf(fixed)).toEqual([]);
+    expect(await allOf(fixed)).toEqual([]);
   });
 
   it('names no single export when a source exports several components', async () => {
@@ -345,7 +358,7 @@ describe('a name that differs from its file name', () => {
         'export function AcmeWidget() { return null; }\nexport function AcmeGizmo() { return null; }\n',
     });
 
-    expect(only(await issuesOf(dir), 'doc_name_mismatch')).toContain(
+    expect(only(await allOf(dir), 'doc_name_mismatch')).toContain(
       'Fix: set name in acme-widget.doc.mjs to the component components/acme-widget.tsx exports (AcmeGizmo, AcmeWidget).',
     );
   });
@@ -381,7 +394,7 @@ describe('a name that differs from its file name', () => {
       {name: '@acme/kit', version: '1.0.0', exports: {'.': './index.ts'}},
     );
 
-    expect(only(await issuesOf(dir), 'doc_name_mismatch')).toContain(
+    expect(only(await allOf(dir), 'doc_name_mismatch')).toContain(
       'but index.ts, the module its import names, does not export AcmeWidget',
     );
   });
@@ -394,7 +407,7 @@ describe('a name that differs from its file name', () => {
         'export default function AcmeWidget() { return null; }\n',
     });
 
-    const message = only(await issuesOf(dir), 'doc_name_mismatch');
+    const message = only(await allOf(dir), 'doc_name_mismatch');
     expect(message).toContain(
       'but components/acme-widget.tsx, the module its import names, does not export AcmeWidget',
     );
@@ -408,7 +421,7 @@ describe('a name that differs from its file name', () => {
       parse(source, {sourceType: 'module', plugins: ['typescript', 'jsx']}),
     ).not.toThrow();
     const fixed = follow(dir, {write: {'components/acme-widget.tsx': source}});
-    expect(await issuesOf(fixed)).toEqual([]);
+    expect(await allOf(fixed)).toEqual([]);
   });
 
   it('proposes a named binding for an anonymous default, which parses and clears it', async () => {
@@ -418,7 +431,7 @@ describe('a name that differs from its file name', () => {
       'components/acme-widget.tsx': 'export default () => null;\n',
     });
 
-    expect(only(await issuesOf(dir), 'doc_name_mismatch')).toContain(
+    expect(only(await allOf(dir), 'doc_name_mismatch')).toContain(
       'Fix: bind the default to AcmeWidget in components/acme-widget.tsx and export it by name too (`const AcmeWidget = …; export default AcmeWidget; export {AcmeWidget};`)',
     );
     const source =
@@ -427,7 +440,7 @@ describe('a name that differs from its file name', () => {
       parse(source, {sourceType: 'module', plugins: ['typescript', 'jsx']}),
     ).not.toThrow();
     const fixed = follow(dir, {write: {'components/acme-widget.tsx': source}});
-    expect(await issuesOf(fixed)).toEqual([]);
+    expect(await allOf(fixed)).toEqual([]);
   });
 
   it('lists a default-only source as not checked when no printed import can be resolved', async () => {
@@ -476,7 +489,7 @@ describe('a name that differs from its file name', () => {
       'components/acme-widget.tsx': componentSource('AcmeWidget'),
     });
 
-    expect(await issuesOf(dir)).toEqual([]);
+    expect(await allOf(dir)).toEqual([]);
   });
 
   it('leaves a doc topic named differently from its file alone: the code does not contradict it', async () => {
@@ -485,7 +498,7 @@ describe('a name that differs from its file name', () => {
       'docs/deploying.doc.mjs': topic('deploy'),
     });
 
-    expect(await issuesOf(dir)).toEqual([]);
+    expect(await allOf(dir)).toEqual([]);
   });
 
   it('leaves a template name alone: it is the display title', async () => {
@@ -495,7 +508,7 @@ describe('a name that differs from its file name', () => {
       'templates/account-card.tsx': templateSource,
     });
 
-    expect(await issuesOf(dir)).toEqual([]);
+    expect(await allOf(dir)).toEqual([]);
   });
 });
 
@@ -513,7 +526,7 @@ describe('block component names', () => {
       'templates/account-card.tsx': templateSource,
     });
 
-    const issues = await issuesOf(dir);
+    const issues = await allOf(dir);
     expect(issues.map(issue => issue.code)).toEqual([
       'unknown_block_component',
       'unknown_block_component',
@@ -538,7 +551,7 @@ describe('block component names', () => {
         "import {Helper} from 'some-lib';\nexport default function A() {\n  return <Helper />;\n}\n",
     });
 
-    expect(await issuesOf(dir)).toEqual([]);
+    expect(await allOf(dir)).toEqual([]);
   });
 
   it('looks a name up in Core before giving up on a namespace import', async () => {
@@ -611,9 +624,7 @@ describe('block component names', () => {
 
     const {data} = await validateIntegration(undefined, {cwd: dir});
     expect(
-      data.issues
-        .filter(issue => issue.code === 'unknown_block_component')
-        .map(issue => issue.message),
+      (data.blockComponents?.findings ?? []).map(finding => finding.message),
     ).toEqual([expect.stringContaining('names "AcmeGizmo" in componentsUsed')]);
     expect(data.blockComponents?.unchecked).toEqual([]);
   });
@@ -638,9 +649,7 @@ describe('block component names', () => {
 
       const {data} = await validateIntegration(undefined, {cwd: dir});
       expect(
-        data.issues
-          .filter(issue => issue.code === 'unknown_block_component')
-          .map(issue => issue.message),
+        (data.blockComponents?.findings ?? []).map(finding => finding.message),
       ).toEqual([
         expect.stringContaining('names "AcmeGizmo" in componentsUsed'),
       ]);
@@ -798,9 +807,7 @@ describe('block component names', () => {
 
     const {data} = await validateIntegration(undefined, {cwd: dir});
     expect(
-      data.issues
-        .filter(issue => issue.code === 'unknown_block_component')
-        .map(issue => issue.message),
+      (data.blockComponents?.findings ?? []).map(finding => finding.message),
     ).toEqual([expect.stringContaining('names "AcmeGizmo" in componentsUsed')]);
   });
 
@@ -841,9 +848,7 @@ describe('block component names', () => {
       );
 
       const {data} = await validateIntegration(undefined, {cwd: outside});
-      expect(
-        data.issues.filter(issue => issue.code === 'unknown_block_component'),
-      ).toEqual([]);
+      expect(data.blockComponents?.findings ?? []).toEqual([]);
       const reason =
         'Core is not installed, so its component names cannot be checked.';
       expect(data.blockComponents).toEqual({
@@ -1375,5 +1380,58 @@ describe('unreadable files and theme names', () => {
     expect(
       (await issuesOf(dir)).filter(issue => issue.code === 'invalid_theme'),
     ).toEqual([]);
+  });
+});
+
+describe('name findings listed until the next minor release', () => {
+  /** @param {string} extra */
+  const block = extra =>
+    `export default {type: 'block', name: 'Account card', displayName: 'Account card', aspectRatio: 1,${extra}};\n`;
+  const docLayout = () =>
+    writeNamed({
+      [MANIFEST]: manifest({components: './components'}),
+      'components/AcmeWidget.doc.mjs': namedDoc('AcmeWidget', 'AcmeWidgets'),
+      'components/AcmeWidget.tsx': componentSource('AcmeWidget'),
+    });
+  const blockLayout = () =>
+    writePackage({
+      [MANIFEST]: manifest({templates: './templates'}),
+      'templates/account-card.doc.mjs': block(" componentsUsed: ['AcmeGizmo']"),
+      'templates/account-card.tsx': templateSource,
+    });
+
+  it.each([
+    ['doc_name_mismatch', docLayout, 'docNames'],
+    ['unknown_block_component', blockLayout, 'blockComponents'],
+  ])(
+    'lists %s at info severity in its report, and integration check --strict passes',
+    async (code, make, report) => {
+      const dir = make();
+      const {data} = await validateIntegration(undefined, {cwd: dir});
+      expect(data.issues).toEqual([]);
+      const findings = /** @type {any} */ (data)[report].findings;
+      expect(
+        findings.map((/** @type {any} */ f) => [f.code, f.severity]),
+      ).toEqual([[code, 'info']]);
+      expect(findings[0].message).toContain('Fix: ');
+
+      const result = await integrationCheck({cwd: dir, strict: true});
+      expect(result.data.failures).toEqual([]);
+      expect(result.data.failed).toBe(false);
+    },
+  );
+
+  it('prints the listed name findings as [info] lines and counts none', () => {
+    const dir = blockLayout();
+    const run = spawnSync(
+      process.execPath,
+      [CLI, 'doctor', 'integration', 'validate'],
+      {cwd: dir, encoding: 'utf-8', timeout: 60_000},
+    );
+    expect(run.status, run.stderr).toBe(0);
+    expect(run.stdout).toContain(
+      '[info] unknown_block_component: Template "account-card" names "AcmeGizmo" in componentsUsed',
+    );
+    expect(run.stdout).toContain('Summary: 0 errors, 0 warnings');
   });
 });

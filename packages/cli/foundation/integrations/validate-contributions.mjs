@@ -377,7 +377,6 @@ async function checkTemplates(integration, issues) {
     );
   }
   checkTemplateSourcesWithoutDoc(integration, issues);
-  issues.push(...(await judgeBlockComponents(integration)).issues);
 }
 
 /**
@@ -385,26 +384,26 @@ async function checkTemplates(integration, issues) {
  * and `componentsUsed`, judged against the components `astryx component`
  * finds: the package's own, and every doc it resolves in Core. A name the
  * template imports needs no doc of its own. A name neither has is an
- * `unknown_block_component` warning, since the template list and the
+ * `unknown_block_component` finding, since the template list and the
  * block's search keywords then give a name no one can look up. A name the
- * template may reach through a namespace import or a local module it could
- * not read, and, without Core installed, a name the package does not have,
- * cannot be judged and is listed in `unchecked` instead.
+ * template may reach through anything the walk does not model, and, without
+ * Core installed, a name the package does not have, cannot be judged and is
+ * listed in `unchecked` instead.
  * @param {LoadedIntegration} integration
- * @returns {Promise<{issues: Issue[], unchecked: Array<{docPath: string, name: string, reason: string}>}>}
+ * @returns {Promise<{findings: Array<{docPath: string, name: string, message: string}>, unchecked: Array<{docPath: string, name: string, reason: string}>}>}
  */
 async function judgeBlockComponents(integration) {
-  /** @type {Issue[]} */
-  const issues = [];
+  /** @type {Array<{docPath: string, name: string, message: string}>} */
+  const findings = [];
   /** @type {Array<{docPath: string, name: string, reason: string}>} */
   const unchecked = [];
   const root = integration.templates;
-  if (!root || rootProblem(root)) return {issues, unchecked};
+  if (!root || rootProblem(root)) return {findings, unchecked};
   let templates;
   try {
     ({templates} = await discoverIntegrationTemplatesForOne(integration));
   } catch {
-    return {issues, unchecked};
+    return {findings, unchecked};
   }
   /** @type {Set<string>} */
   let own;
@@ -415,7 +414,7 @@ async function judgeBlockComponents(integration) {
         .map(record => record.name),
     );
   } catch {
-    return {issues, unchecked};
+    return {findings, unchecked};
   }
   // The Core installed beside the package, never the one the CLI carries:
   // a name is judged against the Core the package's users install.
@@ -469,15 +468,14 @@ async function judgeBlockComponents(integration) {
         });
         continue;
       }
-      issues.push(
-        issueWarning(
-          'unknown_block_component',
-          `Template "${template.dirName}" names "${name}" in ${field}, but neither this package nor Core has a component by that name and the template does not import it, so \`astryx template --list\` and the block's search keywords give a component name no one can look up. Fix: use the component's exact name, or remove "${name}" from ${field}.`,
-        ),
-      );
+      findings.push({
+        docPath: template.docPath,
+        name,
+        message: `Template "${template.dirName}" names "${name}" in ${field}, but neither this package nor Core has a component by that name and the template does not import it, so \`astryx template --list\` and the block's search keywords give a component name no one can look up. Fix: use the component's exact name, or remove "${name}" from ${field}.`,
+      });
     }
   }
-  return {issues, unchecked};
+  return {findings, unchecked};
 }
 
 /**
@@ -845,6 +843,28 @@ function defaultBinding(file) {
 }
 
 /**
+ * A finding a report lists with its fix but nothing counts: `info` severity,
+ * which `integration check` and `--strict` leave alone.
+ * @typedef {{file: string, name: string, code: string, severity: 'info', message: string}} ListedFinding
+ */
+
+/**
+ * @param {string} code
+ * @param {string} base the folder `file` is relative to
+ * @param {{docPath: string, name: string, message: string}} entry
+ * @returns {ListedFinding}
+ */
+function listedFinding(code, base, entry) {
+  return {
+    file: slash(path.relative(base, entry.docPath)),
+    name: entry.name,
+    code,
+    severity: 'info',
+    message: entry.message,
+  };
+}
+
+/**
  * The block component names this check could not judge, shaped like the
  * doc type report so `integration check` counts them as not compared: each
  * name a template gives in `exampleFor` or `componentsUsed` that neither the
@@ -852,16 +872,19 @@ function defaultBinding(file) {
  * anything but named imports and re-exports from the package, Core, or
  * helpers read in full (see importedNames), or when Core is not installed to
  * look it up in. A name judged unknown is an `unknown_block_component`
- * issue, so `findings` is always empty.
+ * finding, listed with its fix at `info` severity: `integration check` counts
+ * it nowhere and `--strict` does not fail on it.
  * @param {LoadedIntegration} integration
- * @returns {Promise<{status: 'checked', findings: [], unchecked: Array<{file: string, name: string, reason: string}>}>}
+ * @returns {Promise<{status: 'checked', findings: ListedFinding[], unchecked: Array<{file: string, name: string, reason: string}>}>}
  */
 export async function blockComponentsReport(integration) {
-  const {unchecked} = await judgeBlockComponents(integration);
+  const {findings, unchecked} = await judgeBlockComponents(integration);
   const base = integration.__packageDir ?? integration.templates ?? '';
   return {
     status: 'checked',
-    findings: [],
+    findings: findings.map(entry =>
+      listedFinding('unknown_block_component', base, entry),
+    ),
     unchecked: unchecked.map(entry => ({
       file: slash(path.relative(base, entry.docPath)),
       name: entry.name,
@@ -909,7 +932,7 @@ async function checkComponents(integration, issues) {
   const root = /** @type {string} */ (integration.components);
   const files = componentDocFiles(root);
   try {
-    const {components, discovered, errors} = await discover(integration);
+    const {discovered, errors} = await discover(integration);
     /** @type {import('./contribution-fixes.mjs').FixContext | undefined} */
     let context;
     const byName = new Map(discovered.map(record => [record.name, record]));
@@ -975,13 +998,6 @@ async function checkComponents(integration, issues) {
         ),
       );
     }
-    await checkComponentDocNames(
-      integration,
-      components,
-      issues,
-      root,
-      files.caseMismatch,
-    );
     const overlap = integration.__packageDir
       ? newComponentDocNote(
           (context ??= createFixContext(integration.__packageDir, integration)),
@@ -1095,52 +1111,22 @@ function componentDocFiles(root) {
 }
 
 /**
- * Warn about a component doc whose `name` is not the name Astryx lists it
- * under and that its source provably does not export. Discovery lists a doc
- * under its file name unless its `name` is a different export of its source,
- * so such a `name` still reaches readers: `astryx component` prints it in the
- * import line, which then names something the source does not export. A family member is
- * read through its family's doc and is not checked here.
- * @param {LoadedIntegration} integration
- * @param {Array<{name: string, docPath: string, sourcePath: string|null}>} components
- * @param {Issue[]} issues
- * @param {string} root
- * @param {Map<string, string>} skip docs already reported, by path
- */
-async function checkComponentDocNames(
-  integration,
-  components,
-  issues,
-  root,
-  skip,
-) {
-  await judgeComponentDocNames(
-    integration,
-    components,
-    root,
-    skip,
-    issues,
-    null,
-  );
-}
-
-/**
  * Judge each component doc's `name` against the module its printed import
- * names: a warning when that module provably does not export it, and an
+ * names: a finding when that module provably does not export it, and an
  * entry in `unchecked` when it cannot be judged, so it is listed instead.
  * @param {LoadedIntegration} integration
  * @param {Array<{name: string, docPath: string, sourcePath: string|null}>} components
  * @param {string} root the components root
  * @param {Map<string, string>} skip docs already reported, by path
- * @param {Issue[] | null} issues where findings go, or null to drop them
- * @param {Array<{docPath: string, name: string, reason: string}> | null} unchecked
+ * @param {Array<{docPath: string, name: string, message: string}>} findings
+ * @param {Array<{docPath: string, name: string, reason: string}>} unchecked
  */
 async function judgeComponentDocNames(
   integration,
   components,
   root,
   skip,
-  issues,
+  findings,
   unchecked,
 ) {
   const base = integration.__packageDir ?? root;
@@ -1166,7 +1152,7 @@ async function judgeComponentDocNames(
       doc,
     );
     if (printed === null) {
-      unchecked?.push({
+      unchecked.push({
         docPath: record.docPath,
         name,
         reason:
@@ -1181,7 +1167,7 @@ async function judgeComponentDocNames(
     const judged = moduleExportVerdict(module, name);
     if (judged.verdict === 'exports') continue;
     if (judged.verdict === 'unknown') {
-      unchecked?.push({docPath: record.docPath, name, reason: judged.reason});
+      unchecked.push({docPath: record.docPath, name, reason: judged.reason});
       continue;
     }
     // A source whose only export is a default, read because no printed
@@ -1194,14 +1180,13 @@ async function judgeComponentDocNames(
       exportedNames.length === 1 &&
       exportedNames[0] === 'default';
     if (defaultOnly && printed === undefined) {
-      unchecked?.push({
+      unchecked.push({
         docPath: record.docPath,
         name,
         reason: `${shown} exports a default, which the package entry may publish under any name.`,
       });
       continue;
     }
-    if (issues == null) continue;
     const file = path.basename(record.docPath);
     // The name to propose: the file name when the module exports it, else
     // the one component the module exports.
@@ -1222,12 +1207,11 @@ async function judgeComponentDocNames(
           ? `Fix: set name: '${exported[0]}' in ${file}, the component ${shown} exports.`
           : `Fix: set name in ${file} to the component ${shown} exports${exported.length > 1 ? ` (${exported.join(', ')})` : ''}.`;
     }
-    issues.push(
-      issueWarning(
-        'doc_name_mismatch',
-        `Component doc "${slash(path.relative(root, record.docPath))}" sets name: '${name}', but ${shown}, the module its import names, does not export ${name}, so Astryx lists the component as "${record.name}" (its file name), and \`astryx component ${record.name}\` prints \`import {${name}}\`. ${fix}`,
-      ),
-    );
+    findings.push({
+      docPath: record.docPath,
+      name,
+      message: `Component doc "${slash(path.relative(root, record.docPath))}" sets name: '${name}', but ${shown}, the module its import names, does not export ${name}, so Astryx lists the component as "${record.name}" (its file name), and \`astryx component ${record.name}\` prints \`import {${name}}\`. ${fix}`,
+    });
   }
 }
 
@@ -1235,12 +1219,16 @@ async function judgeComponentDocNames(
  * The component doc names the check could not judge, shaped like the doc type
  * report so `integration check` counts them as not compared: each doc whose
  * `name` differs from the name it is listed under and whose source's exports
- * cannot all be read without running it. Its findings are always empty: a
- * name the source provably lacks is a `doc_name_mismatch` issue instead.
+ * cannot all be read without running it. A name the module its printed
+ * import names provably lacks is a `doc_name_mismatch` finding, listed with
+ * its fix at `info` severity: `integration check` counts it nowhere and
+ * `--strict` does not fail on it.
  * @param {LoadedIntegration} integration
- * @returns {Promise<{status: 'checked', findings: [], unchecked: Array<{file: string, name: string, reason: string}>}>}
+ * @returns {Promise<{status: 'checked', findings: ListedFinding[], unchecked: Array<{file: string, name: string, reason: string}>}>}
  */
 export async function componentDocNamesReport(integration) {
+  /** @type {Array<{docPath: string, name: string, message: string}>} */
+  const findings = [];
   /** @type {Array<{docPath: string, name: string, reason: string}>} */
   const unchecked = [];
   const root = integration.components;
@@ -1255,7 +1243,7 @@ export async function componentDocNamesReport(integration) {
         components,
         root,
         componentDocFiles(root).caseMismatch,
-        null,
+        findings,
         unchecked,
       );
     } catch {
@@ -1265,7 +1253,9 @@ export async function componentDocNamesReport(integration) {
   const base = integration.__packageDir ?? root ?? '';
   return {
     status: 'checked',
-    findings: [],
+    findings: findings.map(entry =>
+      listedFinding('doc_name_mismatch', base, entry),
+    ),
     unchecked: unchecked.map(entry => ({
       file: slash(path.relative(base, entry.docPath)),
       name: entry.name,

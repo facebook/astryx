@@ -57,20 +57,24 @@
 /**
  * Each component doc whose `name` differs from the name it is listed under,
  * judged against its source. Present when the manifest loads. A name the
- * source provably does not export is a `doc_name_mismatch` issue, so
- * `findings` is always empty; `unchecked` lists each doc whose source's
+ * module its printed import names provably does not export is a
+ * `doc_name_mismatch` entry in `findings`, listed with its fix at `info`
+ * severity: nothing counts it and `integration check --strict` does not fail
+ * on it (it becomes a warning in the next minor release); `unchecked` lists each doc whose source's
  * exports could not all be read (a re-export from another package, `export
  * =`, a destructured binding, a namespace): `file` (the doc, package-relative),
  * `name` (what the doc says), and `reason`.
  *
- * @typedef {{status: 'checked', findings: [], unchecked: Array<{file: string, name: string, reason: string}>}} DocNamesReport
+ * @typedef {{status: 'checked', findings: ListedNameFinding[], unchecked: Array<{file: string, name: string, reason: string}>}} DocNamesReport
  */
 
 /**
  * Each component name a template gives in `exampleFor` or `componentsUsed`
  * that could not be judged. Present when the manifest loads. A name neither
  * the package nor Core has, and the template does not import, is an
- * `unknown_block_component` issue, so `findings` is always empty;
+ * `unknown_block_component` entry in `findings`, listed with its fix at
+ * `info` severity: nothing counts it and `integration check --strict` does
+ * not fail on it (it becomes a warning in the next minor release);
  * `unchecked` lists each name that cannot be judged: one the template may
  * reach through anything other than named imports and re-exports from
  * the package, Core, React, StyleX or local helpers (an import from another
@@ -79,7 +83,15 @@
  * read), or, without Core installed, any name Core would have to resolve: `file` (the template doc, package-relative),
  * `name`, and `reason`.
  *
- * @typedef {{status: 'checked', findings: [], unchecked: Array<{file: string, name: string, reason: string}>}} BlockComponentsReport
+ * @typedef {{status: 'checked', findings: ListedNameFinding[], unchecked: Array<{file: string, name: string, reason: string}>}} BlockComponentsReport
+ */
+
+/**
+ * A name finding listed with its fix but counted nowhere: `file` (the doc,
+ * package-relative), `name`, `code` (`doc_name_mismatch` or
+ * `unknown_block_component`), `severity: 'info'`, and `message`,
+ * which ends in the `Fix:`.
+ * @typedef {{file: string, name: string, code: string, severity: 'info', message: string}} ListedNameFinding
  */
 
 export {};

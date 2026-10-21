@@ -184,7 +184,16 @@ function docTypesBlocks(report, failed) {
  * @param {import('../../../api/integration/validate-integration.type.mjs').DocNamesReport | undefined} report
  */
 function docNamesBlocks(report) {
-  if (!report || report.unchecked.length === 0) return [];
+  if (!report) return [];
+  return [
+    ...listedBlocks(report.findings),
+    ...(report.unchecked.length === 0 ? [] : uncheckedDocNames(report)),
+  ];
+}
+/**
+ * @param {import('../../../api/integration/validate-integration.type.mjs').DocNamesReport} report
+ */
+function uncheckedDocNames(report) {
   return [
     text(
       `[info] Component names not checked: ${report.unchecked.length} doc(s) whose source exports this check cannot read:`,
@@ -198,13 +207,32 @@ function docNamesBlocks(report) {
  * @param {import('../../../api/integration/validate-integration.type.mjs').BlockComponentsReport | undefined} report
  */
 function blockComponentsBlocks(report) {
-  if (!report || report.unchecked.length === 0) return [];
+  if (!report) return [];
+  return [
+    ...listedBlocks(report.findings),
+    ...(report.unchecked.length === 0 ? [] : uncheckedBlockNames(report)),
+  ];
+}
+/**
+ * @param {import('../../../api/integration/validate-integration.type.mjs').BlockComponentsReport} report
+ */
+function uncheckedBlockNames(report) {
   return [
     text(
       `[info] Block component names not checked: ${report.unchecked.length} name(s) this check could not judge:`,
     ),
     records(report.unchecked, {fields: ['file', 'name', 'reason']}),
   ];
+}
+
+/**
+ * Findings listed with their fix but counted nowhere, one `[info]` line each.
+ * @param {Array<{code: string, message: string}>} findings
+ */
+function listedBlocks(findings) {
+  return findings.map(finding =>
+    text(`[info] ${finding.code}: ${finding.message}`),
+  );
 }
 
 /**
