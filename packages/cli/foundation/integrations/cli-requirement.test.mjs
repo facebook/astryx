@@ -352,11 +352,11 @@ describe('every feature check names its CLI floor', () => {
       // `replaces`, and 0.6.6 reads its `keywords`.
       replacesCliProblem: '0.6.4',
       keywordsCliProblem: '0.6.6',
-      // Tied to the next patch slot: published 0.7.1 refuses `stability` on
+      // Tied to the next patch slot: published 0.7.2 refuses `stability` on
       // a template or namespace doc.
-      stabilityCliProblem: '0.7.2',
-      // Published 0.7.1 refuses a template's `icons`.
-      templateIconsCliProblem: '0.7.2',
+      stabilityCliProblem: '0.7.3',
+      // Published 0.7.2 refuses a template's `icons`.
+      templateIconsCliProblem: '0.7.3',
     });
   });
 });

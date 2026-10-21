@@ -2,7 +2,7 @@
 
 /**
  * @file `doctor integration validate` (and so `integration check`) notes a
- * template or namespace doc that sets `stability`, which a CLI before 0.7.2
+ * template or namespace doc that sets `stability`, which a CLI before 0.7.3
  * refuses and drops (spec:AST-017 FR27), unless the package's CLI peer range
  * admits only CLIs that read it. A note is additive data, never an issue: it
  * is not counted and never fails a check. A component doc or guide that sets
@@ -89,8 +89,8 @@ describe('olderCliNotes', () => {
     );
     expect(data.olderCliNotes).toHaveLength(2);
     for (const note of data.olderCliNotes) {
-      expect(note.message).toContain('CLIs before 0.7.2 drop this descriptor');
-      expect(note.message).toContain('">=0.7.2"');
+      expect(note.message).toContain('CLIs before 0.7.3 drop this descriptor');
+      expect(note.message).toContain('">=0.7.3"');
     }
     expect(
       data.olderCliNotes.find(
@@ -117,7 +117,7 @@ describe('olderCliNotes', () => {
     expect(text.stdout).toContain('templates/stab-hero.doc.mjs');
   }, 60_000);
 
-  it('notes a template that declares icons, which 0.7.1 drops', async () => {
+  it('notes a template that declares icons, which 0.7.2 drops', async () => {
     writePackage({}, '');
     const doc = path.join(dir, 'templates', 'stab-hero.doc.mjs');
     fs.writeFileSync(
@@ -135,14 +135,14 @@ describe('olderCliNotes', () => {
         file: 'templates/stab-hero.doc.mjs',
         kind: 'template',
         field: 'icons',
-        message: expect.stringContaining('declares `icons`: CLIs before 0.7.2'),
+        message: expect.stringContaining('declares `icons`: CLIs before 0.7.3'),
       }),
     ]);
   });
 
-  it('says nothing when the CLI peer range starts at 0.7.2', async () => {
+  it('says nothing when the CLI peer range starts at 0.7.3', async () => {
     writePackage(
-      {peerDependencies: {'@astryxdesign/cli': '>=0.7.2'}},
+      {peerDependencies: {'@astryxdesign/cli': '>=0.7.3'}},
       ", stability: 'experimental'",
     );
     expect(await validated()).not.toHaveProperty('olderCliNotes');

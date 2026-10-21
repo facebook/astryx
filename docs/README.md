@@ -111,6 +111,18 @@ base authority commit is its `origin/main` merge base, includes only
 `authority: current` records, and returns only the matched claims; draft records
 and nonmatching routes are omitted.
 
+An optional `path-applicability:v1` JSON block lists the repository paths a
+record governs when no placement, path field, name, or inherited link reaches
+them: `{"paths": ["apps/docsite/**"]}`. Patterns are repository-relative globs:
+`**` is a whole segment spanning any depth, `*` matches within one segment, and
+`?` matches one character. Like `review-applicability:v1`, it is an
+independently versioned overlay, so opting in does not migrate a record kind.
+A pattern must start with a literal path segment. Validation rejects
+malformed, unsafe, repeated, whole-repository, and no-match patterns. A match only locates the record for a path; claim scope and
+precedence are unchanged. `pnpm check:knowledge` also fails when a current record
+is reached from no tracked path that is not itself a record
+(`architecture:knowledge-contracts` INV25 and INV26).
+
 New record kinds should prefer one typed relationship list over parallel fields.
 If `system-spec` receives a future schema revision, replace its legacy
 `affects_*` fields with one typed `affects` list containing ids such as

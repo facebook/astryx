@@ -219,14 +219,14 @@ discover`, Doctor, and `integration check` and `verify` give the output they
   printed as "Unmapped icon definitions (optional)", never counted and never
   failing.
 
-- **FR16 — Older CLIs.** Published CLI 0.7.1 refuses `stability` on page and
+- **FR16 — Older CLIs.** Published CLI 0.7.2 refuses `stability` on page and
   block templates, namespace docs, and theme descriptors, and refuses a
   template's `icons`, dropping the descriptor. No integration descriptor this
   feature writes sets `stability` there. For the package being authored, the
   validate result's additive field `olderCliNotes` (each
   `{file, kind, field, message}`) names each template or namespace doc that
   sets `stability`, and each template that declares `icons`, while the
-  package's CLI peer range admits a release before 0.7.2; a note is never
+  package's CLI peer range admits a release before 0.7.3; a note is never
   counted and never fails a check.
 - **FR17 — Doctor and discover read sets only with the opt-in.** In a project
   that sets `experimental.iconSet`, Doctor's `icon-sets` check fails when it
@@ -278,7 +278,7 @@ discover`, Doctor, and `integration check` and `verify` give the output they
 | FR9–FR10  | template mapping tests                                                         | mapped by match and by definition; kept with a suggestion; no opt-in                                                        | a name is guessed, or a project without the opt-in gets a rewrite                   |
 | FR12–FR14 | writer and command tests                                                       | wrap and refresh; adapter; generated types and theme map                                                                    | a write is left half done, or the theme map drifts from `map`                       |
 | FR15      | `integration check` tests, with and without `--strict`                         | every code; unmapped optional definitions                                                                                   | an export the module lacks passes, or the optional list fails a check               |
-| FR16      | validate tests; a scratch project on published CLI 0.7.1                       | `stability` on a template and namespace doc; template `icons`; peer range from 0.7.2                                        | a note fails a check, or a dropped descriptor goes unnoted                          |
+| FR16      | validate tests; a scratch project on published CLI 0.7.2                       | `stability` on a template and namespace doc; template `icons`; peer range from 0.7.3                                        | a note fails a check, or a dropped descriptor goes unnoted                          |
 | FR17      | Doctor and discover tests                                                      | opted in; installed set and no opt-in; invalid set and no opt-in                                                            | a project without the opt-in sees an icon-set check, issue, or kind                 |
 | FR18      | docs tree, help, and search tests                                              | marked command; stable and experimental namespace with `packages: 'all'`                                                    | a stable namespace adopts another package's doc, or a marked doc reaches search     |
 

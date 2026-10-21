@@ -4,7 +4,7 @@
  * @file Integration descriptors an older CLI drops (spec:AST-017 FR21, FR27;
  * spec:AST-084 FR9).
  *
- * Published CLIs before 0.7.2 refuse an unknown field on a page or block
+ * Published CLIs before 0.7.3 refuse an unknown field on a page or block
  * template, which they drop, and on a namespace doc, which hides every doc
  * topic the package ships. Component docs and guides keep loading there and
  * ignore it. So each template or namespace doc that sets `stability`, and

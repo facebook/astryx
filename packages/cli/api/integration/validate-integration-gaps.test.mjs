@@ -15,8 +15,21 @@
 import {afterEach, beforeEach, describe, expect, it} from 'vitest';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import {validateLocalIntegration} from './validate-integration.mjs';
-import {integrationCheck} from './check/check.mjs';
+import {spawnSync} from 'node:child_process';
+import {fileURLToPath} from 'node:url';
+import {
+  validateIntegration,
+  validateLocalIntegration,
+} from './validate-integration.mjs';
+import {
+  integrationCheck,
+  strictIssues,
+  summarizeCheck,
+} from './check/check.mjs';
+
+const CLI = fileURLToPath(
+  new URL('../../clients/cli/bin/astryx.mjs', import.meta.url),
+);
 
 let tmpDir;
 let copies = 0;
@@ -99,6 +112,24 @@ async function issuesOf(dir) {
 }
 
 /**
+ * The notes validate lists beside its issues, which count nowhere: the layout
+ * findings added after the last minor release, each with its fix.
+ * @param {string} dir
+ * @returns {Promise<Array<{code: string, message: string}>>}
+ */
+async function listedOf(dir) {
+  return (await validateIntegration(undefined, {cwd: dir})).data.notes ?? [];
+}
+
+/**
+ * Issues and notes together: what a followed fix must clear.
+ * @param {string} dir
+ */
+async function allOf(dir) {
+  return [...(await issuesOf(dir)), ...(await listedOf(dir))];
+}
+
+/**
  * The one issue with this code, which the test is about.
  * @param {Array<{code: string, message: string}>} issues
  * @param {string} code
@@ -155,7 +186,7 @@ describe('template ids', () => {
 });
 
 describe('component doc files', () => {
-  it('warns about two docs for one component and names the one read', async () => {
+  it('lists two docs for one component, naming the one read, without an issue', async () => {
     const dir = writePackage({
       [MANIFEST]: manifest({components: './components'}),
       'components/AcmeWidget.doc.mjs': componentDoc('AcmeWidget'),
@@ -163,13 +194,14 @@ describe('component doc files', () => {
       'components/AcmeWidget.tsx': componentSource('AcmeWidget'),
     });
 
-    const message = only(await issuesOf(dir), 'duplicate_component_doc');
+    expect(await issuesOf(dir)).toEqual([]);
+    const message = only(await listedOf(dir), 'duplicate_component_doc');
     expect(message).toBe(
       'Component "AcmeWidget" has 2 docs: AcmeWidget.doc.mjs, AcmeWidget.doc.js. Astryx reads AcmeWidget.doc.mjs and ignores AcmeWidget.doc.js. Fix: delete AcmeWidget.doc.js, moving anything only it says into AcmeWidget.doc.mjs.',
     );
 
     const fixed = follow(dir, {remove: ['components/AcmeWidget.doc.js']});
-    expect(await issuesOf(fixed)).toEqual([]);
+    expect(await allOf(fixed)).toEqual([]);
   });
 
   it('gives one finding for a doc whose name differs from its source only in case', async () => {
@@ -200,7 +232,7 @@ describe('component doc files', () => {
 });
 
 describe('a hidden doc beside a source whose name differs only in case', () => {
-  it('warns, without failing validate, about a hidden doc whose name differs from its source only in case', async () => {
+  it('keeps the source warning 0.7.2 gives where the hidden doc does not pair, as on Linux', async () => {
     const dir = writePackage({
       [MANIFEST]: manifest({components: './components'}),
       'components/Acmewidget.doc.mjs': componentDoc('AcmeWidget').replace(
@@ -211,19 +243,18 @@ describe('a hidden doc beside a source whose name differs only in case', () => {
     });
 
     const issues = await issuesOf(dir);
-    expect(issues).toEqual([
-      {
-        code: 'source_without_component_doc',
-        severity: 'warning',
-        message:
-          'Hidden component doc "Acmewidget.doc.mjs" and its source "AcmeWidget.tsx" differ only in letter case. They pair on a case-insensitive disk (macOS, Windows) but not on Linux, where CI and most installs run. Fix: rename Acmewidget.doc.mjs to AcmeWidget.doc.mjs.',
-      },
+    expect(issues.map(issue => [issue.code, issue.severity])).toEqual([
+      ['source_without_component_doc', 'warning'],
     ]);
+    expect(issues[0].message).toMatch(
+      /^Component source "AcmeWidget\.tsx" has no same-stem metadata file AcmeWidget\.doc\.mjs, so Astryx ignores it\. Fix: /u,
+    );
+    expect(await listedOf(dir)).toEqual([]);
   });
 });
 
 describe('roots', () => {
-  it('warns that npm pack does not follow a symlinked root, and reads its folder through it', async () => {
+  it('lists that npm pack does not follow a symlinked root, and reads its folder through it', async () => {
     const dir = writePackage({
       [MANIFEST]: manifest({components: './components'}),
       'real-components/AcmeWidget.doc.mjs': componentDoc('AcmeWidget'),
@@ -231,7 +262,8 @@ describe('roots', () => {
     });
     fs.symlinkSync('real-components', path.join(dir, 'components'));
 
-    const issues = await issuesOf(dir);
+    expect(await issuesOf(dir)).toEqual([]);
+    const issues = await listedOf(dir);
     expect(issues.map(issue => issue.code)).toEqual(['symlinked_root']);
     expect(issues[0].message).toBe(
       'Declared components root "components" is reached through the symlink "components" (to "real-components"). Astryx follows it locally, but npm pack does not follow a symlinked folder, so the published package ships none of these files. Fix: replace the link with the folder itself (move real-components/ to components/), or set `components: \'./real-components\'` in astryx.integration.mjs.',
@@ -241,7 +273,7 @@ describe('roots', () => {
       remove: ['components'],
       move: [['real-components', 'components']],
     });
-    expect(await issuesOf(fixed)).toEqual([]);
+    expect(await allOf(fixed)).toEqual([]);
   });
 
   it('says an absolute root inside the package must be relative', async () => {
@@ -298,7 +330,7 @@ describe('roots', () => {
 });
 
 describe('package.json', () => {
-  it('warns about a missing name and keeps checking, without crashing any check', async () => {
+  it('lists a missing name and keeps checking, without crashing any check', async () => {
     const dir = writePackage(
       {
         [MANIFEST]: manifest({components: './components', docs: './docs'}),
@@ -312,14 +344,16 @@ describe('package.json', () => {
     for (const check of result.data.checks) {
       expect(
         check.response.data.issues.map(issue => [issue.code, issue.severity]),
-      ).toEqual([
-        ['invalid_package_json', 'warning'],
-        ['invalid_component', 'error'],
-      ]);
+      ).toEqual([['invalid_component', 'error']]);
     }
-    expect(result.data.checks[0].response.data.issues[0].message).toBe(
-      'package.json has no "name", so npm cannot pack or publish the package, and a project that installs it has no name to select it by. Fix: add "name": "@your-scope/your-package" to package.json.',
-    );
+    const validate = result.data.checks[0].response.data;
+    expect('notes' in validate ? validate.notes : undefined).toEqual([
+      {
+        code: 'invalid_package_json',
+        message:
+          'package.json has no "name", so npm cannot pack or publish the package, and a project that installs it has no name to select it by. Fix: add "name": "@your-scope/your-package" to package.json.',
+      },
+    ]);
     expect(result.data.failed).toBe(true);
   });
 
@@ -342,7 +376,7 @@ describe('package.json', () => {
     const propDrift = /** @type {any} */ (components?.response.data)?.propDrift;
     expect(propDrift).toBeDefined();
     const failures = result.data.failures.map(failure => failure.code);
-    expect(failures).toContain('invalid_package_json');
+    expect(failures).not.toContain('invalid_package_json');
     if (propDrift.status === 'skipped') {
       // No TypeScript here: --strict names the skipped comparison.
       expect(failures).toContain('prop_drift_skipped');
@@ -368,9 +402,9 @@ describe('package.json', () => {
     const components = result.data.checks.find(
       check => check.check === 'components',
     );
-    expect(components?.response.data.issues.map(issue => issue.code)).toEqual([
-      'invalid_package_json',
-    ]);
+    expect(components?.response.data.issues.map(issue => issue.code)).toEqual(
+      [],
+    );
     expect(
       result.data.failures.filter(
         failure => failure.code === 'invalid_doc_graph',
@@ -396,10 +430,9 @@ describe('package.json', () => {
       docs?.response.data.issues.map(issue => issue.message) ?? [];
     expect(messages.join('\n')).not.toContain('astryx-unnamed-local-package');
     expect(docs?.response.data.issues.map(issue => issue.code)).toEqual([
-      'invalid_package_json',
       'invalid_doc_graph',
     ]);
-    expect(messages[1]).toMatch(
+    expect(messages[0]).toMatch(
       /^deploying § overview: "generic:no-such-topic" names no doc\./u,
     );
   });
@@ -412,7 +445,7 @@ describe('package.json', () => {
     ['@acme/-kit'],
     ['~acme'],
   ])(
-    'warns that no provider ID can be derived from the name %s, and keeps checking',
+    'lists that no provider ID can be derived from the name %s, and keeps checking',
     async name => {
       const dir = writePackage(
         {
@@ -422,11 +455,11 @@ describe('package.json', () => {
         {name, version: '1.0.0'},
       );
 
-      const issues = await issuesOf(dir);
-      expect(issues.map(issue => [issue.code, issue.severity])).toEqual([
-        ['no_provider_id', 'warning'],
-        ['invalid_component', 'error'],
-      ]);
+      expect(
+        (await issuesOf(dir)).map(issue => [issue.code, issue.severity]),
+      ).toEqual([['invalid_component', 'error']]);
+      const issues = await listedOf(dir);
+      expect(issues.map(issue => issue.code)).toEqual(['no_provider_id']);
       expect(issues[0].message).toBe(
         `No provider ID can be derived for this package: package.json "name" ${JSON.stringify(name)} is not a bare package name (an optional @scope/ and a name, each starting with a lowercase letter or digit and holding only lowercase letters, digits, "-", ".", "_" and "~"), and astryx.integration.mjs declares no providerId that is one. Astryx files the package's components, templates and docs under that ID, so links to them and selecting the package cannot work. Fix: rename the package, such as "@your-scope/your-package", or set \`providerId: '@your-scope/your-package'\` in astryx.integration.mjs.`,
       );
@@ -446,6 +479,7 @@ describe('package.json', () => {
 
     const issues = await issuesOf(dir);
     expect(issues.map(issue => issue.code)).toEqual(['invalid_manifest']);
+    expect(await listedOf(dir)).toEqual([]);
   });
 
   it('derives the provider ID from the manifest when the name cannot give one', async () => {
@@ -532,7 +566,7 @@ describe('package.json', () => {
     ).toEqual([]);
   });
 
-  it('fails only --strict on a missing name when nothing else is wrong', async () => {
+  it('fails neither run on a missing name when nothing else is wrong: it is listed until the next minor', async () => {
     const dir = writePackage(
       {
         [MANIFEST]: manifest({docs: './docs'}),
@@ -543,11 +577,11 @@ describe('package.json', () => {
 
     expect((await integrationCheck({cwd: dir})).data.failed).toBe(false);
     expect((await integrationCheck({cwd: dir, strict: true})).data.failed).toBe(
-      true,
+      false,
     );
   });
 
-  it('warns about a missing version and still checks the rest', async () => {
+  it('lists a missing version and still checks the rest', async () => {
     const dir = writePackage(
       {
         [MANIFEST]: manifest({components: './components'}),
@@ -556,11 +590,11 @@ describe('package.json', () => {
       {name: '@acme/kit'},
     );
 
-    const issues = await issuesOf(dir);
-    expect(issues.map(issue => [issue.code, issue.severity])).toEqual([
-      ['invalid_package_json', 'warning'],
-      ['invalid_component', 'error'],
-    ]);
+    expect(
+      (await issuesOf(dir)).map(issue => [issue.code, issue.severity]),
+    ).toEqual([['invalid_component', 'error']]);
+    const issues = await listedOf(dir);
+    expect(issues.map(issue => issue.code)).toEqual(['invalid_package_json']);
     expect(issues[0].message).toBe(
       'package.json has no "version", so npm cannot pack or publish the package. Fix: add "version": "0.1.0" to package.json.',
     );
@@ -572,7 +606,7 @@ describe('package.json', () => {
       {name: '@acme/kit', private: true},
     );
 
-    expect(await issuesOf(dir)).toEqual([]);
+    expect(await allOf(dir)).toEqual([]);
   });
 });
 
@@ -590,18 +624,15 @@ describe('unreadable files and theme names', () => {
       const file = path.join(dir, 'components', 'AcmeWidget.tsx');
       fs.chmodSync(file, 0);
       try {
-        const issues = await issuesOf(dir);
-        const message = only(issues, 'unreadable_file');
-        expect(issues.find(i => i.code === 'unreadable_file')?.severity).toBe(
-          'warning',
-        );
+        expect(await issuesOf(dir)).toEqual([]);
+        const message = only(await listedOf(dir), 'unreadable_file');
         expect(message).toBe(
           'Could not read "components/AcmeWidget.tsx" (EACCES), so Astryx cannot check it and npm pack fails on it. Fix: make it readable (chmod a+r components/AcmeWidget.tsx), or delete it if it does not belong in the package.',
         );
       } finally {
         fs.chmodSync(file, 0o644);
       }
-      expect(await issuesOf(dir)).toEqual([]);
+      expect(await allOf(dir)).toEqual([]);
     },
   );
 
@@ -620,7 +651,7 @@ describe('unreadable files and theme names', () => {
       );
       for (const file of files) fs.chmodSync(file, 0);
       try {
-        expect(await issuesOf(dir)).toEqual([]);
+        expect(await allOf(dir)).toEqual([]);
       } finally {
         for (const file of files) fs.chmodSync(file, 0o644);
       }
@@ -655,5 +686,142 @@ describe('unreadable files and theme names', () => {
     expect(
       (await issuesOf(dir)).filter(issue => issue.code === 'invalid_theme'),
     ).toEqual([]);
+  });
+});
+
+describe('layout findings 0.7.2 did not fail on', () => {
+  it('never fails --strict on a note: notes count nowhere', () => {
+    /** @type {any} */
+    const response = {
+      type: 'integration.validate',
+      data: {
+        validated: true,
+        name: '@acme/kit',
+        version: '1.0.0',
+        issues: [],
+        notes: [
+          {code: 'duplicate_component_doc', message: 'Two docs. Fix: one.'},
+        ],
+      },
+    };
+    expect(strictIssues('validate', response)).toEqual({
+      warnings: [],
+      skipped: [],
+    });
+    expect(summarizeCheck(response)).toEqual({
+      errors: 0,
+      warnings: 0,
+      skipped: [],
+      failed: false,
+    });
+  });
+
+  const asRoot = process.getuid?.() === 0;
+
+  /** @type {Array<[string, () => string]>} */
+  const layouts = [
+    [
+      'two docs for one component',
+      () =>
+        writePackage({
+          [MANIFEST]: manifest({components: './components'}),
+          'components/AcmeWidget.doc.mjs': componentDoc('AcmeWidget'),
+          'components/AcmeWidget.doc.js': componentDoc('AcmeWidget'),
+          'components/AcmeWidget.tsx': componentSource('AcmeWidget'),
+        }),
+    ],
+    [
+      'a root reached through a symlink',
+      () => {
+        const dir = writePackage({
+          [MANIFEST]: manifest({components: './components'}),
+          'real-components/AcmeWidget.doc.mjs': componentDoc('AcmeWidget'),
+          'real-components/AcmeWidget.tsx': componentSource('AcmeWidget'),
+        });
+        fs.symlinkSync('real-components', path.join(dir, 'components'));
+        return dir;
+      },
+    ],
+    [
+      'a package.json without a version',
+      () =>
+        writePackage(
+          {
+            [MANIFEST]: manifest({docs: './docs'}),
+            'docs/a.doc.mjs': topic('a'),
+          },
+          {name: '@acme/kit'},
+        ),
+    ],
+    [
+      'a package.json without a name',
+      () =>
+        writePackage(
+          {
+            [MANIFEST]: manifest({docs: './docs'}),
+            'docs/a.doc.mjs': topic('a'),
+          },
+          {version: '1.0.0'},
+        ),
+    ],
+    ...(asRoot
+      ? []
+      : /** @type {Array<[string, () => string]>} */ ([
+          [
+            'a contribution file it cannot read',
+            () => {
+              const dir = writePackage({
+                [MANIFEST]: manifest({components: './components'}),
+                'components/AcmeWidget.doc.mjs': componentDoc('AcmeWidget'),
+                'components/AcmeWidget.tsx': componentSource('AcmeWidget'),
+              });
+              fs.chmodSync(path.join(dir, 'components', 'AcmeWidget.tsx'), 0);
+              return dir;
+            },
+          ],
+        ])),
+  ];
+
+  it.each(layouts)(
+    'lists %s as a note and passes integration check --strict',
+    async (_label, make) => {
+      const dir = make();
+      try {
+        const result = await integrationCheck({cwd: dir, strict: true});
+        expect(result.data.failures).toEqual([]);
+        expect(result.data.failed).toBe(false);
+        const validate = /** @type {any} */ (
+          result.data.checks[0].response.data
+        );
+        expect(validate.notes.length).toBeGreaterThan(0);
+        for (const note of validate.notes) {
+          expect(Object.keys(note).sort()).toEqual(['code', 'message']);
+          expect(note.message).toContain('Fix: ');
+        }
+      } finally {
+        const file = path.join(dir, 'components', 'AcmeWidget.tsx');
+        if (fs.existsSync(file)) fs.chmodSync(file, 0o644);
+      }
+    },
+  );
+
+  it('prints the notes and counts none of them', () => {
+    const dir = writePackage({
+      [MANIFEST]: manifest({components: './components'}),
+      'components/AcmeWidget.doc.mjs': componentDoc('AcmeWidget'),
+      'components/AcmeWidget.doc.js': componentDoc('AcmeWidget'),
+      'components/AcmeWidget.tsx': componentSource('AcmeWidget'),
+    });
+
+    const run = spawnSync(
+      process.execPath,
+      [CLI, 'doctor', 'integration', 'validate'],
+      {cwd: dir, encoding: 'utf-8', timeout: 60_000},
+    );
+    expect(run.status, run.stderr).toBe(0);
+    expect(run.stdout).toContain(
+      'note (duplicate_component_doc): Component "AcmeWidget" has 2 docs:',
+    );
+    expect(run.stdout).toContain('Summary: 0 errors, 0 warnings');
   });
 });
