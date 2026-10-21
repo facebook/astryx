@@ -14,7 +14,15 @@ affects_architecture: [architecture:react-component-runtime]
 affects_families: [family:input-fields]
 affects_contributing: []
 affects_consumer_docs:
-  [useAnnounce, Toast, ChatSystemMessage, ChatTypingIndicator, Comments]
+  [
+    useAnnounce,
+    Toast,
+    ChatSystemMessage,
+    ChatTypingIndicator,
+    Comments,
+    FieldStatus,
+    Banner,
+  ]
 ---
 
 # Status announcement delivery system spec
@@ -52,8 +60,8 @@ announcement channel.
   carries a live role (`status`, `alert`, `log`) or `aria-live`.
 - **FR2 — Transient messages use the shared channel.** When the element that
   shows a message mounts, unmounts, or is replaced together with its text, the
-  owner announces through the shared announcement channel, except as FR10
-  provides. The new element
+  owner announces through the shared announcement channel, except as FR4 and
+  FR10 provide. The new element
   MUST NOT carry a live role or `aria-live`.
 - **FR3 — Live roles only on persistent containers.** A component MAY own a
   live role only on an element that stays mounted while its content changes.
@@ -101,7 +109,8 @@ announcement channel.
 
 ## Current-state impact
 
-- `component:FieldStatus` already conforms: AR1 and AR2 match FR2, FR5, and FR7.
+- `component:FieldStatus` AR1 and `component:Banner` FR8 defer to FR4 inside a
+  mounted live container; elsewhere they already match FR2, FR5, and FR7.
 - `architecture:react-component-runtime` INV5 gains the authority it requires
   for the document-owned channel (FR9). INV2 and INV3 already require FR6.
 - Toast: the viewport announces each toast through the body-level channel, and

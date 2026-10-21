@@ -127,7 +127,7 @@ intentional decision.
 - **AR1 — Programmatic announcement channel.** Errors MUST update the persistent
   assertive region; warnings and successes MUST update the persistent polite
   region, including on first mount and when message or type changes, without
-  moving focus.
+  moving focus. Inside a mounted live container, `spec:AST-086` FR4 applies.
 - **AR5 — Assistive-technology output.** Claims about whether, when, or how the
   message is spoken or presented in braille MUST be verified through the real-AT
   evidence process in `spec:AST-009`; DOM and accessibility-tree checks prove
