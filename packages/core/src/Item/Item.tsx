@@ -56,24 +56,6 @@ import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
 import {usePressFeedback} from '../hooks/usePressFeedback';
 import type {ItemSwipeBridge} from './ItemSwipeLayer';
 
-/**
- * Keeps an aria-disabled control inert (spec:AST-085 FR2). Native `disabled`
- * dispatched no click at all; without it, Enter and Space still synthesize one
- * that native listeners on the element (a wrapping Popover's trigger) receive,
- * so cancel those keys, and keep pointer clicks from reaching ancestors.
- */
-const disabledHandlers = {
-  onClick(event: React.MouseEvent) {
-    event.preventDefault();
-    event.stopPropagation();
-  },
-  onKeyDown(event: React.KeyboardEvent) {
-    if (event.key === 'Enter' || event.key === ' ') {
-      event.preventDefault();
-    }
-  },
-};
-
 // The gesture and the panels, loaded only by a row that has swipe actions: a
 // row without them never bundles useSwipeAction. While the chunk loads the
 // row is already painted and at rest — the panels show nothing at rest, so
@@ -779,30 +761,17 @@ export function Item({
           )}>
           {labelAndDescription}
         </span>
-      ) : href != null && !isLinkRoot && isDisabled ? (
-        // A disabled link is a plain href-less <a>, as in Link: nothing can
-        // navigate, and a router link that needs a live href is not rendered.
-        // It keeps a Tab stop and the link role (spec:AST-085 FR1, FR2, FR5).
-        <a
-          role="link"
-          aria-disabled
-          tabIndex={0}
-          {...disabledHandlers}
-          {...stylex.props(
-            styles.invisibleAnchor,
-            isInline && styles.inlineContent,
-            styles.disabledContent,
-          )}>
-          {labelAndDescription}
-        </a>
       ) : href != null && !isLinkRoot ? (
         <LinkComponent
           href={href}
           target={target}
           rel={rel}
+          aria-disabled={isDisabled || undefined}
+          tabIndex={isDisabled ? -1 : undefined}
           {...stylex.props(
             styles.invisibleAnchor,
             isInline && styles.inlineContent,
+            isDisabled && styles.disabledContent,
           )}>
           {labelAndDescription}
         </LinkComponent>
@@ -810,8 +779,7 @@ export function Item({
         <button
           type="button"
           onClick={onClick}
-          aria-disabled={isDisabled || undefined}
-          {...(isDisabled ? disabledHandlers : null)}
+          disabled={isDisabled}
           {...stylex.props(
             styles.invisibleButton,
             isInline && styles.inlineContent,

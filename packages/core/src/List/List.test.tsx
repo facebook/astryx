@@ -643,16 +643,14 @@ describe('List', () => {
     expect(item).toHaveAttribute('aria-disabled', 'true');
   });
 
-  it('keeps the invisible button focusable and disabled when isDisabled', () => {
+  it('disables the invisible button when isDisabled', () => {
     const {container} = render(
       <List>
         <ListItem label="Disabled" onClick={() => {}} isDisabled />
       </List>,
     );
     const button = container.querySelector('button');
-    // spec:AST-085 FR1: aria-disabled instead of native disabled.
-    expect(button).not.toHaveAttribute('disabled');
-    expect(button).toHaveAttribute('aria-disabled', 'true');
+    expect(button).toBeDisabled();
   });
 
   it('does not fire onClick when disabled item is clicked', async () => {

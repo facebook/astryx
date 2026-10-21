@@ -40,24 +40,6 @@ import {
 } from './useSwipeAction';
 import type {ItemSwipeAction, ItemSwipeBehavior} from './Item';
 
-/**
- * Keeps an aria-disabled control inert (spec:AST-085 FR2). Native `disabled`
- * dispatched no click at all; without it, Enter and Space still synthesize one
- * that native listeners on the element (a wrapping Popover's trigger) receive,
- * so cancel those keys, and keep pointer clicks from reaching ancestors.
- */
-const disabledHandlers = {
-  onClick(event: React.MouseEvent) {
-    event.preventDefault();
-    event.stopPropagation();
-  },
-  onKeyDown(event: React.KeyboardEvent) {
-    if (event.key === 'Enter' || event.key === ' ') {
-      event.preventDefault();
-    }
-  },
-};
-
 // =============================================================================
 // Types
 // =============================================================================
@@ -316,15 +298,13 @@ export default function ItemSwipeLayer({
               <button
                 key={entry.id ?? entry.label}
                 type="button"
-                // Focusable while disabled (spec:AST-085 FR1), but inert.
-                aria-disabled={entry.isDisabled === true || undefined}
+                disabled={entry.isDisabled === true}
                 onClick={() =>
                   swipe.activateEntry(() => {
                     void entry.onActivate();
                     return entry.hasRemoval === true;
                   })
                 }
-                {...(entry.isDisabled === true ? disabledHandlers : null)}
                 {...mergeProps(
                   themeProps('item-swipe-action', {variant}),
                   focusOutlineProps.focusVisible(

@@ -51,24 +51,7 @@ import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
 import {usePressFeedback} from '../hooks/usePressFeedback';
 
 import {useMergedRefs} from '../hooks/useMergedRefs';
-
-/**
- * Keeps an aria-disabled control inert (spec:AST-085 FR2). Native `disabled`
- * dispatched no click at all; without it, Enter and Space still synthesize one
- * that native listeners on the element (a wrapping Popover's trigger) receive,
- * so cancel those keys, and keep pointer clicks from reaching ancestors.
- */
-const disabledHandlers = {
-  onClick(event: React.MouseEvent) {
-    event.preventDefault();
-    event.stopPropagation();
-  },
-  onKeyDown(event: React.KeyboardEvent) {
-    if (event.key === 'Enter' || event.key === ' ') {
-      event.preventDefault();
-    }
-  },
-};
+import {disabledInteractionProps} from '../utils/disabledInteraction';
 // =============================================================================
 // Styles — only the interactive layer, Card handles everything else
 // =============================================================================
@@ -391,7 +374,7 @@ export function ClickableCard({
           href={isDisabled ? undefined : href}
           target={isDisabled ? undefined : target}
           role={isDisabled ? 'link' : undefined}
-          {...(isDisabled ? disabledHandlers : null)}
+          {...(isDisabled ? disabledInteractionProps() : null)}
           aria-label={label}
           aria-disabled={isDisabled || undefined}
           // A disabled card keeps its Tab stop (spec:AST-085 FR1).
@@ -406,7 +389,7 @@ export function ClickableCard({
           aria-disabled={isDisabled || undefined}
           onClick={onClickProp}
           // Focusable while disabled (FR1), but inert (FR2).
-          {...(isDisabled ? disabledHandlers : null)}
+          {...(isDisabled ? disabledInteractionProps() : null)}
           {...stylex.props(styles.srOnly)}
         />
       )}

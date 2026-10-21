@@ -48,24 +48,7 @@ import {focusOutlineProps} from '../utils/focusOutline.stylex';
 import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
 import {usePressFeedback} from '../hooks/usePressFeedback';
 import {useTranslator} from '../i18n';
-
-/**
- * Keeps an aria-disabled control inert (spec:AST-085 FR2). Native `disabled`
- * dispatched no click at all; without it, Enter and Space still synthesize one
- * that native listeners on the element (a wrapping Popover's trigger) receive,
- * so cancel those keys, and keep pointer clicks from reaching ancestors.
- */
-const disabledHandlers = {
-  onClick(event: React.MouseEvent) {
-    event.preventDefault();
-    event.stopPropagation();
-  },
-  onKeyDown(event: React.KeyboardEvent) {
-    if (event.key === 'Enter' || event.key === ' ') {
-      event.preventDefault();
-    }
-  },
-};
+import {disabledInteractionProps} from '../utils/disabledInteraction';
 
 /**
  * Base link styles
@@ -394,7 +377,7 @@ export function Link({
         )}
         {...props}
         // Focusable while disabled (spec:AST-085 FR1), but inert (FR2).
-        {...(isDisabled ? disabledHandlers : null)}>
+        {...(isDisabled ? disabledInteractionProps(props.onKeyDown) : null)}>
         {sharedContent}
       </button>
     );
@@ -426,7 +409,7 @@ export function Link({
           style,
         )}
         {...props}
-        {...disabledHandlers}>
+        {...disabledInteractionProps(props.onKeyDown)}>
         {sharedContent}
       </a>
     );
