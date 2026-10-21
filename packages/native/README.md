@@ -57,15 +57,18 @@ Every arm runs the same subjects on the same devices and is scored against a
 **reference**: the same screens hand-built with the platform toolkit (SwiftUI,
 Jetpack Compose, WinUI).
 
-| Arm                  | How components are built                                                                 | iOS | Android | macOS | Windows |
-| -------------------- | ---------------------------------------------------------------------------------------- | --- | ------- | ----- | ------- |
-| A. Pure native       | Platform views (SwiftUI, Compose, WinUI) on generated contracts                          | ✓   | ✓       | ✓     | ✓       |
-| B. React Native      | React Native components; desktop through `react-native-macos` and `react-native-windows` | ✓   | ✓       | ✓     | ✓       |
-| C. Shared logic core | Component logic in TypeScript running in Hermes, driving platform views                  | ✓   | ✓       | ✓     | —       |
-| D. Web on native     | Web React components through a native renderer, such as Expo's experimental fork         | ✓   | ✓       | —     | —       |
+| Arm                       | How components are built                                                                 | iOS | Android | macOS | Windows |
+| ------------------------- | ---------------------------------------------------------------------------------------- | --- | ------- | ----- | ------- |
+| A. Pure native            | Platform views (SwiftUI, Compose, WinUI) on generated contracts                          | ✓   | ✓       | ✓     | ✓       |
+| B. React Native           | React Native components; desktop through `react-native-macos` and `react-native-windows` | ✓   | ✓       | ✓     | ✓       |
+| C. Shared logic core      | Component logic in TypeScript running in Hermes, driving platform views                  | ✓   | ✓       | ✓     | —       |
+| D. Web on native          | Web React components through a native renderer, such as Expo's experimental fork         | ✓   | ✓       | —     | —       |
+| E. Web in a desktop shell | Astryx's web components unchanged inside Electron                                        | —   | —       | ✓     | ✓       |
 
-Arm D is measured but cannot become a required runtime while it depends on a
-third-party fork (AST-082 FR13).
+Arms D and E are measured but cannot become required runtimes as written:
+arm D depends on a third-party fork and arm E on Electron, a third-party
+runtime (AST-082 FR13). Arm E is the baseline for how far plain web gets on
+desktop.
 
 ### Test subjects
 
