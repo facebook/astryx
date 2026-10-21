@@ -580,6 +580,24 @@ describe('a theme module that loads its own styles', () => {
     expect(cli.status, cli.stderr).toBe(0);
   });
 
+  it('says a rebuild cannot fix exports that name the theme after its folder once its source renames it', async () => {
+    writePackage({
+      files: ['astryx.integration.mjs', 'themes'],
+      themeExports: true,
+    });
+    fs.writeFileSync(
+      path.join(tmpDir, 'themes', 'ocean', 'oceanTheme.ts'),
+      "import {defineTheme} from '@astryxdesign/core/theme';\n\nexport const oceanTheme = defineTheme({name: 'sea'});\n",
+    );
+
+    const result = await integrationPackCheck({cwd: tmpDir});
+
+    expect(result.data.issues.map(issue => issue.message)).toEqual([
+      `Theme "ocean" module is themes/ocean/ocean.js, but oceanTheme.ts calls defineTheme with name: 'sea', so \`${formatCliCommand('theme build themes/ocean/oceanTheme.ts', tmpDir)}\` writes themes/ocean/sea.js instead and rebuilding never updates ocean.js. Fix: point the package export that serves it at themes/ocean/sea.js after building, or set name: 'ocean' in oceanTheme.ts and rebuild.`,
+      `Theme "ocean" stylesheet is themes/ocean/ocean.css, but oceanTheme.ts calls defineTheme with name: 'sea', so \`${formatCliCommand('theme build themes/ocean/oceanTheme.ts', tmpDir)}\` writes themes/ocean/sea.css instead and rebuilding never updates ocean.css. Fix: point the package export that serves it at themes/ocean/sea.css after building, or set name: 'ocean' in oceanTheme.ts and rebuild.`,
+    ]);
+  });
+
   it('compares a partial export set with the module named after the theme', async () => {
     writeRenamedOcean();
     setThemeExports({'./themes/ocean': './themes/ocean/deep-sea.js'});
@@ -1917,6 +1935,57 @@ describe('integrationPackCheck', () => {
     expect(sourceWarnings).toHaveLength(1);
     expect(sourceWarnings[0].severity).toBe('warning');
     expect(sourceWarnings[0].message).toContain('stray.tsx');
+  });
+
+  it('says npm pack skips a symlinked root instead of asking for a "files" entry', async () => {
+    writePackage({
+      manifest:
+        "export default {themes: './themes', components: './components'};\n",
+    });
+    const real = path.join(tmpDir, 'real-components');
+    fs.mkdirSync(real, {recursive: true});
+    fs.writeFileSync(
+      path.join(real, 'Card.doc.mjs'),
+      "export default {type: 'component', name: 'Card', displayName: 'Card', usage: {description: 'Card.'}, props: []};\n",
+    );
+    fs.writeFileSync(
+      path.join(real, 'Card.tsx'),
+      'export function Card() { return null; }\n',
+    );
+    fs.symlinkSync('real-components', path.join(tmpDir, 'components'));
+
+    const result = await integrationPackCheck({cwd: tmpDir});
+    const codes = result.data.issues.map(issue => issue.code);
+    expect(codes).toContain('symlinked_root');
+    const notPacked = result.data.issues.find(
+      issue => issue.code === 'root_not_packed',
+    );
+    expect(notPacked?.message).toBe(
+      'Declared components root "components" has 0 of 2 expected files in the pack list. It is reached through the symlink "components", and npm pack does not follow a symlinked folder. Fix: replace the link with the folder itself, or point "components" at the folder it links to.',
+    );
+  });
+
+  it('names packed files by their path in the package, never the scratch copy', async () => {
+    writePackage({
+      manifest:
+        "export default {themes: './themes', docs: './docs/a.doc.mjs'};\n",
+    });
+    fs.mkdirSync(path.join(tmpDir, 'docs'), {recursive: true});
+    fs.writeFileSync(path.join(tmpDir, 'docs', 'a.doc.mjs'), '');
+
+    const result = await integrationPackCheck({cwd: tmpDir});
+    const messages = result.data.issues.map(issue => issue.message);
+    expect(messages.join('\n')).not.toContain(
+      path.join(tmpDir, '.astryx-pack-check-'),
+    );
+    expect(messages).toContain(
+      'Packed: Declared docs root is a file, not a folder: docs/a.doc.mjs. Fix: point "docs" in the manifest at the folder that holds them.',
+    );
+    // The root's own issue covers it: no empty-root error, no raw errno.
+    const codes = result.data.issues.map(issue => issue.code);
+    expect(codes).not.toContain('empty_contribution_root');
+    expect(codes).not.toContain('local_discovery_failed');
+    expect(codes).not.toContain('packed_discovery_failed');
   });
 
   it('fails on a package.json npm cannot pack, which validate only warns about', async () => {

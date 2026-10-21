@@ -29,6 +29,17 @@ describe('validate-data-token-ownership', () => {
     }
   });
 
+  it('reports prebuilt CSS availability without requiring a source compile step', async () => {
+    await expect(
+      run('const fill = "var(--color-data-categorical-blue)";'),
+    ).rejects.toThrow(
+      /in prebuilt mode, loads @astryxdesign\/core\/astryx\.css/,
+    );
+    await expect(
+      run('.bar { fill: var(--color-data-categorical-blue); }', 'chart.css'),
+    ).rejects.toThrow(/load @astryxdesign\/core\/astryx\.css in prebuilt mode/);
+  });
+
   it('leaves fallbacks, dataVars access, and comments unchanged', async () => {
     const source = `
 // var(--color-data-categorical-green)

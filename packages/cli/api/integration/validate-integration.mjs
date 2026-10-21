@@ -57,6 +57,8 @@ import {
 // The on-disk contribution validators live in foundation: Project and
 // integration-warnings need them too, and foundation must not depend on api.
 import {
+  blockComponentsCheck,
+  componentDocNamesCheck,
   INVALID_CLI_COMMAND,
   isListedIssue,
   issueListed as listed,
@@ -329,12 +331,14 @@ async function validateAtPackageDir(
   let manifest;
   /** @type {string[]} */
   let unknownKeys;
+  /** @type {string[]} */
+  let declaredKeys;
   /** @type {string | undefined} */
   let agentDocsError;
   /** @type {string | undefined} */
   let cliCommandError;
   try {
-    ({manifest, unknownKeys, agentDocsError, cliCommandError} =
+    ({manifest, unknownKeys, declaredKeys, agentDocsError, cliCommandError} =
       await loadManifest(
         manifestFile,
         `Integration manifest (${path.basename(manifestFile)})`,
@@ -401,6 +405,7 @@ async function validateAtPackageDir(
     __cliCommandError: cliCommandError,
     __agentDocsError: agentDocsError,
     __unknownKeys: unknownKeys,
+    __declaredKeys: declaredKeys,
     __spec: identity.name,
     __declaredProviderId: manifest.providerId,
     __packageDir: packageDir,
@@ -506,7 +511,9 @@ export async function validateLocalIntegration(cwd = process.cwd()) {
   // A package without one is still checked, under a placeholder name.
   const fields = packageJsonFieldIssues(pkg, pkgJsonPath);
   const name =
-    typeof pkg.name === 'string' && pkg.name !== '' ? pkg.name : '(local package)';
+    typeof pkg.name === 'string' && pkg.name !== ''
+      ? pkg.name
+      : '(local package)';
   const result = await validateAtPackageDir(
     packageDir,
     {name, version: pkg.version},
@@ -676,10 +683,20 @@ export async function validateIntegration(pkg, options = {}) {
   const docTypes = integration
     ? await integrationDocTypes(integration, cwd)
     : undefined;
-  // Notes fail nothing: a malformed `cliCommand`, and the layout findings
-  // added after the last minor release, each with its fix in the message,
-  // which may not fail `--strict` until the next (architecture:cli-surface
-  // INV35).
+  // The component names docs and blocks give: those that cannot be judged
+  // are listed in their reports, and those judged wrong are notes.
+  const names = integration
+    ? [
+        await componentDocNamesCheck(integration),
+        await blockComponentsCheck(integration),
+      ]
+    : undefined;
+  const docNames = names?.[0].report;
+  const blockComponents = names?.[1].report;
+  // Notes fail nothing: a malformed `cliCommand`, and the findings added
+  // after the last minor release, each with its fix in the message, which
+  // may not fail `--strict` until the next (architecture:cli-surface INV35):
+  // the layout findings and the component names judged wrong.
   const notes = result.found
     ? [
         ...(result.notes ?? []),
@@ -687,6 +704,7 @@ export async function validateIntegration(pkg, options = {}) {
           code: issue.code,
           message: issue.message,
         })),
+        ...(names ?? []).flatMap(each => each.notes),
       ]
     : [];
   return {
@@ -710,6 +728,8 @@ export async function validateIntegration(pkg, options = {}) {
           : result.issues,
       ...(notes.length > 0 ? {notes} : {}),
       ...(docTypes ? {docTypes} : {}),
+      ...(docNames ? {docNames} : {}),
+      ...(blockComponents ? {blockComponents} : {}),
       // What the public-import check could not judge: listed, never failed on.
       ...(result.found && result.publicImports
         ? {publicImports: result.publicImports}

@@ -305,14 +305,20 @@ validate` MUST warn on a PascalCase `.tsx` at the top of the components root
   least one copy, whether it starts at the project root or in a folder below
   it, from files the project commits (DEC-2). `--agent` and `--agent-docs-path`
   name the files instead; an `--agent` preset still never leaves a copy in both
-  Claude Code files.
+  Claude Code files, except as the ignored-root rule below says.
   - `AGENTS.md` at the project root holds the block. Init creates it when it is
     missing.
   - The project's Claude Code file holds a full copy: root `CLAUDE.md`, else
     `.claude/CLAUDE.md`. It holds the copy even when it imports `AGENTS.md`,
     because Claude Code does not follow an import of a file above the folder it
     starts in. While root `CLAUDE.md` holds a copy, `.claude/CLAUDE.md` holds
-    none. Init creates no Claude Code file, and a Claude Code file that is
+    none, except while root `CLAUDE.md` is untracked and ignored by the
+    repository's ignore rules, including its local exclude file and configured
+    excludes: then a `.claude/CLAUDE.md` the project commits (tracked, or not
+    ignored) holds a copy too, as it does when the repository cannot say, in
+    the default layout and with the `claude` and `all` presets, so a fresh
+    clone still gives Claude Code one.
+    Init creates no Claude Code file, and a Claude Code file that is
     `AGENTS.md` under another name holds no second copy.
   - `GEMINI.md` holds a one-line managed import of `AGENTS.md`. Init creates
     it when it is missing, and adds no import to a `GEMINI.md` that already
@@ -342,6 +348,8 @@ validate` MUST warn on a PascalCase `.tsx` at the top of the components root
     `astryx init --user` and the global copy's background step write it, as
     INV10 and FR8 state.
   - Upgrade refreshes every copy where it is and moves none.
+  - The managed block is Astryx-owned: `spec:AST-040`'s protections cover
+    consumer-owned content, not the block; INV10 still confines every write.
   - `--remove-agents` removes the block at the project root and in the working
     folder. Every file it would change resolves inside its own folder, or it
     changes nothing.

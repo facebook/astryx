@@ -73,6 +73,68 @@ describe('build-css dependency extraction', () => {
     expect(rules).toEqual([]);
   });
 
+  it('retains the complete explicit distribution group and deduplicates satellite imports', async () => {
+    const {root, src} = await fixture();
+    const provider = path.join(root, 'provider');
+    await fs.mkdir(provider, {recursive: true});
+    const dataSource = await fs.readFile(
+      new URL(
+        '../packages/core/src/theme/dataTokens.stylex.ts',
+        import.meta.url,
+      ),
+      'utf8',
+    );
+    await fs.writeFile(path.join(provider, 'data.stylex.ts'), dataSource);
+    await fs.writeFile(
+      path.join(provider, 'Component.ts'),
+      'export const value = 1;\n',
+    );
+    await fs.writeFile(
+      path.join(src, 'Consumer.ts'),
+      `import {dataVars} from '@probe/data.stylex';\nexport const color = dataVars['--color-data-categorical-blue'];\n`,
+    );
+    const providerTarget = {
+      src: provider,
+      aliases: {},
+      stylexEntries: ['data.stylex.ts'],
+    };
+    const providerCSS = stylexBabelPlugin.processStylexRules(
+      await collectStyleXCSS(providerTarget),
+      false,
+    );
+    const satelliteCSS = stylexBabelPlugin.processStylexRules(
+      await collectStyleXCSS({
+        src,
+        aliases: {'@probe/*': [path.join(provider, '*')]},
+        provider: providerTarget,
+      }),
+      false,
+    );
+    expect(providerCSS.match(/--color-data-[\w-]+:/g)).toHaveLength(56);
+    expect(satelliteCSS).not.toContain('--color-data-');
+    // Without the provider, a one-member consumer still owns the full group.
+    const standaloneCSS = stylexBabelPlugin.processStylexRules(
+      await collectStyleXCSS({
+        src,
+        aliases: {'@probe/*': [path.join(provider, '*')]},
+      }),
+      false,
+    );
+    expect(standaloneCSS.match(/--color-data-[\w-]+:/g)).toHaveLength(56);
+    expect(standaloneCSS).toBe(providerCSS);
+  });
+
+  it('fails closed when an explicit distribution entry is missing', async () => {
+    const {src} = await fixture();
+    await expect(
+      collectStyleXCSS({
+        src,
+        aliases: {},
+        stylexEntries: ['missing.stylex.ts'],
+      }),
+    ).rejects.toThrow('ENOENT');
+  });
+
   it('ignores type-only imports and re-exports', async () => {
     const {src, external} = await fixture();
     await fs.writeFile(

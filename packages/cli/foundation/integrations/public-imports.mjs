@@ -1025,22 +1025,24 @@ async function componentIssues(ctx, integration) {
             'package.json has no "exports", and the root module "main" names is not read, so the component names were not checked',
         });
       } else if (declaration.state === 'declared') {
+        // A doc whose `name` differs from the name it is listed under is
+        // judged by the doc-name check (`doc_name_mismatch`), never here.
+        const judged = list.filter(
+          r => typeof doc.name !== 'string' || doc.name === r.name,
+        );
         const {files, allPresent} = declaredTargets(
           ctx.packageDir,
           declaration,
         );
         const statement = {
           source: specifier,
-          names: list.map(r => ({imported: r.name, typeOnly: false})),
+          names: judged.map(r => ({imported: r.name, typeOnly: false})),
           namespace: false,
         };
-        const missing = missingNames(
-          statement,
-          files,
-          ctx.exportNames,
-          allPresent,
-          true,
-        );
+        const missing =
+          judged.length === 0
+            ? []
+            : missingNames(statement, files, ctx.exportNames, allPresent, true);
         if (missing == null) {
           ctx.unchecked.push({
             file: shownDoc,

@@ -116,7 +116,8 @@ CLI too old to finish the migration.
 - **FR8 — Every modification path follows this contract.** Core, integration,
   and configuration codemods, and any other operation that modifies existing
   consumer files, MUST apply FR1–FR7 identically. A new modification path cannot
-  opt out, consistent with `spec:AST-017` FR16.
+  opt out, consistent with `spec:AST-017` FR16. The managed agent-docs block is
+  governed by `architecture:cli-surface` INV31.
 - **FR9 — An upgrade works on its project.** `astryx upgrade` MUST operate on
   the project of the folder it runs in: the nearest folder at or above that
   folder whose `package.json` declares an Astryx package, or that its workspace

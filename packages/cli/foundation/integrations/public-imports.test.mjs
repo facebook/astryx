@@ -1406,3 +1406,25 @@ describe('the default-export fix names a value', () => {
     expect(note?.message).not.toContain('null/');
   });
 });
+
+describe('a doc name that differs from its file name', () => {
+  it('leaves the export-name judgment to the doc-name check', async () => {
+    write(
+      'components/AcmeWidget.doc.mjs',
+      "export default {type: 'component', name: 'AcmeWidgets', import: '@acme/widgets/components/AcmeWidget', usage: {description: 'A widget.'}, props: []};\n",
+    );
+    write(
+      'components/AcmeWidget.tsx',
+      "export {AcmeWidgets} from '@acme/ui';\n",
+    );
+    const result = await validateIntegration(undefined, {cwd: dir});
+    expect(
+      (await codes()).filter(code => code === 'component_import_missing_name'),
+    ).toEqual([]);
+    expect(
+      (result.data.publicImports?.unchecked ?? []).filter(
+        u => u.file === 'components/AcmeWidget.doc.mjs',
+      ),
+    ).toEqual([]);
+  });
+});

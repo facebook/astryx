@@ -541,7 +541,8 @@ describe('init outside a project (own)', () => {
       const dir = tmpDir('init');
       const json = await answer(['--json', 'init'], dir);
       expect(json.status).toBe(0);
-      expect(json.written).toEqual(['AGENTS.md']);
+      // GEMINI.md gets its one-line import of AGENTS.md (spec cli-surface INV31).
+      expect(json.written).toEqual(['AGENTS.md', 'GEMINI.md']);
       expect(json.envelope.data.nextSteps).toBe(false);
       const text = await runCli(['init'], tmpDir('init-text'));
       expect(text.stdout).not.toContain('Next steps');

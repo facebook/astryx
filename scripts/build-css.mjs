@@ -10,8 +10,8 @@
  *   node scripts/build-css.mjs --package lab   # lab   → packages/lab/dist/lab.css
  *
  * This script:
- * 1. Runs Babel with the StyleX plugin over the target package's source files
- * 2. Collects all StyleX rules
+ * 1. Walks component sources and explicit distribution entries through StyleX imports
+ * 2. Runs Babel over the reachable modules and collects their StyleX rules
  * 3. Fails when the stylesheet reads a StyleX-generated variable that nothing
  *    declares (see undefinedStyleXVariables)
  * 4. Outputs a combined stylesheet that registers the Astryx layer order and
@@ -42,6 +42,10 @@ const TARGETS = {
     outFile: 'astryx.css',
     banner: 'Astryx Pre-compiled StyleX CSS — all components',
     aliases: {},
+    // The public dist dataVars entry is already compiled to var() references.
+    // Dist consumers cannot retain its defineVars call, so astryx.css provides
+    // this group even without a Core component import (spec:AST-066 FR3).
+    stylexEntries: ['theme/dataTokens.stylex.ts'],
   },
   lab: {
     src: path.resolve(ROOT, 'packages/lab/src'),
@@ -193,10 +197,10 @@ const STYLEX_MODULE = /\.stylex\.[cm]?[jt]sx?$/;
 
 /**
  * Walks a package from its all-component entry set through static `.stylex`
- * imports. Non-StyleX source files are the entries; a variable module joins
- * only when a reachable file imports it, so a public defineVars module stays
- * absent from packages that never consume it. Modules in `provided` are left
- * to the stylesheet that already emits them.
+ * imports. Non-StyleX source files and explicitly retained distribution modules
+ * are the entries; other variable modules join only through reachable imports.
+ * This keeps source-like graphs selective without omitting Core's public dist
+ * defaults. Modules in `provided` are left to the stylesheet that emits them.
  */
 async function reachableSourceFiles(target, provided = new Set()) {
   const files = await glob('**/*.{ts,tsx}', {
@@ -205,7 +209,12 @@ async function reachableSourceFiles(target, provided = new Set()) {
     ignore: ['**/*.test.*', '**/*.d.ts', '**/node_modules/**'],
   });
 
-  const queue = files.filter(file => !STYLEX_MODULE.test(file));
+  const queue = [
+    ...files.filter(file => !STYLEX_MODULE.test(file)),
+    ...(target.stylexEntries ?? []).map(entry =>
+      path.resolve(target.src, entry),
+    ),
+  ].filter(file => !provided.has(file));
   const reachable = new Map();
 
   while (queue.length > 0) {

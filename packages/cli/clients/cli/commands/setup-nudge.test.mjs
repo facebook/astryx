@@ -121,6 +121,25 @@ describe('enforcement layer 3 — per-command setup nudge', () => {
     expect(r.stderr).toMatch(NUDGE);
   });
 
+  it.each([
+    ['in the home folder', ''],
+    ['at the top of a settings folder in it', '.dotfiles'],
+  ])('stays quiet %s, where init writes no agent docs', async (_label, rel) => {
+    const saved = {HOME: process.env.HOME, USERPROFILE: process.env.USERPROFILE};
+    process.env.HOME = tmp;
+    process.env.USERPROFILE = tmp;
+    try {
+      write(path.join(rel, 'package.json'), '{"name":"t"}');
+      const r = await runCli(['docs', 'tokens'], path.join(tmp, rel));
+      expect(r.stderr).not.toMatch(NUDGE);
+    } finally {
+      for (const [key, value] of Object.entries(saved)) {
+        if (value === undefined) delete process.env[key];
+        else process.env[key] = value;
+      }
+    }
+  });
+
   it("in a project with only Core of another release, names adding the CLI at Core's version first, as the daily hint does", async () => {
     write(
       'package.json',
@@ -165,6 +184,48 @@ describe('enforcement layer 3 — per-command setup nudge', () => {
     asProject();
     write('astryx.integration.mjs', 'export default {};\n');
     expect((await runCli(['docs', 'tokens'], tmp)).stderr).not.toMatch(NUDGE);
+  });
+
+  it('is quiet in a nested package once init has written the docs at the project root', async () => {
+    // init run in functions/ writes at the root that declares Astryx.
+    write('package.json', JSON.stringify({name: 'app', dependencies: {'@astryxdesign/core': '0.7.0'}}));
+    write('AGENTS.md', MARKER);
+    write('functions/package.json', '{"name":"functions"}');
+    const r = await runCli(['docs', 'tokens'], path.join(tmp, 'functions'));
+    expect(r.stderr).not.toMatch(NUDGE);
+  });
+
+  it('nudges in a nested package while the project root has no docs', async () => {
+    write('package.json', JSON.stringify({name: 'app', dependencies: {'@astryxdesign/core': '0.7.0'}}));
+    write('functions/package.json', '{"name":"functions"}');
+    const r = await runCli(['docs', 'tokens'], path.join(tmp, 'functions'));
+    expect(r.stderr).toMatch(NUDGE);
+  });
+
+  // Inside a git repository the project-root check above adds nothing to the
+  // walk up to the repository root: the same outcomes as without it.
+  it('inside a repository, is quiet in a nested package once init has written the docs at the project root', async () => {
+    fs.mkdirSync(path.join(tmp, '.git'));
+    write('package.json', JSON.stringify({name: 'app', dependencies: {'@astryxdesign/core': '0.7.0'}}));
+    write('AGENTS.md', MARKER);
+    write('functions/package.json', '{"name":"functions"}');
+    const r = await runCli(['docs', 'tokens'], path.join(tmp, 'functions'));
+    expect(r.stderr).not.toMatch(NUDGE);
+  });
+
+  it('inside a repository, still nudges when the only docs lie above the repository root', async () => {
+    write('package.json', JSON.stringify({name: 'outer', dependencies: {'@astryxdesign/core': '0.7.0'}}));
+    write('AGENTS.md', MARKER);
+    fs.mkdirSync(path.join(tmp, 'repo', '.git'), {recursive: true});
+    write('repo/package.json', '{"name":"repo"}');
+    // It declares Astryx: a folder that declares nothing is outside a
+    // project, where no reminder prints (spec AST-081 FR3).
+    write(
+      'repo/functions/package.json',
+      JSON.stringify({name: 'functions', dependencies: {'@astryxdesign/core': '0.7.0'}}),
+    );
+    const r = await runCli(['docs', 'tokens'], path.join(tmp, 'repo', 'functions'));
+    expect(r.stderr).toMatch(NUDGE);
   });
 
   it('does not nudge for the installer command itself', async () => {
