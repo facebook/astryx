@@ -5,9 +5,10 @@
  * @input Repository-relative file paths and the working tree's knowledge records.
  * @output Every record linked to each path, with the declared link that put it
  *   there, plus the trigger-routed global claims reviewers load today.
- * @position Read-only lookup over the links records already declare. It never
- *   infers coverage from names or extensions, and reports a path no record
- *   reaches instead of returning a partial answer silently.
+ * @position Read-only lookup over the links records already declare. A name
+ *   matches only an id a record declares exactly; coverage is never inferred
+ *   from extensions or directory names, and a path no record reaches is
+ *   reported as such.
  */
 
 /* global console, process */
@@ -391,6 +392,34 @@ function mentionedMatches(index, filePath) {
   return matches;
 }
 
+const topicCache = new Map();
+
+/**
+ * True when an `affects_consumer_docs` id names a CLI doc topic
+ * (`packages/cli/assets/docs/[tree/]<id>.doc*.mjs`) rather than a component.
+ * A topic id stays on the topic-file route: `color` is the colour guide, not
+ * every file whose stem is `color`.
+ */
+function isConsumerDocTopic(root, docId) {
+  let topics = topicCache.get(root);
+  if (!topics) {
+    topics = new Set();
+    for (const directory of [
+      'packages/cli/assets/docs',
+      'packages/cli/assets/docs/tree',
+    ]) {
+      const absolute = path.join(root, directory);
+      if (!fs.existsSync(absolute)) continue;
+      for (const name of fs.readdirSync(absolute)) {
+        const match = /^([^/]+?)\.doc(?:\.[a-z]+)*\.mjs$/.exec(name);
+        if (match) topics.add(match[1]);
+      }
+    }
+    topicCache.set(root, topics);
+  }
+  return topics.has(docId.split('/').at(-1));
+}
+
 /** Consumer-doc topic files a system spec's `affects_consumer_docs` id names. */
 function consumerDocTopicCovers(docId, filePath) {
   const topic = docId.split('/').at(-1);
@@ -416,7 +445,10 @@ function namedMatches(index, filePath, location) {
     for (const docId of asList(
       record.frontmatter.get('affects_consumer_docs'),
     )) {
-      if (location?.names.has(docId)) {
+      if (
+        location?.names.has(docId) &&
+        !isConsumerDocTopic(index.root, docId)
+      ) {
         matches.push({record, via: 'affects_consumer_docs', detail: docId});
       } else if (consumerDocTopicCovers(docId, filePath)) {
         matches.push({record, via: 'affects_consumer_docs', detail: docId});
@@ -666,12 +698,12 @@ export function findUnreachedRecords(index, files) {
     .sort((left, right) => left.path.localeCompare(right.path));
 }
 
-/** Tracked files that no current record governs. */
+/** Tracked files that no current record or cited claim governs. */
 export function findUnroutedFiles(index, files) {
-  return files.filter(
-    file =>
-      resolveSpecsForFile(index, file, {triggers: []}).records.length === 0,
-  );
+  return files.filter(file => {
+    const result = resolveSpecsForFile(index, file, {triggers: []});
+    return result.records.length === 0 && result.decisions.length === 0;
+  });
 }
 
 function trackedFiles(root) {
@@ -688,7 +720,11 @@ function formatResult(result) {
     `${result.file}${result.exists ? '' : ' (not in the working tree)'}`,
   ];
   if (result.records.length === 0) {
-    lines.push('  No record links to this path.');
+    lines.push(
+      result.decisions.length > 0
+        ? '  No whole record links to this path; it cites the claims below.'
+        : '  No record links to this path.',
+    );
   }
   for (const record of result.records) {
     const routes = record.routes

@@ -280,6 +280,15 @@ function popoverFixture() {
     system_specs: ['spec:AST-017/FR3'],
     modules: [],
   });
+  write(root, 'packages/cli/assets/docs/color.doc.mjs');
+  write(root, 'packages/core/src/utils/color.ts');
+  writeRecord(root, 'docs/specs/AST-008/spec.md', {
+    kind: 'system-spec',
+    id: 'spec:AST-008',
+    affects_architecture: [],
+    affects_families: [],
+    affects_consumer_docs: ['color'],
+  });
   write(root, 'packages/core/src/TabList/TabList.tsx');
   writeRecord(root, 'packages/core/src/TabList/TabList.spec.md', {
     kind: 'component',
@@ -571,6 +580,19 @@ describe('resolveSpecsForFile', () => {
     ]);
   });
 
+  it('keeps a consumer-doc topic id on its topic file, not on files sharing its stem', () => {
+    const index = loadKnowledgeIndex(popoverFixture());
+    expect(
+      resolveSpecsForFile(index, 'packages/core/src/utils/color.ts').records,
+    ).toEqual([]);
+    expect(
+      ids(
+        resolveSpecsForFile(index, 'packages/cli/assets/docs/color.doc.mjs')
+          .records,
+      ),
+    ).toEqual(['spec:AST-008']);
+  });
+
   it('ignores spec numbers inside record paths', () => {
     const index = loadKnowledgeIndex(popoverFixture());
     const result = resolveSpecsForFile(index, 'scripts/fixture-heavy.test.mjs');
@@ -669,6 +691,7 @@ describe('coverage audits', () => {
       'module:Markdown/headingLinks',
       'module:Markdown/softBreaks',
       'module:Table/useTableActivation',
+      'spec:AST-008',
       'spec:AST-013',
       'spec:AST-014',
       'spec:AST-017',
