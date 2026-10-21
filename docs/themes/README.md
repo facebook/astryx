@@ -16,6 +16,7 @@ Current records:
 - [Neutral](../../packages/themes/neutral/neutral.spec.md) — current
 - [Stone](../../packages/themes/stone/stone.spec.md) — current
 - [Gothic](../../packages/themes/gothic/gothic.spec.md) — current
+- [Matcha](../../packages/themes/matcha/matcha.spec.md) — current
 
 A theme record sits between system theming architecture and consumer/component
 records. It uses one typed `references` list for architecture, design, system,
