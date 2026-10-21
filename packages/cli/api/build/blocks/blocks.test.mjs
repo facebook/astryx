@@ -1,10 +1,11 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file Unit tests for build's block picker on small hand-written weights: it
- * only re-orders the blocks build names (never another block, never more), a
- * block the request names keeps its slot, as does a block the weights do not
- * know or an integration ships, and ties keep build's order.
+ * @file Unit tests for build's block picker on small hand-written weights: its
+ * blocks come from build's own list or search's results (never another,
+ * never more), a block search returned joins only if it shares a content word
+ * with the request, a block the request names keeps its slot, as does a block
+ * the weights do not know or an integration ships, and ties keep the order.
  */
 
 import {describe, expect, it} from 'vitest';
@@ -44,28 +45,51 @@ const TIES = {
  * @param {string[]} kitBlocks
  * @param {string[]} [foreign]
  */
-const signals = (kitBlocks, foreign = []) => ({
+const signals = (kitBlocks, foreign = [], searched = SEARCHED) => ({
   kitBlocks,
-  searched: SEARCHED,
+  searched,
   foreign,
+  blockText: new Map([
+    ['ChartBar', 'Bar chart A bar chart of sales by month.'],
+    ['CardStat', 'Stat card A card with one number.'],
+    ['ListPlain', 'Plain list A list of rows.'],
+    ['TableBasic', 'Basic table A table of rows.'],
+  ]),
 });
 
 describe('pickBlocks', () => {
-  it('re-orders only the blocks build names, never adding one', () => {
+  it('names only blocks from build’s list or search’s, as many as build’s', () => {
     const own = ['TableBasic', 'ListPlain', 'CardStat'];
     const picks = pickBlocks('sales chart with a row', signals(own), WORDS);
-    expect([...picks].sort()).toEqual([...own].sort());
-    expect(picks).toEqual(['CardStat', 'TableBasic', 'ListPlain']);
+    const allowed = new Set([...own, ...SEARCHED.map(s => s[0])]);
+    expect(picks).toHaveLength(own.length);
+    for (const b of picks) expect(allowed.has(b)).toBe(true);
+    expect(new Set(picks).size).toBe(picks.length);
   });
 
-  it('never names a block the words score highly that build did not name', () => {
+  it('adds a block search returned that shares a word with the request', () => {
     const picks = pickBlocks(
       'sales chart chart chart',
       signals(['TableBasic', 'ListPlain']),
       WORDS,
     );
-    expect(picks).not.toContain('ChartBar');
+    expect(picks).toContain('ChartBar');
     expect(picks).toHaveLength(2);
+  });
+
+  it('never adds a block search did not return, or one sharing no word', () => {
+    const searched = /** @type {[string, number, number, number][]} */ ([
+      ['TableBasic', 96, 1, 3],
+      ['CardStat', 90, 1, 3],
+    ]);
+    const picks = pickBlocks(
+      'sales chart chart chart',
+      signals(['TableBasic', 'ListPlain'], [], searched),
+      WORDS,
+    );
+    expect(picks).not.toContain('ChartBar');
+    expect(picks).not.toContain('CardStat');
+    expect([...picks].sort()).toEqual(['ListPlain', 'TableBasic']);
   });
 
   it('keeps a block the request names in its slot', () => {
@@ -88,13 +112,17 @@ describe('pickBlocks', () => {
     );
     expect(picks[1]).toBe('AcmeCallout');
     expect(picks[3]).toBe('ListPlain');
-    expect([...picks].sort()).toEqual([...own].sort());
+    expect(picks).toHaveLength(own.length);
   });
 
   it('keeps build’s order on ties and when no word is known', () => {
     const own = ['X', 'Y', 'Z'];
     expect(
-      pickBlocks('??', {kitBlocks: own, searched: [], foreign: []}, TIES),
+      pickBlocks(
+        '??',
+        {kitBlocks: own, searched: [], foreign: [], blockText: new Map()},
+        TIES,
+      ),
     ).toEqual(own);
   });
 

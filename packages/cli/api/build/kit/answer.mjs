@@ -23,10 +23,11 @@ import {FOUNDATION, FRAME} from './signals.mjs';
 const THIN_KIT = 3;
 
 /**
- * The kit for a request. `blocks` re-orders the blocks build names itself:
- * each keeps build's own entry (its score and reason), and a name build did
- * not give is dropped, so the kit never lists more blocks than build's own.
- * Blocks of the same name from two packages are both kept.
+ * The kit for a request. `blocks` names the blocks to list, best first: a
+ * block build names itself keeps build's entry, another keeps search's own
+ * entry (its real score and reason), a name search did not return is
+ * dropped, and the kit never lists more blocks than build's own. Blocks of
+ * the same name from two packages are both kept.
  *
  * @param {import('./signals.mjs').KitSignals} signals
  * @param {string[]} [blocks] block names; build's own when omitted
@@ -40,10 +41,22 @@ export function kitAnswer(signals, blocks = signals.kitBlocks) {
   const own = new Map();
   for (const b of signals.blocks)
     own.set(b.name, [...(own.get(b.name) ?? []), b]);
-  const named = blocks.flatMap(name => {
-    const entry = own.get(name)?.shift();
-    return entry ? [entry] : [];
-  });
+  /** @type {Set<string>} */
+  const added = new Set();
+  const named = blocks
+    .flatMap(name => {
+      const entry = own.get(name)?.shift();
+      if (entry) return [entry];
+      // A block build does not name itself keeps search's own entry, once.
+      const found =
+        own.has(name) || added.has(name)
+          ? undefined
+          : signals.searchedEntries.get(name);
+      if (!found) return [];
+      added.add(name);
+      return [found];
+    })
+    .slice(0, signals.blocks.length);
 
   // What to try when the kit comes back thin. Keyword search over a design
   // system misses in a predictable way — the reader's words and the package's
