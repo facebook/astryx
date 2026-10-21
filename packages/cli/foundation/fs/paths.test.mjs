@@ -127,7 +127,8 @@ describe('findCoreDir', () => {
     // This copy's carried Core is the workspace Core beside it.
     expect(findCoreDir(tmpDir)).toBe(path.resolve(CLI_ROOT, '..', 'core'));
     linkThisCliAsProjectCli(tmpDir);
-    expect(findCoreDir(tmpDir)).toBeNull();
+    // The project's own Core: findCoreDir falls back to the carried one.
+    expect(findProjectCoreDir(tmpDir)).toBeNull();
   });
 
   // A route folder such as src/app/(shop)/orders/[id]/edit sits six folders
@@ -155,7 +156,8 @@ describe('findCoreDir', () => {
     install(tmpDir, '@astryxdesign/core', '0.7.0');
     const project = writeProject(path.join(tmpDir, 'a', 'b', 'c', 'd', 'e', 'app'));
 
-    expect(findCoreDir(project)).toBeNull();
+    // The project's own Core: findCoreDir falls back to the carried one.
+    expect(findProjectCoreDir(project)).toBeNull();
   });
 
   // A package.json that only sets the module type is not the project, so a
@@ -190,7 +192,8 @@ describe('findCoreDir', () => {
     const app = path.join(tmpDir, 'apps', 'web');
     fs.mkdirSync(app, {recursive: true});
 
-    expect(findCoreDir(app)).toBeNull();
+    // The project's own Core: findCoreDir falls back to the carried one.
+    expect(findProjectCoreDir(app)).toBeNull();
 
     const nmCore = install(tmpDir, '@astryxdesign/core', '0.7.0');
     expect(findCoreDir(app)).toBe(nmCore);
@@ -199,7 +202,8 @@ describe('findCoreDir', () => {
   it('skips a node_modules/@astryxdesign/core folder with no package.json', () => {
     fs.mkdirSync(path.join(tmpDir, 'node_modules', '@astryxdesign', 'core'), {recursive: true});
 
-    expect(findCoreDir(tmpDir)).toBeNull();
+    // The project's own Core: findCoreDir falls back to the carried one.
+    expect(findProjectCoreDir(tmpDir)).toBeNull();
   });
 
   it("asks Yarn Plug'n'Play when no folder holds Core", () => {
