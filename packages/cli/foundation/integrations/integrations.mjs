@@ -73,6 +73,8 @@ import {resolveProviders} from './provider-resolution.mjs';
  *   set on a package whose provider ID an earlier-loaded package already
  *   claims; it contributes nothing and is reported as a `duplicate_provider`
  *   warning
+ * @property {string[]} [__declaredKeys] the keys the manifest object itself
+ *   declares, before any is filled in (providerId from the package name)
  * @property {string[]} [__unknownKeys] manifest keys this CLI does not know —
  *   surfaced as a warning; the rest of the manifest still contributes
  * @property {boolean} [__autolinked] loaded because the project declares the
@@ -215,7 +217,7 @@ function parseDiscoverSourceExport(value, label) {
  * @param {string} file absolute manifest path
  * @param {string} [label] used in error messages
  * @param {{fresh?: boolean}} [options]
- * @returns {Promise<{manifest: import('../../authoring/integration/type').AstryxIntegration, unknownKeys: string[], debug?: import('../../authoring/debug/type').DebugEventHandler, gapReport?: import('../../authoring/gap-report/type').GapReportHandler, gapReportError?: string, discover?: import('../../authoring/discover/type').DiscoverSource, discoverError?: string, agentDocsError?: string, cliCommandError?: string}>}
+ * @returns {Promise<{manifest: import('../../authoring/integration/type').AstryxIntegration, unknownKeys: string[], declaredKeys: string[], debug?: import('../../authoring/debug/type').DebugEventHandler, gapReport?: import('../../authoring/gap-report/type').GapReportHandler, gapReportError?: string, discover?: import('../../authoring/discover/type').DiscoverSource, discoverError?: string, agentDocsError?: string, cliCommandError?: string}>}
  */
 export async function loadManifest(
   file,
@@ -277,6 +279,8 @@ export async function loadManifest(
       ...(cliCommand == null ? {} : {cliCommand}),
     },
     unknownKeys: unknownIntegrationKeys(raw),
+    declaredKeys:
+      raw != null && typeof raw === 'object' ? Object.keys(raw) : [],
     debug:
       typeof mod?.debug === 'function'
         ? /** @type {import('../../authoring/debug/type').DebugEventHandler} */ (
@@ -423,6 +427,8 @@ export async function loadLocalIntegration(packageDir, {fresh = false} = {}) {
   let manifest;
   /** @type {string[]} */
   let unknownKeys;
+  /** @type {string[]} */
+  let declaredKeys;
   /** @type {import('../../authoring/debug/type').DebugEventHandler | undefined} */
   let debugHandler;
   /** @type {import('../../authoring/gap-report/type').GapReportHandler | undefined} */
@@ -441,6 +447,7 @@ export async function loadLocalIntegration(packageDir, {fresh = false} = {}) {
     ({
       manifest,
       unknownKeys,
+      declaredKeys,
       debug: debugHandler,
       gapReport: gapReportHandler,
       gapReportError,
@@ -489,6 +496,7 @@ export async function loadLocalIntegration(packageDir, {fresh = false} = {}) {
     __cliCommandError: cliCommandError,
     __agentDocsError: agentDocsError,
     __unknownKeys: unknownKeys,
+    __declaredKeys: declaredKeys,
     __debug: debugHandler,
     __gapReport: gapReportHandler,
     __gapReportError: gapReportError,
@@ -539,6 +547,8 @@ export async function loadIntegrations(
     let manifest;
     /** @type {string[]} */
     let unknownKeys;
+    /** @type {string[]} */
+    let declaredKeys;
     /** @type {import('../../authoring/debug/type').DebugEventHandler | undefined} */
     let debugHandler;
     /** @type {import('../../authoring/gap-report/type').GapReportHandler | undefined} */
@@ -557,6 +567,7 @@ export async function loadIntegrations(
       ({
         manifest,
         unknownKeys,
+        declaredKeys,
         debug: debugHandler,
         gapReport: gapReportHandler,
         gapReportError,
@@ -612,6 +623,7 @@ export async function loadIntegrations(
       __cliCommandError: cliCommandError,
       __agentDocsError: agentDocsError,
       __unknownKeys: unknownKeys,
+      __declaredKeys: declaredKeys,
       __debug: debugHandler,
       __gapReport: gapReportHandler,
       __gapReportError: gapReportError,

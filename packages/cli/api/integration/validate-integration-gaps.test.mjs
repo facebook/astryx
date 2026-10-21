@@ -765,6 +765,29 @@ describe('the manifest', () => {
     expect(await issuesOf(fixed)).toEqual([]);
   });
 
+  it.each([
+    [
+      'alone, though the package name gives a provider ID',
+      {providerID: '@acme/kit', docs: './docs'},
+      'Fix: rename "providerID" to "providerId" in astryx.integration.mjs.',
+    ],
+    [
+      'beside the key it suggests',
+      {providerID: '@acme/kit', providerId: '@acme/kit', docs: './docs'},
+      'Fix: remove "providerID" from astryx.integration.mjs; it already sets "providerId".',
+    ],
+  ])(
+    'reads the keys the manifest declares: providerID %s',
+    async (_label, keys, fix) => {
+      const dir = writePackage({
+        [MANIFEST]: manifest(keys),
+        'docs/a.doc.mjs': topic('a'),
+      });
+
+      expect(only(await issuesOf(dir), 'unknown_manifest_key')).toContain(fix);
+    },
+  );
+
   it('keeps the newer-CLI explanation for a key that is no near miss', async () => {
     const dir = writePackage({[MANIFEST]: manifest({playgrounds: './x'})});
 

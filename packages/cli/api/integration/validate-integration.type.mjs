@@ -18,6 +18,7 @@
  * @property {string} [codemods]
  * @property {string} [docs]
  * @property {string} [issuesUrl]
+ * @property {string[]} [__declaredKeys]
  * @property {string[]} [__unknownKeys]
  * @property {string} __spec
  * @property {string} __packageDir

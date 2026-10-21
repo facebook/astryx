@@ -101,12 +101,13 @@ function checkUnknownKeys(integration, issues) {
     .map(key => ({key, known: nearestKnownKey(key)}))
     .filter(each => each.known != null);
   for (const {key, known} of typos) {
-    // The manifest already sets the key it is a near miss of: renaming would
-    // give it twice, so the stray key goes.
-    const alreadySet =
-      /** @type {Record<string, unknown>} */ (integration)[
-        /** @type {string} */ (known)
-      ] != null;
+    // The manifest object already declares the key it is a near miss of:
+    // renaming would give it twice, so the stray key goes. Read from what
+    // the manifest says, not the loaded integration, which fills some keys
+    // in (providerId from the package name).
+    const alreadySet = (integration.__declaredKeys ?? []).includes(
+      /** @type {string} */ (known),
+    );
     const fix = alreadySet
       ? `Fix: remove "${key}" from ${manifestName(integration)}; it already sets "${known}".`
       : `Fix: rename "${key}" to "${known}" in ${manifestName(integration)}.`;
