@@ -818,7 +818,7 @@ describe('type-only imports', () => {
     expect(await codes()).toEqual([]);
   });
 
-  it('tells an example with only inline type names to use import type', async () => {
+  it('accepts an import whose every binding is an inline type from a types-only subpath', async () => {
     pkg(p => {
       p.exports['./types'] = {types: './types.d.ts'};
     });
@@ -830,13 +830,21 @@ describe('type-only imports', () => {
         "import {type AcmeWidgetSize} from '@acme/widgets/types';\\nimport {AcmeWidget} from '@acme/widgets/components/AcmeWidget';\\n<AcmeWidget />",
       ),
     );
-    const issue = (await found()).find(
-      i => i.code === 'example_import_not_exported',
+    expect(await codes()).toEqual([]);
+  });
+
+  it('still warns when an inline type sits beside a value binding from a types-only subpath', async () => {
+    pkg(p => {
+      p.exports['./types'] = {types: './types.d.ts'};
+    });
+    write(
+      'components/AcmeWidget.doc.mjs',
+      DOC(
+        undefined,
+        "import {type AcmeWidgetSize, ACME_SIZES} from '@acme/widgets/types';\\n<AcmeWidget />",
+      ),
     );
-    expect(issue?.message).toContain(
-      "write it as `import type {AcmeWidgetSize} from '@acme/widgets/types'`",
-    );
-    expect(issue?.message).not.toContain('as the doc');
+    expect(await codes()).toEqual(['example_import_not_exported']);
   });
 
   it('still warns on a value import from a types-only subpath, and on an undeclared one', async () => {
