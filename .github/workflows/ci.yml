@@ -2388,6 +2388,12 @@ jobs:
       - name: Install Playwright
         run: pnpm install --frozen-lockfile && npx playwright install chromium
 
+      - name: Verify D7 native target regression
+        if: matrix.package == 'core' && matrix.part == 1
+        env:
+          ASTRYX_RTL_BROWSER: '1'
+        run: pnpm exec vitest run --project node .github/scripts/rtl-audit-coarse-hit.browser.test.mjs --maxWorkers=1
+
       # A registry/classifier mutation runs the full audit from the PR checkout,
       # while eligibility itself came from trusted base policy. Scope resolution
       # is strict: malformed or missing analysis fails before the soft findings
