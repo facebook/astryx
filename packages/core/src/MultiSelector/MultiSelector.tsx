@@ -2532,11 +2532,12 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
           }),
           stylex.props(
             inputWrapperStyles.base,
-            // Before the variant and pointer-restore styles, so a disabled
-            // trigger keeps their ring rules while showing focus (AST-085 FR6).
-            isDisabled && inputWrapperStyles.disabled,
             styles.triggerContainer,
             sizeStyles[size],
+            // After the container (its cursor) and before the variant and
+            // pointer-restore styles, so a disabled trigger keeps their ring
+            // rules while showing focus (`spec:AST-085` FR6).
+            isDisabled && inputWrapperStyles.disabled,
             variant === 'secondary' && styles.triggerSecondary,
             variant === 'ghost' && styles.triggerGhost,
             variant !== 'input' && interactionOverlayStyles.backgroundImage,

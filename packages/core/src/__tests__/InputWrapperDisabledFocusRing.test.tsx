@@ -16,15 +16,16 @@ import {Selector} from '../Selector';
 import {MultiSelector} from '../MultiSelector';
 import {ComplexSelector} from '../ComplexSelector';
 
-// jsdom does not match `:focus-within`, so this checks the class instead:
-// StyleX hashes each declaration, so the wrapper's `:focus-within` ring yields
+// jsdom does not match `:has(...:focus)`, so this checks the class instead:
+// StyleX hashes each declaration, so the disabled wrapper's focus ring yields
 // the same atomic class here (the dev build prefixes a debug name; the hash is
-// the last token).
+// the last token). The ring belongs to the focused disabled control only, not
+// to any focused descendant such as a status tooltip button.
 const probe = stylex.create({
   ring: {
     boxShadow: {
       default: null,
-      ':focus-within': `inset 0px 0px 0px 2px ${colorVars['--color-accent-muted']}`,
+      ':has([aria-disabled="true"]:focus)': `inset 0px 0px 0px 2px ${colorVars['--color-accent-muted']}`,
     },
   },
 });
@@ -78,6 +79,7 @@ describe.each(cases)('$name disabled trigger focus ring', c => {
   it('keeps the field focus ring on the input variant', () => {
     render(c.render('input'));
     expect(c.wrapper()).toHaveClass(RING);
+    expect(getComputedStyle(c.wrapper()).cursor).toBe('default');
   });
 
   it.each(['secondary', 'ghost'] as const)(

@@ -330,7 +330,7 @@ describe('Selector', () => {
           ring: {
             boxShadow: {
               default: null,
-              ':focus-within': `inset 0px 0px 0px 2px ${colorVars['--color-accent-muted']}`,
+              ':has([aria-disabled="true"]:focus)': `inset 0px 0px 0px 2px ${colorVars['--color-accent-muted']}`,
             },
           },
         }).ring,

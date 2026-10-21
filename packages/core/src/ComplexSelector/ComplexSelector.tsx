@@ -730,11 +730,12 @@ export function ComplexSelector<Value>({
           }),
           stylex.props(
             inputWrapperStyles.base,
-            // Before the variant styles, so a disabled trigger keeps their
-            // ring rules while showing focus (AST-085 FR6).
-            isDisabled && inputWrapperStyles.disabled,
             styles.triggerContainer,
             styles[size],
+            // After the container and before the variant styles, so a disabled
+            // trigger keeps their ring rules while showing focus
+            // (`spec:AST-085` FR6).
+            isDisabled && inputWrapperStyles.disabled,
             // The ring belongs to the wrapper (the focusable `<button>` sits
             // inside it), but it must still be a KEYBOARD ring: `:focus-within`
             // matched a mouse click on the trigger and drew the outline for
