@@ -12,8 +12,13 @@
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import {act, render, screen, fireEvent} from '@testing-library/react';
 import {createRef, useState} from 'react';
+import {Dialog} from '../Dialog';
 import {BottomSheet} from './BottomSheet';
 import {BottomSheetSwitcher} from './BottomSheetSwitcher';
+import {
+  SHEET_DIALOG_ATTRIBUTE,
+  SHEET_SCROLL_LOCK_RULES_ID,
+} from './sheetScrollLock';
 import {__resetInteractionModalityForTest} from '../utils/interactionModality';
 
 // A sheet has no stops unless its host asks for them, so the tests that
@@ -23,17 +28,22 @@ import {__resetInteractionModalityForTest} from '../utils/interactionModality';
 const SNAP_POINTS: ReadonlyArray<number> = [0.14, 0.5, 0.92];
 
 // jsdom doesn't implement <dialog> open/close or pointer capture; stub them.
+// The stubs also record which open dialogs are modal, standing in for the
+// `:modal` pseudo-class jsdom cannot match.
+const modalDialogs = new WeakSet<HTMLDialogElement>();
 beforeEach(() => {
   HTMLDialogElement.prototype.showModal = vi.fn(function (
     this: HTMLDialogElement,
   ) {
     this.setAttribute('open', '');
+    modalDialogs.add(this);
   });
   HTMLDialogElement.prototype.show = vi.fn(function (this: HTMLDialogElement) {
     this.setAttribute('open', '');
   });
   HTMLDialogElement.prototype.close = vi.fn(function (this: HTMLDialogElement) {
     this.removeAttribute('open');
+    modalDialogs.delete(this);
   });
   if (!Element.prototype.setPointerCapture) {
     Element.prototype.setPointerCapture = vi.fn();
@@ -67,6 +77,21 @@ beforeEach(() => {
 afterEach(() => {
   vi.unstubAllGlobals();
 });
+
+/**
+ * Whether the CSS page-scroll lock is engaged: its selector,
+ * `:root:has(dialog[data-sheet-dialog]:modal)`, matches exactly when an open
+ * sheet dialog was presented with showModal(). jsdom evaluates neither
+ * `:has()` nor `:modal`, so this reads the same precondition from the DOM and
+ * the stubs' modal record; the browser spec measures the lock itself.
+ */
+function isScrollLockEngaged(): boolean {
+  return Array.from(
+    document.querySelectorAll<HTMLDialogElement>(
+      `dialog[${SHEET_DIALOG_ATTRIBUTE}][open]`,
+    ),
+  ).some(dialog => modalDialogs.has(dialog));
+}
 
 function getSheet(): HTMLElement {
   const sheet = document.querySelector<HTMLElement>('.astryx-bottom-sheet');
@@ -509,12 +534,12 @@ describe('BottomSheet', () => {
     expect(dialog).toHaveAttribute('aria-hidden', 'true');
     expect(dialog).not.toHaveAttribute('aria-modal');
     expect(dialog).toHaveStyle({'--_sheet-scrim-opacity': '0'});
-    expect(document.body.style.position).toBe('fixed');
+    expect(isScrollLockEngaged()).toBe(true);
 
     finishSheetExit();
 
     expect(dialog).not.toHaveAttribute('open');
-    expect(document.body.style.position).not.toBe('fixed');
+    expect(isScrollLockEngaged()).toBe(false);
   });
 
   it('does not dismiss when the sheet surface itself is clicked', () => {
@@ -528,6 +553,175 @@ describe('BottomSheet', () => {
     // clicks bubbling up from the sheet must not.
     fireEvent.click(screen.getByText('Content'));
     expect(onOpenChange).not.toHaveBeenCalled();
+  });
+
+  describe('native modal host', () => {
+    function DialogOverSheet() {
+      const [isSheetOpen, setIsSheetOpen] = useState(false);
+      const [isDialogOpen, setIsDialogOpen] = useState(false);
+      return (
+        <>
+          <button type="button" onClick={() => setIsSheetOpen(true)}>
+            Open sheet
+          </button>
+          <BottomSheet
+            isOpen={isSheetOpen}
+            onOpenChange={setIsSheetOpen}
+            label="Filters">
+            <button type="button" onClick={() => setIsDialogOpen(true)}>
+              Open dialog
+            </button>
+            <Dialog
+              isOpen={isDialogOpen}
+              onOpenChange={setIsDialogOpen}
+              aria-label="Confirm">
+              <button type="button" onClick={() => setIsDialogOpen(false)}>
+                Close dialog
+              </button>
+            </Dialog>
+            <button type="button" onClick={() => setIsSheetOpen(false)}>
+              Close sheet
+            </button>
+          </BottomSheet>
+        </>
+      );
+    }
+
+    it('marks its dialog as a sheet dialog and installs the CSS scroll lock once, before presenting', () => {
+      document.getElementById(SHEET_SCROLL_LOCK_RULES_ID)?.remove();
+      const {rerender} = render(
+        <BottomSheet isOpen={false} onOpenChange={() => {}} label="Filters">
+          Content
+        </BottomSheet>,
+      );
+      const dialog = document.querySelector('dialog');
+      expect(dialog).toHaveAttribute(SHEET_DIALOG_ATTRIBUTE, '');
+      // Closed: nothing is modal, so the rule has nothing to do and the
+      // document body carries no lock styles of its own.
+      expect(isScrollLockEngaged()).toBe(false);
+      expect(document.body.style.position).toBe('');
+
+      rerender(
+        <BottomSheet isOpen onOpenChange={() => {}} label="Filters">
+          Content
+        </BottomSheet>,
+      );
+
+      const rules = document.querySelectorAll(`#${SHEET_SCROLL_LOCK_RULES_ID}`);
+      expect(rules).toHaveLength(1);
+      expect(rules[0].textContent).toBe(
+        ':root:has(dialog[data-sheet-dialog]:modal){overflow:hidden;scrollbar-gutter:stable}',
+      );
+      expect(document.head).toContainElement(rules[0] as HTMLElement);
+      expect(isScrollLockEngaged()).toBe(true);
+      // The lock is the rule, not an inline body pin.
+      expect(document.body.style.position).toBe('');
+      expect(document.body.style.overflow).toBe('');
+
+      // A second sheet reuses the one stylesheet.
+      render(
+        <BottomSheet isOpen onOpenChange={() => {}} label="Second">
+          Content
+        </BottomSheet>,
+      );
+      expect(
+        document.querySelectorAll(`#${SHEET_SCROLL_LOCK_RULES_ID}`),
+      ).toHaveLength(1);
+    });
+
+    it('keeps the lock engaged under a Core Dialog opened from the sheet and releases it only when the sheet closes', () => {
+      render(<DialogOverSheet />);
+      expect(isScrollLockEngaged()).toBe(false);
+
+      fireEvent.click(screen.getByRole('button', {name: 'Open sheet'}));
+      expect(isScrollLockEngaged()).toBe(true);
+
+      fireEvent.click(screen.getByRole('button', {name: 'Open dialog'}));
+      const confirm = screen.getByRole('dialog', {name: 'Confirm'});
+      expect(confirm).toHaveAttribute('open');
+      expect(confirm).not.toHaveAttribute(SHEET_DIALOG_ATTRIBUTE);
+      // Two modal dialogs are open; the sheet's keeps the rule matching.
+      expect(isScrollLockEngaged()).toBe(true);
+
+      fireEvent.click(screen.getByRole('button', {name: 'Close dialog'}));
+      expect(confirm).not.toHaveAttribute('open');
+      expect(isScrollLockEngaged()).toBe(true);
+
+      fireEvent.click(screen.getByRole('button', {name: 'Close sheet'}));
+      // Still presented through the exit animation: still locked.
+      expect(isScrollLockEngaged()).toBe(true);
+      finishSheetExit();
+      expect(isScrollLockEngaged()).toBe(false);
+    });
+
+    it('answers a native cancel by purpose: info and form dismiss, required blocks, and the browser never closes the dialog itself', () => {
+      for (const [purpose, dismisses] of [
+        ['info', true],
+        ['form', true],
+        ['required', false],
+      ] as const) {
+        const onOpenChange = vi.fn();
+        const {unmount} = render(
+          <BottomSheet
+            isOpen
+            purpose={purpose}
+            onOpenChange={onOpenChange}
+            label="Filters">
+            Content
+          </BottomSheet>,
+        );
+        const dialog = document.querySelector('dialog');
+        if (dialog == null) {
+          throw new Error('dialog not found');
+        }
+        const cancel = new Event('cancel', {cancelable: true});
+        dialog.dispatchEvent(cancel);
+
+        expect(cancel.defaultPrevented).toBe(true);
+        expect(dialog).toHaveAttribute('open');
+        if (dismisses) {
+          expect(onOpenChange).toHaveBeenCalledWith(false);
+        } else {
+          expect(onOpenChange).not.toHaveBeenCalled();
+        }
+        unmount();
+      }
+    });
+
+    it('treats a click on the backdrop as a click on the dialog element and gates it by purpose', () => {
+      for (const [purpose, dismisses] of [
+        ['info', true],
+        ['form', false],
+        ['required', false],
+      ] as const) {
+        const onOpenChange = vi.fn();
+        const {unmount} = render(
+          <BottomSheet
+            isOpen
+            purpose={purpose}
+            onOpenChange={onOpenChange}
+            label="Filters">
+            <button type="button">Inside</button>
+          </BottomSheet>,
+        );
+        const dialog = document.querySelector('dialog');
+        if (dialog == null) {
+          throw new Error('dialog not found');
+        }
+        // A `::backdrop` click targets its originating dialog element; the
+        // positioner between the dialog and the panel passes pointer events
+        // through, so nothing but the backdrop can be the target.
+        fireEvent.click(dialog);
+        fireEvent.click(screen.getByRole('button', {name: 'Inside'}));
+        if (dismisses) {
+          expect(onOpenChange).toHaveBeenCalledTimes(1);
+          expect(onOpenChange).toHaveBeenCalledWith(false);
+        } else {
+          expect(onOpenChange).not.toHaveBeenCalled();
+        }
+        unmount();
+      }
+    });
   });
 
   describe('hasScrim={false} (non-modal)', () => {
@@ -653,7 +847,7 @@ describe('BottomSheet', () => {
 
       expect(dialog).toHaveAttribute('open');
       expect(dialog).toHaveAttribute('inert');
-      expect(document.body.style.position).not.toBe('fixed');
+      expect(isScrollLockEngaged()).toBe(false);
 
       finishSheetExit();
 

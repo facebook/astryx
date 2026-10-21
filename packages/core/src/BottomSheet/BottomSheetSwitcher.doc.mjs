@@ -3,10 +3,10 @@
 
 const anatomy = [
   {
-    name: 'Shared dialog',
+    name: 'Sheet dialogs',
     required: true,
     description:
-      'One native dialog that owns modality, focus, dismissal, and lifecycle for the complete flow.',
+      "One native dialog per child sheet, presented and closed by the switcher; the dialog hosting the active sheet carries the flow's ref, modality, and dismissal.",
   },
   {
     name: 'Sheet panels',
@@ -18,7 +18,7 @@ const anatomy = [
     name: 'Scrim',
     required: false,
     description:
-      'Native dialog backdrop shown by the default scrim-backed modal presentation.',
+      'Native dialog backdrop shown by the default scrim-backed modal presentation; one sheet dialog paints it at a time, so a handoff never dims the page twice.',
   },
 ];
 
@@ -142,18 +142,19 @@ export const docs = {
     },
   },
   description:
-    'Coordinates multiple BottomSheets as a mutually exclusive flow. One activeSheet ID selects the only interactive sheet; during a handoff, the new sheet enters above the inert previous sheet. If the new sheet is shorter, the previous sheet simultaneously moves down until their top edges align, then fades after both transforms complete. The switcher owns one shared native <dialog>: modal flows call showModal() once for one top-layer boundary and one ::backdrop across the whole flow, while no-scrim flows use a non-modal show() shell. Its ref and shared DOM props target that dialog.',
+    'Coordinates multiple BottomSheets as a mutually exclusive flow. One activeSheet ID selects the only interactive sheet; during a handoff, the new sheet enters above the inert previous sheet. If the new sheet is shorter, the previous sheet simultaneously moves down until their top edges align, then fades after both transforms complete. Each child sheet renders its own native <dialog>, exactly like a standalone sheet: modal flows present each sheet with showModal(), no-scrim flows with show(). The browser supplies modality: the page is inert, focus stays in the top-layer dialog, and one CSS rule locks page scroll while any sheet dialog is modal, so both hold across a handoff. The switcher coordinates the rest: one scrim paints at a time, focus returns to the element that opened the flow, and its ref and dialog props resolve to the dialog hosting the active sheet.',
   props: [
     {
       name: 'ref',
       type: 'Ref<HTMLDialogElement>',
-      description: 'Ref forwarded to the one shared native dialog.',
+      description:
+        "Ref resolved to the native dialog hosting the active sheet. It moves to the next sheet's dialog on a handoff, stays on the exiting sheet's dialog through its exit, and is null while the flow is closed.",
     },
     {
       name: 'onCancel',
       type: '(event: SyntheticEvent<HTMLDialogElement>) => void',
       description:
-        'Called before the switcher handles a native dialog cancel request. Calling preventDefault() keeps the controlled flow open.',
+        "Called before the switcher handles a native cancel request on the active sheet's dialog. Calling preventDefault() keeps the controlled flow open.",
     },
     {
       name: 'activeSheet',
@@ -173,7 +174,7 @@ export const docs = {
       name: 'hasScrim',
       type: 'boolean',
       description:
-        "Whether the shared dialog is modal. true uses showModal() once for one native ::backdrop, focus trap, scroll lock, and click-to-dismiss when the active BottomSheet has purpose='info'. false uses show() with no backdrop and leaves the page interactive; avoid transformed, contained, or clipping ancestors because the non-modal dialog remains in its containing context.",
+        "Whether the sheet dialogs are modal. true presents each sheet with showModal() for a native ::backdrop, native focus containment, a CSS page-scroll lock, and click-to-dismiss when the active BottomSheet has purpose='info'; only one backdrop paints at a time. false uses show() with no backdrop and leaves the page interactive; avoid transformed, contained, or clipping ancestors because a non-modal dialog remains in its containing context.",
       default: 'true',
     },
     {
@@ -186,7 +187,7 @@ export const docs = {
   usage: {
     anatomy,
     description:
-      "Coordinates a multi-step bottom-sheet flow in one shared dialog; set activeSheet to a nested BottomSheet's sheetId to open or switch steps, and to null to close.",
+      "Coordinates a multi-step bottom-sheet flow, one native dialog per sheet; set activeSheet to a nested BottomSheet's sheetId to open or switch steps, and to null to close.",
     bestPractices: [
       {
         guidance: true,
@@ -243,11 +244,11 @@ export const docs = {
 /** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description:
-    'controller with one shared native dialog for mutually exclusive multi-step BottomSheets',
+    'controller for mutually exclusive multi-step BottomSheets, one native dialog per sheet',
   usage: {
     anatomy,
     description:
-      "Coordinates a multi-step bottom-sheet flow in one shared dialog; set activeSheet to a nested BottomSheet's sheetId to open or switch steps, and to null to close.",
+      "Coordinates a multi-step bottom-sheet flow, one native dialog per sheet; set activeSheet to a nested BottomSheet's sheetId to open or switch steps, and to null to close.",
     bestPractices: [
       {
         guidance: true,

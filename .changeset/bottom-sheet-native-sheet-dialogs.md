@@ -1,0 +1,9 @@
+---
+'@astryxdesign/core': patch
+---
+
+[feat] `BottomSheet` dialogs per sheet, native first (prototype for evaluation). Every `BottomSheet` — standalone or a step of a `BottomSheetSwitcher` — owns its own native `<dialog>`, presented with `showModal()` when it has a scrim and `show()` otherwise, and the browser supplies what a modal dialog supplies: the page is inert, focus stays inside the active sheet, Escape and the platform close arrive as `cancel`, the scrim is `::backdrop`, and focus returns on `close()`. Page scroll is no longer locked by pinning `<body>` from script; one CSS rule, `:root:has(dialog[data-sheet-dialog]:modal) { overflow: hidden; scrollbar-gutter: stable }`, installed once per document, locks it exactly while any sheet dialog is modal — through a handoff and beneath a `Dialog` opened from a step — and releases it with the last one. The switcher keeps only what no single dialog can decide: which sheet is presented or retained, one scrim handed from the fading dialog to the entering one without a fade, focus kept in the active sheet when a retained dialog closes, focus returned to the flow's opener when the flow ends, and the one layer-dismissal registration that gates `cancel` by `purpose`.
+
+Public props, defaults, and exports are unchanged. Three observable details move with the structure: the switcher's `ref` resolves to the dialog hosting the active sheet (it moves on a handoff, stays on the exiting sheet's dialog through its exit, and is `null` while the flow is closed) instead of one persistent element; `onCancel` and the forwarded dialog props apply to each sheet's dialog; and a modal sheet no longer sets inline `position`, `top`, or `overflow` styles on `<body>`, so a page that scrolls a nested element rather than the viewport is no longer pinned by the sheet (the root rule freezes the viewport scroller only).
+
+@imdreamrunner
