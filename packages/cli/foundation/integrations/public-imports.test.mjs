@@ -729,9 +729,7 @@ describe('derived component imports', () => {
     });
     const result = await validateIntegration(undefined, {cwd: dir});
     expect(
-      (result.data.notes ?? []).filter(i =>
-        i.code.startsWith('component_import'),
-      ),
+      result.data.issues.filter(i => i.code.startsWith('component_import')),
     ).toEqual([]);
     expect(result.data.publicImports?.unchecked).toEqual([
       expect.objectContaining({
@@ -1037,9 +1035,7 @@ describe('export import declarations', () => {
     );
     const result = await validateIntegration(undefined, {cwd: dir});
     expect(
-      (result.data.notes ?? []).filter(
-        i => i.code === 'template_import_missing_name',
-      ),
+      result.data.issues.filter(i => i.code === 'template_import_missing_name'),
     ).toEqual([]);
     expect(
       result.data.publicImports?.unchecked.map(u => u.specifier),
@@ -1392,7 +1388,7 @@ describe('the default-export fix names a value', () => {
       'export function AccountCard() {\n  return null;\n}\n',
     );
     const result = await validateLocalIntegration(dir);
-    const note = (result.notes ?? []).find(
+    const note = result.issues.find(
       n => n.code === 'template_no_default_export',
     );
     expect(note?.message).toContain(
