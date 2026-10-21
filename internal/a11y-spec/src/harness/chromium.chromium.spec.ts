@@ -3,7 +3,7 @@
 /**
  * @file chromium.chromium.spec.ts
  * @input Uses @playwright/test and the public Chromium harness seam
- * @output Focused accessibility-tree mapping and clipping-aware rendered-visibility tests
+ * @output Focused accessibility-tree mapping, clipping-aware rendered-visibility, and pointer hover/away tests
  * @position Harness regression coverage; proves browser AX properties are exposed without DOM substitution.
  */
 
@@ -175,4 +175,54 @@ test('subjects report rendered visibility', async ({page}) => {
     true,
   );
   expect(await (await harness.related('offscreen')).isVisible()).toBe(true);
+});
+
+test('hover rests the pointer on a subject and pointerAway moves it off every subject', async ({
+  page,
+}) => {
+  await page.setContent(`
+    <div style="padding:40px">
+      <button id="trigger">Trigger</button>
+      <span id="tip" style="display:inline-block;padding:8px">Tip</span>
+    </div>
+    <output id="log"></output>
+    <script>
+      for (const id of ['trigger', 'tip']) {
+        const element = document.getElementById(id);
+        element.addEventListener('mouseenter', () => { log.textContent += id + '+ '; });
+        element.addEventListener('mouseleave', () => { log.textContent += id + '- '; });
+      }
+    </script>
+  `);
+  const cdp = await page.context().newCDPSession(page);
+  const harness = createChromiumHarness({
+    page,
+    subject: page.locator('#trigger'),
+    cdp,
+    related: {tip: page.locator('#tip')},
+  });
+
+  await harness.hover(await harness.subject());
+  await harness.hover(await harness.related('tip'));
+  await harness.pointerAway();
+
+  await expect(page.locator('#log')).toHaveText('trigger+ trigger- tip+ tip-');
+});
+
+test('pointerAway refuses when every candidate point is on a watched subject', async ({
+  page,
+}) => {
+  await page.setContent(
+    '<div id="cover" style="position:fixed;inset:0">Cover</div>',
+  );
+  const cdp = await page.context().newCDPSession(page);
+  const harness = createChromiumHarness({
+    page,
+    subject: page.locator('#cover'),
+    cdp,
+  });
+
+  await expect(harness.pointerAway()).rejects.toThrow(
+    'nowhere to move the pointer away to',
+  );
 });

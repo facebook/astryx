@@ -1751,6 +1751,33 @@ jobs:
           retention-days: 30
           if-no-files-found: warn
 
+      # The Chromium harness's own self-tests: what it reads from the engine's
+      # accessibility tree, rendered visibility, and the pointer primitives
+      # (hover, pointerAway) contracts drive. Run them whenever the harness
+      # changes, so a harness change carries its own browser evidence.
+      - name: Run accessibility harness self-tests
+        if: ${{ !cancelled() && github.event_name == 'pull_request' }}
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          # The helper comes from the base, since an older PR head lacks it.
+          # Exit 1 means out of scope; 0 in scope; 2 unknown, so run.
+          scope=2
+          helper="$(mktemp)"
+          if git fetch --quiet --no-tags --depth=1 origin "$BASE_SHA" \
+            && git show "$BASE_SHA:.github/scripts/pr-scope-touches.sh" > "$helper"; then
+            scope=0
+            bash "$helper" "$BASE_SHA" '^internal/a11y-spec/src/harness' || scope=$?
+          fi
+          if [ "$scope" = 1 ]; then
+            echo "The accessibility harness is not in PR scope; skipping its self-tests."
+            exit 0
+          fi
+          pnpm exec playwright test \
+            internal/a11y-spec/src/harness/chromium.chromium.spec.ts \
+            --project chromium \
+            --output a11y-harness-output
+
       # The accordion contract's header role and name, the page Tab step between
       # headers, the absence of arrow-key focus movement, and the single-expansion
       # sibling collapse are accessibility-tree and real-browser facts that jsdom
