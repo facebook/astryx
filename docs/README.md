@@ -59,8 +59,9 @@ Every knowledge record declares `authority: draft | current | archived`.
 - Any ENGOWNER can approve another author's current-record PR through GitHub
   review. A DESIGNOWNER may do the same for current design or theme records and
   normative design assets. When an eligible approver is also the PR author, they
-  comment `/approve-spec <full-head-sha>`. Any new commit invalidates that
-  approval.
+  comment `/approve-spec <full-head-sha>`. A new commit invalidates that
+  approval unless it is a rebase or only records the approval in the record's
+  metadata; `.github/REVIEW_GATE.md` lists exactly what carries.
 - A configured review app may relay an eligible owner's exact-head decision;
   the gate counts it as that owner's command. `.github/REVIEW_GATE.md`
   describes the relay.

@@ -8,6 +8,11 @@ const fs = require('node:fs');
 const path = require('node:path');
 const {classifyChanges} = require('./change-scope.cjs');
 const {
+  carryCandidates,
+  differingPaths,
+  isApprovalMetadataOnlyChange,
+} = require('./spec-approval-carry.cjs');
+const {
   DECISION_STATUS_PREFIX,
   GATE_STATUS_CONTEXT,
   READY_STATUS_PREFIX,
@@ -62,7 +67,7 @@ function ownerCommandHelpBody({verb, headSha, problem}) {
     '',
     `    /${verb}-spec ${headSha}`,
     '',
-    'A new commit invalidates the command, so repeat it after any push.',
+    'An approval stays in force through a rebase or a commit that only records it in the records; any other new commit needs the command again.',
   ].join('\n');
 }
 
@@ -527,7 +532,8 @@ async function reconcileSpecOwnerGate({
     return;
   }
 
-  const {pr, scope, records, reviews, comments, timeline, statuses} = snapshot;
+  const {pr, files, scope, records, reviews, comments, timeline, statuses} =
+    snapshot;
 
   // A near-miss owner command used to do nothing at all, so an owner could
   // believe they had approved a head the gate never read. Answer it once per
@@ -602,19 +608,105 @@ async function reconcileSpecOwnerGate({
   // A ready-for-review attestation is the design group's own self-attestation
   // path. It is not evidence for the non-design or theme groups, which stay on
   // real exact-head reviews and commands.
-  const specDecision = requiredGroups.spec
+  let specDecision = requiredGroups.spec
     ? resolveOwnerDecision({...decisionInput, owners: engineeringOwners})
     : {approved: true, owner: null};
-  const designDecision = requiredGroups.design
+  let designDecision = requiredGroups.design
     ? resolveOwnerDecision({
         ...decisionInput,
         readyAttestations,
         owners: designApprovers,
       })
     : {approved: true, owner: null};
-  const themeDecision = requiredGroups.theme
+  let themeDecision = requiredGroups.theme
     ? resolveOwnerDecision({...decisionInput, owners: themeApprovers})
     : {approved: true, owner: null};
+  // An approval of an earlier head stands for this head only when nothing
+  // the owner judged has changed since. A decision on this head, including a
+  // request for changes or a revoke, always comes first.
+  const carryChecks = new Map();
+  async function carriedDecision(decision, owners) {
+    if (decision.approved || decision.source !== null) return decision;
+    for (const candidate of carryCandidates({
+      reviews,
+      comments,
+      owners,
+      headSha: initialHead,
+    })) {
+      const key = `${candidate.headSha}:${candidate.owner}:${candidate.at}`;
+      if (!carryChecks.has(key)) {
+        carryChecks.set(key, await isUnchangedSince(candidate));
+      }
+      if (carryChecks.get(key)) {
+        core.info(
+          `Carrying @${candidate.owner}'s approval of ${candidate.headSha.slice(0, 7)}: only a rebase or the recorded approval changed since.`,
+        );
+        return {
+          approved: true,
+          at: candidate.at,
+          source: 'carried',
+          owner: candidate.owner,
+          carriedFrom: candidate.headSha,
+        };
+      }
+    }
+    return decision;
+  }
+
+  async function isUnchangedSince(candidate) {
+    let approvedFiles;
+    try {
+      const {data} = await github.rest.repos.compareCommitsWithBasehead({
+        owner,
+        repo,
+        basehead: `${pr.base.sha}...${candidate.headSha}`,
+      });
+      approvedFiles = data.files;
+    } catch (error) {
+      core.info(
+        `Could not compare approved head ${candidate.headSha.slice(0, 7)}: ${error.message}`,
+      );
+      return false;
+    }
+    // GitHub truncates a comparison at 300 files; an incomplete list proves
+    // nothing, so it never carries an approval.
+    if (!scope.complete || (approvedFiles?.length ?? 0) >= 300) return false;
+    const differing = differingPaths(approvedFiles, files);
+    if (differing === null) return false;
+    for (const file of differing) {
+      if (
+        !file.filename.endsWith('.md') ||
+        !classifyChanges([{filename: file.filename}]).touchesKnowledgeRecords
+      ) {
+        return false;
+      }
+      let before;
+      let after;
+      try {
+        [before, after] = await Promise.all([
+          readText(pr.base.repo.full_name, candidate.headSha, file.filename),
+          readText(pr.head.repo.full_name, initialHead, file.filename),
+        ]);
+      } catch (error) {
+        core.info(`Could not read ${file.filename}: ${error.message}`);
+        return false;
+      }
+      if (
+        !isApprovalMetadataOnlyChange(before, after, {
+          approver: candidate.owner,
+          approvedAt: candidate.at,
+        })
+      ) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  specDecision = await carriedDecision(specDecision, engineeringOwners);
+  designDecision = await carriedDecision(designDecision, designApprovers);
+  themeDecision = await carriedDecision(themeDecision, themeApprovers);
+
   const approved =
     specDecision.approved && designDecision.approved && themeDecision.approved;
   const approvingOwners = [
@@ -667,10 +759,17 @@ async function reconcileSpecOwnerGate({
     return;
   }
 
+  const carriedFrom = [specDecision, designDecision, themeDecision]
+    .map(decision => decision.carriedFrom)
+    .find(Boolean);
   const successDescription = ownerApprovalRequired
     ? `Approved by ${approvingOwners
         .map(name => `@${name}`)
-        .join(' and ')} for ${initialHead.slice(0, 7)}.`
+        .join(' and ')} for ${initialHead.slice(0, 7)}${
+        carriedFrom
+          ? ` (carried from ${carriedFrom.slice(0, 7)}; no material change)`
+          : ''
+      }.`
     : 'Draft-only knowledge change; owner approval is not required.';
 
   if (!scope.specOnly) {

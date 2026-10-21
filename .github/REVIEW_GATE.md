@@ -41,7 +41,16 @@ non-design current records. Same-repository owner reviews update the exact-head
 approval automatically. Fork review events cannot write
 with their read-only token, so an approver uses an issue comment containing
 `/approve-spec <full-head-sha>` instead; that command runs from the trusted
-default branch and a new commit invalidates it.
+default branch and a new commit invalidates it, except as below.
+
+An approval stays in force on a later head when nothing the owner judged has
+changed: a rebase that leaves every changed file's bytes the same, or a commit
+that only records the approval in the records (`authority: draft` to
+`current`, `phase: proposed` to `accepted`, `approved_by` naming the approver,
+`approved_at` and Decider dates within a day of the approval). Any other edit,
+added or removed line, or changed file needs a new approval. A decision on the
+new head, or any owner revoke or request for changes after the approval, wins.
+The gate status names the head the approval was carried from.
 
 A review app may also relay an owner's decision, for owners who decide from
 the app's own pull request view. It sends a `spec-owner-decision` repository
@@ -53,7 +62,8 @@ live head; with the variable unset, every relay is ignored. An accepted relay
 is published as the trusted status `spec-owner-decision/<owner>`, and the gate
 counts it exactly like that owner's `/approve-spec` or `/revoke-spec` command:
 it satisfies only the groups that owner may approve, the owner's latest
-decision wins, and a new commit invalidates it.
+decision wins, and a new commit invalidates it. A relayed decision is not
+carried to a later head.
 
 Only that exact form decides the gate. The command must start the comment,
 lowercase and unindented, because the workflow trigger matches the raw comment

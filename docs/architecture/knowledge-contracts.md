@@ -600,8 +600,8 @@ contraction. It does not merely report that authority is missing.
    - If the direction is rejected, the rejected implementation is removed or
      changed. Record the rejected alternative only when the boundary is
      consequential and likely to come up again.
-5. The final commits invalidate prior approval. The owner approves the exact
-   heads after the record and implementation agree.
+5. The final commits invalidate prior approval unless DEC-13 carries it. The
+   owner approves the exact heads after the record and implementation agree.
 
 If no implementation direction is accepted, close the contributor pull request.
 The maintainer-owned spec pull request remains only when the ruling is useful
@@ -684,7 +684,8 @@ this flow passes the historical review benchmark and is enforced on pull request
   outside a valid optional block.
 - `.github/scripts/change-scope.cjs` identifies pure spec-record changes.
 - `.github/workflows/spec-owner-gate.yml` binds approval to the exact pull
-  request head. Approval for every record kind derives from `.github/ENGOWNERS`;
+  request head, or to an earlier head DEC-13 carries it from. Approval for every
+  record kind derives from `.github/ENGOWNERS`;
   current design and theme records, normative design assets, and DD-only current
   component/module changes additionally accept `.github/DESIGNOWNERS`. A mixed
   DD plus other component/module edit requires both groups. Record metadata never
@@ -938,6 +939,29 @@ every active record to declare paths most already reach through placement or
 inheritance. Rejected: regular expressions, because a reviewer cannot read
 their reach at a glance and they over-match silently.
 
+### DEC-13 — Owner approval survives heads with no material change
+
+**Reference:** `architecture:knowledge-contracts/DEC-13`
+**Decider:** `cixzhang`, `2026-10-21`
+
+An owner's approval of one head also approves a later head of the same pull
+request when nothing the owner judged has changed. Two changes qualify. A rebase
+qualifies when every changed path has the same change status and the same bytes
+at both heads. Recording the approval qualifies when, line for line, a knowledge
+record differs only in its frontmatter `authority` moving from `draft` to
+`current`, `phase` moving from `proposed` to `accepted`, `approved_by` naming the
+approving owner, `approved_at` dated within a day of the approval, and Decider
+lines gaining that date. Any other added, removed, or edited line, a different
+set of changed paths, or any other byte change needs a new decision. The carried approval satisfies only the groups its owner may approve.
+A decision on the new head, and any owner revoke or request for changes after
+the approval, wins over it. A comparison the gate cannot complete carries
+nothing.
+
+Rejected: requiring a fresh approval for the commit that records an approval,
+because a record must carry its approval metadata and writing it would always
+undo the approval it records. Rejected: judging other edits as non-material,
+because whether a wording change alters a decision is the owner's call.
+
 ## Verification
 
 | Invariant                         | Evidence                                                                                                                                                                                                     | Failure signal                                                                                                                                                                                                                                                |
@@ -945,6 +969,7 @@ their reach at a glance and they over-match silently.
 | INV1, INV6                        | `scripts/check-knowledge.test.mjs`                                                                                                                                                                           | An unapproved current record or unmigrated active record passes                                                                                                                                                                                               |
 | INV5, INV7                        | `.github/scripts/change-scope.test.mjs`                                                                                                                                                                      | A template, schema, guidance, architecture, code change, unsafe rename, or truncated list qualifies as spec-only                                                                                                                                              |
 | Approval follows the current head | `.github/scripts/spec-owner-decision.test.mjs`                                                                                                                                                               | An approval for another commit clears the gate, a self-declared owner becomes an approver, or the wrong owner group approves a current record                                                                                                                 |
+| DEC-13                            | `.github/scripts/spec-approval-carry.test.mjs` and `.github/scripts/spec-owner-reconcile.test.mjs`                                                                                                           | A rebase or a commit that only records the approval drops it; a content edit, other path, wrong approver or date, later revoke or request for changes, or failed comparison carries it                                                                        |
 | INV3, INV4, INV11                 | Blinded historical review benchmark                                                                                                                                                                          | Reviewer re-asks a settled decision, invents a new one, approves an unsettled public delta, or treats a contradiction as preserves                                                                                                                            |
 | INV10                             | Record-content and review-disposition fixtures                                                                                                                                                               | A spec assigns a PR verdict, or a reviewer treats a PR link as authority                                                                                                                                                                                      |
 | INV13                             | Blinded spec-authorship fixture plus overlap-search receipt                                                                                                                                                  | An author creates parallel authority, searches only landed records or filenames, misses open work on the canonical owner, or treats an open PR as authority                                                                                                   |
