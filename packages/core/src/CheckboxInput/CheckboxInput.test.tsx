@@ -278,7 +278,7 @@ describe('CheckboxInput', () => {
     );
     const checkbox = screen.getByRole('checkbox');
     expect(checkbox).toBeChecked();
-    expect(checkbox).toBeDisabled();
+    expect(checkbox).toHaveAttribute('aria-disabled', 'true');
     expect(checkbox).toHaveAttribute('type', 'checkbox');
   });
 
@@ -588,16 +588,36 @@ describe('CheckboxInput', () => {
       expect(checkbox).not.toBeChecked();
     });
 
-    it('remains natively disabled when disabled without a reason', () => {
+    it('stays focusable via aria-disabled when disabled without a reason', async () => {
+      const user = userEvent.setup();
+      const onChange = vi.fn();
+      const onClick = vi.fn();
       render(
-        <CheckboxInput
-          label="Accept terms"
-          value={false}
-          onChange={() => {}}
-          isDisabled
-        />,
+        <form>
+          <CheckboxInput
+            label="Accept terms"
+            value={false}
+            onChange={onChange}
+            onClick={onClick}
+            htmlName="terms"
+            isRequired
+            isDisabled
+          />
+        </form>,
       );
-      expect(screen.getByRole('checkbox')).toBeDisabled();
+      const checkbox = screen.getByRole('checkbox');
+      expect(checkbox).not.toHaveAttribute('disabled');
+      expect(checkbox).toHaveAttribute('aria-disabled', 'true');
+      await user.tab();
+      expect(checkbox).toHaveFocus();
+      await user.keyboard(' ');
+      await user.click(checkbox);
+      expect(onChange).not.toHaveBeenCalled();
+      expect(onClick).not.toHaveBeenCalled();
+      expect(checkbox).not.toBeChecked();
+      const form = checkbox.closest('form')!;
+      expect(form.checkValidity()).toBe(true);
+      expect([...new FormData(form).keys()]).toEqual([]);
     });
   });
   describe('form participation', () => {

@@ -209,12 +209,12 @@ export const RADIO_GROUP_BINDING_STATES = [
   {
     id: 'radio-list-option-group-disabled',
     binding: 'RadioListItem',
-    summary: 'an option disabled by its group without a tabReachable reason',
+    summary: 'the checked option of a group disabled without a reason',
     facts: optionFacts({
       checked: true,
       disabled: true,
       operable: false,
-      tabReachable: false,
+      tabReachable: true,
       pointerCancellation: false,
     }),
     subjectName: 'Standard',

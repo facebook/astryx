@@ -595,10 +595,8 @@ export function Switch({
 
   const isOn = optimisticValue === true;
 
-  // Disabled-reason tooltip. Disabled controls swallow pointer events, so the
-  // tooltip listeners attach to the switch row (which already exists) and the
-  // native checkbox stays perceivable via aria-disabled instead of the disabled
-  // attribute. Toggling is blocked by the isDisabled guard in onChange.
+  // Disabled-reason tooltip. Its listeners attach to the switch row (which
+  // already exists); the input stays focusable via aria-disabled.
   const showsDisabledMessage = isDisabled && !!disabledMessage;
   const disabledMessageTooltip = useTooltip({
     placement: 'above',
@@ -637,17 +635,15 @@ export function Switch({
         id={id}
         type="checkbox"
         role="switch"
-        // Withhold the name while disabled: with a disabledMessage the
-        // input stays focusable (not natively disabled), and a disabled
-        // control must not submit.
+        // Withhold the name while disabled: the input stays focusable (not
+        // natively disabled), and a disabled control must not submit.
         name={isDisabled ? undefined : htmlName}
         checked={isOn}
-        // With a disabledMessage the switch keeps focusability via aria-disabled
-        // so the reason is focus-discoverable; toggling is still blocked by the
-        // isDisabled guard in onChange below.
-        disabled={isDisabled && !showsDisabledMessage}
-        aria-disabled={showsDisabledMessage ? 'true' : undefined}
-        form={showsDisabledMessage ? '' : undefined}
+        // A disabled switch stays focusable via aria-disabled (spec:AST-085
+        // FR1) and is detached from its form so it neither submits nor blocks
+        // submission (FR3); toggling is blocked by the onChange guard (FR2).
+        aria-disabled={isDisabled ? 'true' : undefined}
+        form={isDisabled ? '' : undefined}
         required={isRequired}
         aria-required={isEffectivelyRequired ? 'true' : undefined}
         onChange={e => {
