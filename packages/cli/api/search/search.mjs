@@ -15,7 +15,11 @@
  */
 
 import {withListingCache} from '../../foundation/fs/listing-cache.mjs';
-import {gatherCandidates, loadSearchData} from './_adapter.mjs';
+import {
+  gatherCandidates,
+  gatherCandidatesReused,
+  loadSearchData,
+} from './_adapter.mjs';
 import {rankLexical} from './_lexical.mjs';
 import {checkSearchArgs} from './_result.mjs';
 import {runTree} from '../../foundation/route/route.mjs';
@@ -56,7 +60,7 @@ export async function search(query, options = {}) {
             await runTree(
               SEARCH_TREE,
               {query, options},
-              {...(await gatherCandidates(options)), data: loadSearchData()},
+              {...(await gatherCandidatesReused(options)), data: loadSearchData()},
             )
           ),
           options.cwd ?? process.cwd(),

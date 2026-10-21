@@ -17,6 +17,7 @@ import {searchResultHref} from '../../../lib/searchLinks.mjs';
 import type {SearchLinkTables} from '../../../lib/searchLinks.mjs';
 import links from '../../../generated/searchLinks.json';
 import admitted from '../../../generated/integrationPackages.json';
+import docsiteConfig from '../../../../astryx.config.mjs';
 
 /** Packages this build documents: Core, the CLI's docs and themes, and the
  *  integrations it admits (canary: all configured; latest: stable ones). */
@@ -35,6 +36,14 @@ let cli: Promise<typeof CliApi> | null = null;
 const loadCli = () =>
   (cli ??= import(/* webpackIgnore: true */ '@astryxdesign/cli/api'));
 
+/** Whether this build leaves out an integration the site's project has. */
+const FILTERED = docsiteConfig.integrations.some(
+  (name: string) => !DOCUMENTED.has(name),
+);
+
+/** How many results the panel shows: `astryx search`'s default. */
+const LIMIT = 20;
+
 /** Longest query the API accepts. */
 const MAX_QUERY = 200;
 
@@ -47,9 +56,16 @@ export async function GET(request: Request): Promise<Response> {
     );
   }
   const {search} = await loadCli();
-  const response = await search(query, {cwd: process.cwd()});
+  // When this build leaves out an integration, ask for more and drop its
+  // results before cutting to the panel's 20; otherwise this is exactly
+  // `astryx search <query>`.
+  const response = await search(query, {
+    cwd: process.cwd(),
+    ...(FILTERED ? {limit: LIMIT * 4} : {}),
+  });
   const results = response.data.results
     .filter(result => result.package == null || DOCUMENTED.has(result.package))
+    .slice(0, LIMIT)
     .map(result => ({
       ...result,
       href: searchResultHref(result, links as SearchLinkTables),
