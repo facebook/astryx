@@ -1837,6 +1837,76 @@ describe('DropdownMenuSubMenu header and footer', () => {
     expect(trigger).toHaveAttribute('aria-expanded', 'true');
   });
 
+  it('an Escape a control in the region already handled closes only that control: a menu in the header, a field that clears itself', async () => {
+    const user = userEvent.setup();
+    function SortedLabels() {
+      const [query, setQuery] = useState('bu');
+      return (
+        <DropdownMenu button={{label: 'Session'}}>
+          <DropdownMenuItem label="Rename" onClick={() => {}} />
+          <DropdownMenuSubMenu
+            label="Labels"
+            header={
+              <>
+                <input
+                  aria-label="Filter labels"
+                  value={query}
+                  onChange={e => setQuery(e.target.value)}
+                  onKeyDown={e => {
+                    // A field that clears itself on Escape claims the key.
+                    if (e.key === 'Escape' && query !== '') {
+                      e.preventDefault();
+                      setQuery('');
+                    }
+                  }}
+                />
+                <DropdownMenu button={{label: 'Sort'}}>
+                  <DropdownMenuItem label="By name" onClick={() => {}} />
+                </DropdownMenu>
+              </>
+            }>
+            <DropdownMenuItem label="Bug" onClick={() => {}} />
+          </DropdownMenuSubMenu>
+        </DropdownMenu>
+      );
+    }
+    render(<SortedLabels />);
+    const trigger = screen.getByRole('button', {name: /Session/});
+    await user.click(trigger);
+    await waitFor(() =>
+      expect(trigger).toHaveAttribute('aria-expanded', 'true'),
+    );
+    const row = screen.getByRole('menuitem', {name: /Labels/, ...h});
+    fireEvent.click(row, {detail: 1});
+    await screen.findByRole('dialog', {name: /Labels/, ...h});
+    expect(row).toHaveAttribute('aria-expanded', 'true');
+
+    // The header's own menu takes the first Escape and closes; the sub-menu
+    // and the root menu stay open.
+    const sort = screen.getByRole('button', {name: /Sort/, ...h});
+    await user.click(sort);
+    await waitFor(() => expect(sort).toHaveAttribute('aria-expanded', 'true'));
+    const sortMenu = screen.getByRole('menu', {name: /Sort/, ...h});
+    await waitFor(() => expect(sortMenu).toHaveFocus());
+    fireEvent.keyDown(sortMenu, {key: 'Escape'});
+    await waitFor(() => expect(sort).toHaveAttribute('aria-expanded', 'false'));
+    expect(row).toHaveAttribute('aria-expanded', 'true');
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+
+    // A field that clears itself on Escape keeps that Escape too.
+    const filter = screen.getByRole('textbox', {name: 'Filter labels', ...h});
+    act(() => filter.focus());
+    fireEvent.keyDown(filter, {key: 'Escape'});
+    expect(filter).toHaveValue('');
+    expect(filter).toHaveFocus();
+    expect(row).toHaveAttribute('aria-expanded', 'true');
+
+    // The next Escape, which nothing in the region claims, returns to the row.
+    fireEvent.keyDown(filter, {key: 'Escape'});
+    await waitFor(() => expect(row).toHaveAttribute('aria-expanded', 'false'));
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+  });
+
   it('an Escape that ends an IME composition in the field closes nothing', async () => {
     const {trigger, row} = await openLabels();
     act(() => field().focus());

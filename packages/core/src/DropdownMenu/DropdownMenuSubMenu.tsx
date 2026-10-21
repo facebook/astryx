@@ -964,9 +964,15 @@ export function DropdownMenuSubMenu(
         );
         return;
       }
-      // An Escape that ends an IME composition belongs to the field: it
-      // closes nothing.
-      if (e.key === 'Escape' && !isImeKeyEvent(e.nativeEvent)) {
+      // An Escape that ends an IME composition belongs to the field, and one a
+      // control in the region already handled (a menu it opened closing, a
+      // field clearing itself) belongs to that control: either closes nothing
+      // here, so one Escape affects one surface.
+      if (
+        e.key === 'Escape' &&
+        !e.defaultPrevented &&
+        !isImeKeyEvent(e.nativeEvent)
+      ) {
         e.preventDefault();
         e.stopPropagation();
         close({focusTrigger: true});
