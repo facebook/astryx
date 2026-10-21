@@ -343,6 +343,10 @@ const RUNNERS = {
     runs: "the CLI release that answers a project's run, when it is not this copy",
     sites: ['child_process.spawn'],
   },
+  'host/index.mjs': {
+    runs: "another release's host entry, from one of the host's package sets, when that release answers a hosted run",
+    sites: ['import(<computed>)'],
+  },
   'scripts/generate-cli-readme.mjs': {
     runs: '`astryx manifest` and the error-code and response-type docs, to write the README tables (build time, not shipped)',
     sites: ['child_process.spawnSync', 'import(<computed>)'],

@@ -376,6 +376,35 @@ try {
 
 The CLI command handlers are thin wrappers around these functions: they parse args, call the API, then format the output (JSON or text). This guarantees that `@astryxdesign/cli/api` and `astryx --json` always return identical data.
 
+### Host entry
+
+A tool that carries this CLI and runs it for its own users starts it through `@astryxdesign/cli/host`, once per process. The run behaves as the `astryx` bin does with the same arguments in the same folder: it finds the project there, hands a project's run to the project's own CLI, and owns the process's working folder, arguments, standard streams, and exit.
+
+```javascript
+import {runHostedCli} from '@astryxdesign/cli/host';
+
+const {status} = await runHostedCli({
+  argv: process.argv.slice(2),
+  cwd: process.cwd(),
+  cliCommand: 'acme astryx',
+});
+process.exitCode = status;
+```
+
+| Option               | Default                           | Meaning                                                                                                                                                                                                                                                                                                                  |
+| -------------------- | --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `argv`               | none                              | The arguments after `astryx`.                                                                                                                                                                                                                                                                                            |
+| `cwd`                | the process's working folder      | The folder the run works in. It must exist.                                                                                                                                                                                                                                                                              |
+| `cliCommand`         | none (the package manager's name) | The command the tool's users type, such as `acme astryx`. Printed commands start with it unless the integrations the run loads declare their own `cliCommand`. A non-blank single line of at most 120 characters, with no surrounding spaces.                                                                            |
+| `declinedProjectCli` | none                              | When the tool found the project's own CLI and did not run it, why, in its own words, such as `untrusted`. The run is then never handed to that CLI: its release answers in its place when this copy or a package set's host entry is that release; otherwise this copy answers, with one warning line naming the reason. |
+| `roots`              | none                              | The tool's package sets, in its order of preference: folders whose `node_modules` each hold a CLI, the Core equal to it, and the integrations installed with them. A run never installs a release; when another release answers the folder, the first set whose CLI and Core are that release serves the run.            |
+| `integrations`       | none                              | Integrations the tool approves for use outside a project, by package name, loaded from the package set that serves the run.                                                                                                                                                                                              |
+| `discoverSources`    | none                              | The tool's own discover sources, called after every integration's source and reported as the host's. Another package set's host entry that answers the run gets them too.                                                                                                                                                |
+
+It resolves with `{status, packages}`: the exit status the bin would exit with, and each package the run resolved with its version and whether it came from the project or a package set. When another package set's release answers through its own host entry, that entry runs in the same process with the same inputs, and the call resolves with its result. It rejects with a `TypeError` before anything runs for an unknown option or an invalid value, and with an `Error` before anything runs when a run already started in the process.
+
+Like the bin, a run ends the process with its exit status, and the call never resolves, when it prints help or the version (`--help`, `-h`, `help`, `--version`, `-V`, `--version --json`), rejects the command line, reports an error it stops on (every error in `--json` mode included), meets an unexpected error, or hands the run to another CLI's bin: the project's own CLI when `declinedProjectCli` is absent, or a package set whose CLI ships no host entry. `astryx docs cli/host-entry` has the same guide.
+
 ### Consumer utilities
 
 If you're spawning the CLI as a subprocess rather than importing the API directly:
