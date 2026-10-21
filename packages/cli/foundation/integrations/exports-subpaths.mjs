@@ -66,7 +66,10 @@ export function allTargets(value, out = []) {
 export function subpathDeclaration(exportsField, subpath) {
   if (exportsField == null) return {state: 'no_exports'};
   const keys = isRecord(exportsField) ? Object.keys(exportsField) : [];
-  const isMap = keys.length > 0 && keys.every(key => key.startsWith('.'));
+  // An empty object is a subpath map with no keys: it exports nothing, so
+  // every subpath (the root too) is missing from it.
+  const isMap =
+    isRecord(exportsField) && keys.every(key => key.startsWith('.'));
   if (!isMap) {
     if (subpath !== '.') return {state: 'root_only'};
     return importable(exportsField)

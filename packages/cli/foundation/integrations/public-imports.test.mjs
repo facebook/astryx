@@ -833,35 +833,75 @@ describe('type-only imports', () => {
     expect(await codes()).toEqual([]);
   });
 
-  it('still warns when an inline type sits beside a value binding from a types-only subpath', async () => {
+  it('accepts a plain import of names the types file declares as types', async () => {
     pkg(p => {
       p.exports['./types'] = {types: './types.d.ts'};
     });
     write(
+      'types.d.ts',
+      'export type AcmeWidgetSize = "sm" | "md";\ninterface AcmeTone {}\nexport {type AcmeTone as Tone};\n',
+    );
+    write(
       'components/AcmeWidget.doc.mjs',
       DOC(
         undefined,
-        "import {type AcmeWidgetSize, ACME_SIZES} from '@acme/widgets/types';\\n<AcmeWidget />",
+        "import {AcmeWidgetSize, Tone} from '@acme/widgets/types';\\nimport {AcmeWidget} from '@acme/widgets/components/AcmeWidget';\\n<AcmeWidget />",
       ),
     );
-    expect(await codes()).toEqual(['example_import_not_exported']);
+    expect(await codes()).toEqual([]);
+    const report = (await validateLocalIntegration(dir)).publicImports;
+    expect(report?.unchecked).toEqual([]);
   });
 
-  it('still warns on a value import from a types-only subpath, and on an undeclared one', async () => {
+  it('lists a value or unreadable import from a types-only subpath as not checked, never a note', async () => {
     pkg(p => {
       p.exports['./types'] = {types: './types.d.ts'};
+      p.exports['./gone'] = {types: './gone.d.ts'};
     });
+    write(
+      'types.d.ts',
+      'export type AcmeWidgetSize = "sm";\nexport declare const ACME_SIZES: string[];\n',
+    );
     write(
       'components/AcmeWidget.doc.mjs',
       DOC(
         undefined,
-        "import {AcmeWidgetSize} from '@acme/widgets/types';\\nimport type {X} from '@acme/widgets/nope';\\n<AcmeWidget />",
+        "import {type AcmeWidgetSize, ACME_SIZES} from '@acme/widgets/types';\\nimport {Gone} from '@acme/widgets/gone';\\nimport type {X} from '@acme/widgets/nope';\\n<AcmeWidget />",
       ),
     );
-    expect(await codes()).toEqual([
-      'example_import_not_exported',
-      'example_import_not_exported',
+    const notes = await found();
+    expect(notes.map(n => n.code)).toEqual(['example_import_not_exported']);
+    expect(notes[0].message).toContain('@acme/widgets/nope');
+    expect(notes[0].message).not.toContain('"default"');
+    const report = (await validateLocalIntegration(dir)).publicImports;
+    expect(report?.unchecked.map(u => u.specifier).sort()).toEqual([
+      '@acme/widgets/gone',
+      '@acme/widgets/types',
     ]);
+    expect(
+      report?.unchecked.find(u => u.specifier === '@acme/widgets/types')
+        ?.reason,
+    ).toContain('ACME_SIZES');
+  });
+});
+
+describe('an empty exports map', () => {
+  it('names the missing subpath and adds only that entry', async () => {
+    pkg(p => {
+      p.exports = {};
+    });
+    const issue = (await found()).find(
+      i => i.code === 'component_import_not_exported',
+    );
+    expect(issue?.message).toContain(
+      'package.json "exports" does not declare "./components/AcmeWidget"',
+    );
+    expect(issue?.message).toContain(
+      'add "./components/AcmeWidget": "./components/AcmeWidget.tsx" to package.json "exports"',
+    );
+    expect(issue?.message).not.toContain('subpath map');
+    expect(subpathDeclaration({}, '.').state).toBe('missing');
+    expect(subpathDeclaration({}, './a').state).toBe('missing');
   });
 });
 

@@ -971,8 +971,145 @@ function typeOnlyStatement(statement) {
 }
 
 /**
- * Whether an import of the package's own name names a subpath `exports`
- * declares; the declaration when it does not.
+ * Whether every target of an export value sits under a `types` condition, so
+ * nothing loads it at run time.
+ * @param {unknown} value
+ * @param {boolean} [underTypes]
+ * @returns {boolean}
+ */
+function typesOnly(value, underTypes = false) {
+  if (typeof value === 'string') return underTypes;
+  if (Array.isArray(value))
+    return value.length > 0 && value.every(v => typesOnly(v, underTypes));
+  if (!isRecord(value)) return false;
+  const entries = Object.entries(value);
+  return (
+    entries.length > 0 &&
+    entries.every(([condition, v]) =>
+      typesOnly(v, underTypes || condition === 'types'),
+    )
+  );
+}
+
+/**
+ * The files the `types` conditions of an export value name, with a wildcard
+ * filled in.
+ * @param {unknown} value
+ * @param {string} wildcard
+ * @param {boolean} [underTypes]
+ * @param {string[]} [out]
+ * @returns {string[]}
+ */
+function typesTargets(value, wildcard, underTypes = false, out = []) {
+  if (typeof value === 'string') {
+    if (underTypes) out.push(value.replace('*', wildcard));
+  } else if (Array.isArray(value)) {
+    for (const v of value) typesTargets(v, wildcard, underTypes, out);
+  } else if (isRecord(value)) {
+    for (const [condition, v] of Object.entries(value))
+      typesTargets(v, wildcard, underTypes || condition === 'types', out);
+  }
+  return out;
+}
+
+/**
+ * The names a declaration file exports as types: exported interfaces and
+ * type aliases, `export type {…}`, and `export {…}` of a local interface or
+ * type alias. Anything else (a value, an `export *`) is not counted, so an
+ * import of it is listed as not checked. Null when the file cannot be read.
+ * @param {string} file
+ * @returns {Set<string> | null}
+ */
+function declaredTypeNames(file) {
+  let ast;
+  try {
+    ast = parse(fs.readFileSync(file, 'utf-8'), {
+      sourceType: 'module',
+      errorRecovery: true,
+      plugins: /** @type {any} */ ([
+        ['typescript', {dts: /\.d\.[cm]?ts$/u.test(file)}],
+      ]),
+    });
+  } catch {
+    return null;
+  }
+  /** @type {Set<string>} */
+  const local = new Set();
+  /** @type {Set<string>} */
+  const names = new Set();
+  /** @param {any} node */
+  const typeName = node =>
+    node &&
+    (node.type === 'TSInterfaceDeclaration' ||
+      node.type === 'TSTypeAliasDeclaration')
+      ? node.id.name
+      : null;
+  for (const node of ast.program.body) {
+    const own = typeName(node);
+    if (own) local.add(own);
+    if (node.type === 'ExportNamedDeclaration') {
+      const declared = typeName(node.declaration);
+      if (declared) local.add(declared);
+    }
+  }
+  /** @param {any} n */
+  const exportedName = n =>
+    n.type === 'Identifier' ? n.name : String(n.value);
+  for (const node of ast.program.body) {
+    if (node.type !== 'ExportNamedDeclaration') continue;
+    const declared = typeName(node.declaration);
+    if (declared) names.add(declared);
+    for (const s of node.specifiers ?? []) {
+      if (s.type !== 'ExportSpecifier') continue;
+      const exported = exportedName(s.exported);
+      if (node.exportKind === 'type' || s.exportKind === 'type')
+        names.add(exported);
+      else if (!node.source && local.has(exportedName(s.local)))
+        names.add(exported);
+    }
+  }
+  return names;
+}
+
+/**
+ * An import of a subpath whose `exports` entry has only `types` targets is
+ * never judged as a run-time import: accepted when it is `import type`, its
+ * every binding is an inline `type`, or every name it imports is one the
+ * `types` file declares as a type; otherwise the reason it was not checked.
+ * @param {Context} ctx
+ * @param {ImportStatement} statement
+ * @param {string} subpath
+ * @param {SubpathDeclaration} declaration
+ * @returns {string | null}
+ */
+function typesOnlyImport(ctx, statement, subpath, declaration) {
+  if (typeOnlyStatement(statement)) return null;
+  const not = `"${subpath}" has only a "types" target in package.json "exports", which nothing loads at run time`;
+  if (statement.namespace || statement.names.length === 0)
+    return `${not}, and a namespace or side-effect import of it cannot be judged from source, so it was not checked`;
+  const files = typesTargets(declaration.value, declaration.wildcard ?? '');
+  /** @type {Set<string>} */
+  const types = new Set();
+  let read = false;
+  for (const target of files) {
+    const found = declaredTypeNames(path.resolve(ctx.packageDir, target));
+    if (!found) continue;
+    read = true;
+    for (const n of found) types.add(n);
+  }
+  if (!read)
+    return `${not}, and its types file ${files.map(f => `"${f}"`).join(', ')} could not be read (it may be build output), so it was not checked`;
+  const unknown = statement.names
+    .filter(binding => !binding.typeOnly && !types.has(binding.imported))
+    .map(binding => binding.imported);
+  if (unknown.length === 0) return null;
+  return `${not}, and its types file does not declare ${unknown.join(', ')} as a type, so it was not checked`;
+}
+
+/**
+ * How an import of the package's own name is judged: the declaration when
+ * `exports` does not declare its subpath, the names its module provably
+ * lacks, or the reason it was not checked.
  * @param {Context} ctx
  * @param {ImportStatement} statement
  * @param {string} subpath
@@ -980,15 +1117,9 @@ function typeOnlyStatement(statement) {
  */
 function judgeOwnImport(ctx, statement, subpath) {
   const declaration = declarationIn(ctx.exportsField, ctx.packageDir, subpath);
-  // `import type`, or an import whose every binding is an inline `type`
-  // (TypeScript's default emit drops it), needs only a `types` target:
-  // TypeScript reads it, nothing loads it at run time.
-  if (
-    typeOnlyStatement(statement) &&
-    declaration.state === 'not_importable' &&
-    conditionNames(declaration.value).includes('types')
-  ) {
-    return {undeclared: null, missing: [], reason: null};
+  if (declaration.state === 'not_importable' && typesOnly(declaration.value)) {
+    const reason = typesOnlyImport(ctx, statement, subpath, declaration);
+    return {undeclared: null, missing: [], reason};
   }
   if (declaration.state !== 'declared')
     return {undeclared: declaration, missing: null, reason: null};
