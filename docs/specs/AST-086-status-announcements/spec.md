@@ -2,7 +2,7 @@
 schema_version: 4
 template_version: 2
 kind: system-spec
-id: spec:AST-084
+id: spec:AST-086
 authority: current
 archive_reason: null
 superseded_by: null
@@ -13,7 +13,7 @@ owners: [cixzhang]
 affects_architecture: [architecture:react-component-runtime]
 affects_families: [family:input-fields]
 affects_contributing: []
-affects_consumer_docs: [useAnnounce, ChatTypingIndicator]
+affects_consumer_docs: [useAnnounce, Toast, ChatTypingIndicator, Comments]
 ---
 
 # Status announcement delivery system spec
@@ -75,6 +75,10 @@ announcement channel.
   assertive region per document. They are created empty, stay mounted for the
   document's lifetime, and clear their text shortly after each announcement so
   stale text does not linger. `useAnnounce` is the public way to reach it.
+- **FR10 — The channel reaches people inside a modal.** While a modal dialog
+  makes the rest of the document inert, announcements still reach assistive
+  technology. The channel delivers them from inside the active modal or from
+  another host that stays in the accessibility tree.
 
 ### Platform support
 
@@ -115,6 +119,11 @@ announcement channel.
   FR4 the log delivers it; dividers and dates are ordinary log content.
 - ChatTypingIndicator (lab): mounts with `role="status"` and text. It follows
   FR4 inside a live log, otherwise FR2.
+- Comments (lab): its error banners and progress label mount live roles
+  together with their text. Under FR2 they go through the channel.
+- `useAnnounce`: its regions sit on `document.body`, which a native modal makes
+  inert. Under FR10 announcements made while Dialog, Drawer, or BottomSheet is
+  open still reach assistive technology.
 - `spec:AST-037` FR9 (Timer adds no unsolicited live region) already conforms.
 - Consumer tests that query these elements by `status` or `alert` role change.
   Release notes name each affected component.
@@ -130,13 +139,14 @@ announcement channel.
 | FR7      | Accessibility-tree check of the visible message      | FieldStatus attached/detached, toast card                      | Hiding the visible text or a word mismatch fails                    |
 | FR8      | Shared test: no live role inside a busy owner        | Busy TextInput, Selector, Switch thumb, ChatMessageList loader | A composed indicator with a live role or its own announcement fails |
 | FR9      | `useAnnounce` tests                                  | First use, many components, region removed, server render      | A second region pair, or stale text after the clear delay, fails    |
+| FR10     | Accessibility-tree check while a modal is open       | Announcement from inside Dialog, Drawer, and BottomSheet       | An announcement that lands in an inert region fails                 |
 | FR6 (AT) | `spec:AST-009` real-AT receipt                       | Toast, busy Switch, chat notice                                | Missing, repeated, or out-of-order speech fails                     |
 
 ## Decision log
 
 ### DEC-1 — One owner per message, delivered through the shared channel
 
-**Reference:** `spec:AST-084/DEC-1`
+**Reference:** `spec:AST-086/DEC-1`
 **Decider:** cixzhang, 2026-10-15
 
 Several components show status while also claiming it in a second place, or
