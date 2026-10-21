@@ -204,8 +204,15 @@ function printIntegrationValidation(data) {
         `${warnings} warning${warnings === 1 ? '' : 's'}`,
     ),
     ...docTypesBlocks(data.docTypes, errors > 0),
-    ...(data.publicImports?.status === 'skipped'
-      ? [text(`[skip] Imports not checked: ${data.publicImports.reason}`)]
+    ...(data.publicImports && data.publicImports.findings.length > 0
+      ? [
+          text(
+            `[info] Imports apps cannot use: ${data.publicImports.findings.length} (listed only; they fail --strict from the next minor):`,
+          ),
+          records(data.publicImports.findings, {
+            fields: ['code', 'message', 'fix'],
+          }),
+        ]
       : []),
     ...(data.publicImports && data.publicImports.unchecked.length > 0
       ? [
