@@ -16,12 +16,16 @@ affects_contributing: []
 affects_consumer_docs:
   [
     Button,
+    IconButton,
     ClickableCard,
     Collapsible,
     TextInput,
     TextArea,
     NumberInput,
     useInteractiveRole,
+    useIndicatorFocusRing,
+    RichTextEditor,
+    CommentPin,
   ]
 ---
 
@@ -100,9 +104,14 @@ non-operable control. No component renders the native `disabled` attribute.
   its disabled-thumb tests are pending conformance.
 - `component:Selector`: a disabled trigger with a reason keeps its Tab stop, as
   every disabled trigger now does.
-- Consumer docs for Button, ClickableCard, Collapsible, TextInput, TextArea,
-  NumberInput, and `useInteractiveRole` describe disabled controls as natively
-  disabled or out of the tab order; they change with conformance work.
+- Consumer docs for Button, IconButton, ClickableCard, Collapsible, TextInput,
+  TextArea, NumberInput, RichTextEditor, CommentPin, `useInteractiveRole`, and
+  `useIndicatorFocusRing` describe disabled controls as natively disabled, not
+  focusable, or out of the tab order; they change with conformance work.
+- `useIndicatorFocusRing`: its `isDisabled` input suppresses the keyboard focus
+  ring. Under FR6 a focused disabled control still shows it.
+- `family:buttons` and `component:Tokenizer` tests that assert native disabled
+  are pending conformance.
 - Draft records for ClickableCard, BaseTypeahead, CheckboxInput, ChatComposer,
   and CommentPin describe native `disabled` as observed behavior; they change
   with conformance work.
