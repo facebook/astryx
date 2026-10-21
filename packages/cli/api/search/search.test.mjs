@@ -36,6 +36,7 @@ import {
   tokenizeQuery,
   SEARCH_DOMAINS,
 } from './search.mjs';
+import {linkThisCliAsProjectCli} from '../../test-utils/release-fixtures.mjs';
 
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../..');
 const cwd = REPO;
@@ -470,8 +471,10 @@ describe('search leaf — error paths (pinned)', () => {
 
   it('searches the docs without @astryxdesign/core, and throws for a domain that needs it', async () => {
     const empty = fs.mkdtempSync(path.join(os.tmpdir(), 'astryx-search-no-core-'));
+    // A project whose own CLI answers, with no Core installed.
+    linkThisCliAsProjectCli(empty);
     try {
-      // An open search outside an app covers the docs, as `astryx docs` does.
+      // An open search without Core covers the docs, as `astryx docs` does.
       const open = await search('make an integration', {cwd: empty});
       expect(open.data.results.length).toBeGreaterThan(0);
       expect(new Set(open.data.results.map(r => r.domain))).toEqual(

@@ -928,6 +928,47 @@ describe('SideNavItem', () => {
     expect(indentOf(security)).toBe('calc(1 * var(--spacing-6))');
   });
 
+  it("keeps a caller's className on the row element", () => {
+    render(
+      <SideNavItem label="Settings">
+        <SideNavItem
+          label="General"
+          href="/settings/general"
+          className="caller-row"
+        />
+        <SideNavItem
+          label="Security"
+          href="/settings/security"
+          className="caller-row">
+          <SideNavItem label="Keys" href="/settings/security/keys" />
+        </SideNavItem>
+      </SideNavItem>,
+    );
+    // Ordinary row: the link is the row, and the caller's class sits beside
+    // the row's own classes instead of being replaced by them.
+    const general = screen.getByRole('link', {name: 'General'});
+    expect(general).toHaveClass('caller-row');
+    expect(general).toHaveClass('astryx-side-nav-item');
+    // Split row: the class lands on the primary link, as `style` does.
+    expect(screen.getByRole('link', {name: 'Security'})).toHaveClass(
+      'caller-row',
+    );
+  });
+
+  it("keeps a caller's className on a collapsed rail item", () => {
+    render(
+      <SideNav collapsible={{isCollapsed: true, hasButton: false}}>
+        <SideNavItem
+          label="Home"
+          href="/"
+          icon="calendar"
+          className="caller-row"
+        />
+      </SideNav>,
+    );
+    expect(screen.getByRole('link', {name: 'Home'})).toHaveClass('caller-row');
+  });
+
   it("lets a caller's inline-start padding replace the indent", () => {
     // The caller's `style` composes after the indent: a caller-set
     // inline-start padding is an inline declaration, so it wins over the

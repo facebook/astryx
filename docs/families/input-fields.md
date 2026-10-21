@@ -158,8 +158,9 @@ another implementation helper.
   capabilities rather than a permanent allowlist. Family membership or context
   consumption alone is insufficient.
 - **FR4 — Disabled reasons remain reachable where supported.** When a member
-  exposes `disabledMessage`, the inactive field remains focusable enough to
-  expose the reason while editing, selection, and activation stay blocked.
+  exposes `disabledMessage`, the inactive field remains focusable
+  (`spec:AST-085`) and exposes the reason while editing, selection, and
+  activation stay blocked.
   Components without that public concept are not required to add it.
 - **FR5 — Input loading describes the value, not supporting data.** Where a
   member exposes `isLoading`, it means the field value is resolving or being

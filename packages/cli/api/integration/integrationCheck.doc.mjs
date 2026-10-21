@@ -42,7 +42,7 @@ export const doc = {
       type: 'boolean',
       default: 'false',
       description:
-        'Also fail on any warning and on any check that did not run, not only on errors.',
+        'Also fail on any warning and on any check that did not run, not only on errors. A malformed `cliCommand` is reported as a note (`invalid_cli_command`) in `data.notes` of the validate check, which fails nothing until a minor release names it.',
     },
   ],
   returns: [

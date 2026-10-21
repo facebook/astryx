@@ -30,12 +30,22 @@ import {
 } from '../../assets/codemods/integration-discovery.mjs';
 import {runIntegrationCodemods} from '../../assets/codemods/integration-runner.mjs';
 import {
+  AgentDocsHomeError,
+  assertAgentDocsTarget,
   installAgentDocs,
   inspectAgentDocs,
   renderAgentDocsBlock,
 } from '../../foundation/agent-docs/agent-docs.mjs';
-import {formatCliCommand} from '../../foundation/env/package-manager.mjs';
 import {
+  CLI_PACKAGE,
+  commandInFolder,
+  formatCliCommand,
+  getDlxPrefix,
+  quoteCommandArgument,
+} from '../../foundation/env/package-manager.mjs';
+import {isValidSemver, semverGt} from '../../foundation/env/semver.mjs';
+import {
+  CLI_ROOT,
   findAstryxProject,
   findProjectPackageOf,
 } from '../../foundation/fs/paths.mjs';
@@ -200,6 +210,99 @@ export function detectInstalledTargetVersion(cwd) {
 }
 
 /**
+ * The running CLI's own version, read from its package.json.
+ * @returns {string | null} null when it cannot be read or is not semver
+ */
+function readRunningCliVersion() {
+  try {
+    const pkg = JSON.parse(
+      fs.readFileSync(path.join(CLI_ROOT, 'package.json'), 'utf-8'),
+    );
+    return isValidSemver(pkg.version) ? pkg.version : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Whether the installed Core is newer than this CLI, so part of the requested
+ * range has no codemods here.
+ *
+ * Core codemods ship inside the CLI. A CLI older than the installed
+ * `@astryxdesign/core` has none for the releases after its own version, so it
+ * can find no codemods, or stop partway, while the code still needs those
+ * releases' migrations. The returned command repeats this upgrade with the CLI
+ * release that matches the installed Core.
+ *
+ * Where an upgrade runs decides what it finds: the installed Core is read
+ * from that folder, and `--path` must stay inside it. So the command first
+ * changes to `cwd`, the folder this run used, then names `sourcePath`, the
+ * directory this run scanned, as an absolute `--path`. Both are named by their
+ * physical paths, with every symbolic link resolved: a shell's `cd` follows a
+ * link, but the CLI it starts reads its folder with every link resolved and
+ * checks `--path` against that. Pasted from any folder, the command finds the
+ * same Core and scans the same directory, even after a package runner moved
+ * this run (Yarn 1 runs `yarn astryx` at the project root). It is written for
+ * a POSIX shell, or for PowerShell on Windows (cmd.exe is not a target), with
+ * every argument quoted for that shell.
+ *
+ * Returns null when the CLI covers the whole range (`to` is not newer than
+ * both the CLI and `from`), when the CLI's own version cannot be read, or when
+ * the target is legacy `@xds/core`, which no CLI release shares a version with.
+ *
+ * @param {{from: string, to: string, packageName: string, options: UpgradeOptions, cwd: string, sourcePath: string}} input
+ * @returns {import('./upgrade.type.mjs').CliBehindCore | null}
+ */
+export function detectCliBehindCore({
+  from,
+  to,
+  packageName,
+  options,
+  cwd,
+  sourcePath,
+}) {
+  if (packageName !== '@astryxdesign/core') return null;
+  const cliVersion = readRunningCliVersion();
+  if (!cliVersion || !semverGt(to, cliVersion) || !semverGt(to, from)) {
+    return null;
+  }
+  const runFolder = path.resolve(cwd);
+  const folder = physicalFolder(runFolder);
+  const scanned = path.join(folder, path.relative(runFolder, sourcePath));
+  const args = ['upgrade', '--from', from, '--path', scanned];
+  if (options.codemod) args.push('--codemod', options.codemod);
+  for (const name of options.skipCodemod ?? []) {
+    args.push('--skip-codemod', name);
+  }
+  for (const spec of options.integration ?? []) {
+    args.push('--integration', spec);
+  }
+  if (options.force) args.push('--force');
+  if (options.installDeps) args.push('--install-deps');
+  if (options.apply) args.push('--apply');
+  const upgrade = [
+    getDlxPrefix(cwd),
+    ...[`${CLI_PACKAGE}@${to}`, ...args].map(arg => quoteCommandArgument(arg)),
+  ].join(' ');
+  return {cliVersion, command: commandInFolder(folder, upgrade)};
+}
+
+/**
+ * A folder as the operating system reports it to a process that runs there,
+ * with every symbolic link on the way resolved. Falls back to the path as
+ * given when it cannot be resolved.
+ * @param {string} dir an absolute folder
+ * @returns {string}
+ */
+function physicalFolder(dir) {
+  try {
+    return fs.realpathSync(dir);
+  } catch {
+    return dir;
+  }
+}
+
+/**
  * @param {(string | null | undefined | false)[] | undefined} files
  * @returns {string[]}
  */
@@ -305,6 +408,21 @@ function initAdvice(cwd, origin) {
 }
 
 /**
+ * Why upgrade leaves the agent docs of a project at the home folder or the
+ * top of a settings folder, and what to do instead. init refuses the same
+ * folder, so the line never points at it.
+ * @param {AgentDocsHomeError} err
+ * @param {'stale' | 'missing'} [state] whether a block is there to refresh
+ * @returns {string}
+ */
+function homeRefusalLine(err, state = 'stale') {
+  const where = `${err.dir} is the home folder or a settings folder in it, which every project's agents read.`;
+  return state === 'missing'
+    ? `Agent docs not installed: ${where} To have agent docs, move the project into a folder of its own, or add the Astryx block to its agent file by hand.`
+    : `Agent docs not refreshed: ${where} To keep agent docs, move the project into a folder of its own; otherwise update or remove the Astryx block there by hand.`;
+}
+
+/**
  * Compute the expected managed block and report staleness without writing.
  * Apply-mode callers commit the prepared bytes only after codemods and hooks
  * succeed.
@@ -331,6 +449,16 @@ export async function prepareAgentDocsRefresh({
   };
 
   if (initial.status === 'missing') {
+    // init writes nothing in a project at the home folder or the top of a
+    // settings folder, so it is not the remedy there (INV31).
+    try {
+      assertAgentDocsTarget(cwd);
+    } catch (err) {
+      if (!(err instanceof AgentDocsHomeError)) throw err;
+      summary.action = 'error';
+      logger.warn(homeRefusalLine(err, 'missing'));
+      return {cwd, origin, renderedBlock: null, summary};
+    }
     summary.action = 'nudge-init';
     logger.warn(
       `No Astryx agent-docs block found - AI agents have no component index. Run ${initAdvice(cwd, origin)} to install it.`,
@@ -361,6 +489,18 @@ export async function prepareAgentDocsRefresh({
     return {cwd, origin, renderedBlock, summary};
   }
 
+  // A project at the home folder or the top of a settings folder is never
+  // refreshed (INV31): the dry run says so, as --apply does, rather than
+  // offering a refresh that would be refused.
+  try {
+    assertAgentDocsTarget(cwd);
+  } catch (err) {
+    if (!(err instanceof AgentDocsHomeError)) throw err;
+    summary.action = 'error';
+    logger.warn(homeRefusalLine(err));
+    return {cwd, origin, renderedBlock: null, summary};
+  }
+
   summary.action = 'would-refresh';
   if (!apply) {
     logger.warn(
@@ -384,6 +524,9 @@ export function applyAgentDocsRefresh(plan) {
     const written = installAgentDocs(cwd, {
       onlyReplace: true,
       renderedBlock,
+      // A GEMINI.md that resolves outside the project is left as it is.
+      onSkipped: (file, reason) =>
+        logger.warn(`Note: ${file} left as it is (${reason}).`),
     });
     summary.refreshed = written.length > 0;
     summary.files = written;
@@ -395,12 +538,18 @@ export function applyAgentDocsRefresh(plan) {
         `Agent docs look stale but couldn't be refreshed. Run ${initAdvice(cwd, origin)} to reinstall the block.`,
       );
     }
-  } catch {
+  } catch (err) {
     summary.action = 'error';
     summary.refreshed = false;
-    logger.warn(
-      `Could not refresh agent docs. Run ${initAdvice(cwd, origin)} to update them manually.`,
-    );
+    if (err instanceof AgentDocsHomeError) {
+      // init refuses this folder too, so pointing at it would loop: say why,
+      // and what to do instead.
+      logger.warn(homeRefusalLine(err));
+    } else {
+      logger.warn(
+        `Could not refresh agent docs. Run ${initAdvice(cwd, origin)} to update them manually.`,
+      );
+    }
   }
   return summary;
 }
@@ -454,11 +603,20 @@ export async function ensureCodemodDeps({installDeps} = {}) {
  * Run the CORE registry codemods. Runs BEFORE the config is loaded so a core
  * CONFIG codemod can repair a config the strict loader would otherwise reject.
  * @param {CoreVersionManifest[]} versionManifests
- * @param {{apply: boolean, path: string, codemod?: string, skipCodemods: Set<string>, root?: string, protection?: {root: string, classify: (file: string) => import('../../foundation/fs/file-protection.mjs').FileProtection[]}, silent?: boolean}} options
+ * @param {{apply: boolean, path: string, codemod?: string, skipCodemods: Set<string>, root?: string, protection?: {root: string, classify: (file: string) => import('../../foundation/fs/file-protection.mjs').FileProtection[]}, silent?: boolean, coversTarget?: boolean}} options
  */
 export async function runCoreCodemods(
   versionManifests,
-  {apply, path: srcPath, codemod, skipCodemods, root, protection, silent},
+  {
+    apply,
+    path: srcPath,
+    codemod,
+    skipCodemods,
+    root,
+    protection,
+    silent,
+    coversTarget,
+  },
 ) {
   return runCodemods(versionManifests, {
     apply,
@@ -468,6 +626,7 @@ export async function runCoreCodemods(
     silent: silent ?? logger.silent,
     root,
     protection,
+    coversTarget,
   });
 }
 
@@ -489,7 +648,7 @@ export async function loadProjectContext(cwd, extraIntegrationSpecs = []) {
   // The CLI debug preflight may already have imported this config before core
   // CONFIG codemods run. Upgrade needs the bytes now on disk, not that module
   // cache entry; ordinary Project discovery remains cached by default.
-  const project = await Project.load(cwd, {fresh: true});
+  const project = await Project.load(cwd, {fresh: true, core: 'project'});
   const postCodemodHooks = project.config.hooks?.postCodemod ?? [];
   const configuredSpecs = new Set(project.integrations ?? []);
   // Configured packages come from Project, which has already resolved provider
@@ -533,7 +692,9 @@ export async function loadProjectContext(cwd, extraIntegrationSpecs = []) {
   const extras =
     extraSpecs.length === 0
       ? []
-      : await loadIntegrations(extraSpecs, {resolveProviders: false});
+      : // Resolved from the project, as --integration names a package it
+        // installed, not from whichever folder the process started in.
+        await loadIntegrations(extraSpecs, {cwd, resolveProviders: false});
   const {integrations, ledger} = resolveProviders(
     [
       ...candidates,

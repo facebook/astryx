@@ -31,4 +31,10 @@ export const docs = {
       accepts: {kinds: ['namespace']},
     },
   },
+  blocks: [
+    {
+      type: 'prose',
+      text: 'In global mode: templates from an integration installed for the computer show up outside projects; inside a project, only templates from integrations the project installs. See {@link namespace:global} and {@link generic:global-integrations}.',
+    },
+  ],
 };

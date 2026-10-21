@@ -273,6 +273,14 @@ export interface ComponentRef {
  * Used by both `docsZh` (Chinese translation) and `docsDense` (compressed format).
  */
 export interface ComponentTranslationDoc {
+  /** Optional exact name from the base doc. Allowed so an overlay can say
+   *  which component it translates; the overlay renders through the base
+   *  doc, so this field is ignored at render time. */
+  name?: string;
+  /** Optional translated displayName. Allowed so the displayName backfill
+   *  codemod (which adds `displayName` next to every `name:` field) does not
+   *  break translation overlays. Ignored at render time. */
+  displayName?: string;
   /** Compressed/translated component description. */
   description?: string;
   /** Prop descriptions keyed by prop name. Only include props that have descriptions. */

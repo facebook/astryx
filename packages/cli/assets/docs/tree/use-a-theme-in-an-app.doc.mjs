@@ -26,7 +26,7 @@ export const docs = {
         {
           type: 'code',
           lang: 'bash',
-          code: 'npm install @acme/astryx-widgets\nnpx astryx theme add ocean --package @acme/astryx-widgets',
+          code: 'npm install @acme/astryx-widgets\nastryx theme add ocean --package @acme/astryx-widgets',
         },
         {
           type: 'code',
@@ -63,6 +63,16 @@ export const productTheme = defineTheme({
   extends: oceanTheme,
   tokens: {'--color-accent': ['#0051a3', '#4aa3ff']},
 });`,
+        },
+      ],
+    },
+    {
+      id: 'global-mode',
+      title: 'In global mode',
+      content: [
+        {
+          type: 'prose',
+          text: 'In global mode: install the theme package in each app that uses the theme; inside a project, the CLI ignores packages installed for the computer. See {@link namespace:global} and {@link generic:global-integrations}.',
         },
       ],
     },

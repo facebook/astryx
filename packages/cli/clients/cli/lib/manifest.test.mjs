@@ -307,3 +307,28 @@ describe('manifest: text projection', () => {
     for (const key of textKeys) expect(jsonKeys).toContain(key);
   });
 });
+
+describe('global mode is discoverable (spec:AST-017 FR14)', () => {
+  it('the manifest names what a run may do beyond its command, and the docs topic that explains it', () => {
+    expect(manifest.globalMode.docs).toBe('astryx docs global');
+    for (const word of ['hands the run', 'once a day', 'agent skill']) {
+      expect(manifest.globalMode.summary).toContain(word);
+    }
+  });
+
+  it('--help carries one line pointing to the global mode docs', () => {
+    const help = program.helpInformation() + '';
+    let after = '';
+    program.emit('afterHelp', {
+      error: false,
+      write: (/** @type {string} */ s) => {
+        after += s;
+      },
+    });
+    const lines = `${help}${after}`
+      .split('\n')
+      .filter(line => line.startsWith('Global mode:'));
+    expect(lines).toHaveLength(1);
+    expect(lines[0]).toMatch(/docs global\.$/u);
+  });
+});

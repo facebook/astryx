@@ -9,7 +9,9 @@
  *   contribute.
  * @output Ready page templates as `{name, displayName, description, category,
  *   keywords, command}`, where `command` is the `astryx template` command that
- *   selects exactly that template; components as `{name, keywords}`.
+ *   selects exactly that template; blocks as search names them; components as
+ *   `{name, keywords}`; the kit's matcher weights, the root's classifier
+ *   weights, and the block picker's weights.
  * @position Beside build.mjs (api/build/). The kit leaf reads templates and
  *   components only through here, because a subject's `_adapter.mjs` is its
  *   only environment access. This adds no discovery of its own: templates come
@@ -20,7 +22,7 @@ import fs from 'node:fs';
 
 import {discoverTemplates} from '../template/template.mjs';
 import {componentKeywords} from '../search/search.mjs';
-import {findCoreDir} from '../../foundation/fs/paths.mjs';
+import {findCoreDir, requireCoreDir} from '../../foundation/fs/paths.mjs';
 import {analyzeTemplateNeeds} from '../../foundation/discovery/template-needs.mjs';
 
 /**
@@ -63,13 +65,35 @@ export {withListingCache} from '../../foundation/fs/listing-cache.mjs';
  * @returns {Promise<PageTemplate[]>}
  */
 export async function loadPageTemplates(cwd) {
+  return (await loadTemplates(cwd)).pages;
+}
+
+/**
+ * A block the kit can name, as search names a block result.
+ * @typedef {object} BlockTemplate
+ * @property {string} name The block's own id, as search reports it.
+ * @property {string} package The npm package that owns this block.
+ * @property {string} displayName Human-facing name.
+ * @property {string} description What the block is.
+ * @property {string} command `astryx template <id> --type block`, as search prints it.
+ */
+
+/**
+ * Every ready page template and every block the project can scaffold, from one
+ * discovery: pages as {@link loadPageTemplates} returns them, blocks as
+ * {@link BlockTemplate}. Discovery failures leave both empty.
+ *
+ * @param {string} cwd
+ * @returns {Promise<{pages: PageTemplate[], blocks: BlockTemplate[]}>}
+ */
+export async function loadTemplates(cwd) {
   let templates;
   try {
     templates = await discoverTemplates(cwd);
   } catch {
-    return [];
+    return {pages: [], blocks: []};
   }
-  return templates
+  const pages = templates
     .filter(t => t.type === 'page' && t.isReady !== false)
     .map(t => ({
       name: t.dirName,
@@ -83,6 +107,16 @@ export async function loadPageTemplates(cwd) {
       // owns the Core id it names, so that id selects it, not its own.
       command: `astryx template ${t.replaces ?? t.dirName} --type page`,
     }));
+  const blocks = templates
+    .filter(t => t.type === 'block')
+    .map(t => ({
+      name: t.dirName,
+      package: t.package ?? '@astryxdesign/core',
+      displayName: t.name,
+      description: t.description || '',
+      command: `astryx template ${t.replaces ?? t.dirName} --type block`,
+    }));
+  return {pages, blocks};
 }
 
 /**
@@ -126,6 +160,48 @@ export function loadWeights() {
   return weights ?? null;
 }
 
+/** @type {import('../../foundation/route/route.mjs').ClassifierWeights | undefined} */
+let treeWeights;
+
+/**
+ * The classifier weights of build's root (tree.weights.json), read once.
+ * @returns {import('../../foundation/route/route.mjs').ClassifierWeights}
+ */
+export function loadTreeWeights() {
+  treeWeights ??= JSON.parse(
+    fs.readFileSync(new URL('./tree.weights.json', import.meta.url), 'utf8'),
+  );
+  return /** @type {import('../../foundation/route/route.mjs').ClassifierWeights} */ (
+    treeWeights
+  );
+}
+
+/** @type {import('./blocks/blocks.mjs').BlockPickerWeights | null | undefined} */
+let blockPicker;
+
+/**
+ * The block picker's weights (blocks/blocks.weights.json), read once; null
+ * when the file is absent, unreadable, or not the shape the picker reads, in
+ * which case build names its own blocks.
+ * @returns {import('./blocks/blocks.mjs').BlockPickerWeights | null}
+ */
+export function loadBlockPicker() {
+  if (blockPicker === undefined) {
+    try {
+      const file = JSON.parse(
+        fs.readFileSync(
+          new URL('./blocks/blocks.weights.json', import.meta.url),
+          'utf8',
+        ),
+      );
+      blockPicker = isBlockPickerWeights(file) ? file : null;
+    } catch {
+      blockPicker = null;
+    }
+  }
+  return blockPicker ?? null;
+}
+
 /**
  * Whether a parsed weights file has the shape the kit reads: every row has a
  * weight per candidate, every bias a number per candidate, and three blend
@@ -160,6 +236,42 @@ export function isWeightsFile(file) {
 }
 
 /**
+ * Whether a parsed block picker file has the shape the picker reads: a
+ * vocabulary weight per word, a bias per block, sparse rows of
+ * [block index, weight] pairs, and five combiner numbers.
+ * @param {any} w
+ * @returns {w is import('./blocks/blocks.mjs').BlockPickerWeights}
+ */
+function isBlockPickerWeights(w) {
+  const n = Array.isArray(w?.classes) ? w.classes.length : 0;
+  return (
+    n > 0 &&
+    w.classes.every((/** @type {unknown} */ c) => typeof c === 'string') &&
+    Array.isArray(w.bias) &&
+    w.bias.length === n &&
+    w.bias.every((/** @type {unknown} */ b) => Number.isFinite(b)) &&
+    !!w.vocab &&
+    typeof w.vocab === 'object' &&
+    Object.values(w.vocab).every(v => Number.isFinite(v)) &&
+    !!w.words &&
+    typeof w.words === 'object' &&
+    Object.values(w.words).every(
+      row =>
+        Array.isArray(row) &&
+        row.length % 2 === 0 &&
+        row.every(
+          (/** @type {number} */ x, /** @type {number} */ i) =>
+            Number.isFinite(x) &&
+            (i % 2 === 1 || (Number.isInteger(x) && x >= 0 && x < n)),
+        ),
+    ) &&
+    Array.isArray(w.theta) &&
+    w.theta.length === 5 &&
+    w.theta.every((/** @type {unknown} */ x) => Number.isFinite(x))
+  );
+}
+
+/**
  * Analyze what a start template needs that the project lacks. The kit leaf
  * calls this through the adapter rather than reading the file itself, because
  * file access is environment access (architecture:cli-surface INV21).
@@ -176,4 +288,15 @@ export function templateSetupNotes(template, cwd) {
     // Best-effort: a read failure does not break the recommendation.
     return [];
   }
+}
+
+/**
+ * The Core a build answers from: the project's, else the release's own,
+ * installed into the per-user cache first when needed (a network install
+ * and an npm subprocess; spec AST-081 FR3). Throws as requireCoreDir does.
+ * @param {string} cwd
+ * @returns {string}
+ */
+export function requireBuildCoreDir(cwd) {
+  return requireCoreDir(cwd);
 }

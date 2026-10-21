@@ -565,7 +565,7 @@ describe('checkDocTypes', () => {
       'components/Badge.doc.mjs',
       [
         `export default ${JSON.stringify(COMPONENT)};`,
-        "export const docsDense = {name: 'Badge', description: 'count chip'};",
+        "export const docsDense = {name: 'Badge', displayName: 'Badge', summary: 'chip', description: 'count chip'};",
         `export const docsZh = ${JSON.stringify({...COMPONENT, displayName: undefined, keyword: []})};`,
         '',
       ].join('\n'),
@@ -575,10 +575,54 @@ describe('checkDocTypes', () => {
 
     expect(report.docs).toBe(3);
     expect(summary(report)).toEqual([
-      'components/Badge.doc.mjs docsDense name unknown_field',
+      'components/Badge.doc.mjs docsDense summary unknown_field',
       'components/Badge.doc.mjs docsZh keyword unknown_field',
     ]);
     expect(report.findings[0].type).toBe('ComponentTranslationDoc');
+  });
+
+  it('allows a translation overlay to name its component, as Core overlays do', async () => {
+    withTypeScript();
+    write(
+      'components/Badge.doc.mjs',
+      [
+        `export default ${JSON.stringify(COMPONENT)};`,
+        "export const docsZh = {name: 'Badge', displayName: '徽章', description: '计数'};",
+        "export const docsDense = {name: 'Badge', displayName: 'Badge', description: 'count chip'};",
+        '',
+      ].join('\n'),
+    );
+
+    const report = await check([['components/Badge.doc.mjs', 'components']]);
+
+    expect(summary(report)).toEqual([]);
+  });
+
+  it('gives each field TypeScript reports missing together a message naming only that field', async () => {
+    withTypeScript();
+    write(
+      'components/Badge.doc.mjs',
+      [
+        'export default {',
+        "  type: 'component',",
+        "  name: 'Badge',",
+        "  props: [{name: 'label', type: 'string', description: 'Text.'}],",
+        '};',
+        '',
+      ].join('\n'),
+    );
+
+    const report = await check([['components/Badge.doc.mjs', 'components']]);
+    const missing = report.findings.filter(f => f.problem === 'missing_field');
+
+    expect(missing.length).toBeGreaterThan(1);
+    expect(new Set(missing.map(f => f.message)).size).toBe(missing.length);
+    for (const finding of missing) {
+      const others = missing.filter(f => f !== finding).map(f => f.field);
+      expect(finding.message).toContain(`'${finding.field}'`);
+      for (const other of others)
+        expect(finding.message).not.toContain(`'${other}'`);
+    }
   });
 
   it('checks a template, a docs topic by its stamp, a topic overlay, and a theme', async () => {

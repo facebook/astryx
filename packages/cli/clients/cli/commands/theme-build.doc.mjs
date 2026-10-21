@@ -83,6 +83,7 @@ export const doc = {
       cli: 'astryx theme build ./src/themes/ocean.ts --icons-specifier ./icons.mjs',
     },
   ],
+  outsideProject: 'same',
   exitCodes: [
     {
       code: 0,

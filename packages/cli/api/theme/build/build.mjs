@@ -70,7 +70,11 @@ import {
   CLI_ROOT,
   findCoreDir,
   findInstalledPackage,
+  findProjectCoreDir,
 } from '../../../foundation/fs/paths.mjs';
+import {isGlobalCopy} from '../../../foundation/release/choose.mjs';
+import {isInReleaseCache} from '../../../foundation/release/cache.mjs';
+import {fetchCarriedThemeCoreDir} from '../_adapter.mjs';
 import {
   assertWithin,
   sanitizeName,
@@ -306,10 +310,15 @@ function realLocation(target) {
  *
  * @param {string} cwd
  * @param {CoreBindings} cliCore - The CLI's own Core, from {@link loadCliCore}.
+ * @param {{projectOnly?: boolean}} [options] `projectOnly`: never the
+ *   carried Core, as for doctor (spec AST-081 FR3)
  * @returns {Promise<CoreBindings | null>}
  */
-async function loadProjectCore(cwd, cliCore) {
-  const dir = findInstalledPackage(cwd, '@astryxdesign/core');
+async function loadProjectCore(cwd, cliCore, {projectOnly = false} = {}) {
+  // Outside a project, the Core the answering copy carries (spec AST-081 FR3).
+  const dir =
+    findInstalledPackage(cwd, '@astryxdesign/core') ??
+    (projectOnly ? null : fetchCarriedThemeCoreDir(cwd));
   const themeFile = dir ? importTarget(dir, './theme') : null;
   if (!dir || !themeFile) return null;
   if (cliCore.themeModule) {
@@ -355,14 +364,54 @@ const _projectCores = new Map();
 
 /**
  * Choose the Core this build generates with: the project's installed one when
- * {@link loadProjectCore} finds it, else the CLI's own.
+ * {@link loadProjectCore} finds it, else the CLI's own. With `projectOnly`,
+ * only the project's installed Core: a build that cannot use it fails rather
+ * than read the Core the answering copy carries (spec AST-081 FR3).
  * @param {string} cwd
+ * @param {{projectOnly?: boolean}} [options]
  */
-async function selectCore(cwd) {
+async function selectCore(cwd, {projectOnly = false} = {}) {
   const cliCore = await loadCliCore();
-  if (!_projectCores.has(cwd))
-    _projectCores.set(cwd, await loadProjectCore(cwd, cliCore));
-  setCore(_projectCores.get(cwd) ?? cliCore);
+  const key = `${projectOnly ? 'project' : 'any'}\0${cwd}`;
+  if (!_projectCores.has(key))
+    _projectCores.set(key, await loadProjectCore(cwd, cliCore, {projectOnly}));
+  const projectCore = _projectCores.get(key);
+  // A global or cached copy's own Core is the carried one.
+  if (projectOnly && !projectCore && carriesCore() && !cliCoreIsProjects(cwd)) {
+    throw new AstryxError(
+      "The project's Core isn't installed or does not load.",
+      undefined,
+      ERROR_CODES.ERR_CORE_NOT_FOUND,
+    );
+  }
+  setCore(projectCore ?? cliCore);
+}
+
+/**
+ * Whether this CLI copy is one installed for the computer or kept in the
+ * per-user release cache, whose own Core import is the carried Core.
+ * @returns {boolean}
+ */
+function carriesCore() {
+  return isGlobalCopy(CLI_ROOT) || isInReleaseCache(CLI_ROOT);
+}
+
+/**
+ * Whether the Core the CLI's own import loads is the one the project at
+ * `cwd` installed.
+ * @param {string} cwd
+ * @returns {boolean}
+ */
+function cliCoreIsProjects(cwd) {
+  const dir = findProjectCoreDir(cwd);
+  if (!dir) return false;
+  try {
+    const own = fileURLToPath(import.meta.resolve('@astryxdesign/core/theme'));
+    const theirs = importTarget(dir, './theme');
+    return theirs != null && realOrSelf(own) === realOrSelf(theirs);
+  } catch {
+    return false;
+  }
 }
 
 /**
@@ -401,8 +450,7 @@ function inAstryxRepository(cwd) {
  * @returns {string}
  */
 export function coreUnavailableMessage(cwd, importError) {
-  const why =
-    '`astryx theme build` generates CSS with @astryxdesign/core, the same code the runtime <Theme> uses';
+  const why = `\`${formatCliCommand('theme build')}\` generates CSS with @astryxdesign/core, the same code the runtime <Theme> uses`;
   const detail = importError ? `\n  Import error: ${importError.message}` : '';
   if (inAstryxRepository(cwd)) {
     return (
@@ -2497,13 +2545,14 @@ function validateHeadingTypeAugmentationSupport(themeDef) {
  *   output must stay inside, for a CLI-internal scratch build. `iconsSpecifier` overrides the icon registry import
  *   specifier in the generated module (e.g. `./icons.mjs`); when omitted, the
  *   direct registry specifiers from the theme source are emitted unchanged.
- * @param {{cwd?: string}} [ctx]
+ * @param {{cwd?: string, projectCore?: boolean}} [ctx] `projectCore`: only the
+ *   project's installed Core (spec AST-081 FR3)
  * @returns {Promise<any>}
  */
 async function themeBuildInternal(
   file,
   options = {},
-  {cwd = process.cwd()} = {},
+  {cwd = process.cwd(), projectCore = false} = {},
   /** @type {{compact?: boolean, trailers?: ThemeBuildTrailer[]}} */ report = {},
 ) {
   const filePath = path.resolve(cwd, file);
@@ -2522,7 +2571,14 @@ async function themeBuildInternal(
   // A compact report has no per-theme heading, so each warning names its file.
   const source = report.compact ? `${path.relative(cwd, filePath)}: ` : '';
 
-  await selectCore(cwd);
+  if (projectCore && !findProjectCoreDir(cwd)) {
+    throw new AstryxError(
+      "The project's Core isn't installed.",
+      undefined,
+      ERROR_CODES.ERR_CORE_NOT_FOUND,
+    );
+  }
+  await selectCore(cwd, {projectOnly: projectCore});
 
   // Standalone builds only need interception when an older Core could erase
   // adaptations. Family preparation always supplies the same recorder as its
@@ -3272,7 +3328,7 @@ export function printCompactTrailer(trailers, {hint = false} = {}) {
       )
       .join(', ');
     logger.log(
-      `[note] Fonts named but not loaded: ${named}. Load them in your app (recipe: astryx docs typography).`,
+      `[note] Fonts named but not loaded: ${named}. Load them in your app (recipe: ${formatCliCommand('docs typography')}).`,
     );
   }
   if (hint) {
@@ -3327,7 +3383,7 @@ export async function themeBuildForReport(
   return {receipt, trailer: trailers[0] ?? null};
 }
 
-/** @param {string} file @param {{out?: string, check?: boolean, iconsSpecifier?: string}} [options] @param {{cwd?: string}} [ctx] @returns {Promise<import('../theme.type.mjs').ThemeBuildResponse | import('../theme.type.mjs').ThemeBuildCheckResponse | null>} */
+/** @param {string} file @param {{out?: string, check?: boolean, iconsSpecifier?: string}} [options] @param {{cwd?: string, projectCore?: boolean}} [ctx] `projectCore`: read only the project's installed Core, never the carried one (doctor; spec AST-081 FR3) @returns {Promise<import('../theme.type.mjs').ThemeBuildResponse | import('../theme.type.mjs').ThemeBuildCheckResponse | null>} */
 export async function themeBuild(file, options = {}, ctx = {}) {
   return /** @type {any} */ (themeBuildInternal(file, options, ctx));
 }

@@ -26,7 +26,7 @@ export const docs = {
         {
           type: 'code',
           lang: 'bash',
-          code: 'npx astryx integration add doc deploying --parent acme\n# Open your section\nnpx astryx docs acme',
+          code: 'astryx integration add doc deploying --parent acme\n# Open your section\nastryx docs acme',
         },
         {
           type: 'code',
@@ -69,7 +69,7 @@ export const docs = {
         {
           type: 'code',
           lang: 'bash',
-          code: 'npx astryx docs acme/deploying',
+          code: 'astryx docs acme/deploying',
         },
       ],
     },
@@ -84,7 +84,7 @@ export const docs = {
         {
           type: 'code',
           lang: 'bash',
-          code: 'npx astryx doctor integration docs',
+          code: 'astryx doctor integration docs',
         },
         {
           type: 'code',
@@ -95,8 +95,8 @@ export const docs = {
           type: 'list',
           style: 'unordered',
           items: [
-            'A `parent` that your package does not ship, such as `namespace:cli`, "names no namespace".',
-            'A `slot` that the namespace does not declare "is not a slot of namespace"; the message lists the slots it does declare.',
+            'A `parent` your package does not ship, such as `namespace:cli`, "names no namespace".',
+            'A `slot` the namespace does not declare "is not a slot of namespace"; the message lists the declared slots.',
             'The check exits 1; see {@link generic:check-your-docs}.',
           ],
         },

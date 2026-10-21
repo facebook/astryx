@@ -15,12 +15,18 @@
  * ShadCN-copied compositions → post-codemod hooks → render + refresh agent docs
  * from final post-upgrade state. Integration DISCOVERY errors skip that
  * integration; execution errors abort before the agent-doc write.
+ *
+ * Core codemods ship inside the CLI, so a CLI older than the installed Core
+ * has none for the releases after its own version. Every result past the
+ * up-to-date exit then carries `cliBehindCore`, and no human line says the
+ * upgrade finished; the warning names the same upgrade on the matching CLI.
  */
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {
   detectInstalledTargetVersion,
+  detectCliBehindCore,
   prepareAgentDocsRefresh,
   applyAgentDocsRefresh,
   inspectAgentDocs,
@@ -42,9 +48,11 @@ import {
   statusUpToDate,
   statusNoCodemods,
   statusConfigFixable,
+  logCliBehindCore,
 } from '../status/status.mjs';
 import {semverGte} from '../../../foundation/env/semver.mjs';
 import {getCliInvocation} from '../../../foundation/env/package-manager.mjs';
+import {isOutsideProject} from '../../../foundation/env/project-scope.mjs';
 import {ERROR_CODES} from '../../../foundation/response/error-codes.mjs';
 import {AstryxError} from '../../error.mjs';
 import {logger} from '../../logger.mjs';
@@ -153,7 +161,10 @@ export async function run(options = {}, {cwd = process.cwd(), origin} = {}) {
   }
   const installed = detectInstalledTargetVersion(cwd);
   if (!installed) {
-    const msg = `Could not find installed @astryxdesign/core (or legacy @xds/core). Install the target version first, then rerun \`${getCliInvocation()} upgrade --from <old-version>\`.`;
+    // Outside a project there is no version to install (spec AST-081 FR3).
+    const msg = isOutsideProject(cwd)
+      ? 'Could not find installed @astryxdesign/core (or legacy @xds/core). This folder is outside a project; upgrade migrates the code of an app project that installs @astryxdesign/core.'
+      : `Could not find installed @astryxdesign/core (or legacy @xds/core). Install the target version first, then rerun \`${getCliInvocation()} upgrade --from <old-version>\`.`;
     logger.error(msg);
     logger.log('Aborted\n');
     throw new AstryxError(msg, undefined, ERROR_CODES.ERR_VERSION_DETECT);
@@ -204,6 +215,17 @@ export async function run(options = {}, {cwd = process.cwd(), origin} = {}) {
     });
   }
 
+  // Past the up-to-date exit, codemods are needed through targetVersion. A
+  // CLI older than that has none for the releases after its own version.
+  const cliBehindCore = detectCliBehindCore({
+    from: currentVersion,
+    to: targetVersion,
+    packageName: installed.packageName,
+    options,
+    cwd,
+    sourcePath: path_,
+  });
+
   const versionManifests = await getCoreVersionManifests(
     currentVersion,
     targetVersion,
@@ -252,6 +274,7 @@ export async function run(options = {}, {cwd = process.cwd(), origin} = {}) {
     skipCodemods,
     root: cwd,
     protection,
+    coversTarget: !cliBehindCore,
   });
   const coreResult =
     codemodResult && 'totalFilesChanged' in codemodResult
@@ -280,6 +303,7 @@ export async function run(options = {}, {cwd = process.cwd(), origin} = {}) {
       for (const item of protectedFiles) {
         logger.error(`  ${item.file} — ${item.declarations.join('; ')}`);
       }
+      if (cliBehindCore) logCliBehindCore(cliBehindCore, targetVersion);
       logger.log('Upgrade incomplete: protected changes remain\n');
       return {
         type: 'upgrade.run',
@@ -308,6 +332,7 @@ export async function run(options = {}, {cwd = process.cwd(), origin} = {}) {
           complete: false,
           errorCode: 'ERR_CODEMOD_PROTECTED',
           errors: coreResult?.errors ?? [],
+          ...(cliBehindCore ? {cliBehindCore} : {}),
         },
       };
     }
@@ -325,6 +350,7 @@ export async function run(options = {}, {cwd = process.cwd(), origin} = {}) {
         to: targetVersion,
         configError: configErr.message,
         configCodemods: coreConfigCodemodNames,
+        cliBehindCore,
         agentDocs:
           /** @type {import('../upgrade.type.mjs').AgentDocsSummary} */ ({
             status: inspection.status,
@@ -391,6 +417,7 @@ export async function run(options = {}, {cwd = process.cwd(), origin} = {}) {
       to: targetVersion,
       agentDocs,
       ...(registryResult ? {registryCompositions: registryResult.summary} : {}),
+      cliBehindCore,
     });
   }
 
@@ -630,6 +657,7 @@ export async function run(options = {}, {cwd = process.cwd(), origin} = {}) {
   }
   receipt.errors = finalErrors;
   if (registryResult) receipt.registryCompositions = registryResult.summary;
+  if (cliBehindCore) receipt.cliBehindCore = cliBehindCore;
 
   if (protectedFiles.length > 0) {
     logger.error(
@@ -666,7 +694,12 @@ export async function run(options = {}, {cwd = process.cwd(), origin} = {}) {
   }
 
   const registryOk = receipt.registryCompositions?.ok ?? true;
-  const done = apply ? 'Upgrade complete' : 'Dry run complete';
+  if (cliBehindCore) logCliBehindCore(cliBehindCore, targetVersion);
+  const done = cliBehindCore
+    ? 'Upgrade incomplete'
+    : apply
+      ? 'Upgrade complete'
+      : 'Dry run complete';
   logger.log(
     protectedFiles.length > 0
       ? 'Upgrade incomplete: protected changes remain\n'

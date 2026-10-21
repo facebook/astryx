@@ -26,7 +26,7 @@ export const docs = {
         {
           type: 'code',
           lang: 'bash',
-          code: 'npx astryx integration add doc acme-getting-started --replaces getting-started\n# The old name now opens your topic\nnpx astryx docs getting-started',
+          code: 'astryx integration add doc acme-getting-started --replaces getting-started\n# The old name now opens your topic\nastryx docs getting-started',
         },
         {
           type: 'code',
@@ -51,7 +51,7 @@ export const docs = {
         {
           type: 'code',
           lang: 'bash',
-          code: 'npx astryx integration add doc acme-theming --extends theme\nnpx astryx docs theme --index',
+          code: 'astryx integration add doc acme-theming --extends theme\nastryx docs theme --index',
         },
         {
           type: 'code',
@@ -82,7 +82,7 @@ export const docs = {
         {
           type: 'code',
           lang: 'bash',
-          code: 'npx astryx doctor integration docs',
+          code: 'astryx doctor integration docs',
         },
         {
           type: 'code',
@@ -96,6 +96,16 @@ export const docs = {
             'An intentional overlap prints as `[info]`. An accidental one fails with exit code 1.',
             'A topic that sets both fails as `invalid_doc`, and so does a placed guide that sets either one.',
           ],
+        },
+      ],
+    },
+    {
+      id: 'global-mode',
+      title: 'In global mode',
+      content: [
+        {
+          type: 'prose',
+          text: 'In global mode: a doc that extends or replaces a topic from a package installed for the computer applies in folders outside any project; inside a project, only those from packages the project installs apply. See {@link namespace:global} and {@link generic:global-integrations}.',
         },
       ],
     },

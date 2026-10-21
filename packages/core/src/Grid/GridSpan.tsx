@@ -25,7 +25,7 @@ export interface GridSpanProps extends BaseProps<HTMLDivElement> {
   /**
    * Number of columns to span, or 'full' to span all columns.
    * - Number: `grid-column: span N`
-   * - 'full': `grid-column: 1 / -1` (spans entire row)
+   * - 'full': `grid-column: 1 / -1` (spans all explicit columns)
    */
   columns?: number | 'full';
 

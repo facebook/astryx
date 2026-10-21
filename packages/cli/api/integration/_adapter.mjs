@@ -15,6 +15,9 @@ import {
   integrationSourceForDoc,
 } from '../../foundation/discovery/component-discovery.mjs';
 import {comparePropDocs} from '../../foundation/discovery/prop-drift.mjs';
+import {findCopiedPassages} from '../../foundation/discovery/copied-passages.mjs';
+import {findFluff} from '../../foundation/discovery/doc-fluff.mjs';
+import {findStrayPointers} from '../../foundation/discovery/stray-pointers.mjs';
 
 /**
  * Each component doc's props compared with the component's TypeScript props,
@@ -51,4 +54,59 @@ export async function integrationPropDrift(integration, cwd) {
     packageDir: packageDir ?? cwd,
     resolveFrom: [cwd, packageDir],
   });
+}
+
+/**
+ * The passages two of a package's topics, or one of them and a Core topic,
+ * repeat word for word (architecture:cli-surface DEC-8). Reads the package's
+ * topics and Core's guides.
+ *
+ * @param {Parameters<typeof findCopiedPassages>[0]} discovered the package's
+ *   docs, as discoverIntegrationDocs returns them
+ */
+export function integrationCopiedPassages(discovered) {
+  return findCopiedPassages(discovered);
+}
+
+/**
+ * Padding phrases and low-density topics in a package's prose
+ * (architecture:cli-surface DEC-8). Reads the package's topics, and Core's
+ * guides for the density median a finding names.
+ *
+ * @param {Parameters<typeof findFluff>[0]} discovered the package's docs, as
+ *   discoverIntegrationDocs returns them
+ */
+export function integrationFluff(discovered) {
+  return findFluff(discovered);
+}
+
+/**
+ * Code spans in a package's prose that write `astryx docs <name>` for a doc
+ * that exists, where `{@link generic:<name>}` would be checked
+ * (architecture:cli-surface DEC-8). Reads the package's topics, its own
+ * component docs, and the names of Core's docs.
+ *
+ * @param {Parameters<typeof findStrayPointers>[0]} discovered the package's
+ *   docs, as discoverIntegrationDocs returns them
+ * @param {any} [integration] the loaded integration, whose component docs are
+ *   read too
+ */
+export async function integrationStrayPointers(discovered, integration) {
+  /** @type {{name: string, file: string}[]} */
+  const components = [];
+  if (integration?.components) {
+    const seen = new Set();
+    try {
+      const {components: records} =
+        await discoverValidIntegrationComponents(integration);
+      for (const record of records) {
+        if (!record.docPath || seen.has(record.docPath)) continue;
+        seen.add(record.docPath);
+        components.push({name: record.name, file: record.docPath});
+      }
+    } catch {
+      // `validate` reports component docs that do not load.
+    }
+  }
+  return findStrayPointers({...discovered, components});
 }

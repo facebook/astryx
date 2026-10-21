@@ -37,7 +37,7 @@ export const docs = {
         {
           type: 'code',
           lang: 'bash',
-          code: 'npx astryx doctor integration components',
+          code: 'astryx doctor integration components',
         },
         {
           type: 'code',
@@ -58,8 +58,8 @@ docType:   boolean
           style: 'unordered',
           items: [
             "A doc's own `props` describe the export its `name` names. In a family doc, each entry describes its own export. A hook entry documents parameters and returns, so it is not compared.",
-            "It reads props with the `typescript` your package installs, and reads your package's `tsconfig.json` the way `tsc -p` does. Where `typescript` is missing or has no JavaScript compiler API, as TypeScript 7 does, it uses `@typescript/typescript6`, the TypeScript 6 API package, if your package installs it. Without either it prints `[skip] Props not compared` and the reason.",
-            'Every finding is a warning, so the exit code stays 0. Read them before you publish. With `--json`, they are in `data.propDrift.findings`.',
+            "It reads props with the `typescript` your package installs, and reads your package's `tsconfig.json` the way `tsc -p` does. It finds TypeScript the way the docs check does, TypeScript 7 included ({@link generic:check-your-docs}). Without a usable one it prints `[skip] Props not compared` and the reason.",
+            'Findings are warnings and leave the exit code at 0. Read them before you publish. With `--json`, they are in `data.propDrift.findings`.',
           ],
         },
       ],
@@ -95,6 +95,11 @@ docType:   boolean
               '`type_mismatch`',
               "The documented `type` differs from the code's, where both read exactly",
               'Copy the type from the source, or fix the code. The next section says which types are judged',
+            ],
+            [
+              '`default_mismatch`',
+              "The documented `default` differs from the literal default the component writes in its props destructuring, such as `size = 'md'`",
+              'Copy the default from the source, quoted as code: `default: "\'md\'"`. Quotes and spacing are ignored, and a default that is not a literal on either side (a constant, a call, prose) is not compared',
             ],
           ],
         },

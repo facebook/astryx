@@ -827,16 +827,23 @@ function findingsFor(ts, diagnostic, astPath, where) {
       named != null && /^[A-Za-z_$][\w$]*$/.test(named)
         ? named
         : where.typeName;
+    // One diagnostic can list several missing fields; each finding's message
+    // names only its own field, so two findings never share one message.
+    const source = /^Type '(.*)' is missing the following properties/.exec(
+      leaf,
+    )?.[1];
     return missing.map(name => {
-      const field = formatPath([
-        ...parts,
-        unquote(/** @type {string} */ (name)),
-      ]);
+      const key = unquote(/** @type {string} */ (name));
+      const field = formatPath([...parts, key]);
+      const message =
+        missing.length > 1
+          ? `Property '${key}' is missing${source == null ? '' : ` in type '${source}'`} but required in type '${ownerType}'.`
+          : leaf;
       return {
         ...base,
         field,
         problem: /** @type {const} */ ('missing_field'),
-        message: shorten(leaf),
+        message: shorten(message),
         fix: `Add \`${field}\`: ${shorten(ownerType)} requires it.`,
       };
     });

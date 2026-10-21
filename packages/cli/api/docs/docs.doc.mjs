@@ -34,7 +34,8 @@ export const doc = {
     'for a typed doc, `related` to the docs it names (its command or function, ' +
     'and its related docs); `previous` and `next` ' +
     'to the section or node before and after it. ' +
-    'Overlay options select localized or dense variants.',
+    'Overlay options select localized or dense variants.' +
+    " In global mode: with `cwd` outside a project, doc topics from integrations installed next to this CLI package globally are listed too; inside a project, only the project's own integrations count. See {@link namespace:global} and {@link generic:computer-integrations}.",
   importPath: '@astryxdesign/cli/api',
   signature:
     'docs(topic?: string, section?: string, options?: DocsOptions): Promise<DocsListResponse | DocsIndexResponse | DocsDetailResponse | DocsDetailSectionResponse | DocsNodeResponse>',
