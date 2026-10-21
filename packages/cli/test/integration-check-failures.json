@@ -59,6 +59,7 @@
     "root_outside_package",
     "shadowed_component_name",
     "source_without_component_doc",
+    "source_without_template_doc",
     "template_id_conflict",
     "type_mismatch",
     "unknown_field",

@@ -24,7 +24,10 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {isValidSemver} from '../env/semver.mjs';
-import {findSourceOnlyCandidates} from './contribution-inventory.mjs';
+import {
+  findSourceOnlyCandidates,
+  findTemplateSourceOnlyCandidates,
+} from './contribution-inventory.mjs';
 import {
   CODEMOD_FILE_RE,
   CODEMOD_SKIP_DIRS,
@@ -293,6 +296,32 @@ async function checkTemplates(integration, issues) {
   } catch (err) {
     issues.push(
       issueError('invalid_template', /** @type {any} */ (err).message),
+    );
+  }
+  checkTemplateSourcesWithoutDoc(integration, issues);
+}
+
+/**
+ * Warn about a `.tsx` directly in the templates root with no same-stem template
+ * metadata: template discovery pairs sources with docs, so `astryx template`
+ * never lists it. A PascalCase file directly in a shared components root is
+ * left to the component check, which already warns about it.
+ * @param {LoadedIntegration} integration loaded-integration-shaped object
+ * @param {Issue[]} issues
+ */
+function checkTemplateSourcesWithoutDoc(integration, issues) {
+  const root = /** @type {string} */ (integration.templates);
+  const sharedComponents =
+    integration.components != null &&
+    path.resolve(integration.components) === path.resolve(root);
+  for (const file of findTemplateSourceOnlyCandidates(root)) {
+    if (sharedComponents && /^[A-Z]/u.test(file)) continue;
+    const stem = file.slice(0, -'.tsx'.length);
+    issues.push(
+      issueWarning(
+        'source_without_template_doc',
+        `Template source "${file}" has no same-stem metadata file ${stem}.doc.mjs, so \`astryx template\` never lists it. Fix: add ${stem}.doc.mjs beside it with type: 'page' or 'block'; \`astryx docs authoring integration-template-doc\` lists its fields. If it is not a template, move it out of the templates root.`,
+      ),
     );
   }
 }

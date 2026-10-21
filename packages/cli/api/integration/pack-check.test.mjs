@@ -213,6 +213,7 @@ function writePackage({
   themeExports = false,
   npmignore,
   components = false,
+  templates = false,
   scripts,
 } = {}) {
   const pkg = {name, version};
@@ -270,6 +271,14 @@ export default {type: 'theme', name: 'ocean', displayName: 'Ocean', description:
     fs.writeFileSync(
       path.join(root, 'Card.tsx'),
       'export default function Card() { return null; }\n',
+    );
+  }
+  if (templates) {
+    const root = path.join(tmpDir, 'templates');
+    fs.mkdirSync(root, {recursive: true});
+    fs.writeFileSync(
+      path.join(root, 'stray.tsx'),
+      'export default function Stray() { return null; }\n',
     );
   }
   if (npmignore) {
@@ -1897,6 +1906,23 @@ describe('integrationPackCheck', () => {
     expect(sourceWarnings.length).toBeGreaterThanOrEqual(1);
     expect(sourceWarnings[0].severity).toBe('warning');
     expect(sourceWarnings[0].message).toContain('Card.tsx');
+  });
+
+  it('reports template sources without metadata as warnings', async () => {
+    writePackage({
+      manifest:
+        "export default {themes: './themes', templates: './templates'};\n",
+      files: ['astryx.integration.mjs', 'themes', 'templates'],
+      templates: true,
+    });
+    const result = await integrationPackCheck({cwd: tmpDir});
+
+    const sourceWarnings = result.data.issues.filter(
+      issue => issue.code === 'source_without_template_doc',
+    );
+    expect(sourceWarnings).toHaveLength(1);
+    expect(sourceWarnings[0].severity).toBe('warning');
+    expect(sourceWarnings[0].message).toContain('stray.tsx');
   });
 
   it('cleans up its scratch consumer when npm pack fails', async () => {

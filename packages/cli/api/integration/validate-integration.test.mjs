@@ -343,6 +343,36 @@ export default {type: 'theme', name: 'ocean', displayName: 'Ocean', description:
     );
   });
 
+  it('warns when a template source has no same-stem metadata, skipping test files', async () => {
+    const pkgDir = path.join(tmpDir, 'pkg');
+    writePackage(pkgDir, {
+      manifest: `export default { templates: './templates' };\n`,
+    });
+    fs.mkdirSync(path.join(pkgDir, 'templates'));
+    fs.writeFileSync(
+      path.join(pkgDir, 'templates', 'stray.tsx'),
+      'export default function Stray() { return null; }\n',
+    );
+    fs.writeFileSync(
+      path.join(pkgDir, 'templates', 'stray.test.tsx'),
+      "import {it} from 'vitest';\nit('renders', () => {});\n",
+    );
+
+    const result = await validateLocalIntegration(pkgDir);
+
+    const warnings = byCode(result.issues, 'source_without_template_doc');
+    expect(warnings).toEqual([
+      expect.objectContaining({
+        severity: 'warning',
+        message: expect.stringContaining('"stray.tsx"'),
+      }),
+    ]);
+    expect(warnings[0].message).not.toContain('stray.test.tsx');
+    expect(warnings[0].message).toContain(
+      "Fix: add stray.doc.mjs beside it with type: 'page' or 'block'",
+    );
+  });
+
   it('reports codemods outside semver folders and invalid folder names', async () => {
     const pkgDir = path.join(tmpDir, 'pkg');
     writePackage(pkgDir, {
