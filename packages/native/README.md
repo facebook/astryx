@@ -82,7 +82,9 @@ content and states.
 Each subject has one scripted interaction that every arm replays.
 
 Visual scores come from real screens. Every scripted step is captured as a
-screenshot on the device, and every scenario as a recording, for each arm, the
+screenshot on the device, every behavior (sheet open and dismiss, navigation
+transitions, gestures, scrolling, press feedback, keyboard) as a short video or
+GIF, and every scenario as a recording, for each arm, the
 reference, and the web version, in light and dark and at the largest text size.
 Reviewers compare captures side by side with arm names hidden, and pixel checks
 read colors and sizes from the captures, never from source.
@@ -95,6 +97,7 @@ read colors and sizes from the captures, never from source.
 | Gate            | Screen-reader parity           | VoiceOver, TalkBack, Narrator task script                                                                                                                                                                     | pass/fail             |
 | Gate            | Completeness                   | Every subject renders every state                                                                                                                                                                             | pass/fail             |
 | Experience      | Platform feel                  | Blind reviewer rating of captured screens and recordings against the reference, plus a platform-conventions checklist                                                                                         | score, % of checklist |
+| Experience      | Behavior and motion            | Blind reviewer rating of behavior videos against the reference: timing, easing, gesture response, interruptibility                                                                                            | score per behavior    |
 | Experience      | Time to adopt a new OS feature | Days from OS release to shipping it in the arm (for example, Liquid Glass)                                                                                                                                    | days                  |
 | Performance     | Startup to first content       | Release build, cold start, median of runs                                                                                                                                                                     | ms                    |
 | Performance     | Smoothness                     | Dropped frames during the scripted interaction                                                                                                                                                                | % frames              |
