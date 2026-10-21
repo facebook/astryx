@@ -3,7 +3,7 @@
 'use client';
 
 /**
- * @input An anonymous iframe's load and exact-origin reachability message
+ * @input A top-level page and an anonymous iframe's exact-origin reachability message
  * @output A fail-closed, once-per-page-load reachability result
  * @position Client-only detection shared across root-layout remounts
  */
@@ -33,6 +33,11 @@ function publishReachability(next: boolean) {
 function startCheck() {
   attempted = true;
 
+  // Embedded documents, including playground previews, must not probe again.
+  if (window.top !== window) {
+    return;
+  }
+
   // Mirror the companion endpoint's exact deployment allowlist. Never probe
   // arbitrary preview/hash domains or send a different origin on their behalf.
   const parentOrigin = window.location.origin;
@@ -44,6 +49,7 @@ function startCheck() {
   frame.hidden = true;
   frame.tabIndex = -1;
   frame.setAttribute('aria-hidden', 'true');
+  frame.setAttribute('sandbox', 'allow-scripts allow-same-origin');
   frame.title = 'Astryx documentation reachability check';
   frame.referrerPolicy = 'no-referrer';
   frame.src = `${INTERNAL_DOCS_ORIGIN}/embed/access-check?parent_origin=${encodeURIComponent(parentOrigin)}`;

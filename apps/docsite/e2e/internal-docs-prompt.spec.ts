@@ -92,6 +92,9 @@ for (const {name, origin} of deployments) {
       const before = await heading.boundingBox();
       const prompt = page.getByRole('complementary', {name: promptName});
       await expect(prompt).toHaveCount(0);
+      await expect(
+        page.locator('iframe[title="Astryx documentation reachability check"]'),
+      ).toHaveAttribute('sandbox', 'allow-scripts allow-same-origin');
       probe.allowReply();
       await expect(prompt).toBeVisible();
       const after = await heading.boundingBox();
@@ -100,6 +103,10 @@ for (const {name, origin} of deployments) {
         name: /Internal docs — open Astryx documentation/,
       });
       await expect(link).toHaveText('Internal docs');
+      await page.keyboard.press('Tab');
+      await expect(
+        page.getByRole('link', {name: 'Skip to content', exact: true}),
+      ).toBeFocused();
       await expect(
         prompt.getByText("On Meta's network?", {exact: true}),
       ).toHaveCount(0);

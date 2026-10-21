@@ -102,11 +102,11 @@ export default function RootLayout({children}: {children: React.ReactNode}) {
         <Analytics />
         <SpeedInsights />
         <Providers>
-          {/* Keep URL-aware prompt state in a client leaf, not the page shell. */}
+          {/* Keep URL-aware prompt state in a client leaf, after page content. */}
+          {children}
           <Suspense fallback={null}>
             <InternalDocsPrompt />
           </Suspense>
-          {children}
         </Providers>
       </body>
     </html>

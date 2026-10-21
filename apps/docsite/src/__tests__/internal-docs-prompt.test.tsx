@@ -102,8 +102,27 @@ describe('InternalDocsPrompt', () => {
     expect(layout).not.toContain("'use client'");
     expect(layout.match(/<InternalDocsPrompt\s*\/>/g)).toHaveLength(1);
     expect(layout).toMatch(
-      /<Suspense fallback=\{null\}>\s*<InternalDocsPrompt \/>\s*<\/Suspense>\s*\{children\}/,
+      /\{children\}\s*<Suspense fallback=\{null\}>\s*<InternalDocsPrompt \/>\s*<\/Suspense>/,
     );
+  });
+
+  it('does not start another probe inside an embedded document', async () => {
+    const parentFrame = document.createElement('iframe');
+    document.body.append(parentFrame);
+    vi.stubGlobal('top', parentFrame.contentWindow);
+    try {
+      expect(window.top).not.toBe(window);
+      await mount();
+      expect(
+        document.querySelector(
+          'iframe[title="Astryx documentation reachability check"]',
+        ),
+      ).toBeNull();
+      expect(prompt()).toBeNull();
+    } finally {
+      vi.unstubAllGlobals();
+      parentFrame.remove();
+    }
   });
 
   it('renders nothing before a loaded iframe sends a valid message', async () => {
@@ -113,6 +132,9 @@ describe('InternalDocsPrompt', () => {
     expect(target.hidden).toBe(true);
     expect(target.tabIndex).toBe(-1);
     expect(target.getAttribute('aria-hidden')).toBe('true');
+    expect(target.getAttribute('sandbox')).toBe(
+      'allow-scripts allow-same-origin',
+    );
     expect(target.referrerPolicy).toBe('no-referrer');
     expect(target.src).toBe(
       `${internalOrigin}/embed/access-check?parent_origin=https%3A%2F%2Fastryx.atmeta.com`,
