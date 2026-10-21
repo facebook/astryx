@@ -1773,10 +1773,12 @@ describe('an approval carries across heads with no material change', () => {
     extraHeadFiles = [],
     mergeBases = {},
     compareResults = {},
+    timeline = [],
   } = {}) {
     return createHarness({
       comments,
       reviews,
+      timeline,
       mergeBases,
       compareResults,
       changedFiles: [
@@ -2083,5 +2085,115 @@ describe('an approval carries across heads with no material change', () => {
 
     expect(latestGateStatus(harness.state).state).toBe('pending');
     expect(harness.state.calls).toContain('create-comment');
+  });
+
+  const dismissedCurrentApproval = {
+    id: 71,
+    user: {login: 'cixzhang'},
+    state: 'DISMISSED',
+    commit_id: head,
+    submitted_at: '2026-08-30T09:10:00Z',
+    updated_at: '2026-08-30T09:20:00Z',
+  };
+
+  it('lets an owner dismissal of their current-head approval stop the carry', async () => {
+    const harness = carryHarness({
+      reviews: [dismissedCurrentApproval],
+      timeline: [
+        {
+          event: 'review_dismissed',
+          created_at: '2026-08-30T09:20:00Z',
+          dismissed_review: {review_id: 71, state: 'approved'},
+        },
+      ],
+    });
+
+    await run(
+      harness,
+      context({
+        runId: 100n,
+        eventName: 'pull_request_review',
+        action: 'dismissed',
+        review: dismissedCurrentApproval,
+      }),
+    );
+
+    expect(latestGateStatus(harness.state).state).toBe('pending');
+    expect(harness.state.pr.auto_merge ?? null).toBe(null);
+  });
+
+  it('still carries when the dismissed owner review was a request for changes', async () => {
+    const harness = carryHarness({
+      reviews: [
+        {
+          ...dismissedCurrentApproval,
+          commit_id: '3333333333333333333333333333333333333333',
+        },
+      ],
+      timeline: [
+        {
+          event: 'review_dismissed',
+          created_at: '2026-08-30T09:20:00Z',
+          dismissed_review: {review_id: 71, state: 'changes_requested'},
+        },
+      ],
+    });
+
+    await run(harness, synchronize());
+
+    expect(latestGateStatus(harness.state)).toMatchObject({
+      state: 'success',
+      description: expect.stringContaining('carried from'),
+    });
+  });
+
+  it('does not claim a revoke without a full SHA stops the carry', async () => {
+    const shortRevoke = {
+      user: {login: 'cixzhang'},
+      body: `/revoke-spec ${approvedHead.slice(0, 7)}`,
+      created_at: '2026-08-30T09:30:00Z',
+    };
+    const harness = carryHarness({
+      comments: [approveEarlierHead, shortRevoke],
+    });
+
+    await run(
+      harness,
+      context({
+        runId: 100n,
+        eventName: 'issue_comment',
+        action: 'created',
+        comment: shortRevoke,
+      }),
+    );
+
+    expect(latestGateStatus(harness.state).state).toBe('success');
+    const reply = harness.state.comments.at(-1).body;
+    expect(reply).toContain('did not stop an earlier approval from carrying');
+    expect(reply).not.toContain('still stops');
+  });
+
+  it('tells a full-SHA revoke of an earlier head that it stops the carry', async () => {
+    const fullRevoke = {
+      user: {login: 'cixzhang'},
+      body: `/revoke-spec ${approvedHead}`,
+      created_at: '2026-08-30T09:30:00Z',
+    };
+    const harness = carryHarness({
+      comments: [approveEarlierHead, fullRevoke],
+    });
+
+    await run(
+      harness,
+      context({
+        runId: 100n,
+        eventName: 'issue_comment',
+        action: 'created',
+        comment: fullRevoke,
+      }),
+    );
+
+    expect(latestGateStatus(harness.state).state).toBe('pending');
+    expect(harness.state.comments.at(-1).body).toContain('still stops');
   });
 });

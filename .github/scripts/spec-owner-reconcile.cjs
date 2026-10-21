@@ -59,7 +59,7 @@ function ownerCommandHelpMarker(headSha) {
   return `<!-- spec-owner-command-help:${headSha} -->`;
 }
 
-function ownerCommandHelpBody({verb, headSha, problem}) {
+function ownerCommandHelpBody({verb, headSha, problem, namesFullSha}) {
   return [
     ownerCommandHelpMarker(headSha),
     `That \`/${verb}-spec\` comment did not decide \`${GATE_STATUS_CONTEXT}\` for the current head: ${problem}.`,
@@ -69,7 +69,9 @@ function ownerCommandHelpBody({verb, headSha, problem}) {
     `    /${verb}-spec ${headSha}`,
     '',
     verb === 'revoke'
-      ? 'A revoke of an earlier head still stops any earlier approval from carrying to this head.'
+      ? namesFullSha
+        ? 'A revoke of an earlier head still stops any earlier approval from carrying to this head.'
+        : 'It also did not stop an earlier approval from carrying to this head.'
       : 'An approval stays in force through a rebase or a commit that only records it in the records; any other new commit needs the command again.',
   ].join('\n');
 }
@@ -565,6 +567,7 @@ async function reconcileSpecOwnerGate({
         verb: intent.verb,
         headSha: initialHead,
         problem,
+        namesFullSha: /^[0-9a-f]{40}$/i.test(intent.argument),
       }),
     });
     core.info(`Answered an inexact ${intent.verb} command on ${initialHead}.`);
@@ -651,6 +654,7 @@ async function reconcileSpecOwnerGate({
       comments,
       owners,
       headSha: initialHead,
+      dismissalEvents: timeline,
     })) {
       const key = `${candidate.headSha}:${candidate.owner}:${candidate.at}`;
       if (!carryChecks.has(key)) {

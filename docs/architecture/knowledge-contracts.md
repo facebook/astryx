@@ -955,14 +955,15 @@ differs only in its frontmatter `authority` moving from `draft` to `current`,
 `phase` moving from `proposed` to `accepted`, `approved_by` naming the
 approving owner, `approved_at` dated within a day of the approval, and Decider
 lines whose date is still a placeholder gaining that date (and the approving
-owner, when the line names no person yet). A Decider line that already names a
-date or person records an earlier decision and stays as it is. Any other added,
+owner, when the line names no person yet). A Decider line that already has a
+date is never rewritten, and a named person is never replaced. Any other added,
 removed, or edited line, a different set of changed paths, or any other byte
 change needs a new decision. The carried approval satisfies only the groups its
 owner may approve, and wherever a record requires exact-head owner approval, an
 approval carried this way counts for that head. A decision on the new head, and
-any owner revoke or request for changes after the approval, wins over it. A
-comparison the gate cannot complete carries nothing. A DESIGNOWNER's ready
+any owner revoke, request for changes, or dismissal of the owner's own approval
+after the approval, wins over it. A comparison the gate cannot complete carries
+nothing. A DESIGNOWNER's ready
 attestation never carries, and while relayed owner decisions are enabled nothing
 carries, because the gate cannot see a relayed revoke of an intermediate head.
 

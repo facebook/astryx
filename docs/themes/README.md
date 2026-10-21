@@ -33,5 +33,7 @@ and other knowledge relationships rather than separate relation fields:
 Only `current` records are policy. A draft may link another draft while decisions
 are being developed, but current records may depend only on current records.
 Current theme records require exact-head approval from the committed union of
-`.github/ENGOWNERS` and `.github/DESIGNOWNERS`. Theme records do not declare an
+`.github/ENGOWNERS` and `.github/DESIGNOWNERS`; an approval carries to a later
+head only through a rebase or the commit that records it, as
+`.github/REVIEW_GATE.md` lists. Theme records do not declare an
 `owners` field, and record metadata never grants approval rights.

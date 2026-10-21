@@ -50,9 +50,10 @@ commit that only records the approval in the records (`authority: draft` to
 `current`, `phase: proposed` to `accepted`, `approved_by` naming the approver,
 `approved_at` within a day of the approval, and Decider lines whose date is
 still a placeholder gaining that date). A Decider line that already has a date
-or person is never rewritten. Any other edit, added or removed line, or changed
-file needs a new approval. A decision on the new head, or any owner revoke or
-request for changes after the approval, wins. A ready attestation never carries,
+is never rewritten, and a named person is never replaced. Any other edit, added
+or removed line, or changed file needs a new approval. A decision on the new
+head, or any owner revoke, request for changes, or dismissal of an owner's
+approval after the approval, wins. A ready attestation never carries,
 and while `SPEC_DECISION_APP` is set nothing carries (see below).
 The gate status names the head the approval was carried from.
 
@@ -95,8 +96,9 @@ head **for the design-approval group only**. The attestation is published only
 for a `.github/DESIGNOWNERS` handle, and it is read back only for a handle that
 is still in that file — a marker left by someone since removed, or published
 before this rule existed, authorizes nothing. It satisfies no other group: the
-non-design and theme groups always need a real exact-head review or command from
-someone in their own list. An engineering owner cannot attest their own head.
+non-design and theme groups always need a real review or command from someone in
+their own list, on the exact head or carried to it as above. An engineering owner
+cannot attest their own head.
 
 The attestation does not grant auto-merge by itself. The existing gate may enable
 squash auto-merge only when every changed path is a recognized spec record,

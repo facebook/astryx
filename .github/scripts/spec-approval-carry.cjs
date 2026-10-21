@@ -37,16 +37,55 @@ function commandHead(body) {
   return match ? match[1].toLowerCase() : null;
 }
 
+// When the owner's dismissed review was a request for changes, the dismissal
+// lifts an objection rather than withdrawing an approval.
+function dismissalOf(review, dismissalEvents) {
+  const events = dismissalEvents.filter(
+    event =>
+      event.event === 'review_dismissed' &&
+      event.dismissed_review?.review_id === review.id,
+  );
+  const liftsObjection =
+    events.length > 0 &&
+    events.every(
+      event =>
+        String(event.dismissed_review?.state ?? '').toLowerCase() ===
+        'changes_requested',
+    );
+  const at = [review.updated_at, ...events.map(event => event.created_at)]
+    .map(decisionTime)
+    .filter(time => time !== null);
+  return {liftsObjection, at: at.length > 0 ? Math.max(...at) : null};
+}
+
 /**
  * Every owner decision on any head of the pull request, in the same forms the
- * exact-head gate reads: owner commands and owner reviews.
+ * exact-head gate reads: owner commands and owner reviews. A dismissed owner
+ * review counts as a rejection at its dismissal, unless it was itself a
+ * request for changes.
  */
-function ownerDecisionsByHead({reviews, comments, owners}) {
+function ownerDecisionsByHead({
+  reviews,
+  comments,
+  owners,
+  dismissalEvents = [],
+}) {
   const allowed = new Set(owners.map(owner => owner.toLowerCase()));
   const decisions = [];
   for (const review of reviews) {
     const login = review.user?.login?.toLowerCase();
     if (!login || !allowed.has(login) || !review.commit_id) continue;
+    if (review.state === 'DISMISSED') {
+      const dismissal = dismissalOf(review, dismissalEvents);
+      if (dismissal.liftsObjection || dismissal.at === null) continue;
+      decisions.push({
+        owner: login,
+        headSha: review.commit_id.toLowerCase(),
+        approved: false,
+        at: dismissal.at,
+      });
+      continue;
+    }
     if (!['APPROVED', 'CHANGES_REQUESTED'].includes(review.state)) continue;
     const at = decisionTime(review.submitted_at ?? review.updated_at);
     if (at === null) continue;
@@ -74,10 +113,21 @@ function ownerDecisionsByHead({reviews, comments, owners}) {
  * Earlier heads whose owner approval could stand for the current head, newest
  * approval first. A head qualifies only when the exact-head rules approve it
  * on its own, and no owner in the group rejected any head after that
- * approval: a later request for changes or revoke always wins.
+ * approval: a later request for changes, revoke, or dismissal always wins.
  */
-function carryCandidates({reviews, comments, owners, headSha}) {
-  const decisions = ownerDecisionsByHead({reviews, comments, owners});
+function carryCandidates({
+  reviews,
+  comments,
+  owners,
+  headSha,
+  dismissalEvents = [],
+}) {
+  const decisions = ownerDecisionsByHead({
+    reviews,
+    comments,
+    owners,
+    dismissalEvents,
+  });
   const lastRejection = Math.max(
     Number.NEGATIVE_INFINITY,
     ...decisions.filter(entry => !entry.approved).map(entry => entry.at),
@@ -95,6 +145,7 @@ function carryCandidates({reviews, comments, owners, headSha}) {
     const decision = resolveOwnerDecision({
       reviews,
       comments,
+      dismissalEvents,
       owners,
       headSha: candidateHead,
     });
