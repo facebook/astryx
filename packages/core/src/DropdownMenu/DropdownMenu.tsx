@@ -76,6 +76,7 @@ import {focusForLastInput} from '../utils/focusReturn';
 import {useMenuOverflow} from './useMenuOverflow';
 import {MenuRegionsContext} from './menuRegionsContext';
 import {moveRegionsTab} from './menuRegionStops';
+import {resolveSheetLevel} from './menuSheetPath';
 import {useDevWarning} from '../hooks/useDevWarning';
 import {useMenuDrillIn} from './useMenuDrillIn';
 import {resolveMenuWidth} from './menuWidth';
@@ -328,6 +329,22 @@ export interface DropdownMenuItemData extends Pick<
    * "type" is needed. Data-mode parity for the compound DropdownMenuSubMenu API.
    */
   items?: DropdownMenuOption[];
+  /**
+   * With `items`: content above the sub-menu's rows, as `header` on
+   * `DropdownMenuSubMenu` (a filter field, say). The bottom sheet shows it
+   * above that level's actions, in place of the menu's own header, and reads
+   * the level from the current `items` while it shows; give the row an `id`
+   * when another row at its level has the same label. Ignored on a row
+   * without `items`.
+   */
+  header?: ReactNode;
+  /**
+   * With `items`: content below the sub-menu's rows, as `footer` on
+   * `DropdownMenuSubMenu`. The bottom sheet shows it below that level's
+   * actions, in place of the menu's own footer. Ignored on a row without
+   * `items`.
+   */
+  footer?: ReactNode;
 }
 
 /**
@@ -652,8 +669,22 @@ function DropdownMenuBottomSheet({
       setSubmenuPath([]);
     }
   }
-  const currentSubmenu = submenuPath.at(-1);
+  // The opened level as the caller renders it now: its rows, header and
+  // footer stay live while it shows.
+  const currentSubmenu = resolveSheetLevel(items, submenuPath);
   const currentItems = currentSubmenu?.items ?? items;
+  // A level whose row has its own header or footer shows them in place of the
+  // menu's own; every other level shows the menu's.
+  const levelHasRegions =
+    currentSubmenu != null &&
+    (isRenderable(currentSubmenu.header) ||
+      isRenderable(currentSubmenu.footer));
+  const levelHeader = levelHasRegions ? currentSubmenu.header : header;
+  const levelFooter = levelHasRegions ? currentSubmenu.footer : footer;
+  // Each set of regions mounts on its own: the menu's stay mounted across the
+  // levels that show them, and a level's own are new to that level, so what
+  // was typed into one field never shows up in another.
+  const regionsKey = levelHasRegions ? `level-${submenuPath.length}` : 'menu';
   const currentTitle = currentSubmenu?.label ?? button.label;
   const sheetLabel =
     typeof currentTitle === 'string' ? currentTitle : button.label;
@@ -862,16 +893,24 @@ function DropdownMenuBottomSheet({
               {currentTitle}
             </Heading>
           </div>
-          {isRenderable(header) && (
-            <div {...stylex.props(bottomSheetStyles.region)}>{header}</div>
+          {isRenderable(levelHeader) && (
+            <div
+              key={`header-${regionsKey}`}
+              {...stylex.props(bottomSheetStyles.region)}>
+              {levelHeader}
+            </div>
           )}
           <MenuBottomSheetActionList
             items={currentItems}
             onSelect={handleSelect}
             onOpenSubmenu={item => setSubmenuPath(path => [...path, item])}
           />
-          {isRenderable(footer) && (
-            <div {...stylex.props(bottomSheetStyles.region)}>{footer}</div>
+          {isRenderable(levelFooter) && (
+            <div
+              key={`footer-${regionsKey}`}
+              {...stylex.props(bottomSheetStyles.region)}>
+              {levelFooter}
+            </div>
           )}
         </div>
       </MenuBottomSheet>
