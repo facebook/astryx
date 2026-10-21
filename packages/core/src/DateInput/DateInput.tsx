@@ -79,6 +79,20 @@ import {
 import {useDevWarning} from '../hooks/useDevWarning';
 
 const styles = stylex.create({
+  // A disabled field stays focusable (spec:AST-085 FR1), and the shared
+  // disabled wrapper style drops the focus ring. While this field's own input
+  // holds focus, show the base focus ring again (FR6). Listed right after the
+  // shared disabled style; the defaults repeat that style's values.
+  disabledFocusRing: {
+    borderColor: {
+      default: colorVars['--color-border-emphasized'],
+      ':has(input:focus)': colorVars['--color-accent'],
+    },
+    boxShadow: {
+      default: 'none',
+      ':has(input:focus)': `inset 0px 0px 0px 2px ${colorVars['--color-accent-muted']}`,
+    },
+  },
   iconButton: {
     display: 'flex',
     alignItems: 'center',
@@ -808,6 +822,7 @@ function PointerDateField({
           inputWrapperStyles.base,
           sizeStyles[size],
           isEffectivelyDisabled && inputWrapperStyles.disabled,
+          isEffectivelyDisabled && styles.disabledFocusRing,
           status && inputStatusBorderStyles[status.type],
           status &&
             !isEffectivelyDisabled &&
