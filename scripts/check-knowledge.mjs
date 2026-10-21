@@ -436,6 +436,20 @@ export function validatePathApplicability(
       problems.push(`${label} covers the whole repository; name the paths.`);
       continue;
     }
+    if (/[*?]/.test(segments[0])) {
+      problems.push(
+        `${label} must start with a literal path segment; a leading wildcard covers the whole repository.`,
+      );
+      continue;
+    }
+    if (
+      repositoryFiles &&
+      repositoryFiles.length > 1 &&
+      repositoryFiles.every(candidate => matchesPathPattern(pattern, candidate))
+    ) {
+      problems.push(`${label} matches every repository file; name the paths.`);
+      continue;
+    }
     if (
       repositoryFiles &&
       !repositoryFiles.some(candidate => matchesPathPattern(pattern, candidate))
@@ -1987,6 +2001,11 @@ export async function validateKnowledgeRoot(root = DEFAULT_ROOT) {
 }
 
 async function main() {
+  if (!repositoryFileList(DEFAULT_ROOT)) {
+    console.warn(
+      'Skipped the INV25 reachability and path-pattern match checks: `git ls-files` is unavailable here.',
+    );
+  }
   const problems = await validateKnowledgeRoot();
   const baseIndex = process.argv.indexOf('--base');
   if (baseIndex !== -1) {

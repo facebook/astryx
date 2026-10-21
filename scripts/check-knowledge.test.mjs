@@ -2297,6 +2297,10 @@ describe('path-applicability:v1', () => {
           '**',
           'docs/{a,b}.md',
           'apps/missing/**',
+          '**/*',
+          '**/**',
+          '**/?*',
+          '*/src/a.ts',
         ],
       }),
     ).toEqual([
@@ -2307,6 +2311,18 @@ describe('path-applicability:v1', () => {
       'r.md: path-applicability:v1 pattern "**" covers the whole repository; name the paths.',
       'r.md: path-applicability:v1 pattern "docs/{a,b}.md" may use only letters, digits, _ . @ - / and the wildcards * ** ?.',
       'r.md: path-applicability:v1 pattern "apps/missing/**" matches no repository file.',
+      'r.md: path-applicability:v1 pattern "**/*" must start with a literal path segment; a leading wildcard covers the whole repository.',
+      'r.md: path-applicability:v1 pattern "**/**" must start with a literal path segment; a leading wildcard covers the whole repository.',
+      'r.md: path-applicability:v1 pattern "**/?*" must start with a literal path segment; a leading wildcard covers the whole repository.',
+      'r.md: path-applicability:v1 pattern "*/src/a.ts" must start with a literal path segment; a leading wildcard covers the whole repository.',
+    ]);
+    expect(
+      validatePathApplicability({paths: ['apps/**']}, 'r.md', [
+        'apps/a.ts',
+        'apps/b/c.ts',
+      ]),
+    ).toEqual([
+      'r.md: path-applicability:v1 pattern "apps/**" matches every repository file; name the paths.',
     ]);
     expect(
       validatePathApplicability({paths: ['apps/missing/**']}, 'r.md', null),

@@ -117,8 +117,8 @@ them: `{"paths": ["apps/docsite/**"]}`. Patterns are repository-relative globs:
 `**` is a whole segment spanning any depth, `*` matches within one segment, and
 `?` matches one character. Like `review-applicability:v1`, it is an
 independently versioned overlay, so opting in does not migrate a record kind.
-Validation rejects malformed, unsafe, repeated, whole-repository, and
-no-match patterns. A match only locates the record for a path; claim scope and
+A pattern must start with a literal path segment. Validation rejects
+malformed, unsafe, repeated, whole-repository, and no-match patterns. A match only locates the record for a path; claim scope and
 precedence are unchanged. `pnpm check:knowledge` also fails when a current record
 is reached from no tracked path that is not itself a record
 (`architecture:knowledge-contracts` INV25 and INV26).
