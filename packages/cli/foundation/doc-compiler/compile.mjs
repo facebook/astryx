@@ -149,10 +149,7 @@ function markProvider(doc, provider) {
   return {
     ...doc,
     sections: doc.sections.map((/** @type {any} */ section) =>
-      withSourceTitle(
-        {...section, [SECTION_PROVIDER]: provider},
-        sourceTitle(section),
-      ),
+      withSourceTitle({...section, [SECTION_PROVIDER]: provider}, sourceTitle(section)),
     ),
   };
 }

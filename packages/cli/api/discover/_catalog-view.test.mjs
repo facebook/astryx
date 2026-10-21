@@ -85,11 +85,7 @@ describe('availableEntries', () => {
 describe('catalogState', () => {
   it('names the package the project has instead', () => {
     expect(
-      catalogState(
-        CATALOG.packages[0],
-        new Set(['@acme/ui-classic']),
-        new Set(),
-      ),
+      catalogState(CATALOG.packages[0], new Set(['@acme/ui-classic']), new Set()),
     ).toEqual({state: 'alias', installedAs: '@acme/ui-classic'});
   });
 });

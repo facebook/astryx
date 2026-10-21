@@ -18,10 +18,7 @@ import {
 } from '../../../foundation/fs/path-safety.mjs';
 import {AstryxError, writeFailed} from '../../error.mjs';
 import {ERROR_CODES} from '../../../foundation/response/error-codes.mjs';
-import {
-  pkgOf,
-  replaceDemoMedia,
-} from '../../../foundation/discovery/template-adapter.mjs';
+import {pkgOf, replaceDemoMedia} from '../../../foundation/discovery/template-adapter.mjs';
 import {analyzeTemplateNeeds} from '../../../foundation/discovery/template-needs.mjs';
 import {
   NO_ICON_SETS,

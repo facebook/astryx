@@ -198,9 +198,7 @@ function parseGapReportHandlerExport(value, label) {
 function parseDiscoverSourceExport(value, label) {
   if (value === undefined) return {};
   try {
-    return {
-      source: parseDiscoverSource(value, `${label} named export "discover"`),
-    };
+    return {source: parseDiscoverSource(value, `${label} named export "discover"`)};
   } catch (error) {
     return {error: error instanceof Error ? error.message : String(error)};
   }
@@ -231,8 +229,7 @@ export async function loadManifest(
 ) {
   const mod = await importUserModule(file, {fresh});
   const raw = mod?.default;
-  if (raw === undefined)
-    throw new Error(noDefaultExportMessage(file, label, mod));
+  if (raw === undefined) throw new Error(noDefaultExportMessage(file, label, mod));
   const baseManifest = parseIntegrationBase(raw, label);
   const gapReport = parseGapReportHandlerExport(mod?.gapReport, label);
   const discover = parseDiscoverSourceExport(mod?.discover, label);

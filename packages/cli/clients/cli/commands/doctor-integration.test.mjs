@@ -19,10 +19,7 @@ import {Command} from 'commander';
 import {discoverCoreTemplates} from '../../../foundation/discovery/template-adapter.mjs';
 import {discoverOwnedComponents} from '../../../foundation/discovery/component-discovery.mjs';
 import {discoverBuiltinTopics} from '../../../foundation/discovery/docs-discovery.mjs';
-import {
-  findCoreDir,
-  findProjectCoreDir,
-} from '../../../foundation/fs/paths.mjs';
+import {findCoreDir, findProjectCoreDir} from '../../../foundation/fs/paths.mjs';
 import {registerDoctor} from './doctor.mjs';
 import {expectRecordsCarry} from '../../../test-utils/text-projection.mjs';
 

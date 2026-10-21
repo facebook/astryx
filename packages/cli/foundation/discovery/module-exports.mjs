@@ -427,11 +427,7 @@ export function moduleExportSource(file, exportName, seen = new Set()) {
 
   if (exportName === 'default') {
     const defaults = nodesOfType(ast.program, 'ExportDefaultDeclaration');
-    if (
-      defaults.some((/** @type {any} */ node) =>
-        runtimeDefault(node.declaration),
-      )
-    ) {
+    if (defaults.some((/** @type {any} */ node) => runtimeDefault(node.declaration))) {
       return file;
     }
   }
@@ -586,9 +582,7 @@ export function moduleExportVerdict(file, exportName, seen = new Set()) {
     );
   }
   if (topLevel(ast.program, 'TSExportAssignment').length > 0) {
-    unknown.push(
-      `${shown} uses \`export =\`, whose names this check does not read.`,
-    );
+    unknown.push(`${shown} uses \`export =\`, whose names this check does not read.`);
   }
   /**
    * Follow a re-export of `imported` from `specifier`.
@@ -674,9 +668,7 @@ export function moduleExportVerdict(file, exportName, seen = new Set()) {
         return {verdict: 'exports'};
       }
       if (specifier.type !== 'ExportSpecifier') {
-        unknown.push(
-          `${shown} re-exports ${exportName} in a form this check does not read.`,
-        );
+        unknown.push(`${shown} re-exports ${exportName} in a form this check does not read.`);
         continue;
       }
       const imported =

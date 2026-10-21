@@ -6,8 +6,7 @@ export const doc = {
   exampleFor: 'ChatComposer',
   name: 'ChatComposer — Footer Actions',
   displayName: 'ChatComposer — Footer Actions',
-  description:
-    'Chat composer with dropdown menus for a model selector and settings in the footer, and a mic button in the send actions slot.',
+  description: 'Chat composer with dropdown menus for a model selector and settings in the footer, and a mic button in the send actions slot.',
   isReady: true,
   aspectRatio: 16 / 9,
   componentsUsed: [

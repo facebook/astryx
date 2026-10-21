@@ -487,10 +487,7 @@ export class Project {
    * @param {{cache?: import('./config-cache.mjs').ConfigCache, fresh?: boolean, core?: 'any' | 'project'}} [options]
    * @returns {Promise<Project>}
    */
-  static async load(
-    cwd = process.cwd(),
-    {cache, fresh = false, core = 'any'} = {},
-  ) {
+  static async load(cwd = process.cwd(), {cache, fresh = false, core = 'any'} = {}) {
     const resolvedCache = fresh
       ? new InMemoryConfigCache()
       : (cache ?? new InMemoryConfigCache());

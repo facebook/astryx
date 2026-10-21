@@ -6,8 +6,7 @@ export const doc = {
   exampleFor: 'ChatMessageMetadata',
   name: 'ChatMessageMetadata',
   displayName: 'Chat Message Metadata',
-  description:
-    'Three-message conversation showcasing error status with retry, delivery status, and full footer actions with model label.',
+  description: 'Three-message conversation showcasing error status with retry, delivery status, and full footer actions with model label.',
   isReady: true,
   isShowcase: true,
   aspectRatio: 4 / 3,

@@ -70,8 +70,7 @@ function replaceBlock(content, name, block) {
   const re = new RegExp(
     `${begin.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}[\\s\\S]*?${end.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`,
   );
-  if (!re.test(content))
-    throw new Error(`README markers for "${name}" not found`);
+  if (!re.test(content)) throw new Error(`README markers for "${name}" not found`);
   return content.replace(re, `${begin}\n\n${block}\n\n${end}`);
 }
 
@@ -100,17 +99,10 @@ async function build() {
   const manifest = getManifest();
   const commandRows = manifest.commands
     .filter((/** @type {any} */ c) => c.name !== 'manifest')
-    .map((/** @type {any} */ c) => [
-      `\`${c.name}\``,
-      c.description,
-      outsideProject(c),
-    ]);
+    .map((/** @type {any} */ c) => [`\`${c.name}\``, c.description, outsideProject(c)]);
 
   const errorCodes = await loadDoc('foundation/response/error-codes.doc.mjs');
-  const errorRows = errorCodes.members.map((/** @type {any} */ m) => [
-    `\`${m.value}\``,
-    m.description,
-  ]);
+  const errorRows = errorCodes.members.map((/** @type {any} */ m) => [`\`${m.value}\``, m.description]);
 
   const responseTypes = await loadDoc(
     'foundation/response/response-types.doc.mjs',
@@ -127,26 +119,14 @@ async function build() {
     'commands',
     table(['Command', 'Description', 'Outside a project'], commandRows),
   );
-  content = replaceBlock(
-    content,
-    'error-codes',
-    table(['Code', 'Meaning'], errorRows),
-  );
-  content = replaceBlock(
-    content,
-    'response-types',
-    table(['Type', 'What `data` carries'], rtRows),
-  );
+  content = replaceBlock(content, 'error-codes', table(['Code', 'Meaning'], errorRows));
+  content = replaceBlock(content, 'response-types', table(['Type', 'What `data` carries'], rtRows));
 
   // Format through the repo's prettier config so the generated tables match what
   // the commit hook (lint-staged prettier over *.md) would produce; otherwise
   // `--check` would flag the file as drifted right after a commit reformats it.
   const config = (await prettier.resolveConfig(README)) ?? {};
-  return prettier.format(content, {
-    ...config,
-    parser: 'markdown',
-    filepath: README,
-  });
+  return prettier.format(content, {...config, parser: 'markdown', filepath: README});
 }
 
 async function main() {
