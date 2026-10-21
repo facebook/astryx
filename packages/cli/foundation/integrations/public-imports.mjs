@@ -534,13 +534,21 @@ function readOwnExportNames(file, cache, stack) {
     return done(false);
   }
   // A declaration file that is a module exports every top-level declaration,
-  // marked or not, unless it has an export list (`export {}`), a default
-  // export, `export =`, or `export *` (TypeScript's rule for ambient modules).
+  // marked or not, unless it has an export list (`export {}`, `export {…}
+  // from`), `export *`, `export =`, or a default export of an expression
+  // (TypeScript's rule for ambient modules). A default-exported declaration
+  // (`export default function`, `class`, `interface`) does not end it.
   if (DECLARATION_RE.test(file)) {
     const implicit = !ast.program.body.some(
       (/** @type {any} */ node) =>
         (node.type === 'ExportNamedDeclaration' && !node.declaration) ||
-        node.type === 'ExportDefaultDeclaration' ||
+        (node.type === 'ExportDefaultDeclaration' &&
+          ![
+            'FunctionDeclaration',
+            'TSDeclareFunction',
+            'ClassDeclaration',
+            'TSInterfaceDeclaration',
+          ].includes(node.declaration?.type)) ||
         node.type === 'TSExportAssignment' ||
         node.type === 'ExportAllDeclaration',
     );
@@ -714,6 +722,39 @@ function uncheckedReason(files, allPresent = true) {
     return 'a file its package.json "exports" entry names does not exist yet (build output), so the names it imports were not checked';
   }
   return "its module's export list cannot be read in full (CommonJS, an `export *` from another package, a parse error, or JavaScript with no declaration file for its types), so the names it imports were not checked";
+}
+
+/**
+ * The export a template's default export should be: an exported function or
+ * class declaration first, else a PascalCase name that is not ALL CAPS and
+ * not only a type; null when there is none to suggest.
+ * @param {string} text the template source
+ * @param {{names: Set<string>, types: Set<string>}} exported
+ * @returns {string | null}
+ */
+function defaultExportCandidate(text, exported) {
+  try {
+    for (const node of parseModuleText(text).program.body) {
+      const d = /** @type {any} */ (node).declaration;
+      if (
+        node.type === 'ExportNamedDeclaration' &&
+        (d?.type === 'FunctionDeclaration' || d?.type === 'ClassDeclaration') &&
+        d.id?.name
+      ) {
+        return d.id.name;
+      }
+    }
+  } catch {
+    // An unparsable template falls back to the names below.
+  }
+  return (
+    [...exported.names].find(
+      name =>
+        /^[A-Z]/u.test(name) &&
+        /[a-z]/u.test(name) &&
+        !exported.types.has(name),
+    ) ?? null
+  );
 }
 
 // ── Listed findings ─────────────────────────────────────────────────
@@ -1230,17 +1271,19 @@ async function templateIssues(ctx, integration) {
     // template import its default export.
     const exported = text ? moduleExportNames(file, ctx.exportNames) : null;
     if (exported?.complete && !exported.names.has('default')) {
-      // Only a value can be the default export; a props type cannot.
-      const named = [...exported.names].find(
-        name => /^[A-Z]/.test(name) && !exported.types.has(name),
-      );
+      const named = defaultExportCandidate(text, exported);
       const fix = named
         ? `add \`export default ${named};\` to ${shown}, or make ${named} the default export`
         : `export the template's component as the default export of ${shown} (\`export default function …\`)`;
+      // With no package name there is no public import to name.
+      const what =
+        ctx.name == null
+          ? 'anything that renders the template gets nothing'
+          : `its public import "${ctx.name}${subpath.slice(1)}" and anything that renders the template get nothing`;
       issues.push(
         listed(
           'template_no_default_export',
-          `Template "${id}" (${shown}) has no default export, so its public import "${ctx.name}${subpath.slice(1)}" and anything that renders the template get nothing. Fix: ${fix}.`,
+          `Template "${id}" (${shown}) has no default export, so ${what}. Fix: ${fix}.`,
         ),
       );
     }

@@ -1308,3 +1308,85 @@ describe('declaration files follow TypeScript', () => {
     ]);
   });
 });
+
+describe('declaration files: default exports', () => {
+  const template = (/** @type {string} */ names) =>
+    `import {${names}} from '@acme/widgets/widget';\nexport default function C() {\n  return <div />;\n}\n`;
+  const HEAD =
+    'interface AcmeWidgetProps {\n  label: string;\n}\nexport declare const AcmeWidget: (p: AcmeWidgetProps) => null;\n';
+
+  beforeEach(() => {
+    pkg(p => {
+      p.exports['./widget'] = './dist/widget.js';
+    });
+    write('dist/widget.js', 'export const AcmeWidget = () => null;\n');
+    write(
+      'templates/account-card.tsx',
+      template('AcmeWidget, AcmeWidgetProps'),
+    );
+  });
+
+  for (const [form, tail] of [
+    ['export default function', 'export default function f(): void;\n'],
+    ['export default class', 'export default class K {}\n'],
+    ['export default interface', 'export default interface I {\n  a: 1;\n}\n'],
+  ]) {
+    it(`keeps implicit exports after ${form}`, async () => {
+      write('dist/widget.d.ts', HEAD + tail);
+      expect(await codes()).toEqual([]);
+    });
+  }
+
+  for (const [form, tail] of [
+    [
+      'export default <expression>',
+      'declare const d: number;\nexport default d;\n',
+    ],
+    ['export {} list', 'export {};\n'],
+    ['export … from', "export {X} from './x';\n"],
+    ['export *', "export * from './x';\n"],
+  ]) {
+    it(`ends implicit exports at ${form}`, async () => {
+      write('dist/widget.d.ts', HEAD + tail);
+      write('dist/x.d.ts', 'export declare const X: number;\n');
+      expect(await codes()).toEqual(['template_import_missing_name']);
+    });
+  }
+});
+
+describe('the default-export fix names a value', () => {
+  it('prefers an exported function or class declaration', async () => {
+    write(
+      'templates/account-card.tsx',
+      'export const ACCOUNT_LIMIT = 3;\nexport const Size = "sm";\nexport class AccountCard {}\n',
+    );
+    const [issue] = await found();
+    expect(issue?.message).toContain('export default AccountCard;');
+  });
+
+  it('skips ALL-CAPS names and falls back to the generic fix with none left', async () => {
+    write(
+      'templates/account-card.tsx',
+      'export const ACCOUNT_LIMIT = 3;\nexport const API = 1;\n',
+    );
+    const [issue] = await found();
+    expect(issue?.message).not.toContain('export default ACCOUNT_LIMIT');
+    expect(issue?.message).toContain('`export default function …`');
+  });
+
+  it('names no public import when package.json has no name', async () => {
+    pkg(p => delete p.name);
+    write(
+      'templates/account-card.tsx',
+      'export function AccountCard() {\n  return null;\n}\n',
+    );
+    const result = await validateLocalIntegration(dir);
+    const note = (result.notes ?? []).find(
+      n => n.code === 'template_no_default_export',
+    );
+    expect(note?.message).toContain(
+      'anything that renders the template gets nothing',
+    );
+    expect(note?.message).not.toContain('null/');
+  });
+});
