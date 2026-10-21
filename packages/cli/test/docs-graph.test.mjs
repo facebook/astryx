@@ -616,7 +616,7 @@ describe('the docs graph', () => {
   it("opens every search hit's command and parent", async () => {
     /** @type {string[]} */
     const broken = [];
-    for (const query of ['assertResponse', 'token-ref', 'codemod protected files', 'agent docs', 'ERR_UNKNOWN_SECTION', 'theme', 'unorganized', 'Astryx CLI']) {
+    for (const query of ['assertResponse', 'token-ref', 'codemod protected files', 'agent docs', 'ERR_UNKNOWN_SECTION', 'theme', 'foundations', 'Astryx CLI']) {
       const {data} = await search(query, {type: 'doc', limit: 20});
       for (const hit of data.results) {
         if (!hit.parent) broken.push(`"${query}": ${hit.name} has no parent`);

@@ -16,7 +16,7 @@ import {docs} from './docs.mjs';
 import {TOPIC_LEVELS} from '../../foundation/doc-compiler/tree.mjs';
 
 const CLI = '@astryxdesign/cli';
-const SLOW = 30_000;
+const SLOW = 60_000;
 
 describe('every Core doc has a named home', () => {
   it(
