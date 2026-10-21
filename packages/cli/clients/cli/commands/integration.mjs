@@ -79,10 +79,16 @@ async function verifyPackage(program) {
     if (issues.length > 0) {
       blocks.push(
         list(
-          issues.map(
-            issue =>
-              `[${issue.severity === 'error' ? 'fail' : 'warn'}] ${issue.message}`,
-          ),
+          issues.map(issue => [
+            `[${issue.severity === 'error' ? 'fail' : 'warn'}] ${issue.message}`,
+            // Every field the JSON issue carries.
+            ...(issue.file != null
+              ? [
+                  `file: ${issue.file}${issue.line != null ? `:${issue.line}` : ''}`,
+                ]
+              : []),
+            ...(issue.fix != null ? [`fix: ${issue.fix}`] : []),
+          ]),
         ),
       );
     }

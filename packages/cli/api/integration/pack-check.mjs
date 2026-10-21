@@ -1539,6 +1539,10 @@ export async function integrationPackCheck(options = {}) {
         code: `packed_${issue.code}`,
         severity: issue.severity,
         message: `Packed: ${issue.message}`,
+        // The packed tree keeps the package's own paths.
+        ...(issue.fix != null ? {fix: issue.fix} : {}),
+        ...(issue.file != null ? {file: issue.file} : {}),
+        ...(issue.line != null ? {line: issue.line} : {}),
       });
     }
 
