@@ -12,6 +12,7 @@ import {
 import {render, screen, act, waitFor, fireEvent} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {Timestamp} from './Timestamp';
+import type {TimestampFormat} from './Timestamp';
 import {formatInstant} from './formatInstant';
 import {formatTooltipLines} from './tooltipEntries';
 import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
@@ -1422,6 +1423,373 @@ describe('Timestamp', () => {
       const [line] = formatTooltipLines(date, [{format: 'full'}], 'en');
       expect(screen.getByTestId('ts').getAttribute('aria-label')).toBe(
         line.value.replace(tzPart('short'), tzPart('long')),
+      );
+    });
+  });
+
+  describe('visible time zone', () => {
+    // One instant at UTC midnight. Read in UTC it is the 25th at 00:00; read
+    // in Los Angeles it is still 5 PM on the 24th — a different date, a
+    // different time of day, and a different weekday. Every assertion below
+    // compares two readings of that one instant, so none of them depends on
+    // the zone the machine running the test happens to be in.
+    const UTC_MIDNIGHT = '2026-03-25T00:00:00Z';
+    const UTC_MIDNIGHT_ISO = '2026-03-25T00:00:00.000Z';
+    const LOS_ANGELES = 'America/Los_Angeles';
+
+    // Some ICU builds spell the space before AM/PM U+202F and others U+0020.
+    // Which one a build picked is not what any of these tests is about.
+    const normalize = (text: string | null | undefined) =>
+      (text ?? '').replace(/[\u202f\u00a0]/g, ' ');
+
+    /** The visible text of one Timestamp, rendered and torn down in place. */
+    function textFor(
+      timezoneID: string | undefined,
+      format: TimestampFormat,
+      value: string = UTC_MIDNIGHT,
+    ): string {
+      const {unmount} = render(
+        <Timestamp
+          value={value}
+          format={format}
+          timezoneID={timezoneID}
+          hasTooltip={false}
+          data-testid="ts"
+        />,
+      );
+      const text = normalize(screen.getByTestId('ts').textContent);
+      unmount();
+      return text;
+    }
+
+    it.each([
+      ['date', 'Mar 25, 2026', 'Mar 24, 2026'],
+      ['date_long', 'March 25, 2026', 'March 24, 2026'],
+      ['date_weekday', 'Wed, Mar 25, 2026', 'Tue, Mar 24, 2026'],
+      ['date_time', 'Mar 25, 2026, 12:00 AM', 'Mar 24, 2026, 5:00 PM'],
+      ['time', '12:00 AM', '5:00 PM'],
+      ['system_date', '2026-03-25', '2026-03-24'],
+      ['system_date_time', '2026-03-25 00:00:00', '2026-03-24 17:00:00'],
+      ['system_time', '00:00:00', '17:00:00'],
+    ] as ReadonlyArray<readonly [TimestampFormat, string, string]>)(
+      'renders %s in the named zone',
+      (format, inUTC, inLosAngeles) => {
+        expect({
+          utc: textFor('UTC', format),
+          losAngeles: textFor(LOS_ANGELES, format),
+        }).toEqual({utc: inUTC, losAngeles: inLosAngeles});
+      },
+    );
+
+    it('leaves unix_seconds alone, which names no wall clock', () => {
+      // Seconds since the epoch count an elapsed duration, not a reading on
+      // someone's clock, so no zone can change how many have elapsed.
+      expect({
+        utc: textFor('UTC', 'unix_seconds'),
+        losAngeles: textFor(LOS_ANGELES, 'unix_seconds'),
+      }).toEqual({utc: '1774396800', losAngeles: '1774396800'});
+    });
+
+    it('does not move the instant the datetime attribute carries', () => {
+      // The whole point of a zone prop is that it changes the reading and not
+      // the instant: anything parsing the `<time>` must get the same moment
+      // whichever zone the text was rendered for.
+      const datetimeFor = (timezoneID: string | undefined) => {
+        const {unmount} = render(
+          <Timestamp
+            value={UTC_MIDNIGHT}
+            format="date_time"
+            timezoneID={timezoneID}
+            hasTooltip={false}
+            data-testid="ts"
+          />,
+        );
+        const datetime = screen.getByTestId('ts').getAttribute('datetime');
+        unmount();
+        return datetime;
+      };
+
+      expect({
+        none: datetimeFor(undefined),
+        utc: datetimeFor('UTC'),
+        losAngeles: datetimeFor(LOS_ANGELES),
+      }).toEqual({
+        none: UTC_MIDNIGHT_ISO,
+        utc: UTC_MIDNIGHT_ISO,
+        losAngeles: UTC_MIDNIGHT_ISO,
+      });
+    });
+
+    it('renders the named zone in the provider locale', () => {
+      // The zone picks the wall clock; the locale still picks the words and
+      // the field order. Both have to apply at once, or a zoned timestamp
+      // would quietly drop out of the surrounding translation.
+      render(
+        <InternationalizationProvider locale="de-DE">
+          <Timestamp
+            value={UTC_MIDNIGHT}
+            format="date_long"
+            timezoneID={LOS_ANGELES}
+            hasTooltip={false}
+            data-testid="ts"
+          />
+        </InternationalizationProvider>,
+      );
+      expect(normalize(screen.getByTestId('ts').textContent)).toBe(
+        normalize(
+          formatInstant(new Date(UTC_MIDNIGHT), 'date_long', 'de-DE', {
+            timeZone: LOS_ANGELES,
+          }),
+        ),
+      );
+    });
+
+    it('abbreviates the named zone, not the viewer one, with isTimezoneShown', () => {
+      // `isTimezoneShown` keeps meaning "name the zone this text is in". Once
+      // the text is in a named zone, naming the viewer's instead would label
+      // the reading with a zone it was not read in.
+      expect({
+        utc: textFor('UTC', 'date_time'),
+        utcShown: (() => {
+          const {unmount} = render(
+            <Timestamp
+              value={UTC_MIDNIGHT}
+              format="date_time"
+              timezoneID="UTC"
+              isTimezoneShown
+              hasTooltip={false}
+              data-testid="ts"
+            />,
+          );
+          const text = normalize(screen.getByTestId('ts').textContent);
+          unmount();
+          return text;
+        })(),
+        losAngelesShown: (() => {
+          const {unmount} = render(
+            <Timestamp
+              value={UTC_MIDNIGHT}
+              format="date_time"
+              timezoneID={LOS_ANGELES}
+              isTimezoneShown
+              hasTooltip={false}
+              data-testid="ts"
+            />,
+          );
+          const text = normalize(screen.getByTestId('ts').textContent);
+          unmount();
+          return text;
+        })(),
+      }).toEqual({
+        utc: 'Mar 25, 2026, 12:00 AM',
+        utcShown: 'Mar 25, 2026, 12:00 AM UTC',
+        losAngelesShown: 'Mar 24, 2026, 5:00 PM PDT',
+      });
+    });
+
+    it('is inert on the relative formats, which name no wall clock', () => {
+      expect({
+        relative: textFor('UTC', 'relative'),
+        relativeInLosAngeles: textFor(LOS_ANGELES, 'relative'),
+        relativeShort: textFor('UTC', 'relative_short'),
+      }).toEqual({
+        relative: '12 hours ago',
+        relativeInLosAngeles: '12 hours ago',
+        relativeShort: '12h ago',
+      });
+    });
+
+    it('applies once auto resolves to an absolute format', () => {
+      // `auto` is relative while the instant is recent and `date_time` once it
+      // is not. The zone has to follow that switch, or an aging timestamp
+      // would silently change which zone it reads in.
+      const old = '2020-01-01T00:00:00Z';
+      expect({
+        recent: textFor(LOS_ANGELES, 'auto'),
+        old: textFor(LOS_ANGELES, 'auto', old),
+      }).toEqual({
+        recent: '12 hours ago',
+        old: 'Dec 31, 2019, 4:00 PM',
+      });
+    });
+
+    it('leaves the accessible name of a relative timestamp in the viewer zone', () => {
+      // A relative timestamp's accessible name is the only reading a screen
+      // reader gets, and it describes the viewer's own clock. The prop steers
+      // visible absolute text; it does not re-point that name at a zone the
+      // reader is not in.
+      const ariaLabelFor = (timezoneID: string | undefined) => {
+        const {unmount} = render(
+          <Timestamp
+            value={UTC_MIDNIGHT}
+            format="relative"
+            timezoneID={timezoneID}
+            hasTooltip={false}
+            data-testid="ts"
+          />,
+        );
+        const label = screen.getByTestId('ts').getAttribute('aria-label');
+        unmount();
+        return label;
+      };
+
+      const inViewerZone = formatInstant(new Date(UTC_MIDNIGHT), 'full', 'en', {
+        timeZoneNameStyle: 'long',
+      });
+      expect({
+        none: ariaLabelFor(undefined),
+        utc: ariaLabelFor('UTC'),
+        losAngeles: ariaLabelFor(LOS_ANGELES),
+      }).toEqual({
+        none: inViewerZone,
+        utc: inViewerZone,
+        losAngeles: inViewerZone,
+      });
+    });
+
+    it('names an absolute timestamp by its own visible text', () => {
+      // An absolute timestamp has never carried an aria-label: its accessible
+      // name is the text itself. A zoned reading must not grow one, or the
+      // name and the text would be two different readings.
+      render(
+        <Timestamp
+          value={UTC_MIDNIGHT}
+          format="date_time"
+          timezoneID={LOS_ANGELES}
+          isTimezoneShown
+          hasTooltip={false}
+          data-testid="ts"
+        />,
+      );
+      const time = screen.getByTestId('ts');
+      expect({
+        ariaLabel: time.getAttribute('aria-label'),
+        accessibleName: normalize(time.textContent),
+      }).toEqual({
+        ariaLabel: null,
+        accessibleName: 'Mar 24, 2026, 5:00 PM PDT',
+      });
+    });
+
+    describe('alongside the hover card', () => {
+      const originalShowPopover = HTMLElement.prototype.showPopover;
+      const originalHidePopover = HTMLElement.prototype.hidePopover;
+
+      beforeEach(() => {
+        // The card content renders inline in a (mocked) popover; real timers
+        // let RTL's waitFor resolve (the outer beforeEach installs fake ones).
+        vi.useRealTimers();
+        HTMLElement.prototype.showPopover = vi.fn();
+        HTMLElement.prototype.hidePopover = vi.fn();
+      });
+
+      afterEach(() => {
+        HTMLElement.prototype.showPopover = originalShowPopover;
+        HTMLElement.prototype.hidePopover = originalHidePopover;
+        __resetLiveRegionsForTest();
+      });
+
+      it('leaves the tooltip rows to tooltipEntries', async () => {
+        // The hover card's zones are `tooltipEntries`' decision and stay that
+        // way: a visible reading in one zone and a card row in another is a
+        // supported combination, not a contradiction to resolve here.
+        render(
+          <Timestamp
+            value={UTC_MIDNIGHT}
+            format="date_time"
+            timezoneID="UTC"
+            tooltipEntries={[
+              {timezoneID: LOS_ANGELES, format: 'system_date_time'},
+            ]}
+            data-testid="ts"
+          />,
+        );
+        const card = await openTimestampHoverCard();
+        expect({
+          visible: normalize(screen.getByTestId('ts').textContent),
+          row: normalize(card.textContent).includes('2026-03-24 17:00:00'),
+        }).toEqual({visible: 'Mar 25, 2026, 12:00 AM', row: true});
+      });
+
+      it('leaves the default tooltip row in the viewer zone', async () => {
+        // With no entries the card shows one row: the full absolute time in the
+        // viewer's own zone. That default is documented as the viewer's zone and
+        // the prop does not quietly redefine it.
+        render(
+          <Timestamp
+            value={UTC_MIDNIGHT}
+            format="relative"
+            timezoneID={LOS_ANGELES}
+            data-testid="ts"
+          />,
+        );
+        const card = await openTimestampHoverCard();
+        expect(normalize(card.textContent)).toContain(
+          normalize(formatInstant(new Date(UTC_MIDNIGHT), 'full', 'en')),
+        );
+      });
+    });
+
+    it('reads the viewer zone for the local alias, as a tooltip entry does', () => {
+      expect({
+        alias: textFor('local', 'system_date_time'),
+        mixedCase: textFor('Local', 'system_date_time'),
+        omitted: textFor(undefined, 'system_date_time'),
+      }).toEqual({
+        alias: textFor(undefined, 'system_date_time'),
+        mixedCase: textFor(undefined, 'system_date_time'),
+        omitted: formatInstant(
+          new Date(UTC_MIDNIGHT),
+          'system_date_time',
+          'en',
+        ),
+      });
+    });
+
+    it('falls back to the viewer zone and warns on an identifier the platform rejects', () => {
+      // An unknown identifier makes every Intl.DateTimeFormat constructor
+      // throw. Rendering a timestamp must never take down the tree, so this
+      // degrades exactly the way an unknown `tooltipEntries` zone does.
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const unknown = 'Mars/Olympus_Mons';
+
+      const render1 = textFor(unknown, 'system_date_time');
+      const render2 = textFor(unknown, 'system_date_time');
+
+      expect({
+        text: render1,
+        stable: render2,
+        warnings: warn.mock.calls.filter(([first]) =>
+          String(first).includes(unknown),
+        ).length,
+        message: String(warn.mock.calls.at(0)?.[0] ?? ''),
+      }).toEqual({
+        text: textFor(undefined, 'system_date_time'),
+        stable: textFor(undefined, 'system_date_time'),
+        warnings: 1,
+        message: `Timestamp: unknown time zone ${JSON.stringify(unknown)} in timezoneID. Falling back to the viewer's time zone.`,
+      });
+      warn.mockRestore();
+    });
+
+    it('renders every format exactly as before when it is omitted', () => {
+      // The prop is additive. With nothing passed, every format still reads in
+      // the viewer's zone through the same zone-less formatter path.
+      const date = new Date(UTC_MIDNIGHT);
+      const formats = [
+        'date',
+        'date_long',
+        'date_weekday',
+        'date_time',
+        'time',
+        'system_date',
+        'system_date_time',
+        'system_time',
+        'unix_seconds',
+      ] as const;
+
+      expect(formats.map(format => textFor(undefined, format))).toEqual(
+        formats.map(format => normalize(formatInstant(date, format, 'en'))),
       );
     });
   });

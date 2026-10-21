@@ -52,10 +52,16 @@ export const docs = {
         "Lines to show on hover, so one instant can be read (and optionally copied) in several time zones and/or formats at once. Each entry is one line, in the order given. Omit timezoneID (or pass 'local') for the viewer's own zone; format defaults to the full absolute style and also accepts 'full' alongside every non-relative TimestampFormat. Rows are read-only unless they set isCopyable (default false); copyable rows show a copy button in a dedicated trailing action column so buttons align, and the column is only present when some row is copyable. With no entries the card shows a single default row with the full absolute time, which is copyable. Configuring entries also attaches the surface to absolute formats, which otherwise have none.",
     },
     {
+      name: 'timezoneID',
+      type: 'string',
+      description:
+        "IANA time zone identifier the visible text reads in (e.g. 'UTC', 'America/Los_Angeles'). Omit it, or pass 'local', for the viewer's own zone. Applies to the absolute formats, and to 'auto' once it resolves to one; the relative formats and 'unix_seconds' name no wall clock, so a zone cannot change them. The <time> element's datetime attribute always carries the true instant. Affects the visible text only: tooltipEntries controls the hover card's zones, and a relative timestamp's accessible name keeps naming the viewer's zone. An identifier the platform does not recognize falls back to the viewer's zone with a console warning.",
+    },
+    {
       name: 'isTimezoneShown',
       type: 'boolean',
       description:
-        'Whether to append the timezone abbreviation to the visible text. Applies to the date_time and time formats; system_* formats stay machine-readable and never carry one. Use tooltipEntries to control the tooltip\'s time zones.',
+        'Whether to append the timezone abbreviation to the visible text. Names whichever zone the text reads in, including one selected with timezoneID. Applies to the date_time and time formats; system_* formats stay machine-readable and never carry one. Use tooltipEntries to control the tooltip\'s time zones.',
       default: 'false',
     },
     {
@@ -101,6 +107,7 @@ export const docs = {
       {guidance: true, description: 'Use the auto format in feeds and lists so recent items show "2 hours ago" and older items show the full date automatically.'},
       {guidance: true, description: 'Keep formatting consistent within the same list or table; mixing relative and absolute timestamps in the same column confuses scanning.'},
       {guidance: true, description: 'Enable isTimezoneShown when the audience spans multiple time zones, like a global team calendar or audit log.'},
+      {guidance: true, description: 'Use timezoneID when the instant belongs to a place rather than to the reader, such as a maintenance window announced in the data centre\'s zone, and pair it with isTimezoneShown so the reader can see which zone they are reading.'},
       {guidance: true, description: 'Use tooltipEntries when readers must compare zones, such as an incident log where the reader\'s time and the event\'s origin zone both matter.'},
       {guidance: true, description: 'Label every entry once a tooltip shows more than one zone; a bare abbreviation is not always recognizable (Tokyo renders as "GMT+9", not "JST").'},
       {guidance: true, description: 'Use isLive for active dashboards or real-time feeds so the relative time stays accurate without a page refresh.'},
@@ -129,8 +136,10 @@ export const docsZh = {
     hasTooltip: '\u60ac\u505c\u65f6\u662f\u5426\u663e\u793a\u5305\u542b\u5b8c\u6574\u65e5\u671f/\u65f6\u95f4\u7684\u53ef\u590d\u5236\u60ac\u505c\u5361\u7247\uff08\u76f8\u5bf9\u65f6\u95f4\u6a21\u5f0f\uff0c\u6216\u914d\u7f6e tooltipEntries \u7684\u4efb\u610f\u683c\u5f0f\uff09\u3002',
     tooltipEntries:
       '\u60ac\u505c\u65f6\u8981\u663e\u793a\u7684\u884c\uff0c\u7528\u4e8e\u540c\u65f6\u5c55\u793a\u591a\u4e2a\u65f6\u533a\u548c/\u6216\u591a\u79cd\u683c\u5f0f\u3002\u6bcf\u9879\u4e3a\u4e00\u884c\uff0c\u6309\u987a\u5e8f\u6e32\u67d3\uff1b\u7701\u7565 timezoneID\uff08\u6216\u4f20\u5165 \'local\'\uff09\u8868\u793a\u67e5\u770b\u8005\u672c\u5730\u65f6\u533a\u3002\u60ac\u505c\u9762\u677f\u59cb\u7ec8\u662f\u53ef\u9010\u884c\u590d\u5236\u5230\u526a\u8d34\u677f\u7684\u4ea4\u4e92\u5f0f\u5361\u7247\uff0c\u8fd9\u4e9b\u914d\u7f6e\u9879\u81ea\u5b9a\u4e49\u5176\u884c\uff1b\u672a\u914d\u7f6e\u65f6\u5361\u7247\u663e\u793a\u4e00\u884c\u9ed8\u8ba4\u7684\u5b8c\u6574\u7edd\u5bf9\u65f6\u95f4\u3002\u914d\u7f6e\u540e\u7edd\u5bf9\u65f6\u95f4\u683c\u5f0f\u4e5f\u4f1a\u56e0\u6b64\u83b7\u5f97\u60ac\u505c\u9762\u677f\u3002',
+    timezoneID:
+      "\u53ef\u89c1\u6587\u672c\u6240\u7528\u7684 IANA \u65f6\u533a\u6807\u8bc6\uff08\u5982 'UTC'\u3001'America/Los_Angeles'\uff09\u3002\u7701\u7565\u6216\u4f20\u5165 'local' \u8868\u793a\u67e5\u770b\u8005\u672c\u5730\u65f6\u533a\u3002\u4ec5\u5bf9\u7edd\u5bf9\u65f6\u95f4\u683c\u5f0f\uff08\u4ee5\u53ca\u89e3\u6790\u4e3a\u7edd\u5bf9\u683c\u5f0f\u7684 'auto'\uff09\u751f\u6548\uff1b<time> \u7684 datetime \u59cb\u7ec8\u4fdd\u7559\u771f\u5b9e\u65f6\u523b\u3002\u53ea\u5f71\u54cd\u53ef\u89c1\u6587\u672c\uff1b\u60ac\u505c\u9762\u677f\u7684\u65f6\u533a\u4ecd\u7531 tooltipEntries \u63a7\u5236\u3002\u5e73\u53f0\u65e0\u6cd5\u8bc6\u522b\u7684\u6807\u8bc6\u4f1a\u56de\u9000\u5230\u67e5\u770b\u8005\u65f6\u533a\u5e76\u8f93\u51fa\u8b66\u544a\u3002",
     isTimezoneShown:
-      '\u662f\u5426\u5728\u53ef\u89c1\u6587\u672c\u540e\u9644\u52a0\u65f6\u533a\u7f29\u5199\uff08\u4ec5 date_time \u548c time\uff1bsystem_* \u683c\u5f0f\u4e0d\u9644\u52a0\uff09\u3002',
+      '\u662f\u5426\u5728\u53ef\u89c1\u6587\u672c\u540e\u9644\u52a0\u65f6\u533a\u7f29\u5199\uff08\u4ec5 date_time \u548c time\uff1bsystem_* \u683c\u5f0f\u4e0d\u9644\u52a0\uff09\uff1b\u6807\u6ce8\u7684\u662f\u6587\u672c\u5b9e\u9645\u6240\u5728\u7684\u65f6\u533a\uff0c\u5305\u62ec timezoneID \u6307\u5b9a\u7684\u90a3\u4e2a\u3002',
     isLive: '\u76f8\u5bf9\u65f6\u95f4\u662f\u5426\u5b9e\u65f6\u66f4\u65b0\u3002',
     type: '\u6765\u81ea Text \u7684\u8bed\u4e49\u6587\u672c\u7c7b\u578b\u3002',
     size: '\u663e\u5f0f\u5b57\u4f53\u5927\u5c0f\u8986\u76d6\u3002',
@@ -144,6 +153,7 @@ export const docsZh = {
       {guidance: true, description: 'Use the auto format in feeds and lists so recent items show "2 hours ago" and older items show the full date automatically.'},
       {guidance: true, description: 'Keep formatting consistent within the same list or table; mixing relative and absolute timestamps in the same column confuses scanning.'},
       {guidance: true, description: 'Enable isTimezoneShown when the audience spans multiple time zones, like a global team calendar or audit log.'},
+      {guidance: true, description: 'Use timezoneID when the instant belongs to a place rather than to the reader, such as a maintenance window announced in the data centre\'s zone, and pair it with isTimezoneShown so the reader can see which zone they are reading.'},
       {guidance: true, description: 'Use tooltipEntries when readers must compare zones, such as an incident log where the reader\'s time and the event\'s origin zone both matter.'},
       {guidance: true, description: 'Label every entry once a tooltip shows more than one zone; a bare abbreviation is not always recognizable (Tokyo renders as "GMT+9", not "JST").'},
       {guidance: true, description: 'Use isLive for active dashboards or real-time feeds so the relative time stays accurate without a page refresh.'},
@@ -173,6 +183,7 @@ export const docsDense = {
       {guidance: true, description: 'Auto format in feeds and lists; recent shows relative, older shows date_time.'},
       {guidance: true, description: 'Consistent formatting within the same list or table column.'},
       {guidance: true, description: 'isTimezoneShown for multi-timezone audiences.'},
+      {guidance: true, description: 'timezoneID when the instant belongs to a place, not the reader; pair it with isTimezoneShown.'},
       {guidance: true, description: 'tooltipEntries to compare zones when the reader time and event zone both matter.'},
       {guidance: true, description: 'Label each entry once a tooltip shows more than one zone; a bare abbreviation is not always recognizable (Tokyo renders "GMT+9", not "JST").'},
       {guidance: true, description: 'isLive for dashboards so relative time stays current.'},
@@ -191,8 +202,10 @@ export const docsDense = {
     hasTooltip: 'show copyable full-time hover card on hover (relative mode, or any format with tooltipEntries)',
     tooltipEntries:
       "hover rows across zones/formats: [{timezoneID?, format?, label?}]; timezoneID omitted or 'local' = viewer zone, format defaults to 'full'; the hover surface is always a copy-to-clipboard card, these customize its rows (default: a single full-time row), and configuring entries enables the card on absolute formats",
+    timezoneID:
+      "IANA zone the visible text reads in (e.g. 'UTC', 'America/Los_Angeles'); omitted or 'local' = viewer zone. Absolute formats only (and 'auto' once absolute); datetime keeps the true instant; tooltip zones stay with tooltipEntries; unknown id falls back to the viewer zone with a warning",
     isTimezoneShown:
-      'append timezone abbreviation to visible text (date_time and time only)',
+      'append timezone abbreviation to visible text (date_time and time only); names whichever zone the text reads in, including a timezoneID one',
     isLive: 'live-update relative time',
     type: 'Text semantic type',
     size: 'font size override',

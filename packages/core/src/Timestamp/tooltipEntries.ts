@@ -8,21 +8,23 @@
  *   it needs a zone abbreviation, then defers to formatInstant to render it
  *
  * This module holds only the decisions a tooltip makes that the visible text
- * does not: resolving `timezoneID` (including the `'local'` alias and the
- * fallback for an unknown identifier), and deciding which lines need a zone
- * abbreviation to be told apart. The formatting itself is formatInstant's,
- * shared with the rendered text, so the two surfaces cannot drift.
+ * does not: which zone each line names, and which lines need a zone
+ * abbreviation to be told apart. Resolving a consumer's `timezoneID` is no
+ * longer one of them — both surfaces take one now, so that lives in
+ * resolveTimezoneID.ts. The formatting itself is formatInstant's, shared with
+ * the rendered text, so the two surfaces cannot drift.
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Timestamp/Timestamp.tsx
  * - /packages/core/src/Timestamp/formatInstant.ts
+ * - /packages/core/src/Timestamp/resolveTimezoneID.ts
  * - /packages/core/src/Timestamp/tooltipEntries.test.ts
  * - /packages/core/src/Timestamp/Timestamp.doc.mjs
  * - /packages/core/src/Timestamp/index.ts
  */
 
-import {devWarn} from '../utils/devWarning';
 import {formatInstant} from './formatInstant';
+import {resolveTimezoneID} from './resolveTimezoneID';
 import type {InstantFormat} from './formatInstant';
 import type {Locale} from '../i18n/types';
 
@@ -103,52 +105,6 @@ export interface TimestampTooltipLine {
 const LOCAL_ZONE_ALIAS = 'local';
 
 /**
- * Zone identifiers already reported as unknown.
- *
- * Resolution runs once per entry on every render, so without this a single
- * typo on a live timestamp would emit the same warning every tick, forever.
- * One report per bad identifier is enough to act on.
- */
-const warnedTimezoneIDs = new Set<string>();
-
-/**
- * Resolves an entry's zone to something safe to hand to `Intl`.
- *
- * Returns `undefined` for the viewer's own zone, which is also what `Intl`
- * treats as "use the host zone" — so the local path never constructs a
- * formatter with an explicit `timeZone` and cannot drift from today's output.
- */
-function resolveTimezoneID(timezoneID: string | undefined): string | undefined {
-  if (
-    timezoneID === undefined ||
-    timezoneID.toLowerCase() === LOCAL_ZONE_ALIAS
-  ) {
-    return undefined;
-  }
-
-  // An unrecognized identifier makes every Intl.DateTimeFormat constructor
-  // throw a RangeError. Rendering a timestamp must never take down the tree —
-  // degrade to the viewer's zone and say so, mirroring how an unparseable
-  // `value` is handled in Timestamp.tsx.
-  try {
-    // Locale does not affect time-zone identifier validity; pin one so this
-    // validation path stays explicit and deterministic.
-    new Intl.DateTimeFormat('en-US', {timeZone: timezoneID});
-  } catch {
-    if (!warnedTimezoneIDs.has(timezoneID)) {
-      warnedTimezoneIDs.add(timezoneID);
-      devWarn(
-        'Timestamp',
-        `unknown time zone ${JSON.stringify(timezoneID)} in tooltipEntries. Falling back to the viewer's time zone.`,
-      );
-    }
-    return undefined;
-  }
-
-  return timezoneID;
-}
-
-/**
  * A stable key for "which zone did the consumer ask for", used to decide
  * whether the tooltip needs zone abbreviations to disambiguate its lines.
  *
@@ -207,7 +163,9 @@ export function formatTooltipLines(
   entries: ReadonlyArray<TimestampTooltipEntry>,
   locale: Locale,
 ): ReadonlyArray<TimestampTooltipLine> {
-  const resolved = entries.map(entry => resolveTimezoneID(entry.timezoneID));
+  const resolved = entries.map(entry =>
+    resolveTimezoneID(entry.timezoneID, 'tooltipEntries'),
+  );
   const hasMultipleZones = new Set(resolved.map(zoneKey)).size > 1;
 
   return entries.map((entry, index) => {

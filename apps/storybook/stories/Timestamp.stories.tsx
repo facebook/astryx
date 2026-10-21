@@ -87,6 +87,11 @@ const meta: Meta<typeof Timestamp> = {
       control: 'boolean',
       description: 'Append timezone abbreviation',
     },
+    timezoneID: {
+      control: 'text',
+      description:
+        "IANA zone the visible text reads in (omit, or 'local', for the viewer's own)",
+    },
   },
 };
 
@@ -246,6 +251,54 @@ export const TimeFormat: Story = {
     value: '2026-02-19T17:00:00Z',
     format: 'time',
   },
+};
+
+const UTC_MIDNIGHT = '2026-03-25T00:00:00Z';
+
+function ZonedRow({
+  caption,
+  timezoneID,
+}: {
+  caption: string;
+  timezoneID?: string;
+}) {
+  return (
+    <div data-testid={`zoned-${timezoneID ?? 'viewer'}`}>
+      <Text type="supporting" color="secondary">
+        {caption}
+      </Text>
+      <div>
+        <Timestamp
+          value={UTC_MIDNIGHT}
+          format="date_time"
+          timezoneID={timezoneID}
+          isTimezoneShown
+          hasTooltip={false}
+        />
+      </div>
+      <Text type="supporting" color="secondary">
+        {`datetime="${new Date(UTC_MIDNIGHT).toISOString()}"`}
+      </Text>
+    </div>
+  );
+}
+
+export const VisibleTimezone: Story = {
+  name: 'Visible time zone',
+  render: () => (
+    <div style={{display: 'flex', flexDirection: 'column', gap: '24px'}}>
+      <Text type="supporting" color="secondary">
+        One instant at UTC midnight, read three ways. The reading moves between
+        zones; the datetime attribute under each row does not.
+      </Text>
+      <ZonedRow caption="Viewer's own zone (no timezoneID)" />
+      <ZonedRow caption="timezoneID='UTC'" timezoneID="UTC" />
+      <ZonedRow
+        caption="timezoneID='America/Los_Angeles'"
+        timezoneID="America/Los_Angeles"
+      />
+    </div>
+  ),
 };
 
 export const TooltipTimezones: Story = {

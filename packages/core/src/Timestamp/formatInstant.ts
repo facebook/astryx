@@ -25,6 +25,7 @@
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Timestamp/Timestamp.tsx
+ * - /packages/core/src/Timestamp/resolveTimezoneID.ts
  * - /packages/core/src/Timestamp/tooltipEntries.ts
  * - /packages/core/src/Timestamp/Timestamp.test.tsx
  */
@@ -58,8 +59,9 @@ export interface FormatInstantOptions {
    * Must already be one the platform accepts. An identifier `Intl` does not
    * recognize throws a `RangeError` from its constructor, before any
    * formatting happens; deciding what to do about that belongs to whoever
-   * took the identifier from a consumer, not here (tooltipEntries resolves
-   * and warns in `resolveTimezoneID`, then passes only what survived).
+   * took the identifier from a consumer, not here (`resolveTimezoneID`
+   * resolves and warns for both surfaces that take one, then passes only
+   * what survived).
    */
   timeZone?: string;
   /**
