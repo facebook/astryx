@@ -1003,6 +1003,82 @@ function builtThemeSourceFix(sourceDir, sources, doc, exportName) {
   return `Fix: ${built.map(file => `"${file}"`).join(', ')} is the module \`${formatCliCommand('theme build', sourceDir)}\` writes, which takes the theme's name; rename ${source[0]} to ${stem}${extension} and ${doc} to ${stem}${THEME_DOC_SUFFIX}, export \`${stem}\` from it, and build again.`;
 }
 
+/**
+ * Why a descriptor pairs with the built module and the built module lacks
+ * the export the descriptor's stem names (`ocean.doc.mjs` beside a built
+ * `ocean.js` that exports `oceanTheme`): the descriptor is named for the
+ * build's output, not the theme's source. The source is named only when the
+ * built module's `Source:` header, or a source whose defineTheme gives the
+ * theme's name, confirms it; otherwise the message stays generic. Null when
+ * the entry is not a built module.
+ * @param {string} label the descriptor, as messages name it
+ * @param {string} sourceDir
+ * @param {string} entry the file the descriptor pairs with
+ * @param {string} exportName the descriptor's stem
+ * @param {string} doc the descriptor's file name
+ * @param {string} slug the theme's name
+ * @param {string[]} files the theme folder's files
+ * @returns {string | null}
+ */
+function builtModuleDescriptorMessage(
+  label,
+  sourceDir,
+  entry,
+  exportName,
+  doc,
+  slug,
+  files,
+) {
+  if (!isBuiltThemeModule(path.join(sourceDir, entry))) return null;
+  const source = confirmedThemeSource(sourceDir, entry, slug, files);
+  const head = `${label} shares its stem with the built module "${entry}", which does not export "${exportName}": a descriptor must share its stem with the source that calls defineTheme.`;
+  if (source == null) {
+    return `${head} Fix: rename ${doc} to share its stem with the theme's source (the module that calls defineTheme, such as ${exportName}Theme.ts).`;
+  }
+  const stem = source.replace(/\.[^.]+$/u, '');
+  return `${head} The theme's source is "${source}". Fix: rename ${doc} to ${stem}${THEME_DOC_SUFFIX}.`;
+}
+
+/**
+ * The theme's source, when something confirms it: the file the built
+ * module's `Source:` header names, if it is in the folder, else the one
+ * module in the folder whose defineTheme gives the theme's name as a
+ * literal. Null otherwise: a `<name>Theme` file alone may be a helper.
+ * @param {string} sourceDir
+ * @param {string} built the built module's file name
+ * @param {string} slug
+ * @param {string[]} files
+ * @returns {string | null}
+ */
+function confirmedThemeSource(sourceDir, built, slug, files) {
+  const own = files.filter(
+    file =>
+      !file.includes('/') &&
+      file !== built &&
+      THEME_MODULE_EXTENSIONS.some(extension => file.endsWith(extension)),
+  );
+  /** @param {string} file */
+  const read = file => {
+    try {
+      return fs.readFileSync(path.join(sourceDir, file), 'utf8');
+    } catch {
+      return '';
+    }
+  };
+  const header = /^\s*\*?\s*Source:\s*(\S+)\s*$/mu.exec(read(built));
+  if (header) {
+    const named = path.posix.basename(header[1].replace(/\\/gu, '/'));
+    if (own.includes(named)) return named;
+  }
+  const quoted = slug.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&');
+  const naming = new RegExp(
+    `\\bdefineTheme\\s*\\(\\s*\\{[^}]*\\bname\\s*:\\s*['"\`]${quoted}['"\`]`,
+    'u',
+  );
+  const matches = own.filter(file => naming.test(read(file)));
+  return matches.length === 1 ? matches[0] : null;
+}
+
 /** A module named for the theme it exports, such as `oceanTheme.ts`. */
 const THEME_SOURCE_RE = /^[$A-Z_a-z][$\w]*Theme\.(?:mjs|js|mts|ts|tsx|jsx)$/u;
 
@@ -1320,29 +1396,6 @@ export function discoverThemeDirectory(
     const sources = THEME_MODULE_EXTENSIONS.map(
       extension => `${exportName}${extension}`,
     ).filter(file => listing.files.includes(file));
-    // A descriptor named for the theme's built output rather than its
-    // `<name>Theme` source pairs with the build, and every later check then
-    // reads the wrong file.
-    const themeSources = listing.files.filter(
-      file =>
-        !file.includes('/') &&
-        THEME_SOURCE_RE.test(file) &&
-        !file.startsWith(`${exportName}.`),
-    );
-    // Blamed only when the file the descriptor pairs with is the built
-    // module: a descriptor beside its own defineTheme source is valid, even
-    // with a `<name>Theme` helper in the folder.
-    if (
-      !THEME_SOURCE_RE.test(`${exportName}.ts`) &&
-      themeSources.length === 1 &&
-      sources.length === 1 &&
-      isBuiltThemeModule(path.join(sourceDir, sources[0]))
-    ) {
-      const stem = themeSources[0].replace(/\.[^.]+$/u, '');
-      throw new Error(
-        `${label} shares its stem with the built module "${sources[0]}", but the theme's source is "${themeSources[0]}": a descriptor must share its stem with the source that calls defineTheme. Fix: rename ${docs[0]} to ${stem}${THEME_DOC_SUFFIX}.`,
-      );
-    }
     if (sources.length !== 1) {
       const fix =
         sources.length > 1
@@ -1396,7 +1449,16 @@ export function discoverThemeDirectory(
           )
         ) {
           throw new ThemeRuntimeExportError(
-            `Theme "${slug}" for ${owner} entry "${entry}" does not export "${exportName}".`,
+            builtModuleDescriptorMessage(
+              label,
+              sourceDir,
+              entry,
+              exportName,
+              docs[0],
+              slug,
+              listing.files,
+            ) ??
+              `Theme "${slug}" for ${owner} entry "${entry}" does not export "${exportName}".`,
           );
         }
       } catch (error) {

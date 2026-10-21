@@ -593,8 +593,8 @@ describe('a theme module that loads its own styles', () => {
     const result = await integrationPackCheck({cwd: tmpDir});
 
     expect(result.data.issues.map(issue => issue.message)).toEqual([
-      `Theme "ocean" module is themes/ocean/ocean.js, but oceanTheme.ts calls defineTheme with name: 'sea', so \`${formatCliCommand('theme build', tmpDir)}\` writes themes/ocean/sea.js instead and rebuilding never updates ocean.js. Fix: point the package export that serves it at themes/ocean/sea.js after building, or set name: 'ocean' in oceanTheme.ts and rebuild.`,
-      `Theme "ocean" stylesheet is themes/ocean/ocean.css, but oceanTheme.ts calls defineTheme with name: 'sea', so \`${formatCliCommand('theme build', tmpDir)}\` writes themes/ocean/sea.css instead and rebuilding never updates ocean.css. Fix: point the package export that serves it at themes/ocean/sea.css after building, or set name: 'ocean' in oceanTheme.ts and rebuild.`,
+      `Theme "ocean" module is themes/ocean/ocean.js, but oceanTheme.ts calls defineTheme with name: 'sea', so \`${formatCliCommand('theme build themes/ocean/oceanTheme.ts', tmpDir)}\` writes themes/ocean/sea.js instead and rebuilding never updates ocean.js. Fix: point the package export that serves it at themes/ocean/sea.js after building, or set name: 'ocean' in oceanTheme.ts and rebuild.`,
+      `Theme "ocean" stylesheet is themes/ocean/ocean.css, but oceanTheme.ts calls defineTheme with name: 'sea', so \`${formatCliCommand('theme build themes/ocean/oceanTheme.ts', tmpDir)}\` writes themes/ocean/sea.css instead and rebuilding never updates ocean.css. Fix: point the package export that serves it at themes/ocean/sea.css after building, or set name: 'ocean' in oceanTheme.ts and rebuild.`,
     ]);
   });
 

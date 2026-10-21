@@ -1690,7 +1690,7 @@ function renamedOutputMessage(
   const built = rel(
     path.join(path.dirname(source), `${builtName}${extension}`),
   );
-  return `Theme "${theme.slug}" ${kind} is ${rel(exported)}, but ${path.basename(source)} calls defineTheme with name: '${builtName}', so \`${formatCliCommand('theme build', packageDir)}\` writes ${built} instead and rebuilding never updates ${path.basename(exported)}. Fix: point the package export that serves it at ${built} after building, or set name: '${theme.slug}' in ${path.basename(source)} and rebuild.`;
+  return `Theme "${theme.slug}" ${kind} is ${rel(exported)}, but ${path.basename(source)} calls defineTheme with name: '${builtName}', so \`${formatCliCommand(`theme build ${rel(source)}`, packageDir)}\` writes ${built} instead and rebuilding never updates ${path.basename(exported)}. Fix: point the package export that serves it at ${built} after building, or set name: '${theme.slug}' in ${path.basename(source)} and rebuild.`;
 }
 
 /**

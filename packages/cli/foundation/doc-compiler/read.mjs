@@ -174,7 +174,9 @@ export async function readDocView(file, options) {
   if (result.loadFailed) throw result.loadFailure;
   if (result.missing) {
     if (strict) {
-      // Said plainly: the schema would only say "(root): Invalid input".
+      // A doc that exports nothing its reader takes (an empty file, or one
+      // with other exports) is said plainly, with what it does export and
+      // the fix; the schema would only say "(root): Invalid input".
       const exported =
         options.exports ??
         /** @type {Record<string, readonly string[]>} */ (DOC_EXPORTS)[
