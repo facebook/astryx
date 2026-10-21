@@ -172,11 +172,11 @@ No new performance or resource constraint is introduced.
 
 ## Verification map
 
-| Contract            | Verification                                                               | Representative states                                                  | Mutation or failure expectation                                             | Audit section                  |
-| ------------------- | -------------------------------------------------------------------------- | ---------------------------------------------------------------------- | --------------------------------------------------------------------------- | ------------------------------ |
-| FR1, FR2, AR1–AR3   | `DateRangeInput.test.tsx`                                                  | no match, applied preset, endpoint-invalid preset, span-invalid preset | Semantics or state attributes disappear                                     | `audit:DateRangeInput/presets` |
-| FR3, FR4            | `DateRangeInput.test.tsx`, `themingTargets.test.ts`, generated probe theme | group target, selected button, disabled button                         | Target class/state is missing, undocumented, or placed on the wrong element | `audit:DateRangeInput/theming` |
-| Theming anatomy map | `scripts/check-knowledge.mjs`                                              | all documented anatomy                                                 | Target ownership or anatomy names drift                                     | `audit:DateRangeInput/theming` |
+| Contract            | Verification                                                                      | Representative states                                                  | Mutation or failure expectation                                             | Audit section                  |
+| ------------------- | --------------------------------------------------------------------------------- | ---------------------------------------------------------------------- | --------------------------------------------------------------------------- | ------------------------------ |
+| FR1, FR2, AR1–AR3   | `DateRangeInput.test.tsx`; disabled-preset focusability (AR3) pending conformance | no match, applied preset, endpoint-invalid preset, span-invalid preset | Semantics or state attributes disappear                                     | `audit:DateRangeInput/presets` |
+| FR3, FR4            | `DateRangeInput.test.tsx`, `themingTargets.test.ts`, generated probe theme        | group target, selected button, disabled button                         | Target class/state is missing, undocumented, or placed on the wrong element | `audit:DateRangeInput/theming` |
+| Theming anatomy map | `scripts/check-knowledge.mjs`                                                     | all documented anatomy                                                 | Target ownership or anatomy names drift                                     | `audit:DateRangeInput/theming` |
 
 ## Decision log
 

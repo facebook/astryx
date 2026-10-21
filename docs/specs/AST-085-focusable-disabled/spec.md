@@ -13,7 +13,16 @@ owners: [cixzhang]
 affects_architecture: [architecture:interaction-modality]
 affects_families: [family:buttons, family:input-fields]
 affects_contributing: []
-affects_consumer_docs: []
+affects_consumer_docs:
+  [
+    Button,
+    ClickableCard,
+    Collapsible,
+    TextInput,
+    TextArea,
+    NumberInput,
+    useInteractiveRole,
+  ]
 ---
 
 # Focusable disabled controls system spec
@@ -83,10 +92,17 @@ non-operable control. No component renders the native `disabled` attribute.
   "follows `spec:AST-085`". Button already does this for busy and tooltip cases.
 - `family:input-fields` FR4 is satisfied for every member. "Focusable enough"
   becomes "focusable".
-- `component:DateRangeInput` AR3 and its disabled-preset state,
-  `component:Tokenizer`'s disabled state and verification, `component:Slider`
-  AR1 (every thumb is a Tab stop), and `component:Selector`'s disabled-with-reason
-  state follow this record instead of native `disabled`.
+- `component:DateRangeInput` AR3 and its disabled-preset state, and
+  `component:Tokenizer`'s disabled state and verification, follow this record
+  instead of native `disabled`. Their tests that assert native disabled are
+  pending conformance.
+- `component:Slider` AR1: a disabled thumb without a message gains a Tab stop;
+  its disabled-thumb tests are pending conformance.
+- `component:Selector`: a disabled trigger with a reason keeps its Tab stop, as
+  every disabled trigger now does.
+- Consumer docs for Button, ClickableCard, Collapsible, TextInput, TextArea,
+  NumberInput, and `useInteractiveRole` describe disabled controls as natively
+  disabled or out of the tab order; they change with conformance work.
 - Draft records for ClickableCard, BaseTypeahead, CheckboxInput, ChatComposer,
   and CommentPin describe native `disabled` as observed behavior; they change
   with conformance work.
