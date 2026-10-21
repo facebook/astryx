@@ -191,6 +191,31 @@ describe('doctor — individual checks', () => {
     expect(res.fix).toContain('`npx astryx init --features agents`');
   });
 
+  it('agent-docs: at the top of a home settings folder, the fix moves the project or edits by hand, never init', () => {
+    const saved = {HOME: process.env.HOME, USERPROFILE: process.env.USERPROFILE};
+    process.env.HOME = tmpDir;
+    process.env.USERPROFILE = tmpDir;
+    try {
+      const project = path.join(tmpDir, '.dotfiles');
+      fs.mkdirSync(project);
+      fs.writeFileSync(path.join(project, 'package.json'), '{"name":"dots"}');
+      for (const content of [null, '# Agents\nno markers here\n']) {
+        if (content != null) fs.writeFileSync(path.join(project, 'AGENTS.md'), content);
+        const res = checkAgentDocs({cwd: project});
+        expect(res.fix).toContain('Agent docs are not written into the home folder');
+        expect(res.fix).toContain(
+          'Move the project into a folder of its own, or edit the Astryx block in its agent file by hand.',
+        );
+        expect(res.fix).not.toContain('init --features agents');
+      }
+    } finally {
+      for (const [key, value] of Object.entries(saved)) {
+        if (value === undefined) delete process.env[key];
+        else process.env[key] = value;
+      }
+    }
+  });
+
   it('agent-docs: WARN when docs exist without XDS markers', () => {
     fs.writeFileSync(path.join(tmpDir, 'AGENTS.md'), '# AGENTS\nno markers here');
     const res = checkAgentDocs({cwd: tmpDir});
@@ -221,6 +246,25 @@ describe('doctor — individual checks', () => {
     );
   });
 
+  it('agent-docs: PASS from a nested package, reading the root that declares Astryx', () => {
+    fs.writeFileSync(
+      path.join(tmpDir, 'package.json'),
+      JSON.stringify({dependencies: {'@astryxdesign/core': '0.7.0'}}),
+    );
+    fs.writeFileSync(
+      path.join(tmpDir, 'AGENTS.md'),
+      '<!-- ASTRYX:START -->\nstuff\n<!-- ASTRYX:END -->\n',
+    );
+    const functions = path.join(tmpDir, 'functions');
+    fs.mkdirSync(path.join(functions, 'src'), {recursive: true});
+    fs.writeFileSync(path.join(functions, 'package.json'), '{"name":"functions"}');
+
+    expect(checkAgentDocs({cwd: path.join(functions, 'src')})).toMatchObject({
+      status: 'pass',
+      message: `Astryx agent docs section present in ${path.join('..', '..', 'AGENTS.md')}.`,
+    });
+  });
+
   it('agent-docs: reads every file init can write, Hermes included', () => {
     fs.writeFileSync(
       path.join(tmpDir, 'HERMES.md'),
@@ -229,6 +273,27 @@ describe('doctor — individual checks', () => {
     expect(checkAgentDocs({cwd: tmpDir})).toMatchObject({
       status: 'pass',
       message: 'Astryx agent docs section present in HERMES.md.',
+    });
+  });
+
+  it('agent-docs: FAIL when GEMINI.md imports an AGENTS.md that holds no block', () => {
+    const geminiImport = '<!-- ASTRYX:START -->\n@./AGENTS.md\n<!-- ASTRYX:END -->\n';
+    fs.writeFileSync(path.join(tmpDir, 'GEMINI.md'), geminiImport);
+    expect(checkAgentDocs({cwd: tmpDir})).toMatchObject({
+      status: 'fail',
+      message: expect.stringMatching(/^GEMINI\.md imports AGENTS\.md, which holds no Astryx block/),
+      fix: expect.stringMatching(/init --features agents/),
+    });
+
+    // A copy elsewhere does not mend it: Codex and Gemini CLI still get none.
+    fs.writeFileSync(path.join(tmpDir, 'CLAUDE.md'), '<!-- ASTRYX:START -->\nstuff\n<!-- ASTRYX:END -->\n');
+    fs.writeFileSync(path.join(tmpDir, 'AGENTS.md'), '# Agents\n');
+    expect(checkAgentDocs({cwd: tmpDir}).status).toBe('fail');
+
+    fs.writeFileSync(path.join(tmpDir, 'AGENTS.md'), '<!-- ASTRYX:START -->\nstuff\n<!-- ASTRYX:END -->\n');
+    expect(checkAgentDocs({cwd: tmpDir})).toMatchObject({
+      status: 'pass',
+      message: 'Astryx agent docs section present in AGENTS.md, CLAUDE.md.',
     });
   });
 

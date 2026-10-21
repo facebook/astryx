@@ -51,6 +51,7 @@ const PACKED_DIRS = ['clients', 'api', 'assets', 'authoring', 'foundation'];
 const RUNTIME_DEPS = [
   '@babel/parser',
   'commander',
+  'ignore',
   'jiti',
   'jscodeshift',
   'zod',

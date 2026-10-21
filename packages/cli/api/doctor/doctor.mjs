@@ -28,7 +28,15 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 
 import {MIN_NODE_VERSION, isNodeVersionSupported} from '../../foundation/env/node-version.mjs';
-import {AGENT_DOC_PATHS} from '../../foundation/agent-docs/agent-doc-state.mjs';
+import {
+  AGENT_DOC_PATHS,
+  holdsAstryxBlock,
+} from '../../foundation/agent-docs/agent-doc-state.mjs';
+import {
+  agentDocsTargetDir,
+  assertAgentDocsTarget,
+  resolveAgentDocsRoot,
+} from '../../foundation/agent-docs/agent-docs.mjs';
 import {CLI_ROOT, findProjectCoreDir, findInstalledPackage} from '../../foundation/fs/paths.mjs';
 import {explainPackageManager, formatCliCommand, getCliInvocation, guessCliInvocation} from '../../foundation/env/package-manager.mjs';
 import {chooseDeclaredCliCommand, declaredCliCommandsOf} from '../../foundation/env/cli-command.mjs';
@@ -611,14 +619,36 @@ export function checkConfiguredIntegrations(ctx) {
 }
 
 /**
+ * Why init writes no agent docs for `cwd`, or null when it does: the folder
+ * it would write to is the home folder or the top of a settings folder in it.
+ * @param {string} cwd
+ * @returns {string | null}
+ */
+function agentDocsRefusal(cwd) {
+  try {
+    assertAgentDocsTarget(agentDocsTargetDir(cwd));
+    return null;
+  } catch (err) {
+    return err instanceof Error && err.name === 'AgentDocsHomeError' ? err.message : null;
+  }
+}
+
+/**
  * Check 7 — agent docs exist and contain the Astryx section markers.
  * @param {DoctorContext} ctx
  * @returns {DoctorCheck}
  */
 export function checkAgentDocs(ctx) {
   // Every file init can write (one shared list), looked for in the working
-  // directory and in the project root: run from src/, the docs sit at the root.
-  const dirs = [...new Set([ctx.cwd, projectRootOf(ctx)])];
+  // directory, the project root, and the folder init writes them to: run from
+  // src/ or a nested package, the docs sit at the root.
+  const dirs = [
+    ...new Set(
+      [ctx.cwd, projectRootOf(ctx), resolveAgentDocsRoot(ctx.cwd) ?? ctx.cwd].map(dir =>
+        path.resolve(dir),
+      ),
+    ),
+  ];
   const present = dirs.flatMap(dir =>
     AGENT_DOC_PATHS.map(rel => path.join(dir, rel)).filter(abs =>
       fs.existsSync(abs),
@@ -626,6 +656,15 @@ export function checkAgentDocs(ctx) {
   );
   /** @param {string} abs */
   const shown = abs => path.relative(ctx.cwd, abs) || path.basename(abs);
+  // In the home folder, or at the top of a settings folder in it, init
+  // writes no agent docs (INV31), so the fix is moving the project or a hand
+  // edit, never init.
+  const refusal = agentDocsRefusal(ctx.cwd);
+  /** @param {string} initFix */
+  const fixFor = initFix =>
+    refusal
+      ? `${refusal} Move the project into a folder of its own, or edit the Astryx block in its agent file by hand.`
+      : initFix;
 
   if (present.length === 0) {
     return {
@@ -633,21 +672,54 @@ export function checkAgentDocs(ctx) {
       label: 'AI agent docs',
       status: 'info',
       message: `No agent docs found: looked for ${AGENT_DOC_PATHS.join(', ')} in ${dirs.map(dir => path.relative(ctx.cwd, dir) || '.').join(' and ')}.`,
-      fix: `Generate agent docs with \`${getCliInvocation(ctx.cwd)} init --features agents\`.`,
+      fix: fixFor(
+        `Generate agent docs with \`${getCliInvocation(ctx.cwd)} init --features agents\`.`,
+      ),
     };
   }
 
-  const withMarkers = present.filter(abs => {
+  /** @param {string} abs */
+  const read = abs => {
     try {
-      const content = fs.readFileSync(abs, 'utf-8');
-      return (
-        (content.includes('<!-- ASTRYX:START -->') || content.includes('<!-- XDS:START -->')) &&
-        (content.includes('<!-- ASTRYX:END -->') || content.includes('<!-- XDS:END -->'))
-      );
+      return fs.readFileSync(abs, 'utf-8');
     } catch {
-      return false;
+      return '';
     }
+  };
+  const withMarkers = present.filter(abs => {
+    const content = read(abs);
+    return (
+      (content.includes('<!-- ASTRYX:START -->') || content.includes('<!-- XDS:START -->')) &&
+      (content.includes('<!-- ASTRYX:END -->') || content.includes('<!-- XDS:END -->')) &&
+      holdsAstryxBlock(content)
+    );
   });
+
+  // A managed block that only imports another file (init's GEMINI.md import
+  // of AGENTS.md) is broken when that file holds no block: the agents that
+  // read either file get no Astryx docs.
+  const dangling = present.flatMap(abs => {
+    const match = /<!-- ASTRYX:START -->\s*@(\S+)\s*<!-- ASTRYX:END -->/.exec(read(abs));
+    if (match == null) return [];
+    const target = path.resolve(path.dirname(abs), match[1]);
+    return holdsAstryxBlock(read(target)) ? [] : [{abs, target}];
+  });
+  if (dangling.length > 0) {
+    return {
+      id: 'agent-docs',
+      label: 'AI agent docs',
+      status: 'fail',
+      message: dangling
+        .map(
+          ({abs, target}) =>
+            `${shown(abs)} imports ${shown(target)}, which holds no Astryx block, so agents that read them get no Astryx docs.`,
+        )
+        .join(' '),
+      fix: fixFor(
+        `Write the block again with \`${getCliInvocation(ctx.cwd)} init --features agents\`.`,
+      ),
+    };
+  }
 
   if (withMarkers.length === 0) {
     return {
@@ -655,7 +727,9 @@ export function checkAgentDocs(ctx) {
       label: 'AI agent docs',
       status: 'warn',
       message: `Agent docs present (${present.map(shown).join(', ')}) but no Astryx section markers found.`,
-      fix: `Add the Astryx section to your agent docs with \`${getCliInvocation(ctx.cwd)} init --features agents\`.`,
+      fix: fixFor(
+        `Add the Astryx section to your agent docs with \`${getCliInvocation(ctx.cwd)} init --features agents\`.`,
+      ),
     };
   }
 

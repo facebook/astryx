@@ -65,6 +65,26 @@ describe('TimeInput', () => {
     expect(onChange).toHaveBeenCalledWith('14:31');
   });
 
+  it('does not step into a fractional minute when increment is fractional', () => {
+    const onChange = vi.fn();
+    render(
+      <TimeInput
+        label="Time"
+        value={'14:30' as ISOTimeString}
+        increment={0.5}
+        onChange={onChange}
+      />,
+    );
+    const input = screen.getByLabelText('Time');
+
+    // `increment` is documented as minutes and typed `number`. A fractional one
+    // used to reach formatISOTime unrounded, which pads "30.5" to two
+    // characters and leaves it, so the arrow key handed the consumer a value
+    // that is no longer a time at all.
+    fireEvent.keyDown(input, {key: 'ArrowUp'});
+    expect(onChange).toHaveBeenCalledWith('14:30');
+  });
+
   it('displays formatted time in 12h format', () => {
     render(
       <TimeInput

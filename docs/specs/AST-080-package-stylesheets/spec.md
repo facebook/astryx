@@ -149,8 +149,9 @@ first.
 
 - Core, Lab, Rich Text, and Charts already export one stylesheet each with every
   rule inside `@layer astryx-base`. Non-Core stylesheets omit the Core variable
-  groups `astryx.css` declares; Lab's keeps Core's data-token group, which
-  `astryx.css` omits under `spec:AST-066` FR3.
+  groups `astryx.css` declares. Core's prebuilt stylesheet carries the canonical
+  data-token group; Lab relies on that stylesheet and adds no copy, under
+  `spec:AST-066` FR3.
 - No package stylesheet and not `reset.css` carries the FR3 order registration
   today. The order holds only when the product writes the registration line
   itself; a product that loads `reset.css` after a package stylesheet without it

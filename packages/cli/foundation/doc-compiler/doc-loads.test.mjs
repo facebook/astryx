@@ -248,6 +248,10 @@ const RUNNERS = {
     runs: 'astryx.config, through the config parser',
     sites: ['loadModuleWithParser(..., parseConfig)'],
   },
+  'foundation/agent-docs/agent-docs.mjs': {
+    runs: 'git, sl or hg, to read whether the repository ignores an untracked agent file',
+    sites: ['child_process.spawnSync'],
+  },
   'foundation/fs/file-protection.mjs': {
     runs: 'the ignore matcher (CommonJS), loaded when a resolver first reads an ignore file',
     sites: ['require(ignore)'],
