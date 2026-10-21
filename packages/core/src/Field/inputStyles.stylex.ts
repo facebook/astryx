@@ -67,9 +67,16 @@ export const inputWrapperStyles = stylex.create({
   disabled: {
     cursor: 'default',
     opacity: 0.5,
-    borderColor: colorVars['--color-border-emphasized'],
-    // Suppress the base hover ring — a disabled control must not react to hover.
-    boxShadow: 'none',
+    // A disabled control does not react to hover, but one that holds focus
+    // still shows it (`spec:AST-085` FR6), with the same ring as base.
+    borderColor: {
+      default: colorVars['--color-border-emphasized'],
+      ':focus-within': colorVars['--color-accent'],
+    },
+    boxShadow: {
+      default: 'none',
+      ':focus-within': `inset 0px 0px 0px 2px ${colorVars['--color-accent-muted']}`,
+    },
   },
 });
 
