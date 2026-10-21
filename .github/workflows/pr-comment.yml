@@ -45,14 +45,21 @@ jobs:
       source_conclusion: ${{ steps.identity.outputs.source_conclusion }}
       spec_only: ${{ steps.identity.outputs.spec_only }}
       tooling_only: ${{ steps.identity.outputs.tooling_only }}
+      failed: ${{ steps.checkout.outcome == 'failure' || steps.identity.outcome == 'failure' }}
     steps:
       - name: Checkout trusted default-branch code
+        id: checkout
+        continue-on-error: true
         uses: actions/checkout@v7
         with:
           ref: main
 
       - name: Resolve trusted PR identity
+        continue-on-error: true
         id: identity
+        # Steps continue on error, so a failed checkout no longer skips this
+        # one by itself.
+        if: steps.checkout.outcome == 'success'
         uses: actions/github-script@v9
         with:
           retries: 3
@@ -218,16 +225,25 @@ jobs:
       actions: read
       contents: read
       pull-requests: write
+    outputs:
+      failed: ${{ steps.scope.outcome == 'failure' || steps.checkout.outcome == 'failure' || steps.reconcile.outcome == 'failure' }}
     steps:
       - name: Report no visual scope
+        id: scope
+        continue-on-error: true
         run: echo 'No visual scope applies; canonical visual checks are not applicable.' >> "$GITHUB_STEP_SUMMARY"
 
       - name: Checkout trusted default-branch code
+        id: checkout
+        continue-on-error: true
         uses: actions/checkout@v7
         with:
           ref: main
 
       - name: Remove stale preview links from an existing report
+        id: reconcile
+        continue-on-error: true
+        if: steps.checkout.outcome == 'success'
         uses: actions/github-script@v9
         env:
           PR_NUMBER: ${{ needs.resolve.outputs.pr_number }}
@@ -286,19 +302,37 @@ jobs:
       pull-requests: write
       actions: read
       deployments: read # resolve the exact-head Vercel Preview deployment
+    # The artifact downloads are optional (a run may not produce them), so
+    # they are not failures of this job.
+    outputs:
+      failed: >-
+        ${{ steps.checkout.outcome == 'failure' ||
+        steps.setup.outcome == 'failure' ||
+        steps.identity.outcome == 'failure' ||
+        steps.cross-check.outcome == 'failure' ||
+        steps.visual.outcome == 'failure' ||
+        steps.publish.outcome == 'failure' }}
     steps:
       - name: Checkout trusted default-branch code
+        id: checkout
+        continue-on-error: true
         uses: actions/checkout@v7
         with:
           ref: main
 
       - name: Setup Node and pnpm
+        id: setup
+        continue-on-error: true
         uses: ./.github/actions/setup
 
       # Recheck the exact source run and current PR immediately before any
       # privileged report or status mutation.
       - name: Reconfirm trusted PR identity
+        continue-on-error: true
         id: identity
+        # Steps continue on error, so a failed checkout or install no longer
+        # skips the rest by itself. Every later step requires a valid identity.
+        if: steps.setup.outcome == 'success'
         uses: actions/github-script@v9
         env:
           PR_NUMBER: ${{ needs.resolve.outputs.pr_number }}
@@ -381,6 +415,8 @@ jobs:
         continue-on-error: true
 
       - name: Cross-check artifact identity
+        id: cross-check
+        continue-on-error: true
         if: steps.identity.outputs.valid == 'true' && hashFiles('pr-analysis/pr-meta.json') != ''
         env:
           EXPECTED_PR: ${{ steps.identity.outputs.pr_number }}
@@ -407,6 +443,8 @@ jobs:
       # Only JSON and re-encoded PNGs from the exact CI attempt are published.
       # No browser, baseline comparison, acceptance, or status authority lives here.
       - name: Prepare canonical visual report
+        id: visual
+        continue-on-error: true
         if: steps.identity.outputs.valid == 'true' && steps.visual-download.outcome == 'success'
         env:
           HEAD_SHA: ${{ steps.identity.outputs.head_sha }}
@@ -421,6 +459,8 @@ jobs:
             --run-attempt "$RUN_ATTEMPT"
 
       - name: Generate and post PR comment
+        id: publish
+        continue-on-error: true
         if: always() && steps.identity.outputs.valid == 'true'
         uses: actions/github-script@v9
         env:
@@ -457,4 +497,50 @@ jobs:
                 sourceRunAttempt: Number(process.env.RUN_ATTEMPT),
                 sourceConclusion: process.env.SOURCE_CONCLUSION,
               },
+            });
+
+  # The CI-completion lane runs on workflow_run, so GitHub attaches its jobs to
+  # main's latest commit. Main's checks must show main's health, not a pull
+  # request's. The jobs above therefore never fail the run: every fallible step
+  # continues on error, and this job reports their outcome as the PR Comment
+  # status on the pull request's own head. (The deployment_status lane already
+  # runs on the pull request's head commit.)
+  report:
+    needs: [resolve, spec-only-reconcile, comment]
+    if: >-
+      always() &&
+      github.event_name == 'workflow_run' &&
+      github.event.workflow_run.event == 'pull_request' &&
+      (needs.resolve.outputs.valid == 'true' ||
+      needs.resolve.outputs.failed == 'true')
+    runs-on: ubuntu-slim
+    permissions:
+      statuses: write
+    steps:
+      - name: Report the outcome on the pull request head
+        continue-on-error: true
+        uses: actions/github-script@v9
+        env:
+          # The source run's head is the pull request head it tested, taken from
+          # the trusted event rather than from any job output.
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+          FAILED: >-
+            ${{ needs.resolve.outputs.failed == 'true' ||
+            needs.spec-only-reconcile.outputs.failed == 'true' ||
+            needs.comment.outputs.failed == 'true' ||
+            contains(needs.*.result, 'failure') ||
+            contains(needs.*.result, 'cancelled') }}
+        with:
+          retries: 3
+          script: |
+            const failed = process.env.FAILED === 'true';
+            await github.rest.repos.createCommitStatus({
+              ...context.repo,
+              sha: process.env.HEAD_SHA,
+              context: 'PR Comment',
+              state: failed ? 'failure' : 'success',
+              target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
+              description: failed
+                ? 'A PR report step failed or was cancelled. See the run.'
+                : 'No PR report step failed.',
             });

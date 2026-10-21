@@ -180,6 +180,34 @@ function docTypesBlocks(report, failed) {
 }
 
 /**
+ * The component doc names that could not be judged against their sources.
+ * @param {import('../../../api/integration/validate-integration.type.mjs').DocNamesReport | undefined} report
+ */
+function docNamesBlocks(report) {
+  if (!report || report.unchecked.length === 0) return [];
+  return [
+    text(
+      `[info] Component names not checked: ${report.unchecked.length} doc(s) whose source exports this check cannot read:`,
+    ),
+    records(report.unchecked, {fields: ['file', 'name', 'reason']}),
+  ];
+}
+
+/**
+ * The block component names this check could not judge.
+ * @param {import('../../../api/integration/validate-integration.type.mjs').BlockComponentsReport | undefined} report
+ */
+function blockComponentsBlocks(report) {
+  if (!report || report.unchecked.length === 0) return [];
+  return [
+    text(
+      `[info] Block component names not checked: ${report.unchecked.length} name(s) this check could not judge:`,
+    ),
+    records(report.unchecked, {fields: ['file', 'name', 'reason']}),
+  ];
+}
+
+/**
  * @param {import('../../../api/integration/validate-integration.type.mjs').ValidateIntegrationResponse['data']} data
  */
 function printIntegrationValidation(data) {
@@ -204,6 +232,8 @@ function printIntegrationValidation(data) {
         `${warnings} warning${warnings === 1 ? '' : 's'}`,
     ),
     ...docTypesBlocks(data.docTypes, errors > 0),
+    ...docNamesBlocks(data.docNames),
+    ...blockComponentsBlocks(data.blockComponents),
   );
 }
 

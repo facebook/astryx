@@ -39,7 +39,17 @@ describe('PR report and deployment workflow contracts', () => {
     expect(value).toContain('types: [completed]');
     expect(value).not.toMatch(/gate\.mjs (?:check|capture|release)/);
     expect(value).not.toContain('playwright');
-    expect(value).not.toContain('createCommitStatus');
+    // Its one status says whether the report was published, on the pull
+    // request head; it carries no visual verdict.
+    const parsed = yaml.parse(value);
+    for (const [name, job] of Object.entries(parsed.jobs)) {
+      if (name === 'report') continue;
+      expect(JSON.stringify(job), name).not.toContain('createCommitStatus');
+    }
+    const reportScript = parsed.jobs.report.steps[0].with.script;
+    expect(reportScript.match(/createCommitStatus/g)).toHaveLength(1);
+    expect(reportScript).toContain("context: 'PR Comment'");
+    expect(reportScript).not.toMatch(/visual|verdict/i);
   });
 
   it('serializes early preview and later CI enrichment per PR, not across PRs', () => {

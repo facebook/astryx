@@ -22,7 +22,9 @@ import {
   collectGlobalReviewMatches,
   discoverKnowledgeRecords,
   consumerDocPublicNames,
+  matchesPathPattern,
   parseKnowledgeDocument,
+  parsePathApplicabilityBlock,
 } from './check-knowledge.mjs';
 
 const require = createRequire(import.meta.url);
@@ -142,6 +144,9 @@ export function loadKnowledgeIndex(root = DEFAULT_ROOT) {
       authority: frontmatter.get('authority'),
       frontmatter,
       classified: classifyComponentKnowledgePath(filePath),
+      pathPatterns: asList(
+        parsePathApplicabilityBlock(content, filePath).config?.paths,
+      ).filter(pattern => typeof pattern === 'string'),
     });
   }
   const byId = new Map(records.map(record => [record.id, record]));
@@ -331,10 +336,16 @@ function placementMatches(index, filePath, location) {
   return matches;
 }
 
-/** Records that declare a path entry covering `filePath`. */
+/** Records that declare a path entry or pattern covering `filePath`. */
 function declaredPathMatches(index, filePath) {
   const matches = [];
   for (const record of index.records) {
+    const pattern = record.pathPatterns.find(candidate =>
+      matchesPathPattern(candidate, filePath),
+    );
+    if (pattern) {
+      matches.push({record, via: 'path-applicability', detail: pattern});
+    }
     for (const field of ['applies_to', 'verified_by']) {
       for (const entry of asList(record.frontmatter.get(field))) {
         if (pathEntryCovers(index.root, entry, filePath)) {
