@@ -38,7 +38,8 @@ detached presentations; consumer usage remains documented in
 
 - Released default preserved: `yes`
 - Compatibility class: additive documentation only; runtime, DOM, styling, and
-  public API remain unchanged
+  public API remain unchanged, except that delivery inside a mounted live
+  container follows `spec:AST-086` FR4 once conformance work lands
 - Controlled/uncontrolled behavior: not applicable
 - Migration decision: direct `FieldStatus variant="tooltip"` support is rejected.
   `tooltip` remains a field-family sentinel that MUST be handled before rendering

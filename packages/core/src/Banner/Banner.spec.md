@@ -156,6 +156,8 @@ announcement urgency. Banner renders no live-region role by default. A caller ma
 provide `role="status"` through the standard DOM surface when the visible banner
 is intentionally a persistent semantic mirror. Async outcomes use `useAnnounce`
 from the transition handler, which writes into a previously mounted live region;
+inside a mounted live container, that container delivers them
+(`spec:AST-086` FR4);
 a Banner mounted together with its message is not a reliable announcement.
 `role="alert"` remains available as an explicit native role, but is reserved for
 genuinely urgent content that should interrupt current speech.
@@ -247,7 +249,7 @@ placement and would imply that the target must remain on the outermost element.
 Banner status selects color and icon only. It does not assign `role="status"` or
 `role="alert"`. Async outcomes announce through `useAnnounce` from the transition
 handler so the message reaches a persistent live region rather than one mounted
-with its content. An explicit native role remains available through BaseProps for
+with its content; inside a mounted live container, `spec:AST-086` FR4 applies. An explicit native role remains available through BaseProps for
 a persistent semantic mirror or the rare genuinely urgent alert.
 
 Rejected: deriving alert urgency from `warning` or `error`. Severity and urgency
