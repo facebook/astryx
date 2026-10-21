@@ -91,13 +91,19 @@ function MockContent({paragraphs = 3}: {paragraphs?: number}) {
  * Standard TopNav used across multiple stories.
  * Provides app identity (logo + heading) and top-level navigation.
  */
-function AppTopNav({endContent}: {endContent?: React.ReactNode}) {
+function AppTopNav({
+  endContent,
+  heading = 'Acme App',
+}: {
+  endContent?: React.ReactNode;
+  heading?: string;
+}) {
   return (
     <TopNav
       label="Main navigation"
       heading={
         <TopNavHeading
-          heading="Acme App"
+          heading={heading}
           logo={<NavIcon icon={<CubeIcon style={{width: 16, height: 16}} />} />}
         />
       }
@@ -304,6 +310,42 @@ export const TopNavWithSideNav: Story = {
     <AppShell
       contentPadding={6}
       topNav={<AppTopNav />}
+      sideNav={<SideNavWithoutHeader />}>
+      <MockContent />
+    </AppShell>
+  ),
+};
+
+/**
+ * A long app name on a phone. The heading truncates with an ellipsis so the
+ * end content and the menu toggle stay inside the bar.
+ */
+export const LongHeadingOnMobile: Story = {
+  globals: {viewport: {value: 'mobile1', isRotated: false}},
+  render: () => (
+    <AppShell
+      contentPadding={6}
+      topNav={
+        <AppTopNav
+          heading="Northwind Internal Usage Analytics"
+          endContent={
+            <>
+              <Button
+                label="Notifications"
+                variant="ghost"
+                icon={<BellIcon style={{width: 16, height: 16}} />}
+                isIconOnly
+              />
+              <Button
+                label="Profile"
+                variant="ghost"
+                icon={<UserCircleIcon style={{width: 16, height: 16}} />}
+                isIconOnly
+              />
+            </>
+          }
+        />
+      }
       sideNav={<SideNavWithoutHeader />}>
       <MockContent />
     </AppShell>

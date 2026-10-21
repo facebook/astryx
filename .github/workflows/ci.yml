@@ -1415,6 +1415,17 @@ jobs:
             --project chromium \
             --output token-remove-target-output
 
+      # On a phone-width screen AppShell shows TopNav's compact bar. A long
+      # heading must give way so the menu toggle stays inside the bar and the
+      # drawer's close button stays inside the drawer; only a real engine lays
+      # them out.
+      - name: Run TopNav mobile long heading contract
+        run: |
+          pnpm exec playwright test \
+            packages/core/src/TopNav/__tests__/TopNavMobileLongHeading.a11y.chromium.spec.ts \
+            --project chromium \
+            --output top-nav-mobile-long-heading-output
+
       # The RichTextEditor "Markdown parity" stories render one Markdown
       # document with core Markdown and RichTextEditor and measure where each
       # block lands; geometry, the read/edit switch and the scroll anchor only
