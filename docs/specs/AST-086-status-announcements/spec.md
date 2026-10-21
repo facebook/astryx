@@ -132,8 +132,9 @@ announcement channel.
   DropdownMenuSubMenu, Thumbnail, and the lab EmojiPicker, Schedule, and
   Comments history loaders): each composes a Spinner with
   `role="status"` inside the busy control. Under FR8 that Spinner is silent and
-  each control announces its own busy state through the channel; Switch and
-  CommandPaletteInput already do.
+  each control announces its own busy state through the channel. Switch
+  already does; CommandPalette announces only typed-query loading, so its load on
+  opening or clearing the query still needs an announcement.
 - ChatMessageList: its top loading Spinner is a `role="status"` child of the
   log. Under FR4 and FR8 it is silent, and ChatMessageList announces its loading
   through the channel.
