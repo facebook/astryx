@@ -361,8 +361,15 @@ function pathPatternExpression(pattern) {
  * `**` spans any number of whole segments, `*` any run within one segment,
  * and `?` one character within a segment. Matching is case-sensitive.
  */
+const pathPatternCache = new Map();
+
 export function matchesPathPattern(pattern, filePath) {
-  return pathPatternExpression(pattern).test(filePath);
+  let expression = pathPatternCache.get(pattern);
+  if (!expression) {
+    expression = pathPatternExpression(pattern);
+    pathPatternCache.set(pattern, expression);
+  }
+  return expression.test(filePath);
 }
 
 export function parsePathApplicabilityBlock(
