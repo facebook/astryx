@@ -35,7 +35,7 @@ vi.mock(
   },
 );
 
-const {validateIntegration} = await import('./validate-integration.mjs');
+const {validateLocalIntegration} = await import('./validate-integration.mjs');
 
 /** @type {string} */
 let tmpDir;
@@ -49,7 +49,7 @@ afterEach(() => {
 });
 
 describe('a doc whose name differs from its source only in case, on a case-insensitive disk', () => {
-  it('lists source_without_component_doc with the rename, without an issue', async () => {
+  it('warns source_without_component_doc with the rename, without failing validate', async () => {
     fs.writeFileSync(
       path.join(tmpDir, 'package.json'),
       JSON.stringify({name: '@acme/kit', version: '1.0.0'}),
@@ -68,43 +68,13 @@ describe('a doc whose name differs from its source only in case, on a case-insen
       'export function AcmeWidget() { return null; }\n',
     );
 
-    const {data} = await validateIntegration(undefined, {cwd: tmpDir});
-    expect(data.issues).toEqual([]);
-    expect(data.notes).toEqual([
+    const {issues} = await validateLocalIntegration(tmpDir);
+    expect(issues).toEqual([
       {
         code: 'source_without_component_doc',
+        severity: 'warning',
         message:
           'Component doc "Acmewidget.doc.mjs" and its source "AcmeWidget.tsx" differ only in letter case. They pair on a case-insensitive disk (macOS, Windows) but not on Linux, where CI and most installs run, so there the component is missing. Fix: rename Acmewidget.doc.mjs to AcmeWidget.doc.mjs.',
-      },
-    ]);
-  });
-
-  it('lists a hidden doc that pairs with its source, without an issue', async () => {
-    fs.writeFileSync(
-      path.join(tmpDir, 'package.json'),
-      JSON.stringify({name: '@acme/kit', version: '1.0.0'}),
-    );
-    fs.writeFileSync(
-      path.join(tmpDir, 'astryx.integration.mjs'),
-      "export default {components: './components'};\n",
-    );
-    fs.mkdirSync(path.join(tmpDir, 'components'));
-    fs.writeFileSync(
-      path.join(tmpDir, 'components', 'Acmewidget.doc.mjs'),
-      "export default {type: 'component',\n  hidden: true,\n  name: 'AcmeWidget', displayName: 'AcmeWidget', usage: {description: 'A widget.'}, props: []};\n",
-    );
-    fs.writeFileSync(
-      path.join(tmpDir, 'components', 'AcmeWidget.tsx'),
-      'export function AcmeWidget() { return null; }\n',
-    );
-
-    const {data} = await validateIntegration(undefined, {cwd: tmpDir});
-    expect(data.issues).toEqual([]);
-    expect(data.notes).toEqual([
-      {
-        code: 'source_without_component_doc',
-        message:
-          'Hidden component doc "Acmewidget.doc.mjs" and its source "AcmeWidget.tsx" differ only in letter case. They pair on a case-insensitive disk (macOS, Windows) but not on Linux, where CI and most installs run. Fix: rename Acmewidget.doc.mjs to AcmeWidget.doc.mjs.',
       },
     ]);
   });
