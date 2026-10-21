@@ -1035,6 +1035,42 @@ export function importedModule(integration, docPath, doc) {
 }
 
 /**
+ * The file an import of the package's own name resolves to, through its
+ * package.json `exports` (or `main` when it has none): `@acme/kit` or
+ * `@acme/kit/widget`. Null when the specifier names another package, or the
+ * package publishes nothing at it.
+ * @param {{name?: string, __packageDir?: string, __packageExports?: Record<string, unknown> | null}} integration
+ * @param {string} specifier
+ * @returns {string | null}
+ */
+export function ownPackageModule(integration, specifier) {
+  const packageName = integration?.name;
+  const packageDir = integration?.__packageDir;
+  if (!packageName || !packageDir) return null;
+  if (specifier !== packageName && !specifier.startsWith(`${packageName}/`)) {
+    return null;
+  }
+  const exportsMap =
+    integration.__packageExports === undefined
+      ? readPackageExports(packageDir)
+      : integration.__packageExports;
+  if (specifier === packageName && exportsMap == null) {
+    return packageMain(packageDir) ?? null;
+  }
+  const subpath =
+    specifier === packageName
+      ? '.'
+      : `./${specifier.slice(packageName.length + 1)}`;
+  return (
+    inspectPackageExport(
+      {name: packageName, exports: exportsMap ?? undefined},
+      packageDir,
+      subpath,
+    ).target ?? null
+  );
+}
+
+/**
  * Whether `file` sits in `folder` or below it.
  * @param {string} folder
  * @param {string} file

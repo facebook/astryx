@@ -23,7 +23,7 @@ import {
   validateLocalIntegration,
 } from './validate-integration.mjs';
 import {integrationCheck} from './check/check.mjs';
-import {componentDocNamesReport} from '../../foundation/integrations/validate-contributions.mjs';
+import {componentDocNamesCheck} from '../../foundation/integrations/validate-contributions.mjs';
 
 let tmpDir;
 let copies = 0;
@@ -116,17 +116,12 @@ async function issuesOf(dir) {
 }
 
 /**
- * Issues plus the name findings validate lists without counting
- * (`docNames.findings`, `blockComponents.findings`).
+ * Issues plus the notes validate lists beside them, which count nowhere.
  * @param {string} dir
  */
 async function allOf(dir) {
   const {data} = await validateIntegration(undefined, {cwd: dir});
-  return [
-    ...data.issues,
-    ...(data.docNames?.findings ?? []),
-    ...(data.blockComponents?.findings ?? []),
-  ];
+  return [...data.issues, ...(data.notes ?? [])];
 }
 
 /**
@@ -175,7 +170,7 @@ describe('a name that differs from its file name', () => {
     expect(await issuesOf(dir)).toEqual([]);
     const issues = await allOf(dir);
     expect(issues.map(issue => issue.code)).toEqual(['doc_name_mismatch']);
-    expect(issues[0].severity).toBe('info');
+    expect(Object.keys(issues[0]).sort()).toEqual(['code', 'message']);
     expect(issues[0].message).toBe(
       'Component doc "AcmeWidget.doc.mjs" sets name: \'AcmeWidgets\', but components/AcmeWidget.tsx, the module its import names, does not export AcmeWidgets, so Astryx lists the component as "AcmeWidget" (its file name), and `astryx component AcmeWidget` prints `import {AcmeWidgets}`. Fix: set name: \'AcmeWidget\' in AcmeWidget.doc.mjs.',
     );
@@ -229,7 +224,7 @@ describe('a name that differs from its file name', () => {
       });
 
       const {data} = await validateIntegration(undefined, {cwd: dir});
-      expect(data.docNames?.findings ?? []).toEqual([]);
+      expect(data.notes ?? []).toEqual([]);
       expect(data.docNames).toEqual({
         status: 'checked',
         findings: [],
@@ -451,7 +446,7 @@ describe('a name that differs from its file name', () => {
         'export default function AcmeWidget() { return null; }\n',
     });
     // No package to resolve an import in: the same-stem source is read.
-    const report = await componentDocNamesReport({
+    const {report} = await componentDocNamesCheck({
       name: '@acme/kit',
       components: path.join(dir, 'components'),
       __spec: '@acme/kit',
@@ -513,12 +508,26 @@ describe('a name that differs from its file name', () => {
 });
 
 describe('block component names', () => {
+  /**
+   * A package whose own name resolves, through its exports, to an entry that
+   * publishes the names the templates import from it.
+   * @param {Record<string, string>} files
+   */
+  const writeKit = files =>
+    writePackage(
+      {
+        'index.tsx':
+          'export function Panel() { return null; }\nexport const UI = {};\nexport const Lib = {};\nexport function pick() { return null; }\n',
+        ...files,
+      },
+      {name: '@acme/kit', version: '1.0.0', exports: {'.': './index.tsx'}},
+    );
   /** @param {string} extra */
   const block = extra =>
     `export default {type: 'block', name: 'Account card', displayName: 'Account card', aspectRatio: 1,${extra}};\n`;
 
   it('flags exampleFor and componentsUsed naming no component', async () => {
-    const dir = writePackage({
+    const dir = writeKit({
       [MANIFEST]: manifest({templates: './templates'}),
       'templates/account-card.doc.mjs': block(
         " exampleFor: 'AcmeGizmo', componentsUsed: ['AcmeGizmo']",
@@ -537,7 +546,7 @@ describe('block component names', () => {
   });
 
   it("accepts every doc astryx component resolves in Core, such as Chat and Layout, and the package's and imported names", async () => {
-    const dir = writePackage({
+    const dir = writeKit({
       [MANIFEST]: manifest({
         components: './components',
         templates: './templates',
@@ -555,7 +564,7 @@ describe('block component names', () => {
   });
 
   it('looks a name up in Core before giving up on a namespace import', async () => {
-    const dir = writePackage({
+    const dir = writeKit({
       [MANIFEST]: manifest({templates: './templates'}),
       'templates/account-card.doc.mjs': block(
         " componentsUsed: ['Layout', 'Panel']",
@@ -572,7 +581,7 @@ describe('block component names', () => {
   });
 
   it('lists a name the template may render through a namespace import as not checked', async () => {
-    const dir = writePackage({
+    const dir = writeKit({
       [MANIFEST]: manifest({templates: './templates'}),
       'templates/account-card.doc.mjs': block(" componentsUsed: ['Panel']"),
       'templates/account-card.tsx':
@@ -592,7 +601,7 @@ describe('block component names', () => {
   });
 
   it('prints the block names it could not judge', () => {
-    const dir = writePackage({
+    const dir = writeKit({
       [MANIFEST]: manifest({templates: './templates'}),
       'templates/account-card.doc.mjs': block(" componentsUsed: ['Panel']"),
       'templates/account-card.tsx':
@@ -611,7 +620,7 @@ describe('block component names', () => {
   });
 
   it('follows a local helper the template renders through', async () => {
-    const dir = writePackage({
+    const dir = writeKit({
       [MANIFEST]: manifest({templates: './templates'}),
       'templates/account-card/account-card.doc.mjs': block(
         " componentsUsed: ['Panel', 'AcmeGizmo']",
@@ -623,9 +632,9 @@ describe('block component names', () => {
     });
 
     const {data} = await validateIntegration(undefined, {cwd: dir});
-    expect(
-      (data.blockComponents?.findings ?? []).map(finding => finding.message),
-    ).toEqual([expect.stringContaining('names "AcmeGizmo" in componentsUsed')]);
+    expect((data.notes ?? []).map(note => note.message)).toEqual([
+      expect.stringContaining('names "AcmeGizmo" in componentsUsed'),
+    ]);
     expect(data.blockComponents?.unchecked).toEqual([]);
   });
 
@@ -635,7 +644,7 @@ describe('block component names', () => {
   ])(
     'follows a helper barrel with %s like an import',
     async (_label, barrel) => {
-      const dir = writePackage({
+      const dir = writeKit({
         [MANIFEST]: manifest({templates: './templates'}),
         'templates/account-card/account-card.doc.mjs': block(
           " componentsUsed: ['Panel', 'AcmeGizmo']",
@@ -648,9 +657,7 @@ describe('block component names', () => {
       });
 
       const {data} = await validateIntegration(undefined, {cwd: dir});
-      expect(
-        (data.blockComponents?.findings ?? []).map(finding => finding.message),
-      ).toEqual([
+      expect((data.notes ?? []).map(note => note.message)).toEqual([
         expect.stringContaining('names "AcmeGizmo" in componentsUsed'),
       ]);
       expect(data.blockComponents?.unchecked).toEqual([]);
@@ -711,7 +718,7 @@ describe('block component names', () => {
   ])(
     'lists a name the template may render through %s as not checked',
     async (_label, source, reason) => {
-      const dir = writePackage({
+      const dir = writeKit({
         [MANIFEST]: manifest({templates: './templates'}),
         'templates/account-card.doc.mjs': block(
           " componentsUsed: ['AcmePanel']",
@@ -728,7 +735,7 @@ describe('block component names', () => {
   );
 
   it('leaves names to unchecked when the template imports another package, which may render them', async () => {
-    const dir = writePackage({
+    const dir = writeKit({
       [MANIFEST]: manifest({templates: './templates'}),
       'templates/account-card.doc.mjs': block(
         " componentsUsed: ['AcmeCardGrid', 'AcmeCard']",
@@ -750,7 +757,7 @@ describe('block component names', () => {
   });
 
   it('leaves names to unchecked when the template imports a default by name', async () => {
-    const dir = writePackage({
+    const dir = writeKit({
       [MANIFEST]: manifest({templates: './templates'}),
       'templates/account-card.doc.mjs': block(" componentsUsed: ['AcmePanel']"),
       'templates/account-card.tsx':
@@ -770,7 +777,7 @@ describe('block component names', () => {
   });
 
   it('leaves names to unchecked when a helper re-exports a default by name', async () => {
-    const dir = writePackage({
+    const dir = writeKit({
       [MANIFEST]: manifest({templates: './templates'}),
       'templates/account-card/account-card.doc.mjs': block(
         " componentsUsed: ['AcmePanel']",
@@ -796,7 +803,7 @@ describe('block component names', () => {
   });
 
   it('still flags a name when the template imports only from Core, React, StyleX and itself', async () => {
-    const dir = writePackage({
+    const dir = writeKit({
       [MANIFEST]: manifest({templates: './templates'}),
       'templates/account-card.doc.mjs': block(
         " componentsUsed: ['Layout', 'AcmeGizmo']",
@@ -806,13 +813,93 @@ describe('block component names', () => {
     });
 
     const {data} = await validateIntegration(undefined, {cwd: dir});
-    expect(
-      (data.blockComponents?.findings ?? []).map(finding => finding.message),
-    ).toEqual([expect.stringContaining('names "AcmeGizmo" in componentsUsed')]);
+    expect((data.notes ?? []).map(note => note.message)).toEqual([
+      expect.stringContaining('names "AcmeGizmo" in componentsUsed'),
+    ]);
+  });
+
+  it("follows an import of the package's own name to its source, and lists what that source may render", async () => {
+    const dir = writeKit({
+      [MANIFEST]: manifest({templates: './templates'}),
+      'index.tsx': "export {AcmeCardGrid} from './src/AcmeCardGrid';\n",
+      'src/AcmeCardGrid.tsx':
+        "import {AcmeCard} from '@acme/cards';\nexport function AcmeCardGrid() {\n  return <AcmeCard />;\n}\n",
+      'templates/account-card.doc.mjs': block(
+        " componentsUsed: ['AcmeCardGrid', 'AcmeCardRow']",
+      ),
+      'templates/account-card.tsx':
+        "import {AcmeCardGrid} from '@acme/kit';\nexport default function A() {\n  return <AcmeCardGrid />;\n}\n",
+    });
+
+    const {data} = await validateIntegration(undefined, {cwd: dir});
+    expect(data.notes ?? []).toEqual([]);
+    expect(data.blockComponents?.unchecked).toEqual([
+      {
+        file: 'templates/account-card.doc.mjs',
+        name: 'AcmeCardRow',
+        reason:
+          '../src/AcmeCardGrid.tsx imports from "@acme/cards", another package whose components may render ones this check does not see.',
+      },
+    ]);
+  });
+
+  it("still flags a name when the package's own source it follows imports only what this check sees", async () => {
+    const dir = writeKit({
+      [MANIFEST]: manifest({templates: './templates'}),
+      'index.tsx': "export {AcmeCardGrid} from './src/AcmeCardGrid';\n",
+      'src/AcmeCardGrid.tsx':
+        "import {Layout} from '@astryxdesign/core';\nexport function AcmeCardGrid() {\n  return <Layout />;\n}\n",
+      'templates/account-card.doc.mjs': block(
+        " componentsUsed: ['AcmeCardGrid', 'AcmeGizmo']",
+      ),
+      'templates/account-card.tsx':
+        "import {AcmeCardGrid} from '@acme/kit';\nexport default function A() {\n  return <AcmeCardGrid />;\n}\n",
+    });
+
+    const {data} = await validateIntegration(undefined, {cwd: dir});
+    expect((data.notes ?? []).map(note => note.message)).toEqual([
+      expect.stringContaining('names "AcmeGizmo" in componentsUsed'),
+    ]);
+    expect(data.blockComponents?.unchecked).toEqual([]);
+  });
+
+  it("lists names behind an import of the package's own name that resolves to no source", async () => {
+    const dir = writePackage({
+      [MANIFEST]: manifest({templates: './templates'}),
+      'templates/account-card.doc.mjs': block(" componentsUsed: ['AcmeGizmo']"),
+      'templates/account-card.tsx':
+        "import {AcmeCardGrid} from '@acme/kit/grid';\nexport default function A() {\n  return <AcmeCardGrid />;\n}\n",
+    });
+
+    const {data} = await validateIntegration(undefined, {cwd: dir});
+    expect(data.notes ?? []).toEqual([]);
+    expect(data.blockComponents?.unchecked).toEqual([
+      {
+        file: 'templates/account-card.doc.mjs',
+        name: 'AcmeGizmo',
+        reason:
+          'account-card.tsx imports "@acme/kit/grid", this package\'s own name, which resolves to no source this check can read.',
+      },
+    ]);
+  });
+
+  it("skips a renderless library's default import, as its namespace import", async () => {
+    const dir = writeKit({
+      [MANIFEST]: manifest({templates: './templates'}),
+      'templates/account-card.doc.mjs': block(" componentsUsed: ['AcmeGizmo']"),
+      'templates/account-card.tsx':
+        "import React from 'react';\nexport default function A() {\n  return <div />;\n}\n",
+    });
+
+    const {data} = await validateIntegration(undefined, {cwd: dir});
+    expect((data.notes ?? []).map(note => note.message)).toEqual([
+      expect.stringContaining('names "AcmeGizmo" in componentsUsed'),
+    ]);
+    expect(data.blockComponents?.unchecked).toEqual([]);
   });
 
   it('lists a name behind a local helper it cannot read as not checked', async () => {
-    const dir = writePackage({
+    const dir = writeKit({
       [MANIFEST]: manifest({templates: './templates'}),
       'templates/account-card.doc.mjs': block(" componentsUsed: ['Panel']"),
       'templates/account-card.tsx':
@@ -848,7 +935,7 @@ describe('block component names', () => {
       );
 
       const {data} = await validateIntegration(undefined, {cwd: outside});
-      expect(data.blockComponents?.findings ?? []).toEqual([]);
+      expect(data.notes ?? []).toEqual([]);
       const reason =
         'Core is not installed, so its component names cannot be checked.';
       expect(data.blockComponents).toEqual({
@@ -1404,16 +1491,14 @@ describe('name findings listed until the next minor release', () => {
     ['doc_name_mismatch', docLayout, 'docNames'],
     ['unknown_block_component', blockLayout, 'blockComponents'],
   ])(
-    'lists %s at info severity in its report, and integration check --strict passes',
+    'lists %s as a note beside the issues, and integration check --strict passes',
     async (code, make, report) => {
       const dir = make();
       const {data} = await validateIntegration(undefined, {cwd: dir});
       expect(data.issues).toEqual([]);
-      const findings = /** @type {any} */ (data)[report].findings;
-      expect(
-        findings.map((/** @type {any} */ f) => [f.code, f.severity]),
-      ).toEqual([[code, 'info']]);
-      expect(findings[0].message).toContain('Fix: ');
+      expect(/** @type {any} */ (data)[report].findings).toEqual([]);
+      expect(data.notes?.map(note => note.code)).toEqual([code]);
+      expect(data.notes?.[0].message).toContain('Fix: ');
 
       const result = await integrationCheck({cwd: dir, strict: true});
       expect(result.data.failures).toEqual([]);
@@ -1421,7 +1506,7 @@ describe('name findings listed until the next minor release', () => {
     },
   );
 
-  it('prints the listed name findings as [info] lines and counts none', () => {
+  it('prints the name notes and counts none', () => {
     const dir = blockLayout();
     const run = spawnSync(
       process.execPath,
@@ -1430,7 +1515,7 @@ describe('name findings listed until the next minor release', () => {
     );
     expect(run.status, run.stderr).toBe(0);
     expect(run.stdout).toContain(
-      '[info] unknown_block_component: Template "account-card" names "AcmeGizmo" in componentsUsed',
+      'note (unknown_block_component): Template "account-card" names "AcmeGizmo" in componentsUsed',
     );
     expect(run.stdout).toContain('Summary: 0 errors, 0 warnings');
   });
