@@ -959,6 +959,12 @@ importers:
         specifier: 17.0.0
         version: 17.0.0(emojibase@17.0.0)
 
+  packages/native:
+    devDependencies:
+      '@astryxdesign/core':
+        specifier: workspace:*
+        version: link:../core
+
   packages/richtext:
     dependencies:
       '@astryxdesign/core':

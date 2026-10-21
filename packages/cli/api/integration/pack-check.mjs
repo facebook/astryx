@@ -1282,13 +1282,17 @@ export async function integrationPackCheck(options = {}) {
   // ── Phase 1: structure validation ──
   const localResult = await validateLocalIntegration(cwd);
   /** @type {Issue[]} */
-  const issues = localResult.issues.map(issue =>
-    // A package.json npm cannot pack is a warning to validate, which does
-    // not pack; here it is what fails the pack.
-    issue.code === 'invalid_package_json'
-      ? {...issue, severity: 'error'}
-      : issue,
-  );
+  const issues = [
+    ...localResult.issues,
+    // Validate lists these layout findings without counting them. A
+    // package.json npm cannot pack is what fails the pack here, as it did
+    // before they were named; the rest stay warnings, which fail nothing.
+    ...(localResult.found ? (localResult.listed ?? []) : []).map(issue =>
+      issue.code === 'invalid_package_json'
+        ? {...issue, severity: /** @type {const} */ ('error')}
+        : issue,
+    ),
+  ];
 
   if (!localResult.found || !localResult.integration) {
     return emptyReceipt(pkgName, [

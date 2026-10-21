@@ -90,6 +90,10 @@ import {
 import {validateLoadedIntegration} from '../integrations/validate-contributions.mjs';
 import {recordDeclaredCliCommands} from '../env/cli-command.mjs';
 import {
+  hostedRun,
+  recordResolvedIntegrations,
+} from '../runtime/package-root.mjs';
+import {
   InMemoryConfigCache,
   cacheKey,
   configContentHash,
@@ -121,9 +125,16 @@ function errorMessage(err) {
  */
 export function computerIntegrationCandidates(cwd = process.cwd()) {
   try {
-    const cliRoot = isOutsideProject(cwd) ? CLI_ROOT : globalCliRoot(cwd);
+    const outside = isOutsideProject(cwd);
+    const cliRoot = outside ? CLI_ROOT : globalCliRoot(cwd);
     return cliRoot
-      ? scanComputerIntegrations({cliRoot, release: cliVersion()})
+      ? scanComputerIntegrations({
+          cliRoot,
+          release: cliVersion(),
+          // Outside a project, the integrations a host approves load from the
+          // package set that serves the run too (cli-surface INV30).
+          approved: outside ? (hostedRun()?.integrations ?? []) : [],
+        })
       : [];
   } catch {
     return [];
@@ -580,6 +591,8 @@ export class Project {
         : []),
     ]);
     loadedIntegrations = resolution.integrations;
+    // A hosted run returns each package it resolved (cli-surface INV30).
+    recordResolvedIntegrations(loadedIntegrations);
     // The picker (getCliInvocation) is synchronous, so the commands these
     // integrations declare are recorded here, where they become known.
     recordDeclaredCliCommands(projectDir, loadedIntegrations);
