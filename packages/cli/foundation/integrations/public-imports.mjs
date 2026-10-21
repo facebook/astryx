@@ -22,9 +22,9 @@
  * An `exports` target may point at build output that does not exist yet, so
  * only the declared subpath is judged here, never the target file. A name is
  * judged only when a declared target exists on disk and its export list can be
- * read completely (a declaration file that loads another file, which may
- * augment it with `declare module`, cannot be); anything less is left to
- * `integration verify`.
+ * read completely, and no TypeScript file in the package has a `declare
+ * module` or `declare global` block (which can add names to any module);
+ * anything less is left to `integration verify`.
  */
 
 import * as fs from 'node:fs';
@@ -488,49 +488,6 @@ function readExportNames(file, cache, stack) {
   return {...value, cycleTo};
 }
 
-const REFERENCE_DIRECTIVE_RE = /^\/\s*<reference\s/u;
-const DECLARE_MODULE_RE = /\bdeclare\s+module\s+['"]/u;
-
-/**
- * Whether a declaration file's exports may be widened by a module
- * augmentation: it has a `/// <reference …/>` directive, a side-effect import
- * (`import './augment.js'`), a `declare module '…'` block of its own, or
- * imports a local file that has one. TypeScript merges such a block into the
- * module it names, so the file's own list may lack names apps can import.
- * @param {any} ast
- * @param {string} file
- */
-function mayBeAugmented(ast, file) {
-  if (
-    (ast.comments ?? []).some(
-      (/** @type {any} */ c) =>
-        c.type === 'CommentLine' && REFERENCE_DIRECTIVE_RE.test(c.value),
-    )
-  ) {
-    return true;
-  }
-  for (const node of ast.program.body) {
-    if (
-      node.type === 'TSModuleDeclaration' &&
-      node.id?.type === 'StringLiteral'
-    ) {
-      return true;
-    }
-    if (node.type !== 'ImportDeclaration') continue;
-    if ((node.specifiers ?? []).length === 0) return true;
-    const source = String(node.source.value);
-    if (!source.startsWith('.')) continue;
-    const target = resolveRelative(source, file);
-    if (!target) continue;
-    try {
-      if (DECLARE_MODULE_RE.test(fs.readFileSync(target, 'utf-8'))) return true;
-    } catch {
-      // An unreadable import adds nothing it could be judged by.
-    }
-  }
-  return false;
-}
-
 /**
  * The exports one module itself declares, following local `export *` (each
  * through {@link readExportNames}); its declaration file is merged by the
@@ -579,10 +536,6 @@ function readOwnExportNames(file, cache, stack) {
   if (/\b(?:module\.exports|exports\.[\w$]+)\s*=/u.test(text)) {
     return done(false);
   }
-  // A declaration file that loads another file may have names added to it by
-  // a `declare module './x.js' {…}` augmentation there: its list is no
-  // longer complete, so no name it lacks is judged missing.
-  if (DECLARATION_RE.test(file) && mayBeAugmented(ast, file)) complete = false;
   // A declaration file that is a module exports every top-level declaration,
   // marked or not, unless it has an export list (`export {}`, `export {…}
   // from`), `export *`, `export =`, or a default export of an expression
@@ -762,6 +715,64 @@ function missingNames(
   return wanted.filter(name => !seen.has(name));
 }
 
+const AUGMENTATION_RE = /\bdeclare\s+(?:module\s+['"`]|global\b)/u;
+const TYPESCRIPT_FILE_RE = /\.(?:d\.[cm]?ts|[cm]?ts|tsx)$/u;
+const AUGMENTATION_WALK_LIMIT = 5000;
+
+/**
+ * The first TypeScript file in the package (outside `node_modules` and dot
+ * folders) with a `declare module '…'` or `declare global` block, read once
+ * per check. Such a block can add names to any module, so while one exists
+ * no name is judged missing: what TypeScript merges is not modelled. A
+ * package too large to walk counts as augmented.
+ * @param {Context} ctx
+ * @returns {string | null} the reason names were not checked, or null
+ */
+function augmentationReason(ctx) {
+  if (ctx.augmentation !== undefined) return ctx.augmentation;
+  const root = path.resolve(ctx.packageDir);
+  /** @type {string[]} */
+  const queue = [root];
+  let seen = 0;
+  /** @type {string | null} */
+  let reason = null;
+  walk: while (queue.length > 0) {
+    const current = /** @type {string} */ (queue.shift());
+    let entries;
+    try {
+      entries = fs.readdirSync(current, {withFileTypes: true});
+    } catch {
+      continue;
+    }
+    entries.sort((x, y) => x.name.localeCompare(y.name));
+    for (const entry of entries) {
+      if (++seen > AUGMENTATION_WALK_LIMIT) {
+        reason = `the package has more than ${AUGMENTATION_WALK_LIMIT} files to search for a \`declare module\` or \`declare global\` block, which can add names to any module, so the names it imports were not checked`;
+        break walk;
+      }
+      const full = path.join(current, entry.name);
+      if (entry.isDirectory()) {
+        if (entry.name !== 'node_modules' && !entry.name.startsWith('.'))
+          queue.push(full);
+        continue;
+      }
+      if (!entry.isFile() || !TYPESCRIPT_FILE_RE.test(entry.name)) continue;
+      let text;
+      try {
+        text = fs.readFileSync(full, 'utf-8');
+      } catch {
+        continue;
+      }
+      if (AUGMENTATION_RE.test(text)) {
+        reason = `"${rel(root, full)}" has a \`declare module\` or \`declare global\` block, which can add names to any module in the package, so the names it imports were not checked`;
+        break walk;
+      }
+    }
+  }
+  ctx.augmentation = reason;
+  return reason;
+}
+
 /**
  * Why an import's names could not be judged.
  * @param {string[]} files
@@ -771,7 +782,7 @@ function uncheckedReason(files, allPresent = true) {
   if (files.length === 0 || !allPresent) {
     return 'a file its package.json "exports" entry names does not exist yet (build output), so the names it imports were not checked';
   }
-  return "its module's export list cannot be read in full (CommonJS, an `export *` from another package, a parse error, JavaScript with no declaration file for its types, or a declaration file that loads another file, which may add names to it with `declare module`), so the names it imports were not checked";
+  return "its module's export list cannot be read in full (CommonJS, an `export *` from another package, a parse error, or JavaScript with no declaration file for its types), so the names it imports were not checked";
 }
 
 /**
@@ -895,6 +906,8 @@ function listed(code, message) {
  * @property {any} corePkg
  * @property {PublicImportUnchecked[]} unchecked what could not be judged
  * @property {ExportNameCache} exportNames export lists read in this check
+ * @property {string | null} [augmentation] why no name is judged missing
+ *   (a module augmentation in the package); null when none, unset until read
  * @property {string[]} files the package.json `files` entries, normalized
  * @property {string[]} roots the integration's contribution roots, absolute
  */
@@ -1133,6 +1146,8 @@ function judgeOwnImport(ctx, statement, subpath) {
   }
   const {files, allPresent} = declaredTargets(ctx.packageDir, declaration);
   const missing = missingNames(statement, files, ctx.exportNames, allPresent);
+  const augmented = missing?.length ? augmentationReason(ctx) : null;
+  if (augmented) return {undeclared: null, missing: null, reason: augmented};
   return {
     undeclared: null,
     missing,
@@ -1282,15 +1297,17 @@ async function componentIssues(ctx, integration) {
           names: judged.map(r => ({imported: r.name, typeOnly: false})),
           namespace: false,
         };
-        const missing =
+        const found =
           judged.length === 0
             ? []
             : missingNames(statement, files, ctx.exportNames, allPresent, true);
+        const augmented = found?.length ? augmentationReason(ctx) : null;
+        const missing = augmented ? null : found;
         if (missing == null) {
           ctx.unchecked.push({
             file: shownDoc,
             specifier,
-            reason: uncheckedReason(files, allPresent),
+            reason: augmented ?? uncheckedReason(files, allPresent),
           });
         }
         for (const name of missing ?? []) {

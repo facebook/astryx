@@ -1382,11 +1382,79 @@ describe('declaration files follow TypeScript', () => {
     });
   }
 
-  it('still reports a missing name when the declaration file loads nothing', async () => {
-    write('dist/augment.d.ts', AUGMENT);
+  it('still reports a missing name when no file in the package augments a module', async () => {
     write('dist/widget.d.ts', LISTED);
     write('templates/account-card.tsx', template('AcmeWidget, AcmeWidgetSize'));
     expect(await codes()).toEqual(['template_import_missing_name']);
+  });
+
+  it('lists a name as not checked whenever any file in the package augments a module, even one nothing loads', async () => {
+    write('dist/augment.d.ts', AUGMENT);
+    write('dist/widget.d.ts', LISTED);
+    write('templates/account-card.tsx', template('AcmeWidget, AcmeWidgetSize'));
+    const result = await validateIntegration(undefined, {cwd: dir});
+    expect(await codes()).toEqual([]);
+    expect(result.data.publicImports?.unchecked).toEqual([
+      expect.objectContaining({
+        specifier: '@acme/widgets/widget',
+        reason: expect.stringContaining('"dist/augment.d.ts"'),
+      }),
+    ]);
+  });
+
+  it('lists a name as not checked when the module re-exports from the augmenting file', async () => {
+    write('dist/augment.d.ts', AUGMENT);
+    write(
+      'dist/widget.d.ts',
+      `${LISTED}export {AcmeWidgetTone} from './augment.js';\n`,
+    );
+    write('templates/account-card.tsx', template('AcmeWidget, AcmeWidgetSize'));
+    const result = await validateIntegration(undefined, {cwd: dir});
+    expect(await codes()).toEqual([]);
+    expect(
+      result.data.publicImports?.unchecked.map(u => u.reason).join('\n'),
+    ).toContain('"dist/augment.d.ts"');
+  });
+
+  it('lists a name as not checked when the augmentation is reached through another declaration file', async () => {
+    write(
+      'dist/augment.d.ts',
+      "import './widget.js';\ndeclare global {\n  interface AcmeGlobal {}\n}\nexport {};\n",
+    );
+    write(
+      'dist/types.d.ts',
+      "import './augment.js';\nexport type AcmeTone = 'a';\n",
+    );
+    write(
+      'dist/widget.d.ts',
+      "import type {AcmeTone} from './types.js';\ndeclare const AcmeWidget: (t: AcmeTone) => null;\nexport {AcmeWidget};\n",
+    );
+    write('templates/account-card.tsx', template('AcmeWidget, AcmeWidgetSize'));
+    const result = await validateIntegration(undefined, {cwd: dir});
+    expect(await codes()).toEqual([]);
+    expect(
+      result.data.publicImports?.unchecked.map(u => u.reason).join('\n'),
+    ).toContain('"dist/augment.d.ts"');
+  });
+
+  it('lists a name as not checked when TypeScript source augments the module it exports', async () => {
+    pkg(p => {
+      p.exports['./widget'] = './src/widget.ts';
+    });
+    write(
+      'src/widget.ts',
+      "import './augment.js';\nexport const AcmeWidget = () => null;\n",
+    );
+    write(
+      'src/augment.ts',
+      "declare module './widget.js' {\n  export interface AcmeWidgetSize {\n    value: string;\n  }\n}\nexport {};\n",
+    );
+    write('templates/account-card.tsx', template('AcmeWidget, AcmeWidgetSize'));
+    const result = await validateIntegration(undefined, {cwd: dir});
+    expect(await codes()).toEqual([]);
+    expect(
+      result.data.publicImports?.unchecked.map(u => u.reason).join('\n'),
+    ).toContain('"src/augment.ts"');
   });
 
   it('leaves a declaration file with no import or export (a global script) unchecked', async () => {
