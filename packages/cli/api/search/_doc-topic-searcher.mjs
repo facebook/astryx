@@ -10,8 +10,8 @@
  * kind (FR2's exception).
  * @input {query, options} and the gathered catalog
  * @output the search response, the lexical response's shape and size
- * @position api/search; tree.mjs's root sends a query here before the
- *   classifier when namedTopic finds the topic
+ * @position api/search; tree.mjs's root sends a query here, before the
+ *   classifier, only when topicOrder would move something
  */
 
 import {routeKit} from '../../foundation/route/route.mjs';
@@ -23,58 +23,97 @@ import {searchedComponentsOf} from './_result.mjs';
 const {defineSearcher} = routeKit;
 
 /**
- * The doc topic the whole query names, if any: its route, the route's last
- * segment, or its own title.
+ * The routes of the doc topics the whole query names: a topic's route, the
+ * route's last segment, or its own title, as words whatever the plural.
  * @param {string} query
  * @param {import('./_adapter.mjs').SearchCatalog} catalog
- * @returns {string | null} the topic's route
+ * @returns {Set<string>}
  */
-export function namedTopic(query, catalog) {
+export function topicsNamed(query, catalog) {
   const term = String(query).trim().toLowerCase();
-  if (!term) return null;
+  /** @type {Set<string>} */
+  const named = new Set();
+  if (!term) return named;
   for (const c of catalog.all) {
     if (c.domain !== 'doc' || c._section != null) continue;
-    const topic = String(c._topic ?? c.name).toLowerCase();
+    const route = String(c._topic ?? c.name);
+    const topic = route.toLowerCase();
     const names = [topic, topic.slice(topic.lastIndexOf('/') + 1)];
     if (c.titles?.[0]) names.push(String(c.titles[0]));
-    if (names.some(n => samePhrase(term, n))) return String(c.name);
+    if (names.some(n => samePhrase(term, n))) named.add(route);
   }
-  return null;
+  return named;
 }
 
-export const docTopic = defineSearcher({
-  id: 'doc-topic',
-  summary:
-    'Answers a query that names a doc topic with that topic and its own sections first, then the rest in lexical order.',
-  run: (request, catalog) => {
-    const topic = namedTopic(request.query, catalog);
-    if (topic == null) return null;
-    const {limit = 20} = request.options;
+/** @type {WeakMap<object, Map<string, import('./search.type.mjs').SearchResponse | null>>} */
+const memo = new WeakMap();
+
+/**
+ * The doc-topic order for a query, or null when it would move nothing. The
+ * topic is the named topic the lexical ranker lists first (several topics can
+ * share a name). Entries of another kind that matched only in passing (a
+ * prose or description mention) and sit ahead of the topic's last own entry
+ * step behind it; everything else keeps the lexical order. The response holds
+ * every lexical match.
+ * @param {{query: string, options: {type?: string}}} request
+ * @param {import('./_adapter.mjs').SearchCatalog} catalog
+ * @returns {import('./search.type.mjs').SearchResponse | null}
+ */
+export function topicOrder(request, catalog) {
+  let byQuery = memo.get(catalog);
+  if (!byQuery) memo.set(catalog, (byQuery = new Map()));
+  const key = `${request.options.type ?? ''}\u0000${request.query}`;
+  if (byQuery.has(key)) return byQuery.get(key) ?? null;
+  /** @type {import('./search.type.mjs').SearchResponse | null} */
+  let answer = null;
+  const named = topicsNamed(request.query, catalog);
+  if (named.size > 0) {
     const lexical = rankLexical(
       request.query,
       {...request.options, limit: Number.MAX_SAFE_INTEGER},
       catalog,
     );
     const all = lexical.data.results;
+    const topic = all.find(r => r.domain === 'doc' && named.has(r.name))?.name;
     const own = (/** @type {any} */ r) =>
       r.domain === 'doc' && r.name === topic;
-    // Only an entry of another kind that matched the words in passing (its
-    // prose or description) steps behind the topic's sections; docs and every
-    // name or keyword match keep the lexical order.
     const passing = (/** @type {any} */ r) =>
       r.domain !== 'doc' && /mentions/.test(String(r.reason ?? ''));
     const last = all.map(own).lastIndexOf(true);
     const head = all.slice(0, last + 1);
-    const ordered = [
-      ...head.filter(r => !passing(r)),
-      ...head.filter(passing),
-      ...all.slice(last + 1),
-    ];
+    if (topic != null && head.some(passing)) {
+      answer = /** @type {import('./search.type.mjs').SearchResponse} */ ({
+        ...lexical,
+        data: {
+          ...lexical.data,
+          results: [
+            ...head.filter(r => !passing(r)),
+            ...head.filter(passing),
+            ...all.slice(last + 1),
+          ],
+        },
+      });
+      const searched = searchedComponentsOf.get(lexical);
+      if (searched) searchedComponentsOf.set(answer, searched);
+    }
+  }
+  byQuery.set(key, answer);
+  return answer;
+}
+
+export const docTopic = defineSearcher({
+  id: 'doc-topic',
+  summary:
+    "Answers a query that names a doc topic, when an entry of another kind that only mentions the words sits among the topic's sections, with the topic and its sections first, then the rest in lexical order.",
+  run: (request, catalog) => {
+    const ordered = topicOrder(request, catalog);
+    if (!ordered) return null;
+    const {limit = 20} = request.options;
     const response = {
-      ...lexical,
-      data: {...lexical.data, results: ordered.slice(0, limit)},
+      ...ordered,
+      data: {...ordered.data, results: ordered.data.results.slice(0, limit)},
     };
-    const searched = searchedComponentsOf.get(lexical);
+    const searched = searchedComponentsOf.get(ordered);
     if (searched) searchedComponentsOf.set(response, searched);
     return /** @type {import('./search.type.mjs').SearchResponse} */ (response);
   },

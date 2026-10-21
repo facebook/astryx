@@ -1,8 +1,9 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file How search answers: a query that names a doc topic goes to the
- * doc-topic searcher by rule, before any vote. Otherwise a root classifier
+ * @file How search answers: a query that names a doc topic, where an entry of
+ * another kind that only mentions the words sits among the topic's sections,
+ * goes to the doc-topic searcher by rule, before any vote. Otherwise a root classifier
  * reads the query's words and guesses the domain it wants
  * (tree.weights.json), and hands it to that domain's topic searcher when it is
  * sure enough; otherwise the main searcher keeps it. Adding a topic searcher is one file and one line here.
@@ -14,7 +15,7 @@
 import {routeKit} from '../../foundation/route/route.mjs';
 import {routerTokens} from './_query-words.mjs';
 import {doc} from './_doc-searcher.mjs';
-import {docTopic, namedTopic} from './_doc-topic-searcher.mjs';
+import {docTopic, topicOrder} from './_doc-topic-searcher.mjs';
 import {main} from './_main-searcher.mjs';
 import {template} from './_template-searcher.mjs';
 
@@ -35,7 +36,7 @@ const root = defineClassifier({
   rules: [
     {
       id: docTopic.id,
-      when: (request, catalog) => namedTopic(request.query, catalog) != null,
+      when: (request, catalog) => topicOrder(request, catalog) != null,
     },
   ],
   searchers: {doc: doc.id, template: template.id},
