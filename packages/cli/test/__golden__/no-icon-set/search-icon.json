@@ -3,7 +3,7 @@
   "type": "search",
   "data": {
     "query": "icon",
-    "matchCount": 214,
+    "matchCount": 217,
     "results": [
       {
         "domain": "component",
@@ -225,8 +225,8 @@
   },
   "meta": {
     "answeredBy": {
-      "cli": "0.7.2",
-      "core": "0.7.2",
+      "cli": "0.7.3",
+      "core": "0.7.3",
       "copy": "project"
     }
   }

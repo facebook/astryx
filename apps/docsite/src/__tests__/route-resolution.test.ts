@@ -108,6 +108,7 @@ describe('route resolution', () => {
         'cli-writing-docs',
         'global',
         'internationalization',
+        'is-my-code-good',
         'layout',
         'migration',
         'principles',
@@ -122,7 +123,7 @@ describe('route resolution', () => {
 
   it('opens every CLI integration guide at its section on a full page', () => {
     for (const route of docsTreeRoutes) {
-      if (!route.startsWith('cli/integrations/')) continue;
+      if (!route.startsWith('cli/integrations/')) {continue;}
       const slug = route.replaceAll('/', '-');
       expect(pageBySlug.has(slug), slug).toBe(false);
       expect(docRedirects[slug], slug).toMatch(
@@ -141,7 +142,7 @@ describe('route resolution', () => {
     expect(docRedirects['cli-global']).toBe('/docs/global');
     expect(docRedirects['cli-install-once']).toBe('/docs/global');
     for (const route of docsTreeRoutes) {
-      if (!route.startsWith('global/')) continue;
+      if (!route.startsWith('global/')) {continue;}
       const slug = route.replaceAll('/', '-');
       expect(docRedirects[slug], slug).toMatch(/^\/docs\/global#/);
     }

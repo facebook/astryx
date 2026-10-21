@@ -3691,3 +3691,38 @@ describe('SideNav collapse conflict warning', () => {
     expect(warn).not.toHaveBeenCalled();
   });
 });
+
+// =============================================================================
+// SideNavItem — collapsed-from-mount rail tooltip
+// =============================================================================
+
+describe('SideNavItem collapsed-from-mount rail tooltip', () => {
+  // #7692: a childless item that mounts inside an already-collapsed SideNav
+  // renders its Tooltip inside the very element anchorRef points at. React
+  // attaches that ref only after the tooltip's layout effect has run, so the
+  // tooltip never attached and a persisted collapsed rail lost all tooltips
+  // on page load.
+  it('anchors the rail tooltip when the nav is collapsed at mount', async () => {
+    render(
+      <SideNav
+        aria-label="Main"
+        collapsible={{isCollapsed: true, hasButton: false}}>
+        <SideNavItem label="Dashboard" icon={StubIcon} href="/dashboard" />
+      </SideNav>,
+    );
+    const link = screen.getByRole('link', {name: 'Dashboard'});
+    const anchor = link.parentElement as HTMLElement;
+
+    // The tooltip attaches despite mounting inside its own anchor: the item
+    // row is described by the tooltip layer.
+    await waitFor(() => {
+      expect(anchor.getAttribute('aria-describedby')).not.toBe('');
+    });
+    const layer = document.getElementById(
+      anchor.getAttribute('aria-describedby') as string,
+    );
+    expect(layer).not.toBeNull();
+    expect(layer).toHaveAttribute('role', 'tooltip');
+    expect(layer).toHaveTextContent('Dashboard');
+  });
+});

@@ -163,6 +163,14 @@ Consumer migration instructions belong in consumer docs and release notes.
   claimed by the innermost root carrying `data-astryx-menu-press` (a flyout
   before its parent); the outermost root decides what counts as "inside the
   menu" for the release.
+- **ORD1a (proposed) — A menu beside the root.** A root carrying
+  `data-astryx-menu-press-surface`, which names another root's `id`, is nested
+  in that root for ORD1, as a flyout inside the root's DOM is: a release on
+  its rows is inside the menu. Only the menu of a sub-menu with a header or
+  footer, which the root renders beside itself (`component:DropdownMenu`
+  FR20), carries it. Anything else beside the root, a header field or a picker
+  placed in a region say, is outside the menu, as the root's own regions are,
+  and a picker there stays its own root. Pending owner review.
 - **ORD2 — Release resolution.** Enabled row under the point → `act`; inside
   the menu or on the trigger with no row → `settle` (stray click swallowed,
   menu stays); outside → `settle` with `dismiss` only for a mouse.
@@ -238,6 +246,7 @@ owned by the item components.
 | FR4 (scroll)           | `MenuPress.a11y.chromium.spec.ts` (real Chromium)                                                                          | Chromium touch pan in an overflowing menu; touch-action by overflow; finger slide and its stray click                                                    | Not provable in jsdom; a pan that acts on a row, or a slide that acts on the press row, fails                                   |
 | FR4 (pinch)            | `MenuPinchZoom.a11y.chromium.spec.ts` (real Chromium, phone emulation)                                                     | two-finger pinch over a menu whose rows fit, over one that scrolls, and over a picker listbox                                                            | Not provable in jsdom; a pinch that leaves the page at scale 1, or acts on a row, fails                                         |
 | FR8, FR9 (proposed)    | `menuPressGesture.test.ts` trigger states; `useMenuPress.test.tsx` trigger suite; `DropdownMenu.test.tsx` press-open cases | mouse opens at once, finger tap, held finger, settle before/after, cancel; press-open + drag-release, unsettled release, trigger toggle, held touch, tap | A menu that does not open on a mouse press, an unsettled release that acts, or a trigger that reopens in the same gesture fails |
+| ORD1a (proposed)       | `DropdownMenuSubMenu.test.tsx` press cases; `SubMenuHeaderFooter.a11y.chromium.spec.ts` press-drag case                    | a mouse press on a menu row released on a row of a sub-menu rendered beside the menu; the same press released on that sub-menu's header field            | A release on such a row that acts on nothing or closes the menu, or a release on its header field that acts, fails.             |
 
 ## Decision log
 

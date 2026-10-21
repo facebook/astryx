@@ -212,7 +212,7 @@ export const docs = {
       name: 'increment',
       type: 'number',
       description:
-        'Number of minutes to add or subtract when the user presses the up or down arrow key.',
+        'Number of minutes to add or subtract when the user presses the up or down arrow key. Steps are whole minutes; a fractional value leaves the time unchanged.',
       default: '1',
     },
     {
@@ -392,7 +392,8 @@ export const docsZh = {
     {
       name: 'increment',
       type: 'number',
-      description: '用户按上或下方向键时增加或减少的分钟数。',
+      description:
+        '用户按上或下方向键时增加或减少的分钟数。步长为整分钟；传入小数时时间保持不变。',
       default: '1',
     },
     {
@@ -623,7 +624,8 @@ export const docsDense = {
     hasClear: 'Shows clear button when value set+not disabled.',
     hourFormat:
       "Display format. '12h' shows AM/PM; '24h' uses 24-hour notation.",
-    increment: 'Minutes to add/subtract on arrow up/down.',
+    increment:
+      'Minutes to add/subtract on arrow up/down. Whole minutes only; a fractional value leaves the time unchanged.',
     presentation:
       "picker surface: 'adaptive-native' (default) = typed field fine / browser/OS coarse (hasSeconds or increment!=1 retains typed); 'native' = browser/OS always, no fallback; 'adaptive-bottom-sheet' = typed fine / Astryx wheel sheet coarse; 'bottom-sheet' = sheet always; 'text-input'/'popover' = typed field only.",
     nativePicker:

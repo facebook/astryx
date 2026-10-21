@@ -30,6 +30,8 @@ import {
 } from '../../assets/codemods/integration-discovery.mjs';
 import {runIntegrationCodemods} from '../../assets/codemods/integration-runner.mjs';
 import {
+  AgentDocsHomeError,
+  assertAgentDocsTarget,
   installAgentDocs,
   inspectAgentDocs,
   renderAgentDocsBlock,
@@ -287,6 +289,21 @@ export async function runPostCodemodHooks(hooks, context) {
  */
 
 /**
+ * Why upgrade leaves the agent docs of a project at the home folder or the
+ * top of a settings folder, and what to do instead. init refuses the same
+ * folder, so the line never points at it.
+ * @param {AgentDocsHomeError} err
+ * @param {'stale' | 'missing'} [state] whether a block is there to refresh
+ * @returns {string}
+ */
+function homeRefusalLine(err, state = 'stale') {
+  const where = `${err.dir} is the home folder or a settings folder in it, which every project's agents read.`;
+  return state === 'missing'
+    ? `Agent docs not installed: ${where} To have agent docs, move the project into a folder of its own, or add the Astryx block to its agent file by hand.`
+    : `Agent docs not refreshed: ${where} To keep agent docs, move the project into a folder of its own; otherwise update or remove the Astryx block there by hand.`;
+}
+
+/**
  * Compute the expected managed block and report staleness without writing.
  * Apply-mode callers commit the prepared bytes only after codemods and hooks
  * succeed.
@@ -312,6 +329,16 @@ export async function prepareAgentDocsRefresh({
   };
 
   if (initial.status === 'missing') {
+    // init writes nothing in a project at the home folder or the top of a
+    // settings folder, so it is not the remedy there (INV31).
+    try {
+      assertAgentDocsTarget(cwd);
+    } catch (err) {
+      if (!(err instanceof AgentDocsHomeError)) throw err;
+      summary.action = 'error';
+      logger.warn(homeRefusalLine(err, 'missing'));
+      return {cwd, renderedBlock: null, summary};
+    }
     summary.action = 'nudge-init';
     logger.warn(
       `No Astryx agent-docs block found - AI agents have no component index. Run \`${formatCliCommand('astryx init --features agents')}\` to install it.`,
@@ -340,6 +367,18 @@ export async function prepareAgentDocsRefresh({
   summary.files = inspection.staleFiles;
   if (inspection.status === 'current') return {cwd, renderedBlock, summary};
 
+  // A project at the home folder or the top of a settings folder is never
+  // refreshed (INV31): the dry run says so, as --apply does, rather than
+  // offering a refresh that would be refused.
+  try {
+    assertAgentDocsTarget(cwd);
+  } catch (err) {
+    if (!(err instanceof AgentDocsHomeError)) throw err;
+    summary.action = 'error';
+    logger.warn(homeRefusalLine(err));
+    return {cwd, renderedBlock: null, summary};
+  }
+
   summary.action = 'would-refresh';
   if (!apply) {
     logger.warn(
@@ -363,6 +402,9 @@ export function applyAgentDocsRefresh(plan) {
     const written = installAgentDocs(cwd, {
       onlyReplace: true,
       renderedBlock,
+      // A GEMINI.md that resolves outside the project is left as it is.
+      onSkipped: (file, reason) =>
+        logger.warn(`Note: ${file} left as it is (${reason}).`),
     });
     summary.refreshed = written.length > 0;
     summary.files = written;
@@ -374,12 +416,18 @@ export function applyAgentDocsRefresh(plan) {
         `Agent docs look stale but couldn't be refreshed. Run \`${formatCliCommand('astryx init --features agents')}\` to reinstall the block.`,
       );
     }
-  } catch {
+  } catch (err) {
     summary.action = 'error';
     summary.refreshed = false;
-    logger.warn(
-      `Could not refresh agent docs. Run \`${formatCliCommand('astryx init --features agents')}\` to update them manually.`,
-    );
+    if (err instanceof AgentDocsHomeError) {
+      // init refuses this folder too, so pointing at it would loop: say why,
+      // and what to do instead.
+      logger.warn(homeRefusalLine(err));
+    } else {
+      logger.warn(
+        `Could not refresh agent docs. Run \`${formatCliCommand('astryx init --features agents')}\` to update them manually.`,
+      );
+    }
   }
   return summary;
 }

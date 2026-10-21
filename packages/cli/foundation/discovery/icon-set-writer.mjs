@@ -39,7 +39,7 @@ import {
 import {
   exportScalarType,
   exportValueKind,
-  moduleExportNames,
+  followedExportNames,
   moduleExportOrigin,
 } from './module-exports.mjs';
 
@@ -415,7 +415,7 @@ function resolveFile(base) {
  */
 export function assertIconExport(file, module, exportName) {
   if (!moduleExportOrigin(file, exportName)) {
-    const names = moduleExportNames(file);
+    const names = followedExportNames(file);
     throw new IconSetAuthoringError(
       exportName === 'default'
         ? `"${module}" has no default export.`
@@ -447,7 +447,7 @@ function iconCandidates(file, {adapter = false, exclude = []} = {}) {
   const skipped = new Set(exclude);
   /** @type {Array<{name: string, adapt: boolean, scalar: string | null}>} */
   const out = [];
-  for (const name of moduleExportNames(file)) {
+  for (const name of followedExportNames(file)) {
     if (name === 'default' || name === 'Icon' || skipped.has(name)) continue;
     // SCREAMING_CASE names are constants (`README`, `VERSION`), not icons.
     if (SCREAMING_CASE_RE.test(name)) continue;

@@ -13,13 +13,13 @@
         "id": "core-installed",
         "label": "@astryxdesign/core installed",
         "status": "pass",
-        "message": "@astryxdesign/core resolved (v0.7.2)."
+        "message": "@astryxdesign/core resolved (v0.7.3)."
       },
       {
         "id": "version-alignment",
         "label": "@astryxdesign/core <-> @astryxdesign/cli alignment",
         "status": "pass",
-        "message": "@astryxdesign/core v0.7.2 is in step with @astryxdesign/cli v0.7.2."
+        "message": "@astryxdesign/core v0.7.3 is in step with @astryxdesign/cli v0.7.3."
       },
       {
         "id": "themes",
@@ -69,7 +69,7 @@
         "id": "agent-docs",
         "label": "AI agent docs",
         "status": "info",
-        "message": "No agent docs found: looked for AGENTS.md, CLAUDE.md, .claude/CLAUDE.md, .cursorrules, .hermes.md, HERMES.md in ..",
+        "message": "No agent docs found: looked for AGENTS.md, CLAUDE.md, .claude/CLAUDE.md, GEMINI.md, .cursorrules, .hermes.md, HERMES.md in ..",
         "fix": "Generate agent docs with `pnpm exec astryx init --features agents`."
       },
       {
@@ -116,13 +116,13 @@
         "id": "docs-tree",
         "label": "Docs tree",
         "status": "pass",
-        "message": "The docs tree has 195 docs in 30 sections (10 at the top), each at one route."
+        "message": "The docs tree has 196 docs in 30 sections (10 at the top), each at one route."
       },
       {
         "id": "docs-progressive-disclosure",
         "label": "Documentation navigation and size",
         "status": "pass",
-        "message": "114 topics: every section index and section fits in one 32 KB read."
+        "message": "115 topics: every section index and section fits in one 32 KB read."
       }
     ],
     "summary": {
@@ -134,8 +134,8 @@
   },
   "meta": {
     "answeredBy": {
-      "cli": "0.7.2",
-      "core": "0.7.2",
+      "cli": "0.7.3",
+      "core": "0.7.3",
       "copy": "project"
     }
   }

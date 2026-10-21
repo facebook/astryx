@@ -14,9 +14,10 @@
 
 import {afterEach, beforeEach, describe, expect, it} from 'vitest';
 import * as fs from 'node:fs';
+import * as os from 'node:os';
 import * as path from 'node:path';
+import {parse} from '@babel/parser';
 import {spawnSync} from 'node:child_process';
-import {fileURLToPath} from 'node:url';
 import {
   validateIntegration,
   validateLocalIntegration,
@@ -26,13 +27,21 @@ import {
   strictIssues,
   summarizeCheck,
 } from './check/check.mjs';
-
-const CLI = fileURLToPath(
-  new URL('../../clients/cli/bin/astryx.mjs', import.meta.url),
-);
+import {componentDocNamesCheck} from '../../foundation/integrations/validate-contributions.mjs';
+import {formatCliCommand} from '../../foundation/env/package-manager.mjs';
 
 let tmpDir;
 let copies = 0;
+
+const CLI = path.join(
+  process.cwd(),
+  'packages',
+  'cli',
+  'clients',
+  'cli',
+  'bin',
+  'astryx.mjs',
+);
 
 beforeEach(() => {
   tmpDir = fs.mkdtempSync(path.join(process.cwd(), '.astryx-validate-gaps-'));
@@ -140,34 +149,820 @@ function only(issues, code) {
   return found[0].message;
 }
 
+/**
+ * A component doc whose import names its published subpath.
+ * @param {string} stem the doc's file name
+ * @param {string} name
+ */
+const namedDoc = (stem, name) =>
+  componentDoc(name).replace(
+    "type: 'component',",
+    `type: 'component', import: '@acme/kit/components/${stem}',`,
+  );
+/**
+ * A package that publishes each file under its components folder.
+ * @param {Record<string, string>} files
+ */
+const writeNamed = files =>
+  writePackage(files, {
+    name: '@acme/kit',
+    version: '1.0.0',
+    exports: {
+      './components/*': './components/*.tsx',
+      '.': './index.ts',
+    },
+  });
+
 describe('a name that differs from its file name', () => {
-  it('accepts a kebab-case file whose doc names the export it holds', async () => {
-    const dir = writePackage({
+  it('lists a component doc whose name is not the name it is listed under, without an issue', async () => {
+    const dir = writeNamed({
       [MANIFEST]: manifest({components: './components'}),
-      'components/acme-widget.doc.mjs': componentDoc('AcmeWidget'),
-      'components/acme-widget.tsx': componentSource('AcmeWidget'),
+      'components/AcmeWidget.doc.mjs': namedDoc('AcmeWidget', 'AcmeWidgets'),
+      'components/AcmeWidget.tsx': componentSource('AcmeWidget'),
     });
 
     expect(await issuesOf(dir)).toEqual([]);
+    const issues = await allOf(dir);
+    expect(issues.map(issue => issue.code)).toEqual(['doc_name_mismatch']);
+    expect(Object.keys(issues[0]).sort()).toEqual(['code', 'message']);
+    expect(issues[0].message).toBe(
+      'Component doc "AcmeWidget.doc.mjs" sets name: \'AcmeWidgets\', but components/AcmeWidget.tsx, the module its import names, does not export AcmeWidgets, so Astryx lists the component as "AcmeWidget" (its file name), and `astryx component AcmeWidget` prints `import {AcmeWidgets}`. Fix: set name: \'AcmeWidget\' in AcmeWidget.doc.mjs.',
+    );
+
+    const fixed = follow(dir, {
+      write: {
+        'components/AcmeWidget.doc.mjs': namedDoc('AcmeWidget', 'AcmeWidget'),
+      },
+    });
+    expect(await allOf(fixed)).toEqual([]);
+  });
+
+  it.each([
+    [
+      'a re-export from another package',
+      "export {AcmeWidgets} from '@acme/ui';\n",
+      'AcmeWidget.tsx re-exports AcmeWidgets from "@acme/ui", another package this check does not read.',
+    ],
+    [
+      'a .js specifier this read cannot follow',
+      "export {AcmeWidgets} from './impl/widgets.js';\n",
+      'AcmeWidget.tsx re-exports AcmeWidgets from "./impl/widgets.js", which resolves to no file this check can read.',
+    ],
+    [
+      'an export * from another package',
+      "export * from '@acme/ui';\n",
+      'AcmeWidget.tsx re-exports everything from "@acme/ui", another package this check does not read.',
+    ],
+    [
+      'a destructured export',
+      'const parts = {AcmeWidgets: () => null};\nexport const {AcmeWidgets} = parts;\n',
+      'AcmeWidget.tsx exports a destructured binding, whose names this check does not read.',
+    ],
+    [
+      'a TypeScript namespace export',
+      'export namespace AcmeWidgets {\n  export const Root = () => null;\n}\n',
+      'AcmeWidget.tsx exports AcmeWidgets as a TypeScript namespace, which has a runtime value only when it holds one.',
+    ],
+    [
+      'an export assignment',
+      'const AcmeWidgets = () => null;\nexport = {AcmeWidgets};\n',
+      'AcmeWidget.tsx uses `export =`, whose names this check does not read.',
+    ],
+  ])(
+    'lists a doc name the code cannot judge as not checked, with no finding: %s',
+    async (_label, source, reason) => {
+      const dir = writeNamed({
+        [MANIFEST]: manifest({components: './components'}),
+        'components/AcmeWidget.doc.mjs': namedDoc('AcmeWidget', 'AcmeWidgets'),
+        'components/AcmeWidget.tsx': source,
+      });
+
+      const {data} = await validateIntegration(undefined, {cwd: dir});
+      expect(data.notes ?? []).toEqual([]);
+      expect(data.docNames).toEqual({
+        status: 'checked',
+        findings: [],
+        unchecked: [
+          {file: 'components/AcmeWidget.doc.mjs', name: 'AcmeWidgets', reason},
+        ],
+      });
+      // Counted as not compared, never as a failure, even under --strict.
+      const checked = await integrationCheck({cwd: dir, strict: true});
+      const propsNotCompared = checked.data.checks
+        .map(check => check.response.data.propDrift?.unchecked?.length ?? 0)
+        .reduce((a, b) => a + b, 0);
+      expect(checked.data.unchecked).toBe(1 + propsNotCompared);
+      expect(
+        checked.data.failures.filter(
+          failure => failure.code === 'doc_names_skipped',
+        ),
+      ).toEqual([]);
+    },
+  );
+
+  it.each([
+    [
+      'a source that exports both names',
+      'export function AcmeWidget() { return null; }\nexport const AcmeWidgets = AcmeWidget;\n',
+    ],
+    [
+      'an export import alias, a runtime value',
+      'namespace Impl {\n  export const Widgets = () => null;\n}\nexport function AcmeWidget() { return null; }\nexport import AcmeWidgets = Impl.Widgets;\n',
+    ],
+    [
+      'an enum, a runtime value',
+      'export function AcmeWidget() { return null; }\nexport enum AcmeWidgets {\n  Small,\n}\n',
+    ],
+  ])(
+    'checks a doc name the source exports, with nothing listed: %s',
+    async (_label, source) => {
+      const dir = writeNamed({
+        [MANIFEST]: manifest({components: './components'}),
+        'components/AcmeWidget.doc.mjs': namedDoc('AcmeWidget', 'AcmeWidgets'),
+        'components/AcmeWidget.tsx': source,
+      });
+
+      const {data} = await validateIntegration(undefined, {cwd: dir});
+      expect(data.issues).toEqual([]);
+      expect(data.docNames).toEqual({
+        status: 'checked',
+        findings: [],
+        unchecked: [],
+      });
+    },
+  );
+
+  it('prints the doc names it could not check', () => {
+    const dir = writeNamed({
+      [MANIFEST]: manifest({components: './components'}),
+      'components/AcmeWidget.doc.mjs': namedDoc('AcmeWidget', 'AcmeWidgets'),
+      'components/AcmeWidget.tsx': "export {AcmeWidgets} from '@acme/ui';\n",
+    });
+
+    const run = spawnSync(
+      process.execPath,
+      [CLI, 'doctor', 'integration', 'validate'],
+      {cwd: dir, encoding: 'utf-8', timeout: 60_000},
+    );
+    expect(run.status, run.stderr).toBe(0);
+    expect(run.stdout).toContain(
+      '[info] Component names not checked: 1 doc(s) whose source exports this check cannot read:',
+    );
+    expect(run.stdout).toContain('components/AcmeWidget.doc.mjs');
+    expect(run.stdout).toContain(
+      'AcmeWidget.tsx re-exports AcmeWidgets from "@acme/ui", another package this check does not read.',
+    );
+  });
+
+  it('does not count a member a namespace exports as an export of the module', async () => {
+    const dir = writeNamed({
+      [MANIFEST]: manifest({components: './components'}),
+      'components/AcmeWidget.doc.mjs': namedDoc('AcmeWidget', 'AcmeWidgets'),
+      'components/AcmeWidget.tsx':
+        'namespace Impl {\n  export const AcmeWidgets = () => null;\n}\nexport function AcmeWidget() { return null; }\n',
+    });
+
+    expect(only(await allOf(dir), 'doc_name_mismatch')).toContain(
+      'components/AcmeWidget.tsx, the module its import names, does not export AcmeWidgets',
+    );
+  });
+
+  it('follows a local re-export that does not export the documented name', async () => {
+    const dir = writeNamed({
+      [MANIFEST]: manifest({components: './components'}),
+      'components/AcmeWidget.doc.mjs': namedDoc('AcmeWidget', 'AcmeWidgets'),
+      'components/AcmeWidget.tsx': "export * from './impl';\n",
+      'components/impl.tsx': componentSource('AcmeWidget'),
+    });
+
+    expect(only(await allOf(dir), 'doc_name_mismatch')).toContain(
+      "sets name: 'AcmeWidgets'",
+    );
+  });
+
+  it('proposes the export a kebab-case source holds, never its file name', async () => {
+    const dir = writeNamed({
+      [MANIFEST]: manifest({components: './components'}),
+      'components/acme-widget.doc.mjs': namedDoc('acme-widget', 'AcmeWidgets'),
+      'components/acme-widget.tsx': componentSource('AcmeWidget'),
+    });
+
+    const message = only(await allOf(dir), 'doc_name_mismatch');
+    expect(message).toBe(
+      'Component doc "acme-widget.doc.mjs" sets name: \'AcmeWidgets\', but components/acme-widget.tsx, the module its import names, does not export AcmeWidgets, so Astryx lists the component as "acme-widget" (its file name), and `astryx component acme-widget` prints `import {AcmeWidgets}`. Fix: set name: \'AcmeWidget\' in acme-widget.doc.mjs, the component components/acme-widget.tsx exports.',
+    );
+    const fixed = follow(dir, {
+      write: {
+        'components/acme-widget.doc.mjs': namedDoc('acme-widget', 'AcmeWidget'),
+      },
+    });
+    expect(await allOf(fixed)).toEqual([]);
+  });
+
+  it('names no single export when a source exports several components', async () => {
+    const dir = writeNamed({
+      [MANIFEST]: manifest({components: './components'}),
+      'components/acme-widget.doc.mjs': namedDoc('acme-widget', 'AcmeWidgets'),
+      'components/acme-widget.tsx':
+        'export function AcmeWidget() { return null; }\nexport function AcmeGizmo() { return null; }\n',
+    });
+
+    expect(only(await allOf(dir), 'doc_name_mismatch')).toContain(
+      'Fix: set name in acme-widget.doc.mjs to the component components/acme-widget.tsx exports (AcmeGizmo, AcmeWidget).',
+    );
+  });
+
+  it('judges the module the printed import names: an entry that publishes a default under the doc name passes', async () => {
+    const dir = writePackage(
+      {
+        [MANIFEST]: manifest({components: './components'}),
+        'components/acme-widget.doc.mjs': componentDoc('AcmeWidget'),
+        'components/acme-widget.tsx':
+          'export default function AcmeWidget() { return null; }\n',
+        'index.ts':
+          "export {default as AcmeWidget} from './components/acme-widget';\n",
+      },
+      {name: '@acme/kit', version: '1.0.0', exports: {'.': './index.ts'}},
+    );
+
+    const {data} = await validateIntegration(undefined, {cwd: dir});
+    expect(data.issues).toEqual([]);
+    expect(data.docNames?.unchecked).toEqual([]);
+  });
+
+  it('flags a name the printed entry provably does not publish', async () => {
+    const dir = writePackage(
+      {
+        [MANIFEST]: manifest({components: './components'}),
+        'components/acme-widget.doc.mjs': componentDoc('AcmeWidget'),
+        'components/acme-widget.tsx':
+          'export default function AcmeWidget() { return null; }\n',
+        'index.ts':
+          "export {default as AcmeGadget} from './components/acme-widget';\n",
+      },
+      {name: '@acme/kit', version: '1.0.0', exports: {'.': './index.ts'}},
+    );
+
+    expect(only(await allOf(dir), 'doc_name_mismatch')).toContain(
+      'but index.ts, the module its import names, does not export AcmeWidget',
+    );
+  });
+
+  it('flags a name a default-only printed module cannot give, with a fix that parses and clears it', async () => {
+    const dir = writeNamed({
+      [MANIFEST]: manifest({components: './components'}),
+      'components/acme-widget.doc.mjs': namedDoc('acme-widget', 'AcmeWidget'),
+      'components/acme-widget.tsx':
+        'export default function AcmeWidget() { return null; }\n',
+    });
+
+    const message = only(await allOf(dir), 'doc_name_mismatch');
+    expect(message).toContain(
+      'but components/acme-widget.tsx, the module its import names, does not export AcmeWidget',
+    );
+    expect(message).toContain(
+      "Fix: add `export {AcmeWidget};` to components/acme-widget.tsx, so it exports AcmeWidget by name as well, or set the doc's import to the module that publishes it as AcmeWidget.",
+    );
+
+    const source =
+      'export default function AcmeWidget() { return null; }\nexport {AcmeWidget};\n';
+    expect(() =>
+      parse(source, {sourceType: 'module', plugins: ['typescript', 'jsx']}),
+    ).not.toThrow();
+    const fixed = follow(dir, {write: {'components/acme-widget.tsx': source}});
+    expect(await allOf(fixed)).toEqual([]);
+  });
+
+  it('proposes a named binding for an anonymous default, which parses and clears it', async () => {
+    const dir = writeNamed({
+      [MANIFEST]: manifest({components: './components'}),
+      'components/acme-widget.doc.mjs': namedDoc('acme-widget', 'AcmeWidget'),
+      'components/acme-widget.tsx': 'export default () => null;\n',
+    });
+
+    expect(only(await allOf(dir), 'doc_name_mismatch')).toContain(
+      'Fix: bind the default to AcmeWidget in components/acme-widget.tsx and export it by name too (`const AcmeWidget = …; export default AcmeWidget; export {AcmeWidget};`)',
+    );
+    const source =
+      'const AcmeWidget = () => null;\nexport default AcmeWidget;\nexport {AcmeWidget};\n';
+    expect(() =>
+      parse(source, {sourceType: 'module', plugins: ['typescript', 'jsx']}),
+    ).not.toThrow();
+    const fixed = follow(dir, {write: {'components/acme-widget.tsx': source}});
+    expect(await allOf(fixed)).toEqual([]);
+  });
+
+  it('lists a default-only source as not checked when no printed import can be resolved', async () => {
+    const dir = writePackage({
+      [MANIFEST]: manifest({components: './components'}),
+      'components/acme-widget.doc.mjs': componentDoc('AcmeWidget'),
+      'components/acme-widget.tsx':
+        'export default function AcmeWidget() { return null; }\n',
+    });
+    // No package to resolve an import in: the same-stem source is read.
+    const {report} = await componentDocNamesCheck({
+      name: '@acme/kit',
+      components: path.join(dir, 'components'),
+      __spec: '@acme/kit',
+      __manifestFile: path.join(dir, MANIFEST),
+    });
+
+    expect(report.unchecked).toEqual([
+      {
+        file: 'acme-widget.doc.mjs',
+        name: 'AcmeWidget',
+        reason:
+          'acme-widget.tsx exports a default, which the package entry may publish under any name.',
+      },
+    ]);
+  });
+
+  it('lists a name whose printed import resolves to no file as not checked', async () => {
+    const dir = writePackage({
+      [MANIFEST]: manifest({components: './components'}),
+      'components/acme-widget.doc.mjs': componentDoc('AcmeGadget'),
+      'components/acme-widget.tsx': componentSource('AcmeWidget'),
+    });
+
+    const {data} = await validateIntegration(undefined, {cwd: dir});
+    expect(data.issues).toEqual([]);
+    expect(data.docNames?.unchecked.map(entry => entry.file)).toEqual([
+      'components/acme-widget.doc.mjs',
+    ]);
+  });
+
+  it('accepts a kebab-case file whose doc names the export it holds', async () => {
+    const dir = writeNamed({
+      [MANIFEST]: manifest({components: './components'}),
+      'components/acme-widget.doc.mjs': namedDoc('acme-widget', 'AcmeWidget'),
+      'components/acme-widget.tsx': componentSource('AcmeWidget'),
+    });
+
+    expect(await allOf(dir)).toEqual([]);
   });
 
   it('leaves a doc topic named differently from its file alone: the code does not contradict it', async () => {
-    const dir = writePackage({
+    const dir = writeNamed({
       [MANIFEST]: manifest({docs: './docs'}),
       'docs/deploying.doc.mjs': topic('deploy'),
     });
 
-    expect(await issuesOf(dir)).toEqual([]);
+    expect(await allOf(dir)).toEqual([]);
   });
 
   it('leaves a template name alone: it is the display title', async () => {
-    const dir = writePackage({
+    const dir = writeNamed({
       [MANIFEST]: manifest({templates: './templates'}),
       'templates/account-card.doc.mjs': templateDoc('Account card'),
       'templates/account-card.tsx': templateSource,
     });
 
-    expect(await issuesOf(dir)).toEqual([]);
+    expect(await allOf(dir)).toEqual([]);
+  });
+});
+
+describe('block component names', () => {
+  /**
+   * A package whose own name resolves, through its exports, to an entry that
+   * publishes the names the templates import from it.
+   * @param {Record<string, string>} files
+   */
+  const writeKit = files =>
+    writePackage(
+      {
+        'index.tsx':
+          'export function Panel() { return null; }\nexport const UI = {};\nexport const Lib = {};\nexport function pick() { return null; }\n',
+        ...files,
+      },
+      {name: '@acme/kit', version: '1.0.0', exports: {'.': './index.tsx'}},
+    );
+  /** @param {string} extra */
+  const block = extra =>
+    `export default {type: 'block', name: 'Account card', displayName: 'Account card', aspectRatio: 1,${extra}};\n`;
+
+  it('flags exampleFor and componentsUsed naming no component', async () => {
+    const dir = writeKit({
+      [MANIFEST]: manifest({templates: './templates'}),
+      'templates/account-card.doc.mjs': block(
+        " exampleFor: 'AcmeGizmo', componentsUsed: ['AcmeGizmo']",
+      ),
+      'templates/account-card.tsx': templateSource,
+    });
+
+    const issues = await allOf(dir);
+    expect(issues.map(issue => issue.code)).toEqual([
+      'unknown_block_component',
+      'unknown_block_component',
+    ]);
+    expect(issues[0].message).toBe(
+      'Template "account-card" names "AcmeGizmo" in exampleFor, but neither this package nor Core has a component by that name and the template does not import it, so `astryx template --list` and the block\'s search keywords give a component name no one can look up. Fix: use the component\'s exact name, or remove "AcmeGizmo" from exampleFor.',
+    );
+  });
+
+  it("accepts every doc astryx component resolves in Core, such as Chat and Layout, and the package's and imported names", async () => {
+    const dir = writeKit({
+      [MANIFEST]: manifest({
+        components: './components',
+        templates: './templates',
+      }),
+      'components/AcmeWidget.doc.mjs': componentDoc('AcmeWidget'),
+      'components/AcmeWidget.tsx': componentSource('AcmeWidget'),
+      'templates/account-card.doc.mjs': block(
+        " exampleFor: 'AcmeWidget', componentsUsed: ['Chat', 'Layout', 'Button', 'AcmeWidget', 'Helper']",
+      ),
+      'templates/account-card.tsx':
+        "import {Helper} from 'some-lib';\nexport default function A() {\n  return <Helper />;\n}\n",
+    });
+
+    expect(await allOf(dir)).toEqual([]);
+  });
+
+  it('looks a name up in Core before giving up on a namespace import', async () => {
+    const dir = writeKit({
+      [MANIFEST]: manifest({templates: './templates'}),
+      'templates/account-card.doc.mjs': block(
+        " componentsUsed: ['Layout', 'Panel']",
+      ),
+      'templates/account-card.tsx':
+        "import * as stylex from '@stylexjs/stylex';\nimport * as UI from '@acme/kit';\nexport default function A() {\n  return <UI.Panel />;\n}\n",
+    });
+
+    const {data} = await validateIntegration(undefined, {cwd: dir});
+    expect(data.issues).toEqual([]);
+    expect(data.blockComponents?.unchecked.map(entry => entry.name)).toEqual([
+      'Panel',
+    ]);
+  });
+
+  it('lists a name the template may render through a namespace import as not checked', async () => {
+    const dir = writeKit({
+      [MANIFEST]: manifest({templates: './templates'}),
+      'templates/account-card.doc.mjs': block(" componentsUsed: ['Panel']"),
+      'templates/account-card.tsx':
+        "import * as UI from '@acme/kit';\nexport default function A() {\n  return <UI.Panel />;\n}\n",
+    });
+
+    const {data} = await validateIntegration(undefined, {cwd: dir});
+    expect(data.issues).toEqual([]);
+    expect(data.blockComponents?.unchecked).toEqual([
+      {
+        file: 'templates/account-card.doc.mjs',
+        name: 'Panel',
+        reason:
+          'account-card.tsx imports "@acme/kit" as a namespace (UI), whose component names this check does not read.',
+      },
+    ]);
+  });
+
+  it('prints the block names it could not judge', () => {
+    const dir = writeKit({
+      [MANIFEST]: manifest({templates: './templates'}),
+      'templates/account-card.doc.mjs': block(" componentsUsed: ['Panel']"),
+      'templates/account-card.tsx':
+        "import * as UI from '@acme/kit';\nexport default function A() {\n  return <UI.Panel />;\n}\n",
+    });
+
+    const run = spawnSync(
+      process.execPath,
+      [CLI, 'doctor', 'integration', 'validate'],
+      {cwd: dir, encoding: 'utf-8', timeout: 60_000},
+    );
+    expect(run.status, run.stderr).toBe(0);
+    expect(run.stdout).toContain(
+      '[info] Block component names not checked: 1 name(s) this check could not judge:',
+    );
+  });
+
+  it('follows a local helper the template renders through', async () => {
+    const dir = writeKit({
+      [MANIFEST]: manifest({templates: './templates'}),
+      'templates/account-card/account-card.doc.mjs': block(
+        " componentsUsed: ['Panel', 'AcmeGizmo']",
+      ),
+      'templates/account-card/account-card.tsx':
+        "import {Body} from './parts/Body';\nexport default function A() {\n  return <Body />;\n}\n",
+      'templates/account-card/parts/Body.tsx':
+        "import {Panel} from '@acme/kit';\nexport function Body() {\n  return <Panel />;\n}\n",
+    });
+
+    const {data} = await validateIntegration(undefined, {cwd: dir});
+    expect((data.notes ?? []).map(note => note.message)).toEqual([
+      expect.stringContaining('names "AcmeGizmo" in componentsUsed'),
+    ]);
+    expect(data.blockComponents?.unchecked).toEqual([]);
+  });
+
+  it.each([
+    ['a named re-export', "export {Body} from './Body';\n"],
+    ['an export *', "export * from './Body';\n"],
+  ])(
+    'follows a helper barrel with %s like an import',
+    async (_label, barrel) => {
+      const dir = writeKit({
+        [MANIFEST]: manifest({templates: './templates'}),
+        'templates/account-card/account-card.doc.mjs': block(
+          " componentsUsed: ['Panel', 'AcmeGizmo']",
+        ),
+        'templates/account-card/account-card.tsx':
+          "import {Body} from './parts';\nexport default function A() {\n  return <Body />;\n}\n",
+        'templates/account-card/parts/index.ts': barrel,
+        'templates/account-card/parts/Body.tsx':
+          "import {Panel} from '@acme/kit';\nexport function Body() {\n  return <Panel />;\n}\n",
+      });
+
+      const {data} = await validateIntegration(undefined, {cwd: dir});
+      expect((data.notes ?? []).map(note => note.message)).toEqual([
+        expect.stringContaining('names "AcmeGizmo" in componentsUsed'),
+      ]);
+      expect(data.blockComponents?.unchecked).toEqual([]);
+    },
+  );
+
+  it.each([
+    [
+      'a default import used as a namespace',
+      "import UI from '@acme/kit';\nexport default function A() {\n  return <UI.Panel />;\n}\n",
+      'account-card.tsx imports the default of "@acme/kit" as UI, which may be any component.',
+    ],
+    [
+      'members destructured off a named import',
+      "import {UI} from '@acme/kit';\nconst {Panel} = UI;\nexport default function A() {\n  return <Panel />;\n}\n",
+      'account-card.tsx reads UI (imported from "@acme/kit") into another name, which this check does not follow.',
+    ],
+    [
+      'a member read off a named import',
+      "import {UI} from '@acme/kit';\nconst Panel = UI.Panel;\nexport default function A() {\n  return <Panel />;\n}\n",
+      'account-card.tsx reads members of UI (imported from "@acme/kit"), whose names this check does not read.',
+    ],
+    [
+      'createElement with a member',
+      "import {createElement} from 'react';\nimport {UI} from '@acme/kit';\nexport default function A() {\n  return createElement(UI.Panel);\n}\n",
+      'account-card.tsx reads members of UI (imported from "@acme/kit"), whose names this check does not read.',
+    ],
+    [
+      'a default import under another name',
+      "import Panel from '@acme/kit/AcmePanel';\nexport default function A() {\n  return <Panel />;\n}\n",
+      'account-card.tsx imports the default of "@acme/kit/AcmePanel" as Panel, which may be any component.',
+    ],
+    [
+      'an alias of an imported binding',
+      "import {Lib} from '@acme/kit';\nconst UI = Lib;\nexport default function A() {\n  return <UI.AcmePanel />;\n}\n",
+      'account-card.tsx reads Lib (imported from "@acme/kit") into another name, which this check does not follow.',
+    ],
+    [
+      'an optional member read',
+      "import {UI} from '@acme/kit';\nconst Panel = UI?.AcmePanel;\nexport default function A() {\n  return <Panel />;\n}\n",
+      'account-card.tsx reads members of UI (imported from "@acme/kit"), whose names this check does not read.',
+    ],
+    [
+      'a component held in a variable',
+      "import {pick} from '@acme/kit';\nconst Panel = pick('panel');\nexport default function A() {\n  return <Panel />;\n}\n",
+      'account-card.tsx renders Panel, a value this check does not trace to an import.',
+    ],
+    [
+      'require()',
+      "const {Panel} = require('@acme/kit');\nexport default function A() {\n  return <Panel />;\n}\n",
+      'account-card.tsx loads "@acme/kit" with require(), whose component names this check does not read.',
+    ],
+    [
+      'a lazy dynamic import',
+      "import {lazy} from 'react';\nconst Panel = lazy(() => import('@acme/kit/Panel'));\nexport default function A() {\n  return <Panel />;\n}\n",
+      'account-card.tsx loads "@acme/kit/Panel" with a dynamic import(), whose component names this check does not read.',
+    ],
+  ])(
+    'lists a name the template may render through %s as not checked',
+    async (_label, source, reason) => {
+      const dir = writeKit({
+        [MANIFEST]: manifest({templates: './templates'}),
+        'templates/account-card.doc.mjs': block(
+          " componentsUsed: ['AcmePanel']",
+        ),
+        'templates/account-card.tsx': source,
+      });
+
+      const {data} = await validateIntegration(undefined, {cwd: dir});
+      expect(data.issues).toEqual([]);
+      expect(data.blockComponents?.unchecked).toEqual([
+        {file: 'templates/account-card.doc.mjs', name: 'AcmePanel', reason},
+      ]);
+    },
+  );
+
+  it('leaves names to unchecked when the template imports another package, which may render them', async () => {
+    const dir = writeKit({
+      [MANIFEST]: manifest({templates: './templates'}),
+      'templates/account-card.doc.mjs': block(
+        " componentsUsed: ['AcmeCardGrid', 'AcmeCard']",
+      ),
+      'templates/account-card.tsx':
+        "import {AcmeCardGrid} from '@acme/cards';\nexport default function A() {\n  return <AcmeCardGrid />;\n}\n",
+    });
+
+    const {data} = await validateIntegration(undefined, {cwd: dir});
+    expect(data.issues).toEqual([]);
+    expect(data.blockComponents?.unchecked).toEqual([
+      {
+        file: 'templates/account-card.doc.mjs',
+        name: 'AcmeCard',
+        reason:
+          'account-card.tsx imports from "@acme/cards", another package whose components may render ones this check does not see.',
+      },
+    ]);
+  });
+
+  it('leaves names to unchecked when the template imports a default by name', async () => {
+    const dir = writeKit({
+      [MANIFEST]: manifest({templates: './templates'}),
+      'templates/account-card.doc.mjs': block(" componentsUsed: ['AcmePanel']"),
+      'templates/account-card.tsx':
+        "import {default as Panel} from '@acme/kit/AcmePanel';\nexport default function A() {\n  return <Panel />;\n}\n",
+    });
+
+    const {data} = await validateIntegration(undefined, {cwd: dir});
+    expect(data.issues).toEqual([]);
+    expect(data.blockComponents?.unchecked).toEqual([
+      {
+        file: 'templates/account-card.doc.mjs',
+        name: 'AcmePanel',
+        reason:
+          'account-card.tsx imports the default of "@acme/kit/AcmePanel" as Panel, which may be any component.',
+      },
+    ]);
+  });
+
+  it('leaves names to unchecked when a helper re-exports a default by name', async () => {
+    const dir = writeKit({
+      [MANIFEST]: manifest({templates: './templates'}),
+      'templates/account-card/account-card.doc.mjs': block(
+        " componentsUsed: ['AcmePanel']",
+      ),
+      'templates/account-card/account-card.tsx':
+        "import {Body} from './parts';\nexport default function A() {\n  return <Body />;\n}\n",
+      'templates/account-card/parts/index.ts':
+        "export {default as Body} from './Body';\n",
+      'templates/account-card/parts/Body.tsx':
+        'export default function Body() {\n  return null;\n}\n',
+    });
+
+    const {data} = await validateIntegration(undefined, {cwd: dir});
+    expect(data.issues).toEqual([]);
+    expect(data.blockComponents?.unchecked).toEqual([
+      {
+        file: 'templates/account-card/account-card.doc.mjs',
+        name: 'AcmePanel',
+        reason:
+          'parts/index.ts re-exports the default of "./Body" as Body, which may be any component.',
+      },
+    ]);
+  });
+
+  it('still flags a name when the template imports only from Core, React, StyleX and itself', async () => {
+    const dir = writeKit({
+      [MANIFEST]: manifest({templates: './templates'}),
+      'templates/account-card.doc.mjs': block(
+        " componentsUsed: ['Layout', 'AcmeGizmo']",
+      ),
+      'templates/account-card.tsx':
+        "import {useState} from 'react';\nimport * as stylex from '@stylexjs/stylex';\nimport {Layout} from '@astryxdesign/core';\nimport type {ReactNode} from 'react';\nimport type {Gizmo} from '@acme/types';\nexport default function A() {\n  useState();\n  return <Layout />;\n}\n",
+    });
+
+    const {data} = await validateIntegration(undefined, {cwd: dir});
+    expect((data.notes ?? []).map(note => note.message)).toEqual([
+      expect.stringContaining('names "AcmeGizmo" in componentsUsed'),
+    ]);
+  });
+
+  it("follows an import of the package's own name to its source, and lists what that source may render", async () => {
+    const dir = writeKit({
+      [MANIFEST]: manifest({templates: './templates'}),
+      'index.tsx': "export {AcmeCardGrid} from './src/AcmeCardGrid';\n",
+      'src/AcmeCardGrid.tsx':
+        "import {AcmeCard} from '@acme/cards';\nexport function AcmeCardGrid() {\n  return <AcmeCard />;\n}\n",
+      'templates/account-card.doc.mjs': block(
+        " componentsUsed: ['AcmeCardGrid', 'AcmeCardRow']",
+      ),
+      'templates/account-card.tsx':
+        "import {AcmeCardGrid} from '@acme/kit';\nexport default function A() {\n  return <AcmeCardGrid />;\n}\n",
+    });
+
+    const {data} = await validateIntegration(undefined, {cwd: dir});
+    expect(data.notes ?? []).toEqual([]);
+    expect(data.blockComponents?.unchecked).toEqual([
+      {
+        file: 'templates/account-card.doc.mjs',
+        name: 'AcmeCardRow',
+        reason:
+          '../src/AcmeCardGrid.tsx imports from "@acme/cards", another package whose components may render ones this check does not see.',
+      },
+    ]);
+  });
+
+  it("still flags a name when the package's own source it follows imports only what this check sees", async () => {
+    const dir = writeKit({
+      [MANIFEST]: manifest({templates: './templates'}),
+      'index.tsx': "export {AcmeCardGrid} from './src/AcmeCardGrid';\n",
+      'src/AcmeCardGrid.tsx':
+        "import {Layout} from '@astryxdesign/core';\nexport function AcmeCardGrid() {\n  return <Layout />;\n}\n",
+      'templates/account-card.doc.mjs': block(
+        " componentsUsed: ['AcmeCardGrid', 'AcmeGizmo']",
+      ),
+      'templates/account-card.tsx':
+        "import {AcmeCardGrid} from '@acme/kit';\nexport default function A() {\n  return <AcmeCardGrid />;\n}\n",
+    });
+
+    const {data} = await validateIntegration(undefined, {cwd: dir});
+    expect((data.notes ?? []).map(note => note.message)).toEqual([
+      expect.stringContaining('names "AcmeGizmo" in componentsUsed'),
+    ]);
+    expect(data.blockComponents?.unchecked).toEqual([]);
+  });
+
+  it("lists names behind an import of the package's own name that resolves to no source", async () => {
+    const dir = writePackage({
+      [MANIFEST]: manifest({templates: './templates'}),
+      'templates/account-card.doc.mjs': block(" componentsUsed: ['AcmeGizmo']"),
+      'templates/account-card.tsx':
+        "import {AcmeCardGrid} from '@acme/kit/grid';\nexport default function A() {\n  return <AcmeCardGrid />;\n}\n",
+    });
+
+    const {data} = await validateIntegration(undefined, {cwd: dir});
+    expect(data.notes ?? []).toEqual([]);
+    expect(data.blockComponents?.unchecked).toEqual([
+      {
+        file: 'templates/account-card.doc.mjs',
+        name: 'AcmeGizmo',
+        reason:
+          'account-card.tsx imports "@acme/kit/grid", this package\'s own name, which resolves to no source this check can read.',
+      },
+    ]);
+  });
+
+  it("skips a renderless library's default import, as its namespace import", async () => {
+    const dir = writeKit({
+      [MANIFEST]: manifest({templates: './templates'}),
+      'templates/account-card.doc.mjs': block(" componentsUsed: ['AcmeGizmo']"),
+      'templates/account-card.tsx':
+        "import React from 'react';\nexport default function A() {\n  return <div />;\n}\n",
+    });
+
+    const {data} = await validateIntegration(undefined, {cwd: dir});
+    expect((data.notes ?? []).map(note => note.message)).toEqual([
+      expect.stringContaining('names "AcmeGizmo" in componentsUsed'),
+    ]);
+    expect(data.blockComponents?.unchecked).toEqual([]);
+  });
+
+  it('lists a name behind a local helper it cannot read as not checked', async () => {
+    const dir = writeKit({
+      [MANIFEST]: manifest({templates: './templates'}),
+      'templates/account-card.doc.mjs': block(" componentsUsed: ['Panel']"),
+      'templates/account-card.tsx':
+        "import {Body} from './parts/missing';\nexport default function A() {\n  return <Body />;\n}\n",
+    });
+
+    const {data} = await validateIntegration(undefined, {cwd: dir});
+    expect(data.issues).toEqual([]);
+    expect(data.blockComponents?.unchecked.map(entry => entry.name)).toEqual([
+      'Panel',
+    ]);
+  });
+
+  it('lists names only Core could resolve as not checked when Core is not installed', async () => {
+    const outside = fs.mkdtempSync(path.join(os.tmpdir(), 'astryx-no-core-'));
+    try {
+      fs.writeFileSync(
+        path.join(outside, 'package.json'),
+        JSON.stringify({name: '@acme/kit', version: '1.0.0'}),
+      );
+      fs.writeFileSync(
+        path.join(outside, MANIFEST),
+        manifest({templates: './templates'}),
+      );
+      fs.mkdirSync(path.join(outside, 'templates'));
+      fs.writeFileSync(
+        path.join(outside, 'templates', 'account-card.doc.mjs'),
+        block(" componentsUsed: ['Chat', 'Layout']"),
+      );
+      fs.writeFileSync(
+        path.join(outside, 'templates', 'account-card.tsx'),
+        templateSource,
+      );
+
+      const {data} = await validateIntegration(undefined, {cwd: outside});
+      expect(data.notes ?? []).toEqual([]);
+      const reason =
+        'Core is not installed, so its component names cannot be checked.';
+      expect(data.blockComponents).toEqual({
+        status: 'checked',
+        findings: [],
+        unchecked: [
+          {file: 'templates/account-card.doc.mjs', name: 'Chat', reason},
+          {file: 'templates/account-card.doc.mjs', name: 'Layout', reason},
+        ],
+      });
+    } finally {
+      fs.rmSync(outside, {recursive: true, force: true});
+    }
   });
 });
 
@@ -228,6 +1023,219 @@ describe('component doc files', () => {
       ],
     });
     expect(await issuesOf(fixed)).toEqual([]);
+  });
+
+  it('names a .jsx source beside a component doc and says to rename it', async () => {
+    const dir = writePackage({
+      [MANIFEST]: manifest({components: './components'}),
+      'components/AcmeWidget.doc.mjs': componentDoc('AcmeWidget'),
+      'components/AcmeWidget.jsx': componentSource('AcmeWidget'),
+    });
+
+    const message = only(await issuesOf(dir), 'invalid_component');
+    expect(message).toBe(
+      'Component "AcmeWidget" is missing its same-stem source file AcmeWidget.tsx: found AcmeWidget.jsx, but a component source must be a .tsx file. Fix: rename AcmeWidget.jsx to AcmeWidget.tsx (and point its package export at the new file).',
+    );
+
+    const fixed = follow(dir, {
+      move: [['components/AcmeWidget.jsx', 'components/AcmeWidget.tsx']],
+    });
+    expect(await issuesOf(fixed)).toEqual([]);
+  });
+
+  it('says what an empty doc and a doc with no default export are missing', async () => {
+    const dir = writePackage({
+      [MANIFEST]: manifest({components: './components'}),
+      'components/Empty.doc.mjs': '',
+      'components/Empty.tsx': componentSource('Empty'),
+      'components/Named.doc.mjs': componentDoc('Named').replace(
+        'export default',
+        'export const doc =',
+      ),
+      'components/Named.tsx': componentSource('Named'),
+    });
+
+    const messages = (await issuesOf(dir)).map(issue => issue.message);
+    const fix =
+      'Fix: export the doc object as the default export: `export default {type: ..., name: ..., ...}`.';
+    expect(messages).toEqual([
+      `Component "Empty" has invalid metadata: ${path.join(dir, 'components', 'Empty.doc.mjs')} is empty, so it documents nothing. ${fix}`,
+      `Component "Named" has invalid metadata: ${path.join(dir, 'components', 'Named.doc.mjs')} has no default export or \`docs\` export (it exports \`doc\`), so it documents nothing. ${fix}`,
+    ]);
+    expect(messages.join('\n')).not.toContain('Invalid input');
+  });
+});
+
+describe('template and theme pairing', () => {
+  it('gives a template doc with no source a fix', async () => {
+    const dir = writePackage({
+      [MANIFEST]: manifest({templates: './templates'}),
+      'templates/account-card.doc.mjs': templateDoc('Account card'),
+    });
+
+    const message = only(await issuesOf(dir), 'invalid_template');
+    expect(message).toBe(
+      'Template "account-card" is missing its same-stem source file account-card.tsx. Fix: add account-card.tsx beside account-card.doc.mjs, with the template as its default export.',
+    );
+    const fixed = follow(dir, {
+      write: {'templates/account-card.tsx': templateSource},
+    });
+    expect(await issuesOf(fixed)).toEqual([]);
+  });
+
+  const themeDoc = `${THEME_TYPE}export default {type: 'theme', name: 'ocean', displayName: 'Ocean', description: 'A theme.', maintained: true};\n`;
+  const themeSource =
+    "import {defineTheme} from '@astryxdesign/core/theme';\nexport const oceanTheme = defineTheme({name: 'ocean'});\n";
+
+  it('gives a theme descriptor with no source a fix', async () => {
+    const dir = writePackage({
+      [MANIFEST]: manifest({themes: './themes'}),
+      'themes/ocean/oceanTheme.doc.mjs': themeDoc,
+    });
+
+    expect(only(await issuesOf(dir), 'invalid_theme')).toBe(
+      'Theme "ocean" for @acme/kit must contain exactly one same-stem source for oceanTheme.doc.mjs; found 0. Fix: add oceanTheme.ts beside oceanTheme.doc.mjs, exporting `oceanTheme` from defineTheme.',
+    );
+  });
+
+  it('gives a theme source with no descriptor a fix', async () => {
+    const dir = writePackage({
+      [MANIFEST]: manifest({themes: './themes'}),
+      'themes/ocean/oceanTheme.ts': themeSource,
+    });
+
+    const message = only(await issuesOf(dir), 'invalid_theme');
+    expect(message).toBe(
+      `Theme "ocean" for @acme/kit must contain exactly one same-stem .doc.mjs descriptor; found 0 beside "oceanTheme.ts". Fix: add oceanTheme.doc.mjs beside it with type: 'theme' and name: 'ocean'; \`${formatCliCommand('docs authoring theme-doc', path.join(dir, 'themes', 'ocean'))}\` lists its fields.`,
+    );
+    const fixed = follow(dir, {
+      write: {'themes/ocean/oceanTheme.doc.mjs': themeDoc},
+    });
+    expect(
+      (await issuesOf(fixed)).filter(issue => issue.code === 'invalid_theme'),
+    ).toEqual([]);
+  });
+
+  it('says to rename a source named for its theme when the build writes beside it, and the rename clears it', async () => {
+    const brandDoc = `${THEME_TYPE}export default {type: 'theme', name: 'brand', displayName: 'Brand', description: 'A theme.', maintained: true};\n`;
+    const dir = writePackage({
+      [MANIFEST]: manifest({themes: './themes'}),
+      'themes/brand/brand.doc.mjs': brandDoc,
+      'themes/brand/brand.ts':
+        "import {defineTheme} from '@astryxdesign/core/theme';\nexport const brand = defineTheme({name: 'brand'});\n",
+      'themes/brand/brand.js':
+        "/**\n * @generated by `astryx theme build` — do not edit manually.\n */\nimport './brand.css';\nexport const brandTheme = {};\n",
+      'themes/brand/brand.css': '.astryx-theme-brand {}\n',
+    });
+
+    expect(only(await issuesOf(dir), 'invalid_theme')).toBe(
+      `Theme "brand" for @acme/kit must contain exactly one same-stem source for brand.doc.mjs; found 2: "brand.js", "brand.ts". Fix: "brand.js" is the module \`${formatCliCommand('theme build', path.join(dir, 'themes', 'brand'))}\` writes, which takes the theme's name; rename brand.ts to brandTheme.ts and brand.doc.mjs to brandTheme.doc.mjs, export \`brandTheme\` from it, and build again.`,
+    );
+
+    const fixed = follow(dir, {
+      remove: ['themes/brand/brand.ts', 'themes/brand/brand.doc.mjs'],
+      write: {
+        'themes/brand/brandTheme.ts':
+          "import {defineTheme} from '@astryxdesign/core/theme';\nexport const brandTheme = defineTheme({name: 'brand'});\n",
+        'themes/brand/brandTheme.doc.mjs': brandDoc,
+      },
+    });
+    expect(
+      (await issuesOf(fixed)).filter(issue => issue.code === 'invalid_theme'),
+    ).toEqual([]);
+  });
+
+  const builtOcean = (/** @type {string} */ extra) =>
+    `/**\n * @generated by \`astryx theme build\` — do not edit manually.\n${extra} */\nimport './ocean.css';\nexport const oceanTheme = {};\n`;
+
+  it("names the theme's source when its defineTheme gives the theme's name, for a descriptor named for the built module", async () => {
+    const dir = writePackage({
+      [MANIFEST]: manifest({themes: './themes'}),
+      'themes/ocean/ocean.doc.mjs': themeDoc,
+      'themes/ocean/oceanTheme.ts': themeSource,
+      'themes/ocean/ocean.js': builtOcean(''),
+      'themes/ocean/ocean.css': '.astryx-theme-ocean {}\n',
+    });
+
+    const message = only(await issuesOf(dir), 'invalid_theme');
+    expect(message).toContain(
+      'shares its stem with the built module "ocean.js", which does not export "ocean": a descriptor must share its stem with the source that calls defineTheme. The theme\'s source is "oceanTheme.ts". Fix: rename ocean.doc.mjs to oceanTheme.doc.mjs.',
+    );
+    const fixed = follow(dir, {
+      move: [['themes/ocean/ocean.doc.mjs', 'themes/ocean/oceanTheme.doc.mjs']],
+    });
+    expect(
+      (await issuesOf(fixed)).filter(issue => issue.code === 'invalid_theme'),
+    ).toEqual([]);
+  });
+
+  it("names the source the built module's Source: line gives, over a <name>Theme helper", async () => {
+    const dir = writePackage({
+      [MANIFEST]: manifest({themes: './themes'}),
+      'themes/ocean/ocean.doc.mjs': themeDoc,
+      'themes/ocean/seaTheme.ts': themeSource.replace('oceanTheme', 'seaTheme'),
+      'themes/ocean/baseTheme.ts':
+        "import {defineTheme} from '@astryxdesign/core/theme';\nexport const baseTheme = defineTheme({name: 'base'});\n",
+      'themes/ocean/ocean.js': builtOcean(
+        ' * Source: themes/ocean/seaTheme.ts\n',
+      ),
+      'themes/ocean/ocean.css': '.astryx-theme-ocean {}\n',
+    });
+
+    expect(only(await issuesOf(dir), 'invalid_theme')).toContain(
+      'The theme\'s source is "seaTheme.ts". Fix: rename ocean.doc.mjs to seaTheme.doc.mjs.',
+    );
+  });
+
+  it('never names a lone <name>Theme helper as the source: the message stays generic', async () => {
+    const dir = writePackage({
+      [MANIFEST]: manifest({themes: './themes'}),
+      'themes/ocean/ocean.doc.mjs': themeDoc,
+      'themes/ocean/oceanTheme.ts':
+        "import {defineTheme} from '@astryxdesign/core/theme';\nexport const oceanTheme = defineTheme({name: 'base'});\n",
+      'themes/ocean/ocean.js': builtOcean(''),
+      'themes/ocean/ocean.css': '.astryx-theme-ocean {}\n',
+    });
+
+    const message = only(await issuesOf(dir), 'invalid_theme');
+    expect(message).toContain(
+      'shares its stem with the built module "ocean.js", which does not export "ocean": a descriptor must share its stem with the source that calls defineTheme. Fix: rename ocean.doc.mjs to share its stem with the theme\'s source (the module that calls defineTheme, such as oceanTheme.ts).',
+    );
+    expect(message).not.toContain("The theme's source is");
+  });
+
+  it('accepts a descriptor named for a built module that exports its stem, as 0.7.2 does', async () => {
+    const dir = writePackage({
+      [MANIFEST]: manifest({themes: './themes'}),
+      'themes/ocean/ocean.doc.mjs': themeDoc,
+      'themes/ocean/oceanTheme.ts': themeSource,
+      'themes/ocean/ocean.js': builtOcean('').replace(
+        'export const oceanTheme = {};',
+        'export const oceanTheme = {};\nexport const ocean = oceanTheme;',
+      ),
+      'themes/ocean/ocean.css': '.astryx-theme-ocean {}\n',
+    });
+
+    expect(
+      (await issuesOf(dir)).filter(issue => issue.code === 'invalid_theme'),
+    ).toEqual([]);
+  });
+});
+
+describe('a theme folder with a helper', () => {
+  it('reads a descriptor beside its own defineTheme source, with a <name>Theme helper beside them', async () => {
+    const dir = writePackage({
+      [MANIFEST]: manifest({themes: './themes'}),
+      'themes/brand/brand.doc.mjs': `${THEME_TYPE}export default {type: 'theme', name: 'brand', displayName: 'Brand', description: 'A theme.', maintained: true};\n`,
+      'themes/brand/brand.ts':
+        "import {defineTheme} from '@astryxdesign/core/theme';\nimport {baseTheme} from './baseTheme';\nexport const brand = defineTheme({name: 'brand', extends: baseTheme});\n",
+      'themes/brand/baseTheme.ts':
+        "import {defineTheme} from '@astryxdesign/core/theme';\nexport const baseTheme = defineTheme({name: 'base'});\n",
+    });
+
+    expect(
+      (await issuesOf(dir)).filter(issue => issue.code === 'invalid_theme'),
+    ).toEqual([]);
   });
 });
 
@@ -610,6 +1618,84 @@ describe('package.json', () => {
   });
 });
 
+describe('the manifest', () => {
+  it('asks about a key one letter from a known one before blaming the CLI version', async () => {
+    const dir = writePackage({
+      [MANIFEST]: manifest({component: './components'}),
+    });
+
+    const message = only(await issuesOf(dir), 'unknown_manifest_key');
+    expect(message).toBe(
+      'This CLI does not know the manifest key "component", so it is ignored. Did you mean `components`? Fix: rename "component" to "components" in astryx.integration.mjs. If it is a key from a newer Astryx CLI instead, upgrading @astryxdesign/cli picks it up.',
+    );
+  });
+
+  it('says to remove a near-miss key when the manifest already sets the key it suggests', async () => {
+    const dir = writePackage({
+      [MANIFEST]: manifest({components: './components', component: './x'}),
+      'components/AcmeWidget.doc.mjs': componentDoc('AcmeWidget'),
+      'components/AcmeWidget.tsx': componentSource('AcmeWidget'),
+    });
+
+    expect(only(await issuesOf(dir), 'unknown_manifest_key')).toBe(
+      'This CLI does not know the manifest key "component", so it is ignored. Did you mean `components`? Fix: remove "component" from astryx.integration.mjs; it already sets "components". If it is a key from a newer Astryx CLI instead, upgrading @astryxdesign/cli picks it up.',
+    );
+    const fixed = follow(dir, {
+      write: {[MANIFEST]: manifest({components: './components'})},
+    });
+    expect(await issuesOf(fixed)).toEqual([]);
+  });
+
+  it.each([
+    [
+      'alone, though the package name gives a provider ID',
+      {providerID: '@acme/kit', docs: './docs'},
+      'Fix: rename "providerID" to "providerId" in astryx.integration.mjs.',
+    ],
+    [
+      'beside the key it suggests',
+      {providerID: '@acme/kit', providerId: '@acme/kit', docs: './docs'},
+      'Fix: remove "providerID" from astryx.integration.mjs; it already sets "providerId".',
+    ],
+  ])(
+    'reads the keys the manifest declares: providerID %s',
+    async (_label, keys, fix) => {
+      const dir = writePackage({
+        [MANIFEST]: manifest(keys),
+        'docs/a.doc.mjs': topic('a'),
+      });
+
+      expect(only(await issuesOf(dir), 'unknown_manifest_key')).toContain(fix);
+    },
+  );
+
+  it('keeps the newer-CLI explanation for a key that is no near miss', async () => {
+    const dir = writePackage({[MANIFEST]: manifest({playgrounds: './x'})});
+
+    expect(only(await issuesOf(dir), 'unknown_manifest_key')).toContain(
+      'published against a newer Astryx CLI',
+    );
+  });
+
+  it('says a manifest has no default export, and what it exports', async () => {
+    const dir = writePackage({
+      [MANIFEST]: "export const integration = {docs: './docs'};\n",
+    });
+
+    expect(only(await issuesOf(dir), 'invalid_manifest')).toBe(
+      "Integration manifest (astryx.integration.mjs) has no default export (it exports `integration`). Fix: export the manifest object as the default export: `export default {components: './components'}`, naming the roots the package has.",
+    );
+  });
+
+  it('says a manifest is empty', async () => {
+    const dir = writePackage({[MANIFEST]: ''});
+
+    expect(only(await issuesOf(dir), 'invalid_manifest')).toMatch(
+      /^Integration manifest \(astryx\.integration\.mjs\) is empty\. Fix: /u,
+    );
+  });
+});
+
 describe('unreadable files and theme names', () => {
   const asRoot = process.getuid?.() === 0;
 
@@ -821,6 +1907,57 @@ describe('layout findings 0.7.2 did not fail on', () => {
     expect(run.status, run.stderr).toBe(0);
     expect(run.stdout).toContain(
       'note (duplicate_component_doc): Component "AcmeWidget" has 2 docs:',
+    );
+    expect(run.stdout).toContain('Summary: 0 errors, 0 warnings');
+  });
+});
+
+describe('name findings listed until the next minor release', () => {
+  /** @param {string} extra */
+  const block = extra =>
+    `export default {type: 'block', name: 'Account card', displayName: 'Account card', aspectRatio: 1,${extra}};\n`;
+  const docLayout = () =>
+    writeNamed({
+      [MANIFEST]: manifest({components: './components'}),
+      'components/AcmeWidget.doc.mjs': namedDoc('AcmeWidget', 'AcmeWidgets'),
+      'components/AcmeWidget.tsx': componentSource('AcmeWidget'),
+    });
+  const blockLayout = () =>
+    writePackage({
+      [MANIFEST]: manifest({templates: './templates'}),
+      'templates/account-card.doc.mjs': block(" componentsUsed: ['AcmeGizmo']"),
+      'templates/account-card.tsx': templateSource,
+    });
+
+  it.each([
+    ['doc_name_mismatch', docLayout, 'docNames'],
+    ['unknown_block_component', blockLayout, 'blockComponents'],
+  ])(
+    'lists %s as a note beside the issues, and integration check --strict passes',
+    async (code, make, report) => {
+      const dir = make();
+      const {data} = await validateIntegration(undefined, {cwd: dir});
+      expect(data.issues).toEqual([]);
+      expect(/** @type {any} */ (data)[report].findings).toEqual([]);
+      expect(data.notes?.map(note => note.code)).toEqual([code]);
+      expect(data.notes?.[0].message).toContain('Fix: ');
+
+      const result = await integrationCheck({cwd: dir, strict: true});
+      expect(result.data.failures).toEqual([]);
+      expect(result.data.failed).toBe(false);
+    },
+  );
+
+  it('prints the name notes and counts none', () => {
+    const dir = blockLayout();
+    const run = spawnSync(
+      process.execPath,
+      [CLI, 'doctor', 'integration', 'validate'],
+      {cwd: dir, encoding: 'utf-8', timeout: 60_000},
+    );
+    expect(run.status, run.stderr).toBe(0);
+    expect(run.stdout).toContain(
+      'note (unknown_block_component): Template "account-card" names "AcmeGizmo" in componentsUsed',
     );
     expect(run.stdout).toContain('Summary: 0 errors, 0 warnings');
   });
