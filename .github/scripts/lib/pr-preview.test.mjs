@@ -583,6 +583,46 @@ describe('PR Comment keeps its outcome off main', () => {
         `needs.${name}.outputs.failed == 'true'`,
       );
     }
+    // A cancelled job published nothing; it is not an up-to-date report.
+    expect(step.env.FAILED).toContain("contains(needs.*.result, 'cancelled')");
+  });
+
+  it.each([
+    [
+      'resolve',
+      'Resolve trusted PR identity',
+      "steps.checkout.outcome == 'success'",
+    ],
+    [
+      'spec-only-reconcile',
+      'Remove stale preview links from an existing report',
+      "steps.checkout.outcome == 'success'",
+    ],
+    [
+      'comment',
+      'Reconfirm trusted PR identity',
+      "steps.setup.outcome == 'success'",
+    ],
+  ])(
+    'still skips the %s work after its checkout or install fails',
+    (job, name, condition) => {
+      const step = PR_COMMENT_WORKFLOW.jobs[job].steps.find(
+        item => item.name === name,
+      );
+      expect(step.if).toBe(condition);
+    },
+  );
+
+  it('gates every later comment step on the confirmed identity', () => {
+    const steps = PR_COMMENT_WORKFLOW.jobs.comment.steps;
+    const after = steps.slice(
+      steps.findIndex(step => step.id === 'identity') + 1,
+    );
+    for (const step of after) {
+      expect(step.if, step.name).toContain(
+        "steps.identity.outputs.valid == 'true'",
+      );
+    }
   });
 
   it.each([

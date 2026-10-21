@@ -57,6 +57,9 @@ jobs:
       - name: Resolve trusted PR identity
         continue-on-error: true
         id: identity
+        # Steps continue on error, so a failed checkout no longer skips this
+        # one by itself.
+        if: steps.checkout.outcome == 'success'
         uses: actions/github-script@v9
         with:
           retries: 3
@@ -240,6 +243,7 @@ jobs:
       - name: Remove stale preview links from an existing report
         id: reconcile
         continue-on-error: true
+        if: steps.checkout.outcome == 'success'
         uses: actions/github-script@v9
         env:
           PR_NUMBER: ${{ needs.resolve.outputs.pr_number }}
@@ -326,6 +330,9 @@ jobs:
       - name: Reconfirm trusted PR identity
         continue-on-error: true
         id: identity
+        # Steps continue on error, so a failed checkout or install no longer
+        # skips the rest by itself. Every later step requires a valid identity.
+        if: steps.setup.outcome == 'success'
         uses: actions/github-script@v9
         env:
           PR_NUMBER: ${{ needs.resolve.outputs.pr_number }}
@@ -521,7 +528,8 @@ jobs:
             ${{ needs.resolve.outputs.failed == 'true' ||
             needs.spec-only-reconcile.outputs.failed == 'true' ||
             needs.comment.outputs.failed == 'true' ||
-            contains(needs.*.result, 'failure') }}
+            contains(needs.*.result, 'failure') ||
+            contains(needs.*.result, 'cancelled') }}
         with:
           retries: 3
           script: |
