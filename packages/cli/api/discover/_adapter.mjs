@@ -725,7 +725,8 @@ export const EXPERIMENTAL_KINDS = /** @type {const} */ (['icon-set']);
 
 /** The item kinds every project reads: the catalog kinds, less experimental ones. */
 export const STABLE_KINDS = DISCOVER_KINDS.filter(
-  kind => !/** @type {readonly string[]} */ (EXPERIMENTAL_KINDS).includes(kind),
+  kind =>
+    !(/** @type {readonly string[]} */ (EXPERIMENTAL_KINDS).includes(kind)),
 );
 
 /**
