@@ -694,10 +694,8 @@ describe('doctor integration — command', () => {
     ]);
 
     const output = logCalls.join('\n');
-    expect(output).toContain(
-      '[info] Imports apps cannot use: 1 (listed only; they fail --strict from the next minor):',
-    );
-    expect(output).toContain('template_import_not_exported');
+    expect(output).toContain('note (template_import_not_exported):');
+    expect(output).toContain('Fix:');
     expect(output).toContain('[ok] No integration issues found.');
     expect(process.exitCode).toBeUndefined();
   });

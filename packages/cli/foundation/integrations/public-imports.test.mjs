@@ -121,20 +121,10 @@ afterEach(() => {
   fs.rmSync(dir, {recursive: true, force: true});
 });
 
-/**
- * The public-import findings, listed or warned, each message rejoined with
- * its fix.
- */
+/** The public-import findings, listed as notes on validate's result. */
 async function found() {
   const result = await validateLocalIntegration(dir);
-  return [...result.issues, ...(result.publicImports?.findings ?? [])]
-    .filter(finding => CODES.has(finding.code))
-    .map(finding => ({
-      ...finding,
-      message: finding.fix
-        ? `${finding.message} Fix: ${finding.fix}`
-        : finding.message,
-    }));
+  return (result.notes ?? []).filter(note => CODES.has(note.code));
 }
 
 async function codes() {
@@ -172,6 +162,27 @@ describe('public imports: clean packages', () => {
     expect(await codes()).toEqual([]);
   });
 
+  it('reads "exports": null as no exports field', async () => {
+    pkg(p => {
+      p.exports = null;
+    });
+    // A doc module loads once per run, so the doc is written before checking.
+    write(
+      'components/AcmeWidget.doc.mjs',
+      DOC('@acme/widgets/components/Missing'),
+    );
+    const issue = (await found()).find(
+      i => i.code === 'component_import_not_exported',
+    );
+    expect(issue?.message).toContain(
+      'no file exists at "./components/Missing"',
+    );
+    // The template's deep path to its own file still resolves.
+    expect((await found()).filter(i => i.code.startsWith('template_'))).toEqual(
+      [],
+    );
+  });
+
   it('keeps legacy deep paths when package.json has no exports', async () => {
     pkg(p => delete p.exports);
     expect(await codes()).toEqual([]);
@@ -205,9 +216,7 @@ describe('public imports: clean packages', () => {
     );
     const result = await validateIntegration(undefined, {cwd: dir});
     expect(
-      (result.data.publicImports?.findings ?? []).filter(i =>
-        i.code.includes('_not_exported'),
-      ),
+      (result.data.notes ?? []).filter(i => i.code.includes('_not_exported')),
     ).toEqual([]);
     expect(result.data.publicImports?.unchecked).toEqual([
       expect.objectContaining({
@@ -251,7 +260,7 @@ describe('public imports: component doc import', () => {
     pkg(p => delete p.exports['./components/AcmeWidget']);
     const issues = await found();
     const issue = issues.find(i => i.code === 'component_import_not_exported');
-    expect(issue?.severity).toBe('info');
+    expect(issue).not.toHaveProperty('severity');
     expect(issue?.message).toContain(
       '"./components/AcmeWidget": "./components/AcmeWidget.tsx"',
     );
@@ -267,7 +276,7 @@ describe('public imports: component doc import', () => {
     );
     const issues = await found();
     expect(issues.length).toBeGreaterThan(2);
-    expect(issues.every(i => i.severity === 'info')).toBe(true);
+    expect(issues.every(i => !('severity' in i))).toBe(true);
     const validated = await validateLocalIntegration(dir);
     expect(validated.issues.filter(issue => CODES.has(issue.code))).toEqual([]);
     const plain = await integrationCheck({cwd: dir});
@@ -605,9 +614,7 @@ describe('template default export', () => {
       'export function AccountCard() {\n  return <div>Account</div>;\n}\n',
     );
     const issues = await found();
-    expect(issues.map(i => [i.code, i.severity])).toEqual([
-      ['template_no_default_export', 'info'],
-    ]);
+    expect(issues.map(i => i.code)).toEqual(['template_no_default_export']);
     expect(issues[0].message).toContain('export default AccountCard;');
   });
 
@@ -709,7 +716,7 @@ describe('derived component imports', () => {
     });
     const result = await validateIntegration(undefined, {cwd: dir});
     expect(
-      (result.data.publicImports?.findings ?? []).filter(i =>
+      (result.data.notes ?? []).filter(i =>
         i.code.startsWith('component_import'),
       ),
     ).toEqual([]);
@@ -1017,7 +1024,7 @@ describe('export import declarations', () => {
     );
     const result = await validateIntegration(undefined, {cwd: dir});
     expect(
-      (result.data.publicImports?.findings ?? []).filter(
+      (result.data.notes ?? []).filter(
         i => i.code === 'template_import_missing_name',
       ),
     ).toEqual([]);
@@ -1133,7 +1140,7 @@ describe('which Core and which package', () => {
         cwd: path.join(root, 'packages/widgets'),
       });
       expect(
-        (result.data.publicImports?.findings ?? []).filter(
+        (result.data.notes ?? []).filter(
           i => i.code === 'template_private_import',
         ),
       ).toEqual([]);
@@ -1163,9 +1170,15 @@ describe('which Core and which package', () => {
         reason: expect.stringContaining('no "name"'),
       }),
     );
-    // Nothing from it fails `integration check --strict`: no skip, no warning.
+    // Nothing from the public-import check fails `integration check
+    // --strict`: no skip, no warning (other checks may report the missing
+    // name themselves).
     const {warnings, skipped} = strictIssues('validate', result);
-    expect([...warnings, ...skipped]).toEqual([]);
+    expect(
+      [...warnings, ...skipped].filter(
+        each => CODES.has(each.code) || each.code === 'public_imports_skipped',
+      ),
+    ).toEqual([]);
   });
 });
 

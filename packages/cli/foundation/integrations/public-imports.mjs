@@ -5,15 +5,16 @@
  * import is importable, read without a build.
  *
  * @input A package directory and its loaded integration record.
- * @output Findings, listed in the `publicImports` report and never counted
- *   (they fail `--strict` from the next minor), for: a component doc's
- *   `import` or a template's public import whose subpath package.json
- *   `exports` does not declare (or that names another package), or whose
- *   module does not export the component; a component example that imports
- *   an undeclared subpath or a name its package does not export; a template
- *   source with no default export, or one that imports a relative path
- *   outside the templates root, an undeclared subpath of its own package or
- *   of Core, or a name its package does not export.
+ * @output Notes, listed on validate's result and never counted (they fail
+ *   `--strict` from the next minor), for: a component's import (the doc's
+ *   `import`, or the one the CLI derives) or a template's public import whose
+ *   subpath package.json `exports` does not declare (or that names another
+ *   package), or whose module does not export the component; a component
+ *   example that imports an undeclared subpath or a name its package does not
+ *   export; a template source with no default export, or one that imports a
+ *   relative path outside the templates root, an undeclared subpath of its own
+ *   package or of Core, or a name its package does not export. Imports it
+ *   cannot judge are listed in a report.
  * @position foundation/integrations, beside the other on-disk contribution
  *   validators; run by `astryx doctor integration validate` (and so by
  *   `integration check`) through api/integration/validate-integration.mjs.
@@ -718,23 +719,16 @@ function uncheckedReason(files, allPresent = true) {
 // ── Listed findings ─────────────────────────────────────────────────
 
 /**
- * A public-import finding, listed in the report and never counted: it
- * becomes a failing warning in the next minor release (a new failure code
- * joins only in a minor). The message's ` Fix: …` tail is its fix.
+ * A public-import finding as a note on validate's result: listed with its
+ * fix inside the message, never counted or failed on. It becomes a failing
+ * warning in the next minor release (a new failure code joins only in a
+ * minor).
  * @param {string} code
  * @param {string} message
- * @returns {PublicImportFinding}
+ * @returns {PublicImportNote}
  */
 function listed(code, message) {
-  const at = message.indexOf(' Fix: ');
-  return at === -1
-    ? {code, severity: 'info', message}
-    : {
-        code,
-        severity: 'info',
-        message: message.slice(0, at),
-        fix: message.slice(at + ' Fix: '.length),
-      };
+  return {code, message};
 }
 
 // ── Checks ──────────────────────────────────────────────────────────
@@ -808,7 +802,7 @@ function fixTarget(subpath, sourceTarget) {
 
 /** @typedef {import('../../api/integration/validate-integration.type.mjs').PublicImportUnchecked} PublicImportUnchecked */
 /** @typedef {import('../../api/integration/validate-integration.type.mjs').PublicImportsReport} PublicImportsReport */
-/** @typedef {import('../../api/integration/validate-integration.type.mjs').PublicImportFinding} PublicImportFinding */
+/** @typedef {{code: string, message: string}} PublicImportNote */
 
 /**
  * Judge an import of the package's own name.
@@ -879,10 +873,10 @@ function subpathExporting(ctx, name, preferred) {
  * A component doc's import specifier, and every example's imports.
  * @param {Context} ctx
  * @param {any} integration
- * @returns {Promise<PublicImportFinding[]>}
+ * @returns {Promise<PublicImportNote[]>}
  */
 async function componentIssues(ctx, integration) {
-  /** @type {PublicImportFinding[]} */
+  /** @type {PublicImportNote[]} */
   const issues = [];
   // Every component check compares imports with the package's own name.
   if (ctx.name == null) return issues;
@@ -1192,10 +1186,10 @@ async function componentIssues(ctx, integration) {
  * Template public imports and what each template source imports.
  * @param {Context} ctx
  * @param {any} integration
- * @returns {Promise<PublicImportFinding[]>}
+ * @returns {Promise<PublicImportNote[]>}
  */
 async function templateIssues(ctx, integration) {
-  /** @type {PublicImportFinding[]} */
+  /** @type {PublicImportNote[]} */
   const issues = [];
   const root = integration.templates;
   if (!root) return issues;
@@ -1333,11 +1327,13 @@ async function templateIssues(ctx, integration) {
 }
 
 /**
- * Every public-import warning for one package, and the report of what could
- * not be judged.
+ * Every public-import finding for one package, as notes, and the report of
+ * what could not be judged. It returns no issues: the notes are listed
+ * only, and fail `--strict` from the next minor release.
  * @param {string} packageDir
  * @param {any} integration the loaded integration record
- * @returns {Promise<{issues: Issue[], report: PublicImportsReport}>}
+ * @returns {Promise<{issues: Issue[], notes: PublicImportNote[], report: PublicImportsReport}>}
+ *   `issues` is always empty: kept so validate's call site stays one shape
  */
 export async function publicImportIssues(packageDir, integration) {
   /** @type {PublicImportsReport} */
@@ -1351,7 +1347,7 @@ export async function publicImportIssues(packageDir, integration) {
       specifier: '',
       reason: 'package.json could not be read, so no import was checked',
     });
-    return {issues: [], report};
+    return {issues: [], notes: [], report};
   }
   const name =
     typeof pkg.name === 'string' && pkg.name !== '' ? pkg.name : null;
@@ -1396,10 +1392,10 @@ export async function publicImportIssues(packageDir, integration) {
       .filter(root => typeof root === 'string')
       .map(root => path.resolve(root)),
   };
-  report.findings.push(
+  const notes = [
     ...(await componentIssues(ctx, integration)),
     ...(await templateIssues(ctx, integration)),
-  );
+  ];
   // Listed only: none is an issue, so none counts or fails a check.
-  return {issues: [], report};
+  return {issues: [], notes, report};
 }
