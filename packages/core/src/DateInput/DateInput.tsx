@@ -537,11 +537,11 @@ function PointerDateField({
   const isBusy = isLoading || optimisticValue !== value;
   const isEffectivelyDisabled = isDisabled || isBusy;
 
-  // Disabled-reason tooltip. Disabled controls swallow pointer events, so the
-  // tooltip listeners attach to the input container (which already exists) and
-  // the text input stays perceivable via aria-disabled instead of the disabled
-  // attribute. Typing is blocked with readOnly and value mutation guards;
-  // calendar activation is blocked by the isEffectivelyDisabled guards. Only
+  // A disabled or busy field never renders native `disabled` (spec:AST-085
+  // FR1): the input and calendar button stay focusable via aria-disabled.
+  // Typing is blocked with readOnly and value mutation guards; calendar
+  // activation is blocked by the isEffectivelyDisabled guards. The
+  // disabled-reason tooltip's listeners attach to the input container. Only
   // the persistent isDisabled state (not the transient busy state) surfaces a
   // reason.
   const showsDisabledMessage = isDisabled && !!disabledMessage;
@@ -703,8 +703,8 @@ function PointerDateField({
   // Handle input text change - update immediately if valid and allowed
   const handleInputChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
-      // With a disabledMessage the input drops `disabled` for focusability, so
-      // guard value mutation explicitly (readOnly also blocks typing).
+      // The input is never natively disabled (spec:AST-085 FR1), so guard
+      // value mutation explicitly (readOnly also blocks typing).
       if (isEffectivelyDisabled) {
         return;
       }
@@ -823,7 +823,7 @@ function PointerDateField({
       <button
         type="button"
         onClick={handleToggle}
-        disabled={isEffectivelyDisabled}
+        aria-disabled={isEffectivelyDisabled || undefined}
         aria-label={
           popover.isOpen
             ? t('@astryx.dateInput.toggleCalendarClose')
@@ -861,13 +861,8 @@ function PointerDateField({
         onClick={chainEventHandlers(handleInputClick, onClickProp)}
         onKeyDown={chainEventHandlers(handleInputKeyDown, onKeyDownProp)}
         placeholder={placeholder}
-        // With a disabledMessage the input keeps focusability via
-        // aria-disabled so the reason is focus-discoverable; typing is
-        // blocked with readOnly and the mutation guards, and calendar
-        // activation is blocked by the isEffectivelyDisabled guards.
-        disabled={isEffectivelyDisabled && !showsDisabledMessage}
-        aria-disabled={showsDisabledMessage ? 'true' : undefined}
-        readOnly={showsDisabledMessage || undefined}
+        aria-disabled={isEffectivelyDisabled ? 'true' : undefined}
+        readOnly={isEffectivelyDisabled || undefined}
         aria-labelledby={
           ariaLabelledByProp != null
             ? joinAriaIDs(ariaLabelledBy ?? fieldLabelID, ariaLabelledByProp)

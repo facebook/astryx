@@ -554,8 +554,13 @@ describe('DateInput — field parity', () => {
         onChange={() => {}}
       />,
     );
-    expect(field()).toBeDisabled();
+    // Focusable, never natively disabled (AST-085 FR1), and still inert.
+    expect(field()).not.toHaveAttribute('disabled');
+    expect(field()).toHaveAttribute('aria-disabled', 'true');
+    field().focus();
+    expect(field()).toHaveFocus();
     fireEvent.click(field());
+    fireEvent.keyDown(field(), {key: 'Enter'});
     expect(screen.queryByRole('grid')).not.toBeInTheDocument();
   });
 

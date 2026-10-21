@@ -620,11 +620,11 @@ export function TouchDateField({
   const isBusy = isLoading || optimisticValue !== value;
   const isEffectivelyDisabled = isDisabled || isBusy;
 
-  // Disabled-reason tooltip, same contract as DateInput: a disabled control
-  // swallows pointer events, so the listeners attach to the wrapper and the
-  // input stays focusable via aria-disabled rather than the disabled
-  // attribute. Only the persistent disabled state surfaces a reason, never
-  // the transient busy one.
+  // Same contract as DateInput: a disabled or busy field never renders native
+  // `disabled` (spec:AST-085 FR1); the input stays focusable via
+  // aria-disabled. The disabled-reason tooltip's listeners attach to the
+  // wrapper. Only the persistent disabled state surfaces a reason, never the
+  // transient busy one.
   const showsDisabledMessage = isDisabled && !!disabledMessage;
   const disabledMessageTooltip = useTooltip({
     placement: 'above',
@@ -1228,7 +1228,7 @@ export function TouchDateField({
       <button
         type="button"
         onClick={openSheet}
-        disabled={isEffectivelyDisabled}
+        aria-disabled={isEffectivelyDisabled || undefined}
         aria-label={t('@astryx.dateInput.openCalendar')}
         tabIndex={-1}
         {...stylex.props(
@@ -1262,8 +1262,7 @@ export function TouchDateField({
         onClick={chainEventHandlers(openSheet, onClickProp)}
         onKeyDown={chainEventHandlers(handleInputKeyDown, onKeyDownProp)}
         placeholder={placeholder}
-        disabled={isEffectivelyDisabled && !showsDisabledMessage}
-        aria-disabled={showsDisabledMessage ? 'true' : undefined}
+        aria-disabled={isEffectivelyDisabled ? 'true' : undefined}
         aria-labelledby={
           ariaLabelledByProp != null
             ? joinAriaIDs(ariaLabelledBy ?? fieldLabelID, ariaLabelledByProp)

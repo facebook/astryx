@@ -323,9 +323,10 @@ export function NativeDateField({
   // platform picker from its input.
   const isEffectivelyDisabled = isDisabled || isLoading;
 
-  // Disabled-reason tooltip, same contract as the other two surfaces: a
-  // disabled control swallows pointer events, so the listeners attach to the
-  // wrapper and the input stays focusable via aria-disabled.
+  // Same contract as the other two surfaces: a disabled field never renders
+  // native `disabled` (spec:AST-085 FR1); the input stays focusable via
+  // aria-disabled and readOnly. The disabled-reason tooltip's listeners
+  // attach to the wrapper.
   const showsDisabledMessage = isDisabled && !!disabledMessage;
   const disabledMessageTooltip = useTooltip({
     placement: 'above',
@@ -597,7 +598,7 @@ export function NativeDateField({
       <button
         type="button"
         onClick={openPicker}
-        disabled={isEffectivelyDisabled}
+        aria-disabled={isEffectivelyDisabled || undefined}
         aria-label={t('@astryx.dateInput.openCalendar')}
         tabIndex={-1}
         {...stylex.props(
@@ -626,9 +627,8 @@ export function NativeDateField({
           onBlur={chainEventHandlers(handleBlur, onBlurProp)}
           min={min}
           max={max}
-          disabled={isEffectivelyDisabled && !showsDisabledMessage}
-          aria-disabled={showsDisabledMessage ? 'true' : undefined}
-          readOnly={showsDisabledMessage || undefined}
+          aria-disabled={isEffectivelyDisabled ? 'true' : undefined}
+          readOnly={isEffectivelyDisabled || undefined}
           aria-labelledby={
             ariaLabelledByProp != null
               ? joinAriaIDs(ariaLabelledBy ?? fieldLabelID, ariaLabelledByProp)
