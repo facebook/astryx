@@ -115,9 +115,8 @@ Membership follows public responsibility, not an import of Button or a rendered
   otherwise. Button's `href` mode is the explicit navigation variation and also
   follows `family:navigation-destinations`.
 - **FR3 — Disabled means non-operable.** A disabled member MUST NOT invoke its
-  callback or Action. When a disabled reason requires focus, the component MAY use
-  focusable `aria-disabled` semantics while still blocking activation. A group
-  disabled state overrides member availability.
+  callback or Action. Disabled members stay focusable and follow
+  `spec:AST-085`. A group disabled state overrides member availability.
 - **FR4 — Pending feedback preserves purpose and geometry.** Where a member
   exposes loading or an Action, pending work MUST set `aria-busy`, keep the
   control's dimensions stable, and present a Spinner without changing the
