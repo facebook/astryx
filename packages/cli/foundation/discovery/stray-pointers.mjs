@@ -24,9 +24,10 @@ import {
 
 /**
  * A code span that is exactly the command opening one doc. A command with
- * more words, a flag, or a route is a walkthrough, not a pointer.
+ * more words, a flag, or a route is a walkthrough, not a pointer. A name holds
+ * what a topic name may (letters, digits, `_` and `-`), never opening with `-`.
  */
-const POINTER = /`astryx docs ([a-z0-9][a-z0-9-]*)`/g;
+const POINTER = /`astryx docs ([A-Za-z0-9_][A-Za-z0-9_-]*)`/g;
 
 /** @type {Promise<Map<string, string>> | undefined} */
 let coreKinds;

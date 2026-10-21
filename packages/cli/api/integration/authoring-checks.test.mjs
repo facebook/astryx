@@ -1042,6 +1042,26 @@ describe('integrationDocConflicts fluff', () => {
 describe('integrationDocConflicts stray doc pointers', () => {
   const stray = (/** @type {any} */ result) => result.data.strayPointers;
 
+  it('lists a pointer to a topic whose name holds an underscore or capitals', async () => {
+    writeTopics([
+      {name: 'acme_setup', text: 'Install it first.'},
+      {name: 'AcmeGuide', text: 'Read on.'},
+      {
+        name: 'acme-menus',
+        text: 'Set it up as `astryx docs acme_setup` says, then `astryx docs AcmeGuide`; flags such as `astryx docs -h` are not pointers.',
+      },
+    ]);
+
+    const found = stray(
+      await integrationDocConflicts(undefined, {cwd: tmpDir}),
+    );
+
+    expect(found.map((/** @type {any} */ each) => each.link)).toEqual([
+      '{@link generic:acme_setup}',
+      '{@link generic:AcmeGuide}',
+    ]);
+  });
+
   it('links a pointer to an extension topic to the page it extends', async () => {
     writeTopics([
       {name: 'acme-theme', text: 'Acme colors.', extendsTopic: 'theme'},
