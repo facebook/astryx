@@ -6,9 +6,10 @@
  * domain, _gather-*.mjs) and loads the tree's static data before it runs.
  */
 
-import {readFileSync, statSync} from 'node:fs';
+import {readFileSync} from 'node:fs';
 import * as path from 'node:path';
 import {requireCoreDir} from '../../foundation/fs/paths.mjs';
+import {recordReads, stampOf} from '../../foundation/fs/read-record.mjs';
 import {isOutsideProject} from '../../foundation/env/project-scope.mjs';
 import {coreDirOrThrow} from '../error.mjs';
 import {CORELESS_DOMAINS} from './_query.mjs';
@@ -93,75 +94,38 @@ export async function gatherCandidates(options) {
 }
 
 /**
- * The files whose change can change what a search in `cwd` gathers, checked
- * from `cwd` up to the filesystem root: each folder's package.json, Astryx
- * config, lockfiles and node_modules folder (an install or removal changes
- * its time).
+ * @typedef {Awaited<ReturnType<typeof gatherCandidates>>} Gathered
+ * @type {Map<string, {paths: string[], stamp: string, value: Promise<Gathered>}>}
  */
-const INPUT_FILES = [
-  'package.json',
-  'astryx.config.mjs',
-  'astryx.config.js',
-  'astryx.config.cjs',
-  'astryx.config.ts',
-  'astryx.config.json',
-  'pnpm-lock.yaml',
-  'package-lock.json',
-  'yarn.lock',
-  'node_modules',
-];
-
-/**
- * A stamp of the inputs a search in `cwd` gathers from: the change time and
- * size of each file in INPUT_FILES, in `cwd` and every folder above it.
- * @param {string} cwd
- * @returns {string}
- */
-function inputStamp(cwd) {
-  const parts = [];
-  for (let dir = path.resolve(cwd); ; dir = path.dirname(dir)) {
-    for (const name of INPUT_FILES) {
-      try {
-        const stat = statSync(path.join(dir, name));
-        parts.push(`${dir}/${name}:${stat.mtimeMs}:${stat.size}`);
-      } catch {
-        // absent
-      }
-    }
-    if (path.dirname(dir) === dir) break;
-  }
-  return parts.join('\n');
-}
-
-/** How long a gathered catalog is reused while its input stamp holds. */
-const REUSE_MS = 5 * 60_000;
-
-/** @type {Map<string, {stamp: string, at: number, value: Promise<Awaited<ReturnType<typeof gatherCandidates>>>}>} */
 const gathered = new Map();
 
 /**
  * gatherCandidates, reused within one process: a later search in the same
- * folder, for the same `type`, within REUSE_MS, while none of its input
- * files changed, ranks the candidates the earlier search gathered. A
+ * folder, for the same `type`, ranks the candidates an earlier search
+ * gathered when none of the files that gather read, and none of the folders
+ * it listed or probed, changed since (each is checked by its change time and
+ * size, so an edited doc in a linked package is seen on the next call). A
  * long-running caller (a docs site's search, an agent harness) then pays the
- * gather once, and each search costs only its ranking. A one-shot
- * `astryx search` gathers as before.
+ * gather once. A one-shot `astryx search` gathers once, as before.
  * @param {{cwd?: string, type?: string}} options
- * @returns {Promise<Awaited<ReturnType<typeof gatherCandidates>>>}
+ * @returns {Promise<Gathered>}
  */
-export function gatherCandidatesReused(options) {
+export async function gatherCandidatesReused(options) {
   const cwd = path.resolve(options.cwd ?? process.cwd());
   const key = `${cwd}\0${options.type ?? ''}`;
-  const stamp = inputStamp(cwd);
-  const now = Date.now();
   const hit = gathered.get(key);
-  if (hit && hit.stamp === stamp && now - hit.at < REUSE_MS) return hit.value;
-  const value = gatherCandidates({...options, cwd});
-  gathered.set(key, {stamp, at: now, value});
-  // A failed gather (no Core for a typed search) is not kept.
-  value.catch(() => {
+  if (hit && stampOf(hit.paths) === hit.stamp) return hit.value;
+  /** @type {Set<string>} */
+  const seen = new Set();
+  const value = recordReads(seen, () => gatherCandidates({...options, cwd}));
+  try {
+    await value;
+  } catch (error) {
     if (gathered.get(key)?.value === value) gathered.delete(key);
-  });
+    throw error;
+  }
+  const paths = [...seen].sort();
+  gathered.set(key, {paths, stamp: stampOf(paths), value});
   return value;
 }
 

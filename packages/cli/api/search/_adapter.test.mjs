@@ -7,7 +7,7 @@
  * the reuse window passes.
  */
 
-import {describe, it, expect, vi} from 'vitest';
+import {describe, it, expect} from 'vitest';
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
@@ -74,18 +74,88 @@ describe('gatherCandidatesReused', () => {
   );
 
   it(
-    'gathers again once the reuse window passes',
+    'gathers again when a file the gather read changes, in a linked package too',
     async () => {
-      const cwd = scratchProject();
-      const first = await gatherCandidatesReused({cwd, type: 'doc'});
-      const now = Date.now();
-      const clock = vi.spyOn(Date, 'now').mockReturnValue(now + 6 * 60_000);
+      // A consumer whose integration is a symlink to a package folder
+      // elsewhere, as a workspace package is.
+      const dir = fs.mkdtempSync(
+        path.join(process.cwd(), '.astryx-gather-reuse-'),
+      );
+      const pkg = fs.mkdtempSync(
+        path.join(os.tmpdir(), 'astryx-linked-widgets-'),
+      );
       try {
-        expect(await gatherCandidatesReused({cwd, type: 'doc'})).not.toBe(
-          first,
+        fs.writeFileSync(path.join(dir, 'package.json'), '{"name":"consumer"}');
+        fs.writeFileSync(
+          path.join(dir, 'astryx.config.mjs'),
+          "export default { integrations: ['@acme/widgets'] };\n",
         );
+        fs.mkdirSync(
+          path.join(dir, 'node_modules', '@astryxdesign', 'core', 'src'),
+          {
+            recursive: true,
+          },
+        );
+        fs.mkdirSync(path.join(pkg, 'components'));
+        fs.writeFileSync(
+          path.join(pkg, 'package.json'),
+          '{"name":"@acme/widgets","version":"1.0.0"}',
+        );
+        fs.writeFileSync(
+          path.join(pkg, 'astryx.integration.mjs'),
+          "export default { components: './components' };\n",
+        );
+        fs.writeFileSync(
+          path.join(pkg, 'components', 'FancyGizmo.doc.mjs'),
+          `export default {
+            type: 'component',
+            name: 'FancyGizmo',
+            keywords: ['gizmo'],
+            usage: {description: 'A fancy part.'},
+            props: [],
+          };\n`,
+        );
+        fs.writeFileSync(
+          path.join(pkg, 'components', 'FancyGizmo.tsx'),
+          'export function FancyGizmo() { return null; }\n',
+        );
+        fs.mkdirSync(path.join(dir, 'node_modules', '@acme'));
+        fs.symlinkSync(
+          pkg,
+          path.join(dir, 'node_modules', '@acme', 'widgets'),
+          'dir',
+        );
+        const options = {cwd: dir, type: 'component'};
+        const first = await gatherCandidatesReused(options);
+        expect(first.all.map(c => c.name)).toContain('FancyGizmo');
+        expect(await gatherCandidatesReused(options)).toBe(first);
+
+        // A new component in the linked package: its folder changed.
+        fs.writeFileSync(
+          path.join(pkg, 'components', 'TinySprocket.doc.mjs'),
+          `export default {
+            type: 'component',
+            name: 'TinySprocket',
+            keywords: ['sprocket'],
+            usage: {description: 'A small part.'},
+            props: [],
+          };\n`,
+        );
+        fs.writeFileSync(
+          path.join(pkg, 'components', 'TinySprocket.tsx'),
+          'export function TinySprocket() { return null; }\n',
+        );
+        const second = await gatherCandidatesReused(options);
+        expect(second).not.toBe(first);
+        expect(second.all.map(c => c.name)).toContain('TinySprocket');
+
+        // An edited file the gather read: the linked package's manifest.
+        const later = new Date(Date.now() + 5_000);
+        fs.utimesSync(path.join(pkg, 'package.json'), later, later);
+        expect(await gatherCandidatesReused(options)).not.toBe(second);
       } finally {
-        clock.mockRestore();
+        fs.rmSync(dir, {recursive: true, force: true});
+        fs.rmSync(pkg, {recursive: true, force: true});
       }
     },
     SLOW,
