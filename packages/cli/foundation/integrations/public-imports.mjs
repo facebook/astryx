@@ -5,8 +5,7 @@
  * import is importable, read without a build.
  *
  * @input A package directory and its loaded integration record.
- * @output Notes, listed on validate's result and never counted (they fail
- *   `--strict` from the next minor), for: a component's import (the doc's `import`, or the one
+ * @output Warnings (so `integration check --strict` fails on them) for: a component's import (the doc's `import`, or the one
  *   the CLI derives) or a template's public import whose subpath
  *   package.json `exports` does not declare (or that names another package);
  *   a component example that imports an undeclared subpath; a template
@@ -27,6 +26,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {parse} from '@babel/parser';
 import {findProjectCoreDir} from '../fs/paths.mjs';
+import {issueWarning} from './validate-contributions.mjs';
 import {normalizeProviderId} from '../identity/provider-identity.mjs';
 import {
   discoverIntegrationComponents,
@@ -362,10 +362,8 @@ function isPackageName(name) {
 // ── Listed findings ─────────────────────────────────────────────────
 
 /**
- * A public-import finding as a note on validate's result: listed with its
- * fix inside the message, never counted or failed on. It becomes a failing
- * warning in the next minor release (a new failure code joins only in a
- * minor).
+ * A public-import finding, its fix inside the message; publicImportIssues
+ * makes each a warning.
  * @param {string} code
  * @param {string} message
  * @returns {PublicImportNote}
@@ -747,13 +745,12 @@ async function templateIssues(ctx, integration) {
 }
 
 /**
- * Every public-import finding for one package, as notes, and the report of
- * what could not be judged. It returns no issues: the notes are listed
- * only, and fail `--strict` from the next minor release.
+ * Every public-import finding for one package, as warnings, and the report
+ * of what could not be judged. `notes` stays empty.
  * @param {string} packageDir
  * @param {any} integration the loaded integration record
  * @returns {Promise<{issues: Issue[], notes: PublicImportNote[], report: PublicImportsReport}>}
- *   `issues` is always empty: kept so validate's call site stays one shape
+ *   `notes` is always empty: kept so validate's call site stays one shape
  */
 export async function publicImportIssues(packageDir, integration) {
   /** @type {PublicImportsReport} */
@@ -812,10 +809,14 @@ export async function publicImportIssues(packageDir, integration) {
       .filter(root => typeof root === 'string')
       .map(root => path.resolve(root)),
   };
-  const notes = [
+  const findings = [
     ...(await componentIssues(ctx, integration)),
     ...(await templateIssues(ctx, integration)),
   ];
-  // Listed only: none is an issue, so none counts or fails a check.
-  return {issues: [], notes, report};
+  // Each finding is a warning, so `integration check --strict` fails on it.
+  return {
+    issues: findings.map(each => issueWarning(each.code, each.message)),
+    notes: [],
+    report,
+  };
 }

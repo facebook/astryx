@@ -48,8 +48,8 @@
  *   (`unreadable_file`), a package.json without `name` or `version`
  *   (`invalid_package_json`), no provider ID (`no_provider_id`), and a doc
  *   whose file name differs from its source only in letter case where the two
- *   still pair (`source_without_component_doc`), and since 0.7.3 each
- *   public-import finding; they become warnings in the next minor release
+ *   still pair (`source_without_component_doc`); they become warnings in the
+ *   next minor release
  */
 
 /**
@@ -76,7 +76,7 @@ export {};
 /**
  * The public-import check's report on validate's result: `unchecked` lists
  * what it could not judge, never counted or failed on. Its findings are
- * notes on the result (`data.notes`), so `findings` stays empty.
+ * warning issues on the result (`data.issues`), so `findings` stays empty.
  * @typedef {object} PublicImportsReport
  * @property {'checked'} status
  * @property {never[]} findings
