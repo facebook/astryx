@@ -1117,15 +1117,22 @@ export function writeGeneratedIcons(
       else replaceText(target, prior);
     });
   };
-  put(file, js, before, generated);
-  if (typesFile && dts != null && typesRel)
-    put(typesFile, dts, typesBefore, typesRel);
+  const undo = () => {
+    for (const each of [...undos].reverse()) each();
+  };
+  try {
+    put(file, js, before, generated);
+    if (typesFile && dts != null && typesRel)
+      put(typesFile, dts, typesBefore, typesRel);
+  } catch (error) {
+    // A failed types write leaves the module as it was too.
+    undo();
+    throw error;
+  }
   return {
     changed: files.length > 0,
     files,
-    undo: () => {
-      for (const undo of undos.reverse()) undo();
-    },
+    undo,
   };
 }
 

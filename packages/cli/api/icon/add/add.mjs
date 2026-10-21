@@ -263,28 +263,31 @@ export function iconAdd(exportName, options) {
     };
     /** @type {string[]} */
     const files = [];
-    const written = writeGeneratedIcons(packageDir, generated, next, [
-      {name: setName, from: source.module, source: sourceExport, adapt},
-    ]);
-    files.push(...written.files);
+    // Every write happens inside this try, so any failure undoes the ones
+    // before it and leaves every file as it was (AST-084 FR13).
     let undoDefinition = () => {};
-    if (created) {
-      undoDefinition = writeDefinitionFile(set, created);
-      files.push(
-        path
-          .relative(
-            packageDir,
-            path.join(set.dir, 'definitions', `${created.name}.doc.mjs`),
-          )
-          .split(path.sep)
-          .join('/'),
-      );
-    }
-    const changed =
-      JSON.stringify(next) !== JSON.stringify(set.data) ||
-      created != null ||
-      written.changed;
+    let undoGenerated = () => {};
+    /** @type {boolean} */
+    let generatedChanged;
     try {
+      if (created) undoDefinition = writeDefinitionFile(set, created);
+      const written = writeGeneratedIcons(packageDir, generated, next, [
+        {name: setName, from: source.module, source: sourceExport, adapt},
+      ]);
+      undoGenerated = written.undo;
+      generatedChanged = written.changed;
+      files.push(...written.files);
+      if (created) {
+        files.push(
+          path
+            .relative(
+              packageDir,
+              path.join(set.dir, 'definitions', `${created.name}.doc.mjs`),
+            )
+            .split(path.sep)
+            .join('/'),
+        );
+      }
       if (JSON.stringify(next) !== JSON.stringify(set.data)) {
         writeIconSetData(set, next, {
           extraDefinitions: created ? [created.name] : [],
@@ -294,8 +297,8 @@ export function iconAdd(exportName, options) {
         );
       }
     } catch (error) {
+      undoGenerated();
       undoDefinition();
-      written.undo();
       if (error instanceof Error && /is not in axes\./u.test(error.message)) {
         throw new AstryxError(
           `${error.message} Add the value to "axes" in ${set.name}.icons.json first.`,
@@ -305,6 +308,10 @@ export function iconAdd(exportName, options) {
       }
       throw error;
     }
+    const changed =
+      JSON.stringify(next) !== JSON.stringify(set.data) ||
+      created != null ||
+      generatedChanged;
     const note = setModuleNote(set, where, generated, setName);
     return {
       type: /** @type {const} */ ('icon.add'),

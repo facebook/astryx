@@ -262,6 +262,48 @@ describe('icon add', () => {
     );
   });
 
+  it('--new-definition that cannot write its definition leaves the generated module, its types, and the set data unchanged', async () => {
+    const set = path.join(pkg, 'icon-sets', 'outline');
+    const first = await json([
+      'experimental',
+      'icon',
+      'add',
+      'Bin',
+      '--from',
+      '@acme/glyph-library',
+      '--definition',
+      'delete',
+    ]);
+    expect(first.code).toBe(0);
+    const files = ['outline.generated.js', 'outline.generated.d.ts'].map(name =>
+      path.join(set, name),
+    );
+    files.push(path.join(set, 'outline.icons.json'));
+    const before = files.map(file => fs.readFileSync(file, 'utf-8'));
+    // A file where the definitions folder belongs: the definition write fails.
+    fs.rmSync(path.join(set, 'definitions'), {recursive: true, force: true});
+    fs.writeFileSync(path.join(set, 'definitions'), 'not a folder\n');
+    const failed = await json([
+      'experimental',
+      'icon',
+      'add',
+      'Cross',
+      '--from',
+      '@acme/glyph-library',
+      '--new-definition',
+      'crossOut',
+      '--description',
+      'Cross something out.',
+      '--words',
+      'strike,cross',
+    ]);
+    expect(failed.code).toBe(1);
+    expect(files.map(file => fs.readFileSync(file, 'utf-8'))).toEqual(before);
+    expect(fs.readFileSync(path.join(set, 'definitions'), 'utf-8')).toBe(
+      'not a folder\n',
+    );
+  });
+
   it('refuses an export the module lacks, with close names, and an unknown definition', async () => {
     const missing = await json([
       'experimental',
