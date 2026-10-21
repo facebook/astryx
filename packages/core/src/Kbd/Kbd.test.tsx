@@ -12,6 +12,7 @@
 import {render, screen} from '@testing-library/react';
 import {describe, it, expect, afterEach, vi} from 'vitest';
 import {Kbd} from './Kbd';
+import {InternationalizationProvider} from '../i18n';
 
 describe('Kbd', () => {
   const originalPlatform = navigator.platform;
@@ -184,6 +185,77 @@ describe('Kbd', () => {
     // ...without disturbing the computed accessibility contract.
     expect(el).toHaveAttribute('role', 'img');
     expect(el).toHaveAttribute('aria-label', 'Control + K');
+  });
+
+  it.each([
+    {platform: 'Linux', key: 'control', expectedGlyph: 'Ctrl'},
+    {platform: 'MacIntel', key: 'command', expectedGlyph: '⌘'},
+  ])(
+    'localizes modifier labels on $platform without changing the glyph',
+    ({platform, key, expectedGlyph}) => {
+      Object.defineProperty(navigator, 'platform', {
+        value: platform,
+        configurable: true,
+      });
+      const overrides = {
+        fr: {
+          [`@astryx.kbd.key.${key}`]: 'Modificateur',
+          '@astryx.kbd.key.shift': 'Majuscule',
+        },
+      };
+      const {rerender} = render(
+        <InternationalizationProvider locale="fr" overrides={overrides}>
+          <Kbd keys="mod+shift+k" />
+        </InternationalizationProvider>,
+      );
+      expect(screen.getByRole('img')).toHaveAccessibleName(
+        'Modificateur + Majuscule + K',
+      );
+      expect(screen.getByText(expectedGlyph)).toBeInTheDocument();
+      expect(screen.getByText('⇧')).toBeInTheDocument();
+      rerender(
+        <InternationalizationProvider locale="en" overrides={overrides}>
+          <Kbd keys="mod+shift+k" />
+        </InternationalizationProvider>,
+      );
+      expect(screen.getByRole('img')).toHaveAccessibleName(
+        `${key === 'command' ? 'Command' : 'Control'} + Shift + K`,
+      );
+    },
+  );
+
+  it.each([
+    'ctrl',
+    'alt',
+    'shift',
+    'enter',
+    'backspace',
+    'escape',
+    'tab',
+    'up',
+    'down',
+    'left',
+    'right',
+    'plus',
+    'esc',
+    'return',
+  ])('uses a catalog entry for the %s spoken key', key => {
+    const canonical =
+      key === 'ctrl'
+        ? 'control'
+        : key === 'esc'
+          ? 'escape'
+          : key === 'return'
+            ? 'enter'
+            : key;
+    render(
+      <InternationalizationProvider
+        locale="fr"
+        overrides={{fr: {[`@astryx.kbd.key.${canonical}`]: 'Touche traduite'}}}>
+        <Kbd keys={key} />
+      </InternationalizationProvider>,
+    );
+    expect(screen.getByRole('img')).toHaveAccessibleName('Touche traduite');
   });
 
   it('computed role and aria-label win over consumer-passed overrides', () => {
