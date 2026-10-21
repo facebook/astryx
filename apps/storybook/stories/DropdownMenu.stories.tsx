@@ -1494,9 +1494,11 @@ const LABELS = ['Bug', 'Feature', 'Documentation', 'Design', 'Performance'];
 /**
  * A filter field above the rows and a "Create" button below them. Both sit in
  * the popover beside the menu, never inside it: the menu holds only its rows,
- * so it stays a valid menu to a screen reader, and the field and button keep
- * their own keys and presses. The popover is a modal dialog around the menu:
- * Tab walks field, menu, button and wraps at either end; Escape closes.
+ * so it stays a valid menu to a screen reader. The button keeps its own keys
+ * and presses, and so does the field, but for one hand-off: ArrowDown in the
+ * field moves to the first row, and ArrowUp on that row comes back. The
+ * popover is a modal dialog around the menu: Tab walks field, menu, button and
+ * wraps at either end; Escape closes.
  */
 export const HeaderAndFooter: Story = {
   render: () => {
