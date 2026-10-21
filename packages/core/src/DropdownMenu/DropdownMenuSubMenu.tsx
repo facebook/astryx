@@ -600,17 +600,35 @@ export function DropdownMenuSubMenu(
   const handleFrameFocus = useCallback(() => {
     isFocusInFrameRef.current = true;
   }, []);
-  const handleFrameBlur = useCallback(() => {
-    isFocusInFrameRef.current = false;
-    // Focus moving within the frame, or into a level nested in it, arrives as
-    // a focus event right after this blur; decide once it has.
-    queueMicrotask(() => {
-      if (!isFocusInFrameRef.current && closeWhenFocusLeavesRef.current) {
-        closeWhenFocusLeavesRef.current = false;
-        layer.hide();
+  const handleFrameBlur = useCallback(
+    (event: React.FocusEvent<HTMLElement>) => {
+      isFocusInFrameRef.current = false;
+      if (!closeWhenFocusLeavesRef.current) {
+        return;
       }
-    });
-  }, [layer]);
+      // Focus moving to another control in the frame keeps it open.
+      const next = event.relatedTarget;
+      if (next instanceof Node && event.currentTarget.contains(next)) {
+        return;
+      }
+      // Focus moving into a level nested in this one (React brings that
+      // focus event back through its portal), or moved by the browser itself
+      // (an arrow key in a native radio group, whose focus event follows a
+      // microtask checkpoint), arrives after this blur: decide in a task of
+      // its own, once the move has completed.
+      setTimeout(() => {
+        if (
+          !isFocusInFrameRef.current &&
+          closeWhenFocusLeavesRef.current &&
+          triggerRef.current?.isConnected === true
+        ) {
+          closeWhenFocusLeavesRef.current = false;
+          layer.hide();
+        }
+      }, 0);
+    },
+    [layer],
+  );
   const handleFramePointerEnter = useCallback(() => {
     closeWhenFocusLeavesRef.current = false;
   }, []);

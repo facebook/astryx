@@ -16,6 +16,7 @@ import {
   DropdownMenuSubMenu,
 } from '@astryxdesign/core/DropdownMenu';
 import {Button} from '@astryxdesign/core/Button';
+import {RadioList, RadioListItem} from '@astryxdesign/core/RadioList';
 import {TextInput} from '@astryxdesign/core/TextInput';
 import {spacingVars} from '@astryxdesign/core/theme/tokens.stylex';
 import {
@@ -1604,6 +1605,51 @@ export const SubMenuHeaderAndFooter: Story = {
         </DropdownMenu>
         <output data-testid="picked">{picked.join(', ')}</output>
         <output data-testid="created">{created}</output>
+      </div>
+    );
+  },
+};
+
+/**
+ * A sub-menu whose header holds a choice rather than a field: whether the
+ * picked labels must all match. The radio group keeps its own arrow keys, and
+ * a flyout the pointer has left stays open while focus is inside it, so the
+ * choice can still be changed from the keyboard.
+ */
+export const SubMenuHeaderChoice: Story = {
+  name: 'Submenu / header with a choice',
+  render: () => {
+    const [match, setMatch] = useState('any');
+    const [picked, setPicked] = useState<ReadonlyArray<string>>(['Bug']);
+    return (
+      <div data-testid="submenu-choice-fixture" style={{padding: 16}}>
+        <DropdownMenu button={{label: 'Filters'}}>
+          <DropdownMenuItem label="Reset" onClick={() => {}} />
+          <DropdownMenuSubMenu
+            label="Labels"
+            header={
+              <RadioList label="Match" value={match} onChange={setMatch}>
+                <RadioListItem label="Any label" value="any" />
+                <RadioListItem label="All labels" value="all" />
+              </RadioList>
+            }>
+            {LABELS.map(label => (
+              <DropdownMenuCheckboxItem
+                key={label}
+                label={label}
+                value={picked.includes(label)}
+                onChange={isChecked =>
+                  setPicked(current =>
+                    isChecked
+                      ? [...current, label]
+                      : current.filter(item => item !== label),
+                  )
+                }
+              />
+            ))}
+          </DropdownMenuSubMenu>
+        </DropdownMenu>
+        <output data-testid="match">{match}</output>
       </div>
     );
   },

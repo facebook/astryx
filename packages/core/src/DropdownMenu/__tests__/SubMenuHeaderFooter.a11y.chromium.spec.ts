@@ -12,7 +12,8 @@
  *   and Shift+Tab walk field, rows and button and wrap; typing filters the
  *   rows and Escape returns to the row; a pick keeps the sub-menu open. On a
  *   phone the drilled-in view holds the same regions while the root menu
- *   steps aside.
+ *   steps aside. On the "Submenu / header with a choice" story, a flyout the
+ *   pointer has left stays open while an arrow moves the header's radio choice.
  * @position Browser proof behind the jsdom suite: the accessibility tree, real
  *   Tab order and the pointer decision are what jsdom cannot exercise.
  */
@@ -221,5 +222,39 @@ test.describe('on a phone (coarse pointer)', () => {
     await dialog.getByRole('menuitem', {name: 'Back to Session'}).tap();
     await expect(dialog).toBeHidden();
     await expect(rootMenu).toBeVisible();
+  });
+});
+
+test.describe('a header with a choice', () => {
+  test('a flyout the pointer has left stays open while an arrow moves the choice in its header', async ({
+    page,
+  }) => {
+    await page.goto(
+      `${storybook.origin}/iframe.html?id=core-dropdownmenu--sub-menu-header-choice&viewMode=story`,
+    );
+    await expect(page.getByTestId('submenu-choice-fixture')).toBeVisible();
+    await page.getByRole('button', {name: 'Filters'}).click();
+    const row = page.getByRole('menuitem', {name: 'Labels'});
+    await row.hover();
+    const dialog = page.getByRole('dialog', {name: 'Labels'});
+    await expect(dialog).toBeVisible();
+    const anyLabel = dialog.getByRole('radio', {name: 'Any label'});
+    const allLabels = dialog.getByRole('radio', {name: 'All labels'});
+    await anyLabel.click();
+    await expect(anyLabel).toBeFocused();
+
+    // The pointer leaves the flyout and the menu, and its hide delay runs out
+    // with focus still inside.
+    const viewport = page.viewportSize() ?? {width: 1280, height: 720};
+    await page.mouse.move(viewport.width - 8, viewport.height - 8, {steps: 4});
+    await page.waitForTimeout(500);
+    await expect(dialog).toBeVisible();
+
+    // The browser moves focus and the choice for the arrow itself.
+    await page.keyboard.press('ArrowDown');
+    await expect(allLabels).toBeFocused();
+    await expect(allLabels).toBeChecked();
+    await expect(page.getByTestId('match')).toHaveText('all');
+    await expect(dialog).toBeVisible();
   });
 });

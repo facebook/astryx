@@ -24,6 +24,7 @@ import {DropdownMenuItem} from './DropdownMenuItem';
 import {DropdownMenuSubMenu} from './DropdownMenuSubMenu';
 import {warmMenuBottomSheet} from './__tests__/warmMenuBottomSheet';
 import {IconButton} from '../IconButton';
+import {RadioList, RadioListItem} from '../RadioList';
 import {COMPACT_TOUCH_PRESENTATION_QUERY} from '../hooks/useAdaptivePresentation';
 import {rtlStyles} from '../utils';
 
@@ -2039,11 +2040,73 @@ describe('DropdownMenuSubMenu header and footer', () => {
       expect(row).toHaveAttribute('aria-expanded', 'true');
       // Focus moving inside the flyout keeps it open.
       await act(async () => create().focus());
+      act(() => {
+        vi.advanceTimersByTime(0);
+      });
       expect(row).toHaveAttribute('aria-expanded', 'true');
-      // Focus leaving it closes it, with no further pointer movement.
+      // Focus leaving it closes it, with no further pointer movement, once
+      // the move has completed.
       const rename = screen.getByRole('menuitem', {name: 'Rename', ...h});
       await act(async () => rename.focus());
+      act(() => {
+        vi.advanceTimersByTime(0);
+      });
       expect(row).toHaveAttribute('aria-expanded', 'false');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  function MatchMenu() {
+    const [match, setMatch] = useState('any');
+    return (
+      <DropdownMenu button={{label: 'Filters'}}>
+        <DropdownMenuItem label="Reset" onClick={() => {}} />
+        <DropdownMenuSubMenu
+          label="Labels"
+          header={
+            <RadioList label="Match" value={match} onChange={setMatch}>
+              <RadioListItem label="Any label" value="any" />
+              <RadioListItem label="All labels" value="all" />
+            </RadioList>
+          }>
+          <DropdownMenuItem label="Bug" onClick={() => {}} />
+        </DropdownMenuSubMenu>
+      </DropdownMenu>
+    );
+  }
+
+  it('a flyout the pointer left stays open while the browser moves focus between its header controls, as an arrow in a radio group does', async () => {
+    vi.useFakeTimers({toFake: ['setTimeout', 'clearTimeout']});
+    try {
+      render(<MatchMenu />);
+      fireEvent.click(screen.getByRole('button', {name: /Filters/}));
+      const row = screen.getByRole('menuitem', {name: /Labels/, ...h});
+      fireEvent.mouseEnter(row);
+      act(() => {
+        vi.advanceTimersByTime(500);
+      });
+      const dialog = screen.getByRole('dialog', {name: /Labels/, ...h});
+      const anyLabel = screen.getByRole('radio', {name: 'Any label', ...h});
+      const allLabels = screen.getByRole('radio', {name: 'All labels', ...h});
+      act(() => anyLabel.focus());
+      fireEvent.mouseLeave(dialog);
+      act(() => {
+        vi.advanceTimersByTime(1000);
+      });
+      expect(row).toHaveAttribute('aria-expanded', 'true');
+      // The browser's own move, in its order: the blur, a microtask
+      // checkpoint, then the focus on the next radio.
+      fireEvent.focusOut(anyLabel);
+      await act(async () => {
+        await Promise.resolve();
+      });
+      act(() => allLabels.focus());
+      act(() => {
+        vi.advanceTimersByTime(0);
+      });
+      expect(row).toHaveAttribute('aria-expanded', 'true');
+      expect(allLabels).toHaveFocus();
     } finally {
       vi.useRealTimers();
     }
