@@ -40,7 +40,9 @@
  * @property {'integration.validate'} type
  * @property {{validated: boolean, name: string | null, version: string | null, issues: import('../../foundation/integrations/issue').AstryxIntegrationIssue[], notes?: Array<{code: string, message: string}>, docTypes?: DocTypesReport, publicImports?: PublicImportsReport}} data
  *   `notes`: information beside the issues that fails nothing, such as
- *   `invalid_cli_command`, a `cliCommand` that was ignored as malformed
+ *   `invalid_cli_command`, a `cliCommand` that was ignored as malformed,
+ *   and since 0.7.3 each public-import finding (its fix in the message),
+ *   which fails `--strict` from the next minor
  */
 
 /**
@@ -65,21 +67,11 @@ export {};
  */
 
 /**
- * One public-import finding: listed, never counted or failed on. It fails
- * `integration check --strict` from the next minor release.
- * @typedef {object} PublicImportFinding
- * @property {string} code
- * @property {'info'} severity
- * @property {string} message
- * @property {string} [fix]
- */
-
-/**
- * The public-import check's report on validate's result, listed only:
- * `findings` names each import that cannot be imported, and `unchecked`
- * what it could not judge. Neither is counted or failed on.
+ * The public-import check's report on validate's result: `unchecked` lists
+ * what it could not judge, never counted or failed on. Its findings are
+ * notes on the result (`data.notes`), so `findings` stays empty.
  * @typedef {object} PublicImportsReport
  * @property {'checked'} status
- * @property {PublicImportFinding[]} findings
+ * @property {never[]} findings
  * @property {PublicImportUnchecked[]} unchecked
  */

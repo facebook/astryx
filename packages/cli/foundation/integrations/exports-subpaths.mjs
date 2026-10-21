@@ -57,13 +57,14 @@ export function allTargets(value, out = []) {
  * How a package's `exports` field declares one subpath, without touching the
  * targets: a missing key, a key with only a `require` condition, an `exports`
  * that is a bare string or a condition object (so only `.`), a wildcard that
- * does not match, or a `null` that blocks it.
+ * does not match, or a `null` that blocks it. An `exports` of `null` is no
+ * `exports` field, as Node reads it.
  * @param {unknown} exportsField
  * @param {string} subpath `.` or `./…`
  * @returns {SubpathDeclaration}
  */
 export function subpathDeclaration(exportsField, subpath) {
-  if (exportsField === undefined) return {state: 'no_exports'};
+  if (exportsField == null) return {state: 'no_exports'};
   const keys = isRecord(exportsField) ? Object.keys(exportsField) : [];
   const isMap = keys.length > 0 && keys.every(key => key.startsWith('.'));
   if (!isMap) {
