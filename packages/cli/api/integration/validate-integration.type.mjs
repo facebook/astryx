@@ -65,21 +65,14 @@ export {};
  */
 
 /**
- * One public-import finding: listed, never counted or failed on. It fails
- * `integration check --strict` from the next minor release.
- * @typedef {object} PublicImportFinding
- * @property {string} code
- * @property {'info'} severity
- * @property {string} message
- * @property {string} [fix]
- */
-
-/**
- * The public-import check's report on validate's result, listed only:
- * `findings` names each import that cannot be imported, and `unchecked`
- * what it could not judge. Neither is counted or failed on.
+ * The public-import check's report on validate's result: its warnings are
+ * issues, so `findings` stays empty; `unchecked` lists what it could not
+ * judge (listed, never failed on).
  * @typedef {object} PublicImportsReport
- * @property {'checked'} status
- * @property {PublicImportFinding[]} findings
+ * @property {'checked' | 'skipped'} status `skipped` when package.json has
+ *   no `name`: imports of the package's own name cannot be told apart, so
+ *   only the checks that need no name ran
+ * @property {string} [reason] why it was skipped
+ * @property {never[]} findings
  * @property {PublicImportUnchecked[]} unchecked
  */

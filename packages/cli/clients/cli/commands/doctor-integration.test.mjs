@@ -677,32 +677,7 @@ describe('doctor integration — command', () => {
     }
   });
 
-  it('validate prints the public-import findings as listed only, and still exits 0', async () => {
-    writeIntegration({id: 'hero', name: 'Hero', type: 'block'});
-    fs.writeFileSync(
-      path.join(tmpDir, 'package.json'),
-      JSON.stringify({name: '@acme/widgets', version: '1.2.3', exports: {}}),
-    );
-    process.chdir(tmpDir);
-
-    await createProgram().parseAsync([
-      'node',
-      'astryx',
-      'doctor',
-      'integration',
-      'validate',
-    ]);
-
-    const output = logCalls.join('\n');
-    expect(output).toContain(
-      '[info] Imports apps cannot use: 1 (listed only; they fail --strict from the next minor):',
-    );
-    expect(output).toContain('template_import_not_exported');
-    expect(output).toContain('[ok] No integration issues found.');
-    expect(process.exitCode).toBeUndefined();
-  });
-
-  it('validate lists, as not checked, the imports it cannot judge when package.json has no name', async () => {
+  it('validate says, in one visible line, that imports were not checked when package.json has no name', async () => {
     writeIntegration({id: 'hero', name: 'Hero', type: 'block'});
     fs.writeFileSync(
       path.join(tmpDir, 'package.json'),
@@ -719,8 +694,9 @@ describe('doctor integration — command', () => {
     ]);
 
     const output = logCalls.join('\n');
-    expect(output).toMatch(/\[info\] Imports not checked: 1:/);
-    expect(output).toContain('package.json has no "name"');
+    expect(output).toMatch(
+      /\[skip\] Imports not checked: package\.json has no "name"/,
+    );
     expect(process.exitCode).toBeUndefined();
   });
 

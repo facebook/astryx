@@ -5,8 +5,7 @@
  * import is importable, read without a build.
  *
  * @input A package directory and its loaded integration record.
- * @output Findings, listed in the `publicImports` report and never counted
- *   (they fail `--strict` from the next minor), for: a component's import (the doc's `import`, or the one
+ * @output Warnings for: a component's import (the doc's `import`, or the one
  *   the CLI derives) or a template's public import whose subpath
  *   package.json `exports` does not declare (or that names another package);
  *   a component example that imports an undeclared subpath; a template
@@ -33,6 +32,7 @@ import {
 } from '../discovery/component-discovery.mjs';
 import {loadComponentDoc} from '../discovery/component-loader.mjs';
 import {discoverIntegrationTemplatesForOne} from '../discovery/template-adapter.mjs';
+import {issueWarning} from './validate-contributions.mjs';
 import {
   allTargets,
   importable,
@@ -344,28 +344,6 @@ function exportsFix(exportsField, state, subpath, target) {
   return `add ${entry} to package.json "exports" (or the built file it compiles to).`;
 }
 
-// ── Listed findings ─────────────────────────────────────────────────
-
-/**
- * A public-import finding, listed in the report and never counted: it
- * becomes a failing warning in the next minor release (a new failure code
- * joins only in a minor). The message's ` Fix: …` tail is its fix.
- * @param {string} code
- * @param {string} message
- * @returns {PublicImportFinding}
- */
-function listed(code, message) {
-  const at = message.indexOf(' Fix: ');
-  return at === -1
-    ? {code, severity: 'info', message}
-    : {
-        code,
-        severity: 'info',
-        message: message.slice(0, at),
-        fix: message.slice(at + ' Fix: '.length),
-      };
-}
-
 // ── Checks ──────────────────────────────────────────────────────────
 
 /**
@@ -436,7 +414,6 @@ function fixTarget(subpath, sourceTarget) {
 
 /** @typedef {import('../../api/integration/validate-integration.type.mjs').PublicImportUnchecked} PublicImportUnchecked */
 /** @typedef {import('../../api/integration/validate-integration.type.mjs').PublicImportsReport} PublicImportsReport */
-/** @typedef {import('../../api/integration/validate-integration.type.mjs').PublicImportFinding} PublicImportFinding */
 
 /**
  * Whether an import of the package's own name names a subpath `exports`
@@ -464,10 +441,10 @@ function undeclaredOwnImport(ctx, statement, subpath) {
  * A component doc's import specifier, and every example's imports.
  * @param {Context} ctx
  * @param {any} integration
- * @returns {Promise<PublicImportFinding[]>}
+ * @returns {Promise<Issue[]>}
  */
 async function componentIssues(ctx, integration) {
-  /** @type {PublicImportFinding[]} */
+  /** @type {Issue[]} */
   const issues = [];
   // Every component check compares imports with the package's own name.
   if (ctx.name == null) return issues;
@@ -530,7 +507,7 @@ async function componentIssues(ctx, integration) {
       (sourceTarget ? sourceTarget.replace(/\.[cm]?[jt]sx?$/u, '') : null);
     if (split && split.pkg !== ctx.name) {
       issues.push(
-        listed(
+        issueWarning(
           'component_import_other_package',
           `Component doc "${shownDoc}" ${gives}, which names package "${split.pkg}", not this package "${ctx.name}", so apps are told to import the component from somewhere it is not. Fix: set import: '${ctx.name}${suggested ? suggested.slice(1) : ''}' in the doc.`,
         ),
@@ -553,7 +530,7 @@ async function componentIssues(ctx, integration) {
             ? `set import: '${ctx.name}${declared.slice(1)}' (already exported), or `
             : '';
         issues.push(
-          listed(
+          issueWarning(
             'component_import_not_exported',
             `Component doc "${shownDoc}" ${gives}, but ${whyUndeclared(declaration, split.subpath)}, so apps cannot import the component from it. Fix: ${already}${split.subpath === '.' && perComponent ? `${perComponent}.` : exportsFix(ctx.exportsField, declaration.state, split.subpath, fixTarget(split.subpath, sourceTarget))}`,
           ),
@@ -615,7 +592,7 @@ async function componentIssues(ctx, integration) {
           });
         } else if (undeclared) {
           issues.push(
-            listed(
+            issueWarning(
               'example_import_not_exported',
               `Component doc "${shownDoc}" example ${label} imports "${statement.source}", but ${whyUndeclared(undeclared, parts.subpath)}, so the example fails when an app copies it. Fix: ${exampleFix(statement, parts.subpath, undeclared)}`,
             ),
@@ -631,10 +608,10 @@ async function componentIssues(ctx, integration) {
  * Template public imports and what each template source imports.
  * @param {Context} ctx
  * @param {any} integration
- * @returns {Promise<PublicImportFinding[]>}
+ * @returns {Promise<Issue[]>}
  */
 async function templateIssues(ctx, integration) {
-  /** @type {PublicImportFinding[]} */
+  /** @type {Issue[]} */
   const issues = [];
   const root = integration.templates;
   if (!root) return issues;
@@ -657,7 +634,7 @@ async function templateIssues(ctx, integration) {
     );
     if (ctx.name != null && declaration.state !== 'declared') {
       issues.push(
-        listed(
+        issueWarning(
           'template_import_not_exported',
           `Template "${id}" has public import "${ctx.name}${subpath.slice(1)}", but ${whyUndeclared(declaration, subpath)}, so it cannot be imported once published. Fix: ${exportsFix(ctx.exportsField, declaration.state, subpath, sourceTarget)}`,
         ),
@@ -676,7 +653,7 @@ async function templateIssues(ctx, integration) {
         const target = path.resolve(path.dirname(file), spec);
         if (target !== root && !target.startsWith(root + path.sep)) {
           issues.push(
-            listed(
+            issueWarning(
               'template_import_outside_root',
               `Template "${id}" (${shown}) imports "${spec}", a path outside the templates root; \`astryx template\` copies only the template into an app, where that path does not exist. Fix: import it through the package's public name (e.g. '${ctx.name ?? '<package name>'}/…' declared in package.json "exports"), or move the code into the template.`,
             ),
@@ -696,7 +673,7 @@ async function templateIssues(ctx, integration) {
           });
         } else if (undeclared) {
           issues.push(
-            listed(
+            issueWarning(
               'template_private_import',
               `Template "${id}" (${shown}) imports "${spec}", but ${whyUndeclared(undeclared, parts.subpath)}, so the template breaks in an app. Fix: import from a subpath package.json "exports" declares, or add one for it.`,
             ),
@@ -726,7 +703,7 @@ async function templateIssues(ctx, integration) {
               ? `'${CORE}/${top}'`
               : `a subpath Core's package.json "exports" declares`;
           issues.push(
-            listed(
+            issueWarning(
               'template_private_import',
               `Template "${id}" (${shown}) imports "${spec}", a path Core's package.json "exports" does not declare, so the template breaks in an app. Fix: import from ${hint}.`,
             ),
@@ -739,37 +716,33 @@ async function templateIssues(ctx, integration) {
 }
 
 /**
- * Every public-import finding for one package, listed in its report with
- * what could not be judged. It returns no issues: the findings are listed
- * only, and fail `--strict` from the next minor release.
+ * Every public-import warning for one package, and the report of what could
+ * not be judged.
  * @param {string} packageDir
  * @param {any} integration the loaded integration record
- * @returns {Promise<{issues: Issue[], report: PublicImportsReport}>} `issues`
- *   is always empty: kept so validate's call site stays one shape
+ * @returns {Promise<{issues: Issue[], report: PublicImportsReport}>}
  */
 export async function publicImportIssues(packageDir, integration) {
   /** @type {PublicImportsReport} */
   const report = {status: 'checked', findings: [], unchecked: []};
   const pkg = readJson(path.join(packageDir, 'package.json'));
-  // What cannot run is listed as not checked, never a skip `--strict` would
-  // fail on.
   if (!isRecord(pkg)) {
-    report.unchecked.push({
-      file: 'package.json',
-      specifier: '',
-      reason: 'package.json could not be read, so no import was checked',
-    });
-    return {issues: [], report};
+    return {
+      issues: [],
+      report: {
+        status: 'skipped',
+        reason: 'package.json could not be read, so no import was checked',
+        findings: [],
+        unchecked: [],
+      },
+    };
   }
   const name =
     typeof pkg.name === 'string' && pkg.name !== '' ? pkg.name : null;
   if (name == null) {
-    report.unchecked.push({
-      file: 'package.json',
-      specifier: '',
-      reason:
-        'package.json has no "name", so imports of the package\'s own name were not checked; only template imports outside the templates root and of Core were',
-    });
+    report.status = 'skipped';
+    report.reason =
+      'package.json has no "name", so imports of the package\'s own name were not checked; only template imports outside the templates root and of Core were';
   }
   // The Core installed beside the package, which its templates' imports
   // resolve against; never the CLI's own copy, which may be another release.
@@ -803,10 +776,9 @@ export async function publicImportIssues(packageDir, integration) {
       .filter(root => typeof root === 'string')
       .map(root => path.resolve(root)),
   };
-  report.findings.push(
+  const issues = [
     ...(await componentIssues(ctx, integration)),
     ...(await templateIssues(ctx, integration)),
-  );
-  // Listed only: none is an issue, so none counts or fails a check.
-  return {issues: [], report};
+  ];
+  return {issues, report};
 }
