@@ -35,6 +35,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {assertWithin} from '../../foundation/fs/path-safety.mjs';
 import {integrationDocTypes} from '../docs/_adapter.mjs';
+import {integrationDocConsistency} from '../../foundation/discovery/doc-consistency.mjs';
 import {
   THEME_SLUG_RE,
   unreadThemeFolders,
@@ -332,6 +333,22 @@ async function validateAtPackageDir(
   issues.push(...(await validateLoadedIntegration(loaded)));
   if (loaded.themes && !rootProblem(loaded.themes))
     issues.push(...unreadThemeFolderIssues(packageDir, loaded));
+  // What the docs say that no reader serves: a prop listed twice, an
+  // overlay's text for a prop the doc lacks, an empty or unreachable section,
+  // and an overlay of no topic.
+  issues.push(
+    ...(await integrationDocConsistency(
+      {
+        components:
+          loaded.components && !rootProblem(loaded.components)
+            ? loaded.components
+            : undefined,
+        docs:
+          loaded.docs && !rootProblem(loaded.docs) ? loaded.docs : undefined,
+      },
+      packageDir,
+    )),
+  );
   if (scanUnreachable) {
     issues.push(
       ...(await findUnreachableContributionIssues(packageDir, loaded)),
@@ -476,9 +493,17 @@ export async function validateIntegration(pkg, options = {}) {
       validated: result.found,
       name: result.found ? (result.name ?? null) : null,
       version: result.found ? (result.version ?? null) : null,
-      issues: result.reason === 'no_package_json'
-        ? [{code: 'no_package', severity: 'error', message: 'No package.json found. Run this command inside a package directory.'}]
-        : result.issues,
+      issues:
+        result.reason === 'no_package_json'
+          ? [
+              {
+                code: 'no_package',
+                severity: 'error',
+                message:
+                  'No package.json found. Run this command inside a package directory.',
+              },
+            ]
+          : result.issues,
       ...(docTypes ? {docTypes} : {}),
     },
   };

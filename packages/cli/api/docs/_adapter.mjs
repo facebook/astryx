@@ -433,7 +433,16 @@ async function docFinder(catalog, fromProvider) {
   const identities = identitiesOf(await projectTree(catalog));
   return async target => {
     const parsed = parseLinkTarget(target);
-    if ('error' in parsed) return {problem: parsed.error};
+    if ('error' in parsed)
+      return {
+        problem: bareLinkHint(
+          parsed.error,
+          target,
+          catalog,
+          identities,
+          fromProvider,
+        ),
+      };
     let provider;
     try {
       provider = normalizeProviderId(parsed.provider ?? fromProvider);
@@ -442,7 +451,9 @@ async function docFinder(catalog, fromProvider) {
         problem: `"${target}" names "${parsed.provider}", which is not a provider id: an npm package name, or the \`providerId\` its manifest declares`,
       };
     }
-    const node = identities.get(identityKey(provider, parsed.kind, parsed.name));
+    const node = identities.get(
+      identityKey(provider, parsed.kind, parsed.name),
+    );
     if (node) {
       return {
         link: {
@@ -529,6 +540,45 @@ async function docFinder(catalog, fromProvider) {
       problem: `"${target}" names no doc. Find it with \`astryx search ${parsed.name} --type ${searchType}\`, then name it as \`[<provider>:]<kind>:<name>\`.`,
     };
   };
+}
+
+/**
+ * What a link written as a bare name (`{@link deploying}`) should say
+ * instead: the exact target to write when a topic or tree doc has that
+ * name, or that none does.
+ * @param {string} error the parse error
+ * @param {string} target the target as written
+ * @param {DocsCatalog} catalog
+ * @param {Map<string, any>} identities
+ * @param {string} fromProvider
+ * @returns {string}
+ */
+function bareLinkHint(error, target, catalog, identities, fromProvider) {
+  const name = typeof target === 'string' ? target.trim() : '';
+  if (!name || name.includes(':') || /\s/.test(name)) return error;
+  /** @param {string} provider */
+  const normal = provider => {
+    try {
+      return normalizeProviderId(provider);
+    } catch {
+      return provider;
+    }
+  };
+  const from = normal(fromProvider);
+  /** @param {string} provider @param {string} kind @param {string} named */
+  const written = (provider, kind, named) =>
+    `{@link ${normal(provider) === from ? '' : `${provider}:`}${kind}:${named}}`;
+  const entry = catalog.resolve(name);
+  if (entry) {
+    return `${error}. "${name}" is a topic: write \`${written(entry.providerId ?? entry.package, 'generic', entry.name)}\`.`;
+  }
+  const node = [...identities.values()].find(
+    each => String(each.name).toLowerCase() === name.toLowerCase(),
+  );
+  if (node) {
+    return `${error}. "${name}" is a ${node.kind === 'generic' ? 'topic' : `${node.kind} doc`}: write \`${written(node.providerId, node.kind, node.name)}\`.`;
+  }
+  return `${error}, and no topic is named "${name}". Link a doc that exists, as \`{@link generic:<topic>}\` (\`astryx docs\` lists the topics), or remove the link.`;
 }
 
 /** The doc kinds no docs tree holds: components and templates. */
@@ -1136,7 +1186,8 @@ export async function topicLinks(catalog, entry) {
   const tree = await projectTree(catalog);
   const node = tree.get(entry.tree ? (entry.route ?? entry.name) : entry.name);
   const placed =
-    node && (entry.tree ? node.kind === 'generic' : node.ref?.flatTopic === entry.name);
+    node &&
+    (entry.tree ? node.kind === 'generic' : node.ref?.flatTopic === entry.name);
   return placed ? placeLinks(tree, node) : {up: topicUp(entry)};
 }
 
@@ -1159,7 +1210,8 @@ export async function resolveDocsArgument(topic, {cwd} = {}) {
   const tree = await projectTree(catalog);
   const owner = nameOwner(tree, catalog, topic);
   if (owner == null) return {kind: 'unknown', catalog};
-  if (owner.kind === 'topic') return {kind: 'topic', catalog, entry: owner.entry};
+  if (owner.kind === 'topic')
+    return {kind: 'topic', catalog, entry: owner.entry};
   return treeArgument(catalog, tree, owner.node);
 }
 
@@ -1359,7 +1411,10 @@ export async function integrationDocTypes(integration, cwd) {
   if (report.status !== 'checked' || unread.length === 0) return report;
   // A root its reader cannot read serves no doc; say so rather than skip it.
   const rel = (/** @type {string} */ file) =>
-    path.relative(packageDir ?? cwd, file).split(path.sep).join('/') || '.';
+    path
+      .relative(packageDir ?? cwd, file)
+      .split(path.sep)
+      .join('/') || '.';
   return {
     ...report,
     unchecked: [

@@ -96,6 +96,11 @@ docType:   boolean
               "The documented `type` differs from the code's, where both read exactly",
               'Copy the type from the source, or fix the code. The next section says which types are judged',
             ],
+            [
+              '`default_mismatch`',
+              "The documented `default` differs from the literal default the component writes in its props destructuring, such as `size = 'md'`",
+              'Copy the default from the source, quoted as code: `default: "\'md\'"`. Quotes and spacing are ignored, and a default that is not a literal on either side (a constant, a call, prose) is not compared',
+            ],
           ],
         },
       ],

@@ -256,6 +256,10 @@ const RUNNERS = {
     runs: "the CLI's own guides and the package's topics, to compare their prose for passages two topics repeat",
     sites: ['builtinGuideFiles', 'loadTopicModule'],
   },
+  'foundation/discovery/doc-consistency.mjs': {
+    runs: "a package's component docs and topics, to read the props, overlays, sections, and replaces/extends they declare",
+    sites: ['importDocModule ×2'],
+  },
   'foundation/discovery/doc-fluff.mjs': {
     runs: "the CLI's own guides, to measure the median share of content words a topic's density is compared with",
     sites: ['builtinGuideFiles'],

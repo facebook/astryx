@@ -147,6 +147,52 @@ describe('integration authoring CLI', () => {
     );
   });
 
+  it("verify carries each issue's fix, file, and line in JSON and prints them in text", async () => {
+    fs.writeFileSync(
+      path.join(tmpDir, 'package.json'),
+      `${JSON.stringify({
+        name: '@acme/widgets',
+        version: '1.0.0',
+        files: ['astryx.integration.mjs', 'docs'],
+      })}\n`,
+    );
+    fs.writeFileSync(
+      path.join(tmpDir, 'astryx.integration.mjs'),
+      "export default {docs: './docs'};\n",
+    );
+    fs.mkdirSync(path.join(tmpDir, 'docs'));
+    fs.writeFileSync(
+      path.join(tmpDir, 'docs', 'deploying.doc.mjs'),
+      "export const docs = {type: 'generic', name: 'deploying', title: 'Deploying', description: 'How to deploy.', sections: [{title: 'Overview', content: [{type: 'prose', text: 'Ship it.'}]}]};\n",
+    );
+    fs.writeFileSync(
+      path.join(tmpDir, 'docs', 'ghost.doc.zh.mjs'),
+      "export default {title: 'ghost'};\n",
+    );
+
+    const json = parseEnvelope(
+      (await runCli(['integration', 'verify', '--json'], tmpDir)).stdout,
+    );
+    const orphans = json.data.issues.filter(issue =>
+      issue.code.endsWith('orphan_doc_overlay'),
+    );
+    expect(orphans.map(issue => issue.code).sort()).toEqual([
+      'orphan_doc_overlay',
+      'packed_orphan_doc_overlay',
+    ]);
+    for (const issue of orphans) {
+      expect(issue).toMatchObject({
+        file: 'docs/ghost.doc.zh.mjs',
+        line: 1,
+        fix: expect.stringContaining('Delete docs/ghost.doc.zh.mjs'),
+      });
+    }
+
+    const text = (await runCli(['integration', 'verify'], tmpDir)).stdout;
+    expect(text).toContain('file: docs/ghost.doc.zh.mjs:1');
+    expect(text).toContain(`fix: ${orphans[0].fix}`);
+  });
+
   it('keeps `integration pack --check` as a deprecated alias of `integration verify`', async () => {
     // The old spelling runs the same check: the same JSON, the same exit code.
     const verify = await runCli(['integration', 'verify', '--json'], tmpDir);
