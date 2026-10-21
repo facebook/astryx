@@ -168,7 +168,7 @@ Consumer migration instructions belong in consumer docs and release notes.
   in that root for ORD1, as a flyout inside the root's DOM is: a release on
   its rows is inside the menu. Only the menu of a sub-menu with a header or
   footer, which the root renders beside itself (`component:DropdownMenu`
-  FR18), carries it. Anything else beside the root, a header field or a picker
+  FR20), carries it. Anything else beside the root, a header field or a picker
   placed in a region say, is outside the menu, as the root's own regions are,
   and a picker there stays its own root. Pending owner review.
 - **ORD2 — Release resolution.** Enabled row under the point → `act`; inside

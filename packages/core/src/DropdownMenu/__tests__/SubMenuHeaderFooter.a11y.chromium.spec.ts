@@ -6,7 +6,7 @@
  *   sub-menu with a filter field above its checkbox rows and a "Create label"
  *   button below them) and real Chromium, once as a laptop (fine pointer) and
  *   once as a phone (coarse pointer, touch).
- * @output Evidence for component:DropdownMenu FR18: a sub-menu's header and
+ * @output Evidence for component:DropdownMenu FR20: a sub-menu's header and
  *   footer sit with its rows in a modal dialog named by its row, beside every
  *   menu element rather than inside one; the row says it opens a dialog; Tab
  *   and Shift+Tab walk field, rows and button and wrap; typing filters the
