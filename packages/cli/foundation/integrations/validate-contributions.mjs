@@ -25,6 +25,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {isValidSemver} from '../env/semver.mjs';
 import {
+  contributionFiles,
   findSourceOnlyCandidates,
   findTemplateSourceOnlyCandidates,
 } from './contribution-inventory.mjs';
@@ -75,6 +76,32 @@ export function issueWarning(code, message) {
   return {code, severity: 'warning', message};
 }
 
+/** Issues `issueListed` made: listed in validate's `layout` report only. */
+const LISTED = new WeakSet();
+
+/**
+ * A layout finding added after the last minor release: validate lists it, in
+ * its `layout` report, but it is never an issue, so nothing counts it and
+ * `integration check --strict` does not fail on it. A new failing finding
+ * joins only in a minor release (architecture:cli-surface INV35).
+ * @param {string} code
+ * @param {string} message
+ * @returns {Issue}
+ */
+export function issueListed(code, message) {
+  const issue = issueWarning(code, message);
+  LISTED.add(issue);
+  return issue;
+}
+
+/**
+ * Whether `issueListed` made this issue.
+ * @param {Issue} issue
+ */
+export function isListedIssue(issue) {
+  return LISTED.has(issue);
+}
+
 /**
  * Report the manifest keys this CLI does not know.
  *
@@ -102,6 +129,13 @@ function checkUnknownKeys(integration, issues) {
         `this project resolves; upgrading @astryxdesign/cli picks it up.`,
     ),
   );
+}
+
+/** @param {{__manifestFile?: string}} integration */
+function manifestName(integration) {
+  return integration.__manifestFile
+    ? path.basename(integration.__manifestFile)
+    : 'the integration manifest';
 }
 
 /**
@@ -139,11 +173,14 @@ export function rootProblem(root) {
  * declared-but-missing root is a `missing_root` error, a file is an
  * `invalid_root` error, and a folder that cannot be read is an
  * `unreadable_root` error. The contribution checks skip all three.
- * @param {{components?: string, templates?: string, codemods?: string, docs?: string, themes?: string}} resolved
+ * A readable root reached through a symlinked folder is a `symlinked_root`
+ * warning: npm pack does not follow it, so the published package loses it.
+ * @param {{components?: string, templates?: string, codemods?: string, docs?: string, themes?: string, __manifestFile?: string}} resolved
  *   absolute resolved roots (undefined when not declared)
  * @param {Issue[]} issues
+ * @param {string} [packageDir] the package the roots belong to
  */
-function checkRoots(resolved, issues) {
+function checkRoots(resolved, issues, packageDir) {
   const kinds = /** @type {const} */ ([
     'components',
     'templates',
@@ -155,7 +192,28 @@ function checkRoots(resolved, issues) {
     const root = resolved[kind];
     if (root == null) continue;
     const problem = rootProblem(root);
-    if (problem == null) continue;
+    if (problem == null) {
+      const link = packageDir ? symlinkedFolder(root, packageDir) : null;
+      if (link && packageDir) {
+        const shown = slash(path.relative(packageDir, link.path));
+        const realPackage = fs.realpathSync(packageDir);
+        const target = slash(path.relative(realPackage, link.target));
+        const realRoot = slash(
+          path.relative(realPackage, fs.realpathSync(root)),
+        );
+        const outside = target.startsWith('../') || path.isAbsolute(target);
+        const fix = outside
+          ? 'replace the link with a real folder holding its files'
+          : `replace the link with the folder itself (move ${target}/ to ${shown}/), or set \`${kind}: './${realRoot}'\` in ${manifestName(resolved)}`;
+        issues.push(
+          issueListed(
+            'symlinked_root',
+            `Declared ${kind} root "${slash(path.relative(packageDir, root))}" is reached through the symlink "${shown}" (to "${target}"). Astryx follows it locally, but npm pack does not follow a symlinked folder, so the published package ships none of these files. Fix: ${fix}.`,
+          ),
+        );
+      }
+      continue;
+    }
     if (problem.kind === 'missing') {
       issues.push(
         issueError(
@@ -179,6 +237,41 @@ function checkRoots(resolved, issues) {
       );
     }
   }
+}
+
+/** @param {string} file */
+function slash(file) {
+  return file.split(path.sep).join('/');
+}
+
+/**
+ * The first folder on the way from the package to `root` (the root itself
+ * included) that is a symlink, with where it points, or null.
+ * @param {string} root absolute
+ * @param {string} packageDir absolute
+ * @returns {{path: string, target: string} | null}
+ */
+export function symlinkedFolder(root, packageDir) {
+  const relative = path.relative(packageDir, root);
+  if (
+    relative === '' ||
+    relative.startsWith('..') ||
+    path.isAbsolute(relative)
+  ) {
+    return null;
+  }
+  let current = packageDir;
+  for (const segment of relative.split(path.sep)) {
+    current = path.join(current, segment);
+    try {
+      if (fs.lstatSync(current).isSymbolicLink()) {
+        return {path: current, target: fs.realpathSync(current)};
+      }
+    } catch {
+      return null;
+    }
+  }
+  return null;
 }
 
 /**
@@ -340,6 +433,8 @@ async function checkComponents(integration, issues) {
   if (!integration.components || rootProblem(integration.components)) return;
   const discover = componentDiscovery.discoverValidIntegrationComponents;
   if (typeof discover !== 'function') return; // feature not present yet
+  const root = /** @type {string} */ (integration.components);
+  const files = componentDocFiles(root);
   try {
     const {discovered, errors} = await discover(integration);
     /** @type {import('./contribution-fixes.mjs').FixContext | undefined} */
@@ -352,13 +447,68 @@ async function checkComponents(integration, issues) {
         continue;
       }
       const docPath = record.docPath;
-      let fix = `Fix: add ${record.name}.tsx beside ${docPath ? path.basename(docPath) : `${record.name}.doc.mjs`}.`;
+      // Reported once, below, as the case mismatch it is.
+      if (docPath && files.caseMismatch.has(docPath)) continue;
+      const docName = docPath
+        ? path.basename(docPath)
+        : `${record.name}.doc.mjs`;
+      let fix = `Fix: add ${record.name}.tsx beside ${docName}.`;
       const stamp = docPath ? readContributionStamp(docPath, false) : null;
       if (stamp && stamp.type !== 'component' && integration.__packageDir) {
         context ??= createFixContext(integration.__packageDir, integration);
         fix = notAComponentFix(context, docPath, stamp);
       }
       issues.push(issueError('invalid_component', `${error.message} ${fix}`));
+    }
+    /** @type {Set<string>} sources a case-only rename is reported for */
+    const reportedSources = new Set();
+    for (const [docPath, source] of files.caseMismatch) {
+      const doc = path.basename(docPath);
+      const renamed = `${source.slice(0, -'.tsx'.length)}${doc.slice(docStemOf(doc).length)}`;
+      const shown = slash(path.relative(root, docPath));
+      const linux = `They pair on a case-insensitive disk (macOS, Windows) but not on Linux, where CI and most installs run`;
+      const fix = `Fix: rename ${doc} to ${renamed}.`;
+      // Where discovery still pairs the doc with its source (a
+      // case-insensitive disk), the component works here: listed, as
+      // validate passed it before. A hidden doc that does not pair leaves its
+      // source without a doc, which the source check below reports as it
+      // always has (architecture:cli-surface INV37).
+      const pairs = componentDiscovery.integrationSourceForDoc(docPath) != null;
+      const hidden = componentDiscovery.isHiddenComponentDoc(docPath);
+      if (hidden && !pairs) continue;
+      reportedSources.add(path.join(path.dirname(docPath), source));
+      if (hidden) {
+        issues.push(
+          issueListed(
+            'source_without_component_doc',
+            `Hidden component doc "${shown}" and its source "${source}" differ only in letter case. ${linux}. ${fix}`,
+          ),
+        );
+      } else if (pairs) {
+        issues.push(
+          issueListed(
+            'source_without_component_doc',
+            `Component doc "${shown}" and its source "${source}" differ only in letter case. ${linux}, so there the component is missing. ${fix}`,
+          ),
+        );
+      } else {
+        issues.push(
+          issueError(
+            'invalid_component',
+            `Component doc "${shown}" and its source "${source}" differ only in letter case. ${linux}, so here the component is missing. ${fix}`,
+          ),
+        );
+      }
+    }
+    for (const {read, ignored} of files.duplicates) {
+      const readName = path.basename(read);
+      const ignoredNames = ignored.map(file => path.basename(file));
+      issues.push(
+        issueListed(
+          'duplicate_component_doc',
+          `Component "${docStemOf(readName)}" has ${ignored.length + 1} docs: ${[readName, ...ignoredNames].join(', ')}. Astryx reads ${readName} and ignores ${ignoredNames.join(' and ')}. Fix: delete ${ignoredNames.join(' and ')}, moving anything only ${ignored.length === 1 ? 'it says' : 'they say'} into ${readName}.`,
+        ),
+      );
     }
     const overlap = integration.__packageDir
       ? newComponentDocNote(
@@ -372,16 +522,13 @@ async function checkComponents(integration, issues) {
       // A hidden doc still pairs with its source; discovery just skips it.
       if (
         ['.doc.ts', '.doc.mjs', '.doc.js'].some(suffix =>
-          fs.existsSync(
-            path.join(
-              /** @type {string} */ (integration.components),
-              `${name}${suffix}`,
-            ),
-          ),
+          fs.existsSync(path.join(root, `${name}${suffix}`)),
         )
       ) {
         continue;
       }
+      // A doc whose name differs only in case is reported above.
+      if (reportedSources.has(path.join(root, `${name}.tsx`))) continue;
       issues.push(
         issueWarning(
           'source_without_component_doc',
@@ -394,6 +541,80 @@ async function checkComponents(integration, issues) {
       issueError('invalid_component', /** @type {any} */ (err).message),
     );
   }
+}
+
+const COMPONENT_DOC_SUFFIXES = ['.doc.ts', '.doc.mjs', '.doc.js'];
+
+/** @param {string} file a doc file name */
+function docStemOf(file) {
+  const suffix = COMPONENT_DOC_SUFFIXES.find(each => file.endsWith(each));
+  return suffix ? file.slice(0, -suffix.length) : file;
+}
+
+/**
+ * The component docs under a root, read from the real directory listings:
+ * those beside a source whose name differs only in letter case (which an
+ * existence check on a case-insensitive disk would call paired), and stems
+ * with more than one doc, with the doc discovery reads.
+ * @param {string} root
+ */
+function componentDocFiles(root) {
+  /** @type {Map<string, string>} doc path -> the source's real file name */
+  const caseMismatch = new Map();
+  /** @type {Array<{read: string, ignored: string[]}>} */
+  const duplicates = [];
+  /** @param {string} dir */
+  const walk = dir => {
+    let entries;
+    try {
+      entries = fs.readdirSync(dir, {withFileTypes: true});
+    } catch {
+      return;
+    }
+    const names = new Set(entries.map(entry => entry.name));
+    /** @type {Map<string, string[]>} */
+    const byStem = new Map();
+    for (const entry of entries) {
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        if (entry.name !== 'node_modules' && entry.name !== '__tests__') {
+          walk(full);
+        }
+        continue;
+      }
+      const stem = docStemOf(entry.name);
+      if (stem === entry.name) continue;
+      byStem.set(stem, [...(byStem.get(stem) ?? []), entry.name]);
+      const source = `${stem}.tsx`;
+      if (names.has(source)) continue;
+      const other = [...names].find(
+        name => name !== source && name.toLowerCase() === source.toLowerCase(),
+      );
+      // The source's own doc, if it has one, is its pair.
+      if (
+        other &&
+        !COMPONENT_DOC_SUFFIXES.some(suffix =>
+          names.has(`${other.slice(0, -'.tsx'.length)}${suffix}`),
+        )
+      ) {
+        caseMismatch.set(full, other);
+      }
+    }
+    for (const docs of byStem.values()) {
+      if (docs.length < 2) continue;
+      const ordered = COMPONENT_DOC_SUFFIXES.map(suffix =>
+        docs.find(doc => doc.endsWith(suffix)),
+      ).filter(doc => doc != null);
+      duplicates.push({
+        read: path.join(dir, /** @type {string} */ (ordered[0])),
+        ignored: ordered
+          .slice(1)
+          .map(doc => path.join(dir, /** @type {string} */ (doc))),
+      });
+    }
+  };
+  walk(root);
+  return {caseMismatch, duplicates};
 }
 
 /**
@@ -431,9 +652,39 @@ async function checkDocs(integration, issues) {
 async function checkThemes(integration, issues) {
   if (!integration.themes || rootProblem(integration.themes)) return;
   try {
+    // A theme may name itself differently from its folder (its built files
+    // then carry that name), so a name that differs is no finding here:
+    // verify judges it against the files the package exports.
     await discoverIntegrationThemes(integration);
   } catch (err) {
     issues.push(issueError('invalid_theme', /** @type {any} */ (err).message));
+  }
+}
+
+/**
+ * A warning for each contribution file a reader reads (the docs and sources
+ * `integration verify` expects in the tarball) that the user running astryx
+ * cannot read; files no reader takes, such as `.DS_Store`, are not looked at: Astryx cannot check it, and npm pack stops on it. A
+ * warning, so validate keeps its exit code; `integration verify` fails on the
+ * pack itself.
+ * @param {LoadedIntegration} integration
+ * @param {Issue[]} issues
+ */
+function checkUnreadableFiles(integration, issues) {
+  const packageDir = integration.__packageDir;
+  if (!packageDir) return;
+  for (const shown of contributionFiles(integration, packageDir)) {
+    try {
+      fs.accessSync(path.join(packageDir, shown), fs.constants.R_OK);
+    } catch (err) {
+      const code = String(/** @type {any} */ (err)?.code ?? 'unknown error');
+      issues.push(
+        issueListed(
+          'unreadable_file',
+          `Could not read "${shown}" (${code}), so Astryx cannot check it and npm pack fails on it. Fix: make it readable (chmod a+r ${shown}), or delete it if it does not belong in the package.`,
+        ),
+      );
+    }
   }
 }
 
@@ -443,6 +694,7 @@ async function checkThemes(integration, issues) {
  * @param {Issue[]} issues
  */
 async function runContributionChecks(integration, issues) {
+  checkUnreadableFiles(integration, issues);
   await checkCodemods(integration, issues);
   await checkTemplates(integration, issues);
   await checkComponents(integration, issues);
@@ -461,6 +713,29 @@ async function runContributionChecks(integration, issues) {
  * @returns {Promise<Issue[]>}
  */
 export async function validateLoadedIntegration(loaded) {
+  return (await validateLoadedIntegrationListed(loaded)).issues;
+}
+
+/**
+ * Every contribution check, split: `issues` as validateLoadedIntegration
+ * returns them, and `listed`, the layout findings validate lists in its
+ * `layout` report without counting them.
+ * @param {LoadedIntegration} loaded
+ * @returns {Promise<{issues: Issue[], listed: Issue[]}>}
+ */
+export async function validateLoadedIntegrationListed(loaded) {
+  const all = await allLoadedIntegrationIssues(loaded);
+  return {
+    issues: all.filter(issue => !LISTED.has(issue)),
+    listed: all.filter(issue => LISTED.has(issue)),
+  };
+}
+
+/**
+ * @param {LoadedIntegration} loaded
+ * @returns {Promise<Issue[]>}
+ */
+async function allLoadedIntegrationIssues(loaded) {
   /** @type {Issue[]} */
   const issues = [];
   if (!loaded || typeof loaded !== 'object') return issues;
@@ -497,8 +772,10 @@ export async function validateLoadedIntegration(loaded) {
       codemods: loaded.codemods,
       docs: loaded.docs,
       themes: loaded.themes,
+      __manifestFile: loaded.__manifestFile,
     },
     issues,
+    loaded.__packageDir,
   );
   await runContributionChecks(loaded, issues);
   return issues;

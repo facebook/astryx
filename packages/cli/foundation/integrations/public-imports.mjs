@@ -27,6 +27,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {parse} from '@babel/parser';
 import {findProjectCoreDir} from '../fs/paths.mjs';
+import {normalizeProviderId} from '../identity/provider-identity.mjs';
 import {
   discoverIntegrationComponents,
   resolveIntegrationImportPath,
@@ -342,6 +343,20 @@ function exportsFix(exportsField, state, subpath, target) {
     return `replace the null for "${subpath}" in package.json "exports" with ${JSON.stringify(target)}, or stop advertising it.`;
   }
   return `add ${entry} to package.json "exports" (or the built file it compiles to).`;
+}
+
+/**
+ * Whether `name` is a bare npm package name (an optional `@scope/` and a
+ * name), the only form an import can name the package by.
+ * @param {string} name
+ */
+function isPackageName(name) {
+  try {
+    normalizeProviderId(name);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 // ── Listed findings ─────────────────────────────────────────────────
@@ -754,14 +769,15 @@ export async function publicImportIssues(packageDir, integration) {
     });
     return {issues: [], notes: [], report};
   }
-  const name =
-    typeof pkg.name === 'string' && pkg.name !== '' ? pkg.name : null;
+  const raw = typeof pkg.name === 'string' && pkg.name !== '' ? pkg.name : null;
+  // A name that is not a bare package name (`acme/kit`) cannot be told apart
+  // from an import of another package: checked as if there were none.
+  const name = raw != null && isPackageName(raw) ? raw : null;
   if (name == null) {
     report.unchecked.push({
       file: 'package.json',
       specifier: '',
-      reason:
-        'package.json has no "name", so imports of the package\'s own name were not checked; only template imports outside the templates root and of Core were',
+      reason: `${raw == null ? 'package.json has no "name"' : `package.json "name" ${JSON.stringify(raw)} is not a bare package name`}, so imports of the package's own name were not checked; only template imports outside the templates root and of Core were`,
     });
   }
   // The Core installed beside the package, which its templates' imports

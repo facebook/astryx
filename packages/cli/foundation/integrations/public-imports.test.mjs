@@ -158,6 +158,22 @@ describe('public imports: clean packages', () => {
     expect(await codes()).toEqual([]);
   });
 
+  it('checks a package whose name is not a bare package name as nameless', async () => {
+    pkg(p => {
+      p.name = 'acme/kit';
+    });
+    const result = await validateIntegration(undefined, {cwd: dir});
+    expect(await codes()).toEqual([]);
+    expect(result.data.publicImports?.unchecked).toContainEqual(
+      expect.objectContaining({
+        file: 'package.json',
+        reason: expect.stringContaining(
+          '"acme/kit" is not a bare package name',
+        ),
+      }),
+    );
+  });
+
   it('reads "exports": null as no exports field', async () => {
     pkg(p => {
       p.exports = null;

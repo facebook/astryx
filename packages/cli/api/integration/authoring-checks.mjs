@@ -51,6 +51,8 @@ import {
   validateInstalledIntegration,
   validateLocalIntegration,
 } from './validate-integration.mjs';
+import {rootProblem} from '../../foundation/integrations/validate-contributions.mjs';
+import {normalizeProviderId} from '../../foundation/identity/provider-identity.mjs';
 
 /** @param {string} value */
 export function shellArg(value) {
@@ -59,14 +61,60 @@ export function shellArg(value) {
 }
 
 /**
+ * The provider ID a package without a name is checked under: a valid bare
+ * package name no published package can hold (npm names are lowercase).
+ */
+const UNNAMED_PROVIDER = 'astryx-unnamed-local-package';
+
+/**
+ * A message as the package sees it: the stand-in provider ID gone, its docs
+ * named by their path in the package.
+ * @param {string} message
+ */
+function unnamedShown(message) {
+  return message
+    .split(`${UNNAMED_PROVIDER}/`)
+    .join('')
+    .split(UNNAMED_PROVIDER)
+    .join('this package');
+}
+
+/**
  * Resolve one local or installed integration for an authoring check.
  * @param {string | undefined} pkg
  * @param {string} cwd
  */
 async function resolveIntegration(pkg, cwd) {
-  return pkg
-    ? validateInstalledIntegration(pkg, cwd)
-    : validateLocalIntegration(cwd);
+  const resolved = pkg
+    ? await validateInstalledIntegration(pkg, cwd)
+    : await validateLocalIntegration(cwd);
+  const integration = resolved.found ? resolved.integration : undefined;
+  if (!integration) return resolved;
+  // A root that is not a readable folder is reported in the issues; the
+  // checks read nothing from it rather than fail on it.
+  /** @type {typeof integration & {__unnamed?: boolean}} */
+  const usable = {...integration};
+  // The provider ID readers key the package on: the manifest's providerId,
+  // else its name. A package with neither (validate warned about it) is
+  // still checked; the docs check names its docs under a stand-in ID.
+  try {
+    usable.providerId = normalizeProviderId(
+      integration.__declaredProviderId ?? integration.name,
+    );
+  } catch {
+    usable.__unnamed = true;
+  }
+  for (const kind of /** @type {const} */ ([
+    'components',
+    'templates',
+    'codemods',
+    'docs',
+    'themes',
+  ])) {
+    const root = usable[kind];
+    if (root != null && rootProblem(root)) usable[kind] = undefined;
+  }
+  return {...resolved, integration: usable};
 }
 
 /**
@@ -387,8 +435,20 @@ export async function integrationDocConflicts(pkg, options = {}) {
     };
   }
 
+  // The docs tree names a package's docs by its provider ID, which a
+  // package.json without a name does not give: its docs are checked under a
+  // stand-in ID, which no message names.
+  const unnamed = /** @type {{__unnamed?: boolean}} */ (resolved.integration)
+    .__unnamed;
+  const docsIntegration = unnamed
+    ? {
+        ...resolved.integration,
+        name: UNNAMED_PROVIDER,
+        providerId: UNNAMED_PROVIDER,
+      }
+    : resolved.integration;
   const [discovered, builtinTopics] = await Promise.all([
-    discoverIntegrationDocs(resolved.integration),
+    discoverIntegrationDocs(docsIntegration),
     Promise.resolve(discoverBuiltinTopics()),
   ]);
   const {records, errors} = discovered;
@@ -458,27 +518,40 @@ export async function integrationDocConflicts(pkg, options = {}) {
   // its docs (spec:AST-046, spec:AST-047).
   if (errors.length === 0) {
     for (const {severity, message} of await packageDocsProblems(
-      /** @type {{name: string}} */ (resolved.integration),
+      /** @type {{name: string}} */ (docsIntegration),
       discovered,
     )) {
-      issues.push({code: 'invalid_doc_graph', severity, message});
+      issues.push({
+        code: 'invalid_doc_graph',
+        severity,
+        message: unnamedShown(message),
+      });
     }
 
     // A reference block includes content rather than linking to it, so one
     // that cannot include what it names loses that content for every reader:
     // an error, where a link that names no doc still prints as written.
     for (const message of await packageReferenceProblems(
-      /** @type {{name: string}} */ (resolved.integration),
+      /** @type {{name: string}} */ (docsIntegration),
       discovered,
     )) {
-      issues.push({code: 'invalid_doc_reference', severity: 'error', message});
+      issues.push({
+        code: 'invalid_doc_reference',
+        severity: 'error',
+        message: unnamedShown(message),
+      });
     }
 
     // One fact has one owner: a passage two topics repeat goes stale in one
     // of them. Each is listed and is a warning (architecture:cli-surface
     // DEC-8), so `integration check --strict` fails until it is fixed;
     // `doctor integration docs` keeps its exit code, as it fails on errors.
-    copiedPassages.push(...(await integrationCopiedPassages(discovered)));
+    copiedPassages.push(
+      ...(await integrationCopiedPassages(discovered)).map(passage => ({
+        ...passage,
+        message: unnamedShown(passage.message),
+      })),
+    );
     for (const {message} of copiedPassages) {
       issues.push({code: 'copied_passage', severity: 'warning', message});
     }
@@ -488,6 +561,7 @@ export async function integrationDocConflicts(pkg, options = {}) {
       ...(await integrationFluff(discovered)).map(each => ({
         ...each,
         file: fromPackage(each.file),
+        message: unnamedShown(each.message),
       })),
     );
     for (const {message} of fluff) {

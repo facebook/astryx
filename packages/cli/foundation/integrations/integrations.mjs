@@ -60,6 +60,8 @@ import {resolveProviders} from './provider-resolution.mjs';
  * @property {string} [__agentDocsError] contribution-specific validation
  *   failure; other manifest contributions remain available
  * @property {string} __spec
+ * @property {string} [__declaredProviderId] the manifest's `providerId` as
+ *   written, kept by validation so it can tell whether the package has one
  * @property {string} __packageDir
  * @property {Record<string, unknown>|null} [__packageExports] the owning
  *   package's `exports` map, kept from the package.json this loader already

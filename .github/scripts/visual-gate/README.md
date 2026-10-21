@@ -71,11 +71,14 @@ keys requires explicit full-plan baseline maintenance.
 - `skipped`: no comparison was performed; the reason is explicit. It does not
   imply a separate workflow covered the change.
 
-The `visual-pr-report` artifact belongs to the exact CI run and attempt.
+The `visual-pr-report` artifact belongs to the exact CI run. A rerun of only
+the failed jobs keeps the artifacts of the jobs that passed, so the report can
+come from an earlier attempt of that run, never a later one.
 `pr-comment.yml` only publishes its report: it checks identity, bounds JSON and
 image sizes, re-encodes PNGs, and renders escaped HTML from default-branch code.
 It does not execute artifact HTML, run a browser, compare pixels again, change
-a baseline, or create another visual status.
+a baseline, or create another visual status. Its only status is `PR Comment` on
+the pull request head, which says whether a report step failed.
 
 Deployment previews, `a11y-weekly.yml`, `rtl-weekly.yml`, and
 `vibe-screenshots.yml` remain separate because they do not run visual regression.

@@ -1146,6 +1146,14 @@ function packageCatalog(integration, discovered) {
  * @returns {Promise<Array<{severity: 'warning', message: string}>>}
  */
 export async function packageComponentLinkProblems(integration, discovered) {
+  // A package with no provider id (its manifest's, else its name) links
+  // nothing, as on the read path: its text reads as written, so there is
+  // nothing to report.
+  try {
+    normalizeProviderId(integration.providerId ?? integration.name);
+  } catch {
+    return [];
+  }
   const catalog = packageCatalog(integration, discovered);
   return (await componentLinkProblems(catalog, integration.name)).map(
     message => ({severity: /** @type {const} */ ('warning'), message}),
@@ -1176,11 +1184,15 @@ async function componentLinkProblems(catalog, owner) {
       // The components check reports a doc that does not load.
       continue;
     }
-    const linked = await linkComponentDoc(
-      catalog,
-      componentLinkProvider(record.package, record.providerId),
-      doc,
-    );
+    let provider;
+    try {
+      provider = componentLinkProvider(record.package, record.providerId);
+    } catch {
+      // An owner that is not a provider id links nothing (as on the read
+      // path); its text reads as written.
+      continue;
+    }
+    const linked = await linkComponentDoc(catalog, provider, doc);
     const name = typeof doc?.name === 'string' ? doc.name : record.name;
     for (const problem of linked.problems) {
       problems.push(
