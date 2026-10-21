@@ -858,7 +858,7 @@ describe('checkAuthoringDocs against the public authoring surface', () => {
   it(
     "fails when the topic's index no longer exposes the NamespaceDoc section",
     async () => {
-      const index = await docs('authoring', undefined, {index: true});
+      const index = await docs('authoring/field-reference', undefined, {index: true});
       const topicKeys = new Set(
         index.data.sections
           .map((/** @type {any} */ s) => s.id)

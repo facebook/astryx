@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file `astryx docs cli/integrations/building-blocks/templates/document-the-template/block-template`:
+ * @file `astryx docs authoring/building-blocks/templates/document-the-template/block-template`:
  * the block-only fields: component relationships and the preview shape.
  */
 

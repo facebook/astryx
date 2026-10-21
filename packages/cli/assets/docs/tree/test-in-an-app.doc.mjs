@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file `astryx docs cli/integrations/ship/test-in-an-app`: install the packed
+ * @file `astryx docs authoring/ship/test-in-an-app`: install the packed
  * package in an app and run the commands its users run.
  */
 

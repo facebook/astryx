@@ -499,8 +499,9 @@ validate` MUST warn on a PascalCase `.tsx` at the top of the components root
   on any tree error diagnostic or unplaced CLI doc.
   An integration's namespace docs and placed guides join the same tree, named
   by its provider id; the CLI's own docs keep a contested route.
-  Every flat topic sits in the generated Unorganized level under its own name,
-  so every doc has a home in the tree.
+  Every flat topic sits in the generated level for its category, Guides or
+  Foundations, under its own name, so every doc has a named home in the tree.
+  Everything an integration author reads lives under `authoring`.
 - **INV27 — Every read says where to go next (`spec:AST-047`).** A read names
   its place and ends with its moves (up, down, across, and out) as runnable
   commands, and its JSON carries the same moves as `links`; a search hit
