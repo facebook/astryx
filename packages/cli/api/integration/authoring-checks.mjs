@@ -581,18 +581,14 @@ export async function integrationDocConflicts(pkg, options = {}) {
       issues.push({code: 'stray_doc_pointer', severity: 'warning', message});
     }
     // Docs write bare `astryx` commands and the CLI shows each with the
-    // reader's runner, so a written runner is a warning
-    // (architecture:cli-surface DEC-8): `integration check --strict` fails on
-    // it, and `doctor integration docs` keeps its exit code.
+    // reader's runner. A command written with a runner is listed with its
+    // line and fix; it is not an issue, so no exit changes on it.
     runnerCommands.push(
       ...(await findRunnerCommands(discovered)).map(each => ({
         ...each,
         file: fromPackage(each.file),
       })),
     );
-    for (const {message} of runnerCommands) {
-      issues.push({code: 'runner_command', severity: 'warning', message});
-    }
   }
 
   return {

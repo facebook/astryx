@@ -91,8 +91,8 @@
  * runner before a command, or the unscoped name after a download runner,
  * which fetches an unrelated package. Docs write the bare `astryx <command>`;
  * the CLI shows it with the reader's runner. The scoped package name after a
- * download runner, for install steps, is not listed. Each is also a
- * `runner_command` warning (architecture:cli-surface DEC-8).
+ * download runner, for install steps, is not listed. A listed command is
+ * not an issue: no check warns or fails on it.
  *
  * @typedef {object} RunnerCommand
  * @property {string} topic

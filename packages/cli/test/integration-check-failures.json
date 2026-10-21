@@ -62,7 +62,6 @@
     "root_outside_package",
     "shadowed_component_name",
     "source_without_component_doc",
-    "runner_command",
     "source_without_template_doc",
     "stray_doc_pointer",
     "symlinked_root",

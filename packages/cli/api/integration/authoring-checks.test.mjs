@@ -1364,7 +1364,7 @@ describe('integrationDocConflicts runner commands', () => {
     );
   }
 
-  it('lists a runner command with its line and fix, and warns about it', async () => {
+  it('lists a runner command with its line and fix, and raises no issue', async () => {
     writeTopic('Check it with `pnpm exec astryx doctor` first.');
 
     const result = await integrationDocConflicts(undefined, {cwd: tmpDir});
@@ -1379,9 +1379,8 @@ describe('integrationDocConflicts runner commands', () => {
       command: 'pnpm exec astryx doctor',
     });
     expect(hit.message).toContain('Write `astryx doctor`');
-    expect(result.data.issues).toEqual([
-      {code: 'runner_command', severity: 'warning', message: hit.message},
-    ]);
+    // Listed only: no issue, so no exit changes on it.
+    expect(result.data.issues).toEqual([]);
   });
 
   it('puts each copy of a repeated command on its own line', async () => {

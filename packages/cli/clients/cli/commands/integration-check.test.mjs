@@ -440,7 +440,7 @@ describe('a stray doc pointer', () => {
   });
 });
 describe('a command written with a runner', () => {
-  it('keeps doctor integration docs at exit 0, and fails integration check --strict', async () => {
+  it('is listed by doctor integration docs, and integration check --strict still passes', async () => {
     fs.writeFileSync(
       path.join(tmpDir, 'package.json'),
       JSON.stringify({name: '@acme/widgets', version: '1.2.3'}),
@@ -471,8 +471,17 @@ describe('a command written with a runner', () => {
     expect(doctor.status).toBe(0);
     expect(doctor.stdout).toContain('written with a package runner');
 
-    const strict = await runCli(['integration', 'check', '--strict'], tmpDir);
-    expect(strict.status).toBe(1);
-    expect(strict.stdout).toContain('runner_command');
+    expect(doctor.stdout).toContain('[info] 1 command(s)');
+
+    const strict = await runCli(
+      ['--json', 'integration', 'check', '--strict'],
+      tmpDir,
+    );
+    expect(strict.status).toBe(0);
+    const docs = JSON.parse(strict.stdout).data.checks.find(
+      (/** @type {any} */ each) => each.check === 'docs',
+    ).response.data;
+    expect(docs.runnerCommands).toHaveLength(1);
+    expect(docs.issues).toEqual([]);
   });
 });
