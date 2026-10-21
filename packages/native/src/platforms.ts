@@ -13,7 +13,7 @@ export const NATIVE_PLATFORMS = ['ios', 'android', 'macos', 'windows'] as const;
 export type NativePlatform = (typeof NATIVE_PLATFORMS)[number];
 
 /** Type-resolution condition that exposes only core contracts (AST-082 FR6). */
-export const SHARED_CONDITION = 'astryx-shared';
+export const SHARED_CONDITION = 'shared';
 
 export function isNativePlatform(value: string): value is NativePlatform {
   return (NATIVE_PLATFORMS as readonly string[]).includes(value);

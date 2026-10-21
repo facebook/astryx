@@ -53,7 +53,7 @@
       "windows": {
         "types": "./dist/types/windows.d.ts"
       },
-      "astryx-shared": {
+      "shared": {
         "types": "./dist/types/shared.d.ts"
       },
       "types": "./dist/types/shared.d.ts"

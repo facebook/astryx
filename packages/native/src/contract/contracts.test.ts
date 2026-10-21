@@ -140,7 +140,7 @@ describe('native contracts', () => {
     expect(errorsFor('android', usage('pullDown')).join('\n')).toContain(
       'pullDown',
     );
-    expect(errorsFor('astryx-shared', usage('pullDown')).join('\n')).toContain(
+    expect(errorsFor('shared', usage('pullDown')).join('\n')).toContain(
       'menuStyle',
     );
     expect(errorsFor(null, usage('pullDown')).join('\n')).toContain(
