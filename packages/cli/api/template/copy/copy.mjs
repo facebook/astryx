@@ -98,7 +98,7 @@ export function templateCopy(
   const {source: withMedia, demoMediaReplaced} = replaceDemoMedia(
     fs.readFileSync(match.filePath, 'utf-8'),
   );
-  // Icons follow the project's icon set (AST-084 FR11). An icon with no match
+  // Icons follow the project's icon set (AST-084 FR9). An icon with no match
   // keeps its import, so its library stays a needed dependency below.
   const {source: outputSource, icons} = mapTemplateIcons(
     withMedia,

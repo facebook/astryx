@@ -735,8 +735,8 @@ function checkPlacement(placement, kind, at, declared) {
 
 /**
  * Every adoption rule that matches the doc's group and kind, from namespaces
- * that have a route: its own package's, and a CLI namespace's rule that
- * adopts its group from every package (`source.packages: 'all'`).
+ * that have a route: its own package's, and an experimental CLI namespace's
+ * rule that adopts its group from every package (`source.packages: 'all'`).
  * @param {TreeDocInput} doc
  * @param {Map<string, TreeNamespaceInput>} declared
  * @param {Map<string, string | null>} routeOf
@@ -748,8 +748,12 @@ function adoptionsFor(doc, declared, routeOf) {
     if (routeOf.get(key) == null) continue;
     for (const rule of namespace.doc.adopts ?? []) {
       if (rule.source.group !== doc.group) continue;
+      // Adopting from every package is experimental (spec:AST-017 FR27): only
+      // a CLI namespace marked experimental may (the icon definitions).
       const shared =
-        rule.source.packages === 'all' && namespace.provider === CLI_PROVIDER;
+        rule.source.packages === 'all' &&
+        namespace.provider === CLI_PROVIDER &&
+        /** @type {any} */ (namespace.doc).stability === 'experimental';
       if (namespace.provider !== doc.provider && !shared) continue;
       if (
         rule.source.kinds &&

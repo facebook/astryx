@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file Template icon mapping (AST-084 FR11, FR12): a template's declared
+ * @file Template icon mapping (AST-084 FR9, FR10): a template's declared
  * icon definitions, an installed set's icons and reviewed matches, a kept
  * icon, a variant, a name collision, and no set. Nothing is guessed from
  * names or words.

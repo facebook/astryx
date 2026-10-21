@@ -43,7 +43,7 @@ export {
  */
 
 /**
- * The icon report as text lines (AST-084 FR12): one line per mapped or kept
+ * The icon report as text lines (AST-084 FR10): one line per mapped or kept
  * icon, or one line saying why nothing was mapped. Nothing when the project
  * has no icon set at all (no report: icon sets are experimental).
  * @param {import('../../../api/template/template.type.mjs').TemplateIconsReport | undefined} icons

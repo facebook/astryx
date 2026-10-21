@@ -88,7 +88,7 @@
  */
 
 /**
- * How a template's icons follow the project's icon set (AST-084 FR12).
+ * How a template's icons follow the project's icon set (AST-084 FR10).
  * Without a project icon set (`status` `none`, `ambiguous`, or `missing`)
  * the source is unchanged and both lists are empty.
  * @typedef {object} TemplateIconsReport

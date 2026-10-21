@@ -32,7 +32,9 @@ import {
   discoverPackages,
   findComponent,
   hasSources,
+  loadReadKinds,
   officialDeclarations,
+  STABLE_KINDS,
   officialFirst,
   officialList,
   withDeclaredOfficial,
@@ -51,7 +53,6 @@ import {search} from './search/search.mjs';
 import {AstryxError} from '../error.mjs';
 import {ERROR_CODES} from '../../foundation/response/error-codes.mjs';
 import {levenshteinDistance} from '../../foundation/text/string-utils.mjs';
-import {DISCOVER_KINDS} from '../../authoring/discover/parse.mjs';
 
 const DEFAULT_LIMIT = 20;
 
@@ -88,14 +89,11 @@ function splitTarget(query) {
 /**
  * @param {{type?: unknown, installed?: boolean, available?: boolean, limit?: unknown}} options
  */
-function checkOptions({type, installed, available, limit}) {
-  if (
-    type != null &&
-    !(/** @type {readonly unknown[]} */ (DISCOVER_KINDS).includes(type))
-  ) {
+function checkOptions({type, installed, available, limit}, kinds) {
+  if (type != null && !kinds.includes(/** @type {string} */ (type))) {
     throw new AstryxError(
       `Unknown --type "${String(type)}"`,
-      DISCOVER_KINDS.map(kind => ({name: kind, reason: 'item kind'})),
+      kinds.map(kind => ({name: kind, reason: 'item kind'})),
       ERROR_CODES.ERR_INVALID_OPTION,
     );
   }
@@ -177,7 +175,14 @@ export function answersQueries(project) {
  */
 export async function discover(query, options = {}) {
   const {lang = null, zh = false, type, limit} = options;
-  checkOptions(options);
+  // An experimental kind is read only in a project that opts in (spec:AST-017
+  // FR27); only then does `--type` take it, or an error name it.
+  const kinds =
+    options.type != null &&
+    !(/** @type {readonly unknown[]} */ (STABLE_KINDS).includes(options.type))
+      ? await loadReadKinds()
+      : STABLE_KINDS;
+  checkOptions(options, kinds);
   const only = options.installed
     ? /** @type {const} */ ('installed')
     : options.available

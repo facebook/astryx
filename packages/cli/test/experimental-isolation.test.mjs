@@ -212,7 +212,7 @@ describe('with an icon set installed and configured, search is unchanged', () =>
   });
 
   // Icon words: icon lookup by meaning is only `astryx experimental icon`;
-  // `astryx search` joins it only at promotion (spec:AST-084 FR8).
+  // `astryx search` joins it only at promotion (spec:AST-084 FR11).
   it.each(['delete', 'close', 'trash can'])(
     'search %s equals the output without icon sets, text and JSON',
     async query => {
@@ -236,5 +236,60 @@ describe('with an icon set installed and configured, search is unchanged', () =>
     );
     expect(res.status).toBe(1);
     expect(JSON.parse(res.stdout).code).toBe('ERR_INVALID_ARGUMENT');
+  });
+});
+
+describe('with icon sets installed but no experimental.iconSet, stable output is unchanged', () => {
+  /** @type {string} */
+  let root;
+  beforeAll(() => {
+    root = fs.mkdtempSync(path.join(REPO_ROOT, '.astryx-icon-set-no-opt-in-'));
+  });
+  afterAll(() => {
+    fs.rmSync(root, {recursive: true, force: true});
+  });
+
+  /**
+   * A project that loads an icon-set package, its set valid or not.
+   * @param {string} name
+   * @param {unknown} [data] the set's data file; omit for a valid one
+   */
+  function installed(name, data) {
+    const dir = writeIconSetProject(path.join(root, name), {
+      packages: [data === undefined ? {} : {data}],
+      config: {integrations: ['@acme/glyphs']},
+    });
+    fs.mkdirSync(path.join(dir, 'node_modules', '.bin'), {recursive: true});
+    fs.writeFileSync(path.join(dir, 'node_modules', '.bin', 'astryx'), '');
+    return dir;
+  }
+
+  // The goldens were written by the CLI without icon sets, in the same
+  // project with the package's manifest emptied: that CLI warns about the
+  // manifest key `experimental` it does not know, which is the one line no
+  // CLI with this feature can print.
+  it('discover lists no icon set, and --type icon-set is an unknown type', async () => {
+    const cwd = installed('discover');
+    await expect(
+      astryx(['discover', '--json'], cwd).stdout,
+    ).toMatchFileSnapshot(path.join(GOLDEN, 'discover.json'));
+    const typed = astryx(['discover', '--type', 'icon-set', '--json'], cwd);
+    expect(typed.status).toBe(1);
+    await expect(typed.stdout).toMatchFileSnapshot(
+      path.join(GOLDEN, 'discover-type-icon-set.json'),
+    );
+    const unknown = astryx(['discover', '--type', 'bogus', '--json'], cwd);
+    await expect(unknown.stdout).toMatchFileSnapshot(
+      path.join(GOLDEN, 'discover-type-bogus.json'),
+    );
+  });
+
+  it('doctor reports nothing about an invalid installed set', async () => {
+    const cwd = installed('doctor', '{nope');
+    const res = astryx(['doctor', '--json'], cwd);
+    expect(res.stdout).not.toMatch(/icon/i);
+    await expect(res.stdout).toMatchFileSnapshot(
+      path.join(GOLDEN, 'doctor-installed-set.json'),
+    );
   });
 });

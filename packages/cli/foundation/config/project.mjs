@@ -632,7 +632,13 @@ export class Project {
       return;
     }
     try {
-      const found = await validateLoadedIntegration(integration);
+      // An experimental root is checked only in a project that opts in
+      // (spec:AST-017 FR27); the package's own checks read it either way.
+      const found = await validateLoadedIntegration(
+        this.#config.experimental?.iconSet
+          ? integration
+          : {...integration, iconSets: undefined},
+      );
       for (const issue of found ?? []) this.#pushIssue(pkg, issue);
     } catch (err) {
       this.#pushIssue(pkg, {
@@ -833,15 +839,32 @@ export class Project {
 
   /**
    * Installed icon sets, the sets withdrawn and why, and the project's icon
-   * set (AST-084 FR9, FR10). Sets come from each loaded integration's
+   * set (AST-084 FR7, FR8). Sets come from each loaded integration's
    * `iconSets` root in load order; `sets` puts the project's set first, the
    * tie order every icon surface uses. A set whose descriptor or data file is
    * invalid is withdrawn and reported as an `invalid_icon_set` issue; a set
    * whose module does not resolve from the project is withdrawn without one.
    *
+   * Icon sets are experimental (spec:AST-017 FR27): every surface but
+   * `astryx experimental icon` reads them only in a project that sets
+   * `experimental.iconSet`. Without it this answers no sets and records no
+   * issue, unless `experimental` asks for the installed sets anyway.
+   *
+   * @param {{experimental?: boolean}} [options] `experimental`: read the
+   *   installed sets without the opt-in, for `astryx experimental icon`
    * @returns {Promise<{sets: import('../discovery/icon-set-discovery.mjs').DiscoveredIconSet[], withdrawn: import('../discovery/icon-set-discovery.mjs').WithdrawnIconSet[], choice: import('../discovery/icon-set-discovery.mjs').IconSetChoice}>}
    */
-  async iconSets() {
+  async iconSets({experimental = false} = {}) {
+    if (!experimental && !this.#config.experimental?.iconSet) {
+      return {
+        sets: [],
+        withdrawn: [],
+        choice: {
+          status: /** @type {const} */ ('none'),
+          reason: 'astryx.config sets no experimental.iconSet.',
+        },
+      };
+    }
     return this.#memo('iconSets', async () => {
       const projectDir = findPackageRoot(this.#cwd) ?? this.#cwd;
       /** @type {import('../discovery/icon-set-discovery.mjs').DiscoveredIconSet[]} */

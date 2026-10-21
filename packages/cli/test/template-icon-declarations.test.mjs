@@ -3,7 +3,7 @@
 /**
  * @file Every icon a bundled template or block imports is declared in its
  * descriptor's `icons` with the icon definition it draws, so a project's icon
- * set replaces it (AST-084 FR11). The CLI knows no icon library; only this
+ * set replaces it (AST-084 FR9). The CLI knows no icon library; only this
  * test names the libraries the bundled templates happen to import, to find
  * their icon imports.
  */

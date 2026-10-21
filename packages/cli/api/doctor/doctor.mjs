@@ -106,7 +106,7 @@ import {checkAppThemes, checkThemes} from './theme-checks.mjs';
  * @property {Error|null} [configError] - Error thrown while resolving the config
  *   path (e.g. multiple config files present), surfaced by checkConfig as a FAIL.
  * @property {{sets: Array<{name: string, package: string}>, withdrawn: Array<{name: string, package: string, reason: string}>, choice: {status: 'selected'|'none'|'ambiguous'|'missing', reason: string, configured?: string}}|null} [iconSets]
- *   The project's icon sets (AST-084 FR15), or null when they could not be read.
+ *   The project's icon sets (AST-084 FR17), or null when they could not be read.
  * @property {string|null} [projectError] - Why the CLI could not load the
  *   project from its config, when it could not. Checks that need the loaded
  *   project quote it when they skip, so a skip says what was found.
@@ -481,7 +481,8 @@ export function checkImplicitIntegrations(ctx) {
       'themes',
       'docs',
       'codemods',
-      'iconSets',
+      // An experimental root counts only in a project that opts in.
+      ...(ctx.iconSets?.choice?.configured ? ['iconSets'] : []),
     ].filter(root => integration[/** @type {'components'} */ (root)]);
     const missing = declared.filter(root => {
       const dir = integration[/** @type {'components'} */ (root)];
@@ -826,7 +827,7 @@ export function checkIntegrationIssues(ctx) {
 }
 
 /**
- * The project's icon sets (AST-084 FR15). Fails when `experimental.iconSet` names a set
+ * The project's icon sets (AST-084 FR17). Fails when `experimental.iconSet` names a set
  * that is not installed; warns when two or more sets are installed and none
  * is the project's, and for each installed set that was withdrawn, with why.
  * Icon sets are experimental (spec:AST-017 FR27): only a project that sets

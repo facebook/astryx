@@ -41,7 +41,7 @@ export const docs = {
   blocks: [
     {
       type: 'prose',
-      text: "An icon definition is one thing an icon stands for, such as `close` or `delete`. Every icon set registers its icons against definitions in its data file's `map`, and templates are written against definitions, so a project that switches icon sets gets the same definition from the new set. Built-in definitions are the shared names Core renders; every set maps them. A set may add its own definitions; they are listed here with the package that ships them. `astryx experimental icon <definition>` finds the icon each installed set draws for it. Icon definitions are experimental: they may change or be removed in a patch release.",
+      text: "An icon definition is one thing an icon stands for, such as `close` or `delete`. Every icon set registers its icons against definitions in its data file's `map`, and templates are written against definitions, so a project that switches icon sets gets the same definition from the new set. Built-in definitions are the shared names Core renders; every set maps them. A set may add its own definitions; in a project that sets `experimental.iconSet`, they are listed here with the package that ships them. `astryx experimental icon <definition>` finds the icon each installed set draws for it. Icon definitions are experimental: they may change or be removed in a patch release.",
     },
   ],
 };

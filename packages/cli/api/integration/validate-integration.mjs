@@ -83,7 +83,7 @@ export {validateLoadedIntegration};
  * @property {Issue[]} issues
  * @property {import('../../foundation/integrations/integrations.mjs').LoadedIntegration} [integration]
  * @property {import('../../foundation/discovery/icon-set-checks.mjs').IconSetCoverage[]} [iconSets]
- *   Which definitions each icon set leaves unmapped (spec:AST-084 FR14).
+ *   Which definitions each icon set leaves unmapped (spec:AST-084 FR15).
  * @property {import('../../foundation/discovery/doc-stability.mjs').OlderCliNote[]} [olderCliNotes]
  */
 
@@ -342,7 +342,7 @@ async function validateAtPackageDir(
   issues.push(...(await validateLoadedIntegration(loaded)));
   if (loaded.themes && !rootProblem(loaded.themes))
     issues.push(...unreadThemeFolderIssues(packageDir, loaded));
-  // The icon-set checks (AST-084 FR14): data against descriptor, module
+  // The icon-set checks (AST-084 FR15): data against descriptor, module
   // exports, and theme map, all read statically.
   if (loaded.iconSets && !rootProblem(loaded.iconSets)) {
     issues.push(...iconSetIssues(packageDir, loaded));

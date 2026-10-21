@@ -53,7 +53,7 @@
  */
 
 /**
- * Experimental (spec:AST-084 FR14): for a package that declares
+ * Experimental (spec:AST-084 FR15): for a package that declares
  * `experimental.iconSets`, which icon definitions each valid set leaves
  * unmapped. Listed beside the issues and never counted: mapping an optional
  * definition is optional, and nothing here fails a check, even under
@@ -70,12 +70,14 @@
 
 /**
  * A descriptor an older CLI drops: a page or block template, or a namespace
- * doc, that sets `stability` while the package's `@astryxdesign/cli` peer
- * range admits a release before 0.7.2. Listed beside the issues for the
- * package being authored, and never counted or failing a check.
+ * doc, that sets `stability`, or a template that declares `icons`, while the
+ * package's `@astryxdesign/cli` peer range admits a release before 0.7.2.
+ * Listed beside the issues for the package being authored, and never counted
+ * or failing a check.
  * @typedef {object} OlderCliNote
  * @property {string} file The descriptor, relative to the package.
  * @property {'template' | 'namespace'} kind
+ * @property {'stability' | 'icons'} field The field an older CLI refuses.
  * @property {string} message What an older CLI does with it, and the fix.
  */
 

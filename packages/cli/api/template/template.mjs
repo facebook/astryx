@@ -210,7 +210,7 @@ export async function template(name, options = {}) {
   }
 
   // The project's icon set decides how the template's icons are written
-  // (AST-084 FR11): both the printed source and the copied file follow it.
+  // (AST-084 FR9): both the printed source and the copied file follow it.
   const iconSets = await loadTemplateIconSets(cwd);
   if (show || !targetPath) {
     return templateShow(match, {iconSets});

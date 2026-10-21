@@ -83,6 +83,15 @@ export const SECTION_IDS_CLI = '0.6.4';
  */
 export const STABILITY_CLI = '0.7.2';
 
+/**
+ * The first stable CLI release that reads a template's `icons` declaration
+ * (spec:AST-084 FR9). Published 0.7.1 refuses the field and drops that
+ * template.
+ *
+ * Tied to the next patch slot, with {@link STABILITY_CLI}.
+ */
+export const TEMPLATE_ICONS_CLI = '0.7.2';
+
 const VERSION_RE =
   /^v?(\d+|[xX*])(?:\.(\d+|[xX*]))?(?:\.(\d+|[xX*]))?(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/;
 
@@ -319,5 +328,21 @@ export function stabilityCliProblem(pkg) {
     'has a template or namespace doc that sets `stability`',
     "rejects the field and drops that descriptor, and for a namespace doc hides the package's doc topics",
     STABILITY_CLI,
+  );
+}
+
+/**
+ * Why a package with a template that declares `icons` would lose that
+ * template on an older CLI, or null when its declared CLI range admits only
+ * CLIs that read the field.
+ * @param {any} pkg package.json
+ * @returns {string | null}
+ */
+export function templateIconsCliProblem(pkg) {
+  return cliRangeProblem(
+    pkg,
+    'has a template that declares `icons`',
+    'rejects the field and drops that template',
+    TEMPLATE_ICONS_CLI,
   );
 }

@@ -226,7 +226,9 @@ describe('buildDocsTree', () => {
     );
     // It names both docs as their authors know them, never by artifact id,
     // and says what to change.
-    const taken = problems(tree).find(([, message]) => message.includes('route "CLI"'))?.[1];
+    const taken = problems(tree).find(([, message]) =>
+      message.includes('route "CLI"'),
+    )?.[1];
     expect(taken).toBe(
       `The topic "CLI" from ${P} and Astryx's own namespace "cli" both have the route "CLI", so \`astryx docs CLI\` cannot open both. Fix: rename "CLI" (its \`name\` and its file), such as \`name: 'kit-cli'\`.`,
     );
@@ -348,6 +350,40 @@ describe('buildDocsTree', () => {
     expect(routes(tree)).toEqual(['commands', 'commands/theme-add']);
     expect(tree.get('commands')?.slots[0].children).toEqual([
       'commands/theme-add',
+    ]);
+  });
+
+  it('adopts from every package only on an experimental CLI namespace', () => {
+    const CLI = '@astryxdesign/cli';
+    /** @param {object} extra */
+    const shared = extra => ({
+      ...ns('words', {
+        slots: {all: {title: 'All', accepts: {kinds: ['generic']}}},
+        adopts: [
+          {
+            source: {group: 'words', kinds: ['generic'], packages: 'all'},
+            into: 'all',
+          },
+        ],
+        ...extra,
+      }),
+      provider: CLI,
+      providerId: CLI,
+      source: `${CLI}/tree/words.doc.mjs`,
+    });
+    const docs = [
+      guide('mine', {group: 'words', provider: CLI, providerId: CLI}),
+      guide('theirs', {group: 'words'}),
+    ];
+    const stable = buildDocsTree({namespaces: [shared({})], docs});
+    expect(stable.get('words')?.slots[0].children).toEqual(['words/mine']);
+    const experimental = buildDocsTree({
+      namespaces: [shared({stability: 'experimental'})],
+      docs,
+    });
+    expect(experimental.get('words')?.slots[0].children).toEqual([
+      'words/mine',
+      'words/theirs',
     ]);
   });
 

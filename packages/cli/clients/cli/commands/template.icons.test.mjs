@@ -2,7 +2,7 @@
 
 /**
  * @file Copied and printed templates follow the project's icon set
- * (AST-084 FR11, FR12): the JSON and the copy receipt report every icon,
+ * (AST-084 FR9, FR10): the JSON and the copy receipt report every icon,
  * and printed source keeps stdout to the source with the report on stderr.
  */
 

@@ -117,6 +117,29 @@ describe('olderCliNotes', () => {
     expect(text.stdout).toContain('templates/stab-hero.doc.mjs');
   }, 60_000);
 
+  it('notes a template that declares icons, which 0.7.1 drops', async () => {
+    writePackage({}, '');
+    const doc = path.join(dir, 'templates', 'stab-hero.doc.mjs');
+    fs.writeFileSync(
+      doc,
+      fs
+        .readFileSync(doc, 'utf-8')
+        .replace(
+          'componentsUsed: []',
+          "componentsUsed: [], icons: {XIcon: 'close'}",
+        ),
+    );
+    const data = await validated();
+    expect(data.olderCliNotes).toEqual([
+      expect.objectContaining({
+        file: 'templates/stab-hero.doc.mjs',
+        kind: 'template',
+        field: 'icons',
+        message: expect.stringContaining('declares `icons`: CLIs before 0.7.2'),
+      }),
+    ]);
+  });
+
   it('says nothing when the CLI peer range starts at 0.7.2', async () => {
     writePackage(
       {peerDependencies: {'@astryxdesign/cli': '>=0.7.2'}},

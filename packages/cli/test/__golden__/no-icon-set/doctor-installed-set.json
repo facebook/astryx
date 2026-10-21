@@ -1,0 +1,120 @@
+{
+  "apiVersion": 1,
+  "type": "doctor",
+  "data": {
+    "checks": [
+      {
+        "id": "node-version",
+        "label": "Node.js version",
+        "status": "pass",
+        "message": "Node v22.23.2 meets the minimum (>=22.13.0)."
+      },
+      {
+        "id": "core-installed",
+        "label": "@astryxdesign/core installed",
+        "status": "pass",
+        "message": "@astryxdesign/core resolved (v0.7.2)."
+      },
+      {
+        "id": "version-alignment",
+        "label": "@astryxdesign/core <-> @astryxdesign/cli alignment",
+        "status": "pass",
+        "message": "@astryxdesign/core v0.7.2 is in step with @astryxdesign/cli v0.7.2."
+      },
+      {
+        "id": "themes",
+        "label": "Theme packages",
+        "status": "warn",
+        "message": "No @astryxdesign/theme-* packages are installed.",
+        "fix": "Install a theme, e.g. `npm install @astryxdesign/theme-neutral`, then add it to the app with `pnpm exec astryx theme add neutral`."
+      },
+      {
+        "id": "theme-management",
+        "label": "CLI-managed app themes",
+        "status": "info",
+        "message": "The CLI manages no themes because this project has no generated theme module.",
+        "fix": "Start managing app themes with `pnpm exec astryx theme add <slug>`."
+      },
+      {
+        "id": "config",
+        "label": "astryx.config.mjs",
+        "status": "pass",
+        "message": "astryx.config.mjs loaded cleanly (astryx.config.mjs)."
+      },
+      {
+        "id": "implicit-integrations",
+        "label": "Implicitly linked integrations",
+        "status": "info",
+        "message": "None — every loaded integration is named in astryx.config."
+      },
+      {
+        "id": "configured-integrations",
+        "label": "Configured integrations",
+        "status": "pass",
+        "message": "1 integration named in astryx.config loaded: @acme/glyphs."
+      },
+      {
+        "id": "provider-identity",
+        "label": "Integration provider identity",
+        "status": "pass",
+        "message": "1 loaded integration has its own provider ID."
+      },
+      {
+        "id": "integration-issues",
+        "label": "Integration contributions",
+        "status": "pass",
+        "message": "1 loaded integration checked (@acme/glyphs): contributions and cross-package relationships are valid."
+      },
+      {
+        "id": "agent-docs",
+        "label": "AI agent docs",
+        "status": "info",
+        "message": "No agent docs found: looked for AGENTS.md, CLAUDE.md, .claude/CLAUDE.md, .cursorrules, .hermes.md, HERMES.md in ..",
+        "fix": "Generate agent docs with `pnpm exec astryx init --features agents`."
+      },
+      {
+        "id": "peer-deps",
+        "label": "@astryxdesign/core peer dependencies",
+        "status": "warn",
+        "message": "Peer dependency issues — missing: @stylexjs/stylex@^0.19.0.",
+        "fix": "Install compatible peers: `npm install @stylexjs/stylex@^0.19.0`."
+      },
+      {
+        "id": "package-manager",
+        "label": "Package manager",
+        "status": "info",
+        "message": "Detected package manager: pnpm (declared in <repo>/package.json)."
+      },
+      {
+        "id": "authoring-docs",
+        "label": "Authoring docs",
+        "status": "pass",
+        "message": "All 19 authoring schemas are readable in `astryx docs authoring`."
+      },
+      {
+        "id": "cli-docs",
+        "label": "CLI docs",
+        "status": "pass",
+        "message": "All 100 CLI docs are readable: 81 in the `astryx docs cli` tree and 19 in `astryx docs authoring`."
+      },
+      {
+        "id": "docs-tree",
+        "label": "Docs tree",
+        "status": "pass",
+        "message": "The docs tree has 181 docs in 29 sections (9 at the top), each at one route."
+      },
+      {
+        "id": "docs-progressive-disclosure",
+        "label": "Documentation navigation and size",
+        "status": "pass",
+        "message": "100 topics: every section index and section fits in one 32 KB read."
+      }
+    ],
+    "summary": {
+      "pass": 11,
+      "warn": 2,
+      "fail": 0,
+      "info": 4
+    }
+  }
+}

@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file Template icon mapping (AST-084 FR11, FR12): rewrite a template's icon
+ * @file Template icon mapping (AST-084 FR9, FR10): rewrite a template's icon
  * imports to the project's icon set, by icon definition.
  *
  * Source text, the template's declared icons, and icon-set data in; source

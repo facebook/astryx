@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file The `template` subject's adapter for icon mapping (AST-084 FR11):
+ * @file The `template` subject's adapter for icon mapping (AST-084 FR9):
  * reads the project's icon sets through the `Project` seam.
  *
  * @position api/template — adapter read by the template dispatcher

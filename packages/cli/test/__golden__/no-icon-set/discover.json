@@ -1,0 +1,114 @@
+{
+  "apiVersion": 1,
+  "type": "discover.list",
+  "data": [
+    {
+      "name": "@acme/glyphs",
+      "category": "@acme/glyphs",
+      "components": [],
+      "version": "1.0.0"
+    }
+  ],
+  "meta": {
+    "available": [
+      {
+        "name": "@astryxdesign/richtext",
+        "components": [
+          "RichTextEditor"
+        ],
+        "version": "0.7.2",
+        "description": "Astryx rich text — a Lexical-based rich text editor and viewer, styled with Astryx design tokens.",
+        "templates": [
+          "RichTextEditorShowcase"
+        ],
+        "source": "Astryx",
+        "install": "pnpm add @astryxdesign/richtext@0.7.2"
+      },
+      {
+        "name": "@astryxdesign/theme-butter",
+        "components": [],
+        "version": "0.7.2",
+        "description": "Warm, creamy yellows with a friendly blue accent. Playful enough for consumer surfaces, soft enough to stay readable.",
+        "themes": [
+          "butter"
+        ],
+        "source": "Astryx",
+        "install": "pnpm add @astryxdesign/theme-butter@0.7.2"
+      },
+      {
+        "name": "@astryxdesign/theme-chocolate",
+        "components": [],
+        "version": "0.7.2",
+        "description": "Warm chocolate theme for Astryx — rich brown palette with Fraunces headings, Albert Sans body, and Lucide icons",
+        "themes": [
+          "chocolate"
+        ],
+        "source": "Astryx",
+        "install": "pnpm add @astryxdesign/theme-chocolate@0.7.2"
+      },
+      {
+        "name": "@astryxdesign/theme-gothic",
+        "components": [],
+        "version": "0.7.2",
+        "description": "Deep blue-grays and a signature display serif. Dramatic and editorial, for surfaces that want to be remembered.",
+        "themes": [
+          "gothic"
+        ],
+        "source": "Astryx",
+        "install": "pnpm add @astryxdesign/theme-gothic@0.7.2"
+      },
+      {
+        "name": "@astryxdesign/theme-matcha",
+        "components": [],
+        "version": "0.7.2",
+        "description": "Earthy greens with a calm, organic feel. Naturalistic and grounded, great for wellness or content-first apps.",
+        "themes": [
+          "matcha"
+        ],
+        "source": "Astryx",
+        "install": "pnpm add @astryxdesign/theme-matcha@0.7.2"
+      },
+      {
+        "name": "@astryxdesign/theme-neutral",
+        "components": [],
+        "version": "0.7.2",
+        "description": "Restrained warm grays. Minimal and quiet, so the content stays the focus.",
+        "themes": [
+          "neutral"
+        ],
+        "source": "Astryx",
+        "install": "pnpm add @astryxdesign/theme-neutral@0.7.2"
+      },
+      {
+        "name": "@astryxdesign/theme-stone",
+        "components": [],
+        "version": "0.7.2",
+        "description": "Warm stone and slate, earthy and understated, with just enough character to feel handcrafted.",
+        "themes": [
+          "stone"
+        ],
+        "source": "Astryx",
+        "install": "pnpm add @astryxdesign/theme-stone@0.7.2"
+      },
+      {
+        "name": "@astryxdesign/theme-y2k",
+        "components": [],
+        "version": "0.7.2",
+        "description": "Hot pinks, lime greens, and Poppins. Bubbly, playful, and unmistakably retro.",
+        "themes": [
+          "y2k"
+        ],
+        "source": "Astryx",
+        "install": "pnpm add @astryxdesign/theme-y2k@0.7.2"
+      }
+    ],
+    "sources": [
+      {
+        "name": "Astryx",
+        "from": "@astryxdesign/cli",
+        "status": "fresh",
+        "complete": true
+      }
+    ]
+  }
+}

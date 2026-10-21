@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file Doctor's `icon-sets` check (AST-084 FR15).
+ * @file Doctor's `icon-sets` check (AST-084 FR17).
  */
 
 import * as fs from 'node:fs';

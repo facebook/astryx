@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file The icon-set checks of `integration check` (AST-084 FR13, FR14):
+ * @file The icon-set checks of `integration check` (AST-084 FR12, FR15):
  * every error and warning FR14 lists, read statically, and how `--strict`
  * treats the warnings.
  */

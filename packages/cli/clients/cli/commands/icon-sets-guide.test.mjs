@@ -3,7 +3,7 @@
 /**
  * @file The icon-set guide reads on its experimental route, each section on
  * its own, and `astryx search` never returns it or any experimental doc
- * (spec:AST-017 FR27, spec:AST-084 FR8).
+ * (spec:AST-017 FR27, spec:AST-084 FR11).
  */
 
 import * as fs from 'node:fs';
@@ -46,7 +46,7 @@ async function topDoc(query, cwd) {
 
 describe('icon-set guide', () => {
   it('search leaves every experimental doc out, with or without an icon set', async () => {
-    // Icon sets join `astryx search` only at promotion (spec:AST-084 FR8);
+    // Icon sets join `astryx search` only at promotion (spec:AST-084 FR11);
     // the guide is read on its experimental route.
     for (const query of ['icon set', 'add icons', 'close']) {
       for (const result of [

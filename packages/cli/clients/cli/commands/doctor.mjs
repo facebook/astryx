@@ -254,7 +254,7 @@ function printIntegrationValidation(data, seen) {
 
 /**
  * The optional icon definitions each icon set leaves unmapped, and the icons
- * that fit (spec:AST-084 FR14). Listed, never counted: nothing here fails.
+ * that fit (spec:AST-084 FR15). Listed, never counted: nothing here fails.
  * @param {import('../../../api/integration/validate-integration.type.mjs').IconSetCoverage[] | undefined} sets
  * @returns {import('../formatters/index.mjs').Block[]}
  */

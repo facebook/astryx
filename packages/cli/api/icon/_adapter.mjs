@@ -80,7 +80,7 @@ export async function authoring(step) {
  */
 export async function loadIconSets(cwd) {
   const project = await Project.load(cwd);
-  return project.iconSets();
+  return project.iconSets({experimental: true});
 }
 
 /**
@@ -89,7 +89,7 @@ export async function loadIconSets(cwd) {
  */
 export async function loadIconProject(cwd) {
   const project = await Project.load(cwd);
-  const {sets} = await project.iconSets();
+  const {sets} = await project.iconSets({experimental: true});
   return {projectDir: findProjectDir(cwd), sets};
 }
 

@@ -74,7 +74,10 @@ describe('scanDirectory — adversarial node_modules', () => {
       path.join(dir, 'package.json'),
       JSON.stringify({name: 12345, astryx: {docs: 'docs'}}),
     );
-    fs.writeFileSync(path.join(dir, 'docs', 'X.doc.mjs'), 'export const docs = {};');
+    fs.writeFileSync(
+      path.join(dir, 'docs', 'X.doc.mjs'),
+      'export const docs = {};',
+    );
     const res = scanDirectory(tmp);
     expect(res).toHaveLength(1);
     expect(typeof res[0].name).toBe('string');

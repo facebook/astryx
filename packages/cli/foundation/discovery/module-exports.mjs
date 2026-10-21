@@ -165,17 +165,9 @@ function nodesOfType(node, type, found = []) {
   return found;
 }
 
-/**
- * The file a re-export's specifier names, from the file that writes it: a
- * relative path, or an installed package (its `exports` map honored, else
- * its `module` or `main`), found through node_modules from that file.
- * @param {unknown} specifier
- * @param {string} fromFile
- */
+/** @param {unknown} specifier @param {string} fromFile */
 function resolveLocalModule(specifier, fromFile) {
-  if (typeof specifier !== 'string') return null;
-  if (!specifier.startsWith('.'))
-    return resolvePackageModule(specifier, fromFile);
+  if (typeof specifier !== 'string' || !specifier.startsWith('.')) return null;
   const base = path.resolve(path.dirname(fromFile), specifier);
   const candidates = [
     base,
@@ -191,6 +183,22 @@ function resolveLocalModule(specifier, fromFile) {
       }
     }) ?? null
   );
+}
+
+/**
+ * The file a re-export's specifier names, from the file that writes it: a
+ * relative path, or an installed package (its `exports` map honored, else
+ * its `module` or `main`), found through node_modules from that file. Only
+ * the icon-set readers follow packages; every other reader in this module
+ * uses {@link resolveLocalModule}, which follows relative paths alone.
+ * @param {unknown} specifier
+ * @param {string} fromFile
+ */
+function resolveModuleOrPackage(specifier, fromFile) {
+  if (typeof specifier !== 'string') return null;
+  if (!specifier.startsWith('.'))
+    return resolvePackageModule(specifier, fromFile);
+  return resolveLocalModule(specifier, fromFile);
 }
 
 /**
@@ -300,7 +308,7 @@ export function unfollowedReexports(file) {
     for (const node of nodesOfType(ast.program, type)) {
       const specifier = node.source?.value;
       if (typeof specifier !== 'string' || node.exportKind === 'type') continue;
-      if (!resolveLocalModule(specifier, file)) missing.add(specifier);
+      if (!resolveModuleOrPackage(specifier, file)) missing.add(specifier);
     }
   }
   return [...missing].sort();
@@ -659,7 +667,7 @@ export function moduleExportOrigin(file, exportName, seen = new Set()) {
       const local =
         specifier.local?.name ?? specifier.local?.value ?? exportName;
       if (node.source) {
-        const target = resolveLocalModule(node.source.value, file);
+        const target = resolveModuleOrPackage(node.source.value, file);
         const origin = target ? moduleExportOrigin(target, local, seen) : null;
         if (origin) return origin;
         continue;
@@ -679,7 +687,7 @@ export function moduleExportOrigin(file, exportName, seen = new Set()) {
   }
   for (const node of nodesOfType(ast.program, 'ExportAllDeclaration')) {
     if (node.exportKind === 'type' || node.exported) continue;
-    const target = resolveLocalModule(node.source?.value, file);
+    const target = resolveModuleOrPackage(node.source?.value, file);
     const origin = target ? moduleExportOrigin(target, exportName, seen) : null;
     if (origin) return origin;
   }
@@ -735,7 +743,7 @@ export function moduleExportNames(file, seen = new Set()) {
   }
   for (const node of nodesOfType(ast.program, 'ExportAllDeclaration')) {
     if (node.exportKind === 'type' || node.exported) continue;
-    const target = resolveLocalModule(node.source?.value, file);
+    const target = resolveModuleOrPackage(node.source?.value, file);
     if (target) {
       for (const name of moduleExportNames(target, seen)) names.add(name);
     }
@@ -890,7 +898,7 @@ function bindingOrigin(ast, file, local, seen) {
       if (specifier.type !== 'ImportSpecifier') return null;
       const imported =
         specifier.imported?.name ?? specifier.imported?.value ?? local;
-      const target = resolveLocalModule(node.source.value, file);
+      const target = resolveModuleOrPackage(node.source.value, file);
       return target ? moduleExportOrigin(target, imported, seen) : null;
     }
   }

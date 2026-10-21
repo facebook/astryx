@@ -30,7 +30,10 @@ import {detectPackageManager} from '../../foundation/env/package-manager.mjs';
 import {isValidSemver, semverCompare} from '../../foundation/env/semver.mjs';
 import {assertWithin} from '../../foundation/fs/path-safety.mjs';
 import {CLI_ROOT, findInstalledPackage} from '../../foundation/fs/paths.mjs';
-import {parseDiscoverCatalog} from '../../authoring/discover/parse.mjs';
+import {
+  DISCOVER_KINDS,
+  parseDiscoverCatalog,
+} from '../../authoring/discover/parse.mjs';
 import {AstryxError} from '../error.mjs';
 import {ERROR_CODES} from '../../foundation/response/error-codes.mjs';
 
@@ -100,7 +103,7 @@ const DEPENDENCY_FIELDS = [
  */
 
 /**
- * What discover shows about one installed icon set (spec:AST-084 FR16).
+ * What discover shows about one installed icon set (spec:AST-084 FR17).
  * @typedef {object} IconSetSummary
  * @property {string} name
  * @property {string} displayName
@@ -235,7 +238,7 @@ export async function describeInstalled(project, scanned) {
     // is invalid or whose module does not resolve answers nothing (FR9).
     // They are experimental (spec:AST-017 FR27), so discover lists them only
     // in a project that opts in with `experimental.iconSet`.
-    const {sets} = project.config?.experimental?.iconSet
+    const {sets} = optedIntoIconSets(project)
       ? discoverIntegrationIconSets(integration, {projectDir: project.cwd})
       : {sets: []};
     installed.push({
@@ -708,8 +711,63 @@ export async function callSources(project, request = {}, options = {}) {
     ],
     // Source order: the first entry per integration is the one discover
     // keeps. Official packages are put first only where discover shows them.
-    packages: [...own.packages, ...added],
+    // An experimental kind is a kind this project does not read unless it
+    // opts in, so its items are ignored like any unknown kind (FR7).
+    packages: withoutUnreadKinds(project, [...own.packages, ...added]),
   };
+}
+
+/**
+ * The experimental item kinds a catalog may list (spec:AST-017 FR27):
+ * `icon-set`, read only in a project that sets `experimental.iconSet`.
+ */
+export const EXPERIMENTAL_KINDS = /** @type {const} */ (['icon-set']);
+
+/** The item kinds every project reads: the catalog kinds, less experimental ones. */
+export const STABLE_KINDS = DISCOVER_KINDS.filter(
+  kind => !/** @type {readonly string[]} */ (EXPERIMENTAL_KINDS).includes(kind),
+);
+
+/**
+ * The item kinds discover reads in the project at the working directory, or
+ * the stable kinds when it cannot be read.
+ * @returns {Promise<readonly string[]>}
+ */
+export async function loadReadKinds() {
+  return readKinds(await Project.load().catch(() => undefined));
+}
+
+/**
+ * The item kinds discover reads in this project: every stable kind, and the
+ * experimental ones when the project opts in.
+ * @param {Project | undefined} project
+ * @returns {readonly string[]}
+ */
+export function readKinds(project) {
+  return optedIntoIconSets(project) ? DISCOVER_KINDS : STABLE_KINDS;
+}
+
+/**
+ * Whether the project opts into icon sets with `experimental.iconSet`.
+ * @param {Project | undefined} project
+ */
+export function optedIntoIconSets(project) {
+  return Boolean(project?.config?.experimental?.iconSet);
+}
+
+/**
+ * @template {{contributions: Array<{kind: string}>}} P
+ * @param {Project | undefined} project
+ * @param {P[]} packages
+ * @returns {P[]}
+ */
+function withoutUnreadKinds(project, packages) {
+  if (optedIntoIconSets(project)) return packages;
+  const kinds = readKinds(project);
+  return packages.map(pkg => ({
+    ...pkg,
+    contributions: pkg.contributions.filter(c => kinds.includes(c.kind)),
+  }));
 }
 
 /**

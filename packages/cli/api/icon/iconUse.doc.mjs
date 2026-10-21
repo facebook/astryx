@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @file FunctionDoc for `iconUse()` / `astryx experimental icon use` (AST-084 FR10). */
+/** @file FunctionDoc for `iconUse()` / `astryx experimental icon use` (AST-084 FR8). */
 
 /** @type {import('@astryxdesign/cli/authoring').FunctionDoc} */
 export const doc = {

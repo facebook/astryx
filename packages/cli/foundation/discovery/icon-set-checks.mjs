@@ -2,7 +2,7 @@
 
 /**
  * @file The icon-set checks of `astryx integration check` and
- * `astryx doctor integration validate` (AST-084 FR13, FR14).
+ * `astryx doctor integration validate` (AST-084 FR12, FR15).
  *
  * For each set under a package's `iconSets` root it proves, without executing
  * anything, that the data file matches the package:
@@ -358,7 +358,7 @@ function checkDefinitions(set) {
 /**
  * Which icon definitions each valid set under a package's
  * `experimental.iconSets` root leaves unmapped, and the icons that fit them.
- * Reported beside the issues, never as one (spec:AST-084 FR14).
+ * Reported beside the issues, never as one (spec:AST-084 FR15).
  * @param {{name: string, iconSets?: string}} loaded
  * @returns {IconSetCoverage[]}
  */

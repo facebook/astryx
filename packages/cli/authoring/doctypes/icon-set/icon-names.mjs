@@ -2,7 +2,7 @@
 
 /**
  * @file The shared semantic icon names (`IconName`) Core renders: the
- * built-in icon definitions every icon set maps (AST-084 FR3, FR13).
+ * built-in icon definitions every icon set maps (AST-084 FR3, FR12).
  *
  * SYNC: packages/core/src/Icon/globalIconRegistry.tsx (the `IconName` union).
  * `icon-names.test.mjs` fails when the two lists differ.

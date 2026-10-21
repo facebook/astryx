@@ -38,9 +38,10 @@ export interface NamespaceAdoptionSource {
   /** Optional subset of authored kinds from the group. */
   kinds?: AuthoredDocKind[];
   /**
-   * `all` adopts the group's docs from every package, not only the
-   * namespace's own. Read only on the CLI's own namespaces, for vocabulary
-   * every package extends, such as icon definitions.
+   * Experimental: `all` adopts the group's docs from every package, not
+   * only the namespace's own. Read only on the CLI's own namespaces marked
+   * `stability: 'experimental'` (the icon definitions).
+   * @experimental
    */
   packages?: 'all';
 }

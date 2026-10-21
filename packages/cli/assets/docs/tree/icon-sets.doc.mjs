@@ -354,7 +354,7 @@ npx astryx experimental icon use outline         # make it the project's icon se
             ],
             [
               '`astryx discover`',
-              "A package's sets (`iconSets`) and, for `@scope/name/<set>`, the set's display name, license, icon count, and definitions; `--kind icon-set` keeps only sets.",
+              "A package's sets (`iconSets`) and, for `@scope/name/<set>`, the set's display name, license, icon count, and definitions; `--type icon-set` keeps only sets.",
             ],
             [
               '`astryx doctor`',

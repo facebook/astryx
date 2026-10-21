@@ -36,7 +36,10 @@ async function iconSetsOf(options) {
   const project = await Project.load(writeIconSetProject(tmp, options), {
     fresh: true,
   });
-  return {state: await project.iconSets(), issues: await project.issues()};
+  return {
+    state: await project.iconSets({experimental: true}),
+    issues: await project.issues(),
+  };
 }
 
 describe('discoverIconSetDirectory', () => {
@@ -161,6 +164,15 @@ describe('resolveIconModule', () => {
 });
 
 describe('Project.iconSets', () => {
+  it('reads no set, and records no issue, without experimental.iconSet unless asked', async () => {
+    const project = await Project.load(
+      writeIconSetProject(tmp, {packages: [{data: '{nope'}]}),
+      {fresh: true},
+    );
+    expect((await project.iconSets()).sets).toEqual([]);
+    expect(await project.issues()).toEqual([]);
+  });
+
   it('answers one installed set as the project set', async () => {
     const {state, issues} = await iconSetsOf();
     expect(state.sets.map(set => set.name)).toEqual(['glyphs']);

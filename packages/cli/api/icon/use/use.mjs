@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file `icon.use` leaf (AST-084 FR10): choose the project's icon set by
+ * @file `icon.use` leaf (AST-084 FR8): choose the project's icon set by
  * writing `experimental.iconSet` in astryx.config.
  *
  * @output the `icon.use` envelope

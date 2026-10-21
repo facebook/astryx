@@ -558,6 +558,37 @@ describe('integration components a family doc lists in components', () => {
     expect(namesIn(loaded)).toEqual(['AcmeList']);
   });
 
+  it('lists no member the import only re-exports from another package', () => {
+    // Discovery follows relative re-exports alone; a package another package
+    // re-exports is not this integration's member.
+    const loaded = writePackage(
+      {main: './src/index.ts'},
+      {
+        'src/list/AcmeList.doc.mjs': family(
+          'AcmeList',
+          "{name: 'AcmeListRow', description: 'x'}, {name: 'AcmeListCell', description: 'x'}",
+        ).replace('usage:', "import: '@acme/widgets', usage:"),
+        'src/list/AcmeList.tsx':
+          'export function AcmeList() { return null; }\n',
+        'src/index.ts':
+          "export {AcmeList} from './list/AcmeList';\nexport {AcmeListRow} from '@acme/rows';\nexport * from '@acme/cells';\n",
+        'node_modules/@acme/rows/package.json': JSON.stringify({
+          name: '@acme/rows',
+          main: 'index.js',
+        }),
+        'node_modules/@acme/rows/index.js':
+          'export function AcmeListRow() { return null; }\n',
+        'node_modules/@acme/cells/package.json': JSON.stringify({
+          name: '@acme/cells',
+          exports: {'.': './index.js'},
+        }),
+        'node_modules/@acme/cells/index.js':
+          'export function AcmeListCell() { return null; }\n',
+      },
+    );
+    expect(namesIn(loaded)).toEqual(['AcmeList']);
+  });
+
   it("takes a member's source from the family's folder, never a bundle or the package root", () => {
     const loaded = writePackage(
       {exports: {'.': {import: './dist/index.mjs'}}},

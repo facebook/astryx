@@ -49,7 +49,9 @@ export function scanDirectory(scanDir) {
     // Defense-in-depth: a dependency's docs dir must stay inside its own
     // package (a `docs: "../../x"` shouldn't let the scanner walk arbitrary
     // sibling dirs). Skip an escaping entry rather than surfacing foreign docs.
-    const pkgDirWithSep = pkgDir.endsWith(path.sep) ? pkgDir : pkgDir + path.sep;
+    const pkgDirWithSep = pkgDir.endsWith(path.sep)
+      ? pkgDir
+      : pkgDir + path.sep;
     if (docsDir !== pkgDir && !docsDir.startsWith(pkgDirWithSep)) continue;
     const components = discoverDocComponents(docsDir);
     if (components.length === 0) continue;
