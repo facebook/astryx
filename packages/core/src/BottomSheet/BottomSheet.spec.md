@@ -99,8 +99,8 @@ Consumer migration instructions belong in consumer docs and release notes.
 - Caller-provided content rendered inside the Content area.
 - A separate target for Content area, Handle, or Scrim; none exists on current
   `main`.
-- A shared switcher dialog or scrim — owned by BottomSheetSwitcher when the sheet
-  participates in that host.
+- The presentation lifecycle of its dialog and the flow's scrim ownership when
+  the sheet participates in a BottomSheetSwitcher — owned by BottomSheetSwitcher.
 - Shared layer hosting or dismissal policy.
 
 ## Public concepts
@@ -128,8 +128,8 @@ in `BottomSheet.doc.mjs`.
 - A standalone modal sheet renders Sheet panel, Content area, Handle, and Scrim.
 - A standalone non-modal sheet renders Sheet panel, Content area, and Handle
   without a Scrim.
-- A switcher-managed sheet renders the same panel anatomy while
-  BottomSheetSwitcher owns the shared dialog and optional Scrim.
+- A switcher-managed sheet renders the same panel anatomy in its own dialog while
+  BottomSheetSwitcher coordinates that dialog's lifecycle and the flow's one Scrim.
 
 ### Transformation and precedence order
 
@@ -184,7 +184,7 @@ a decision that they must remain unthemeable.
   },
   "Scrim": {
     "none": {
-      "reason": "reachability-gap: No BottomSheet public target reaches the native dialog backdrop or switcher-owned scrim."
+      "reason": "reachability-gap: No BottomSheet public target reaches the native dialog backdrop, standalone or switcher-coordinated."
     }
   }
 }

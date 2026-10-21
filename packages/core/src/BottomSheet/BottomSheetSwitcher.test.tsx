@@ -224,8 +224,71 @@ function ModeSwitchFlow() {
   );
 }
 
-function getSharedDialog(): HTMLDialogElement {
+function RequiredConfirmFlow() {
+  const [activeSheet, setActiveSheet] = useState<string | null>('details');
+  return (
+    <BottomSheetSwitcher
+      activeSheet={activeSheet}
+      onActiveSheetChange={setActiveSheet}>
+      <BottomSheet
+        sheetId="details"
+        label="Details"
+        data-testid="details-sheet">
+        <button type="button" onClick={() => setActiveSheet('confirm')}>
+          Continue
+        </button>
+      </BottomSheet>
+      <BottomSheet
+        sheetId="confirm"
+        label="Confirm"
+        purpose="required"
+        data-testid="confirm-sheet">
+        <button type="button" onClick={() => setActiveSheet(null)}>
+          Done
+        </button>
+      </BottomSheet>
+    </BottomSheetSwitcher>
+  );
+}
+
+/** Records every native dialog call with the dialog's accessible label. */
+function recordDialogCalls(): string[] {
+  const log: string[] = [];
+  const record = (name: string) =>
+    vi.fn(function (this: HTMLDialogElement) {
+      log.push(`${name}:${this.getAttribute('aria-label') ?? '?'}`);
+      if (name === 'close') {
+        this.removeAttribute('open');
+      } else {
+        this.setAttribute('open', '');
+      }
+    });
+  HTMLDialogElement.prototype.showModal = record('showModal');
+  HTMLDialogElement.prototype.show = record('show');
+  HTMLDialogElement.prototype.close = record('close');
+  return log;
+}
+
+/**
+ * The dialog hosting the active sheet. A retained sheet's dialog is inert and
+ * `aria-hidden`, so only the active sheet's dialog is exposed by role.
+ */
+function getActiveDialog(): HTMLDialogElement {
   return screen.getByRole<HTMLDialogElement>('dialog');
+}
+
+function getSheetDialog(testId: string): HTMLDialogElement {
+  const dialog = screen.getByTestId(testId).closest('dialog');
+  if (dialog == null) {
+    throw new Error('sheet dialog not found');
+  }
+  return dialog;
+}
+
+function openDialogs(): HTMLDialogElement[] {
+  return Array.from(
+    document.querySelectorAll<HTMLDialogElement>('dialog[open]'),
+  );
 }
 
 function finishSheetTransition(
@@ -288,11 +351,11 @@ describe('BottomSheetSwitcher', () => {
     expect(document.querySelectorAll('dialog[open]')).toHaveLength(1);
     expect(HTMLDialogElement.prototype.showModal).toHaveBeenCalledTimes(1);
     expect(HTMLDialogElement.prototype.show).not.toHaveBeenCalled();
-    expect(getSharedDialog()).toHaveAttribute('aria-modal', 'true');
-    expect(getSharedDialog()).toHaveAccessibleName('Details');
+    expect(getActiveDialog()).toHaveAttribute('aria-modal', 'true');
+    expect(getActiveDialog()).toHaveAccessibleName('Details');
   });
 
-  it('forwards sheet DOM props and refs to its panel in the shared dialog', () => {
+  it('forwards sheet DOM props and refs to its panel in its own dialog', () => {
     const panelRef = createRef<HTMLDivElement>();
 
     render(
@@ -312,10 +375,10 @@ describe('BottomSheetSwitcher', () => {
     expect(panelRef.current).toBe(panel);
     expect(panel).toHaveClass('astryx-bottom-sheet');
     expect(panel).toHaveAttribute('data-sheet-owner', 'settings');
-    expect(getSharedDialog()).toContainElement(panel);
+    expect(getActiveDialog()).toContainElement(panel);
   });
 
-  it('forwards switcher DOM props, events, styles, and refs to the shared dialog', () => {
+  it("forwards switcher DOM props, events, styles, and refs to the active sheet's dialog", () => {
     const dialogRef = createRef<HTMLDialogElement>();
     const onClick = vi.fn();
     const onActiveSheetChange = vi.fn();
@@ -336,7 +399,7 @@ describe('BottomSheetSwitcher', () => {
       </BottomSheetSwitcher>,
     );
 
-    const dialog = getSharedDialog();
+    const dialog = getActiveDialog();
     expect(dialogRef.current).toBe(dialog);
     expect(dialog).toHaveAccessibleName('Notification setup');
     expect(dialog).toHaveAttribute('data-flow-owner', 'settings');
@@ -366,16 +429,18 @@ describe('BottomSheetSwitcher', () => {
     finishSheetTransition(nestedDialog, 'transform');
 
     expect(nestedDialog).not.toHaveAttribute('open');
-    expect(getSharedDialog()).toHaveAttribute('open');
+    expect(getActiveDialog()).toHaveAttribute('open');
     expect(opener).toHaveFocus();
   });
 
   it('keeps the previous sheet stationary until the new entrance finishes, then fades it', () => {
     render(<Flow />);
     fireEvent.click(screen.getByRole('button', {name: 'Start flow'}));
-    const sharedDialog = getSharedDialog();
+    const detailsDialog = getSheetDialog('details-sheet');
+    const confirmDialog = getSheetDialog('confirm-sheet');
     const detailsSheet = getSheetLayer('details-sheet');
     const confirmSheet = getSheetLayer('confirm-sheet');
+    expect(getActiveDialog()).toBe(detailsDialog);
 
     fireEvent.click(screen.getByRole('button', {name: 'Continue'}));
 
@@ -384,9 +449,12 @@ describe('BottomSheetSwitcher', () => {
     expect(detailsSheet).toHaveAttribute('aria-hidden', 'true');
     expect(confirmSheet).not.toHaveAttribute('hidden');
     expect(confirmSheet).not.toHaveAttribute('inert');
-    expect(document.querySelectorAll('dialog[open]')).toHaveLength(1);
-    expect(getSharedDialog()).toBe(sharedDialog);
-    expect(sharedDialog).toHaveAccessibleName('Confirm');
+    // Both dialogs are presented through the handoff: the retained one stays
+    // open and inert beneath the entering one until it has faded.
+    expect(openDialogs()).toEqual([detailsDialog, confirmDialog]);
+    expect(detailsDialog).toHaveAttribute('inert');
+    expect(getActiveDialog()).toBe(confirmDialog);
+    expect(confirmDialog).toHaveAccessibleName('Confirm');
 
     // The previous sheet is covered, not exiting: neither transform nor
     // opacity completion may release it before the new entrance completes.
@@ -401,22 +469,24 @@ describe('BottomSheetSwitcher', () => {
 
     expect(detailsSheet).toHaveAttribute('hidden');
     expect(confirmSheet).not.toHaveAttribute('hidden');
-    expect(document.querySelectorAll('dialog[open]')).toHaveLength(1);
-    expect(getSharedDialog()).toBe(sharedDialog);
+    expect(openDialogs()).toEqual([confirmDialog]);
+    expect(getActiveDialog()).toBe(confirmDialog);
 
     fireEvent.click(screen.getByRole('button', {name: 'Back'}));
 
     expect(detailsSheet).not.toHaveAttribute('hidden');
     expect(confirmSheet).not.toHaveAttribute('hidden');
     expect(confirmSheet).toHaveAttribute('inert');
+    expect(openDialogs()).toEqual([detailsDialog, confirmDialog]);
+    expect(getActiveDialog()).toBe(detailsDialog);
     finishSheetTransition(detailsSheet, 'transform');
     expect(confirmSheet).not.toHaveAttribute('hidden');
     finishSheetTransition(confirmSheet, 'opacity');
 
     expect(detailsSheet).not.toHaveAttribute('hidden');
     expect(confirmSheet).toHaveAttribute('hidden');
-    expect(document.querySelectorAll('dialog[open]')).toHaveLength(1);
-    expect(getSharedDialog()).toBe(sharedDialog);
+    expect(openDialogs()).toEqual([detailsDialog]);
+    expect(getActiveDialog()).toBe(detailsDialog);
   });
 
   it('moves a taller previous sheet down while the shorter new sheet enters, then waits for both', () => {
@@ -483,7 +553,11 @@ describe('BottomSheetSwitcher', () => {
     expect(detailsSheet).not.toHaveAttribute('inert');
     expect(confirmSheet).not.toHaveAttribute('hidden');
     expect(confirmSheet).toHaveAttribute('inert');
-    expect(document.querySelectorAll('dialog[open]')).toHaveLength(1);
+    // The details dialog was still open beneath the confirm dialog, so it
+    // re-presents to become the topmost modal layer again.
+    expect(openDialogs()).toHaveLength(2);
+    expect(getActiveDialog()).toBe(getSheetDialog('details-sheet'));
+    expect(HTMLDialogElement.prototype.showModal).toHaveBeenCalledTimes(3);
 
     finishSheetTransition(confirmSheet, 'opacity');
     expect(detailsSheet).not.toHaveAttribute('hidden');
@@ -513,19 +587,25 @@ describe('BottomSheetSwitcher', () => {
       clientY: 600,
       timeStamp: 16,
     });
+    const detailsDialog = getSheetDialog('details-sheet');
     expect(
-      getSharedDialog().style.getPropertyValue('--_sheet-scrim-opacity'),
+      detailsDialog.style.getPropertyValue('--_sheet-scrim-opacity'),
     ).not.toBe('1');
 
     fireEvent.click(screen.getByRole('button', {name: 'Continue'}));
-    expect(getSharedDialog()).toHaveStyle({'--_sheet-scrim-opacity': '1'});
+    // The retained details dialog keeps painting the flow's scrim through the
+    // handoff; the entering confirm dialog's backdrop stays clear above it.
+    expect(detailsDialog).toHaveStyle({'--_sheet-scrim-opacity': '1'});
+    expect(getSheetDialog('confirm-sheet')).toHaveStyle({
+      '--_sheet-scrim-opacity': '0',
+    });
 
     fireEvent.pointerMove(handle, {
       pointerId: 1,
       clientY: 680,
       timeStamp: 32,
     });
-    expect(getSharedDialog()).toHaveStyle({'--_sheet-scrim-opacity': '1'});
+    expect(detailsDialog).toHaveStyle({'--_sheet-scrim-opacity': '1'});
   });
 
   it('keeps an active handoff when a consumer callback ref changes', () => {
@@ -547,26 +627,26 @@ describe('BottomSheetSwitcher', () => {
     expect(confirmSheet).not.toHaveAttribute('hidden');
   });
 
-  it('dismisses the flow from the one shared scrim', () => {
+  it("dismisses the flow from the active sheet's scrim", () => {
     render(<Flow />);
     fireEvent.click(screen.getByRole('button', {name: 'Start flow'}));
-    const sharedDialog = getSharedDialog();
+    const activeDialog = getActiveDialog();
 
-    fireEvent.click(sharedDialog);
+    fireEvent.click(activeDialog);
 
     const outgoingSheet = getSheetLayer('details-sheet');
     expect(outgoingSheet).not.toHaveAttribute('hidden');
     expect(outgoingSheet).toHaveAttribute('inert');
-    expect(sharedDialog).toHaveStyle({'--_sheet-scrim-opacity': '0'});
+    expect(activeDialog).toHaveStyle({'--_sheet-scrim-opacity': '0'});
     expect(document.body.style.position).toBe('fixed');
 
     finishSheetTransition(outgoingSheet, 'transform');
 
-    expect(sharedDialog).not.toHaveAttribute('open');
+    expect(activeDialog).not.toHaveAttribute('open');
     expect(document.body.style.position).not.toBe('fixed');
   });
 
-  it('releases the shared modal layer when the closing sheet unmounts immediately', () => {
+  it('releases the modal layer when the closing sheet unmounts immediately', () => {
     render(<ConditionalFlow />);
     fireEvent.click(
       screen.getByRole('button', {name: 'Start conditional flow'}),
@@ -581,7 +661,7 @@ describe('BottomSheetSwitcher', () => {
     expect(document.body.style.position).not.toBe('fixed');
   });
 
-  it('keeps the shared dialog inline and opens it modally', () => {
+  it('keeps a sheet dialog inline and opens it modally', () => {
     render(
       <div
         data-testid="clipping-ancestor"
@@ -639,7 +719,7 @@ describe('BottomSheetSwitcher', () => {
       </BottomSheetSwitcher>,
     );
 
-    const dialog = getSharedDialog();
+    const dialog = getActiveDialog();
     expect(dialog).not.toHaveAttribute('aria-modal');
     expect(dialog).toHaveAttribute('open');
     expect(HTMLDialogElement.prototype.show).toHaveBeenCalledTimes(1);
@@ -680,7 +760,7 @@ describe('BottomSheetSwitcher', () => {
         </BottomSheet>
       </BottomSheetSwitcher>,
     );
-    const dialog = getSharedDialog();
+    const dialog = getActiveDialog();
     const panel = getSheetPanel(dialog);
     const handle = panel.firstElementChild;
     if (!(handle instanceof HTMLElement)) {
@@ -756,7 +836,7 @@ describe('BottomSheetSwitcher', () => {
         </BottomSheet>
       </BottomSheetSwitcher>,
     );
-    const dialog = getSharedDialog();
+    const dialog = getActiveDialog();
     const panel = getSheetPanel(dialog);
     const handle = panel.firstElementChild;
     if (!(handle instanceof HTMLElement)) {
@@ -852,7 +932,7 @@ describe('BottomSheetSwitcher', () => {
       </BottomSheetSwitcher>,
     );
 
-    fireEvent.keyDown(getSharedDialog(), {key: 'Escape'});
+    fireEvent.keyDown(getActiveDialog(), {key: 'Escape'});
 
     expect(onKeyDown).toHaveBeenCalledTimes(1);
     expect(onActiveSheetChange).toHaveBeenCalledWith(null);
@@ -875,7 +955,7 @@ describe('BottomSheetSwitcher', () => {
       </BottomSheetSwitcher>,
     );
 
-    fireEvent.keyDown(getSharedDialog(), {key: 'Escape'});
+    fireEvent.keyDown(getActiveDialog(), {key: 'Escape'});
 
     expect(onKeyDown).toHaveBeenCalledTimes(1);
     expect(onActiveSheetChange).not.toHaveBeenCalled();
@@ -923,7 +1003,7 @@ describe('BottomSheetSwitcher', () => {
     );
 
     const event = new Event('cancel', {cancelable: true});
-    getSharedDialog().dispatchEvent(event);
+    getActiveDialog().dispatchEvent(event);
 
     expect(event.defaultPrevented).toBe(true);
     expect(onNestedDismiss).not.toHaveBeenCalled();
@@ -978,5 +1058,303 @@ describe('BottomSheetSwitcher', () => {
     finishSheetTransition(confirmSheet, 'transform');
 
     expect(backButton).toHaveFocus();
+  });
+
+  describe('one native dialog per sheet', () => {
+    it('renders a closed dialog for every sheet and presents only the selected one', () => {
+      render(<Flow />);
+      const detailsDialog = getSheetDialog('details-sheet');
+      const confirmDialog = getSheetDialog('confirm-sheet');
+      expect(detailsDialog).not.toBe(confirmDialog);
+      expect(openDialogs()).toEqual([]);
+
+      fireEvent.click(screen.getByRole('button', {name: 'Start flow'}));
+
+      expect(openDialogs()).toEqual([detailsDialog]);
+      expect(HTMLDialogElement.prototype.showModal).toHaveBeenCalledTimes(1);
+      expect(confirmDialog).not.toHaveAttribute('open');
+      expect(confirmDialog).not.toHaveAttribute('aria-modal');
+      expect(detailsDialog).toHaveAttribute('aria-modal', 'true');
+      expect(detailsDialog).toContainElement(
+        screen.getByTestId('details-sheet'),
+      );
+      expect(confirmDialog).toContainElement(
+        screen.getByTestId('confirm-sheet'),
+      );
+    });
+
+    it('presents the entering dialog once and closes the retained dialog only after it fades', () => {
+      const log = recordDialogCalls();
+      render(<Flow />);
+      fireEvent.click(screen.getByRole('button', {name: 'Start flow'}));
+      expect(log).toEqual(['showModal:Details']);
+
+      fireEvent.click(screen.getByRole('button', {name: 'Continue'}));
+      expect(log).toEqual(['showModal:Details', 'showModal:Confirm']);
+
+      finishSheetTransition(getSheetLayer('confirm-sheet'), 'transform');
+      expect(log).toEqual(['showModal:Details', 'showModal:Confirm']);
+      finishSheetTransition(getSheetLayer('details-sheet'), 'opacity');
+      expect(log).toEqual([
+        'showModal:Details',
+        'showModal:Confirm',
+        'close:Details',
+      ]);
+
+      fireEvent.keyDown(getActiveDialog(), {key: 'Escape'});
+      expect(log).toHaveLength(3);
+      finishSheetTransition(getSheetLayer('confirm-sheet'), 'transform');
+      expect(log.at(-1)).toBe('close:Confirm');
+      expect(openDialogs()).toEqual([]);
+    });
+
+    it("moves the switcher ref to the active sheet's dialog and clears it when the flow closes", () => {
+      const dialogRef = createRef<HTMLDialogElement>();
+      function RefFlow() {
+        const [activeSheet, setActiveSheet] = useState<string | null>(null);
+        return (
+          <>
+            <button type="button" onClick={() => setActiveSheet('details')}>
+              Start flow
+            </button>
+            <BottomSheetSwitcher
+              ref={dialogRef}
+              activeSheet={activeSheet}
+              onActiveSheetChange={setActiveSheet}>
+              <BottomSheet
+                sheetId="details"
+                label="Details"
+                data-testid="details-sheet">
+                <button type="button" onClick={() => setActiveSheet('confirm')}>
+                  Continue
+                </button>
+              </BottomSheet>
+              <BottomSheet
+                sheetId="confirm"
+                label="Confirm"
+                data-testid="confirm-sheet">
+                <button type="button" onClick={() => setActiveSheet(null)}>
+                  Done
+                </button>
+              </BottomSheet>
+            </BottomSheetSwitcher>
+          </>
+        );
+      }
+      render(<RefFlow />);
+      expect(dialogRef.current).toBeNull();
+
+      fireEvent.click(screen.getByRole('button', {name: 'Start flow'}));
+      expect(dialogRef.current).toBe(getSheetDialog('details-sheet'));
+
+      fireEvent.click(screen.getByRole('button', {name: 'Continue'}));
+      expect(dialogRef.current).toBe(getSheetDialog('confirm-sheet'));
+
+      fireEvent.click(screen.getByRole('button', {name: 'Done'}));
+      // The exiting sheet's dialog hosts the flow through its exit motion.
+      expect(dialogRef.current).toBe(getSheetDialog('confirm-sheet'));
+      finishSheetTransition(getSheetLayer('confirm-sheet'), 'transform');
+      expect(dialogRef.current).toBeNull();
+    });
+
+    it('applies the switcher dialog props to each sheet dialog', () => {
+      render(
+        <BottomSheetSwitcher
+          activeSheet="details"
+          onActiveSheetChange={() => {}}
+          className="consumer-switcher"
+          data-flow-owner="settings">
+          <BottomSheet sheetId="details" label="Details" data-testid="a">
+            Content
+          </BottomSheet>
+          <BottomSheet sheetId="confirm" label="Confirm" data-testid="b">
+            Content
+          </BottomSheet>
+        </BottomSheetSwitcher>,
+      );
+      for (const testId of ['a', 'b']) {
+        const dialog = getSheetDialog(testId);
+        expect(dialog).toHaveClass('consumer-switcher');
+        expect(dialog).toHaveAttribute('data-flow-owner', 'settings');
+      }
+      expect(getSheetDialog('a')).toHaveAttribute('aria-label', 'Details');
+      expect(getSheetDialog('b')).toHaveAttribute('aria-label', 'Confirm');
+    });
+
+    it('paints one scrim through a handoff and hands it over without a fade', () => {
+      render(<Flow />);
+      fireEvent.click(screen.getByRole('button', {name: 'Start flow'}));
+      const detailsDialog = getSheetDialog('details-sheet');
+      const confirmDialog = getSheetDialog('confirm-sheet');
+      expect(detailsDialog).toHaveStyle({'--_sheet-scrim-opacity': '1'});
+
+      fireEvent.click(screen.getByRole('button', {name: 'Continue'}));
+      expect(detailsDialog).toHaveStyle({'--_sheet-scrim-opacity': '1'});
+      expect(confirmDialog).toHaveStyle({'--_sheet-scrim-opacity': '0'});
+      expect(document.body.style.position).toBe('fixed');
+
+      finishSheetTransition(getSheetLayer('confirm-sheet'), 'transform');
+      expect(detailsDialog).toHaveStyle({'--_sheet-scrim-opacity': '1'});
+      expect(confirmDialog).toHaveStyle({'--_sheet-scrim-opacity': '0'});
+
+      finishSheetTransition(getSheetLayer('details-sheet'), 'opacity');
+      expect(detailsDialog).not.toHaveAttribute('open');
+      expect(confirmDialog).toHaveStyle({'--_sheet-scrim-opacity': '1'});
+      // The swap pins the backdrop transition for one style flush only.
+      expect(
+        confirmDialog.style.getPropertyValue('--_sheet-scrim-duration'),
+      ).toBe('');
+      expect(document.body.style.position).toBe('fixed');
+
+      fireEvent.keyDown(confirmDialog, {key: 'Escape'});
+      expect(confirmDialog).toHaveStyle({'--_sheet-scrim-opacity': '0'});
+    });
+
+    it('moves focus into the entering sheet while the retained dialog is inert', () => {
+      render(<Flow />);
+      const opener = screen.getByRole('button', {name: 'Start flow'});
+      opener.focus();
+      fireEvent.click(opener);
+      expect(getSheetPanel(getSheetDialog('details-sheet'))).toHaveFocus();
+
+      fireEvent.click(screen.getByRole('button', {name: 'Continue'}));
+
+      expect(getSheetPanel(getSheetDialog('confirm-sheet'))).toHaveFocus();
+      expect(getSheetDialog('details-sheet')).toHaveAttribute('inert');
+      expect(getSheetDialog('details-sheet')).toHaveAttribute(
+        'aria-hidden',
+        'true',
+      );
+      expect(getSheetDialog('confirm-sheet')).not.toHaveAttribute('inert');
+
+      finishSheetTransition(getSheetLayer('confirm-sheet'), 'transform');
+      finishSheetTransition(getSheetLayer('details-sheet'), 'opacity');
+      fireEvent.keyDown(getSheetDialog('confirm-sheet'), {key: 'Escape'});
+      finishSheetTransition(getSheetLayer('confirm-sheet'), 'transform');
+
+      expect(opener).toHaveFocus();
+    });
+
+    it('presents the next dialog with no focused control for the browser to return to', () => {
+      // showModal() records the focused element and close() later returns
+      // focus to it. A control inside the previous sheet must not be that
+      // element, or closing the retained dialog after its fade would pull
+      // focus out of the active sheet.
+      const focusedAtPresent: (Element | null)[] = [];
+      HTMLDialogElement.prototype.showModal = vi.fn(function (
+        this: HTMLDialogElement,
+      ) {
+        focusedAtPresent.push(document.activeElement);
+        this.setAttribute('open', '');
+      });
+      render(<Flow />);
+      const opener = screen.getByRole('button', {name: 'Start flow'});
+      opener.focus();
+      fireEvent.click(opener);
+      expect(focusedAtPresent).toEqual([opener]);
+
+      const continueButton = screen.getByRole('button', {name: 'Continue'});
+      continueButton.focus();
+      fireEvent.click(continueButton);
+
+      expect(focusedAtPresent).toHaveLength(2);
+      expect(focusedAtPresent[1]).toBe(document.body);
+      expect(getSheetPanel(getSheetDialog('confirm-sheet'))).toHaveFocus();
+    });
+
+    it("dismisses according to the active sheet's purpose after a handoff", () => {
+      const log = recordDialogCalls();
+      render(<RequiredConfirmFlow />);
+      expect(screen.queryByRole('alertdialog')).toBeNull();
+
+      fireEvent.click(screen.getByRole('button', {name: 'Continue'}));
+      finishSheetTransition(getSheetLayer('confirm-sheet'), 'transform');
+      finishSheetTransition(getSheetLayer('details-sheet'), 'opacity');
+
+      const confirmDialog = getSheetDialog('confirm-sheet');
+      expect(confirmDialog).toHaveAttribute('role', 'alertdialog');
+      expect(getSheetDialog('details-sheet')).not.toHaveAttribute('role');
+
+      fireEvent.keyDown(confirmDialog, {key: 'Escape'});
+      const cancel = new Event('cancel', {cancelable: true});
+      confirmDialog.dispatchEvent(cancel);
+      fireEvent.click(confirmDialog);
+
+      expect(cancel.defaultPrevented).toBe(true);
+      expect(confirmDialog).toHaveAttribute('open');
+      expect(log.filter(entry => entry.startsWith('close:'))).toEqual([
+        'close:Details',
+      ]);
+
+      fireEvent.click(screen.getByRole('button', {name: 'Done'}));
+      finishSheetTransition(getSheetLayer('confirm-sheet'), 'transform');
+      expect(openDialogs()).toEqual([]);
+    });
+
+    it('presents a non-modal flow with show() on each sheet dialog', () => {
+      const log = recordDialogCalls();
+      function NonModalFlow() {
+        const [activeSheet, setActiveSheet] = useState<string | null>(
+          'details',
+        );
+        return (
+          <BottomSheetSwitcher
+            activeSheet={activeSheet}
+            onActiveSheetChange={setActiveSheet}
+            hasScrim={false}>
+            <BottomSheet
+              sheetId="details"
+              label="Details"
+              data-testid="details-sheet">
+              <button type="button" onClick={() => setActiveSheet('confirm')}>
+                Continue
+              </button>
+            </BottomSheet>
+            <BottomSheet
+              sheetId="confirm"
+              label="Confirm"
+              data-testid="confirm-sheet">
+              Content
+            </BottomSheet>
+          </BottomSheetSwitcher>
+        );
+      }
+      render(<NonModalFlow />);
+      expect(log).toEqual(['show:Details']);
+
+      fireEvent.click(screen.getByRole('button', {name: 'Continue'}));
+
+      expect(log).toEqual(['show:Details', 'show:Confirm']);
+      expect(openDialogs()).toHaveLength(2);
+      expect(getSheetDialog('confirm-sheet')).not.toHaveAttribute('aria-modal');
+      expect(document.body.style.position).not.toBe('fixed');
+
+      finishSheetTransition(getSheetLayer('confirm-sheet'), 'transform');
+      finishSheetTransition(getSheetLayer('details-sheet'), 'opacity');
+      expect(log).toEqual(['show:Details', 'show:Confirm', 'close:Details']);
+    });
+
+    it('re-presents a sheet that is still fading when the flow returns to it', () => {
+      const log = recordDialogCalls();
+      render(<Flow />);
+      fireEvent.click(screen.getByRole('button', {name: 'Start flow'}));
+      fireEvent.click(screen.getByRole('button', {name: 'Continue'}));
+      fireEvent.click(screen.getByRole('button', {name: 'Back'}));
+
+      // Details was still open beneath Confirm in the top layer; it closes and
+      // presents again so the interactive sheet is the topmost modal layer.
+      expect(log).toEqual([
+        'showModal:Details',
+        'showModal:Confirm',
+        'close:Details',
+        'showModal:Details',
+      ]);
+      expect(getActiveDialog()).toBe(getSheetDialog('details-sheet'));
+      expect(getSheetDialog('confirm-sheet')).toHaveAttribute('inert');
+
+      finishSheetTransition(getSheetLayer('confirm-sheet'), 'opacity');
+      expect(log.at(-1)).toBe('close:Confirm');
+      expect(openDialogs()).toEqual([getSheetDialog('details-sheet')]);
+    });
   });
 });
