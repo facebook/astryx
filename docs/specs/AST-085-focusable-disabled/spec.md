@@ -83,9 +83,10 @@ non-operable control. No component renders the native `disabled` attribute.
   "follows `spec:AST-085`". Button already does this for busy and tooltip cases.
 - `family:input-fields` FR4 is satisfied for every member. "Focusable enough"
   becomes "focusable".
-- `component:DateRangeInput` AR3 and its disabled-preset state, and
-  `component:Tokenizer`'s disabled state and verification, follow this record
-  instead of native `disabled`.
+- `component:DateRangeInput` AR3 and its disabled-preset state,
+  `component:Tokenizer`'s disabled state and verification, `component:Slider`
+  AR1 (every thumb is a Tab stop), and `component:Selector`'s disabled-with-reason
+  state follow this record instead of native `disabled`.
 - Draft records for ClickableCard, BaseTypeahead, CheckboxInput, ChatComposer,
   and CommentPin describe native `disabled` as observed behavior; they change
   with conformance work.

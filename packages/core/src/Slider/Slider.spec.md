@@ -134,8 +134,8 @@ value-tooltip behavior; AR1 records the keyboard model and its one correction.
   thumb as one composite control: every thumb is `role="slider"` with an
   accessible name (a range names each thumb), `aria-valuemin`, `aria-valuemax`,
   `aria-valuenow`, `aria-valuetext` when a formatter changes the spoken value,
-  `aria-orientation`, and `aria-disabled` when disabled; an enabled thumb, and a
-  disabled thumb that carries a disabled message, is a Tab stop.
+  `aria-orientation`, and `aria-disabled` when disabled; every thumb is a Tab
+  stop, enabled or disabled (`spec:AST-085`).
   ArrowUp and ArrowDown step by `step`; on a horizontal track the horizontal
   arrows follow the track's direction — ArrowRight increases and ArrowLeft
   decreases under LTR, and under RTL ArrowLeft increases and ArrowRight
