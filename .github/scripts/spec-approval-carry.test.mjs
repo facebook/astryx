@@ -218,6 +218,35 @@ describe('isApprovalMetadataOnlyChange', () => {
     ).toBe(true);
   });
 
+  it('rejects a change that only converts line endings', () => {
+    const before = record();
+    expect(
+      isApprovalMetadataOnlyChange(
+        before,
+        before.replace(/\n/g, '\r\n'),
+        approval,
+      ),
+    ).toBe(false);
+  });
+
+  it('rejects an approval line that also changes its line ending', () => {
+    const after = record(recorded).replace(
+      'authority: current\n',
+      'authority: current\r\n',
+    );
+    expect(isApprovalMetadataOnlyChange(record(), after, approval)).toBe(false);
+  });
+
+  it('accepts recording the approval in a CRLF record', () => {
+    expect(
+      isApprovalMetadataOnlyChange(
+        record().replace(/\n/g, '\r\n'),
+        record(recorded).replace(/\n/g, '\r\n'),
+        approval,
+      ),
+    ).toBe(true);
+  });
+
   it('rejects unreadable content or an unknown approval', () => {
     expect(isApprovalMetadataOnlyChange(null, record(), approval)).toBe(false);
     expect(

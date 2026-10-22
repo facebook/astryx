@@ -51,12 +51,12 @@ commit that only records the approval in the records (`authority: draft` to
 `approved_at` within a day of the approval, and Decider lines whose date is
 still a placeholder, on lines naming the approver or no one yet, gaining that
 date and the approver). A Decider line that already has a date is never
-rewritten, and a named person is never replaced. Any other edit, added
-or removed line, or changed file needs a new approval. A decision on the new
-head, or any later revoke, request for changes, or dismissal of an approving
-review by an owner who may approve the same group, wins. A ready attestation never carries,
-and while `SPEC_DECISION_APP` is set nothing carries (see below).
-The gate status names the head the approval was carried from.
+rewritten, and a named person is never replaced. Any other edit, added or
+removed line, or changed file needs a new approval. A decision on the new head,
+or any later revoke or request for changes by an owner who may approve the same
+group, or dismissal of such an owner's approving review, wins. A ready
+attestation never carries, and while `SPEC_DECISION_APP` is set nothing carries
+(see below). The gate status names the head the approval was carried from.
 
 A review app may also relay an owner's decision, for owners who decide from
 the app's own pull request view. It sends a `spec-owner-decision` repository

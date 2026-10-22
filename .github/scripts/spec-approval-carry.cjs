@@ -278,14 +278,23 @@ function isApprovalMetadataOnlyChange(before, after, {approver, approvedAt}) {
   const owner = typeof approver === 'string' ? approver.toLowerCase() : '';
   const dates = approvalDates(approvedAt);
   if (!owner || dates.size === 0) return false;
-  const beforeLines = before.split(/\r?\n/);
-  const afterLines = after.split(/\r?\n/);
+  // Split on the newline alone and keep each line's carriage return as part
+  // of it: a line-ending change is a byte change, and bytes are what the owner
+  // read. Only the line text, never its ending, may record the approval.
+  const split = text =>
+    text.split('\n').map(line => ({
+      text: line.replace(/\r$/, ''),
+      cr: line.endsWith('\r'),
+    }));
+  const beforeLines = split(before);
+  const afterLines = split(after);
   if (beforeLines.length !== afterLines.length) return false;
-  const end = frontmatterEnd(beforeLines);
-  if (end !== frontmatterEnd(afterLines)) return false;
+  const end = frontmatterEnd(beforeLines.map(line => line.text));
+  if (end !== frontmatterEnd(afterLines.map(line => line.text))) return false;
   for (let index = 0; index < beforeLines.length; index += 1) {
-    const from = beforeLines[index];
-    const to = afterLines[index];
+    if (beforeLines[index].cr !== afterLines[index].cr) return false;
+    const from = beforeLines[index].text;
+    const to = afterLines[index].text;
     if (from === to) continue;
     const inFrontmatter = end > 0 && index > 0 && index < end;
     const allowed = inFrontmatter
