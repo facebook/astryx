@@ -333,6 +333,8 @@ export interface DropdownMenuItemData extends Pick<
    * Nested submenu entries. When present, this row becomes a submenu (a
    * flyout revealing `items`) instead of a leaf action — no separate item
    * "type" is needed. Data-mode parity for the compound DropdownMenuSubMenu API.
+   * The bottom sheet reads an opened level from the current `items` while it
+   * shows, so rows added, removed or relabelled there show at once.
    */
   items?: DropdownMenuOption[];
   /**
