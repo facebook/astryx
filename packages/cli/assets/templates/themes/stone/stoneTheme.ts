@@ -400,6 +400,21 @@ export const stoneTheme = defineTheme({
       },
     },
 
+    'progress-bar-mark': {
+      'placement:fill+variant:accent': {
+        backgroundColor: 'var(--color-on-light)',
+      },
+      'placement:fill+variant:success': {
+        backgroundColor: 'var(--color-on-light)',
+      },
+      'placement:fill+variant:warning': {
+        backgroundColor: 'var(--color-on-light)',
+      },
+      'placement:fill+variant:error': {
+        backgroundColor: 'var(--color-on-light)',
+      },
+    },
+
     // Track default --color-background-muted reads near-body in stone;
     // redirect to --color-skeleton so the channel stays visible.
     'progress-bar-track': {
