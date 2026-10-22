@@ -57,12 +57,16 @@ owns response fields and compatibility.
 - **FR3 — a whole name keeps today's answer.** A query that is an entry's
   whole name or title, read with dashes and spaces alike, gets the lexical
   ranker's answer unchanged.
-- **FR4 — build re-orders only its own blocks.** `spec:AST-048` owns which
-  blocks build lists and delegates their order here. Build's `blocks` are the
-  blocks build itself lists, each with its own score and reason. Build never
-  adds one and never lists more than before. A block the request names, a
-  block the weights do not know, and a block from an integration package
-  keep the place build gave them.
+- **FR4 — build orders its own blocks and search's.** `spec:AST-048` owns
+  which blocks build lists and delegates their order here. Build's `blocks`
+  hold as many blocks as build itself lists. Each is one of build's own blocks
+  or one of search's first 100 block results for the same request, at any
+  score, that shares a content word with the request (not a search stopword or
+  a common English function word), and each keeps its own score and reason. A
+  block the request names, a block the weights do not know, and a block from an
+  integration package keep the place build gave them. An added block's
+  description is shortened, never the choice of block, so no answer is longer
+  than the longest answer build gave before.
 - **FR5 — the order is local, deterministic, and static.** The order inside a
   run comes from plain code and fixed values shipped with the CLI. No model
   runtime runs, no network is used, and the same inputs give the same order.
@@ -82,13 +86,13 @@ owns response fields and compatibility.
 
 ## Verification
 
-| Contract | Verification                                                                                          | Representative states                                    | Mutation or failure expectation                                                                   |
-| -------- | ----------------------------------------------------------------------------------------------------- | -------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
-| FR1, FR2 | `api/search/_order.test.mjs` against the lexical ranker; a replay over every real and synthetic query | multi-word queries, doc sections, domain-priority merges | a non-lexical result, a changed score, reason, or count, a cross-band move, or extra results fail |
-| FR3      | `api/search/_main-searcher.test.mjs` whole-name cases                                                 | exact names, names typed with spaces for dashes          | an answer that differs from the lexical ranker's fails                                            |
-| FR4      | `api/build/blocks/blocks.test.mjs`, `api/build/tree.test.mjs`                                         | named blocks, integration blocks, unknown blocks         | an added block, a changed entry, a moved named block, or more blocks fail                         |
-| FR5      | `_main-searcher.test.mjs` and `tree.test.mjs` offline and repeat checks                               | network stubbed to throw; repeated runs                  | a network call or a differing repeat fails                                                        |
-| FR6      | measured comparison on the evaluation sets, reported in the change's description                      | held-out, fresh, synthetic                               | a row whose paired CI lies below zero blocks the change                                           |
+| Contract | Verification                                                                                          | Representative states                                    | Mutation or failure expectation                                                                                                                      |
+| -------- | ----------------------------------------------------------------------------------------------------- | -------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| FR1, FR2 | `api/search/_order.test.mjs` against the lexical ranker; a replay over every real and synthetic query | multi-word queries, doc sections, domain-priority merges | a non-lexical result, a changed score, reason, or count, a cross-band move, or extra results fail                                                    |
+| FR3      | `api/search/_main-searcher.test.mjs` whole-name cases                                                 | exact names, names typed with spaces for dashes          | an answer that differs from the lexical ranker's fails                                                                                               |
+| FR4      | `api/build/blocks/blocks.test.mjs`, `api/build/tree.test.mjs`                                         | named blocks, integration blocks, unknown blocks         | a block outside build's list and search's results, a changed entry, a moved named block, more blocks, or an added block sharing no content word fail |
+| FR5      | `_main-searcher.test.mjs` and `tree.test.mjs` offline and repeat checks                               | network stubbed to throw; repeated runs                  | a network call or a differing repeat fails                                                                                                           |
+| FR6      | measured comparison on the evaluation sets, reported in the change's description                      | held-out, fresh, synthetic                               | a row whose paired CI lies below zero blocks the change                                                                                              |
 
 ## Decision log
 
