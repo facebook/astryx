@@ -76,6 +76,46 @@ const VERSION_PATTERN = new RegExp(
   `(?<![\\w.-])(v?)${CLI_VERSION.replaceAll('.', '\\.')}(?![\\w-]|\\.\\w)`,
   'gu',
 );
+/**
+ * Every command that prints the integration-issue nudge to stderr (spec:AST-084
+ * FR0), with an invocation that reaches it: in text mode, after the command
+ * succeeds. Run in this order, in one project (the theme writers build on one
+ * another; `upgrade` is a dry run).
+ */
+const NUDGE_COMMANDS = [
+  {name: 'component', args: ['component', 'Button']},
+  {name: 'discover', args: ['discover']},
+  {name: 'search', args: ['search', 'close']},
+  {name: 'template', args: ['template', 'settings-dialog']},
+  {name: 'theme list', args: ['theme', 'list']},
+  {name: 'theme eject', args: ['theme', 'eject', 'stone']},
+  {name: 'theme add', args: ['theme', 'add', 'stone']},
+  {name: 'theme use', args: ['theme', 'use', 'stone']},
+  {name: 'theme remove', args: ['theme', 'remove', 'matcha']},
+  {name: 'upgrade', args: ['upgrade', '--from', '0.7.0']},
+];
+/** A call of the nudge or of a wrapper around it. */
+const NUDGE_CALL =
+  /(?<!function )\b(?:warnOnIntegrationIssues|warnOnThemeIntegrationIssues|warnIntegrationIssues)\(/gu;
+/**
+ * Where NUDGE_CALL appears, by file, and how often: the commands above and
+ * the two wrappers (theme.mjs and upgrade's adapter each call the nudge once).
+ */
+const NUDGE_CALLERS = {
+  // component
+  'clients/cli/commands/component.mjs': 1,
+  // discover
+  'clients/cli/commands/discover.mjs': 1,
+  // search
+  'clients/cli/commands/search.mjs': 1,
+  // template
+  'clients/cli/commands/template.mjs': 1,
+  // the wrapper, then theme list, add, remove, use, eject
+  'clients/cli/commands/theme.mjs': 6,
+  // upgrade: the wrapper, and its one call
+  'api/upgrade/_adapter.mjs': 1,
+  'api/upgrade/run/run.mjs': 1,
+};
 /** Where test projects go: inside the checkout whose CLI answers. */
 const PROJECTS_ROOT = REGENERATING ? GOLDEN_REPO : REPO_ROOT;
 
@@ -718,32 +758,108 @@ describe('with icon sets installed but no experimental.iconSet, stable output is
     );
   });
 
-  // The other difference FR0 names: in text mode, `component`, `discover`,
-  // `search`, `template` and `theme list` print a stderr nudge to run Doctor
-  // when an integration has an issue. The CLI without icon sets has one for
-  // the manifest key `experimental`; this CLI has none, so its stderr equals
-  // what that CLI prints for the package with the key removed.
-  it('text-mode commands print no integration-issue nudge to stderr', async () => {
+  // The other difference FR0 names: every command that prints the
+  // integration-issue nudge to stderr (NUDGE_COMMANDS) prints one for the
+  // manifest key `experimental` in the CLI without icon sets; this CLI prints
+  // none, so its stderr equals what that CLI prints for the package with the
+  // key removed. The theme writers have no dry run and print the nudge only
+  // after they succeed, so they run in this test's own project: two themes
+  // are forked and their built files stubbed, then added, used, and removed.
+  // `upgrade` runs without `--apply`, a dry run, against the repo's Core.
+  it('every command that prints the integration-issue nudge prints none', async () => {
     const cwd = installed('nudge');
-    const stderr = [
-      ['component', 'Button'],
-      ['discover'],
-      ['search', 'close'],
-      ['template', 'settings-dialog'],
-      ['theme', 'list'],
-    ]
-      .map(args => {
-        const res = astryx(args, cwd);
-        expect(res.status).toBe(0);
-        if (!REGENERATING) {
-          expect(res.stderr).not.toMatch(/integration issue/u);
+    const pkgFile = path.join(cwd, 'package.json');
+    const pkgJson = JSON.parse(fs.readFileSync(pkgFile, 'utf8'));
+    pkgJson.dependencies['@astryxdesign/core'] = '*';
+    fs.writeFileSync(pkgFile, JSON.stringify(pkgJson));
+    fs.mkdirSync(path.join(cwd, 'src'));
+    fs.mkdirSync(path.join(cwd, 'node_modules', '@astryxdesign'));
+    fs.symlinkSync(
+      path.join(PROJECTS_ROOT, 'packages', 'core'),
+      path.join(cwd, 'node_modules', '@astryxdesign', 'core'),
+      'dir',
+    );
+    /** @type {Record<string, () => void>} */
+    const setup = {
+      'theme add': () => {
+        // `theme eject` above forked stone; matcha is the second theme.
+        expect(astryx(['theme', 'eject', 'matcha', '--json'], cwd).status).toBe(
+          0,
+        );
+        for (const slug of ['stone', 'matcha']) {
+          const dir = path.join(cwd, 'src', 'themes', slug);
+          fs.writeFileSync(
+            path.join(dir, `${slug}.js`),
+            `export const ${slug}Theme = {};\n`,
+          );
+          fs.writeFileSync(path.join(dir, `${slug}.css`), '\n');
         }
-        return `$ astryx ${args.join(' ')}\n${res.stderr}`;
-      })
-      .join('\n');
+      },
+      'theme use': () => {
+        expect(astryx(['theme', 'add', 'matcha', '--json'], cwd).status).toBe(
+          0,
+        );
+      },
+    };
+    const stderr = NUDGE_COMMANDS.map(({name, args}) => {
+      setup[name]?.();
+      const res = astryx(args, cwd);
+      expect(res.status, `astryx ${args.join(' ')}: ${res.stderr}`).toBe(0);
+      if (!REGENERATING) {
+        expect(res.stderr).not.toMatch(/integration issue/u);
+      }
+      return `$ astryx ${args.join(' ')}\n${res.stderr}`;
+    }).join('\n');
     await expect(stderr).toMatchFileSnapshot(
       path.join(GOLDEN, 'installed-set-stderr.txt'),
     );
+  });
+
+  // The list is every caller of the nudge: a new caller fails here until it
+  // joins NUDGE_COMMANDS, and FR0 names each command in the list.
+  it('NUDGE_COMMANDS is every caller of the nudge, and FR0 names each one', () => {
+    /** @type {Record<string, number>} */
+    const callers = {};
+    /** @param {string} dir */
+    const walk = dir => {
+      for (const entry of fs.readdirSync(dir, {withFileTypes: true})) {
+        const file = path.join(dir, entry.name);
+        if (entry.isDirectory()) {
+          if (entry.name !== 'node_modules' && entry.name !== 'test') {
+            walk(file);
+          }
+        } else if (
+          entry.name.endsWith('.mjs') &&
+          !entry.name.endsWith('.test.mjs')
+        ) {
+          const text = fs.readFileSync(file, 'utf8');
+          const calls = text.match(NUDGE_CALL)?.length ?? 0;
+          if (calls > 0) {
+            callers[path.relative(CLI_ROOT, file).split(path.sep).join('/')] =
+              calls;
+          }
+        }
+      }
+    };
+    for (const dir of ['api', 'clients', 'foundation']) {
+      walk(path.join(CLI_ROOT, dir));
+    }
+    expect(callers).toEqual(NUDGE_CALLERS);
+    const spec = fs.readFileSync(
+      path.join(REPO_ROOT, 'docs', 'specs', 'AST-084-icon-sets', 'spec.md'),
+      'utf8',
+    );
+    const fr0 = spec.slice(
+      spec.indexOf('**FR0 '),
+      spec.indexOf('### What a set declares'),
+    );
+    const text = fr0.replace(/\s+/gu, ' ');
+    expect(text).toContain(
+      'every command that prints the integration-issue nudge',
+    );
+    for (const {name} of NUDGE_COMMANDS) {
+      expect(text).toContain(`\`${name}\``);
+    }
   });
 
   it('doctor reports nothing about an invalid installed set', async () => {
