@@ -603,12 +603,21 @@ export function tokenForCommand(command) {
     up: 'update',
     upgrade: 'update',
     run: 'run',
+    'run-script': 'run',
     exec: 'exec',
     dlx: 'dlx',
     create: 'create',
     x: 'exec',
   };
   const mapped = /** @type {Record<string, string>} */ (VERBS)[verb];
+  // npm's script shortcuts run a script every package manager can run.
+  if (
+    !mapped &&
+    bin === 'npm' &&
+    ['test', 'start', 'stop', 'restart'].includes(verb)
+  ) {
+    return `{@pm run ${[verb, ...tail].join(' ')}}`;
+  }
   if (!mapped) {
     // `pnpm build`, `yarn test`: a script run without `run`.
     if (
