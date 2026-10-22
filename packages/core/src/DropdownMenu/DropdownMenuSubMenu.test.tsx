@@ -2607,6 +2607,57 @@ describe('DropdownMenuSubMenu header and footer', () => {
     }
   });
 
+  it('the bottom sheet keeps a level whose row leaves the menu, not the other row labelled alike', async () => {
+    const user = userEvent.setup();
+    function SizesMenu({withIds}: {withIds: boolean}) {
+      const [query, setQuery] = useState('');
+      const rows = [
+        {label: 'Size', id: 'text-size', items: [{label: 'Small text'}]},
+        {label: 'Size', id: 'image-size', items: [{label: 'Small image'}]},
+      ]
+        .map(({id, ...row}) => (withIds ? {...row, id} : row))
+        .filter(row =>
+          row.items.some(item =>
+            item.label.toLowerCase().includes(query.toLowerCase()),
+          ),
+        );
+      return (
+        <DropdownMenu
+          button={{label: 'Format'}}
+          presentation="bottom-sheet"
+          header={
+            <input
+              aria-label="Search sizes"
+              value={query}
+              onChange={event => setQuery(event.target.value)}
+            />
+          }
+          items={rows}
+        />
+      );
+    }
+    for (const withIds of [false, true]) {
+      const {unmount} = render(<SizesMenu withIds={withIds} />);
+      await user.click(screen.getByRole('button', {name: /Format/}));
+      await waitFor(() =>
+        expect(screen.getAllByRole('button', {name: /^Size/})).toHaveLength(2),
+      );
+      await user.click(screen.getAllByRole('button', {name: /^Size/})[1]);
+      await screen.findByRole('button', {name: /Small image/});
+      // The search leaves only the text row: the opened image row is gone,
+      // and the one row left is labelled as it was.
+      await user.type(
+        screen.getByRole('textbox', {name: 'Search sizes'}),
+        'text',
+      );
+      expect(
+        screen.getByRole('button', {name: /Small image/}),
+      ).toBeInTheDocument();
+      expect(screen.queryByRole('button', {name: /Small text/})).toBeNull();
+      unmount();
+    }
+  });
+
   describe('on a phone', () => {
     const originalMatchMedia = window.matchMedia;
     beforeEach(() => {
