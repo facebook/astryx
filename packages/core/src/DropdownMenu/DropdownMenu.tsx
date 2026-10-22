@@ -76,7 +76,11 @@ import {focusForLastInput} from '../utils/focusReturn';
 import {useMenuOverflow} from './useMenuOverflow';
 import {MenuRegionsContext} from './menuRegionsContext';
 import {moveRegionsTab} from './menuRegionStops';
-import {resolveSheetLevel} from './menuSheetPath';
+import {
+  openSheetLevel,
+  resolveSheetLevel,
+  type SheetPathEntry,
+} from './menuSheetPath';
 import {useDevWarning} from '../hooks/useDevWarning';
 import {useMenuDrillIn} from './useMenuDrillIn';
 import {resolveMenuWidth} from './menuWidth';
@@ -335,8 +339,9 @@ export interface DropdownMenuItemData extends Pick<
    * stays a sub-menu while `items` is empty, so a filter that matches nothing
    * keeps its field. The bottom sheet shows it above that level's actions, in
    * place of the menu's own header, and reads the level from the current
-   * `items` while it shows; give the row an `id` when another row at its level
-   * has the same label. Ignored on a row without `items`.
+   * `items` while it shows, by `id`, label, or position when the label
+   * changes; give the row an `id` when another row at its level has the same
+   * label or the rows can reorder. Ignored on a row without `items`.
    */
   header?: ReactNode;
   /**
@@ -660,7 +665,7 @@ function DropdownMenuBottomSheet({
   const viewHeadingRef = useRef<HTMLHeadingElement>(null);
   const previousSubmenuDepthRef = useRef(0);
   const [internalIsOpen, setInternalIsOpen] = useState(false);
-  const [submenuPath, setSubmenuPath] = useState<DropdownMenuItemData[]>([]);
+  const [submenuPath, setSubmenuPath] = useState<SheetPathEntry[]>([]);
   const isControlled = controlledIsOpen !== undefined;
   const isOpen = isControlled ? controlledIsOpen : internalIsOpen;
   const [previousIsOpen, setPreviousIsOpen] = useState(isOpen);
@@ -761,7 +766,10 @@ function DropdownMenuBottomSheet({
       cancelAnimationFrame(frame);
       observer?.disconnect();
     };
-  }, [currentItems, isOpen]);
+    // On the open and on each level change only: a level read from inline
+    // `items` is a new array on every caller render, and focusing the first
+    // action then would pull focus out of a field being typed into.
+  }, [isOpen, submenuPath]);
 
   useEffect(() => {
     if (!isOpen) {
@@ -904,7 +912,12 @@ function DropdownMenuBottomSheet({
           <MenuBottomSheetActionList
             items={currentItems}
             onSelect={handleSelect}
-            onOpenSubmenu={item => setSubmenuPath(path => [...path, item])}
+            onOpenSubmenu={item =>
+              setSubmenuPath(path => [
+                ...path,
+                openSheetLevel(currentItems, item),
+              ])
+            }
           />
           {isRenderable(levelFooter) && (
             <div
