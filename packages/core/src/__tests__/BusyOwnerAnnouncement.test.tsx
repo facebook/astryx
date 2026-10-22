@@ -506,6 +506,19 @@ describe('DropdownMenuSubMenu loading state (spec:AST-086 FR8)', () => {
     );
   }
 
+  it('announces nothing while its menu is closed', async () => {
+    render(strict(<Menu isLoading />));
+    await nextFrame();
+    expect(busyAnnouncements()).toEqual([]);
+  });
+
+  it('announces the busy start when its menu opens while loading', async () => {
+    render(strict(<Menu isLoading />));
+    fireEvent.click(screen.getByRole('button', {name: /Actions/}));
+    await nextFrame();
+    expect(busyAnnouncements()).toEqual([['Loading', 'polite']]);
+  });
+
   it('keeps the trigger Spinner silent and announces each busy start once', async () => {
     const {rerender} = render(strict(<Menu isLoading={false} />));
     fireEvent.click(screen.getByRole('button', {name: /Actions/}));
