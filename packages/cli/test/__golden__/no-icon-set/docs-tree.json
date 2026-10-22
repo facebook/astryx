@@ -618,7 +618,7 @@
       "run-every-check-in-ci: Run every check in every build (required)",
       "what-integration-verify-does: Verify the packed package"
     ],
-    "digest": "68e324d024ad52a5cb68b7977ae96e74e70cda321bbfd39eff709f943f6df6c7"
+    "digest": "2d5b8d97971d8587b1f44b833e7e112968f83a1d15c2374fd224db5f1367898b"
   },
   "authoring/ship/publishing": {
     "type": "docs.detail",
