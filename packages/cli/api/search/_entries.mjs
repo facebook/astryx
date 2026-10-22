@@ -81,6 +81,10 @@ let nextCardId = 0;
  * The candidate fields buildTable reads, all of them hashed by fingerprint;
  * `_entries.test.mjs` fails if buildTable starts reading another.
  */
+/** How many guidance lines and prose paragraphs of a candidate the index reads. */
+const GUIDANCE_LINES = 10;
+const PROSE_PARAGRAPHS = 4;
+
 export const HASHED_FIELDS = Object.freeze([
   'domain',
   'name',
@@ -111,9 +115,9 @@ function fingerprint(all, cards) {
       JSON.stringify(
         HASHED_FIELDS.map(f =>
           f === 'guidance'
-            ? (c.guidance ?? []).slice(0, 10)
+            ? (c.guidance ?? []).slice(0, GUIDANCE_LINES)
             : f === 'prose'
-              ? (c.prose ?? []).slice(0, 4)
+              ? (c.prose ?? []).slice(0, PROSE_PARAGRAPHS)
               : c[f],
         ),
       ),
@@ -178,8 +182,8 @@ export function buildTable(all, cards) {
         ...(c.titles ?? []),
       );
       text.push(
-        ...(c.guidance ?? []).slice(0, 10),
-        ...(c.prose ?? []).slice(0, 4),
+        ...(c.guidance ?? []).slice(0, GUIDANCE_LINES),
+        ...(c.prose ?? []).slice(0, PROSE_PARAGRAPHS),
       );
     }
     const card =
