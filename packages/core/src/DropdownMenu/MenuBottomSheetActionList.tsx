@@ -21,6 +21,7 @@ import {rtlStyles} from '../utils';
 import {getInteractionModality} from '../utils/interactionModality';
 import type {DropdownMenuItemData, DropdownMenuOption} from './DropdownMenu';
 import {isModifiedClick} from './menuItemRoles';
+import {opensSubMenu} from './opensSubMenu';
 
 /** The action rows: ListItem renders its action as a button (or a link). */
 const SHEET_ROW_SELECTOR = 'button:not(:disabled), a[href]';
@@ -79,7 +80,7 @@ export function MenuBottomSheetActionList({
     item: DropdownMenuItemData,
     index: number,
   ): ReactElement => {
-    const isSubmenu = item.items != null && item.items.length > 0;
+    const isSubmenu = opensSubMenu(item);
     const isDestructive = item.variant === 'destructive';
     const isLink = !isSubmenu && item.href != null;
 
