@@ -2687,7 +2687,7 @@ describe('DropdownMenuSubMenu header and footer', () => {
     await screen.findByRole('button', {name: /Report\.pdf/});
     // The menu's own footer shows on Recent, which has none of its own.
     await user.click(screen.getByRole('button', {name: 'Clear recent'}));
-    // The row no longer opens a sub-menu: the level keeps its last known rows.
+    // The row no longer opens a sub-menu: the level keeps its open-time rows.
     expect(screen.getByRole('heading', {name: 'Recent'})).toBeInTheDocument();
     expect(
       screen.getByRole('button', {name: /Report\.pdf/}),

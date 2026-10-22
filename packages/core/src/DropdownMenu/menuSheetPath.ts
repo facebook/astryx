@@ -19,13 +19,15 @@
  * it opened and still is, or, when no row carries the label any more (a count
  * in it changed, say), at its position, while its level still has as many
  * rows and the row there opens a sub-menu: then it can still be the same row.
- * Otherwise it keeps its last known shape, so a row filtered out of its level
- * never gives way to another, labelled alike or sitting where it sat; so does a
- * row found again that no longer opens a sub-menu (its `items` gone). Without
- * an `id` the label match reads uniqueness from the rows shown when the level
- * opened, so a row labelled alike that was hidden then (by the menu's own
- * search, say) can still take its place: rows whose labels repeat need an `id`
- * for this guarantee.
+ * Otherwise it keeps the shape it had when it opened (its rows, header and
+ * footer then), so a row filtered out of its level never gives way to another,
+ * labelled alike or sitting where it sat; so does a row found again that no
+ * longer opens a sub-menu (its `items` gone). A controlled field in that
+ * open-time header shows the value it had then. Without an `id` the label
+ * match reads uniqueness from the rows shown when the level opened, so a row
+ * labelled alike that was hidden then (by the menu's own search, say) can
+ * still take its place, and a row whose label changes while it shows is found
+ * only while its level keeps its row count: such rows need an `id`.
  */
 import type {DropdownMenuItemData, DropdownMenuOption} from './DropdownMenu';
 import {opensSubMenu} from './opensSubMenu';
