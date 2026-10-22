@@ -12,10 +12,10 @@
  *
  * @input A loaded integration (with __packageDir) and the running CLI version.
  * @output The message, or null when the CLI is inside the range.
- * @position foundation/integrations — read by validate-contributions, which
- *   reports it as a listed `cli_peer_version` finding: a note in
- *   `doctor integration validate` and `integration check`, never a warning,
- *   so it fails nothing (architecture:cli-surface INV35).
+ * @position foundation/integrations — read by api/integration/validate-integration,
+ *   which reports it as a `cli_peer_version` note in `doctor integration
+ *   validate` and `integration check`, never a warning, so it fails nothing
+ *   (architecture:cli-surface INV35).
  */
 
 import * as fs from 'node:fs';
@@ -60,17 +60,26 @@ export function cliVersion() {
  *
  * A CLI below the range is told to upgrade, with the project's own install
  * command. A CLI above it (the range has an upper bound, such as `^0.6.0`) is
- * told the package was published for older CLIs, since upgrading the CLI
- * cannot help there.
+ * told to look for a release of the package that supports it, since
+ * upgrading the CLI cannot help there; the author of the package in the
+ * current folder is told to test with this CLI and widen the range.
  *
  * @param {import('./integrations.mjs').LoadedIntegration} integration
  * @param {string} [version] the running CLI version; defaults to this CLI's
  *   own package.json version
  * @param {string} [cwd] where the install command would run; decides the
  *   package manager it names
+ * @param {{own?: boolean}} [options] `own`: the package is the one being
+ *   authored in the current folder, so above the range its author is told to
+ *   test with this CLI and widen the range instead
  * @returns {string | null}
  */
-export function cliPeerVersionProblem(integration, version, cwd = process.cwd()) {
+export function cliPeerVersionProblem(
+  integration,
+  version,
+  cwd = process.cwd(),
+  {own = false} = {},
+) {
   const ver = version ?? cliVersion();
   if (!integration.__packageDir) return null;
 
@@ -95,6 +104,13 @@ export function cliPeerVersionProblem(integration, version, cwd = process.cwd())
       `${name} needs ${CLI_PACKAGE} ${range}, but this CLI is ${ver}, so ` +
       `some of what it ships may not load. Upgrade the CLI: ` +
       `\`${verb} ${CLI_PACKAGE}@latest\`.`
+    );
+  }
+  if (own) {
+    return (
+      `${name} declares ${CLI_PACKAGE} ${range}, but this CLI is ${ver}, ` +
+      `outside that range. Test the package with this CLI, and if it works, ` +
+      `widen the ${CLI_PACKAGE} range in its peerDependencies.`
     );
   }
   return (

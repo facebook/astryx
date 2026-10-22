@@ -110,6 +110,17 @@ describe('cliPeerVersionProblem', () => {
     expect(cliPeerVersionProblem(integration, '0.6.5', tmpDir)).toBeNull();
   });
 
+  it('tells the author to test and widen the range when the package is their own', () => {
+    const integration = makeIntegration('@test/own', {
+      name: '@test/own',
+      version: '1.0.0',
+      peerDependencies: {'@astryxdesign/cli': '^0.6.0'},
+    });
+    expect(cliPeerVersionProblem(integration, '0.7.3', tmpDir, {own: true})).toBe(
+      '@test/own declares @astryxdesign/cli ^0.6.0, but this CLI is 0.7.3, outside that range. Test the package with this CLI, and if it works, widen the @astryxdesign/cli range in its peerDependencies.',
+    );
+  });
+
   it('warns for an optional peer the CLI does not satisfy', () => {
     // Optional peers are still peers: the integration needs a newer CLI to
     // work fully. The warning is about the CLI version, not about whether
@@ -231,6 +242,45 @@ describe('as a note that fails nothing', () => {
     expect(envelope.data.failed).toBe(false);
     expect(status).toBe(0);
   });
+
+  it('asks for a release of an installed package that supports a CLI above its range', async () => {
+    const cwd = project('^0.6.0');
+    const {stdout} = await runCli(
+      ['doctor', 'integration', 'validate', '@acme/widgets', '--json'],
+      {cwd},
+    );
+    expect(JSON.parse(stdout).data.notes).toContainEqual({
+      code: 'cli_peer_version',
+      message: `@acme/widgets supports @astryxdesign/cli ^0.6.0, but this CLI is ${cliVersion()}, outside that range, so some of what it ships may not work as its author tested. Look for a release of @acme/widgets that supports ${cliVersion()}.`,
+    });
+  });
+
+  it('tells the author of the package in the current folder to test and widen a range below this CLI', async () => {
+    const pkg = fs.mkdtempSync(path.join(tmpDir, 'package-'));
+    writeIntegration(pkg, '^0.6.0');
+    const {status, stdout} = await runCli(
+      ['--json', 'integration', 'check', '--strict'],
+      {cwd: pkg},
+    );
+    const envelope = JSON.parse(stdout);
+    expect(envelope.data.checks[0].response.data.notes).toContainEqual({
+      code: 'cli_peer_version',
+      message: `@acme/widgets declares @astryxdesign/cli ^0.6.0, but this CLI is ${cliVersion()}, outside that range. Test the package with this CLI, and if it works, widen the @astryxdesign/cli range in its peerDependencies.`,
+    });
+    expect(envelope.data.failed).toBe(false);
+    expect(status).toBe(0);
+  });
+
+  it('leaves integration verify as it was: no warning, no issue', async () => {
+    const pkg = fs.mkdtempSync(path.join(tmpDir, 'package-'));
+    writeIntegration(pkg, '>=99.0.0');
+    const {stdout} = await runCli(['--json', 'integration', 'verify'], {
+      cwd: pkg,
+    });
+    expect(stdout).not.toContain('cli_peer_version');
+    const text = await runCli(['integration', 'verify'], {cwd: pkg});
+    expect(text.stdout + text.stderr).not.toContain('needs @astryxdesign/cli');
+  }, 120_000);
 
   it('says nothing when the CLI is in the range', async () => {
     const cwd = project(`>=${cliVersion()}`);

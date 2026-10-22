@@ -122,7 +122,7 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: "When the CLI is outside that range, `doctor integration validate` and `integration check` list a `cli_peer_version` note naming your package. A note fails nothing, `--strict` included, and the exit code does not change. Below the range the note names the install command for a newer CLI; above it, it asks for a release of your package that supports that CLI.",
+          text: "When the CLI is outside that range, `doctor integration validate` and `integration check` list a `cli_peer_version` note naming your package. A note fails nothing, `--strict` included, and `integration verify` does not report it. In an app, below the range the note names the install command for a newer CLI, and above it the note asks for a release of your package that supports that CLI. In your own package folder, above the range it asks you to test your package with that CLI and widen the range.",
         },
       ],
     },

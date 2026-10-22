@@ -60,7 +60,6 @@ import {
 } from '../discovery/module-exports.mjs';
 import {discoverIntegrationDocs} from '../discovery/docs-discovery.mjs';
 import {discoverIntegrationThemes} from '../discovery/theme-discovery.mjs';
-import {cliPeerVersionProblem} from './cli-peer-version.mjs';
 
 /**
  * @typedef {import('./issue').AstryxIntegrationIssue} Issue
@@ -72,8 +71,6 @@ export const INVALID_AGENT_DOCS = 'invalid_agent_docs';
 
 /** Stable issue code for a `cliCommand` that was ignored as invalid. */
 export const INVALID_CLI_COMMAND = 'invalid_cli_command';
-/** The running CLI is outside the package's `@astryxdesign/cli` peer range. */
-export const CLI_PEER_VERSION = 'cli_peer_version';
 
 /** Stable issue code for a package whose provider ID is already claimed. */
 export const DUPLICATE_PROVIDER = 'duplicate_provider';
@@ -1635,10 +1632,6 @@ async function allLoadedIntegrationIssues(loaded) {
     return [issueError('integration_error', loaded.__loadError)];
   }
   checkUnknownKeys(loaded, issues);
-  // Added after the last minor release, so it is listed (a note), never a
-  // warning: `integration check --strict` must not start failing on it.
-  const peerProblem = cliPeerVersionProblem(loaded);
-  if (peerProblem) issues.push(issueListed(CLI_PEER_VERSION, peerProblem));
   if (loaded.__agentDocsError) {
     issues.push(issueError(INVALID_AGENT_DOCS, loaded.__agentDocsError));
   }
