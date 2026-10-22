@@ -786,10 +786,14 @@ export function ContextMenu({
       aria-label={label}
       onKeyDown={listKeyDown}
       onContextMenu={e => {
-        // Only a right-click on the menu itself: a sub-menu's dialog renders
-        // beside the menu but React still bubbles its events here, and a field
-        // there keeps the browser's own menu (paste, spelling).
-        if (e.currentTarget.contains(e.target as Node)) {
+        // Only a right-click on a menu's rows: a sub-menu's dialog renders
+        // beside this element but React still bubbles its events here. Its rows
+        // sit in its own role="menu" and stay cancelled; a field in its header
+        // or footer keeps the browser's own menu (paste, spelling).
+        if (
+          e.target instanceof Element &&
+          e.target.closest('[role="menu"]') != null
+        ) {
           e.preventDefault();
         }
       }}
