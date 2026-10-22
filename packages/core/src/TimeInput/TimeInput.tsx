@@ -4,6 +4,7 @@
 
 /**
  * @file TimeInput.tsx
+ * Composes a silent Spinner; the field owns busy feedback.
  * @input Uses React, Field, NativeTimeSegment, InputGroupContext, pointer media queries, and shared time utilities
  * @output Exports TimeInput, TimeInputProps, and TimeInputNativePicker
  * @position Core implementation; consumed by index.ts, tested by TimeInput.test.tsx
@@ -865,7 +866,7 @@ function TimeField({
           </VisuallyHidden>
         </>
       )}
-      {isBusy && <Spinner size="sm" />}
+      {isBusy && <Spinner size="sm" aria-hidden="true" />}
       {hasClear && optimisticValue && !isDisabled && (
         <InputClearButton
           label={t('@astryx.timeInput.clearLabel', {label})}

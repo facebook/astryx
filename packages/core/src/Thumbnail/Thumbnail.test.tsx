@@ -1,5 +1,12 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+/**
+ * @file Thumbnail.test.tsx
+ * @input Thumbnail and React Testing Library
+ * @output Thumbnail behavior tests, including its decorative upload indicator
+ * @position Colocated component tests
+ */
+
 import {describe, it, expect, vi} from 'vitest';
 import {render, screen, fireEvent} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -38,7 +45,9 @@ describe('Thumbnail', () => {
     );
     const img = screen.getByRole('img');
     expect(img).toHaveAttribute('src', '/local.jpg');
-    expect(screen.getByRole('status')).toBeInTheDocument();
+    expect(
+      screen.getByTestId('thumb').querySelector('.astryx-spinner'),
+    ).toHaveAttribute('aria-hidden', 'true');
   });
 
   it('exposes the label as an accessible name via a valid group role', () => {

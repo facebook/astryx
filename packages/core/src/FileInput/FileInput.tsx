@@ -4,6 +4,7 @@
 
 /**
  * @file FileInput.tsx
+ * Composes silent Spinners; the field owns busy feedback.
  * @input Uses React, useId, Field, Icon, Spinner, VisuallyHidden
  * @output Exports FileInput component, public types, and its root/icon theme targets
  * @position Core implementation; consumed by index.ts, tested by FileInput.test.tsx
@@ -741,7 +742,7 @@ export function FileInput({
 
   const renderDropzoneContent = () => {
     if (isBusy) {
-      return <Spinner size="md" />;
+      return <Spinner size="md" aria-hidden="true" />;
     }
     if (hasFiles) {
       return (
@@ -772,7 +773,7 @@ export function FileInput({
           <span {...stylex.props(styles.fileNameText)}>
             {fileNames ?? displayPlaceholder}
           </span>
-          <Spinner size="sm" />
+          <Spinner size="sm" aria-hidden="true" />
         </>
       );
     }

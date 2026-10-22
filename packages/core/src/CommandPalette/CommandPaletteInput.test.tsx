@@ -3,7 +3,7 @@
 /**
  * @file CommandPaletteInput.test.tsx
  * @input Uses vitest, @testing-library/react, CommandPaletteInput, Dialog
- * @output Unit tests for CommandPaletteInput component
+ * @output Unit tests for CommandPaletteInput and its decorative busy-indicator placement
  * @position Testing; validates CommandPaletteInput.tsx implementation
  */
 
@@ -377,7 +377,10 @@ describe('CommandPaletteInput popup context', () => {
       </CommandPaletteContext>,
     );
 
-    const spinner = screen.getByRole('status');
+    const spinner = screen.getByLabelText('Loading', {
+      selector: '.astryx-spinner',
+    });
+    expect(spinner).toHaveAttribute('aria-hidden', 'true');
     const trailingContent = screen.getByTestId('trailing-content');
     expect(trailingContent.parentElement?.firstElementChild).toContainElement(
       spinner,

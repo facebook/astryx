@@ -4,6 +4,7 @@
 
 /**
  * @file TextArea.tsx
+ * Composes a silent Spinner; the field owns busy feedback.
  * @input Uses React, useId, ChangeEvent, ClipboardEvent, FocusEvent, Field, Icon, Spinner
  * @output Exports TextArea component, TextAreaProps, TextAreaStatus, TextAreaStatusType
  * @position Core implementation; consumed by index.ts, tested by TextArea.test.tsx
@@ -660,7 +661,7 @@ export function TextArea({
         />
         {(isBusy || statusIcon) && (
           <span {...stylex.props(styles.endSlot)}>
-            {isBusy && <Spinner size="sm" />}
+            {isBusy && <Spinner size="sm" aria-hidden="true" />}
             {statusIcon}
           </span>
         )}

@@ -4,6 +4,7 @@
 
 /**
  * @file TouchTimeField.tsx
+ * Composes a silent Spinner; the field owns busy feedback.
  * @input Uses React, Field, BottomSheet, Wheel, DateInput touch geometry
  *   tokens, and shared time utilities
  * @output Exports TouchTimeField — the bottom-sheet surface behind TimeInput
@@ -516,7 +517,7 @@ export function TouchTimeField({
         }
         {...stylex.props(styles.input)}
       />
-      {isBusy && <Spinner size="sm" />}
+      {isBusy && <Spinner size="sm" aria-hidden="true" />}
       {hasClear && optimisticValue && !isEffectivelyDisabled && (
         <InputClearButton
           label={t('@astryx.timeInput.clearLabel', {label})}

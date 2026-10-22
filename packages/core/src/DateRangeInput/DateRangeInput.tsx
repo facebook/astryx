@@ -4,6 +4,7 @@
 
 /**
  * @file DateRangeInput.tsx
+ * Composes a silent Spinner; the field owns busy feedback.
  * @input Uses React, Field, Calendar (range mode), VisuallyHidden, usePopover
  * @output Exports DateRangeInput component, DateRangeInputProps
  * @position Core implementation; consumed by index.ts, tested by DateRangeInput.test.tsx
@@ -787,7 +788,7 @@ export function DateRangeInput({
             {ariaLabelProp ?? triggerAriaLabel}
           </VisuallyHidden>
         )}
-        {isBusy && <Spinner size="sm" />}
+        {isBusy && <Spinner size="sm" aria-hidden="true" />}
         {statusIcon}
       </div>
       {isEffectivelyRequired && (

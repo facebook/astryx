@@ -4,6 +4,7 @@
 
 /**
  * @file NativeDateField.tsx
+ * Composes a silent Spinner; the field owns busy feedback.
  * @input Uses React, Field, Icon, InputClearButton, Spinner, useCalendarConstraints, hasEditableDateSegments
  * @output Exports NativeDateField — the OS-picker touch surface
  * @position One of DateInput's three surfaces. `DateInput` picks the pointer
@@ -687,7 +688,7 @@ export function NativeDateField({
           onClick={handleClear}
         />
       )}
-      {isBusy && <Spinner size="sm" />}
+      {isBusy && <Spinner size="sm" aria-hidden="true" />}
       {statusIcon}
       {showsDisabledMessage &&
         disabledMessageTooltip.renderTooltip(disabledMessage)}

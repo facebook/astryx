@@ -5,7 +5,7 @@
 /**
  * @file StatusMessage.a11y.renders.tsx
  * @input Uses current Core status-message components and the binding state ids
- * @output One public-interface rendering for every Core status-message binding state
+ * @output Public-interface fixtures, including conditional Spinner appearance and repeated occasions
  * @position Shared jsdom and checked-in Storybook fixture layer
  */
 
@@ -183,18 +183,32 @@ function SpinnerHarness({visibleLabel}: {visibleLabel: boolean}) {
   const initial = visibleLabel ? 'Fetching data' : undefined;
   const replacement = visibleLabel ? 'Saving data' : 'Saving';
   const [label, setLabel] = useState<string | undefined>(initial);
+  const [isShown, setIsShown] = useState(false);
+  const [occasion, setOccasion] = useState(0);
   return (
-    <Frame>
-      <TransitionButton name="show" onClick={() => setLabel(initial)} />
+    <>
+      <PrimeLiveRegion politeness="polite" />
+      <button data-a11y-relation="focus-anchor" type="button">
+        Keep focus
+      </button>
+      <TransitionButton name="show" onClick={() => setIsShown(true)} />
       <TransitionButton name="replace" onClick={() => setLabel(replacement)} />
-      {visibleLabel ? (
-        <Spinner label={label ?? 'Fetching data'} />
-      ) : label == null ? (
-        <Spinner />
-      ) : (
-        <Spinner aria-label={label} />
+      <TransitionButton
+        name="repeat"
+        onClick={() => {
+          setLabel(initial);
+          setOccasion(value => value + 1);
+          setIsShown(true);
+        }}
+      />
+      {isShown && (
+        <Spinner
+          key={occasion}
+          label={visibleLabel ? label : undefined}
+          aria-label={visibleLabel ? undefined : label}
+        />
       )}
-    </Frame>
+    </>
   );
 }
 

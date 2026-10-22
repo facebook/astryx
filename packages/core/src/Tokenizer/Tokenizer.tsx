@@ -4,6 +4,7 @@
 
 /**
  * @file Tokenizer.tsx
+ * Composes a silent Spinner; the combobox owns busy feedback.
  * @input Uses React, BaseTypeahead, Field, Token, useAnnounce
  * @output Exports Tokenizer multi-select typeahead component
  * @position Composed component; forwards DOM ref and exposes focus control via
@@ -537,7 +538,9 @@ function EndLane({
   }
   return (
     <div ref={laneRef} {...stylex.props(laneXStyle)}>
-      {isBusy && <Spinner size="sm" aria-label={loadingLabel} />}
+      {isBusy && (
+        <Spinner size="sm" aria-label={loadingLabel} aria-hidden="true" />
+      )}
       {children}
     </div>
   );

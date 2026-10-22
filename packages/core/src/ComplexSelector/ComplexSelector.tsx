@@ -4,6 +4,7 @@
 
 /**
  * @file ComplexSelector.tsx
+ * Composes a silent Spinner; the selector owns busy feedback.
  * @input Uses React, StyleX, Field, Icon slots, Layer positioning, and usePopover
  * @output Exports a rich-selector shell with exact token-sized input, secondary, and ghost triggers, plus an imperative open/close handle
  * @position Core implementation; consumed by index.ts
@@ -790,7 +791,7 @@ export function ComplexSelector<Value>({
           {...stylex.props(styles.trigger)}>
           <span {...stylex.props(styles.triggerText)}>{triggerContent}</span>
         </button>
-        {isBusy && <Spinner size="sm" />}
+        {isBusy && <Spinner size="sm" aria-hidden="true" />}
         <Icon
           icon="chevronDown"
           size="sm"

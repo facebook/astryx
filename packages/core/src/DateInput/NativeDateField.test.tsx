@@ -3,7 +3,7 @@
 /**
  * @file NativeDateField.test.tsx
  * @input Uses vitest, @testing-library/react, DateInput
- * @output Unit tests for the OS-picker surface (`nativePicker`)
+ * @output Unit tests for the OS-picker surface (`nativePicker`) and its silent busy indicator
  * @position Testing; validates NativeDateField.tsx
  *
  * Every test renders through `DateInput` with a pointer stubbed, so the
@@ -222,7 +222,9 @@ describe('DateInput nativePicker', () => {
     expect(changeAction).toHaveBeenCalledExactlyOnceWith('2026-03-21');
     expect(getInput()).not.toBeDisabled();
     expect(getInput()).toHaveAttribute('aria-busy', 'true');
-    expect(screen.getByRole('status', {name: 'Loading'})).toBeInTheDocument();
+    expect(
+      screen.getByLabelText('Loading', {selector: '.astryx-spinner'}),
+    ).toBeInTheDocument();
     expect(screen.getByText('March 21, 2026')).toBeInTheDocument();
 
     fireEvent.change(getInput(), {target: {value: '2026-03-22'}});
@@ -597,7 +599,9 @@ describe('DateInput nativePicker', () => {
 
     expect(calls).toEqual(['onChange', 'changeAction']);
     expect(changeAction).toHaveBeenCalledExactlyOnceWith(undefined);
-    expect(screen.getByRole('status', {name: 'Loading'})).toBeInTheDocument();
+    expect(
+      screen.getByLabelText('Loading', {selector: '.astryx-spinner'}),
+    ).toBeInTheDocument();
     await act(async () => resolveAction());
   });
 

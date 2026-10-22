@@ -4,6 +4,7 @@
 
 /**
  * @file Thumbnail.tsx
+ * Composes a silent Spinner; the thumbnail owns busy feedback.
  * @input Uses React, stylex, Button, Skeleton, Spinner
  * @output Exports Thumbnail component, ThumbnailProps
  * @position Core implementation; consumed by index.ts
@@ -473,7 +474,7 @@ export function Thumbnail({
         {showImage && <div {...stylex.props(styles.insetBorder)} />}
         {showUploadOverlay && (
           <div {...stylex.props(styles.uploadOverlay)}>
-            <Spinner size="sm" shade="onMedia" />
+            <Spinner size="sm" shade="onMedia" aria-hidden="true" />
           </div>
         )}
         {removeButtonEl}

@@ -4,8 +4,8 @@
 
 /**
  * @file Spinner.tsx
- * @input Uses React, i18n (useTranslator), StyleX, SVG rendering
- * @output Exports Spinner component, SpinnerProps, SpinnerSize, SpinnerShade types
+ * @input Uses React, i18n (useTranslator), useAnnounce, StyleX, SVG rendering
+ * @output Exports Spinner and its types; standalone loading names use the shared polite channel
  * @position Core implementation of spinner loading indicator
  *
  * SYNC: When modified, update these files to stay in sync:
@@ -16,12 +16,13 @@
  * - /packages/cli/assets/templates/blocks/components/Spinner/ (showcase blocks)
  */
 
-import {useId, type ReactNode} from 'react';
+import {useEffect, useId, useMemo, useRef, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {colorVars, durationVars, spacingVars} from '../theme/tokens.stylex';
 import type {BaseProps} from '../BaseProps';
 import {Text} from '../Text/Text';
-import {mergeProps} from '../utils';
+import {mergeProps, mergeRefs} from '../utils';
+import {useAnnounce} from '../hooks/useAnnounce';
 import {useTranslator} from '../i18n';
 import {themeProps} from '../utils/themeProps';
 
@@ -332,7 +333,7 @@ const styles = stylex.create({
   arc: {
     // Slow the motion dramatically under reduced-motion rather than freezing
     // it (a frozen spinner reads as broken), matching ProgressBar's approach.
-    // The role="status" + "Loading" label still convey busy state (obs-6).
+    // The named image and shared-channel message still convey loading.
     animationDuration: {
       default: durationVars['--duration-slow-min'],
       '@media (prefers-reduced-motion: reduce)': '3s',
@@ -459,8 +460,9 @@ export interface SpinnerProps extends BaseProps<HTMLSpanElement> {
    * Accepts a string or ReactNode for rich content.
    *
    * When `label` is a string, the visible text also provides the accessible
-   * name of the status element (via aria-labelledby, avoiding a duplicate
-   * announcement) unless `aria-label` is explicitly set.
+   * name of the non-live ring image (via aria-labelledby) unless `aria-label`
+   * is explicitly set. Standalone spinners send that name to the shared
+   * polite announcement channel when they appear.
    *
    * @example
    * ```
@@ -478,6 +480,28 @@ export interface SpinnerProps extends BaseProps<HTMLSpanElement> {
 // =============================================================================
 // Component
 // =============================================================================
+
+/** Read only the rendered label siblings, leaving the ring's name unchanged. */
+function renderedLabelText(ring: HTMLSpanElement): string {
+  const copy = ring.parentElement?.cloneNode(true) as HTMLElement | undefined;
+  if (!copy) {
+    return '';
+  }
+  copy.firstElementChild?.remove();
+  for (const hidden of copy.querySelectorAll(
+    '[aria-hidden="true"], [hidden], [inert]',
+  )) {
+    hidden.remove();
+  }
+  // Preserve line boundaries without reading layout or inspecting React children.
+  for (const boundary of copy.querySelectorAll(
+    'br, p, div, li, h1, h2, h3, h4, h5, h6',
+  )) {
+    boundary.before(' ');
+    boundary.after(' ');
+  }
+  return (copy.textContent ?? '').replace(/\s+/g, ' ').trim();
+}
 
 /**
  * An animated loading indicator. Available in four sizes and four color shades.
@@ -510,11 +534,16 @@ export function Spinner({
   const hasLabel = label != null;
   const labelId = useId();
   const t = useTranslator();
+  const announce = useAnnounce();
+  const spinnerRef = useRef<HTMLSpanElement>(null);
+  const announcedRef = useRef<string | null>(null);
+  const ringRef = useMemo(
+    () => mergeRefs(spinnerRef, hasLabel ? undefined : ref),
+    [hasLabel, ref],
+  );
 
-  // When a visible string label renders (and no explicit aria-label is set),
-  // name the status element from the visible Text via aria-labelledby instead
-  // of duplicating the same string as aria-label — the duplicate would be
-  // announced twice by screen readers (WCAG 4.1.2).
+  // Name the ring from its visible string label without duplicating that
+  // label in an aria-label. Rich content remains outside the image.
   const namedByVisibleLabel =
     hasLabel && typeof label === 'string' && ariaLabel == null;
 
@@ -526,10 +555,50 @@ export function Spinner({
     (typeof label === 'string' ? label : undefined) ??
     t('@astryx.spinner.loading');
 
+  // Synchronize with the document-owned announcement channel (AST-086).
+  // Recheck DOM ownership after each render: the same Spinner can become
+  // hidden or enter a live container without changing its accessible name.
+  useEffect(() => {
+    const element = spinnerRef.current;
+    // The private marker lets composed loaders retain readable visible labels.
+    // Decorative indicators use aria-hidden instead; neither owns the task.
+    if (
+      !element ||
+      element.closest(
+        '[aria-hidden="true"], [hidden], [inert], [data-astryx-spinner-silent]',
+      )
+    ) {
+      announcedRef.current = null;
+      return;
+    }
+    const liveOwner = element.closest(
+      '[aria-live], [role="status"], [role="alert"], [role="log"]',
+    );
+    if (liveOwner && liveOwner.getAttribute('aria-live') !== 'off') {
+      announcedRef.current = null;
+      return;
+    }
+    const message =
+      ariaLabel == null && hasLabel && typeof label !== 'string'
+        ? renderedLabelText(element)
+        : resolvedAriaLabel;
+    if (!message) {
+      announcedRef.current = null;
+      return;
+    }
+    if (announcedRef.current === message) {
+      return;
+    }
+    announcedRef.current = message;
+    announce(message, 'polite');
+    // No cleanup clears this shared channel: it can belong to another owner
+    // by the time this Spinner unmounts. The ref survives StrictMode replay.
+  });
+
   const spinner = (
     <span
-      ref={hasLabel ? undefined : ref}
-      role="status"
+      ref={ringRef}
+      role="img"
       aria-label={namedByVisibleLabel ? undefined : resolvedAriaLabel}
       aria-labelledby={namedByVisibleLabel ? labelId : undefined}
       data-testid={hasLabel ? undefined : testId}

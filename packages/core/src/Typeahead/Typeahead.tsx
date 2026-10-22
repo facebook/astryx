@@ -4,6 +4,7 @@
 
 /**
  * @file Typeahead.tsx
+ * Composes a silent Spinner; the combobox owns busy feedback.
  * @input Uses React, BaseTypeahead, Field, Token, InputGroupContext
  * @output Exports Typeahead styled typeahead component
  * @position Styled wrapper; composes BaseTypeahead with Field or InputGroup
@@ -361,7 +362,9 @@ function EndLane({
   }
   return (
     <div {...stylex.props(styles.endLane)}>
-      {isBusy && <Spinner size="sm" aria-label={loadingLabel} />}
+      {isBusy && (
+        <Spinner size="sm" aria-label={loadingLabel} aria-hidden="true" />
+      )}
       {clear}
     </div>
   );

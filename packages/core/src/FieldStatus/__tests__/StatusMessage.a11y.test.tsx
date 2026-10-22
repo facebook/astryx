@@ -4,7 +4,7 @@
 /**
  * @file StatusMessage.a11y.test.tsx
  * @input Uses the shared status-message contract and current Core binding render map
- * @output Component-facing jsdom evidence through expectAccessibilitySpec
+ * @output Component-facing jsdom evidence through expectAccessibilitySpec, including Spinner's shared-channel owner
  * @position Fast migration lane; browser-owned outcomes remain explicitly unrun
  */
 
@@ -131,7 +131,7 @@ describe('Core status-message binding inventory', () => {
       'ChatSystemMessage',
       'FieldStatus announcement channel',
       'ProgressBar',
-      'Spinner',
+      'Spinner announcement channel',
       'Toast announcement channel',
       'Toast card',
     ]);

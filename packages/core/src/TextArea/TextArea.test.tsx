@@ -3,7 +3,7 @@
 /**
  * @file TextArea.test.tsx
  * @input Uses vitest, @testing-library/react, TextArea component
- * @output Unit tests for TextArea component behavior
+ * @output Unit tests for TextArea behavior and silent busy indicators
  * @position Testing; validates TextArea.tsx implementation
  *
  * SYNC: When TextArea.tsx changes, update tests to match new behavior
@@ -346,9 +346,11 @@ describe('TextArea', () => {
           status={{type: 'error'}}
         />,
       );
-      // Matches the other inputs: spinner (role="status") and the status icon
-      // render side by side in the end slot, not mutually exclusively.
-      expect(screen.getByRole('status')).toBeInTheDocument();
+      // The decorative spinner and status icon share the end slot.
+      expect(container.querySelector('.astryx-spinner')).toHaveAttribute(
+        'aria-hidden',
+        'true',
+      );
       // Status icon svg is also present alongside the spinner.
       expect(container.querySelectorAll('svg').length).toBeGreaterThan(0);
     });
