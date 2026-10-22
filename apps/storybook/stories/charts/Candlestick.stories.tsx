@@ -24,7 +24,7 @@ const axes = (
   </>
 );
 
-/** OHLC candlesticks. Up/down default to the live data-viz categorical green/red tokens. */
+/** OHLC candlesticks. Up/down default to the theme's success/error colors. */
 export const Basic: StoryObj = {
   render: () => (
     <Chart

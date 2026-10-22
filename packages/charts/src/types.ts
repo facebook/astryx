@@ -20,9 +20,11 @@ export type ColorAccessor =
 
 /**
  * Fallback series color used when a mark has neither an explicit color nor a
- * palette color assigned by the chart root. The chart root normally assigns a
- * resolved categorical color; this uses Core's emitted accent token only as a
- * last-resort fallback when a mark renders outside that path.
+ * palette color assigned by the chart root. Uses an EMITTED core token
+ * (`--color-accent`) — the data-viz `--color-data-*` tokens are JS-only values
+ * (resolved via useChartColors), not CSS custom properties, so `var(--color-data-*)`
+ * would render nothing. The chart root normally assigns a resolved palette color,
+ * so this is only a last-resort fallback.
  */
 export const DEFAULT_SERIES_COLOR = 'var(--color-accent)';
 

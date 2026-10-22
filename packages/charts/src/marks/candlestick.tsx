@@ -2,14 +2,10 @@
 
 /**
  * @file marks/candlestick.tsx
- * @input OHLC field names, optional color overrides, chart scales/data, and
- *   public StyleX data-color variables
  * @output Candlestick (OHLC) series. Renders on both band and linear/time x
  *   scales; candles missing any OHLC field are skipped rather than drawn to 0.
- * @position SVG series mark factory for the Charts package
  */
 
-import {dataVars} from '@astryxdesign/core/theme/dataTokens.stylex';
 import type {SeriesDef, ResolvedPoint, SeriesContext} from '../types';
 import {xPixel, isBandScale} from '../utils';
 
@@ -53,6 +49,10 @@ function candleSlot(resolved: ResolvedPoint[], ctx: SeriesContext): number {
 }
 
 export function candlestick(options: CandlestickOptions): SeriesDef {
+  // Emitted core semantic tokens (data-viz --color-data-* tokens aren't CSS vars).
+  const upColor = options.upColor ?? 'var(--color-success)';
+  const downColor = options.downColor ?? 'var(--color-error)';
+
   return {
     type: 'candlestick',
     key: `ohlc-${options.close}`,
@@ -77,10 +77,6 @@ export function candlestick(options: CandlestickOptions): SeriesDef {
 
     render(resolved, ctx) {
       const {data, yScale} = ctx;
-      const upColor =
-        options.upColor ?? dataVars['--color-data-categorical-green'];
-      const downColor =
-        options.downColor ?? dataVars['--color-data-categorical-red'];
       const bodyWidth = Math.max(1, candleSlot(resolved, ctx) * 0.6);
 
       return (

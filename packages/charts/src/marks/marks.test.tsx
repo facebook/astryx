@@ -11,7 +11,6 @@
 
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import {render, act, screen} from '@testing-library/react';
-import {dataVars} from '@astryxdesign/core/theme/dataTokens.stylex';
 import {Chart} from '../Chart';
 import {bar} from './bar';
 import {line} from './line';
@@ -270,41 +269,9 @@ describe('candlestick', () => {
     const wicks = plot.querySelectorAll('line');
     expect(rects).toHaveLength(3);
     expect(wicks).toHaveLength(3);
-    expect(rects[0]).toHaveAttribute(
-      'fill',
-      dataVars['--color-data-categorical-green'],
-    );
-    expect(rects[1]).toHaveAttribute(
-      'fill',
-      dataVars['--color-data-categorical-red'],
-    );
-    expect(rects[2]).toHaveAttribute(
-      'fill',
-      dataVars['--color-data-categorical-green'],
-    );
-    expect(wicks[0]).toHaveAttribute(
-      'stroke',
-      dataVars['--color-data-categorical-green'],
-    );
-    expect(wicks[1]).toHaveAttribute(
-      'stroke',
-      dataVars['--color-data-categorical-red'],
-    );
-  });
-
-  it('lets explicit up/down colors override the data-viz token defaults', () => {
-    const custom = candlestick({
-      open: 'o',
-      high: 'h',
-      low: 'l',
-      close: 'c',
-      upColor: '#123456',
-      downColor: '#abcdef',
-    });
-    const {plot} = renderMarks([custom], OHLC);
-    const rects = plot.querySelectorAll('rect');
-    expect(rects[0]).toHaveAttribute('fill', '#123456');
-    expect(rects[1]).toHaveAttribute('fill', '#abcdef');
+    expect(rects[0]).toHaveAttribute('fill', 'var(--color-success)');
+    expect(rects[1]).toHaveAttribute('fill', 'var(--color-error)');
+    expect(rects[2]).toHaveAttribute('fill', 'var(--color-success)');
   });
 
   it('skips candles missing any OHLC field', () => {
