@@ -172,8 +172,10 @@ Platform-specific details stay inside that compiler.
   icon request and slot request to the same node as its runtime theme, and its
   public icon and slot exports are the same node-valued and static views. Build
   tooling that generates or subsets icon artwork enumerates a theme's requests as
-  every key with each of the four sizes and either no variant or one listed
-  variant; it never enumerates an unlisted variant.
+  every entry's key with each of the four sizes and either no variant or one
+  variant that entry can receive under `spec:AST-087` FR4; it never enumerates a
+  variant the entry cannot receive, such as a name only a child theme lists for
+  an entry it inherits.
 
 This record does not own:
 
@@ -274,19 +276,19 @@ tiers.
 
 ## Verification
 
-| Invariant        | Evidence                                                                                                        | Failure signal                                                                                                          |
-| ---------------- | --------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| INV1, INV2, INV3 | Compiler imports and runtime/build comparison fixtures                                                          | Runtime and build use different theme-to-CSS logic or produce different web rules                                       |
-| INV4             | `generateThemeRules.test.ts` and source/distribution cascade tests                                              | Scope or layer order differs by output path                                                                             |
-| INV5             | Existing per-property fixtures (partial; gap below)                                                             | A guaranteed property compiles but does not produce its promised observable effect                                      |
-| INV6, INV7       | Existing registry and CLI public-variable tests (partial)                                                       | Private variables become authorable, or a reviewed public semantic variable fails build/runtime                         |
-| INV8             | Component target metadata and compatibility review                                                              | Successful generic emission is treated as a guaranteed public behavior                                                  |
-| INV9, INV10      | Platform compiler tests when another compiler ships                                                             | CSS details enter shared authoring, or shared theme intent silently disappears                                          |
-| INV11            | `defineTheme.test.ts` and `build.test.mjs` local-token fixtures                                                 | Runtime/static output rewrites a local name, disagrees, or leaves partial output after failure                          |
-| INV12            | `themeAdaptations.test.ts` and CLI adaptation build fixtures                                                    | Rule blocks merge/reorder/drop, surfaces lose precedence, or runtime/static CSS diverges                                |
-| INV13, INV14     | Declaration scanner, generator, Theme mounting, CLI receipt tests, and the existing theme-family Chromium guard | One unsafe declaration corrupts neighbors, valid CSS changes, legacy token generation crashes, or reporting changes CSS |
-| Built themes     | Theme and CLI build tests                                                                                       | Runtime recompiles a built theme, or built output omits canonical rules                                                 |
-| INV15            | CLI build fixtures with function entries, slot functions, and a variant list, compared with runtime resolution  | Built and runtime icons differ, a function is dropped silently, or tooling enumerates an unlisted variant               |
+| Invariant        | Evidence                                                                                                                                                 | Failure signal                                                                                                          |
+| ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| INV1, INV2, INV3 | Compiler imports and runtime/build comparison fixtures                                                                                                   | Runtime and build use different theme-to-CSS logic or produce different web rules                                       |
+| INV4             | `generateThemeRules.test.ts` and source/distribution cascade tests                                                                                       | Scope or layer order differs by output path                                                                             |
+| INV5             | Existing per-property fixtures (partial; gap below)                                                                                                      | A guaranteed property compiles but does not produce its promised observable effect                                      |
+| INV6, INV7       | Existing registry and CLI public-variable tests (partial)                                                                                                | Private variables become authorable, or a reviewed public semantic variable fails build/runtime                         |
+| INV8             | Component target metadata and compatibility review                                                                                                       | Successful generic emission is treated as a guaranteed public behavior                                                  |
+| INV9, INV10      | Platform compiler tests when another compiler ships                                                                                                      | CSS details enter shared authoring, or shared theme intent silently disappears                                          |
+| INV11            | `defineTheme.test.ts` and `build.test.mjs` local-token fixtures                                                                                          | Runtime/static output rewrites a local name, disagrees, or leaves partial output after failure                          |
+| INV12            | `themeAdaptations.test.ts` and CLI adaptation build fixtures                                                                                             | Rule blocks merge/reorder/drop, surfaces lose precedence, or runtime/static CSS diverges                                |
+| INV13, INV14     | Declaration scanner, generator, Theme mounting, CLI receipt tests, and the existing theme-family Chromium guard                                          | One unsafe declaration corrupts neighbors, valid CSS changes, legacy token generation crashes, or reporting changes CSS |
+| Built themes     | Theme and CLI build tests                                                                                                                                | Runtime recompiles a built theme, or built output omits canonical rules                                                 |
+| INV15            | CLI build fixtures with function entries, slot functions, a variant list, and an inherited entry under a replaced list, compared with runtime resolution | Built and runtime icons differ, a function is dropped silently, or tooling enumerates a variant an entry cannot receive |
 
 ## Known conformance and verification gaps
 
