@@ -7,8 +7,8 @@
  * @input Uses React, useIsHydrating, useAnnounce, renderedText
  * @output Exports useIsInsertedAfterLoad and AnnounceOnInsert
  * @position Internal utility for content that appears after the page loads;
- *   read by useEntryAnimation and EmptyState. SYNC: deliberately NOT exported
- *   from hooks/index.ts, so it ships no public API (`spec:AST-002`).
+ *   read by EmptyState. Uses the same rule as useEntryAnimation. SYNC:
+ *   deliberately NOT exported from hooks/index.ts (no public API, AST-002).
  */
 
 import {useEffect, useRef, useState, type HTMLAttributes} from 'react';
