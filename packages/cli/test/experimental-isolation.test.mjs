@@ -12,18 +12,24 @@
  *   manifest, and the `astryx docs cli` listing gain only the experimental
  *   group or namespace, the one marked entry point FR27 allows.
  *
- * Update after an intended change to stable output: regenerate from a
- * checkout of main (below), then review the diff of `__golden__/no-icon-set/`;
- * a diff that names an icon set, an icon definition, or `experimental` is the
- * leak this test exists to catch.
+ * Updating the goldens has two phases.
  *
- * Regenerating runs main's CLI in test projects created inside main's
- * checkout, so main's CLI and Core answer: a project inside this checkout
- * would hand the run over to this checkout's CLI, and the goldens would record
- * this branch's own output. A run that hands over fails. Tests that need the
- * feature are skipped while regenerating, and every golden that this
- * branch's CLI may add to (help, the manifest, the `cli` docs listings) is
- * compared with those additions stripped.
+ * While main lacks the icon-set feature (before the feature lands), the
+ * goldens are main's own output: regenerate them from a checkout of main
+ * with `GOLDEN_CLI_BIN=<main>/packages/cli/clients/cli/bin/astryx.mjs
+ * GOLDEN_CLI_ROOT=<main>/packages/cli vitest run -u` on this file. That runs
+ * main's CLI in test projects created inside main's checkout, so main's CLI
+ * and Core answer: a project inside this checkout would hand the run over to
+ * this checkout's CLI, and the goldens would record this branch's own output.
+ * A run that hands over fails. Tests that need the feature are skipped while
+ * regenerating, and every golden that this branch's CLI may add to (help,
+ * the manifest, the `cli` docs listings) is compared with those additions
+ * stripped.
+ *
+ * Once the feature is on main, a branch with an intended change to stable
+ * output runs `vitest run -u` on this file in the branch itself, then reviews
+ * the diff of `__golden__/no-icon-set/`: a diff that names an icon set, an
+ * icon definition, or `experimental` is the leak this test exists to catch.
  */
 
 import {afterAll, beforeAll, describe, expect, it} from 'vitest';
@@ -47,6 +53,9 @@ const GOLDEN_REPO = process.env.GOLDEN_CLI_ROOT
   ? path.resolve(process.env.GOLDEN_CLI_ROOT, '..', '..')
   : REPO_ROOT;
 const GOLDEN = path.join(CLI_ROOT, 'test', '__golden__', 'no-icon-set');
+/** Words an experimental surface's text uses; a stable doc that gains one leaks. */
+const LEAK_WORDS =
+  /\bexperimental\b|\bicon[- ]?sets?\b|\bicon[- ]definitions?\b/iu;
 /** Writing the goldens from main's CLI, not checking this branch's. */
 const REGENERATING = Boolean(process.env.GOLDEN_CLI_ROOT);
 /** Where test projects go: inside the checkout whose CLI answers. */
@@ -158,11 +167,13 @@ describe('with no icon set, stable output is unchanged', () => {
     ).toMatchFileSnapshot(path.join(GOLDEN, 'docs-topics.json'));
   }, 120_000);
 
-  // Words an icon, an icon definition, or the icon-set docs would answer.
-  // Every stable node of the docs tree outside `cli`, the same way: each
-  // namespace's children and each guide's sections, and a digest of each
-  // read. The field reference gains the stable `stability` field of every
-  // doc kind, so it is compared by sections.
+  // Every stable node of the docs tree outside `cli`, by structure and by
+  // what could leak, so an unrelated doc edit rewrites no line here: each
+  // namespace's children (route and title) and each guide's sections (id and
+  // title), every `stability` the node or a child carries, and every
+  // sentence in the node that names `experimental`, an icon set, or an icon
+  // definition. The field reference gains the stable `stability` field of
+  // every doc kind, so it is compared by sections.
   it('every stable docs tree node: its children or sections, and its JSON', async () => {
     const root = process.env.GOLDEN_CLI_ROOT ?? CLI_ROOT;
     const {docs} = await import(
@@ -181,6 +192,45 @@ describe('with no icon set, stable output is unchanged', () => {
         .join('<project>')
         .split(path.resolve(root, '..', '..'))
         .join('<repo>');
+    /**
+     * Every `stability` a read carries, on the node or a child, by where.
+     * @param {any} res
+     */
+    const stabilities = res => {
+      /** @type {string[]} */
+      const marked = [];
+      if (res.data?.stability) marked.push(`node: ${res.data.stability}`);
+      for (const slot of res.data?.slots ?? []) {
+        for (const child of slot.children ?? []) {
+          if (child.stability) {
+            marked.push(`${child.route}: ${child.stability}`);
+          }
+        }
+      }
+      return marked.length > 0 ? {stability: marked} : {};
+    };
+    /**
+     * Every sentence in a read that names an experimental surface.
+     * @param {any} value
+     */
+    const mentions = value => {
+      /** @type {Set<string>} */
+      const found = new Set();
+      /** @param {any} each */
+      const visit = each => {
+        if (typeof each === 'string') {
+          for (const sentence of each.split(/(?<=[.!?])\s+/u)) {
+            if (LEAK_WORDS.test(sentence)) found.add(sentence);
+          }
+        } else if (Array.isArray(each)) {
+          each.forEach(visit);
+        } else if (each && typeof each === 'object') {
+          Object.values(each).forEach(visit);
+        }
+      };
+      visit(value);
+      return [...found].sort();
+    };
     const list = await docs(undefined, undefined, {cwd: project});
     const queue = (list.meta?.namespaces ?? []).map(
       (/** @type {any} */ entry) => entry.topic,
@@ -204,7 +254,9 @@ describe('with no icon set, stable output is unchanged', () => {
         ...(res.type === 'docs.node'
           ? {
               children: res.data.slots.flatMap((/** @type {any} */ slot) =>
-                slot.children.map((/** @type {any} */ c) => c.route),
+                slot.children.map(
+                  (/** @type {any} */ c) => `${c.route}: ${c.title}`,
+                ),
               ),
             }
           : {
@@ -213,9 +265,10 @@ describe('with no icon set, stable output is unchanged', () => {
                   `${section.id ?? section.key}: ${section.title}`,
               ),
             }),
+        ...stabilities(res),
         ...(route === 'authoring/field-reference'
           ? {}
-          : {digest: createHash('sha256').update(clean(res)).digest('hex')}),
+          : {mentions: mentions(JSON.parse(clean(res)))}),
       };
     }
     const sorted = Object.fromEntries(
@@ -482,8 +535,10 @@ export default {
   });
 });
 
-// Main's CLI refuses `experimental.iconSet`; these compare with the goldens
-// the project without icon sets wrote.
+// Only while main lacks the feature: main's CLI refuses
+// `experimental.iconSet`, so regenerating from main skips these, which
+// compare with the goldens the project without icon sets wrote. Once the
+// feature is on main, `vitest run -u` in a branch runs them too.
 describe.skipIf(REGENERATING)(
   'with an icon set installed and configured, search is unchanged',
   () => {
