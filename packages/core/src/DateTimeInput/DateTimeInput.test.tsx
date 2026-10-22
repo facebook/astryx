@@ -1127,6 +1127,24 @@ describe('DateTimeInput', () => {
       });
     });
 
+    it('announces no step from a disabled time field (AST-085 FR2)', async () => {
+      render(
+        <DateTimeInput
+          label="Meeting"
+          value={'2026-03-15T14:30' as ISODateTimeString}
+          onChange={() => {}}
+          isDisabled
+        />,
+      );
+
+      fireEvent.keyDown(screen.getByLabelText('Meeting time'), {
+        key: 'ArrowUp',
+      });
+
+      await new Promise(resolve => setTimeout(resolve, 50));
+      expect(politeRegion()?.textContent ?? '').not.toContain('2:31 PM');
+    });
+
     it('politely announces the new time after ArrowDown stepping', async () => {
       render(
         <DateTimeInput
