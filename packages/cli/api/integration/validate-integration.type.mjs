@@ -40,8 +40,11 @@
  * @typedef {object} ValidateIntegrationResponse
  * @property {'integration.validate'} type
  * @property {{validated: boolean, name: string | null, version: string | null, issues: import('../../foundation/integrations/issue').AstryxIntegrationIssue[], notes?: Array<{code: string, message: string, next?: boolean}>, docTypes?: DocTypesReport, docNames?: DocNamesReport, blockComponents?: BlockComponentsReport, publicImports?: PublicImportsReport}} data
- *   `notes`: information beside the issues that fails nothing, such as
- *   `invalid_cli_command`, a `cliCommand` that was ignored as malformed;
+ *   `notes`: information beside the issues. A note fails nothing by default;
+ *   one with `next: true` counts as a warning under `integration check
+ *   --next`, fails `integration check --strict --next`, and fails `--strict`
+ *   from the next minor release. Notes include `invalid_cli_command`, a
+ *   `cliCommand` that was ignored as malformed;
  *   `component_without_example`, `template_category`,
  *   `showcase_not_standalone` and `template_asset_not_packed`, what a
  *   package's examples need (next minor);
@@ -57,8 +60,10 @@
  *   still pair (`source_without_component_doc`); `doc_name_mismatch` and
  *   `unknown_block_component` (see `docNames` and `blockComponents`); and
  *   since 0.7.3 each public-import finding; they become warnings in the next
- *   minor release; and `runner_command`, an Astryx command a topic writes
- *   with a package runner
+ *   minor release; and, for the commands a topic writes, `runner_command`
+ *   (written with a package runner), `plain_command` (written bare),
+ *   `package_manager_command` (written for one package manager) and
+ *   `doc_token` (a token that does not parse), each with the token to write
  */
 
 /**

@@ -141,6 +141,16 @@ describe('a token whose body holds braces or quotes', () => {
   });
 });
 
+describe('npm script shortcuts', () => {
+  it('suggest {@pm run …}, which every package manager runs', () => {
+    expect(tokenForCommand('npm test')).toBe('{@pm run test}');
+    expect(tokenForCommand('npm start -- --port 3000')).toBe(
+      '{@pm run start -- --port 3000}',
+    );
+    expect(tokenForCommand('npm run-script build')).toBe('{@pm run build}');
+  });
+});
+
 describe('a token that never closes', () => {
   it('counts a token broken across lines, or holding a backtick, as unclosed', () => {
     expect(
