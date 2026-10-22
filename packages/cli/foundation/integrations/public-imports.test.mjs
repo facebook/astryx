@@ -850,6 +850,12 @@ describe('type-only imports', () => {
       {'legacy.d.ts': 'export type AcmeLegacy = string;\n'},
       "import type {AcmeLegacy} from '@acme/widgets/legacy';",
     ],
+    [
+      'a plain import of a declared type (types beside only require)',
+      {'./legacy': {types: './legacy.d.ts', require: './legacy.cjs'}},
+      {'legacy.d.ts': 'export type AcmeLegacy = string;\n'},
+      "import {AcmeLegacy} from '@acme/widgets/legacy';",
+    ],
   ])(
     'accepts %s from a subpath with a types target',
     async (_label, entries, files, typeImport) => {
@@ -870,7 +876,24 @@ describe('type-only imports', () => {
     },
   );
 
-  it('still notes a value import from a subpath with types beside only require', async () => {
+  it('notes an import type whose only types target sits under require', async () => {
+    pkg(p => {
+      p.exports['./legacy'] = {
+        require: {types: './legacy.d.cts', default: './legacy.cjs'},
+      };
+    });
+    write('legacy.d.cts', 'export type AcmeLegacy = string;\n');
+    write(
+      'components/AcmeWidget.doc.mjs',
+      DOC(
+        undefined,
+        "import type {AcmeLegacy} from '@acme/widgets/legacy';\\nimport {AcmeWidget} from '@acme/widgets/components/AcmeWidget';\\n<AcmeWidget />",
+      ),
+    );
+    expect(await codes()).not.toEqual([]);
+  });
+
+  it('lists a value import from a subpath with types beside only require as not checked', async () => {
     pkg(p => {
       p.exports['./legacy'] = {types: './legacy.d.ts', require: './legacy.cjs'};
     });
@@ -882,7 +905,11 @@ describe('type-only imports', () => {
         "import {acmeLegacy} from '@acme/widgets/legacy';\\nimport {AcmeWidget} from '@acme/widgets/components/AcmeWidget';\\n<AcmeWidget />",
       ),
     );
-    expect(await codes()).not.toEqual([]);
+    expect(await codes()).toEqual([]);
+    const report = (await validateLocalIntegration(dir)).publicImports;
+    expect(report?.unchecked.map(u => u.specifier)).toEqual([
+      '@acme/widgets/legacy',
+    ]);
   });
 
   it('lists a value or unreadable import from a types-only subpath as not checked, never a note', async () => {

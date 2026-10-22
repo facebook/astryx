@@ -1026,29 +1026,8 @@ function typeOnlyStatement(statement) {
 }
 
 /**
- * Whether every target of an export value sits under a `types` condition, so
- * nothing loads it at run time.
- * @param {unknown} value
- * @param {boolean} [underTypes]
- * @returns {boolean}
- */
-function typesOnly(value, underTypes = false) {
-  if (typeof value === 'string') return underTypes;
-  if (Array.isArray(value))
-    return value.length > 0 && value.every(v => typesOnly(v, underTypes));
-  if (!isRecord(value)) return false;
-  const entries = Object.entries(value);
-  return (
-    entries.length > 0 &&
-    entries.every(([condition, v]) =>
-      typesOnly(v, underTypes || condition === 'types'),
-    )
-  );
-}
-
-/**
- * The files the `types` conditions of an export value name, with a wildcard
- * filled in.
+ * The files the `types` conditions of an export value name that an ES module
+ * import can reach (never one under `require`), with a wildcard filled in.
  * @param {unknown} value
  * @param {string} wildcard
  * @param {boolean} [underTypes]
@@ -1061,8 +1040,10 @@ function typesTargets(value, wildcard, underTypes = false, out = []) {
   } else if (Array.isArray(value)) {
     for (const v of value) typesTargets(v, wildcard, underTypes, out);
   } else if (isRecord(value)) {
-    for (const [condition, v] of Object.entries(value))
+    for (const [condition, v] of Object.entries(value)) {
+      if (condition === 'require') continue;
       typesTargets(v, wildcard, underTypes || condition === 'types', out);
+    }
   }
   return out;
 }
@@ -1139,7 +1120,7 @@ function declaredTypeNames(file) {
  */
 function typesOnlyImport(ctx, statement, subpath, declaration) {
   if (typeOnlyStatement(statement)) return null;
-  const not = `"${subpath}" has only a "types" target in package.json "exports", which nothing loads at run time`;
+  const not = `"${subpath}" reaches an ES module import only through a "types" target in package.json "exports", which nothing loads at run time`;
   if (statement.namespace || statement.names.length === 0)
     return `${not}, and a namespace or side-effect import of it cannot be judged from source, so it was not checked`;
   const files = typesTargets(declaration.value, declaration.wildcard ?? '');
@@ -1172,15 +1153,13 @@ function typesOnlyImport(ctx, statement, subpath, declaration) {
  */
 function judgeOwnImport(ctx, statement, subpath) {
   const declaration = declarationIn(ctx.exportsField, ctx.packageDir, subpath);
-  // TypeScript resolves a type-only import through a `types` target, whatever
-  // runtime conditions sit beside it, and the import is dropped from output.
+  // A subpath an ES module import reaches only through `types` (any other
+  // condition beside it, such as `require`, loads nothing for it) is judged as
+  // a type import, never as a run-time one.
   if (
     declaration.state === 'not_importable' &&
-    typeOnlyStatement(statement) &&
     typesTargets(declaration.value, declaration.wildcard ?? '').length > 0
-  )
-    return {undeclared: null};
-  if (declaration.state === 'not_importable' && typesOnly(declaration.value)) {
+  ) {
     const reason = typesOnlyImport(ctx, statement, subpath, declaration);
     return {undeclared: null, missing: [], reason};
   }
