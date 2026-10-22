@@ -978,6 +978,7 @@ function statusRoleGenerationSignature(
       rule.when,
       tokenSetSignature(rule.tokens),
       tokenSetSignature(rule.localTokens),
+      rule.components,
     ]),
   ]);
 }

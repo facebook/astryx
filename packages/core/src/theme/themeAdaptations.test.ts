@@ -583,6 +583,31 @@ describe('rule order and writes', () => {
     );
   });
 
+  it('invalidates cached rules after legacy adaptation component mutation', () => {
+    const theme = defineTheme({
+      name: 'mutated-adaptation-component-cache',
+      adaptations: {
+        rules: [
+          {
+            when: {contrast: 'more'},
+            value: {
+              components: {button: {base: {borderWidth: '1px'}}},
+            },
+          },
+        ],
+      },
+    });
+
+    expect(generateThemeCSS(theme).component).toContain('border-width: 1px');
+    theme.__adaptationRules = theme.__adaptationRules!.map(rule => ({
+      ...rule,
+      components: {button: {base: {borderWidth: '9px'}}},
+    }));
+    const css = generateThemeCSS(theme).component;
+    expect(css).toContain('border-width: 9px');
+    expect(css).not.toContain('border-width: 1px');
+  });
+
   it('emits a guarded alias when only an adaptation authors the source', () => {
     const theme = defineTheme({
       name: 'adaptation-only-status-source',
