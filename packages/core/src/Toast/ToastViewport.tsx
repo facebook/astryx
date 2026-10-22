@@ -56,8 +56,7 @@ const TOAST_EDGE_DRIFT_NEGATIVE = `calc(-1 * ${TOAST_EDGE_DRIFT})`;
 /** How long a toast's text stays in the viewport's own live region. */
 const OWN_REGION_CLEAR_DELAY_MS = 2000;
 
-/** Whether `element` sits inside an open modal `<dialog>`, which makes the
- * rest of the page, the shared announcement channel included, inert. */
+/** Whether `element` is in an open modal, where the rest of the page is inert. */
 function isInsideModalDialog(element: Element | null): boolean {
   const dialog = element?.closest('dialog[open]');
   if (dialog == null) {
@@ -410,23 +409,19 @@ export function ToastViewport({
     [],
   );
 
-  // Each toast is announced once, from addToast — the imperative dispatch path
-  // invoked once per useToast() call from an event handler, never from render
-  // — so StrictMode, remounts and unrelated re-renders never re-announce. The
-  // viewport is the only announcement owner (spec:AST-086 FR1): the card shows
-  // the words but carries no live role (FR7). A top-layer viewport announces
-  // through its own persistent containers, which move with it into the latest
-  // open native modal, where the page's shared channel is inert (FR10). A
-  // viewport rendered in place uses the shared channel (FR2), unless it sits
-  // inside an open native modal, where that channel cannot be heard.
+  // Each toast is announced once, from addToast (an event-driven dispatch, never
+  // render), by the viewport alone: the card carries no live role
+  // (spec:AST-086 FR1, FR7). In the top layer or inside an open modal, where the
+  // page's shared channel is inert, it writes to its own persistent regions
+  // (FR10); otherwise it uses the shared channel (FR2).
   const announceShared = useAnnounce();
   const politeRegionRef = useRef<HTMLDivElement>(null);
   const assertiveRegionRef = useRef<HTMLDivElement>(null);
-  const ownRegionTimers = useRef<
+  const ownRegionTimersRef = useRef<
     Partial<Record<AnnouncePoliteness, {frame: number; clear: number}>>
   >({});
   useEffect(() => {
-    const timers = ownRegionTimers.current;
+    const timers = ownRegionTimersRef.current;
     return () => {
       for (const pending of Object.values(timers)) {
         cancelAnimationFrame(pending.frame);
@@ -434,25 +429,35 @@ export function ToastViewport({
       }
     };
   }, []);
+  const [isInModal, setIsInModal] = useState(false);
+  useLayoutEffect(() => {
+    if (isTopLayer) {
+      return;
+    }
+    const update = () => {
+      // eslint-disable-next-line @eslint-react/set-state-in-effect -- whether the viewport sits in a modal is read from the DOM after it mounts and whenever a modal opens or closes
+      setIsInModal(isInsideModalDialog(viewportRef.current));
+    };
+    update();
+    return subscribeModalOutlets(update);
+  }, [isTopLayer]);
   const announce = useCallback(
     (text: string, politeness: AnnouncePoliteness) => {
       const regionRef =
         politeness === 'assertive' ? assertiveRegionRef : politeRegionRef;
-      const ownsRegion = isTopLayer || isInsideModalDialog(viewportRef.current);
-      const region = ownsRegion ? regionRef.current : null;
+      const region = regionRef.current;
       if (region == null) {
         announceShared(text, politeness);
         return;
       }
-      // Same delivery as the shared channel: clear, write in the next frame
-      // so identical text still registers, then clear so it does not linger.
-      const previous = ownRegionTimers.current[politeness];
+      // As the shared channel delivers: clear, write next frame, clear later.
+      const previous = ownRegionTimersRef.current[politeness];
       if (previous) {
         cancelAnimationFrame(previous.frame);
         clearTimeout(previous.clear);
       }
       region.textContent = '';
-      ownRegionTimers.current[politeness] = {
+      ownRegionTimersRef.current[politeness] = {
         frame: requestAnimationFrame(() => {
           region.textContent = text;
         }),
@@ -461,7 +466,7 @@ export function ToastViewport({
         }, OWN_REGION_CLEAR_DELAY_MS),
       };
     },
-    [isTopLayer, announceShared],
+    [announceShared],
   );
 
   const addToast = useCallback(
@@ -732,10 +737,9 @@ export function ToastViewport({
           : styles.bottomEnd;
   const isReversed = position === 'topEnd' || position === 'topStart';
 
-  // The live regions sit beside the viewport, not inside it, so the rows'
-  // :first-child/:last-child gap rules still see only rows. In the top layer
-  // they share the viewport's host, which moves into the latest open modal.
-  const liveRegions = (
+  // Beside the viewport, so the rows' :first-child/:last-child gap rules see
+  // only rows; in the top layer they share its host, which follows the modal.
+  const liveRegions = (isTopLayer || isInModal) && (
     <>
       <VisuallyHidden
         as="div"

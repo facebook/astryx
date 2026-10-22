@@ -13,7 +13,6 @@ import {useEffect, useState, type ReactElement, type ReactNode} from 'react';
 import {ChatSystemMessage} from '../../Chat/ChatSystemMessage';
 import {ProgressBar} from '../../ProgressBar/ProgressBar';
 import {Spinner} from '../../Spinner/Spinner';
-import {Toast} from '../../Toast/Toast';
 import {ToastViewport} from '../../Toast/ToastViewport';
 import {useToast} from '../../Toast/useToast';
 import {useAnnounce, type AnnouncePoliteness} from '../../hooks/useAnnounce';
@@ -114,26 +113,6 @@ function ToastAnnouncementHarness({type}: {type: 'info' | 'error'}) {
       </button>
       <ToastAnnouncementButtons type={type} />
     </ToastViewport>
-  );
-}
-
-function ToastCardHarness({type}: {type: 'info' | 'error'}) {
-  const message = type === 'error' ? 'Upload failed' : 'Changes saved';
-  const replacement =
-    type === 'error' ? 'Connection failed' : 'Profile updated';
-  const [body, setBody] = useState(message);
-  return (
-    <Frame>
-      <TransitionButton name="show" onClick={() => setBody(message)} />
-      <TransitionButton name="replace" onClick={() => setBody(replacement)} />
-      <Toast
-        type={type}
-        body={body}
-        isAutoHide={false}
-        autoHideDuration={5000}
-        onDismiss={() => {}}
-      />
-    </Frame>
   );
 }
 
@@ -259,8 +238,6 @@ export const CORE_STATUS_MESSAGE_STATE_RENDERS: Record<
 > = {
   'toast-info-announcement': () => <ToastAnnouncementHarness type="info" />,
   'toast-error-announcement': () => <ToastAnnouncementHarness type="error" />,
-  'toast-info-card-mounted': () => <ToastCardHarness type="info" />,
-  'toast-error-card-mounted': () => <ToastCardHarness type="error" />,
   'field-status-error-attached': () => (
     <FieldStatusHarness
       type="error"
