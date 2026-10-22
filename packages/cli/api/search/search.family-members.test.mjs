@@ -35,6 +35,12 @@ describe('family members found by their spelled-out names', () => {
     expect(top).toContain('HStack');
   });
 
+  it('only a single-letter word is spelled out', async () => {
+    // "without" begins with "With" but spells out no letter of the name.
+    const {results} = (await search('checkbox list without end content')).data;
+    expect(results[0]?.reason).not.toMatch(/spelled out/);
+  });
+
   it('a word the description does not spell out is no name', async () => {
     const {results} = (await search('visual stack')).data;
     expect(results[0]?.name).not.toBe('VStack');

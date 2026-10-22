@@ -49,9 +49,9 @@ import {pluralOf} from './_query.mjs';
 
 /**
  * Whether a multi-word term spells out a name word by word: as many words as
- * the name, each starting with the name's word in order, and every word the
- * term spells longer than the name ("vertical" for V) named in the entry's own
- * description. `vertical stack` spells out VStack when its description says
+ * the name, each the name's word in order or, for a single-letter word, a word
+ * starting with that letter ("vertical" for V) that the entry's own
+ * description names. `vertical stack` spells out VStack when its description says
  * "vertical"; `visual stack` does not.
  * @param {string} term
  * @param {string} name
@@ -67,7 +67,9 @@ function spellsOut(term, name, description) {
     const w = words[i];
     const p = parts[i];
     if (sameWord(w, p)) continue;
-    if (!w.startsWith(p)) return false;
+    // Only a single-letter word is an abbreviation to spell out: "With" in a
+    // name is not spelled out by "without".
+    if (p.length !== 1 || !w.startsWith(p)) return false;
     if (!described.some(d => sameWord(d, w))) return false;
     expanded = true;
   }
@@ -173,6 +175,7 @@ export function scoreCandidate(
       consider(95, `name "${candidateName}" spelled`, 'partial');
     } else if (
       domain !== 'doc' &&
+      domain !== 'theme' &&
       spellsOut(term, candidateName, description)
     ) {
       // The name's short words spelled out, in order, as the entry's own
@@ -186,7 +189,11 @@ export function scoreCandidate(
     } else {
       if (sameWord(term, nameLower)) consider(95, `name "${candidateName}"`);
       // The term is a word of the name, or starts one: "input" in TextInput.
-      else if (domain !== 'doc' && headOfLetters(term, candidateName)) {
+      else if (
+        domain !== 'doc' &&
+        domain !== 'theme' &&
+        headOfLetters(term, candidateName)
+      ) {
         // The term is the name's head word after single letters (Stack in
         // VStack, HStack): a variant named by its head, as a keyword is.
         consider(90, `name "${candidateName}" ends in "${term}"`);
