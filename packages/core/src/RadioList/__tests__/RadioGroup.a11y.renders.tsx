@@ -122,10 +122,15 @@ function MenuRadioFixture({
   initial = 'newest',
   described = false,
   disabledOption,
+  isTitled = false,
+  titledLabel,
 }: {
   initial?: string;
   described?: boolean;
   disabledOption?: 'oldest';
+  isTitled?: boolean;
+  /** A `label` beside the title, which the title outranks. */
+  titledLabel?: string;
 }) {
   const [value, setValue] = useState<string | undefined>(initial || undefined);
   return (
@@ -133,7 +138,9 @@ function MenuRadioFixture({
       <DropdownMenuRadioGroup
         value={value}
         onChange={setValue}
-        label="Sort by"
+        {...(isTitled
+          ? {title: 'Sort by', label: titledLabel}
+          : {label: 'Sort by'})}
         hasCloseOnSelect={false}>
         <DropdownMenuRadioItem value="newest" label="Newest" />
         <DropdownMenuRadioItem
@@ -226,6 +233,10 @@ export const RADIO_GROUP_STATE_RENDERS: Record<
 
   'menu-group-selected': () => <MenuRadioFixture />,
   'menu-group-none-selected': () => <MenuRadioFixture initial="" />,
+  'menu-group-titled': () => <MenuRadioFixture isTitled />,
+  'menu-group-titled-labelled': () => (
+    <MenuRadioFixture isTitled titledLabel="Ordering" />
+  ),
   'menu-option-unselected-described': () => <MenuRadioFixture described />,
   'menu-option-selected': () => <MenuRadioFixture />,
   'menu-option-disabled': () => <MenuRadioFixture disabledOption="oldest" />,

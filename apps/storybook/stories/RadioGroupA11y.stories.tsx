@@ -98,6 +98,8 @@ export const SegmentedOptionGroupDisabledWithMessage = storyFor(
 
 export const MenuGroupSelected = storyFor('menu-group-selected');
 export const MenuGroupNoneSelected = storyFor('menu-group-none-selected');
+export const MenuGroupTitled = storyFor('menu-group-titled');
+export const MenuGroupTitledLabelled = storyFor('menu-group-titled-labelled');
 export const MenuOptionUnselectedDescribed = storyFor(
   'menu-option-unselected-described',
 );

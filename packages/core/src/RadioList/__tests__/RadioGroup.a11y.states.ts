@@ -424,6 +424,41 @@ export const RADIO_GROUP_BINDING_STATES = [
     opensMenu: true,
   },
   {
+    id: 'menu-group-titled',
+    binding: 'DropdownMenuRadioGroup',
+    summary: 'a menu-radio group named by its visible title',
+    facts: groupFacts({
+      role: 'group',
+      disabled: null,
+      tabReachable: false,
+      spaceSelection: false,
+      arrowSelection: false,
+      movement: 'none',
+    }),
+    subjectName: 'Sort by',
+    relations: MENU_RELATIONS,
+    storyId: story('menu-group-titled'),
+    opensMenu: true,
+  },
+  {
+    id: 'menu-group-titled-labelled',
+    binding: 'DropdownMenuRadioGroup',
+    summary:
+      'a titled menu-radio group also given a label, still named by its visible title',
+    facts: groupFacts({
+      role: 'group',
+      disabled: null,
+      tabReachable: false,
+      spaceSelection: false,
+      arrowSelection: false,
+      movement: 'none',
+    }),
+    subjectName: 'Sort by',
+    relations: MENU_RELATIONS,
+    storyId: story('menu-group-titled-labelled'),
+    opensMenu: true,
+  },
+  {
     id: 'menu-option-unselected-described',
     binding: 'DropdownMenuRadioItem',
     summary:
