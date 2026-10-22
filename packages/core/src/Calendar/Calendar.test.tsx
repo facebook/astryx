@@ -502,6 +502,34 @@ describe('Calendar', () => {
     expect(getDayButton(3)).toHaveAttribute('aria-disabled', 'true'); // 7 days before — beyond the cap
   });
 
+  it('keeps one Tab stop when the span cap disables the day that held it', async () => {
+    const user = userEvent.setup();
+
+    render(<Calendar mode="range" focusDate="2026-01-01" maxRangeSpan={7} />);
+
+    // Arrow from Jan 1 to Jan 25 so Jan 25 holds the grid's Tab stop.
+    getDayButton(1).focus();
+    await user.keyboard('{ArrowDown}{ArrowDown}{ArrowDown}');
+    for (let i = 0; i < 3; i += 1) {
+      await user.keyboard('{ArrowRight}');
+    }
+    expect(getDayButton(25)).toHaveFocus();
+
+    // Picking Jan 10 as the start disables Jan 25 (beyond the 7-day cap).
+    await user.click(getDayButton(10));
+    expect(getDayButton(25)).toHaveAttribute('aria-disabled', 'true');
+
+    // spec:AST-085 FR1: a disabled day stays focusable but never keeps the
+    // grid's Tab stop, so the grid still has exactly one, on an enabled day.
+    const grid = screen.getByRole('grid');
+    const stops = Array.from(
+      grid.querySelectorAll<HTMLElement>('button[data-date][tabindex="0"]'),
+    );
+    expect(stops).toHaveLength(1);
+    expect(stops[0]).not.toHaveAttribute('aria-disabled', 'true');
+    expect(getDayButton(25)).toHaveAttribute('tabindex', '-1');
+  });
+
   it('enforces minRangeSpan once a start is picked', async () => {
     const user = userEvent.setup();
 
