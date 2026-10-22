@@ -265,11 +265,11 @@ function withoutComments(text, ext = '', parsed = commentRanges(text, ext)) {
 }
 
 /**
- * The comment ranges `@babel/parser` finds in a source file, or null when it
- * cannot parse the file.
+ * A source file's syntax tree from `@babel/parser` (TypeScript and JSX, then
+ * legacy decorators, then Flow), or null when no attempt parses it.
  * @param {string} text
  * @param {string} ext
- * @returns {Array<[number, number]> | null}
+ * @returns {any}
  */
 function parseSource(text, ext) {
   const typescript = /^\.[cm]?tsx?$/.test(ext);
