@@ -360,17 +360,16 @@ function EndLane({
   clear: ReactNode;
 }) {
   const isBusy = useIsBusy(lane);
-  // The search Spinner is decorative; the field announces each search's busy
-  // start instead (spec:AST-086 FR8).
+  // The search Spinner stays named (family:input-fields FR7) but is not a
+  // live region; the field announces each search's busy start instead
+  // (spec:AST-086 FR8).
   useBusyAnnouncement(isBusy, loadingLabel, anchorRef);
   if (!isBusy && clear == null) {
     return null;
   }
   return (
     <div {...stylex.props(styles.endLane)}>
-      {isBusy && (
-        <Spinner size="sm" aria-label={loadingLabel} aria-hidden="true" />
-      )}
+      {isBusy && <Spinner size="sm" aria-label={loadingLabel} role="img" />}
       {clear}
     </div>
   );

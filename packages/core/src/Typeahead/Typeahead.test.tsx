@@ -99,16 +99,15 @@ const fruitSource: SearchSource = {
   bootstrap: () => fruits.slice(0, 3),
 };
 
-/** The busy Spinner, decorative and hidden from assistive technology (spec:AST-086 FR8). */
+/**
+ * The search Spinner: named but not live (family:input-fields FR7,
+ * spec:AST-086 FR8), so it is found as an image named "Loading".
+ */
 function queryBusySpinner(): Element | null {
-  return document.querySelector('.astryx-spinner[aria-hidden="true"]');
+  return screen.queryByRole('img', {name: 'Loading'});
 }
 function getBusySpinner(): Element {
-  const spinner = queryBusySpinner();
-  if (spinner == null) {
-    throw new Error('Expected the busy Spinner to be rendered');
-  }
-  return spinner;
+  return screen.getByRole('img', {name: 'Loading'});
 }
 
 describe('BaseTypeahead', () => {

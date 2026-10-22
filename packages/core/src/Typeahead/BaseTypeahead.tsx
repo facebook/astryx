@@ -562,9 +562,9 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
   // A wrapper that owns the inline-end lane subscribes through context; see
   // busyIndicatorLane.tsx for why this is not a prop.
   const busyLane = useBusyIndicatorLane();
-  // Without a wrapper that took the indicator over, the search Spinner here is
-  // decorative and this input announces each search's busy start
-  // (spec:AST-086 FR8).
+  // Without a wrapper that took the indicator over, this input announces each
+  // search's busy start (spec:AST-086 FR8); its Spinner stays named but is not
+  // a live region (family:input-fields FR7).
   useBusyAnnouncement(
     isLoading && busyLane == null,
     t('@astryx.typeahead.loading'),
@@ -1230,7 +1230,7 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
           <Spinner
             size="sm"
             aria-label={t('@astryx.typeahead.loading')}
-            aria-hidden="true"
+            role="img"
           />
         </span>
       )}
