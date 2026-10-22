@@ -2222,4 +2222,50 @@ describe('an approval carries across heads with no material change', () => {
     expect(reply).toContain('did not stop an earlier approval from carrying');
     expect(reply).not.toContain('still stops');
   });
+
+  it('carries when the record credits the second of two owners who approved the head', async () => {
+    const harness = carryHarness({
+      headRecord: record({
+        authority: 'current',
+        approvedBy: 'czarandy',
+        approvedAt: '2026-08-30',
+        phase: 'accepted',
+      }),
+      comments: [
+        {
+          user: {login: 'czarandy'},
+          body: `/approve-spec ${approvedHead}`,
+          created_at: '2026-08-30T08:00:00Z',
+        },
+        approveEarlierHead,
+      ],
+    });
+
+    await run(harness, synchronize());
+
+    expect(latestGateStatus(harness.state)).toMatchObject({
+      state: 'success',
+      description: expect.stringContaining('carried from'),
+    });
+  });
+
+  it('does not promise a carry in the reply while relays are enabled', async () => {
+    const harness = carryHarness();
+
+    await run(
+      harness,
+      context({
+        runId: 100n,
+        eventName: 'issue_comment',
+        action: 'created',
+        comment: approveEarlierHead,
+      }),
+      {env: {SPEC_DECISION_APP: 'decision-app[bot]'}},
+    );
+
+    expect(latestGateStatus(harness.state).state).toBe('pending');
+    const reply = harness.state.comments.at(-1).body;
+    expect(reply).toContain('Every new commit needs the command again.');
+    expect(reply).not.toContain('stays in force');
+  });
 });

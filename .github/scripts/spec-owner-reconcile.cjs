@@ -59,7 +59,13 @@ function ownerCommandHelpMarker(headSha) {
   return `<!-- spec-owner-command-help:${headSha} -->`;
 }
 
-function ownerCommandHelpBody({verb, headSha, problem, stopsCarry}) {
+function ownerCommandHelpBody({
+  verb,
+  headSha,
+  problem,
+  stopsCarry,
+  carryEnabled,
+}) {
   return [
     ownerCommandHelpMarker(headSha),
     `That \`/${verb}-spec\` comment did not decide \`${GATE_STATUS_CONTEXT}\` for the current head: ${problem}.`,
@@ -72,7 +78,9 @@ function ownerCommandHelpBody({verb, headSha, problem, stopsCarry}) {
       ? stopsCarry
         ? 'A revoke of an earlier head still stops an earlier approval in the groups you may approve from carrying to this head.'
         : 'It also did not stop an earlier approval from carrying to this head.'
-      : 'An approval stays in force through a rebase or a commit that only records it in the records; any other new commit needs the command again.',
+      : carryEnabled
+        ? 'An approval stays in force through a rebase or a commit that only records it in the records; any other new commit needs the command again.'
+        : 'Every new commit needs the command again.',
   ].join('\n');
 }
 
@@ -569,6 +577,7 @@ async function reconcileSpecOwnerGate({
         verb: intent.verb,
         headSha: initialHead,
         problem,
+        carryEnabled: !env.SPEC_DECISION_APP,
         stopsCarry:
           /^[0-9a-f]{40}$/i.test(intent.argument) &&
           carryOwners.some(name => name.toLowerCase() === commentAuthor),
@@ -689,6 +698,7 @@ async function reconcileSpecOwnerGate({
     return data;
   }
 
+  const approvedComparisons = new Map();
   let headMergeBase;
   async function headMergeBaseSha() {
     if (headMergeBase === undefined) {
@@ -726,7 +736,13 @@ async function reconcileSpecOwnerGate({
     let approvedFiles;
     let approvedBase;
     try {
-      const data = await compare(`${pr.base.sha}...${candidate.headSha}`);
+      if (!approvedComparisons.has(candidate.headSha)) {
+        approvedComparisons.set(
+          candidate.headSha,
+          compare(`${pr.base.sha}...${candidate.headSha}`),
+        );
+      }
+      const data = await approvedComparisons.get(candidate.headSha);
       approvedFiles = data.files;
       approvedBase = data.merge_base_commit?.sha ?? null;
     } catch (error) {

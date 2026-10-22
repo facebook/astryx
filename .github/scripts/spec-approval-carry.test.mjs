@@ -408,6 +408,22 @@ describe('carryCandidates', () => {
     ).toEqual([]);
   });
 
+  it('offers every owner whose approval of a head stands', () => {
+    const candidates = carryCandidates({
+      reviews: [],
+      comments: [
+        command('approve', earlier, '2026-10-20T18:31:30Z'),
+        command('approve', earlier, '2026-10-20T18:40:00Z', 'czarandy'),
+      ],
+      owners,
+      headSha: current,
+    });
+    expect(candidates.map(candidate => candidate.owner).sort()).toEqual([
+      'cixzhang',
+      'czarandy',
+    ]);
+  });
+
   it('examines only the newest approvals', () => {
     const comments = Array.from({length: MAX_CANDIDATE_HEADS + 2}, (_, i) =>
       command(

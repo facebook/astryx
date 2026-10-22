@@ -142,24 +142,39 @@ function carryCandidates({
   ];
   const candidates = [];
   for (const candidateHead of heads) {
-    const decision = resolveOwnerDecision({
-      reviews,
-      comments,
-      dismissalEvents,
-      owners,
-      headSha: candidateHead,
-    });
-    const at = decisionTime(decision.at);
-    if (!decision.approved || at === null || at <= lastRejection) continue;
-    candidates.push({
-      headSha: candidateHead,
-      owner: decision.owner,
-      at: new Date(at).toISOString(),
-    });
+    const resolveFor = groupOwners =>
+      resolveOwnerDecision({
+        reviews,
+        comments,
+        dismissalEvents,
+        owners: groupOwners,
+        headSha: candidateHead,
+      });
+    const group = resolveFor(owners);
+    const groupAt = decisionTime(group.at);
+    if (!group.approved || groupAt === null || groupAt <= lastRejection) {
+      continue;
+    }
+    // Every owner whose approval of this head stands is a candidate, so the
+    // record may name whichever of them it credits.
+    for (const owner of owners) {
+      const decision = resolveFor([owner]);
+      const at = decisionTime(decision.at);
+      if (!decision.approved || at === null || at <= lastRejection) continue;
+      candidates.push({
+        headSha: candidateHead,
+        owner: decision.owner,
+        at: new Date(at).toISOString(),
+      });
+    }
   }
-  return candidates
-    .sort((left, right) => Date.parse(right.at) - Date.parse(left.at))
-    .slice(0, MAX_CANDIDATE_HEADS);
+  candidates.sort((left, right) => Date.parse(right.at) - Date.parse(left.at));
+  const newestHeads = [
+    ...new Set(candidates.map(candidate => candidate.headSha)),
+  ].slice(0, MAX_CANDIDATE_HEADS);
+  return candidates.filter(candidate =>
+    newestHeads.includes(candidate.headSha),
+  );
 }
 
 /**
