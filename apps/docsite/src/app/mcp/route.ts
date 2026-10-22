@@ -19,7 +19,7 @@
 import {createMcpHandler} from 'mcp-handler';
 import {z} from 'zod';
 import {components} from '../../generated/componentRegistry';
-import {docTopics} from '../../generated/docsRegistry';
+import {docRedirects, docTopics} from '../../generated/docsRegistry';
 import {blocks} from '../../generated/blockRegistry';
 import {templates} from '../../generated/templateRegistry';
 
@@ -424,9 +424,11 @@ const handler = createMcpHandler(
         }
 
         // ── Try doc topic match ──────────────────────────────────────
-        const doc = docTopics.find(
-          (d: DocTopic) => d.topic.toLowerCase() === lower,
-        );
+        // An older slug (`migration`) opens the page that holds its text now.
+        const moved = /^\/docs\/([^#]+)/.exec(docRedirects[lower] ?? '')?.[1];
+        const doc =
+          docTopics.find((d: DocTopic) => d.topic.toLowerCase() === lower) ??
+          docTopics.find((d: DocTopic) => d.topic === moved);
 
         if (doc) {
           // If section requested, return just that section

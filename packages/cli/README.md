@@ -9,7 +9,7 @@ npx @astryxdesign/cli --help
 npx @astryxdesign/cli search button
 npx @astryxdesign/cli component Button
 npx @astryxdesign/cli docs tokens
-npx @astryxdesign/cli docs upgrade-and-migrate/from-tailwind-shadcn-radix
+npx @astryxdesign/cli docs upgrade-and-migrate/move-an-app
 npx @astryxdesign/cli template --list
 ```
 

@@ -2,6 +2,7 @@
 
 import {describe, expect, it} from 'vitest';
 import {
+  docAnchors,
   docGuides,
   docRedirects,
   docTopics,
@@ -60,7 +61,7 @@ const PAGES_BEFORE_THE_GUIDES: Record<string, string> = {
   internationalization: 'translate-your-app',
   'is-my-code-good': 'check-your-code-agent-review',
   layout: 'build-a-page',
-  migration: 'upgrade-and-migrate-from-tailwind-shadcn-radix',
+  migration: 'upgrade-and-migrate-move-an-app',
   principles: 'get-started-principles',
   styling: 'style-components',
   'styling-libraries': 'style-components',
@@ -130,7 +131,7 @@ describe('route resolution', () => {
   );
 
   it('sends the old Build a page section anchors to the page that holds them', () => {
-    const anchors = pageBySlug.get('build-a-page')?.anchors ?? {};
+    const anchors = docAnchors['build-a-page'] ?? {};
     for (const [anchor, page] of [
       ['scaffold', 'build-a-page-scaffold'],
       ['shell', 'build-a-page-scaffold'],

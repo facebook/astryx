@@ -164,7 +164,7 @@ describe('every Core doc has a named home', () => {
         ['cli/component-lookups', 'find-a-component/search-and-read'],
         [
           'migration/migration-setup',
-          'upgrade-and-migrate/from-tailwind-shadcn-radix/migration-setup',
+          'upgrade-and-migrate/move-an-app/migration-setup',
         ],
       ]) {
         const error = await docs(old).catch(e => e);

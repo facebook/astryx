@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file `astryx docs upgrade-and-migrate/from-tailwind-shadcn-radix`: the migration guides. Groups the
+ * @file `astryx docs upgrade-and-migrate/move-an-app`: the migration guides. Groups the
  * incremental migration guides: setup (theme, CSS, layers), component
  * replacement, and verification.
  */
@@ -9,11 +9,11 @@
 /** @type {import('@astryxdesign/cli/authoring').NamespaceDoc} */
 export const docs = {
   type: 'namespace',
-  name: 'from-tailwind-shadcn-radix',
+  name: 'move-an-app',
   placement: {parent: 'namespace:upgrade-and-migrate', slot: 'guides', order: 30},
-  title: 'Move an app from Tailwind, shadcn, or Radix',
+  title: 'Move an existing app to Astryx',
   summary:
-    'Migrate an existing Tailwind, shadcn, or Radix app to the design system incrementally — setup, component replacement, and verification.',
+    'Move an existing app to Astryx one surface at a time: setup, component replacement, and verification.',
   keywords: [
     'migration',
     'migrate',

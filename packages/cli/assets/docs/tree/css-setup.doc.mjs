@@ -242,7 +242,7 @@ export const docs = {
             '{@link namespace:style-components} \u2014 xstyle, className, data-attribute selectors, design tokens in code.',
             '{@link namespace:style-components} \u2014 Tailwind bridge details, Panda, Chakra, MUI, CSS Modules, and non-CSS token resolution.',
             '{@link generic:use-a-theme} \u2014 applying themes, dark mode, nested themes. {@link generic:author-a-theme} \u2014 defineTheme, overrides, production builds.',
-            '{@link namespace:from-tailwind-shadcn-radix} \u2014 cascade layer audit, Tailwind v3 coexistence, and foundation smoke test.',
+            '{@link namespace:move-an-app} \u2014 cascade layer audit, Tailwind v3 coexistence, and foundation smoke test.',
           ],
         },
       ],

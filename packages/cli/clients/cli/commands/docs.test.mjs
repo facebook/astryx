@@ -101,11 +101,11 @@ describe('migration docs', () => {
       'node',
       'astryx',
       'docs',
-      'upgrade-and-migrate/from-tailwind-shadcn-radix',
+      'upgrade-and-migrate/move-an-app',
     ]);
 
     const output = console.log.mock.calls.map(c => c[0]).join('\n');
-    expect(output).toContain('Move an app from Tailwind, shadcn, or Radix');
+    expect(output).toContain('Move an existing app to Astryx');
     expect(output).toContain('migration-setup');
   });
 });

@@ -242,7 +242,11 @@ describeHiddenProduction('hidden production ShadCN discovery', () => {
     expect(Array.isArray(search)).toBe(true);
     for (const result of search as Array<Record<string, unknown>>) {
       if (/shadcn/i.test(JSON.stringify(result))) {
-        expect(result).toMatchObject({type: 'doc', topic: 'migration'});
+        // The migration guide, a page of its own per part.
+        expect(result).toMatchObject({
+          type: 'doc',
+          topic: expect.stringMatching(/^upgrade-and-migrate-move-an-app(?:-|$)/),
+        });
         expectNoRegistryDiscovery(result, 'allowed MCP migration result');
       } else {
         expectNoShadcnPromotion(result, 'real MCP search result');
@@ -262,11 +266,14 @@ describeHiddenProduction('hidden production ShadCN discovery', () => {
       {components, blocks, templates},
       'complete MCP component and template registries',
     );
-    const migrationTopic = docTopics.find(topic => topic.topic === 'migration');
-    expect(migrationTopic).toBeDefined();
-    expectNoRegistryDiscovery(migrationTopic, 'allowed migration topic');
+    // The migration guide is a landing page and a page per part.
+    const isMigration = (topic: {topic: string}) =>
+      /^upgrade-and-migrate-move-an-app(?:-|$)/.test(topic.topic);
+    const migrationTopics = docTopics.filter(isMigration);
+    expect(migrationTopics.length).toBeGreaterThan(0);
+    expectNoRegistryDiscovery(migrationTopics, 'allowed migration topic');
     expectNoShadcnPromotion(
-      docTopics.filter(topic => topic.topic !== 'migration'),
+      docTopics.filter(topic => !isMigration(topic)),
       'all other MCP doc topics',
     );
   });

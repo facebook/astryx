@@ -58,7 +58,7 @@ export const RENAMED_DOC_IDENTITIES = Object.freeze({
   'namespace:styling': 'namespace:style-components',
   'namespace:styling-libraries': 'namespace:style-components',
   'namespace:internationalization': 'namespace:translate-your-app',
-  'namespace:migration': 'namespace:from-tailwind-shadcn-radix',
+  'namespace:migration': 'namespace:move-an-app',
 });
 
 /**

@@ -62,7 +62,6 @@ export const docs = {
           items: [
             '`astryx upgrade --list` names every codemod and the release it belongs to.',
             '`--skip-codemod <name>` steps past one that failed; `--codemod <name>` runs only that one, including optional ones.',
-            '`--registry --apply` refreshes components copied from a ShadCN registry, merging edits that do not overlap.',
           ],
         },
         {

@@ -33,7 +33,7 @@ export const docs = {
     },
     {
       type: 'prose',
-      text: 'Moving an existing Tailwind, shadcn, or Radix app over one surface at a time: {@link namespace:from-tailwind-shadcn-radix}.',
+      text: 'Moving an existing app from another component or styling library, one surface at a time: {@link namespace:move-an-app}.',
     },
   ],
 };

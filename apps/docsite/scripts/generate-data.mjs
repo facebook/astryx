@@ -1831,7 +1831,7 @@ async function generateDocsRegistry() {
   if (!fs.existsSync(DOCS_DIR)) {
     writeRegistry(
       'docsRegistry.ts',
-      `// Auto-generated — no docs found\nexport const docTopics = [];\nexport const docsCount = 0;\nexport const docsTreeRoutes = [];\nexport const docRedirects = {};\nexport const docGuides = [];\n`,
+      `// Auto-generated — no docs found\nexport const docTopics = [];\nexport const docsCount = 0;\nexport const docsTreeRoutes = [];\nexport const docRedirects = {};\nexport const docAnchors = {};\nexport const docGuides = [];\n`,
     );
     fs.writeFileSync(path.join(OUT_DIR, 'docRedirects.json'), '{}\n');
     return {docTopics: [], docsCount: 0};
@@ -1901,10 +1901,7 @@ async function generateDocsRegistry() {
         `docs: "${page.topic}" is both a flat topic and a docs-tree page. Remove the flat topic file when its namespace replaces it.`,
       );
     }
-    const anchors = tree.anchors[page.topic];
-    docTopics.push(
-      anchors && Object.keys(anchors).length > 0 ? {...page, anchors} : page,
-    );
+    docTopics.push(page);
   }
   // Foundations has no page of its own; its old guide-page URL opens the
   // first page of its group.
@@ -2029,9 +2026,6 @@ export interface DocTopic {
   sections: DocSection[];
   /** A guide's landing page: each child page, with its one line. */
   children?: {title: string; href: string; summary: string}[];
-  /** On a landing page, where each anchor of the guide's old single page now
-   *  opens. */
-  anchors?: Record<string, string>;
 }
 
 export const docTopics: DocTopic[] = ${JSON.stringify(docTopics, null, 2)};
@@ -2046,6 +2040,18 @@ export const docsTreeRoutes: string[] = ${JSON.stringify(docsTreeRoutes, null, 2
  *  guide under a namespace page, or a flat topic merged into another page.
  *  next.config.mjs serves them as redirects. */
 export const docRedirects: Record<string, string> = ${JSON.stringify(docRedirects, null, 2)};
+
+/** For each guide's landing page, where each anchor of the guide's old single
+ *  page now opens: the child page that holds its text. */
+export const docAnchors: Record<string, Record<string, string>> = ${JSON.stringify(
+    Object.fromEntries(
+      Object.entries(tree.anchors).filter(
+        ([, anchors]) => Object.keys(anchors).length > 0,
+      ),
+    ),
+    null,
+    2,
+  )};
 
 export interface DocLink {
   title: string;

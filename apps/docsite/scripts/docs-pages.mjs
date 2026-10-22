@@ -117,7 +117,7 @@ export const MOVED_PAGES = [
   ['styling-libraries', 'style-components'],
   ['styling', 'style-components'],
   ['internationalization', 'translate-your-app'],
-  ['migration', 'upgrade-and-migrate/from-tailwind-shadcn-radix'],
+  ['migration', 'upgrade-and-migrate/move-an-app'],
   ['global/computer-agent-guide', 'work-with-agents/computer-agent-guide'],
   ['global/problems', 'fix-a-problem/global-mode-messages'],
   ['global/reference', 'reference/global-mode'],

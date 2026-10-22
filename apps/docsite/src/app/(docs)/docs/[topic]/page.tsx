@@ -13,7 +13,11 @@
 
 import type {Metadata} from 'next';
 import {notFound} from 'next/navigation';
-import {docGuides, docTopics} from '../../../../generated/docsRegistry';
+import {
+  docAnchors,
+  docGuides,
+  docTopics,
+} from '../../../../generated/docsRegistry';
 import {
   packages,
   type PackageMeta,
@@ -142,7 +146,7 @@ export default async function DocPage({
           description={topic.description}
           sections={sections}
           items={topic.children}
-          anchors={topic.anchors}
+          anchors={docAnchors[topic.topic]}
           footer={footer}
         />
       );

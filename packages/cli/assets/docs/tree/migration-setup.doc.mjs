@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file `astryx docs upgrade-and-migrate/from-tailwind-shadcn-radix/migration-setup`: theme and CSS setup,
+ * @file `astryx docs upgrade-and-migrate/move-an-app/migration-setup`: theme and CSS setup,
  * cascade layer safety, layer audit, and the foundation smoke test.
  */
 
@@ -11,7 +11,7 @@ export const docs = {
   type: 'generic',
   name: 'migration-setup',
   title: 'Setup',
-  placement: {parent: 'namespace:from-tailwind-shadcn-radix', slot: 'guides', order: 10},
+  placement: {parent: 'namespace:move-an-app', slot: 'guides', order: 10},
   category: 'guide',
   description:
     'Install the theme, wire CSS layers, audit resets, and run the foundation smoke test before migrating any surface.',
@@ -68,7 +68,7 @@ export const docs = {
           type: 'code',
           lang: 'bash',
           label: 'Migration-oriented CLI pass',
-          code: `astryx docs upgrade-and-migrate/from-tailwind-shadcn-radix
+          code: `astryx docs upgrade-and-migrate/move-an-app
 astryx docs theme-your-app
 astryx docs style-components
 astryx template --list --type block
@@ -89,7 +89,7 @@ astryx component TextInput`,
           type: 'code',
           lang: 'bash',
           label: 'Short and JSON modes',
-          code: `astryx docs upgrade-and-migrate/from-tailwind-shadcn-radix --full --detail brief
+          code: `astryx docs upgrade-and-migrate/move-an-app --full --detail brief
 astryx component Button --json`,
         },
       ],

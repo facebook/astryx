@@ -3117,7 +3117,7 @@
     {
       "kind": "topic",
       "id": "migration",
-      "oldCliRoute": "astryx docs upgrade-and-migrate/from-tailwind-shadcn-radix",
+      "oldCliRoute": "astryx docs migration",
       "oldDocsiteUrl": "/docs/migration",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3127,7 +3127,7 @@
     {
       "kind": "section",
       "id": "migration#overview",
-      "oldCliRoute": "astryx docs upgrade-and-migrate/from-tailwind-shadcn-radix overview",
+      "oldCliRoute": "astryx docs migration overview",
       "oldDocsiteUrl": "/docs/migration#overview",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3137,7 +3137,7 @@
     {
       "kind": "section",
       "id": "migration#recommended-order",
-      "oldCliRoute": "astryx docs upgrade-and-migrate/from-tailwind-shadcn-radix recommended-order",
+      "oldCliRoute": "astryx docs migration recommended-order",
       "oldDocsiteUrl": "/docs/migration#recommended-order",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3147,7 +3147,7 @@
     {
       "kind": "section",
       "id": "migration#cli-workflow",
-      "oldCliRoute": "astryx docs upgrade-and-migrate/from-tailwind-shadcn-radix cli-workflow",
+      "oldCliRoute": "astryx docs migration cli-workflow",
       "oldDocsiteUrl": "/docs/migration#cli-workflow",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3157,7 +3157,7 @@
     {
       "kind": "section",
       "id": "migration#theme-and-css-setup",
-      "oldCliRoute": "astryx docs upgrade-and-migrate/from-tailwind-shadcn-radix theme-and-css-setup",
+      "oldCliRoute": "astryx docs migration theme-and-css-setup",
       "oldDocsiteUrl": "/docs/migration#theme-and-css-setup",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3167,7 +3167,7 @@
     {
       "kind": "section",
       "id": "migration#cascade-layer-safety",
-      "oldCliRoute": "astryx docs upgrade-and-migrate/from-tailwind-shadcn-radix cascade-layer-safety",
+      "oldCliRoute": "astryx docs migration cascade-layer-safety",
       "oldDocsiteUrl": "/docs/migration#why-resets-break-cascade-layers",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3177,7 +3177,7 @@
     {
       "kind": "section",
       "id": "migration#layer-audit",
-      "oldCliRoute": "astryx docs upgrade-and-migrate/from-tailwind-shadcn-radix layer-audit",
+      "oldCliRoute": "astryx docs migration layer-audit",
       "oldDocsiteUrl": "/docs/migration#cascade-layer-audit",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3187,7 +3187,7 @@
     {
       "kind": "section",
       "id": "migration#foundation-smoke-test",
-      "oldCliRoute": "astryx docs upgrade-and-migrate/from-tailwind-shadcn-radix foundation-smoke-test",
+      "oldCliRoute": "astryx docs migration foundation-smoke-test",
       "oldDocsiteUrl": "/docs/migration#foundation-smoke-test",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3197,7 +3197,7 @@
     {
       "kind": "section",
       "id": "migration#move-the-app-frame-first",
-      "oldCliRoute": "astryx docs upgrade-and-migrate/from-tailwind-shadcn-radix move-the-app-frame-first",
+      "oldCliRoute": "astryx docs migration move-the-app-frame-first",
       "oldDocsiteUrl": "/docs/migration#move-the-app-frame-first",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3207,7 +3207,7 @@
     {
       "kind": "section",
       "id": "migration#map-shadcn-and-radix-primitives",
-      "oldCliRoute": "astryx docs upgrade-and-migrate/from-tailwind-shadcn-radix map-shadcn-and-radix-primitives",
+      "oldCliRoute": "astryx docs migration map-shadcn-and-radix-primitives",
       "oldDocsiteUrl": "/docs/migration#map-shadcn-and-radix-primitives",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3217,7 +3217,7 @@
     {
       "kind": "section",
       "id": "migration#command-palette",
-      "oldCliRoute": "astryx docs upgrade-and-migrate/from-tailwind-shadcn-radix command-palette",
+      "oldCliRoute": "astryx docs migration command-palette",
       "oldDocsiteUrl": "/docs/migration#command-palette-settings-and-theme",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3227,7 +3227,7 @@
     {
       "kind": "section",
       "id": "migration#verification-checklist",
-      "oldCliRoute": "astryx docs upgrade-and-migrate/from-tailwind-shadcn-radix verification-checklist",
+      "oldCliRoute": "astryx docs migration verification-checklist",
       "oldDocsiteUrl": "/docs/migration#verification-checklist",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3237,7 +3237,7 @@
     {
       "kind": "section",
       "id": "migration#ai-migration-prompt",
-      "oldCliRoute": "astryx docs upgrade-and-migrate/from-tailwind-shadcn-radix ai-migration-prompt",
+      "oldCliRoute": "astryx docs migration ai-migration-prompt",
       "oldDocsiteUrl": "/docs/migration#ai-migration-prompt",
       "placement": "keep-flat",
       "aliasNeeded": false,

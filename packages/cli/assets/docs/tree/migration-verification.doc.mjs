@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file `astryx docs upgrade-and-migrate/from-tailwind-shadcn-radix/migration-verification`: post-migration
+ * @file `astryx docs upgrade-and-migrate/move-an-app/migration-verification`: post-migration
  * verification checklist and AI migration prompt.
  */
 
@@ -11,7 +11,7 @@ export const docs = {
   type: 'generic',
   name: 'migration-verification',
   title: 'Verification',
-  placement: {parent: 'namespace:from-tailwind-shadcn-radix', slot: 'guides', order: 30},
+  placement: {parent: 'namespace:move-an-app', slot: 'guides', order: 30},
   category: 'guide',
   description:
     'Post-migration verification checklist and an AI migration prompt to paste into your coding tool.',
@@ -53,7 +53,7 @@ export const docs = {
           code: `We are migrating this existing Tailwind/shadcn app to Astryx incrementally.
 
 First run:
-- astryx docs upgrade-and-migrate/from-tailwind-shadcn-radix --dense
+- astryx docs upgrade-and-migrate/move-an-app --dense
 - astryx docs theme-your-app --dense
 - astryx docs style-components --dense
 - astryx template AppShellTopNavWithSideNav --skeleton

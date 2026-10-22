@@ -283,11 +283,11 @@ describe('search domain priority — real docs and components', () => {
       const [layers] = (await search('cascade layers', {cwd})).data.results;
       expect(layers).toMatchObject({
         domain: 'doc',
-        name: 'upgrade-and-migrate/from-tailwind-shadcn-radix/migration-setup',
+        name: 'upgrade-and-migrate/move-an-app/migration-setup',
       });
       const [keyboard] = (await search('keyboard navigation', {cwd})).data
         .results;
-      expect(keyboard?.name).not.toBe('upgrade-and-migrate/from-tailwind-shadcn-radix/migration-verification');
+      expect(keyboard?.name).not.toBe('upgrade-and-migrate/move-an-app/migration-verification');
     },
     SLOW,
   );
