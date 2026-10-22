@@ -4,10 +4,10 @@
  * @file Which files and folders an operation read, so a long-running caller
  * can tell whether its inputs changed since.
  *
- * @input An operation run inside `recordReads(set, fn)`.
- * @output `set` gets every file whose content the operation read through fs
- *   and every folder it listed or probed. `stampOf(paths)` is the state of those paths; equal stamps mean
- *   nothing the operation read has changed.
+ * @input An operation run inside `recordReads(seen, fn)`.
+ * @output `seen` gets every file whose content the operation read through fs
+ *   and every folder it listed or probed, each with its state when first
+ *   read; `unchangedSince(seen)` says whether all are still in that state.
  * @position Used by search's adapter to reuse a gathered catalog only while
  *   it is exact. Outside `recordReads` nothing is recorded and every fs call
  *   behaves as before.
@@ -21,7 +21,7 @@ import {fileURLToPath} from 'node:url';
 /**
  * The paths the running operation touched: every file it read and every
  * folder it listed or probed.
- * @type {AsyncLocalStorage<Set<string>>}
+ * @type {AsyncLocalStorage<Map<string, string>>}
  */
 const reads = new AsyncLocalStorage();
 
@@ -74,11 +74,13 @@ function installRecorder() {
         // A file read is checked itself; a probe or listing is checked by its
         // folder, whose time changes when an entry is added, removed or
         // renamed.
-        seen.add(
+        const checked =
           CONTENT_READS.has(name) || name === 'readdirSync'
             ? file
-            : path.dirname(file),
-        );
+            : path.dirname(file);
+        // Its state is taken when it is first read, before the read, so a
+        // change made while the operation runs shows as a change afterwards.
+        if (!seen.has(checked)) seen.set(checked, stateOf(checked));
       }
       return original.apply(this, args);
     };
@@ -90,27 +92,36 @@ function installRecorder() {
 }
 
 /**
- * The state of each path: its change time and size, or that it is absent.
- * @param {Iterable<string>} paths
+ * One path's state: its change time and size, or that it is absent.
+ * @param {string} file
  * @returns {string}
  */
-export function stampOf(paths) {
-  const parts = [];
-  for (const file of paths) {
-    try {
-      const stat = statSyncRaw(file);
-      parts.push(`${file}\0${stat.mtimeMs}\0${stat.size}`);
-    } catch {
-      parts.push(`${file}\0-`);
-    }
+function stateOf(file) {
+  try {
+    const stat = statSyncRaw(file);
+    return `${stat.mtimeMs}\0${stat.size}`;
+  } catch {
+    return '-';
   }
-  return parts.join('\n');
 }
 
 /**
- * Run `fn`, adding to `seen` each path it reads (see the file header).
+ * Whether every recorded path is still in the state it had when it was read.
+ * @param {Map<string, string>} recorded - From recordReads.
+ * @returns {boolean}
+ */
+export function unchangedSince(recorded) {
+  for (const [file, state] of recorded) {
+    if (stateOf(file) !== state) return false;
+  }
+  return true;
+}
+
+/**
+ * Run `fn`, adding to `seen` each path it reads, with that path's state when
+ * it was first read (see the file header).
  * @template T
- * @param {Set<string>} seen
+ * @param {Map<string, string>} seen
  * @param {() => T} fn
  * @returns {T}
  */

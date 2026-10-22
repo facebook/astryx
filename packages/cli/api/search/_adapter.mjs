@@ -9,7 +9,7 @@
 import {readFileSync} from 'node:fs';
 import * as path from 'node:path';
 import {requireCoreDir} from '../../foundation/fs/paths.mjs';
-import {recordReads, stampOf} from '../../foundation/fs/read-record.mjs';
+import {recordReads, unchangedSince} from '../../foundation/fs/read-record.mjs';
 import {isOutsideProject} from '../../foundation/env/project-scope.mjs';
 import {coreDirOrThrow} from '../error.mjs';
 import {CORELESS_DOMAINS} from './_query.mjs';
@@ -95,7 +95,7 @@ export async function gatherCandidates(options) {
 
 /**
  * @typedef {Awaited<ReturnType<typeof gatherCandidates>>} Gathered
- * @type {Map<string, {paths: string[], stamp: string, value: Promise<Gathered>}>}
+ * @type {Map<string, {reads: Map<string, string>, value: Promise<Gathered>}>}
  */
 const gathered = new Map();
 
@@ -114,9 +114,9 @@ export async function gatherCandidatesReused(options) {
   const cwd = path.resolve(options.cwd ?? process.cwd());
   const key = `${cwd}\0${options.type ?? ''}`;
   const hit = gathered.get(key);
-  if (hit && stampOf(hit.paths) === hit.stamp) return hit.value;
-  /** @type {Set<string>} */
-  const seen = new Set();
+  if (hit && unchangedSince(hit.reads)) return hit.value;
+  /** @type {Map<string, string>} */
+  const seen = new Map();
   const value = recordReads(seen, () => gatherCandidates({...options, cwd}));
   try {
     await value;
@@ -124,8 +124,9 @@ export async function gatherCandidatesReused(options) {
     if (gathered.get(key)?.value === value) gathered.delete(key);
     throw error;
   }
-  const paths = [...seen].sort();
-  gathered.set(key, {paths, stamp: stampOf(paths), value});
+  // Each path's state was taken as it was first read, so an edit made while
+  // the gather ran shows as a change on the next call.
+  gathered.set(key, {reads: seen, value});
   return value;
 }
 
