@@ -259,8 +259,9 @@ icon, and the CLI verifies it, writes the files, and checks the set.
 
 ### Supporting pieces
 
-- **FR18 — Additive docs support.** Every doc type, schema field, and enum
-  value accepts `stability: 'experimental'`: help shows a marked command as
+- **FR18 — Additive docs support.** Every doc type except `ThemeDoc` and
+  `IconSetDoc`, and every schema field and enum value, accepts
+  `stability: 'experimental'`: help shows a marked command as
   `[experimental]`, stable tables leave out a marked field or value, search
   leaves out a marked doc, and Doctor's doc counts leave marked docs out. A
   namespace's `source.packages: 'all'` adopts a doc group from every package
