@@ -67,7 +67,8 @@ contract does not claim token-granular pruning that the compiler does not provid
   selectors.
 - Changing scoped prose defaults, non-data token declarations, component
   overrides, adaptations, MediaTheme rules, icon output, or type augmentation.
-- Defining the separate `@astryxdesign/build` source-build composition contract.
+- Defining the separate `@astryxdesign/build` source-build composition contract,
+  beyond FR3's data-group guarantee for its PostCSS integration.
 - Release scheduling and versioning beyond the breaking-minor requirement in
   FR17.
 - Equivalent internal implementations remain valid when they satisfy this
