@@ -392,43 +392,43 @@ describe('doctor: the computer-level agent text', () => {
   const A = '/home/me/.agents/skills/astryx/SKILL.md';
   const C = '/home/me/.claude/skills/astryx';
 
-  it('a skill naming `astryx` with no Astryx CLI on the search path: names the install step', () => {
-    const check = checkComputerAgentText({
-      nodeVersion: '22.13.0',
-      answeredBy: {cli: '1.2.0', core: '1.2.0', copy: 'carried'},
-      latest: null,
-      agentText: [{path: A, state: 'current'}],
-      agentTextCommand: 'astryx',
-      searchPathCommands: [],
-      cwd: os.tmpdir(),
-    });
-    expect(check.status).toBe('info');
-    expect(check.message).toContain(
-      'tells agents to run `astryx`, but no `astryx` command on the search path runs the Astryx CLI',
-    );
-    expect(check.fix).toBe(
-      'Run `npm i -g @astryxdesign/cli`, the step the skill names for when `astryx` is not found.',
-    );
-    // With the CLI on the search path, or a skill naming a host's command,
-    // there is nothing to restore.
-    // The step the skill records, such as pnpm's.
-    expect(
+  it('a skill naming `astryx` with no Astryx CLI on the search path: says whether it is current, and names the step it records', () => {
+    const check = (/** @type {Record<string, any>} */ over) =>
       checkComputerAgentText({
         nodeVersion: '22.13.0',
         answeredBy: {cli: '1.2.0', core: '1.2.0', copy: 'carried'},
         latest: null,
         agentText: [{path: A, state: 'current'}],
         agentTextCommand: 'astryx',
-        agentTextInstall: 'pnpm add -g @astryxdesign/cli',
         searchPathCommands: [],
         cwd: os.tmpdir(),
-      }).fix,
-    ).toBe(
+        ...over,
+      });
+    const recorded = check({agentTextInstall: 'pnpm add -g @astryxdesign/cli'});
+    expect(recorded.status).toBe('info');
+    expect(recorded.message).toContain(
+      `The computer-level agent text matches this release: ${A}. It tells agents to run \`astryx\`, but no \`astryx\` command on the search path runs the Astryx CLI`,
+    );
+    expect(recorded.fix).toBe(
       'Run `pnpm add -g @astryxdesign/cli`, the step the skill names for when `astryx` is not found.',
     );
-    for (const ctx of [
+    // A skill from an earlier release records no step: npm's, worded as
+    // cli-on-path words it.
+    const older = check({
+      agentText: [{path: A, state: 'differs'}],
+      agentTextInstall: null,
+    });
+    expect(older.message).toContain(
+      "The computer-level agent text differs from this release's",
+    );
+    expect(older.fix).toBe(
+      'Install it for the computer: `npm i -g @astryxdesign/cli`.',
+    );
+    // With the Astryx CLI anywhere on the search path, even behind another
+    // program (cli-on-path's to report), or a skill naming a host's command,
+    // there is nothing to restore.
+    for (const over of [
       {
-        agentTextCommand: 'astryx',
         searchPathCommands: [
           /** @type {any} */ ({
             file: '/usr/bin/astryx',
@@ -437,17 +437,22 @@ describe('doctor: the computer-level agent text', () => {
           }),
         ],
       },
-      {agentTextCommand: 'acme astryx', searchPathCommands: []},
+      {
+        searchPathCommands: [
+          /** @type {any} */ ({file: '/opt/other/astryx', astryx: false}),
+          /** @type {any} */ ({
+            file: '/usr/bin/astryx',
+            astryx: true,
+            version: '1.2.0',
+          }),
+        ],
+      },
+      {agentTextCommand: 'acme astryx'},
     ]) {
-      const other = checkComputerAgentText({
-        nodeVersion: '22.13.0',
-        answeredBy: {cli: '1.2.0', core: '1.2.0', copy: 'carried'},
-        latest: null,
-        agentText: [{path: A, state: 'current'}],
-        cwd: os.tmpdir(),
-        ...ctx,
-      });
-      expect(other.message).toContain('matches this release');
+      const other = check(over);
+      expect(other.message).toBe(
+        `The computer-level agent text matches this release: ${A}.`,
+      );
     }
   });
 

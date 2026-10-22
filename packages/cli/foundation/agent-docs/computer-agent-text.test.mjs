@@ -24,6 +24,7 @@ import {
   computerSkillLinks,
   inspectComputerAgentText,
   removeComputerAgentText,
+  computerInstallStep,
   renderComputerAgentText,
   skillInstallStepOf,
   writeComputerAgentText,
@@ -157,6 +158,30 @@ describe('renderComputerAgentText', () => {
       'If `astryx` is not found, run `bun add -g @astryxdesign/cli` first.',
     );
     expect(skillInstallStepOf(bun)).toBe('bun add -g @astryxdesign/cli');
+  });
+
+  // Only the CLI installed for the computer chooses the step; every other
+  // copy of the release, such as a project's own CLI, keeps the one the file
+  // records, so it neither reports the file as different nor rewrites it.
+  it('keeps the step the file records for a copy that is not installed for the computer', () => {
+    const home = tmp('home');
+    const file = computerSkillFile(home);
+    fs.mkdirSync(path.dirname(file), {recursive: true});
+    const pnpm = renderComputerAgentText({
+      command: 'astryx',
+      install: 'pnpm add -g @astryxdesign/cli',
+    });
+    fs.writeFileSync(file, pnpm);
+    expect(computerInstallStep({home})).toBe('pnpm add -g @astryxdesign/cli');
+    expect(inspectComputerAgentText({home, command: 'astryx'})[0].state).toBe(
+      'current',
+    );
+    writeComputerAgentText({home, command: 'astryx'});
+    expect(fs.readFileSync(file, 'utf8')).toBe(pnpm);
+    // No file yet: npm's step.
+    expect(computerInstallStep({home: tmp('empty-home')})).toBe(
+      'npm i -g @astryxdesign/cli',
+    );
     expect(renderComputerAgentText({command: 'acme astryx'})).not.toContain(
       'npm i -g',
     );

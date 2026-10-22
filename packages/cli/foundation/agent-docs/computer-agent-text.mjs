@@ -67,14 +67,19 @@ export function computerRestoreLine(install) {
 }
 
 /**
- * The install step the text records: when the copy writing it is the CLI
- * installed for the computer, the command that installs it again with the
- * same package manager into the same folder, as the update notice names it
- * but with no version; otherwise npm's.
- * @param {string} [cliRoot] the copy writing the text
+ * The install step the text records. Only the CLI installed for the computer
+ * chooses it: the command that installs it again with the same package
+ * manager into the same folder, as the update notice names it but with no
+ * version. Any other copy of a release keeps the step the file in `home`
+ * already records, so every copy of one release expects the same text, and
+ * names npm's when the file records none.
+ * @param {{cliRoot?: string, home?: string}} [options]
  * @returns {string}
  */
-export function computerInstallStep(cliRoot = CLI_ROOT) {
+export function computerInstallStep({
+  cliRoot = CLI_ROOT,
+  home = os.homedir(),
+} = {}) {
   try {
     if (isGlobalCopy(cliRoot)) {
       return globalUpgradeCommand(cliRoot).replace(
@@ -83,7 +88,15 @@ export function computerInstallStep(cliRoot = CLI_ROOT) {
       );
     }
   } catch {
-    // A copy whose install cannot be read gets npm's step.
+    // A copy whose install cannot be read keeps the recorded step.
+  }
+  try {
+    const recorded = skillInstallStepOf(
+      fs.readFileSync(computerSkillFile(home), 'utf8'),
+    );
+    if (recorded) return recorded;
+  } catch {
+    // No file yet: npm's step.
   }
   return COMPUTER_INSTALL_STEP;
 }
@@ -467,7 +480,10 @@ export function inspectComputerAgentText({
   command,
   links = [],
 } = {}) {
-  const expected = renderComputerAgentText({command});
+  const expected = renderComputerAgentText({
+    command,
+    install: computerInstallStep({home}),
+  });
   const folder = path.join(home, SKILL_FOLDER);
   const made = new Set(links);
   return [
@@ -580,7 +596,10 @@ function writeCopy(at, expected) {
  * @returns {{rows: import('../../api/init/init.type.mjs').InitUserFile[], links: string[]}}
  */
 export function writeComputerAgentText({home = os.homedir(), command} = {}) {
-  const expected = renderComputerAgentText({command});
+  const expected = renderComputerAgentText({
+    command,
+    install: computerInstallStep({home}),
+  });
   const file = computerSkillFile(home);
   const folder = path.dirname(file);
   /** @type {import('../../api/init/init.type.mjs').InitUserFile[]} */

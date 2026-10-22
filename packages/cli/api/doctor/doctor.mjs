@@ -1688,7 +1688,7 @@ export function checkComputerAgentText(ctx) {
   }
   const entries = ctx.agentText ?? /** @type {NonNullable<typeof state>} */ (state).entries;
   const command = ctx.agentText ? (ctx.agentTextCommand ?? null) : /** @type {NonNullable<typeof state>} */ (state).command;
-  const install = (ctx.agentText ? ctx.agentTextInstall : /** @type {NonNullable<typeof state>} */ (state).install) ?? COMPUTER_INSTALL_STEP;
+  const recorded = (ctx.agentText ? ctx.agentTextInstall : /** @type {NonNullable<typeof state>} */ (state).install) ?? null;
   const fix = `Run \`${formatCliCommand('astryx init --user', ctx.cwd)}\`.`;
   const [file, ...links] = entries;
   const home = (/** @type {{path: string}} */ e) => displayHomePath(e.path);
@@ -1716,21 +1716,26 @@ export function checkComputerAgentText(ctx) {
       fix,
     };
   }
+  const current = file.state === 'current';
+  const status = `${current ? 'The computer-level agent text matches this release' : "The computer-level agent text differs from this release's"}: ${home(file)}.`;
   // The skill outlives the CLI it names when the home folder outlasts the
   // folder the CLI is installed in, as on a machine whose system folders
-  // reset on restart: say so, with the step the skill itself names.
+  // reset on restart. Only when no Astryx CLI is on the search path at all:
+  // one behind another program is cli-on-path's to report. The reinstalled
+  // copy refreshes the text too.
   const rows = ctx.searchPathCommands;
-  if (command === COMPUTER_COMMAND && rows && !rows[0]?.astryx) {
+  if (command === COMPUTER_COMMAND && rows && !rows.some(r => r.astryx)) {
     return {
       ...base,
-      message: `${home(file)} tells agents to run \`${COMPUTER_COMMAND}\`, but no \`${COMPUTER_COMMAND}\` command on the search path runs the Astryx CLI, so agents that read it find no CLI to run (as when a restart removes the CLI installed for the computer and keeps the home folder).${linkNote}`,
-      fix: `Run \`${install}\`, the step the skill names for when \`${COMPUTER_COMMAND}\` is not found.`,
+      message: `${status} It tells agents to run \`${COMPUTER_COMMAND}\`, but no \`${COMPUTER_COMMAND}\` command on the search path runs the Astryx CLI, so agents that read it find no CLI to run (as when a restart removes the CLI installed for the computer and keeps the home folder).${linkNote}`,
+      fix: recorded
+        ? `Run \`${recorded}\`, the step the skill names for when \`${COMPUTER_COMMAND}\` is not found.`
+        : `Install it for the computer: \`${COMPUTER_INSTALL_STEP}\`.`,
     };
   }
-  const current = file.state === 'current';
   return {
     ...base,
-    message: `${current ? 'The computer-level agent text matches this release' : "The computer-level agent text differs from this release's"}: ${home(file)}.${linkNote}`,
+    message: `${status}${linkNote}`,
     ...(!current || missing.length > 0 || dangling.length > 0 ? {fix} : {}),
   };
 }

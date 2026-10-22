@@ -246,9 +246,11 @@ works on is `spec:AST-040` FR9's.
   does outside a project, is classified under `spec:AST-017`. `doctor` is `own`:
   outside a project it checks the computer, reporting the Node version, the
   release that answered and the newest release it knows of, and whether the
-  computer-level agent text (FR8) is present and current, and it never fails a
-  check because the folder has no project. `swizzle` is `refuse`, even with a
-  carried Core.
+  computer-level agent text (FR8) is present and current; when that text names
+  `astryx` and no `astryx` on the search path runs the Astryx CLI, it says so
+  and names the install step the text records, or npm's when it records none;
+  and it never fails a check because the folder has no project. `swizzle` is
+  `refuse`, even with a carried Core.
 
 - **FR5 — Every answer names who answered, and one picker names every printed
   command.**
@@ -396,7 +398,12 @@ works on is `spec:AST-040` FR9's.
     tells an agent that Astryx is on the computer, when it is relevant, and to
     start with `astryx search`; it names no version, no release-specific
     command or prop, and only entry points every release keeps (`search`,
-    `docs`, `component`, and the like), so an older copy never misleads.
+    `docs`, `component`, and the like), so an older copy never misleads. When
+    it names `astryx`, it ends with
+    ``If `astryx` is not found, run `<install step>` first.``, where the
+    step installs the CLI for the computer with the package manager and folder
+    of the global copy that wrote it, without a version; any other copy keeps
+    the step the file records, or names npm's when it records none.
   - The computer-level text is one file, `.agents/skills/astryx/SKILL.md` in
     the home folder, which most agent tools read. The computer-level agent
     files table below names each other folder it reaches: a folder link to its
