@@ -134,8 +134,8 @@ functions for Astryx resolution. Its public reads stay plain:
 `{size: 'md'}`; `DefinedTheme['componentIcons']` is a static view of names,
 `null`, and static requests, with resolver slots omitted; and
 `DefinedTheme['iconVariants']` is the theme's list. Inside `defineTheme`, entry
-functions and slot functions receive `variant` typed as that theme's listed
-names.
+functions receive `variant`, and static slot requests and slot functions return
+it, typed as that theme's listed names.
 
 ## Boundaries and invariants
 

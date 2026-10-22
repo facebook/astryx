@@ -103,13 +103,13 @@ A theme decides how icons look:
   A child theme that sets `iconVariants` replaces the inherited list; one that
   omits it inherits the list.
 - **FR3 — The list types the theme and the request.** Inside `defineTheme`, entry
-  functions and slot resolvers receive `variant` typed as the theme's listed
-  names. `Icon`'s `variant` prop and a slot request's `variant` use
-  `IconVariant`, the names in the public, augmentable `IconVariantMap`. `theme
-build` writes an augmentation of that map from the theme it builds, the same
-  way it augments custom component values, and an application may augment the
-  map itself. Astryx never derives a variant type from several themes' lists;
-  when an application loads several built themes, TypeScript merges their
+  functions receive `variant`, and static slot requests and slot resolvers
+  return it, typed as the theme's listed names. `Icon`'s `variant` prop uses
+  `IconVariant`, the names in the public, augmentable `IconVariantMap`. The
+  theme build writes an augmentation of that map from the theme it builds, the
+  same way it augments custom component values, and an application may augment
+  the map itself. Astryx never derives a variant type from several themes'
+  lists; when an application loads several built themes, TypeScript merges their
   augmentations, and FR4 renders the normal icon wherever the active theme does
   not list a requested name.
 - **FR4 — An unlisted variant renders the normal icon.** `Icon` passes a
@@ -198,8 +198,10 @@ build` writes an augmentation of that map from the theme it builds, the same
   placement, color, interaction, and accessibility remain set by the component,
   including any outer dimensions a family contract fixes across states.
 - **FR15 — Themes set state-dependent icons through slots.** A component that
-  shows a state-dependent icon through `Icon` exposes that state through its slot
-  so the theme can resolve it. Per-state icon props passed by a caller, such as
+  exposes a state-dependent icon as a `componentIcons` slot passes that state
+  through the slot so the theme can resolve it. A component that picks a shared
+  icon name from its own state without a slot keeps doing so until its own
+  contract adds one. Per-state icon props passed by a caller, such as
   `pressedIcon` or `selectedIcon`, act as caller-supplied icon content. A
   stateful control mark that a component draws through an indicator, such as the
   selection check, the radio, or the checkbox box, stays an indicator: the
