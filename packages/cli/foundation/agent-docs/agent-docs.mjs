@@ -37,6 +37,7 @@ import {findCoreDir, CLI_ROOT} from '../fs/paths.mjs';
 import {assertWithin, PathSafetyError} from '../fs/path-safety.mjs';
 import {createFileProtectionResolver} from '../fs/file-protection.mjs';
 import {getCliInvocation} from '../env/package-manager.mjs';
+import {isValidSemver, semverGte} from '../env/semver.mjs';
 import {discoverComponents} from '../discovery/component-discovery.mjs';
 import {Project} from '../config/project.mjs';
 import {cliRootNamespaceNames} from '../doc-compiler/tree.mjs';
@@ -683,6 +684,21 @@ export function detectStylingSystem(targetDir) {
   }
 }
 
+/** The first release whose `doctor` takes `--built`. */
+const BUILT_CHECK_SINCE = '0.7.4';
+
+/**
+ * Whether a project on this Core release can run `astryx doctor --built`.
+ * @param {string | null} version
+ */
+function hasBuiltCheck(version) {
+  return (
+    typeof version === 'string' &&
+    isValidSemver(version) &&
+    semverGte(version, BUILT_CHECK_SINCE)
+  );
+}
+
 /**
  * Generate the agent cheat sheet from live CLI metadata.
  *
@@ -767,10 +783,13 @@ export function generateCompressedIndex(
   // intentionally omitted from the command reference below.
   lines.push(WORKFLOW_TITLE, ...WORKFLOW_STEPS);
   lines.push('Changing an existing page? Keep it: skip step 2 and add blocks/components inside its sections.');
-  // Project block only: the project's own CLI writes and answers this block,
-  // so the option exists; the computer-level skill names only entry points
-  // every release keeps (AST-081 FR8).
-  lines.push("Before you deliver a build, run `astryx doctor --built <dir>`; don't deliver it if it fails.");
+  // Only for a project whose Core release has `doctor --built`: a newer copy
+  // may write this block in a project that then installs the CLI at its
+  // Core's version, and an older CLI rejects the option. The computer-level
+  // skill names only entry points every release keeps (AST-081 FR8).
+  if (hasBuiltCheck(version)) {
+    lines.push("Before you deliver a build, run `astryx doctor --built <dir>`; don't deliver it if it fails.");
+  }
   lines.push('');
 
   // Rules — the top error-preventers.

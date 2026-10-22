@@ -100,6 +100,10 @@ describe('generateCompressedIndex', () => {
     const line =
       "Before you deliver a build, run `astryx doctor --built <dir>`; don't deliver it if it fails.";
     expect(generateCompressedIndex('1.0.0')).toContain(line);
+    expect(generateCompressedIndex('0.7.4')).toContain(line);
+    // A Core-only project on an older release installs a CLI without it.
+    expect(generateCompressedIndex('0.7.3')).not.toContain('doctor --built');
+    expect(generateCompressedIndex(null)).not.toContain('doctor --built');
     expect(renderComputerAgentText({command: 'astryx'})).not.toContain(
       'doctor --built',
     );
