@@ -339,9 +339,10 @@ export interface DropdownMenuItemData extends Pick<
    * stays a sub-menu while `items` is empty, so a filter that matches nothing
    * keeps its field. The bottom sheet shows it above that level's actions, in
    * place of the menu's own header, and reads the level from the current
-   * `items` while it shows, by `id`, label, or position when the label
-   * changes; give the row an `id` when another row at its level has the same
-   * label or the rows can reorder. Ignored on a row without `items`.
+   * `items` while it shows, by `id`, by label, or, while its level keeps its
+   * row count, by position; give the row an `id` when another row at its level
+   * has the same label or the rows can reorder. Ignored on a row without
+   * `items`.
    */
   header?: ReactNode;
   /**
@@ -912,6 +913,7 @@ function DropdownMenuBottomSheet({
           <MenuBottomSheetActionList
             items={currentItems}
             onSelect={handleSelect}
+            showsLevelRegions
             onOpenSubmenu={item =>
               setSubmenuPath(path => [
                 ...path,
@@ -1576,7 +1578,9 @@ function DropdownMenuPopover({
 
   // Resolve menu content: data-driven items become components
   const menuContent = wrapContent(
-    props.items !== undefined ? renderDropdownItems(items) : children,
+    props.items !== undefined
+      ? renderDropdownItems(items, {showsRegions: true})
+      : children,
   );
   const hasOverflow = useMenuOverflow(listRef, menuContent, popover.isOpen);
 

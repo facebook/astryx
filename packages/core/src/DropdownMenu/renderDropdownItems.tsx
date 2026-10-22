@@ -78,8 +78,14 @@ function renderLeafItem(
 /**
  * Converts data-driven items into DropdownMenuItem components,
  * so both modes share the same rendering and keyboard navigation path.
+ * `showsRegions`: the menu renders a sub-menu's header and footer (a
+ * DropdownMenu does), so a row with either stays a sub-menu while its `items`
+ * is empty (see opensSubMenu).
  */
-export function renderDropdownItems(items: DropdownMenuOption[]): ReactNode {
+export function renderDropdownItems(
+  items: DropdownMenuOption[],
+  {showsRegions = false}: {showsRegions?: boolean} = {},
+): ReactNode {
   const elements: ReactNode[] = [];
 
   for (let i = 0; i < items.length; i++) {
@@ -112,7 +118,7 @@ export function renderDropdownItems(items: DropdownMenuOption[]): ReactNode {
       // leaf (see opensSubMenu). renderDropdownItems owns the recursion and
       // hands the rendered children to DropdownMenuSubMenu — so
       // DropdownMenuSubMenu never imports this module back (no import cycle).
-      if (opensSubMenu(option)) {
+      if (opensSubMenu(option, {showsRegions})) {
         elements.push(
           <DropdownMenuSubMenu
             key={getItemKey(option, i)}
@@ -121,7 +127,7 @@ export function renderDropdownItems(items: DropdownMenuOption[]): ReactNode {
             isDisabled={option.isDisabled}
             header={option.header}
             footer={option.footer}>
-            {renderDropdownItems(option.items)}
+            {renderDropdownItems(option.items, {showsRegions})}
           </DropdownMenuSubMenu>,
         );
       } else {

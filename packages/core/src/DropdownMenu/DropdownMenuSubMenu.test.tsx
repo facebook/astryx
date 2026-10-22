@@ -2563,6 +2563,50 @@ describe('DropdownMenuSubMenu header and footer', () => {
     ).toBeInTheDocument();
   });
 
+  it("the bottom sheet keeps a level whose row the menu's own search filters out, not the row then at its position", async () => {
+    const user = userEvent.setup();
+    function SearchedMenu({withIds}: {withIds: boolean}) {
+      const [query, setQuery] = useState('');
+      const rows = [
+        {label: 'Move to', items: [{label: 'Inbox'}]},
+        {label: 'Labels', items: [{label: 'Bug'}]},
+        {label: 'Copy to', items: [{label: 'Drafts'}]},
+      ]
+        .map(row => (withIds ? {...row, id: row.label} : row))
+        .filter(row => row.label.toLowerCase().includes(query.toLowerCase()));
+      return (
+        <DropdownMenu
+          button={{label: 'Session'}}
+          presentation="bottom-sheet"
+          header={
+            <input
+              aria-label="Search actions"
+              value={query}
+              onChange={event => setQuery(event.target.value)}
+            />
+          }
+          items={rows}
+        />
+      );
+    }
+    for (const withIds of [false, true]) {
+      const {unmount} = render(<SearchedMenu withIds={withIds} />);
+      await user.click(screen.getByRole('button', {name: /Session/}));
+      await user.click(await screen.findByRole('button', {name: /Labels/}));
+      await screen.findByRole('button', {name: /Bug/});
+      // Labels has no regions of its own, so the menu's search still shows,
+      // and what it types filters the root rows, Labels among them.
+      await user.type(
+        screen.getByRole('textbox', {name: 'Search actions'}),
+        'to',
+      );
+      expect(screen.getByRole('heading', {name: 'Labels'})).toBeInTheDocument();
+      expect(screen.getByRole('button', {name: /Bug/})).toBeInTheDocument();
+      expect(screen.queryByRole('button', {name: /Drafts/})).toBeNull();
+      unmount();
+    }
+  });
+
   describe('on a phone', () => {
     const originalMatchMedia = window.matchMedia;
     beforeEach(() => {
