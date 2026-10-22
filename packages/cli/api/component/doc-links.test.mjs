@@ -250,14 +250,14 @@ describe("a link in a guide's description, as the docs tree shows it", () => {
         'Document a theme by extending the core theme topic, so an app reads it in `astryx docs theme`.';
       const guide = /** @type {any} */ (
         await docs(
-          'cli/integrations/building-blocks/themes/document-the-theme',
+          'authoring/building-blocks/themes/document-the-theme',
           undefined,
           {cwd: tmpDir, full: true},
         )
       );
       expect(guide.data.description).toBe(expected);
       const namespace = /** @type {any} */ (
-        await docs('cli/integrations/building-blocks/themes', undefined, {
+        await docs('authoring/building-blocks/themes', undefined, {
           cwd: tmpDir,
         })
       );

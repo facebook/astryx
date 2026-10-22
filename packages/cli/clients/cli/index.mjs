@@ -32,7 +32,12 @@ import {levenshteinDistance} from '../../foundation/text/string-utils.mjs';
 import {installJsonShim} from './lib/json-shim.mjs';
 import {addDocHelp, markReportsResult} from './lib/define-command.mjs';
 import {doc as manifestDoc} from './commands/manifest.doc.mjs';
-import {isAstryxInitialized, isAstryxPromptInReach} from '../../foundation/agent-docs/agent-docs.mjs';
+import {
+  agentDocsTargetDir,
+  assertAgentDocsTarget,
+  isAstryxInitialized,
+  isAstryxPromptInReach,
+} from '../../foundation/agent-docs/agent-docs.mjs';
 import {CLI_ROOT} from '../../foundation/fs/paths.mjs';
 import {setupNudge} from '../../foundation/agent-docs/agent-doc-state.mjs';
 import * as debug from '../../foundation/debug/index.mjs';
@@ -635,6 +640,19 @@ export async function createProgram() {
       if (INTEGRATION_MANIFEST_FILES.some(file => fs.existsSync(path.join(cwd, file)))) return;
       if (inOwnSourceCheckout(cwd)) return; // developing Astryx itself, not an app
       if (isAstryxPromptInReach(cwd)) return; // already set up — stay quiet
+      // Where init writes the docs, by init's own rule: the project root, which
+      // can sit above a nested package such as functions/. Inside a git
+      // repository the walk above already reaches it (the root never lies
+      // above the repository root), so this changes nothing there; outside a
+      // repository the walk checks only cwd, and this finds the root.
+      if (isAstryxInitialized(agentDocsTargetDir(cwd))) return;
+      // In the home folder, or at the top of a settings folder in it, init
+      // writes no agent docs, so naming it would repeat on every command.
+      try {
+        assertAgentDocsTarget(agentDocsTargetDir(cwd));
+      } catch {
+        return;
+      }
       // Same wording as the core/cli postinstall nudges. getCliInvocation()
       // renders the correct form for THIS project — an integration's cliCommand,
       // scoped `npx @astryxdesign/cli` one-off, or `<pm> astryx` when installed —

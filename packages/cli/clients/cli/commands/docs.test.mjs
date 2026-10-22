@@ -227,7 +227,7 @@ describe('the docs tree, one level at a time', () => {
   it('wraps namespace summaries without discarding searchable words', async () => {
     const {status, stdout} = await runCli([
       'docs',
-      'cli/integrations/building-blocks/templates',
+      'authoring/building-blocks/templates',
     ]);
     expect(status).toBe(0);
     expect(stdout).toMatch(/^start-a-template +Help others build apps faster/m);
@@ -274,8 +274,8 @@ describe('the docs tree, one level at a time', () => {
   }, SLOW);
 
   it('reads the integration guides by their routes, and not by the old name', async () => {
-    // cli/integrations is a namespace: one level, its guides by slot.
-    const level = await runCli(['docs', 'cli/integrations']);
+    // authoring is a namespace: one level, its guides by slot.
+    const level = await runCli(['docs', 'authoring']);
     expect(level.status).toBe(0);
     expect(level.stdout).toMatch(
       /^quick-start +Create a new integration package/m,
@@ -283,42 +283,42 @@ describe('the docs tree, one level at a time', () => {
     expect(level.stdout).toMatch(/^building-blocks +/m);
     const guide = await runCli([
       'docs',
-      'cli/integrations/building-blocks/codemods',
+      'authoring/building-blocks/codemods',
       '--index',
     ]);
     expect(guide.status).toBe(0);
     expect(guide.stdout).toMatch(
-      /Read one section: .*docs cli\/integrations\/building-blocks\/codemods <section>/,
+      /Read one section: .*docs authoring\/building-blocks\/codemods <section>/,
     );
     // A bare read is one level too: the sections, and how to read it all.
     const bare = await runCli([
       'docs',
-      'cli/integrations/building-blocks/codemods',
+      'authoring/building-blocks/codemods',
     ]);
     expect(bare.status).toBe(0);
     expect(bare.stdout).toBe(guide.stdout);
     expect(bare.stdout).toMatch(
-      /Read everything: +.*docs cli\/integrations\/building-blocks\/codemods --full$/m,
+      /Read everything: +.*docs authoring\/building-blocks\/codemods --full$/m,
     );
     const one = await runCli([
       'docs',
-      'cli/integrations/building-blocks/codemods',
+      'authoring/building-blocks/codemods',
       'which-codemods-run',
     ]);
     expect(one.status).toBe(0);
     expect(one.stdout).toMatch(/^## Choose when a codemod runs$/m);
     expect(one.stdout).toMatch(
-      /^Up: .*docs cli\/integrations\/building-blocks\/codemods --index$/m,
+      /^Up: .*docs authoring\/building-blocks\/codemods --index$/m,
     );
     expect(one.stdout).toMatch(
-      /^Previous: .*docs cli\/integrations\/building-blocks\/codemods write-the-transform$/m,
+      /^Previous: .*docs authoring\/building-blocks\/codemods write-the-transform$/m,
     );
     expect(one.stdout).toMatch(
-      /^Next: .*docs cli\/integrations\/building-blocks\/codemods run-codemods-in-an-app$/m,
+      /^Next: .*docs authoring\/building-blocks\/codemods run-codemods-in-an-app$/m,
     );
     const full = await runCli([
       'docs',
-      'cli/integrations/building-blocks/codemods',
+      'authoring/building-blocks/codemods',
       '--full',
     ]);
     expect(full.status).toBe(0);
@@ -343,11 +343,11 @@ describe('the docs tree, one level at a time', () => {
       type: 'docs.detail.section',
       data: {id: 'side-panels', title: 'Side panels'},
     });
-    const missing = await runCli(['docs', 'cli', 'zzzz-nope', '--json']);
+    const missing = await runCli(['docs', 'authoring', 'zzzz-nope', '--json']);
     expect(missing.status).toBe(1);
     const error = JSON.parse(missing.stdout);
     expect(error).toMatchObject({code: 'ERR_UNKNOWN_SECTION'});
-    expect(error.suggestions.map(s => s.name)).toContain('cli/integrations/quick-start');
+    expect(error.suggestions.map(s => s.name)).toContain('authoring/quick-start');
   }, SLOW);
 });
 

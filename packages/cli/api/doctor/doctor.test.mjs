@@ -652,7 +652,7 @@ describe('checkAuthoringDocs', () => {
   it('passes when every authoring self-doc is reachable and fits one read', async () => {
     const c = await checkAuthoringDocs();
     expect(c).toMatchObject({id: 'authoring-docs', status: 'pass'});
-    expect(c.message).toContain(formatCliCommand('docs authoring'));
+    expect(c.message).toContain(formatCliCommand('docs authoring/field-reference'));
   }, SLOW);
 });
 
@@ -680,7 +680,7 @@ describe('checkCliDocs', () => {
         id: 'cli-docs',
         label: 'CLI docs',
         status: 'pass',
-        message: `All ${audit.docs} CLI docs are readable: ${audit.tree} in the \`${formatCliCommand('docs cli')}\` tree and ${audit.authoring} in \`${formatCliCommand('docs authoring')}\`.`,
+        message: `All ${audit.docs} CLI docs are readable: ${audit.tree} in the \`${formatCliCommand('docs cli')}\` tree and ${audit.authoring} in \`${formatCliCommand('docs authoring/field-reference')}\`.`,
       });
     },
     SLOW,
@@ -790,7 +790,7 @@ describe('checkDocsTree', () => {
 describe('checkAuthoringDocs against the public authoring surface', () => {
   const NAMESPACE = 'doctypes/namespace/namespace.doc.mjs';
   const NAMESPACE_TYPES =
-    `NamespaceDoc, NamespaceProviderScope, NamespaceSlotAcceptance, NamespaceSlot, NamespaceAdoptionSource, NamespaceAdoptionRule from doctypes/namespace/type.ts have no doc in \`${formatCliCommand('docs authoring')}\``;
+    `NamespaceDoc, NamespaceProviderScope, NamespaceSlotAcceptance, NamespaceSlot, NamespaceAdoptionSource, NamespaceAdoptionRule from doctypes/namespace/type.ts have no doc in \`${formatCliCommand('docs authoring/field-reference')}\``;
   const SURFACE_FIX =
     'Put a self-doc beside each module whose types @astryxdesign/cli/authoring exports and list it in AUTHORING_SELF_DOCS; export what each listed self-doc documents, or remove that self-doc.';
 
@@ -820,7 +820,7 @@ describe('checkAuthoringDocs against the public authoring surface', () => {
         id: 'authoring-docs',
         label: 'Authoring docs',
         status: 'pass',
-        message: `All ${AUTHORING_SELF_DOCS.length} authoring schemas are readable in \`${formatCliCommand('docs authoring')}\`.`,
+        message: `All ${AUTHORING_SELF_DOCS.length} authoring schemas are readable in \`${formatCliCommand('docs authoring/field-reference')}\`.`,
       });
     },
     SLOW,
@@ -849,7 +849,7 @@ describe('checkAuthoringDocs against the public authoring surface', () => {
       });
       expect(c.status).toBe('fail');
       expect(c.message).toBe(
-        `2 problems: ${NAMESPACE} is not in \`${formatCliCommand('docs authoring')}\`; ${NAMESPACE_TYPES}: ${NAMESPACE} is not listed in AUTHORING_SELF_DOCS`,
+        `2 problems: ${NAMESPACE} is not in \`${formatCliCommand('docs authoring/field-reference')}\`; ${NAMESPACE_TYPES}: ${NAMESPACE} is not listed in AUTHORING_SELF_DOCS`,
       );
     },
     SLOW,
@@ -858,7 +858,7 @@ describe('checkAuthoringDocs against the public authoring surface', () => {
   it(
     "fails when the topic's index no longer exposes the NamespaceDoc section",
     async () => {
-      const index = await docs('authoring', undefined, {index: true});
+      const index = await docs('authoring/field-reference', undefined, {index: true});
       const topicKeys = new Set(
         index.data.sections
           .map((/** @type {any} */ s) => s.id)
@@ -947,7 +947,7 @@ describe('checkAuthoringDocs against the public authoring surface', () => {
       expect(c.fix).toBe(SURFACE_FIX);
       expect(c.message).toMatch(
         new RegExp(
-          `^[A-Za-z, ]+ from ${escape(module)} have no doc in \`${escape(formatCliCommand('docs authoring'))}\`: no self-doc sits beside ${escape(module)}$`,
+          `^[A-Za-z, ]+ from ${escape(module)} have no doc in \`${escape(formatCliCommand('docs authoring/field-reference'))}\`: no self-doc sits beside ${escape(module)}$`,
         ),
       );
       for (const name of names) {
@@ -990,7 +990,7 @@ describe('checkAuthoringDocs against the public authoring surface', () => {
         expect(await checkAuthoringDocs()).toMatchObject({
           status: 'fail',
           message:
-            `\`${formatCliCommand('docs authoring')}\` could not be read: no built-in docs`,
+            `\`${formatCliCommand('docs authoring/field-reference')}\` could not be read: no built-in docs`,
           fix: SURFACE_FIX,
         });
       } finally {
@@ -1011,7 +1011,7 @@ describe('checkAuthoringDocs against the public authoring surface', () => {
       const c = await checkAuthoringDocs(undefined, {root});
       expect(c.status).toBe('fail');
       expect(c.message).toContain(
-        `@astryxdesign/cli/authoring exports no types, so nothing was compared with \`${formatCliCommand('docs authoring')}\``,
+        `@astryxdesign/cli/authoring exports no types, so nothing was compared with \`${formatCliCommand('docs authoring/field-reference')}\``,
       );
     },
     SLOW,
@@ -1317,8 +1317,12 @@ describe('a configured integration that cannot load fails the gate', () => {
     'astryx.config.mjs': "export default { integrations: ['@acme/widgets'] };\n",
   };
 
-  /** Run doctor on a project under the working directory. */
-  async function report(files) {
+  /**
+   * Run doctor on a project under the working directory, in its folder `at`.
+   * @param {Record<string, string>} files
+   * @param {string} [at]
+   */
+  async function report(files, at = '.') {
     const dir = fs.mkdtempSync(path.join(process.cwd(), '.astryx-doctor-gate-'));
     tmpDirs.push(dir);
     for (const [rel, content] of Object.entries(files)) {
@@ -1326,7 +1330,7 @@ describe('a configured integration that cannot load fails the gate', () => {
       fs.mkdirSync(path.dirname(abs), {recursive: true});
       fs.writeFileSync(abs, content);
     }
-    const {checks, summary} = (await doctor({cwd: dir})).data;
+    const {checks, summary} = (await doctor({cwd: path.join(dir, at)})).data;
     return {by: Object.fromEntries(checks.map(c => [c.id, c])), summary};
   }
 
@@ -1350,6 +1354,27 @@ describe('a configured integration that cannot load fails the gate', () => {
       expect(check.message).toMatch(reason);
       expect(check.fix).toContain(' doctor integration validate <package>`');
       expect(summary.fail).toBe(1);
+    },
+    SLOW,
+  );
+
+  it(
+    'passes in a workspace member whose configured integration is hoisted to the root',
+    async () => {
+      const {by} = await report(
+        {
+          'package.json': JSON.stringify({name: 'root', private: true, workspaces: ['apps/*']}),
+          ...CORE_STUB,
+          ...widgets(),
+          'apps/web/package.json': '{"name":"web"}',
+          'apps/web/astryx.config.mjs': "export default { integrations: ['@acme/widgets'] };\n",
+        },
+        'apps/web',
+      );
+      expect(by['configured-integrations'].status).toBe('pass');
+      expect(by['configured-integrations'].message).toBe(
+        '1 integration named in astryx.config loaded: @acme/widgets.',
+      );
     },
     SLOW,
   );

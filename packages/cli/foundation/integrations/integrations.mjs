@@ -19,6 +19,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {assertWithin} from '../fs/path-safety.mjs';
+import {findNodeModulesPackage} from '../fs/paths.mjs';
 import {normalizeProviderId} from '../identity/provider-identity.mjs';
 // The key census and contribution parsers are internal to the schema module on
 // purpose: the public parser still validates the complete authored type, while
@@ -73,6 +74,8 @@ import {resolveProviders} from './provider-resolution.mjs';
  *   set on a package whose provider ID an earlier-loaded package already
  *   claims; it contributes nothing and is reported as a `duplicate_provider`
  *   warning
+ * @property {string[]} [__declaredKeys] the keys the manifest object itself
+ *   declares, before any is filled in (providerId from the package name)
  * @property {string[]} [__unknownKeys] manifest keys this CLI does not know —
  *   surfaced as a warning; the rest of the manifest still contributes
  * @property {boolean} [__autolinked] loaded because the project declares the
@@ -215,7 +218,7 @@ function parseDiscoverSourceExport(value, label) {
  * @param {string} file absolute manifest path
  * @param {string} [label] used in error messages
  * @param {{fresh?: boolean}} [options]
- * @returns {Promise<{manifest: import('../../authoring/integration/type').AstryxIntegration, unknownKeys: string[], debug?: import('../../authoring/debug/type').DebugEventHandler, gapReport?: import('../../authoring/gap-report/type').GapReportHandler, gapReportError?: string, discover?: import('../../authoring/discover/type').DiscoverSource, discoverError?: string, agentDocsError?: string, cliCommandError?: string}>}
+ * @returns {Promise<{manifest: import('../../authoring/integration/type').AstryxIntegration, unknownKeys: string[], declaredKeys: string[], debug?: import('../../authoring/debug/type').DebugEventHandler, gapReport?: import('../../authoring/gap-report/type').GapReportHandler, gapReportError?: string, discover?: import('../../authoring/discover/type').DiscoverSource, discoverError?: string, agentDocsError?: string, cliCommandError?: string}>}
  */
 export async function loadManifest(
   file,
@@ -224,6 +227,7 @@ export async function loadManifest(
 ) {
   const mod = await importUserModule(file, {fresh});
   const raw = mod?.default;
+  if (raw === undefined) throw new Error(noDefaultExportMessage(file, label, mod));
   const baseManifest = parseIntegrationBase(raw, label);
   const gapReport = parseGapReportHandlerExport(mod?.gapReport, label);
   const discover = parseDiscoverSourceExport(mod?.discover, label);
@@ -276,6 +280,8 @@ export async function loadManifest(
       ...(cliCommand == null ? {} : {cliCommand}),
     },
     unknownKeys: unknownIntegrationKeys(raw),
+    declaredKeys:
+      raw != null && typeof raw === 'object' ? Object.keys(raw) : [],
     debug:
       typeof mod?.debug === 'function'
         ? /** @type {import('../../authoring/debug/type').DebugEventHandler} */ (
@@ -289,6 +295,30 @@ export async function loadManifest(
     agentDocsError,
     cliCommandError,
   };
+}
+
+/**
+ * Why a manifest has no default export, said plainly instead of as a schema
+ * failure on `undefined`: the file is empty, or it exports other names.
+ * @param {string} file
+ * @param {string} label
+ * @param {Record<string, unknown> | undefined} mod
+ */
+function noDefaultExportMessage(file, label, mod) {
+  const fix = `Fix: export the manifest object as the default export: \`export default {components: './components'}\`, naming the roots the package has.`;
+  let text = '';
+  try {
+    text = fs.readFileSync(file, 'utf8');
+  } catch {
+    // Unreadable now: say only what is missing.
+  }
+  const names = Object.keys(mod ?? {}).filter(name => name !== 'default');
+  if (text.trim() === '') return `${label} is empty. ${fix}`;
+  const found =
+    names.length > 0
+      ? ` (it exports ${names.map(name => `\`${name}\``).join(', ')})`
+      : '';
+  return `${label} has no default export${found}. ${fix}`;
 }
 
 /**
@@ -337,6 +367,25 @@ export function resolvePackageDir(packageName, cwd = process.cwd()) {
     );
   }
   return dir;
+}
+
+/**
+ * Where an integration named in astryx.config is installed: the nearest
+ * `node_modules/<name>` at or above `cwd`, found the way an autolinked
+ * dependency is, so a package a workspace hoists to its root loads in every
+ * member. When it is installed nowhere, `cwd`'s own `node_modules/<name>`,
+ * which the caller reports as not installed.
+ * @param {string} packageName
+ * @param {string} [cwd]
+ * @returns {string}
+ */
+export function resolveInstalledIntegrationDir(
+  packageName,
+  cwd = process.cwd(),
+) {
+  // Validates the name first: it throws on a spec with path segments.
+  const ownDir = resolvePackageDir(packageName, cwd);
+  return findNodeModulesPackage(cwd, packageName)?.packageDir ?? ownDir;
 }
 
 /**
@@ -398,6 +447,8 @@ export async function loadLocalIntegration(packageDir, {fresh = false} = {}) {
   let manifest;
   /** @type {string[]} */
   let unknownKeys;
+  /** @type {string[]} */
+  let declaredKeys;
   /** @type {import('../../authoring/debug/type').DebugEventHandler | undefined} */
   let debugHandler;
   /** @type {import('../../authoring/gap-report/type').GapReportHandler | undefined} */
@@ -416,6 +467,7 @@ export async function loadLocalIntegration(packageDir, {fresh = false} = {}) {
     ({
       manifest,
       unknownKeys,
+      declaredKeys,
       debug: debugHandler,
       gapReport: gapReportHandler,
       gapReportError,
@@ -464,6 +516,7 @@ export async function loadLocalIntegration(packageDir, {fresh = false} = {}) {
     __cliCommandError: cliCommandError,
     __agentDocsError: agentDocsError,
     __unknownKeys: unknownKeys,
+    __declaredKeys: declaredKeys,
     __debug: debugHandler,
     __gapReport: gapReportHandler,
     __gapReportError: gapReportError,
@@ -498,7 +551,7 @@ export async function loadIntegrations(
     if (!spec || seenSpecs.has(spec)) continue;
     seenSpecs.add(spec);
 
-    const packageDir = resolvePackageDir(spec, cwd);
+    const packageDir = resolveInstalledIntegrationDir(spec, cwd);
     const pkgPath = path.join(packageDir, 'package.json');
     let pkg;
     try {
@@ -514,6 +567,8 @@ export async function loadIntegrations(
     let manifest;
     /** @type {string[]} */
     let unknownKeys;
+    /** @type {string[]} */
+    let declaredKeys;
     /** @type {import('../../authoring/debug/type').DebugEventHandler | undefined} */
     let debugHandler;
     /** @type {import('../../authoring/gap-report/type').GapReportHandler | undefined} */
@@ -532,6 +587,7 @@ export async function loadIntegrations(
       ({
         manifest,
         unknownKeys,
+        declaredKeys,
         debug: debugHandler,
         gapReport: gapReportHandler,
         gapReportError,
@@ -587,6 +643,7 @@ export async function loadIntegrations(
       __cliCommandError: cliCommandError,
       __agentDocsError: agentDocsError,
       __unknownKeys: unknownKeys,
+      __declaredKeys: declaredKeys,
       __debug: debugHandler,
       __gapReport: gapReportHandler,
       __gapReportError: gapReportError,

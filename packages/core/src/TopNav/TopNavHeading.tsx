@@ -52,6 +52,7 @@ const styles = stylex.create({
     alignItems: 'center',
     gap: spacingVars['--spacing-2'],
     minHeight: spacingVars['--spacing-8'],
+    minWidth: 0,
     paddingInlineStart: {
       default: spacingVars['--spacing-2'],
       ':has(.astryx-nav-icon)': 0,

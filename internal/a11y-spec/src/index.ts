@@ -173,3 +173,4 @@ export {
   type LinkStateFacts,
 } from './patterns/link';
 export {TOOLBAR_PATTERN, type ToolbarStateFacts} from './patterns/toolbar';
+export {TOOLTIP_PATTERN, type TooltipStateFacts} from './patterns/tooltip';

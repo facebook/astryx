@@ -286,7 +286,8 @@ export interface TimeInputProps extends Omit<
   hourFormat?: TimeInputHourFormat;
 
   /**
-   * Increment in minutes when using arrow keys.
+   * Increment in minutes when using arrow keys. Steps are whole minutes: a
+   * fractional value leaves the time unchanged.
    * @default 1
    */
   increment?: number;

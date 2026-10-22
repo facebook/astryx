@@ -18,6 +18,7 @@
  * @property {string} [codemods]
  * @property {string} [docs]
  * @property {string} [issuesUrl]
+ * @property {string[]} [__declaredKeys]
  * @property {string[]} [__unknownKeys]
  * @property {string} __spec
  * @property {string} __packageDir
@@ -50,7 +51,8 @@
  *   whose file name differs from its source only in letter case where the two
  *   still pair (`source_without_component_doc`); and `doc_name_mismatch` and
  *   `unknown_block_component` (see `docNames` and `blockComponents`); they
- *   become warnings in the next minor release
+ *   become warnings in the next minor release; and `runner_command`, an
+ *   Astryx command a topic writes with a package runner
  */
 
 /**

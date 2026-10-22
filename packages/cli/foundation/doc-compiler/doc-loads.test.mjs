@@ -248,6 +248,10 @@ const RUNNERS = {
     runs: 'astryx.config, through the config parser',
     sites: ['loadModuleWithParser(..., parseConfig)'],
   },
+  'foundation/agent-docs/agent-docs.mjs': {
+    runs: 'git, sl or hg, to read whether the repository ignores an untracked agent file',
+    sites: ['child_process.spawnSync'],
+  },
   'foundation/fs/file-protection.mjs': {
     runs: 'the ignore matcher (CommonJS), loaded when a resolver first reads an ignore file',
     sites: ['require(ignore)'],
@@ -271,6 +275,10 @@ const RUNNERS = {
   'foundation/discovery/docs-discovery.mjs': {
     runs: 'a contributed topic, for its catalog fields: name, title, description, category, and relationships',
     sites: ['importDocModule'],
+  },
+  'foundation/discovery/runner-commands.mjs': {
+    runs: "the package's topics, to find each Astryx command written with a package runner",
+    sites: ['loadTopicModule'],
   },
   'foundation/discovery/stray-pointers.mjs': {
     runs: "the CLI's own guides, for their names, to tell which written `astryx docs <name>` points at a doc that exists",

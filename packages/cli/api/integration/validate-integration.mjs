@@ -12,7 +12,7 @@
  *   - validateLocalIntegration(cwd)  — the package rooted at `cwd` (nearest
  *     package.json + sibling astryx.integration.{ts,mjs,js}).
  *   - validateInstalledIntegration(spec, cwd) — an installed package resolved
- *     from `cwd`/node_modules.
+ *     from the node_modules chain at or above `cwd`.
  *
  * Both return a { found, name, version, manifestFile, issues } result. `found`
  * is false only for the no-manifest local case, which is guidance (not an
@@ -37,6 +37,7 @@ import {assertWithin} from '../../foundation/fs/path-safety.mjs';
 import {normalizeProviderId} from '../../foundation/identity/provider-identity.mjs';
 import {integrationDocTypes} from '../docs/_adapter.mjs';
 import {integrationDocConsistency} from '../../foundation/discovery/doc-consistency.mjs';
+import {integrationRunnerCommands} from './_adapter.mjs';
 import {
   THEME_SLUG_RE,
   unreadThemeFolders,
@@ -52,7 +53,7 @@ import {
 import {
   findManifestPaths,
   loadManifest,
-  resolvePackageDir,
+  resolveInstalledIntegrationDir,
 } from '../../foundation/integrations/integrations.mjs';
 // The on-disk contribution validators live in foundation: Project and
 // integration-warnings need them too, and foundation must not depend on api.
@@ -328,12 +329,14 @@ async function validateAtPackageDir(
   let manifest;
   /** @type {string[]} */
   let unknownKeys;
+  /** @type {string[]} */
+  let declaredKeys;
   /** @type {string | undefined} */
   let agentDocsError;
   /** @type {string | undefined} */
   let cliCommandError;
   try {
-    ({manifest, unknownKeys, agentDocsError, cliCommandError} =
+    ({manifest, unknownKeys, declaredKeys, agentDocsError, cliCommandError} =
       await loadManifest(
         manifestFile,
         `Integration manifest (${path.basename(manifestFile)})`,
@@ -400,6 +403,7 @@ async function validateAtPackageDir(
     __cliCommandError: cliCommandError,
     __agentDocsError: agentDocsError,
     __unknownKeys: unknownKeys,
+    __declaredKeys: declaredKeys,
     __spec: identity.name,
     __declaredProviderId: manifest.providerId,
     __packageDir: packageDir,
@@ -592,20 +596,21 @@ function packageJsonFieldIssues(pkg, pkgJsonPath) {
 }
 
 /**
- * Validate an INSTALLED integration package resolved from `cwd`/node_modules.
+ * Validate an INSTALLED integration package: the nearest `node_modules/<spec>`
+ * at or above `cwd`, resolved the way the project loads it.
  * @param {string} spec package name
  * @param {string} [cwd]
  * @returns {Promise<ValidateResult>}
  */
 export async function validateInstalledIntegration(spec, cwd = process.cwd()) {
-  // resolvePackageDir throws (path-safety guard) on a spec with path segments,
+  // The resolver throws (path-safety guard) on a spec with path segments,
   // `..`, or an absolute path. Every other malformed input to this command
   // degrades into a diagnostic — so catch it here and return an issue instead
   // of letting the throw escape to a raw stack (human) / generic ERR_UNKNOWN
   // (--json).
   let packageDir;
   try {
-    packageDir = resolvePackageDir(spec, cwd);
+    packageDir = resolveInstalledIntegrationDir(spec, cwd);
   } catch (err) {
     return {
       found: true,
@@ -641,6 +646,24 @@ export async function validateInstalledIntegration(spec, cwd = process.cwd()) {
     name: pkg.name ?? spec,
     version: pkg.version,
   });
+}
+
+/**
+ * The runner-command notes for a package's topics: each Astryx command a topic
+ * writes with a package runner, where the doc file is, and the bare command to
+ * write.
+ * @param {any} integration a loaded integration
+ * @returns {Promise<Array<{code: string, message: string}>>}
+ */
+async function runnerCommandNotes(integration) {
+  const packageDir = integration.__packageDir;
+  return (await integrationRunnerCommands(integration)).map(each => ({
+    code: 'runner_command',
+    message:
+      typeof packageDir === 'string'
+        ? `${path.relative(packageDir, each.file).split(path.sep).join('/')}: ${each.message}`
+        : each.message,
+  }));
 }
 
 /**
@@ -693,6 +716,11 @@ export async function validateIntegration(pkg, options = {}) {
         ...(names ?? []).flatMap(each => each.notes),
       ]
     : [];
+  // Each Astryx command a topic writes with a package runner, as a
+  // `runner_command` note with its fix, the same way.
+  if (integration?.docs) {
+    notes.push(...(await runnerCommandNotes(integration)));
+  }
   return {
     type: 'integration.validate',
     data: {

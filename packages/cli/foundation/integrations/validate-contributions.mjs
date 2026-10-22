@@ -26,6 +26,7 @@ import * as path from 'node:path';
 import {parse as parseModule} from '@babel/parser';
 import {isValidSemver} from '../env/semver.mjs';
 import {findProjectCoreDir} from '../fs/paths.mjs';
+import {KNOWN_INTEGRATION_KEYS} from '../../authoring/integration/schema.mjs';
 import {
   contributionFiles,
   findSourceOnlyCandidates,
@@ -127,11 +128,36 @@ export function isListedIssue(issue) {
 function checkUnknownKeys(integration, issues) {
   const keys = integration.__unknownKeys ?? [];
   if (keys.length === 0) return;
+  // A key one edit away from a known one is almost always a typo: say so
+  // first, since "a newer CLI" sends the author to upgrade for nothing.
+  const typos = keys
+    .map(key => ({key, known: nearestKnownKey(key)}))
+    .filter(each => each.known != null);
+  for (const {key, known} of typos) {
+    // The manifest object already declares the key it is a near miss of:
+    // renaming would give it twice, so the stray key goes. Read from what
+    // the manifest says, not the loaded integration, which fills some keys
+    // in (providerId from the package name).
+    const alreadySet = (integration.__declaredKeys ?? []).includes(
+      /** @type {string} */ (known),
+    );
+    const fix = alreadySet
+      ? `Fix: remove "${key}" from ${manifestName(integration)}; it already sets "${known}".`
+      : `Fix: rename "${key}" to "${known}" in ${manifestName(integration)}.`;
+    issues.push(
+      issueWarning(
+        'unknown_manifest_key',
+        `This CLI does not know the manifest key "${key}", so it is ignored. Did you mean \`${known}\`? ${fix} If it is a key from a newer Astryx CLI instead, upgrading @astryxdesign/cli picks it up.`,
+      ),
+    );
+  }
+  const rest = keys.filter(key => !typos.some(each => each.key === key));
+  if (rest.length === 0) return;
   issues.push(
     issueWarning(
       'unknown_manifest_key',
-      `This CLI does not know the manifest ${keys.length === 1 ? 'key' : 'keys'} ` +
-        `${keys.map(key => `"${key}"`).join(', ')}, so ${keys.length === 1 ? 'it is' : 'they are'} ` +
+      `This CLI does not know the manifest ${rest.length === 1 ? 'key' : 'keys'} ` +
+        `${rest.map(key => `"${key}"`).join(', ')}, so ${rest.length === 1 ? 'it is' : 'they are'} ` +
         `ignored — everything else in the manifest still applies. This usually ` +
         `means the integration was published against a newer Astryx CLI than ` +
         `this project resolves; upgrading @astryxdesign/cli picks it up.`,
@@ -144,6 +170,53 @@ function manifestName(integration) {
   return integration.__manifestFile
     ? path.basename(integration.__manifestFile)
     : 'the integration manifest';
+}
+
+/**
+ * The known manifest key `key` is a near miss of: a different letter case, or
+ * at most two letters added, dropped or changed (`component`, `doc`,
+ * `tempaltes`). Null when no known key is that close, or two are.
+ * @param {string} key
+ * @returns {string | null}
+ */
+export function nearestKnownKey(key) {
+  const lower = key.toLowerCase();
+  const limit = lower.length <= 4 ? 1 : 2;
+  /** @type {string[]} */
+  const close = [];
+  for (const known of KNOWN_INTEGRATION_KEYS) {
+    const distance = editDistance(lower, known.toLowerCase());
+    if (distance <= limit) close.push(known);
+  }
+  return close.length === 1 ? close[0] : null;
+}
+
+/**
+ * Levenshtein distance, with a swap of two neighbours counted as one edit.
+ * @param {string} a
+ * @param {string} b
+ */
+function editDistance(a, b) {
+  /** @type {number[][]} */
+  const d = Array.from({length: a.length + 1}, (_, i) =>
+    Array.from({length: b.length + 1}, (_, j) =>
+      i === 0 ? j : j === 0 ? i : 0,
+    ),
+  );
+  for (let i = 1; i <= a.length; i++) {
+    for (let j = 1; j <= b.length; j++) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      d[i][j] = Math.min(
+        d[i - 1][j] + 1,
+        d[i][j - 1] + 1,
+        d[i - 1][j - 1] + cost,
+      );
+      if (i > 1 && j > 1 && a[i - 1] === b[j - 2] && a[i - 2] === b[j - 1]) {
+        d[i][j] = Math.min(d[i][j], d[i - 2][j - 2] + 1);
+      }
+    }
+  }
+  return d[a.length][b.length];
 }
 
 /**
@@ -1005,13 +1078,20 @@ async function checkComponents(integration, issues) {
       const docName = docPath
         ? path.basename(docPath)
         : `${record.name}.doc.mjs`;
+      let message = error.message;
       let fix = `Fix: add ${record.name}.tsx beside ${docName}.`;
       const stamp = docPath ? readContributionStamp(docPath, false) : null;
       if (stamp && stamp.type !== 'component' && integration.__packageDir) {
         context ??= createFixContext(integration.__packageDir, integration);
         fix = notAComponentFix(context, docPath, stamp);
+      } else {
+        const other = docPath ? otherSourceFor(docPath) : null;
+        if (other) {
+          message = `${message.replace(/\.$/u, '')}: found ${other}, but a component source must be a .tsx file.`;
+          fix = `Fix: rename ${other} to ${record.name}.tsx (and point its package export at the new file).`;
+        }
       }
-      issues.push(issueError('invalid_component', `${error.message} ${fix}`));
+      issues.push(issueError('invalid_component', `${message} ${fix}`));
     }
     /** @type {Set<string>} sources a case-only rename is reported for */
     const reportedSources = new Set();
@@ -1102,6 +1182,21 @@ const COMPONENT_DOC_SUFFIXES = ['.doc.ts', '.doc.mjs', '.doc.js'];
 function docStemOf(file) {
   const suffix = COMPONENT_DOC_SUFFIXES.find(each => file.endsWith(each));
   return suffix ? file.slice(0, -suffix.length) : file;
+}
+
+/**
+ * A same-stem source discovery does not read: `.jsx`, `.js`, `.ts` or `.mjs`.
+ * @param {string} docPath
+ * @returns {string | null} its file name
+ */
+function otherSourceFor(docPath) {
+  const stem = docStemOf(path.basename(docPath));
+  const dir = path.dirname(docPath);
+  return (
+    ['.jsx', '.js', '.ts', '.mjs']
+      .map(extension => `${stem}${extension}`)
+      .find(file => fs.existsSync(path.join(dir, file))) ?? null
+  );
 }
 
 /**
@@ -1368,6 +1463,80 @@ async function checkThemes(integration, issues) {
   } catch (err) {
     issues.push(issueError('invalid_theme', /** @type {any} */ (err).message));
   }
+}
+
+/**
+ * The `name` a theme source passes to defineTheme for its exported theme,
+ * when the file says it as a string literal: `export const oceanTheme =
+ * defineTheme({name: 'ocean', ...})`. Null whenever only running the module
+ * could tell (a variable, a factory, a spread after the name, `extends`
+ * alone), so nothing is judged that a build would decide.
+ * @param {string} file
+ * @param {string} exportName
+ * @returns {string | null}
+ */
+export function literalThemeName(file, exportName) {
+  let ast;
+  try {
+    ast = parseModule(fs.readFileSync(file, 'utf8'), {
+      sourceType: 'module',
+      plugins: ['typescript', 'jsx'],
+      errorRecovery: true,
+    });
+  } catch {
+    return null;
+  }
+  /** @type {any} */
+  let init = null;
+  for (const node of ast.program.body) {
+    const declaration =
+      node.type === 'ExportNamedDeclaration' ? node.declaration : node;
+    if (declaration?.type !== 'VariableDeclaration') continue;
+    for (const declarator of declaration.declarations) {
+      if (
+        declarator.id.type === 'Identifier' &&
+        declarator.id.name === exportName
+      ) {
+        init = declarator.init;
+      }
+    }
+  }
+  while (
+    init?.type === 'TSAsExpression' ||
+    init?.type === 'TSSatisfiesExpression'
+  ) {
+    init = init.expression;
+  }
+  if (init?.type !== 'CallExpression') return null;
+  const callee =
+    init.callee.type === 'Identifier'
+      ? init.callee.name
+      : init.callee.type === 'MemberExpression' &&
+          init.callee.property.type === 'Identifier'
+        ? init.callee.property.name
+        : null;
+  if (callee !== 'defineTheme') return null;
+  const [config] = init.arguments;
+  if (config?.type !== 'ObjectExpression') return null;
+  /** @type {string | null} */
+  let name = null;
+  for (const property of config.properties) {
+    if (property.type === 'SpreadElement') {
+      name = null;
+      continue;
+    }
+    if (property.type !== 'ObjectProperty' || property.computed) continue;
+    const key =
+      property.key.type === 'Identifier'
+        ? property.key.name
+        : property.key.type === 'StringLiteral'
+          ? property.key.value
+          : null;
+    if (key !== 'name') continue;
+    name =
+      property.value.type === 'StringLiteral' ? property.value.value : null;
+  }
+  return name;
 }
 
 /**

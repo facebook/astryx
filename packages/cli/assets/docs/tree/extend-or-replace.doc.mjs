@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file `astryx docs cli/integrations/building-blocks/docs/extend-or-replace`:
+ * @file `astryx docs authoring/building-blocks/docs/extend-or-replace`:
  * take over an existing topic with `replaces`, merge sections into one with
  * `extends`, and check overlaps with Core topics.
  */

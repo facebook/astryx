@@ -24,6 +24,7 @@ import {
   ContextMenuRadioItem,
 } from './index';
 import {DropdownMenuItem} from '../DropdownMenu/DropdownMenuItem';
+import {DropdownMenuSubMenu} from '../DropdownMenu/DropdownMenuSubMenu';
 import {Divider} from '../Divider';
 import {useLayerDismissal} from '../Layer/useLayerDismissal';
 import {warmMenuBottomSheet} from '../DropdownMenu/__tests__/warmMenuBottomSheet';
@@ -706,6 +707,46 @@ describe('ContextMenu dividers', () => {
 });
 
 describe('ContextMenu compound mode', () => {
+  it('shows a sub-menu with a header or footer as its rows alone, and says why in development', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      render(
+        <ContextMenu
+          menuContent={
+            <>
+              <DropdownMenuItem label="Rename" onClick={() => {}} />
+              <DropdownMenuSubMenu
+                label="Labels"
+                header={<input aria-label="Filter labels" />}
+                footer={<button type="button">Create label</button>}>
+                <DropdownMenuItem label="Bug" onClick={() => {}} />
+              </DropdownMenuSubMenu>
+            </>
+          }>
+          <div>Right-click me</div>
+        </ContextMenu>,
+      );
+      fireEvent.contextMenu(screen.getByText('Right-click me'));
+      const row = screen.getByRole('menuitem', {name: /Labels/, hidden: true});
+      // No region can sit outside this menu, so none renders inside it.
+      expect(row).toHaveAttribute('aria-haspopup', 'menu');
+      fireEvent.click(row, {detail: 1});
+      await waitFor(() => expect(row).toHaveAttribute('aria-expanded', 'true'));
+      expect(screen.queryByRole('dialog', {hidden: true})).toBeNull();
+      expect(
+        screen.queryByRole('textbox', {name: 'Filter labels', hidden: true}),
+      ).toBeNull();
+      expect(
+        screen.getByRole('menuitem', {name: 'Bug', hidden: true}),
+      ).toBeInTheDocument();
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringContaining('DropdownMenuSubMenu: header and footer'),
+      );
+    } finally {
+      warn.mockRestore();
+    }
+  });
+
   it('renders menuContent as menu items', () => {
     render(
       <ContextMenu

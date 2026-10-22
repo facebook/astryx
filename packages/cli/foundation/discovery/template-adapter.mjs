@@ -1193,6 +1193,23 @@ function reportSamePackageReplacements(pkg, autolinked, templates, errors) {
 }
 
 /**
+ * The fix for a template doc with no same-stem `.tsx`: rename a same-stem
+ * source written in another extension, or add the `.tsx`.
+ * @param {string} docPath
+ * @param {string} sourcePath the `.tsx` it needs
+ */
+function missingTemplateSourceFix(docPath, sourcePath) {
+  const source = path.basename(sourcePath);
+  const stem = source.slice(0, -'.tsx'.length);
+  const other = ['.jsx', '.js', '.ts', '.mjs']
+    .map(extension => `${stem}${extension}`)
+    .find(file => fs.existsSync(path.join(path.dirname(sourcePath), file)));
+  return other
+    ? `Found ${other}, but a template source must be a .tsx file. Fix: rename ${other} to ${source}.`
+    : `Fix: add ${source} beside ${path.basename(docPath)}, with the template as its default export.`;
+}
+
+/**
  * Discover the templates contributed by a SINGLE integration. Same per-template
  * rules as {@link discoverIntegrationTemplates} (same-stem source required,
  * page|block type required); broken templates are recorded in `errors` rather
@@ -1225,7 +1242,7 @@ export async function discoverIntegrationTemplatesForOne(integration) {
       errors.push({
         package: pkgLabel,
         template: id,
-        message: `Template "${id}" is missing its same-stem source file ${path.basename(sourcePath)}.`,
+        message: `Template "${id}" is missing its same-stem source file ${path.basename(sourcePath)}. ${missingTemplateSourceFix(docPath, sourcePath)}`,
       });
       // A replacement this unusable template declares still counts, so its
       // target fails closed instead of going to a sibling.

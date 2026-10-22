@@ -558,15 +558,12 @@ export function Slider({ref, ...props}: SliderProps) {
 
   const handleThumbFocus = useCallback(
     (thumbIndex: number, _e: FocusEvent<HTMLDivElement>) => {
-      // A disabled thumb draws no ring even when it stays focusable for its
-      // reason tooltip, so there is nothing to track for one.
+      // A focused disabled thumb still shows the ring (spec:AST-085 FR6).
       setKeyboardFocusThumb(
-        !isDisabled && getInteractionModality() === 'keyboard'
-          ? thumbIndex
-          : null,
+        getInteractionModality() === 'keyboard' ? thumbIndex : null,
       );
     },
-    [isDisabled],
+    [],
   );
 
   const handleThumbBlur = useCallback((_e: FocusEvent<HTMLDivElement>) => {
@@ -960,10 +957,8 @@ export function Slider({ref, ...props}: SliderProps) {
         ref={!isRange ? ref : undefined}
         id={!isRange ? id : undefined}
         role="slider"
-        // With a disabledMessage the thumb keeps focusability so the reason is
-        // focus-discoverable; value changes stay blocked by the isDisabled
-        // guards in the pointer/keyboard handlers.
-        tabIndex={isDisabled && !showsDisabledMessage ? -1 : 0}
+        // A disabled thumb keeps its Tab stop (spec:AST-085 FR1).
+        tabIndex={0}
         aria-valuemin={ariaValueMin}
         aria-valuemax={ariaValueMax}
         aria-valuenow={val}
@@ -999,8 +994,7 @@ export function Slider({ref, ...props}: SliderProps) {
               : rtlStyles.centerInline('50%'),
             !isDisabled && styles.thumbHover,
             !isDisabled && draggingThumb === thumbIndex && styles.thumbPressed,
-            !isDisabled &&
-              keyboardFocusThumb === thumbIndex &&
+            keyboardFocusThumb === thumbIndex &&
               focusOutlineStyles.focusVisible,
             isDisabled && styles.thumbDisabled,
           ),
@@ -1095,7 +1089,9 @@ export function Slider({ref, ...props}: SliderProps) {
           }),
           stylex.props(styles.sliderRow),
         )}>
+        {/* A disabled slider submits no value (spec:AST-085 FR3). */}
         {htmlName != null &&
+          !isDisabled &&
           values.map((v, i) => (
             <input
               // Positional identity: index 0 is the start thumb, 1 the end.
@@ -1103,9 +1099,6 @@ export function Slider({ref, ...props}: SliderProps) {
               type="hidden"
               name={htmlName}
               value={String(v)}
-              // Disabled native controls are excluded from form submission;
-              // mirror that for the hidden carrier.
-              disabled={isDisabled}
             />
           ))}
         <div
