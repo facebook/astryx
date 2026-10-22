@@ -323,8 +323,8 @@ export interface DropdownMenuItemData extends Pick<
    * correct for a fixed menu; set it when `items` can reorder, filter, or grow,
    * so a row keeps its DOM node — and therefore keyboard focus — as the array
    * changes around it. The bottom sheet also needs it on a row with nested
-   * `items` whose label another row at its level shares, to find that row's
-   * level again while it shows.
+   * `items` whose label another row at its level shares or changes while its
+   * level shows, to find that row's level again.
    */
   id?: string;
   /** Primary label content. */
@@ -343,8 +343,9 @@ export interface DropdownMenuItemData extends Pick<
    * place of the menu's own header, and reads the level from the current
    * `items` while it shows, by `id`, by a label it has to itself, or, while
    * its level keeps its row count, by position; give the row an `id` when
-   * another row at its level has the same label or the rows can reorder.
-   * Ignored on a row without `items`.
+   * another row at its level has the same label, when its label changes while
+   * it shows, or when the rows can reorder or grow. Ignored on a row without
+   * `items`.
    */
   header?: ReactNode;
   /**
