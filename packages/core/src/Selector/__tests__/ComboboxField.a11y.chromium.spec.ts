@@ -396,6 +396,25 @@ test('a contenteditable field keeps its arrows while the list is hidden', async 
 test('a new query is announced once, through the shared live region', async ({
   page,
 }) => {
+  // Every non-empty text written to the shared polite region, in order.
+  await page.addInitScript(() => {
+    const writes: string[] = [];
+    (window as unknown as {__politeWrites: string[]}).__politeWrites = writes;
+    new MutationObserver(records => {
+      for (const record of records) {
+        if (
+          record.target instanceof Element &&
+          record.target.matches('[data-astryx-live-region="polite"]')
+        ) {
+          for (const node of record.addedNodes) {
+            if (node.textContent) {
+              writes.push(node.textContent);
+            }
+          }
+        }
+      }
+    }).observe(document, {childList: true, subtree: true});
+  });
   await openStory(page, STORY.search);
   const field = page.getByRole('combobox', {name: 'Search settings'});
   await field.click();
@@ -404,6 +423,13 @@ test('a new query is announced once, through the shared live region', async ({
   await expect(polite).toHaveText('2 results');
   await page.keyboard.type('pe');
   await expect(polite).toHaveText('No results found');
+  await page.waitForTimeout(500);
+  // One update per new query: n, no, nop, nope.
+  expect(
+    await page.evaluate(
+      () => (window as unknown as {__politeWrites: string[]}).__politeWrites,
+    ),
+  ).toEqual(['5 results', '2 results', 'No results found', 'No results found']);
   const regions = await page
     .locator('[aria-live]')
     .evaluateAll(nodes =>

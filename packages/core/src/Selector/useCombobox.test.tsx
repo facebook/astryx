@@ -564,7 +564,37 @@ describe('useCombobox field props — result count (FR7)', () => {
     });
   }
 
-  it('announces the count for each new query through the shared announcer', async () => {
+  // Every non-empty text written to the shared polite region, in order: one
+  // entry per update a screen reader can hear.
+  const observers: MutationObserver[] = [];
+  afterEach(() => {
+    for (const observer of observers.splice(0)) {
+      observer.disconnect();
+    }
+  });
+  function recordPoliteWrites(): string[] {
+    const writes: string[] = [];
+    const observer = new MutationObserver(records => {
+      for (const record of records) {
+        if (
+          record.target instanceof Element &&
+          record.target.matches('[data-astryx-live-region="polite"]')
+        ) {
+          for (const node of record.addedNodes) {
+            if (node.textContent) {
+              writes.push(node.textContent);
+            }
+          }
+        }
+      }
+    });
+    observer.observe(document.body, {childList: true, subtree: true});
+    observers.push(observer);
+    return writes;
+  }
+
+  it('announces the count once for each new query through the shared announcer', async () => {
+    const writes = recordPoliteWrites();
     const {rerender} = render(<Picker field="input" query="" />);
     rerender(<Picker field="input" query="a" />);
     await waitFor(() => expect(politeText()).toBe('3 results'));
@@ -574,6 +604,8 @@ describe('useCombobox field props — result count (FR7)', () => {
 
     rerender(<Picker field="input" query="zz" options={[]} />);
     await waitFor(() => expect(politeText()).toBe('No results found'));
+    await nextFrames();
+    expect(writes).toEqual(['3 results', '1 result', 'No results found']);
 
     // Every live region on the page is the shared announcer's; the field
     // renders none of its own.
@@ -585,6 +617,7 @@ describe('useCombobox field props — result count (FR7)', () => {
   });
 
   it('announces nothing for the query a field mounts with, an empty query, or the same query again', async () => {
+    const writes = recordPoliteWrites();
     const {rerender} = render(<Picker field="input" query="a" />);
     await nextFrames();
     expect(politeText()).toBe('');
@@ -599,9 +632,11 @@ describe('useCombobox field props — result count (FR7)', () => {
     rerender(<Picker field="input" query="c" options={PEOPLE.slice(2)} />);
     await nextFrames();
     expect(politeText()).toBe('3 results');
+    expect(writes).toEqual(['3 results']);
   });
 
   it('announces nothing while the list is hidden, and the count once it shows', async () => {
+    const writes = recordPoliteWrites();
     const user = userEvent.setup();
     const {rerender} = render(
       <Picker field="input" query="" isInitiallyOpen={false} />,
@@ -613,5 +648,7 @@ describe('useCombobox field props — result count (FR7)', () => {
     await user.click(fieldFor('input'));
     await user.keyboard('{ArrowDown}');
     await waitFor(() => expect(politeText()).toBe('3 results'));
+    await nextFrames();
+    expect(writes).toEqual(['3 results']);
   });
 });
