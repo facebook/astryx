@@ -24,6 +24,7 @@ import {
   useRef,
   useState,
   useTransition,
+  type KeyboardEvent,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {BottomSheet} from '../BottomSheet';
@@ -45,7 +46,7 @@ import {useMergedRefs} from '../hooks/useMergedRefs';
 import {useResolvedRequired} from '../hooks/useResolvedRequired';
 import {Icon} from '../Icon';
 import {useTranslator} from '../i18n';
-import {sizeVars, spacingVars} from '../theme/tokens.stylex';
+import {colorVars, sizeVars, spacingVars} from '../theme/tokens.stylex';
 import {useSize} from '../SizeContext/SizeContext';
 import {Spinner} from '../Spinner';
 import {useTooltip} from '../Tooltip';
@@ -74,6 +75,17 @@ const sizeStyles = stylex.create({
 });
 
 const styles = stylex.create({
+  // Same as TimeInput's: the focus ring for a focused disabled field.
+  disabledFocusRing: {
+    borderColor: {
+      default: colorVars['--color-border-emphasized'],
+      ':focus-within': colorVars['--color-accent'],
+    },
+    boxShadow: {
+      default: 'none',
+      ':focus-within': `inset 0px 0px 0px 2px ${colorVars['--color-accent-muted']}`,
+    },
+  },
   iconButton: {
     display: 'flex',
     alignItems: 'center',
@@ -447,6 +459,7 @@ export function TouchTimeField({
           inputWrapperStyles.base,
           sizeStyles[size],
           isDisabled && inputWrapperStyles.disabled,
+          isDisabled && styles.disabledFocusRing,
           status && inputStatusBorderStyles[status.type],
           status && !isDisabled && inputStatusHoverShadowStyles[status.type],
           status && inputStatusFocusWithinStyles[status.type],
@@ -459,7 +472,7 @@ export function TouchTimeField({
       <button
         type="button"
         onClick={openSheet}
-        disabled={isEffectivelyDisabled}
+        aria-disabled={isEffectivelyDisabled || undefined}
         aria-label={t('@astryx.timeInput.openPicker', {label})}
         tabIndex={-1}
         {...stylex.props(focusOutlineStyles.focusVisible, styles.iconButton)}>
@@ -475,10 +488,19 @@ export function TouchTimeField({
         readOnly
         inputMode="none"
         onChange={() => {}}
-        onClick={chainEventHandlers(openSheet, onClickProp)}
+        onClick={
+          isEffectivelyDisabled
+            ? undefined
+            : chainEventHandlers(openSheet, onClickProp)
+        }
+        // Enter would submit a surrounding form while disabled (FR2).
+        onKeyDown={chainEventHandlers((e: KeyboardEvent<HTMLInputElement>) => {
+          if (isEffectivelyDisabled && e.key === 'Enter') {
+            e.preventDefault();
+          }
+        }, controlProps.onKeyDown)}
         placeholder={placeholder}
-        disabled={isEffectivelyDisabled && !showsDisabledMessage}
-        aria-disabled={showsDisabledMessage ? 'true' : undefined}
+        aria-disabled={isEffectivelyDisabled ? 'true' : undefined}
         aria-describedby={ariaDescribedBy}
         aria-required={isEffectivelyRequired ? 'true' : undefined}
         aria-invalid={status?.type === 'error' ? 'true' : undefined}

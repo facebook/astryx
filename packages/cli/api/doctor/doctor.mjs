@@ -65,8 +65,8 @@ import {typedEdges} from '../docs/node/node.mjs';
 import {detailView, indexView} from '../../foundation/doc-compiler/lenses.mjs';
 import {semverCompare, isValidSemver, satisfiesRange} from '../../foundation/env/semver.mjs';
 import {checkAppThemes, checkThemes} from './theme-checks.mjs';
-import {availableLine, upgradeLine} from '../../foundation/release/notices.mjs';
-import {alignCommand, addCliCommandFor, computerAgentTextState, installCommandFor, projectCoreVersion, projectHasOwnCli, computerIntegrationsOutside, computerIntegrationsToAdd, displayHomePath, outsideProject, releaseFacts} from './_adapter.mjs';
+import {availableLine, RUN_FROM_PROJECT, upgradeLine} from '../../foundation/release/notices.mjs';
+import {alignCommand, addCliCommandFor, computerAgentTextState, installCommandFor, insideProjectElsewhere, projectCoreVersion, projectHasOwnCli, computerIntegrationsOutside, computerIntegrationsToAdd, displayHomePath, outsideProject, releaseFacts} from './_adapter.mjs';
 
 /**
  * @typedef {'pass'|'warn'|'fail'|'info'} DoctorStatus
@@ -286,15 +286,25 @@ export function checkVersionAlignment(ctx) {
   // the run (spec AST-081 FR2): say so, and how to add the CLI at Core's
   // version.
   if (ctx.ownCli === false) {
+    // The same comparison as the daily hint: the CLI against the Core the
+    // run reads (spec AST-081 FR2). The command adds the CLI in the project
+    // spec:AST-040 FR9 defines; from a folder inside it whose package.json
+    // is not the project's, or in no project, the fix says how to reach one.
+    const add = addCliCommandFor(ctx.cwd, coreVersion);
+    const matches = coreVersion === cliVersion;
+    const fix = add
+      ? `${matches ? 'To pin it for the team and CI' : 'To match'}, run: ${add.command}.`
+      : matches
+        ? null
+        : NO_PROJECT_FIX;
     return {
       id: 'version-alignment',
       label: '@astryxdesign/core <-> @astryxdesign/cli alignment',
-      status: coreVersion === cliVersion ? 'info' : 'warn',
-      message:
-        coreVersion === cliVersion
-          ? `This project has no Astryx CLI installed; CLI ${cliVersion}, the one you started, answered and matches its Core.`
-          : `This project has no Astryx CLI installed; CLI ${cliVersion}, the one you started, answered while its Core is ${coreVersion}.`,
-      fix: `${coreVersion === cliVersion ? 'To pin it for the team and CI' : 'To match'}, run: ${addCliCommandFor(ctx.cwd, coreVersion)}.`,
+      status: matches ? 'info' : 'warn',
+      message: matches
+        ? `This project has no Astryx CLI installed; CLI ${cliVersion}, the one you started, answered and matches its Core.`
+        : `This project has no Astryx CLI installed; CLI ${cliVersion}, the one you started, answered while its Core is ${coreVersion}.`,
+      ...(fix ? {fix} : {}),
     };
   }
   // The project's own CLI answers this project whatever its version
@@ -308,9 +318,30 @@ export function checkVersionAlignment(ctx) {
     message: drift
       ? `This project's CLI ${cliVersion} answers it, but its Core is ${coreVersion}: templates, docs, and agent text come from CLI ${cliVersion}, components from Core ${coreVersion}.`
       : `@astryxdesign/core v${coreVersion} is in step with @astryxdesign/cli v${cliVersion}.`,
-    ...(drift ? {fix: `To align them, run: ${alignCommand(ctx.cwd, cliVersion, coreVersion)}.`} : {}),
+    ...(drift ? alignFix(ctx.cwd, cliVersion, coreVersion) : {}),
   };
 }
+
+/**
+ * The fix for a CLI and Core on different releases, when a command fits.
+ * @param {string} cwd
+ * @param {string} cli
+ * @param {string} core
+ * @returns {{fix?: string}}
+ */
+function alignFix(cwd, cli, core) {
+  // From a folder inside a project whose package.json is not the project's,
+  // aligning the project would leave this warning in place, so no command
+  // fits there (alignCommand returns none): point at the project instead.
+  const command = alignCommand(cwd, cli, core);
+  return {fix: command ? `To align them, run: ${command}.` : NO_PROJECT_FIX};
+}
+
+/**
+ * The fix where no install command fits: the folder's package.json is not an
+ * Astryx project's (spec AST-040 FR9), and adding there would make it one.
+ */
+const NO_PROJECT_FIX = RUN_FROM_PROJECT;
 
 /**
  * Check 5 — astryx.config.mjs (if present) loads and has a valid shape.
@@ -1559,6 +1590,7 @@ function checkFailureNote(failed) {
 const SKIP_REASONS = {
   'already-shown': 'it had already printed that day',
   'no-newer': 'no newer release was known',
+  'no-project': 'the folder belongs to no Astryx project, so no install command fits',
 };
 
 /**
@@ -1764,12 +1796,14 @@ export function checkComputerIntegrations(ctx) {
  * Inside a project, the integrations installed for the computer that the
  * project does not install: available, never used (spec AST-081 FR12).
  * Always info.
- * @param {{installed: Set<string>, candidates: import('../../foundation/integrations/computer-integrations.mjs').ComputerIntegrationCandidate[], install: (name: string) => string}} input
+ * @param {{installed: Set<string>, candidates: import('../../foundation/integrations/computer-integrations.mjs').ComputerIntegrationCandidate[], install: ((name: string) => string) | null, elsewhere?: boolean}} input
  *   `install`: the command that adds a package with the project's package
- *   manager (read by the adapter)
+ *   manager (read by the adapter); null when the folder belongs to no
+ *   project, or `elsewhere`: its package.json is not the project's, where the
+ *   fix points at the project's folder
  * @returns {DoctorCheck}
  */
-export function checkComputerIntegrationsAvailable({installed, candidates, install}) {
+export function checkComputerIntegrationsAvailable({installed, candidates, install, elsewhere = false}) {
   const available = candidates.filter(c => !installed.has(c.name));
   const base = {id: 'computer-integrations', label: 'Integrations installed for this computer', status: /** @type {const} */ ('info')};
   if (available.length === 0) {
@@ -1779,7 +1813,11 @@ export function checkComputerIntegrationsAvailable({installed, candidates, insta
   return {
     ...base,
     message: `Installed for this computer but not in this project, so not used here: ${available.map(c => c.name).join(', ')}.`,
-    fix: `To use one in this project, run ${available.map(c => `\`${add(c.name)}\``).join(' or ')}.`,
+    ...(add
+      ? {fix: `To use one in this project, run ${available.map(c => `\`${add(c.name)}\``).join(' or ')}.`}
+      : elsewhere
+        ? {fix: NO_PROJECT_FIX}
+        : {}),
   };
 }
 
@@ -2038,7 +2076,7 @@ export async function runChecks(options = {}) {
   {
     const loadedNames = (project?.loadedIntegrations ?? []).map((/** @type {{name: string}} */ i) => i.name);
     const candidates = await computerIntegrationsToAdd(cwd, loadedNames);
-    checks.push(checkComputerIntegrationsAvailable({installed: new Set(loadedNames), candidates, install: installCommandFor(cwd)}));
+    checks.push(checkComputerIntegrationsAvailable({installed: new Set(loadedNames), candidates, install: installCommandFor(cwd), elsewhere: insideProjectElsewhere(cwd)}));
   }
   checks.push(await checkAuthoringDocs(ctx));
   checks.push(await checkCliDocs(ctx));
