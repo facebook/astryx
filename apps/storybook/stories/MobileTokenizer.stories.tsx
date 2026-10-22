@@ -72,3 +72,23 @@ export const Disabled: Story = {
     </div>
   ),
 };
+
+export const AtLimit: Story = {
+  render: () => {
+    const [value, setValue] = useState<SearchableItem[]>([tags[0], tags[1]]);
+    return (
+      <div style={{width: 350}}>
+        <MobileTokenizer
+          label="Tags"
+          searchSource={source}
+          value={value}
+          onChange={items => setValue(items)}
+          placeholder="Add tags"
+          maxEntries={2}
+          debounceMs={0}
+        />
+      </div>
+    );
+  },
+  name: 'At the maxEntries limit',
+};

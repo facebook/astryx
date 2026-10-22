@@ -381,6 +381,24 @@ describe('MobileTokenizer (Lab, single-sheet flow)', () => {
     fireEvent.click(row);
     expect(spy).not.toHaveBeenCalled();
     expect(row).toHaveAttribute('aria-checked', 'false');
+    // In forced colors its indicator border takes GrayText (AST-085 FR6).
+    const indicatorClasses = stylex
+      .props(
+        stylex.create({
+          border: {
+            borderColor: {
+              default: colorVars['--color-border'],
+              '@media (forced-colors: active)': 'GrayText',
+            },
+          },
+        }).border,
+      )
+      .className!.split(' ')
+      .filter(name => !name.includes('__'));
+    const indicator = row.querySelector('.astryx-checkbox-indicator')!;
+    for (const name of indicatorClasses) {
+      expect(indicator).toHaveClass(name);
+    }
   });
 
   it('paints a disabled trigger and its tokens GrayText in forced colors (AST-085 FR6)', () => {

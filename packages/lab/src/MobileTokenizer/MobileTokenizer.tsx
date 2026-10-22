@@ -180,6 +180,14 @@ const styles = stylex.create({
       '@media (forced-colors: active)': 'GrayText',
     },
   },
+  // Same for the indicator's border: GrayText in forced colors, and the
+  // default repeats the indicator's disabled border.
+  indicatorDisabled: {
+    borderColor: {
+      default: colorVars['--color-border'],
+      '@media (forced-colors: active)': 'GrayText',
+    },
+  },
   rowDisabled: {
     color: {
       default: colorVars['--color-text-primary'],
@@ -562,6 +570,9 @@ export function MobileTokenizer<T extends SearchableItem>({
                           state={isSelected ? 'checked' : 'unchecked'}
                           size="md"
                           isDisabled={rowDisabled}
+                          xstyle={
+                            rowDisabled ? styles.indicatorDisabled : undefined
+                          }
                         />
                       </button>
                     );
