@@ -381,7 +381,9 @@ export function docCommandsIn(text, lang) {
   // A sample in another language has tokens of its own, such as TSDoc's
   // `{@inheritDoc}`: only prose and shell blocks are read for doc tokens.
   const readsTokens = lang == null || SHELL_LANGS.has(lang.toLowerCase());
-  for (const opening of readsTokens ? unclosedTokensIn(source) : []) {
+  // An unclosed doc token prints as written in any block: only the three
+  // doc token names are looked for, so another language's tags never match.
+  for (const opening of unclosedTokensIn(source)) {
     found.push({
       at: source.indexOf(opening),
       written: opening,

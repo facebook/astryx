@@ -1604,6 +1604,31 @@ describe('validateIntegration runner-command notes', () => {
     ).toEqual([]);
   });
 
+  it('lists a token that never closes, in prose and in any code block', async () => {
+    writeTopic(
+      'Install with {@pm install @acme/widgets --dev before you start.',
+    );
+    const file = path.join(tmpDir, 'docs', 'acme-setup.doc.mjs');
+    fs.writeFileSync(
+      file,
+      fs.readFileSync(file, 'utf8').replace(
+        /\{"type":"code"[^}]*\}/,
+        JSON.stringify({
+          type: 'code',
+          lang: 'tsx',
+          code: '// {@pm install @acme/widgets --dev\nexport const x = 1;',
+        }),
+      ),
+    );
+
+    const {data} = await validateIntegration(undefined, {cwd: tmpDir});
+    const tokens = (data.notes ?? []).filter(
+      (/** @type {any} */ note) => note.code === 'doc_token',
+    );
+    expect(tokens).toHaveLength(2);
+    expect(tokens[0].message).toContain('never closes');
+  });
+
   it('lists a {@command} token that names no Astryx command', async () => {
     writeTopic('Run {@command dcotor} before you ship.');
 

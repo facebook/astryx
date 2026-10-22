@@ -21,7 +21,7 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: "Apps copy the component doc's `import` field into their code, so that exact specifier must resolve from your packed package. `integration add` writes it together with an `exports` entry in package.json.",
+          text: 'Apps copy the component doc\'s `import` field into their code, so that exact specifier must resolve from your packed package. `integration add` writes it together with an `exports` entry in package.json.',
         },
         {
           type: 'code',
@@ -37,7 +37,7 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: "A file does not have to be named after its component. When `Slides.tsx` exports `AcmeCarousel` and nothing named `Slides`, keep the doc beside it as `Slides.doc.mjs` and set its `name` to `AcmeCarousel`: apps list, search and open the component by that name, and `integration verify` checks that its import exports `AcmeCarousel`. A file that exports its own name keeps that name. A package that names its files in kebab case works the same way: `acme-gallery.doc.mjs` beside `acme-gallery.tsx` sets `name: 'AcmeGallery'`.",
+          text: 'A file does not have to be named after its component. When `Slides.tsx` exports `AcmeCarousel` and nothing named `Slides`, keep the doc beside it as `Slides.doc.mjs` and set its `name` to `AcmeCarousel`: apps list, search and open the component by that name, and `integration verify` checks that its import exports `AcmeCarousel`. A file that exports its own name keeps that name. A package that names its files in kebab case works the same way: `acme-gallery.doc.mjs` beside `acme-gallery.tsx` sets `name: \'AcmeGallery\'`.',
         },
         {
           type: 'prose',
