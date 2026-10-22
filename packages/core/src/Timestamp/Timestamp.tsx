@@ -308,12 +308,14 @@ export function Timestamp({
   const [now, setNow] = useState<Date | null>(() =>
     needsClock && canReadClock ? new Date() : null,
   );
-  useEffect(() => {
-    if (needsClock && now === null) {
-      // eslint-disable-next-line @eslint-react/set-state-in-effect -- the clock is read only after hydration, so server and client markup match
-      setNow(new Date());
-    }
-  }, [needsClock, now]);
+  // Read the clock during render once it may be read: after hydration (the
+  // store re-renders with its client value) and when `format` switches from
+  // an absolute value to a clock-dependent one, so the placeholder never
+  // commits on the client.
+  if (needsClock && canReadClock && now === null) {
+    // eslint-disable-next-line @eslint-react/purity -- seeds clock state once, like the initializer; never runs on the server or while hydrating
+    setNow(new Date());
+  }
 
   const date = parseValue(value);
   // An unparseable value (a malformed date string, or a NaN timestamp from
@@ -336,8 +338,9 @@ export function Timestamp({
         : 'date_time'
       : format;
 
-  // Format the display text. No time zone is passed: the visible text always
-  // reads in the viewer's own zone, and only the tooltip names others.
+  // Format the display text in the viewer's own zone; only the tooltip names
+  // others. The one exception is the pre-hydration placeholder, written in
+  // UTC with its label so every zone produces the same markup.
   const displayText = !isValidDate
     ? ''
     : effectiveFormat === 'relative'

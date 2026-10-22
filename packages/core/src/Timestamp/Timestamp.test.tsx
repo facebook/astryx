@@ -11,6 +11,7 @@ import {
 } from 'vitest';
 import {render, screen, act, waitFor, fireEvent} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import {Profiler} from 'react';
 import {hydrateRoot, type Root} from 'react-dom/client';
 import {renderToString} from 'react-dom/server';
 import {Timestamp} from './Timestamp';
@@ -1534,6 +1535,27 @@ describe('Timestamp server rendering', () => {
       );
     },
   );
+
+  it('never commits the UTC placeholder when a client Timestamp switches to a relative format', () => {
+    const value = Date.now() / 1000 - 7200;
+    const committed: string[] = [];
+    function Spy({format}: {format: 'date' | 'relative'}) {
+      return (
+        <Profiler
+          id="ts"
+          onRender={() => {
+            committed.push(document.querySelector('time')?.textContent ?? '');
+          }}>
+          <Timestamp value={value} format={format} hasTooltip={false} />
+        </Profiler>
+      );
+    }
+    const {rerender} = render(<Spy format="date" />);
+    committed.length = 0;
+    rerender(<Spy format="relative" />);
+    expect(screen.getByText('2 hours ago')).toBeInTheDocument();
+    expect(committed.some(text => text.includes('UTC'))).toBe(false);
+  });
 
   describe('across time zones', () => {
     const originalTZ = process.env.TZ;
