@@ -30,6 +30,7 @@ import {
   typeScaleVars,
 } from '../theme/tokens.stylex';
 import {mergeProps} from '../utils';
+import {disabledInteractionProps} from '../utils/disabledInteraction';
 import {themeProps} from '../utils/themeProps';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
 import {useMediaQuery} from '../hooks/useMediaQuery';
@@ -298,13 +299,17 @@ export default function ItemSwipeLayer({
               <button
                 key={entry.id ?? entry.label}
                 type="button"
-                disabled={entry.isDisabled === true}
+                // Focusable while disabled (spec:AST-085 FR1), but inert (FR2).
+                aria-disabled={entry.isDisabled === true || undefined}
                 onClick={() =>
                   swipe.activateEntry(() => {
                     void entry.onActivate();
                     return entry.hasRemoval === true;
                   })
                 }
+                {...(entry.isDisabled === true
+                  ? disabledInteractionProps()
+                  : null)}
                 {...mergeProps(
                   themeProps('item-swipe-action', {variant}),
                   focusOutlineProps.focusVisible(

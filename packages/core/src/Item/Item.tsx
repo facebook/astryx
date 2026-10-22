@@ -44,6 +44,7 @@ import {
 } from '../theme/tokens.stylex';
 import type {BaseProps} from '../BaseProps';
 import {isRenderable, mergeProps} from '../utils';
+import {disabledInteractionProps} from '../utils/disabledInteraction';
 import {ItemDescriptionContext} from './ItemDescriptionContext';
 import {useMergedRefs} from '../hooks/useMergedRefs';
 import {computeTargetAndRel} from '../Link/computeTargetAndRel';
@@ -761,17 +762,30 @@ export function Item({
           )}>
           {labelAndDescription}
         </span>
+      ) : href != null && !isLinkRoot && isDisabled ? (
+        // A disabled link is a plain href-less <a>, as in Link: nothing can
+        // navigate, and a router link that needs a live href is not rendered.
+        // It keeps a Tab stop and the link role (spec:AST-085 FR1, FR2, FR5).
+        <a
+          role="link"
+          aria-disabled
+          tabIndex={0}
+          {...disabledInteractionProps()}
+          {...stylex.props(
+            styles.invisibleAnchor,
+            isInline && styles.inlineContent,
+            styles.disabledContent,
+          )}>
+          {labelAndDescription}
+        </a>
       ) : href != null && !isLinkRoot ? (
         <LinkComponent
           href={href}
           target={target}
           rel={rel}
-          aria-disabled={isDisabled || undefined}
-          tabIndex={isDisabled ? -1 : undefined}
           {...stylex.props(
             styles.invisibleAnchor,
             isInline && styles.inlineContent,
-            isDisabled && styles.disabledContent,
           )}>
           {labelAndDescription}
         </LinkComponent>
@@ -779,7 +793,9 @@ export function Item({
         <button
           type="button"
           onClick={onClick}
-          disabled={isDisabled}
+          aria-disabled={isDisabled || undefined}
+          // Focusable while disabled (spec:AST-085 FR1), but inert (FR2).
+          {...(isDisabled ? disabledInteractionProps() : null)}
           {...stylex.props(
             styles.invisibleButton,
             isInline && styles.inlineContent,
