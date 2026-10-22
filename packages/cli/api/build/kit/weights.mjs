@@ -166,7 +166,7 @@ export function weightWords(idea) {
  * A table's score for every candidate.
  * @param {WeightTable} table
  * @param {Map<string, number>} index word -> row
- * @param {Set<string>} words the idea's stemmed words
+ * @param {Set<string>} words the idea's stemmed words, less search's stopwords
  * @param {number} n candidates
  */
 function tableScores(table, index, words, n) {
@@ -359,13 +359,17 @@ export function weighStart(
   if (kept && !position.has(kept)) {
     const listed = best(c => c !== SHELL && position.has(c));
     if (!listed) return kept;
-    const mine = ownWords(kept, catalog, words);
-    const theirs = ownWords(listed, catalog, words);
+    // The idea's own words, less search's stopwords: "basically" must not
+    // answer the "Basic" of a category.
+    const content = weightWords(idea).filter(w => !STOPWORDS.has(w));
+    const said = new Set(content.map(stem));
+    const mine = ownWords(kept, catalog, said);
+    const theirs = ownWords(listed, catalog, said);
     if (mine >= theirs) return kept;
     // An idea that names the template's family before the listed one's
     // ("a dashboard with a data table") is that family's page, unless it
     // names far more of the listed template's words.
-    const order = weightWords(idea).map(stem);
+    const order = content.map(stem);
     return familyAt(kept, catalog, order) < familyAt(listed, catalog, order) &&
       mine >= theirs - FAMILY_SLACK
       ? kept

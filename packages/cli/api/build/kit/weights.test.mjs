@@ -183,6 +183,26 @@ describe('weighStart', () => {
       expect(start).toBe('fold');
     });
 
+    it("never counts a stopword from the idea's words", () => {
+      // "basically" is one of search's stopwords and stems to "basic", the
+      // word of grid's category; it must not tip the count to grid.
+      const own = [
+        {name: 'board'},
+        {name: 'charts'},
+        {name: 'grid', displayName: 'Grid', category: 'Grid - Basic'},
+        {name: 'fold', displayName: 'Folding Rows'},
+      ];
+      const ranked = [page('fold', 9, 'Fold'), ...RANKED];
+      const start = weighStart(
+        'basically a grid of rows on cards',
+        ranked,
+        ranked[0],
+        own,
+        {weights: WEIGHTS},
+      );
+      expect(start).toBe('fold');
+    });
+
     it('yields to the listed template whose own words the idea names more', () => {
       const ranked = [page('gauge-fleet', 9, 'Gauges'), ...RANKED];
       const start = weighStart(
