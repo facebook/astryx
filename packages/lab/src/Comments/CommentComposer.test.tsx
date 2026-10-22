@@ -25,7 +25,7 @@ vi.mock('../EmojiPicker/emojiData', () => ({
   ],
 }));
 
-import {CommentComposer} from './CommentComposer';
+import {CommentComposer, CommentComposerBase} from './CommentComposer';
 
 const originalMatches = HTMLElement.prototype.matches;
 const popoverOpenState = new WeakMap<HTMLElement, boolean>();
@@ -99,6 +99,34 @@ describe('CommentComposer', () => {
     );
     fireEvent.click(screen.getByRole('button', {name: /send/i}));
     expect(onSubmit).toHaveBeenCalledWith('Looks good');
+  });
+
+  it('keeps Cancel in the tab order but inert while submitting (AST-085 FR1, FR2)', () => {
+    const onCancel = vi.fn();
+    render(
+      <CommentComposerBase
+        value="Draft"
+        onChange={() => {}}
+        onSubmit={() => {}}
+        placeholder="Edit comment"
+        onCancel={onCancel}
+        context={{kind: 'edit', commentId: 'c1'}}
+        contextLabel="Editing comment"
+        highlightColor="yellow"
+        triggers={[]}
+        agentCommands={[]}
+        hasEmojiPicker={false}
+        isSubmitting
+      />,
+    );
+    const cancel = screen.getByText('Cancel').closest('a, button')!;
+    expect(cancel).toHaveAttribute('aria-disabled', 'true');
+    expect(cancel).not.toHaveAttribute('tabindex', '-1');
+    act(() => (cancel as HTMLElement).focus());
+    expect(cancel).toHaveFocus();
+    fireEvent.click(cancel);
+    fireEvent.keyDown(cancel, {key: 'Enter'});
+    expect(onCancel).not.toHaveBeenCalled();
   });
 
   it('shows the placeholder as the input’s name, and keeps Post focusable while submitting', () => {
