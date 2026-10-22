@@ -240,6 +240,10 @@ const ReferenceSectionSchema = z
     title: nonEmptyString,
     category: z.string().optional(),
     content: z.array(SectionContentBlockSchema),
+    // Where an extension adds this section to the topic it extends: before
+    // or after the section with this key. Ignored on any other section.
+    before: nonEmptyString.optional(),
+    after: nonEmptyString.optional(),
     previewType: z
       .enum([
         'swatch',

@@ -22,6 +22,7 @@ import path from 'node:path';
 import {getCliInvocation} from '../../foundation/env/package-manager.mjs';
 import {
   packageComponentLinkProblems,
+  packageDocTargets,
   packageDocsProblems,
   packageReferenceProblems,
 } from '../docs/_adapter.mjs';
@@ -38,6 +39,7 @@ import {
   integrationStrayPointers,
 } from './_adapter.mjs';
 import {
+  BUILTIN_DOCS_PACKAGE,
   discoverBuiltinTopics,
   discoverIntegrationDocs,
 } from '../../foundation/discovery/docs-discovery.mjs';
@@ -504,6 +506,25 @@ export async function integrationDocConflicts(pkg, options = {}) {
         message:
           `Accidental conflict: "${record.name}" is already a Core topic. ` +
           `Rename it, declare replaces: '${sameNameCore}' to take it over, or declare extends: '${sameNameCore}' to merge sections.`,
+      });
+    }
+  }
+  // A doc that replaces or extends one of the CLI's guides by its route is
+  // as intentional as one that names a Core topic.
+  if (errors.length === 0) {
+    for (const target of await packageDocTargets(
+      /** @type {{name: string}} */ (docsIntegration),
+      discovered,
+    )) {
+      if (target.kind !== 'guide' || target.owner !== BUILTIN_DOCS_PACKAGE) {
+        continue;
+      }
+      findings.push({
+        topic: target.topic,
+        severity: 'info',
+        relationship: target.relationship,
+        coreTopic: target.target,
+        message: `Intentional ${target.relationship === 'replaces' ? 'override' : 'extension'}: "${target.topic}" ${target.relationship} the CLI guide "${target.target}".`,
       });
     }
   }

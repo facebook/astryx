@@ -35,7 +35,11 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {assertWithin} from '../../foundation/fs/path-safety.mjs';
 import {normalizeProviderId} from '../../foundation/identity/provider-identity.mjs';
-import {integrationDocTypes} from '../docs/_adapter.mjs';
+import {
+  integrationDocTypes,
+  packageDocTargets,
+} from '../docs/_adapter.mjs';
+import {discoverIntegrationDocs} from '../../foundation/discovery/docs-discovery.mjs';
 import {integrationDocConsistency} from '../../foundation/discovery/doc-consistency.mjs';
 import {integrationRunnerCommands} from './_adapter.mjs';
 import {
@@ -76,6 +80,12 @@ import {runChoice} from '../../foundation/release/run-context.mjs';
 
 /** The running CLI is outside the package's `@astryxdesign/cli` peer range. */
 const CLI_PEER_VERSION = 'cli_peer_version';
+
+/** A doc replaces or extends a name that holds no topic and no guide. */
+const DOC_TARGET_NOT_FOUND = 'doc_target_not_found';
+
+/** An extension section's `before` or `after` names no section of the base. */
+const DOC_SECTION_UNPLACED = 'doc_section_unplaced';
 
 export {validateLoadedIntegration, isListedIssue};
 
@@ -704,6 +714,58 @@ async function runnerCommandNotes(integration) {
 }
 
 /**
+ * The notes for docs that replace or extend a topic or a guide the docs tree
+ * places, or place an extension's section with `before` or `after`: a name
+ * that holds neither (such as a namespace) applies nothing, and a key that
+ * names no section adds the section at the end. Each is listed, failing nothing, until
+ * the next minor release (architecture:cli-surface INV35).
+ * @param {any} integration a loaded integration
+ * @returns {Promise<Array<{code: string, message: string}>>}
+ */
+async function docTargetNotes(integration) {
+  let discovered;
+  try {
+    discovered = await discoverIntegrationDocs(integration);
+  } catch {
+    return [];
+  }
+  // A doc that does not load is an issue already; its targets are not read.
+  if (discovered.errors.length > 0) return [];
+  /** @type {Array<{code: string, message: string}>} */
+  const notes = [];
+  /** @type {Awaited<ReturnType<typeof packageDocTargets>>} */
+  let targets;
+  try {
+    targets = await packageDocTargets(integration, discovered);
+  } catch {
+    // A package whose docs cannot form a tree is reported by the docs check.
+    return [];
+  }
+  for (const each of targets) {
+    if (each.kind === 'namespace') {
+      const shown = each.guidesBelow.slice(0, 8);
+      const more = each.guidesBelow.length - shown.length;
+      notes.push({
+        code: DOC_TARGET_NOT_FOUND,
+        message: `"${each.topic}" ${each.relationship} "${each.target}", which is a namespace of the docs tree: it holds no sections to ${each.relationship === 'replaces' ? 'replace' : 'extend'}, so this changes nothing. Fix: name the route of a guide below it${shown.length > 0 ? `: ${shown.join(', ')}${more > 0 ? `, and ${more} more` : ''}` : ''}.`,
+      });
+    } else if (each.kind == null) {
+      notes.push({
+        code: DOC_TARGET_NOT_FOUND,
+        message: `"${each.topic}" ${each.relationship} "${each.target}", which is no topic and no guide in the docs tree, so it changes nothing. Fix: name a topic as \`${formatCliCommand('docs')}\` lists it, or a guide's route as \`${formatCliCommand('docs cli --depth all')}\` lists it.`,
+      });
+    }
+    for (const {section, field, key} of each.unplaced) {
+      notes.push({
+        code: DOC_SECTION_UNPLACED,
+        message: `Section "${section}" of "${each.topic}" goes ${field} "${key}", which is no section of "${each.target}", so it is added at the end. Fix: use a key \`${formatCliCommand(`docs ${each.target} --index`)}\` lists.`,
+      });
+    }
+  }
+  return notes;
+}
+
+/**
  * Unified entry: validate the LOCAL integration (no `pkg`) or an INSTALLED one
  * (`pkg` given) and return the `integration.validate` envelope. The no-manifest
  * local case is guidance, not an error — it comes back with `validated: false`,
@@ -757,6 +819,7 @@ export async function validateIntegration(pkg, options = {}) {
   // `runner_command` note with its fix, the same way.
   if (integration?.docs) {
     notes.push(...(await runnerCommandNotes(integration)));
+    notes.push(...(await docTargetNotes(integration)));
   }
   return {
     type: 'integration.validate',

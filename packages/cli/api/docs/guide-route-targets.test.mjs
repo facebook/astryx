@@ -1,0 +1,409 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
+/**
+ * @file An integration's flat topic replaces or extends a guide the docs tree
+ * places, by its route, and an extension places its sections with `before` or
+ * `after`. Every read names the package of the guide and of each section, in
+ * text and JSON (architecture:cli-surface INV28). A route that holds no guide,
+ * and a `before`/`after` that names no section, fail nothing: they are listed
+ * notes (INV35).
+ */
+
+import * as fs from 'node:fs';
+import * as path from 'node:path';
+import {afterEach, beforeEach, describe, expect, it} from 'vitest';
+import {docs} from './docs.mjs';
+import {integrationDocConflicts} from '../integration/authoring-checks.mjs';
+import {validateIntegration} from '../integration/validate-integration.mjs';
+import {integrationCheck} from '../integration/check/check.mjs';
+import {runCli} from '../../test-utils/run-cli.mjs';
+
+const SLOW = 60_000;
+const CLI = '@astryxdesign/cli';
+const KIT = '@acme/kit';
+const GUIDE = 'authoring/quick-start';
+
+/** @type {string} */
+let tmpDir;
+
+/**
+ * A flat topic of the kit.
+ * @param {string} name
+ * @param {object} fields
+ */
+function topic(name, fields) {
+  return {
+    type: 'generic',
+    name,
+    title: `Acme ${name}`,
+    description: `The Acme ${name}.`,
+    sections: [
+      {
+        id: `acme-${name}`,
+        title: `Acme ${name}`,
+        content: [{type: 'prose', text: `Acme ${name}.`}],
+      },
+    ],
+    ...fields,
+  };
+}
+
+/**
+ * One section of an extension.
+ * @param {string} id
+ * @param {object} [fields]
+ */
+function section(id, fields = {}) {
+  return {
+    id,
+    title: id.replace(/-/g, ' '),
+    content: [{type: 'prose', text: `Acme ${id}.`}],
+    ...fields,
+  };
+}
+
+/** The installed kit's folder. */
+const kitDir = () => path.join(tmpDir, 'node_modules', '@acme', 'kit');
+
+/**
+ * A project that configures `@acme/kit`, which ships these docs.
+ * @param {Record<string, object>} files
+ */
+function scaffold(files) {
+  fs.writeFileSync(
+    path.join(tmpDir, 'package.json'),
+    JSON.stringify({name: 'consumer'}),
+  );
+  fs.writeFileSync(
+    path.join(tmpDir, 'astryx.config.mjs'),
+    `export default {integrations: ['${KIT}']};\n`,
+  );
+  fs.mkdirSync(path.join(kitDir(), 'docs'), {recursive: true});
+  fs.writeFileSync(
+    path.join(kitDir(), 'package.json'),
+    JSON.stringify({name: KIT, version: '1.0.0', type: 'module'}),
+  );
+  fs.writeFileSync(
+    path.join(kitDir(), 'astryx.integration.mjs'),
+    "export default {docs: './docs'};\n",
+  );
+  for (const [file, doc] of Object.entries(files)) {
+    fs.writeFileSync(
+      path.join(kitDir(), 'docs', file),
+      `export default ${JSON.stringify(doc, null, 2)};\n`,
+    );
+  }
+}
+
+/** @param {string[]} args */
+async function cliText(args) {
+  const {status, stdout} = await runCli(args, tmpDir);
+  return {status, stdout};
+}
+
+/** @param {string[]} args */
+async function cliJson(args) {
+  const {status, stdout} = await runCli(['--json', ...args], tmpDir);
+  return {status, json: JSON.parse(stdout)};
+}
+
+beforeEach(() => {
+  tmpDir = fs.mkdtempSync(
+    path.join(process.cwd(), '.astryx-guide-route-targets-'),
+  );
+});
+
+afterEach(() => {
+  fs.rmSync(tmpDir, {recursive: true, force: true});
+});
+
+describe('a flat topic that replaces a placed guide by its route', () => {
+  beforeEach(() => {
+    scaffold({
+      'quick-start.doc.mjs': topic('quick-start', {replaces: GUIDE}),
+    });
+  });
+
+  it('is read at the route, naming its package and the one it replaced', async () => {
+    const read = await docs(GUIDE, undefined, {cwd: tmpDir});
+    expect(Object.keys(read).slice(0, 2)).toEqual(['type', 'package']);
+    expect(read).toMatchObject({type: 'docs.detail', package: KIT});
+    expect(read.data).toMatchObject({
+      name: GUIDE,
+      title: 'Acme quick-start',
+      replaces: GUIDE,
+      replacedPackage: CLI,
+    });
+    expect(read.data.sections.map(s => [s.id, s.package])).toEqual([
+      ['acme-quick-start', KIT],
+    ]);
+
+    const index = await docs(GUIDE, undefined, {cwd: tmpDir, index: true});
+    expect(index).toMatchObject({type: 'docs.index', package: KIT});
+    expect(index.data).toMatchObject({replaces: GUIDE, replacedPackage: CLI});
+    expect(index.data.sections.every(s => s.package === KIT)).toBe(true);
+  }, SLOW);
+
+  it('lists under its own package where its namespace lists the guide', async () => {
+    const parent = await docs('authoring', undefined, {cwd: tmpDir});
+    const child = parent.data.slots
+      .flatMap(slot => slot.children)
+      .find(each => each.route === GUIDE);
+    expect(child).toMatchObject({
+      package: KIT,
+      replaces: GUIDE,
+      replacedPackage: CLI,
+      title: 'Acme quick-start',
+    });
+    const text = await cliText(['docs', 'authoring']);
+    expect(text.stdout).toContain(`quick-start (${KIT})`);
+  }, SLOW);
+
+  it('names both packages in text, the replaced one right after package:', async () => {
+    for (const args of [
+      ['docs', GUIDE],
+      ['docs', GUIDE, '--full'],
+    ]) {
+      const {status, stdout} = await cliText(args);
+      expect(status).toBe(0);
+      expect(stdout).toMatch(
+        new RegExp(
+          `package: +${KIT.replace('/', '\\/')}\\s*\\n+replaces ${CLI.replace('/', '\\/')}'s ${GUIDE.replace('/', '\\/')}`,
+        ),
+      );
+    }
+    const {json} = await cliJson(['docs', GUIDE, '--full']);
+    expect(json).toMatchObject({package: KIT, data: {replacedPackage: CLI}});
+  }, SLOW);
+
+  it('is an intentional override to doctor integration docs, with no issue', async () => {
+    const result = await integrationDocConflicts(KIT, {cwd: tmpDir});
+    expect(result.data.findings).toContainEqual(
+      expect.objectContaining({
+        topic: 'quick-start',
+        severity: 'info',
+        relationship: 'replaces',
+        coreTopic: GUIDE,
+      }),
+    );
+    expect(result.data.issues).toEqual([]);
+  }, SLOW);
+});
+
+describe('a flat topic that extends a placed guide by its route', () => {
+  /** @param {object[]} sections */
+  const extend = sections =>
+    scaffold({
+      'quick-start-acme.doc.mjs': topic('quick-start-acme', {
+        extends: GUIDE,
+        sections,
+      }),
+    });
+
+  it('places each section before or after a key, or at the end, naming its package', async () => {
+    extend([
+      section('acme-registry', {before: 'fill-in-package-json'}),
+      section('acme-login', {after: 'quick-start'}),
+      section('acme-support'),
+      // Replaces the guide's section in place, by its key.
+      {...section('global-mode'), title: 'In global mode, at Acme'},
+    ]);
+    const index = await docs(GUIDE, undefined, {cwd: tmpDir, index: true});
+    expect(index.package).toBe(CLI);
+    expect(index.data.replaces).toBeUndefined();
+    expect(index.data.sections.map(s => [s.id, s.package])).toEqual([
+      ['quick-start', CLI],
+      ['acme-login', KIT],
+      ['acme-registry', KIT],
+      ['fill-in-package-json', CLI],
+      ['the-integration-file', CLI],
+      ['global-mode', KIT],
+      ['acme-support', KIT],
+    ]);
+
+    const read = await docs(GUIDE, undefined, {cwd: tmpDir});
+    expect(read.package).toBe(CLI);
+    expect(read.data.replacedPackage).toBeUndefined();
+    // Readers never see the placing fields.
+    for (const each of read.data.sections) {
+      expect(each).not.toHaveProperty('before');
+      expect(each).not.toHaveProperty('after');
+    }
+    expect(read.data.sections.find(s => s.id === 'acme-login').package).toBe(
+      KIT,
+    );
+  }, SLOW);
+
+  it('labels each section it adds once, in text', async () => {
+    extend([
+      section('acme-login', {after: 'quick-start', title: `Log in (${KIT})`}),
+      section('acme-support', {title: 'Acme support'}),
+    ]);
+    const index = await cliText(['docs', GUIDE]);
+    expect(index.stdout).toContain(`package: ${CLI}`);
+    expect(index.stdout).not.toContain(`replaces ${CLI}`);
+    expect(index.stdout).toContain(`Acme support (${KIT})`);
+    expect(index.stdout).toContain(`Log in (${KIT})`);
+    expect(index.stdout).not.toContain(`(${KIT}) (${KIT})`);
+    const full = await cliText(['docs', GUIDE, '--full']);
+    expect(full.stdout).toContain(`Acme support (${KIT})`);
+    expect(full.stdout).not.toContain(`(${KIT}) (${KIT})`);
+    const one = await cliJson(['docs', GUIDE, 'acme-support']);
+    expect(one.json).toMatchObject({package: KIT});
+  }, SLOW);
+
+  it('adds a section whose key names no section at the end, as a listed note', async () => {
+    extend([section('acme-registry', {before: 'no-such-section'})]);
+    const index = await docs(GUIDE, undefined, {cwd: tmpDir, index: true});
+    expect(index.data.sections.at(-1)).toMatchObject({
+      id: 'acme-registry',
+      package: KIT,
+    });
+    const validated = await validateIntegration(KIT, {cwd: tmpDir});
+    expect(validated.data.issues).toEqual([]);
+    expect(validated.data.notes).toContainEqual({
+      code: 'doc_section_unplaced',
+      message: expect.stringContaining('"no-such-section"'),
+    });
+    const docsCheck = await integrationDocConflicts(KIT, {cwd: tmpDir});
+    expect(docsCheck.data.issues).toEqual([]);
+    expect(docsCheck.data.findings).toContainEqual(
+      expect.objectContaining({relationship: 'extends', coreTopic: GUIDE}),
+    );
+  }, SLOW);
+
+  it('places sections in a flat topic it extends the same way', async () => {
+    scaffold({
+      'theme-acme.doc.mjs': topic('theme-acme', {
+        extends: 'theme',
+        sections: [section('acme-theme', {before: 'creating-a-custom-theme'})],
+      }),
+    });
+    const index = await docs('theme', undefined, {cwd: tmpDir, index: true});
+    const ids = index.data.sections.map(s => s.id);
+    expect(ids.indexOf('acme-theme')).toBe(
+      ids.indexOf('creating-a-custom-theme') - 1,
+    );
+    expect(index.data.sections.find(s => s.id === 'acme-theme').package).toBe(
+      KIT,
+    );
+  }, SLOW);
+
+  it('refuses a section that sets both before and after, as before', async () => {
+    extend([section('acme-x', {before: 'quick-start', after: 'quick-start'})]);
+    const result = await integrationDocConflicts(KIT, {cwd: tmpDir});
+    expect(result.data.issues).toContainEqual(
+      expect.objectContaining({code: 'invalid_doc', severity: 'error'}),
+    );
+  }, SLOW);
+});
+
+describe('a route that holds no guide', () => {
+  it('changes nothing and fails nothing, as a listed note', async () => {
+    scaffold({
+      'quick-start.doc.mjs': topic('quick-start', {
+        replaces: 'authoring/no-such-guide',
+      }),
+    });
+    const read = await docs(GUIDE, undefined, {cwd: tmpDir});
+    expect(read.package).toBe(CLI);
+
+    const validated = await validateIntegration(KIT, {cwd: tmpDir});
+    expect(validated.data.issues).toEqual([]);
+    expect(validated.data.notes).toContainEqual({
+      code: 'doc_target_not_found',
+      message: expect.stringContaining('"authoring/no-such-guide"'),
+    });
+    const docsCheck = await integrationDocConflicts(KIT, {cwd: tmpDir});
+    expect(docsCheck.data.issues).toEqual([]);
+
+    const check = await integrationCheck({cwd: kitDir(), strict: true});
+    expect(check.data.failed).toBe(false);
+  }, SLOW);
+});
+
+describe('a flat topic that replaces a flat topic', () => {
+  it('names the package it replaced in the list, the index, and text', async () => {
+    scaffold({
+      'acme-start.doc.mjs': topic('acme-start', {replaces: 'getting-started'}),
+    });
+    const listed = await docs(undefined, undefined, {cwd: tmpDir});
+    expect(listed.data.find(t => t.topic === 'acme-start')).toMatchObject({
+      package: KIT,
+      replaces: 'getting-started',
+      replacedPackage: CLI,
+    });
+    const index = await docs('acme-start', undefined, {
+      cwd: tmpDir,
+      index: true,
+    });
+    expect(index.data).toMatchObject({
+      replaces: 'getting-started',
+      replacedPackage: CLI,
+    });
+    const {stdout} = await cliText(['docs', 'getting-started']);
+    expect(stdout).toContain(`replaces ${CLI}'s getting-started`);
+  }, SLOW);
+});
+
+describe('a doc that names a namespace instead of a guide', () => {
+  it.each(['extends', 'replaces'])(
+    'changes nothing with %s, as a note naming the guides below it',
+    async relationship => {
+      scaffold({
+        'authoring-acme.doc.mjs': topic('authoring-acme', {
+          [relationship]: 'authoring',
+          sections: [section('make-it-at-acme')],
+        }),
+      });
+      const validated = await validateIntegration(KIT, {cwd: tmpDir});
+      expect(validated.data.issues).toEqual([]);
+      const note = validated.data.notes?.find(
+        each => each.code === 'doc_target_not_found',
+      );
+      expect(note?.message).toContain('"authoring", which is a namespace');
+      expect(note?.message).toContain('authoring/field-reference');
+      const check = await integrationCheck({cwd: kitDir(), strict: true});
+      expect(check.data.failed).toBe(false);
+    },
+    SLOW,
+  );
+
+  it('extends a guide below it by its route, labeled with its package', async () => {
+    scaffold({
+      'authoring-acme.doc.mjs': topic('authoring-acme', {
+        extends: 'authoring/field-reference',
+        sections: [section('make-it-at-acme', {title: 'At Acme: make it in the kit'})],
+      }),
+    });
+    const read = await docs('authoring/field-reference', 'make-it-at-acme', {
+      cwd: tmpDir,
+    });
+    expect(read).toMatchObject({type: 'docs.detail.section', package: KIT});
+    const {stdout} = await cliText(['docs', 'authoring/field-reference']);
+    expect(stdout).toContain(`At Acme: make it in the kit (${KIT})`);
+    const docsCheck = await integrationDocConflicts(KIT, {cwd: tmpDir});
+    expect(docsCheck.data.findings).toContainEqual(
+      expect.objectContaining({
+        relationship: 'extends',
+        coreTopic: 'authoring/field-reference',
+      }),
+    );
+  }, SLOW);
+});
+
+describe('a route that moved', () => {
+  it('applies to the guide at the route it moved to', async () => {
+    scaffold({
+      'quick-start.doc.mjs': topic('quick-start', {
+        replaces: 'cli/integrations/quick-start',
+      }),
+    });
+    const read = await docs(GUIDE, undefined, {cwd: tmpDir});
+    expect(read).toMatchObject({package: KIT, data: {replacedPackage: CLI}});
+    const validated = await validateIntegration(KIT, {cwd: tmpDir});
+    expect(
+      (validated.data.notes ?? []).filter(n => n.code.startsWith('doc_')),
+    ).toEqual([]);
+  }, SLOW);
+});

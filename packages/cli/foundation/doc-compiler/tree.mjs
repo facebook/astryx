@@ -178,6 +178,9 @@ export const topicLevel = category =>
  * @property {TreeSlot[]} slots a namespace's slots; empty for a leaf
  * @property {string} source
  * @property {any} [ref]
+ * @property {import('../discovery/docs-discovery.mjs').GuideOverlay} [guideOverlay]
+ *   what integrations do to a guide the tree places, by its route: set by the
+ *   project's tree, absent when nothing replaces or extends it
  */
 
 /**
