@@ -3,7 +3,6 @@
 'use client';
 /**
  * @file CommandPaletteInput.tsx
- * Composes a silent Spinner; the palette owns busy feedback.
  * @input Uses React, StyleX, Icon, CommandPaletteContext, DialogContext
  * @output Exports CommandPaletteInput component and props
  * @position Search input for the command palette
@@ -336,7 +335,7 @@ export function CommandPaletteInput({
         <span {...stylex.props(styles.end)}>
           {ctx?.isBusy && (
             <span {...stylex.props(styles.icon, styles.spinner)}>
-              <Spinner size="sm" aria-hidden="true" />
+              <Spinner size="sm" />
             </span>
           )}
           {hasEndContent && endContent}

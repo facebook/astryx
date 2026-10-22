@@ -4,7 +4,6 @@
 
 /**
  * @file DateInput.tsx
- * Composes a silent Spinner; the field owns busy feedback.
  * @input Uses React, useId, useState, useCallback, useRef, Field, Icon, Calendar, usePopover, InputGroupContext
  * @output Exports DateInput component, DateInputProps
  * @position Core implementation; consumed by index.ts, tested by DateInput.test.tsx
@@ -933,7 +932,7 @@ function PointerDateField({
           onClick={handleClear}
         />
       )}
-      {isBusy && <Spinner size="sm" aria-hidden="true" />}
+      {isBusy && <Spinner size="sm" />}
       {statusIcon}
       {popover.render(
         <Calendar

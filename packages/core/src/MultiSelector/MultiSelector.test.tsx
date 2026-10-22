@@ -3,7 +3,7 @@
 /**
  * @file MultiSelector.test.tsx
  * @input Uses vitest, @testing-library/react, @testing-library/user-event
- * @output Unit tests for MultiSelector, including silent busy indicators
+ * @output Unit tests for MultiSelector
  * @position Tests; validates MultiSelector behavior
  *
  * SYNC: When MultiSelector.tsx API changes, update these tests.
@@ -1555,9 +1555,7 @@ describe('MultiSelector', () => {
       />,
     );
     expect(screen.getByRole('combobox')).toHaveAttribute('aria-busy', 'true');
-    expect(
-      screen.getByLabelText('Loading', {selector: '.astryx-spinner'}),
-    ).toBeInTheDocument();
+    expect(screen.getByRole('status', {name: 'Loading'})).toBeInTheDocument();
   });
 
   it('renders with custom selectAllLabel', async () => {
@@ -2252,9 +2250,7 @@ describe('MultiSelector', () => {
 
       const trigger = screen.getByRole('combobox', {name: 'Fruit'});
       expect(trigger).toHaveAttribute('aria-busy', 'true');
-      expect(
-        screen.getByLabelText('Loading', {selector: '.astryx-spinner'}),
-      ).toBeInTheDocument();
+      expect(screen.getByRole('status', {name: 'Loading'})).toBeInTheDocument();
 
       await user.click(trigger);
       expect(screen.queryByRole('listbox', h)).not.toBeInTheDocument();

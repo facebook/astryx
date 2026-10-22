@@ -4,7 +4,6 @@
 
 /**
  * @file shared.tsx
- * Keeps the persistent decorative Spinner silent, including while idle.
  * @input Schedule events, dates, timezone IDs, provider locale, and display metadata
  * @output Shared rendering primitives, formatters, and styles for schedule views
  * @position Internal view utility module; consumed by Monthly, Weekly, Day, and List views
@@ -78,7 +77,7 @@ export function ScheduleFrame({
             styles.loadingSpinner,
             !isLoading && styles.loadingSpinnerHidden,
           )}>
-          <Spinner size="md" aria-label="Loading events" aria-hidden="true" />
+          <Spinner size="md" aria-label="Loading events" />
         </span>
       </span>
     ),

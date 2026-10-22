@@ -1,12 +1,5 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/**
- * @file EmojiPicker.test.tsx
- * @input EmojiPicker, mocked emoji data, and React Testing Library
- * @output Picker tests, including its non-live loading indicator and readable label
- * @position Colocated component tests
- */
-
 import {act, fireEvent, render, screen, within} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {describe, expect, it, vi} from 'vitest';
@@ -264,8 +257,7 @@ describe('EmojiPicker', () => {
 
   it('loads the bundled set when no categories are passed', async () => {
     render(<EmojiPicker frequentEmojis={[]} onSelect={() => {}} />);
-    expect(screen.getByRole('img', {name: 'Loading emoji'})).toBeTruthy();
-    expect(screen.getByText('Loading emoji')).toBeVisible();
+    expect(screen.getByRole('status', {name: 'Loading emoji'})).toBeTruthy();
     await act(async () => {
       for (let attempt = 0; attempt < 40; attempt++) {
         if (screen.queryAllByRole('grid').length > 0) {

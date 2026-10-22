@@ -4,7 +4,6 @@
 
 /**
  * @file MultiSelector.tsx
- * Composes a silent Spinner; the selector owns busy feedback.
  * @input Uses React, StyleX, usePopover, useTooltip, CheckboxInput, Field, Badge, Icon, InputGroupContext
  * @output Exports MultiSelector with input, secondary, and ghost trigger variants
  * @position Core implementation; consumed by index.ts
@@ -2644,7 +2643,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
           value.map(v => (
             <input key={v} type="hidden" name={htmlName} value={v} />
           ))}
-        {isBusy && <Spinner size="sm" aria-hidden="true" />}
+        {isBusy && <Spinner size="sm" />}
         {hasClear &&
           value.length > 0 &&
           !isDisabled &&

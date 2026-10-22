@@ -3,7 +3,7 @@
 /**
  * @file Selector.test.tsx
  * @input Uses vitest, @testing-library/react, @testing-library/user-event
- * @output Unit tests for Selector behavior, silent busy indicators, and selected-item geometry
+ * @output Unit tests for Selector behavior and selected-item geometry
  * @position Tests; validates Selector behavior
  *
  * SYNC: When Selector.tsx API changes, update these tests.
@@ -1388,9 +1388,7 @@ describe('Selector', () => {
         <Selector label="Fruit" options={[]} onChange={() => {}} isLoading />,
       );
       const trigger = screen.getByRole('combobox', {name: 'Fruit'});
-      expect(
-        screen.getByLabelText('Loading', {selector: '.astryx-spinner'}),
-      ).toBeInTheDocument();
+      expect(screen.getByRole('status', {name: 'Loading'})).toBeInTheDocument();
 
       await user.click(trigger);
       expect(trigger).toHaveAttribute('aria-expanded', 'true');
@@ -2898,9 +2896,7 @@ describe('Selector', () => {
 
       const trigger = screen.getByRole('combobox', {name: 'Fruit'});
       expect(trigger).toHaveAttribute('aria-busy', 'true');
-      expect(
-        screen.getByLabelText('Loading', {selector: '.astryx-spinner'}),
-      ).toBeInTheDocument();
+      expect(screen.getByRole('status', {name: 'Loading'})).toBeInTheDocument();
 
       await user.click(trigger);
       expect(screen.queryByRole('listbox', h)).not.toBeInTheDocument();

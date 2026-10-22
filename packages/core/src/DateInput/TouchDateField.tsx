@@ -4,7 +4,6 @@
 
 /**
  * @file TouchDateField.tsx
- * Composes a silent Spinner; the field owns busy feedback.
  * @input Uses React, Field, BottomSheet, Button, Icon, Calendar hooks, MonthScroller, MonthYearWheels
  * @output Exports TouchDateField — the touch surface behind DateInput
  * @position Internal component; consumed by DateInput.tsx
@@ -1304,7 +1303,7 @@ export function TouchDateField({
           onClick={handleClear}
         />
       )}
-      {isBusy && <Spinner size="sm" aria-hidden="true" />}
+      {isBusy && <Spinner size="sm" />}
       {statusIcon}
       <BottomSheet
         isOpen={isSheetOpen}

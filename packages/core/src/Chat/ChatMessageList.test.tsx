@@ -3,7 +3,7 @@
 /**
  * @file ChatMessageList.test.tsx
  * @input React Testing Library, Vitest, and the public ChatMessageList surface
- * @output Observable log, empty-state, alignment, and non-live loading-indicator regressions
+ * @output Observable log, empty-state, alignment, and async-loading regressions
  * @position Colocated component behavior tests
  */
 
@@ -182,10 +182,9 @@ describe('ChatMessageList', () => {
         );
       });
       expect(action).toHaveBeenCalledTimes(1);
-      expect(screen.getByRole('img', {name: 'Loading'})).toBeTruthy();
-      expect(screen.queryByRole('status', {name: 'Loading'})).toBeNull();
+      expect(screen.getByRole('status', {name: 'Loading'})).toBeTruthy();
       await act(async () => complete());
-      expect(screen.queryByRole('img', {name: 'Loading'})).toBeNull();
+      expect(screen.queryByRole('status', {name: 'Loading'})).toBeNull();
       unmount();
       expect(disconnect).toHaveBeenCalledTimes(1);
     } finally {

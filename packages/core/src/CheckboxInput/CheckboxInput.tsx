@@ -4,7 +4,6 @@
 
 /**
  * @file CheckboxInput.tsx
- * Composes a silent Spinner; the checkbox owns busy feedback.
  * @input Uses React, useId, ChangeEvent, FieldLabel, FieldStatus, IconType, InputStatus, useTooltip
  * @output Exports CheckboxInput component, CheckboxInputProps
  * @position Core implementation; consumed by index.ts, tested by CheckboxInput.test.tsx
@@ -519,9 +518,7 @@ export function CheckboxInput({
               }
               size={size}
               isDisabled={isDisabled}>
-              {isBusy ? (
-                <Spinner size="sm" shade="inherit" aria-hidden="true" />
-              ) : null}
+              {isBusy ? <Spinner size="sm" shade="inherit" /> : null}
             </CheckboxControl>
           </span>
         </div>

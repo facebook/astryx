@@ -4,7 +4,6 @@
 
 /**
  * @file DropdownMenuSubMenu.tsx
- * Composes a silent Spinner; the submenu owns busy feedback.
  * @input React, stylex, useLayer (context mode), useListFocus, useMenuHover,
  *   useTypeahead, the shared viewport-safe menu-width resolver, Item, Icon,
  *   Spinner, and DropdownMenu context + item roles
@@ -1034,7 +1033,7 @@ export function DropdownMenuSubMenu(
 
   const endAffordance = hasSpinner ? (
     <span {...stylex.props(triggerStyles.caret)}>
-      <Spinner size="sm" aria-hidden="true" />
+      <Spinner size="sm" />
     </span>
   ) : (
     <span {...stylex.props(triggerStyles.caret)}>

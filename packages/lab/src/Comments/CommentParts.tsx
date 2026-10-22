@@ -4,7 +4,6 @@
 
 /**
  * @file CommentParts.tsx
- * Keeps the history loader silent without hiding its visible label.
  * @input Uses React, StyleX, theme tokens, and Astryx primitives (Avatar,
  *   Badge, Banner, Blockquote, Button, Card, Dialog, EmptyState, Item, Link,
  *   Section, Skeleton, Spinner, Text, Thumbnail, Timestamp, Tooltip)
@@ -729,7 +728,6 @@ export function HistoryDialog({
               <Spinner
                 size="lg"
                 label={t('@astryx.comments.historyLoading')}
-                data-astryx-spinner-silent
               />
             ) : history.error != null ? (
               <Banner

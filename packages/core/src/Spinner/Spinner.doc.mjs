@@ -1,13 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/**
- * @file Spinner.doc.mjs
- * @input Spinner public props and announcement behavior
- * @output Consumer docs for the non-live ring and shared-channel delivery
- * @position Spinner's shipped component documentation
- */
-
 /** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
+
 export const docs = {
   name: 'Spinner',
   displayName: 'Spinner',
@@ -30,7 +24,7 @@ export const docs = {
       name: 'label',
       type: 'ReactNode',
       description:
-        'Visible content below the spinner. String labels name the ring via aria-labelledby. Rich labels are announced as rendered text unless aria-label is supplied.',
+        'Visible content below the spinner. String labels auto-set aria-label.',
     },
     {
       name: 'aria-label',
@@ -59,7 +53,7 @@ export const docs = {
   },
   usage: {
     description:
-      'An animated loading indicator for processes with unknown duration. A standalone Spinner sends its label through the shared polite announcement channel when it appears or the label changes, without repeating on an unchanged rerender. The ring is a named, non-live image (role="img"), not a status region; visible labels stay readable. An existing live container owns announcements for content inside it. Mark a decorative Spinner aria-hidden when its enclosing control owns busy feedback. Supports visible labels, multiple sizes, and a dark background variant. For content with known dimensions, use Skeleton instead.',
+      'An animated loading indicator for processes with unknown duration, such as data fetching or form submission. Supports visible labels, multiple sizes, and a dark background variant. For content with known dimensions, use Skeleton instead.',
     bestPractices: [
       {guidance: true, description: 'Provide a meaningful label to describe what is loading for screen reader users.'},
       {guidance: true, description: 'Use the "onMedia" shade when placed on dark or accent-colored backgrounds.'},
@@ -89,7 +83,7 @@ export const docsZh = {
     {
       name: 'label',
       type: 'ReactNode',
-      description: '旋转器下方的可见内容。字符串通过 aria-labelledby 命名圆环。未提供 aria-label 时，富文本标签按实际渲染的文字播报。',
+      description: '旋转器下方的可见内容。字符串标签自动设置 aria-label。',
     },
     {
       name: 'aria-label',
@@ -118,7 +112,7 @@ export const docsZh = {
   },
   usage: {
     description:
-      'An animated loading indicator for processes with unknown duration. A standalone Spinner sends its label through the shared polite announcement channel when it appears or the label changes, without repeating on an unchanged rerender. The ring is a named, non-live image (role="img"), not a status region; visible labels stay readable. An existing live container owns announcements for content inside it. Mark a decorative Spinner aria-hidden when its enclosing control owns busy feedback. Supports visible labels, multiple sizes, and a dark background variant. For content with known dimensions, use Skeleton instead.',
+      'An animated loading indicator for processes with unknown duration, such as data fetching or form submission. Supports visible labels, multiple sizes, and a dark background variant. For content with known dimensions, use Skeleton instead.',
     bestPractices: [
       {guidance: true, description: 'Provide a meaningful label to describe what is loading for screen reader users.'},
       {guidance: true, description: 'Use the "onMedia" shade when placed on dark or accent-colored backgrounds.'},
@@ -132,7 +126,7 @@ export const docsZh = {
 export const docsDense = {
   usage: {
     description:
-      'An animated loading indicator for processes with unknown duration. A standalone Spinner sends its label through the shared polite announcement channel when it appears or the label changes, without repeating on an unchanged rerender. The ring is a named, non-live image (role="img"), not a status region; visible labels stay readable. An existing live container owns announcements for content inside it. Mark a decorative Spinner aria-hidden when its enclosing control owns busy feedback. Supports visible labels, multiple sizes, and a dark background variant. For content with known dimensions, use Skeleton instead.',
+      'An animated loading indicator for processes with unknown duration, such as data fetching or form submission. Supports visible labels, multiple sizes, and a dark background variant. For content with known dimensions, use Skeleton instead.',
     bestPractices: [
       {guidance: true, description: 'Provide a meaningful label to describe what is loading for screen reader users.'},
       {guidance: true, description: 'Use the "onMedia" shade when placed on dark or accent-colored backgrounds.'},
@@ -143,7 +137,7 @@ export const docsDense = {
   propDescriptions: {
     size: 'Spinner size: ring diameter (10px, 14px, 18px, 28px).',
     shade: 'Color shade for light or dark backgrounds.',
-    label: 'Visible content below spinner. Strings name the ring via aria-labelledby; rich labels announce rendered text unless aria-label is supplied.',
+    label: 'Visible content below spinner. String auto-sets aria-label.',
     'aria-label':
       'A11y name for screen readers. Defaults to label or a translated "Loading".',
     xstyle: 'StyleX styles for layout customization. Must be stylex.create() value, not inline style.',

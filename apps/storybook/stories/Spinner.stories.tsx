@@ -1,16 +1,8 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/**
- * @file Spinner.stories.tsx
- * @input Spinner, React state, and theme fixtures
- * @output Spinner examples and a repeatable conditional-announcement scenario
- * @position Storybook visual and assistive-technology verification surface
- */
-
-import {StrictMode, useState, type CSSProperties} from 'react';
+import type {CSSProperties} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import {Spinner} from '@astryxdesign/core/Spinner';
-import {Button} from '@astryxdesign/core/Button';
 import {Text} from '@astryxdesign/core/Text';
 import {HStack, VStack} from '@astryxdesign/core/Layout';
 import {Theme, defineTheme} from '@astryxdesign/core/theme';
@@ -54,31 +46,6 @@ export const Default: Story = {
   args: {
     size: 'md',
     shade: 'default',
-  },
-};
-
-export const ConditionalAppearance: Story = {
-  render: function ConditionalAppearance() {
-    const [isLoading, setIsLoading] = useState(false);
-    const [renderCount, setRenderCount] = useState(0);
-    return (
-      <StrictMode>
-        <VStack gap={4}>
-          <HStack gap={2}>
-            <Button
-              label={isLoading ? 'Finish loading' : 'Start loading'}
-              onClick={() => setIsLoading(value => !value)}
-            />
-            <Button
-              label="Rerender"
-              onClick={() => setRenderCount(value => value + 1)}
-            />
-          </HStack>
-          <Text>Rerenders: {renderCount}</Text>
-          {isLoading && <Spinner label="Loading results" />}
-        </VStack>
-      </StrictMode>
-    );
   },
 };
 

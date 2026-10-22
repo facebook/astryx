@@ -4,7 +4,6 @@
 
 /**
  * @file TouchDateTimeField.tsx
- * Composes a silent Spinner; the field owns busy feedback.
  * @input Uses React, Field, BottomSheet, SegmentedControl, DateInput month picker primitives, Wheel, StyleX intrinsic flex layout
  * @output Exports TouchDateTimeField — the coarse-pointer surface behind DateTimeInput
  * @position Internal component; consumed by DateTimeInput.tsx
@@ -1413,7 +1412,7 @@ export function TouchDateTimeField({
               onClick={handleClear}
             />
           )}
-          {isBusy && <Spinner size="sm" aria-hidden="true" />}
+          {isBusy && <Spinner size="sm" />}
           {isRenderable(statusIcon) && statusIcon}
         </div>
 

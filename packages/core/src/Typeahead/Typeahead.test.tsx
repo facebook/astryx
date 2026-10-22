@@ -3,7 +3,7 @@
 /**
  * @file Typeahead.test.tsx
  * @input Uses vitest, @testing-library/react, Typeahead, BaseTypeahead
- * @output Unit tests for Typeahead components, including silent busy indicators
+ * @output Unit tests for Typeahead components
  * @position Testing; validates Typeahead.tsx and BaseTypeahead.tsx
  *
  * SYNC: When Typeahead components change, update tests to match
@@ -929,15 +929,13 @@ describe('BaseTypeahead hasEntriesOnFocus', () => {
 
     fireEvent.change(input, {target: {value: 'a'}});
     await waitFor(() => {
-      expect(
-        screen.getByLabelText('Loading', {selector: '.astryx-spinner'}),
-      ).toBeInTheDocument();
+      expect(screen.getByRole('status', {name: 'Loading'})).toBeInTheDocument();
     });
 
     fireEvent.change(input, {target: {value: ''}});
     await waitFor(() => {
       expect(
-        screen.queryByLabelText('Loading', {selector: '.astryx-spinner'}),
+        screen.queryByRole('status', {name: 'Loading'}),
       ).not.toBeInTheDocument();
     });
 
@@ -968,9 +966,7 @@ describe('BaseTypeahead hasEntriesOnFocus', () => {
 
     fireEvent.focus(input);
     await waitFor(() => {
-      expect(
-        screen.getByLabelText('Loading', {selector: '.astryx-spinner'}),
-      ).toBeInTheDocument();
+      expect(screen.getByRole('status', {name: 'Loading'})).toBeInTheDocument();
     });
 
     await act(async () => {
@@ -978,7 +974,7 @@ describe('BaseTypeahead hasEntriesOnFocus', () => {
       await Promise.resolve();
     });
     expect(
-      screen.queryByLabelText('Loading', {selector: '.astryx-spinner'}),
+      screen.queryByRole('status', {name: 'Loading'}),
     ).not.toBeInTheDocument();
   });
 
@@ -1008,9 +1004,7 @@ describe('BaseTypeahead hasEntriesOnFocus', () => {
 
     fireEvent.focus(input);
     await waitFor(() => {
-      expect(
-        screen.getByLabelText('Loading', {selector: '.astryx-spinner'}),
-      ).toBeInTheDocument();
+      expect(screen.getByRole('status', {name: 'Loading'})).toBeInTheDocument();
     });
 
     rerender(
@@ -1024,7 +1018,7 @@ describe('BaseTypeahead hasEntriesOnFocus', () => {
 
     await waitFor(() => {
       expect(
-        screen.queryByLabelText('Loading', {selector: '.astryx-spinner'}),
+        screen.queryByRole('status', {name: 'Loading'}),
       ).not.toBeInTheDocument();
     });
 
@@ -1033,7 +1027,7 @@ describe('BaseTypeahead hasEntriesOnFocus', () => {
       await Promise.resolve();
     });
     expect(
-      screen.queryByLabelText('Loading', {selector: '.astryx-spinner'}),
+      screen.queryByRole('status', {name: 'Loading'}),
     ).not.toBeInTheDocument();
   });
 
@@ -1058,16 +1052,14 @@ describe('BaseTypeahead hasEntriesOnFocus', () => {
       </StrictMode>,
     );
 
-    expect(
-      screen.getByLabelText('Loading', {selector: '.astryx-spinner'}),
-    ).toBeInTheDocument();
+    expect(screen.getByRole('status', {name: 'Loading'})).toBeInTheDocument();
 
     await act(async () => {
       settle([]);
       await Promise.resolve();
     });
     expect(
-      screen.queryByLabelText('Loading', {selector: '.astryx-spinner'}),
+      screen.queryByRole('status', {name: 'Loading'}),
     ).not.toBeInTheDocument();
   });
 
@@ -1133,9 +1125,7 @@ describe('BaseTypeahead hasEntriesOnFocus', () => {
     await waitFor(() => {
       expect(input).toHaveAttribute('aria-busy', 'true');
     });
-    expect(
-      screen.getByLabelText('Loading', {selector: '.astryx-spinner'}),
-    ).toBeInTheDocument();
+    expect(screen.getByRole('status', {name: 'Loading'})).toBeInTheDocument();
 
     // Create the pending promise for suspension
     isSuspended = true;
@@ -1171,7 +1161,7 @@ describe('BaseTypeahead hasEntriesOnFocus', () => {
     // The combobox must not keep aria-busy and the spinner must be gone
     expect(input).not.toHaveAttribute('aria-busy');
     expect(
-      screen.queryByLabelText('Loading', {selector: '.astryx-spinner'}),
+      screen.queryByRole('status', {name: 'Loading'}),
     ).not.toBeInTheDocument();
   });
 
@@ -1453,9 +1443,7 @@ describe('BaseTypeahead minQueryLength', () => {
 
     fireEvent.change(input, {target: {value: 'App'}});
     await waitFor(() => {
-      expect(
-        screen.getByLabelText('Loading', {selector: '.astryx-spinner'}),
-      ).toBeInTheDocument();
+      expect(screen.getByRole('status', {name: 'Loading'})).toBeInTheDocument();
     });
     expect(input).toHaveAttribute('aria-busy', 'true');
 
@@ -1466,7 +1454,7 @@ describe('BaseTypeahead minQueryLength', () => {
     });
 
     expect(
-      screen.queryByLabelText('Loading', {selector: '.astryx-spinner'}),
+      screen.queryByRole('status', {name: 'Loading'}),
     ).not.toBeInTheDocument();
     expect(input).not.toHaveAttribute('aria-busy');
     expect(input).toHaveAttribute('aria-expanded', 'false');
@@ -2197,9 +2185,12 @@ describe('busy indicator ownership', () => {
     };
   };
 
-  it('renders a silent busy indicator for a direct caller', async () => {
-    // Direct BaseTypeahead callers still get the visual loading indicator;
-    // its ring is decorative rather than an independent announcement owner.
+  it('renders its own named status for a direct caller', async () => {
+    // BaseTypeaheadProps is re-exported from the package entry point, so the
+    // base has direct callers this repo cannot see. They painted no indicator
+    // of their own — the base did it for them — so it keeps doing it, and the
+    // status stays a named one rather than a bare aria-busy that only reaches
+    // assistive tech.
     const {source, settle} = pendingSource();
     render(
       <BaseTypeahead
@@ -2213,17 +2204,13 @@ describe('busy indicator ownership', () => {
 
     fireEvent.change(input, {target: {value: 'App'}});
     await waitFor(() => {
-      expect(
-        screen.getByLabelText('Loading', {selector: '.astryx-spinner'}),
-      ).toBeInTheDocument();
+      expect(screen.getByRole('status', {name: 'Loading'})).toBeInTheDocument();
     });
     // A Spinner, not the static clock glyph this used to render: `clock`
     // means *time* everywhere else in core, and nothing about it moved while
     // a search was out.
     expect(
-      screen
-        .getByLabelText('Loading', {selector: '.astryx-spinner'})
-        .querySelector('svg'),
+      screen.getByRole('status', {name: 'Loading'}).querySelector('svg'),
     ).toBeInTheDocument();
 
     await act(async () => {
@@ -2231,7 +2218,7 @@ describe('busy indicator ownership', () => {
       await Promise.resolve();
     });
     expect(
-      screen.queryByLabelText('Loading', {selector: '.astryx-spinner'}),
+      screen.queryByRole('status', {name: 'Loading'}),
     ).not.toBeInTheDocument();
   });
 
@@ -2261,9 +2248,10 @@ describe('busy indicator ownership', () => {
     await waitFor(() => {
       expect(input).toHaveAttribute('aria-busy', 'true');
     });
-    // Query the indicator rather than the separate result-count channel.
+    // Scoped by name: the announcer for result counts is a role="status"
+    // live region too, and it is not the indicator.
     expect(
-      screen.queryByLabelText('Loading', {selector: '.astryx-spinner'}),
+      screen.queryByRole('status', {name: 'Loading'}),
     ).not.toBeInTheDocument();
     expect(onLoadingChange).toHaveBeenLastCalledWith(true);
 

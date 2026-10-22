@@ -4,7 +4,6 @@
 
 /**
  * @file BaseTypeahead.tsx
- * Composes a silent Spinner; the combobox owns busy feedback.
  * @input Uses React, StyleX, usePopover, TypeaheadItem
  * @output Exports BaseTypeahead; focus bootstraps a replaced search source
  * @position Core implementation; used by Typeahead and Tokenizer
@@ -1219,11 +1218,7 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
       />
       {isLoading && busyLane == null && (
         <span {...stylex.props(styles.loadingStatus)}>
-          <Spinner
-            size="sm"
-            aria-label={t('@astryx.typeahead.loading')}
-            aria-hidden="true"
-          />
+          <Spinner size="sm" aria-label={t('@astryx.typeahead.loading')} />
         </span>
       )}
       {popover.render(

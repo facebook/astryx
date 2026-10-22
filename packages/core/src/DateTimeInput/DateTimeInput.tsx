@@ -4,7 +4,6 @@
 
 /**
  * @file DateTimeInput.tsx
- * Composes a silent Spinner; the field owns busy feedback.
  * @input Uses React, Field, Calendar, NativeDateSegment, NativeTimeSegment, TouchDateTimeField, usePopover, useAnnounce, time parsing utilities, StyleX intrinsic flex layout
  * @output Exports DateTimeInput component, DateTimeInputProps, and native picker type; cleared values keep the pointer Calendar controlled-empty
  * @position Core implementation; consumed by index.ts, tested by DateTimeInput.test.tsx
@@ -1802,7 +1801,7 @@ function PointerDateTimeField({
               onClick={handleClear}
             />
           )}
-          {isBusy && <Spinner size="sm" aria-hidden="true" />}
+          {isBusy && <Spinner size="sm" />}
           {statusIcon}
         </div>
 

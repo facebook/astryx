@@ -4,7 +4,6 @@
 
 /**
  * @file EmojiPicker.tsx
- * Keeps loading indicators silent without hiding their visible labels.
  * @input Uses React, StyleX, theme tokens, useGridFocus, useTranslator,
  *   TextInput, ScrollableArea, Text, Spinner, Icon, and the lazily loaded CLDR
  *   emoji set (emojiData.ts)
@@ -521,19 +520,11 @@ export function EmojiPicker({
           {sections.map(renderSection)}
           {queryWords.length > 0 && sections.length === 0 && isLoading ? (
             <Center>
-              <Spinner
-                size="sm"
-                label={t('@astryx.emojiPicker.loading')}
-                data-astryx-spinner-silent
-              />
+              <Spinner size="sm" label={t('@astryx.emojiPicker.loading')} />
             </Center>
           ) : queryWords.length === 0 && isLoading ? (
             <Center>
-              <Spinner
-                size="sm"
-                label={t('@astryx.emojiPicker.loading')}
-                data-astryx-spinner-silent
-              />
+              <Spinner size="sm" label={t('@astryx.emojiPicker.loading')} />
             </Center>
           ) : queryWords.length === 0 && categories === 'failed' ? (
             <HStack paddingInline={3}>

@@ -4,7 +4,6 @@
 
 /**
  * @file TextInput.tsx
- * Composes a silent Spinner; the field owns busy feedback.
  * @input Uses React, useId, ChangeEvent, Field, Icon, InputGroupContext
  * @output Exports TextInput component, TextInputProps
  * @position Core implementation; consumed by index.ts, tested by TextInput.test.tsx
@@ -507,7 +506,7 @@ export function TextInput({
           onClick={handleClear}
         />
       )}
-      {isBusy && <Spinner size="sm" aria-hidden="true" />}
+      {isBusy && <Spinner size="sm" />}
       {statusIcon}
     </div>
   );

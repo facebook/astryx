@@ -4,7 +4,7 @@
 /**
  * @file StatusMessage.a11y.test.tsx
  * @input Uses the shared status-message contract and current Core binding render map
- * @output Component-facing jsdom evidence through expectAccessibilitySpec, including Spinner's shared-channel owner
+ * @output Component-facing jsdom evidence through expectAccessibilitySpec
  * @position Fast migration lane; browser-owned outcomes remain explicitly unrun
  */
 
@@ -46,6 +46,7 @@ async function renderState(
   await waitFor(() =>
     expect(document.querySelector('[data-a11y-ready="true"]')).not.toBeNull(),
   );
+  await waitFor(() => expect(subjectFor(state)).toBeInTheDocument());
 }
 
 function subjectFor(state: CoreStatusMessageBindingState): Element {

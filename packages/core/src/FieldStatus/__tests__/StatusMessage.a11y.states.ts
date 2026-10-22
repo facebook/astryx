@@ -3,7 +3,7 @@
 /**
  * @file StatusMessage.a11y.states.ts
  * @input Uses StatusMessageStateFacts from the shared accessibility contract
- * @output The AST-021 inventory, including Spinner's shared-channel transitions and explicit exclusions
+ * @output The AST-021 inventory for current Core status-message parts and states, plus explicit exclusions
  * @position Data-only binding inventory shared by jsdom, Storybook, and Chromium
  */
 
@@ -160,13 +160,14 @@ export const CORE_STATUS_MESSAGE_BINDING_STATES = [
     id: 'spinner-default-label-mounted',
     binding: 'Spinner announcement channel',
     summary:
-      'a standalone spinner sends its default name through the persistent polite channel on appearance',
+      'a mounted spinner sends its default label and updates through the persistent polite channel',
     facts: liveFacts({
       role: 'status',
       politeness: 'polite',
+      initialMessage: 'Loading',
       message: 'Loading',
       replacement: 'Saving',
-      semanticTransitions: ['show', 'replace', 'repeat'],
+      semanticTransitions: ['replace'],
     }),
     storyId: 'a11y-status-message-pattern--spinner-default-label-mounted',
   },
@@ -174,13 +175,14 @@ export const CORE_STATUS_MESSAGE_BINDING_STATES = [
     id: 'spinner-visible-label-mounted',
     binding: 'Spinner announcement channel',
     summary:
-      'a standalone spinner sends its visible label through the persistent polite channel on appearance',
+      'a mounted spinner sends its visible label and updates through the persistent polite channel',
     facts: liveFacts({
       role: 'status',
       politeness: 'polite',
+      initialMessage: 'Fetching data',
       message: 'Fetching data',
       replacement: 'Saving data',
-      semanticTransitions: ['show', 'replace', 'repeat'],
+      semanticTransitions: ['replace'],
     }),
     storyId: 'a11y-status-message-pattern--spinner-visible-label-mounted',
   },

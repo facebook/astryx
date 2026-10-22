@@ -3,7 +3,7 @@
 /**
  * @file Tokenizer.test.tsx
  * @input Uses vitest, @testing-library/react, Tokenizer
- * @output Unit tests for Tokenizer, including its silent busy-indicator lane
+ * @output Unit tests for Tokenizer component
  * @position Testing; validates Tokenizer.tsx
  *
  * SYNC: When Tokenizer.tsx changes, update tests to match
@@ -1675,9 +1675,7 @@ describe('Tokenizer end-lane reserve', () => {
       fireEvent.change(screen.getByRole('combobox'), {target: {value: 'Al'}});
     });
 
-    expect(
-      screen.getByLabelText('Loading', {selector: '.astryx-spinner'}),
-    ).toHaveAttribute('aria-hidden', 'true');
+    expect(screen.getByRole('status')).toBeInTheDocument();
     expect(reserveOf(container)).toBe(
       `calc(var(--spacing-2) + ${LANE_LOCAL_WIDTH}px)`,
     );
@@ -1776,9 +1774,7 @@ describe('Tokenizer end-lane reserve', () => {
     // The indicator is up, so the transition really did happen. Scoped by
     // name: the announcer for result counts is a role="status" live region
     // too, and it is not the indicator.
-    expect(
-      screen.getByLabelText('Loading', {selector: '.astryx-spinner'}),
-    ).toBeInTheDocument();
+    expect(screen.getByRole('status', {name: 'Loading'})).toBeInTheDocument();
     // ...and it cost no token a render.
     expect(renderedTokens).toEqual([]);
 
@@ -1788,7 +1784,7 @@ describe('Tokenizer end-lane reserve', () => {
     });
     await waitFor(() => {
       expect(
-        screen.queryByLabelText('Loading', {selector: '.astryx-spinner'}),
+        screen.queryByRole('status', {name: 'Loading'}),
       ).not.toBeInTheDocument();
     });
     expect(renderedTokens).toEqual([]);
@@ -1827,16 +1823,14 @@ describe('Tokenizer end-lane reserve', () => {
 
     fireEvent.focus(input);
     await waitFor(() => {
-      expect(
-        screen.getByLabelText('Loading', {selector: '.astryx-spinner'}),
-      ).toBeInTheDocument();
+      expect(screen.getByRole('status', {name: 'Loading'})).toBeInTheDocument();
     });
 
     fireEvent.click(screen.getByRole('button', {name: 'Add Token'}));
 
     await waitFor(() => {
       expect(
-        screen.queryByLabelText('Loading', {selector: '.astryx-spinner'}),
+        screen.queryByRole('status', {name: 'Loading'}),
       ).not.toBeInTheDocument();
     });
 
@@ -1845,7 +1839,7 @@ describe('Tokenizer end-lane reserve', () => {
       await Promise.resolve();
     });
     expect(
-      screen.queryByLabelText('Loading', {selector: '.astryx-spinner'}),
+      screen.queryByRole('status', {name: 'Loading'}),
     ).not.toBeInTheDocument();
   });
 

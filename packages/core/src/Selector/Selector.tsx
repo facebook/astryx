@@ -4,7 +4,6 @@
 
 /**
  * @file Selector.tsx
- * Composes a silent Spinner; the selector owns busy feedback.
  * @input Uses React, StyleX, adaptive selection surfaces, theme-resolved
  *   indicators, Field, and InputGroup context
  * @output Exports Selector with input, secondary, and ghost trigger treatments, content-derived option-mark layout, and token-sized single-line triggers
@@ -2039,7 +2038,7 @@ export function Selector<T extends SelectorOptionType>(
         {htmlName != null && !isDisabled && (
           <input type="hidden" name={htmlName} value={value ?? ''} />
         )}
-        {isBusy && <Spinner size="sm" aria-hidden="true" />}
+        {isBusy && <Spinner size="sm" />}
         {hasClear && value != null && !isDisabled && !isEffectivelyReadOnly && (
           <InternalInputClearButton
             {...keepOpenProps}
