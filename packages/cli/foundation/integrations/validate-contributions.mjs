@@ -1050,13 +1050,13 @@ function isPackedBy(rel, files) {
   for (const entry of files) {
     if (typeof entry !== 'string') continue;
     const negated = entry.startsWith('!');
-    let pattern = entry
-      .slice(negated ? 1 : 0)
-      .replace(/^\.\//u, '')
-      .replace(/\/+$/u, '');
-    // As in .gitignore, which npm follows: a pattern with no slash matches a
-    // name at any depth.
-    if (!pattern.includes('/')) pattern = `**/${pattern}`;
+    const raw = entry.slice(negated ? 1 : 0);
+    // A leading `/` or `./` anchors the pattern at the package root.
+    const anchored = /^\.?\//u.test(raw);
+    let pattern = raw.replace(/^\.?\//u, '').replace(/\/+$/u, '');
+    // As in .gitignore, which npm follows: an unanchored pattern with no
+    // slash matches a name at any depth.
+    if (!anchored && !pattern.includes('/')) pattern = `**/${pattern}`;
     const source = pattern
       .replace(/[.+^${}()|[\]\\]/gu, '\\$&')
       .replace(/\*\*\//gu, '<<DIRS>>')
@@ -1070,6 +1070,127 @@ function isPackedBy(rel, files) {
     if (new RegExp(`^${source}(?:/.*)?$`, 'u').test(rel)) packed = !negated;
   }
   return packed;
+}
+
+/**
+ * What in a showcase's own module a browser cannot run, read from the parsed
+ * module so strings, JSX text, comments and type-only imports never count:
+ * an import or `require()` of a server-only module or an uninstalled Node
+ * builtin, a read of `process.env` other than `process.env.NODE_ENV` (which
+ * bundlers replace), and a `'use server'` directive. A module that does not
+ * parse reports nothing; the template check owns that.
+ * @param {string} source
+ * @param {Set<string>} builtins
+ * @returns {string[]}
+ */
+function serverUses(source, builtins) {
+  /** @type {any} */
+  let ast;
+  try {
+    ast = parseModule(source, {
+      sourceType: 'module',
+      plugins: ['jsx', 'typescript'],
+      errorRecovery: true,
+    });
+  } catch {
+    return [];
+  }
+  /** @type {string[]} */
+  const found = [];
+  /** @param {unknown} spec */
+  const checkSpec = spec => {
+    if (
+      typeof spec === 'string' &&
+      (SERVER_ONLY_IMPORTS.test(spec) || builtins.has(spec))
+    ) {
+      found.push(`imports '${spec}'`);
+    }
+  };
+  for (const directive of ast.program.directives ?? []) {
+    if (directive.value?.value === 'use server') {
+      found.push("is a 'use server' module");
+    }
+  }
+  /** @param {any} node */
+  const visit = node => {
+    if (!node || typeof node.type !== 'string') return;
+    switch (node.type) {
+      case 'ImportDeclaration':
+        if (
+          node.importKind !== 'type' &&
+          !(
+            node.specifiers.length > 0 &&
+            node.specifiers.every(
+              (/** @type {any} */ s) => s.importKind === 'type',
+            )
+          )
+        ) {
+          checkSpec(node.source.value);
+        }
+        return;
+      case 'ExportNamedDeclaration':
+      case 'ExportAllDeclaration':
+        if (node.source && node.exportKind !== 'type') {
+          checkSpec(node.source.value);
+        }
+        break;
+      case 'CallExpression':
+        if (
+          (node.callee.type === 'Identifier' &&
+            node.callee.name === 'require') ||
+          node.callee.type === 'Import'
+        ) {
+          checkSpec(node.arguments[0]?.value);
+        }
+        break;
+      case 'ImportExpression':
+        checkSpec(node.source?.value);
+        break;
+      case 'MemberExpression': {
+        const object = node.object;
+        if (
+          object.type === 'Identifier' &&
+          object.name === 'process' &&
+          !node.computed &&
+          node.property.name === 'env'
+        ) {
+          found.push('reads process.env');
+          return;
+        }
+        if (
+          object.type === 'MemberExpression' &&
+          object.object.type === 'Identifier' &&
+          object.object.name === 'process' &&
+          !object.computed &&
+          object.property.name === 'env'
+        ) {
+          if (!node.computed && node.property.name === 'NODE_ENV') return;
+          found.push('reads process.env');
+          return;
+        }
+        break;
+      }
+      default:
+        break;
+    }
+    for (const key of Object.keys(node)) {
+      if (
+        key === 'loc' ||
+        key === 'start' ||
+        key === 'end' ||
+        key === 'leadingComments' ||
+        key === 'trailingComments' ||
+        key === 'innerComments'
+      ) {
+        continue;
+      }
+      const value = node[key];
+      if (Array.isArray(value)) value.forEach(visit);
+      else if (value && typeof value === 'object') visit(value);
+    }
+  };
+  visit(ast.program);
+  return found;
 }
 
 /**
@@ -1116,14 +1237,27 @@ export async function componentExamplesCheck(integration) {
   const rel = (/** @type {string} */ file) => slash(path.relative(base, file));
   /** @type {unknown} */
   let packedFiles;
+  /** @type {Set<string>} */
+  const declared = new Set();
   try {
-    packedFiles = JSON.parse(
+    const pkg = JSON.parse(
       fs.readFileSync(path.join(base, 'package.json'), 'utf8'),
-    ).files;
+    );
+    packedFiles = pkg.files;
+    for (const field of [
+      'dependencies',
+      'peerDependencies',
+      'optionalDependencies',
+      'devDependencies',
+    ]) {
+      for (const name of Object.keys(pkg[field] ?? {})) declared.add(name);
+    }
   } catch {
     packedFiles = undefined;
   }
-  const builtins = new Set(builtinModules);
+  // A bare builtin name the package installs from npm (`buffer`, `events`)
+  // is that package, which bundlers ship to the browser.
+  const builtins = new Set(builtinModules.filter(name => !declared.has(name)));
   /** @type {Set<string>} */
   const shown = new Set();
   for (const template of templates) {
@@ -1156,28 +1290,7 @@ export async function componentExamplesCheck(integration) {
       continue;
     }
     if (template.type === 'block' && template.isShowcase) {
-      /** @type {string[]} */
-      const blocked = [];
-      // Comments are not code, and a type-only import is erased.
-      const code = source
-        .replace(/\/\*[\s\S]*?\*\//gu, '')
-        .replace(/(^|[^:'"`\\])\/\/.*$/gmu, '$1');
-      for (const match of code.matchAll(
-        /\b(import\s+type\b[^;]*?\bfrom|export\s+type\b[^;]*?\bfrom|from|import)\s+['"]([^'"]+)['"]|\brequire\(\s*['"]([^'"]+)['"]\s*\)/gu,
-      )) {
-        if (match[1] && /\btype\b/u.test(match[1])) continue;
-        const spec = match[2] ?? match[3];
-        if (SERVER_ONLY_IMPORTS.test(spec) || builtins.has(spec)) {
-          blocked.push(`imports '${spec}'`);
-        }
-      }
-      // Bundlers replace process.env.NODE_ENV; any other key is the server's.
-      if (/\bprocess\.env\b(?!\.NODE_ENV\b)/u.test(code)) {
-        blocked.push('reads process.env');
-      }
-      if (/^\s*['"]use server['"]/mu.test(code)) {
-        blocked.push("is a 'use server' module");
-      }
+      const blocked = serverUses(source, builtins);
       if (blocked.length > 0) {
         notes.push({
           code: 'showcase_not_standalone',

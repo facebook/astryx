@@ -160,6 +160,11 @@ describe('template_category', () => {
 describe('showcase_not_standalone', () => {
   it('lists a showcase that imports server-only code or reads process.env, and allows live data', async () => {
     write({
+      'package.json': JSON.stringify({
+        name: '@acme/kit',
+        version: '1.0.0',
+        dependencies: {buffer: '^6.0.0'},
+      }),
       'templates/card.doc.mjs': blockDoc(
         'card',
         ", exampleFor: 'AcmeCard', isShowcase: true",
@@ -177,6 +182,20 @@ describe('showcase_not_standalone', () => {
         'live',
         ", exampleFor: 'AcmeCard', isShowcase: true",
       ),
+      'templates/text.doc.mjs': blockDoc(
+        'text',
+        ", exampleFor: 'AcmeCard', isShowcase: true",
+      ),
+      // Sample code in strings and JSX text, and the npm buffer package.
+      'templates/text.tsx': [
+        "import {Buffer} from 'buffer';",
+        "const sample = `import fs from 'node:fs'; process.env.SECRET`;",
+        'const quoted = \'require("next/headers")\';',
+        'export default function Text() {',
+        '  return <p>Set process.env.API_KEY on the server.</p>;',
+        '}',
+        '',
+      ].join('\n'),
       'templates/live.tsx': [
         "import type {Headers} from 'next/headers';",
         "// import fs from 'node:fs';",
@@ -237,6 +256,7 @@ describe('template_asset_not_packed', () => {
     [['templates/**/*', 'astryx.integration.mjs']],
     [['templates', '*.png']],
     [['./assets/', 'templates/']],
+    [['/assets', '/templates']],
   ])('counts what npm packs under %j', async files => {
     write({
       'package.json': JSON.stringify({
