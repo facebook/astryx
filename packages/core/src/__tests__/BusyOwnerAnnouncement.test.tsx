@@ -8,7 +8,13 @@
  *   owning control announces each busy start once through the shared channel
  */
 
-import {StrictMode, useEffect, useRef, type ReactElement} from 'react';
+import {
+  StrictMode,
+  useEffect,
+  useRef,
+  useState,
+  type ReactElement,
+} from 'react';
 import {
   afterAll,
   afterEach,
@@ -617,6 +623,72 @@ describe('FileInput busy start from a pick or a clear (spec:AST-086 FR6, FR8)', 
       'true',
     );
     expect(announce).toHaveBeenCalledWith('1 file selected: report.pdf');
+    expect(busyAnnouncements()).toEqual([]);
+  });
+
+  it('keeps a pick whose onChange starts an upload (isLoading) to its one "selected" message', async () => {
+    function Uploader() {
+      const [value, setValue] = useState<File | null>(null);
+      const [isLoading, setIsLoading] = useState(false);
+      return (
+        <FileInput
+          label="Attachment"
+          value={value}
+          isLoading={isLoading}
+          onChange={next => {
+            setValue(next as File | null);
+            setIsLoading(true);
+          }}
+        />
+      );
+    }
+    const {container} = render(strict(<Uploader />));
+    act(() => {
+      fireEvent.change(
+        container.querySelector('input[type="file"]') as HTMLInputElement,
+        {target: {files: [file]}},
+      );
+    });
+    await nextFrame();
+    await nextFrame();
+    expect(announce).toHaveBeenCalledWith('1 file selected: report.pdf');
+    expect(busyAnnouncements()).toEqual([]);
+  });
+
+  it('announces nothing more when an earlier pick settles while a later one is still pending', async () => {
+    const settles: (() => void)[] = [];
+    const {container} = render(
+      strict(
+        <FileInput
+          label="Attachment"
+          value={null}
+          onChange={() => {}}
+          changeAction={async () =>
+            new Promise<void>(resolve => {
+              settles.push(resolve);
+            })
+          }
+        />,
+      ),
+    );
+    const input = container.querySelector(
+      'input[type="file"]',
+    ) as HTMLInputElement;
+    act(() => {
+      fireEvent.change(input, {target: {files: [file]}});
+    });
+    await nextFrame();
+    act(() => {
+      fireEvent.change(input, {
+        target: {files: [new File(['y'], 'notes.txt', {type: 'text/plain'})]},
+      });
+    });
+    await nextFrame();
+    await act(async () => {
+      settles[0]();
+    });
+    await nextFrame();
+    await nextFrame();
     expect(busyAnnouncements()).toEqual([]);
   });
 

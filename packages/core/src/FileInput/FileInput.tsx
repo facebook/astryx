@@ -491,10 +491,15 @@ export function FileInput({
   const [, startTransition] = useTransition();
   const [optimisticValue, setOptimisticValue] = useOptimistic(value);
   const isBusy = isLoading || optimisticValue !== value;
-  // A pick that runs changeAction is one user action, already announced as
-  // "file selected"; its busy start does not add a second message (spec:AST-086
-  // FR6). Other busy starts announce, and the Spinner stays decorative (FR8).
+  // A pick is one user action, already announced as "file selected"; a busy
+  // period it starts (changeAction, or a caller setting isLoading from
+  // onChange) adds no second message (spec:AST-086 FR6). The mark lasts until
+  // the field is idle again. Other busy starts announce; the Spinner stays
+  // decorative (FR8).
   const [isPickAnnounced, setIsPickAnnounced] = useState(false);
+  if (isPickAnnounced && !isBusy) {
+    setIsPickAnnounced(false);
+  }
   useBusyAnnouncement(
     isBusy && !isPickAnnounced,
     t('@astryx.spinner.loading'),
@@ -590,6 +595,7 @@ export function FileInput({
       // status mounts, so only announce the attach here (do not
       // double-announce errors).
       if (errors.length === 0) {
+        setIsPickAnnounced(true);
         announce(
           valid.length === 1
             ? t('@astryx.fileInput.fileSelected', {fileName: valid[0].name})
@@ -598,14 +604,9 @@ export function FileInput({
       }
 
       if (changeAction) {
-        setIsPickAnnounced(errors.length === 0);
         startTransition(async () => {
           setOptimisticValue(result);
-          try {
-            await changeAction(result);
-          } finally {
-            setIsPickAnnounced(false);
-          }
+          await changeAction(result);
         });
       }
     },
