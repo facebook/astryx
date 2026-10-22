@@ -41,10 +41,53 @@ import {
   wordForms,
   sameWord,
   startsAWordOf,
+  wordsOf,
   joined,
   isTypo,
 } from './_words.mjs';
 import {pluralOf} from './_query.mjs';
+
+/**
+ * Whether a multi-word term spells out a name word by word: as many words as
+ * the name, each starting with the name's word in order, and every word the
+ * term spells longer than the name ("vertical" for V) named in the entry's own
+ * description. `vertical stack` spells out VStack when its description says
+ * "vertical"; `visual stack` does not.
+ * @param {string} term
+ * @param {string} name
+ * @param {string} description
+ */
+function spellsOut(term, name, description) {
+  const words = term.split(/\s+/).filter(Boolean);
+  const parts = wordsOf(name);
+  if (words.length < 2 || words.length !== parts.length) return false;
+  const described = wordsOf(description);
+  let expanded = false;
+  for (let i = 0; i < words.length; i++) {
+    const w = words[i];
+    const p = parts[i];
+    if (sameWord(w, p)) continue;
+    if (!w.startsWith(p)) return false;
+    if (!described.some(d => sameWord(d, w))) return false;
+    expanded = true;
+  }
+  return expanded;
+}
+
+/**
+ * Whether a one-word term is a name's last word and every word before it is a
+ * single letter: Stack in VStack and HStack.
+ * @param {string} term
+ * @param {string} name
+ */
+function headOfLetters(term, name) {
+  const parts = wordsOf(name);
+  return (
+    parts.length >= 2 &&
+    sameWord(term, parts[parts.length - 1]) &&
+    parts.slice(0, -1).every(p => p.length === 1)
+  );
+}
 
 /**
  * Score a single candidate against the search term across name, keywords,
@@ -128,6 +171,14 @@ export function scoreCandidate(
       // Most of the name typed as words, cut short: `complex select` is
       // ComplexSelector, ahead of a one-word keyword elsewhere.
       consider(95, `name "${candidateName}" spelled`, 'partial');
+    } else if (
+      domain !== 'doc' &&
+      spellsOut(term, candidateName, description)
+    ) {
+      // The name's short words spelled out, in order, as the entry's own
+      // description spells them: `vertical stack` is VStack ("Vertical stack
+      // for arranging items top-to-bottom").
+      consider(95, `name "${candidateName}" spelled out`);
     } else if (pluralOf(nameLower, term) || pluralOf(term, nameLower)) {
       // One point under the exact spelling, so the doc named `tokens` still
       // outranks the Token component for `tokens`.
@@ -135,7 +186,11 @@ export function scoreCandidate(
     } else {
       if (sameWord(term, nameLower)) consider(95, `name "${candidateName}"`);
       // The term is a word of the name, or starts one: "input" in TextInput.
-      else if (startsAWordOf(term, candidateName)) {
+      else if (domain !== 'doc' && headOfLetters(term, candidateName)) {
+        // The term is the name's head word after single letters (Stack in
+        // VStack, HStack): a variant named by its head, as a keyword is.
+        consider(90, `name "${candidateName}" ends in "${term}"`);
+      } else if (startsAWordOf(term, candidateName)) {
         consider(60, `name contains "${term}"`);
       }
       if (fuzzy) {
