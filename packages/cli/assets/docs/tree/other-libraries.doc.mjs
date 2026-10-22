@@ -15,7 +15,11 @@ export const docs = {
   category: 'guide',
   description:
     'Panda, Chakra, MUI, Emotion, styled-components, Theme UI, UnoCSS, and the interop checklist.',
-  keywords: ['UnoCSS', 'semantic tokens', 'palette'],
+  keywords: [
+    'UnoCSS',
+    'semantic tokens',
+    'palette',
+  ],
 
   sections: [
     {

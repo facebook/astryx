@@ -101,8 +101,7 @@ export const doc = {
             {
               name: 'packages[].latest',
               type: 'string | null',
-              description:
-                'The latest release. Null when there are only prereleases.',
+              description: 'The latest release. Null when there are only prereleases.',
               required: true,
             },
             {
@@ -116,7 +115,7 @@ export const doc = {
               name: 'packages[].contributions',
               type: 'DiscoverContribution[]',
               description:
-                'What the requested (else latest) version adds: `{kind, name, title?, summary?, keywords?}`, where kind is `component`, `template`, `doc`, `theme`, `codemod`, or `agent-doc` (a DiscoverKind) and name is the name the CLI uses for it.',
+                "What the requested (else latest) version adds: `{kind, name, title?, summary?, keywords?}`, where kind is `component`, `template`, `doc`, `theme`, `codemod`, or `agent-doc` (a DiscoverKind) and name is the name the CLI uses for it.",
               required: true,
             },
           ],
@@ -139,7 +138,7 @@ export const doc = {
   notes: [
     {
       type: 'prose',
-      text: 'In global mode: the discover source of an integration installed for the computer is called in folders outside any project; inside a project, only the sources of integrations the project installs are. See {@link namespace:global} and {@link generic:global-integrations}.',
+      text: "In global mode: the discover source of an integration installed for the computer is called in folders outside any project; inside a project, only the sources of integrations the project installs are. See {@link namespace:global} and {@link generic:global-integrations}.",
     },
   ],
 };

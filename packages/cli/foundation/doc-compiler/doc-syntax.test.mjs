@@ -129,6 +129,17 @@ describe('renderPmStep', () => {
   });
 });
 
+describe('a token whose body holds braces or quotes', () => {
+  it('renders and is found by doctor', () => {
+    const text =
+      'Run {@pm-only npm "edits package.json" pkg set \'exports={}\' --json} first.';
+    expect(renderCommandTokens(text, {stem: 'astryx', pm: 'pnpm'})).toBe(
+      "Run `npm pkg set 'exports={}' --json` first. (only with npm: edits package.json)",
+    );
+    expect(commandTokensIn(text).map(each => each.name)).toEqual(['pm-only']);
+  });
+});
+
 describe('parseCommandToken', () => {
   it('names what is wrong and how to write it', () => {
     expect(parseCommandToken('pm', 'install -D x')).toMatchObject({
