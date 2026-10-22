@@ -7,15 +7,15 @@
  * An integration published against a newer CLI declares
  * `"@astryxdesign/cli": ">=X.Y.Z"` in peerDependencies. When the running CLI
  * does not satisfy that range, the integration's newer contributions may not
- * load correctly. This module detects that mismatch and returns a warning —
- * never an error, and never a changed exit code — naming the package, the
- * required range, the running version, and the upgrade command.
+ * load correctly. This module detects that mismatch and says why, naming the
+ * package, the range, the running version, and what to do.
  *
  * @input A loaded integration (with __packageDir) and the running CLI version.
- * @output A warning issue when the CLI is outside the peer range, or null.
- *   Doctor's integration checks and the everyday-command nudge both read it
- *   through validateLoadedIntegration.
- * @position foundation/integrations — read by validate-contributions.
+ * @output The message, or null when the CLI is inside the range.
+ * @position foundation/integrations — read by validate-contributions, which
+ *   reports it as a listed `cli_peer_version` finding: a note in
+ *   `doctor integration validate` and `integration check`, never a warning,
+ *   so it fails nothing (architecture:cli-surface INV35).
  */
 
 import * as fs from 'node:fs';
@@ -54,10 +54,9 @@ export function cliVersion() {
 }
 
 /**
- * Check whether the running CLI satisfies an integration's declared
- * `@astryxdesign/cli` peer range. Returns a warning-severity issue when it
- * does not, or null when it does (or when no peer is declared or the
- * package.json cannot be read).
+ * Why the running CLI is outside an integration's declared
+ * `@astryxdesign/cli` peer range, or null when it is inside it (or when no
+ * peer is declared or the package.json cannot be read).
  *
  * A CLI below the range is told to upgrade, with the project's own install
  * command. A CLI above it (the range has an upper bound, such as `^0.6.0`) is
@@ -69,9 +68,9 @@ export function cliVersion() {
  *   own package.json version
  * @param {string} [cwd] where the install command would run; decides the
  *   package manager it names
- * @returns {import('./issue').AstryxIntegrationIssue | null}
+ * @returns {string | null}
  */
-export function checkCliPeerVersion(integration, version, cwd = process.cwd()) {
+export function cliPeerVersionProblem(integration, version, cwd = process.cwd()) {
   const ver = version ?? cliVersion();
   if (!integration.__packageDir) return null;
 
@@ -92,21 +91,15 @@ export function checkCliPeerVersion(integration, version, cwd = process.cwd()) {
   const lowest = lowestAdmitted(range);
   if (lowest != null && semverCompare(ver, lowest) < 0) {
     const verb = ADD_VERB[detectPackageManager(cwd)] ?? ADD_VERB.npm;
-    return {
-      code: 'cli_peer_version',
-      severity: 'warning',
-      message:
-        `${name} needs ${CLI_PACKAGE} ${range}, but this CLI is ${ver}, so ` +
-        `some of what it ships may not load. Upgrade the CLI: ` +
-        `\`${verb} ${CLI_PACKAGE}@latest\`.`,
-    };
+    return (
+      `${name} needs ${CLI_PACKAGE} ${range}, but this CLI is ${ver}, so ` +
+      `some of what it ships may not load. Upgrade the CLI: ` +
+      `\`${verb} ${CLI_PACKAGE}@latest\`.`
+    );
   }
-  return {
-    code: 'cli_peer_version',
-    severity: 'warning',
-    message:
-      `${name} supports ${CLI_PACKAGE} ${range}, but this CLI is ${ver}, ` +
-      `outside that range, so some of what it ships may not work as its ` +
-      `author tested. Look for a release of ${name} that supports ${ver}.`,
-  };
+  return (
+    `${name} supports ${CLI_PACKAGE} ${range}, but this CLI is ${ver}, ` +
+    `outside that range, so some of what it ships may not work as its ` +
+    `author tested. Look for a release of ${name} that supports ${ver}.`
+  );
 }

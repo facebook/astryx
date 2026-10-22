@@ -122,7 +122,7 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: "In an app whose CLI is outside that range, `doctor` and `doctor integration validate` warn with `cli_peer_version`, and everyday commands print one line naming your package. The exit code does not change. Below the range the warning names the app's install command for a newer CLI; above it, it asks for a release of your package that supports that CLI.",
+          text: "When the CLI is outside that range, `doctor integration validate` and `integration check` list a `cli_peer_version` note naming your package. A note fails nothing, `--strict` included, and the exit code does not change. Below the range the note names the install command for a newer CLI; above it, it asks for a release of your package that supports that CLI.",
         },
       ],
     },

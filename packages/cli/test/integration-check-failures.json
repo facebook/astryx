@@ -16,7 +16,6 @@
     "ambiguous_component_replacement",
     "ambiguous_template_replacement",
     "block_components_skipped",
-    "cli_peer_version",
     "codemod_outside_version",
     "component_name_conflict",
     "copied_passage",

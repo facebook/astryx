@@ -8,7 +8,7 @@ import {describe, it, expect, beforeAll, afterAll} from 'vitest';
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
-import {checkCliPeerVersion, cliVersion} from './cli-peer-version.mjs';
+import {cliPeerVersionProblem, cliVersion} from './cli-peer-version.mjs';
 import {runCli} from '../../test-utils/run-cli.mjs';
 
 /** @type {string} */
@@ -33,13 +33,13 @@ function makeIntegration(name, pkgJson) {
   return {name, version: String(pkgJson.version ?? '1.0.0'), __packageDir: dir};
 }
 
-describe('checkCliPeerVersion', () => {
+describe('cliPeerVersionProblem', () => {
   it('returns null when no @astryxdesign/cli peer is declared', () => {
     const integration = makeIntegration('@test/no-peer', {
       name: '@test/no-peer',
       version: '1.0.0',
     });
-    expect(checkCliPeerVersion(integration, '0.6.5', tmpDir)).toBeNull();
+    expect(cliPeerVersionProblem(integration, '0.6.5', tmpDir)).toBeNull();
   });
 
   it('returns null when the CLI satisfies the peer range', () => {
@@ -48,7 +48,7 @@ describe('checkCliPeerVersion', () => {
       version: '1.0.0',
       peerDependencies: {'@astryxdesign/cli': '>=0.6.0'},
     });
-    expect(checkCliPeerVersion(integration, '0.6.5', tmpDir)).toBeNull();
+    expect(cliPeerVersionProblem(integration, '0.6.5', tmpDir)).toBeNull();
   });
 
   it('warns when the CLI is below the peer range', () => {
@@ -60,14 +60,9 @@ describe('checkCliPeerVersion', () => {
     const project = path.join(tmpDir, 'npm-project');
     fs.mkdirSync(project, {recursive: true});
     fs.writeFileSync(path.join(project, 'package-lock.json'), '{}\n');
-    const result = checkCliPeerVersion(integration, '0.6.5', project);
-    expect(result).not.toBeNull();
-    expect(result.severity).toBe('warning');
-    expect(result.code).toBe('cli_peer_version');
-    expect(result.message).toContain('@test/needs-newer');
-    expect(result.message).toContain('>=0.8.0');
-    expect(result.message).toContain('0.6.5');
-    expect(result.message).toContain('`npm install @astryxdesign/cli@latest`');
+    expect(cliPeerVersionProblem(integration, '0.6.5', project)).toBe(
+      '@test/needs-newer needs @astryxdesign/cli >=0.8.0, but this CLI is 0.6.5, so some of what it ships may not load. Upgrade the CLI: `npm install @astryxdesign/cli@latest`.',
+    );
   });
 
   it("names the project's own package manager in the upgrade command", () => {
@@ -79,8 +74,9 @@ describe('checkCliPeerVersion', () => {
       version: '1.0.0',
       peerDependencies: {'@astryxdesign/cli': '>=0.8.0'},
     });
-    const result = checkCliPeerVersion(integration, '0.6.5', project);
-    expect(result?.message).toContain('`pnpm add @astryxdesign/cli@latest`');
+    expect(cliPeerVersionProblem(integration, '0.6.5', project)).toContain(
+      '`pnpm add @astryxdesign/cli@latest`',
+    );
   });
 
   it('does not ask for an upgrade when the CLI is newer than the range', () => {
@@ -89,10 +85,7 @@ describe('checkCliPeerVersion', () => {
       version: '1.0.0',
       peerDependencies: {'@astryxdesign/cli': '^0.6.0'},
     });
-    const result = checkCliPeerVersion(integration, '0.7.3', tmpDir);
-    expect(result?.code).toBe('cli_peer_version');
-    expect(result?.severity).toBe('warning');
-    expect(result?.message).toBe(
+    expect(cliPeerVersionProblem(integration, '0.7.3', tmpDir)).toBe(
       '@test/older supports @astryxdesign/cli ^0.6.0, but this CLI is 0.7.3, outside that range, so some of what it ships may not work as its author tested. Look for a release of @test/older that supports 0.7.3.',
     );
   });
@@ -103,9 +96,9 @@ describe('checkCliPeerVersion', () => {
       version: '1.0.0',
       peerDependencies: {'@astryxdesign/cli': '^1.0.0'},
     });
-    const result = checkCliPeerVersion(integration, '0.6.5', tmpDir);
-    expect(result).not.toBeNull();
-    expect(result.message).toContain('^1.0.0');
+    expect(cliPeerVersionProblem(integration, '0.6.5', tmpDir)).toContain(
+      '^1.0.0',
+    );
   });
 
   it('returns null for a caret range the CLI satisfies', () => {
@@ -114,7 +107,7 @@ describe('checkCliPeerVersion', () => {
       version: '1.0.0',
       peerDependencies: {'@astryxdesign/cli': '^0.6.0'},
     });
-    expect(checkCliPeerVersion(integration, '0.6.5', tmpDir)).toBeNull();
+    expect(cliPeerVersionProblem(integration, '0.6.5', tmpDir)).toBeNull();
   });
 
   it('warns for an optional peer the CLI does not satisfy', () => {
@@ -127,9 +120,7 @@ describe('checkCliPeerVersion', () => {
       peerDependencies: {'@astryxdesign/cli': '>=0.9.0'},
       peerDependenciesMeta: {'@astryxdesign/cli': {optional: true}},
     });
-    const result = checkCliPeerVersion(integration, '0.6.5', tmpDir);
-    expect(result).not.toBeNull();
-    expect(result.severity).toBe('warning');
+    expect(cliPeerVersionProblem(integration, '0.6.5', tmpDir)).not.toBeNull();
   });
 
   it('handles a prerelease CLI version gracefully', () => {
@@ -139,15 +130,16 @@ describe('checkCliPeerVersion', () => {
       peerDependencies: {'@astryxdesign/cli': '>=0.7.0'},
     });
     // A canary like 0.7.0-canary.abc123 should satisfy >=0.7.0
-    expect(checkCliPeerVersion(integration, '0.7.0-canary.abc123', tmpDir)).toBeNull();
+    expect(cliPeerVersionProblem(integration, '0.7.0-canary.abc123', tmpDir)).toBeNull();
     // A canary below the floor should warn
-    const result = checkCliPeerVersion(integration, '0.6.5-canary.xyz', tmpDir);
-    expect(result).not.toBeNull();
+    expect(
+      cliPeerVersionProblem(integration, '0.6.5-canary.xyz', tmpDir),
+    ).not.toBeNull();
   });
 
   it('returns null when __packageDir is missing', () => {
     const integration = {name: '@test/no-dir', version: '1.0.0'};
-    expect(checkCliPeerVersion(integration, '0.6.5', tmpDir)).toBeNull();
+    expect(cliPeerVersionProblem(integration, '0.6.5', tmpDir)).toBeNull();
   });
 
   it('returns null when package.json cannot be read', () => {
@@ -156,7 +148,7 @@ describe('checkCliPeerVersion', () => {
       version: '1.0.0',
       __packageDir: path.join(tmpDir, 'nonexistent'),
     };
-    expect(checkCliPeerVersion(integration, '0.6.5', tmpDir)).toBeNull();
+    expect(cliPeerVersionProblem(integration, '0.6.5', tmpDir)).toBeNull();
   });
 });
 
@@ -167,9 +159,27 @@ describe('cliVersion', () => {
   });
 });
 
-describe('in a project', () => {
+describe('as a note that fails nothing', () => {
   /**
-   * A project that installs @acme/widgets with the given CLI peer range.
+   * An integration package at `dir` whose CLI peer range is `range`.
+   * @param {string} dir
+   * @param {string} range
+   */
+  function writeIntegration(dir, range) {
+    fs.mkdirSync(dir, {recursive: true});
+    fs.writeFileSync(
+      path.join(dir, 'package.json'),
+      JSON.stringify({
+        name: '@acme/widgets',
+        version: '1.0.0',
+        peerDependencies: {'@astryxdesign/cli': range},
+      }),
+    );
+    fs.writeFileSync(path.join(dir, 'astryx.integration.mjs'), 'export default {};\n');
+  }
+
+  /**
+   * A project with a lockfile that installs @acme/widgets.
    * @param {string} range
    */
   function project(range) {
@@ -183,46 +193,54 @@ describe('in a project', () => {
       }),
     );
     fs.writeFileSync(path.join(root, 'package-lock.json'), '{}\n');
-    const pkg = path.join(root, 'node_modules', '@acme', 'widgets');
-    fs.mkdirSync(pkg, {recursive: true});
-    fs.writeFileSync(
-      path.join(pkg, 'package.json'),
-      JSON.stringify({
-        name: '@acme/widgets',
-        version: '1.0.0',
-        peerDependencies: {'@astryxdesign/cli': range},
-      }),
-    );
-    fs.writeFileSync(path.join(pkg, 'astryx.integration.mjs'), 'export default {};\n');
+    writeIntegration(path.join(root, 'node_modules', '@acme', 'widgets'), range);
     return root;
   }
 
-  /** @param {string} cwd */
-  async function validate(cwd) {
+  const below = () =>
+    `@acme/widgets needs @astryxdesign/cli >=99.0.0, but this CLI is ${cliVersion()}, so some of what it ships may not load. Upgrade the CLI: \`npm install @astryxdesign/cli@latest\`.`;
+
+  it('doctor integration validate lists it in data.notes, never in data.issues, and exits 0', async () => {
+    const cwd = project('>=99.0.0');
     const {status, stdout} = await runCli(
       ['doctor', 'integration', 'validate', '@acme/widgets', '--json'],
       {cwd},
     );
-    return {status, issues: JSON.parse(stdout).data.issues};
-  }
-
-  it('doctor integration validate warns, and still exits 0, when the CLI is below the range', async () => {
-    const {status, issues} = await validate(project('>=99.0.0'));
+    const {data} = JSON.parse(stdout);
     expect(status).toBe(0);
-    expect(issues).toContainEqual(
-      expect.objectContaining({
-        code: 'cli_peer_version',
-        severity: 'warning',
-        message: `@acme/widgets needs @astryxdesign/cli >=99.0.0, but this CLI is ${cliVersion()}, so some of what it ships may not load. Upgrade the CLI: \`npm install @astryxdesign/cli@latest\`.`,
-      }),
+    expect(data.notes).toContainEqual({code: 'cli_peer_version', message: below()});
+    expect(data.issues.map((/** @type {{code: string}} */ i) => i.code)).not.toContain(
+      'cli_peer_version',
     );
   });
 
-  it('says nothing when the CLI is in the range', async () => {
-    const {status, issues} = await validate(project(`>=${cliVersion()}`));
-    expect(status).toBe(0);
-    expect(issues.map((/** @type {{code: string}} */ i) => i.code)).not.toContain(
+  it('integration check --strict carries the note and still exits 0', async () => {
+    const pkg = fs.mkdtempSync(path.join(tmpDir, 'package-'));
+    writeIntegration(pkg, '>=99.0.0');
+    fs.writeFileSync(path.join(pkg, 'package-lock.json'), '{}\n');
+    const {status, stdout} = await runCli(
+      ['--json', 'integration', 'check', '--strict'],
+      {cwd: pkg},
+    );
+    const envelope = JSON.parse(stdout);
+    const validate = envelope.data.checks[0].response.data;
+    expect(validate.notes).toContainEqual({code: 'cli_peer_version', message: below()});
+    expect(validate.issues.map((/** @type {{code: string}} */ i) => i.code)).not.toContain(
       'cli_peer_version',
     );
+    expect(envelope.data.failed).toBe(false);
+    expect(status).toBe(0);
+  });
+
+  it('says nothing when the CLI is in the range', async () => {
+    const cwd = project(`>=${cliVersion()}`);
+    const {stdout} = await runCli(
+      ['doctor', 'integration', 'validate', '@acme/widgets', '--json'],
+      {cwd},
+    );
+    const {data} = JSON.parse(stdout);
+    expect(
+      (data.notes ?? []).map((/** @type {{code: string}} */ n) => n.code),
+    ).not.toContain('cli_peer_version');
   });
 });
