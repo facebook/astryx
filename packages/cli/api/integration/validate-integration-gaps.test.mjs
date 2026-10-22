@@ -28,6 +28,7 @@ import {
   summarizeCheck,
 } from './check/check.mjs';
 import {componentDocNamesCheck} from '../../foundation/integrations/validate-contributions.mjs';
+import {formatCliCommand} from '../../foundation/env/package-manager.mjs';
 
 let tmpDir;
 let copies = 0;
@@ -1023,6 +1024,219 @@ describe('component doc files', () => {
     });
     expect(await issuesOf(fixed)).toEqual([]);
   });
+
+  it('names a .jsx source beside a component doc and says to rename it', async () => {
+    const dir = writePackage({
+      [MANIFEST]: manifest({components: './components'}),
+      'components/AcmeWidget.doc.mjs': componentDoc('AcmeWidget'),
+      'components/AcmeWidget.jsx': componentSource('AcmeWidget'),
+    });
+
+    const message = only(await issuesOf(dir), 'invalid_component');
+    expect(message).toBe(
+      'Component "AcmeWidget" is missing its same-stem source file AcmeWidget.tsx: found AcmeWidget.jsx, but a component source must be a .tsx file. Fix: rename AcmeWidget.jsx to AcmeWidget.tsx (and point its package export at the new file).',
+    );
+
+    const fixed = follow(dir, {
+      move: [['components/AcmeWidget.jsx', 'components/AcmeWidget.tsx']],
+    });
+    expect(await issuesOf(fixed)).toEqual([]);
+  });
+
+  it('says what an empty doc and a doc with no default export are missing', async () => {
+    const dir = writePackage({
+      [MANIFEST]: manifest({components: './components'}),
+      'components/Empty.doc.mjs': '',
+      'components/Empty.tsx': componentSource('Empty'),
+      'components/Named.doc.mjs': componentDoc('Named').replace(
+        'export default',
+        'export const doc =',
+      ),
+      'components/Named.tsx': componentSource('Named'),
+    });
+
+    const messages = (await issuesOf(dir)).map(issue => issue.message);
+    const fix =
+      'Fix: export the doc object as the default export: `export default {type: ..., name: ..., ...}`.';
+    expect(messages).toEqual([
+      `Component "Empty" has invalid metadata: ${path.join(dir, 'components', 'Empty.doc.mjs')} is empty, so it documents nothing. ${fix}`,
+      `Component "Named" has invalid metadata: ${path.join(dir, 'components', 'Named.doc.mjs')} has no default export or \`docs\` export (it exports \`doc\`), so it documents nothing. ${fix}`,
+    ]);
+    expect(messages.join('\n')).not.toContain('Invalid input');
+  });
+});
+
+describe('template and theme pairing', () => {
+  it('gives a template doc with no source a fix', async () => {
+    const dir = writePackage({
+      [MANIFEST]: manifest({templates: './templates'}),
+      'templates/account-card.doc.mjs': templateDoc('Account card'),
+    });
+
+    const message = only(await issuesOf(dir), 'invalid_template');
+    expect(message).toBe(
+      'Template "account-card" is missing its same-stem source file account-card.tsx. Fix: add account-card.tsx beside account-card.doc.mjs, with the template as its default export.',
+    );
+    const fixed = follow(dir, {
+      write: {'templates/account-card.tsx': templateSource},
+    });
+    expect(await issuesOf(fixed)).toEqual([]);
+  });
+
+  const themeDoc = `${THEME_TYPE}export default {type: 'theme', name: 'ocean', displayName: 'Ocean', description: 'A theme.', maintained: true};\n`;
+  const themeSource =
+    "import {defineTheme} from '@astryxdesign/core/theme';\nexport const oceanTheme = defineTheme({name: 'ocean'});\n";
+
+  it('gives a theme descriptor with no source a fix', async () => {
+    const dir = writePackage({
+      [MANIFEST]: manifest({themes: './themes'}),
+      'themes/ocean/oceanTheme.doc.mjs': themeDoc,
+    });
+
+    expect(only(await issuesOf(dir), 'invalid_theme')).toBe(
+      'Theme "ocean" for @acme/kit must contain exactly one same-stem source for oceanTheme.doc.mjs; found 0. Fix: add oceanTheme.ts beside oceanTheme.doc.mjs, exporting `oceanTheme` from defineTheme.',
+    );
+  });
+
+  it('gives a theme source with no descriptor a fix', async () => {
+    const dir = writePackage({
+      [MANIFEST]: manifest({themes: './themes'}),
+      'themes/ocean/oceanTheme.ts': themeSource,
+    });
+
+    const message = only(await issuesOf(dir), 'invalid_theme');
+    expect(message).toBe(
+      `Theme "ocean" for @acme/kit must contain exactly one same-stem .doc.mjs descriptor; found 0 beside "oceanTheme.ts". Fix: add oceanTheme.doc.mjs beside it with type: 'theme' and name: 'ocean'; \`${formatCliCommand('docs authoring theme-doc', path.join(dir, 'themes', 'ocean'))}\` lists its fields.`,
+    );
+    const fixed = follow(dir, {
+      write: {'themes/ocean/oceanTheme.doc.mjs': themeDoc},
+    });
+    expect(
+      (await issuesOf(fixed)).filter(issue => issue.code === 'invalid_theme'),
+    ).toEqual([]);
+  });
+
+  it('says to rename a source named for its theme when the build writes beside it, and the rename clears it', async () => {
+    const brandDoc = `${THEME_TYPE}export default {type: 'theme', name: 'brand', displayName: 'Brand', description: 'A theme.', maintained: true};\n`;
+    const dir = writePackage({
+      [MANIFEST]: manifest({themes: './themes'}),
+      'themes/brand/brand.doc.mjs': brandDoc,
+      'themes/brand/brand.ts':
+        "import {defineTheme} from '@astryxdesign/core/theme';\nexport const brand = defineTheme({name: 'brand'});\n",
+      'themes/brand/brand.js':
+        "/**\n * @generated by `astryx theme build` — do not edit manually.\n */\nimport './brand.css';\nexport const brandTheme = {};\n",
+      'themes/brand/brand.css': '.astryx-theme-brand {}\n',
+    });
+
+    expect(only(await issuesOf(dir), 'invalid_theme')).toBe(
+      `Theme "brand" for @acme/kit must contain exactly one same-stem source for brand.doc.mjs; found 2: "brand.js", "brand.ts". Fix: "brand.js" is the module \`${formatCliCommand('theme build', path.join(dir, 'themes', 'brand'))}\` writes, which takes the theme's name; rename brand.ts to brandTheme.ts and brand.doc.mjs to brandTheme.doc.mjs, export \`brandTheme\` from it, and build again.`,
+    );
+
+    const fixed = follow(dir, {
+      remove: ['themes/brand/brand.ts', 'themes/brand/brand.doc.mjs'],
+      write: {
+        'themes/brand/brandTheme.ts':
+          "import {defineTheme} from '@astryxdesign/core/theme';\nexport const brandTheme = defineTheme({name: 'brand'});\n",
+        'themes/brand/brandTheme.doc.mjs': brandDoc,
+      },
+    });
+    expect(
+      (await issuesOf(fixed)).filter(issue => issue.code === 'invalid_theme'),
+    ).toEqual([]);
+  });
+
+  const builtOcean = (/** @type {string} */ extra) =>
+    `/**\n * @generated by \`astryx theme build\` — do not edit manually.\n${extra} */\nimport './ocean.css';\nexport const oceanTheme = {};\n`;
+
+  it("names the theme's source when its defineTheme gives the theme's name, for a descriptor named for the built module", async () => {
+    const dir = writePackage({
+      [MANIFEST]: manifest({themes: './themes'}),
+      'themes/ocean/ocean.doc.mjs': themeDoc,
+      'themes/ocean/oceanTheme.ts': themeSource,
+      'themes/ocean/ocean.js': builtOcean(''),
+      'themes/ocean/ocean.css': '.astryx-theme-ocean {}\n',
+    });
+
+    const message = only(await issuesOf(dir), 'invalid_theme');
+    expect(message).toContain(
+      'shares its stem with the built module "ocean.js", which does not export "ocean": a descriptor must share its stem with the source that calls defineTheme. The theme\'s source is "oceanTheme.ts". Fix: rename ocean.doc.mjs to oceanTheme.doc.mjs.',
+    );
+    const fixed = follow(dir, {
+      move: [['themes/ocean/ocean.doc.mjs', 'themes/ocean/oceanTheme.doc.mjs']],
+    });
+    expect(
+      (await issuesOf(fixed)).filter(issue => issue.code === 'invalid_theme'),
+    ).toEqual([]);
+  });
+
+  it("names the source the built module's Source: line gives, over a <name>Theme helper", async () => {
+    const dir = writePackage({
+      [MANIFEST]: manifest({themes: './themes'}),
+      'themes/ocean/ocean.doc.mjs': themeDoc,
+      'themes/ocean/seaTheme.ts': themeSource.replace('oceanTheme', 'seaTheme'),
+      'themes/ocean/baseTheme.ts':
+        "import {defineTheme} from '@astryxdesign/core/theme';\nexport const baseTheme = defineTheme({name: 'base'});\n",
+      'themes/ocean/ocean.js': builtOcean(
+        ' * Source: themes/ocean/seaTheme.ts\n',
+      ),
+      'themes/ocean/ocean.css': '.astryx-theme-ocean {}\n',
+    });
+
+    expect(only(await issuesOf(dir), 'invalid_theme')).toContain(
+      'The theme\'s source is "seaTheme.ts". Fix: rename ocean.doc.mjs to seaTheme.doc.mjs.',
+    );
+  });
+
+  it('never names a lone <name>Theme helper as the source: the message stays generic', async () => {
+    const dir = writePackage({
+      [MANIFEST]: manifest({themes: './themes'}),
+      'themes/ocean/ocean.doc.mjs': themeDoc,
+      'themes/ocean/oceanTheme.ts':
+        "import {defineTheme} from '@astryxdesign/core/theme';\nexport const oceanTheme = defineTheme({name: 'base'});\n",
+      'themes/ocean/ocean.js': builtOcean(''),
+      'themes/ocean/ocean.css': '.astryx-theme-ocean {}\n',
+    });
+
+    const message = only(await issuesOf(dir), 'invalid_theme');
+    expect(message).toContain(
+      'shares its stem with the built module "ocean.js", which does not export "ocean": a descriptor must share its stem with the source that calls defineTheme. Fix: rename ocean.doc.mjs to share its stem with the theme\'s source (the module that calls defineTheme, such as oceanTheme.ts).',
+    );
+    expect(message).not.toContain("The theme's source is");
+  });
+
+  it('accepts a descriptor named for a built module that exports its stem, as 0.7.2 does', async () => {
+    const dir = writePackage({
+      [MANIFEST]: manifest({themes: './themes'}),
+      'themes/ocean/ocean.doc.mjs': themeDoc,
+      'themes/ocean/oceanTheme.ts': themeSource,
+      'themes/ocean/ocean.js': builtOcean('').replace(
+        'export const oceanTheme = {};',
+        'export const oceanTheme = {};\nexport const ocean = oceanTheme;',
+      ),
+      'themes/ocean/ocean.css': '.astryx-theme-ocean {}\n',
+    });
+
+    expect(
+      (await issuesOf(dir)).filter(issue => issue.code === 'invalid_theme'),
+    ).toEqual([]);
+  });
+});
+
+describe('a theme folder with a helper', () => {
+  it('reads a descriptor beside its own defineTheme source, with a <name>Theme helper beside them', async () => {
+    const dir = writePackage({
+      [MANIFEST]: manifest({themes: './themes'}),
+      'themes/brand/brand.doc.mjs': `${THEME_TYPE}export default {type: 'theme', name: 'brand', displayName: 'Brand', description: 'A theme.', maintained: true};\n`,
+      'themes/brand/brand.ts':
+        "import {defineTheme} from '@astryxdesign/core/theme';\nimport {baseTheme} from './baseTheme';\nexport const brand = defineTheme({name: 'brand', extends: baseTheme});\n",
+      'themes/brand/baseTheme.ts':
+        "import {defineTheme} from '@astryxdesign/core/theme';\nexport const baseTheme = defineTheme({name: 'base'});\n",
+    });
+
+    expect(
+      (await issuesOf(dir)).filter(issue => issue.code === 'invalid_theme'),
+    ).toEqual([]);
+  });
 });
 
 describe('a hidden doc beside a source whose name differs only in case', () => {
@@ -1401,6 +1615,84 @@ describe('package.json', () => {
     );
 
     expect(await allOf(dir)).toEqual([]);
+  });
+});
+
+describe('the manifest', () => {
+  it('asks about a key one letter from a known one before blaming the CLI version', async () => {
+    const dir = writePackage({
+      [MANIFEST]: manifest({component: './components'}),
+    });
+
+    const message = only(await issuesOf(dir), 'unknown_manifest_key');
+    expect(message).toBe(
+      'This CLI does not know the manifest key "component", so it is ignored. Did you mean `components`? Fix: rename "component" to "components" in astryx.integration.mjs. If it is a key from a newer Astryx CLI instead, upgrading @astryxdesign/cli picks it up.',
+    );
+  });
+
+  it('says to remove a near-miss key when the manifest already sets the key it suggests', async () => {
+    const dir = writePackage({
+      [MANIFEST]: manifest({components: './components', component: './x'}),
+      'components/AcmeWidget.doc.mjs': componentDoc('AcmeWidget'),
+      'components/AcmeWidget.tsx': componentSource('AcmeWidget'),
+    });
+
+    expect(only(await issuesOf(dir), 'unknown_manifest_key')).toBe(
+      'This CLI does not know the manifest key "component", so it is ignored. Did you mean `components`? Fix: remove "component" from astryx.integration.mjs; it already sets "components". If it is a key from a newer Astryx CLI instead, upgrading @astryxdesign/cli picks it up.',
+    );
+    const fixed = follow(dir, {
+      write: {[MANIFEST]: manifest({components: './components'})},
+    });
+    expect(await issuesOf(fixed)).toEqual([]);
+  });
+
+  it.each([
+    [
+      'alone, though the package name gives a provider ID',
+      {providerID: '@acme/kit', docs: './docs'},
+      'Fix: rename "providerID" to "providerId" in astryx.integration.mjs.',
+    ],
+    [
+      'beside the key it suggests',
+      {providerID: '@acme/kit', providerId: '@acme/kit', docs: './docs'},
+      'Fix: remove "providerID" from astryx.integration.mjs; it already sets "providerId".',
+    ],
+  ])(
+    'reads the keys the manifest declares: providerID %s',
+    async (_label, keys, fix) => {
+      const dir = writePackage({
+        [MANIFEST]: manifest(keys),
+        'docs/a.doc.mjs': topic('a'),
+      });
+
+      expect(only(await issuesOf(dir), 'unknown_manifest_key')).toContain(fix);
+    },
+  );
+
+  it('keeps the newer-CLI explanation for a key that is no near miss', async () => {
+    const dir = writePackage({[MANIFEST]: manifest({playgrounds: './x'})});
+
+    expect(only(await issuesOf(dir), 'unknown_manifest_key')).toContain(
+      'published against a newer Astryx CLI',
+    );
+  });
+
+  it('says a manifest has no default export, and what it exports', async () => {
+    const dir = writePackage({
+      [MANIFEST]: "export const integration = {docs: './docs'};\n",
+    });
+
+    expect(only(await issuesOf(dir), 'invalid_manifest')).toBe(
+      "Integration manifest (astryx.integration.mjs) has no default export (it exports `integration`). Fix: export the manifest object as the default export: `export default {components: './components'}`, naming the roots the package has.",
+    );
+  });
+
+  it('says a manifest is empty', async () => {
+    const dir = writePackage({[MANIFEST]: ''});
+
+    expect(only(await issuesOf(dir), 'invalid_manifest')).toMatch(
+      /^Integration manifest \(astryx\.integration\.mjs\) is empty\. Fix: /u,
+    );
   });
 });
 

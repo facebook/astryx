@@ -461,8 +461,22 @@ async function componentRead(name, options = {}) {
         return componentDetailBlocks(dirName, cwd, owner.package);
       }
       const loaded = await loadComponentDoc(owner.docPath, docOpts);
-      // A family member an integration lists under its own name reads as that
-      // member, the way a Core sub-component does below.
+      // A family member reads as that member, scoped the way the unscoped
+      // lookup scopes it: an integration member by its own entry, a Core
+      // sub-component (HStack in the Stack doc) by scopeSubComponent.
+      const sub =
+        scoped.kind === 'core'
+          ? scopeSubComponent(loaded, dirName, coreDir)
+          : null;
+      if (sub) {
+        if (props) {
+          return componentDetailProps(
+            {props: sub.matchingComponent.props},
+            owner.package,
+          );
+        }
+        return componentDetail(sub.scoped, owner, dirName, coreDir);
+      }
       const docs =
         scoped.kind === 'integration'
           ? scopeIntegrationMember(loaded, owner, dirName)

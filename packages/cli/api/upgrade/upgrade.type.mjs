@@ -45,7 +45,7 @@
  * @property {'missing' | 'stale' | 'current'} status
  * @property {string} installedVersion Installed core version the block should reflect.
  * @property {string[]} fromVersions Distinct stale block versions found (the "from" side of the refresh).
- * @property {string[]} files Files rewritten (apply) or that would be rewritten (dry-run).
+ * @property {string[]} files Files rewritten (apply) or that would be rewritten (dry-run), relative to the folder the command ran in.
  * @property {boolean} refreshed True only when a block was actually rewritten (apply mode).
  * @property {'refreshed' | 'would-refresh' | 'nudge-init' | 'error' | 'none'} action
  */
@@ -70,7 +70,9 @@
  */
 
 /**
- * Aggregate receipt for ShadCN-copied composition reconciliation.
+ * Aggregate receipt for ShadCN-copied composition reconciliation. File paths
+ * are relative to the scanned source directory, or, when the upgrade ran in a
+ * folder below the project root, to that folder.
  * @typedef {object} RegistryCompositionSummary
  * @property {boolean} applied
  * @property {boolean} ok False when conflicts, missing files, invalid receipts, or failures remain.
@@ -99,7 +101,7 @@
 /**
  * A required codemod change blocked by effective working-tree protection.
  * @typedef {object} ProtectedCodemodFile
- * @property {string} file Project-relative path.
+ * @property {string} file Path relative to the folder the command ran in.
  * @property {string[]} codemods Codemods that still require a change.
  * @property {string[]} reasons Protection categories (generated, vendored, ignored, and hard boundaries).
  * @property {string[]} declarations Effective declarations that protect the file.
@@ -132,11 +134,11 @@
  * @property {boolean} [data.complete] False when protected required changes remain.
  * @property {'ERR_CODEMOD_PROTECTED'} [data.errorCode] Stable incomplete-result code when complete is false.
  * @property {number} [data.filesChanged] Distinct files changed across core + integration codemods (apply mode). One file that four codemods each changed counts once.
- * @property {string[]} [data.modifiedFiles] Project-relative files changed or previewed.
+ * @property {string[]} [data.modifiedFiles] Files changed or previewed, relative to the folder the command ran in.
  * @property {ProtectedCodemodFile[]} [data.protectedFiles] Protected files that still require a codemod change after regeneration.
- * @property {Array<{file: string, location?: string, reason: string}>} [data.declinedCandidates] Candidates left unchanged because proof was insufficient.
+ * @property {Array<{file: string, location?: string, reason: string}>} [data.declinedCandidates] Candidates left unchanged because proof was insufficient. Each `file` is relative to the folder the command ran in.
  * @property {number} [data.transformsApplied] Total codemod changes. A code or config codemod counts once for each file it changed, so one file changed by four of them counts four times; a project codemod counts once, however many files it writes.
- * @property {Array<{file: string, codemod: string, error: string}>} [data.errors] Per-codemod errors, when any codemod failed.
+ * @property {Array<{file: string, codemod: string, error: string}>} [data.errors] Per-codemod errors, when any codemod failed. Each `file` is relative to the folder the command ran in.
  * @property {CliBehindCore} [data.cliBehindCore] Present only when the installed Core is newer than this CLI: codemods for the releases after `cliBehindCore.cliVersion` did not run.
  */
 
