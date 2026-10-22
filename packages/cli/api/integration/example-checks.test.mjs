@@ -545,7 +545,6 @@ describe('what npm packs decides', () => {
   it('reports an asset outside the package root, which npm never packs', async () => {
     write({
       'package.json': JSON.stringify({name: '@acme/kit', version: '1.0.0'}),
-      '../shared/logo.png': 'png',
       'templates/card.doc.mjs': blockDoc(
         'card',
         ", exampleFor: 'AcmeCard', isShowcase: true",
@@ -556,13 +555,11 @@ describe('what npm packs decides', () => {
         '',
       ].join('\n'),
     });
-    try {
-      const [note] = await notesOf(['template_asset_not_packed']);
-      expect(note.message).toContain('which is outside the package');
-      expect(note.message).not.toContain('to `files`');
-    } finally {
-      fs.rmSync(path.join(dir, '..', 'shared'), {recursive: true, force: true});
-    }
+    // Reported before the file is looked for, so none is written outside
+    // the temp folder.
+    const [note] = await notesOf(['template_asset_not_packed']);
+    expect(note.message).toContain('which is outside the package');
+    expect(note.message).not.toContain('to `files`');
   });
 
   it('accepts a folder URL when npm packs the files inside it', async () => {
