@@ -62,6 +62,7 @@ import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
 
 import {useMergedRefs} from '../hooks/useMergedRefs';
+import {useBusyAnnouncement} from '../hooks/useBusyAnnouncement';
 import {layerViewportInset} from '../Layer/layerViewportInset.stylex';
 import {clampInlineSize} from '../Layer/clampInlineSize';
 // =============================================================================
@@ -561,6 +562,14 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
   // A wrapper that owns the inline-end lane subscribes through context; see
   // busyIndicatorLane.tsx for why this is not a prop.
   const busyLane = useBusyIndicatorLane();
+  // Without a wrapper that took the indicator over, this input announces each
+  // search's busy start (spec:AST-086 FR8); its Spinner stays named but is not
+  // a live region (family:input-fields FR7).
+  useBusyAnnouncement(
+    isLoading && busyLane == null,
+    t('@astryx.typeahead.loading'),
+    inputRef,
+  );
   const onLoadingChangeRef = useRef(busyLane?.onBusyChange);
   useIsomorphicLayoutEffect(() => {
     onLoadingChangeRef.current = busyLane?.onBusyChange;
@@ -1218,7 +1227,11 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
       />
       {isLoading && busyLane == null && (
         <span {...stylex.props(styles.loadingStatus)}>
-          <Spinner size="sm" aria-label={t('@astryx.typeahead.loading')} />
+          <Spinner
+            size="sm"
+            aria-label={t('@astryx.typeahead.loading')}
+            role="img"
+          />
         </span>
       )}
       {popover.render(

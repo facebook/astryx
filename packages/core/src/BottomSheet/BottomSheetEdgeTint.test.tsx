@@ -127,8 +127,10 @@ describe('BottomSheetEdgeTint', () => {
     expect(tints()).toHaveLength(0);
   });
 
-  // The switcher owns one shared dialog for the whole flow, so the tint
-  // belongs to that dialog and must not be minted per child sheet.
+  // Each switcher step owns a dialog and tints it while presented: one tint
+  // at rest, one per open dialog through a handoff (the retained dialog's
+  // sits beneath the entering dialog), none for a sheet that is not
+  // presented.
   it('gives a non-modal switcher flow exactly one tint', () => {
     render(
       <BottomSheetSwitcher

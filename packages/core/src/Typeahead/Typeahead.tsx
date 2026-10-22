@@ -25,6 +25,7 @@ import React, {
   useMemo,
   useState,
   type ReactNode,
+  type RefObject,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
@@ -70,6 +71,7 @@ import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
 
 import {useMergedRefs} from '../hooks/useMergedRefs';
+import {useBusyAnnouncement} from '../hooks/useBusyAnnouncement';
 export type {
   InputStatus as TypeaheadStatus,
   InputStatusType as TypeaheadStatusType,
@@ -349,19 +351,25 @@ const wrapperSizeStyles = stylex.create({
 function EndLane({
   lane,
   loadingLabel,
+  anchorRef,
   clear,
 }: {
   lane: BusyIndicatorLane;
   loadingLabel: string;
+  anchorRef: RefObject<Element | null>;
   clear: ReactNode;
 }) {
   const isBusy = useIsBusy(lane);
+  // The search Spinner stays named (family:input-fields FR7) but is not a
+  // live region; the field announces each search's busy start instead
+  // (spec:AST-086 FR8).
+  useBusyAnnouncement(isBusy, loadingLabel, anchorRef);
   if (!isBusy && clear == null) {
     return null;
   }
   return (
     <div {...stylex.props(styles.endLane)}>
-      {isBusy && <Spinner size="sm" aria-label={loadingLabel} />}
+      {isBusy && <Spinner size="sm" aria-label={loadingLabel} role="img" />}
       {clear}
     </div>
   );
@@ -679,6 +687,7 @@ export function Typeahead<T extends SearchableItem>({
         <EndLane
           lane={busyLane}
           loadingLabel={t('@astryx.typeahead.loading')}
+          anchorRef={wrapperRef}
           clear={
             hasClear && value && !isDisabled ? (
               <InputClearButton

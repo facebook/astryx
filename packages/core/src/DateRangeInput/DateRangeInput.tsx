@@ -75,6 +75,7 @@ import {
 import type {SizeValue} from '../utils/types';
 import {useSize} from '../SizeContext/SizeContext';
 import {useInputStatusIcon} from '../hooks/useInputStatusIcon';
+import {useBusyAnnouncement} from '../hooks/useBusyAnnouncement';
 import {useMergedRefs} from '../hooks/useMergedRefs';
 import {useResolvedRequired} from '../hooks/useResolvedRequired';
 import {themeProps} from '../utils/themeProps';
@@ -645,6 +646,9 @@ export function DateRangeInput({
   );
 
   const triggerRef = useRef<HTMLButtonElement>(null);
+  // The busy Spinner is decorative; this control announces its busy start
+  // (spec:AST-086 FR8).
+  useBusyAnnouncement(isBusy, t('@astryx.spinner.loading'), triggerRef);
   const triggerButtonRef = useMergedRefs<HTMLButtonElement>(triggerRef, ref);
 
   const handleClear = useCallback(
@@ -787,7 +791,7 @@ export function DateRangeInput({
             {ariaLabelProp ?? triggerAriaLabel}
           </VisuallyHidden>
         )}
-        {isBusy && <Spinner size="sm" />}
+        {isBusy && <Spinner size="sm" aria-hidden="true" />}
         {statusIcon}
       </div>
       {isEffectivelyRequired && (
