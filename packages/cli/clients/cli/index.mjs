@@ -21,9 +21,7 @@ import {hasRecordedProject} from '../../foundation/env/cli-command.mjs';
 import {isOutsideProject} from '../../foundation/env/project-scope.mjs';
 import {API_VERSION, setJsonMode} from '../../foundation/response/json.mjs';
 import {answeredBy, runChoice} from '../../foundation/release/run-context.mjs';
-import {addCliCommand} from '../../foundation/release/notices.mjs';
-import {projectRootOf} from '../../foundation/release/choose.mjs';
-import {readReleaseFacts} from '../../foundation/release/project.mjs';
+import {cliInstallAdvice} from '../../foundation/release/notices.mjs';
 import {buildManifest} from './lib/manifest.mjs';
 import {cliError} from './lib/cli-error.mjs';
 import {emit, section, text, records} from './formatters/index.mjs';
@@ -662,11 +660,15 @@ export async function createProgram() {
       // then run that CLI's init (spec AST-081 FR2).
       const choice = runChoice(cwd);
       if (choice.copy === 'starting' && choice.coreVersion && choice.coreVersion !== choice.version) {
-        const root = projectRootOf(readReleaseFacts(cwd)) ?? cwd;
-        console.error(
-          setupNudge(getCliInvocation(root, {installed: true}), {before: addCliCommand(root, choice.coreVersion)}).trimEnd(),
-        );
-        return;
+        // From a folder whose package.json declares no Astryx package, the
+        // CLI goes into the project above; with none, nothing is added.
+        const add = cliInstallAdvice({cwd, core: choice.coreVersion});
+        if (add && add.core !== choice.version) {
+          console.error(
+            setupNudge(getCliInvocation(add.root, {installed: true}), {before: add.command}).trimEnd(),
+          );
+          return;
+        }
       }
       console.error(setupNudge(getCliInvocation(cwd)).trimEnd());
     } catch {

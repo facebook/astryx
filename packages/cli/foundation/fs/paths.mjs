@@ -304,7 +304,7 @@ function isInside(child, parent) {
  * @param {string} dir
  * @returns {boolean}
  */
-function declaresAstryx(dir) {
+export function declaresAstryx(dir) {
   const pkg = readPackageJson(dir);
   if (pkg == null) return false;
   return DEPENDENCY_FIELDS.some(field => {

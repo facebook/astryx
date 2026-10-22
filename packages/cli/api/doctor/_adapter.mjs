@@ -10,18 +10,14 @@ import {
   stateLockHolder,
 } from '../../foundation/release/global-state.mjs';
 import {
-  addCliCommand,
   alignCliAndCore,
+  cliInstallAdvice,
   globalBehind,
   globalUpgradeCommand,
   lastNoticeSkip,
   projectLag,
 } from '../../foundation/release/notices.mjs';
-import {
-  coreVersionOf,
-  isGlobalCopy,
-  projectRootOf,
-} from '../../foundation/release/choose.mjs';
+import {coreVersionOf, isGlobalCopy} from '../../foundation/release/choose.mjs';
 import {readReleaseFacts} from '../../foundation/release/project.mjs';
 import {detectPackageManager} from '../../foundation/env/package-manager.mjs';
 import {astryxCommandsOnSearchPath} from '../../foundation/env/search-path.mjs';
@@ -348,11 +344,12 @@ export function outsideProject(/** @type {string} */ cwd) {
 /**
  * The commands that bring a project's own CLI and Core to one release, with
  * the project's package manager: Core up to the CLI, then its codemods, when
- * the CLI is newer; else the CLI to the Core's release.
+ * the CLI is newer; else the CLI to the Core's release. Null when no
+ * command fits (see `alignCliAndCore`).
  * @param {string} cwd
  * @param {string} cli
  * @param {string} core
- * @returns {string}
+ * @returns {string | null}
  */
 export function alignCommand(cwd, cli, core) {
   return alignCliAndCore({cwd, cli, core});
@@ -380,13 +377,16 @@ export function projectHasOwnCli(cwd) {
 
 /**
  * The command that adds the CLI at `version` with the project's package
- * manager.
+ * manager, and the Core it matches: from a folder whose package.json declares
+ * no Astryx package, in the Astryx project above at that project's Core; null
+ * when there is none (see `cliInstallAdvice`).
  * @param {string} cwd
  * @param {string} version
- * @returns {string}
+ * @returns {{command: string, core: string} | null}
  */
 export function addCliCommandFor(cwd, version) {
-  return addCliCommand(projectRootOf(readReleaseFacts(cwd)) ?? cwd, version);
+  const advice = cliInstallAdvice({cwd, core: version});
+  return advice && {command: advice.command, core: advice.core};
 }
 
 /**

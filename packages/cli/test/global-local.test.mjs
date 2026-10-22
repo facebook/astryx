@@ -418,6 +418,74 @@ describe.skipIf(!POSIX)(
       );
     });
 
+    it("in a tool folder that installs its own Core inside a project, install advice names the project's folder and Core, never the tool's package.json", () => {
+      const pc = computer();
+      const g = globalCli('npm', '9.0.0', {root: pc.home});
+      globalState(pc, {
+        latest: '9.0.7',
+        checkOkAt: Date.now(),
+        firstRunAt: Date.now() - 2 * 24 * 60 * 60_000,
+      });
+      const app = makeProject({core: '9.0.1'});
+      writeJson(path.join(app, 'package-lock.json'), {lockfileVersion: 3});
+      const tool = path.join(app, 'tools', 'codegen');
+      writeJson(path.join(tool, 'package.json'), {name: 'codegen'});
+      installCore(tool, '9.0.5');
+      const before = fs.readFileSync(path.join(tool, 'package.json'), 'utf8');
+
+      const r = run(g.bin, ['--version'], {cwd: tool, pc});
+      expect(r.lines).toContain(
+        `astryx: this project has no Astryx CLI installed; answered by CLI 9.0.0 while its Core is 9.0.1. To match, run: cd ${app} && npm install @astryxdesign/cli@9.0.1`,
+      );
+      expect(r.notice).toEqual([
+        'A new release of Astryx is available: 9.0.1 → 9.0.7',
+        `To upgrade, run: cd ${app} && npm install @astryxdesign/core@9.0.7 @astryxdesign/cli@9.0.7, then cd ${app} && npx astryx upgrade --from 9.0.1 --apply`,
+      ]);
+      const doctor = JSON.parse(
+        run(g.bin, ['doctor', '--json'], {cwd: tool, pc}).stdout,
+      );
+      expect(
+        doctor.data.checks.find(
+          (/** @type {any} */ c) => c.id === 'version-alignment',
+        ).fix,
+      ).toBe(
+        `To match, run: cd ${app} && npm install @astryxdesign/cli@9.0.1.`,
+      );
+      // Nothing above suggests adding Astryx to the tool's own package.json.
+      expect(
+        [...r.lines, ...r.notice].some(line => /run: npm install/u.test(line)),
+      ).toBe(false);
+      expect(fs.readFileSync(path.join(tool, 'package.json'), 'utf8')).toBe(
+        before,
+      );
+    });
+
+    it('in a folder that installs Core with no Astryx project above, gives no install advice', () => {
+      const pc = computer();
+      const g = globalCli('npm', '9.0.0', {root: pc.home});
+      globalState(pc, {
+        latest: '9.0.7',
+        checkOkAt: Date.now(),
+        firstRunAt: Date.now() - 2 * 24 * 60 * 60_000,
+      });
+      const tool = tempDir('tool');
+      writeJson(path.join(tool, 'package.json'), {name: 'codegen'});
+      writeJson(path.join(tool, 'package-lock.json'), {lockfileVersion: 3});
+      installCore(tool, '9.0.5');
+
+      const r = run(g.bin, ['--version'], {cwd: tool, pc});
+      expect(r.lines.filter(line => line.includes('To match'))).toEqual([]);
+      expect(r.notice).toEqual([]);
+      const doctor = JSON.parse(
+        run(g.bin, ['doctor', '--json'], {cwd: tool, pc}).stdout,
+      );
+      expect(
+        doctor.data.checks.find(
+          (/** @type {any} */ c) => c.id === 'version-alignment',
+        ),
+      ).not.toHaveProperty('fix');
+    });
+
     it('G6 the installed Core wins over a lockfile that disagrees, for the release a project whose CLI cannot start gets', () => {
       const pc = computer();
       const g = globalCli('npm', '9.0.0', {root: pc.home});

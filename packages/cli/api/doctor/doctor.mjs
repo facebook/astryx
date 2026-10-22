@@ -286,6 +286,9 @@ export function checkVersionAlignment(ctx) {
   // the run (spec AST-081 FR2): say so, and how to add the CLI at Core's
   // version.
   if (ctx.ownCli === false) {
+    // Run from a folder whose package.json declares no Astryx package, the
+    // command names the project above and its Core, or there is none.
+    const add = addCliCommandFor(ctx.cwd, coreVersion);
     return {
       id: 'version-alignment',
       label: '@astryxdesign/core <-> @astryxdesign/cli alignment',
@@ -294,7 +297,11 @@ export function checkVersionAlignment(ctx) {
         coreVersion === cliVersion
           ? `This project has no Astryx CLI installed; CLI ${cliVersion}, the one you started, answered and matches its Core.`
           : `This project has no Astryx CLI installed; CLI ${cliVersion}, the one you started, answered while its Core is ${coreVersion}.`,
-      fix: `${coreVersion === cliVersion ? 'To pin it for the team and CI' : 'To match'}, run: ${addCliCommandFor(ctx.cwd, coreVersion)}.`,
+      ...(add
+        ? {
+            fix: `${add.core === cliVersion ? 'To pin it for the team and CI' : 'To match'}, run: ${add.command}.`,
+          }
+        : {}),
     };
   }
   // The project's own CLI answers this project whatever its version
@@ -308,8 +315,20 @@ export function checkVersionAlignment(ctx) {
     message: drift
       ? `This project's CLI ${cliVersion} answers it, but its Core is ${coreVersion}: templates, docs, and agent text come from CLI ${cliVersion}, components from Core ${coreVersion}.`
       : `@astryxdesign/core v${coreVersion} is in step with @astryxdesign/cli v${cliVersion}.`,
-    ...(drift ? {fix: `To align them, run: ${alignCommand(ctx.cwd, cliVersion, coreVersion)}.`} : {}),
+    ...(drift ? alignFix(ctx.cwd, cliVersion, coreVersion) : {}),
   };
+}
+
+/**
+ * The fix for a CLI and Core on different releases, when a command fits.
+ * @param {string} cwd
+ * @param {string} cli
+ * @param {string} core
+ * @returns {{fix?: string}}
+ */
+function alignFix(cwd, cli, core) {
+  const command = alignCommand(cwd, cli, core);
+  return command ? {fix: `To align them, run: ${command}.`} : {};
 }
 
 /**
