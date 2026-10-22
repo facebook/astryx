@@ -3,7 +3,7 @@
   "type": "manifest",
   "data": {
     "name": "astryx",
-    "version": "0.7.4",
+    "version": "<version>",
     "apiVersion": 1,
     "description": "Design system CLI — components, themes, and tooling",
     "globalOptions": [
@@ -1799,8 +1799,8 @@
   },
   "meta": {
     "answeredBy": {
-      "cli": "0.7.4",
-      "core": "0.7.4",
+      "cli": "<version>",
+      "core": "<version>",
       "copy": "project"
     }
   }

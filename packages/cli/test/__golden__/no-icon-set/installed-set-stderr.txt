@@ -1,0 +1,10 @@
+$ astryx component Button
+
+$ astryx discover
+
+$ astryx search close
+
+$ astryx template settings-dialog
+package: @astryxdesign/core
+
+$ astryx theme list

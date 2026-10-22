@@ -58,6 +58,24 @@ const LEAK_WORDS =
   /\bexperimental\b|\bicon[- ]?sets?\b|\bicon[- ]definitions?\b/iu;
 /** Writing the goldens from main's CLI, not checking this branch's. */
 const REGENERATING = Boolean(process.env.GOLDEN_CLI_ROOT);
+/**
+ * The release of the CLI that answers, read from its package.json: each exact
+ * mention becomes `<version>`, so a release bump rewrites no golden.
+ */
+const CLI_VERSION = JSON.parse(
+  fs.readFileSync(
+    path.join(process.env.GOLDEN_CLI_ROOT ?? CLI_ROOT, 'package.json'),
+    'utf8',
+  ),
+).version;
+/**
+ * The version alone, bare or after `v`: no letter, digit, dot, or hyphen
+ * around it, so `0.7.40`, `10.7.4`, and a prerelease never match.
+ */
+const VERSION_PATTERN = new RegExp(
+  `(?<![\\w.-])(v?)${CLI_VERSION.replaceAll('.', '\\.')}(?![\\w-]|\\.\\w)`,
+  'gu',
+);
 /** Where test projects go: inside the checkout whose CLI answers. */
 const PROJECTS_ROOT = REGENERATING ? GOLDEN_REPO : REPO_ROOT;
 
@@ -65,7 +83,8 @@ const PROJECTS_ROOT = REGENERATING ? GOLDEN_REPO : REPO_ROOT;
 let project;
 
 /**
- * Run the CLI in the project; machine paths become placeholders.
+ * Run the CLI in the project; machine paths and the CLI's release version
+ * become placeholders.
  * @param {string[]} args
  */
 function astryx(args, cwd = project) {
@@ -88,7 +107,8 @@ function astryx(args, cwd = project) {
       .split(REPO_ROOT)
       .join('<repo>')
       .split(GOLDEN_REPO)
-      .join('<repo>');
+      .join('<repo>')
+      .replace(VERSION_PATTERN, '$1<version>');
   return {
     status: result.status,
     stdout: clean(result.stdout),
@@ -695,6 +715,34 @@ describe('with icon sets installed but no experimental.iconSet, stable output is
     expect(res.status).toBe(0);
     await expect(res.stdout).toMatchFileSnapshot(
       path.join(GOLDEN, 'discover-malformed-icon-set-source.json'),
+    );
+  });
+
+  // The other difference FR0 names: in text mode, `component`, `discover`,
+  // `search`, `template` and `theme list` print a stderr nudge to run Doctor
+  // when an integration has an issue. The CLI without icon sets has one for
+  // the manifest key `experimental`; this CLI has none, so its stderr equals
+  // what that CLI prints for the package with the key removed.
+  it('text-mode commands print no integration-issue nudge to stderr', async () => {
+    const cwd = installed('nudge');
+    const stderr = [
+      ['component', 'Button'],
+      ['discover'],
+      ['search', 'close'],
+      ['template', 'settings-dialog'],
+      ['theme', 'list'],
+    ]
+      .map(args => {
+        const res = astryx(args, cwd);
+        expect(res.status).toBe(0);
+        if (!REGENERATING) {
+          expect(res.stderr).not.toMatch(/integration issue/u);
+        }
+        return `$ astryx ${args.join(' ')}\n${res.stderr}`;
+      })
+      .join('\n');
+    await expect(stderr).toMatchFileSnapshot(
+      path.join(GOLDEN, 'installed-set-stderr.txt'),
     );
   });
 

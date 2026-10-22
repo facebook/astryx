@@ -103,7 +103,7 @@
         "token-utilities: Token Utilities",
         "usetheme-hook: useTheme Hook"
       ],
-      "digest": "436e7aff820de3ab74d5a4bd523b016e5a3416ad91f258d10a778ce70d1633da"
+      "digest": "0e9cc0bae291b50c2f80f2c58c4945102de639dcf8237b3f560b1eaf56121137"
     },
     "browser-support": {
       "sections": [
@@ -115,7 +115,7 @@
         "supporting-older-browsers: Supporting Older Browsers",
         "how-these-tiers-move-over-time: How These Tiers Move Over Time"
       ],
-      "digest": "199279617516e8aceb8a53af6789c89f0a472f82bf4cfacd302321322c8d7952"
+      "digest": "548eeee916da2a44c33dabc2fa882d4a6806596d558376f58abd05e37fbc6c66"
     },
     "color": {
       "sections": [
@@ -124,7 +124,7 @@
         "usage: Use color tokens in StyleX",
         "best-practices: Best Practices"
       ],
-      "digest": "5d770f28add2e719a0fa40338e8c1c71dc873e4073a90b5c1763d10080e6f7c3"
+      "digest": "872fea1ea92e2d137da17ecf206846859ea300417c983e3fc10a683432a8a693"
     },
     "elevation": {
       "sections": [
@@ -135,7 +135,7 @@
         "usage: Usage",
         "best-practices: Best Practices"
       ],
-      "digest": "ad4df76e8f96a62ea4571e3008d73c18740b6b7ba7ce6f12dfee0ed4f10ca88d"
+      "digest": "dbf7e5bb888ec9ebab521bf76f34c6c25578224305aa8423c62834a51f43ca8b"
     },
     "getting-started": {
       "sections": [
@@ -148,7 +148,7 @@
         "example-apps: Example Apps",
         "explore-the-cli: Explore the CLI"
       ],
-      "digest": "efffc75c9c78de4e1cc371c6cf95cee9dba81016c8fe724a37b9c3161afa315c"
+      "digest": "40129aa01075667dfb5efad3f64d3fc3bd0907db149df646303bedea3be6cfd9"
     },
     "icons": {
       "sections": [
@@ -157,7 +157,7 @@
         "theme-overrides: Theme Overrides",
         "component-and-library-icons: Component and Library Icons"
       ],
-      "digest": "a7a462ba18c6acdc05f4e50d88f7821ca3aa85e3d993cfe48f1a7ecdc50b2c78"
+      "digest": "b70e1ef818921f76c3130e0b807cccd7ad587de048c70dbc00272931a0368ee0"
     },
     "illustrations": {
       "sections": [
@@ -165,7 +165,7 @@
         "guidelines: Guidelines",
         "placement: Placement"
       ],
-      "digest": "a77e79298b2a7191729979c19333349fc1ddc02898a99cd7225d6b37efad33ff"
+      "digest": "75a698f4f5f2b7f3e1589f4ade3ac7045fda8f1a1974038f4f84aa70fb8b5849"
     },
     "is-my-code-good": {
       "sections": [
@@ -176,7 +176,7 @@
         "ask-an-agent: Ask an agent",
         "verify-and-repeat: Verify, improve, and repeat"
       ],
-      "digest": "28830d859f72c3fb8aac0e0b62f28d90d59c07501adfb848805e27b29159081f"
+      "digest": "93a5722b6a3e9bab955bc197f7f12f0a29e914e977c7d3a9eb1e644d7afe103d"
     },
     "motion": {
       "sections": [
@@ -190,7 +190,7 @@
         "usage: Animate with motion tokens",
         "best-practices: Best Practices"
       ],
-      "digest": "ad9afde66bd8162bc9dc12e8ee0b594d466c64d7693a6b00771e6b7f43fc47a9"
+      "digest": "02deb46c58109f42157b3ff174b505654d1754849cc7dbfb282d0550a62caa80"
     },
     "principles": {
       "sections": [
@@ -200,7 +200,7 @@
         "anti-patterns: Anti-Patterns",
         "design-tokens: Design Tokens"
       ],
-      "digest": "cf98e0636b518c296d0e74f71f22e54fdb1591fcc317e92eb51cc91f804d7439"
+      "digest": "9b5041ee8c540dfdfefba74a0fd4f19be329e57f9cbcaa40e5932d231eb62315"
     },
     "shape": {
       "sections": [
@@ -209,7 +209,7 @@
         "concentric-radius: Concentric Radius",
         "best-practices: Best Practices"
       ],
-      "digest": "92ca6444da8743b5d42ab59a52b5f2a2fc13792411c2ac0a140c155a861d37f5"
+      "digest": "334873a4809ec5ef151579f50dc128a30c0a8d5dc612a864dc3254d9f0a4d080"
     },
     "spacing": {
       "sections": [
@@ -218,7 +218,7 @@
         "usage: Usage",
         "best-practices: Best Practices"
       ],
-      "digest": "9dcce00f74eb2eae79ccbc23e7a184172b4c43846164f22460209111038e3083"
+      "digest": "f2e814b8b442481512e703ad1a958c95d5b62ceca7924dd7b8a3cc545285890d"
     },
     "styling-overview": {
       "sections": [
@@ -230,7 +230,7 @@
         "what-each-file-does: What each import does",
         "further-reading: Further reading"
       ],
-      "digest": "0843c28c85250c19a487b6f8bc5cffdd48acc3c36338ba6ea7ab2045f96f88af"
+      "digest": "8fbfe6997b3cd45c44aef1c8d0b21b13e4b175cd540efb45c7464252fb2dbb76"
     },
     "theme": {
       "sections": [
@@ -239,7 +239,7 @@
         "light-dark-mode: Dark mode",
         "integration-themes: Integration themes"
       ],
-      "digest": "471159b41529881be237ed3b7800b005664b313ae7242542f2f68119b91ac927"
+      "digest": "704ebed735c74666d59a9dff8307afdd4a8b510645aef017c74913002a427510"
     },
     "use-a-theme": {
       "sections": [
@@ -252,7 +252,7 @@
         "nesting-themes: Nested themes",
         "runtime-vs-built-themes: Runtime vs Built Themes"
       ],
-      "digest": "6e759d678a9f4af7b0a551fe1256c3cdc36c6a2f20a4058c614fee680db92ed4"
+      "digest": "578d61cf82fdd88c0d990f258fea0fcdcc7662e7d6f754dfc4fc80d16c52a2b0"
     },
     "use-integrations": {
       "sections": [
@@ -261,7 +261,7 @@
         "use-what-it-adds: Use what it adds",
         "check-for-problems: Check for problems"
       ],
-      "digest": "d3be2938231de366b8e5291a2b2f865e2870ee7795f8628deda33d6e4c07af04"
+      "digest": "6f929faf5f7be52e8850c1b374f96f045bf5f8f3f90c8aa34ee2e26563bc33f0"
     },
     "working-with-ai": {
       "sections": [
@@ -275,7 +275,7 @@
         "mcp-server: MCP Server",
         "global-mode: In global mode"
       ],
-      "digest": "4997a29c230153fd77782fe93bd48973188c77b1ceba1e9172b5e811dea0cda3"
+      "digest": "94076943343e8f26cedf2cb8b0e747427e9a965c6cfad926baac0c0cc23a6fef"
     }
   }
 }
