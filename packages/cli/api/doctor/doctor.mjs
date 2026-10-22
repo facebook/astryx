@@ -1754,20 +1754,19 @@ export function checkComputerAgentText(ctx) {
   const status = `${current ? 'The computer-level agent text matches this release' : "The computer-level agent text differs from this release's"}: ${home(file)}.`;
   // The skill outlives the CLI it names when the home folder outlasts the
   // folder the CLI is installed in, as on a machine whose system folders
-  // reset on restart. Only when no Astryx CLI is on the search path at all:
-  // one behind another program is cli-on-path's to report. The reinstalled
-  // copy refreshes the text too.
+  // reset on restart. Reported only when no `astryx` command is on the search
+  // path at all, apart from a package runner's own copy, which it puts first
+  // only for the run it starts (the way back when the global CLI is gone).
+  // Any other `astryx`, even one the scan cannot trace to the package, such
+  // as the shim of Volta, asdf or mise, may well run the CLI, so doctor stays
+  // quiet here and cli-on-path reports what it can; never a false "gone".
+  // Nor when the copy answering is itself the CLI installed for the computer.
+  // The reinstalled copy refreshes the text too.
   const rows = ctx.searchPathCommands;
-  // A package runner's own copy, first on the search path only for the run
-  // it starts (the way to run the CLI when the global one is gone), does not
-  // count.
-  // Nor when the copy answering is itself the CLI installed for the computer:
-  // its command can be a shim the scan does not trace to the package, as
-  // Volta's is, and reinstalling would change nothing.
-  if (command === COMPUTER_COMMAND && rows && !ctx.selfGlobal && !rows.some(r => r.astryx && !r.runner)) {
+  if (command === COMPUTER_COMMAND && rows && !ctx.selfGlobal && !rows.some(r => !r.runner)) {
     return {
       ...base,
-      message: `${status} It tells agents to run \`${COMPUTER_COMMAND}\`, but no \`${COMPUTER_COMMAND}\` command on the search path runs the Astryx CLI, so agents that read it find no CLI to run (as when a restart removes the CLI installed for the computer and keeps the home folder).${linkNote}`,
+      message: `${status} It tells agents to run \`${COMPUTER_COMMAND}\`, but no \`${COMPUTER_COMMAND}\` command is on the search path, so agents that read it find no CLI to run (as when a restart removes the CLI installed for the computer and keeps the home folder).${linkNote}`,
       fix: recorded
         ? `Run \`${recorded}\`, the step the skill names for when \`${COMPUTER_COMMAND}\` is not found.`
         : `Install it for the computer: \`${COMPUTER_INSTALL_STEP}\`.`,

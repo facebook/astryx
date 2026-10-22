@@ -253,8 +253,9 @@ works on is `spec:AST-040` FR9's.
   outside a project it checks the computer, reporting the Node version, the
   release that answered and the newest release it knows of, and whether the
   computer-level agent text (FR8) is present and current; when that text names
-  `astryx` and no `astryx` on the search path runs the Astryx CLI, it says so
-  and names the install step the text records, or npm's when it records none;
+  `astryx` and no `astryx` command is on the search path, apart from a package
+  runner's own copy, it says so and names the install step the text records,
+  or npm's when it records none;
   and it never fails a check because the folder has no project. `swizzle` is
   `refuse`, even with a carried Core.
 

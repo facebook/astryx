@@ -405,9 +405,24 @@ describe('doctor: the computer-level agent text', () => {
         ...over,
       });
     const recorded = check({agentTextInstall: 'pnpm add -g @astryxdesign/cli'});
+    // A package runner's own copy first on the search path does not count.
+    expect(
+      check({
+        agentTextInstall: 'pnpm add -g @astryxdesign/cli',
+        searchPathCommands: [
+          /** @type {any} */ ({
+            file: '/tmp/_npx/r/node_modules/.bin/astryx',
+            astryx: true,
+            runner: true,
+          }),
+        ],
+      }).fix,
+    ).toBe(
+      'Run `pnpm add -g @astryxdesign/cli`, the step the skill names for when `astryx` is not found.',
+    );
     expect(recorded.status).toBe('info');
     expect(recorded.message).toContain(
-      `The computer-level agent text matches this release: ${A}. It tells agents to run \`astryx\`, but no \`astryx\` command on the search path runs the Astryx CLI`,
+      `The computer-level agent text matches this release: ${A}. It tells agents to run \`astryx\`, but no \`astryx\` command is on the search path`,
     );
     expect(recorded.fix).toBe(
       'Run `pnpm add -g @astryxdesign/cli`, the step the skill names for when `astryx` is not found.',
@@ -448,6 +463,18 @@ describe('doctor: the computer-level agent text', () => {
         ],
       },
       {agentTextCommand: 'acme astryx'},
+      // An `astryx` the scan cannot trace (a Volta, asdf or mise shim, or
+      // another program): it may run the CLI, so no report here.
+      {
+        searchPathCommands: [
+          /** @type {any} */ ({
+            file: '/home/me/.volta/bin/astryx',
+            astryx: false,
+            runner: false,
+          }),
+        ],
+      },
+      // Only a package runner's own copy: the CLI is still gone.
     ]) {
       const other = check(over);
       expect(other.message).toBe(

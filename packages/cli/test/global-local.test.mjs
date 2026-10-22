@@ -883,7 +883,7 @@ describe.skipIf(!POSIX)(
           if (first) pc.path.unshift(runnerBin);
           const check = agentText();
           expect(check.message).toContain(
-            'but no `astryx` command on the search path runs the Astryx CLI',
+            'but no `astryx` command is on the search path',
           );
           expect(check.fix).toBe(
             `Run \`${step}\`, the step the skill names for when \`astryx\` is not found.`,
@@ -914,6 +914,70 @@ describe.skipIf(!POSIX)(
         (/** @type {any} */ c) => c.id === 'computer-agent-text',
       );
       expect(check.message).toContain('matches this release');
+      expect(check.message).not.toContain('no `astryx` command');
+      expect(check.fix).toBeUndefined();
+      // Run through a package runner's copy too, its .bin first on the
+      // search path, as npx puts it: Volta's shim still counts.
+      const runner = placeCli(
+        path.join(
+          tempDir('npx'),
+          '_npx',
+          'v1',
+          'node_modules',
+          '@astryxdesign',
+          'cli',
+        ),
+        '9.0.0',
+      );
+      const runnerBin = path.join(
+        path.dirname(path.dirname(runner.dir)),
+        '.bin',
+      );
+      fs.mkdirSync(runnerBin, {recursive: true});
+      fs.symlinkSync(runner.bin, path.join(runnerBin, 'astryx'));
+      pc.path.unshift(runnerBin);
+      const viaRunner = JSON.parse(
+        run(runner.bin, ['doctor', '--json'], {cwd: empty, pc}).stdout,
+      ).data.checks.find(
+        (/** @type {any} */ c) => c.id === 'computer-agent-text',
+      );
+      expect(viaRunner.message).not.toContain('no `astryx` command');
+      expect(viaRunner.fix).toBeUndefined();
+    });
+
+    // Any `astryx` the scan cannot trace, such as an asdf or mise shim, may
+    // run the CLI: doctor stays quiet rather than call it gone.
+    it("with an untraceable astryx shim on the search path, doctor run through a package runner does not report the skill's CLI as gone", () => {
+      const pc = computer();
+      const g = globalCli('npm', '9.0.0', {root: pc.home});
+      pc.path.unshift(g.binDir);
+      const empty = tempDir('empty');
+      expect(run(g.bin, ['init', '--user'], {cwd: empty, pc}).status).toBe(0);
+      pc.path.splice(pc.path.indexOf(g.binDir), 1);
+      const shims = path.join(pc.home, '.asdf', 'shims');
+      fs.mkdirSync(shims, {recursive: true});
+      fs.writeFileSync(
+        path.join(shims, 'astryx'),
+        '#!/bin/sh\nexec asdf exec astryx "$@"\n',
+      );
+      fs.chmodSync(path.join(shims, 'astryx'), 0o755);
+      pc.path.unshift(shims);
+      const runner = placeCli(
+        path.join(
+          tempDir('npx'),
+          '_npx',
+          'a1',
+          'node_modules',
+          '@astryxdesign',
+          'cli',
+        ),
+        '9.0.0',
+      );
+      const check = JSON.parse(
+        run(runner.bin, ['doctor', '--json'], {cwd: empty, pc}).stdout,
+      ).data.checks.find(
+        (/** @type {any} */ c) => c.id === 'computer-agent-text',
+      );
       expect(check.message).not.toContain('no `astryx` command');
       expect(check.fix).toBeUndefined();
     });
