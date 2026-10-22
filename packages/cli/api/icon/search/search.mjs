@@ -12,7 +12,7 @@
 import {AstryxError} from '../../error.mjs';
 import {ERROR_CODES} from '../../../foundation/response/error-codes.mjs';
 import {loadIconSets} from '../_adapter.mjs';
-import {closest, rankIcons, setsNamed} from '../_records.mjs';
+import {closest, rankIcons, setsNamed, withdrawnReason} from '../_records.mjs';
 
 /**
  * Rank every installed icon against a query.
@@ -21,13 +21,14 @@ import {closest, rankIcons, setsNamed} from '../_records.mjs';
  * @returns {Promise<import('../icon.type.mjs').IconSearchResponse>}
  */
 export async function iconSearch(query, {cwd, set, limit}) {
-  const {sets} = await loadIconSets(cwd);
+  const {sets, withdrawn} = await loadIconSets(cwd);
   let searched = sets;
   if (set != null) {
     searched = setsNamed(sets, set);
     if (searched.length === 0) {
       throw new AstryxError(
-        `No installed icon set named "${set}"`,
+        withdrawnReason(withdrawn, set) ??
+          `No installed icon set named "${set}"`,
         closest(
           set,
           sets.flatMap(each => [each.name, `${each.package}/${each.name}`]),

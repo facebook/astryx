@@ -77,6 +77,18 @@ export const doc = {
       code: 'ERR_NOT_FOUND',
       when: 'the package ships no icon set, or the set has no such icon',
     },
+    {
+      code: 'ERR_PROJECT_REQUIRED',
+      when: 'the folder is outside any project and has no package.json at or above it',
+    },
+    {
+      code: 'ERR_PATH_TRAVERSAL',
+      when: 'the declared `experimental.iconSets` root escapes the package',
+    },
+    {
+      code: 'ERR_WRITE_FAILED',
+      when: 'the definition file or data file cannot be written; every write before it is undone',
+    },
   ],
   examples: [
     {

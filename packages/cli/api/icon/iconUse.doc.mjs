@@ -52,6 +52,14 @@ export const doc = {
       code: 'ERR_CODEMOD_PROTECTION_SOURCE',
       when: 'a protection declaration in the project cannot be read',
     },
+    {
+      code: 'ERR_PROJECT_REQUIRED',
+      when: 'the folder is outside any project and has no package.json at or above it',
+    },
+    {
+      code: 'ERR_MISSING_ARGUMENT',
+      when: 'the set name is missing',
+    },
   ],
   examples: [{label: 'Use a set', code: "await iconUse('outline');"}],
   command: 'experimental icon use',

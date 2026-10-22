@@ -266,6 +266,17 @@ describe('Project.iconSets', () => {
     }
   });
 
+  it('iconSet naming an installed set that was withdrawn is withdrawn, with why', async () => {
+    const {state} = await iconSetsOf({
+      packages: [{data: {...glyphsData(), module: '@acme/not-installed'}}],
+      config: {experimental: {iconSet: 'glyphs'}},
+    });
+    expect(state.choice.status).toBe('withdrawn');
+    expect(state.choice.reason).toMatch(
+      /names "glyphs", which is installed but withdrawn: .*does not resolve/,
+    );
+  });
+
   it('iconSet naming a set that is not installed is missing', async () => {
     const {state} = await iconSetsOf({
       config: {experimental: {iconSet: 'nope'}},
@@ -285,5 +296,25 @@ describe('chooseProjectIconSet', () => {
     const b = /** @type {any} */ ({name: 'outline', package: '@acme/b'});
     expect(chooseProjectIconSet([a, b], 'outline').status).toBe('ambiguous');
     expect(chooseProjectIconSet([a, b], '@acme/b/outline').set).toBe(b);
+  });
+
+  it('a configured name only a withdrawn set has is withdrawn; a valid set wins over it', () => {
+    const gone = /** @type {any} */ ({
+      name: 'outline',
+      package: '@acme/a',
+      kind: 'invalid',
+      reason: 'its data is not valid JSON.',
+    });
+    const valid = /** @type {any} */ ({name: 'outline', package: '@acme/b'});
+    expect(chooseProjectIconSet([], 'outline', [gone])).toMatchObject({
+      status: 'withdrawn',
+      reason:
+        'experimental.iconSet names "outline", which is installed but withdrawn: its data is not valid JSON.',
+    });
+    expect(chooseProjectIconSet([], '@acme/a/outline', [gone]).status).toBe(
+      'withdrawn',
+    );
+    expect(chooseProjectIconSet([], 'other', [gone]).status).toBe('missing');
+    expect(chooseProjectIconSet([valid], 'outline', [gone]).set).toBe(valid);
   });
 });

@@ -77,10 +77,12 @@ export const NOTICE_FILE_RE = /^(?:licen[cs]e|notice|copying)(?:[.-].*)?$/iu;
 /**
  * The project's icon set (FR10).
  * @typedef {object} IconSetChoice
- * @property {'selected' | 'none' | 'ambiguous' | 'missing'} status
+ * @property {'selected' | 'none' | 'ambiguous' | 'missing' | 'withdrawn'} status
  *   `selected`: one set is the project's; `none`: no set is installed;
  *   `ambiguous`: two or more are installed and `experimental.iconSet` names none of them
- *   uniquely; `missing`: `experimental.iconSet` names a set that is not installed
+ *   uniquely; `missing`: `experimental.iconSet` names a set that is not installed;
+ *   `withdrawn`: it names a set that is installed but withdrawn (invalid, or
+ *   its module does not resolve), and `reason` says why
  * @property {DiscoveredIconSet} [set] the project's set, when selected
  * @property {string} [configured] the `experimental.iconSet` config value, when set
  * @property {string} reason one sentence saying why
@@ -365,14 +367,31 @@ export function discoverIntegrationIconSets(integration, {projectDir}) {
 }
 
 /**
- * Pick the project's icon set (FR10): the set `experimental.iconSet` names, as
- * `"<set>"` or `"<package>/<set>"`; otherwise the only installed set;
- * otherwise none.
+ * The withdrawn sets a selector names, as `"<set>"` or `"<package>/<set>"`.
+ * @param {WithdrawnIconSet[]} withdrawn
+ * @param {string} selector
+ * @returns {WithdrawnIconSet[]}
+ */
+export function withdrawnNamed(withdrawn, selector) {
+  const exact = withdrawn.filter(
+    each => `${each.package}/${each.name}` === selector,
+  );
+  return exact.length > 0
+    ? exact
+    : withdrawn.filter(each => each.name === selector);
+}
+
+/**
+ * Pick the project's icon set (FR8, FR17): the set `experimental.iconSet`
+ * names, as `"<set>"` or `"<package>/<set>"`; otherwise the only installed
+ * set; otherwise none. A configured name that matches no valid set but an
+ * installed set that was withdrawn says so, with why.
  * @param {DiscoveredIconSet[]} sets installed sets, in integration load order
  * @param {string | undefined} configured the `experimental.iconSet` config value
+ * @param {WithdrawnIconSet[]} [withdrawn] installed sets that were withdrawn
  * @returns {IconSetChoice}
  */
-export function chooseProjectIconSet(sets, configured) {
+export function chooseProjectIconSet(sets, configured, withdrawn = []) {
   if (configured) {
     const exact = sets.filter(
       set => `${set.package}/${set.name}` === configured,
@@ -392,6 +411,14 @@ export function chooseProjectIconSet(sets, configured) {
         status: 'ambiguous',
         configured,
         reason: `experimental.iconSet "${configured}" names a set in ${byName.map(set => set.package).join(' and ')}; write it as "<package>/<set>".`,
+      };
+    }
+    const gone = withdrawnNamed(withdrawn, configured);
+    if (gone.length > 0) {
+      return {
+        status: 'withdrawn',
+        configured,
+        reason: `experimental.iconSet names "${configured}", which is installed but withdrawn: ${gone.map(each => each.reason).join(' ')}`,
       };
     }
     return {

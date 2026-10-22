@@ -31,7 +31,7 @@ import {
  * @param {import('../icon.type.mjs').IconMapOptions} [options]
  * @returns {Promise<import('../icon.type.mjs').IconMapResponse>}
  */
-export function iconMap(definition, icon, options = {}) {
+export async function iconMap(definition, icon, options = {}) {
   const {cwd = process.cwd(), set: selector, remove = false} = options;
   refuseOutsideProject(cwd, 'experimental icon map', 'the icon-set package');
   return authoring(async () => {

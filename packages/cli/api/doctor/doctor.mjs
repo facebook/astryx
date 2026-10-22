@@ -112,7 +112,7 @@ import {alignCommand, addCliCommandFor, computerAgentTextState, installCommandFo
  *   Combined project-level integration issues, including cross-package template replacement warnings.
  * @property {Error|null} [configError] - Error thrown while resolving the config
  *   path (e.g. multiple config files present), surfaced by checkConfig as a FAIL.
- * @property {{sets: Array<{name: string, package: string}>, withdrawn: Array<{name: string, package: string, reason: string}>, choice: {status: 'selected'|'none'|'ambiguous'|'missing', reason: string, configured?: string}}|null} [iconSets]
+ * @property {{sets: Array<{name: string, package: string}>, withdrawn: Array<{name: string, package: string, reason: string}>, choice: {status: 'selected'|'none'|'ambiguous'|'missing'|'withdrawn', reason: string, configured?: string}}|null} [iconSets]
  *   The project's icon sets (AST-084 FR17), or null when they could not be read.
  *   Experimental: may change or be removed in a patch release.
  * @property {string|null} [projectError] - Why the CLI could not load the
@@ -918,8 +918,9 @@ export function checkIntegrationIssues(ctx) {
 
 /**
  * The project's icon sets (AST-084 FR17). Fails when `experimental.iconSet` names a set
- * that is not installed; warns when two or more sets are installed and none
- * is the project's, and for each installed set that was withdrawn, with why.
+ * that is not installed, or one that is installed but withdrawn (with why);
+ * warns when two or more sets are installed and none is the project's, and
+ * for each other installed set that was withdrawn, with why.
  * Icon sets are experimental (spec:AST-017 FR27): only a project that sets
  * `experimental.iconSet` gets the check, so every other report is unchanged.
  * @param {DoctorContext} ctx
@@ -940,6 +941,15 @@ export function checkIconSets(ctx) {
       status: 'fail',
       message: choice.reason,
       fix: 'Install the package that ships the set, or set experimental.iconSet in astryx.config to an installed set (`astryx experimental icon --list` names them).',
+    };
+  }
+  if (choice.status === 'withdrawn') {
+    return {
+      id,
+      label,
+      status: 'fail',
+      message: choice.reason,
+      fix: 'Run `astryx integration check` in the package that ships the set, or install the module its data names; or set experimental.iconSet in astryx.config to a valid installed set (`astryx experimental icon --list` names them).',
     };
   }
   /** @type {string[]} */

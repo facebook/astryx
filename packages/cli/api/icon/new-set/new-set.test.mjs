@@ -195,7 +195,9 @@ describe('iconNewSet (experimental icon new-set)', () => {
     });
     fs.writeFileSync(path.join(tmpDir, 'taken'), 'not a directory');
     const pkgBefore = read('package.json');
-    await expect(iconNewSet('outline', {cwd: tmpDir})).rejects.toBeTruthy();
+    await expect(iconNewSet('outline', {cwd: tmpDir})).rejects.toMatchObject({
+      code: 'ERR_WRITE_FAILED',
+    });
     expect(read('package.json')).toBe(pkgBefore);
     expect(read('taken')).toBe('not a directory');
   });

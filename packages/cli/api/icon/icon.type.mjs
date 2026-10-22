@@ -110,7 +110,7 @@
  * @typedef {object} IconListResponse
  * @property {'icon.list'} type
  * @property {object} data
- * @property {'selected' | 'none' | 'ambiguous' | 'missing'} data.status - The project's icon-set state.
+ * @property {'selected' | 'none' | 'ambiguous' | 'missing' | 'withdrawn'} data.status - The project's icon-set state.
  * @property {string | null} data.projectSet - The project's set, as `<package>/<set>`, when selected.
  * @property {string} data.reason - Why the project has that set, or none.
  * @property {IconSetEntry[]} data.sets - Installed sets, the project's first.

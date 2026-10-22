@@ -16,6 +16,7 @@ import {Project} from '../../foundation/config/project.mjs';
 import {AstryxError} from '../error.mjs';
 import {ERROR_CODES} from '../../foundation/response/error-codes.mjs';
 import {IconSetAuthoringError} from '../../foundation/discovery/icon-set-writer.mjs';
+import {PathSafetyError} from '../../foundation/fs/path-safety.mjs';
 import {isOutsideProject} from '../../foundation/env/project-scope.mjs';
 import {projectIconSetCliWarning} from '../../foundation/integrations/cli-requirement.mjs';
 
@@ -103,6 +104,15 @@ export async function authoring(step) {
           ERROR_CODES.ERR_INVALID_ARGUMENT,
       );
     }
+    // A path that leaves the package (a source, the sets root) is refused
+    // with the stable code every writer uses.
+    if (error instanceof PathSafetyError) {
+      throw new AstryxError(
+        error.message,
+        undefined,
+        ERROR_CODES.ERR_PATH_TRAVERSAL,
+      );
+    }
     throw error;
   }
 }
@@ -118,13 +128,14 @@ export async function loadIconSets(cwd) {
 }
 
 /**
- * The project directory and its installed icon sets, for `experimental icon use`.
+ * The project directory, its installed icon sets, and the sets withdrawn,
+ * for `experimental icon use`.
  * @param {string} cwd
  */
 export async function loadIconProject(cwd) {
   const project = await Project.load(cwd);
-  const {sets} = await project.iconSets({experimental: true});
-  return {projectDir: findProjectDir(cwd), sets};
+  const {sets, withdrawn} = await project.iconSets({experimental: true});
+  return {projectDir: findProjectDir(cwd), sets, withdrawn};
 }
 
 /**

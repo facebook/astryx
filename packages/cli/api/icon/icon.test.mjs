@@ -10,6 +10,7 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 import {afterEach, beforeEach, describe, expect, it} from 'vitest';
 import {icon} from './icon.mjs';
+import {iconUse} from './use/use.mjs';
 import {ICON_NAMES} from '../../authoring/doctypes/icon-set/icon-names.mjs';
 import {rankIcons, scoreIcon} from './_records.mjs';
 import {
@@ -336,6 +337,38 @@ describe('icon.list', () => {
     });
     await expect(icon('', {cwd})).rejects.toMatchObject({
       code: 'ERR_MISSING_ARGUMENT',
+    });
+  });
+});
+
+describe('a withdrawn set, named', () => {
+  it('search --set, detail, use, and list say it is withdrawn and why, not that no set has the name', async () => {
+    const dir = writeIconSetProject(path.join(tmp, 'withdrawn'), {
+      packages: [{}, {name: '@acme/lines', data: '{nope'}],
+      config: {experimental: {iconSet: 'lines'}},
+    });
+    const withdrawn =
+      /Icon set "lines" is installed but withdrawn: .*not valid JSON/;
+    await expect(icon('close', {cwd: dir, set: 'lines'})).rejects.toMatchObject(
+      {code: 'ERR_NOT_FOUND', message: expect.stringMatching(withdrawn)},
+    );
+    await expect(icon('lines/x', {cwd: dir})).rejects.toMatchObject({
+      code: 'ERR_NOT_FOUND',
+      message: expect.stringMatching(withdrawn),
+    });
+    await expect(iconUse('lines', {cwd: dir})).rejects.toMatchObject({
+      code: 'ERR_NOT_FOUND',
+      message: expect.stringMatching(withdrawn),
+    });
+    const listed = await icon(undefined, {cwd: dir, list: true});
+    if (listed.type !== 'icon.list') throw new Error(listed.type);
+    expect(listed.data.status).toBe('withdrawn');
+    expect(listed.data.reason).toMatch(
+      /names "lines", which is installed but withdrawn: .*not valid JSON/,
+    );
+    // A name no installed set has, valid or withdrawn, still says so.
+    await expect(icon('close', {cwd: dir, set: 'nope'})).rejects.toMatchObject({
+      message: expect.stringMatching(/No installed icon set named "nope"/),
     });
   });
 });

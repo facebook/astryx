@@ -1029,6 +1029,7 @@ export class Project {
       const choice = chooseProjectIconSet(
         sets,
         this.#config.experimental?.iconSet,
+        withdrawn,
       );
       return {sets: orderIconSets(sets, choice), withdrawn, choice};
     });

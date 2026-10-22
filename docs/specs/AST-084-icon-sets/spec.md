@@ -278,15 +278,22 @@ message}`) names each template or namespace doc that sets `stability`, and
   any dependency field) that admits such a release; a project that declares no
   range, or a `workspace:`, `file:`, or `link:` one, gets none.
 - **FR17 — Doctor and discover read sets only with the opt-in.** In a project
-  that sets `experimental.iconSet`, Doctor's `icon-sets` check fails when it
-  names a set that is not installed and warns when two packages ship that name
-  or a set is withdrawn, and `astryx discover` reads `icon-set` as a kind:
-  `--type icon-set`, catalog entries with `iconCount` and `definitions`, and
-  `discover <package>/<set>`. Without the opt-in, Doctor has no such check and
-  reports no icon-set issue, and discover treats `icon-set` as an unknown kind
-  and `iconCount` and `definitions` as unknown fields before it validates a
-  catalog, so a malformed icon-set item never fails a source
-  (`spec:AST-051/FR7`).
+  that sets `experimental.iconSet`, the project's set is one of: valid
+  (`selected`), not installed (`missing`), or installed but withdrawn
+  (`withdrawn`: invalid, or its module does not resolve, with that reason).
+  Doctor's `icon-sets` check fails when it names a set that is not installed
+  or one that was withdrawn, saying which and why, and warns when two packages
+  ship that name or another set is withdrawn. The template `icons` report and
+  `experimental icon --list` carry the same status and reason, and
+  `experimental icon` with `--set` or `<set>/<id>`, `experimental icon use`,
+  and `discover <package>/<set>` name a withdrawn set as withdrawn, with its
+  reason, rather than as not installed. `astryx discover` reads `icon-set` as
+  a kind: `--type icon-set`, catalog entries with `iconCount` and
+  `definitions`, and `discover <package>/<set>`; a withdrawn set is not
+  listed. Without the opt-in, Doctor has no such check and reports no icon-set
+  issue, and discover treats `icon-set` as an unknown kind and `iconCount` and
+  `definitions` as unknown fields before it validates a catalog, so a
+  malformed icon-set item never fails a source (`spec:AST-051/FR7`).
 
 ### Supporting pieces
 

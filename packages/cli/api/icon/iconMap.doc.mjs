@@ -63,6 +63,22 @@ export const doc = {
       code: 'ERR_INVALID_ARGUMENT',
       when: 'the package ships several sets and none is named',
     },
+    {
+      code: 'ERR_PROJECT_REQUIRED',
+      when: 'the folder is outside any project and has no package.json at or above it',
+    },
+    {
+      code: 'ERR_MISSING_ARGUMENT',
+      when: 'the definition is missing, or the icon id without `remove`',
+    },
+    {
+      code: 'ERR_PATH_TRAVERSAL',
+      when: 'the declared `experimental.iconSets` root escapes the package',
+    },
+    {
+      code: 'ERR_WRITE_FAILED',
+      when: 'the data file or generated module cannot be written; every write before it is undone',
+    },
   ],
   examples: [
     {label: 'Map a definition', code: "await iconMap('delete', 'trash');"},

@@ -110,6 +110,26 @@ export const doc = {
       when: 'the export is data rather than a component, a new definition is named like an Astryx one, or the variant is not one the set declares',
     },
     {code: 'ERR_FILE_EXISTS', when: 'another icon already has the id'},
+    {
+      code: 'ERR_PROJECT_REQUIRED',
+      when: 'the folder is outside any project and has no package.json at or above it',
+    },
+    {
+      code: 'ERR_MISSING_ARGUMENT',
+      when: '`from` is missing',
+    },
+    {
+      code: 'ERR_FILE_NOT_FOUND',
+      when: 'a relative `from` resolves to no module file in the package',
+    },
+    {
+      code: 'ERR_PATH_TRAVERSAL',
+      when: '`from`, or the declared `experimental.iconSets` root, escapes the package',
+    },
+    {
+      code: 'ERR_WRITE_FAILED',
+      when: 'a file cannot be written; every write before it is undone',
+    },
   ],
   examples: [
     {

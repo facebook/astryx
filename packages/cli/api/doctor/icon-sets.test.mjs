@@ -9,7 +9,10 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 import {afterEach, beforeEach, describe, expect, it} from 'vitest';
 import {checkIconSets, runChecks} from './doctor.mjs';
-import {writeIconSetProject} from '../../test-utils/icon-set-fixture.mjs';
+import {
+  glyphsData,
+  writeIconSetProject,
+} from '../../test-utils/icon-set-fixture.mjs';
 
 /** @type {string} */
 let tmp;
@@ -66,6 +69,28 @@ describe('icon-sets check', () => {
     ).toMatchObject({
       status: 'fail',
     });
+  });
+
+  it('experimental.iconSet naming an installed set that was withdrawn fails, saying withdrawn and why', async () => {
+    const invalid = await iconCheckOf({
+      packages: [{data: '{nope'}],
+      config: {experimental: {iconSet: 'glyphs'}},
+    });
+    expect(invalid).toMatchObject({status: 'fail'});
+    expect(invalid?.message).toMatch(
+      /names "glyphs", which is installed but withdrawn: .*not valid JSON/,
+    );
+    expect(invalid?.message).not.toMatch(/no installed set has that name/);
+    fs.rmSync(tmp, {recursive: true, force: true});
+    fs.mkdirSync(tmp);
+    const unresolved = await iconCheckOf({
+      packages: [{data: {...glyphsData(), module: '@acme/not-installed'}}],
+      config: {experimental: {iconSet: '@acme/glyphs/glyphs'}},
+    });
+    expect(unresolved).toMatchObject({status: 'fail'});
+    expect(unresolved?.message).toMatch(
+      /installed but withdrawn: .*does not resolve from the project/,
+    );
   });
 
   it('an invalid data file warns with the reason', async () => {

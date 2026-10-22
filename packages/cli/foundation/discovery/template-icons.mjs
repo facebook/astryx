@@ -84,7 +84,7 @@ import {astryxDefinitionsByName} from './icon-definition-discovery.mjs';
 /**
  * What template icon mapping did.
  * @typedef {object} TemplateIconsReport
- * @property {'selected' | 'none' | 'ambiguous' | 'missing'} status the
+ * @property {'selected' | 'none' | 'ambiguous' | 'missing' | 'withdrawn'} status the
  *   project's icon-set state; only `selected` maps anything
  * @property {string | null} set the project set as `<package>/<set>`
  * @property {string} reason

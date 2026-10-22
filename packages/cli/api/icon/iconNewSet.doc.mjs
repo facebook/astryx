@@ -75,6 +75,18 @@ export const doc = {
       code: 'ERR_WRITE_FAILED',
       when: 'a staged write fails and prior writes are rolled back',
     },
+    {
+      code: 'ERR_PROJECT_REQUIRED',
+      when: 'the folder is outside any project and has no package.json at or above it',
+    },
+    {
+      code: 'ERR_NOT_FOUND',
+      when: '`from` does not resolve from the package, or exports no icon component',
+    },
+    {
+      code: 'ERR_FILE_NOT_FOUND',
+      when: 'a relative `from` resolves to no module file in the package',
+    },
   ],
   examples: [
     {

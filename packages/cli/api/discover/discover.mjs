@@ -314,6 +314,18 @@ export async function discover(query, options = {}) {
     if (!target.item) return detail(packages, target.name, context);
     const found = item(packages, target.name, target.item, context);
     if (found) return found;
+    // An installed icon set that was withdrawn answers nothing; say why
+    // rather than that the package has no such item (spec:AST-084 FR17).
+    const gone = packages
+      .find(p => p.name === target.name)
+      ?.withdrawnIconSets?.find(each => each.name === target.item);
+    if (gone) {
+      throw new AstryxError(
+        `Icon set "${target.item}" in ${target.name} is installed but withdrawn: ${gone.reason}`,
+        [],
+        ERROR_CODES.ERR_UNKNOWN_COMPONENT,
+      );
+    }
     if (officialOnly) {
       throw new AstryxError(
         `"${target.item}" not found in ${target.name}`,

@@ -67,7 +67,7 @@ const MATCH_LIMIT = 10;
  * @param {import('../icon.type.mjs').IconAddOptions} options
  * @returns {Promise<import('../icon.type.mjs').IconAddResponse | import('../icon.type.mjs').IconDefinitionMatchesResponse>}
  */
-export function iconAdd(exportName, options) {
+export async function iconAdd(exportName, options) {
   const {
     cwd = process.cwd(),
     from,

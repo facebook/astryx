@@ -415,6 +415,13 @@ async function iconAuthoring(step) {
           ERROR_CODES.ERR_INVALID_ARGUMENT,
       );
     }
+    if (error instanceof PathSafetyError) {
+      throw new AstryxError(
+        error.message,
+        undefined,
+        ERROR_CODES.ERR_PATH_TRAVERSAL,
+      );
+    }
     throw error;
   }
 }

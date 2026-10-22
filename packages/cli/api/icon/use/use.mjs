@@ -18,7 +18,7 @@ import {
   refuseOutsideProject,
   setConfigString,
 } from '../_adapter.mjs';
-import {closest, setsNamed} from '../_records.mjs';
+import {closest, setsNamed, withdrawnReason} from '../_records.mjs';
 
 /**
  * Make an installed set the project's icon set.
@@ -43,11 +43,12 @@ export async function iconUse(selector, {cwd = process.cwd()} = {}) {
     );
   }
   refuseOutsideProject(cwd, 'experimental icon use', 'the app project');
-  const {projectDir, sets} = await loadIconProject(cwd);
+  const {projectDir, sets, withdrawn} = await loadIconProject(cwd);
   const named = setsNamed(sets, selector);
   if (named.length === 0) {
     throw new AstryxError(
-      `No installed icon set is named "${selector}".`,
+      withdrawnReason(withdrawn, selector) ??
+        `No installed icon set is named "${selector}".`,
       closest(
         selector,
         sets.flatMap(set => [set.name, iconSetKey(set)]),

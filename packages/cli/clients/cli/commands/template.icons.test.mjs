@@ -103,6 +103,21 @@ describe('template icon mapping', () => {
     expect(`${copiedText.stdout}${copiedText.stderr}`).not.toContain('icons:');
   });
 
+  it('a configured set that is installed but withdrawn says so, with why, and maps nothing', async () => {
+    const cwd = writeIconSetProject(path.join(tmp, 'withdrawn'), {
+      packages: [{data: '{nope'}],
+      config: {experimental: {iconSet: 'glyphs'}},
+    });
+    const res = await runCli(['template', TEMPLATE, '--json'], cwd);
+    const icons = JSON.parse(res.stdout).data.icons;
+    expect(icons).toMatchObject({status: 'withdrawn', set: null, mapped: []});
+    expect(icons.reason).toMatch(
+      /names "glyphs", which is installed but withdrawn: .*not valid JSON/,
+    );
+    const text = await runCli(['template', TEMPLATE], cwd);
+    expect(text.stderr).toContain('icons: unchanged (withdrawn):');
+  });
+
   it('a configured set that is not installed reports why nothing was mapped', async () => {
     const cwd = writeIconSetProject(path.join(tmp, 'missing'), {
       packages: [],

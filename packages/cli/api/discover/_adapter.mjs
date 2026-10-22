@@ -108,6 +108,7 @@ const DEPENDENCY_FIELDS = [
  *   codemods?: string[],
  *   iconSets?: string[],
  *   iconSetDetails?: IconSetSummary[],
+ *   withdrawnIconSets?: Array<{name: string, reason: string}>,
  * }} InstalledPackage
  */
 
@@ -248,9 +249,9 @@ export async function describeInstalled(project, scanned) {
     // is invalid or whose module does not resolve answers nothing (FR9).
     // They are experimental (spec:AST-017 FR27), so discover lists them only
     // in a project that opts in with `experimental.iconSet`.
-    const {sets} = optedIntoIconSets(project)
+    const {sets, withdrawn} = optedIntoIconSets(project)
       ? discoverIntegrationIconSets(integration, {projectDir: project.cwd})
-      : {sets: []};
+      : {sets: [], withdrawn: []};
     installed.push({
       ...base,
       templates: identities.templates.map(t => t.id),
@@ -267,6 +268,15 @@ export async function describeInstalled(project, scanned) {
         ...(set.data.default ? {default: set.data.default} : {}),
         definitions: [...Object.keys(set.data.map ?? {})].sort(),
       })),
+      // Never listed; named only to say why a lookup of one answers nothing.
+      ...(withdrawn.length > 0
+        ? {
+            withdrawnIconSets: withdrawn.map(each => ({
+              name: each.name,
+              reason: each.reason,
+            })),
+          }
+        : {}),
     });
   }
   return installed;

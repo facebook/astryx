@@ -102,3 +102,30 @@ describe('discover icon sets', () => {
     expect(res.stdout + res.stderr).toContain('icon-set');
   });
 });
+
+describe('discover and a withdrawn icon set', () => {
+  it('lists no withdrawn set, and its item page says withdrawn and why', async () => {
+    const dir = writeIconSetProject(path.join(tmp, 'withdrawn'), {
+      packages: [{data: '{nope'}],
+      config: {
+        integrations: ['@acme/glyphs'],
+        experimental: {iconSet: 'glyphs'},
+      },
+    });
+    const all = await runCli(['discover', '--json'], dir);
+    const [entry] = JSON.parse(all.stdout).data;
+    expect(entry.name).toBe('@acme/glyphs');
+    expect(entry.iconSets ?? []).toEqual([]);
+    expect(all.stdout).not.toContain('withdrawnIconSets');
+    const page = await runCli(
+      ['discover', '@acme/glyphs/glyphs', '--json'],
+      dir,
+    );
+    expect(page.code).toBe(1);
+    const body = JSON.parse(page.stdout);
+    expect(body.code).toBe('ERR_UNKNOWN_COMPONENT');
+    expect(body.error).toMatch(
+      /Icon set "glyphs" in @acme\/glyphs is installed but withdrawn: .*not valid JSON/,
+    );
+  });
+});
