@@ -117,7 +117,7 @@ export function iconAdd(exportName, options) {
     const adapt = exportValueKind(source.file, sourceExport) !== 'component';
     if (adapt && !set.data.adapter) {
       throw new AstryxError(
-        `"${sourceExport}" in "${source.module}" is not a component, so this set needs an adapter: a function in your package that turns it into one. Declare "adapter": {"module": "./src/adapt.js", "export": "adapt"} in ${set.name}.icons.json (astryx docs cli/integrations/building-blocks/icon-sets library-shapes).`,
+        `"${sourceExport}" in "${source.module}" is not a component, so this set needs an adapter: a function in your package that turns it into one. Declare "adapter": {"module": "./src/adapt.js", "export": "adapt"} in ${set.name}.icons.json (astryx docs cli/experimental/icon-sets library-shapes).`,
         undefined,
         ERROR_CODES.ERR_INVALID_ARGUMENT,
       );

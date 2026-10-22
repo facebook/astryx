@@ -40,8 +40,8 @@
  * @typedef {object} ValidateIntegrationResponse
  * @property {'integration.validate'} type
  * @property {{validated: boolean, name: string | null, version: string | null, issues: import('../../foundation/integrations/issue').AstryxIntegrationIssue[], notes?: Array<{code: string, message: string}>, docTypes?: DocTypesReport, docNames?: DocNamesReport, blockComponents?: BlockComponentsReport, iconSets?: IconSetCoverage[], olderCliNotes?: OlderCliNote[]}} data
- *   `iconSets` and `olderCliNotes` are experimental: they may change or be
- *   removed in a patch release.
+ *   `iconSets` is experimental: it may change or be removed in a patch
+ *   release.
  *   `notes`: information beside the issues that fails nothing, such as
  *   `invalid_cli_command`, a `cliCommand` that was ignored as malformed, and
  *   the package layout findings added after the last minor release, each with
@@ -123,7 +123,6 @@
  * package's `@astryxdesign/cli` peer range admits a release before 0.7.3.
  * Listed beside the issues for the package being authored, and never counted
  * or failing a check.
- * @experimental May change or be removed in a patch release.
  * @typedef {object} OlderCliNote
  * @property {string} file The descriptor, relative to the package.
  * @property {'template' | 'namespace'} kind

@@ -23,6 +23,7 @@ import {spawnSync} from 'node:child_process';
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
+import {createHash} from 'node:crypto';
 import {CLI_ROOT} from '../foundation/fs/paths.mjs';
 import {writeIconSetProject} from '../test-utils/icon-set-fixture.mjs';
 
@@ -102,6 +103,32 @@ afterAll(() => {
 });
 
 describe('with no icon set, stable output is unchanged', () => {
+  // Every stable docs topic, against the CLI without the feature: the
+  // listing, each topic's sections, and a digest of each topic's JSON. The
+  // `authoring` topic gains the stable `stability` field of every doc kind,
+  // so only its sections are compared: an experimental schema never adds one.
+  it('every stable docs topic: the listing, its sections, and its JSON', async () => {
+    const list = JSON.parse(astryx(['docs', '--json']).stdout);
+    /** @type {Record<string, {sections: string[], digest?: string}>} */
+    const topics = {};
+    for (const {topic} of list.data) {
+      const out = astryx(['docs', topic, '--json']).stdout;
+      const doc = JSON.parse(out).data;
+      topics[topic] = {
+        sections: (doc.sections ?? []).map(
+          (/** @type {any} */ section) =>
+            `${section.id ?? section.key}: ${section.title}`,
+        ),
+        ...(topic === 'authoring'
+          ? {}
+          : {digest: createHash('sha256').update(out).digest('hex')}),
+      };
+    }
+    await expect(
+      `${JSON.stringify({list: list.data, topics}, null, 2)}\n`,
+    ).toMatchFileSnapshot(path.join(GOLDEN, 'docs-topics.json'));
+  }, 120_000);
+
   // Words an icon, an icon definition, or the icon-set docs would answer.
   it.each(['delete', 'close', 'icon', 'trash can', 'search'])(
     'search %s, text and JSON',

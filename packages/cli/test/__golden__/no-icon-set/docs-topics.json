@@ -1,0 +1,295 @@
+{
+  "list": [
+    {
+      "topic": "author-a-theme",
+      "description": "Create, customize, and build a theme: defineTheme, palette generation, token overrides, component style overrides, custom variants, responsive adaptations, and production builds.",
+      "package": "@astryxdesign/cli"
+    },
+    {
+      "topic": "authoring",
+      "description": "Every file an integration author writes, field by field: the integration manifest, astryx.config, codemods, identity, and each doc type. The step-by-step guides are under `astryx docs cli/integrations`.",
+      "package": "@astryxdesign/cli"
+    },
+    {
+      "topic": "browser-support",
+      "description": "What browsers Astryx targets, which modern platform features it depends on, and how to support older browsers for your own audience.",
+      "package": "@astryxdesign/cli"
+    },
+    {
+      "topic": "color",
+      "description": "Semantic color tokens for surfaces, text, icons, borders, and status indicators.",
+      "package": "@astryxdesign/cli"
+    },
+    {
+      "topic": "elevation",
+      "description": "Shadow tokens for visual elevation and inset state rings.",
+      "package": "@astryxdesign/cli"
+    },
+    {
+      "topic": "getting-started",
+      "description": "Add the design system to your project and start building.",
+      "package": "@astryxdesign/cli"
+    },
+    {
+      "topic": "icons",
+      "description": "Semantic icon names available in the design system. These adapt to the active theme's icon registry.",
+      "package": "@astryxdesign/cli"
+    },
+    {
+      "topic": "illustrations",
+      "description": "Illustration guidelines for empty states, onboarding flows, and feature highlights.",
+      "package": "@astryxdesign/cli"
+    },
+    {
+      "topic": "is-my-code-good",
+      "description": "Check whether a product surface fits its app and uses Astryx well, require evidence for every claim, and improve it with a repeatable agent review.",
+      "package": "@astryxdesign/cli"
+    },
+    {
+      "topic": "motion",
+      "description": "Duration and easing tokens for animations and transitions.",
+      "package": "@astryxdesign/cli"
+    },
+    {
+      "topic": "principles",
+      "description": "Core design principles and rules for building with the design system.",
+      "package": "@astryxdesign/cli"
+    },
+    {
+      "topic": "shape",
+      "description": "Border radius tokens for consistent component rounding, from sharp corners to full pills.",
+      "package": "@astryxdesign/cli"
+    },
+    {
+      "topic": "spacing",
+      "description": "Spacing scale tokens for padding, gap, and margin: the rhythmic foundation of design system layouts.",
+      "package": "@astryxdesign/cli"
+    },
+    {
+      "topic": "styling-overview",
+      "description": "How to set up CSS — exact imports for three paths: plain, Tailwind, and StyleX for your own code — plus the stylesheet each Astryx package ships.",
+      "package": "@astryxdesign/cli"
+    },
+    {
+      "topic": "theme",
+      "description": "How to use and create themes: see Use a theme for applying themes, and Author a theme for creating and customizing them.",
+      "package": "@astryxdesign/cli"
+    },
+    {
+      "topic": "use-a-theme",
+      "description": "Apply a theme to your app: install, import with the CLI, wire the generated module, switch dark mode, nest themes, and choose runtime or built for production.",
+      "package": "@astryxdesign/cli"
+    },
+    {
+      "topic": "working-with-ai",
+      "description": "How to set up AI coding tools to generate correct component code.",
+      "package": "@astryxdesign/cli"
+    }
+  ],
+  "topics": {
+    "author-a-theme": {
+      "sections": [
+        "creating-a-custom-theme: Custom themes",
+        "palette: Generate a palette",
+        "definetheme: defineTheme",
+        "extending-a-theme: Extending a Theme",
+        "component-style-overrides: Component Style Overrides",
+        "custom-variants: Custom Variants",
+        "theme-adaptations: Theme Adaptations",
+        "adaptation-rules: Adaptation order and validation",
+        "building-themes-for-production: Build a theme",
+        "icon-registry: Built themes with an icon registry",
+        "building-a-theme-family: Building a Theme Family",
+        "token-utilities: Token Utilities",
+        "usetheme-hook: useTheme Hook"
+      ],
+      "digest": "dcb8e8d015dc58197f961174f25af513df92a8bcaa144402ad84f6a4fc264e29"
+    },
+    "authoring": {
+      "sections": [
+        "integration: Astryx Integration",
+        "config: astryx.config",
+        "debug-event: DebugEvent",
+        "gap-report-handler: GapReportHandler",
+        "discover-source: DiscoverSource",
+        "codemod: Astryx Codemod",
+        "provider-identity: Provider and artifact identity",
+        "authored-doc-graph-fields: Authored doc graph fields",
+        "component-doc: ComponentDoc",
+        "hook-doc: HookDoc",
+        "function-doc: FunctionDoc",
+        "command-doc: CommandDoc",
+        "enum-doc: EnumDoc",
+        "namespace-doc: NamespaceDoc",
+        "reference-doc: ReferenceDoc",
+        "schema-doc: SchemaDoc",
+        "template-doc: TemplateDoc",
+        "integration-template-doc: IntegrationTemplateDoc",
+        "theme-doc: ThemeDoc"
+      ]
+    },
+    "browser-support": {
+      "sections": [
+        "overview: Overview",
+        "support-tiers: Support Tiers",
+        "which-features-set-the-floor: Which Features Set the Floor",
+        "which-components-are-affected: Which Components Are Affected",
+        "what-astryx-guarantees: What Astryx Guarantees",
+        "supporting-older-browsers: Supporting Older Browsers",
+        "how-these-tiers-move-over-time: How These Tiers Move Over Time"
+      ],
+      "digest": "c9af1cabb6f660909c97b4ba8c4b055c1a0ebf9b5f742ac0d9f169e808d90bf8"
+    },
+    "color": {
+      "sections": [
+        "overview: Overview",
+        "surface-colors: Color Tokens",
+        "usage: Use color tokens in StyleX",
+        "best-practices: Best Practices"
+      ],
+      "digest": "1a2c1edc6dd4989c0b03bef45171f6bc3acb147c23a1fa79c46683999bd2be53"
+    },
+    "elevation": {
+      "sections": [
+        "overview: Overview",
+        "elevation-scale: Elevation Scale",
+        "choosing-a-level: Choosing a level",
+        "the-elevation-prop: The elevation prop",
+        "usage: Usage",
+        "best-practices: Best Practices"
+      ],
+      "digest": "e59b363b460ce8422d5c0172be4e4f8873cb19a647de338adf6c7f4e5ecbe49a"
+    },
+    "getting-started": {
+      "sections": [
+        "quick-start-with-ai: Quick Start with AI",
+        "install: Install",
+        "install-once: Install once, use everywhere",
+        "add-base-css-and-a-theme: Add base CSS and a theme",
+        "add-your-first-component: Add your first component",
+        "customize-with-stylex: Customize with StyleX",
+        "example-apps: Example Apps",
+        "explore-the-cli: Explore the CLI"
+      ],
+      "digest": "daea0f59362d33eaf096c6ed58b4379964e123f89fae58e5c0262ed0cdba1e78"
+    },
+    "icons": {
+      "sections": [
+        "available-names: Available Names",
+        "custom-icons: Custom Icons",
+        "theme-overrides: Theme Overrides",
+        "component-and-library-icons: Component and Library Icons"
+      ],
+      "digest": "aad2d01bcb211fd4f4764895a27aaeb7d5654661a0438c62e443f71d3598f6d7"
+    },
+    "illustrations": {
+      "sections": [
+        "when-to-use: When to Use",
+        "guidelines: Guidelines",
+        "placement: Placement"
+      ],
+      "digest": "77338e22e247ce6f8ee5d2eb7b491cb1d747dec83b188c395b956c3d0583e85e"
+    },
+    "is-my-code-good": {
+      "sections": [
+        "understand-the-app: Understand the app",
+        "choose-the-review: Choose the review",
+        "apply-the-rubric: Apply the shared rubric",
+        "collect-the-evidence: Collect the evidence",
+        "ask-an-agent: Ask an agent",
+        "verify-and-repeat: Verify, improve, and repeat"
+      ],
+      "digest": "8ddd69fec1d13b2aed57f7c043c0717bd389d7fadc294843043019e59d7723b1"
+    },
+    "motion": {
+      "sections": [
+        "overview: Overview",
+        "duration: Duration",
+        "easing: Easing",
+        "where-motion-helps: Where Motion Helps",
+        "where-motion-hurts: Where Motion Hurts",
+        "movement-principles: Movement Principles",
+        "respecting-user-preferences: Respecting User Preferences",
+        "usage: Animate with motion tokens",
+        "best-practices: Best Practices"
+      ],
+      "digest": "36284b389ea018d6588dc82f883371f5454831020b640354245fbd955bd03485"
+    },
+    "principles": {
+      "sections": [
+        "design-philosophy: Design Philosophy",
+        "rules: Rules",
+        "styling-approach: Styling Approach",
+        "anti-patterns: Anti-Patterns",
+        "design-tokens: Design Tokens"
+      ],
+      "digest": "a73ac1da1d5747f11a8c0776c2642f03b490cf9cee8474f3fb632d0b7d0c70ab"
+    },
+    "shape": {
+      "sections": [
+        "overview: Overview",
+        "radius-scale: Radius Scale",
+        "concentric-radius: Concentric Radius",
+        "best-practices: Best Practices"
+      ],
+      "digest": "2aed2eaead671a4a448d7f62aad48633358346552c26fbd162ae644a1f985969"
+    },
+    "spacing": {
+      "sections": [
+        "overview: Overview",
+        "scale: Scale",
+        "usage: Usage",
+        "best-practices: Best Practices"
+      ],
+      "digest": "cc847c7f4b95f846e5c1665855d9b6e14c8123811fa15d8477ceea5877f198f2"
+    },
+    "styling-overview": {
+      "sections": [
+        "pick-a-path: Pick a path",
+        "plain: Plain CSS",
+        "tailwind: Tailwind",
+        "stylex-own-code: StyleX for your own code",
+        "other-packages: Other Astryx packages",
+        "what-each-file-does: What each import does",
+        "further-reading: Further reading"
+      ],
+      "digest": "006bdeb57afbf3eed940577d6b1703e31f93d0259a777d71aea1d5aedbcec801"
+    },
+    "theme": {
+      "sections": [
+        "quick-start: Wrap your app in a theme",
+        "creating-a-custom-theme: Create a custom theme",
+        "light-dark-mode: Dark mode",
+        "integration-themes: Integration themes"
+      ],
+      "digest": "e7b1ce765a42274ebf5b764449bf64af3f8e3457d32005321d71cd0e5de79527"
+    },
+    "use-a-theme": {
+      "sections": [
+        "quick-start: Wrap your app in a theme",
+        "migrating-earlier-theme-copies: Migrating Earlier Theme Copies",
+        "available-themes: Available Themes",
+        "theme-props: Theme Props",
+        "integration-themes: Using a Theme from an Integration",
+        "light-dark-mode: Dark mode",
+        "nesting-themes: Nested themes",
+        "runtime-vs-built-themes: Runtime vs Built Themes"
+      ],
+      "digest": "d9a2d0a7bf59bdb3bfe2484d6c5df10031a48670d4b330917d6c9df1a916c448"
+    },
+    "working-with-ai": {
+      "sections": [
+        "overview: Overview",
+        "quick-start: Set up agent docs",
+        "what-gets-generated: What Gets Generated",
+        "cursor-setup: Cursor Setup",
+        "checking-your-setup: Checking Your Setup",
+        "the-astryx-pattern: The astryx Pattern",
+        "the-dense-flag: Shorter output: --detail and --dense",
+        "mcp-server: MCP Server",
+        "global-mode: In global mode"
+      ],
+      "digest": "34cde5e4f808052dd47e04b015efe4c190d7194e4e3741361f6c59be980ec7ea"
+    }
+  }
+}

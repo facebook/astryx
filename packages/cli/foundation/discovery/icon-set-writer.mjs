@@ -961,7 +961,7 @@ export function generatedModuleText(
   );
   if (needsAdapter && !data.adapter) {
     throw new IconSetAuthoringError(
-      'An icon here is not a component, so the set needs an adapter. Declare "adapter": {"module": "./src/adapt.js", "export": "adapt"} in the data file: a function in your package that turns the library export into a component (astryx docs cli/integrations/building-blocks/icon-sets library-shapes).',
+      'An icon here is not a component, so the set needs an adapter. Declare "adapter": {"module": "./src/adapt.js", "export": "adapt"} in the data file: a function in your package that turns the library export into a component (astryx docs cli/experimental/icon-sets library-shapes).',
       'ERR_INVALID_ARGUMENT',
     );
   }

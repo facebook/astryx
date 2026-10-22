@@ -52,6 +52,8 @@ import {
   cliDocSection,
 } from '../../foundation/discovery/cli-self-docs.mjs';
 import {
+  EXPERIMENTAL_AUTHORING_ROUTE,
+  isExperimentalSelfDoc,
   loadAuthoringSelfDocs,
   schemaFieldTable,
   selfDocSection,
@@ -614,14 +616,19 @@ function docFinderOver(catalog, tree, fromProvider, summaries = true) {
         ? await authoringDoc(catalog, parsed.kind, parsed.name)
         : null;
     if (authored) {
+      // An experimental schema is a section of its experimental route, not
+      // of `astryx docs authoring` (spec:AST-084 FR0).
+      const route = isExperimentalSelfDoc(authored)
+        ? EXPERIMENTAL_AUTHORING_ROUTE
+        : 'authoring';
       return {
         link: {
           target,
           id: createDocId(provider, authored.type, authored.name),
-          route: 'authoring',
+          route,
           title: authored.displayName ?? authored.name,
           summary: authored.description ?? '',
-          command: `astryx docs authoring ${authored.name}`,
+          command: `astryx docs ${route} ${authored.name}`,
         },
         kind: parsed.kind,
         typed: {doc: authored, providerId: CLI_PROVIDER_ID, tree: false},

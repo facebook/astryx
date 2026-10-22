@@ -6,7 +6,9 @@ import * as path from 'node:path';
 import {
   AUTHORING_SELF_DOCS,
   auditAuthoringSelfDocs,
+  EXPERIMENTAL_AUTHORING_ROUTE,
   buildAuthoringTopic,
+  buildExperimentalAuthoringSections,
   discoverAuthoringSelfDocSources,
 } from './authoring-self-docs.mjs';
 import {
@@ -30,8 +32,10 @@ describe('authoring self-docs', () => {
   });
 
   it('audits clean: every self-doc loads, is reachable, and fits one read', async () => {
+    // The three experimental schemas are sections of their own route, not of
+    // `astryx docs authoring` (spec:AST-084 FR0).
     expect(await auditAuthoringSelfDocs()).toEqual({
-      sections: AUTHORING_SELF_DOCS.length,
+      sections: AUTHORING_SELF_DOCS.length - 3,
       experimental: 3,
       unreachable: [],
       failed: [],
@@ -39,10 +43,21 @@ describe('authoring self-docs', () => {
     });
   });
 
-  it('builds a valid topic with one section per self-doc', async () => {
+  it('builds a valid topic with one section per stable self-doc, and serves the experimental ones on their own route', async () => {
     const topic = await buildAuthoringTopic();
     expect(problemsInTopic(topic)).toEqual([]);
-    expect(topic.sections).toHaveLength(AUTHORING_SELF_DOCS.length);
+    expect(topic.sections).toHaveLength(AUTHORING_SELF_DOCS.length - 3);
+    const experimental = await buildExperimentalAuthoringSections();
+    expect(experimental.map(section => section.id)).toEqual([
+      'icon-set-doc',
+      'icon-set-data',
+      'icon-definition-doc',
+    ]);
+    expect(topic.sections.map(section => section.id)).not.toContain(
+      'icon-set-doc',
+    );
+    const read = await docs(EXPERIMENTAL_AUTHORING_ROUTE, 'icon-set-data');
+    expect(read.data.title).toBe('IconSetData');
   });
 
   it(

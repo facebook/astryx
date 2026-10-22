@@ -75,7 +75,14 @@ export const doc = {
       name: 'adopts',
       type: 'NamespaceAdoptionRule[]',
       description:
-        "Provider-local rules that adopt otherwise-unplaced docs from a logical discovery group. They never scan a folder. `source.packages: 'all'` is experimental: it adopts the group from every package, and is read only on the CLI's own namespaces that are marked `stability: 'experimental'`.",
+        'Provider-local rules that adopt otherwise-unplaced docs from a logical discovery group. They never scan a folder.',
+    },
+    {
+      name: 'adopts[].source.packages',
+      type: "'all'",
+      stability: 'experimental',
+      description:
+        "Experimental: may change or be removed in a patch release. `'all'` adopts the group from every package, not only the namespace's own, and is read only on the CLI's own namespaces that are marked `stability: 'experimental'`.",
     },
     {
       name: 'blocks',

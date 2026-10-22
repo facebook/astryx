@@ -63,8 +63,10 @@ icon, and the CLI verifies it, writes the files, and checks the set.
     is discover's `icon-set`, read only with the opt-in (FR17, DEC-8);
   - configuration is `experimental.iconSet` in `astryx.config`, the project's
     opt-in, and `experimental.iconSets` in the integration manifest;
-  - the docs live under `cli/experimental` (the guide and the
-    `icon-definitions` namespace) and carry `stability: 'experimental'`;
+  - the docs live under `cli/experimental` (the guide, the `icon-set-files`
+    reference of the descriptor, data file, and definition schemas, which
+    stable `astryx docs authoring` never lists, and the `icon-definitions`
+    namespace) and carry `stability: 'experimental'`;
     API functions and authoring types carry `@experimental`; and
   - every change ships as an `[experimental]` patch Changeset. Promotion to
     stable needs the owner's approval and a `[feat]` Changeset
@@ -279,8 +281,8 @@ discover`, Doctor, and `integration check` and `verify` give the output they
   validate fields.
 - `contributing:cli-conventions`: `IconSetDoc`, `IconSetData`, and
   `IconDefinitionDoc` join the authoring types.
-- Consumer docs: `cli/experimental/icon-sets` and
-  `cli/experimental/icon-definitions`.
+- Consumer docs: `cli/experimental/icon-sets`,
+  `cli/experimental/icon-set-files`, and `cli/experimental/icon-definitions`.
 - `spec:AST-051`: discover's `icon-set` kind, read only with the opt-in.
 
 ## Verification

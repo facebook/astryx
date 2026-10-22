@@ -32,6 +32,7 @@ import {
   loadCliSelfDocs,
 } from '../foundation/discovery/cli-self-docs.mjs';
 import {routeSegment} from '../foundation/discovery/docs-section-key.mjs';
+import {EXPERIMENTAL_AUTHORING_ROUTE} from '../foundation/discovery/authoring-self-docs.mjs';
 import {generateCompressedIndex} from '../foundation/agent-docs/agent-docs.mjs';
 import {program, JSON_SUPPORTED} from '../clients/cli/index.mjs';
 import {buildManifest} from '../clients/cli/lib/manifest.mjs';
@@ -397,18 +398,28 @@ describe('the docs graph', () => {
     // of `astryx docs authoring`.
     const {loaded, failed} = await loadCliSelfDocs(discoverCliSelfDocSources(CLI), CLI);
     expect(failed).toEqual([]);
-    const authoring = reads.get(`${TOP} authoring --index`)?.data.sections ?? [];
+    // An experimental schema is a section of its own experimental route
+    // instead (spec:AST-084 FR0).
+    // That route is a tree node: one read returns all its sections.
+    const sectionsOf = (/** @type {string} */ route) =>
+      (reads.get(`${TOP} ${route} --index`) ?? reads.get(`${TOP} ${route}`))
+        ?.data.sections ?? [];
     for (const {source, doc} of loaded) {
       const leaf = [...tree.nodes.values()].find(
         node => node.kind === doc.type && node.name === doc.name,
       );
-      const section = authoring.find(
+      const route =
+        doc.stability === 'experimental'
+          ? EXPERIMENTAL_AUTHORING_ROUTE
+          : 'authoring';
+      const section = sectionsOf(route).find(
         (/** @type {any} */ s) => s.id === routeSegment(doc.name) || s.title === doc.displayName,
       );
       const ok = leaf
         ? reached(`${TOP} ${leaf.route}`)
         : section
-          ? reached(`${TOP} authoring ${section.id}`)
+          ? reached(`${TOP} ${route} ${section.id}`) ||
+            (route !== 'authoring' && reached(`${TOP} ${route}`))
           : false;
       if (!ok) unreached.push(source);
     }

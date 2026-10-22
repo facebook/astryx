@@ -1229,9 +1229,10 @@ export async function checkAuthoringDocs(_ctx, options = {}) {
       id,
       label,
       status: 'pass',
-      // Experimental schemas are checked like every other but not counted,
-      // so the count is unchanged without them (spec:AST-017 FR27).
-      message: `All ${audit.sections - (audit.experimental ?? 0)} authoring schemas are readable in \`${formatCliCommand('docs authoring')}\`.`,
+      // Experimental schemas are checked like every other but are sections
+      // of their experimental route, so the count is unchanged without them
+      // (spec:AST-017 FR27).
+      message: `All ${audit.sections} authoring schemas are readable in \`${formatCliCommand('docs authoring')}\`.`,
     };
   } catch (err) {
     return {

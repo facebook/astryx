@@ -940,7 +940,7 @@ describe('checkAuthoringDocs against the public authoring surface', () => {
       fs.rmSync(path.join(root, source));
       const sources = without(source);
       expect(await auditAuthoringSelfDocs({root, sources})).toEqual({
-        sections: sources.length,
+        sections: sources.length - 3,
         experimental: 3,
         unreachable: [],
         failed: [],

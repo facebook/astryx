@@ -80,7 +80,7 @@ export default {
     },
     {
       type: 'prose',
-      text: "IconSetDoc is static metadata. The descriptor holds one default-exported object of literal string and boolean fields, directly under a `/** @type {import('@astryxdesign/cli/authoring').IconSetDoc} */` comment, and nothing else. Discovery reads it, and the data file, without executing them or the icon module.",
+      text: "Write the descriptor as one default-exported object of literal strings and booleans under a `/** @type {import('@astryxdesign/cli/authoring').IconSetDoc} */` comment, with nothing else in the file. Discovery reads it, and the data file, without executing them or the icon module.",
     },
     {
       type: 'prose',
