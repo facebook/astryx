@@ -50,11 +50,15 @@ highlight follows the pointer — is contracted by
 
 ## Compatibility and migration
 
-- Released default preserved: `yes`
-- Compatibility class: additive documentation; the press-model behavior
-  delta is recorded in `module:DropdownMenu/useMenuPress`
+- Released default preserved: `no` — with proposed FR21, ArrowDown in a
+  single-line text field in `header` moves focus to the first row, where the
+  released header kept every key of its own
+- Compatibility class: breaking interaction change under `spec:AST-017` FR1
+  (proposed FR21); the press-model behavior delta is recorded in
+  `module:DropdownMenu/useMenuPress`
 - Controlled/uncontrolled behavior: unchanged
-- Migration decision: `module:DropdownMenu/useMenuPress/DEC-3`; proposed
+- Migration decision: a field that needs ArrowDown prevents its default
+  (proposed DEC-14); `module:DropdownMenu/useMenuPress/DEC-3`; proposed
   `module:DropdownMenu/useMenuPress/DEC-4`
 
 Consumer migration instructions belong in consumer docs and release notes.
