@@ -195,21 +195,22 @@ function checkContract(set, packageName, pkg, unchecked) {
   /** @type {Issue[]} */
   const issues = [];
   const label = `Icon set "${set.name}"`;
-  const subpaths =
-    pkg.exports != null &&
-    typeof pkg.exports === 'object' &&
-    !Array.isArray(pkg.exports)
-      ? Object.keys(pkg.exports).filter(
-          key => key.startsWith('./') && !key.includes('*'),
-        )
-      : [];
-  const publicModules = new Set([
-    packageName,
-    ...subpaths.map(subpath => `${packageName}/${subpath.slice(2)}`),
-  ]);
+  const packageDir = /** @type {string} */ (set.packageDir);
+  /**
+   * Is `module` the package itself, or a subpath its `exports` map exposes
+   * (pattern keys such as `./*` included)? With no `exports`, only the
+   * package name is public.
+   * @param {string} module
+   */
+  const isPublic = module => {
+    if (module === packageName) return true;
+    const {name, subpath} = splitSpecifier(module);
+    if (name !== packageName || pkg.exports === undefined) return false;
+    return inspectPackageExport(pkg, packageDir, subpath).exported;
+  };
   /** @param {string} module @param {string} what */
   const checkModule = (module, what) => {
-    if (!publicModules.has(module)) {
+    if (!isPublic(module)) {
       issues.push(
         issueError(
           ICON_MODULE_NOT_PUBLIC,
@@ -245,7 +246,6 @@ function checkContract(set, packageName, pkg, unchecked) {
       checkName(variant.export, `a variant of icon "${icon.id}"`);
     }
   }
-  const packageDir = /** @type {string} */ (set.packageDir);
   if (set.data.generated) {
     const file = path.join(packageDir, set.data.generated);
     const typesRel = generatedTypesPath(set.data.generated);

@@ -200,6 +200,43 @@ describe('iconSetIssues', () => {
       );
     });
 
+    it('a module public only through a pattern subpath is public; a subpath no key matches is not', () => {
+      /** @param {Record<string, string>} exports @param {string} module */
+      const contractIssues = (exports, module) => {
+        writeIconPackage(dir, {
+          data: data(d => (d.icons[0].module = module)),
+          modules: modules({
+            'dist/outline.js': "export {XIcon} from '../icons/x.js';\n",
+          }),
+        });
+        const pkgFile = path.join(dir, 'package.json');
+        const pkg = JSON.parse(fs.readFileSync(pkgFile, 'utf-8'));
+        pkg.exports = exports;
+        fs.writeFileSync(pkgFile, JSON.stringify(pkg));
+        return iconSetIssues(dir, {
+          name: '@acme/glyphs',
+          iconSets: path.join(dir, 'icon-sets'),
+        }).filter(issue => issue.code === 'icon_module_not_public');
+      };
+      expect(
+        contractIssues(
+          {'.': './index.js', './*': './dist/*.js'},
+          '@acme/glyphs/outline',
+        ),
+      ).toEqual([]);
+      expect(
+        contractIssues(
+          {'.': './index.js', './icons/*': './dist/*.js'},
+          '@acme/glyphs/outline',
+        ),
+      ).toEqual([
+        expect.objectContaining({
+          code: 'icon_module_not_public',
+          severity: 'error',
+        }),
+      ]);
+    });
+
     it('an export not named <Name>Icon warns', () => {
       const issues = issuesOf({
         data: data(d => (d.icons[3].export = 'House')),
