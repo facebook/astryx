@@ -2,7 +2,7 @@
 
 import {butterPalettes} from '@astryxdesign/theme-butter';
 import {gothicPalettes} from '@astryxdesign/theme-gothic';
-import {stonePalettes} from '@astryxdesign/theme-stone';
+import {palette as stoneModePalettes} from '../../../../../../../packages/themes/stone/src/stonePalettes.generated';
 import {y2kPalettes} from '@astryxdesign/theme-y2k';
 
 import {hexToHct, hctToHex} from '../color-studio/colorUtils';
@@ -152,18 +152,82 @@ const stoneFamilies = [
     'neutral',
     'Stone Neutral',
     '#e2e2e2',
-    stonePalettes.neutral,
+    stoneModePalettes.neutral.light,
     'neutral',
+    stoneModePalettes.neutral.dark,
   ),
-  storedFamily('blue', 'Blue', '#d7e4f5', stonePalettes.blue),
-  storedFamily('cyan', 'Cyan', '#cce8e5', stonePalettes.cyan),
-  storedFamily('green', 'Green', '#d0e9ce', stonePalettes.green),
-  storedFamily('teal', 'Teal', '#d4e7dc', stonePalettes.teal),
-  storedFamily('yellow', 'Yellow', '#f4e1b7', stonePalettes.yellow),
-  storedFamily('orange', 'Orange', '#ffdcbb', stonePalettes.orange),
-  storedFamily('red', 'Red', '#f9dcd7', stonePalettes.red),
-  storedFamily('pink', 'Pink', '#f0dde8', stonePalettes.pink),
-  storedFamily('purple', 'Purple', '#e8dff3', stonePalettes.purple),
+  storedFamily(
+    'blue',
+    'Blue',
+    '#d7e4f5',
+    stoneModePalettes.blue.light,
+    'chromatic',
+    stoneModePalettes.blue.dark,
+  ),
+  storedFamily(
+    'cyan',
+    'Cyan',
+    '#cce8e5',
+    stoneModePalettes.cyan.light,
+    'chromatic',
+    stoneModePalettes.cyan.dark,
+  ),
+  storedFamily(
+    'green',
+    'Green',
+    '#d0e9ce',
+    stoneModePalettes.green.light,
+    'chromatic',
+    stoneModePalettes.green.dark,
+  ),
+  storedFamily(
+    'teal',
+    'Teal',
+    '#d4e7dc',
+    stoneModePalettes.teal.light,
+    'chromatic',
+    stoneModePalettes.teal.dark,
+  ),
+  storedFamily(
+    'yellow',
+    'Yellow',
+    '#f4e1b7',
+    stoneModePalettes.yellow.light,
+    'chromatic',
+    stoneModePalettes.yellow.dark,
+  ),
+  storedFamily(
+    'orange',
+    'Orange',
+    '#ffdcbb',
+    stoneModePalettes.orange.light,
+    'chromatic',
+    stoneModePalettes.orange.dark,
+  ),
+  storedFamily(
+    'red',
+    'Red',
+    '#f9dcd7',
+    stoneModePalettes.red.light,
+    'chromatic',
+    stoneModePalettes.red.dark,
+  ),
+  storedFamily(
+    'pink',
+    'Pink',
+    '#f0dde8',
+    stoneModePalettes.pink.light,
+    'chromatic',
+    stoneModePalettes.pink.dark,
+  ),
+  storedFamily(
+    'purple',
+    'Purple',
+    '#e8dff3',
+    stoneModePalettes.purple.light,
+    'chromatic',
+    stoneModePalettes.purple.dark,
+  ),
 ];
 
 const gothicFamilies = [
