@@ -4,6 +4,7 @@
 
 /**
  * @file BaseTypeahead.tsx
+ * Source busy announcements stay here, independent of composed indicator lanes.
  * @input Uses React, StyleX, usePopover, TypeaheadItem
  * @output Exports BaseTypeahead; focus bootstraps a replaced search source
  * @position Core implementation; used by Typeahead and Tokenizer
@@ -39,6 +40,7 @@ import {isImeKeyEvent} from '../utils/ime';
 import {TypeaheadItem} from './TypeaheadItem';
 import {Icon} from '../Icon';
 import {Spinner} from '../Spinner';
+import {BusyAnnouncement} from '../utils/BusyAnnouncement';
 import {
   borderVars,
   colorVars,
@@ -1216,9 +1218,13 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
           style,
         )}
       />
+      <BusyAnnouncement
+        isBusy={isLoading}
+        message={t('@astryx.typeahead.loading')}
+      />
       {isLoading && busyLane == null && (
         <span {...stylex.props(styles.loadingStatus)}>
-          <Spinner size="sm" aria-label={t('@astryx.typeahead.loading')} />
+          <Spinner size="sm" aria-hidden="true" role={undefined} />
         </span>
       )}
       {popover.render(

@@ -4,6 +4,7 @@
 
 /**
  * @file DropdownMenuSubMenu.tsx
+ * Busy starts are announced by the submenu owner; its indicator is silent.
  * @input React, stylex, useLayer (context mode), useListFocus, useMenuHover,
  *   useTypeahead, the shared viewport-safe menu-width resolver, Item, Icon,
  *   Spinner, and DropdownMenu context + item roles
@@ -66,6 +67,7 @@ import {createPortal} from 'react-dom';
 import * as stylex from '@stylexjs/stylex';
 import {Icon, renderIconSlot, type IconType} from '../Icon';
 import {Spinner} from '../Spinner';
+import {BusyAnnouncement} from '../utils/BusyAnnouncement';
 import {MenuRegionsContext} from './menuRegionsContext';
 import {moveRegionsTab} from './menuRegionStops';
 import {Item} from '../Item';
@@ -1033,7 +1035,7 @@ export function DropdownMenuSubMenu(
 
   const endAffordance = hasSpinner ? (
     <span {...stylex.props(triggerStyles.caret)}>
-      <Spinner size="sm" />
+      <Spinner size="sm" aria-hidden="true" role={undefined} />
     </span>
   ) : (
     <span {...stylex.props(triggerStyles.caret)}>
@@ -1231,6 +1233,7 @@ export function DropdownMenuSubMenu(
           style,
         })}
       />
+      <BusyAnnouncement isBusy={hasSpinner} />
       {activeDrillIn != null
         ? isOnStack &&
           activeDrillIn.host != null &&

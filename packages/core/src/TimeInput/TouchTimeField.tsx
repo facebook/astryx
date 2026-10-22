@@ -4,6 +4,7 @@
 
 /**
  * @file TouchTimeField.tsx
+ * Busy starts are announced by the field; the composed Spinner is silent.
  * @input Uses React, Field, BottomSheet, Wheel, DateInput touch geometry
  *   tokens, and shared time utilities
  * @output Exports TouchTimeField — the bottom-sheet surface behind TimeInput
@@ -49,6 +50,7 @@ import {useTranslator} from '../i18n';
 import {colorVars, sizeVars, spacingVars} from '../theme/tokens.stylex';
 import {useSize} from '../SizeContext/SizeContext';
 import {Spinner} from '../Spinner';
+import {BusyAnnouncement} from '../utils/BusyAnnouncement';
 import {useTooltip} from '../Tooltip';
 import {Wheel, type WheelOption} from '../DateInput/Wheel';
 import {dateInputTouchGeometry} from '../DateInput/tokens.stylex';
@@ -516,7 +518,8 @@ export function TouchTimeField({
         }
         {...stylex.props(styles.input)}
       />
-      {isBusy && <Spinner size="sm" />}
+      <BusyAnnouncement isBusy={isBusy} />
+      {isBusy && <Spinner size="sm" aria-hidden="true" role={undefined} />}
       {hasClear && optimisticValue && !isEffectivelyDisabled && (
         <InputClearButton
           label={t('@astryx.timeInput.clearLabel', {label})}

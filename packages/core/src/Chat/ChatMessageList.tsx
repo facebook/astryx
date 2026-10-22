@@ -4,6 +4,7 @@
 
 /**
  * @file ChatMessageList.tsx
+ * History-loading announcements belong to the list, outside the transcript log.
  * @input Uses React, StyleX, ChatListContext, theme tokens, spacing step utilities,
  *   and isRenderable to preserve accepted empty-state content
  * @output Exports ChatMessageList component and ChatMessageListProps
@@ -34,6 +35,7 @@ import {
 } from './ChatContext';
 import {isRenderable, mergeProps} from '../utils';
 import {Spinner} from '../Spinner';
+import {BusyAnnouncement} from '../utils/BusyAnnouncement';
 import type {BaseProps} from '../BaseProps';
 import type {SpacingStep} from '../utils/types';
 import {themeProps} from '../utils/themeProps';
@@ -286,6 +288,7 @@ export function ChatMessageList({
 
   return (
     <ChatListContext value={contextValue}>
+      <BusyAnnouncement isBusy={isLoadingTop} />
       <div
         {...rest}
         ref={ref}
@@ -309,7 +312,7 @@ export function ChatMessageList({
           {/* Loading spinner at top */}
           {isLoadingTop && (
             <div {...stylex.props(styles.loadingTop)}>
-              <Spinner size="md" />
+              <Spinner size="md" aria-hidden="true" role={undefined} />
             </div>
           )}
 

@@ -3,6 +3,7 @@
 'use client';
 /**
  * @file CommandPaletteInput.tsx
+ * The loading indicator is silent; CommandPalette owns busy announcements.
  * @input Uses React, StyleX, Icon, CommandPaletteContext, DialogContext
  * @output Exports CommandPaletteInput component and props
  * @position Search input for the command palette
@@ -335,7 +336,7 @@ export function CommandPaletteInput({
         <span {...stylex.props(styles.end)}>
           {ctx?.isBusy && (
             <span {...stylex.props(styles.icon, styles.spinner)}>
-              <Spinner size="sm" />
+              <Spinner size="sm" aria-hidden="true" role={undefined} />
             </span>
           )}
           {hasEndContent && endContent}

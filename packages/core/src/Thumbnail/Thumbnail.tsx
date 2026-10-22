@@ -4,6 +4,7 @@
 
 /**
  * @file Thumbnail.tsx
+ * Busy starts follow isLoading, independently of the silent upload overlay.
  * @input Uses React, stylex, Button, Skeleton, Spinner
  * @output Exports Thumbnail component, ThumbnailProps
  * @position Core implementation; consumed by index.ts
@@ -38,6 +39,7 @@ import {Button} from '../Button';
 import {Icon} from '../Icon';
 import {Skeleton} from '../Skeleton';
 import {Spinner} from '../Spinner';
+import {BusyAnnouncement} from '../utils/BusyAnnouncement';
 import {Tooltip} from '../Tooltip/Tooltip';
 import {useDevWarning} from '../hooks/useDevWarning';
 import {useContainerReveal} from '../hooks/useContainerReveal';
@@ -473,7 +475,12 @@ export function Thumbnail({
         {showImage && <div {...stylex.props(styles.insetBorder)} />}
         {showUploadOverlay && (
           <div {...stylex.props(styles.uploadOverlay)}>
-            <Spinner size="sm" shade="onMedia" />
+            <Spinner
+              size="sm"
+              shade="onMedia"
+              aria-hidden="true"
+              role={undefined}
+            />
           </div>
         )}
         {removeButtonEl}
@@ -481,11 +488,16 @@ export function Thumbnail({
     </div>
   );
 
-  if (label != null) {
-    return <Tooltip content={label}>{thumbnail}</Tooltip>;
-  }
-
-  return thumbnail;
+  return (
+    <>
+      <BusyAnnouncement isBusy={isLoading} />
+      {label != null ? (
+        <Tooltip content={label}>{thumbnail}</Tooltip>
+      ) : (
+        thumbnail
+      )}
+    </>
+  );
 }
 
 Thumbnail.displayName = 'Thumbnail';

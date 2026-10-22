@@ -4,6 +4,7 @@
 
 /**
  * @file TimeInput.tsx
+ * Busy starts are announced by the field; the composed Spinner is silent.
  * @input Uses React, Field, NativeTimeSegment, InputGroupContext, pointer media queries, and shared time utilities
  * @output Exports TimeInput, TimeInputProps, and TimeInputNativePicker
  * @position Core implementation; consumed by index.ts, tested by TimeInput.test.tsx
@@ -48,6 +49,7 @@ import {
 } from '../Field';
 import {Icon} from '../Icon';
 import {Spinner} from '../Spinner';
+import {BusyAnnouncement} from '../utils/BusyAnnouncement';
 import {VisuallyHidden} from '../VisuallyHidden';
 import {
   type ISOTimeString,
@@ -865,7 +867,8 @@ function TimeField({
           </VisuallyHidden>
         </>
       )}
-      {isBusy && <Spinner size="sm" />}
+      <BusyAnnouncement isBusy={isBusy} />
+      {isBusy && <Spinner size="sm" aria-hidden="true" role={undefined} />}
       {hasClear && optimisticValue && !isDisabled && (
         <InputClearButton
           label={t('@astryx.timeInput.clearLabel', {label})}

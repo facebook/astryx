@@ -4,6 +4,7 @@
 
 /**
  * @file FileInput.tsx
+ * Busy starts are announced by the field in both modes; Spinners are silent.
  * @input Uses React, useId, Field, Icon, Spinner, VisuallyHidden
  * @output Exports FileInput component, public types, and its root/icon theme targets
  * @position Core implementation; consumed by index.ts, tested by FileInput.test.tsx
@@ -45,6 +46,7 @@ import {
 } from '../Field';
 import {Icon} from '../Icon';
 import {Spinner} from '../Spinner';
+import {BusyAnnouncement} from '../utils/BusyAnnouncement';
 import {VisuallyHidden} from '../VisuallyHidden';
 import {useAnnounce} from '../hooks/useAnnounce';
 import {useInputStatusIcon} from '../hooks/useInputStatusIcon';
@@ -741,7 +743,7 @@ export function FileInput({
 
   const renderDropzoneContent = () => {
     if (isBusy) {
-      return <Spinner size="md" />;
+      return <Spinner size="md" aria-hidden="true" role={undefined} />;
     }
     if (hasFiles) {
       return (
@@ -772,7 +774,7 @@ export function FileInput({
           <span {...stylex.props(styles.fileNameText)}>
             {fileNames ?? displayPlaceholder}
           </span>
-          <Spinner size="sm" />
+          <Spinner size="sm" aria-hidden="true" role={undefined} />
         </>
       );
     }
@@ -906,6 +908,7 @@ export function FileInput({
           tabIndex={-1}
           {...stylex.props(styles.hiddenInput)}
         />
+        <BusyAnnouncement isBusy={isBusy} />
         {isDropzone ? renderDropzoneContent() : renderCompactContent()}
         {hasFiles && !isDisabled && !isBusy && (
           <InputClearButton

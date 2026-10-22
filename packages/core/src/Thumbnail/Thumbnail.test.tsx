@@ -1,5 +1,12 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+/**
+ * @file Thumbnail.test.tsx
+ * @input Thumbnail rendering, loading, naming, and interaction states
+ * @output Visual-state and accessibility regressions, including a silent busy Spinner
+ * @position Colocated Thumbnail contract tests; shared owner delivery is tested separately
+ */
+
 import {describe, it, expect, vi} from 'vitest';
 import {render, screen, fireEvent} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -27,8 +34,8 @@ describe('Thumbnail', () => {
     expect(screen.queryByRole('img')).toBeNull();
   });
 
-  it('shows image with upload overlay when isLoading with src', () => {
-    render(
+  it('shows image with a decorative upload overlay when isLoading with src', () => {
+    const {container} = render(
       <Thumbnail
         src="/local.jpg"
         alt="Uploading"
@@ -38,7 +45,10 @@ describe('Thumbnail', () => {
     );
     const img = screen.getByRole('img');
     expect(img).toHaveAttribute('src', '/local.jpg');
-    expect(screen.getByRole('status')).toBeInTheDocument();
+    const spinner = container.querySelector('.astryx-spinner');
+    expect(spinner).toHaveAttribute('aria-hidden', 'true');
+    expect(spinner).not.toHaveAttribute('role');
+    expect(screen.queryByRole('status', {name: 'Loading'})).toBeNull();
   });
 
   it('exposes the label as an accessible name via a valid group role', () => {

@@ -4,6 +4,7 @@
 
 /**
  * @file TextInput.tsx
+ * The busy Spinner carries no live role; useBusyAnnouncement owns delivery.
  * @input Uses React, useId, ChangeEvent, Field, Icon, InputGroupContext
  * @output Exports TextInput component, TextInputProps
  * @position Core implementation; consumed by index.ts, tested by TextInput.test.tsx
@@ -510,7 +511,7 @@ export function TextInput({
           onClick={handleClear}
         />
       )}
-      {isBusy && <Spinner size="sm" aria-hidden="true" />}
+      {isBusy && <Spinner size="sm" aria-hidden="true" role={undefined} />}
       {statusIcon}
     </div>
   );

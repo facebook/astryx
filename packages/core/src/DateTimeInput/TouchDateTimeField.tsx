@@ -4,6 +4,7 @@
 
 /**
  * @file TouchDateTimeField.tsx
+ * Busy starts are announced once for both segments; the composed Spinner is silent.
  * @input Uses React, Field, BottomSheet, SegmentedControl, DateInput month picker primitives, Wheel, StyleX intrinsic flex layout
  * @output Exports TouchDateTimeField — the coarse-pointer surface behind DateTimeInput
  * @position Internal component; consumed by DateTimeInput.tsx
@@ -53,6 +54,7 @@ import {useTranslator, InternationalizationContext} from '../i18n';
 import {SegmentedControl, SegmentedControlItem} from '../SegmentedControl';
 import {useSize} from '../SizeContext/SizeContext';
 import {Spinner} from '../Spinner';
+import {BusyAnnouncement} from '../utils/BusyAnnouncement';
 import {useTooltip} from '../Tooltip';
 import {useFieldInputStyling} from '../Field/fieldParts';
 import {
@@ -1412,7 +1414,8 @@ export function TouchDateTimeField({
               onClick={handleClear}
             />
           )}
-          {isBusy && <Spinner size="sm" />}
+          <BusyAnnouncement isBusy={isBusy} />
+          {isBusy && <Spinner size="sm" aria-hidden="true" role={undefined} />}
           {isRenderable(statusIcon) && statusIcon}
         </div>
 

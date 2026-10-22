@@ -3,7 +3,7 @@
 /**
  * @file NativeDateField.test.tsx
  * @input Uses vitest, @testing-library/react, DateInput
- * @output Unit tests for the OS-picker surface (`nativePicker`)
+ * @output OS-picker surface (`nativePicker`) tests, including silent busy indicators
  * @position Testing; validates NativeDateField.tsx
  *
  * Every test renders through `DateInput` with a pointer stubbed, so the
@@ -28,6 +28,7 @@ import {
   resetDateSegmentProbe,
 } from './nativeDateSegments';
 import {InternationalizationProvider} from '../i18n';
+import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
 
 /**
  * Lets a test say which kind of `<input type="date">` the engine draws.
@@ -109,6 +110,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  __resetLiveRegionsForTest();
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
   segmentState.editable = null;
@@ -222,7 +224,7 @@ describe('DateInput nativePicker', () => {
     expect(changeAction).toHaveBeenCalledExactlyOnceWith('2026-03-21');
     expect(getInput()).not.toBeDisabled();
     expect(getInput()).toHaveAttribute('aria-busy', 'true');
-    expect(screen.getByRole('status', {name: 'Loading'})).toBeInTheDocument();
+    expect(document.querySelector('.astryx-spinner')).toBeInTheDocument();
     expect(screen.getByText('March 21, 2026')).toBeInTheDocument();
 
     fireEvent.change(getInput(), {target: {value: '2026-03-22'}});
@@ -597,7 +599,7 @@ describe('DateInput nativePicker', () => {
 
     expect(calls).toEqual(['onChange', 'changeAction']);
     expect(changeAction).toHaveBeenCalledExactlyOnceWith(undefined);
-    expect(screen.getByRole('status', {name: 'Loading'})).toBeInTheDocument();
+    expect(document.querySelector('.astryx-spinner')).toBeInTheDocument();
     await act(async () => resolveAction());
   });
 

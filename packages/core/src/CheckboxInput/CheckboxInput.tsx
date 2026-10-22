@@ -4,6 +4,7 @@
 
 /**
  * @file CheckboxInput.tsx
+ * Busy starts are announced by the checkbox, outside its decorative indicator.
  * @input Uses React, useId, ChangeEvent, FieldLabel, FieldStatus, IconType, InputStatus, useTooltip
  * @output Exports CheckboxInput component, CheckboxInputProps
  * @position Core implementation; consumed by index.ts, tested by CheckboxInput.test.tsx
@@ -42,6 +43,7 @@ import {FieldStatus} from '../FieldStatus/FieldStatus';
 import type {IconType} from '../Icon';
 import type {InputStatus} from '../Field/types';
 import {Spinner} from '../Spinner';
+import {BusyAnnouncement} from '../utils/BusyAnnouncement';
 import {useTooltip} from '../Tooltip';
 import {mergeProps, rtlStyles} from '../utils';
 import {indicatorScope} from '../Indicator/indicator.markers.stylex';
@@ -518,7 +520,14 @@ export function CheckboxInput({
               }
               size={size}
               isDisabled={isDisabled}>
-              {isBusy ? <Spinner size="sm" shade="inherit" /> : null}
+              {isBusy ? (
+                <Spinner
+                  size="sm"
+                  shade="inherit"
+                  aria-hidden="true"
+                  role={undefined}
+                />
+              ) : null}
             </CheckboxControl>
           </span>
         </div>
@@ -541,6 +550,7 @@ export function CheckboxInput({
           />
         </div>
       </div>
+      <BusyAnnouncement isBusy={isBusy} />
       {status?.message && (
         <FieldStatus
           type={status.type}

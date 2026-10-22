@@ -3,7 +3,7 @@
 /**
  * @file CommandPalette.test.tsx
  * @input Uses vitest, @testing-library/react, CommandPalette
- * @output Unit tests for CommandPalette dialog shell
+ * @output CommandPalette shell, result feedback, and modal busy-announcement tests
  * @position Testing; validates CommandPalette.tsx implementation
  */
 
@@ -707,7 +707,7 @@ describe('CommandPalette', () => {
       }
     });
 
-    it('announces loading politely while a search is in flight', async () => {
+    it('announces loading inside the native dialog while a search is in flight', async () => {
       // A source whose searches never resolve, so the palette stays busy and
       // only the loading announcement can reach the live region.
       const source: SearchSource = {
@@ -725,11 +725,14 @@ describe('CommandPalette', () => {
       );
       fireEvent.change(screen.getByRole('combobox'), {target: {value: 'z'}});
       await waitFor(() => {
-        expect(politeRegion()).toHaveTextContent('Loading');
+        expect(
+          document.querySelector('dialog [role="status"]'),
+        ).toHaveTextContent('Loading');
+        expect(politeRegion()?.textContent ?? '').not.toContain('Loading');
       });
     });
 
-    it('does not announce on initial open (bootstrap)', async () => {
+    it('does not announce results on initial open (bootstrap)', async () => {
       render(
         <CommandPalette
           isOpen={true}

@@ -4,6 +4,7 @@
 
 /**
  * @file NativeDateField.tsx
+ * Busy starts are announced by the field; the composed Spinner is silent.
  * @input Uses React, Field, Icon, InputClearButton, Spinner, useCalendarConstraints, hasEditableDateSegments
  * @output Exports NativeDateField — the OS-picker touch surface
  * @position One of DateInput's three surfaces. `DateInput` picks the pointer
@@ -58,6 +59,7 @@ import {joinAriaIDs} from '../utils/inputAria';
 import {groupStyles} from '../InputGroup/groupStyles';
 import {useSize} from '../SizeContext';
 import {Spinner} from '../Spinner';
+import {BusyAnnouncement} from '../utils/BusyAnnouncement';
 import {
   colorVars,
   radiusVars,
@@ -687,7 +689,8 @@ export function NativeDateField({
           onClick={handleClear}
         />
       )}
-      {isBusy && <Spinner size="sm" />}
+      <BusyAnnouncement isBusy={isBusy} />
+      {isBusy && <Spinner size="sm" aria-hidden="true" role={undefined} />}
       {statusIcon}
       {showsDisabledMessage &&
         disabledMessageTooltip.renderTooltip(disabledMessage)}

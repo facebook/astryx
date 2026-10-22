@@ -4,6 +4,7 @@
 
 /**
  * @file Tokenizer.tsx
+ * The loading indicator is silent; BaseTypeahead owns source busy announcements.
  * @input Uses React, BaseTypeahead, Field, Token, useAnnounce
  * @output Exports Tokenizer multi-select typeahead component
  * @position Composed component; forwards DOM ref and exposes focus control via
@@ -537,7 +538,14 @@ function EndLane({
   }
   return (
     <div ref={laneRef} {...stylex.props(laneXStyle)}>
-      {isBusy && <Spinner size="sm" aria-label={loadingLabel} />}
+      {isBusy && (
+        <Spinner
+          size="sm"
+          aria-label={loadingLabel}
+          aria-hidden="true"
+          role={undefined}
+        />
+      )}
       {children}
     </div>
   );

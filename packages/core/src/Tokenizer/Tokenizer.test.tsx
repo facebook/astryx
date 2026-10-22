@@ -3,7 +3,7 @@
 /**
  * @file Tokenizer.test.tsx
  * @input Uses vitest, @testing-library/react, Tokenizer
- * @output Unit tests for Tokenizer component
+ * @output Tokenizer behavior, layout, and silent busy-indicator regressions
  * @position Testing; validates Tokenizer.tsx
  *
  * SYNC: When Tokenizer.tsx changes, update tests to match
@@ -1675,7 +1675,7 @@ describe('Tokenizer end-lane reserve', () => {
       fireEvent.change(screen.getByRole('combobox'), {target: {value: 'Al'}});
     });
 
-    expect(screen.getByRole('status')).toBeInTheDocument();
+    expect(container.querySelector('.astryx-spinner')).toBeInTheDocument();
     expect(reserveOf(container)).toBe(
       `calc(var(--spacing-2) + ${LANE_LOCAL_WIDTH}px)`,
     );
@@ -1771,10 +1771,9 @@ describe('Tokenizer end-lane reserve', () => {
     await act(async () => {
       fireEvent.change(screen.getByRole('combobox'), {target: {value: 'Al'}});
     });
-    // The indicator is up, so the transition really did happen. Scoped by
-    // name: the announcer for result counts is a role="status" live region
-    // too, and it is not the indicator.
-    expect(screen.getByRole('status', {name: 'Loading'})).toBeInTheDocument();
+    // The silent visual indicator is up, so the transition really happened.
+    // The shared announcement region is not the indicator.
+    expect(document.querySelector('.astryx-spinner')).toBeInTheDocument();
     // ...and it cost no token a render.
     expect(renderedTokens).toEqual([]);
 
@@ -1783,9 +1782,7 @@ describe('Tokenizer end-lane reserve', () => {
       await Promise.resolve();
     });
     await waitFor(() => {
-      expect(
-        screen.queryByRole('status', {name: 'Loading'}),
-      ).not.toBeInTheDocument();
+      expect(document.querySelector('.astryx-spinner')).not.toBeInTheDocument();
     });
     expect(renderedTokens).toEqual([]);
   });
@@ -1823,24 +1820,20 @@ describe('Tokenizer end-lane reserve', () => {
 
     fireEvent.focus(input);
     await waitFor(() => {
-      expect(screen.getByRole('status', {name: 'Loading'})).toBeInTheDocument();
+      expect(document.querySelector('.astryx-spinner')).toBeInTheDocument();
     });
 
     fireEvent.click(screen.getByRole('button', {name: 'Add Token'}));
 
     await waitFor(() => {
-      expect(
-        screen.queryByRole('status', {name: 'Loading'}),
-      ).not.toBeInTheDocument();
+      expect(document.querySelector('.astryx-spinner')).not.toBeInTheDocument();
     });
 
     await act(async () => {
       settle([]);
       await Promise.resolve();
     });
-    expect(
-      screen.queryByRole('status', {name: 'Loading'}),
-    ).not.toBeInTheDocument();
+    expect(document.querySelector('.astryx-spinner')).not.toBeInTheDocument();
   });
 
   it('shares one observer across every field on the page', () => {

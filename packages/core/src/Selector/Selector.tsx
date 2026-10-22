@@ -4,6 +4,7 @@
 
 /**
  * @file Selector.tsx
+ * The busy Spinner carries no live role; useBusyAnnouncement owns delivery.
  * @input Uses React, StyleX, adaptive selection surfaces, theme-resolved
  *   indicators, Field, and InputGroup context
  * @output Exports Selector with input, secondary, and ghost trigger treatments, content-derived option-mark layout, and token-sized single-line triggers
@@ -2042,7 +2043,7 @@ export function Selector<T extends SelectorOptionType>(
         {htmlName != null && !isDisabled && (
           <input type="hidden" name={htmlName} value={value ?? ''} />
         )}
-        {isBusy && <Spinner size="sm" aria-hidden="true" />}
+        {isBusy && <Spinner size="sm" aria-hidden="true" role={undefined} />}
         {hasClear && value != null && !isDisabled && !isEffectivelyReadOnly && (
           <InternalInputClearButton
             {...keepOpenProps}

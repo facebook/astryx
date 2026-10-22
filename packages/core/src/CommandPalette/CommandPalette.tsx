@@ -3,6 +3,7 @@
 'use client';
 /**
  * @file CommandPalette.tsx
+ * Every busy start is delivered by the palette, locally inside native modals.
  * @input Uses React, Dialog, Layout, CommandPaletteContext, SearchSource,
  *   useCombobox, useAnnounce, useAnnounceRenderedText
  * @output Exports CommandPalette root component and props
@@ -38,6 +39,7 @@ import {CommandPaletteFooter} from './CommandPaletteFooter';
 import {CommandPaletteEmpty} from './CommandPaletteEmpty';
 import type {BaseProps} from '../BaseProps';
 import {useAnnounce} from '../hooks/useAnnounce';
+import {BusyAnnouncement} from '../utils/BusyAnnouncement';
 import {useAnnounceRenderedText} from '../hooks/useAnnounceRenderedText';
 import {useTranslator} from '../i18n';
 
@@ -407,14 +409,6 @@ export function CommandPalette<T extends SearchableItem = SearchableItem>({
       startTransition(async () => {
         const isBootstrap = query === '';
 
-        // Loading started for a user query: tell screen-reader users the
-        // spinner appeared. The polite region coalesces rapid updates, so for
-        // fast sources the result-count announcement below simply replaces
-        // this instead of stacking one "Loading" per keystroke.
-        if (!isBootstrap) {
-          announce(t('@astryx.commandPalette.loading'));
-        }
-
         // Client-filter previous results for instant narrowing while fetch is in flight
         if (!isBootstrap && searchResults.length > 0) {
           const lower = query.toLowerCase().trim();
@@ -667,6 +661,10 @@ export function CommandPalette<T extends SearchableItem = SearchableItem>({
       aria-label={label}
       {...rest}>
       <CommandPaletteContext value={contextValue}>
+        <BusyAnnouncement
+          isBusy={isOpen && isBusy}
+          message={t('@astryx.commandPalette.loading')}
+        />
         <Layout
           defaultHasDividers
           header={

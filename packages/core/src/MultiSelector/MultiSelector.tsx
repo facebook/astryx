@@ -4,6 +4,7 @@
 
 /**
  * @file MultiSelector.tsx
+ * The busy Spinner carries no live role; useBusyAnnouncement owns delivery.
  * @input Uses React, StyleX, usePopover, useTooltip, CheckboxInput, Field, Badge, Icon, InputGroupContext
  * @output Exports MultiSelector with input, secondary, and ghost trigger variants
  * @position Core implementation; consumed by index.ts
@@ -2647,7 +2648,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
           value.map(v => (
             <input key={v} type="hidden" name={htmlName} value={v} />
           ))}
-        {isBusy && <Spinner size="sm" aria-hidden="true" />}
+        {isBusy && <Spinner size="sm" aria-hidden="true" role={undefined} />}
         {hasClear &&
           value.length > 0 &&
           !isDisabled &&

@@ -4,6 +4,7 @@
 
 /**
  * @file TouchDateField.tsx
+ * Busy starts are announced by the field; the composed Spinner is silent.
  * @input Uses React, Field, BottomSheet, Button, Icon, Calendar hooks, MonthScroller, MonthYearWheels
  * @output Exports TouchDateField — the touch surface behind DateInput
  * @position Internal component; consumed by DateInput.tsx
@@ -82,6 +83,7 @@ import {joinAriaIDs} from '../utils/inputAria';
 import {groupStyles} from '../InputGroup/groupStyles';
 import {useSize} from '../SizeContext';
 import {Spinner} from '../Spinner';
+import {BusyAnnouncement} from '../utils/BusyAnnouncement';
 import {
   colorVars,
   spacingVars,
@@ -1303,7 +1305,8 @@ export function TouchDateField({
           onClick={handleClear}
         />
       )}
-      {isBusy && <Spinner size="sm" />}
+      <BusyAnnouncement isBusy={isBusy} />
+      {isBusy && <Spinner size="sm" aria-hidden="true" role={undefined} />}
       {statusIcon}
       <BottomSheet
         isOpen={isSheetOpen}

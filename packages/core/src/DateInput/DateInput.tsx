@@ -4,6 +4,7 @@
 
 /**
  * @file DateInput.tsx
+ * Busy starts are announced by the active field; the composed Spinner is silent.
  * @input Uses React, useId, useState, useCallback, useRef, Field, Icon, Calendar, usePopover, InputGroupContext
  * @output Exports DateInput component, DateInputProps
  * @position Core implementation; consumed by index.ts, tested by DateInput.test.tsx
@@ -48,6 +49,7 @@ import {useInputGroup} from '../InputGroup/InputGroupContext';
 import {groupStyles} from '../InputGroup/groupStyles';
 import {useSize} from '../SizeContext/SizeContext';
 import {Spinner} from '../Spinner';
+import {BusyAnnouncement} from '../utils/BusyAnnouncement';
 import {
   Calendar,
   type ISODateString,
@@ -932,7 +934,8 @@ function PointerDateField({
           onClick={handleClear}
         />
       )}
-      {isBusy && <Spinner size="sm" />}
+      <BusyAnnouncement isBusy={isBusy} />
+      {isBusy && <Spinner size="sm" aria-hidden="true" role={undefined} />}
       {statusIcon}
       {popover.render(
         <Calendar

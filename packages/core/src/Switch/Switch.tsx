@@ -4,6 +4,7 @@
 
 /**
  * @file Switch.tsx
+ * Busy starts use owner-level delivery, including native modals; the thumb is silent.
  * @input Uses React, useId, ChangeEvent, FieldLabel, FieldStatus, IconType, InputStatus, useTooltip, i18n (useTranslator)
  * @output Exports Switch component, SwitchProps, SwitchLabelPosition, SwitchLabelSpacing
  * @position Core implementation; consumed by index.ts, tested by Switch.test.tsx
@@ -20,8 +21,6 @@ import {
   useId,
   useOptimistic,
   useTransition,
-  useEffect,
-  useRef,
   type ChangeEvent,
   type FocusEvent,
   type ReactNode,
@@ -49,7 +48,7 @@ import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
 import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
 import {themeProps} from '../utils/themeProps';
-import {useAnnounce} from '../hooks/useAnnounce';
+import {BusyAnnouncement} from '../utils/BusyAnnouncement';
 import {useResolvedRequired} from '../hooks/useResolvedRequired';
 import {useTranslator} from '../i18n';
 
@@ -587,23 +586,6 @@ export function Switch({
   const [optimisticValue, setOptimisticValue] = useOptimistic(value);
   const isBusy = isLoading || optimisticValue !== value;
 
-  const announce = useAnnounce();
-  // One announcement per busy start (spec:AST-086 FR6). The ref outlives
-  // StrictMode's effect replay and rerenders, so only a new busy start (busy
-  // again after settling) speaks again.
-  const announcedBusyRef = useRef(false);
-  useEffect(() => {
-    if (!isBusy) {
-      announcedBusyRef.current = false;
-      return;
-    }
-    if (announcedBusyRef.current) {
-      return;
-    }
-    announcedBusyRef.current = true;
-    announce(t('@astryx.switch.loading'));
-  }, [announce, isBusy, t]);
-
   const isOn = optimisticValue === true;
 
   // Disabled-reason tooltip. Disabled controls swallow pointer events, so the
@@ -717,7 +699,7 @@ export function Switch({
               isOn ? styles.thumbOn : styles.thumbOff,
             ),
           )}>
-          {isBusy && <Spinner size="sm" />}
+          {isBusy && <Spinner size="sm" aria-hidden="true" role={undefined} />}
         </div>
       </div>
     </div>
@@ -791,6 +773,7 @@ export function Switch({
           </>
         )}
       </div>
+      <BusyAnnouncement isBusy={isBusy} message={t('@astryx.switch.loading')} />
       {status?.message && (
         <FieldStatus
           type={status.type}

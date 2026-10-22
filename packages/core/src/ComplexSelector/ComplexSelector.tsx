@@ -4,6 +4,7 @@
 
 /**
  * @file ComplexSelector.tsx
+ * Busy starts are announced by the selector, including custom-trigger use.
  * @input Uses React, StyleX, Field, Icon slots, Layer positioning, and usePopover
  * @output Exports a rich-selector shell with exact token-sized input, secondary, and ghost triggers, plus an imperative open/close handle
  * @position Core implementation; consumed by index.ts
@@ -38,6 +39,7 @@ import {useMergedRefs} from '../hooks/useMergedRefs';
 import {Field, inputWrapperStyles, type FieldStatusVariant} from '../Field';
 import {Icon, renderIconSlot, type IconType} from '../Icon';
 import {Spinner} from '../Spinner';
+import {BusyAnnouncement} from '../utils/BusyAnnouncement';
 import {useTranslator} from '../i18n';
 import {layerAnimations} from '../Layer/layerAnimations.stylex';
 import type {LayerAlignment, LayerPlacement} from '../Layer/useLayer';
@@ -724,6 +726,7 @@ export function ComplexSelector<Value>({
     };
     return (
       <>
+        <BusyAnnouncement isBusy={isBusy} />
         {renderTrigger(triggerProps)}
         {popup}
       </>
@@ -790,7 +793,7 @@ export function ComplexSelector<Value>({
           {...stylex.props(styles.trigger)}>
           <span {...stylex.props(styles.triggerText)}>{triggerContent}</span>
         </button>
-        {isBusy && <Spinner size="sm" />}
+        {isBusy && <Spinner size="sm" aria-hidden="true" role={undefined} />}
         <Icon
           icon="chevronDown"
           size="sm"
@@ -815,31 +818,34 @@ export function ComplexSelector<Value>({
   );
 
   return (
-    <Field
-      label={label}
-      isLabelHidden={isLabelHidden}
-      description={description}
-      inputID={triggerId}
-      descriptionID={description ? descriptionId : undefined}
-      labelID={labelId}
-      isOptional={isOptional}
-      isRequired={isRequired}
-      isDisabled={isDisabled}
-      status={
-        status
-          ? {
-              type: status.type,
-              message: status.message,
-              messageID: status.message ? statusMessageId : undefined,
-            }
-          : undefined
-      }
-      statusVariant={effectiveStatusVariant}
-      labelTooltip={labelTooltip}
-      width={width}
-      {...container}>
-      {selectorContent}
-    </Field>
+    <>
+      <BusyAnnouncement isBusy={isBusy} />
+      <Field
+        label={label}
+        isLabelHidden={isLabelHidden}
+        description={description}
+        inputID={triggerId}
+        descriptionID={description ? descriptionId : undefined}
+        labelID={labelId}
+        isOptional={isOptional}
+        isRequired={isRequired}
+        isDisabled={isDisabled}
+        status={
+          status
+            ? {
+                type: status.type,
+                message: status.message,
+                messageID: status.message ? statusMessageId : undefined,
+              }
+            : undefined
+        }
+        statusVariant={effectiveStatusVariant}
+        labelTooltip={labelTooltip}
+        width={width}
+        {...container}>
+        {selectorContent}
+      </Field>
+    </>
   );
 }
 

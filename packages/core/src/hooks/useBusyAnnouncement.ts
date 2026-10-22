@@ -4,19 +4,17 @@
 
 /**
  * @file useBusyAnnouncement.ts
- * @input Whether the owning control is busy, the words to announce, and a ref
- *   to an element inside the control
- * @output Announces each busy start once, through the shared polite channel
- *   or a persistent region inside the open modal dialog holding the control
- * @position Core a11y hook for controls that show a decorative busy Spinner
+ * @input Whether the task owner is busy, localized words, and an owner element ref
+ * @output Once-per-busy-start delivery through the shared polite channel or a
+ *   persistent in-dialog region, with pending delivery canceled on cleanup
+ * @position Private AST-086 FR3/FR6/FR8 hook shared by busy task owners
  *
- * The busy Spinner inside a control is decorative (hidden, no live role); the
- * control announces its busy state instead (`spec:AST-086` FR8), once per busy
- * start (FR6): rerenders and StrictMode replay do not repeat it, and settling
- * re-arms it. While a native modal is open, the body-level channel is not
- * exposed, so a control inside it announces through one persistent polite
- * region in that dialog, inserted empty and filled a frame later (Platform
- * support, FR3).
+ * A composed Spinner is decorative: it is hidden and carries no live role.
+ * The task owner announces once per busy start, not per rerender or StrictMode
+ * replay. A native dialog retains closed children, so undelivered work waits
+ * for it to open rather than consuming the occasion while hidden. Its region
+ * is inserted empty and populated on a later frame, outside the inert body
+ * channel. Settling re-arms the owner without clearing another owner's text.
  *
  * SYNC: deliberately NOT exported from /packages/core/src/hooks/index.ts —
  * this is a shared implementation detail of Astryx's busy controls.
@@ -31,14 +29,15 @@ const VISUALLY_HIDDEN_CSS =
   'overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;';
 const CLEAR_DELAY_MS = 2000; // Matches useAnnounce.
 
-// The pending write and clear of each in-dialog region; a new write cancels
-// them so an earlier message can neither land late nor clear a later one.
-const pendingByRegion = new WeakMap<
-  HTMLElement,
-  {frame: number; timer?: ReturnType<typeof setTimeout>}
->();
+// A dialog shares one region. A newer write cancels the previous pending
+// write/clear, and cleanup for an older owner cannot clear the newer message.
+const pendingByRegion = new WeakMap<HTMLElement, () => void>();
 
-function announceInModal(dialog: HTMLDialogElement, message: string): void {
+function announceInModal(
+  dialog: HTMLDialogElement,
+  message: string,
+  onDelivery: () => void,
+): () => void {
   let region = dialog.querySelector<HTMLElement>(`:scope > [${REGION_ATTR}]`);
   if (region == null) {
     region = document.createElement('div');
@@ -50,23 +49,27 @@ function announceInModal(dialog: HTMLDialogElement, message: string): void {
     dialog.appendChild(region);
   }
   const target = region;
-  const previous = pendingByRegion.get(target);
-  if (previous != null) {
-    cancelAnimationFrame(previous.frame);
-    clearTimeout(previous.timer);
-  }
+  pendingByRegion.get(target)?.();
   target.textContent = '';
-  const pending: {frame: number; timer?: ReturnType<typeof setTimeout>} = {
-    frame: 0,
-  };
-  pending.frame = requestAnimationFrame(() => {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const frame = requestAnimationFrame(() => {
+    if (!dialog.open) {
+      return;
+    }
     target.textContent = message;
-    pending.timer = setTimeout(() => {
+    onDelivery();
+    timer = setTimeout(cancel, CLEAR_DELAY_MS);
+  });
+  const cancel = () => {
+    cancelAnimationFrame(frame);
+    clearTimeout(timer);
+    if (pendingByRegion.get(target) === cancel) {
       target.textContent = '';
       pendingByRegion.delete(target);
-    }, CLEAR_DELAY_MS);
-  });
-  pendingByRegion.set(target, pending);
+    }
+  };
+  pendingByRegion.set(target, cancel);
+  return cancel;
 }
 
 export function useBusyAnnouncement(
@@ -84,17 +87,55 @@ export function useBusyAnnouncement(
     if (hasAnnouncedRef.current) {
       return;
     }
-    // Choose the route a frame later: a Dialog opening in the same commit
-    // calls showModal() in its own Effect, which runs after this one.
-    const frame = requestAnimationFrame(() => {
-      hasAnnouncedRef.current = true;
-      const dialog = elementRef.current?.closest('dialog');
-      if (dialog?.open && dialog.matches(':modal')) {
-        announceInModal(dialog, message);
-      } else {
-        announce(message, 'polite');
+    const dialog = elementRef.current?.closest('dialog');
+    let frame: number | undefined;
+    let cancelModal: (() => void) | undefined;
+    const cancelPending = () => {
+      if (frame != null) {
+        cancelAnimationFrame(frame);
+        frame = undefined;
       }
-    });
-    return () => cancelAnimationFrame(frame);
+      cancelModal?.();
+      cancelModal = undefined;
+    };
+    const scheduleWhenOpen = () => {
+      if (hasAnnouncedRef.current) {
+        return;
+      }
+      cancelPending();
+      if (dialog != null && !dialog.open) {
+        return;
+      }
+      // Dialog calls showModal() in its parent Effect. Preserve the deferred
+      // route selection; a closed dialog never falls back to the body channel.
+      frame = requestAnimationFrame(() => {
+        frame = undefined;
+        if (dialog != null) {
+          if (!dialog.open) {
+            return;
+          }
+          cancelModal = announceInModal(dialog, message, () => {
+            hasAnnouncedRef.current = true;
+            observer?.disconnect();
+          });
+        } else {
+          hasAnnouncedRef.current = true;
+          announce(message, 'polite');
+        }
+      });
+    };
+    // Observe only an undelivered occasion. Once delivered, close/reopen alone
+    // is not another busy start. Cleanup also leaves canceled writes eligible
+    // for StrictMode replay or a message change before delivery.
+    const observer =
+      dialog == null ? null : new MutationObserver(scheduleWhenOpen);
+    if (dialog != null) {
+      observer?.observe(dialog, {attributes: true, attributeFilter: ['open']});
+    }
+    scheduleWhenOpen();
+    return () => {
+      observer?.disconnect();
+      cancelPending();
+    };
   }, [announce, elementRef, isBusy, message]);
 }

@@ -4,6 +4,7 @@
 
 /**
  * @file DateTimeInput.tsx
+ * Busy starts are announced once for both segments; the composed Spinner is silent.
  * @input Uses React, Field, Calendar, NativeDateSegment, NativeTimeSegment, TouchDateTimeField, usePopover, useAnnounce, time parsing utilities, StyleX intrinsic flex layout
  * @output Exports DateTimeInput component, DateTimeInputProps, and native picker type; cleared values keep the pointer Calendar controlled-empty
  * @position Core implementation; consumed by index.ts, tested by DateTimeInput.test.tsx
@@ -54,6 +55,7 @@ import {
 import {Icon} from '../Icon';
 import {VisuallyHidden} from '../VisuallyHidden';
 import {Spinner} from '../Spinner';
+import {BusyAnnouncement} from '../utils/BusyAnnouncement';
 import {
   Calendar,
   type ISODateString,
@@ -1801,7 +1803,8 @@ function PointerDateTimeField({
               onClick={handleClear}
             />
           )}
-          {isBusy && <Spinner size="sm" />}
+          <BusyAnnouncement isBusy={isBusy} />
+          {isBusy && <Spinner size="sm" aria-hidden="true" role={undefined} />}
           {statusIcon}
         </div>
 

@@ -3,15 +3,18 @@
 /**
  * @file ChatMessageList.test.tsx
  * @input React Testing Library, Vitest, and the public ChatMessageList surface
- * @output Observable log, empty-state, alignment, and async-loading regressions
+ * @output Log, empty-state, alignment, and silent history-loading regressions
  * @position Colocated component behavior tests
  */
 
-import {describe, it, expect, vi} from 'vitest';
+import {afterEach, describe, it, expect, vi} from 'vitest';
 import {act, render, screen} from '@testing-library/react';
 import {ChatMessageList} from './ChatMessageList';
 import {ChatMessage} from './ChatMessage';
 import {ChatMessageBubble} from './ChatMessageBubble';
+import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
+
+afterEach(__resetLiveRegionsForTest);
 
 describe('ChatMessageList', () => {
   it('renders children', () => {
@@ -182,9 +185,15 @@ describe('ChatMessageList', () => {
         );
       });
       expect(action).toHaveBeenCalledTimes(1);
-      expect(screen.getByRole('status', {name: 'Loading'})).toBeTruthy();
+      expect(document.querySelector('.astryx-spinner')).toHaveAttribute(
+        'aria-hidden',
+        'true',
+      );
+      expect(document.querySelector('.astryx-spinner')).not.toHaveAttribute(
+        'role',
+      );
       await act(async () => complete());
-      expect(screen.queryByRole('status', {name: 'Loading'})).toBeNull();
+      expect(document.querySelector('.astryx-spinner')).toBeNull();
       unmount();
       expect(disconnect).toHaveBeenCalledTimes(1);
     } finally {
