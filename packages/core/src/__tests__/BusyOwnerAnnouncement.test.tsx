@@ -10,11 +10,15 @@
 
 import {StrictMode, useEffect, useRef, type ReactElement} from 'react';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
-import {act, render, screen} from '@testing-library/react';
+import {act, fireEvent, render, screen} from '@testing-library/react';
 import {TextInput} from '../TextInput';
 import {TextArea} from '../TextArea';
 import {Selector} from '../Selector';
 import {MultiSelector} from '../MultiSelector';
+import {ComplexSelector} from '../ComplexSelector';
+import {BaseTypeahead, Typeahead} from '../Typeahead';
+import type {SearchableItem, SearchSource} from '../Typeahead';
+import {Tokenizer} from '../Tokenizer';
 
 const announce = vi.fn();
 vi.mock('../hooks/useAnnounce', async importOriginal => ({
@@ -72,6 +76,63 @@ const OWNERS: ReadonlyArray<
         value={[]}
         onChange={() => {}}
         isLoading={isLoading}
+      />
+    ),
+  ],
+  [
+    'ComplexSelector',
+    isLoading => (
+      <ComplexSelector label="Fruit blend" value="Apple" isLoading={isLoading}>
+        {() => <div>Options</div>}
+      </ComplexSelector>
+    ),
+  ],
+];
+
+/** A search source whose searches stay in flight until the test settles them. */
+function pendingSource(): SearchSource<SearchableItem> {
+  return {
+    search: async () => new Promise<SearchableItem[]>(() => {}),
+    bootstrap: () => [],
+  };
+}
+
+/** Owners whose busy state is a search in flight, started by typing. */
+const SEARCH_OWNERS: ReadonlyArray<
+  readonly [string, (source: SearchSource<SearchableItem>) => ReactElement]
+> = [
+  [
+    'Typeahead',
+    source => (
+      <Typeahead
+        label="User"
+        searchSource={source}
+        value={null}
+        onChange={() => {}}
+        debounceMs={0}
+      />
+    ),
+  ],
+  [
+    'Tokenizer',
+    source => (
+      <Tokenizer
+        label="Users"
+        searchSource={source}
+        value={[]}
+        onChange={() => {}}
+        debounceMs={0}
+      />
+    ),
+  ],
+  [
+    'BaseTypeahead',
+    source => (
+      <BaseTypeahead
+        searchSource={source}
+        value={null}
+        onChange={() => {}}
+        debounceMs={0}
       />
     ),
   ],
@@ -185,6 +246,73 @@ describe.each(OWNERS)(
         dialog.querySelector('[data-astryx-modal-busy-region]'),
       ).toHaveTextContent('Loading');
       expect(busyAnnouncements()).toEqual([]);
+    });
+  },
+);
+
+describe.each(SEARCH_OWNERS)(
+  '%s search busy state (spec:AST-086)',
+  (_name, renderOwner) => {
+    it('keeps its search Spinner named but not live, and announces the search start once (FR6, FR8)', async () => {
+      const {container} = render(strict(renderOwner(pendingSource())));
+      await nextFrame();
+      expect(busyAnnouncements()).toEqual([]);
+      act(() => {
+        fireEvent.change(screen.getByRole('combobox'), {target: {value: 'Al'}});
+      });
+      await nextFrame();
+      // Named but not live (family:input-fields FR7, FR8).
+      const spinner = container.querySelector('.astryx-spinner');
+      expect(spinner).toHaveAttribute('role', 'img');
+      expect(screen.getByRole('img', {name: 'Loading'})).toBe(spinner);
+      expect(screen.queryByRole('status', {name: 'Loading'})).toBeNull();
+      expect(busyAnnouncements()).toEqual([['Loading', 'polite']]);
+    });
+
+    it('announces each new search start again (FR6)', async () => {
+      render(renderOwner(pendingSource()));
+      const input = screen.getByRole('combobox');
+      act(() => {
+        fireEvent.change(input, {target: {value: 'Al'}});
+      });
+      await nextFrame();
+      // Clearing the query ends the search; typing again starts a new one.
+      act(() => {
+        fireEvent.change(input, {target: {value: ''}});
+      });
+      await nextFrame();
+      act(() => {
+        fireEvent.change(input, {target: {value: 'Be'}});
+      });
+      await nextFrame();
+      expect(busyAnnouncements()).toEqual([
+        ['Loading', 'polite'],
+        ['Loading', 'polite'],
+      ]);
+    });
+
+    it('announces the search start inside an open modal dialog, not the body channel', async () => {
+      const matches = Element.prototype.matches;
+      vi.spyOn(Element.prototype, 'matches').mockImplementation(function (
+        this: Element,
+        selector: string,
+      ) {
+        return selector === ':modal'
+          ? this instanceof HTMLDialogElement && this.open
+          : matches.call(this, selector);
+      });
+      render(<dialog open>{renderOwner(pendingSource())}</dialog>);
+      act(() => {
+        fireEvent.change(screen.getByRole('combobox'), {target: {value: 'Al'}});
+      });
+      await nextFrame();
+      await nextFrame();
+      const dialog = document.querySelector('dialog') as HTMLDialogElement;
+      expect(
+        dialog.querySelector('[data-astryx-modal-busy-region]'),
+      ).toHaveTextContent('Loading');
+      expect(busyAnnouncements()).toEqual([]);
+      vi.restoreAllMocks();
     });
   },
 );
