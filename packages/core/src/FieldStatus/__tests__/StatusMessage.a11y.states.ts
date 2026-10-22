@@ -3,7 +3,7 @@
 /**
  * @file StatusMessage.a11y.states.ts
  * @input Uses StatusMessageStateFacts from the shared accessibility contract
- * @output The AST-021 inventory for current Core status-message parts and states, plus explicit exclusions
+ * @output The AST-021 inventory, including Spinner's shared-channel transitions and explicit exclusions
  * @position Data-only binding inventory shared by jsdom, Storybook, and Chromium
  */
 
@@ -13,7 +13,8 @@ export type CoreStatusMessageBinding =
   | 'Toast announcement channel'
   | 'Toast card'
   | 'FieldStatus announcement channel'
-  | 'Spinner'
+  | 'Spinner announcement channel'
+  | 'ChatSystemMessage'
   | 'ProgressBar';
 
 export interface CoreStatusMessageBindingDefinition {
@@ -157,35 +158,45 @@ export const CORE_STATUS_MESSAGE_BINDING_STATES = [
   },
   {
     id: 'spinner-default-label-mounted',
-    binding: 'Spinner',
+    binding: 'Spinner announcement channel',
     summary:
-      'a loading spinner is mounted with its default accessible status name',
+      'a standalone spinner sends its default name through the persistent polite channel on appearance',
     facts: liveFacts({
       role: 'status',
       politeness: 'polite',
-      initialMessage: 'Loading',
-      messageSource: 'accessible-name',
       message: 'Loading',
       replacement: 'Saving',
-      semanticTransitions: ['replace'],
+      semanticTransitions: ['show', 'replace', 'repeat'],
     }),
     storyId: 'a11y-status-message-pattern--spinner-default-label-mounted',
   },
   {
     id: 'spinner-visible-label-mounted',
-    binding: 'Spinner',
+    binding: 'Spinner announcement channel',
     summary:
-      'a loading spinner is mounted with a visible label that names its status role',
+      'a standalone spinner sends its visible label through the persistent polite channel on appearance',
     facts: liveFacts({
       role: 'status',
       politeness: 'polite',
-      initialMessage: 'Fetching data',
-      messageSource: 'accessible-name',
       message: 'Fetching data',
       replacement: 'Saving data',
-      semanticTransitions: ['replace'],
+      semanticTransitions: ['show', 'replace', 'repeat'],
     }),
     storyId: 'a11y-status-message-pattern--spinner-visible-label-mounted',
+  },
+  {
+    id: 'chat-system-status-mounted',
+    binding: 'ChatSystemMessage',
+    summary: 'a chat status notice is mounted with its live-region content',
+    facts: liveFacts({
+      role: 'status',
+      politeness: 'polite',
+      initialMessage: 'Conversation started',
+      message: 'Conversation started',
+      replacement: 'A file was shared',
+      semanticTransitions: ['replace', 'clear'],
+    }),
+    storyId: 'a11y-status-message-pattern--chat-system-status-mounted',
   },
   {
     id: 'progress-loading-to-complete',
@@ -264,10 +275,10 @@ export const CORE_STATUS_MESSAGE_EXCLUSIONS = [
       'A composing control that marks Spinner aria-hidden owns the surrounding busy semantics; the decorative ring is not another status message.',
   },
   {
-    owner: 'ChatSystemMessage',
-    part: 'chat notice or date separator',
+    owner: 'ChatSystemMessage divider',
+    part: 'date or section separator',
     reason:
-      'spec:AST-086 FR4: a notice added to a chat log is delivered by the log, so neither the notice row nor the divider carries its own live role; a date or section separator is ordinary transcript content.',
+      'A divider does not report success, results, waiting, progress, or an error. Its current forced status role is tracked as a separate ownership mismatch rather than adopted here.',
   },
   {
     owner: 'ChatMessageList and streaming logs',

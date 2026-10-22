@@ -4,7 +4,7 @@
 /**
  * @file StatusMessage.a11y.test.tsx
  * @input Uses the shared status-message contract and current Core binding render map
- * @output Component-facing jsdom evidence through expectAccessibilitySpec
+ * @output Component-facing jsdom evidence through expectAccessibilitySpec, including Spinner's shared-channel owner
  * @position Fast migration lane; browser-owned outcomes remain explicitly unrun
  */
 
@@ -128,9 +128,10 @@ describe('Core status-message binding inventory', () => {
         ),
       ].sort(),
     ).toEqual([
+      'ChatSystemMessage',
       'FieldStatus announcement channel',
       'ProgressBar',
-      'Spinner',
+      'Spinner announcement channel',
       'Toast announcement channel',
       'Toast card',
     ]);
@@ -140,7 +141,7 @@ describe('Core status-message binding inventory', () => {
     expect(CORE_STATUS_MESSAGE_EXCLUSIONS.map(entry => entry.part)).toEqual([
       'visible validation text',
       'aria-hidden decorative spinner',
-      'chat notice or date separator',
+      'date or section separator',
       'role=log transcript updates',
       'composer errors and tool-run states',
       'busy announcement',
