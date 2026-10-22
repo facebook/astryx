@@ -748,7 +748,14 @@ export function generateShadcnRegistry({
   fs.mkdirSync(outDir, {recursive: true});
   writeJson(path.join(outDir, 'registry.json'), result.registry);
   for (const item of result.items) {
-    for (const itemPath of [item.astryx.path, ...item.astryx.aliases]) {
+    // Standard clients address an index entry as `<name>.json` in the
+    // registry root (search results, `@namespace/<name>`), so every item is
+    // also served there, beside its organized path and aliases.
+    for (const itemPath of [
+      item.name,
+      item.astryx.path,
+      ...item.astryx.aliases,
+    ]) {
       writeJson(path.join(outDir, `${itemPath}.json`), item);
     }
   }

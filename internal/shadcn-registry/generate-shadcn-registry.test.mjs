@@ -390,6 +390,19 @@ describe('buildShadcnRegistry', () => {
       );
       expect(result.routes).toContain('showcases/button/variants');
       expect(result.routes).toContain('blocks/filter-toolbar');
+
+      // Every item is also served at `<name>.json` in the root, the address
+      // standard clients derive from the index, with the canonical bytes.
+      for (const [name, canonical] of [
+        ['component-button', 'components/button'],
+        ['showcase-button-button-styles', 'showcases/button/button-styles'],
+        ['block-filter-toolbar', 'blocks/filter-toolbar'],
+        ['template-dashboard', 'templates/dashboard'],
+      ]) {
+        expect(readFileSync(path.join(outDir, `${name}.json`), 'utf8')).toBe(
+          readFileSync(path.join(outDir, `${canonical}.json`), 'utf8'),
+        );
+      }
     } finally {
       rmSync(outDir, {recursive: true, force: true});
     }

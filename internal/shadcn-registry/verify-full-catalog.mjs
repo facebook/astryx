@@ -270,6 +270,20 @@ function loadCatalog() {
       fail(`${registryPath}.json does not match its registry.json identity`);
     }
 
+    // Search results and `@namespace/<name>` resolve `<name>.json` in the
+    // registry root; it must serve the canonical item's exact bytes.
+    const nameFile = resolveInside(
+      REGISTRY_DIR,
+      `${name}.json`,
+      `${name} name route`,
+    );
+    if (!fs.existsSync(nameFile)) {
+      fail(`${name} is missing its name route ${name}.json`);
+    }
+    if (fs.readFileSync(nameFile, 'utf8') !== canonicalBytes) {
+      fail(`name route ${name}.json drifted from canonical item ${name}`);
+    }
+
     for (const route of [registryPath, ...(item.astryx?.aliases ?? [])]) {
       const prior = routes.get(route);
       if (prior != null) {
