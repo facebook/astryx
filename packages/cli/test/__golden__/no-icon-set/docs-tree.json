@@ -744,9 +744,10 @@
       "in-ci: In CI",
       "cache: Cache project versions",
       "read-only: Read-only home folders",
+      "short-lived: Machines that keep only the home folder",
       "more: More on global mode"
     ],
-    "digest": "9cb4e731fd2df6d4212ee852346642ea5ce429c028745a3be1f8e951b97d738c"
+    "digest": "6c9624fc53aeeb2d3a1d7ce172cf976517e3c9cb7c2490164ecede27c4fa6828"
   },
   "global/computer-agent-guide": {
     "type": "docs.detail",

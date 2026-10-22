@@ -17,6 +17,7 @@ import {AstryxError} from '../error.mjs';
 import {ERROR_CODES} from '../../foundation/response/error-codes.mjs';
 import {IconSetAuthoringError} from '../../foundation/discovery/icon-set-writer.mjs';
 import {isOutsideProject} from '../../foundation/env/project-scope.mjs';
+import {projectIconSetCliWarning} from '../../foundation/integrations/cli-requirement.mjs';
 
 export {
   iconRecord,
@@ -139,4 +140,23 @@ function findProjectDir(cwd) {
     dir = parent;
   }
   return path.resolve(cwd);
+}
+
+/**
+ * Why a CLI the project may run would refuse its astryx.config once it sets
+ * `experimental.iconSet`, read from the project's package.json; null when
+ * nothing says so.
+ * @param {string} projectDir
+ * @returns {string | null}
+ */
+export function iconSetConfigCliWarning(projectDir) {
+  let pkg;
+  try {
+    pkg = JSON.parse(
+      fs.readFileSync(path.join(projectDir, 'package.json'), 'utf-8'),
+    );
+  } catch {
+    return null;
+  }
+  return projectIconSetCliWarning(pkg);
 }

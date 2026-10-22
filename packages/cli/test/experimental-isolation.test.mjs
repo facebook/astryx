@@ -12,10 +12,18 @@
  *   manifest, and the `astryx docs cli` listing gain only the experimental
  *   group or namespace, the one marked entry point FR27 allows.
  *
- * Update after an intended change to stable output: `vitest run -u` on this
- * file, then review the diff of `__golden__/no-icon-set/`; a diff that names
- * an icon set, an icon definition, or `experimental` is the leak this test
- * exists to catch.
+ * Update after an intended change to stable output: regenerate from a
+ * checkout of main (below), then review the diff of `__golden__/no-icon-set/`;
+ * a diff that names an icon set, an icon definition, or `experimental` is the
+ * leak this test exists to catch.
+ *
+ * Regenerating runs main's CLI in test projects created inside main's
+ * checkout, so main's CLI and Core answer: a project inside this checkout
+ * would hand the run over to this checkout's CLI, and the goldens would record
+ * this branch's own output. A run that hands over fails. Tests that need the
+ * feature are skipped while regenerating, and every golden that this
+ * branch's CLI may add to (help, the manifest, the `cli` docs listings) is
+ * compared with those additions stripped.
  */
 
 import {afterAll, beforeAll, describe, expect, it} from 'vitest';
@@ -39,6 +47,10 @@ const GOLDEN_REPO = process.env.GOLDEN_CLI_ROOT
   ? path.resolve(process.env.GOLDEN_CLI_ROOT, '..', '..')
   : REPO_ROOT;
 const GOLDEN = path.join(CLI_ROOT, 'test', '__golden__', 'no-icon-set');
+/** Writing the goldens from main's CLI, not checking this branch's. */
+const REGENERATING = Boolean(process.env.GOLDEN_CLI_ROOT);
+/** Where test projects go: inside the checkout whose CLI answers. */
+const PROJECTS_ROOT = REGENERATING ? GOLDEN_REPO : REPO_ROOT;
 
 /** @type {string} */
 let project;
@@ -53,6 +65,12 @@ function astryx(args, cwd = project) {
     encoding: 'utf8',
     env: {...process.env, NO_COLOR: '1', FORCE_COLOR: '0', COLUMNS: '100'},
   });
+  // A golden is main's own answer, never one main handed to this checkout.
+  if (REGENERATING && /handed over from CLI/u.test(result.stderr)) {
+    throw new Error(
+      `main's CLI handed \`astryx ${args.join(' ')}\` over to another CLI: ${result.stderr.trim()}`,
+    );
+  }
   /** @param {string} text */
   const clean = text =>
     text
@@ -103,8 +121,8 @@ function withoutComputerChecks(stdout) {
 }
 
 beforeAll(() => {
-  // Inside the repo, so the project finds this checkout's Core.
-  project = fs.mkdtempSync(path.join(REPO_ROOT, '.astryx-no-icon-set-'));
+  // Inside the checkout whose CLI answers, so it finds that checkout's Core.
+  project = fs.mkdtempSync(path.join(PROJECTS_ROOT, '.astryx-no-icon-set-'));
   fs.writeFileSync(
     path.join(project, 'package.json'),
     JSON.stringify({name: 'no-icon-set', version: '1.0.0'}),
@@ -311,13 +329,43 @@ describe('with no icon set, stable output is unchanged', () => {
     ).toBe(fs.readFileSync(path.join(project, 'out/text/page.tsx'), 'utf-8'));
   });
 
-  it('help gains only the experimental group', () => {
-    const help = astryx(['help']).stdout;
-    const lines = help
-      .split('\n')
-      .filter(line => /experimental|\bicon\b/i.test(line));
-    expect(lines).toHaveLength(1);
-    expect(lines[0]).toMatch(/^\s+experimental\s+\[experimental\] /);
+  it('help gains only the experimental group', async () => {
+    const help = astryx(['help']).stdout.split('\n');
+    const added = help.filter(line => /experimental|\bicon\b/i.test(line));
+    if (!REGENERATING) {
+      expect(added).toHaveLength(1);
+      expect(added[0]).toMatch(/^\s+experimental\s+\[experimental\] /);
+    }
+    // Every other line reads exactly as main prints it.
+    await expect(
+      help.filter(line => !added.includes(line)).join('\n'),
+    ).toMatchFileSnapshot(path.join(GOLDEN, 'help.txt'));
+  });
+
+  it('the manifest gains only the experimental group and its commands', async () => {
+    const manifest = JSON.parse(astryx(['manifest', '--json']).stdout);
+    const isExperimental = (/** @type {string} */ name) =>
+      name === 'experimental' || name.startsWith('experimental ');
+    const data = manifest.data;
+    if (!REGENERATING) {
+      expect(
+        data.commands.filter((/** @type {any} */ c) => isExperimental(c.name)),
+      ).toHaveLength(1);
+    }
+    data.commands = data.commands.filter(
+      (/** @type {any} */ c) => !isExperimental(c.name),
+    );
+    data.jsonSupported = data.jsonSupported.filter(
+      (/** @type {string} */ name) => !isExperimental(name),
+    );
+    data.responseTypes = Object.fromEntries(
+      Object.entries(data.responseTypes).filter(
+        ([name]) => !isExperimental(name),
+      ),
+    );
+    await expect(`${JSON.stringify(manifest, null, 2)}\n`).toMatchFileSnapshot(
+      path.join(GOLDEN, 'manifest.json'),
+    );
   });
 
   it('doctor has no icon-sets check, and its doc counts leave experimental docs out', async () => {
@@ -345,27 +393,36 @@ describe('with no icon set, stable output is unchanged', () => {
     );
   });
 
-  it('no stable command family gains an icon-set subcommand or kind', () => {
-    const manifest = JSON.parse(astryx(['manifest', '--json']).stdout);
-    /** @type {string[]} */
-    const names = [];
-    /** @param {any[]} commands */
-    const walk = commands => {
-      for (const command of commands ?? []) {
-        names.push(command.name);
-        walk(command.subcommands);
+  it.skipIf(REGENERATING)(
+    'no stable command family gains an icon-set subcommand or kind',
+    () => {
+      const manifest = JSON.parse(astryx(['manifest', '--json']).stdout);
+      /** @type {string[]} */
+      const names = [];
+      /** @param {any[]} commands */
+      const walk = commands => {
+        for (const command of commands ?? []) {
+          names.push(command.name);
+          walk(command.subcommands);
+        }
+      };
+      walk(manifest.data?.commands ?? manifest.commands);
+      const iconCommands = names.filter(name => /\bicon\b/.test(name));
+      expect(iconCommands.length).toBeGreaterThan(0);
+      for (const name of iconCommands) {
+        expect(name.startsWith('experimental ')).toBe(true);
       }
-    };
-    walk(manifest.data?.commands ?? manifest.commands);
-    const iconCommands = names.filter(name => /\bicon\b/.test(name));
-    expect(iconCommands.length).toBeGreaterThan(0);
-    for (const name of iconCommands) {
-      expect(name.startsWith('experimental ')).toBe(true);
-    }
-    const res = astryx(['integration', 'add', 'icon-set', 'outline', '--json']);
-    expect(res.status).toBe(1);
-    expect(JSON.parse(res.stdout).code).toBe('ERR_INVALID_ARGUMENT');
-  });
+      const res = astryx([
+        'integration',
+        'add',
+        'icon-set',
+        'outline',
+        '--json',
+      ]);
+      expect(res.status).toBe(1);
+      expect(JSON.parse(res.stdout).code).toBe('ERR_INVALID_ARGUMENT');
+    },
+  );
 });
 
 describe('an integration package without experimental.iconSets', () => {
@@ -425,63 +482,77 @@ export default {
   });
 });
 
-describe('with an icon set installed and configured, search is unchanged', () => {
-  /** @type {string} */
-  let root;
-  /** @type {string} */
-  let withSet;
-  beforeAll(() => {
-    root = fs.mkdtempSync(path.join(REPO_ROOT, '.astryx-icon-set-search-'));
-    withSet = writeIconSetProject(root, {
-      config: {experimental: {iconSet: 'glyphs'}},
+// Main's CLI refuses `experimental.iconSet`; these compare with the goldens
+// the project without icon sets wrote.
+describe.skipIf(REGENERATING)(
+  'with an icon set installed and configured, search is unchanged',
+  () => {
+    /** @type {string} */
+    let root;
+    /** @type {string} */
+    let withSet;
+    beforeAll(() => {
+      root = fs.mkdtempSync(
+        path.join(PROJECTS_ROOT, '.astryx-icon-set-search-'),
+      );
+      withSet = writeIconSetProject(root, {
+        config: {experimental: {iconSet: 'glyphs'}},
+      });
+      fs.mkdirSync(path.join(withSet, 'node_modules', '.bin'), {
+        recursive: true,
+      });
+      fs.writeFileSync(
+        path.join(withSet, 'node_modules', '.bin', 'astryx'),
+        '',
+      );
     });
-    fs.mkdirSync(path.join(withSet, 'node_modules', '.bin'), {recursive: true});
-    fs.writeFileSync(path.join(withSet, 'node_modules', '.bin', 'astryx'), '');
-  });
-  afterAll(() => {
-    fs.rmSync(root, {recursive: true, force: true});
-  });
+    afterAll(() => {
+      fs.rmSync(root, {recursive: true, force: true});
+    });
 
-  it('the set is loaded', () => {
-    const list = JSON.parse(
-      astryx(['experimental', 'icon', '--list', '--json'], withSet).stdout,
-    );
-    expect(list.data.projectSet).toBe('@acme/glyphs/glyphs');
-  });
-
-  // Icon words: icon lookup by meaning is only `astryx experimental icon`;
-  // `astryx search` joins it only at promotion (spec:AST-084 FR11).
-  it.each(['delete', 'close', 'trash can'])(
-    'search %s equals the output without icon sets, text and JSON',
-    async query => {
-      const slug = query.replace(/\s+/g, '-');
-      const json = astryx(['search', ...query.split(' '), '--json'], withSet);
-      expect(json.status).toBe(0);
-      await expect(json.stdout).toMatchFileSnapshot(
-        path.join(GOLDEN, `search-${slug}.json`),
+    it('the set is loaded', () => {
+      const list = JSON.parse(
+        astryx(['experimental', 'icon', '--list', '--json'], withSet).stdout,
       );
-      const text = astryx(['search', ...query.split(' ')], withSet);
-      await expect(text.stdout).toMatchFileSnapshot(
-        path.join(GOLDEN, `search-${slug}.txt`),
-      );
-    },
-  );
+      expect(list.data.projectSet).toBe('@acme/glyphs/glyphs');
+    });
 
-  it('search --type icon stays an unknown type', () => {
-    const res = astryx(
-      ['search', 'trash', '--type', 'icon', '--json'],
-      withSet,
+    // Icon words: icon lookup by meaning is only `astryx experimental icon`;
+    // `astryx search` joins it only at promotion (spec:AST-084 FR11).
+    it.each(['delete', 'close', 'trash can'])(
+      'search %s equals the output without icon sets, text and JSON',
+      async query => {
+        const slug = query.replace(/\s+/g, '-');
+        const json = astryx(['search', ...query.split(' '), '--json'], withSet);
+        expect(json.status).toBe(0);
+        await expect(json.stdout).toMatchFileSnapshot(
+          path.join(GOLDEN, `search-${slug}.json`),
+        );
+        const text = astryx(['search', ...query.split(' ')], withSet);
+        await expect(text.stdout).toMatchFileSnapshot(
+          path.join(GOLDEN, `search-${slug}.txt`),
+        );
+      },
     );
-    expect(res.status).toBe(1);
-    expect(JSON.parse(res.stdout).code).toBe('ERR_INVALID_ARGUMENT');
-  });
-});
+
+    it('search --type icon stays an unknown type', () => {
+      const res = astryx(
+        ['search', 'trash', '--type', 'icon', '--json'],
+        withSet,
+      );
+      expect(res.status).toBe(1);
+      expect(JSON.parse(res.stdout).code).toBe('ERR_INVALID_ARGUMENT');
+    });
+  },
+);
 
 describe('with icon sets installed but no experimental.iconSet, stable output is unchanged', () => {
   /** @type {string} */
   let root;
   beforeAll(() => {
-    root = fs.mkdtempSync(path.join(REPO_ROOT, '.astryx-icon-set-no-opt-in-'));
+    root = fs.mkdtempSync(
+      path.join(PROJECTS_ROOT, '.astryx-icon-set-no-opt-in-'),
+    );
   });
   afterAll(() => {
     fs.rmSync(root, {recursive: true, force: true});
@@ -499,6 +570,19 @@ describe('with icon sets installed but no experimental.iconSet, stable output is
     });
     fs.mkdirSync(path.join(dir, 'node_modules', '.bin'), {recursive: true});
     fs.writeFileSync(path.join(dir, 'node_modules', '.bin', 'astryx'), '');
+    if (REGENERATING) {
+      // Main's CLI warns about the manifest key it does not know.
+      fs.writeFileSync(
+        path.join(
+          dir,
+          'node_modules',
+          '@acme',
+          'glyphs',
+          'astryx.integration.mjs',
+        ),
+        'export default {};\n',
+      );
+    }
     return dir;
   }
 

@@ -259,11 +259,16 @@ unchecked}`): the optional Astryx definitions a set leaves unmapped, printed
   block templates, namespace docs, and theme descriptors, and refuses a
   template's `icons`, dropping the descriptor. No integration descriptor this
   feature writes sets `stability` there. For the package being authored, the
-  validate result's additive field `olderCliNotes` (each
-  `{file, kind, field, message}`) names each template or namespace doc that
-  sets `stability`, and each template that declares `icons`, while the
-  package's CLI peer range admits a release before 0.7.3; a note is never
-  counted and never fails a check (DEC-9).
+  validate result's additive field `olderCliNotes` (each `{file, kind, field,
+message}`) names each template or namespace doc that sets `stability`, and
+  each template that declares `icons`, while the package's CLI peer range
+  admits a release before 0.7.3; a note is never counted and never fails a
+  check (DEC-9). A CLI before 0.7.3 also refuses an astryx.config that sets
+  `experimental.iconSet` ("Unrecognized key"), so every command fails in that
+  project. `experimental icon use` adds `warning` to its receipt, printed as a
+  `[warn]` line, when the project declares an `@astryxdesign/cli` range (in
+  any dependency field) that admits such a release; a project that declares no
+  range, or a `workspace:`, `file:`, or `link:` one, gets none.
 - **FR17 — Doctor and discover read sets only with the opt-in.** In a project
   that sets `experimental.iconSet`, Doctor's `icon-sets` check fails when it
   names a set that is not installed and warns when two packages ship that name

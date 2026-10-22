@@ -276,6 +276,7 @@ export function registerExperimentalIcon(group, program) {
             ...(data.previous && data.changed
               ? [text(`It was "${data.previous}".`)]
               : []),
+            ...(data.warning ? [text(`[warn] ${data.warning}`)] : []),
           ),
       ),
   });

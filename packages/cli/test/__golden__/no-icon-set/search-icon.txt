@@ -1,4 +1,4 @@
-Results for "icon" (20 of 218)
+Results for "icon" (20 of 219)
 
 name:        Icon
 domain:      component

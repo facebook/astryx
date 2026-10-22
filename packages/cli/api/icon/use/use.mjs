@@ -12,6 +12,7 @@ import * as path from 'node:path';
 import {AstryxError} from '../../error.mjs';
 import {ERROR_CODES} from '../../../foundation/response/error-codes.mjs';
 import {
+  iconSetConfigCliWarning,
   iconSetKey,
   loadIconProject,
   refuseOutsideProject,
@@ -82,6 +83,8 @@ export async function iconUse(selector, {cwd = process.cwd()} = {}) {
       stable ?? ERROR_CODES.ERR_WRITE_FAILED,
     );
   }
+  // An older CLI the project may still run refuses the key just written.
+  const warning = iconSetConfigCliWarning(projectDir);
   return {
     type: 'icon.use',
     data: {
@@ -91,6 +94,7 @@ export async function iconUse(selector, {cwd = process.cwd()} = {}) {
       created: written.created,
       previous: written.previous,
       changed: written.changed,
+      ...(warning ? {warning} : {}),
     },
   };
 }

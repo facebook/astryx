@@ -1,0 +1,1800 @@
+{
+  "apiVersion": 1,
+  "type": "manifest",
+  "data": {
+    "name": "astryx",
+    "version": "0.7.3",
+    "apiVersion": 1,
+    "description": "Design system CLI — components, themes, and tooling",
+    "globalOptions": [
+      {
+        "flag": "-V, --version",
+        "description": "output the version number",
+        "type": "boolean"
+      },
+      {
+        "flag": "--zh",
+        "description": "Simplified Chinese for component reads and for docs topics that have a translation (English otherwise)",
+        "type": "boolean"
+      },
+      {
+        "flag": "--dense",
+        "description": "Token-efficient dense text for component <Name> and docs <topic> reads",
+        "type": "boolean"
+      },
+      {
+        "flag": "--lang <locale>",
+        "description": "Language or format for component and docs reads: en (default), zh (as --zh), or dense (as --dense)",
+        "type": "enum",
+        "choices": [
+          "en",
+          "zh",
+          "dense"
+        ]
+      },
+      {
+        "flag": "--detail <level>",
+        "description": "Detail level for component, hook, and docs tree reads (e.g. docs cli/commands/build), and for theme build reports. Lists default to brief; theme build prints one line per built theme unless full, which adds the install example and font recipe",
+        "type": "enum",
+        "choices": [
+          "full",
+          "compact",
+          "brief"
+        ],
+        "default": "full"
+      },
+      {
+        "flag": "--json",
+        "description": "Output as typed JSON. Success envelope: { apiVersion, type, package?, data, meta? }. Error envelope: { apiVersion, error, code, suggestions? }.",
+        "type": "boolean"
+      }
+    ],
+    "commands": [
+      {
+        "name": "blog",
+        "description": "Read the Astryx blog from the published feed",
+        "arguments": [
+          {
+            "name": "slug",
+            "required": false,
+            "variadic": false,
+            "description": ""
+          }
+        ],
+        "options": [],
+        "json": true,
+        "responseTypes": [
+          "blog.list",
+          "blog.detail"
+        ],
+        "examples": [
+          "astryx blog",
+          "astryx blog introducing-astryx --json"
+        ],
+        "exitCodes": [
+          {
+            "code": 0,
+            "when": "success"
+          },
+          {
+            "code": 1,
+            "when": "unknown slug, or the feed or a post cannot be fetched"
+          }
+        ],
+        "outsideProject": "same"
+      },
+      {
+        "name": "build",
+        "description": "Build a page: the template to start from, or the workflow playbook (no query)",
+        "arguments": [
+          {
+            "name": "query",
+            "required": false,
+            "variadic": false,
+            "description": ""
+          }
+        ],
+        "options": [
+          {
+            "flag": "--type <domain>",
+            "description": "Filter the kit to one domain (component|hook|template)",
+            "type": "string"
+          },
+          {
+            "flag": "--limit <n>",
+            "description": "Max candidates to draw from (default 60)",
+            "type": "string"
+          },
+          {
+            "flag": "--verbose",
+            "description": "Verbose output (every block and component, full descriptions, import paths and match reason)",
+            "type": "boolean"
+          }
+        ],
+        "json": true,
+        "responseTypes": [
+          "build.help",
+          "build.kit"
+        ],
+        "examples": [
+          "astryx build",
+          "astryx build \"analytics dashboard\" --json"
+        ],
+        "exitCodes": [
+          {
+            "code": 0,
+            "when": "success (including zero matches)"
+          },
+          {
+            "code": 1,
+            "when": "invalid --type, a --limit that is not a positive integer, or a query when @astryxdesign/core cannot be found (the playbook needs no core)"
+          }
+        ],
+        "outsideProject": "same"
+      },
+      {
+        "name": "component",
+        "description": "List components or print component docs",
+        "arguments": [
+          {
+            "name": "names",
+            "required": false,
+            "variadic": true,
+            "description": "One or more exact selectors. Use Name, package/Name, @scope/package/Name, or @scope/package@version/Name. Two or more return one ordered batch. At most 100 selectors are accepted."
+          }
+        ],
+        "options": [
+          {
+            "flag": "--list",
+            "description": "List every component (the same as giving no name)",
+            "type": "boolean"
+          },
+          {
+            "flag": "--category <category>",
+            "description": "List one component group, e.g. --category Layout or --category Avatar (an unknown group lists the valid ones)",
+            "type": "string"
+          },
+          {
+            "flag": "--props",
+            "description": "Print only the props table",
+            "type": "boolean"
+          },
+          {
+            "flag": "--source",
+            "description": "Print component source code",
+            "type": "boolean"
+          },
+          {
+            "flag": "--showcase",
+            "description": "Print showcase source code",
+            "type": "boolean"
+          },
+          {
+            "flag": "--blocks",
+            "description": "List example blocks: showcase, examples, and related",
+            "type": "boolean"
+          },
+          {
+            "flag": "--package <name>",
+            "description": "Scope lookup to an external package (e.g. @acme/xds-widgets). Use @astryxdesign/core to select an original replaced by an integration component.",
+            "type": "string"
+          }
+        ],
+        "json": true,
+        "responseTypes": [
+          "component.list",
+          "component.batch",
+          "component.detail",
+          "component.detail.props",
+          "component.detail.source",
+          "component.detail.showcase",
+          "component.detail.blocks"
+        ],
+        "examples": [
+          "astryx component --list",
+          "astryx component Button Badge Text",
+          "astryx component Button --props --json",
+          "astryx component SideNav --package @astryxdesign/core"
+        ],
+        "exitCodes": [
+          {
+            "code": 0,
+            "when": "success"
+          },
+          {
+            "code": 1,
+            "when": "unknown component, category, or package; more than 100 selectors; any batch row is unresolved; or @astryxdesign/core cannot be resolved"
+          }
+        ],
+        "outsideProject": "same"
+      },
+      {
+        "name": "discover",
+        "description": "Browse and search integrations: the ones you have and the ones you could add",
+        "arguments": [
+          {
+            "name": "query",
+            "required": false,
+            "variadic": false,
+            "description": ""
+          }
+        ],
+        "options": [
+          {
+            "flag": "--components",
+            "description": "In the package list, print every component, and every other item, of each package instead of the first 10 and a \"+N more\" count. No effect on --json output or on a package, component, or search query.",
+            "type": "boolean"
+          },
+          {
+            "flag": "--type <kind>",
+            "description": "Only one kind: component, template, doc, theme, codemod, or agent-doc. In the list, only packages that add it; in a search, only items of that kind.",
+            "type": "string"
+          },
+          {
+            "flag": "--installed",
+            "description": "Only what this project has. Cannot be set with --available.",
+            "type": "boolean"
+          },
+          {
+            "flag": "--available",
+            "description": "Only what this project could add. Cannot be set with --installed.",
+            "type": "boolean"
+          },
+          {
+            "flag": "--limit <n>",
+            "description": "Max number of search results, a positive integer (default 20).",
+            "type": "string"
+          }
+        ],
+        "json": true,
+        "responseTypes": [
+          "discover.list",
+          "discover.detail",
+          "discover.detail.doc",
+          "discover.item",
+          "discover.search"
+        ],
+        "examples": [
+          "astryx discover",
+          "astryx discover --components",
+          "astryx discover --type theme",
+          "astryx discover @acme/ui",
+          "astryx discover @acme/ui@2.1.0",
+          "astryx discover dashboard --type template --available"
+        ],
+        "exitCodes": [
+          {
+            "code": 0,
+            "when": "success"
+          },
+          {
+            "code": 1,
+            "when": "unknown package, version, component, or item; a malformed doc; an invalid --type or --limit; --installed with --available; or a blank query when packages are discovered"
+          }
+        ],
+        "outsideProject": "same"
+      },
+      {
+        "name": "docs",
+        "description": "Print reference docs",
+        "arguments": [
+          {
+            "name": "topic",
+            "required": false,
+            "variadic": false,
+            "description": ""
+          },
+          {
+            "name": "section",
+            "required": false,
+            "variadic": false,
+            "description": ""
+          }
+        ],
+        "options": [
+          {
+            "flag": "--index",
+            "description": "List the topic's sections and their keys, even for a topic with one section",
+            "type": "boolean"
+          },
+          {
+            "flag": "--full",
+            "description": "Print the whole topic instead of its sections (text; `--json` returns the whole topic unless --index). Cannot be set with --index",
+            "type": "boolean"
+          },
+          {
+            "flag": "--depth <levels>",
+            "description": "How many levels of the docs tree to read below a namespace: 0 for the namespace alone, 1 for its children (what a read without --depth shows), all for everything below it. With it, --detail sets how much of each doc below shows: brief (one line each, the default), compact (with its sections), or full",
+            "type": "string"
+          }
+        ],
+        "json": true,
+        "responseTypes": [
+          "docs.list",
+          "docs.detail",
+          "docs.index",
+          "docs.detail.section",
+          "docs.node"
+        ],
+        "examples": [
+          "astryx docs",
+          "astryx docs theme",
+          "astryx docs spacing --json",
+          "astryx docs theme quick-start",
+          "astryx docs cli",
+          "astryx docs cli --depth all",
+          "astryx docs authoring --depth all --detail full",
+          "astryx docs cli/api/functions/search",
+          "astryx docs authoring/quick-start --full"
+        ],
+        "exitCodes": [
+          {
+            "code": 0,
+            "when": "success"
+          },
+          {
+            "code": 1,
+            "when": "unknown topic or route, a section that matches no section or more than one, or a --depth that is not a number of levels or all"
+          }
+        ],
+        "outsideProject": "same"
+      },
+      {
+        "name": "doctor",
+        "description": "Diagnose Astryx projects and integration packages",
+        "arguments": [],
+        "options": [],
+        "json": true,
+        "responseTypes": [
+          "doctor"
+        ],
+        "examples": [
+          "astryx doctor",
+          "astryx doctor --json",
+          "astryx doctor integration validate @acme/widgets",
+          "astryx doctor integration templates @acme/widgets",
+          "astryx doctor integration components @acme/widgets",
+          "astryx doctor integration docs @acme/widgets"
+        ],
+        "exitCodes": [
+          {
+            "code": 0,
+            "when": "no checks failed (warnings are allowed)"
+          },
+          {
+            "code": 1,
+            "when": "one or more checks failed"
+          }
+        ],
+        "outsideProject": "own",
+        "subcommands": [
+          {
+            "name": "doctor integration",
+            "description": "Check an integration package while authoring it",
+            "arguments": [],
+            "options": [],
+            "json": false,
+            "examples": [
+              "astryx doctor integration validate",
+              "astryx doctor integration templates",
+              "astryx doctor integration components",
+              "astryx doctor integration docs"
+            ],
+            "exitCodes": [
+              {
+                "code": 0,
+                "when": "help is shown or the selected check has no errors"
+              },
+              {
+                "code": 1,
+                "when": "the selected check reports an error"
+              }
+            ],
+            "subcommands": [
+              {
+                "name": "doctor integration components",
+                "description": "Check integration component names, replacements, and documented props",
+                "arguments": [
+                  {
+                    "name": "package",
+                    "required": false,
+                    "variadic": false,
+                    "description": "Installed integration package name; omit to check the package in the current directory."
+                  }
+                ],
+                "options": [],
+                "json": true,
+                "responseTypes": [
+                  "integration.component-conflicts"
+                ],
+                "examples": [
+                  "astryx doctor integration components",
+                  "astryx doctor integration components @acme/widgets --json"
+                ],
+                "exitCodes": [
+                  {
+                    "code": 0,
+                    "when": "the check completed; component name conflicts, replaces findings for a package without the CLI range, props that differ from the code, and links that name no doc are warnings"
+                  },
+                  {
+                    "code": 1,
+                    "when": "the integration is invalid, Core cannot be resolved, or a package that declares the CLI range has an invalid replaces"
+                  }
+                ],
+                "outsideProject": "same"
+              },
+              {
+                "name": "doctor integration docs",
+                "description": "Check an integration's docs: the docs tree they add, every link, and overlaps with Core topics",
+                "arguments": [
+                  {
+                    "name": "package",
+                    "required": false,
+                    "variadic": false,
+                    "description": "Installed integration package name; omit to check the package in the current directory."
+                  }
+                ],
+                "options": [],
+                "json": true,
+                "responseTypes": [
+                  "integration.doc-conflicts"
+                ],
+                "examples": [
+                  "astryx doctor integration docs",
+                  "astryx doctor integration docs @acme/widgets --json"
+                ],
+                "exitCodes": [
+                  {
+                    "code": 0,
+                    "when": "all Core overlaps are explicitly declared or no overlap exists"
+                  },
+                  {
+                    "code": 1,
+                    "when": "an overlap is accidental, a doc is invalid, a namespace or placement fails, or a reference block cannot include what it names. A link that names no doc is a warning, and does not change the exit code"
+                  }
+                ],
+                "outsideProject": "same"
+              },
+              {
+                "name": "doctor integration templates",
+                "description": "Validate integration template replacements and Core id overlaps",
+                "arguments": [
+                  {
+                    "name": "package",
+                    "required": false,
+                    "variadic": false,
+                    "description": "Installed integration package name; omit to check the package in the current directory."
+                  }
+                ],
+                "options": [],
+                "json": true,
+                "responseTypes": [
+                  "integration.template-conflicts"
+                ],
+                "examples": [
+                  "astryx doctor integration templates",
+                  "astryx doctor integration templates @acme/widgets --json"
+                ],
+                "exitCodes": [
+                  {
+                    "code": 0,
+                    "when": "replacement declarations are valid; undeclared id conflicts are warnings"
+                  },
+                  {
+                    "code": 1,
+                    "when": "the integration, a template, or a replacement declaration is invalid"
+                  }
+                ],
+                "outsideProject": "same"
+              },
+              {
+                "name": "doctor integration validate",
+                "description": "Validate an integration manifest and its contributions",
+                "arguments": [
+                  {
+                    "name": "package",
+                    "required": false,
+                    "variadic": false,
+                    "description": "Installed integration package name; omit to validate the package in the current directory."
+                  }
+                ],
+                "options": [],
+                "json": true,
+                "responseTypes": [
+                  "integration.validate"
+                ],
+                "examples": [
+                  "astryx doctor integration validate",
+                  "astryx doctor integration validate @acme/widgets --json"
+                ],
+                "exitCodes": [
+                  {
+                    "code": 0,
+                    "when": "no error-severity issues (warnings, including doc type findings, are allowed)"
+                  },
+                  {
+                    "code": 1,
+                    "when": "one or more error-severity issues"
+                  }
+                ],
+                "outsideProject": "own"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "gap-report",
+        "description": "Report a missing component or feature to the package that owns it",
+        "arguments": [
+          {
+            "name": "component",
+            "required": false,
+            "variadic": false,
+            "description": "Component or design-system area the gap is about, up to 120 characters. Required unless --list-categories is set."
+          }
+        ],
+        "options": [
+          {
+            "flag": "--category <category>",
+            "description": "Gap category (run --list-categories for values). Required unless --list-categories is set.",
+            "type": "string"
+          },
+          {
+            "flag": "--reason <reason>",
+            "description": "What capability was missing or difficult, up to 2000 characters. Required unless --list-categories is set.",
+            "type": "string"
+          },
+          {
+            "flag": "--additional-context <text>",
+            "description": "Optional additional context, up to 8000 characters",
+            "type": "string"
+          },
+          {
+            "flag": "--package <pkg>",
+            "description": "Package that owns the gap: @astryxdesign/core or a loaded integration. Overrides automatic routing, which picks the integration whose component replaces the named Core component, else the one package that provides it, else Core; needed when more than one package provides the component",
+            "type": "string"
+          },
+          {
+            "flag": "--confirm-public",
+            "description": "Allow public delivery: public handlers run, and a GitHub issues URL gets an issue filed with your gh login",
+            "type": "boolean"
+          },
+          {
+            "flag": "--to <package>",
+            "description": "Send the report only to this loaded integration's issues URL, as the person chose; the destinations the output lists are the choices",
+            "type": "string"
+          },
+          {
+            "flag": "--list-categories",
+            "description": "List valid report categories, and the destinations when there is more than one, without filing; the component and the other gap-report options are refused with ERR_INVALID_ARGUMENT",
+            "type": "boolean"
+          }
+        ],
+        "json": true,
+        "responseTypes": [
+          "gap-report.categories",
+          "gap-report.file"
+        ],
+        "examples": [
+          "astryx gap-report --list-categories",
+          "astryx gap-report Button --category missing_variant --reason 'Need a compact size'",
+          "astryx gap-report Button --category missing_variant --reason 'Need a compact size' --to @acme/widgets"
+        ],
+        "exitCodes": [
+          {
+            "code": 0,
+            "when": "filed, routed-only, confirmation required, skipped, or categories listed"
+          },
+          {
+            "code": 1,
+            "when": "failed or partial delivery, invalid input, or ambiguous routing"
+          }
+        ],
+        "outsideProject": "same"
+      },
+      {
+        "name": "hook",
+        "description": "List hooks or print hook docs",
+        "arguments": [
+          {
+            "name": "name",
+            "required": false,
+            "variadic": false,
+            "description": ""
+          }
+        ],
+        "options": [
+          {
+            "flag": "--list",
+            "description": "List all hooks grouped by category",
+            "type": "boolean"
+          },
+          {
+            "flag": "--category <category>",
+            "description": "List hooks in a specific category",
+            "type": "string"
+          },
+          {
+            "flag": "--params",
+            "description": "Print only the parameters table",
+            "type": "boolean"
+          }
+        ],
+        "json": true,
+        "responseTypes": [
+          "hook.list",
+          "hook.detail",
+          "hook.detail.params"
+        ],
+        "examples": [
+          "astryx hook --list",
+          "astryx hook useFocusTrap --json"
+        ],
+        "exitCodes": [
+          {
+            "code": 0,
+            "when": "success"
+          },
+          {
+            "code": 1,
+            "when": "unknown hook or category, or @astryxdesign/core cannot be resolved"
+          }
+        ],
+        "outsideProject": "same"
+      },
+      {
+        "name": "init",
+        "description": "Initialize the design system in your project",
+        "arguments": [],
+        "options": [
+          {
+            "flag": "--features <list>",
+            "description": "Comma-separated features: agents (agent docs), theme (writes theme.template.ts), template (prints the page-building commands; writes no file). An unknown feature exits 1 with ERR_UNKNOWN_FEATURE. Refused with --all or --remove-agents",
+            "type": "string"
+          },
+          {
+            "flag": "--all",
+            "description": "Install all features (agents, theme, template); refused with --features. Prints their guidance instead of the getting-started steps",
+            "type": "boolean"
+          },
+          {
+            "flag": "--remove-agents",
+            "description": "Remove the managed block from AGENTS.md, CLAUDE.md, .claude/CLAUDE.md, GEMINI.md, .cursorrules, .hermes.md and HERMES.md, at the project root (where init writes them) and in this folder (deleting AGENTS.md or .claude/CLAUDE.md when only init's heading is left, and GEMINI.md when nothing is left) and do nothing else. Below the project root, a project-root agent file whose block resolves outside the project is left as it is, with a note. --features, --all, --agent and --agent-docs-path are refused; a file written with --agent-docs-path keeps its block",
+            "type": "boolean"
+          },
+          {
+            "flag": "--user",
+            "description": "Write or refresh the computer-level agent text instead of setting up the folder: one skill file, ~/.agents/skills/astryx/SKILL.md, which most coding agents read, linked into the skill folders of agents that read only their own (~/.claude/skills always; Kiro, Windsurf, Letta, Xcode's coding assistant, and ~/.config/agents/skills when that folder exists): a folder symlink with a relative target, a junction on Windows, or a copy where neither can be made. Continue, whose scanner skips links, gets a managed copy, refreshed with the file. It tells agents anywhere on the computer that Astryx is there, when it is relevant, and to start with `astryx search`. Records the links it made in astryx/settings.json in the per-user configuration folder, so removal removes exactly those; the CLI installed for the computer refreshes the file in the background after each upgrade. Works in any folder. A file without the Astryx markers, one edited since Astryx wrote it, or a symlink, is kept as it is, and so is anything at a link target that Astryx did not create. Warns, and still writes, when no `astryx` command on the computer runs the Astryx CLI. With --remove-agents it removes the file, the links, and the copy instead and records that the text is turned off. --features, --all, --agent and --agent-docs-path are refused",
+            "type": "boolean"
+          },
+          {
+            "flag": "--agent <tool>",
+            "description": "Target AI tool for agent docs: claude (CLAUDE.md or .claude/CLAUDE.md, else creates .claude/CLAUDE.md), cursor (.cursorrules if present, else AGENTS.md), codex and muse (AGENTS.md), hermes (.hermes.md or HERMES.md if present, else AGENTS.md), all (every existing agent doc except GEMINI.md, which keeps its one-line import of AGENTS.md, else AGENTS.md and .claude/CLAUDE.md). With claude and all, when CLAUDE.md gets the block, .claude/CLAUDE.md gets none and a block already there is removed, unless the project ignores CLAUDE.md: then a .claude/CLAUDE.md the project commits gets a copy too, with claude and all alike. An unknown tool exits 1 with ERR_UNKNOWN_AGENT. Used only when agent docs are installed (the default, --all, or --features agents); --agent-docs-path takes precedence.",
+            "type": "string"
+          },
+          {
+            "flag": "--agent-docs-path <path...>",
+            "description": "Explicit file path(s) for agent docs, inside the project; takes precedence over --agent. If any path is outside the project, no agent docs are written and the command exits 1. A path in the home folder itself, or in a settings folder in it outside a project (such as ~/.claude or ~/.claude/hooks), is refused with a note (exit 0), and nothing is written. Used only when agent docs are installed",
+            "type": "string"
+          }
+        ],
+        "json": true,
+        "responseTypes": [
+          "init.run",
+          "init.remove",
+          "init.user"
+        ],
+        "examples": [
+          "astryx init",
+          "astryx init --all",
+          "astryx init --json",
+          "astryx init --user",
+          "astryx init --user --remove-agents"
+        ],
+        "exitCodes": [
+          {
+            "code": 0,
+            "when": "success, including agent docs left unwritten in five soft cases, each reported as docsError with one note: running in the home folder, or in a settings folder in it outside a project; a GEMINI.md that resolves outside the project; when init runs below the project root, a project-root agent file that resolves outside the project; the project's Claude Code file (root CLAUDE.md, or .claude/CLAUDE.md when there is no root one) when it resolves outside the project and is a block-less import of an existing AGENTS.md, which 0.7.1 left alone; and a .claude/CLAUDE.md that resolves outside the project and that 0.7.1 did not write: beside a CLAUDE.md the project ignores, the one --agent claude adds or a block-less import of an existing AGENTS.md; with --agent claude beside a CLAUDE.md, one whose block it would remove"
+          },
+          {
+            "code": 1,
+            "when": "an unknown --agent (ERR_UNKNOWN_AGENT) or feature, an --agent-docs-path outside the project, --remove-agents combined with install options, --user combined with --features, --all, --agent or --agent-docs-path, or --all with --features (ERR_INVALID_ARGUMENT); or, when init runs at the project root, an agent file 0.7.1 also wrote there that resolves outside the project (ERR_PATH_TRAVERSAL, docsError path-safety, nothing written)"
+          }
+        ],
+        "outsideProject": "own"
+      },
+      {
+        "name": "integration",
+        "description": "Author and verify an Astryx integration package",
+        "arguments": [],
+        "options": [],
+        "json": false,
+        "examples": [
+          "astryx integration add component AcmeWidget",
+          "astryx integration check --strict",
+          "astryx integration verify"
+        ],
+        "exitCodes": [
+          {
+            "code": 0,
+            "when": "help is shown or a subcommand succeeds"
+          },
+          {
+            "code": 1,
+            "when": "an unknown subcommand is provided"
+          }
+        ],
+        "subcommands": [
+          {
+            "name": "integration add",
+            "description": "Add one working contribution to an integration package",
+            "arguments": [
+              {
+                "name": "kind",
+                "required": true,
+                "variadic": false,
+                "description": "component, doc, template, codemod, agent-doc, or theme"
+              },
+              {
+                "name": "name",
+                "required": true,
+                "variadic": false,
+                "description": "Contribution name: PascalCase for component (AcmeWidget); lowercase kebab-case for template, codemod, and theme (account-card); letters, digits, _ and - for doc; the literal guidance line for agent-doc"
+              }
+            ],
+            "options": [
+              {
+                "flag": "--dry-run",
+                "description": "Validate and show planned writes without changing files",
+                "type": "boolean"
+              },
+              {
+                "flag": "--type <type>",
+                "description": "Template type: page (default) or block; only valid for template",
+                "type": "string"
+              },
+              {
+                "flag": "--replaces <topic>",
+                "description": "Existing doc topic this one replaces (letters, digits, _ and -); only valid for doc and not with --extends",
+                "type": "string"
+              },
+              {
+                "flag": "--extends <topic>",
+                "description": "Existing doc topic this one extends (letters, digits, _ and -); only valid for doc and not with --replaces",
+                "type": "string"
+              },
+              {
+                "flag": "--parent <namespace>",
+                "description": "Namespace of this package to place the doc in, as a guide in its `guides` slot; writes the namespace doc when it is missing, and declares the CLI that reads it as an optional `@astryxdesign/cli` peer. Only valid for doc, and not with --replaces or --extends",
+                "type": "string"
+              },
+              {
+                "flag": "--from <theme>",
+                "description": "Existing theme slug to fork as a starting point instead of a blank scaffold; the new theme copies the base and has no link back, and package.json `dependencies` gains the npm packages the copied files import (other than Core and React). Only valid for theme",
+                "type": "string"
+              },
+              {
+                "flag": "--to <version>",
+                "description": "Exact semver of the @astryxdesign/core version whose upgrade runs the codemod (e.g. 0.7.0); required for codemod and only valid there",
+                "type": "string"
+              }
+            ],
+            "json": true,
+            "responseTypes": [
+              "integration.add"
+            ],
+            "examples": [
+              "astryx integration add component AcmeWidget --dry-run --json",
+              "astryx integration add component AcmeWidget",
+              "astryx integration add doc deploying",
+              "astryx integration add template acme-dashboard",
+              "astryx integration add template account-card --type block",
+              "astryx integration add doc acme-getting-started --replaces getting-started",
+              "astryx integration add doc acme-theming --extends theme",
+              "astryx integration add doc releasing --parent acme",
+              "astryx integration add codemod rename-widget --to 1.2.0",
+              "astryx integration add agent-doc 'Run acme verify before finishing.'",
+              "astryx integration add theme ocean",
+              "astryx integration add theme ocean --from neutral"
+            ],
+            "exitCodes": [
+              {
+                "code": 0,
+                "when": "the contribution is written or the dry run succeeds"
+              },
+              {
+                "code": 1,
+                "when": "the kind, name, options, package, or target files are invalid or conflict"
+              }
+            ],
+            "outsideProject": "refuse"
+          },
+          {
+            "name": "integration check",
+            "description": "The CI check for an integration package's own build: every source check, run in continuous integration or a typecheck script, against the package in the current folder",
+            "arguments": [],
+            "options": [
+              {
+                "flag": "--strict",
+                "description": "Also exit 1 on any warning and on any check that did not run. A new check or failure code joins only in a minor release, named in the release notes; until then, a malformed `cliCommand` is reported as a note (`invalid_cli_command`) that fails nothing.",
+                "type": "boolean"
+              }
+            ],
+            "json": true,
+            "responseTypes": [
+              "integration.check"
+            ],
+            "examples": [
+              "integration check --strict",
+              "integration check",
+              "integration check --strict --json",
+              "integration verify"
+            ],
+            "exitCodes": [
+              {
+                "code": 0,
+                "when": "no check fails on its own; with --strict, also no warning, and every check ran"
+              },
+              {
+                "code": 1,
+                "when": "a check fails on its own (an error); with --strict, also any warning, or a check that did not run"
+              }
+            ],
+            "outsideProject": "own"
+          },
+          {
+            "name": "integration pack",
+            "description": "Deprecated: the old name of `integration verify`",
+            "arguments": [],
+            "options": [
+              {
+                "flag": "--check",
+                "description": "Run the check. Required, as before.",
+                "type": "boolean"
+              }
+            ],
+            "json": true,
+            "responseTypes": [
+              "integration.pack-check"
+            ],
+            "examples": [
+              "astryx integration pack --check"
+            ],
+            "exitCodes": [
+              {
+                "code": 0,
+                "when": "the packed package exposes the same valid contributions"
+              },
+              {
+                "code": 1,
+                "when": "--check is omitted or the tarball is incomplete or invalid"
+              }
+            ],
+            "outsideProject": "own"
+          },
+          {
+            "name": "integration verify",
+            "description": "Check the package the way npm will publish it, before you publish",
+            "arguments": [],
+            "options": [],
+            "json": true,
+            "responseTypes": [
+              "integration.pack-check"
+            ],
+            "examples": [
+              "astryx integration verify",
+              "astryx integration verify --json"
+            ],
+            "exitCodes": [
+              {
+                "code": 0,
+                "when": "the packed package exposes the same valid contributions"
+              },
+              {
+                "code": 1,
+                "when": "the tarball is incomplete or invalid"
+              }
+            ],
+            "outsideProject": "own"
+          }
+        ]
+      },
+      {
+        "name": "manifest",
+        "description": "Print the full CLI capability manifest (use with --json)",
+        "arguments": [],
+        "options": [],
+        "json": true,
+        "responseTypes": [
+          "manifest"
+        ],
+        "examples": [
+          "astryx manifest --json",
+          "astryx --json"
+        ],
+        "exitCodes": [
+          {
+            "code": 0,
+            "when": "success"
+          },
+          {
+            "code": 1,
+            "when": "the manifest cannot be generated"
+          }
+        ],
+        "outsideProject": "same"
+      },
+      {
+        "name": "search",
+        "description": "Search components, hooks, docs, templates, and themes in one ranked list",
+        "arguments": [
+          {
+            "name": "query",
+            "required": true,
+            "variadic": true,
+            "description": ""
+          }
+        ],
+        "options": [
+          {
+            "flag": "--type <domain>",
+            "description": "Filter to one domain (component|hook|doc|template|theme)",
+            "type": "string"
+          },
+          {
+            "flag": "--limit <n>",
+            "description": "Max number of results, a positive integer (default 20)",
+            "type": "string"
+          },
+          {
+            "flag": "--verbose",
+            "description": "Also print each result's score and match reason",
+            "type": "boolean"
+          }
+        ],
+        "json": true,
+        "responseTypes": [
+          "search"
+        ],
+        "examples": [
+          "astryx search button",
+          "astryx search dark mode --type doc",
+          "astryx search \"data table\" --type template --json",
+          "astryx search warm --type theme"
+        ],
+        "exitCodes": [
+          {
+            "code": 0,
+            "when": "success (including zero matches)"
+          },
+          {
+            "code": 1,
+            "when": "invalid --type, a --limit that is not a positive integer, or --type component, hook, or template where @astryxdesign/core cannot be found"
+          }
+        ],
+        "outsideProject": "same"
+      },
+      {
+        "name": "swizzle",
+        "description": "Copy component source for customization",
+        "arguments": [
+          {
+            "name": "component",
+            "required": false,
+            "variadic": false,
+            "description": ""
+          }
+        ],
+        "options": [
+          {
+            "flag": "--output <dir>",
+            "description": "Output directory",
+            "type": "string",
+            "default": "./components/astryx"
+          },
+          {
+            "flag": "--package <pkg>",
+            "description": "Scope to a specific owning package. Use @astryxdesign/core to copy an original replaced by an integration component",
+            "type": "string"
+          },
+          {
+            "flag": "--list",
+            "description": "List the swizzlable Core components, including any that an integration component replaces",
+            "type": "boolean"
+          },
+          {
+            "flag": "-f, --overwrite",
+            "description": "Replace existing files. Without it, existing files fail the command with ERR_FILE_EXISTS and nothing is written",
+            "type": "boolean"
+          }
+        ],
+        "json": true,
+        "responseTypes": [
+          "swizzle.list",
+          "swizzle.copy"
+        ],
+        "examples": [
+          "astryx swizzle --list",
+          "astryx swizzle Button",
+          "astryx swizzle SideNav --package @astryxdesign/core"
+        ],
+        "exitCodes": [
+          {
+            "code": 0,
+            "when": "success"
+          },
+          {
+            "code": 1,
+            "when": "unknown or ambiguous component, no source on disk, a path escape, or existing files without --overwrite"
+          }
+        ],
+        "outsideProject": "refuse"
+      },
+      {
+        "name": "template",
+        "description": "List, show, or scaffold page and block templates",
+        "arguments": [
+          {
+            "name": "name",
+            "required": false,
+            "variadic": false,
+            "description": "Template id (see --list). Omit it to list the templates."
+          },
+          {
+            "name": "path",
+            "required": false,
+            "variadic": false,
+            "description": "Where to scaffold the template, relative to the project root. A path that ends in .tsx, .ts, .jsx, .js, .mjs, .cjs, .css, .scss, .json, .md or .html is the file to write; any other path is a directory, which receives page.tsx for a page template or the block's own file name for a block. Omit it to print the source."
+          }
+        ],
+        "options": [
+          {
+            "flag": "--list",
+            "description": "List available templates (narrow with --type and --package) and do nothing else: <name>, <path>, --skeleton and --overwrite are refused",
+            "type": "boolean"
+          },
+          {
+            "flag": "--type <type>",
+            "description": "Filter by template type: page or block",
+            "type": "string"
+          },
+          {
+            "flag": "--package <pkg>",
+            "description": "Narrow to templates from a specific package. Use @astryxdesign/core to select an original hidden by an integration replacement.",
+            "type": "string"
+          },
+          {
+            "flag": "--skeleton",
+            "description": "Show layout skeleton with spatial annotations (padding, gap, nesting) instead of the source. Needs <name>. It writes nothing, so <path> and --overwrite are refused with ERR_INVALID_ARGUMENT",
+            "type": "boolean"
+          },
+          {
+            "flag": "--cdn [path]",
+            "description": "Write the no-build-step CDN starter page and do nothing else: <name>, --list, --skeleton, --type and --package are refused. The page goes to the --cdn value, else to <path>, else cdn.template.html, and that path is always the file itself. A value right after --cdn (anything not starting with -) is taken as that path",
+            "type": "string"
+          },
+          {
+            "flag": "-f, --overwrite",
+            "description": "Replace an existing target file. Without it an existing file is refused (ERR_FILE_EXISTS) and an existing CDN page is left as is",
+            "type": "boolean"
+          }
+        ],
+        "json": true,
+        "responseTypes": [
+          "template.list",
+          "template.show",
+          "template.skeleton",
+          "template.copy",
+          "template.cdn"
+        ],
+        "examples": [
+          "astryx template --json",
+          "astryx --json template --list --package @astryxdesign/core",
+          "astryx template dashboard ./src/app",
+          "astryx template shell-side-nav ./src/app --package @astryxdesign/core",
+          "astryx template --cdn",
+          "astryx template --cdn public/demo.html"
+        ],
+        "exitCodes": [
+          {
+            "code": 0,
+            "when": "success, including a CDN page left untouched because it already exists"
+          },
+          {
+            "code": 1,
+            "when": "unknown or ambiguous template, no source, a path escape, an existing target without --overwrite, or --list with a type outside page or block or a package that provides no templates"
+          }
+        ],
+        "outsideProject": "same"
+      },
+      {
+        "name": "theme",
+        "description": "Add, switch, build, and author themes",
+        "arguments": [],
+        "options": [],
+        "json": false,
+        "examples": [
+          "astryx theme list",
+          "astryx theme add ocean",
+          "astryx theme use ocean",
+          "astryx theme eject ocean",
+          "astryx theme palette generate palette.config.json",
+          "astryx theme targets"
+        ],
+        "exitCodes": [
+          {
+            "code": 0,
+            "when": "help is shown or a subcommand succeeds"
+          },
+          {
+            "code": 1,
+            "when": "an unknown subcommand or a subcommand failure"
+          }
+        ],
+        "subcommands": [
+          {
+            "name": "theme add",
+            "description": "Add a built theme to the app. To copy a theme's source as an editable fork, run `theme eject <slug> [path] [--overwrite]`.",
+            "arguments": [
+              {
+                "name": "slug",
+                "required": false,
+                "variadic": false,
+                "description": ""
+              }
+            ],
+            "options": [
+              {
+                "flag": "--list",
+                "description": "List available themes",
+                "type": "boolean"
+              },
+              {
+                "flag": "--import",
+                "description": "Compatibility no-op; the built theme is added with or without this flag",
+                "type": "boolean"
+              },
+              {
+                "flag": "--package <package>",
+                "description": "Select the package that owns the theme",
+                "type": "string"
+              }
+            ],
+            "json": true,
+            "responseTypes": [
+              "theme.app",
+              "theme.list"
+            ],
+            "examples": [
+              "astryx theme add ocean",
+              "astryx theme add ocean --package @acme/themes"
+            ],
+            "exitCodes": [
+              {
+                "code": 0,
+                "when": "the theme is listed or added"
+              },
+              {
+                "code": 1,
+                "when": "the theme, its built imports, its record, or the option combination is invalid"
+              }
+            ],
+            "outsideProject": "own"
+          },
+          {
+            "name": "theme build",
+            "description": "Compile standalone themes or one keyed theme family",
+            "arguments": [
+              {
+                "name": "files",
+                "required": true,
+                "variadic": true,
+                "description": ""
+              }
+            ],
+            "options": [
+              {
+                "flag": "--family",
+                "description": "Build the selected extension family into one keyed CSS, JS, and declaration set, written beside the family root theme file, which must be inside the working directory to build (ERR_PATH_TRAVERSAL); --check only reads, so it compares outputs anywhere. Requires --family-key; refused with --out or --watch (ERR_THEME_INVALID)",
+                "type": "boolean"
+              },
+              {
+                "flag": "--family-key <key>",
+                "description": "Lower-kebab filename stem required with --family and refused without it; must differ from every member name (ERR_THEME_INVALID)",
+                "type": "string"
+              },
+              {
+                "flag": "-o, --out <path>",
+                "description": "Output CSS file path, relative or absolute; the .js and .d.ts are written beside it (default: <theme name>.css next to the source). A build writes only inside the working directory, the defaults beside the source too (ERR_PATH_TRAVERSAL); --check writes nothing, so it compares outputs anywhere and refuses only a relative path that escapes the working directory. Single theme only: refused with more than one file or with --family (ERR_THEME_INVALID)",
+                "type": "string"
+              },
+              {
+                "flag": "--icons-specifier <specifier>",
+                "description": "Override the icon-registry import in the generated JS module, for example ./icons.mjs (default: the specifier in the theme source's own import). With --family it applies to every member's icon import",
+                "type": "string"
+              },
+              {
+                "flag": "-w, --watch",
+                "description": "Rebuild automatically when a theme file changes (Ctrl-C to stop). Refused with --check, --family, or --json (ERR_THEME_INVALID)",
+                "type": "boolean"
+              },
+              {
+                "flag": "-c, --check",
+                "description": "Verify the committed outputs match the source without writing; exit non-zero if stale. Composes with --family and several files; refused with --watch (ERR_THEME_INVALID)",
+                "type": "boolean"
+              }
+            ],
+            "json": true,
+            "responseTypes": [
+              "theme.build",
+              "theme.build.check",
+              "theme.build.batch"
+            ],
+            "examples": [
+              "astryx theme build ./src/themes/ocean.ts --out ./dist/ocean.css",
+              "astryx theme build --family ./themes/ocean.mjs ./themes/ocean-calm.mjs --family-key ocean-family",
+              "astryx theme build ./src/themes/*.ts",
+              "astryx theme build ./src/themes/ocean.ts --check",
+              "astryx theme build ./src/themes/ocean.ts --icons-specifier ./icons.mjs"
+            ],
+            "exitCodes": [
+              {
+                "code": 0,
+                "when": "the theme builds, or --check finds the outputs up to date"
+              },
+              {
+                "code": 1,
+                "when": "a build or validation error, or --check finds stale or missing outputs"
+              }
+            ],
+            "outsideProject": "same"
+          },
+          {
+            "name": "theme eject",
+            "description": "Fork a theme as editable local source",
+            "arguments": [
+              {
+                "name": "slug",
+                "required": true,
+                "variadic": false,
+                "description": ""
+              },
+              {
+                "name": "path",
+                "required": false,
+                "variadic": false,
+                "description": ""
+              }
+            ],
+            "options": [
+              {
+                "flag": "-f, --overwrite",
+                "description": "Replace existing files. Without it, an existing file fails with ERR_FILE_EXISTS and nothing is written",
+                "type": "boolean"
+              },
+              {
+                "flag": "--package <package>",
+                "description": "Select the package that owns the theme",
+                "type": "string"
+              }
+            ],
+            "json": true,
+            "responseTypes": [
+              "theme.eject"
+            ],
+            "examples": [
+              "astryx theme eject ocean",
+              "astryx theme eject ocean src/themes/my-ocean --package @acme/themes"
+            ],
+            "exitCodes": [
+              {
+                "code": 0,
+                "when": "all source and descriptor files are written"
+              },
+              {
+                "code": 1,
+                "when": "the theme is unknown or ambiguous, a path escapes, a source file is missing, or a destination exists"
+              }
+            ],
+            "outsideProject": "same"
+          },
+          {
+            "name": "theme list",
+            "description": "List themes available to add",
+            "arguments": [],
+            "options": [
+              {
+                "flag": "--package <package>",
+                "description": "Show only themes owned by this package",
+                "type": "string"
+              }
+            ],
+            "json": true,
+            "responseTypes": [
+              "theme.list"
+            ],
+            "examples": [
+              "astryx theme list --json",
+              "astryx theme list --package @acme/themes"
+            ],
+            "exitCodes": [
+              {
+                "code": 0,
+                "when": "success"
+              },
+              {
+                "code": 1,
+                "when": "a bundled or installed theme descriptor cannot be read"
+              }
+            ],
+            "outsideProject": "same"
+          },
+          {
+            "name": "theme palette",
+            "description": "Create and work with theme-owned color palettes",
+            "arguments": [],
+            "options": [],
+            "json": false,
+            "examples": [
+              "astryx theme palette generate palette.config.json"
+            ],
+            "exitCodes": [
+              {
+                "code": 0,
+                "when": "help is shown or a subcommand succeeds"
+              },
+              {
+                "code": 1,
+                "when": "an unknown subcommand is provided"
+              }
+            ],
+            "subcommands": [
+              {
+                "name": "theme palette generate",
+                "description": "Generate an OKLCH palette candidate for human review",
+                "arguments": [
+                  {
+                    "name": "config",
+                    "required": true,
+                    "variadic": false,
+                    "description": ""
+                  }
+                ],
+                "options": [
+                  {
+                    "flag": "-o, --out <path>",
+                    "description": "Write a candidate TypeScript or JSON file and a sibling receipt",
+                    "type": "string"
+                  },
+                  {
+                    "flag": "--preview <path>",
+                    "description": "Write a self-contained HTML preview page; the path must end in .html",
+                    "type": "string"
+                  },
+                  {
+                    "flag": "-f, --overwrite",
+                    "description": "Replace existing candidate, receipt, and preview files. Without it, if any of them exists, nothing is written",
+                    "type": "boolean"
+                  }
+                ],
+                "json": true,
+                "responseTypes": [
+                  "theme.palette.generate"
+                ],
+                "examples": [
+                  "astryx theme palette generate themes/ocean/palette.config.json",
+                  "astryx theme palette generate themes/ocean/palette.config.json --out themes/ocean/tokens/ocean.palette.ts",
+                  "astryx theme palette generate themes/ocean/palette.config.json --out themes/ocean/tokens/ocean.palette.ts --preview themes/ocean/tokens/ocean.palette.html"
+                ],
+                "exitCodes": [
+                  {
+                    "code": 0,
+                    "when": "a candidate is produced or existing output is left untouched"
+                  },
+                  {
+                    "code": 1,
+                    "when": "the request is invalid or output cannot be written safely"
+                  }
+                ],
+                "outsideProject": "same"
+              }
+            ]
+          },
+          {
+            "name": "theme remove",
+            "description": "Remove a non-default theme from the app",
+            "arguments": [
+              {
+                "name": "slug",
+                "required": true,
+                "variadic": false,
+                "description": ""
+              }
+            ],
+            "options": [],
+            "json": true,
+            "responseTypes": [
+              "theme.app"
+            ],
+            "examples": [
+              "astryx theme remove ocean"
+            ],
+            "exitCodes": [
+              {
+                "code": 0,
+                "when": "the module is regenerated without the theme"
+              },
+              {
+                "code": 1,
+                "when": "the theme is not added, is the default, or state is invalid"
+              }
+            ],
+            "outsideProject": "refuse"
+          },
+          {
+            "name": "theme targets",
+            "description": "List the component theming targets a theme can override",
+            "arguments": [
+              {
+                "name": "filter",
+                "required": false,
+                "variadic": false,
+                "description": ""
+              }
+            ],
+            "options": [],
+            "json": true,
+            "responseTypes": [
+              "theme.targets"
+            ],
+            "examples": [
+              "astryx theme targets",
+              "astryx theme targets Switch",
+              "astryx theme targets thumb",
+              "astryx --json theme targets"
+            ],
+            "exitCodes": [
+              {
+                "code": 0,
+                "when": "success"
+              },
+              {
+                "code": 1,
+                "when": "a filter matches no target, or core cannot be resolved"
+              }
+            ],
+            "outsideProject": "same"
+          },
+          {
+            "name": "theme template",
+            "description": "Write the annotated theme template into your project",
+            "arguments": [
+              {
+                "name": "path",
+                "required": false,
+                "variadic": false,
+                "description": ""
+              }
+            ],
+            "options": [
+              {
+                "flag": "-f, --overwrite",
+                "description": "Replace an existing file",
+                "type": "boolean"
+              }
+            ],
+            "json": true,
+            "responseTypes": [
+              "theme.template"
+            ],
+            "examples": [
+              "astryx theme template",
+              "astryx theme template src/themes/starter.ts"
+            ],
+            "exitCodes": [
+              {
+                "code": 0,
+                "when": "success, including when an existing file was left untouched"
+              },
+              {
+                "code": 1,
+                "when": "the target path escapes the project, or the file cannot be written"
+              }
+            ],
+            "outsideProject": "same"
+          },
+          {
+            "name": "theme use",
+            "description": "Choose the app default from its added themes",
+            "arguments": [
+              {
+                "name": "slug",
+                "required": true,
+                "variadic": false,
+                "description": ""
+              }
+            ],
+            "options": [],
+            "json": true,
+            "responseTypes": [
+              "theme.app"
+            ],
+            "examples": [
+              "astryx theme use ocean"
+            ],
+            "exitCodes": [
+              {
+                "code": 0,
+                "when": "the module is regenerated with the selected default"
+              },
+              {
+                "code": 1,
+                "when": "the theme is not added or state is invalid"
+              }
+            ],
+            "outsideProject": "refuse"
+          }
+        ]
+      },
+      {
+        "name": "upgrade",
+        "description": "Update your code after upgrading Astryx, and refresh ShadCN-copied components",
+        "arguments": [],
+        "options": [
+          {
+            "flag": "--from <version>",
+            "description": "Previous version before the dependency upgrade; required unless --list or --registry is set. The target is the installed @astryxdesign/core version, or legacy @xds/core when @astryxdesign/core is not installed",
+            "type": "string"
+          },
+          {
+            "flag": "--apply",
+            "description": "Write changes to disk; without it, the run is a dry run",
+            "type": "boolean",
+            "default": false
+          },
+          {
+            "flag": "--force",
+            "description": "Run codemods even if --from is newer than the installed version",
+            "type": "boolean",
+            "default": false
+          },
+          {
+            "flag": "--codemod <name>",
+            "description": "Run only the named codemod. Optional codemods run only when named here; a normal run skips them. Also skips the check of ShadCN-copied compositions. An unknown name exits 1 with ERR_UNKNOWN_CODEMOD when the version range has codemods",
+            "type": "string"
+          },
+          {
+            "flag": "--skip-codemod <name...>",
+            "description": "Exclude named codemods (repeatable). Re-run past a failed codemod by skipping it.",
+            "type": "string"
+          },
+          {
+            "flag": "--integration <package>",
+            "description": "Explicit integration specifier (repeatable). Resolved beneath node_modules; absolute paths and `.` or `..` segments are rejected.",
+            "type": "string",
+            "default": []
+          },
+          {
+            "flag": "--path <dir>",
+            "description": "Source directory to scan, relative to where you run the command, however you spell it. Without --path, the project's src folder, from any folder in the project",
+            "type": "string",
+            "default": "./src at the project root"
+          },
+          {
+            "flag": "--install-deps",
+            "description": "Install jscodeshift when it is missing. Without it, a missing jscodeshift fails the command with ERR_DEP_MISSING",
+            "type": "boolean",
+            "default": false
+          },
+          {
+            "flag": "--registry",
+            "description": "Only update ShadCN-copied compositions from their install receipts: unchanged files are updated, edits that do not overlap are merged, and conflicts are left untouched; --from is not required. Combining it with --list, --from, --force, --codemod, --skip-codemod, --integration or --install-deps exits 1 with ERR_INVALID_ARGUMENT",
+            "type": "boolean",
+            "default": false
+          },
+          {
+            "flag": "--list",
+            "description": "List available codemods and do nothing else. Every other flag is refused, as is --registry (exit 1)",
+            "type": "boolean",
+            "default": false
+          }
+        ],
+        "json": true,
+        "responseTypes": [
+          "upgrade.list",
+          "upgrade.registry",
+          "upgrade.status",
+          "upgrade.run"
+        ],
+        "examples": [
+          "astryx upgrade --list --json",
+          "astryx upgrade --registry --apply",
+          "astryx upgrade --from 0.1.0 --apply"
+        ],
+        "exitCodes": [
+          {
+            "code": 0,
+            "when": "success, including complete dry-run previews"
+          },
+          {
+            "code": 1,
+            "when": "missing or invalid --from, --registry with --list or a migration flag, a --path escape, no installed @astryxdesign/core (or legacy @xds/core), jscodeshift missing and not installed by --install-deps, an astryx.config that fails validation and that no pending config codemod repairs, an unreadable or invalid protection declaration, a protected file that still requires a codemod change, an unknown codemod, a codemod or post-codemod hook failure, or unresolved registry items"
+          }
+        ],
+        "outsideProject": "own"
+      }
+    ],
+    "jsonSupported": [
+      "blog",
+      "build",
+      "component",
+      "discover",
+      "docs",
+      "doctor",
+      "doctor integration components",
+      "doctor integration docs",
+      "doctor integration templates",
+      "doctor integration validate",
+      "gap-report",
+      "hook",
+      "init",
+      "integration add",
+      "integration check",
+      "integration pack",
+      "integration verify",
+      "manifest",
+      "search",
+      "swizzle",
+      "template",
+      "theme add",
+      "theme build",
+      "theme eject",
+      "theme list",
+      "theme palette generate",
+      "theme remove",
+      "theme targets",
+      "theme template",
+      "theme use",
+      "upgrade"
+    ],
+    "globalMode": {
+      "docs": "astryx docs global",
+      "summary": "In a folder that belongs to a project, the project's own CLI answers: this copy hands the run to it. In a project with no CLI of its own, and outside any project, this copy answers. A copy installed for the computer checks the registry for a newer release once a day in the background, and keeps one agent skill file in the home folder."
+    },
+    "responseTypes": {
+      "blog": [
+        "blog.list",
+        "blog.detail"
+      ],
+      "build": [
+        "build.help",
+        "build.kit"
+      ],
+      "component": [
+        "component.list",
+        "component.batch",
+        "component.detail",
+        "component.detail.props",
+        "component.detail.source",
+        "component.detail.showcase",
+        "component.detail.blocks"
+      ],
+      "discover": [
+        "discover.list",
+        "discover.detail",
+        "discover.detail.doc",
+        "discover.item",
+        "discover.search"
+      ],
+      "docs": [
+        "docs.list",
+        "docs.detail",
+        "docs.index",
+        "docs.detail.section",
+        "docs.node"
+      ],
+      "doctor": [
+        "doctor"
+      ],
+      "doctor integration components": [
+        "integration.component-conflicts"
+      ],
+      "doctor integration docs": [
+        "integration.doc-conflicts"
+      ],
+      "doctor integration templates": [
+        "integration.template-conflicts"
+      ],
+      "doctor integration validate": [
+        "integration.validate"
+      ],
+      "gap-report": [
+        "gap-report.categories",
+        "gap-report.file"
+      ],
+      "hook": [
+        "hook.list",
+        "hook.detail",
+        "hook.detail.params"
+      ],
+      "init": [
+        "init.run",
+        "init.remove",
+        "init.user"
+      ],
+      "integration add": [
+        "integration.add"
+      ],
+      "integration check": [
+        "integration.check"
+      ],
+      "integration pack": [
+        "integration.pack-check"
+      ],
+      "integration verify": [
+        "integration.pack-check"
+      ],
+      "manifest": [
+        "manifest"
+      ],
+      "search": [
+        "search"
+      ],
+      "swizzle": [
+        "swizzle.list",
+        "swizzle.copy"
+      ],
+      "template": [
+        "template.list",
+        "template.show",
+        "template.skeleton",
+        "template.copy",
+        "template.cdn"
+      ],
+      "theme add": [
+        "theme.app",
+        "theme.list"
+      ],
+      "theme build": [
+        "theme.build",
+        "theme.build.check",
+        "theme.build.batch"
+      ],
+      "theme eject": [
+        "theme.eject"
+      ],
+      "theme list": [
+        "theme.list"
+      ],
+      "theme palette generate": [
+        "theme.palette.generate"
+      ],
+      "theme remove": [
+        "theme.app"
+      ],
+      "theme targets": [
+        "theme.targets"
+      ],
+      "theme template": [
+        "theme.template"
+      ],
+      "theme use": [
+        "theme.app"
+      ],
+      "upgrade": [
+        "upgrade.list",
+        "upgrade.registry",
+        "upgrade.status",
+        "upgrade.run"
+      ]
+    }
+  },
+  "meta": {
+    "answeredBy": {
+      "cli": "0.7.3",
+      "core": "0.7.3",
+      "copy": "project"
+    }
+  }
+}

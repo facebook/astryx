@@ -641,6 +641,31 @@ describe('experimental icon use', () => {
     );
   });
 
+  it('warns in the receipt when the project may run a CLI that refuses experimental.iconSet', async () => {
+    const app = writeIconSetProject(tmp);
+    const pkgFile = path.join(app, 'package.json');
+    const pkgJson = JSON.parse(fs.readFileSync(pkgFile, 'utf-8'));
+    // No CLI range declared: nothing says which CLI it runs.
+    const none = await json(['experimental', 'icon', 'use', 'glyphs'], app);
+    expect(none.body.data).not.toHaveProperty('warning');
+    pkgJson.devDependencies = {'@astryxdesign/cli': '^0.7.0'};
+    fs.writeFileSync(pkgFile, JSON.stringify(pkgJson));
+    const old = await json(['experimental', 'icon', 'use', 'glyphs'], app);
+    expect(old.code).toBe(0);
+    expect(old.body.data.warning).toContain(
+      'range "^0.7.0" (devDependencies) admits a release before 0.7.3',
+    );
+    expect(old.body.data.warning).toContain('"Unrecognized key"');
+    const text = await runCli(['experimental', 'icon', 'use', 'glyphs'], app);
+    expect(text.stdout).toContain(
+      "[warn] The project's @astryxdesign/cli range",
+    );
+    pkgJson.devDependencies = {'@astryxdesign/cli': '^0.7.3'};
+    fs.writeFileSync(pkgFile, JSON.stringify(pkgJson));
+    const current = await json(['experimental', 'icon', 'use', 'glyphs'], app);
+    expect(current.body.data).not.toHaveProperty('warning');
+  });
+
   it('writes a plain existing config, keeping its other fields', async () => {
     const app = writeIconSetProject(tmp);
     const config = path.join(app, 'astryx.config.mjs');

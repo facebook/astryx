@@ -346,3 +346,39 @@ export function templateIconsCliProblem(pkg) {
     TEMPLATE_ICONS_CLI,
   );
 }
+
+/**
+ * The first stable CLI release that reads `experimental.iconSet` in a
+ * project's astryx.config (spec:AST-084 FR16). Published 0.7.2 refuses the
+ * config ("Unrecognized key"), so every command fails in that project.
+ *
+ * Tied to the next patch slot, with {@link STABILITY_CLI}.
+ */
+export const CONFIG_ICON_SET_CLI = '0.7.3';
+
+/**
+ * Why an app project whose astryx.config sets `experimental.iconSet` would be
+ * refused by a CLI it may run, or null when the `@astryxdesign/cli` range it
+ * declares (in dependencies, devDependencies, optionalDependencies, or
+ * peerDependencies) admits only CLIs that read the key. A project that
+ * declares no range, or one that is not a version range (`workspace:`,
+ * `file:`, `link:`), gets null: nothing says which CLI it runs.
+ * @param {any} pkg the project's package.json
+ * @returns {string | null}
+ */
+export function projectIconSetCliWarning(pkg) {
+  const field = [
+    'dependencies',
+    'devDependencies',
+    'optionalDependencies',
+    'peerDependencies',
+  ].find(name => typeof pkg?.[name]?.[CLI_PACKAGE] === 'string');
+  if (!field) return null;
+  const range = pkg[field][CLI_PACKAGE];
+  if (range.includes(':')) return null;
+  const lowest = lowestAdmitted(range);
+  if (lowest != null && semverCompare(lowest, CONFIG_ICON_SET_CLI) >= 0) {
+    return null;
+  }
+  return `The project's ${CLI_PACKAGE} range "${range}" (${field}) admits a release before ${CONFIG_ICON_SET_CLI}, which refuses an astryx.config that sets \`experimental.iconSet\` ("Unrecognized key"), so every command fails there. Require "${CLI_PACKAGE}": ">=${CONFIG_ICON_SET_CLI}".`;
+}
