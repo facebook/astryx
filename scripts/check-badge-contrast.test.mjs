@@ -188,19 +188,10 @@ const THEMES_WITH_BADGE_BLOCK = ['butter', 'gothic', 'neutral', 'stone', 'y2k'];
 
 /**
  * Pre-existing shortfalls this guard records rather than silently tolerates.
- *
- * Butter pins these fills to brand values, so moving them is a design call,
- * not a bug fix. The guard asserts the set matches exactly, so a new shortfall
- * fails the build and a fixed one fails until it is deleted from this list.
+ * The set is exact: a new shortfall fails the build, and a fixed one fails until
+ * it is deleted from this list.
  */
-const KNOWN_GAPS = [
-  'butter/dark variant:error',
-  'butter/dark variant:info',
-  'butter/dark variant:neutral',
-  'butter/light variant:error',
-  'butter/light variant:info',
-  'butter/light variant:neutral',
-];
+const KNOWN_GAPS = [];
 
 describe('Badge label contrast', () => {
   const rows = badgePairs();

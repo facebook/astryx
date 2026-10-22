@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import {butterPalettes} from '@astryxdesign/theme-butter';
+import {palette as butterModePalettes} from '../../../../../../../packages/themes/butter/src/butterPalettes.generated';
 import {palette as gothicModePalettes} from '../../../../../../../packages/themes/gothic/src/gothicPalettes.generated';
 import {palette as stoneModePalettes} from '../../../../../../../packages/themes/stone/src/stonePalettes.generated';
 import {y2kPalettes} from '@astryxdesign/theme-y2k';
@@ -268,59 +268,95 @@ const y2kFamilies = [
   storedFamily('teal', 'Teal', '#78e0b0', y2kPalettes.teal),
 ];
 
-const butterDarkYellow = {
-  0: '#000000',
-  5: '#161100',
-  10: '#211b00',
-  15: '#2c2600',
-  20: '#383100',
-  25: '#443c00',
-  30: '#504700',
-  35: '#5d5300',
-  40: '#6a5f00',
-  45: '#786b00',
-  50: '#867800',
-  55: '#948500',
-  60: '#a29200',
-  65: '#b19f00',
-  70: '#bfac1a',
-  75: '#ceba2c',
-  80: '#ddc73c',
-  85: '#ecd54a',
-  90: '#fbe358',
-  95: '#fff1bd',
-  100: '#ffffff',
-} as const;
-
 const butterFamilies = [
   storedFamily(
     'accent',
     'Accent',
     '#225bff',
-    butterPalettes.accent,
+    butterModePalettes.accent.light,
     'chromatic',
-    butterPalettes.yellow,
+    butterModePalettes.accent.dark,
   ),
-  storedFamily('neutral', 'Gray', '#868b99', butterPalettes.neutral, 'neutral'),
-  storedFamily('red', 'Red', '#ff7553', butterPalettes.red),
-  storedFamily('orange', 'Orange', '#ffa347', butterPalettes.orange),
+  storedFamily(
+    'neutral',
+    'Gray',
+    '#868b99',
+    butterModePalettes.neutral.light,
+    'neutral',
+    butterModePalettes.neutral.dark,
+  ),
+  storedFamily(
+    'red',
+    'Red',
+    '#ff7553',
+    butterModePalettes.red.light,
+    'chromatic',
+    butterModePalettes.red.dark,
+  ),
+  storedFamily(
+    'orange',
+    'Orange',
+    '#ffa347',
+    butterModePalettes.orange.light,
+    'chromatic',
+    butterModePalettes.orange.dark,
+  ),
   storedFamily(
     'yellow',
     'Yellow',
     '#edd64b',
-    butterPalettes.yellow,
+    butterModePalettes.yellow.light,
     'chromatic',
-    butterDarkYellow,
+    butterModePalettes.yellow.dark,
   ),
-  storedFamily('green', 'Green', '#5dce5f', butterPalettes.green),
-  storedFamily('cyan', 'Cyan', '#60cfd3', butterPalettes.cyan),
-  storedFamily('teal', 'Teal', '#6cd9a8', butterPalettes.teal),
-  storedFamily('blue', 'Blue', '#5681ff', butterPalettes.blue),
-  storedFamily('purple', 'Purple', '#b780f6', butterPalettes.purple),
-  storedFamily('pink', 'Pink', '#f680e8', butterPalettes.pink),
-  storedFamily('error', 'Error', '#ff5947', butterPalettes.error),
-  storedFamily('warning', 'Warning', '#f8c726', butterPalettes.warning),
-  storedFamily('success', 'Success', '#91d143', butterPalettes.success),
+  storedFamily(
+    'green',
+    'Green',
+    '#5dce5f',
+    butterModePalettes.green.light,
+    'chromatic',
+    butterModePalettes.green.dark,
+  ),
+  storedFamily(
+    'cyan',
+    'Cyan',
+    '#60cfd3',
+    butterModePalettes.cyan.light,
+    'chromatic',
+    butterModePalettes.cyan.dark,
+  ),
+  storedFamily(
+    'teal',
+    'Teal',
+    '#6cd9a8',
+    butterModePalettes.teal.light,
+    'chromatic',
+    butterModePalettes.teal.dark,
+  ),
+  storedFamily(
+    'blue',
+    'Blue',
+    '#5681ff',
+    butterModePalettes.blue.light,
+    'chromatic',
+    butterModePalettes.blue.dark,
+  ),
+  storedFamily(
+    'purple',
+    'Purple',
+    '#b780f6',
+    butterModePalettes.purple.light,
+    'chromatic',
+    butterModePalettes.purple.dark,
+  ),
+  storedFamily(
+    'pink',
+    'Pink',
+    '#f680e8',
+    butterModePalettes.pink.light,
+    'chromatic',
+    butterModePalettes.pink.dark,
+  ),
 ];
 
 export const THEME_REFERENCES: ThemeReference[] = [
