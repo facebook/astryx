@@ -19,10 +19,13 @@
  *            or whose name is an Astryx definition; a data file generated from an upstream version
  *            other than the one the package depends on; a set with an
  *            upstream and no license notice file in its directory or package.
- * What it cannot judge it lists as not checked, never as an issue
- * (`architecture:cli-surface` INV35, DEC-7): an export whose module is a
- * package `exports` target not built yet, an export behind a re-export the
- * reader cannot follow, and a theme-map entry it cannot read.
+ * Only what the static reader proves absent fails. What it cannot judge it
+ * lists as not checked, never as an issue (`architecture:cli-surface` INV35,
+ * DEC-7): an export whose module is a package `exports` target not built
+ * yet; an icon or adapter export it cannot prove either way (behind a
+ * re-export it cannot follow, bound to a default or namespace import, or
+ * imported from a package that does not resolve); and a theme-map entry it
+ * cannot read.
  *
  * @input A package directory and its loaded integration roots
  * @output Issues in the integration issue format, and the items not checked
@@ -47,10 +50,9 @@ import {
 } from './icon-set-writer.mjs';
 import {
   exportValueKind,
-  moduleExportOrigin,
+  exportOriginVerdict,
   moduleParseFailure,
   staticExportBindings,
-  unfollowedReexports,
 } from './module-exports.mjs';
 import {astryxIconDefinitions} from './icon-definition-discovery.mjs';
 import {
@@ -106,6 +108,7 @@ function readJson(file) {
  * @typedef {object} IconSetUnchecked
  * @property {string} [icon] the icon whose export was not checked
  * @property {string} [entry] the theme-map entry that was not checked
+ * @property {string} [adapter] the adapter export that was not checked
  * @property {string} reason why, and what would let the check judge it
  */
 
@@ -127,18 +130,18 @@ export function iconSetIssues(packageDir, loaded, unchecked = new Map()) {
   }
   const pkg = readJson(path.join(packageDir, 'package.json')) ?? {};
   for (const set of found.sets) {
-    issues.push(...checkContract({...set, packageDir}, loaded.name, pkg));
+    /** @type {IconSetUnchecked[]} */
+    const notChecked = [];
+    issues.push(
+      ...checkContract({...set, packageDir}, loaded.name, pkg, notChecked),
+    );
     issues.push(...checkDefinitions(set));
     // A module that does not parse hides every export behind it: report it
     // once instead of one missing export per icon.
     const broken = unparsedModule(set, packageDir, loaded.name);
     if (broken) issues.push(broken);
-    else {
-      /** @type {IconSetUnchecked[]} */
-      const notChecked = [];
-      issues.push(...checkExports(set, packageDir, loaded.name, notChecked));
-      if (notChecked.length > 0) unchecked.set(set.name, notChecked);
-    }
+    else issues.push(...checkExports(set, packageDir, loaded.name, notChecked));
+    if (notChecked.length > 0) unchecked.set(set.name, notChecked);
     issues.push(...checkUpstream(set, packageDir, pkg));
   }
   return issues;
@@ -184,9 +187,10 @@ function unparsedModule(set, packageDir, packageName) {
  * @param {DiscoveredIconSet} set
  * @param {string} packageName
  * @param {Record<string, any>} pkg
+ * @param {IconSetUnchecked[]} unchecked filled with what it cannot judge
  * @returns {Issue[]}
  */
-function checkContract(set, packageName, pkg) {
+function checkContract(set, packageName, pkg, unchecked) {
   /** @type {Issue[]} */
   const issues = [];
   const label = `Icon set "${set.name}"`;
@@ -279,12 +283,17 @@ function checkContract(set, packageName, pkg) {
     }
   }
   if (set.data.adapter) {
-    const file = resolveFile(path.join(packageDir, set.data.adapter.module));
-    if (!file || !moduleExportOrigin(file, set.data.adapter.export)) {
+    const {module, export: name} = set.data.adapter;
+    const file = resolveFile(path.join(packageDir, module));
+    const found = file ? exportOriginVerdict(file, name) : null;
+    if (found?.verdict === 'unknown') {
+      // The reader cannot prove it either way: listed, never failed.
+      unchecked.push({adapter: name, reason: found.reason});
+    } else if (!found || found.verdict === 'lacks') {
       issues.push(
         issueError(
           ICON_EXPORT_MISSING,
-          `${label}: its adapter "${set.data.adapter.export}" from "${set.data.adapter.module}" does not exist. Export the function there, or fix "adapter".`,
+          `${label}: its adapter "${name}" from "${module}" does not exist. Export the function there, or fix "adapter".`,
         ),
       );
     }
@@ -494,7 +503,8 @@ function checkExports(set, packageDir, packageName, unchecked) {
     const key = `${specifier}\0${name}`;
     if (origins.has(key)) return origins.get(key) ?? null;
     const file = fileOf(specifier);
-    const origin = file ? moduleExportOrigin(file, name) : null;
+    const found = file ? exportOriginVerdict(file, name) : null;
+    const origin = found?.verdict === 'exports' ? found.origin : null;
     origins.set(key, origin);
     const unbuilt = file ? null : unbuiltTarget(specifier);
     if (unbuilt) {
@@ -509,21 +519,20 @@ function checkExports(set, packageDir, packageName, unchecked) {
           `${label}: ${what} is read from "${specifier}", which does not resolve from the package. Fix "module" in ${set.name}.icons.json, or add the subpath to package.json "exports".`,
         ),
       );
+    } else if (found?.verdict === 'unknown') {
+      // Only an export the reader proves absent fails; anything it cannot
+      // prove is listed (architecture:cli-surface INV35, DEC-7).
+      unchecked.push({
+        ...subject,
+        reason: `${what} names export "${name}" of "${specifier}", which this check could not prove: ${found.reason}`,
+      });
     } else if (!origin) {
-      const unfollowed = unfollowedReexports(file);
-      if (unfollowed.length > 0) {
-        unchecked.push({
-          ...subject,
-          reason: `${what} names export "${name}", which "${specifier}" may re-export from ${unfollowed.map(each => `"${each}"`).join(', ')}, which the reader could not follow. Install that package as a dependency, or re-export the icon by name from a file in this package.`,
-        });
-      } else {
-        issues.push(
-          issueError(
-            ICON_EXPORT_MISSING,
-            `${label}: ${what} names export "${name}", which "${specifier}" does not export at runtime. Export it, or fix the name in ${set.name}.icons.json.`,
-          ),
-        );
-      }
+      issues.push(
+        issueError(
+          ICON_EXPORT_MISSING,
+          `${label}: ${what} names export "${name}", which "${specifier}" does not export at runtime. Export it, or fix the name in ${set.name}.icons.json.`,
+        ),
+      );
     } else if (component && exportValueKind(file, name) === 'data') {
       issues.push(
         issueError(
@@ -589,7 +598,13 @@ function checkExports(set, packageDir, packageName, unchecked) {
   if (!mapOrigin || !file) return issues;
   const bindings = staticExportBindings(file, themeMap);
   // A theme map built at runtime cannot be read, so it is not checked.
-  if (!bindings) return issues;
+  if (!bindings) {
+    unchecked.push({
+      entry: themeMap,
+      reason: `Theme map "${themeMap}" is not one object literal the static reader can read, so none of its entries were checked. Export it as \`export const ${themeMap} = {...}\` to have it checked.`,
+    });
+    return issues;
+  }
   for (const key of bindings.keys()) {
     if (!fillers.has(key)) {
       issues.push(

@@ -119,11 +119,12 @@
  * @property {Array<{definition: string, icon: string}>} suggestions For each
  *   unmapped definition (built-in, optional, or the set's own), the icon
  *   whose whole id is the definition's name or one of its words, when one is.
- * @property {Array<{icon?: string, entry?: string, reason: string}>} unchecked
- *   What the checks could not judge: an icon export whose module is an
- *   `exports` target not built yet, or sits behind a re-export the reader
- *   cannot follow (`icon`), and a theme-map entry the reader cannot read
- *   (`entry`), each with the reason.
+ * @property {Array<{icon?: string, adapter?: string, entry?: string, reason: string}>} unchecked
+ *   What the checks could not judge, each with the reason: an icon export
+ *   whose module is an `exports` target not built yet, or that the reader
+ *   cannot prove either way (`icon`); an adapter export it cannot prove
+ *   (`adapter`); and a theme map or theme-map entry it cannot read
+ *   (`entry`).
  */
 
 /**

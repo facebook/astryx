@@ -427,7 +427,11 @@ export function moduleExportSource(file, exportName, seen = new Set()) {
 
   if (exportName === 'default') {
     const defaults = nodesOfType(ast.program, 'ExportDefaultDeclaration');
-    if (defaults.some((/** @type {any} */ node) => runtimeDefault(node.declaration))) {
+    if (
+      defaults.some((/** @type {any} */ node) =>
+        runtimeDefault(node.declaration),
+      )
+    ) {
       return file;
     }
   }
@@ -582,7 +586,9 @@ export function moduleExportVerdict(file, exportName, seen = new Set()) {
     );
   }
   if (topLevel(ast.program, 'TSExportAssignment').length > 0) {
-    unknown.push(`${shown} uses \`export =\`, whose names this check does not read.`);
+    unknown.push(
+      `${shown} uses \`export =\`, whose names this check does not read.`,
+    );
   }
   /**
    * Follow a re-export of `imported` from `specifier`.
@@ -668,7 +674,9 @@ export function moduleExportVerdict(file, exportName, seen = new Set()) {
         return {verdict: 'exports'};
       }
       if (specifier.type !== 'ExportSpecifier') {
-        unknown.push(`${shown} re-exports ${exportName} in a form this check does not read.`);
+        unknown.push(
+          `${shown} re-exports ${exportName} in a form this check does not read.`,
+        );
         continue;
       }
       const imported =
@@ -941,6 +949,117 @@ export function moduleExportOrigin(file, exportName, seen = new Set()) {
     if (origin) return origin;
   }
   return null;
+}
+
+/**
+ * @typedef {{verdict: 'exports', origin: {file: string, name: string}} | {verdict: 'lacks'} | {verdict: 'unknown', reason: string}} ExportOriginVerdict
+ */
+
+/**
+ * Whether a module exports `exportName`, and where it is declared, for a
+ * check that must fail only what it proves: `exports` with the origin when
+ * {@link moduleExportOrigin} follows it to its declaration (through local
+ * files and installed packages); `lacks` only when
+ * {@link moduleExportVerdict} proves no export binds it; `unknown`, with the
+ * reason, for anything else, including an export bound to a default or
+ * namespace import, or to an import from a package that does not resolve.
+ * @param {string} file
+ * @param {string} exportName
+ * @returns {ExportOriginVerdict}
+ */
+export function exportOriginVerdict(file, exportName) {
+  const origin = moduleExportOrigin(file, exportName);
+  if (origin) return {verdict: 'exports', origin};
+  const verdict = moduleExportVerdict(file, exportName);
+  if (verdict.verdict === 'lacks') return {verdict: 'lacks'};
+  if (verdict.verdict === 'unknown') return verdict;
+  return {verdict: 'unknown', reason: originGapReason(file, exportName)};
+}
+
+/**
+ * Why an export a module binds could not be followed to its declaration:
+ * re-exports are followed to the module that binds it.
+ * @param {string} file
+ * @param {string} exportName
+ * @param {Set<string>} [seen]
+ * @returns {string}
+ */
+function originGapReason(file, exportName, seen = new Set()) {
+  const shown = path.basename(file);
+  const identity = `${file}\0${exportName}`;
+  if (seen.has(identity)) {
+    return `${shown} exports ${exportName}, but this check could not follow it to the declaration.`;
+  }
+  seen.add(identity);
+  const generic = `${shown} exports ${exportName}, but this check could not follow it to the declaration.`;
+  let ast;
+  try {
+    ast = parseModule(file);
+  } catch {
+    return generic;
+  }
+  /** @type {string | null} */
+  let local = null;
+  for (const node of nodesOfType(ast.program, 'ExportNamedDeclaration')) {
+    for (const specifier of node.specifiers ?? []) {
+      const exported = specifier.exported?.name ?? specifier.exported?.value;
+      if (exported !== exportName) continue;
+      const name = specifier.local?.name ?? specifier.local?.value;
+      if (node.source) {
+        const source = String(node.source.value);
+        const target = resolveModuleOrPackage(source, file);
+        if (!target) {
+          return `${shown} re-exports ${exportName} from "${source}", which does not resolve from the package.`;
+        }
+        return originGapReason(
+          target,
+          typeof name === 'string' ? name : exportName,
+          seen,
+        );
+      }
+      local = typeof name === 'string' ? name : null;
+    }
+  }
+  if (exportName === 'default') {
+    for (const node of nodesOfType(ast.program, 'ExportDefaultDeclaration')) {
+      if (node.declaration?.type === 'Identifier') {
+        local = node.declaration.name;
+      }
+    }
+  }
+  if (!local) {
+    // Bound behind `export *`: the module it comes from says why.
+    for (const node of nodesOfType(ast.program, 'ExportAllDeclaration')) {
+      if (node.exportKind === 'type' || node.exported) continue;
+      const target = resolveModuleOrPackage(node.source?.value, file);
+      if (
+        target &&
+        moduleExportVerdict(target, exportName).verdict === 'exports'
+      ) {
+        return originGapReason(target, exportName, seen);
+      }
+    }
+    return generic;
+  }
+  for (const node of ast.program.body) {
+    if (node.type !== 'ImportDeclaration' || node.importKind === 'type') {
+      continue;
+    }
+    const source = String(node.source.value);
+    for (const specifier of node.specifiers ?? []) {
+      if (specifier.local?.name !== local) continue;
+      if (specifier.type === 'ImportDefaultSpecifier') {
+        return `${shown} exports ${exportName} from a default import of "${source}", which this check does not follow.`;
+      }
+      if (specifier.type === 'ImportNamespaceSpecifier') {
+        return `${shown} exports ${exportName} from a namespace import of "${source}", which this check does not follow.`;
+      }
+      return resolveModuleOrPackage(source, file)
+        ? `${shown} exports ${exportName} imported from "${source}", which this check could not follow to the declaration.`
+        : `${shown} exports ${exportName} imported from "${source}", which does not resolve from the package.`;
+    }
+  }
+  return generic;
 }
 
 /**

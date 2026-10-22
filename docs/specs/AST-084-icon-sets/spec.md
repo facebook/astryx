@@ -230,16 +230,20 @@ icon, and the CLI verifies it, writes the files, and checks the set.
   suggests an `icon map` command only when an icon's whole `id` is the
   definition's name or one of its words. Errors fail the check; warnings fail
   under `--strict`. Re-exports are followed through relative files and
-  installed packages for these checks only. Neither is an issue, never counted
-  and never failing, even under `--strict`, in the validate result's additive
+  installed packages for these checks only, and an export fails only when the
+  reader proves it absent. Neither of these is an issue, never counted and
+  never failing, even under `--strict`, in the validate result's additive
   field `iconSets` (each `{set, unmappedDefinitions, suggestions,
 unchecked}`): the optional Astryx definitions a set leaves unmapped, printed
-  as "Unmapped icon definitions (optional)"; and what a check cannot judge (an
-  icon export whose module is a package `exports` target not built yet, an
-  export behind a re-export the reader cannot follow, and a theme-map entry
-  the reader cannot read), each `{icon}` or `{entry}` with its `reason`,
-  printed under "Not checked" (`architecture:cli-surface` INV35, DEC-7). An
-  export the built module lacks is still `icon_export_missing`.
+  as "Unmapped icon definitions (optional)"; and what a check cannot judge,
+  each `{icon}`, `{adapter}`, or `{entry}` with its `reason`, printed under
+  "Not checked" (`architecture:cli-surface` INV35, DEC-7): an icon export
+  whose module is a package `exports` target not built yet; an icon or adapter
+  export the reader cannot prove either way (behind a re-export it cannot
+  follow, bound to a default or namespace import, or imported from a package
+  that does not resolve); and a theme map or theme-map entry the reader cannot
+  read. An export a module the reader fully reads lacks is still
+  `icon_export_missing`.
 
 - **FR16 — Older CLIs.** Published CLI 0.7.2 refuses `stability` on page and
   block templates, namespace docs, and theme descriptors, and refuses a

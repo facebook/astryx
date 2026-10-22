@@ -271,7 +271,7 @@ describe('iconSetIssues', () => {
         {
           icon: 'home',
           reason: expect.stringContaining(
-            're-export from "not-installed", which the reader could not follow',
+            're-exports everything from "not-installed"',
           ),
         },
       ]);
@@ -324,6 +324,88 @@ describe('iconSetIssues', () => {
         }),
       );
       expect(notChecked.get('glyphs')).toBeUndefined();
+    });
+
+    it('fails only an export the reader proves absent; an export it cannot follow is not checked', () => {
+      // Bound to a default import: present, but not followed to its declaration.
+      const viaDefault = issuesOf({
+        modules: modules({
+          'icons/trash-default.js':
+            'export default function Trash(props) { return null; }\n',
+          'icons/trash.js':
+            "import Trash from './trash-default.js';\nexport {Trash as TrashIcon};\nexport function TrashSolidIcon(props) { return null; }\n",
+        }),
+      });
+      expect(viaDefault).toEqual([]);
+      expect(notChecked.get('glyphs')).toEqual([
+        {
+          icon: 'trash',
+          reason: expect.stringContaining(
+            'from a default import of "./trash-default.js"',
+          ),
+        },
+      ]);
+      // Imported from a package that does not resolve.
+      const viaMissing = issuesOf({
+        modules: modules({
+          'icons/trash.js':
+            "import {TrashIcon} from 'not-installed';\nexport {TrashIcon};\nexport function TrashSolidIcon(props) { return null; }\n",
+        }),
+      });
+      expect(viaMissing).toEqual([]);
+      expect(notChecked.get('glyphs')).toEqual([
+        {
+          icon: 'trash',
+          reason: expect.stringContaining(
+            'imported from "not-installed", which does not resolve from the package',
+          ),
+        },
+      ]);
+      // A built file that truly lacks the export: an error.
+      const lacking = issuesOf({
+        modules: modules({
+          'icons/trash.js':
+            'export function TrashSolidIcon(props) { return null; }\n',
+        }),
+      });
+      expect(lacking).toEqual([
+        expect.objectContaining({
+          code: 'icon_export_missing',
+          severity: 'error',
+        }),
+      ]);
+      expect(notChecked.get('glyphs')).toBeUndefined();
+    });
+
+    it('an adapter behind a re-export the reader cannot follow is not checked; one proved absent is an error', () => {
+      const adapter = {module: './src/adapt.js', export: 'adapt'};
+      const unfollowed = issuesOf({
+        data: data(d => {
+          d.adapter = adapter;
+        }),
+        modules: modules({
+          'src/adapt.js': "export * from 'not-installed';\n",
+        }),
+      });
+      expect(unfollowed).toEqual([]);
+      expect(notChecked.get('glyphs')).toEqual([
+        {
+          adapter: 'adapt',
+          reason: expect.stringContaining('"not-installed"'),
+        },
+      ]);
+      const absent = issuesOf({
+        data: data(d => {
+          d.adapter = adapter;
+        }),
+        modules: modules({'src/adapt.js': 'export function other() {}\n'}),
+      });
+      expect(absent).toEqual([
+        expect.objectContaining({
+          code: 'icon_export_missing',
+          message: expect.stringContaining('its adapter "adapt"'),
+        }),
+      ]);
     });
 
     it('a generated module or adapter the data names must exist', () => {

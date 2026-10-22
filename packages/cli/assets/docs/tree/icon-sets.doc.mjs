@@ -282,7 +282,7 @@ export const brand = defineTheme({name: 'brand', icons: themeIcons});`,
         },
         {
           type: 'prose',
-          text: 'What the check cannot judge it does not fail either. An icon export whose module is an `exports` target you have not built yet, an export behind a re-export the reader cannot follow (from a package that is not installed), and a theme-map entry it cannot read are listed under "Not checked", and in the JSON as each set\'s `unchecked` (each `{icon}` or `{entry}`, with its `reason`). Build the package, install the package it re-exports from, or write the entry as a binding or element to have it checked. An export your built module lacks is still an error.',
+          text: 'An export fails only when the reader proves it absent; what it cannot judge it does not fail either. An icon export whose module is an `exports` target you have not built yet; an icon or adapter export it cannot prove either way (behind a re-export it cannot follow, bound to a default or namespace import, or imported from a package that is not installed); and a theme map or theme-map entry it cannot read are listed under "Not checked", and in the JSON as each set\'s `unchecked` (each `{icon}`, `{adapter}`, or `{entry}`, with its `reason`). Build the package, install the package it imports from, export the icon by name, or write the entry as a binding or element to have it checked. An export your built module lacks is still an error.',
         },
         {
           type: 'prose',

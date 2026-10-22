@@ -310,7 +310,11 @@ function iconSetCoverageBlocks(sets) {
   const unchecked = (sets ?? []).flatMap(each =>
     (each.unchecked ?? []).map(item => ({
       set: each.set,
-      item: item.icon ? `icon ${item.icon}` : `theme map ${item.entry}`,
+      item: item.icon
+        ? `icon ${item.icon}`
+        : item.adapter
+          ? `adapter ${item.adapter}`
+          : `theme map ${item.entry}`,
       reason: item.reason,
     })),
   );
