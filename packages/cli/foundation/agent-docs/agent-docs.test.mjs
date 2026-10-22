@@ -7,6 +7,7 @@ import * as os from 'node:os';
 import {renderComputerAgentText} from './computer-agent-text.mjs';
 import {
   generateCompressedIndex,
+  recordedCoreOf,
   detectStylingSystem,
   getXdsVersion,
   installAgentDocs,
@@ -99,15 +100,38 @@ describe('generateCompressedIndex', () => {
   it('tells agents to check a build with doctor --built; the computer-level skill does not', () => {
     const line =
       "Before you deliver a build, run `astryx doctor --built <dir>`; don't deliver it if it fails.";
-    expect(generateCompressedIndex('1.0.0')).toContain(line);
-    expect(generateCompressedIndex('0.7.4')).toContain(line);
-    // A Core-only project on an older release installs a CLI without it.
-    expect(generateCompressedIndex('0.7.3')).not.toContain('doctor --built');
-    expect(generateCompressedIndex(null)).not.toContain('doctor --built');
+    expect(generateCompressedIndex('0.7.4', {recordedCore: '0.7.4'})).toContain(line);
+    expect(generateCompressedIndex('1.0.0', {recordedCore: '1.0.0'})).toContain(line);
+    // The project's recorded Core decides, not the version the block names
+    // (which falls back to the running CLI's own before install).
+    expect(generateCompressedIndex('0.7.4', {recordedCore: '0.7.3'})).not.toContain('doctor --built');
+    expect(generateCompressedIndex('0.7.4')).not.toContain('doctor --built');
+    // A 0.7.4 canary predates the option.
+    expect(
+      generateCompressedIndex('0.7.4', {recordedCore: '0.7.4-canary.b25f95e'}),
+    ).not.toContain('doctor --built');
     expect(renderComputerAgentText({command: 'astryx'})).not.toContain(
       'doctor --built',
     );
   });
+
+  it('reads the Core release a fresh clone records, before install', () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'astryx-recorded-core-'));
+    try {
+      fs.writeFileSync(
+        path.join(dir, 'package.json'),
+        JSON.stringify({
+          name: 'app',
+          dependencies: {'@astryxdesign/core': '0.7.3'},
+          devDependencies: {'@astryxdesign/cli': '0.7.3'},
+        }),
+      );
+      expect(recordedCoreOf(dir)).toBe('0.7.3');
+    } finally {
+      fs.rmSync(dir, {recursive: true, force: true});
+    }
+  });
+
 
   it('includes theme nudge rule', () => {
     const result = generateCompressedIndex('1.0.0');

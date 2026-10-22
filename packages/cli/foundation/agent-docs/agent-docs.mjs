@@ -38,6 +38,8 @@ import {assertWithin, PathSafetyError} from '../fs/path-safety.mjs';
 import {createFileProtectionResolver} from '../fs/file-protection.mjs';
 import {getCliInvocation} from '../env/package-manager.mjs';
 import {isValidSemver, semverGte} from '../env/semver.mjs';
+import {coreVersionOf} from '../release/choose.mjs';
+import {readReleaseFacts} from '../release/project.mjs';
 import {discoverComponents} from '../discovery/component-discovery.mjs';
 import {Project} from '../config/project.mjs';
 import {cliRootNamespaceNames} from '../doc-compiler/tree.mjs';
@@ -688,15 +690,31 @@ export function detectStylingSystem(targetDir) {
 const BUILT_CHECK_SINCE = '0.7.4';
 
 /**
- * Whether a project on this Core release can run `astryx doctor --built`.
- * @param {string | null} version
+ * Whether a project on this Core release can run `astryx doctor --built`. A
+ * prerelease of the first release is below it: its canaries predate the
+ * option.
+ * @param {string | null | undefined} version
  */
 function hasBuiltCheck(version) {
-  return (
-    typeof version === 'string' &&
-    isValidSemver(version) &&
-    semverGte(version, BUILT_CHECK_SINCE)
-  );
+  if (typeof version !== 'string' || !isValidSemver(version)) return false;
+  const [release, prerelease] = version.split('-', 2);
+  if (prerelease !== undefined && release === BUILT_CHECK_SINCE) return false;
+  return semverGte(release, BUILT_CHECK_SINCE);
+}
+
+/**
+ * The Core release a project records (installed, locked, or declared
+ * exactly), never the running CLI's own version, so a block written before
+ * install matches the CLI the install brings.
+ * @param {string} dir
+ * @returns {string | null}
+ */
+export function recordedCoreOf(dir) {
+  try {
+    return coreVersionOf(readReleaseFacts(dir));
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -723,7 +741,7 @@ function hasBuiltCheck(version) {
  * `getting-started` is the one it should reach for first.
  *
  * @param {string | null} version the Core version
- * @param {{coreDir?: string|null, invocation?: string, stylingSystem?: 'stylex'|'tailwind'|'css', zh?: boolean, lang?: string, topics?: string[], agentDocs?: Array<{package: string, append: readonly string[]}>}} [options]
+ * @param {{coreDir?: string|null, invocation?: string, stylingSystem?: 'stylex'|'tailwind'|'css', zh?: boolean, lang?: string, topics?: string[], agentDocs?: Array<{package: string, append: readonly string[]}>, recordedCore?: string | null}} [options]
  * @returns {string}
  */
 export function generateCompressedIndex(
@@ -734,6 +752,7 @@ export function generateCompressedIndex(
     stylingSystem = 'css',
     topics,
     agentDocs = [],
+    recordedCore = null,
   } = {},
 ) {
   const run = invocation;
@@ -783,11 +802,11 @@ export function generateCompressedIndex(
   // intentionally omitted from the command reference below.
   lines.push(WORKFLOW_TITLE, ...WORKFLOW_STEPS);
   lines.push('Changing an existing page? Keep it: skip step 2 and add blocks/components inside its sections.');
-  // Only for a project whose Core release has `doctor --built`: a newer copy
-  // may write this block in a project that then installs the CLI at its
-  // Core's version, and an older CLI rejects the option. The computer-level
+  // Only for a project whose recorded Core release has `doctor --built`: a
+  // newer copy may write this block in a project that then installs the CLI
+  // at its Core's version, and an older CLI rejects the option. The computer-level
   // skill names only entry points every release keeps (AST-081 FR8).
-  if (hasBuiltCheck(version)) {
+  if (hasBuiltCheck(recordedCore)) {
     lines.push("Before you deliver a build, run `astryx doctor --built <dir>`; don't deliver it if it fails.");
   }
   lines.push('');
@@ -934,6 +953,7 @@ export async function renderAgentDocsBlock(
 
   return generateCompressedIndex(version, {
     coreDir,
+    recordedCore: recordedCoreOf(targetDir),
     invocation: getCliInvocation(targetDir),
     stylingSystem: detectStylingSystem(targetDir),
     topics,
@@ -1022,6 +1042,7 @@ export function injectAgentsMd(targetDir, version) {
   const agentsPath = path.join(targetDir, AGENTS_MD);
   const compressedIndex = generateCompressedIndex(version, {
     coreDir: findCoreDir(targetDir),
+    recordedCore: recordedCoreOf(targetDir),
     stylingSystem: detectStylingSystem(targetDir),
   });
   injectXdsBlock(agentsPath, compressedIndex, {
@@ -1042,6 +1063,7 @@ export function injectClaudeMd(targetDir, version) {
   const claudePath = path.join(targetDir, CLAUDE_MD);
   const compressedIndex = generateCompressedIndex(version, {
     coreDir: findCoreDir(targetDir),
+    recordedCore: recordedCoreOf(targetDir),
     stylingSystem: detectStylingSystem(targetDir),
   });
   return injectXdsBlock(claudePath, compressedIndex);
@@ -1766,6 +1788,7 @@ export function installAgentDocs(
     renderedBlock ??
     generateCompressedIndex(version, {
       coreDir,
+      recordedCore: recordedCoreOf(targetDir),
       zh,
       lang,
       invocation,
