@@ -80,6 +80,7 @@ describe('width breakpoint metadata', () => {
         },
         rules: [],
       },
+      __adaptationRules: [],
       __axes: {},
     } as unknown as DefinedTheme;
 
@@ -285,10 +286,40 @@ describe('rule order and writes', () => {
     // The root alias follows source-only adaptation writes through var(), but
     // no later generated role declaration can outrank the first adaptation's
     // explicit role when both conditions match.
-    expect(count(component, '--color-info: var(--color-accent);')).toBe(1);
+    expect(count(component, '--color-info: var(--color-accent);')).toBe(3);
     expect(component).toContain('--color-info: #123456;');
     expect(adaptationCss).toContain('--color-accent: #abcdef;');
     expect(adaptationCss).not.toContain('--color-info: var(--color-accent);');
+  });
+
+  it('replays authored status roles after overlapping adaptation and media aliases', () => {
+    const theme = defineTheme({
+      name: 'conditional-status-role-replay',
+      adaptations: {
+        rules: [
+          {
+            when: {contrast: 'more'},
+            value: {tokens: {'--color-info': '#123456'}},
+          },
+          {
+            when: {pointer: 'coarse'},
+            value: {tokens: {'--color-accent': '#abcdef'}},
+          },
+        ],
+      },
+      onDark: {tokens: {'--color-accent': '#ffffff'}},
+    });
+    const css = generateThemeCSS(theme).component;
+    const alias = '--color-info: var(--color-accent);';
+    const authored = '--color-info: #123456;';
+
+    // The adaptation-only source and both generated media surfaces keep their
+    // aliases for states where the authored role condition is inactive.
+    expect(count(css, alias)).toBe(3);
+    // The authored role is emitted once normally, once after adaptation aliases,
+    // and once on each media descendant after its local alias.
+    expect(count(css, authored)).toBe(4);
+    expect(css.lastIndexOf(authored)).toBeGreaterThan(css.lastIndexOf(alias));
   });
 
   it('emits a guarded alias when only an adaptation authors the source', () => {

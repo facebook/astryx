@@ -3,7 +3,12 @@
 import {describe, it, expect, vi} from 'vitest';
 import type {IconRegistry} from '../Icon/globalIconRegistry';
 import type {DefinedTheme} from './defineTheme';
-import {defineTheme, generateThemeCSS, isDefinedTheme} from './defineTheme';
+import {
+  defineTheme,
+  generateThemeCSS,
+  generateThemeRules,
+  isDefinedTheme,
+} from './defineTheme';
 import {resolveThemeToken} from './tokens';
 
 function generateThemeTestCSS(theme: Parameters<typeof generateThemeCSS>[0]) {
@@ -43,6 +48,17 @@ describe('defineTheme', () => {
     });
 
     expect(theme.tokens['--color-info']).toBe('#0066CC');
+  });
+
+  it('does not generate a status alias that would create a token cycle', () => {
+    const theme = defineTheme({
+      name: 'parent-role-reference',
+      tokens: {'--color-accent': 'var(--color-info)'},
+    });
+    const css = generateThemeRules(theme).join('\n');
+
+    expect(css).toContain('--color-accent: var(--color-info);');
+    expect(css).not.toContain('--color-info: var(--color-accent);');
   });
 
   it('emits every source-derived status role without counting it as authored', () => {

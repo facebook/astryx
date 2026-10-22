@@ -200,7 +200,11 @@ describe('generateOnMediaCSS', () => {
     const css = generateOnMediaCSS(theme);
 
     expect(css).toContain('--color-accent: #FFFFFF;');
-    expect(css).not.toContain('--color-info: var(--color-accent);');
+    expect(css).toContain('--color-info: var(--color-accent);');
+    expect(css).toContain('--color-info: #123456;');
+    expect(css.lastIndexOf('--color-info: #123456;')).toBeGreaterThan(
+      css.lastIndexOf('--color-info: var(--color-accent);'),
+    );
   });
 
   it('emits component override rules', () => {

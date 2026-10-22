@@ -465,11 +465,10 @@ function joinDeclarations(
  * source repeats its omitted role at the theme root so nested Theme regions
  * bind the alias locally without changing authored-token metadata.
  *
- * Conditional scopes need a guarded fallback when no root alias can follow an
- * adaptation write, or when a MediaTheme descendant writes the source on a
- * different element. Those fallbacks are suppressed for every role authored
- * at the root or by any adaptation rule, so generated aliases can never outrank
- * authored role writes when conditions overlap.
+ * Conditional scopes repeat an omitted alias only when the source changes on
+ * that scope. Explicit adaptation role writes are replayed after generated
+ * aliases (and on media descendants) so authored role precedence survives
+ * overlapping conditions without disabling the alias in non-matching states.
  */
 const SCOPED_STATUS_ROLE_DEFAULTS: ReadonlyArray<
   readonly [role: string, source: string]
@@ -487,39 +486,76 @@ const SCOPED_STATUS_ROLE_DEFAULTS: ReadonlyArray<
   ['--color-on-error-muted', '--color-text-red'],
 ];
 
-function tokenEntriesWithScopedStatusRoleDefaults(
+/** Whether following authored var() references from source reaches target. */
+function tokenReferences(
+  tokens: Record<string, string>,
+  source: string,
+  target: string,
+  seen: ReadonlySet<string> = new Set(),
+): boolean {
+  if (source === target) {
+    return true;
+  }
+  if (seen.has(source)) {
+    return false;
+  }
+  const value = tokens[source];
+  if (value === undefined) {
+    return false;
+  }
+  const nextSeen = new Set(seen).add(source);
+  for (const match of value.matchAll(/var\(\s*(--[-_a-zA-Z0-9]+)/g)) {
+    const reference = match[1];
+    if (
+      reference === target ||
+      tokenReferences(tokens, reference, target, nextSeen)
+    ) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function generatedScopedStatusRoleDefaults(
   tokens: Record<string, string>,
 ): [string, string][] {
-  const entries = Object.entries(tokens);
+  const entries: [string, string][] = [];
   for (const [role, source] of SCOPED_STATUS_ROLE_DEFAULTS) {
-    if (tokens[role] === undefined && tokens[source] !== undefined) {
+    if (
+      tokens[role] === undefined &&
+      tokens[source] !== undefined &&
+      !tokenReferences(tokens, source, role)
+    ) {
       entries.push([role, `var(${source})`]);
     }
   }
   return entries;
 }
 
-function adaptationAuthoredStatusRoles(
-  rules: ReadonlyArray<ThemeRuleSource>,
-): ReadonlySet<string> {
-  const roles = new Set<string>();
-  for (const rule of rules) {
-    for (const [role] of SCOPED_STATUS_ROLE_DEFAULTS) {
-      if (rule.tokens[role] !== undefined) {
-        roles.add(role);
-      }
-    }
-  }
-  return roles;
+function tokenEntriesWithScopedStatusRoleDefaults(
+  tokens: Record<string, string>,
+): [string, string][] {
+  return [
+    ...Object.entries(tokens),
+    ...generatedScopedStatusRoleDefaults(tokens),
+  ];
 }
 
-function tokenEntriesWithConditionalStatusRoleDefaults(
+function authoredStatusRoleEntries(
+  tokens: Record<string, string>,
+): [string, string][] {
+  return SCOPED_STATUS_ROLE_DEFAULTS.flatMap(([role]) =>
+    tokens[role] === undefined ? [] : [[role, tokens[role]]],
+  );
+}
+
+function generatedConditionalStatusRoleDefaults(
   tokens: Record<string, string>,
   rootTokens: Record<string, string>,
-  adaptationAuthoredRoles: ReadonlySet<string>,
   scope: 'adaptation' | 'media',
 ): [string, string][] {
-  const entries = Object.entries(tokens);
+  const entries: [string, string][] = [];
+  const effectiveTokens = {...rootTokens, ...tokens};
   for (const [role, source] of SCOPED_STATUS_ROLE_DEFAULTS) {
     const rootRole = rootTokens[role];
     const rootAllowsDefault =
@@ -531,13 +567,24 @@ function tokenEntriesWithConditionalStatusRoleDefaults(
       tokens[role] === undefined &&
       tokens[source] !== undefined &&
       rootAllowsDefault &&
-      !adaptationAuthoredRoles.has(role) &&
-      (scope === 'media' || !rootAlreadyCarriesAlias)
+      (scope === 'media' || !rootAlreadyCarriesAlias) &&
+      !tokenReferences(effectiveTokens, source, role)
     ) {
       entries.push([role, `var(${source})`]);
     }
   }
   return entries;
+}
+
+function tokenEntriesWithConditionalStatusRoleDefaults(
+  tokens: Record<string, string>,
+  rootTokens: Record<string, string>,
+  scope: 'adaptation' | 'media',
+): [string, string][] {
+  return [
+    ...Object.entries(tokens),
+    ...generatedConditionalStatusRoleDefaults(tokens, rootTokens, scope),
+  ];
 }
 
 /** The `:scope` token block for portable and theme-local token values. */
@@ -1093,17 +1140,19 @@ export function generateThemeRulesSplit(
 function resolvedAdaptationRules(
   theme: DefinedTheme,
 ): ResolvedThemeAdaptationRule[] {
+  // Retained metadata is part of the built-theme contract. Validate it even
+  // when a concrete rule cache is present so a stale or malformed breakpoint
+  // map cannot bypass the same checks live themes receive.
+  const normalized =
+    theme.__adaptations === undefined
+      ? undefined
+      : normalizeThemeAdaptations(theme.name, theme.__adaptations, undefined);
   if (Array.isArray(theme.__adaptationRules)) {
     return theme.__adaptationRules;
   }
-  if (theme.__adaptations === undefined) {
+  if (normalized === undefined) {
     return [];
   }
-  const normalized = normalizeThemeAdaptations(
-    theme.name,
-    theme.__adaptations,
-    undefined,
-  );
   return (
     resolveThemeAdaptationRules(
       theme.name,
@@ -1131,9 +1180,6 @@ export function generateOnMediaCSS(
   const parts: string[] = [];
   const scopeSelector = themeScopeStart(theme.name);
   const sink = diagnosticSink(warnings);
-  const adaptationAuthoredRoles = adaptationAuthoredStatusRoles(
-    resolvedAdaptationRules(theme),
-  );
 
   for (const surface of ['dark', 'light'] as const) {
     const onMedia = surface === 'dark' ? theme.__onDark : theme.__onLight;
@@ -1147,7 +1193,6 @@ export function generateOnMediaCSS(
     const tokenEntries = tokenEntriesWithConditionalStatusRoleDefaults(
       onMedia.tokens,
       theme.tokens,
-      adaptationAuthoredRoles,
       'media',
     );
     if (tokenEntries.length > 0) {
@@ -1181,19 +1226,64 @@ export function generateOnMediaCSS(
     }
   }
 
-  if (parts.length === 0) {
+  const adaptationMediaRoleBlocks: string[] = [];
+  for (const [index, rule] of resolvedAdaptationRules(theme).entries()) {
+    const authoredRoles = authoredStatusRoleEntries(rule.tokens);
+    if (authoredRoles.length === 0) {
+      continue;
+    }
+    const roleParts: string[] = [];
+    for (const surface of ['dark', 'light'] as const) {
+      const onMedia = surface === 'dark' ? theme.__onDark : theme.__onLight;
+      if (!onMedia) {
+        continue;
+      }
+      const generatedRoles = new Set(
+        generatedConditionalStatusRoleDefaults(
+          onMedia.tokens,
+          theme.tokens,
+          'media',
+        ).map(([role]) => role),
+      );
+      const restorationEntries = authoredRoles.filter(([role]) =>
+        generatedRoles.has(role),
+      );
+      if (restorationEntries.length === 0) {
+        continue;
+      }
+      const declarations = joinDeclarations(
+        restorationEntries,
+        `adaptations[${index}].on${surface}.statusRoles.`,
+        sink,
+      );
+      roleParts.push(`  ${mediaSelector(surface)} {\n${declarations}\n  }`);
+    }
+    if (roleParts.length > 0) {
+      adaptationMediaRoleBlocks.push(
+        generateAdaptationMediaBlock(rule.query, roleParts, scopeSelector),
+      );
+    }
+  }
+
+  if (parts.length === 0 && adaptationMediaRoleBlocks.length === 0) {
     return '';
   }
 
-  const inner = parts.join('\n\n');
-  return `@scope (${scopeSelector}) to (${THEME_SCOPE_TO}) {\n${inner}\n}`;
+  const blocks: string[] = [];
+  if (parts.length > 0) {
+    const inner = parts.join('\n\n');
+    blocks.push(
+      `@scope (${scopeSelector}) to (${THEME_SCOPE_TO}) {\n${inner}\n}`,
+    );
+  }
+  blocks.push(...adaptationMediaRoleBlocks);
+  return blocks.join('\n\n');
 }
 
 /** Generate only the declarations one adaptation rule writes. */
 function generateAdaptationRuleRules(
   rule: ThemeRuleSource,
   rootTokens: Record<string, string>,
-  adaptationAuthoredRoles: ReadonlySet<string>,
   location: string,
   sink: DiagnosticSink,
 ): string[] {
@@ -1205,7 +1295,6 @@ function generateAdaptationRuleRules(
     tokenEntriesWithConditionalStatusRoleDefaults(
       rule.tokens,
       rootTokens,
-      adaptationAuthoredRoles,
       'adaptation',
     ),
   );
@@ -1270,7 +1359,6 @@ export function generateAdaptationCSS(
 
   const scopeSelector = themeScopeStart(theme.name);
   const blocks: string[] = [];
-  const adaptationAuthoredRoles = adaptationAuthoredStatusRoles(rules);
   const adaptsHeading = rules.some(rule =>
     hasHeadingComponentRules(rule.components),
   );
@@ -1284,7 +1372,6 @@ export function generateAdaptationCSS(
     const parts = generateAdaptationRuleRules(
       rule,
       theme.tokens,
-      adaptationAuthoredRoles,
       `adaptations[${index}].`,
       sink,
     );
@@ -1292,6 +1379,28 @@ export function generateAdaptationCSS(
       continue;
     }
     blocks.push(generateAdaptationMediaBlock(rule.query, parts, scopeSelector));
+  }
+
+  // Replay explicit role writes after every generated source alias. This keeps
+  // an authored role authoritative when its condition overlaps a later rule
+  // that changes only the role's source, while the alias still works when the
+  // authored-role condition is inactive.
+  for (const [index, rule] of rules.entries()) {
+    const roleEntries = authoredStatusRoleEntries(rule.tokens);
+    if (roleEntries.length === 0) {
+      continue;
+    }
+    const roleRule = tokenBlock(
+      {tokens: {}},
+      `adaptations[${index}].statusRoles.`,
+      sink,
+      roleEntries,
+    );
+    if (roleRule !== null) {
+      blocks.push(
+        generateAdaptationMediaBlock(rule.query, [roleRule], scopeSelector),
+      );
+    }
   }
 
   if (adaptsHeading) {
