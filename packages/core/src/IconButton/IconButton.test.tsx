@@ -12,6 +12,7 @@
 import {describe, it, expect, vi} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import {Icon} from '../Icon/Icon';
 import {IconButton} from './IconButton';
 
 describe('IconButton', () => {
@@ -52,6 +53,45 @@ describe('IconButton', () => {
     expect(screen.getByRole('button', {name: 'Add'})).toBeInTheDocument();
   });
 
+  it.each([
+    ['sm', 'sm', '1rem'],
+    ['md', 'sm', '1rem'],
+    ['lg', 'md', '1.25rem'],
+  ] as const)(
+    'renders the %s button wrapper and inherited Icon at the same size',
+    (buttonSize, iconSize, renderedSize) => {
+      render(
+        <IconButton
+          label="Add"
+          icon={<Icon icon="check" data-testid="icon" />}
+          size={buttonSize}
+        />,
+      );
+
+      const icon = screen.getByTestId('icon');
+      const wrapper = icon.parentElement;
+      expect(wrapper).not.toBeNull();
+
+      expect(icon).toHaveAttribute('data-size', iconSize);
+      expect(getComputedStyle(icon).width).toBe(renderedSize);
+      expect(getComputedStyle(icon).height).toBe(renderedSize);
+      expect(getComputedStyle(wrapper!).width).toBe(renderedSize);
+      expect(getComputedStyle(wrapper!).height).toBe(renderedSize);
+    },
+  );
+
+  it('preserves an explicit Astryx Icon size', () => {
+    render(
+      <IconButton
+        label="Add"
+        icon={<Icon icon="check" size="lg" data-testid="icon" />}
+        size="sm"
+      />,
+    );
+
+    expect(screen.getByTestId('icon')).toHaveAttribute('data-size', 'lg');
+  });
+
   it('handles click events', async () => {
     const user = userEvent.setup();
     const handleClick = vi.fn();
@@ -84,7 +124,9 @@ describe('IconButton', () => {
   it('shows loading state', () => {
     render(<IconButton label="Save" icon={<span>💾</span>} isLoading />);
     const button = screen.getByRole('button');
-    expect(button).toBeDisabled();
+    // Busy is aria-disabled (focusable), not native disabled — see #4871.
+    expect(button).not.toBeDisabled();
+    expect(button).toHaveAttribute('aria-disabled', 'true');
   });
 
   it('forwards ref correctly', () => {

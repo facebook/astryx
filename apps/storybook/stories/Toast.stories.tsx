@@ -703,14 +703,38 @@ export const ToastOverDialog: StoryObj = {
   },
 };
 
+export const AppToastOverDialog: StoryObj = {
+  render: function AppToastOverDialogStory() {
+    const [isOpen, setIsOpen] = useState(false);
+    return (
+      <ToastViewport>
+        <Stack gap={2}>
+          <Button label="Open dialog" onClick={() => setIsOpen(true)} />
+          <Dialog
+            isOpen={isOpen}
+            onOpenChange={() => setIsOpen(false)}
+            aria-label="Edit item">
+            <DialogToastContent onClose={() => setIsOpen(false)} />
+          </Dialog>
+        </Stack>
+      </ToastViewport>
+    );
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "The app's own `ToastViewport` and no viewport in the dialog: while the dialog is open the viewport moves into it, so toasts fired from inside paint above the overlay and stay clickable.",
+      },
+    },
+  },
+};
+
 function DialogToastContent({onClose}: {onClose: () => void}) {
   const toast = useToast();
   return (
     <Stack gap={3}>
-      <p>
-        This dialog has its own toast viewport. Toasts fired here render inside
-        the dialog, above its overlay.
-      </p>
+      <p>Toasts fired here render inside the dialog, above its overlay.</p>
       <Stack direction="horizontal" gap={2} wrap="wrap">
         <Button label="Close" variant="secondary" onClick={onClose} />
         <Button

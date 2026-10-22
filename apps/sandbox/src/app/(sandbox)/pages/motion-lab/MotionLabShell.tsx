@@ -21,7 +21,7 @@
  * which is the order they are meant to be read in.
  */
 
-import {usePathname} from 'next/navigation';
+import {usePathname} from '../../../../router';
 import {useEffect, useRef, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
@@ -56,16 +56,9 @@ const sx = stylex.create({
 });
 
 /**
- * Hrefs here are written WITHOUT the deployed basePath, and must stay that way.
- *
- * The sandbox deploys under a prefix (`/astryx/pr/<n>/sandbox` on a preview),
- * and `next/link` prepends it exactly once. LinkProvider in layout.tsx routes
- * every Astryx `Link` and `ListItem` in this section through `next/link`, so
- * the prefix is already handled — applying it here as well produces a
- * double-prefixed URL that 404s, which is how this was found.
- *
- * `usePathname()` also returns the path without the prefix, so the
- * current-page comparison below matches these hrefs directly.
+ * Hrefs stay unprefixed: SandboxLink applies the Vite base path once in the
+ * LinkProvider, and usePathname() returns the path within that base path.
+ * A second prefix here would break navigation on the staged /sandbox/ build.
  */
 
 /** The export sets `trailingSlash: true`, so normalise before comparing. */

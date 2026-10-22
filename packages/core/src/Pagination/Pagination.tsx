@@ -5,9 +5,10 @@
 /**
  * @file Pagination.tsx
  * @input Uses React, StyleX, Button, Icon, Selector, Text; page number buttons delegate to Button.
+ *   Compact first/last buttons cancel the inside control gap with logical token margins.
  *   Prev/next and first/last chevrons mirror under RTL via the shared rtlStyles.mirror
- *   (CSS scaleX), not a JS direction read. The input variant uses the chevronsLeft/chevronsRight
- *   (first/last) icons.
+ *   (CSS scaleX), not a JS direction read. The input and compact variants use the
+ *   chevronsLeft/chevronsRight (first/last) icons.
  * @output Exports Pagination component, PaginationProps, PaginationVariant, PaginationSize types
  * @position Core implementation; consumed by index.ts, tested by Pagination.test.tsx
  *
@@ -105,7 +106,8 @@ export interface PaginationProps extends Omit<
    * Visual variant controlling what appears between prev/next buttons.
    * - pages: Page number buttons with ellipsis (default)
    * - count: "X–Y of Z" text
-   * - compact: "Page X of Y" text
+   * - compact: "Page X of Y" text. First/last buttons are opt-in (see
+   *   hasFirstLast).
    * - dots: Dot indicators
    * - input: An editable number box rendering "Page [ n ] / N". The leading
    *   noun is controlled by `pageLabel`. First/last double-chevron buttons
@@ -122,9 +124,11 @@ export interface PaginationProps extends Omit<
   pageLabel?: string;
   /**
    * Whether to show first/last («/») double-chevron buttons flanking
-   * prev/next. Only applies to the `input` variant; other variants ignore it.
-   * The last button needs a known total — it is omitted when the page count is
-   * unknown (cursor/hasMore pagination). @default true
+   * prev/next. Applies to the `input` variant (shown unless false) and the
+   * `compact` variant (shown only when true); other variants ignore it.
+   * The last button needs a known total — both are omitted when the page count
+   * is unknown (cursor/hasMore pagination).
+   * @default true for `input`, false for `compact`
    */
   hasFirstLast?: boolean;
   /**
@@ -180,6 +184,12 @@ const styles = stylex.create({
     display: 'flex',
     alignItems: 'center',
     gap: spacingVars['--spacing-1'],
+  },
+  compactFirst: {
+    marginInlineEnd: `calc(-1 * ${spacingVars['--spacing-1']})`,
+  },
+  compactLast: {
+    marginInlineStart: `calc(-1 * ${spacingVars['--spacing-1']})`,
   },
   ellipsis: {
     display: 'inline-flex',
@@ -369,7 +379,7 @@ export function Pagination({
   onPageSizeChange,
   variant = 'pages',
   pageLabel,
-  hasFirstLast = true,
+  hasFirstLast: hasFirstLastProp,
   step: stepProp = 1,
   siblingCount = 1,
   size = 'md',
@@ -572,10 +582,14 @@ export function Pagination({
   const buttonSize = size === 'sm' ? 'sm' : 'md';
   const isSm = size === 'sm';
 
-  // First/last buttons only exist in the input variant, and only when the page
-  // count is known (they'd have no target otherwise).
-  const showFirstLast =
-    hasFirstLast && variant === 'input' && computedTotalPages != null;
+  // First/last buttons are on by default in the input variant and opt-in for
+  // compact; other variants never render them. They also need a known page
+  // count (the last button would have no target otherwise).
+  const hasFirstLast =
+    variant === 'input'
+      ? (hasFirstLastProp ?? true)
+      : variant === 'compact' && hasFirstLastProp === true;
+  const showFirstLast = hasFirstLast && computedTotalPages != null;
 
   const renderIndicator = () => {
     switch (variant) {
@@ -819,6 +833,7 @@ export function Pagination({
             onClick={handleFirst}
             isDisabled={isDisabled || !hasPrevious}
             isIconOnly
+            xstyle={variant === 'compact' && styles.compactFirst}
           />
         )}
 
@@ -874,6 +889,7 @@ export function Pagination({
             onClick={handleLast}
             isDisabled={isDisabled || !hasNext}
             isIconOnly
+            xstyle={variant === 'compact' && styles.compactLast}
           />
         )}
       </div>

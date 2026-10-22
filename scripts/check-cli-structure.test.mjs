@@ -12,7 +12,7 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {afterEach, describe, expect, it} from 'vitest';
-import {checkCommandLayout, KNOWN_LAYOUT_GAPS} from './check-cli-structure.mjs';
+import {checkCommandLayout} from './check-cli-structure.mjs';
 
 const REPO_ROOT = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -194,12 +194,12 @@ describe('checkCommandLayout', () => {
 });
 
 describe('the repository', () => {
-  it('has no layout gaps beyond the known ones', async () => {
+  it('puts every command and CommandDoc at its INV6 path', async () => {
     const {errors, commands} = await checkCommandLayout(
       path.join(REPO_ROOT, 'packages/cli'),
     );
     expect(commands).toBeGreaterThan(0);
-    expect([...errors].sort()).toEqual([...KNOWN_LAYOUT_GAPS].sort());
+    expect(errors).toEqual([]);
   });
 
   it('passes pnpm check:cli-structure', () => {
@@ -209,6 +209,6 @@ describe('the repository', () => {
       {encoding: 'utf8'},
     );
     expect(res.status, res.stderr).toBe(0);
-    expect(res.stdout).toMatch(/\d+ command\(s\) checked/);
+    expect(res.stdout).toMatch(/\d+ command\(s\) checked for INV6/);
   });
 });

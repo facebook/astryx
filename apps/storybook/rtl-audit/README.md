@@ -24,7 +24,10 @@ independent auto passes: **D1 (icon-mirror)**, **D5 (positional-mirror)**, and
 > a missing policy, empty or unmatched path set, unresolved component list, or
 > registry/classifier/workflow mutation runs the full audit rather than accepting
 > an empty scope. CI partitions that full scope into one bounded shard per
-> canonical package, each with four browser workers; the stable `pr-rtl` context
+> canonical package, each with eight browser workers. Core, the largest, runs as
+> three parts (`--shard i/3`, every third D1 target, story and curated target)
+> that `pr-rtl-merge` joins with `--merge-shards` into the report a whole Core
+> leg would write; a missing or mismatched part fails the join. The stable `pr-rtl` context
 > succeeds only after all five scope manifests arrive and every applicable
 > package produces a report whose requested package/filter, duplicate-free exact
 > D1/D5/D6 identities, and nonzero planned/completed scans match. When trusted
@@ -130,6 +133,11 @@ measure against, the second navigation can't change the verdict. Most stories
 have no candidates (1378 of 1394 in a recent full sweep), so this is about half
 of D5's page loads.
 
+**One LTR load shared with D6.** D5 and D6 both scan every story, so one LTR
+load serves both: D5 reads the page before the reveal step (unless
+`--pm-reveal`), D6 after it, the same order each used on its own load. The RTL
+page loads only when either dimension found an LTR candidate.
+
 It is also a correctness fix: the old `ltr.length === 0 && rtl.length === 0`
 guard let one-sided stories fall through to a compare loop that runs
 `min(ltr, rtl) = 0` times, reporting **pass** having compared nothing.
@@ -202,7 +210,7 @@ D6 returns **N-A** when a story contains no contextual decoration. The
 applicability layer below decides whether that N-A is explained; D6 itself does
 not turn absence into a pass.
 
-### B. Curated precision — D2 / D3 / D4 / D7 / D8
+### B. Curated precision — D2 / D3 / D4 / D7 / D8 / D9
 
 `targets.json` holds the geometry/behavior dimensions that genuinely need
 hand-written selectors, run **in addition** to auto-discovery:
@@ -223,8 +231,13 @@ hand-written selectors, run **in addition** to auto-discovery:
   fixtures fail closed because they cannot prove the relationship. Real
   Chromium startup self-checks prove horizontal and vertical-writing passes plus
   a hidden-subject failure before any component result is accepted.
+- **D9 logical grouped corners** — configured first/middle/last subjects must
+  tighten the end/both/start corners on one declared logical inline side, keep
+  every opposite-side corner full, and mirror the physical side between LTR and
+  RTL. Missing, hidden, symmetric, inconsistent, or physically pinned groups
+  fail rather than earning coverage for parent alignment.
 
-D1 and D6 are intentionally **not** in `targets.json`; auto-discovery covers
+D1, D5, and D6 are intentionally **not** in `targets.json`; auto-discovery covers
 them universally.
 
 ### C. Applicability: no unexplained all-N/A components
@@ -322,7 +335,7 @@ Edit `targets.json`. Each entry is:
 {
   "component": "MyComponent", // explicit alias for grouped story titles
   "storyId": "core-mycomponent--some-story", // must exist in dist/index.json
-  "dims": ["D2", "D3"], // D2/D3/D4 only (D1 is auto)
+  "dims": ["D2", "D3", "D9"], // D2/D3/D4/D7/D8/D9 only (D1/D5/D6 are auto)
   "setup": {
     "args": {"position": "start"}, // optional: drive Storybook args
     "click": "img", // optional: reveal the target after args settle
@@ -334,6 +347,16 @@ Edit `targets.json`. Each entry is:
     "nextButton": "button[aria-label=\"Scroll right\"]",
     "overlay": "…",
     "overlayRoot": "…", // D4
+    "groups": [
+      // D9
+      {
+        "name": "primary",
+        "logicalSide": "inline-start",
+        "first": "[data-testid=group-first]",
+        "middle": "[data-testid=group-middle]",
+        "last": "[data-testid=group-last]",
+      },
+    ],
   },
 }
 ```

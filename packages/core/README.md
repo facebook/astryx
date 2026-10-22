@@ -6,10 +6,10 @@ Core UI components, theme system, and utilities for the Astryx design system. Fo
 >
 > ```bash
 > npm install -D @astryxdesign/cli   # or: pnpm add -D / yarn add -D / bun add -d
-> npx astryx init                    # resolves to the CLI you just installed
+> npx @astryxdesign/cli init         # the CLI you just installed
 > ```
 >
-> `init` writes the Astryx component index into your `AGENTS.md`/`CLAUDE.md` so your agent discovers components, templates, and design tokens instead of guessing. Need a single command without installing? Use the scoped package directly — `npx @astryxdesign/cli <cmd>` (or `pnpm dlx`/`bunx @astryxdesign/cli`). Bare `npx astryx` only works once `@astryxdesign/cli` is a dependency; before that npm resolves it to an unrelated package. See [XDS CLI](#xds-cli).
+> `init` writes the Astryx component index into your `AGENTS.md`/`CLAUDE.md` so your agent discovers components, templates, and design tokens instead of guessing. Need a single command without installing? The same scoped command works: `npx @astryxdesign/cli <cmd>`. Always use the scoped name: the unscoped `astryx` resolves to an unrelated npm package until `@astryxdesign/cli` is a dependency. See [XDS CLI](#xds-cli).
 
 ## Component Docs
 
@@ -21,7 +21,7 @@ npx @astryxdesign/cli component Button        # full docs for a component
 npx @astryxdesign/cli component --list        # list all components
 ```
 
-> Use the scoped `@astryxdesign/cli` to run without installing; bare `npx astryx` only resolves once the CLI is a dependency.
+> Use the scoped `@astryxdesign/cli`: it runs with or without installing, while the unscoped `astryx` resolves to an unrelated npm package until the CLI is a dependency.
 
 ## Page Layouts
 
@@ -57,7 +57,7 @@ astryx discover                     # discover external Astryx packages
 astryx gap-report                   # report a missing capability
 ```
 
-> Prefix these with your runner: `npx astryx …` / `pnpm exec astryx …` once the CLI is installed, or `npx @astryxdesign/cli …` to run without installing.
+> Run these as `npx @astryxdesign/cli …`, or `pnpm exec astryx …` (or your package manager's equivalent) once the CLI is installed.
 
 ## Related Packages
 
@@ -68,7 +68,7 @@ astryx gap-report                   # report a missing capability
 
 ## Resources
 
-- [Component Storybook](https://facebook.github.io/astryx/)
+- [Component Storybook](https://astryx.atmeta.com/storybook/)
 - [GitHub Repository](https://github.com/facebook/astryx)
 
 ---
@@ -153,7 +153,7 @@ No build plugins needed; Astryx ships pre-built CSS that works alongside Tailwin
 @import 'tailwindcss/utilities.css' layer(utilities);
 ```
 
-The `tailwind-theme.css` import maps system tokens to Tailwind utilities via `@theme inline`:
+The `tailwind-theme.css` import maps system tokens to Tailwind utilities via `@theme reference inline`, so the mappings generate utilities without redeclaring the tokens at runtime:
 
 ```tsx
 // Without the bridge — verbose:
@@ -261,7 +261,7 @@ The CLI writes this page for you, annotated and pinned to the version you have
 installed:
 
 ```bash
-npx astryx template --cdn        # writes cdn.template.html
+npx @astryxdesign/cli template --cdn   # writes cdn.template.html
 ```
 
 ```html

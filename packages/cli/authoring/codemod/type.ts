@@ -128,7 +128,19 @@ export interface CodemodEntry {
 /** The result of running a single codemod over one or more files. */
 export interface CodemodRunResult {
   filesChanged: number;
+  /** Existing owned files changed or previewed by this codemod. */
+  changedFiles: string[];
+  /** Files actually written; empty during a dry run. */
   writtenFiles: string[];
+  /** Existing files that require the change but are protected. */
+  protectedFiles: Array<{
+    file: string;
+    codemod: string;
+    reason: string;
+    declaration: string;
+    generated: boolean;
+    command?: string;
+  }>;
   errors: Array<{file: string; codemod: string; error: string}>;
 }
 

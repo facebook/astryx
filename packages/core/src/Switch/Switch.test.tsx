@@ -30,8 +30,13 @@ import {
   getAllInjectedCss,
   getForcedColorsRules,
 } from '../__tests__/forcedColors';
-import {hasPressedArm} from '../__tests__/pressState';
+import {
+  hasPressedArm,
+  hasReleaseFade,
+  readsPressStrength,
+} from '../__tests__/pressState';
 import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
+import {InternationalizationProvider} from '../i18n';
 
 afterEach(() => {
   __resetLiveRegionsForTest();
@@ -388,6 +393,81 @@ describe('Switch', () => {
     });
   });
 
+  it('announces loading state through useAnnounce when busy', async () => {
+    const {container, rerender} = render(
+      <Switch label="Enable notifications" value={false} onChange={() => {}} />,
+    );
+    // Does not introduce a permanent live region DOM element per switch
+    expect(
+      container.querySelector('[role="status"][aria-live="polite"]'),
+    ).toBeNull();
+
+    rerender(
+      <Switch
+        label="Enable notifications"
+        value={false}
+        onChange={() => {}}
+        isLoading
+      />,
+    );
+    await waitFor(() => {
+      expect(
+        document.querySelector('[data-astryx-live-region="polite"]'),
+      ).toHaveTextContent('Loading');
+    });
+  });
+
+  it('localizes the loading announcement through the i18n catalog', async () => {
+    render(
+      <InternationalizationProvider
+        locale="fr"
+        overrides={{fr: {'@astryx.switch.loading': 'Chargement'}}}>
+        <Switch
+          label="Enable notifications"
+          value={false}
+          onChange={() => {}}
+          isLoading
+        />
+      </InternationalizationProvider>,
+    );
+    await waitFor(() => {
+      expect(
+        document.querySelector('[data-astryx-live-region="polite"]'),
+      ).toHaveTextContent('Chargement');
+    });
+  });
+
+  it('announces loading state while async changeAction is pending', async () => {
+    let resolveAction!: () => void;
+    const changeAction = vi.fn(
+      async () =>
+        new Promise<void>(resolve => {
+          resolveAction = resolve;
+        }),
+    );
+
+    render(
+      <Switch
+        label="Enable notifications"
+        value={false}
+        onChange={() => {}}
+        changeAction={changeAction}
+      />,
+    );
+
+    const switchEl = screen.getByRole('switch');
+    fireEvent.click(switchEl);
+
+    expect(changeAction).toHaveBeenCalled();
+    await waitFor(() => {
+      expect(
+        document.querySelector('[data-astryx-live-region="polite"]'),
+      ).toHaveTextContent('Loading');
+    });
+
+    resolveAction();
+  });
+
   it('calls onFocus and onBlur callbacks', async () => {
     const user = userEvent.setup();
     const handleFocus = vi.fn();
@@ -544,16 +624,37 @@ describe('Switch', () => {
       expect(onChange).not.toHaveBeenCalled();
     });
 
-    it('remains natively disabled when disabled without a reason', () => {
+    it('stays focusable via aria-disabled when disabled without a reason', async () => {
+      const user = userEvent.setup();
+      const onChange = vi.fn();
+      const onClick = vi.fn();
       render(
-        <Switch
-          label="Enable notifications"
-          value={false}
-          onChange={() => {}}
-          isDisabled
-        />,
+        <form>
+          <Switch
+            label="Enable notifications"
+            value={false}
+            onChange={onChange}
+            onClick={onClick}
+            htmlName="notifications"
+            isRequired
+            isDisabled
+          />
+        </form>,
       );
-      expect(screen.getByRole('switch')).toBeDisabled();
+      const control = screen.getByRole('switch');
+      expect(control).not.toHaveAttribute('disabled');
+      expect(control).toHaveAttribute('aria-disabled', 'true');
+      await user.tab();
+      expect(control).toHaveFocus();
+      await user.keyboard(' ');
+      await user.click(control);
+      await user.click(screen.getByText('Enable notifications'));
+      expect(onChange).not.toHaveBeenCalled();
+      expect(onClick).not.toHaveBeenCalled();
+      expect(control).not.toBeChecked();
+      const form = control.closest('form')!;
+      expect(form.checkValidity()).toBe(true);
+      expect([...new FormData(form).keys()]).toEqual([]);
     });
   });
   describe('labelSpacing', () => {
@@ -754,6 +855,55 @@ describe('Switch', () => {
       expect(root).toHaveAttribute('id', 'switch-1');
       expect(root).toHaveAttribute('aria-label', 'Toggle notifications');
     });
+
+    it('composes a caller aria-describedby onto the switch control', () => {
+      const {container} = render(
+        <>
+          <p id="external-hint">Applies to every repository</p>
+          <Switch
+            label="Notifications"
+            description="Sends a daily digest"
+            value={false}
+            onChange={() => {}}
+            data-testid="my-switch"
+            aria-describedby="external-hint"
+          />
+        </>,
+      );
+      const control = screen.getByRole('switch');
+      const description = screen.getByText('Sends a daily digest');
+      expect(control.getAttribute('aria-describedby')?.split(' ')).toEqual([
+        'external-hint',
+        description.id,
+      ]);
+      expect(control).toHaveAccessibleDescription(
+        'Applies to every repository Sends a daily digest',
+      );
+      // The id reference lives on the control only, not on the field wrapper.
+      const root = container.querySelector('[data-testid="my-switch"]');
+      expect(root).not.toHaveAttribute('aria-describedby');
+    });
+
+    it('names the switch control from a caller aria-labelledby', () => {
+      const {container} = render(
+        <>
+          <span id="row-title">Release notes</span>
+          <Switch
+            label="Pin Release notes"
+            isLabelHidden
+            value={false}
+            onChange={() => {}}
+            data-testid="my-switch"
+            aria-labelledby="row-title"
+          />
+        </>,
+      );
+      const control = screen.getByRole('switch', {name: 'Release notes'});
+      expect(control).toHaveAttribute('aria-labelledby', 'row-title');
+      // The id reference lives on the control only, not on the field wrapper.
+      const root = container.querySelector('[data-testid="my-switch"]');
+      expect(root).not.toHaveAttribute('aria-labelledby');
+    });
   });
 
   describe('pressed state', () => {
@@ -768,6 +918,26 @@ describe('Switch', () => {
       }
       expect(hasPressedArm(track)).toBe(true);
       expect(hasPressedArm(thumb)).toBe(true);
+    });
+
+    it('fades the touch press out from the row, with the track and thumb reading its strength', () => {
+      const {container} = render(
+        <Switch label="Notifications" value={false} onChange={() => {}} />,
+      );
+      const track = container.querySelector('.astryx-switch');
+      const thumb = container.querySelector('.astryx-switch-thumb');
+      const row = track?.closest('[data-astryx-pressable]');
+      if (track == null || thumb == null || row == null) {
+        throw new Error('the switch has no pressable row, track or thumb');
+      }
+      // The controller writes the row; the row owns the strength and its
+      // release, and the two parts paint the pressed token at that strength
+      // on both touch arms, so they fade together.
+      expect(hasReleaseFade(row)).toBe(true);
+      for (const part of [track, thumb]) {
+        expect(readsPressStrength(part, '[data-astryx-press="on"]')).toBe(true);
+        expect(readsPressStrength(part)).toBe(true);
+      }
     });
   });
 

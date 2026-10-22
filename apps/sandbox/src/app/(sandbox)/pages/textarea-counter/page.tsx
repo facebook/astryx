@@ -259,7 +259,7 @@ function InsideBottomRight({value, onChange, max, status}: VariantProps) {
           rows={3}
           width="100%"
           placeholder="Write a description..."
-          xstyle={styles.overlayTextareaPad}
+          controlXstyle={styles.overlayTextareaPad}
         />
         <div {...stylex.props(styles.overlayCounter)}>
           <Counter length={value.length} max={max} />

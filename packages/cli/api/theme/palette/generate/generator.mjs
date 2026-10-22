@@ -37,6 +37,7 @@ export const COMPACT_11_STOPS = Object.freeze([
 
 const DARK_CHROMA_FACTOR = 0.85;
 const RESERVED_FAMILY_IDS = new Set(['black', 'white']);
+const NEUTRAL_PROFILES = ['neutral-v1', 'warm-v1', 'cool-v1', 'custom'];
 
 /** @param {number} value @param {number} minimum @param {number} maximum */
 function clamp(value, minimum, maximum) {
@@ -665,11 +666,17 @@ export function normalizeGenerationRequest(input) {
       anchors,
     };
   });
+  const neutralProfile = input.neutralProfile ?? 'neutral-v1';
+  // The receipt records this request, so an unknown profile fails even when no
+  // neutral family reads it.
+  if (!NEUTRAL_PROFILES.includes(neutralProfile)) {
+    throw new Error(`Unknown neutral profile: ${String(neutralProfile)}`);
+  }
   /** @type {NormalizedRequest} */
   const request = {
     recipe: PALETTE_RECIPE,
     vibrancy: input.vibrancy ?? 50,
-    neutralProfile: input.neutralProfile ?? 'neutral-v1',
+    neutralProfile,
     modeStrategy,
     stops,
     families: normalizedFamilies,

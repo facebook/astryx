@@ -43,7 +43,7 @@ const commandModules = [
   {name: 'swizzle', path: './commands/swizzle.mjs', register: 'registerSwizzle'},
   {name: 'template', path: './commands/template.mjs', register: 'registerTemplate'},
   {name: 'upgrade', path: './commands/upgrade.mjs', register: 'registerUpgrade'},
-  {name: 'theme', path: './commands/build-theme.mjs', register: 'registerTheme'},
+  {name: 'theme', path: './commands/theme.mjs', register: 'registerTheme'},
   {name: 'discover', path: './commands/discover.mjs', register: 'registerDiscover'},
 ];
 

@@ -195,8 +195,8 @@ function buildTableStylePlugin<
   return {
     transformTable(props: TableRenderProps): TableRenderProps {
       // The `astryx-table` class itself comes from BaseTable, which renders
-      // the <table> element and now names it `table` (with `base-table` as its
-      // legacy name). Adding it here too would put the token on twice.
+      // the <table> element and names it with the canonical `table` target.
+      // Adding it here too would put the token on twice.
       return {
         ...props,
         xstyle: [...props.xstyle, tableStyles.base],
@@ -268,8 +268,9 @@ function TableInner<T extends Record<string, unknown>>({
  * Combine with Badge (status labels), StatusDot (colored indicators),
  * Text (formatted values), Avatar (user cells), and HStack/VStack
  * (multi-element cell layouts). Without renderCell, cells render as plain text.
- * Always set explicit width on columns using proportional() or pixel() — omitting
- * width skips the minimum width floor, which can cause columns to collapse on mobile.
+ * Columns without width remain equally flexible with a compact 60px readability
+ * floor. Set one column's floor with proportional(1, { minWidth }), weight
+ * columns with proportional(n), and fix widths with pixel().
  *
  * @example
  * ```

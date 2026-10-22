@@ -51,7 +51,7 @@ const ESBUILD_BIN = resolveBin('esbuild/bin/esbuild');
 let tmpDir;
 
 /**
- * Build an @acme/widgets fixture: a block template (`.template.ts` doc +
+ * Build an @acme/widgets fixture: a block template (released `.template.ts` compatibility descriptor +
  * same-stem `.tsx` source) under `templates/`, plus an astryx.integration
  * manifest, plus a caller-supplied `exports` map.
  * @param {Record<string, string> | undefined} exportsMap
@@ -71,7 +71,7 @@ function makeWidgets(exportsMap) {
     path.join(pkgDir, 'astryx.integration.mjs'),
     `export default { templates: './templates' };\n`,
   );
-  // The template-spec doc (canonical `.template.*` family).
+  // The released `.template.*` compatibility form remains resolvable.
   fs.writeFileSync(
     path.join(blockDir, 'GaugeShowcase.template.ts'),
     `export default { name: 'Gauge showcase', description: 'A gauge.' };\n`,
@@ -127,10 +127,14 @@ function writeTsconfig() {
 /** @returns {{ok: boolean, out: string}} */
 function runTsc() {
   try {
-    execFileSync(process.execPath, [TSC_BIN, '--noEmit', '-p', 'tsconfig.json'], {
-      cwd: tmpDir,
-      stdio: 'pipe',
-    });
+    execFileSync(
+      process.execPath,
+      [TSC_BIN, '--noEmit', '-p', 'tsconfig.json'],
+      {
+        cwd: tmpDir,
+        stdio: 'pipe',
+      },
+    );
     return {ok: true, out: ''};
   } catch (e) {
     return {ok: false, out: `${e.stdout ?? ''}${e.stderr ?? ''}`};

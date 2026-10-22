@@ -44,7 +44,7 @@ export default function TokenizerMaxEntries() {
         value={value}
         onChange={items => setValue(items)}
         maxEntries={MAX_SKILLS}
-        style={{width: 400}}
+        containerStyle={{width: 400}}
       />
     </Stack>
   );

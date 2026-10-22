@@ -324,6 +324,82 @@ describe('theme build custom-variant augmentations', () => {
     );
   });
 
+  it('rejects a custom Heading type whose only declaration is blank', async () => {
+    const themeFile = writeTheme(
+      tmpDir,
+      `export default {
+        name: 'variants-theme',
+        tokens: { '--color-bg': '#fff' },
+        components: { heading: { 'type:hero': { fontSize: '' } } },
+      };\n`,
+    );
+
+    const result = await runCli(
+      ['theme', 'build', path.relative(tmpDir, themeFile)],
+      tmpDir,
+    );
+
+    expect(result.code).toBe(1);
+    expect(result.stderr).toContain(
+      'Custom Heading type "hero" needs a non-empty standalone',
+    );
+    expect(fs.existsSync(path.join(tmpDir, 'variants-theme.css'))).toBe(false);
+  });
+
+  it('rejects a custom Heading type whose every declaration the compiler drops', async () => {
+    const themeFile = writeTheme(
+      tmpDir,
+      `export default {
+        name: 'variants-theme',
+        tokens: { '--color-bg': '#fff' },
+        components: {
+          heading: { 'type:hero': { color: 'red; } body { color: blue' } },
+        },
+      };\n`,
+    );
+
+    const result = await runCli(
+      ['--json', 'theme', 'build', path.relative(tmpDir, themeFile)],
+      tmpDir,
+    );
+
+    expect(result.code).toBe(1);
+    const envelope = JSON.parse(result.stdout);
+    expect(envelope.code).toBe('ERR_THEME_INVALID');
+    expect(envelope.error).toContain('Custom Heading type "hero"');
+    expect(fs.existsSync(path.join(tmpDir, 'variants-theme.css'))).toBe(false);
+    expect(
+      fs.existsSync(path.join(tmpDir, 'variants-theme.variants.d.ts')),
+    ).toBe(false);
+  });
+
+  it('builds a custom Heading type that keeps one valid declaration', async () => {
+    const themeFile = writeTheme(
+      tmpDir,
+      `export default {
+        name: 'variants-theme',
+        tokens: { '--color-bg': '#fff' },
+        components: {
+          heading: {
+            'type:hero': { fontSize: '80px', color: 'red; } body { color: blue' },
+          },
+        },
+      };\n`,
+    );
+
+    const result = await runCli(
+      ['--json', 'theme', 'build', path.relative(tmpDir, themeFile)],
+      tmpDir,
+    );
+
+    expect(result.code).toBe(0);
+    const envelope = JSON.parse(result.stdout);
+    expect(envelope.data.outputs.variantsDts).toBe(
+      'variants-theme.variants.d.ts',
+    );
+    expect(envelope.data.warnings.join('\n')).toContain('Declaration dropped');
+  });
+
   it('makes generated custom component prop values type-check through public subpaths', async () => {
     const themeFile = writeTheme(
       tmpDir,

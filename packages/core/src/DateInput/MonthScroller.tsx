@@ -637,12 +637,16 @@ export function MonthScroller({
       // Column within the displayed week, which is what Home/End move to —
       // not the day of the month.
       const column = (plainDateDayOfWeek(date) - weekStartsOn + 7) % 7;
+      // The horizontal arrows follow the reading direction (APG grid): under
+      // RTL the next day sits to the left.
+      const forward = isRTL ? 'ArrowLeft' : 'ArrowRight';
+      const backward = isRTL ? 'ArrowRight' : 'ArrowLeft';
       switch (event.key) {
-        case 'ArrowLeft':
+        case backward:
           event.preventDefault();
           moveFocus(date, -1);
           break;
-        case 'ArrowRight':
+        case forward:
           event.preventDefault();
           moveFocus(date, 1);
           break;
@@ -666,7 +670,7 @@ export function MonthScroller({
           break;
       }
     },
-    [moveFocus, weekStartsOn],
+    [isRTL, moveFocus, weekStartsOn],
   );
 
   // The focused day may have been in an unmounted pane a frame ago; focus it
@@ -677,8 +681,11 @@ export function MonthScroller({
     if (!shouldRestoreFocusRef.current || focusedISO == null) {
       return;
     }
+    // A date can be mounted twice: as a real day in its own pane and as a
+    // dimmed, disabled spill copy at the edge of a neighbouring pane. Only
+    // the real day may take focus, or Enter and Space would select nothing.
     const target = scrollerRef.current?.querySelector<HTMLElement>(
-      `[data-date="${focusedISO}"]`,
+      `[data-date="${focusedISO}"]:not([data-outside])`,
     );
     if (target != null) {
       shouldRestoreFocusRef.current = false;
@@ -835,6 +842,7 @@ function MonthPane({
                 <button
                   type="button"
                   data-date={day.iso}
+                  data-outside={day.isOutside ? '' : undefined}
                   tabIndex={day.iso === tabbableISO ? 0 : -1}
                   aria-label={plainDateFormat(
                     day.date,

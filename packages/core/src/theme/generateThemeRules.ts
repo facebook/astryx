@@ -6,6 +6,8 @@
  * Shared logic for generating CSS rules from a resolved theme definition,
  * including one component-leaf lowering path for root, adaptation, and
  * media-surface values plus condition-correct Heading weight precedence guards.
+ * Built adaptation metadata resolves against the same root component defaults
+ * as defineTheme, so scale-only rules do not reset authored component styles.
  * Used by both the runtime path (Theme injects <style>) and the build
  * path (`astryx theme build` pre-compiles to CSS files).
  *
@@ -30,7 +32,6 @@ import {
 } from './themeAdaptations';
 import {parseStyleKey} from '../utils/parseStyleKey';
 import {getDerivedVars} from './derivedVarRegistry';
-import {dataTokenDefaults} from './domainTokens/dataTokens';
 import {cssVar, classPrefix, dataAttrNamespace} from '../naming';
 import {
   checkDeclarationName,
@@ -1139,6 +1140,7 @@ export function generateAdaptationCSS(
           theme.__axes ?? {},
           theme.tokens,
           theme.localTokens,
+          theme.components,
         )
       : undefined);
   if (!rules || rules.length === 0) {
@@ -1213,30 +1215,6 @@ function indentRule(rule: string): string {
 }
 
 /**
- * The `--color-data-*` defaults as one unscoped `:root` block.
- *
- * Core tokens reach CSS once, at `:root`, from StyleX's `defineVars` output in
- * `@layer astryx-base`; a theme's own scope block then carries only the tokens
- * that theme overrides, which is why a nested theme inherits its parent's
- * override instead of shadowing it. Data tokens are not StyleX vars, so nothing
- * declares them — this is their equivalent, and callers put it in
- * `@layer astryx-base` so a theme's override wins by layer rather than by
- * specificity. Seeding it per theme scope instead re-declares the default
- * inside every nested theme, which is the shadowing this shape avoids.
- *
- * @internal Not exported from `@astryxdesign/core/theme`: the `<Theme>`
- * runtime is the only caller. `astryx theme build` formats the same block from
- * the public `dataTokenDefaults` export, and a CLI test asserts the two are
- * byte-identical.
- */
-export function generateDataTokenDefaultsCSS(): string {
-  const declarations = Object.entries(dataTokenDefaults)
-    .map(([prop, value]) => `  ${prop}: ${value};`)
-    .join('\n');
-  return `:root {\n${declarations}\n}`;
-}
-
-/**
  * Generate layered CSS for a theme — runtime path.
  *
  * Returns two CSS blocks for injection into different layers:
@@ -1247,8 +1225,8 @@ export function generateDataTokenDefaultsCSS(): string {
  * sit at reset-layer priority where any class-based style wins, while component
  * overrides sit above StyleX so themes can restyle components intentionally.
  *
- * The theme-independent `--color-data-*` defaults are not part of this output:
- * see `generateDataTokenDefaultsCSS`.
+ * Data-token defaults are owned by the public StyleX `dataVars` group. This
+ * generator emits only a theme's explicitly authored token overrides.
  */
 export function generateThemeCSS(
   theme: DefinedTheme,

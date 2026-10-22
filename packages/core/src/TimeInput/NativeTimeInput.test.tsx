@@ -99,14 +99,47 @@ describe('TimeInput nativePicker', () => {
   it.each([
     ['seconds', {hasSeconds: true}],
     ['custom increment', {increment: 15}],
-  ] as const)('retains the typed field for %s', (_name, props) => {
-    stubPointer(true);
+  ] as const)(
+    'retains the typed field for %s under adaptive-native (default)',
+    (_name, props) => {
+      stubPointer(true);
+      render(<TimeInput label="Start time" onChange={() => {}} {...props} />);
+
+      expect(
+        screen.getByRole('textbox', {name: 'Start time'}),
+      ).toBeInTheDocument();
+      expect(document.querySelector('input[type="time"]')).toBeNull();
+    },
+  );
+
+  it.each([
+    ['seconds', {hasSeconds: true}],
+    ['custom increment', {increment: 15}],
+  ] as const)(
+    'forces the native field for %s under presentation="native" (FR2)',
+    (_name, props) => {
+      stubPointer(false);
+      render(
+        <TimeInput
+          label="Start time"
+          presentation="native"
+          onChange={() => {}}
+          {...props}
+        />,
+      );
+
+      expect(getNativeTimeInput()).toBeInTheDocument();
+    },
+  );
+
+  it('deprecated nativePicker="always" keeps released fallbacks (FR2 legacy)', () => {
+    stubPointer(false);
     render(
       <TimeInput
         label="Start time"
         nativePicker="always"
+        hasSeconds
         onChange={() => {}}
-        {...props}
       />,
     );
 

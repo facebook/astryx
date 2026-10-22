@@ -46,7 +46,9 @@ const sx = stylex.create({
   full: {width: '100%'},
   mono: {fontFamily: 'var(--font-family-code)', fontSize: '12px'},
   quote: {
-    borderInlineStart: '2px solid var(--color-border)',
+    borderInlineStartWidth: '2px',
+    borderInlineStartStyle: 'solid',
+    borderInlineStartColor: 'var(--color-border)',
     paddingInlineStart: '12px',
     maxWidth: '64ch',
   },

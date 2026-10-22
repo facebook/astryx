@@ -9,7 +9,8 @@
  *
  * Compositional API: children are Avatar elements (and optionally
  * one AvatarGroupOverflow). The group provides overlap styling via
- * context — no child introspection needed.
+ * context — no child introspection needed. The overlap does not depend on
+ * child position, so avatars can be wrapped in HoverCard or Tooltip.
  *
  * When the group contains interactive avatars (rendered as links/buttons) or an
  * interactive AvatarGroupOverflow, it becomes a single Tab stop with roving
@@ -72,7 +73,21 @@ const styles = stylex.create({
   root: {
     display: 'inline-flex',
     alignItems: 'center',
+    // Every avatar (and the overflow indicator) takes the negative overlap
+    // margin, including the first one, so the overlap survives wrappers such
+    // as HoverCard and Tooltip. This padding gives the first child that space
+    // back, keeping the row inside the group's box.
+    paddingInlineStart: {
+      default: 'calc(-1 * var(--_avatar-group-overlap))',
+      ':empty': 0,
+    },
   },
+});
+
+const dynamicStyles = stylex.create({
+  overlap: (offset: number) => ({
+    '--_avatar-group-overlap': `${offset}px`,
+  }),
 });
 
 /**
@@ -161,7 +176,7 @@ export function AvatarGroup({
         onFocus={composeEventHandlers(onFocus, handleFocus)}
         {...mergeProps(
           themeProps('avatar-group', {size, shape}),
-          stylex.props(styles.root, xstyle),
+          stylex.props(styles.root, dynamicStyles.overlap(-overlap), xstyle),
           className,
           style,
         )}>

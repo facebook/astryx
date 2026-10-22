@@ -45,6 +45,7 @@ export type IconName =
   | 'menu'
   | 'moreHorizontal'
   | 'search'
+  | 'upload'
   | 'arrowUp'
   | 'arrowDown'
   | 'arrowsUpDown'
@@ -83,7 +84,7 @@ export type NamespacedIconName = `${string}:${string}`;
 export type ExtendedIconName = IconName | (string & {});
 
 /**
- * Icon registry mapping semantic names to React nodes.
+ * A complete icon registry: every semantic name mapped to a React node.
  */
 export type IconRegistry = Record<IconName, ReactNode>;
 
@@ -163,7 +164,7 @@ export function registerIcons(
  */
 export function getIconRegistry(
   source?: IconRegistrySource,
-): Readonly<IconRegistry> {
+): Readonly<Record<IconName, ReactNode>> {
   const registry: Record<string, ReactNode> = {};
 
   // Only surface built-in IconName keys here — namespaced keys, whether
@@ -187,7 +188,7 @@ export function getIconRegistry(
     }
   }
 
-  return registry as IconRegistry;
+  return registry as Record<IconName, ReactNode>;
 }
 
 /**

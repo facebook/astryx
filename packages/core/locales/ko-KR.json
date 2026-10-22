@@ -220,11 +220,11 @@
     "description": "PowerSearch date operator, inclusive range. Example: `Created is between 2024-01-01 and 2024-06-30`. The `and <end>` portion is composed separately."
   },
   "@astryx.powersearch.operator.isTrue": {
-    "defaultMessage": "True",
+    "defaultMessage": "참",
     "description": "PowerSearch boolean operator: matches truthy. Example: `Is admin is true`. Pairs with `is false`; field may be affirmative or a yes/no question."
   },
   "@astryx.powersearch.operator.isFalse": {
-    "defaultMessage": "False",
+    "defaultMessage": "거짓",
     "description": "PowerSearch boolean operator: matches falsy. Example: `Is admin is false`. Pairs with `is true`."
   },
   "@astryx.powersearch.operator.isAnyOf": {

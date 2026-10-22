@@ -151,22 +151,25 @@ export const colorVars = stylex.defineVars(colorDefaults);
 // Spacing Tokens
 // =============================================================================
 
+// rem, like the type scale, so gaps and padding grow with the reader's root
+// font size instead of tightening around larger text. At the default 16px
+// root every step is still 4px × step: --spacing-2 is 8px, --spacing-4 16px.
 export const spacingDefaults = {
-  '--spacing-0': '0px',
-  '--spacing-0-5': '2px',
-  '--spacing-1': '4px',
-  '--spacing-1-5': '6px',
-  '--spacing-2': '8px',
-  '--spacing-3': '12px',
-  '--spacing-4': '16px',
-  '--spacing-5': '20px',
-  '--spacing-6': '24px',
-  '--spacing-7': '28px',
-  '--spacing-8': '32px',
-  '--spacing-9': '36px',
-  '--spacing-10': '40px',
-  '--spacing-11': '44px',
-  '--spacing-12': '48px',
+  '--spacing-0': '0rem',
+  '--spacing-0-5': '0.125rem',
+  '--spacing-1': '0.25rem',
+  '--spacing-1-5': '0.375rem',
+  '--spacing-2': '0.5rem',
+  '--spacing-3': '0.75rem',
+  '--spacing-4': '1rem',
+  '--spacing-5': '1.25rem',
+  '--spacing-6': '1.5rem',
+  '--spacing-7': '1.75rem',
+  '--spacing-8': '2rem',
+  '--spacing-9': '2.25rem',
+  '--spacing-10': '2.5rem',
+  '--spacing-11': '2.75rem',
+  '--spacing-12': '3rem',
 } as const;
 
 export const spacingVars = stylex.defineVars(spacingDefaults);

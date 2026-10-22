@@ -28,6 +28,10 @@ on:
     types: [submitted, dismissed]
   issue_comment:
     types: [created]
+  # A review app relays an owner's exact-head decision. The reconciler accepts
+  # it only from the app named in the SPEC_DECISION_APP repository variable.
+  repository_dispatch:
+    types: [spec-owner-decision]
   workflow_dispatch:
     inputs:
       pr:
@@ -48,6 +52,7 @@ permissions: {}
 env:
   REVIEW_LABEL: needs:spec-owner-review
   AUTO_MERGE_LABEL: spec-auto-merge
+  SPEC_DECISION_APP: ${{ vars.SPEC_DECISION_APP }}
 
 jobs:
   reconcile:

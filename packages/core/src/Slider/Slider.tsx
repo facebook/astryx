@@ -48,7 +48,10 @@ import {
   useInteractionModalityTracking,
 } from '../utils/interactionModality';
 import {isRtlElement} from '../hooks/isRtlElement';
-import type {BaseProps} from '../BaseProps';
+import {
+  type FieldInputBaseProps,
+  useFieldInputStyling,
+} from '../Field/fieldParts';
 import type {SizeValue} from '../utils/types';
 import {themeProps} from '../utils/themeProps';
 
@@ -58,10 +61,10 @@ import {useMergedRefs} from '../hooks/useMergedRefs';
 // =============================================================================
 
 export interface SliderBaseProps extends Omit<
-  BaseProps<HTMLDivElement>,
+  FieldInputBaseProps<HTMLDivElement>,
   'onChange'
 > {
-  /** Ref forwarded to the root element */
+  /** Ref forwarded to the slider control element. */
   ref?: React.Ref<HTMLDivElement>;
   /** Label text for the slider (always rendered for accessibility). */
   label: string;
@@ -486,14 +489,33 @@ export function Slider({ref, ...props}: SliderProps) {
     valueDisplay = 'tooltip',
     marks,
     width,
-    xstyle,
-    className,
-    style,
-    'data-testid': testId,
+    containerXstyle,
+    containerClassName,
+    containerStyle,
+    controlXstyle,
+    controlClassName,
+    controlStyle,
     value,
     onChange,
     onChangeEnd,
+    onPointerDown,
+    onPointerMove,
+    onPointerUp,
+    onPointerCancel,
+    onKeyDown,
+    onFocus,
+    onBlur,
+    id: idProp,
+    'aria-describedby': ariaDescribedByProp,
+    ...restWithRange
   } = props;
+  const {minStepsBetweenThumbs: _minSteps, ...restProps} =
+    restWithRange as typeof restWithRange & {minStepsBetweenThumbs?: number};
+  const {rest, container} = useFieldInputStyling('Slider', restProps, {
+    containerXstyle,
+    containerClassName,
+    containerStyle,
+  });
 
   const isRange = Array.isArray(value);
   const minStepsBetweenThumbs =
@@ -503,7 +525,17 @@ export function Slider({ref, ...props}: SliderProps) {
 
   const isHorizontal = orientation === 'horizontal';
 
-  const id = useId();
+  // Consumer handlers run after the component's own and always run: the
+  // component's handlers call preventDefault() for their own reasons, which
+  // must not silence a consumer.
+  const after =
+    <E,>(own: (event: E) => void, consumer?: (event: E) => void) =>
+    (event: E) => {
+      own(event);
+      consumer?.(event);
+    };
+  const generatedId = useId();
+  const id = idProp ?? generatedId;
   const labelID = useId();
   const descriptionID = useId();
   const statusMessageID = useId();
@@ -526,15 +558,12 @@ export function Slider({ref, ...props}: SliderProps) {
 
   const handleThumbFocus = useCallback(
     (thumbIndex: number, _e: FocusEvent<HTMLDivElement>) => {
-      // A disabled thumb draws no ring even when it stays focusable for its
-      // reason tooltip, so there is nothing to track for one.
+      // A focused disabled thumb still shows the ring (spec:AST-085 FR6).
       setKeyboardFocusThumb(
-        !isDisabled && getInteractionModality() === 'keyboard'
-          ? thumbIndex
-          : null,
+        getInteractionModality() === 'keyboard' ? thumbIndex : null,
       );
     },
-    [isDisabled],
+    [],
   );
 
   const handleThumbBlur = useCallback((_e: FocusEvent<HTMLDivElement>) => {
@@ -636,11 +665,18 @@ export function Slider({ref, ...props}: SliderProps) {
   );
 
   const updateValue = useCallback(
-    (thumbIndex: number, newVal: number) => {
+    (thumbIndex: number, newVal: number, snap = true) => {
       if (isDisabled) {
         return;
       }
-      const clamped = clamp(snapToStep(newVal, min, step), min, max);
+      // Home and End pass the bound itself (`snap: false`). The step grid is
+      // anchored at `min`, so Home always landed there; `max` may lie off the
+      // grid (max 100 with step 3 snapped End to 99, not 100).
+      const clamped = clamp(
+        snap ? snapToStep(newVal, min, step) : newVal,
+        min,
+        max,
+      );
 
       if (isRange) {
         const currentValues = [...values] as [number, number];
@@ -795,12 +831,22 @@ export function Slider({ref, ...props}: SliderProps) {
       const currentVal = values[thumbIndex];
       let newVal: number;
 
+      // On a horizontal track the keyboard follows the track's direction:
+      // under RTL the value grows toward the left, so ArrowLeft increases and
+      // ArrowRight decreases (APG Slider). Up/Down and a vertical track are
+      // direction-free.
+      const towardMax =
+        isHorizontal && isRtlElement(trackRef.current)
+          ? 'ArrowLeft'
+          : 'ArrowRight';
+      const towardMin = towardMax === 'ArrowLeft' ? 'ArrowRight' : 'ArrowLeft';
+
       switch (e.key) {
-        case 'ArrowRight':
+        case towardMax:
         case 'ArrowUp':
           newVal = currentVal + step;
           break;
-        case 'ArrowLeft':
+        case towardMin:
         case 'ArrowDown':
           newVal = currentVal - step;
           break;
@@ -821,8 +867,13 @@ export function Slider({ref, ...props}: SliderProps) {
       }
 
       e.preventDefault();
-      const clamped = clamp(snapToStep(newVal, min, step), min, max);
-      updateValue(thumbIndex, newVal);
+      const toBound = e.key === 'Home' || e.key === 'End';
+      const clamped = clamp(
+        toBound ? newVal : snapToStep(newVal, min, step),
+        min,
+        max,
+      );
+      updateValue(thumbIndex, newVal, !toBound);
 
       // Compute exact post-update values so onChangeEnd reports the correct
       // value even before React batches the state update.
@@ -844,6 +895,7 @@ export function Slider({ref, ...props}: SliderProps) {
     },
     [
       isDisabled,
+      isHorizontal,
       isRange,
       values,
       step,
@@ -901,12 +953,12 @@ export function Slider({ref, ...props}: SliderProps) {
     const thumbElement = (
       <div
         key={thumbIndex}
+        {...(!isRange ? rest : undefined)}
+        ref={!isRange ? ref : undefined}
         id={!isRange ? id : undefined}
         role="slider"
-        // With a disabledMessage the thumb keeps focusability so the reason is
-        // focus-discoverable; value changes stay blocked by the isDisabled
-        // guards in the pointer/keyboard handlers.
-        tabIndex={isDisabled && !showsDisabledMessage ? -1 : 0}
+        // A disabled thumb keeps its Tab stop (spec:AST-085 FR1).
+        tabIndex={0}
         aria-valuemin={ariaValueMin}
         aria-valuemax={ariaValueMax}
         aria-valuenow={val}
@@ -916,10 +968,20 @@ export function Slider({ref, ...props}: SliderProps) {
         aria-invalid={status?.type === 'error' ? true : undefined}
         aria-label={thumbLabel}
         aria-labelledby={!isRange ? labelID : undefined}
-        aria-describedby={ariaDescribedBy}
-        onKeyDown={e => handleKeyDown(thumbIndex, e)}
-        onFocus={e => handleThumbFocus(thumbIndex, e)}
-        onBlur={handleThumbBlur}
+        aria-describedby={
+          [!isRange ? ariaDescribedByProp : undefined, ariaDescribedBy]
+            .filter(Boolean)
+            .join(' ') || undefined
+        }
+        onKeyDown={after(
+          e => handleKeyDown(thumbIndex, e),
+          !isRange ? onKeyDown : undefined,
+        )}
+        onFocus={after(
+          e => handleThumbFocus(thumbIndex, e),
+          !isRange ? onFocus : undefined,
+        )}
+        onBlur={after(handleThumbBlur, !isRange ? onBlur : undefined)}
         {...mergeProps(
           themeProps('slider-thumb', {
             orientation,
@@ -932,8 +994,7 @@ export function Slider({ref, ...props}: SliderProps) {
               : rtlStyles.centerInline('50%'),
             !isDisabled && styles.thumbHover,
             !isDisabled && draggingThumb === thumbIndex && styles.thumbPressed,
-            !isDisabled &&
-              keyboardFocusThumb === thumbIndex &&
+            keyboardFocusThumb === thumbIndex &&
               focusOutlineStyles.focusVisible,
             isDisabled && styles.thumbDisabled,
           ),
@@ -991,7 +1052,7 @@ export function Slider({ref, ...props}: SliderProps) {
 
   return (
     <Field
-      data-testid={testId}
+      {...container}
       label={label}
       isLabelHidden={isLabelHidden}
       description={description}
@@ -1019,10 +1080,7 @@ export function Slider({ref, ...props}: SliderProps) {
       }
       labelTooltip={labelTooltip}
       statusVariant="detached"
-      width={width}
-      xstyle={xstyle}
-      className={className}
-      style={style}>
+      width={width}>
       <div
         {...mergeProps(
           themeProps('slider', {
@@ -1031,7 +1089,9 @@ export function Slider({ref, ...props}: SliderProps) {
           }),
           stylex.props(styles.sliderRow),
         )}>
+        {/* A disabled slider submits no value (spec:AST-085 FR3). */}
         {htmlName != null &&
+          !isDisabled &&
           values.map((v, i) => (
             <input
               // Positional identity: index 0 is the start thumb, 1 the end.
@@ -1039,20 +1099,32 @@ export function Slider({ref, ...props}: SliderProps) {
               type="hidden"
               name={htmlName}
               value={String(v)}
-              // Disabled native controls are excluded from form submission;
-              // mirror that for the hidden carrier.
-              disabled={isDisabled}
             />
           ))}
         <div
-          ref={useMergedRefs(ref, trackRef, disabledMessageTooltip.ref)}
+          // In range mode the role="group" control takes the base props; a
+          // single slider gives them to its role="slider" thumb.
+          {...(isRange ? rest : undefined)}
+          {...(isRange
+            ? {
+                onKeyDown,
+                onFocus,
+                onBlur,
+                'aria-describedby': ariaDescribedByProp,
+              }
+            : undefined)}
+          ref={useMergedRefs(
+            isRange ? ref : undefined,
+            trackRef,
+            disabledMessageTooltip.ref,
+          )}
           {...(isRange
             ? {role: 'group', 'aria-labelledby': labelID}
             : undefined)}
-          onPointerDown={handlePointerDown}
-          onPointerMove={handlePointerMove}
-          onPointerUp={handlePointerUp}
-          onPointerCancel={handlePointerUp}
+          onPointerDown={after(handlePointerDown, onPointerDown)}
+          onPointerMove={after(handlePointerMove, onPointerMove)}
+          onPointerUp={after(handlePointerUp, onPointerUp)}
+          onPointerCancel={after(handlePointerUp, onPointerCancel)}
           {...mergeProps(
             themeProps('slider-control', {
               orientation,
@@ -1064,7 +1136,10 @@ export function Slider({ref, ...props}: SliderProps) {
                 ? styles.trackContainerHorizontal
                 : styles.trackContainerVertical,
               isDisabled && styles.trackContainerDisabled,
+              controlXstyle,
             ),
+            controlClassName,
+            controlStyle,
           )}>
           {/* Background track */}
           <div

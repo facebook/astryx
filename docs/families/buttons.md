@@ -26,7 +26,11 @@ members:
     component:ToggleButtonGroup,
   ]
 architecture:
-  [architecture:component-theming-surface, architecture:public-component-api]
+  [
+    architecture:component-size-cascade,
+    architecture:component-theming-surface,
+    architecture:public-component-api,
+  ]
 contributing: []
 deciding_specs: [spec:AST-002/DEC-1]
 ---
@@ -111,9 +115,8 @@ Membership follows public responsibility, not an import of Button or a rendered
   otherwise. Button's `href` mode is the explicit navigation variation and also
   follows `family:navigation-destinations`.
 - **FR3 — Disabled means non-operable.** A disabled member MUST NOT invoke its
-  callback or Action. When a disabled reason requires focus, the component MAY use
-  focusable `aria-disabled` semantics while still blocking activation. A group
-  disabled state overrides member availability.
+  callback or Action. Disabled members stay focusable and follow
+  `spec:AST-085`. A group disabled state overrides member availability.
 - **FR4 — Pending feedback preserves purpose and geometry.** Where a member
   exposes loading or an Action, pending work MUST set `aria-busy`, keep the
   control's dimensions stable, and present a Spinner without changing the
@@ -124,6 +127,10 @@ Membership follows public responsibility, not an import of Button or a rendered
   event prevents the Action. Standalone ToggleButton runs `onPressedChange`
   synchronously before `pressedChangeAction` and skips the Action when the callback
   calls `preventDefault()`. The Action also runs when no callback is supplied.
+  A caller `onClick` on a standalone ToggleButton runs before `onPressedChange`
+  and `pressedChangeAction`. When that `onClick` calls `preventDefault()`, the
+  activation requests no next state and neither runs; otherwise the toggle
+  proceeds. A caller `onClick` never replaces the toggle request.
   Without `pressedChangeAction`, callback-only activation MUST remain synchronous
   and report no Action-pending feedback. A fire-once action deduplicates activation
   while pending; an explicitly interruptible persistent action may accept a new
@@ -134,8 +141,11 @@ Membership follows public responsibility, not an import of Button or a rendered
   derive from the effective in-flight value rather than a stale committed value.
 - **FR7 — Shared size preserves family geometry.** Members using the family size
   axis MUST map `sm`, `md`, and `lg` to the same control-height contract. An
-  icon-only member is square at the resolved size. Label weight, pressed state,
-  loading, or icon replacement MUST NOT change its outer dimensions.
+  icon-only member is square at the resolved size. Button and IconButton MUST
+  default an Astryx Icon in their owned icon slot to `sm` for `sm` and `md`
+  controls and to `md` for `lg` controls; an explicit Icon size MUST win. Label
+  weight, pressed state, loading, or icon replacement MUST NOT change the outer
+  control dimensions.
 - **FR8 — Elevation belongs to the painted surface.** A standalone member that
   paints its visible surface owns its resting elevation. A connected group that
   paints one continuous surface owns one shared elevation and its members paint
@@ -219,7 +229,7 @@ and any later fill or outline treatment requires separate visual review.
 
 | Contract  | Verification                                                                                                                                          | Representative members and states                                                                              | Mutation or failure expectation                                                                  |
 | --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
-| FR1–FR3   | role/name, keyboard, callback, disabled, and disabled-reason tests                                                                                    | text Button, IconButton, ToggleButton, link mode, member/group disabled                                        | a member loses its name, keyboard path, or invokes while disabled                                |
+| FR1–FR3   | role/name, keyboard, callback, disabled, and disabled-reason tests; native-disabled assertions pending conformance (`spec:AST-085`)                   | text Button, IconButton, ToggleButton, link mode, member/group disabled                                        | a member loses its name, keyboard path, or invokes while disabled                                |
 | FR4–FR6   | `ToggleButton.test.tsx`: callback/Action order and cancellation, callback-only no-pending path, Action-only settlement, and optimistic re-click tests | standalone ToggleButton with either/both callbacks; Button fire-once Action                                    | callback is dropped, an empty Action reports busy, cancellation is bypassed, or stale state wins |
 | FR7       | unit plus real-browser geometry checks                                                                                                                | all sizes; text/icon-only; pressed/unpressed; loading                                                          | family heights diverge, icon-only stops being square, or state shifts outer size                 |
 | FR8–FR10  | data attribute, theme metadata, and computed-shadow tests                                                                                             | standalone Button/IconButton/ToggleButton; connected and spaced groups; every elevation tier                   | shadow lands on the wrong box, state changes depth, or public/theme/rendered values disagree     |

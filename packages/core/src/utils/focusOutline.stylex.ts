@@ -70,6 +70,10 @@ const focusOutlineLonghands = {
  * independently overridable — and every part stays a var, so a theme's
  * `--focus-outline-*` overrides still flow through.
  *
+ * NOT usable inside another file's `stylex.create`, for the same reason as
+ * {@link FOCUS_OUTLINE}: StyleX compiles each member there to a CSS variable
+ * nothing defines. Compose the `focusVars` tokens instead.
+ *
  * Keys are camelCase to match `HTMLElement.style`, so this spreads straight
  * onto an element:
  *

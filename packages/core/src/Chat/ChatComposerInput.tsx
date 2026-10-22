@@ -157,12 +157,28 @@ export type ChatComposerTrigger = {
    * Used when loading a previous message for editing.
    */
   deserialize?: (value: string) => ChatComposerToken | null;
-  /** Text shown when no results found. @default 'No results' */
-  emptySearchResultsText?: string;
+  /**
+   * Content shown when the query matched nothing (`spec:AST-056` FR1).
+   * Takes a `ReactNode`, so a dead end can carry a link or a create row.
+   *
+   * `null` means "not given", exactly as `undefined` does, so it falls
+   * through to the default. Pass an empty string to render nothing.
+   * @default 'No results'
+   */
+  emptySearchText?: ReactNode;
   /** Text shown during async search. @default 'Searching\u2026' */
   loadingText?: string;
   /** Accessible label for the menu. @default 'Suggestions' */
   menuLabel?: string;
+  /**
+   * Whether the query continues past spaces, for suggestions whose names have
+   * spaces (e.g. "@María José García", "@Design Review: Q4"). The query then
+   * runs until a line break or about 64 characters, and when nothing matches
+   * the menu hides unless `emptySearchText` is set. When false, the query ends
+   * at the first space.
+   * @default false
+   */
+  hasMultiWordQuery?: boolean;
 };
 
 export interface ChatComposerInputProps extends Omit<
@@ -258,7 +274,7 @@ const styles = stylex.create({
     fontFamily: typographyVars['--font-family-body'],
     color: colorVars['--color-text-primary'],
     caretColor: colorVars['--color-accent'],
-    padding: spacingVars['--spacing-1'],
+    paddingInline: spacingVars['--spacing-1'],
   },
   placeholder: {
     position: 'absolute',
@@ -277,7 +293,7 @@ const styles = stylex.create({
     lineHeight: `${LINE_HEIGHT_PX}px`,
     fontFamily: typographyVars['--font-family-body'],
     userSelect: 'none',
-    padding: spacingVars['--spacing-1'],
+    paddingInline: spacingVars['--spacing-1'],
   },
   disabled: {
     opacity: 0.5,
@@ -285,7 +301,9 @@ const styles = stylex.create({
   },
   tokenSpan: {
     display: 'inline-flex',
-    verticalAlign: 'middle',
+    alignItems: 'center',
+    height: '1lh',
+    verticalAlign: 'top',
   },
 });
 
@@ -676,6 +694,10 @@ export function ChatComposerInput(props: ChatComposerInputProps) {
           currentDraftRef.current = '';
         }
 
+        // Submitting ends any trigger query, including one dismissed with
+        // Escape: no menu stays open, and no dismissal carries into the next
+        // message.
+        triggerMenu.reset();
         onSubmit?.(text);
         editableRef.current.textContent = '';
         setIsEmpty(true);

@@ -34,6 +34,10 @@ export const docs = {
   category: 'foundations',
       content: [
         {
+          type: 'prose',
+          text: 'Nine duration tokens in fast, medium, and slow bands.',
+        },
+        {
           type: 'token-ref',
           topic: 'tokens',
           section: 'Duration Tokens',
@@ -44,6 +48,10 @@ export const docs = {
       title: 'Easing',
   category: 'foundations',
       content: [
+        {
+          type: 'prose',
+          text: 'One easing curve, `--ease-standard`.',
+        },
         {
           type: 'token-ref',
           topic: 'tokens',
@@ -101,19 +109,24 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'Some users experience motion sensitivity; animation that feels polished to one person can cause discomfort for another. Components should honor the operating system\'s reduced motion setting. When it\'s enabled, replace animations with instant state changes.',
+          text: 'Some users experience motion sensitivity; animation that feels polished to one person can cause discomfort for another. Astryx components already switch to instant changes when the OS reduced-motion setting is on. Do the same in your own animations with `@media (prefers-reduced-motion: reduce)`.',
         },
       ],
     },
     {
-      title: 'Usage',
+      id: 'usage',
+      title: 'Animate with motion tokens',
   category: 'foundations',
       content: [
+        {
+          type: 'prose',
+          text: 'Set transition durations and easing from the motion tokens, so a theme that retunes motion retunes your animations too.',
+        },
         {
           type: 'code',
           lang: 'tsx',
           label: 'Applying motion tokens',
-          code: `import {durationVars, easeVars} from '@astryxdesign/core';
+          code: `import {durationVars, easeVars} from '@astryxdesign/core/theme/tokens.stylex';
 
 const styles = stylex.create({
   fadeIn: {

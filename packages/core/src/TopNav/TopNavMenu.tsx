@@ -41,6 +41,7 @@ import {isSafeUrl} from '../utils/safeUrl';
 import {themeProps} from '../utils/themeProps';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
 import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
+import {usePressFeedback} from '../hooks/usePressFeedback';
 import {
   colorVars,
   spacingVars,
@@ -81,7 +82,8 @@ const styles = stylex.create({
         '@media (hover: hover)': colorVars['--color-overlay-hover'],
       },
     },
-    border: 'none',
+    borderWidth: 0,
+    borderStyle: 'none',
     fontFamily: 'inherit',
   },
   triggerOpen: {
@@ -134,7 +136,8 @@ const styles = stylex.create({
         '@media (hover: hover)': colorVars['--color-overlay-hover'],
       },
     },
-    border: 'none',
+    borderWidth: 0,
+    borderStyle: 'none',
   },
   menuItemIcon: {
     display: 'flex',
@@ -173,8 +176,9 @@ const drawerStyles = stylex.create({
   },
   header: {
     justifyContent: 'space-between',
-    border: 'none',
-    background: 'none',
+    borderWidth: 0,
+    borderStyle: 'none',
+    backgroundColor: 'transparent',
   },
   chevron: {
     display: 'inline-flex',
@@ -190,18 +194,26 @@ const drawerStyles = stylex.create({
   chevronExpanded: {
     transform: 'rotate(180deg)',
   },
+  // The section clips its items only for the 0fr collapse animation: a
+  // permanent clip cuts off the focus ring, which paints outside the item.
+  // `overflow` is discrete, so it rides the transition with `allow-discrete`
+  // and switches to `visible` only after the open has finished. Collapsing
+  // clips again at once.
   items: {
     display: 'grid',
     gridTemplateRows: '0fr',
-    transitionProperty: 'grid-template-rows',
-    transitionDuration: durationVars['--duration-medium'],
+    overflow: 'hidden',
+    transitionProperty: 'grid-template-rows, overflow',
+    transitionBehavior: 'allow-discrete',
+    transitionDuration: `${durationVars['--duration-medium']}, 0s`,
     transitionTimingFunction: easeVars['--ease-standard'],
   },
   itemsExpanded: {
     gridTemplateRows: '1fr',
+    overflow: 'visible',
+    transitionDelay: `0s, ${durationVars['--duration-medium']}`,
   },
   itemsInner: {
-    overflow: 'hidden',
     minHeight: 0,
   },
   item: {
@@ -342,6 +354,7 @@ export function TopNavMenu({
   onMouseLeave: onMouseLeaveProp,
   ...rest
 }: TopNavMenuProps) {
+  const pressable = usePressFeedback();
   const renderMode = useTopNavRenderMode();
   const {closeMobileNav} = useAppShellMobile();
   const LinkComponent = useLinkComponent();
@@ -457,6 +470,7 @@ export function TopNavMenu({
           )}
           aria-expanded={drawerExpanded}
           aria-controls={`${menuId}-items`}
+          {...pressable}
           {...mergeProps(
             focusOutlineProps.focusVisible(
               navItemStyles.item,
@@ -480,6 +494,8 @@ export function TopNavMenu({
         </button>
         <div
           id={`${menuId}-items`}
+          aria-hidden={!drawerExpanded}
+          inert={!drawerExpanded ? true : undefined}
           {...stylex.props(
             drawerStyles.items,
             drawerExpanded && drawerStyles.itemsExpanded,
@@ -489,6 +505,7 @@ export function TopNavMenu({
               <LinkComponent
                 key={getMenuItemKey(item)}
                 href={item.href}
+                {...pressable}
                 onClick={(_e: React.MouseEvent) => {
                   item.onClick?.();
                   closeMobileNav();

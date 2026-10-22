@@ -1,9 +1,11 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+import {createHash} from 'node:crypto';
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import {afterEach, describe, expect, it} from 'vitest';
+import {isErrorCode} from '../../../../foundation/response/error-codes.mjs';
 import {themePaletteGenerate} from './generate.mjs';
 
 const temporaryDirectories = [];
@@ -99,6 +101,81 @@ describe('themePaletteGenerate', () => {
     expect(written).toEqual(result.data.candidate);
     expect(written).toMatchObject({black: '#000000', white: '#ffffff'});
     expect(result.data.receipt).toBe('ocean.palette.receipt.json');
+  });
+
+  it('writes candidate JSON byte-identical to the recipe fixtures', () => {
+    const families = [
+      {id: 'neutral', name: 'Neutral', seed: '#777777', kind: 'neutral'},
+      {id: 'blue', name: 'Blue', seed: '#0074e2'},
+      {id: 'orange', name: 'Orange', seed: '#d57113'},
+    ];
+    const fixtures = [
+      [
+        {families},
+        3755,
+        '11c40191d508274d89d631bb4e1cb662f70ff0dce6c0dec101c317f9f69d3e25',
+      ],
+      [
+        {
+          modeStrategy: 'light-only',
+          stops: [20, 50, 80],
+          families: [
+            {
+              id: 'blue',
+              name: 'Blue',
+              seed: '#0074e2',
+              anchors: [
+                {mode: 'light', stop: 50, color: '#1682d5', policy: 'exact'},
+              ],
+            },
+          ],
+        },
+        327,
+        'c42929be3c4b5cb857cada078f62bb5a2242c1a22cfa4ae7546a18592540f7f3',
+      ],
+      [
+        {
+          modeStrategy: 'dark-only',
+          stops: [40],
+          families: [{id: 'red', name: 'Red', seed: '#d62830'}],
+        },
+        258,
+        '88d3d69865c74c7fb14347b9967575285a7d44ab893087a08bc842bb66b29bbb',
+      ],
+      [
+        {
+          stops: [60, 80, 95],
+          families: [
+            {id: 'green', name: 'Green', seed: '#358a3a'},
+            {id: 'teal', name: 'Teal', seed: '#0c7365'},
+            {id: 'cyan', name: 'Cyan', seed: '#0c6f82'},
+          ],
+        },
+        910,
+        '873821574fdbe3357304dbc06986bd2e5ec88af80d0f36305626fd826c3cf07b',
+      ],
+    ];
+
+    for (const [request, bytes, sha256] of fixtures) {
+      const cwd = fixture();
+      fs.writeFileSync(
+        path.join(cwd, 'palette.config.json'),
+        JSON.stringify(request),
+      );
+
+      const printed = themePaletteGenerate('palette.config.json', {}, {cwd});
+      expect(printed.data.generationReceipt.candidateSha256).toBe(sha256);
+
+      const result = themePaletteGenerate(
+        'palette.config.json',
+        {out: 'candidate.json'},
+        {cwd},
+      );
+      const written = fs.readFileSync(path.join(cwd, 'candidate.json'));
+      expect(written.length).toBe(bytes);
+      expect(createHash('sha256').update(written).digest('hex')).toBe(sha256);
+      expect(result.data.generationReceipt.candidateSha256).toBe(sha256);
+    }
   });
 
   it('preserves mixed decimal and integer stop order in every artifact', () => {
@@ -266,5 +343,24 @@ describe('themePaletteGenerate', () => {
     expect(() =>
       themePaletteGenerate('palette.config.json', {}, {cwd}),
     ).toThrow('Could not parse palette config');
+  });
+
+  it('reports an output path it cannot use with a registered error code', () => {
+    const cwd = fixture();
+    fs.writeFileSync(path.join(cwd, 'blocker'), '');
+
+    for (const options of [
+      {out: 'blocker/ocean.palette.json'},
+      {preview: 'blocker/ocean.palette.html'},
+    ]) {
+      let error;
+      try {
+        themePaletteGenerate('palette.config.json', options, {cwd});
+      } catch (caught) {
+        error = caught;
+      }
+      expect(error).toMatchObject({code: 'ERR_WRITE_FAILED'});
+      expect(isErrorCode(error.code)).toBe(true);
+    }
   });
 });

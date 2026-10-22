@@ -1,8 +1,8 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file `template.show` leaf — return a resolved template's raw source plus the
- * components it composes.
+ * @file `template.show` leaf — return a resolved template's source, exactly as
+ * `template.copy` writes it, plus the components it composes.
  *
  * @position api/template/show — reads the resolved match's source file; the
  *   template dispatcher routes `show` (and the no-target-path default) here.
@@ -11,7 +11,11 @@
 import * as fs from 'node:fs';
 import {AstryxError} from '../../error.mjs';
 import {ERROR_CODES} from '../../../foundation/response/error-codes.mjs';
-import {extractComponents} from '../../../foundation/discovery/template-adapter.mjs';
+import {
+  extractComponents,
+  pkgOf,
+  replaceDemoMedia,
+} from '../../../foundation/discovery/template-adapter.mjs';
 
 /**
  * Build the `template.show` envelope for an already-resolved template.
@@ -27,14 +31,23 @@ export function templateShow(match) {
     );
   }
 
+  // The source template.copy writes (spec:AST-028 FR7): a template printed and
+  // pasted must not keep a media path only Astryx's previews serve, and the
+  // caller is told how many it replaced, the way the copy receipt tells it.
+  const {source, demoMediaReplaced} = replaceDemoMedia(
+    fs.readFileSync(match.filePath, 'utf-8'),
+  );
+
   return {
     type: 'template.show',
+    package: pkgOf(match),
     data: {
       template: match.dirName,
       description: match.description,
       type: match.type,
       components: extractComponents(match.filePath),
-      source: fs.readFileSync(match.filePath, 'utf-8'),
+      source,
+      demoMediaReplaced,
     },
   };
 }

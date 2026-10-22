@@ -20,9 +20,9 @@ export const docs = {
     {
       name: 'icon',
       type: 'ReactNode',
-      description: 'Icon element rendered inside the button.',
+      description: 'Icon element rendered inside the button. An Astryx Icon with no explicit size defaults to sm for sm/md buttons and md for lg buttons.',
       required: true,
-      slotElements: [{__element: 'Icon', props: {icon: 'check', size: 'sm'}}],
+      slotElements: [{__element: 'Icon', props: {icon: 'check'}}],
     },
     {
       name: 'variant',
@@ -46,7 +46,7 @@ export const docs = {
     {
       name: 'isLoading',
       type: 'boolean',
-      description: 'Shows a loading spinner and disables interaction.',
+      description: 'Shows a loading spinner and blocks re-activation while staying focusable (aria-busy + aria-disabled, not native disabled).',
       default: 'false',
     },
     {
@@ -137,11 +137,11 @@ export const docsDense = {
   },
   propDescriptions: {
     label: 'accessible label; used as aria-label, not rendered as visible text',
-    icon: 'icon element rendered inside button',
+    icon: 'icon element rendered inside button; unsized Astryx Icon defaults to sm for sm/md buttons and md for lg',
     variant: 'visual style variant',
     size: 'size variant',
     elevation: 'resting shadow depth: none|low|med|high; raise for a floating action button (FAB)',
-    isLoading: 'shows loading spinner + disables interaction',
+    isLoading: 'shows loading spinner, blocks re-activation but stays focusable (aria-disabled, not native disabled)',
     isDisabled: 'disables button',
     tooltip: 'tooltip text shown on hover',
     onClick: 'standard click handler',

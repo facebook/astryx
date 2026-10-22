@@ -3,6 +3,9 @@
 /**
  * defineTheme — Create an Astryx theme from a flat token map.
  *
+ * Adaptations resolve against the effective root axes and components, retaining
+ * authored component pins without repeating root typography defaults.
+ *
  * Two distribution modes:
  * - Unbuilt: Theme generates CSS and injects a <style> tag at runtime
  * - Built: `astryx theme build` pre-compiles to a CSS file; Theme just
@@ -168,7 +171,7 @@ export type StyleOverrides = Record<string, string | Record<string, string>>;
  *   badge: {
  *     'variant:ghost': { border: '1px solid var(--color-border)' },
  *   },
- *   radio: {
+ *   'radio-indicator': {
  *     base: {
  *       borderColor: '#8F9296',
  *       ':hover': { borderColor: 'color-mix(in srgb, #8F9296, black 20%)' },
@@ -595,6 +598,7 @@ export function defineTheme(input: DefineThemeInput): ResolvedDefinedTheme {
     __axes,
     tokens,
     localTokenContract?.localTokens,
+    components,
   );
 
   // Icons — input icons override base icons

@@ -23,7 +23,7 @@ import type {
   BodyCellRenderProps,
   ScrollWrapperRenderProps,
 } from '../../types';
-import {DEFAULT_MIN_COLUMN_WIDTH} from '../../columnUtils';
+import {resolveColumnFloorWidths} from '../../columnUtils';
 
 // =============================================================================
 // Config
@@ -56,23 +56,10 @@ export interface UseTableStickyColumnsConfig {
 // Width helpers
 // =============================================================================
 
-/**
- * Resolve a column's pixel width for cumulative offset math. Mirrors the
- * resize plugin's fallback so offsets line up with rendered widths:
- * pixel columns use their value; proportional columns use their declared
- * minWidth (or the default); unknown widths use the default.
- */
-function getColumnWidth(col: TableColumn<Record<string, unknown>>): number {
-  const w = col.width;
-  if (!w) {
-    return DEFAULT_MIN_COLUMN_WIDTH;
-  }
-  if (w.type === 'pixel') {
-    return w.value;
-  }
-  // proportional
-  return w.minWidth ?? DEFAULT_MIN_COLUMN_WIDTH;
-}
+// Pinned offsets only matter while the table overflows, and an overflowing
+// table renders at its minimum width. Offsets therefore accumulate the widths
+// Table layout gives each column at that width (resolveColumnFloorWidths), so a
+// pinned block stays contiguous for pixel, proportional, and width-less mixes.
 
 /**
  * Columns pinned to the START edge → cumulative inline offset (px). The pinned
@@ -95,11 +82,12 @@ function computeStartOffsets(
   if (lastStickyIndex === -1) {
     return null;
   }
+  const widths = resolveColumnFloorWidths(columns);
   const offsets = new Map<string, number>();
   let cumulative = 0;
   for (let i = 0; i <= lastStickyIndex; i++) {
     offsets.set(columns[i].key, cumulative);
-    cumulative += getColumnWidth(columns[i]);
+    cumulative += widths.get(columns[i].key) ?? 0;
   }
   return offsets;
 }
@@ -126,11 +114,12 @@ function computeEndOffsets(
   if (firstStickyIndex === -1) {
     return null;
   }
+  const widths = resolveColumnFloorWidths(columns);
   const offsets = new Map<string, number>();
   let cumulative = 0;
   for (let i = columns.length - 1; i >= firstStickyIndex; i--) {
     offsets.set(columns[i].key, cumulative);
-    cumulative += getColumnWidth(columns[i]);
+    cumulative += widths.get(columns[i].key) ?? 0;
   }
   return offsets;
 }
@@ -355,10 +344,19 @@ export function useTableStickyColumns<T extends Record<string, unknown>>(
         // position/inline-offset are runtime values → set via inline style so
         // they are authoritative regardless of plugin composition order (the
         // resize plugin also writes inline style on header cells).
+        //
+        // `position` belongs inline for the same reason, and used not to be:
+        // it was left to `stickyStyles.cell`, which put it in the same xstyle
+        // array the resize plugin appends `position: relative` to for its
+        // handle's containing block. Whichever plugin was appended later won,
+        // so a pinned column silently stopped pinning depending on the order
+        // the caller happened to write `plugins={{ ... }}`. Inline wins over
+        // both, which makes the composition order-independent instead of
+        // buying a lucky order from the plugin sequence.
         const offsetStyle: CSSProperties =
           side.edge === 'start'
-            ? {insetInlineStart: `${side.offset}px`}
-            : {insetInlineEnd: `${side.offset}px`};
+            ? {position: 'sticky', insetInlineStart: `${side.offset}px`}
+            : {position: 'sticky', insetInlineEnd: `${side.offset}px`};
         return {
           ...props,
           htmlProps: {

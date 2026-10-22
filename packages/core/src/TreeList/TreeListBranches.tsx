@@ -32,10 +32,16 @@ const BRANCH_MARGIN = `calc(${spacingVars['--spacing-2']} + ${spacingVars['--spa
 const LEVEL_INDENT = 'var(--tree-list-indent)';
 
 const styles = stylex.create({
+  // Rows span the full width of the list and carry their indent inside, so
+  // the guide columns sit inside the row boxes of deeper rows. Lift the guides
+  // above the rows so a hovered or selected row's fill never breaks the line,
+  // and let pointer input fall through to the row underneath.
   container: {
     height: '100%',
     position: 'absolute',
     width: spacingVars['--spacing-5'],
+    zIndex: 1,
+    pointerEvents: 'none',
   },
   verticalLine: {
     borderRadius: 1,

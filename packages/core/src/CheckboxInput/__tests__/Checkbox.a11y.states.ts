@@ -125,8 +125,8 @@ export const CHECKBOX_BINDING_STATES = [
   {
     id: 'input-disabled',
     binding: 'CheckboxInput',
-    summary: 'a natively disabled checkbox outside the tab sequence',
-    facts: facts({operable: false, focusable: false, disabled: true}),
+    summary: 'a disabled checkbox that keeps its tab stop',
+    facts: facts({operable: false, focusable: true, disabled: true}),
     visibleLabel: 'Managed setting',
     storyId: 'a11y-checkbox-pattern--input-disabled',
   },
@@ -269,7 +269,7 @@ export const CHECKBOX_BINDING_STATES = [
     id: 'list-item-disabled',
     binding: 'CheckboxListItem',
     summary: 'an individually disabled list item',
-    facts: facts({operable: false, focusable: false, disabled: true}),
+    facts: facts({operable: false, focusable: true, disabled: true}),
     visibleLabel: 'SMS',
     visibleLabelSelector: '[data-a11y-visible-label]',
     storyId: 'a11y-checkbox-pattern--list-item-disabled',
@@ -400,11 +400,5 @@ export const CHECKBOX_BINDING_STATES = [
     visibleLabelSelector: '[data-a11y-visible-label]',
     pointerTargetSelector: '[data-a11y-pointer-target]',
     storyId: 'a11y-checkbox-pattern--card-disabled',
-    declaredNotDelivered: [
-      {
-        fact: 'focusable',
-        owned: 'checkbox.focus.declared-inoperable-reachable',
-      },
-    ],
   },
 ] as const satisfies ReadonlyArray<CheckboxBindingState>;

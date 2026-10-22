@@ -64,6 +64,8 @@
  *   | 'ERR_UNKNOWN_FEATURE'
  *   | 'ERR_UNKNOWN_CODEMOD'
  *   | 'ERR_CODEMOD_FAILED'
+ *   | 'ERR_CODEMOD_PROTECTED'
+ *   | 'ERR_CODEMOD_PROTECTION_SOURCE'
  *   | 'ERR_NOT_FOUND'
  *   | 'ERR_NO_DOC'
  *   | 'ERR_NO_SHOWCASE'
@@ -86,6 +88,8 @@
  *   | 'ERR_LAYOUT_INVALID'
  *   | 'ERR_UNCLASSIFIED_EXIT'
  *   | 'ERR_SIGNAL_TERMINATED'
+ *   | 'ERR_VERSIONS_UNAVAILABLE'
+ *   | 'ERR_PROJECT_REQUIRED'
  * )} ErrorCode
  */
 
@@ -161,6 +165,10 @@ export const ERROR_CODES = Object.freeze({
   ERR_UNKNOWN_CODEMOD: 'ERR_UNKNOWN_CODEMOD',
   /** One or more codemods failed during an upgrade run. */
   ERR_CODEMOD_FAILED: 'ERR_CODEMOD_FAILED',
+  /** A required codemod change remains blocked by a protected consumer file. */
+  ERR_CODEMOD_PROTECTED: 'ERR_CODEMOD_PROTECTED',
+  /** A working-tree protection declaration could not be read or parsed. */
+  ERR_CODEMOD_PROTECTION_SOURCE: 'ERR_CODEMOD_PROTECTION_SOURCE',
   /** A generic discover/lookup query matched nothing in any package. */
   ERR_NOT_FOUND: 'ERR_NOT_FOUND',
 
@@ -177,7 +185,7 @@ export const ERROR_CODES = Object.freeze({
   // ── Filesystem ───────────────────────────────────────────────────
   /** A required input file did not exist. */
   ERR_FILE_NOT_FOUND: 'ERR_FILE_NOT_FOUND',
-  /** Refused to overwrite an existing file in non-interactive mode. */
+  /** Refused to overwrite an existing file. */
   ERR_FILE_EXISTS: 'ERR_FILE_EXISTS',
   /** A path escaped its allowed root, or a name contained traversal markers. */
   ERR_PATH_TRAVERSAL: 'ERR_PATH_TRAVERSAL',
@@ -185,7 +193,7 @@ export const ERROR_CODES = Object.freeze({
   ERR_WRITE_FAILED: 'ERR_WRITE_FAILED',
 
   // ── Theme build ──────────────────────────────────────────────────
-  /** A theme definition or contributed theme catalog is invalid. */
+  /** A theme definition or contributed theme descriptor is invalid. */
   ERR_THEME_INVALID: 'ERR_THEME_INVALID',
   /** A theme file could not be loaded / parsed into a defineTheme result. */
   ERR_THEME_LOAD: 'ERR_THEME_LOAD',
@@ -230,6 +238,21 @@ export const ERROR_CODES = Object.freeze({
    * command never reached a terminal path of its own.
    */
   ERR_SIGNAL_TERMINATED: 'ERR_SIGNAL_TERMINATED',
+
+  // ── Global mode (which release answers) ──────────────────────────
+  /**
+   * The CLI release a run needs could not run: the release that matches the
+   * project's Core is not installed and could not be fetched (offline, or the
+   * registry lacks it), the project's own CLI could not be started, or a copy
+   * that carries no Core could not install its release's Core outside a
+   * project. Nothing was written.
+   */
+  ERR_VERSIONS_UNAVAILABLE: 'ERR_VERSIONS_UNAVAILABLE',
+  /**
+   * The command needs a project (an app with Astryx installed, or an
+   * integration package) and was run outside one. Nothing was written.
+   */
+  ERR_PROJECT_REQUIRED: 'ERR_PROJECT_REQUIRED',
 });
 
 /**

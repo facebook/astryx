@@ -30,6 +30,11 @@ nested `AGENTS.md`.
   route exposes only the listed claim; it never makes the whole record govern
   the component or change. Preserve each matched record, claim, trigger, and
   match reason in the review receipt.
+- Any path: `pnpm specs:for <path>` lists the current records linked to it,
+  the specs that decided them, and the global claims its component's triggers
+  route. It reads the working tree, so on a pull-request branch it shows that
+  branch's proposed records; it is a lookup, not review authority. It adds to
+  the component-review steps above; it does not replace them.
 - Component-local visual intent: reuse or amend the optional `Design decisions`
   table in the current component/module spec only when durable local intent must
   survive future redesigns. Keep exact tuning in code/evidence and shared rules
@@ -41,6 +46,17 @@ nested `AGENTS.md`.
   applicable design spec under `docs/design/`, and current architecture under
   `docs/architecture/`.
 - Consequential shared-system changes: use a record under `docs/specs/`.
+- Writing or reviewing any knowledge record: run the rubric in
+  `docs/contributing/spec-writing.md` over the record and put its results in
+  the pull request description under `## Writing rubric results`. A record
+  describes the system in the present tense; proposals, history, pull
+  requests, and research stay out of it. When reviewing, read the record
+  against the reported results; a record pull request without them is
+  incomplete, so ask for them before reviewing the content.
+- Integration contribution work: read `docs/specs/AST-039/spec.md`. Every new
+  discoverable item owns a strongly typed, same-stem `.doc.mjs`; root manifests
+  locate directories and never catalog their items. No catalog file (like
+  `themes/manifest.json`) and no per-item map in the manifest, ever.
 
 ## Authority
 
@@ -143,7 +159,7 @@ Documentation lives in two places:
 
 **Update Protocol**: When modifying code, update the file's header comment. Look for `SYNC:` comments as reminders.
 
-**Audience**: every `.doc.mjs`, and everything under `packages/cli/assets/docs/`, is written for people **building with** Astryx — not for people building Astryx. Rubrics, readiness gates, audit checklists and lab→core criteria belong in the wiki. [`packages/cli/assets/docs/README.md`](packages/cli/assets/docs/README.md) has the test and the page each kind of material goes to.
+**Audience**: every `.doc.mjs`, and everything under `packages/cli/assets/docs/`, is written for people **building with** Astryx — not for people building Astryx. Internal review rubrics, readiness gates, audit checklists and lab→core criteria belong in the wiki. A public authoring-quality rubric belongs in shipped docs when callers use it to evaluate an artifact they create through Astryx and a current system spec assigns that ownership. [`packages/cli/assets/docs/README.md`](packages/cli/assets/docs/README.md) has the test and the page each kind of material goes to.
 
 ## Quick Reference
 
@@ -161,7 +177,7 @@ Documentation lives in two places:
 
 <!-- STYLEX-CAPS:START -->
 
-[StyleX v0.17.5 CSS Support]|Use CSS-native solutions. Don't build JS workarounds for supported features.
+[StyleX v0.19.0 CSS Support]|Use CSS-native solutions. Don't build JS workarounds for supported features.
 |AT-RULES: @media, @supports, @container (+named), @starting-style, @scope — YES
 |AT-RULES: @layer, @property (explicit) — NO (compiles but invalid CSS output)
 |PSEUDO-CLS: :hover, :focus, :focus-visible, :focus-within, :active, :disabled — YES
@@ -170,10 +186,11 @@ Documentation lives in two places:
 |PSEUDO-EL: ::before, ::after, ::placeholder, ::selection, ::backdrop, ::marker, ::view-transition-_ — YES
 |COMPOUND: ::backdrop+condition, RTL :is([dir="rtl"] _), nested @media+pseudo — YES
 |VALUES: var(), calc(), clamp(), light-dark(), color-mix(), container-type/name — YES
-|ANIM: transition (shorthand+individual), transitionBehavior:allow-discrete, animation, stylex.keyframes — YES
+|ANIM: transition (shorthand+individual), transitionBehavior:allow-discrete, animation longhands, stylex.keyframes — YES
+|ANIM: animation shorthand — NO (use animationName/duration/timingFunction/etc.)
 |WHEN: stylex.when.ancestor(':hover'/':focus-within'/':active'/':disabled') — YES
 |WHEN: stylex.when.descendant(':hover'), siblingBefore(':checked'), siblingAfter(':checked'), anySibling(':hover') — YES
-|WHEN: stylex.when.ancestor('[data-attr]') — NO (pseudo selectors only, must start with ":")
+|WHEN: stylex.when.ancestor('[data-attr]') — YES
 |NESTING: CSS nesting with & — NO (use stylex.when.ancestor/descendant/sibling for parent-child state)
 |API: stylex.firstThatWorks() for CSS fallbacks (e.g. display: grid with flex fallback) — YES
 |API: stylex.positionTry() for anchor positioning @position-try — YES
@@ -214,10 +231,10 @@ astryx component <Name> --dense # props, variants, usage, anatomy for one compon
 astryx template <name> # emit full page source
 astryx template <name> --skeleton # layout skeleton with spatial annotations
 astryx swizzle <Name> # eject component source for deep customization
-astryx upgrade --apply # run version migration codemods
+astryx upgrade --from <old version> --apply # run version migration codemods
 OPTIONS: --detail compact|brief less output | --dense token-efficient | --zh Chinese
 RULE: always run bootstrap on each branch — docs reflect the branch's actual API
 RULE: always run astryx component <Name> --dense before modifying a component
-RULE: after @astryxdesign/core bump, always run astryx upgrade --apply
+RULE: after @astryxdesign/core bump, always run astryx upgrade --from <old version> --apply
 
 <!-- ASTRYX-CLI:END -->

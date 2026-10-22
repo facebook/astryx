@@ -13,6 +13,7 @@ const path = require('node:path');
 const { execSync } = require('node:child_process');
 const {
   COMPONENT_PACKAGES,
+  componentExportsFromBarrel,
   documentedComponentNames,
   flatPackageComponentNames,
   nestedPackageComponentNames,
@@ -51,14 +52,24 @@ function getComponentNames(pkg) {
   }
   const canonical = new Set(nestedPackageComponentNames(process.cwd(), pkg));
   const sourceDir = path.join(process.cwd(), pkgSrc(pkg));
+  const exports = componentExportsFromBarrel(
+    path.join(sourceDir, 'index.ts'),
+    sourceDir,
+  );
   try {
     return fs
       .readdirSync(sourceDir, {withFileTypes: true})
       .filter(entry => entry.isDirectory())
       .filter(entry => {
-        const names = documentedComponentNames(
-          path.join(sourceDir, entry.name),
-        ).filter(name => canonical.has(name));
+        const directory = path.join(sourceDir, entry.name);
+        // A doc also names the components it is built from (anatomy parts
+        // such as Label or Spinner). Only a component this folder implements
+        // belongs to it, the same rule a11y-pr-scope.mjs applies.
+        const names = documentedComponentNames(directory).filter(
+          name =>
+            canonical.has(name) &&
+            exports.get(name)?.startsWith(`${directory}${path.sep}`),
+        );
         return names.length === 1 && names[0] === entry.name;
       })
       .map(entry => entry.name)

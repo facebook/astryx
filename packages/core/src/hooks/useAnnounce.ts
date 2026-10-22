@@ -4,7 +4,7 @@
 
 /**
  * @file useAnnounce.ts
- * @input Uses React useCallback; DOM APIs for a singleton live-region pair
+ * @input Uses React useCallback; DOM APIs and cancellable animation frames for a singleton live-region pair
  * @output Exports useAnnounce hook and AnnouncePoliteness type
  * @position Core a11y hook; provides imperative screen-reader announcements
  *   via persistently-mounted polite/assertive live regions; regions are
@@ -72,6 +72,18 @@ function cancelScheduledClear(politeness: AnnouncePoliteness): void {
   }
 }
 
+const pendingFrames: Record<AnnouncePoliteness, Set<number>> = {
+  polite: new Set(),
+  assertive: new Set(),
+};
+
+function cancelPendingFrames(politeness: AnnouncePoliteness): void {
+  for (const frame of pendingFrames[politeness]) {
+    cancelAnimationFrame(frame);
+  }
+  pendingFrames[politeness].clear();
+}
+
 function scheduleClear(
   politeness: AnnouncePoliteness,
   target: HTMLElement,
@@ -136,9 +148,11 @@ function announceMessage(
   target.textContent = '';
   // A microtask/rAF-free re-set in the next frame is more reliable across AT
   // than an immediate re-set, which can be coalesced with the clear.
-  requestAnimationFrame(() => {
+  const frame = requestAnimationFrame(() => {
+    pendingFrames[politeness].delete(frame);
     target.textContent = message;
   });
+  pendingFrames[politeness].add(frame);
   // Auto-clear so the last message does not linger in the accessibility tree
   // indefinitely. Scheduled per announce, so a newer announcement always
   // resets the countdown (the delay comfortably outlasts the rAF re-set).
@@ -151,6 +165,7 @@ function announceMessage(
  * so stale status text does not linger in the accessibility tree.
  */
 function clearRegion(politeness: AnnouncePoliteness): void {
+  cancelPendingFrames(politeness);
   cancelScheduledClear(politeness);
   if (!regions) {
     return;
@@ -204,6 +219,8 @@ export function useAnnounce(): AnnounceFn {
  * @internal
  */
 export function __resetLiveRegionsForTest(): void {
+  cancelPendingFrames('polite');
+  cancelPendingFrames('assertive');
   cancelScheduledClear('polite');
   cancelScheduledClear('assertive');
   if (regions) {

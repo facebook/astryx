@@ -15,6 +15,7 @@ import {
   buildComponentCoverage,
   buildStoryComponentRoutes,
   classifyDirectionalDecorationPair,
+  classifyLogicalGroupedCorners,
   classifyLogicalInlinePair,
   collectDirectionalDecorations,
   filterStoryRoutesByPackages,
@@ -248,6 +249,98 @@ describe('classifyLogicalInlinePair', () => {
   });
 });
 
+function groupedCornerMeasurement(direction = 'ltr', physicalSide = 'left') {
+  const full = 28;
+  const inset = 6;
+  const left = physicalSide === 'left';
+  const corners = (topInset, bottomInset) => ({
+    topLeft: left && topInset ? inset : full,
+    topRight: !left && topInset ? inset : full,
+    bottomRight: !left && bottomInset ? inset : full,
+    bottomLeft: left && bottomInset ? inset : full,
+  });
+  return {
+    direction,
+    writingMode: 'horizontal-tb',
+    boxes: [
+      {
+        visible: true,
+        width: 180,
+        height: 44,
+        corners: corners(false, true),
+      },
+      {
+        visible: true,
+        width: 180,
+        height: 44,
+        corners: corners(true, true),
+      },
+      {
+        visible: true,
+        width: 180,
+        height: 44,
+        corners: corners(true, false),
+      },
+    ],
+  };
+}
+
+describe('classifyLogicalGroupedCorners', () => {
+  it('passes an inline-start group that mirrors left to right', () => {
+    expect(
+      classifyLogicalGroupedCorners(
+        groupedCornerMeasurement('ltr', 'left'),
+        groupedCornerMeasurement('rtl', 'right'),
+        'inline-start',
+      ),
+    ).toMatchObject({
+      verdict: 'pass',
+      ltr: {physicalSide: 'left', insetRadius: 6, fullRadius: 28},
+      rtl: {physicalSide: 'right', insetRadius: 6, fullRadius: 28},
+    });
+  });
+
+  it('passes an inline-end group that mirrors right to left', () => {
+    expect(
+      classifyLogicalGroupedCorners(
+        groupedCornerMeasurement('ltr', 'right'),
+        groupedCornerMeasurement('rtl', 'left'),
+        'inline-end',
+      ),
+    ).toMatchObject({
+      verdict: 'pass',
+      ltr: {physicalSide: 'right'},
+      rtl: {physicalSide: 'left'},
+    });
+  });
+
+  it('fails grouped corners that stay on the LTR physical side', () => {
+    expect(
+      classifyLogicalGroupedCorners(
+        groupedCornerMeasurement('ltr', 'left'),
+        groupedCornerMeasurement('rtl', 'left'),
+        'inline-start',
+      ),
+    ).toMatchObject({verdict: 'fail'});
+  });
+
+  it('fails when any grouped subject is missing or hidden', () => {
+    const rtl = groupedCornerMeasurement('rtl', 'right');
+    rtl.boxes[1] = null;
+    expect(
+      classifyLogicalGroupedCorners(
+        groupedCornerMeasurement('ltr', 'left'),
+        rtl,
+        'inline-start',
+      ),
+    ).toMatchObject({
+      verdict: 'fail',
+      reason:
+        'grouped-corner subjects must be three visible horizontal LTR/RTL boxes',
+    });
+  });
+});
+
 describe('buildComponentCoverage', () => {
   it('classifies measured, verified N/A, unexplained gaps, and stale declarations', () => {
     const coverage = buildComponentCoverage({
@@ -397,6 +490,7 @@ describe('audited package and story routing', () => {
       'core-',
       'lab-',
       'charts-',
+      'richtext-',
       'vega-',
     ]);
   });
@@ -425,20 +519,20 @@ describe('audited package and story routing', () => {
           title: 'Charts/Chrome/Tooltip',
         },
         {
-          id: 'lab-richtexteditor--default',
-          title: 'Lab/RichTextEditor',
+          id: 'richtext-richtexteditor--default',
+          title: 'RichText/RichTextEditor',
         },
         {
-          id: 'lab-richtexteditor--with-toolbar',
-          title: 'Lab/RichTextEditor',
+          id: 'richtext-richtexteditor--with-toolbar',
+          title: 'RichText/RichTextEditor',
         },
         {
-          id: 'lab-richtexteditor--with-auto-link',
-          title: 'Lab/RichTextEditor',
+          id: 'richtext-richtexteditor--with-auto-link',
+          title: 'RichText/RichTextEditor',
         },
         {
-          id: 'lab-richtexteditor--markdown-serializers',
-          title: 'Lab/RichTextEditor',
+          id: 'richtext-richtexteditor--markdown-serializers',
+          title: 'RichText/RichTextEditor',
         },
         {
           id: 'vega-vegachart--radial-plot',
@@ -456,19 +550,19 @@ describe('audited package and story routing', () => {
         },
         {
           component: 'richtext/RichTextEditor',
-          storyId: 'lab-richtexteditor--default',
+          storyId: 'richtext-richtexteditor--default',
         },
         {
           component: 'richtext/RichTextEditorToolbar',
-          storyId: 'lab-richtexteditor--with-toolbar',
+          storyId: 'richtext-richtexteditor--with-toolbar',
         },
         {
           component: 'richtext/RichTextEditorAutoLinkPlugin',
-          storyId: 'lab-richtexteditor--with-auto-link',
+          storyId: 'richtext-richtexteditor--with-auto-link',
         },
         {
           component: 'richtext/RichTextView',
-          storyId: 'lab-richtexteditor--markdown-serializers',
+          storyId: 'richtext-richtexteditor--markdown-serializers',
         },
       ],
       publicComponentsByPackage,
@@ -500,19 +594,19 @@ describe('audited package and story routing', () => {
         component: 'charts/ChartTooltip',
       },
       {
-        id: 'lab-richtexteditor--default',
+        id: 'richtext-richtexteditor--default',
         component: 'richtext/RichTextEditor',
       },
       {
-        id: 'lab-richtexteditor--with-toolbar',
+        id: 'richtext-richtexteditor--with-toolbar',
         component: 'richtext/RichTextEditorToolbar',
       },
       {
-        id: 'lab-richtexteditor--with-auto-link',
+        id: 'richtext-richtexteditor--with-auto-link',
         component: 'richtext/RichTextEditorAutoLinkPlugin',
       },
       {
-        id: 'lab-richtexteditor--markdown-serializers',
+        id: 'richtext-richtexteditor--markdown-serializers',
         component: 'richtext/RichTextView',
       },
       {
@@ -535,10 +629,10 @@ describe('audited package and story routing', () => {
     const assigned = Object.values(shardRoutes).flat().map(routeKey).sort();
     expect(assigned).toEqual(routesWithUnknown.map(routeKey).sort());
     expect(shardRoutes.richtext.map(routeKey)).toContain(
-      'lab-richtexteditor--with-toolbar::richtext/RichTextEditorToolbar',
+      'richtext-richtexteditor--with-toolbar::richtext/RichTextEditorToolbar',
     );
     expect(shardRoutes.lab.map(routeKey)).not.toContain(
-      'lab-richtexteditor--with-toolbar::richtext/RichTextEditorToolbar',
+      'richtext-richtexteditor--with-toolbar::richtext/RichTextEditorToolbar',
     );
     expect(shardRoutes.core.map(routeKey)).toContain(
       'core-mystery--default::unknown/mystery',
@@ -559,9 +653,9 @@ describe('audited package and story routing', () => {
       'charts-chrome-axes-grids--playground',
       'charts-chrome-swatch--gallery',
       'charts-chrome-tooltip--default',
-      'lab-richtexteditor--with-toolbar',
-      'lab-richtexteditor--with-auto-link',
-      'lab-richtexteditor--markdown-serializers',
+      'richtext-richtexteditor--with-toolbar',
+      'richtext-richtexteditor--with-auto-link',
+      'richtext-richtexteditor--markdown-serializers',
     ]);
     expect(unresolvedComponentFilters(routes, groupedOwners)).toEqual([]);
     expect(unresolvedComponentFilters(routes, ['charts/MissingOwner'])).toEqual(
@@ -615,20 +709,20 @@ describe('audited package and story routing', () => {
     const routes = buildStoryComponentRoutes({
       stories: [
         {
-          id: 'lab-richtexteditor--default',
-          title: 'Lab/RichTextEditor',
+          id: 'richtext-richtexteditor--default',
+          title: 'RichText/RichTextEditor',
         },
         {
-          id: 'lab-richtexteditor--with-toolbar',
-          title: 'Lab/RichTextEditor',
+          id: 'richtext-richtexteditor--with-toolbar',
+          title: 'RichText/RichTextEditor',
         },
         {
-          id: 'lab-richtexteditor--with-auto-link',
-          title: 'Lab/RichTextEditor',
+          id: 'richtext-richtexteditor--with-auto-link',
+          title: 'RichText/RichTextEditor',
         },
         {
-          id: 'lab-richtexteditor--markdown-serializers',
-          title: 'Lab/RichTextEditor',
+          id: 'richtext-richtexteditor--markdown-serializers',
+          title: 'RichText/RichTextEditor',
         },
       ],
       targets,
@@ -637,10 +731,10 @@ describe('audited package and story routing', () => {
     const owners = richTextComponents.map(component => `richtext/${component}`);
     expect(unresolvedComponentFilters(routes, owners)).toEqual([]);
     expect(storyIdsForComponentFilters(routes, owners)).toEqual([
-      'lab-richtexteditor--default',
-      'lab-richtexteditor--with-toolbar',
-      'lab-richtexteditor--with-auto-link',
-      'lab-richtexteditor--markdown-serializers',
+      'richtext-richtexteditor--default',
+      'richtext-richtexteditor--with-toolbar',
+      'richtext-richtexteditor--with-auto-link',
+      'richtext-richtexteditor--markdown-serializers',
     ]);
   });
 
@@ -686,12 +780,12 @@ describe('audited package and story routing', () => {
       curatedResults: [
         {
           component: 'richtext/RichTextEditor',
-          storyId: 'lab-richtexteditor--error-status',
+          storyId: 'richtext-richtexteditor--error-status',
           rollup: 'RTL-ready',
         },
         {
           component: 'richtext/RichTextEditorToolbar',
-          storyId: 'lab-richtexteditor--with-toolbar',
+          storyId: 'richtext-richtexteditor--with-toolbar',
           rollup: 'RTL-ready',
         },
       ],
