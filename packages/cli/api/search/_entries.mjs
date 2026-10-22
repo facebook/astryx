@@ -78,6 +78,29 @@ const cardIds = new WeakMap();
 let nextCardId = 0;
 
 /**
+ * The candidate fields buildTable reads, all of them hashed by fingerprint;
+ * `_entries.test.mjs` fails if buildTable starts reading another.
+ */
+/** How many guidance lines and prose paragraphs of a candidate the index reads. */
+const GUIDANCE_LINES = 10;
+const PROSE_PARAGRAPHS = 4;
+
+export const HASHED_FIELDS = Object.freeze([
+  'domain',
+  'name',
+  '_topic',
+  '_section',
+  '_resultName',
+  '_package',
+  'description',
+  'keywords',
+  'aliases',
+  'titles',
+  'guidance',
+  'prose',
+]);
+
+/**
  * Everything the table reads from the catalog, hashed.
  * @param {any[]} all
  * @param {object} cards
@@ -89,20 +112,15 @@ function fingerprint(all, cards) {
   h.update(String(cardIds.get(cards)));
   for (const c of all) {
     h.update(
-      JSON.stringify([
-        c.domain,
-        c.name,
-        c._topic,
-        c._section,
-        c._resultName,
-        c._package,
-        c.description,
-        c.keywords,
-        c.aliases,
-        c.titles,
-        (c.guidance ?? []).slice(0, 10),
-        (c.prose ?? []).slice(0, 4),
-      ]),
+      JSON.stringify(
+        HASHED_FIELDS.map(f =>
+          f === 'guidance'
+            ? (c.guidance ?? []).slice(0, GUIDANCE_LINES)
+            : f === 'prose'
+              ? (c.prose ?? []).slice(0, PROSE_PARAGRAPHS)
+              : c[f],
+        ),
+      ),
     );
   }
   return h.digest('hex');
@@ -113,7 +131,7 @@ function fingerprint(all, cards) {
  * @param {Record<string, {what?: string, synonyms?: string[], props?: string[]}>} cards
  * @returns {EntryTable}
  */
-function buildTable(all, cards) {
+export function buildTable(all, cards) {
   /** @type {Map<string, any[]>} */
   const by = new Map();
   /** @type {Map<string, string>} each id's first package */
@@ -164,8 +182,8 @@ function buildTable(all, cards) {
         ...(c.titles ?? []),
       );
       text.push(
-        ...(c.guidance ?? []).slice(0, 10),
-        ...(c.prose ?? []).slice(0, 4),
+        ...(c.guidance ?? []).slice(0, GUIDANCE_LINES),
+        ...(c.prose ?? []).slice(0, PROSE_PARAGRAPHS),
       );
     }
     const card =
