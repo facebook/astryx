@@ -9,7 +9,7 @@
  */
 
 import {describe, expect, it} from 'vitest';
-import {pickBlocks, stemOf} from './blocks.mjs';
+import {pickBlocks} from './blocks.mjs';
 
 /** @type {import('./blocks.mjs').BlockPickerWeights} */
 const WORDS = {
@@ -31,6 +31,19 @@ const SEARCHED = [
   ['ChartBar', 50, 1, 3],
   ['CardStat', 40, 1, 3],
 ];
+
+/**
+ * Two blocks, no words, and a theta that prefers a block build did not name:
+ * a block search returned wins the slot whenever the word check lets it in.
+ * @type {import('./blocks.mjs').BlockPickerWeights}
+ */
+const TIES_ALL = {
+  vocab: {},
+  classes: ['ListPlain', 'CardStat'],
+  bias: [0, 0],
+  words: {},
+  theta: [0, 0, -1, 0, 0],
+};
 
 /** @type {import('./blocks.mjs').BlockPickerWeights} */
 const TIES = {
@@ -134,20 +147,40 @@ describe('pickBlocks', () => {
     expect(own).toEqual(copy);
   });
 
-  it('stems plurals the same way as their singular', () => {
-    for (const [word, stem] of [
+  it('reads a request word and a block word as the same up to plural and stem', () => {
+    for (const [word, blockWord] of [
+      ['settings', 'setting'],
+      ['statuses', 'status'],
       ['tables', 'table'],
-      ['table', 'table'],
-      ['files', 'file'],
-      ['images', 'image'],
-      ['notes', 'note'],
-      ['class', 'class'],
       ['classes', 'class'],
-      ['boxes', 'box'],
-      ['switches', 'switch'],
+      ['files', 'file'],
       ['categories', 'category'],
-    ])
-      expect(stemOf(word)).toBe(stem);
+    ]) {
+      const sig = {
+        kitBlocks: ['ListPlain'],
+        searched: /** @type {[string, number, number, number][]} */ ([
+          ['ListPlain', 96, 1, 3],
+          ['CardStat', 90, 1, 3],
+        ]),
+        foreign: [],
+        blockText: new Map([['CardStat', `Stat card. A ${blockWord} panel.`]]),
+      };
+      expect(pickBlocks(`one ${word} view`, sig, TIES_ALL)).toEqual([
+        'CardStat',
+      ]);
+    }
+    const none = {
+      kitBlocks: ['ListPlain'],
+      searched: /** @type {[string, number, number, number][]} */ ([
+        ['ListPlain', 96, 1, 3],
+        ['CardStat', 90, 1, 3],
+      ]),
+      foreign: [],
+      blockText: new Map([['CardStat', 'Stat card. A setting panel.']]),
+    };
+    expect(pickBlocks('one widget view', none, TIES_ALL)).toEqual([
+      'ListPlain',
+    ]);
   });
 
   it('never adds a block that shares only a function word with the request', () => {
@@ -163,5 +196,26 @@ describe('pickBlocks', () => {
     };
     const picks = pickBlocks('each row under which', sig, WORDS);
     expect(picks).not.toContain('CardStat');
+  });
+  it('never adds a block for a function word alone', () => {
+    const sig = {
+      kitBlocks: ['ListPlain'],
+      searched: /** @type {[string, number, number, number][]} */ ([
+        ['ListPlain', 96, 1, 3],
+        ['CardStat', 90, 1, 3],
+      ]),
+      foreign: [],
+      blockText: new Map([
+        [
+          'CardStat',
+          'Shows which one is done. Each, every, any, some, all, both, either, neither, few, many, much, several, such, that, who, whom, whose.',
+        ],
+      ]),
+    };
+    for (const w of 'which that who whom whose each every any some all both either neither few many much several such'.split(
+      ' ',
+    ))
+      expect(pickBlocks(`a ${w} b`, sig, TIES_ALL)).toEqual(['ListPlain']);
+    expect(pickBlocks('each, which', sig, TIES_ALL)).toEqual(['ListPlain']);
   });
 });

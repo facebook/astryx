@@ -86,10 +86,23 @@ describe('kitAnswer', () => {
         'A navigation bar with a logo, five links, a search box and a menu.',
     };
     const kit = kitAnswer(signals([hero, foot], [nav]), ['Nav', 'Hero']);
-    const first = kit.data.blocks[0].description.split('. ')[0];
-    expect(first.length).toBeLessThanOrEqual(
-      'A footer.'.length + 'Footer'.length - 'Nav'.length,
-    );
+    const d = kit.data.blocks[0].description;
+    expect(d).toMatch(/…$/);
+    expect(d.length).toBeLessThan(nav.description.length);
+    expect(nav.description.startsWith(d.slice(0, -1))).toBe(true);
     expect(kit.data.blocks[1]).toEqual(hero);
+  });
+  it('never empties an added block’s description', () => {
+    const nav = {
+      name: 'Nav',
+      package: '@a/one',
+      score: 60,
+      reason: 'keyword',
+      description:
+        'A navigation bar with a logo, five links, a search box and a menu.',
+    };
+    const kit = kitAnswer(signals([a, c], [nav]), ['Nav', 'Hero']);
+    expect(kit.data.blocks[0].name).toBe('Nav');
+    expect(kit.data.blocks[0].description.length).toBeGreaterThan(0);
   });
 });

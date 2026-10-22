@@ -125,23 +125,29 @@ const textSize = list =>
     0,
   );
 
+/** An added block keeps at least this much of its description. */
+const MIN_DESCRIPTION = 24;
+
 /**
- * A description cut to at most `keep` characters at a word boundary, with an
- * ellipsis; empty when nothing fits.
+ * A description cut to about `keep` characters (never fewer than
+ * {@link MIN_DESCRIPTION}) at a word boundary, with an ellipsis. Never empty:
+ * a description already that short is kept whole.
  * @param {string} description
  * @param {number} keep
  */
 function cutTo(description, keep) {
-  if (keep <= 0) return '';
-  const cut = description.slice(0, keep);
+  const room = Math.max(keep, MIN_DESCRIPTION);
+  if (description.length <= room) return description;
+  const cut = description.slice(0, room);
   const at = cut.lastIndexOf(' ');
   return `${(at > 0 ? cut.slice(0, at) : cut).trimEnd()}…`;
 }
 
 /**
- * The listed blocks with the added blocks' descriptions shortened, last block
- * first, until neither the JSON nor the text answer is longer than with
- * build's own blocks. Build's own entries are never changed.
+ * The listed blocks with the added blocks' descriptions shortened until
+ * neither the JSON nor the text answer is longer than with build's own
+ * blocks, or every added description is as short as it may get. A
+ * description is never emptied, and build's own entries never change.
  * @template {{name: string, package?: string, description?: string}} B
  * @param {B[]} list
  * @param {B[]} own build's own entries
@@ -156,27 +162,25 @@ function fitDescriptions(list, own, size) {
     text: Math.max(0, size.text(l) - limit.text),
     json: Math.max(0, size.json(l) - limit.json),
   });
-  for (let k = out.length - 1; k >= 0; k--) {
-    const b = out[k];
-    if (own.includes(b) || !b.description) continue;
-    let o = over(out);
-    // Cut the description until both answers fit, or it is gone. A byte count
-    // can exceed a character count (the ellipsis, other non-ASCII), so cut
-    // again by whatever is left over.
-    let description = b.description;
-    while ((o.text > 0 || o.json > 0) && description) {
-      const first = firstSentence(description);
+  // The last added block first, each cut by what is still over and never
+  // below MIN_DESCRIPTION; when one is as short as it may get, the next one
+  // up is cut, and passes repeat while any cut still helps.
+  for (let changed = true; changed;) {
+    changed = false;
+    for (let k = out.length - 1; k >= 0; k--) {
+      const o = over(out);
+      if (o.text === 0 && o.json === 0) return out;
+      const b = out[k];
+      if (own.includes(b) || !b.description) continue;
+      const first = firstSentence(b.description);
       const keep = Math.min(
-        o.text > 0 ? first.length - o.text - 1 : description.length,
-        o.json > 0 ? description.length - o.json - 1 : description.length,
-        description.length - 1,
+        o.text > 0 ? first.length - o.text - 1 : b.description.length,
+        o.json > 0 ? b.description.length - o.json - 1 : b.description.length,
       );
-      const cut = cutTo(description, keep);
-      // Each pass must shorten it; a cut that cannot is the end of it.
-      description = cut.length < description.length ? cut : '';
-      const d = description;
-      out = out.map((x, i) => (i === k ? {...x, description: d} : x));
-      o = over(out);
+      const description = cutTo(b.description, keep);
+      if (description.length >= b.description.length) continue;
+      out = out.map((x, i) => (i === k ? {...x, description} : x));
+      changed = true;
     }
   }
   return out;

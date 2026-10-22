@@ -19,7 +19,8 @@
  * block a linear score (its bias plus the weighted words' rows). The
  * candidates are build's own blocks and search's first 100 block results
  * (each a block search returned, with its real score and reason); a block
- * build does not name joins only if it shares a content word with the
+ * build does not name joins only if it shares a content word (the same word
+ * up to plural and stem form, as search's sameWord reads it) with the
  * request (its display name and description against the request's words).
  * Each candidate's final score combines five numbers: search's score / 100,
  * the share of the request search matched, whether build names it, 1 / (1 +
@@ -32,7 +33,7 @@
  */
 
 import {pluralOf, STOPWORDS} from '../../search/_query.mjs';
-import {wordsOf} from '../../search/_words.mjs';
+import {sameWord, wordsOf} from '../../search/_words.mjs';
 
 /**
  * @typedef {object} BlockPickerWeights
@@ -108,21 +109,30 @@ function linearScores(request, weights) {
 const SEARCH_POOL = 100;
 
 /**
- * Generic English function words: never a reason to tie a block to a request.
+ * Generic English function words (pronouns, relative pronouns, determiners,
+ * quantifiers, auxiliaries, conjunctions, prepositions): never a reason to tie
+ * a block to a request.
  */
 const FUNCTION_WORDS = (
-  'about above across after against along already also always among any ' +
-  'anyone anything around because before behind below beneath beside ' +
-  'besides between beyond both but despite down during each either else ' +
-  'enough even ever every except few following here how however if inside ' +
-  'instead just least less lot many may maybe might more most much must ' +
-  'near neither no none nor not nothing now off often once only onto ' +
-  'other others out outside over own past quite rather same several shall ' +
-  'should since so still such than then there these they those though ' +
-  'through throughout thus till together too toward towards under ' +
-  'underneath unless unlike until up upon very was were what whatever ' +
-  'when whenever whether which whichever while who whom whose why will ' +
-  'within without would yet'
+  'about above across after again against all along already also although ' +
+  'always am among amongst an and another any anyone anything anywhere are ' +
+  'around as at be because been before behind being below beneath beside ' +
+  'besides between beyond both but by can could despite did do does doing ' +
+  'down during each either else enough even ever every everyone everything ' +
+  'everywhere except few following for from further had has have having he ' +
+  'her here hers herself him himself his how however if in inside instead ' +
+  'into is it its itself just least less little lot lots many may maybe me ' +
+  'might more most much must my myself near neither never no nobody none ' +
+  'nor not nothing now nowhere of off often on once one ones only onto or ' +
+  'other others ought our ours ourselves out outside over own past per ' +
+  'perhaps quite rather same several shall she should since so some someone ' +
+  'something sometimes somewhat somewhere still such than that the their ' +
+  'theirs them themselves then there these they this those though through ' +
+  'throughout thus till to together too toward towards under underneath ' +
+  'unless unlike until up upon usually very via was we were what whatever ' +
+  'when whenever where whereas whether which whichever while who whoever ' +
+  'whom whomever whose why will with within without would yet you your ' +
+  'yours yourself yourselves'
 ).split(' ');
 
 /**
@@ -142,35 +152,17 @@ const STOP = new Set([
 ]);
 
 /**
- * A word with a plural or verb ending removed (words over four letters):
- * "-ies" becomes "-y"; "-es" goes only after s, x, z, ch, or sh ("classes" ->
- * "class", "boxes" -> "box"); otherwise a final "s" goes, but never after
- * another "s" ("tables" -> "table", "class" stays); then "-ing" or "-ed".
- * @param {string} w
- * @returns {string}
- */
-export function stemOf(w) {
-  if (w.length <= 4) return w;
-  if (w.endsWith('ies')) return `${w.slice(0, -3)}y`;
-  if (/(?:s|x|z|ch|sh)es$/.test(w)) return w.slice(0, -2);
-  if (w.endsWith('s') && !w.endsWith('ss')) return w.slice(0, -1);
-  if (w.endsWith('ing')) return w.slice(0, -3);
-  if (w.endsWith('ed')) return w.slice(0, -2);
-  return w;
-}
-
-/**
- * The content words of a text: lowercase words of three or more letters, not
- * in {@link STOP}, stemmed.
+ * The content words of a text: its lowercase words of three or more letters
+ * that are not in {@link STOP}.
  * @param {string} text
- * @returns {Set<string>}
+ * @returns {string[]}
  */
 function contentWords(text) {
   const words =
     String(text)
       .toLowerCase()
       .match(/[a-z0-9]{3,}/g) ?? [];
-  return new Set(words.filter(w => !STOP.has(w)).map(stemOf));
+  return [...new Set(words.filter(w => !STOP.has(w)))];
 }
 
 /**
@@ -230,13 +222,11 @@ export function pickBlocks(request, signals, weights) {
   for (const b of [...own, ...signals.searched.map(s => s[0])])
     if (!place.has(b)) place.set(b, place.size);
   const requestWords = contentWords(request);
-  const shares = (/** @type {string} */ b) => {
-    for (const w of contentWords(
+  // The same word, up to plural and stem form, as search reads it.
+  const shares = (/** @type {string} */ b) =>
+    contentWords(
       `${wordsOf(b).join(' ')} ${signals.blockText.get(b) ?? ''}`,
-    ))
-      if (requestWords.has(w)) return true;
-    return false;
-  };
+    ).some(v => requestWords.some(w => sameWord(w, v)));
   const pool = own.filter((_, k) => !keeps[k]);
   for (const [b] of signals.searched.slice(0, SEARCH_POOL)) {
     if (own.includes(b) || pool.includes(b)) continue;
