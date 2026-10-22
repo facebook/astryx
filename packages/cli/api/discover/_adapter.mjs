@@ -26,10 +26,7 @@ import {
 } from '../../foundation/config/project.mjs';
 import {isOutsideProject} from '../../foundation/env/project-scope.mjs';
 import {hostedRun} from '../../foundation/runtime/package-root.mjs';
-import {
-  scanAllPackages,
-  findComponentInPackages,
-} from './_package-scanner.mjs';
+import {scanAllPackages, findComponentInPackages} from './_package-scanner.mjs';
 import {loadDocs} from '../../foundation/discovery/component-loader.mjs';
 import {collectIdentities} from '../../foundation/integrations/contribution-inventory.mjs';
 import {detectPackageManager} from '../../foundation/env/package-manager.mjs';
@@ -145,8 +142,7 @@ function validateDocs(docs) {
     return 'docs.name is missing or not a string';
   if (!d.usage || typeof d.usage.description !== 'string')
     return 'docs.usage.description is missing or not a string';
-  if (d.props && !Array.isArray(d.props))
-    return 'docs.props must be an array';
+  if (d.props && !Array.isArray(d.props)) return 'docs.props must be an array';
   if (d.components && !Array.isArray(d.components))
     return 'docs.components must be an array';
   if (d.usage?.bestPractices && !Array.isArray(d.usage.bestPractices))
@@ -288,6 +284,7 @@ export async function computerAvailableEntries(
   const have = new Set([...installed.map(pkg => pkg.name), ...declared]);
   return (await availableComputerIntegrations(cwd, have)).map(c => ({
     name: c.name,
+    package: c.name,
     components: [],
     ...(c.version ? {version: c.version} : {}),
     ...(c.description ? {description: c.description} : {}),
@@ -599,7 +596,10 @@ async function callOwnSources(project, request = {}, options = {}) {
   }
   for (const integration of project?.loadedIntegrations ?? []) {
     if (integration.__discoverError) {
-      origins.push({from: integration.name, error: integration.__discoverError});
+      origins.push({
+        from: integration.name,
+        error: integration.__discoverError,
+      });
     } else if (integration.__discover) {
       origins.push({from: integration.name, source: integration.__discover});
     }
@@ -619,7 +619,10 @@ async function callOwnSources(project, request = {}, options = {}) {
   /** @type {Set<string>} */
   const seen = new Set();
   const ask = request.package
-    ? {package: request.package, ...(request.version ? {version: request.version} : {})}
+    ? {
+        package: request.package,
+        ...(request.version ? {version: request.version} : {}),
+      }
     : {};
   for (const {from, key = from, source, error} of origins) {
     if (source == null) {
@@ -647,7 +650,12 @@ async function callOwnSources(project, request = {}, options = {}) {
       const message = err instanceof Error ? err.message : String(err);
       const saved = readSavedCopy(file, label);
       if (saved == null) {
-        result.sources.push({name: from, from, status: 'failed', error: message});
+        result.sources.push({
+          name: from,
+          from,
+          status: 'failed',
+          error: message,
+        });
         continue;
       }
       catalog = saved.catalog;
@@ -982,7 +990,10 @@ export async function loadValidatedDoc(result, {lang, zh}) {
   try {
     docs = await loadDocs(
       result.docPath,
-      /** @type {{zh?: boolean, dense?: boolean, lang?: string}} */ ({zh, lang}),
+      /** @type {{zh?: boolean, dense?: boolean, lang?: string}} */ ({
+        zh,
+        lang,
+      }),
     );
   } catch (e) {
     throw new AstryxError(

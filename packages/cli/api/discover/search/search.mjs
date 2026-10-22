@@ -6,9 +6,12 @@
  *
  * A free-text query always answers with a list, so its response type depends
  * on the form of the query and never on what the project has:
- *   1. any matches                -> discover.search
- *   2. fuzzy hits (distance <= 3) -> throw ERR_NOT_FOUND with suggestions
- *   3. otherwise                  -> throw ERR_NOT_FOUND
+ *   1. any matches, a near-miss name included -> discover.search (a one- to
+ *      three-edit miss counts when both words are long enough: 5, 8 and 11
+ *      letters)
+ *   2. other fuzzy hits (distance <= 3)        -> throw ERR_NOT_FOUND with
+ *      suggestions
+ *   3. otherwise                               -> throw ERR_NOT_FOUND
  * Matches are installed components, the project's other installed items,
  * packages, and every item a source lists for a package the project could add.
  * A caller opens one item by its package path, which ../detail answers.
@@ -66,8 +69,9 @@ function rank(item, lower) {
 /**
  * Search all packages for `query` (a free-text term that never starts with
  * `@`). Resolves to a search response when anything matches, even a single
- * item or an exact component name, or throws AstryxError (ERR_NOT_FOUND) —
- * with fuzzy suggestions when any exist.
+ * item, an exact component name or a near-miss name long enough to be a
+ * typo, or throws AstryxError (ERR_NOT_FOUND) — with fuzzy suggestions when
+ * any exist.
  *
  * @param {ScannedPackage[]} packages installed packages
  * @param {string} query

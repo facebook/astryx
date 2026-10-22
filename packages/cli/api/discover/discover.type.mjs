@@ -62,6 +62,7 @@
  * A package the project could add.
  * @typedef {object} DiscoverAvailableEntry
  * @property {string} name
+ * @property {string} package The npm package — always equal to `name`.
  * @property {string} [version] Its latest release.
  * @property {string[]} components
  * @property {string[]} [templates]

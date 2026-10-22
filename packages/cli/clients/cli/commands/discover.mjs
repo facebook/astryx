@@ -488,8 +488,7 @@ export function registerDiscover(program) {
                 : detail === 'compact'
                   ? formatCompact(docs, docs.name, '')
                   : formatFull(docs);
-            console.error(`package: ${result.package}`);
-            emit(code(md));
+            emit(record({package: result.package}), code(md));
             break;
           }
 

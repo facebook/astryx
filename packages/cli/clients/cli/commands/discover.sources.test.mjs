@@ -271,6 +271,10 @@ describe('astryx discover with a discover source', () => {
       cwd: project,
     });
     expect(JSON.parse(opened.stdout).type).toBe('discover.detail.doc');
+
+    // Text mode names the package on stdout, so a pipe keeps it.
+    const text = await runCli(['discover', '@test/kit/Dial'], {cwd: project});
+    expect(text.stdout).toMatch(/package: @test\/kit/);
   });
 
   it('saves the answer in the user cache and writes nothing into the project', async () => {
