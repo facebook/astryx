@@ -52,3 +52,11 @@ describe('stone input status roles', () => {
     }
   });
 });
+
+describe('stone secondary ComplexSelector', () => {
+  it('keeps the hover fill off a disabled trigger in either form', () => {
+    expect(generateThemeCSS(stoneTheme).component).toMatch(
+      /:hover:not\(:has\(> ?:is\(:disabled, ?\[aria-disabled="true"\]\)\)\)/,
+    );
+  });
+});

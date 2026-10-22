@@ -115,15 +115,17 @@ export const PointerPresentation: Story = {
     </ContextMenu>
   ),
   play: async ({canvasElement}) => {
-    canvasElement
-      .querySelector('[data-testid="pointer-context-menu"]')
-      ?.dispatchEvent(
-        new MouseEvent('contextmenu', {
-          bubbles: true,
-          clientX: 40,
-          clientY: 40,
-        }),
-      );
+    const trigger = canvasElement.querySelector(
+      '[data-testid="pointer-context-menu"]',
+    );
+    const box = trigger?.getBoundingClientRect();
+    trigger?.dispatchEvent(
+      new MouseEvent('contextmenu', {
+        bubbles: true,
+        clientX: (box?.left ?? 0) + 40,
+        clientY: (box?.top ?? 0) + 40,
+      }),
+    );
   },
 };
 

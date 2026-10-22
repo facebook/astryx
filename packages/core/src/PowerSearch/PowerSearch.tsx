@@ -900,6 +900,15 @@ export function PowerSearch({
           size={size}
           icon={tokenIcon}
           endContent={valueContent}
+          onMouseDown={
+            handleClick
+              ? e => {
+                  // Keep a token press from entering Tokenizer's input-focus
+                  // redirect. Click still edits/removes; Tab entry is unchanged.
+                  e.preventDefault();
+                }
+              : undefined
+          }
           onClick={
             handleClick
               ? (e: React.MouseEvent) => {

@@ -87,6 +87,8 @@ export const docs = {
     'modal',
     'dialog',
     'navigation',
+    'commandmenu',
+    'cmdk',
   ],
   description:
     'Root component. Manages open state, search, keyboard navigation, and composition slots.',

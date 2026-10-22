@@ -229,18 +229,22 @@ const styles = stylex.create({
   drawerChevronExpanded: {
     transform: 'rotate(180deg)',
   },
+  // Clips only while collapsed or animating; see TopNavMenu drawerStyles.items.
   drawerItems: {
     display: 'grid',
     gridTemplateRows: '0fr',
-    transitionProperty: 'grid-template-rows',
-    transitionDuration: durationVars['--duration-medium'],
+    overflow: 'hidden',
+    transitionProperty: 'grid-template-rows, overflow',
+    transitionBehavior: 'allow-discrete',
+    transitionDuration: `${durationVars['--duration-medium']}, 0s`,
     transitionTimingFunction: easeVars['--ease-standard'],
   },
   drawerItemsExpanded: {
     gridTemplateRows: '1fr',
+    overflow: 'visible',
+    transitionDelay: `0s, ${durationVars['--duration-medium']}`,
   },
   drawerItemsInner: {
-    overflow: 'hidden',
     minHeight: 0,
   },
 
@@ -595,6 +599,8 @@ function DrawerMegaMenu({
       {/* Animated expand/collapse container */}
       <div
         id={`${menuId}-items`}
+        aria-hidden={!isExpanded}
+        inert={!isExpanded ? true : undefined}
         {...stylex.props(
           styles.drawerItems,
           isExpanded && styles.drawerItemsExpanded,

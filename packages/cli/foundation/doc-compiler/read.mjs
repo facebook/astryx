@@ -173,13 +173,71 @@ export async function readDocView(file, options) {
   );
   if (result.loadFailed) throw result.loadFailure;
   if (result.missing) {
-    if (strict)
+    if (strict) {
+      // A doc that exports nothing its reader takes (an empty file, or one
+      // with other exports) is said plainly, with what it does export and
+      // the fix; the schema would only say "(root): Invalid input".
+      const exported =
+        options.exports ??
+        /** @type {Record<string, readonly string[]>} */ (DOC_EXPORTS)[
+          options.root
+        ] ??
+        [];
+      const problem =
+        result.missingValue === undefined
+          ? await missingDocProblem(file, options, exported)
+          : null;
+      if (problem) throw new Error(`${options.label ?? file} ${problem}`);
       parserFor(options.root)(result.missingValue, options.label ?? file);
+    }
     return result.missingValue;
   }
   if (strict && result.failed) throw result.failure;
   if (result.overlayFailed) throw result.overlayFailure;
   return result.view;
+}
+
+/**
+ * Why a doc file exports no doc, with the fix: it is empty, or it exports
+ * other names than the ones its reader takes. Null when neither explains it.
+ * @param {string} file
+ * @param {ReadOptions} options
+ * @param {readonly string[]} exported the export names the reader takes
+ * @returns {Promise<string | null>}
+ */
+async function missingDocProblem(file, options, exported) {
+  // A theme descriptor is read statically, never imported.
+  if (options.root === 'themes') return null;
+  const fix =
+    'Fix: export the doc object as the default export: `export default {type: ..., name: ..., ...}`.';
+  let text;
+  try {
+    text = fs.readFileSync(file, 'utf8');
+  } catch {
+    return null;
+  }
+  const code = text
+    .replace(/^\uFEFF/u, '')
+    .replace(/\/\*[\s\S]*?\*\//gu, '')
+    .replace(/(^|[^:])\/\/.*$/gmu, '$1')
+    .trim();
+  if (code === '') return `is empty, so it documents nothing. ${fix}`;
+  /** @type {string[]} */
+  let names;
+  try {
+    const mod = await LOADERS[options.loader ?? 'user'](file);
+    names = Object.keys(mod ?? {}).filter(name => name !== 'default');
+  } catch {
+    return null;
+  }
+  const takes = exported.map(name =>
+    name === 'default' ? 'default export' : `\`${name}\` export`,
+  );
+  const found =
+    names.length > 0
+      ? ` (it exports ${names.map(name => `\`${name}\``).join(', ')})`
+      : ' (it exports nothing)';
+  return `has no ${takes.join(' or ')}${found}, so it documents nothing. ${fix}`;
 }
 
 /**

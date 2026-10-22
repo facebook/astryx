@@ -34,6 +34,7 @@ import {node as nodeLeaf, nodeView} from './node/node.mjs';
 import {resolveDocsArgument} from './_adapter.mjs';
 import {AstryxError} from '../error.mjs';
 import {ERROR_CODES} from '../../foundation/response/error-codes.mjs';
+import {formatCliCommand} from '../../foundation/env/package-manager.mjs';
 
 export {list, index, detail, sectionLeaf as section, nodeLeaf as node};
 
@@ -108,7 +109,7 @@ export async function docs(topic, section, options = {}) {
         return namespaceSection(found.tree, found.node, section, options);
       }
       throw new AstryxError(
-        `"${found.node.route}" has no sections. Read it whole: astryx docs ${found.node.route}.`,
+        `"${found.node.route}" has no sections. Read it whole: ${formatCliCommand(`docs ${found.node.route}`)}.`,
         [{name: found.node.route, reason: found.node.summary}],
         ERROR_CODES.ERR_UNKNOWN_SECTION,
       );

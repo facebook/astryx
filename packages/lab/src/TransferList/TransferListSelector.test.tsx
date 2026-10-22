@@ -461,7 +461,9 @@ describe('TransferListSelector', () => {
     expect(cancel).toBeEnabled();
     expect(fieldset).not.toContainElement(cancel);
     expect(apply).toBeDisabled();
-    expect(screen.getByRole('button', {name: 'Visible fields'})).toBeDisabled();
+    expect(
+      screen.getByRole('button', {name: 'Visible fields'}),
+    ).toHaveAttribute('aria-disabled', 'true');
 
     view.rerender(
       <TransferListSelector

@@ -71,7 +71,7 @@ export const docs = {
       {
         guidance: false,
         description:
-          'Wrap a disabled TimeInput in Tooltip to explain why it is disabled; disabled triggers swallow the hover events the wrapper needs. Use the disabledMessage prop instead.',
+          'Wrap a disabled TimeInput in Tooltip to explain why it is disabled. Use the disabledMessage prop instead, which ties the reason to the field.',
       },
     ],
     anatomy: [
@@ -144,14 +144,15 @@ export const docs = {
     {
       name: 'isDisabled',
       type: 'boolean',
-      description: 'Disables the input and suppresses interactions.',
+      description:
+        'Disables the input and suppresses interactions. The input stays focusable and exposes `aria-disabled`.',
       default: 'false',
     },
     {
       name: 'disabledMessage',
       type: 'string',
       description:
-        'Explains why the input is disabled. With isDisabled, shows a tooltip on hover/keyboard focus and keeps the field focusable via aria-disabled (activation stays blocked). Use this instead of wrapping a disabled TimeInput in Tooltip. Disabled controls swallow the hover events an external Tooltip needs.',
+        'Explains why the input is disabled. With isDisabled, shows a tooltip on hover/keyboard focus and describes the input (activation stays blocked). Use this instead of wrapping a disabled TimeInput in Tooltip.',
     },
     {
       name: 'value',
@@ -212,7 +213,7 @@ export const docs = {
       name: 'increment',
       type: 'number',
       description:
-        'Number of minutes to add or subtract when the user presses the up or down arrow key.',
+        'Number of minutes to add or subtract when the user presses the up or down arrow key. Steps are whole minutes; a fractional value leaves the time unchanged.',
       default: '1',
     },
     {
@@ -329,14 +330,14 @@ export const docsZh = {
     {
       name: 'isDisabled',
       type: 'boolean',
-      description: '禁用输入框并抑制交互。',
+      description: '禁用输入框并抑制交互。输入框仍可聚焦并暴露 `aria-disabled`。',
       default: 'false',
     },
     {
       name: 'disabledMessage',
       type: 'string',
       description:
-        '说明输入框为何被禁用。与 isDisabled 一起使用时，在悬停/键盘聚焦时显示提示，并通过 aria-disabled 保持输入框可聚焦（仍阻止输入和调整）。请使用此属性，而不是用 Tooltip 包裹已禁用的 TimeInput。',
+        '说明输入框为何被禁用。与 isDisabled 一起使用时，在悬停/键盘聚焦时显示提示，并描述输入框（仍阻止输入和调整）。请使用此属性，而不是用 Tooltip 包裹已禁用的 TimeInput。',
     },
     {
       name: 'value',
@@ -392,7 +393,8 @@ export const docsZh = {
     {
       name: 'increment',
       type: 'number',
-      description: '用户按上或下方向键时增加或减少的分钟数。',
+      description:
+        '用户按上或下方向键时增加或减少的分钟数。步长为整分钟；传入小数时时间保持不变。',
       default: '1',
     },
     {
@@ -509,7 +511,7 @@ export const docsZh = {
       {
         guidance: false,
         description:
-          'Wrap a disabled TimeInput in Tooltip to explain why it is disabled; disabled triggers swallow the hover events the wrapper needs. Use the disabledMessage prop instead.',
+          'Wrap a disabled TimeInput in Tooltip to explain why it is disabled. Use the disabledMessage prop instead, which ties the reason to the field.',
       },
     ],
     anatomy: [
@@ -611,7 +613,7 @@ export const docsDense = {
       'Marks required+sets aria-required. Mutually exclusive w/ isOptional.',
     isDisabled: 'Disables input, suppresses interactions.',
     disabledMessage:
-      'Reason shown in a tooltip on hover/focus when disabled; keeps input focusable via aria-disabled.',
+      'Reason shown in a tooltip on hover/focus when disabled; describes the input.',
     value: 'Controlled time in ISO format (HH:MM or HH:MM:SS).',
     onChange: 'Fired on time change. Receives undefined when cleared.',
     changeAction:
@@ -623,7 +625,8 @@ export const docsDense = {
     hasClear: 'Shows clear button when value set+not disabled.',
     hourFormat:
       "Display format. '12h' shows AM/PM; '24h' uses 24-hour notation.",
-    increment: 'Minutes to add/subtract on arrow up/down.',
+    increment:
+      'Minutes to add/subtract on arrow up/down. Whole minutes only; a fractional value leaves the time unchanged.',
     presentation:
       "picker surface: 'adaptive-native' (default) = typed field fine / browser/OS coarse (hasSeconds or increment!=1 retains typed); 'native' = browser/OS always, no fallback; 'adaptive-bottom-sheet' = typed fine / Astryx wheel sheet coarse; 'bottom-sheet' = sheet always; 'text-input'/'popover' = typed field only.",
     nativePicker:

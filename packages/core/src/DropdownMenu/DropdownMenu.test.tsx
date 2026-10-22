@@ -9,21 +9,31 @@
  * SYNC: When DropdownMenu.tsx changes, update tests to match new behavior
  */
 
-import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
+import {
+  describe,
+  it,
+  expect,
+  vi,
+  beforeAll,
+  beforeEach,
+  afterEach,
+} from 'vitest';
 import {readFileSync} from 'node:fs';
 import {render, screen, fireEvent, waitFor, act} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import {useState} from 'react';
+import {createRef, useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {DropdownMenu, type DropdownMenuTriggerProps} from './DropdownMenu';
 import {DropdownMenuItem} from './DropdownMenuItem';
 import {DropdownMenuDivider} from './DropdownMenuDivider';
 import {DropdownMenuGroup} from './DropdownMenuGroup';
+import {warmMenuBottomSheet} from './__tests__/warmMenuBottomSheet';
 import {DropdownMenuSubMenu} from './DropdownMenuSubMenu';
 import {Divider} from '../Divider';
 import {rtlStyles} from '../utils';
 import {__resetInteractionModalityForTest} from '../utils/interactionModality';
 import {focusOutlineStyles} from '../utils/focusOutline.stylex';
+import {spacingVars} from '../theme/tokens.stylex';
 
 // Mock showPopover and hidePopover methods since they're not implemented in jsdom
 beforeEach(() => {
@@ -72,6 +82,10 @@ beforeEach(() => {
     return originalMatches.call(this, selector);
   };
 });
+
+// The touch sheet is loaded lazily; resolve it once so sheets below render
+// synchronously.
+beforeAll(warmMenuBottomSheet, 20000);
 
 describe('DropdownMenu', () => {
   it('renders trigger button with label', () => {
@@ -1553,10 +1567,9 @@ describe('DropdownMenuItem host attributes', () => {
 
 describe('DropdownMenuGroup (compound mode)', () => {
   it('a focusable node in the heading is not reachable by the arrow keys', async () => {
-    // A heading is not a menu row, so a control inside one lands in the
-    // group but outside the roving focus order. The type does not prevent
-    // this — a rich heading is a legitimate need — so the behavior is
-    // pinned rather than discovered.
+    // The public ReactNode type permits a focusable descendant, but the menu's
+    // roving focus model cannot reach it. Pin that shipped gap while the public
+    // title contract remains unsettled.
     const user = userEvent.setup();
     render(
       <DropdownMenu button={{label: 'Actions'}}>
@@ -2527,6 +2540,45 @@ describe('DropdownMenu data/compound parity', () => {
     expect(separator).toHaveAttribute('aria-label', 'Danger zone');
     expect(separator).toHaveAttribute('role', 'separator');
     expect(separator).toHaveClass('astryx-dropdown-menu-divider');
+  });
+
+  it('composes the complete public root surface on the separator', () => {
+    const ref = createRef<HTMLDivElement>();
+    const onClick = vi.fn();
+    const customStyles = stylex.create({
+      divider: {marginBlock: spacingVars['--spacing-5']},
+    });
+    const customClass = stylex
+      .props(customStyles.divider)
+      .className!.split(' ')
+      .pop()!;
+
+    render(
+      <DropdownMenu button={{label: 'Actions'}}>
+        <DropdownMenuItem label="Edit" />
+        <DropdownMenuDivider
+          ref={ref}
+          data-testid="menu-separator"
+          className="consumer-divider"
+          style={{backgroundColor: 'rgb(1, 2, 3)'}}
+          xstyle={customStyles.divider}
+          onClick={onClick}
+        />
+        <DropdownMenuItem label="Delete" />
+      </DropdownMenu>,
+    );
+
+    const separator = screen.getByTestId('menu-separator');
+    expect(ref.current).toBe(separator);
+    expect(separator).toHaveClass(
+      'astryx-dropdown-menu-divider',
+      'astryx-divider',
+      'consumer-divider',
+      customClass,
+    );
+    expect(separator).toHaveStyle({backgroundColor: 'rgb(1, 2, 3)'});
+    fireEvent.click(separator);
+    expect(onClick).toHaveBeenCalledTimes(1);
   });
 
   it('skips a compound divider in the arrow-key order', async () => {

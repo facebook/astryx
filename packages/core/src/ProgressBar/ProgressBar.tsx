@@ -321,7 +321,7 @@ const variantStyles = stylex.create({
 // grayed-out component.
 const markOnFillStyles = stylex.create({
   accent: {
-    backgroundColor: colorVars['--color-on-accent'],
+    backgroundColor: colorVars['--color-on-info'],
   },
   success: {
     backgroundColor: colorVars['--color-on-success'],

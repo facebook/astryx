@@ -8,8 +8,15 @@
  */
 
 import {describe, it, expect, beforeAll} from 'vitest';
+import * as stylex from '@stylexjs/stylex';
 import {render, screen, waitFor} from '@testing-library/react';
+import {colorVars} from '../theme/tokens.stylex';
 import {ProgressBar} from './ProgressBar';
+
+const semanticRoleStyles = stylex.create({
+  onInfo: {backgroundColor: colorVars['--color-on-info']},
+  onAccent: {backgroundColor: colorVars['--color-on-accent']},
+});
 
 // A labeled mark wraps the tick in a lazily-loaded Tooltip (React.lazy +
 // Suspense). Preload that chunk once so the Tooltip (and its
@@ -531,6 +538,34 @@ describe('ProgressBar', () => {
       expect(styleClasses(offMarks[1])).not.toBe(styleClasses(liveMarks[1]));
     });
 
+    it('pairs the accent fill with the info on-color', () => {
+      const {container} = render(
+        <>
+          <ProgressBar
+            value={60}
+            variant="accent"
+            label="A"
+            marks={[{value: 20, label: 'On fill'}]}
+          />
+          <span
+            data-testid="on-info-reference"
+            {...stylex.props(semanticRoleStyles.onInfo)}
+          />
+          <span
+            data-testid="on-accent-reference"
+            {...stylex.props(semanticRoleStyles.onAccent)}
+          />
+        </>,
+      );
+      const mark = container.querySelector<HTMLElement>(MARK)!;
+      const onInfoClass = styleClasses(screen.getByTestId('on-info-reference'));
+      const onAccentClass = styleClasses(
+        screen.getByTestId('on-accent-reference'),
+      );
+      expect(mark).toHaveClass(onInfoClass);
+      expect(mark).not.toHaveClass(onAccentClass);
+    });
+
     it('recolors marks per variant when they sit on the fill', () => {
       // Two bars at the same progress with different variants give their
       // on-fill marks different colors (different atomic classes), while
@@ -563,21 +598,6 @@ describe('ProgressBar', () => {
         styleClasses(errorMarks[0]),
       );
       expect(styleClasses(accentMarks[1])).toBe(styleClasses(errorMarks[1]));
-    });
-
-    it('keeps tabbable target marks outside the progressbar subtree', () => {
-      const {container} = render(
-        <ProgressBar
-          value={50}
-          label="Progress"
-          marks={[{value: 80, label: 'Goal'}]}
-        />,
-      );
-      const progressbar = screen.getByRole('progressbar', {name: 'Progress'});
-      const mark = container.querySelector(MARK)!;
-      expect(mark).toHaveAttribute('tabindex', '0');
-      expect(progressbar.querySelector('[tabindex="0"]')).toBeNull();
-      expect(mark.closest('[role="progressbar"]')).toBeNull();
     });
 
     it('renders every mark as a focusable trigger (label is required, never decorative)', () => {
@@ -637,7 +657,6 @@ describe('ProgressBar', () => {
         />,
       );
       const progressbar = screen.getByRole('progressbar');
-      expect(progressbar.querySelector(MARK)).toBeNull();
       expect(progressbar.querySelector('[role="img"]')).toBeNull();
       expect(progressbar.querySelector('[aria-label]')).toBeNull();
       expect(container.querySelectorAll(MARK)).toHaveLength(1);
@@ -655,9 +674,10 @@ describe('ProgressBar', () => {
       expect(progressbar.getAttribute('aria-valuetext')).toBe('50%');
     });
 
-    it('preserves the fill inside the progressbar when marks are rendered outside it', () => {
-      // Only the fill belongs to the semantic track; the focusable marks
-      // remain independently available outside its presentational subtree.
+    it('keeps the fill as the progressbar child when marks are rendered', () => {
+      // Only the fill belongs to the semantic track. That the focusable marks
+      // stay outside its presentational subtree is the progressbar contract's
+      // target-marks state (progressbar.subtree.no-focusable-descendants).
       const {container} = render(
         <ProgressBar
           value={50}
@@ -669,8 +689,6 @@ describe('ProgressBar', () => {
       const fill = progressbar.firstElementChild as HTMLElement;
       expect(fill.style.width).toBe('50%');
       expect(fill.classList.contains('astryx-progress-bar-mark')).toBe(false);
-      const mark = container.querySelector<HTMLElement>(MARK)!;
-      expect(progressbar).not.toContainElement(mark);
       expect(container.querySelectorAll(MARK)).toHaveLength(1);
     });
 
