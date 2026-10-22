@@ -29,6 +29,7 @@ import {DateInput} from '../DateInput';
 import {DateRangeInput} from '../DateRangeInput';
 import {DateTimeInput} from '../DateTimeInput';
 import {TimeInput} from '../TimeInput';
+import {CheckboxInput} from '../CheckboxInput';
 import {BaseTypeahead, Typeahead} from '../Typeahead';
 import type {SearchableItem, SearchSource} from '../Typeahead';
 import type {ISOTimeString} from '../utils';
@@ -131,6 +132,17 @@ const OWNERS: ReadonlyArray<
       ),
     ] as const,
   ]),
+  [
+    'CheckboxInput',
+    isLoading => (
+      <CheckboxInput
+        label="Subscribe"
+        value={false}
+        onChange={() => {}}
+        isLoading={isLoading}
+      />
+    ),
+  ],
   [
     'DateRangeInput',
     isLoading => (

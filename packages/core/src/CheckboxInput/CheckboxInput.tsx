@@ -46,7 +46,9 @@ import {useTooltip} from '../Tooltip';
 import {mergeProps, rtlStyles} from '../utils';
 import {indicatorScope} from '../Indicator/indicator.markers.stylex';
 import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
+import {useTranslator} from '../i18n';
 import {useIndicatorFocusRing} from '../hooks/useIndicatorFocusRing';
+import {useBusyAnnouncement} from '../hooks/useBusyAnnouncement';
 import {usePressFeedback} from '../hooks/usePressFeedback';
 import {useResolvedRequired} from '../hooks/useResolvedRequired';
 import {useIndicator} from '../Indicator';
@@ -371,6 +373,10 @@ export function CheckboxInput({
   // `opacity: 0`, and only the indicator's own element can shape the outline
   // to match it. See useIndicatorFocusRing.
   const indicatorRef = useRef<HTMLSpanElement>(null);
+  const t = useTranslator();
+  // The busy Spinner is decorative; this control announces its busy start
+  // (spec:AST-086 FR8).
+  useBusyAnnouncement(isBusy, t('@astryx.spinner.loading'), indicatorRef);
   const {focusProps} = useIndicatorFocusRing(indicatorRef);
 
   const isIndeterminate = optimisticValue === 'indeterminate';
@@ -518,7 +524,9 @@ export function CheckboxInput({
               }
               size={size}
               isDisabled={isDisabled}>
-              {isBusy ? <Spinner size="sm" shade="inherit" /> : null}
+              {isBusy ? (
+                <Spinner size="sm" shade="inherit" aria-hidden="true" />
+              ) : null}
             </CheckboxControl>
           </span>
         </div>
