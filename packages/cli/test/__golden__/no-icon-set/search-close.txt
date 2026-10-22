@@ -17,7 +17,7 @@ name:        BottomSheetSwitcher
 domain:      component
 package:     @astryxdesign/core
 import:      @astryxdesign/core/BottomSheet
-description: Coordinates a multi-step bottom-sheet flow in one shared dialog; set activeSheet to a nested BottomSheet's sheetId to open or switch steps, and to null to close.
+description: Coordinates a multi-step bottom-sheet flow, one native dialog per sheet; set activeSheet to a nested BottomSheet's sheetId to open or switch steps, and to null to close.
 command:     pnpm exec astryx component BottomSheetSwitcher
 
 name:        DialogHeader

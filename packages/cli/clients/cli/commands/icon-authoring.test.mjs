@@ -656,6 +656,10 @@ describe('experimental icon use', () => {
       'range "^0.7.0" (devDependencies) admits a release before 0.7.3',
     );
     expect(old.body.data.warning).toContain('"Unrecognized key"');
+    expect(old.body.data.warning).toContain(
+      'commands that load the project configuration, such as `doctor` and `discover`, fail there',
+    );
+    expect(old.body.data.warning).not.toContain('every command');
     const text = await runCli(['experimental', 'icon', 'use', 'glyphs'], app);
     expect(text.stdout).toContain(
       "[warn] The project's @astryxdesign/cli range",

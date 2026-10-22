@@ -275,8 +275,8 @@ message}`) names each template or namespace doc that sets `stability`, and
   each template that declares `icons`, while the package's CLI peer range
   admits a release before 0.7.3; a note is never counted and never fails a
   check (DEC-9). A CLI before 0.7.3 also refuses an astryx.config that sets
-  `experimental.iconSet` ("Unrecognized key"), so every command fails in that
-  project. `experimental icon use` adds `warning` to its receipt, printed as a
+  `experimental.iconSet` ("Unrecognized key"), so commands that load the
+  project configuration, such as `doctor` and `discover`, fail in that project. `experimental icon use` adds `warning` to its receipt, printed as a
   `[warn]` line, when the project declares an `@astryxdesign/cli` range (in
   any dependency field) that admits such a release; a project that declares no
   range, or a `workspace:`, `file:`, or `link:` one, gets none.

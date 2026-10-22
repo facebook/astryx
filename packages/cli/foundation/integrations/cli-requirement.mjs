@@ -350,7 +350,8 @@ export function templateIconsCliProblem(pkg) {
 /**
  * The first stable CLI release that reads `experimental.iconSet` in a
  * project's astryx.config (spec:AST-084 FR16). Published 0.7.2 refuses the
- * config ("Unrecognized key"), so every command fails in that project.
+ * config ("Unrecognized key"), so commands that load the project
+ * configuration, such as `doctor` and `discover`, fail in that project.
  *
  * Tied to the next patch slot, with {@link STABILITY_CLI}.
  */
@@ -380,5 +381,5 @@ export function projectIconSetCliWarning(pkg) {
   if (lowest != null && semverCompare(lowest, CONFIG_ICON_SET_CLI) >= 0) {
     return null;
   }
-  return `The project's ${CLI_PACKAGE} range "${range}" (${field}) admits a release before ${CONFIG_ICON_SET_CLI}, which refuses an astryx.config that sets \`experimental.iconSet\` ("Unrecognized key"), so every command fails there. Require "${CLI_PACKAGE}": ">=${CONFIG_ICON_SET_CLI}".`;
+  return `The project's ${CLI_PACKAGE} range "${range}" (${field}) admits a release before ${CONFIG_ICON_SET_CLI}, which refuses an astryx.config that sets \`experimental.iconSet\` ("Unrecognized key"), so commands that load the project configuration, such as \`doctor\` and \`discover\`, fail there. Require "${CLI_PACKAGE}": ">=${CONFIG_ICON_SET_CLI}".`;
 }
