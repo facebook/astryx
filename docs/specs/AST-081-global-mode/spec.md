@@ -147,7 +147,10 @@ works on is `spec:AST-040` FR9's.
     standard error says so when that copy is not the project's Core release:
     `astryx: this project has no Astryx CLI installed; answered by CLI <version> while its Core is <core>. To match, run: <command>`,
     where the command adds `@astryxdesign/cli` at the Core's version with the
-    project's package manager. A machine-readable result carries
+    project's package manager. For this advice, the project is the one
+    `spec:AST-040` FR9 defines: the command runs in that project's folder, at
+    that project's Core, and a folder that belongs to no such project gets no
+    project advice, as outside a project. A machine-readable result carries
     `meta.answeredBy.copy` `starting`. `doctor` warns in the same case and
     names the same command, and the setup reminder of a project that has not
     run `init` names it first, then `astryx init`.
@@ -508,7 +511,10 @@ works on is `spec:AST-040` FR9's.
     `@astryxdesign/cli`, so a project that installed only Core gets its own CLI
     too, at the newest release with the project's own package manager, then runs
     `astryx upgrade --from <current> --apply` with the command name FR5 picks
-    for that release, as `<install command>, then <upgrade command>`.
+    for that release, as `<install command>, then <upgrade command>`. For this
+    notice, the project is the one `spec:AST-040` FR9 defines, as in FR2's
+    hint: both commands run in that project's folder, with that project's
+    release as `<current>`.
   - In any folder, when the first `astryx` command on the search path is an
     Astryx CLI release that predates the hand-off, so it answers every run
     started through it with its own release: the first line reads

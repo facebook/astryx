@@ -483,7 +483,39 @@ describe.skipIf(!POSIX)(
         doctor.data.checks.find(
           (/** @type {any} */ c) => c.id === 'version-alignment',
         ),
-      ).not.toHaveProperty('fix');
+      ).toMatchObject({
+        status: 'warn',
+        fix: "Run this from the Astryx project's folder, or declare an Astryx package in this folder's package.json to make it a project of its own.",
+      });
+      // The skip says why, so doctor does not claim nothing newer is known.
+      expect(readState(pc).noticeSkips?.project?.reason).toBe('no-project');
+    });
+
+    it("in a member its workspace lists, which declares no Astryx package, the advice stays the member's own, as before", () => {
+      const pc = computer();
+      const g = globalCli('npm', '9.0.0', {root: pc.home});
+      globalState(pc, {
+        latest: '9.0.7',
+        checkOkAt: Date.now(),
+        firstRunAt: Date.now() - 2 * 24 * 60 * 60_000,
+      });
+      const root = makeProject({core: '9.0.1'});
+      const rootPkg = JSON.parse(
+        fs.readFileSync(path.join(root, 'package.json'), 'utf8'),
+      );
+      writeJson(path.join(root, 'package.json'), {
+        ...rootPkg,
+        workspaces: ['apps/*'],
+      });
+      writeJson(path.join(root, 'package-lock.json'), {lockfileVersion: 3});
+      const member = path.join(root, 'apps', 'web');
+      writeJson(path.join(member, 'package.json'), {name: 'web'});
+      installCore(member, '9.0.5');
+
+      const r = run(g.bin, ['--version'], {cwd: member, pc});
+      const all = [...r.lines, ...r.notice].join('\n');
+      expect(all).not.toContain(`cd ${root}`);
+      expect(r.lines).toContain(noCliHint('9.0.0', '9.0.5'));
     });
 
     it('G6 the installed Core wins over a lockfile that disagrees, for the release a project whose CLI cannot start gets', () => {

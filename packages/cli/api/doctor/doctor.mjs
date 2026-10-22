@@ -286,22 +286,22 @@ export function checkVersionAlignment(ctx) {
   // the run (spec AST-081 FR2): say so, and how to add the CLI at Core's
   // version.
   if (ctx.ownCli === false) {
-    // Run from a folder whose package.json declares no Astryx package, the
-    // command names the project above and its Core, or there is none.
+    // The command names the project spec:AST-040 FR9 defines and that
+    // project's Core, as the daily hint does (spec AST-081 FR2); a folder
+    // that belongs to no such project gets the way to one instead.
     const add = addCliCommandFor(ctx.cwd, coreVersion);
+    const core = add?.core ?? coreVersion;
     return {
       id: 'version-alignment',
       label: '@astryxdesign/core <-> @astryxdesign/cli alignment',
-      status: coreVersion === cliVersion ? 'info' : 'warn',
+      status: core === cliVersion ? 'info' : 'warn',
       message:
-        coreVersion === cliVersion
+        core === cliVersion
           ? `This project has no Astryx CLI installed; CLI ${cliVersion}, the one you started, answered and matches its Core.`
-          : `This project has no Astryx CLI installed; CLI ${cliVersion}, the one you started, answered while its Core is ${coreVersion}.`,
-      ...(add
-        ? {
-            fix: `${add.core === cliVersion ? 'To pin it for the team and CI' : 'To match'}, run: ${add.command}.`,
-          }
-        : {}),
+          : `This project has no Astryx CLI installed; CLI ${cliVersion}, the one you started, answered while its Core is ${core}.`,
+      fix: add
+        ? `${add.core === cliVersion ? 'To pin it for the team and CI' : 'To match'}, run: ${add.command}.`
+        : NO_PROJECT_FIX,
     };
   }
   // The project's own CLI answers this project whatever its version
@@ -328,8 +328,15 @@ export function checkVersionAlignment(ctx) {
  */
 function alignFix(cwd, cli, core) {
   const command = alignCommand(cwd, cli, core);
-  return command ? {fix: `To align them, run: ${command}.`} : {};
+  return {fix: command ? `To align them, run: ${command}.` : NO_PROJECT_FIX};
 }
+
+/**
+ * The fix where no install command fits: the folder's package.json is not an
+ * Astryx project's (spec AST-040 FR9), and adding there would make it one.
+ */
+const NO_PROJECT_FIX =
+  "Run this from the Astryx project's folder, or declare an Astryx package in this folder's package.json to make it a project of its own.";
 
 /**
  * Check 5 — astryx.config.mjs (if present) loads and has a valid shape.
@@ -1574,6 +1581,7 @@ function checkFailureNote(failed) {
 const SKIP_REASONS = {
   'already-shown': 'it had already printed that day',
   'no-newer': 'no newer release was known',
+  'no-project': 'the folder belongs to no Astryx project, so no install command fits',
 };
 
 /**
