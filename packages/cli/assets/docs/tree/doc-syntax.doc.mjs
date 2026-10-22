@@ -70,7 +70,7 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: 'In prose a token prints as a code span; in a code span or code block it prints as the command alone. `--json` returns the doc as written, tokens included.',
+          text: 'In prose a token prints as a code span; in a code span or code block it prints as the command alone. `--json` carries the same commands, a `{@@command}` token as the bare `astryx …` command, which a reader that shows the doc prefixes itself.',
         },
       ],
     },

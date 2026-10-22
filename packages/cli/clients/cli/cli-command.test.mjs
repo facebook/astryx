@@ -137,7 +137,7 @@ describe('help', () => {
 });
 
 describe("a host's door", () => {
-  it('prefixes doc commands in text and leaves them as written in JSON', async () => {
+  it('prefixes doc commands in text and leaves them bare in JSON', async () => {
     const text = await runWithCliDoor('acme astryx', () =>
       runCli(['docs', 'getting-started', '--full']),
     );
@@ -146,9 +146,7 @@ describe("a host's door", () => {
     const json = await runWithCliDoor('acme astryx', () =>
       runCli(['docs', 'getting-started', '--json']),
     );
-    // JSON returns the doc as written: the token, for the reader to render.
-    expect(json.stdout).toContain('{@command init}');
-    expect(json.stdout).not.toContain('acme astryx init');
+    expect(json.stdout).toContain('astryx init');
     expect(json.stdout).not.toContain('acme astryx');
   });
 

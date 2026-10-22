@@ -27,6 +27,7 @@
 import {recordCommandResult} from '../../../foundation/debug/index.mjs';
 import {routeSegment} from '../../../foundation/discovery/docs-section-key.mjs';
 import {formatCliCommand} from '../../../foundation/env/package-manager.mjs';
+import {renderTokens} from '../../../foundation/doc-compiler/links.mjs';
 import {text} from '../formatters/index.mjs';
 
 /**
@@ -120,8 +121,12 @@ export function defineCommand(parent, doc, {fn, action} = {}) {
     .join(' ');
 
   const cmd = parent.command(argSpec ? `${token} ${argSpec}` : token);
-  Object.defineProperty(cmd, COMMAND_DOCS, {value: {doc, fn}, configurable: true});
-  if (doc.summary) cmd.description(doc.summary);
+  Object.defineProperty(cmd, COMMAND_DOCS, {
+    value: {doc, fn},
+    configurable: true,
+  });
+  // Help shows doc tokens as commands, the way `astryx docs` does.
+  if (doc.summary) cmd.description(renderTokens(doc.summary));
   if (doc.deprecated) {
     const base = cmd.description() || '';
     cmd.description(`${base} [DEPRECATED: ${doc.deprecated}]`);
@@ -137,14 +142,16 @@ export function defineCommand(parent, doc, {fn, action} = {}) {
     // current CLI has none. (Docsite/`astryx docs` read the arg's `param` for
     // its description instead.)
     if (arg.description) {
-      const argument = cmd.registeredArguments?.find(a => a.name() === arg.name);
-      if (argument) argument.description = arg.description;
+      const argument = cmd.registeredArguments?.find(
+        a => a.name() === arg.name,
+      );
+      if (argument) argument.description = renderTokens(arg.description);
     }
   }
 
   for (const o of doc.options ?? []) {
     const desc = o.description ?? (o.param ? paramDesc(o.param) : '');
-    const option = cmd.createOption(o.flag, desc);
+    const option = cmd.createOption(o.flag, renderTokens(desc));
     if (o.default != null) option.default(o.default);
     cmd.addOption(option);
   }
@@ -188,7 +195,10 @@ export function addDocHelp(cmd, doc) {
       `  ${formatCliCommand(cli)}`,
     ]);
     const more = `More: ${formatCliCommand(`docs cli/commands/${routeSegment(doc.name)}`)}`;
-    const blocks = examples.length > 0 ? [['Examples:', ...examples].join('\n'), more] : [more];
+    const blocks =
+      examples.length > 0
+        ? [['Examples:', ...examples].join('\n'), more]
+        : [more];
     return `\n${text(blocks.join('\n\n')).toString()}`;
   });
 }
@@ -201,5 +211,8 @@ export function addDocHelp(cmd, doc) {
 export function addExitCodesHelp(cmd, exitCodes) {
   if (!exitCodes?.length) return;
   const lines = exitCodes.map(({code, when}) => `  ${code}  ${when}`);
-  cmd.addHelpText('after', `\n${text(['Exit codes:', ...lines].join('\n')).toString()}`);
+  cmd.addHelpText(
+    'after',
+    `\n${text(['Exit codes:', ...lines].join('\n')).toString()}`,
+  );
 }

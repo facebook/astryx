@@ -616,27 +616,27 @@ function prefixLine(line, stem, lang) {
  * `text` or `markdown` fence, both. Other fences, and plain words, are left
  * alone. Doc tokens render too, in prose and in every fence: `{@command …}`
  * with `stem`, `{@pm …}` in the project's package manager, `{@pm-only …}`
- * with its reason (foundation/doc-compiler/doc-syntax.mjs). JSON output keeps
- * the authored text.
+ * with its reason (foundation/doc-compiler/doc-syntax.mjs), when `options.pm`
+ * names the package manager; the CLI renders them as it compiles a doc, so
+ * there they are already commands.
  *
  * @param {string} text Markdown-style doc text, or the body of one code block.
  * @param {string} stem e.g. `pnpm exec astryx`
  * @param {string | null} [lang] the code block's language when `text` is one
  *   block's body; omit for Markdown, whose fences are followed
  * @param {{pm?: import('../doc-compiler/doc-syntax.mjs').DocPackageManager, targetDir?: string}} [options]
- *   `pm`: the package manager `{@pm}` steps render for; detected from the
- *   project in `targetDir` (the working directory) when omitted
+ *   `pm`: the package manager `{@pm}` steps render for; without it, tokens
+ *   are left as they are
  * @returns {string}
  */
 export function prefixCliCommands(text, stem, lang = null, options = {}) {
   const source = String(text);
-  const hasTokens = source.includes('{@');
-  if (stem === CLI_BIN && !hasTokens) return source;
-  // Doc tokens render for this reader: `{@command}` with `stem`, `{@pm}` in
-  // the package manager the project uses.
-  const tokens = hasTokens
-    ? {stem, pm: options.pm ?? docPackageManager(options.targetDir)}
-    : null;
+  // The CLI renders doc tokens when it compiles a doc (links.mjs), so text and
+  // JSON carry the same commands; a reader of raw doc files, such as the
+  // docsite, names the package manager to render them here.
+  const tokens =
+    options.pm != null && source.includes('{@') ? {stem, pm: options.pm} : null;
+  if (stem === CLI_BIN && !tokens) return source;
   /** @param {string} line @param {string | null} fenceLang */
   const show = (line, fenceLang) => {
     // Bare commands first: a token renders with the stem itself, and its
