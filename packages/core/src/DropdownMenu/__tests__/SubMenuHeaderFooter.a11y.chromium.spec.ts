@@ -14,6 +14,8 @@
  *   phone the drilled-in view holds the same regions while the root menu
  *   steps aside. On the "Submenu / header with a choice" story, a flyout the
  *   pointer has left stays open while an arrow moves the header's radio choice.
+ *   On the ContextMenu "Submenu / header and footer" story, a mouse press on
+ *   the dialog's field, button and rows reaches them and keeps the menu open.
  * @position Browser proof behind the jsdom suite: the accessibility tree, real
  *   Tab order and the pointer decision are what jsdom cannot exercise.
  */
@@ -321,5 +323,42 @@ test.describe('in the action sheet', () => {
     await expect(sheet.getByRole('button', {name: /Feature/})).toHaveCount(0);
     await sheet.getByRole('button', {name: 'Create label'}).click();
     await expect(page.getByTestId('created')).toHaveText('1');
+  });
+});
+
+test.describe('in a ContextMenu', () => {
+  test("a mouse press on the dialog's field, button and rows reaches them and keeps the menu open", async ({
+    page,
+  }) => {
+    await page.goto(
+      `${storybook.origin}/iframe.html?id=core-contextmenu--sub-menu-header-and-footer&viewMode=story`,
+    );
+    await expect(
+      page.getByTestId('context-submenu-regions-fixture'),
+    ).toBeVisible();
+    await page.getByText('Right-click for labels').click({button: 'right'});
+    const menu = page.getByRole('menu', {name: 'Row actions'});
+    await expect(menu).toBeVisible();
+    await menu.getByRole('menuitem', {name: 'Labels'}).click();
+    const dialog = page.getByRole('dialog', {name: 'Labels'});
+    await expect(dialog).toBeVisible();
+    expect(await isInsideAMenu(page, 'Labels')).toBe(false);
+
+    const field = dialog.getByRole('textbox', {name: 'Filter labels'});
+    await field.click();
+    await expect(field).toBeFocused();
+    await page.keyboard.type('fe');
+    await expect(dialog.getByRole('menuitemcheckbox')).toHaveCount(1);
+    await expect(menu).toBeVisible();
+
+    await dialog.getByRole('button', {name: 'Create label'}).click();
+    await expect(page.getByTestId('created')).toHaveText('1');
+    await expect(dialog).toBeVisible();
+
+    await dialog.getByRole('menuitemcheckbox', {name: 'Feature'}).click();
+    await expect(page.getByTestId('picked')).toHaveText('Bug, Feature');
+    // A checkbox pick keeps the sub-menu, and the menu, open.
+    await expect(dialog).toBeVisible();
+    await expect(menu).toBeVisible();
   });
 });

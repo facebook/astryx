@@ -860,6 +860,61 @@ describe('ContextMenu compound mode', () => {
     );
   });
 
+  it("a mouse press on a regioned sub-menu's field, button or row reaches it and keeps the menu open", async () => {
+    const user = userEvent.setup();
+    const onCreate = vi.fn();
+    const onBug = vi.fn();
+    render(
+      <ContextMenu
+        label="Row actions"
+        menuContent={
+          <>
+            <DropdownMenuItem label="Rename" onClick={() => {}} />
+            <DropdownMenuSubMenu
+              label="Labels"
+              header={<input aria-label="Filter labels" />}
+              footer={
+                <button type="button" onClick={onCreate}>
+                  Create label
+                </button>
+              }>
+              <DropdownMenuItem label="Bug" onClick={onBug} />
+            </DropdownMenuSubMenu>
+          </>
+        }>
+        <div>Right-click me</div>
+      </ContextMenu>,
+    );
+    fireEvent.contextMenu(screen.getByText('Right-click me'));
+    const menu = screen.getByRole('menu', {name: 'Row actions', hidden: true});
+    const rootPopover = menu.closest('[popover]');
+    await user.click(
+      screen.getByRole('menuitem', {name: /Labels/, hidden: true}),
+    );
+    await screen.findByRole('dialog', {name: /Labels/, hidden: true});
+
+    // The dialog renders beside the menu, so a press in it is not outside.
+    const field = screen.getByRole('textbox', {
+      name: 'Filter labels',
+      hidden: true,
+    });
+    await user.click(field);
+    expect(rootPopover).toHaveAttribute('popover-open');
+    expect(field).toHaveFocus();
+    await user.keyboard('bu');
+    expect(field).toHaveValue('bu');
+
+    await user.click(
+      screen.getByRole('button', {name: 'Create label', hidden: true}),
+    );
+    expect(onCreate).toHaveBeenCalledOnce();
+    expect(rootPopover).toHaveAttribute('popover-open');
+
+    // A row acts, as a row of any sub-menu does.
+    await user.click(screen.getByRole('menuitem', {name: 'Bug', hidden: true}));
+    expect(onBug).toHaveBeenCalledOnce();
+  });
+
   it("paints a drilled-in sub-menu's view under the menu's theme target and the caller's styling", async () => {
     render(
       <ContextMenu

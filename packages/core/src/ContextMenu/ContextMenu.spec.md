@@ -211,7 +211,7 @@ anchor is positioning infrastructure rather than consumer anatomy.
 | FR6                 | `ContextMenu.test.tsx` keyboard case; shared `useListFocus` and `useTypeahead` suites             | wrap at both ends                                   | Clamping arrows fail.                                                                              | `audit:ContextMenu/behavior` |
 | Theming anatomy map | `scripts/check-knowledge.mjs`                                                                     | Canonical anatomy and current target                | Missing, extra, prefixed, stale, or unclassified mappings fail repository validation.              | `audit:ContextMenu/theming`  |
 | FR6, AR1            | `ContextMenu.test.tsx` "inline trigger (triggerAs)" suite                                         | `span` in a paragraph, default `div`                | A block trigger inside prose, or a lost invocation path, fails.                                    | `audit:ContextMenu/behavior` |
-| FR12                | `ContextMenu.test.tsx` sub-menu header and footer cases                                           | a regioned sub-menu: pointer menu, view, sheet      | A dialog inside a menu element, regions missing from the pointer menu, or an unthemed view, fails. | `audit:ContextMenu/behavior` |
+| FR12                | `ContextMenu.test.tsx` sub-menu header and footer cases; `SubMenuHeaderFooter` Chromium spec      | a regioned sub-menu: pointer menu, view, sheet      | A dialog inside a menu element, missing or unthemed regions, or a press in them closing it, fails. | `audit:ContextMenu/behavior` |
 
 ## Decision log
 
