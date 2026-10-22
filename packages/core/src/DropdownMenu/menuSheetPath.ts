@@ -20,7 +20,12 @@
  * in it changed, say), at its position, while its level still has as many
  * rows and the row there opens a sub-menu: then it can still be the same row.
  * Otherwise it keeps its last known shape, so a row filtered out of its level
- * never gives way to another, labelled alike or sitting where it sat.
+ * never gives way to another, labelled alike or sitting where it sat; so does a
+ * row found again that no longer opens a sub-menu (its `items` gone). Without
+ * an `id` the label match reads uniqueness from the rows shown when the level
+ * opened, so a row labelled alike that was hidden then (by the menu's own
+ * search, say) can still take its place: rows whose labels repeat need an `id`
+ * for this guarantee.
  */
 import type {DropdownMenuItemData, DropdownMenuOption} from './DropdownMenu';
 import {opensSubMenu} from './opensSubMenu';
@@ -103,8 +108,14 @@ export function resolveSheetLevel(
   let options: ReadonlyArray<DropdownMenuOption> | undefined = items;
   let level: DropdownMenuItemData | undefined;
   for (const opened of path) {
-    const live: DropdownMenuItemData | undefined =
+    const found: DropdownMenuItemData | undefined =
       options != null ? findRow(options, opened) : undefined;
+    // A row found again that no longer opens a sub-menu is not this level any
+    // more: listing the level's parent rows under its heading would mislead.
+    const live: DropdownMenuItemData | undefined =
+      found != null && opensSubMenu(found, {showsRegions: true})
+        ? found
+        : undefined;
     level = live ?? opened.row;
     options = live?.items;
   }
