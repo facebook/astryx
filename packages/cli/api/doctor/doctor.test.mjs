@@ -31,7 +31,9 @@ import {
   checkIntegrationIssues,
   checkVersionAlignment,
   checkPackageManager,
+  checkComputerIntegrationsAvailable,
 } from './doctor.mjs';
+import {installCommandFor} from './_adapter.mjs';
 import {formatCliCommand} from '../../foundation/env/package-manager.mjs';
 import {Project} from '../../foundation/config/project.mjs';
 
@@ -223,7 +225,13 @@ describe("doctor — the project's own CLI and Core on different releases", () =
   ).version;
   /** @param {string} core */
   const at = core => {
+    // A project as spec:AST-040 FR9 defines it: its package.json declares
+    // an Astryx package.
     const dir = mkProject({
+      'package.json': JSON.stringify({
+        name: 'app',
+        dependencies: {'@astryxdesign/core': core},
+      }),
       'package-lock.json': '{}',
       'node_modules/@astryxdesign/core/package.json': JSON.stringify({
         name: '@astryxdesign/core',
@@ -257,6 +265,10 @@ describe("doctor — the project's own CLI and Core on different releases", () =
 
   it('in a project with no CLI of its own, warns that the started copy answered and names the command that adds the CLI at Core', () => {
     const dir = mkProject({
+      'package.json': JSON.stringify({
+        name: 'app',
+        dependencies: {'@astryxdesign/core': '0.0.1'},
+      }),
       'package-lock.json': '{}',
       'node_modules/@astryxdesign/core/package.json': JSON.stringify({
         name: '@astryxdesign/core',
@@ -276,6 +288,52 @@ describe("doctor — the project's own CLI and Core on different releases", () =
       `This project has no Astryx CLI installed; CLI ${cli}, the one you started, answered while its Core is 0.0.1.`,
     );
     expect(c.fix).toBe('To match, run: npm install @astryxdesign/cli@0.0.1.');
+  });
+});
+
+describe('the command that adds an integration installed for the computer', () => {
+  const app = () =>
+    mkProject({
+      'package.json': JSON.stringify({
+        name: 'app',
+        dependencies: {'@astryxdesign/core': '0.7.0'},
+      }),
+      'pnpm-lock.yaml': '',
+      'tools/codegen/package.json': JSON.stringify({name: 'codegen'}),
+    });
+
+  it('adds it in the project, with its package manager', () => {
+    const dir = app();
+    expect(installCommandFor(dir)?.('@acme/a')).toBe('pnpm add @acme/a');
+  });
+
+  // A package.json that is not the project's (spec AST-040 FR9): a run
+  // there loads integrations from it, so a package added to the project
+  // stays unused there. No command; the fix points at the project.
+  it("from a tool folder inside the project, names no command and points at the project's folder", () => {
+    const dir = app();
+    expect(installCommandFor(path.join(dir, 'tools', 'codegen'))).toBeNull();
+    const c = checkComputerIntegrationsAvailable({
+      installed: new Set(),
+      candidates: [/** @type {any} */ ({name: '@acme/a'})],
+      install: null,
+      elsewhere: true,
+    });
+    expect(c.fix).toBe(
+      "Run this from the Astryx project's folder, or declare an Astryx package in this folder's package.json to make it a project of its own.",
+    );
+  });
+
+  it('in a folder that belongs to no project, names no command', () => {
+    const dir = mkProject({'package.json': JSON.stringify({name: 'tool'})});
+    expect(installCommandFor(dir)).toBeNull();
+    const c = checkComputerIntegrationsAvailable({
+      installed: new Set(),
+      candidates: [/** @type {any} */ ({name: '@acme/a'})],
+      install: null,
+    });
+    expect(c.status).toBe('info');
+    expect(c).not.toHaveProperty('fix');
   });
 });
 

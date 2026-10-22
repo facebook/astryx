@@ -392,6 +392,97 @@ describe('doctor: the computer-level agent text', () => {
   const A = '/home/me/.agents/skills/astryx/SKILL.md';
   const C = '/home/me/.claude/skills/astryx';
 
+  it('a skill naming `astryx` with no Astryx CLI on the search path: says whether it is current, and names the step it records', () => {
+    const check = (/** @type {Record<string, any>} */ over) =>
+      checkComputerAgentText({
+        nodeVersion: '22.13.0',
+        answeredBy: {cli: '1.2.0', core: '1.2.0', copy: 'carried'},
+        latest: null,
+        agentText: [{path: A, state: 'current'}],
+        agentTextCommand: 'astryx',
+        searchPathCommands: [],
+        cwd: os.tmpdir(),
+        ...over,
+      });
+    const recorded = check({agentTextInstall: 'pnpm add -g @astryxdesign/cli'});
+    // A package runner's own copy first on the search path does not count.
+    expect(
+      check({
+        agentTextInstall: 'pnpm add -g @astryxdesign/cli',
+        searchPathCommands: [
+          /** @type {any} */ ({
+            file: '/tmp/_npx/r/node_modules/.bin/astryx',
+            astryx: true,
+            runner: true,
+          }),
+        ],
+      }).fix,
+    ).toBe(
+      'Run `pnpm add -g @astryxdesign/cli`, the step the skill names for when `astryx` is not found.',
+    );
+    expect(recorded.status).toBe('info');
+    expect(recorded.message).toContain(
+      `The computer-level agent text matches this release: ${A}. It tells agents to run \`astryx\`, but no \`astryx\` command is on the search path`,
+    );
+    expect(recorded.fix).toBe(
+      'Run `pnpm add -g @astryxdesign/cli`, the step the skill names for when `astryx` is not found.',
+    );
+    // A skill from an earlier release records no step: npm's, worded as
+    // cli-on-path words it.
+    const older = check({
+      agentText: [{path: A, state: 'differs'}],
+      agentTextInstall: null,
+    });
+    expect(older.message).toContain(
+      "The computer-level agent text differs from this release's",
+    );
+    expect(older.fix).toBe(
+      'Install it for the computer: `npm i -g @astryxdesign/cli`.',
+    );
+    // With the Astryx CLI anywhere on the search path, even behind another
+    // program (cli-on-path's to report), or a skill naming a host's command,
+    // there is nothing to restore.
+    for (const over of [
+      {
+        searchPathCommands: [
+          /** @type {any} */ ({
+            file: '/usr/bin/astryx',
+            astryx: true,
+            version: '1.2.0',
+          }),
+        ],
+      },
+      {
+        searchPathCommands: [
+          /** @type {any} */ ({file: '/opt/other/astryx', astryx: false}),
+          /** @type {any} */ ({
+            file: '/usr/bin/astryx',
+            astryx: true,
+            version: '1.2.0',
+          }),
+        ],
+      },
+      {agentTextCommand: 'acme astryx'},
+      // An `astryx` the scan cannot trace (a Volta, asdf or mise shim, or
+      // another program): it may run the CLI, so no report here.
+      {
+        searchPathCommands: [
+          /** @type {any} */ ({
+            file: '/home/me/.volta/bin/astryx',
+            astryx: false,
+            runner: false,
+          }),
+        ],
+      },
+      // Only a package runner's own copy: the CLI is still gone.
+    ]) {
+      const other = check(over);
+      expect(other.message).toBe(
+        `The computer-level agent text matches this release: ${A}.`,
+      );
+    }
+  });
+
   it('present and current, linked: no fix', () => {
     const check = at([
       {path: A, state: 'current'},
@@ -460,6 +551,14 @@ describe('doctor: the computer-level agent text', () => {
       const home = tmpDir('home');
       vi.stubEnv('HOME', home);
       vi.stubEnv('USERPROFILE', home);
+      // The CLI installed for the computer, first on the search path, as the
+      // skill expects.
+      const bin = tmpDir('bin');
+      fs.symlinkSync(
+        path.join(CLI_ROOT, 'clients', 'cli', 'bin', 'astryx.mjs'),
+        path.join(bin, 'astryx'),
+      );
+      vi.stubEnv('PATH', `${bin}${path.delimiter}${process.env.PATH ?? ''}`);
       try {
         const find = r =>
           r.envelope.data.checks.find(c => c.id === 'computer-agent-text');

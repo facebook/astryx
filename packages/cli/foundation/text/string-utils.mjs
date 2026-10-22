@@ -48,7 +48,8 @@ export function findClosestComponents(name, components, maxDistance = 3) {
  *    30  keyword Levenshtein distance 2
  *    20  name Levenshtein distance 3
  *
- * Each result: { name, score, reason }
+ * Each result: { name, score, reason }, plus `keywordAt` when a keyword set
+ * the component's score: the position of the keyword that set it.
  *
  * @param {string} needle
  * @param {string} coreDir
@@ -64,6 +65,9 @@ export async function searchComponents(needle, coreDir, components) {
   const allNames = Object.values(components).flat();
   /** @type {Map<string, {name: string, score: number, reason: string}>} */
   const scored = new Map();
+  /** Position of the keyword that set each component's score. */
+  /** @type {Map<string, number>} */
+  const keywordAt = new Map();
 
   /**
    * @param {string} name
@@ -146,12 +150,14 @@ export async function searchComponents(needle, coreDir, components) {
 
       // Keyword matching
       if (docs.keywords && Array.isArray(docs.keywords)) {
-        for (const kw of docs.keywords) {
+        for (const [at, kw] of docs.keywords.entries()) {
           const kwLower = kw.toLowerCase();
+          const before = scored.get(comp)?.score ?? 0;
 
           // Exact keyword
           if (kwLower === term) {
             addMatch(comp, 90, 'keyword "' + kw + '"');
+            if (!keywordAt.has(comp) || before < 90) keywordAt.set(comp, at);
             break;
           }
 
@@ -170,6 +176,7 @@ export async function searchComponents(needle, coreDir, components) {
             addMatch(comp, 70, 'keyword "' + kw + '" (distance ' + dist + ')');
           else if (dist === 2)
             addMatch(comp, 30, 'keyword "' + kw + '" (distance ' + dist + ')');
+          if ((scored.get(comp)?.score ?? 0) > before) keywordAt.set(comp, at);
         }
       }
 
@@ -202,9 +209,13 @@ export async function searchComponents(needle, coreDir, components) {
     }
   }
 
-  const results = Array.from(scored.values()).sort(
-    (a, b) => b.score - a.score || a.name.localeCompare(b.name),
-  );
+  const results = Array.from(scored.values())
+    .map(r =>
+      keywordAt.has(r.name)
+        ? {...r, keywordAt: /** @type {number} */ (keywordAt.get(r.name))}
+        : r,
+    )
+    .sort((a, b) => b.score - a.score || a.name.localeCompare(b.name));
 
   return results;
 }

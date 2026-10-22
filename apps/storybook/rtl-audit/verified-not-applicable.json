@@ -380,6 +380,15 @@
     "reason": "Comments is a block-axis timeline of CommentThread rows and activity events inside the core ChatLayout and ChatMessageList, with the composer docked on the block axis. It adds no horizontal positioning, directional glyphs, or arrow-key behavior of its own: rows, rails, and dividers use logical properties, and the load-earlier control and error Banners are centered or full width."
   },
   {
+    "component": "core/DropdownMenuItem",
+    "reason": "DropdownMenuItem owns one interactive pointer-menu row whose label, icon, description, and end content follow logical document direction. Its insets use logical properties and its text uses start alignment; it renders no component-owned directional glyph, physical inline placement, reordered controls, horizontal scrolling or dragging, side-placed overlay, or horizontal keyboard behavior. DropdownMenu owns directional placement and keyboard navigation. Exact-head frames still render RTL to confirm inherited direction without adding a component-owned RTL dimension.",
+    "evidence": {
+      "apps/storybook/stories/DropdownMenuItem.stories.tsx": "sha256:62c041b50e970a0485490de20655fc788b3ea0e848cdcf7464d3725b030281f8",
+      "packages/core/src/DropdownMenu/DropdownMenuItem.tsx": "sha256:3d5ee9cb5422c7fa560a3546ec6783c9473c925a795dd266a8757fe420555d44",
+      "packages/core/src/DropdownMenu/index.ts": "sha256:59bf02be4a577cbecf3ad7e981e2577602375892f74548593aa9b998cae733fa"
+    }
+  },
+  {
     "component": "core/DropdownMenuGroup",
     "reason": "DropdownMenuGroup owns a block-axis set of menu rows and an optional heading with symmetric logical inline padding. It renders no directional glyph, physical inline placement, reordered content, horizontal scrolling or dragging, side-placed overlay, or horizontal keyboard behavior of its own; DropdownMenu owns menu placement and row navigation. The exact-head audit still renders RTL frames to confirm inherited direction without adding a component-owned RTL dimension.",
     "evidence": {
