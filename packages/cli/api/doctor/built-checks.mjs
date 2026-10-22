@@ -252,8 +252,7 @@ let lineCache = {text: null, starts: [0]};
  * cannot parse falls back to a scan that skips string literals.
  * @param {string} text
  */
-function withoutComments(text, ext = '') {
-  const parsed = commentRanges(text, ext);
+function withoutComments(text, ext = '', parsed = commentRanges(text, ext)) {
   if (parsed) {
     const out = text.split('');
     for (const [start, end] of parsed) {
@@ -272,12 +271,15 @@ function withoutComments(text, ext = '') {
  * @returns {Array<[number, number]> | null}
  */
 function commentRanges(text, ext) {
-  if (!/\/[/*]/.test(text)) return [];
   const typescript = /^\.[cm]?tsx?$/.test(ext);
   const jsx = ext === '.tsx' || !typescript;
+  const base = [...(typescript ? ['typescript'] : []), ...(jsx ? ['jsx'] : [])];
   for (const plugins of /** @type {any[][]} */ ([
-    [...(typescript ? ['typescript'] : []), ...(jsx ? ['jsx'] : [])],
-    ['jsx', 'flow', ['decorators', {decoratorsBeforeExport: true}]],
+    base,
+    [...base, 'decorators-legacy'],
+    ...(typescript
+      ? []
+      : [['jsx', 'flow', ['decorators', {decoratorsBeforeExport: true}]]]),
   ])) {
     try {
       const ast = parseModule(text, {
@@ -499,11 +501,16 @@ export function scanBuilt(target, packages) {
     }
     if (isBuilt) {
       scan.builtFiles++;
-      if (STYLESHEET_MARK.test(raw)) scan.stylesheets.push(rel);
+      // A commented-out rule or import is not Astryx styling.
+      const styles =
+        ext === '.css' || ext === '.html' || ext === '.htm'
+          ? raw.replace(/\/\*[\s\S]*?\*\/|<!--[\s\S]*?-->/g, ' ')
+          : raw;
+      if (STYLESHEET_MARK.test(styles)) scan.stylesheets.push(rel);
       // A stylesheet that imports an Astryx package's CSS, as the
       // getting-started setup does, uses Astryx.
       if (ext === '.css') {
-        for (const match of raw.matchAll(
+        for (const match of styles.matchAll(
           /@import\s+(?:url\(\s*)?['"]?([^'")\s;]+)/g,
         )) {
           if (!isAstryxSpecifier(match[1], packages)) continue;
@@ -520,7 +527,8 @@ export function scanBuilt(target, packages) {
     }
     if (!isSource) continue;
     scan.sourceFiles++;
-    const text = withoutComments(raw, ext);
+    const ranges = commentRanges(raw, ext);
+    const text = withoutComments(raw, ext, ranges);
     const astryxNames = new Set();
     const iconNames = new Set();
     let fileImports = 0;
@@ -559,6 +567,12 @@ export function scanBuilt(target, packages) {
       if (!/^[A-Z]/.test(name)) continue;
       const uses = text.match(new RegExp(`<${name}(?=[\\s/>.])`, 'g'));
       scan.componentUses += uses?.length ?? 0;
+    }
+    // A file the parser cannot read is not inspected: its imports still
+    // count, but no finding is read from it.
+    if (ranges === null && (JSX_EXT.has(ext) || /\.[cm]?js$/u.test(ext))) {
+      scan.unread++;
+      continue;
     }
     const jsx = /\.[cm]?js$/u.test(ext) ? hasJsx(text) : false;
     if (jsx === null) {

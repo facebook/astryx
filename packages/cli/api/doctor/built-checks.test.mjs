@@ -405,6 +405,26 @@ describe('--built edge cases', () => {
     expect(usage.message).toContain('@astryxdesign/core');
   });
 
+  it('reads a .tsx with TypeScript and legacy decorators, and counts one nothing parses as unread', () => {
+    write({
+      'src/Ok.tsx':
+        'function track(t: any) { return t; }\n@track\nclass Store { value!: string; }\nexport const A = () => <div>Hi</div>;\n',
+      'src/Broken.tsx': 'export const B = () => <div>{</div>;\n@@ enum ;\n',
+    });
+    const scan = scanBuilt(path.join(dir, 'src'), []);
+    expect(scan.findings.filter(f => f.file === 'Ok.tsx')).toHaveLength(1);
+    expect(scan.unread).toBe(1);
+    expect(check('src').purity.status).not.toBe('pass');
+  });
+
+  it('does not count commented-out CSS as Astryx', () => {
+    write({
+      'dist/index.css':
+        "/* @import '@astryxdesign/core/styles.css'; */\n/* --astryx-color: red; */\n.x { color: red; }\n",
+    });
+    expect(check('dist').usage.status).toBe('fail');
+  });
+
   it('survives a file with more findings than a call can spread', () => {
     write({
       'src/Rows.tsx': `export const Rows = () => (\n<>\n${'<p/>\n'.repeat(200_000)}</>);\n`,
