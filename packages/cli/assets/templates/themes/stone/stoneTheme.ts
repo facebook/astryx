@@ -13,21 +13,21 @@ import {stoneIconRegistry} from './icons';
 
 /**
  * Input status border overrides (per-component, per-status). All 9 input
- * components share inputStatusBorderStyles in core, which read
- * --color-{success,warning,error} (T30 light / T80 dark = saturated text
- * tone). Stone redefines those vars inside each input's status scope to
- * T60 light / T70 dark so the border (and the matching status icon) reads
- * as a softer hue rim, in line with the gentle T90 status message bubble.
+ * components share inputStatusBorderStyles in core, which read the dedicated
+ * --color-status-foreground-{success,warning,error} roles. Stone redefines
+ * those vars inside each input's status scope to T60 light / T70 dark so the
+ * border (and the matching status icon) reads as a softer hue rim, in line with
+ * the gentle T90 status message bubble.
  */
 const INPUT_STATUS_VARS = {
   'status:success': {
-    '--color-success': 'light-dark(#7f977e, #99b298)', // Green T60 / T70
+    '--color-status-foreground-success': 'light-dark(#7f977e, #99b298)', // Green T60 / T70
   },
   'status:warning': {
-    '--color-warning': 'light-dark(#9f8f68, #bbaa81)', // Yellow T60 / T70
+    '--color-status-foreground-warning': 'light-dark(#9f8f68, #bbaa81)', // Yellow T60 / T70
   },
   'status:error': {
-    '--color-error': 'light-dark(#a58b86, #c0a5a1)', // Red T60 / T70
+    '--color-status-foreground-error': 'light-dark(#a58b86, #c0a5a1)', // Red T60 / T70
   },
 } as const;
 

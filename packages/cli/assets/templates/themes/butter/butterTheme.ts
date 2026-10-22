@@ -92,6 +92,19 @@ const SECONDARY_COMPLEX_SELECTOR = {
   ':hover:not(:has(> :disabled))': SECONDARY_BUTTON[':hover'],
 } as const;
 
+/** Preserve Butter's bright status rims and glyphs in input status scopes. */
+const INPUT_STATUS_VARS = {
+  'status:success': {
+    '--color-status-foreground-success': '#91D143',
+  },
+  'status:warning': {
+    '--color-status-foreground-warning': '#ffc502',
+  },
+  'status:error': {
+    '--color-status-foreground-error': '#fc473b',
+  },
+} as const;
+
 export const butterTheme = defineTheme({
   name: 'butter',
 
@@ -524,9 +537,7 @@ export const butterTheme = defineTheme({
         paddingInline: 'var(--spacing-3)',
         borderColor: 'var(--color-border)',
       },
-      'status:success': {'--color-success': '#91D143'},
-      'status:warning': {'--color-warning': '#ffc502'},
-      'status:error': {'--color-error': '#fc473b'},
+      ...INPUT_STATUS_VARS,
     },
     'text-area': {
       base: {
@@ -534,9 +545,7 @@ export const butterTheme = defineTheme({
         paddingInline: 'var(--spacing-3)',
         borderColor: 'var(--color-border)',
       },
-      'status:success': {'--color-success': '#91D143'},
-      'status:warning': {'--color-warning': '#ffc502'},
-      'status:error': {'--color-error': '#fc473b'},
+      ...INPUT_STATUS_VARS,
     },
     'number-input': {
       base: {
@@ -544,9 +553,7 @@ export const butterTheme = defineTheme({
         paddingInline: 'var(--spacing-3)',
         borderColor: 'var(--color-border)',
       },
-      'status:success': {'--color-success': '#91D143'},
-      'status:warning': {'--color-warning': '#ffc502'},
-      'status:error': {'--color-error': '#fc473b'},
+      ...INPUT_STATUS_VARS,
     },
     'date-input': {
       base: {
@@ -554,9 +561,7 @@ export const butterTheme = defineTheme({
         paddingInline: 'var(--spacing-3)',
         borderColor: 'var(--color-border)',
       },
-      'status:success': {'--color-success': '#91D143'},
-      'status:warning': {'--color-warning': '#ffc502'},
-      'status:error': {'--color-error': '#fc473b'},
+      ...INPUT_STATUS_VARS,
     },
     'time-input': {
       base: {
@@ -564,9 +569,7 @@ export const butterTheme = defineTheme({
         paddingInline: 'var(--spacing-3)',
         borderColor: 'var(--color-border)',
       },
-      'status:success': {'--color-success': '#91D143'},
-      'status:warning': {'--color-warning': '#ffc502'},
-      'status:error': {'--color-error': '#fc473b'},
+      ...INPUT_STATUS_VARS,
     },
     selector: {
       base: {
@@ -574,9 +577,7 @@ export const butterTheme = defineTheme({
         paddingInline: 'var(--spacing-3)',
         borderColor: 'var(--color-border)',
       },
-      'status:success': {'--color-success': '#91D143'},
-      'status:warning': {'--color-warning': '#ffc502'},
-      'status:error': {'--color-error': '#fc473b'},
+      ...INPUT_STATUS_VARS,
       'variant:secondary': SECONDARY_SELECTOR,
     },
     'multi-selector': {
@@ -585,9 +586,7 @@ export const butterTheme = defineTheme({
         paddingInline: 'var(--spacing-3)',
         borderColor: 'var(--color-border)',
       },
-      'status:success': {'--color-success': '#91D143'},
-      'status:warning': {'--color-warning': '#ffc502'},
-      'status:error': {'--color-error': '#fc473b'},
+      ...INPUT_STATUS_VARS,
       'variant:secondary': SECONDARY_SELECTOR,
     },
     'complex-selector': {'variant:secondary': SECONDARY_COMPLEX_SELECTOR},
@@ -597,9 +596,7 @@ export const butterTheme = defineTheme({
         paddingInline: 'var(--spacing-3)',
         borderColor: 'var(--color-border)',
       },
-      'status:success': {'--color-success': '#91D143'},
-      'status:warning': {'--color-warning': '#ffc502'},
-      'status:error': {'--color-error': '#fc473b'},
+      ...INPUT_STATUS_VARS,
     },
     tokenizer: {
       base: {
@@ -607,9 +604,7 @@ export const butterTheme = defineTheme({
         paddingInline: 'var(--spacing-3)',
         borderColor: 'var(--color-border)',
       },
-      'status:success': {'--color-success': '#91D143'},
-      'status:warning': {'--color-warning': '#ffc502'},
-      'status:error': {'--color-error': '#fc473b'},
+      ...INPUT_STATUS_VARS,
     },
 
     // Display sizes use Sarina — the signature buttery display
