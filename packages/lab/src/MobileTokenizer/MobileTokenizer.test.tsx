@@ -15,6 +15,8 @@ import {
   within,
 } from '@testing-library/react';
 import {useState} from 'react';
+import * as stylex from '@stylexjs/stylex';
+import {colorVars} from '@astryxdesign/core/theme/tokens.stylex';
 import {MobileTokenizer, type MobileTokenizerChange} from './MobileTokenizer';
 import type {SearchSource, SearchableItem} from '@astryxdesign/core/Typeahead';
 
@@ -336,5 +338,141 @@ describe('MobileTokenizer (Lab, single-sheet flow)', () => {
       [],
       expect.objectContaining({type: 'remove'}),
     );
+  });
+
+  it('keeps a disabled trigger focusable without opening the sheet (AST-085 FR1, FR2)', () => {
+    render(
+      <MobileTokenizer
+        label="Tags"
+        searchSource={source}
+        value={[ITEMS[0]]}
+        onChange={() => {}}
+        isDisabled
+      />,
+    );
+    const trigger = screen.getByRole('button', {name: /Tags/});
+    expect(trigger).not.toHaveAttribute('disabled');
+    expect(trigger).toHaveAttribute('aria-disabled', 'true');
+    trigger.focus();
+    expect(trigger).toHaveFocus();
+    fireEvent.click(trigger);
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    expect(
+      screen.queryByTestId('mobile-tokenizer-list'),
+    ).not.toBeInTheDocument();
+  });
+
+  it('keeps an unselectable row at the limit focusable but inert (AST-085 FR1, FR2)', async () => {
+    const spy = vi.fn();
+    render(
+      <MobileTokenizer
+        label="Tags"
+        searchSource={source}
+        value={[ITEMS[0]]}
+        maxEntries={1}
+        debounceMs={0}
+        onChange={spy}
+      />,
+    );
+    fireEvent.click(screen.getByRole('button', {name: /Tags/}));
+    const row = await screen.findByRole('checkbox', {name: 'Energizer'});
+    expect(row).not.toHaveAttribute('disabled');
+    expect(row).toHaveAttribute('aria-disabled', 'true');
+    fireEvent.click(row);
+    expect(spy).not.toHaveBeenCalled();
+    expect(row).toHaveAttribute('aria-checked', 'false');
+    // In forced colors its indicator border takes GrayText (AST-085 FR6).
+    const indicatorClasses = stylex
+      .props(
+        stylex.create({
+          border: {
+            borderColor: {
+              default: colorVars['--color-border'],
+              '@media (forced-colors: active)': 'GrayText',
+            },
+          },
+        }).border,
+      )
+      .className!.split(' ')
+      .filter(name => !name.includes('__'));
+    const indicator = row.querySelector('.astryx-checkbox-indicator')!;
+    for (const name of indicatorClasses) {
+      expect(indicator).toHaveClass(name);
+    }
+  });
+
+  it('paints the placeholder of a disabled empty trigger GrayText in forced colors (AST-085 FR6)', () => {
+    const placeholderClasses = stylex
+      .props(
+        stylex.create({
+          placeholder: {
+            color: {
+              default: colorVars['--color-text-secondary'],
+              '@media (forced-colors: active)': 'GrayText',
+            },
+          },
+        }).placeholder,
+      )
+      .className!.split(' ')
+      .filter(name => !name.includes('__'));
+    render(
+      <MobileTokenizer
+        label="Tags"
+        searchSource={source}
+        value={[]}
+        onChange={() => {}}
+        placeholder="Add tags"
+        isDisabled
+      />,
+    );
+    const placeholder = screen.getByText('Add tags');
+    for (const name of placeholderClasses) {
+      expect(placeholder).toHaveClass(name);
+    }
+  });
+
+  it('paints a disabled trigger and its tokens GrayText in forced colors (AST-085 FR6)', () => {
+    // The same declarations as the component's styles compile to the same
+    // atomic classes; without them the tokens keep their CanvasText label.
+    const atoms = (style: stylex.StyleXStyles) =>
+      stylex
+        .props(style)
+        .className!.split(' ')
+        .filter(name => !name.includes('__'));
+    const forced = stylex.create({
+      trigger: {
+        borderColor: {
+          default: colorVars['--color-border'],
+          '@media (forced-colors: active)': 'GrayText',
+        },
+        color: {default: null, '@media (forced-colors: active)': 'GrayText'},
+      },
+      token: {
+        color: {
+          default: colorVars['--color-text-primary'],
+          '@media (forced-colors: active)': 'GrayText',
+        },
+      },
+    });
+    render(
+      <MobileTokenizer
+        label="Tags"
+        searchSource={source}
+        value={[ITEMS[0], ITEMS[1]]}
+        onChange={() => {}}
+        isDisabled
+      />,
+    );
+    const trigger = screen.getByRole('button', {name: /Tags/});
+    for (const name of atoms(forced.trigger)) {
+      expect(trigger).toHaveClass(name);
+    }
+    const tokens = trigger.querySelectorAll('.astryx-token');
+    expect(tokens).toHaveLength(2);
+    for (const token of tokens) {
+      for (const name of atoms(forced.token)) {
+        expect(token).toHaveClass(name);
+      }
+    }
   });
 });

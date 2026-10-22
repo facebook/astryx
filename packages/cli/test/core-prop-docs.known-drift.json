@@ -20,8 +20,6 @@
   "src/DropdownMenu/DropdownMenu.doc.mjs DropdownMenu.items required_mismatch",
   "src/DropdownMenu/DropdownMenuCheckboxItem.doc.mjs DropdownMenuCheckboxItem.label required_mismatch",
   "src/DropdownMenu/DropdownMenuCheckboxItem.doc.mjs DropdownMenuCheckboxItem.value required_mismatch",
-  "src/DropdownMenu/DropdownMenuItem.doc.mjs DropdownMenuItem.isDisabled not_in_doc",
-  "src/DropdownMenu/DropdownMenuItem.doc.mjs DropdownMenuItem.label required_mismatch",
   "src/DropdownMenu/DropdownMenuRadioGroup.doc.mjs DropdownMenuRadioGroup.children required_mismatch",
   "src/DropdownMenu/DropdownMenuRadioGroup.doc.mjs DropdownMenuRadioGroup.label required_mismatch",
   "src/DropdownMenu/DropdownMenuRadioGroup.doc.mjs DropdownMenuRadioGroup.onChange required_mismatch",
