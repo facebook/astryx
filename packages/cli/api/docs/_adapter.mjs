@@ -1129,7 +1129,16 @@ export async function docsLinkProblems(
     }
   }
   for (const node of tree.nodes.values()) {
-    if (owner != null && node.provider !== owner) continue;
+    // A package owns a guide it placed, and a guide it replaces or extends by
+    // its route.
+    if (
+      owner != null &&
+      node.provider !== owner &&
+      node.guideOverlay?.replacement?.package !== owner &&
+      !node.guideOverlay?.extensions.some(each => each.package === owner)
+    ) {
+      continue;
+    }
     if (node.kind === 'generic' && node.ref?.topicFile) {
       try {
         note(node.route, await topicLinkProblems(catalog, guideEntry(node)));
@@ -1534,7 +1543,9 @@ export function guideEntry(node) {
           providerId: replacement.providerId ?? replacement.package,
           path: replacement.path,
           replaces: node.route,
-          replacedPackage: node.provider,
+          // The package whose guide it took over: an earlier replacement's,
+          // when the guide was already replaced.
+          replacedPackage: overlay.replacedPackage ?? node.provider,
         }
       : {}),
     extensions: [...overlay.extensions],

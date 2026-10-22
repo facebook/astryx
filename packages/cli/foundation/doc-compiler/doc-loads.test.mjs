@@ -393,6 +393,7 @@ const LOADER_MODULES = {
     'mergeTopic',
     'mergeTopicReport',
     'problemsInTopic',
+    'withoutPosition',
     'withSourceTitle',
   ],
 };

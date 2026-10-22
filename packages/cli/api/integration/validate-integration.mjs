@@ -35,13 +35,12 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {assertWithin} from '../../foundation/fs/path-safety.mjs';
 import {normalizeProviderId} from '../../foundation/identity/provider-identity.mjs';
-import {
-  integrationDocTypes,
-  packageDocTargets,
-} from '../docs/_adapter.mjs';
-import {discoverIntegrationDocs} from '../../foundation/discovery/docs-discovery.mjs';
+import {integrationDocTypes} from '../docs/_adapter.mjs';
 import {integrationDocConsistency} from '../../foundation/discovery/doc-consistency.mjs';
-import {integrationRunnerCommands} from './_adapter.mjs';
+import {
+  integrationDocTargets,
+  integrationRunnerCommands,
+} from './_adapter.mjs';
 import {
   THEME_SLUG_RE,
   unreadThemeFolders,
@@ -86,6 +85,9 @@ const DOC_TARGET_NOT_FOUND = 'doc_target_not_found';
 
 /** An extension section's `before` or `after` names no section of the base. */
 const DOC_SECTION_UNPLACED = 'doc_section_unplaced';
+
+/** Two docs of one package replace one guide; only the last one is read. */
+const DUPLICATE_GUIDE_REPLACEMENT = 'duplicate_guide_replacement';
 
 export {validateLoadedIntegration, isListedIssue};
 
@@ -723,23 +725,22 @@ async function runnerCommandNotes(integration) {
  * @returns {Promise<Array<{code: string, message: string}>>}
  */
 async function docTargetNotes(integration) {
-  let discovered;
-  try {
-    discovered = await discoverIntegrationDocs(integration);
-  } catch {
-    return [];
-  }
-  // A doc that does not load is an issue already; its targets are not read.
-  if (discovered.errors.length > 0) return [];
   /** @type {Array<{code: string, message: string}>} */
   const notes = [];
-  /** @type {Awaited<ReturnType<typeof packageDocTargets>>} */
-  let targets;
-  try {
-    targets = await packageDocTargets(integration, discovered);
-  } catch {
-    // A package whose docs cannot form a tree is reported by the docs check.
-    return [];
+  const targets = await integrationDocTargets(integration);
+  /** @type {Map<string, string[]>} lowercased route → the docs replacing it */
+  const replacers = new Map();
+  for (const each of targets) {
+    if (each.kind !== 'guide' || each.relationship !== 'replaces') continue;
+    const key = each.target.toLowerCase();
+    replacers.set(key, [...(replacers.get(key) ?? []), each.topic]);
+  }
+  for (const [route, topics] of replacers) {
+    if (topics.length < 2) continue;
+    notes.push({
+      code: DUPLICATE_GUIDE_REPLACEMENT,
+      message: `"${topics.join('", "')}" all replace the guide "${route}", and only the last, "${topics.at(-1)}", is read. Fix: keep one replacement, or make the others extend it.`,
+    });
   }
   for (const each of targets) {
     if (each.kind === 'namespace') {
@@ -752,7 +753,7 @@ async function docTargetNotes(integration) {
     } else if (each.kind == null) {
       notes.push({
         code: DOC_TARGET_NOT_FOUND,
-        message: `"${each.topic}" ${each.relationship} "${each.target}", which is no topic and no guide in the docs tree, so it changes nothing. Fix: name a topic as \`${formatCliCommand('docs')}\` lists it, or a guide's route as \`${formatCliCommand('docs cli --depth all')}\` lists it.`,
+        message: `"${each.topic}" ${each.relationship} "${each.target}", which is no topic and no guide in the docs tree, so it changes nothing. Fix: name a topic as \`${formatCliCommand('docs')}\` lists it, or a guide's route as \`${formatCliCommand('docs authoring --depth all')}\` or \`${formatCliCommand('docs cli --depth all')}\` lists it.`,
       });
     }
     for (const {section, field, key} of each.unplaced) {

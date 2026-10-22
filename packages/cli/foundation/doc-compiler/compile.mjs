@@ -23,7 +23,11 @@
 
 import {parseTemplate} from '../../authoring/doctypes/template/parse.mjs';
 import {parseTheme} from '../../authoring/doctypes/theme/parse.mjs';
-import {mergeTopic, problemsInTopic} from '../discovery/docs-discovery.mjs';
+import {
+  mergeTopic,
+  problemsInTopic,
+  withoutPosition,
+} from '../discovery/docs-discovery.mjs';
 import {
   sectionKey,
   sectionKeyErrors,
@@ -179,6 +183,9 @@ export function lowerReferenceTopic(input) {
       );
     }
   }
+  // `before` and `after` place an extension's sections while it merges; no
+  // read carries them, whether or not the doc extends anything.
+  doc = {...doc, sections: doc.sections.map(withoutPosition)};
   // Derived keys are stamped only now, so they never take part in merging.
   const keyed = withSectionKeys(doc);
   /** @type {Record<string, string>} */

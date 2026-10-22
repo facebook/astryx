@@ -137,14 +137,14 @@ export interface ReferenceDoc extends AuthoredDocGraphFields {
    *  `replaces: 'getting-started'` on a doc named `getting-started` swaps the
    *  content, and on a doc named something else swaps it and leaves the old
    *  name as an alias, so `astryx docs getting-started` still resolves.
-   *  A route (`'cli/integrations/quick-start'`) names a guide the docs tree
+   *  A route (`'authoring/quick-start'`) names a guide the docs tree
    *  places: readers who open that route get this doc.
    *  Ignored on a built-in topic (there is nothing above it to replace). */
   replaces?: string;
   /** Name of an existing topic this doc merges onto, section by section: a
    *  section whose title matches one in the base replaces it, and a section
    *  the base does not have is added where its `before` or `after` says, else
-   *  at the end. A route (`'cli/integrations/quick-start'`) names a guide the
+   *  at the end. A route (`'authoring/quick-start'`) names a guide the
    *  docs tree places. For correcting or adding to a topic rather than owning
    *  it — `replaces` and `extends` are exclusive. */
   extends?: string;

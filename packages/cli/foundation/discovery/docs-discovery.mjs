@@ -86,6 +86,8 @@ export function isGuideRoute(target) {
  *   route instead of the guide; the last package configured wins
  * @property {Array<{package: string, path: string, providerId?: string}>} extensions
  *   extensions authored after the replacement, if any, in configured order
+ * @property {string} [replacedPackage] the package of the replacement this one
+ *   took over from, when the guide was replaced twice
  */
 
 /**
@@ -679,6 +681,8 @@ export function mergeTopicReport(base, overlay) {
   const sections = [...(base.sections ?? [])];
   /** @type {Array<{section: string, field: 'before' | 'after', key: string}>} */
   const unplaced = [];
+  /** The last section placed after each anchor, so later ones follow it. */
+  const lastAfter = new Map();
   for (const authored of overlay.sections ?? []) {
     const section = withoutPosition(authored);
     const at = findMergeTarget(sections, section);
@@ -695,8 +699,13 @@ export function mergeTopicReport(base, overlay) {
       if (anchor === -1) {
         unplaced.push({section: sectionKey(section), field, key});
         sections.push(section);
+      } else if (field === 'before') {
+        sections.splice(anchor, 0, section);
       } else {
-        sections.splice(field === 'before' ? anchor : anchor + 1, 0, section);
+        // Sections placed after one anchor keep their authored order.
+        const previous = sections.indexOf(lastAfter.get(sections[anchor]));
+        sections.splice((previous === -1 ? anchor : previous) + 1, 0, section);
+        lastAfter.set(sections[anchor], section);
       }
     } else {
       // A legacy extension that replaces a section which has since gained a
@@ -717,7 +726,7 @@ export function mergeTopicReport(base, overlay) {
  * @param {any} section
  * @returns {any}
  */
-function withoutPosition(section) {
+export function withoutPosition(section) {
   if (section?.before == null && section?.after == null) return section;
   const {before: _before, after: _after, ...rest} = section;
   // Copy every own symbol (the provider and authored-title marks) too.
@@ -836,6 +845,7 @@ export class DocsCatalog {
    * tree is built: {@link guideOverlay} applies the record there, and a route
    * that holds none applies nothing.
    * @param {DocsTopicRecord} record
+   * @returns {import('../integrations/issue').AstryxIntegrationIssue | null}
    */
   #targetGuide(record) {
     const route = /** @type {string} */ (
@@ -847,6 +857,15 @@ export class DocsCatalog {
       extensions: [],
     };
     if (record.replaces != null) {
+      const earlier = overlay.replacement;
+      if (earlier) {
+        // As with a flat topic, the later-configured doc wins, and reads name
+        // the replacement it took over from. Unlike a flat topic's, this is
+        // no warning: a new failing finding joins only in a minor release
+        // (architecture:cli-surface INV35); `integration validate` lists one
+        // package's two replacements of a guide as a note.
+        overlay.replacedPackage = earlier.package;
+      }
       // Extensions were authored against the content that just went away.
       overlay.replacement = record;
       overlay.extensions = [];
@@ -859,6 +878,7 @@ export class DocsCatalog {
     }
     this.#guideOverlays.set(key, overlay);
     this.#guideTargeters.push(record);
+    return null;
   }
 
   /**
@@ -975,8 +995,7 @@ export class DocsCatalog {
     if (record.extendsTopic != null) {
       const target = this.resolve(record.extendsTopic);
       if (!target && isGuideRoute(record.extendsTopic)) {
-        this.#targetGuide(record);
-        return null;
+        return this.#targetGuide(record);
       }
       if (!target) {
         return {
@@ -996,8 +1015,7 @@ export class DocsCatalog {
     if (record.replaces != null) {
       const target = this.resolve(record.replaces);
       if (!target && isGuideRoute(record.replaces)) {
-        this.#targetGuide(record);
-        return null;
+        return this.#targetGuide(record);
       }
       if (!target) {
         return {

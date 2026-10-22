@@ -99,7 +99,7 @@ export const docs = {
         {
           type: 'code',
           lang: 'bash',
-          code: '# Every guide route\nastryx docs cli --depth all\n# The keys to place sections by\nastryx docs authoring/quick-start --index',
+          code: '# Every guide route, by namespace\nastryx docs authoring --depth all\nastryx docs cli --depth all\n# The keys to place sections by\nastryx docs authoring/quick-start --index',
         },
       ],
     },
