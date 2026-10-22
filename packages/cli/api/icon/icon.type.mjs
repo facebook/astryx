@@ -9,12 +9,14 @@
 
 /**
  * The variant an icon's own export draws.
+ * @experimental May change or be removed in a patch release.
  * @typedef {object} IconSetDefaultVariant
  * @property {string} [variant] - One of the set's declared variants.
  */
 
 /**
  * One variant of an icon.
+ * @experimental May change or be removed in a patch release.
  * @typedef {object} IconVariantEntry
  * @property {string} variant - Which of the set's declared variants it draws.
  * @property {string} module - The import specifier the variant is read from.
@@ -23,11 +25,13 @@
 
 /**
  * One variant of an icon, with its import line.
+ * @experimental May change or be removed in a patch release.
  * @typedef {IconVariantEntry & {import: string}} IconDetailVariantEntry
  */
 
 /**
  * One icon, as every icon read names it.
+ * @experimental May change or be removed in a patch release.
  * @typedef {object} IconRecord
  * @property {string} set - The set's name.
  * @property {string} id - The icon's id, unique in its set.
@@ -42,11 +46,13 @@
 
 /**
  * One ranked icon match.
+ * @experimental May change or be removed in a patch release.
  * @typedef {IconRecord & {reason: string, score: number}} IconMatchEntry
  */
 
 /**
  * `astryx --json experimental icon <words>`.
+ * @experimental May change or be removed in a patch release.
  * @typedef {object} IconSearchResponse
  * @property {'icon.search'} type
  * @property {object} data
@@ -57,6 +63,7 @@
 
 /**
  * `astryx --json experimental icon <set>/<id>`.
+ * @experimental May change or be removed in a patch release.
  * @typedef {object} IconDetailResponse
  * @property {'icon.detail'} type
  * @property {string} package - The integration package that ships the set.
@@ -65,6 +72,7 @@
 
 /**
  * One installed set.
+ * @experimental May change or be removed in a patch release.
  * @typedef {object} IconSetEntry
  * @property {string} name
  * @property {string} displayName
@@ -80,6 +88,7 @@
 
 /**
  * Which icon definitions one set's `map` covers.
+ * @experimental May change or be removed in a patch release.
  * @typedef {object} IconSetCoverage
  * @property {{mapped: number, total: number, missing: string[]}} builtIn - Built-in definitions: every set maps them all.
  * @property {{mapped: number, total: number}} astryx - Every Astryx definition, built in or not.
@@ -88,6 +97,7 @@
 
 /**
  * A set that answers nothing, and why.
+ * @experimental May change or be removed in a patch release.
  * @typedef {object} IconWithdrawnEntry
  * @property {string} name
  * @property {string} package
@@ -96,6 +106,7 @@
 
 /**
  * `astryx --json experimental icon --list`.
+ * @experimental May change or be removed in a patch release.
  * @typedef {object} IconListResponse
  * @property {'icon.list'} type
  * @property {object} data
@@ -108,6 +119,7 @@
 
 /**
  * `astryx --json experimental icon use <set>`.
+ * @experimental May change or be removed in a patch release.
  * @typedef {object} IconUseResponse
  * @property {'icon.use'} type
  * @property {object} data
@@ -121,6 +133,7 @@
 
 /**
  * Options for `iconMap()`.
+ * @experimental May change or be removed in a patch release.
  * @typedef {object} IconMapOptions
  * @property {string} [cwd]
  * @property {string} [set] - The set to edit, when the package ships several.
@@ -129,6 +142,7 @@
 
 /**
  * `astryx --json experimental icon map <definition> <icon>`.
+ * @experimental May change or be removed in a patch release.
  * @typedef {object} IconMapResponse
  * @property {'icon.map'} type
  * @property {object} data
@@ -144,6 +158,7 @@
 
 /**
  * Options for `iconAdd()`.
+ * @experimental May change or be removed in a patch release.
  * @typedef {object} IconAddOptions
  * @property {string} [cwd]
  * @property {string} from - The module the icon is exported from: a package, a package subpath, or a relative path in this package.
@@ -159,6 +174,7 @@
 
 /**
  * `astryx --json experimental icon add <Export> --from <module> --definition <name>`.
+ * @experimental May change or be removed in a patch release.
  * @typedef {object} IconAddResponse
  * @property {'icon.add'} type
  * @property {object} data
@@ -175,6 +191,7 @@
 
 /**
  * One icon definition that fits an export.
+ * @experimental May change or be removed in a patch release.
  * @typedef {object} IconDefinitionMatch
  * @property {string} name
  * @property {string} description
@@ -186,6 +203,7 @@
 
 /**
  * `astryx --json experimental icon add <Export> --from <module>` with no definition.
+ * @experimental May change or be removed in a patch release.
  * @typedef {object} IconDefinitionMatchesResponse
  * @property {'icon.definitionMatches'} type
  * @property {object} data
@@ -198,6 +216,7 @@
 
 /**
  * Options for `icon()`.
+ * @experimental May change or be removed in a patch release.
  * @typedef {object} IconOptions
  * @property {string} [cwd]
  * @property {boolean} [list] - List the installed sets.
@@ -207,6 +226,7 @@
 
 /**
  * Options for `iconNewSet()`.
+ * @experimental May change or be removed in a patch release.
  * @typedef {object} IconNewSetOptions
  * @property {string} [cwd] - A directory inside the integration package.
  * @property {boolean} [dryRun] - Return the receipt without writing.
@@ -216,6 +236,7 @@
 
 /**
  * Options for `iconNewDefinition()`.
+ * @experimental May change or be removed in a patch release.
  * @typedef {object} IconNewDefinitionOptions
  * @property {string} [cwd] - A directory inside the icon-set package.
  * @property {boolean} [dryRun] - Return the receipt without writing.
@@ -227,6 +248,7 @@
 
 /**
  * What `iconNewSet()` and `iconNewDefinition()` wrote.
+ * @experimental May change or be removed in a patch release.
  * @typedef {object} IconNewData
  * @property {'icon-set' | 'icon-definition'} kind
  * @property {string} name
@@ -242,6 +264,7 @@
 
 /**
  * `astryx --json experimental icon new-set <name>`.
+ * @experimental May change or be removed in a patch release.
  * @typedef {object} IconNewSetResponse
  * @property {'icon.newSet'} type
  * @property {IconNewData} data
@@ -249,11 +272,15 @@
 
 /**
  * `astryx --json experimental icon new-definition <name>`.
+ * @experimental May change or be removed in a patch release.
  * @typedef {object} IconNewDefinitionResponse
  * @property {'icon.newDefinition'} type
  * @property {IconNewData} data
  */
 
-/** @typedef {IconNewSetResponse | IconNewDefinitionResponse} IconNewResponse */
+/**
+ * @experimental May change or be removed in a patch release.
+ * @typedef {IconNewSetResponse | IconNewDefinitionResponse} IconNewResponse
+ */
 
 export {};

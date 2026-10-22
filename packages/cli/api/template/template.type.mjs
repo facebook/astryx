@@ -55,7 +55,7 @@
  * @property {string[]} data.components
  * @property {string} data.source
  * @property {number} data.demoMediaReplaced Astryx demo media references (images, posters, videos) replaced in the returned source: images with a neutral placeholder, videos with an empty source. Swap in your own media at those points; no media is installed. 0 when the template carried none.
- * @property {TemplateIconsReport} [data.icons] Experimental, present only when the project sets `experimental.iconSet`: how the template's icons follow the project's icon set, each icon `mapped` (source and target) or `kept`, and the icon-set state.
+ * @property {TemplateIconsReport} [data.icons] Experimental, present only when the project sets `experimental.iconSet`: how the template's icons follow the project's icon set, each icon `mapped` (source and target) or `kept`, and the icon-set state. It may change or be removed in a patch release.
  */
 
 /**
@@ -84,13 +84,14 @@
  * @property {string[]} data.notes Setup notes: what the template needs that the project lacks (missing packages, missing StyleX compiler). Each note is one actionable line. Empty when the template needs nothing the project lacks.
  * @property {string[]} data.missingPackages External package names the template imports that are not in the project's dependencies. Empty when none are missing.
  * @property {string | null} data.installCommand A ready-to-run install command for the missing packages, using the project's package manager and the CLI workspace's version ranges. Null when no packages are missing, or when several lockfiles leave the package manager undetermined; missingPackages still names the packages.
- * @property {TemplateIconsReport} [data.icons] Experimental, present only when the project sets `experimental.iconSet`: how the written file's icons follow the project's icon set, each icon `mapped` (source and target) or `kept`, and the icon-set state.
+ * @property {TemplateIconsReport} [data.icons] Experimental, present only when the project sets `experimental.iconSet`: how the written file's icons follow the project's icon set, each icon `mapped` (source and target) or `kept`, and the icon-set state. It may change or be removed in a patch release.
  */
 
 /**
  * How a template's icons follow the project's icon set (AST-084 FR10).
  * Without a project icon set (`status` `none`, `ambiguous`, or `missing`)
  * the source is unchanged and both lists are empty.
+ * @experimental May change or be removed in a patch release.
  * @typedef {object} TemplateIconsReport
  * @property {'selected' | 'none' | 'ambiguous' | 'missing'} status The project's icon-set state.
  * @property {string | null} set The project's icon set as `<package>/<set>`, when selected.

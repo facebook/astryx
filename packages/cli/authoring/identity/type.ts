@@ -43,7 +43,11 @@ export type ProviderInstanceId = string & {
 /** Lowercase `sha256:<64 hex characters>` digest. */
 export type ContentDigest = string & {readonly [contentDigestBrand]: true};
 
-/** Every stable artifact kind owned by a provider. */
+/**
+ * Every artifact kind owned by a provider, each with a stable identity. The
+ * `icon-definition` kind is experimental (spec:AST-084): it may change or be
+ * removed in a patch release.
+ */
 export type ContributionKind =
   AuthoredDocKind | 'theme' | 'codemod' | 'agent-doc';
 

@@ -112,6 +112,7 @@ import {alignCommand, addCliCommandFor, computerAgentTextState, installCommandFo
  *   path (e.g. multiple config files present), surfaced by checkConfig as a FAIL.
  * @property {{sets: Array<{name: string, package: string}>, withdrawn: Array<{name: string, package: string, reason: string}>, choice: {status: 'selected'|'none'|'ambiguous'|'missing', reason: string, configured?: string}}|null} [iconSets]
  *   The project's icon sets (AST-084 FR17), or null when they could not be read.
+ *   Experimental: may change or be removed in a patch release.
  * @property {string|null} [projectError] - Why the CLI could not load the
  *   project from its config, when it could not. Checks that need the loaded
  *   project quote it when they skip, so a skip says what was found.

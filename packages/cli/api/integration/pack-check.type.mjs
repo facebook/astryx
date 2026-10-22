@@ -28,7 +28,7 @@
  * @property {{version: string, id: string}[]} codemods
  * @property {string[]} docs
  * @property {string[]} agentDocsAppend
- * @property {string[]} [iconSets] - Icon set names; present only when the package declares `experimental.iconSets`. @experimental May change or be removed in a patch release.
+ * @property {string[]} [iconSets] - Icon set names; present only when the package declares `experimental.iconSets`. Experimental: may change or be removed in a patch release.
  */
 
 /**
@@ -61,6 +61,8 @@
 /**
  * @typedef {object} PackCheckInventoryRoot
  * @property {'themes'|'components'|'templates'|'codemods'|'docs'|'iconSets'} kind
+ *   `iconSets` is the experimental icon-set root: it may change or be removed
+ *   in a patch release.
  * @property {string} path
  * @property {number} expectedFiles
  * @property {string[]} missingFiles
