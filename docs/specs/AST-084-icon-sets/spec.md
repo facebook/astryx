@@ -61,6 +61,14 @@ icon, and the CLI verifies it, writes the files, and checks the set.
     `experimental` command group; no stable command gains an icon-set
     subcommand or option value, and the one icon-set kind on a stable command
     is discover's `icon-set`, read only with the opt-in (FR17, DEC-8);
+  - `astryx experimental` is a top-level command group admitted here under
+    `spec:AST-042/FR4`. It answers one question: where does a CLI control live
+    while it may still change in a patch release? No existing command can hold
+    such controls, because `spec:AST-017/FR27` keeps experimental controls off
+    every stable command and its output; extending `help` or any stable family
+    would change that command. Its one job is to group experimental
+    commands. It performs no operation itself, so `spec:AST-042/FR1` names no
+    function for it; each command under it names its own;
   - configuration is `experimental.iconSet` in `astryx.config`, the project's
     opt-in, and `experimental.iconSets` in the integration manifest;
   - the guides and schemas live under `cli/experimental` (the guide, the
