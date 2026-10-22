@@ -15,9 +15,11 @@
  *   findings of the source check in `astryx docs is-my-code-good` (raw
  *   elements Astryx has a component for, raw SVG and icon-library icons,
  *   inline styles, classes, StyleX declarations and imported stylesheets),
- *   each with its file and line; info when the path holds no source.
- * @position Pure: the doctor adapter reads the files (readBuiltPath); this
- *   never runs project code or a browser. Plain `astryx doctor` does not run
+ *   each with its file and line; info, "not inspected", when the path holds
+ *   no source with JSX (a bundle is build output, not source).
+ * @position Pure: the doctor adapter reads the files (readBuiltPath) and the
+ *   integration package names (builtIntegrationPackages); nothing here runs
+ *   project code, its configuration, or a browser. Plain `astryx doctor` does not run
  *   it.
  */
 
@@ -26,6 +28,7 @@ import {
   readBuiltPath,
   resolveBuiltPath,
 } from './_adapter.mjs';
+import {formatCliCommand} from '../../foundation/env/package-manager.mjs';
 
 /** Source files, read for imports and JSX. */
 const SOURCE_EXT = new Set(['.tsx', '.jsx', '.ts', '.js', '.mjs', '.cjs']);
@@ -40,8 +43,14 @@ function extensionOf(rel) {
   return dot > 0 ? name.slice(dot).toLowerCase() : '';
 }
 
-/** Files that can hold JSX. */
+/** Files that hold JSX by their extension. */
 const JSX_EXT = new Set(['.tsx', '.jsx']);
+
+/**
+ * JSX written in a `.js` or `.mjs` source file: an element opened where an
+ * expression starts (after `return`, `(`, `=`, `?`, `:`, `,`, `&&` or `=>`).
+ */
+const HAS_JSX = /(?:\breturn|[(=?:,]|&&|=>)\s*<[A-Za-z][\w.]*[\s/>]/;
 
 /** Built files, read for an Astryx stylesheet. */
 const BUILT_EXT = new Set(['.css', '.html', '.htm', '.js', '.mjs']);
@@ -132,6 +141,7 @@ const ICON_PACKAGES = [
 /**
  * @typedef {object} BuiltScan
  * @property {number} sourceFiles
+ * @property {number} jsxFiles source files whose JSX was inspected
  * @property {number} builtFiles
  * @property {number} imports imports from Astryx packages
  * @property {number} importFiles files with one
@@ -193,7 +203,7 @@ function importsOf(text) {
   /** @type {{spec: string, names: string[], at: number}[]} */
   const found = [];
   const fromImport =
-    /\bimport\s+(?:type\s+)?([\s\S]*?)\s+from\s+['"]([^'"]+)['"]|\bimport\s+['"]([^'"]+)['"]/g;
+    /\bimport\s+(?:type\s+)?([^'";]*?)\s+from\s+['"]([^'"]+)['"]|\bimport\s+['"]([^'"]+)['"]/g;
   for (const match of text.matchAll(fromImport)) {
     const at = /** @type {number} */ (match.index);
     if (match[3]) {
@@ -314,6 +324,7 @@ export function scanBuilt(target, packages) {
   /** @type {BuiltScan} */
   const scan = {
     sourceFiles: 0,
+    jsxFiles: 0,
     builtFiles: 0,
     imports: 0,
     importFiles: 0,
@@ -326,7 +337,12 @@ export function scanBuilt(target, packages) {
   const imported = new Set();
   for (const {rel, built, read} of files) {
     const ext = extensionOf(rel);
-    const isSource = !built && SOURCE_EXT.has(ext) && !rel.endsWith('.d.ts');
+    // A bundler emits no .tsx or .jsx, so one inside a folder named like
+    // build output is still source.
+    const isSource =
+      SOURCE_EXT.has(ext) &&
+      !rel.endsWith('.d.ts') &&
+      (!built || JSX_EXT.has(ext));
     const isBuilt = BUILT_EXT.has(ext) && (built || !isSource);
     if (!isSource && !isBuilt) continue;
     const raw = read();
@@ -377,8 +393,10 @@ export function scanBuilt(target, packages) {
       const uses = text.match(new RegExp(`<${name}(?=[\\s/>.])`, 'g'));
       scan.componentUses += uses?.length ?? 0;
     }
-    if (JSX_EXT.has(ext))
+    if (JSX_EXT.has(ext) || HAS_JSX.test(text)) {
+      scan.jsxFiles++;
       scan.findings.push(...jsxFindings(text, rel, iconNames));
+    }
   }
   scan.packages = [...imported].sort();
   scan.findings.sort((a, b) => a.file.localeCompare(b.file) || a.line - b.line);
@@ -441,24 +459,24 @@ export function checkBuilt(target, {cwd, packages}) {
         label: 'Built output uses Astryx',
         status: 'fail',
         message: `Read ${read}: no import from an Astryx package, no Astryx component, and no Astryx styles, so this output does not use Astryx.`,
-        fix: 'Rebuild the page from an Astryx template: run `astryx build "<what the page is>"`, scaffold the template it names, and fill it with Astryx components. Do not deliver this output.',
+        fix: `Rebuild the page from an Astryx template: run \`${formatCliCommand('build "<what the page is>"', cwd)}\`, scaffold the template it names, and fill it with Astryx components. Do not deliver this output.`,
       };
   /** @type {import('./doctor.type.mjs').DoctorCheck} */
   let purity;
-  if (scan.sourceFiles === 0) {
+  if (scan.jsxFiles === 0) {
     purity = {
       id: 'built-astryx-purity',
       label: 'Source uses Astryx well',
       status: 'info',
-      message: `No source files under ${target}, so the source check did not run; it reads components, icons and styles in source.`,
-      fix: 'Run `astryx doctor --built <project folder>` to check the source too.',
+      message: `Not inspected: ${plural(scan.sourceFiles, 'source file')} under ${target} and no JSX among them, so components, icons and styles were not checked. A bundle or other build output is not source.`,
+      fix: `Run \`${formatCliCommand('doctor --built <project folder>', cwd)}\` on the folder that holds the page's source.`,
     };
   } else if (scan.findings.length === 0) {
     purity = {
       id: 'built-astryx-purity',
       label: 'Source uses Astryx well',
       status: 'pass',
-      message: `${plural(scan.sourceFiles, 'source file')}: no raw element Astryx has a component for, no hand-drawn or library icon, and no custom styling.`,
+      message: `${plural(scan.jsxFiles, 'source file')} with JSX: no raw element Astryx has a component for, no hand-drawn or library icon, and no custom styling.`,
     };
   } else {
     /** @type {Record<string, number>} */
@@ -482,7 +500,7 @@ export function checkBuilt(target, {cwd, packages}) {
       label: 'Source uses Astryx well',
       status: 'warn',
       message: `${plural(scan.findings.length, 'finding')} (${counts}): ${shown}${more}.`,
-      fix: 'Replace each with the Astryx component, icon surface, prop or token it names; `astryx docs is-my-code-good` has the full rubric. Keep a raw element only where its native meaning is needed.',
+      fix: `Replace each with the Astryx component, icon surface, prop or token it names; \`${formatCliCommand('docs is-my-code-good', cwd)}\` has the full rubric. Keep a raw element only where its native meaning is needed.`,
     };
   }
   return [usage, purity];

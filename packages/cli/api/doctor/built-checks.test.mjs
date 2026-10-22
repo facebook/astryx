@@ -5,6 +5,7 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 import {afterEach, beforeEach, describe, expect, it} from 'vitest';
 import {checkBuilt, scanBuilt} from './built-checks.mjs';
+import {builtIntegrationPackages} from './_adapter.mjs';
 import {runChecks} from './doctor.mjs';
 
 /** @type {string} */
@@ -46,7 +47,7 @@ describe('built-astryx-usage', () => {
       const {usage, purity} = check(target);
       expect(usage.status).toBe('fail');
       expect(usage.message).toContain('does not use Astryx');
-      expect(usage.fix).toContain('astryx build');
+      expect(usage.fix).toContain('build "<what the page is>"');
       expect(usage.fix).toContain('Do not deliver');
       // Built HTML is not source: the purity check says it did not run.
       expect(purity.status).toBe('info');
@@ -68,13 +69,13 @@ describe('built-astryx-usage', () => {
   it("counts an integration's components as Astryx, by the package names the project loads", () => {
     write({
       'app/page.tsx':
-        'import {MetaEmployeeLink} from \'@meta-internal/ui/Employee\';\nexport default () => <MetaEmployeeLink unixname="jdoe" />;\n',
+        'import {AcmeBadge} from \'@acme/ui/Badge\';\nexport default () => <AcmeBadge label="New" />;\n',
     });
 
     expect(check('.').usage.status).toBe('fail');
-    const {usage} = check('.', ['@meta-internal/ui']);
+    const {usage} = check('.', ['@acme/ui']);
     expect(usage.status).toBe('pass');
-    expect(usage.message).toContain('@meta-internal/ui');
+    expect(usage.message).toContain('@acme/ui');
   });
 
   it('passes built output that carries Astryx styles, minified', () => {
@@ -155,7 +156,7 @@ describe('built-astryx-purity', () => {
     // A helper's SVG counts once, and hidden form state keeps its element.
     expect(all).not.toContain('`<path>`');
     expect(all).not.toContain('`<input>`');
-    expect(purity.fix).toContain('astryx docs is-my-code-good');
+    expect(purity.fix).toContain('docs is-my-code-good');
   });
 
   it('passes source with no raw element, icon or custom style', () => {
@@ -165,6 +166,63 @@ describe('built-astryx-purity', () => {
     });
 
     expect(check('src').purity.status).toBe('pass');
+  });
+});
+
+describe('what a --built path counts', () => {
+  it('reads a bundle as build output: the source check says it was not inspected', () => {
+    write({
+      'dist/assets/index.js':
+        'import "./a.css";import{jsx as e}from"react/jsx-runtime";export default()=>e("div",{className:"x"});',
+    });
+    const {purity} = check('dist');
+    expect(purity.status).toBe('info');
+    expect(purity.message).toContain('Not inspected');
+    expect(purity.fix).toContain('doctor --built <project folder>');
+  });
+
+  it('inspects JSX in a .js source file and a .tsx file inside a folder named build', () => {
+    write({
+      'src/page.js':
+        'export default function Page() {\n  return <div>Hi</div>;\n}\n',
+      'src/build/Form.tsx': 'export const Form = () => <button>Go</button>;\n',
+    });
+    const scan = scanBuilt(path.join(dir, 'src'), []);
+    expect(scan.jsxFiles).toBe(2);
+    expect(scan.findings.map(f => `${f.file}:${f.message}`)).toEqual([
+      'build/Form.tsx:raw `<button>`: use `Button` or `IconButton`',
+      'page.js:raw `<div>`: use `VStack`, `HStack`, `Grid`, `Card`, `Section` or `Center`',
+    ]);
+  });
+
+  it('keeps a side-effect import apart from the import after it', () => {
+    write({
+      'src/Page.tsx':
+        "import './page.css';\nimport {Button} from '@astryxdesign/core/Button';\nexport const Page = () => <Button label=\"Go\" />;\n",
+    });
+    const scan = scanBuilt(path.join(dir, 'src'), []);
+    expect(scan.imports).toBe(1);
+    expect(scan.componentUses).toBe(1);
+    expect(scan.findings.map(f => f.message)).toContain(
+      'imports the stylesheet `./page.css`: use component props and tokens',
+    );
+  });
+
+  it('names the integrations by the declared dependencies that ship a manifest, running nothing', () => {
+    write({
+      'package.json': JSON.stringify({
+        name: 'app',
+        dependencies: {'@acme/ui': '1.0.0', 'left-pad': '1.0.0'},
+      }),
+      'astryx.config.mjs':
+        "import fs from 'node:fs';\nfs.writeFileSync(new URL('./ran.txt', import.meta.url), 'ran');\nexport default {};\n",
+      'node_modules/@acme/ui/package.json': '{"name":"@acme/ui"}',
+      'node_modules/@acme/ui/astryx.integration.mjs': 'export default {};\n',
+      'node_modules/left-pad/package.json': '{"name":"left-pad"}',
+      'out/index.html': '<p>x</p>',
+    });
+    expect(builtIntegrationPackages('out', dir)).toEqual(['@acme/ui']);
+    expect(fs.existsSync(path.join(dir, 'ran.txt'))).toBe(false);
   });
 });
 

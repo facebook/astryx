@@ -26,6 +26,7 @@ import {readReleaseFacts} from '../../foundation/release/project.mjs';
 import {detectPackageManager} from '../../foundation/env/package-manager.mjs';
 import {astryxCommandsOnSearchPath} from '../../foundation/env/search-path.mjs';
 import {readDeclaredDependencies} from '../../foundation/integrations/autolink.mjs';
+import {MANIFEST_BASENAMES} from '../../foundation/integrations/integrations.mjs';
 import {
   displayHomePath,
   inspectComputerAgentText,
@@ -449,15 +450,24 @@ export function readBuiltPath(target) {
     }
   };
   if (!fs.statSync(target).isDirectory()) {
+    const inBuild = path
+      .dirname(target)
+      .split(path.sep)
+      .some(part => BUILD_OUTPUT_DIRS.has(part));
     return {
-      files: [{rel: path.basename(target), built: false, read: reader(target)}],
+      files: [
+        {rel: path.basename(target), built: inBuild, read: reader(target)},
+      ],
       truncated: false,
     };
   }
   /** @type {{rel: string, built: boolean, read: () => string | null}[]} */
   const files = [];
+  // A path that is itself build output (`--built dist`) is read as built.
   /** @type {{dir: string, built: boolean}[]} */
-  const stack = [{dir: target, built: false}];
+  const stack = [
+    {dir: target, built: BUILD_OUTPUT_DIRS.has(path.basename(target))},
+  ];
   while (stack.length > 0) {
     const {dir, built} = /** @type {{dir: string, built: boolean}} */ (
       stack.pop()
@@ -488,4 +498,34 @@ export function readBuiltPath(target) {
     }
   }
   return {files, truncated: false};
+}
+
+/**
+ * The integration packages whose components count as Astryx for a `--built`
+ * path, read without running anything: each dependency the nearest
+ * package.json above the path declares whose installed copy holds an
+ * integration manifest. Every `@astryxdesign/*` package counts beside them.
+ * @param {string} target the path as given
+ * @param {string} cwd
+ * @returns {string[]}
+ */
+export function builtIntegrationPackages(target, cwd) {
+  let dir = path.resolve(cwd, target);
+  try {
+    if (!fs.statSync(dir).isDirectory()) dir = path.dirname(dir);
+  } catch {
+    dir = path.resolve(cwd);
+  }
+  for (let at = dir; ; at = path.dirname(at)) {
+    if (fs.existsSync(path.join(at, 'package.json'))) {
+      return readDeclaredDependencies(at)
+        .map(each => each.name)
+        .filter(name =>
+          MANIFEST_BASENAMES.some(file =>
+            fs.existsSync(path.join(at, 'node_modules', name, file)),
+          ),
+        );
+    }
+    if (path.dirname(at) === at) return [];
+  }
 }

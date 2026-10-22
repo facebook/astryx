@@ -97,6 +97,7 @@ import {
   displayHomePath,
   outsideProject,
   releaseFacts,
+  builtIntegrationPackages,
 } from './_adapter.mjs';
 import {checkBuilt} from './built-checks.mjs';
 
@@ -1991,38 +1992,6 @@ export const SYNC_CHECKS = [
 ];
 
 /**
- * The integration packages whose components count as Astryx for a `--built`
- * path: those the project holding the path loads (its component catalog's
- * providers), else those of the project doctor runs in. Every
- * `@astryxdesign/*` package counts either way.
- * @param {string} built
- * @param {string} cwd
- * @returns {Promise<string[]>}
- */
-async function builtPackages(built, cwd) {
-  const resolved = path.resolve(cwd, built);
-  let dir = resolved;
-  try {
-    if (!fs.statSync(resolved).isDirectory()) dir = path.dirname(resolved);
-  } catch {
-    dir = cwd;
-  }
-  for (const from of [dir, cwd]) {
-    if (outsideProject(from)) continue;
-    try {
-      const project = await Project.load(from, {core: 'project'});
-      return (project.loadedIntegrations ?? []).map(
-        (/** @type {{name: string}} */ each) => each.name,
-      );
-    } catch {
-      // A project that cannot load leaves its integrations uncounted; the
-      // project checks report why.
-    }
-  }
-  return [];
-}
-
-/**
  * Run all diagnostic checks and return a structured report.
  *
  * @param {object} [options]
@@ -2039,7 +2008,10 @@ export async function runChecks(options = {}) {
     const cwd = rest.cwd ?? process.cwd();
     const checks = [
       ...report.checks,
-      ...checkBuilt(built, {cwd, packages: await builtPackages(built, cwd)}),
+      ...checkBuilt(built, {
+        cwd,
+        packages: builtIntegrationPackages(built, cwd),
+      }),
     ];
     const summary = {pass: 0, warn: 0, fail: 0, info: 0};
     for (const c of checks) summary[c.status] += 1;
