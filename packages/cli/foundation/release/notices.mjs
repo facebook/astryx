@@ -383,6 +383,24 @@ const ADD = {
 };
 
 /**
+ * The command that adds a package to the project of a run in `cwd`, with the
+ * project's package manager: from a folder inside the project whose
+ * package.json is not the project's, in the project's folder (see
+ * {@link installFolder}; spec AST-081 FR12). Null when `cwd` belongs to no
+ * project `spec:AST-040` FR9 defines.
+ * @param {string} cwd
+ * @returns {((name: string) => string) | null}
+ */
+export function projectAddCommand(cwd) {
+  const target = installFolder(cwd);
+  if (target == null) return null;
+  const dir = target.moved ? target.dir : cwd;
+  const add = ADD[detectPackageManager(dir)] ?? ADD.npm;
+  return name =>
+    target.moved ? commandInFolder(dir, `${add} ${name}`) : `${add} ${name}`;
+}
+
+/**
  * The commands that bring a project's own CLI and Core to one release, with
  * the project's package manager: when the CLI is newer, Core up to it and then
  * the codemods from Core's release; otherwise the CLI to Core's release.

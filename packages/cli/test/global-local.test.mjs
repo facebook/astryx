@@ -1418,6 +1418,52 @@ describe.skipIf(!POSIX)(
       });
     });
 
+    it("from a tool folder inside a project (as G36), discover and doctor add an integration installed for the computer in the project's folder; with no project, discover names no command", () => {
+      const pc = computer();
+      const g = globalCli('npm', '9.0.0', {root: pc.home});
+      acmeWidgets(path.resolve(g.dir, '..', '..', '..'), {
+        topic: 'acme-deploying',
+      });
+      pc.path.unshift(g.binDir);
+      const dir = makeProject({core: '9.0.0', cli: '9.0.0'});
+      writeJson(path.join(dir, 'package-lock.json'), {lockfileVersion: 3});
+      const tool = path.join(dir, 'tools', 'codegen');
+      writeJson(path.join(tool, 'package.json'), {name: 'codegen'});
+      const discover = JSON.parse(
+        run(g.bin, ['discover', '--json'], {cwd: tool, pc}).stdout,
+      );
+      expect(notOfficial(discover)).toEqual([
+        {
+          name: '@acme/widgets',
+          components: [],
+          version: '1.0.0',
+          source: 'installed for this computer',
+          install: `cd ${dir} && npm install @acme/widgets`,
+        },
+      ]);
+      const doctor = JSON.parse(
+        run(g.bin, ['doctor', '--json'], {cwd: tool, pc}).stdout,
+      );
+      expect(
+        doctor.data.checks.find(
+          (/** @type {any} */ c) => c.id === 'computer-integrations',
+        ).fix,
+      ).toBe(
+        `To use one in this project, run \`cd ${dir} && npm install @acme/widgets\`.`,
+      );
+
+      // A folder that installs Core but belongs to no project.
+      const alone = tempDir('alone');
+      writeJson(path.join(alone, 'package.json'), {name: 'alone'});
+      installCore(alone, '9.0.0');
+      const lone = JSON.parse(
+        run(g.bin, ['discover', '--json'], {cwd: alone, pc}).stdout,
+      );
+      for (const entry of notOfficial(lone)) {
+        expect(entry).not.toHaveProperty('install');
+      }
+    });
+
     it("G37 a project that installs the same integration uses only its own copy, outside the project's folder rules too", () => {
       const pc = computer();
       const g = globalCli('npm', '9.0.0', {root: pc.home});

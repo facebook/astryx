@@ -25,6 +25,7 @@ import {
   availableComputerIntegrations,
 } from '../../foundation/config/project.mjs';
 import {isOutsideProject} from '../../foundation/env/project-scope.mjs';
+import {projectAddCommand} from '../../foundation/release/notices.mjs';
 import {hostedRun} from '../../foundation/runtime/package-root.mjs';
 import {
   scanAllPackages,
@@ -274,17 +275,14 @@ const COMPUTER_SOURCE = 'installed for this computer';
  * @param {Project | undefined} project
  * @param {Array<{name: string}>} installed
  * @param {Set<string>} declared
- * @param {(name: string, version?: string) => string} add
  * @returns {Promise<import('./discover.type.mjs').DiscoverAvailableEntry[]>}
  */
-export async function computerAvailableEntries(
-  project,
-  installed,
-  declared,
-  add,
-) {
+export async function computerAvailableEntries(project, installed, declared) {
   const cwd = project?.cwd ?? process.cwd();
   if (isOutsideProject(cwd)) return [];
+  // The same command doctor names: in the project spec:AST-040 FR9 defines,
+  // and none where FR9 finds no project.
+  const add = projectAddCommand(cwd);
   const have = new Set([...installed.map(pkg => pkg.name), ...declared]);
   return (await availableComputerIntegrations(cwd, have)).map(c => ({
     name: c.name,
@@ -292,7 +290,7 @@ export async function computerAvailableEntries(
     ...(c.version ? {version: c.version} : {}),
     ...(c.description ? {description: c.description} : {}),
     source: COMPUTER_SOURCE,
-    install: add(c.name),
+    ...(add ? {install: add(c.name)} : {}),
   }));
 }
 
