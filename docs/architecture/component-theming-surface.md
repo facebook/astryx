@@ -214,7 +214,10 @@ but acceptance alone is best effort, not a compatibility promise.
   one safe, deterministic baseline that does not depend on the active theme.
   `Heading.type` qualifies because required `Heading.level` provides that
   baseline. `Icon.variant` qualifies because an unlisted variant renders the
-  request without a variant, which is the same for every theme. `Icon.size` does
+  request without a variant, which is the same for every theme. It is an
+  artwork request, not a styling selector: the `icon` target does not reflect
+  it, so it has no `themeProps()` reflection, `visualProps` entry, or
+  component styling map. `Icon.size` does
   not: no missing custom size can be inferred without silently changing
   geometry, alignment, or composition. Behavioral, structural,
   placement, directional, and state-machine axes remain closed regardless. A

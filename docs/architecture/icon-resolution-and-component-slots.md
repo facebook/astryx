@@ -79,7 +79,8 @@ extension keys. Some component-owned artwork uses those extension keys directly.
 This record does not invalidate or require migration of that shipped behavior.
 
 The target model adds one rule for future component roles: new semantic component
-slots use `componentIcons`. Shipped extension keys remain supported until a
+slots use `componentIcons`. No Core slot has shipped. Selector's selected-option
+mark is drawn by the `check` indicator, so it is not a component icon slot. Shipped extension keys remain supported until a
 separate compatibility decision changes them. This record does not decide the
 outcome for any existing component.
 
@@ -98,8 +99,8 @@ The general resolver chooses artwork in this order:
 
 An entry is a React node or a pure synchronous function of `{size, variant}`.
 A nullish static entry falls through to the next source. Once a function entry
-is selected, it runs once and its result is final: a nullish result renders no
-glyph and never falls through, so artwork never mixes two sources. `component:Icon`
+is selected, its result is final for that resolution: a nullish result renders
+no glyph and never falls through, so artwork never mixes two sources. `component:Icon`
 supplies the resolved size and a variant the active theme lists, or `undefined`.
 
 This record does not change which shared or extension keys the general resolver
@@ -278,8 +279,8 @@ This record does not choose the migration design or timeline.
 - **INV10 — Existing keys coexist.** Shipped slots and extension keys remain
   supported until a separate compatibility decision changes them. New Core slots
   use `ComponentIconSlotMap` and `componentIcons`.
-- **INV11 — A selected function answers the request.** A function entry or slot
-  function runs once for its request, and its result is final. Public theme
+- **INV11 — A selected function answers the request.** Once a function entry or slot
+  function is selected, its result is final for that resolution. Public theme
   reads never call or return a slot function.
 - **INV12 — Indicators and slots do not overlap.** A visual drawn by an indicator
   is replaced through `indicators`; it is not also a `componentIcons` slot.
@@ -372,15 +373,15 @@ calls.
 
 ## Verification
 
-| Invariant        | Evidence                                                        | Failure signal                                                                        |
-| ---------------- | --------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
-| INV1, INV3, INV6 | Registry resolver tests and one rendered component fixture      | A component slot resolves concrete artwork directly or skips shared icon resolution   |
-| INV2, INV5       | Type tests plus component `.doc.mjs` metadata checks            | A Core slot is an untyped string or has no owner/fallback                             |
-| INV4             | Resolver and component tests with `componentIcons[slot] = null` | A null mapping falls through and still renders an icon                                |
-| INV7             | Shared-name type and registry snapshot tests                    | Adding a component slot widens `IconName`                                             |
-| INV8             | Representative component-owner tests with state and slot sizes  | A theme must know component rendering details, or a slot size moves control geometry  |
-| INV9             | Theme-authoring, application, and compilation owner tests       | This record invents a second normalization or active-theme path                       |
-| INV10            | Shipped-key compatibility fixtures and new-slot negative tests  | A shipped key stops working without a separate compatibility decision                 |
-| INV11            | Resolver tests for function entries, slot functions, and reads  | A nullish function result falls through, a function runs twice, or a read returns one |
-| INV12            | Slot and indicator inventory check                              | One visual is reachable as both an indicator and a `componentIcons` slot              |
-| Documentation    | Component metadata and generated CLI/docsite fixtures           | A themeable slot cannot be discovered with its owner, fallback, and purpose           |
+| Invariant        | Evidence                                                        | Failure signal                                                                          |
+| ---------------- | --------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| INV1, INV3, INV6 | Registry resolver tests and one rendered component fixture      | A component slot resolves concrete artwork directly or skips shared icon resolution     |
+| INV2, INV5       | Type tests plus component `.doc.mjs` metadata checks            | A Core slot is an untyped string or has no owner/fallback                               |
+| INV4             | Resolver and component tests with `componentIcons[slot] = null` | A null mapping falls through and still renders an icon                                  |
+| INV7             | Shared-name type and registry snapshot tests                    | Adding a component slot widens `IconName`                                               |
+| INV8             | Representative component-owner tests with state and slot sizes  | A theme must know component rendering details, or a slot size moves control geometry    |
+| INV9             | Theme-authoring, application, and compilation owner tests       | This record invents a second normalization or active-theme path                         |
+| INV10            | Shipped-key compatibility fixtures and new-slot negative tests  | A shipped key stops working without a separate compatibility decision                   |
+| INV11            | Resolver tests for function entries, slot functions, and reads  | A nullish function result falls through to another source, or a read returns a function |
+| INV12            | Slot and indicator inventory check                              | One visual is reachable as both an indicator and a `componentIcons` slot                |
+| Documentation    | Component metadata and generated CLI/docsite fixtures           | A themeable slot cannot be discovered with its owner, fallback, and purpose             |

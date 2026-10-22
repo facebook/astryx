@@ -106,9 +106,12 @@ A theme decides how icons look:
   functions and slot resolvers receive `variant` typed as the theme's listed
   names. `Icon`'s `variant` prop and a slot request's `variant` use
   `IconVariant`, the names in the public, augmentable `IconVariantMap`. `theme
-build` writes the augmentation for the theme it builds, the same way it
-  augments custom component values, and an application may augment the map
-  itself. No variant type is derived by combining themes.
+build` writes an augmentation of that map from the theme it builds, the same
+  way it augments custom component values, and an application may augment the
+  map itself. Astryx never derives a variant type from several themes' lists;
+  when an application loads several built themes, TypeScript merges their
+  augmentations, and FR4 renders the normal icon wherever the active theme does
+  not list a requested name.
 - **FR4 — An unlisted variant renders the normal icon.** `<Icon icon={name}
 variant={value}>` passes `variant` to the selected entry only when the active
   theme lists it. An omitted variant, an unlisted variant, or a request with no
@@ -116,11 +119,13 @@ variant={value}>` passes `variant` to the selected entry only when the active
   normal artwork. A node entry renders the same node for every variant.
 - **FR5 — Variant applies to registry icons.** An icon component passed directly
   to `Icon` renders as given and does not receive `variant`; `Icon` does not
-  forward `variant` to it or to the DOM.
+  forward `variant` to it or to the DOM. `variant` selects artwork only: the
+  `icon` theming target does not reflect it, so it has no styling selector.
 - **FR6 — Sources resolve before the request.** A theme entry wins over a
   process-wide registration, which wins over the built-in default; a nullish
-  static entry falls through to the next source. The selected function runs once,
-  and its result is final: a nullish result renders no glyph.
+  static entry falls through to the next source. The selected function's result is
+  final for that resolution: a nullish result renders no glyph and never falls
+  through to another source.
 - **FR7 — Entries and resolvers are pure and synchronous.** They compute their
   result from their input only, without hooks, DOM or SVG measurement, browser
   globals, network access, mutable module state, or side effects.
@@ -249,7 +254,10 @@ size styles renders the same icons. These owners carry the change:
   theme-extensible axis whose fallback is the request without a variant (FR3,
   FR4).
 - `architecture:icon-resolution-and-component-slots` — entries are nodes or
-  functions and a selected function's result is final (FR1, FR6); slot values are
+  functions and a selected function's result is final (FR1, FR6); the
+  never-shipped `selector-selected-option` slot leaves `ComponentIconSlotMap`,
+  because Selector draws its selected-option mark through the `check` indicator
+  (FR15); slot values are
   `true` or a state shape, and INV3 admits static requests and state resolvers
   (FR11, FR12); INV8 lets a slot request set the slot's icon size and variant
   (FR13, FR14); indicators stay separate (FR15); slot resolution is the only
@@ -367,7 +375,7 @@ of requests to enumerate, and gives an unlisted variant one fallback that does
 not depend on the theme: the request without a variant.
 
 Rejected: an open `string`, because it gives callers no types and tooling no
-finite set; types derived by combining themes.
+finite set; Astryx deriving one variant type from several themes' lists.
 
 ### DEC-10 — Slot functions stay inside slot resolution
 

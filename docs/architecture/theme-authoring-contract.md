@@ -181,9 +181,11 @@ names.
   supported consumer; validating and returning the exact input unchanged is
   insufficient.
 - **INV13 — Theme functions stay behind resolution.** Function icon entries and
-  slot functions are pure and synchronous. Astryx resolution is their only
-  caller; public theme reads return nodes, static slot values, and the variant
-  list, never a function.
+  slot functions are pure and synchronous. Astryx icon resolution and build
+  tooling that enumerates a theme's icon requests (`architecture:theme-compilation`
+  INV15) call icon entries; only slot resolution calls slot functions. Public
+  theme reads return nodes, static slot values, and the variant list, never a
+  function.
 - **INV14 — The variant list is theme-level.** `iconVariants` lists the variant
   names the whole theme supports. It is never per icon and never combined with
   another theme's list.
