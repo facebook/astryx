@@ -9,8 +9,8 @@
  *   section keep the menu's row gap: the space between two grouped rows, and
  *   between the group's heading and its first row, equals the space between
  *   two plain rows.
- * @position Browser proof behind the class checks in DropdownMenu.test.tsx:
- *   jsdom lays nothing out.
+ * @position Browser proof beside the computed-style check in
+ *   DropdownMenu.test.tsx: jsdom lays nothing out.
  */
 
 import {expect, test, type Page} from '@playwright/test';

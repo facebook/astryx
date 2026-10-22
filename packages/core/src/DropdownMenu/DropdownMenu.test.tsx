@@ -1368,21 +1368,6 @@ describe('DropdownMenu items', () => {
   });
 });
 
-// jsdom lays nothing out, so which gap declaration wins is read from StyleX
-// classes: a class name hashes one property and its value, and the same
-// declaration yields the same class wherever it is written (the dev build adds
-// a debug name, which does not start with `x` and a hash). The rendered gap
-// itself is measured in real Chromium (MenuGroupRowGap.a11y.chromium.spec.ts).
-const menuRowRhythm = stylex.create({
-  gap: {gap: spacingVars['--spacing-0-5']},
-});
-function atomicClasses(style: stylex.StyleXStyles): string[] {
-  return stylex
-    .props(style)
-    .className!.split(' ')
-    .filter(token => /^x[a-z0-9]+$/.test(token));
-}
-
 describe('DropdownMenu sections', () => {
   it('renders section with title', () => {
     render(
@@ -1596,11 +1581,9 @@ describe('DropdownMenuGroup (compound mode)', () => {
       name: 'Version history',
       hidden: true,
     });
-    const [flushGap] = atomicClasses(flush.group);
-    const [rowGap] = atomicClasses(menuRowRhythm.gap);
-    expect(group).toHaveClass(flushGap);
-    // The group's own 2px gap class is replaced, not stacked beside it.
-    expect(group).not.toHaveClass(rowGap);
+    // The caller's gap replaces the group's own row gap (2px), as the
+    // runtime-injected styles resolve it.
+    expect(getComputedStyle(group).gap).toBe('0');
   });
 
   it('a focusable node in the heading is not reachable by the arrow keys', async () => {

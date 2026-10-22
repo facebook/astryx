@@ -1491,6 +1491,15 @@ jobs:
             --project chromium \
             --output token-remove-target-output
 
+      # Rows in a titled DropdownMenuGroup or a data-mode section keep the
+      # menu's row gap; only a real engine lays the rows out.
+      - name: Run DropdownMenu group row gap contract
+        run: |
+          pnpm exec playwright test \
+            packages/core/src/DropdownMenu/__tests__/MenuGroupRowGap.a11y.chromium.spec.ts \
+            --project chromium \
+            --output menu-group-row-gap-output
+
       # On a phone-width screen AppShell shows TopNav's compact bar. A long
       # heading must give way so the menu toggle stays inside the bar and the
       # drawer's close button stays inside the drawer; only a real engine lays
