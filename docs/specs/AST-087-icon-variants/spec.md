@@ -3,12 +3,12 @@ schema_version: 4
 template_version: 2
 kind: system-spec
 id: spec:AST-087
-authority: draft
+authority: current
 archive_reason: null
 superseded_by: null
-approved_by: null
-approved_at: null
-phase: proposed
+approved_by: imdreamrunner
+approved_at: 2026-10-21
+phase: accepted
 owners: [imdreamrunner]
 affects_architecture:
   [
@@ -29,56 +29,35 @@ affects_consumer_docs: [theme, Icon, Button]
 
 ## Intent
 
-A theme decides how icons look without Astryx modeling any icon library's style
-vocabulary:
+A theme decides how icons look:
 
-- `Icon` accepts one optional `variant` request, and a theme's icon entry is a
-  fixed node or a pure function of the final semantic size and that variant. The
-  function owns every library-specific choice, such as a heavier stroke at small
-  sizes.
-- The four Icon sizes keep their names. A theme sets their physical dimensions
-  through the Icon stylesheet target, and the glyph and any component-owned icon
-  box follow the same dimension.
-- A component exposes a themeable icon only through a `componentIcons` slot. A
-  slot entry may resolve from the component's typed state, so a theme, not a
-  per-state prop, decides what a pressed, selected, or disabled icon looks like.
+- `Icon` takes an optional `variant`, and a theme icon entry can be a function of
+  the final size and that variant, so the theme maps both to its icon library's
+  own artwork or props.
+- A theme sets the dimension of each Icon size through the Icon stylesheet
+  target; the glyph and any component-owned icon box follow it.
+- A component exposes a themeable icon as a `componentIcons` slot, and a slot
+  entry can resolve from the component's state, so a theme decides what a
+  pressed, selected, or disabled icon looks like.
 
 ## Non-goals
 
-- Appearance or weight axes, per-library capability declarations, or variant
-  names defined by Astryx.
-- Adding, removing, or renaming Icon sizes. `xsm | sm | md | lg` stay closed
-  under `architecture:component-theming-surface` INV14.
-- An icon-role concept, or any component icon map besides `componentIcons`.
-- Nested state maps or compound slot keys for state combinations.
-- Theme resolution for direct component-mode icons, or adapters that make an
-  imported icon library follow the theme.
-- Public lookups that take a size or variant. Products request both through
-  `Icon`.
-- Migrating existing namespaced keys, which stay the known deviation recorded by
-  `architecture:icon-resolution-and-component-slots`, or removing released
-  per-state icon props.
-- A generated icon inventory or review tooling.
-- Synthesizing, measuring, or mutating SVG artwork.
+- Appearance or weight axes, or variant names defined by Astryx.
+- New Icon size names.
+- Additional component icon maps or an icon-role concept.
+- Theme styling for icon components passed directly to `Icon`.
 - Equivalent internal implementations remain valid when they satisfy this
   contract.
-- Internal modules, files, function names, algorithms, data structures, storage
-  layouts, manifests, journals, locks, transaction protocols, and CI job/workflow
-  topology belong in architecture or implementation unless callers or
-  interoperating systems intentionally depend on that exact mechanism as a public
-  protocol. In that case, state who depends on it and why an equivalent
-  implementation would not satisfy the contract.
 
 ## Requirements
 
 ### Variant and theme entries
 
-- **FR1 — A theme icon entry is a fixed node or a pure function of the request.**
+- **FR1 — A theme icon entry is a node or a function of the request.**
   `DefineThemeInput.icons` and process-wide registration accept, for a semantic
-  or namespaced key, a React node or one function receiving `{size, variant}`.
-  `size` is the final semantic size and `variant` is the requested variant, or
-  `undefined`. A fixed node is the same node for every request. Built-in default
-  icons are fixed nodes. Conceptually:
+  or namespaced key, a React node or a function receiving `{size, variant}`, where
+  `size` is the final Icon size and `variant` is the requested variant or
+  `undefined`. Conceptually:
 
   ```ts
   type IconRequest = Readonly<{
@@ -90,7 +69,7 @@ vocabulary:
     React.ReactNode | ((request: IconRequest) => React.ReactNode);
   ```
 
-  A theme maps size and variant to its icon library's own props or artwork:
+  A theme maps size and variant to its library's own props or artwork:
 
   ```tsx
   const star = ({size, variant}: IconRequest) => (
@@ -104,56 +83,50 @@ vocabulary:
   defineTheme({name: 'brand', icons: {star}});
   ```
 
-- **FR2 — `Icon` accepts one optional variant.** In registry mode,
+- **FR2 — `Icon` passes an optional variant to the entry.**
   `<Icon icon={name} variant={value}>` passes `variant` to the selected entry. An
   omitted variant, or one the entry does not handle, renders the entry's normal
-  artwork. A fixed-node entry renders the same node for every variant.
-- **FR3 — Direct component mode stays fixed.** A supplied icon component renders
-  directly and never receives `variant`. `Icon` removes `variant` before it
-  forwards remaining props. Size, styling, ref, and accessibility precedence are
-  unchanged.
-- **FR4 — Source precedence resolves before the request.** A non-nullish theme
-  entry wins over a non-nullish process-wide registration, which wins over the
-  built-in default; static nullish entries fall through in that order. A selected
-  function runs once. A nullish result renders no glyph; it does not retry
-  without `variant` or fall through to another source.
-- **FR5 — Resolution is pure and synchronous.** Entry functions and slot
-  resolvers are synchronous functions of their input. They use no hooks, DOM or
-  SVG measurement, computed style, browser globals, network access, mutable
-  module state, or render-phase side effects.
+  artwork. A node entry renders the same node for every variant.
+- **FR3 — Variant applies to registry icons.** An icon component passed directly
+  to `Icon` renders as given and does not receive `variant`; `Icon` does not
+  forward `variant` to it or to the DOM.
+- **FR4 — Sources resolve before the request.** A theme entry wins over a
+  process-wide registration, which wins over the built-in default; a nullish
+  static entry falls through to the next source. The selected function runs once,
+  and its result is final: a nullish result renders no glyph.
+- **FR5 — Entries and resolvers are pure and synchronous.** They compute their
+  result from their input only, without hooks, DOM or SVG measurement, browser
+  globals, network access, or side effects.
 
 ### Sizes
 
-- **FR6 — Size names stay closed and semantic.** Every request uses
-  `xsm | sm | md | lg`. `Icon` resolves its size by `component:Icon` ORD1 and
-  passes it to the entry. An entry function selects artwork for that size and
-  cannot change it.
-- **FR7 — A theme sets each size's dimension through the Icon stylesheet target.**
-  The Icon theming target guarantees `width` and `height` on its `size`
-  selectors as reviewed target-specific additions, so
-  `components.icon['size:sm']` reliably sets the `sm` dimension. A size the
-  active theme does not style keeps its default: 12, 16, 20, and 24px at a 16px
-  root, scaling with the root font size.
-- **FR8 — Component-owned icon boxes follow the theme dimension.** A component
-  that reserves a box for an icon at a semantic size, such as the Button family's
-  icon slot, sizes that box with the active theme's dimension for that size, so
-  the glyph and its box match. Control height, touch target, and family geometry
-  guarantees stay component-owned (`family:buttons` FR7).
-- **FR9 — Astryx-maintained default glyphs render through `Icon`.** A Core or
-  first-party component that supplies a default registry glyph, including one it
-  passes into another component's icon prop, renders it through `Icon` so theme
-  dimensions, color, and variant reach it.
+- **FR6 — Entries receive the resolved size.** `Icon` resolves its size by
+  `component:Icon` ORD1 (`xsm`, `sm`, `md`, `lg`) and passes it to the entry,
+  which selects artwork for that size.
+- **FR7 — A theme sets each size's dimension in the stylesheet.** The Icon theming
+  target guarantees `width` and `height` on its size selectors, so
+  `components.icon['size:sm']` sets the `sm` dimension. Without theme styles,
+  sizes are 12, 16, 20, and 24px at a 16px root and scale with the root font size.
+- **FR8 — Component icon boxes use the theme dimension.** A component that
+  reserves a box for an icon at a size, such as the Button family's icon slot,
+  sizes the box with the active theme's dimension for that size, so the glyph and
+  its box match. Control height and touch targets remain set by the component
+  (`family:buttons` FR7).
+- **FR9 — Astryx default glyphs render through `Icon`.** A Core or first-party
+  component that supplies a default registry glyph, including one passed into
+  another component's icon prop, renders it through `Icon`, so theme dimensions,
+  color, and variant apply to it.
 
 ### Component icon slots
 
-- **FR10 — `componentIcons` is the only component icon map.** A themeable
-  component-owned icon is a slot in `ComponentIconSlotMap`, mapped through
-  `componentIcons` as `architecture:icon-resolution-and-component-slots` defines.
-  A `true` slot value declares a stateless slot. An object-type value declares
-  the slot's exact readonly state fields.
-- **FR11 — A slot value is a name, `null`, or a pure state resolver.**
-  `componentIcons` accepts a static `IconName | null` or one function of the
-  slot's state returning a partial request. Conceptually:
+- **FR10 — Component icons are `componentIcons` slots.** A themeable icon a
+  component owns is a slot in `ComponentIconSlotMap`, mapped through
+  `componentIcons` as `architecture:icon-resolution-and-component-slots`
+  describes. A `true` value declares a stateless slot; an object type declares
+  the slot's readonly state fields.
+- **FR11 — A slot value is a name, `null`, or a state resolver.**
+  `componentIcons` accepts an `IconName`, `null`, or a function of the slot's
+  state that returns a partial request. Conceptually:
 
   ```ts
   type ComponentIconRequest = Readonly<{
@@ -168,223 +141,172 @@ vocabulary:
     | ((state: Readonly<State>) => ComponentIconRequest | null | undefined);
   ```
 
-  The component supplies deterministic state; the theme handles state
-  combinations in resolver code.
+  The component supplies its state; the theme handles state combinations in the
+  resolver.
 
-- **FR12 — Partial results keep precise fallbacks.** Consumer instance content
-  wins, and the theme slot entry is not consulted. Otherwise a resolver `icon`
-  wins over the component's declared fallback, and a missing `icon` or an
-  `undefined` result uses that fallback. Resolver `variant` and `size` apply to
-  whichever name wins. A missing `variant` sends none; a missing `size` keeps the
-  component's own size choice. Static `null`, a `null` result, and `icon: null`
-  suppress the slot.
-- **FR13 — A slot size changes only the glyph and its icon box.** A resolved
-  `size` replaces the component's size choice for that slot; the glyph and its
-  component-owned box use that size's theme dimension. Control height, touch
-  target, placement, color, interaction, and accessibility stay component-owned.
-  Where a family contract fixes outer dimensions across states, a state-dependent
-  slot size does not change them.
-- **FR14 — Themes, not per-state props, own state looks.** A component that shows
-  a state-dependent icon exposes that state through its slot. It does not add a
-  per-state icon prop. A released per-state prop, such as `pressedIcon` or
-  `selectedIcon`, stays a caller override at instance precedence.
-- **FR15 — Slot state is public theme metadata.** A stateful slot's state fields
-  join the slot metadata in its owner's component documentation and CLI and
-  docsite discovery. Adding, renaming, removing, or reinterpreting a shipped
-  state field is a compatibility change.
+- **FR12 — Partial results fall back field by field.** Icon content passed by the
+  caller wins over the slot. Otherwise a resolver `icon` replaces the component's
+  fallback name, and `variant` and `size` apply to whichever name renders. A
+  missing field keeps the component's choice. `null`, a `null` result, or
+  `icon: null` hides the icon.
+- **FR13 — A slot size sizes the glyph and its icon box.** A resolved `size`
+  replaces the component's size for that slot, and the glyph and its box use that
+  size's theme dimension. The control's height, touch target, placement, color,
+  interaction, and accessibility remain set by the component, including any outer
+  dimensions a family contract fixes across states.
+- **FR14 — Themes set state-dependent icons through slots.** A component that
+  shows a state-dependent icon exposes that state through its slot so the theme
+  can resolve it. Per-state icon props passed by a caller, such as `pressedIcon`
+  or `selectedIcon`, act as caller-supplied icon content.
+- **FR15 — Slot state is documented theme metadata.** A slot's state fields are
+  listed with its slot metadata in the owner's component docs and in CLI and
+  docsite discovery. Changing a released state field is a compatibility change.
 
 ### Reads, built themes, and server rendering
 
-- **FR16 — Public reads stay node-valued; size- and variant-aware resolution is
-  internal.** One-argument registry, extension, snapshot, and hook reads return
-  React nodes. `IconRegistry`, `DefinedTheme['icons']`, and built-theme public
-  icon exports are node-valued, with each function entry materialized at
-  `{size: 'md'}`. No public lookup accepts a size or variant. Public slot
-  resolvers return the semantic request for a slot and its state, and the
-  component renders that request through `Icon`.
+- **FR16 — Public reads return nodes.** Registry, extension, snapshot, and hook
+  reads, `IconRegistry`, `DefinedTheme['icons']`, and built-theme icon exports
+  return React nodes; a function entry is read at `{size: 'md'}`. Products
+  request a size or variant through `Icon`.
 - **FR17 — Runtime, built, and server themes agree.** Runtime themes, `extends`,
-  built output, server rendering, and hydration produce the same requests, source
-  precedence, and selected nodes. A child theme's icon and slot entries replace
-  inherited entries for the same key whole. A function value the build cannot
-  carry fails the build rather than being dropped. Server code may resolve icons
-  with a function-bearing theme; passing that theme as a prop from a Server
-  Component to a Client Component is unsupported.
-- **FR18 — Malformed resolver output degrades to missing fields.** Types reject a
-  slot value that is neither `true` nor an object type, a result field outside
-  `icon`, `variant`, and `size`, and a size outside the four names. At render, an
-  unknown `icon`, a non-string `variant`, or an unsupported `size` is treated as
-  missing and warns once in development only.
+  built output, server rendering, and hydration resolve to the same nodes. A
+  child theme's entry replaces the inherited entry for the same key. A function
+  the build cannot carry fails the build. Server code may resolve icons with a
+  theme that holds functions; client code passes that theme to `Theme`.
+- **FR18 — Malformed resolver output is treated as missing.** An unknown `icon`,
+  a non-string `variant`, or a size outside the four names in a resolver result
+  is ignored field by field, with one development-only warning.
 
 ### Platform support
 
 - Supported floor: every React, server-rendering, and browser target supported by
   Astryx Core.
-- Unsupported behavior: asynchronous resolvers, resolvers that depend on ambient
-  mutable state, DOM or SVG measurement, size names outside the four, and passing
-  a function-bearing theme as a prop across a Server-to-Client Component
-  boundary.
+- Unsupported behavior: asynchronous resolvers, and passing a theme that holds
+  functions as a prop from a Server Component to a Client Component.
 - Browser evidence: theme switching, nested themes, component states, and each
-  Icon size keep glyph and icon-box dimensions equal, keep control height and
-  touch targets unchanged, and hydrate to the expected supplied node.
+  Icon size keep glyph and icon-box dimensions equal and hydrate to the expected
+  node.
 
 ## Current-state impact
 
-Fixed entries, direct icon components, semantic names, namespaced keys, instance
-props, node-valued reads, and one-argument lookups keep working. A theme that
-authors no function entry and no size styles, used without `variant`, renders the
-same nodes and dimensions.
+Existing node entries, direct icon components, namespaced keys, instance props,
+and reads keep working. When this ships:
 
-When this ships, these owners change:
-
-- `component:Icon` — registry mode gains the optional `variant` request (FR2,
-  FR3), and registry artwork selection uses the size resolved by ORD1 (FR6).
+- `component:Icon` — registry mode accepts `variant` (FR2, FR3) and selects
+  artwork with the size resolved by ORD1 (FR6).
 - `architecture:component-theming-surface` — the Icon target's guaranteed
-  properties gain `width` and `height` for its size selectors (FR7). INV14
-  records how `variant` relates to the theme-independent fallback once OQ1 is
-  answered.
-- `architecture:icon-resolution-and-component-slots` — `ComponentIconSlotMap`
-  values are `true` or a state shape, and INV3 admits the state resolver beside
-  `IconName | null` (FR10, FR11). INV8 lets a resolver replace the slot's size
-  while control geometry stays component-owned (FR13). Shared resolution treats a
-  selected function's result as final (FR4), and component-local documentation
-  lists state fields (FR15).
+  properties include `width` and `height` for its size selectors (FR7); INV14
+  records how `variant` falls back once OQ1 is answered.
+- `architecture:icon-resolution-and-component-slots` — slot values are `true` or
+  a state shape, and INV3 admits state resolvers (FR10, FR11). INV8 lets a slot
+  resolver set the slot's size (FR13). A selected function's result is final
+  (FR4), and component docs list slot state (FR15).
 - `architecture:theme-authoring-contract` — `icons` and `componentIcons` accept
-  functions; normalization and `extends` replace same-key entries whole and keep
-  `DefinedTheme['icons']` node-valued (FR16, FR17).
-- `architecture:theme-compilation` — built output reproduces runtime `icons` and
-  `componentIcons` behavior and fails on a function it cannot carry (FR17).
-- `architecture:theme-application` — `Theme` receives a function-bearing theme
-  only from client code (FR17).
-- `family:buttons` — FR7's owned icon slot sizes its box with the theme dimension
-  (FR8), and a state-dependent slot size keeps outer control dimensions (FR13).
+  functions, and `extends` replaces same-key entries (FR16, FR17).
+- `architecture:theme-compilation` — built output reproduces function entries and
+  slot resolvers (FR17).
+- `architecture:theme-application` — client code passes a theme that holds
+  functions to `Theme` (FR17).
+- `family:buttons` — FR7's icon slot sizes its box with the theme dimension
+  (FR8, FR13).
 - Consumer `theme`, `Icon`, and `Button` docs describe function entries,
   `variant`, size styling, and slot resolvers.
 
 ## Verification
 
-| Contract  | Verification                                                 | Representative states                                                                                                 | Mutation or failure expectation                                                                |
-| --------- | ------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| FR1–FR5   | Registry type, resolver, and Icon render tests               | fixed node; function; static null; null result; omitted, handled, and unhandled variant; theme/global/default; direct | sources mix, `variant` leaks to a component or the DOM, or a fixed node changes identity       |
-| FR6–FR9   | Theme styling, geometry, and maintained-callsite tests       | each size with and without theme styles; Button family icon slot; default glyphs passed into icon props               | glyph and box dimensions differ, an unstyled size changes, or a default glyph skips `Icon`     |
-| FR10–FR13 | Slot type, state, precedence, and geometry tests             | `true` slot; state slot; empty, icon, variant, size, and full results; `undefined`; `null`; instance content          | fallback order changes, `null` loses suppression, or a slot size changes control or outer size |
-| FR14–FR15 | Component API review, metadata, and CLI/docsite fixtures     | stateful slot docs; state field added, renamed, removed; released per-state prop                                      | a new per-state icon prop appears, or slot state is undiscoverable or changes unclassified     |
-| FR16–FR17 | Public read, SSR, hydration, and runtime/build/extends tests | one-argument reads; nested themes; child replacement; built function entries; function-bearing client theme           | a public read returns a function, built and runtime results differ, or a function is dropped   |
-| FR18      | Type, theme-shape, and returned-field negative tests         | invalid state shape; unknown icon; non-string variant; invalid size                                                   | malformed fields change fallback, or production warns                                          |
+| Contract  | Verification                                                 | Representative states                                                                          | Mutation or failure expectation                                                 |
+| --------- | ------------------------------------------------------------ | ---------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| FR1–FR5   | Registry type, resolver, and Icon render tests               | node; function; null; omitted, handled, and unhandled variant; theme, global, default; direct  | sources mix, `variant` reaches a component or the DOM, or a node entry changes  |
+| FR6–FR9   | Theme styling, geometry, and default-glyph tests             | each size with and without theme styles; Button family icon slot; default glyphs in icon props | glyph and box dimensions differ, or a default glyph renders outside `Icon`      |
+| FR10–FR15 | Slot type, state, fallback, geometry, and metadata tests     | `true` slot; state slot; partial and full results; `null`; caller content; documented state    | fallback order changes, `null` stops hiding, or a slot size changes the control |
+| FR16–FR17 | Public read, SSR, hydration, and runtime/build/extends tests | one-argument reads; nested themes; child replacement; built function entries; client theme     | a public read returns a function, or built and runtime results differ           |
+| FR18      | Type and returned-field tests                                | invalid state shape; unknown icon; non-string variant; invalid size                            | malformed fields change the fallback, or production warns                       |
 
 ## Decision log
 
-### DEC-1 — One variant request; no appearance or weight axes
+### DEC-1 — One variant request
 
 **Reference:** `spec:AST-087/DEC-1`
-**Decider:** pending
+**Decider:** imdreamrunner, 2026-10-21
 
-A variant system is standard across design systems, while appearance and weight
-are product-specific concepts. `Icon` carries one optional `variant`; a heavier
-or lighter stroke is the theme entry's adjustment for the final size, not a
-system axis.
+A variant system is standard across design systems. `Icon` carries one optional
+`variant`, and a heavier or lighter stroke is the theme entry's adjustment for
+the final size.
 
-Rejected: appearance and weight props typed from per-library capability
-declarations, because they encode product concepts in the system.
+Rejected: appearance and weight axes, because they are product-specific.
 
-### DEC-2 — Theme entries are pure functions of size and variant
+### DEC-2 — Theme entries are functions of size and variant
 
 **Reference:** `spec:AST-087/DEC-2`
-**Decider:** pending
+**Decider:** imdreamrunner, 2026-10-21
 
-A theme entry is a fixed node or one pure synchronous function of the final
-semantic size and optional variant. The function returns supplied artwork, and
-Astryx does not model the icon library behind it.
+A theme entry is a node or a pure function of the final size and optional
+variant that returns supplied artwork, so the theme owns everything specific to
+its icon library.
 
-Rejected: per-icon version trees keyed by size, appearance, and weight.
-
-### DEC-3 — Four size names; dimensions belong to the stylesheet
+### DEC-3 — The stylesheet sets icon dimensions
 
 **Reference:** `spec:AST-087/DEC-3`
-**Decider:** pending
+**Decider:** imdreamrunner, 2026-10-21
 
-Size names stay `xsm | sm | md | lg`, because a component may use any of them
-and each needs a value when no theme is applied. A theme sets their dimensions
-through the Icon stylesheet target, which guarantees the properties it needs,
+A theme sets the dimension of each Icon size through the Icon stylesheet target,
 and component-owned icon boxes follow the same dimension.
 
-Rejected: names added by a theme or icon library, because a component using a
-missing name has no fallback; a separate size setting beside the stylesheet
-target.
+Rejected: theme-added size names, because a component using one has no value
+when the theme is absent.
 
-### DEC-4 — `componentIcons` is the one component icon map
+### DEC-4 — `componentIcons` holds component icons
 
 **Reference:** `spec:AST-087/DEC-4`
-**Decider:** pending
+**Decider:** imdreamrunner, 2026-10-21
 
 The global icon map names what each icon is for, and `componentIcons` overrides
-it per component slot. A slot may resolve its request from typed component state.
-Slot names, state meaning, and rendering stay component-owned.
+it per component slot. A slot can resolve its request from typed component state.
 
-Rejected: an icon-role concept or a second component icon map; namespaced
-`icons` keys for new component glyphs; nested state maps or compound keys.
+Rejected: a second component icon map or an icon-role concept.
 
-### DEC-5 — Themes own state looks
+### DEC-5 — Themes set state-dependent icons
 
 **Reference:** `spec:AST-087/DEC-5`
-**Decider:** pending
+**Decider:** imdreamrunner, 2026-10-21
 
-A state-dependent icon look is a theme decision expressed through a slot
-resolver, so every instance follows one rule. Per-state icon props scale with
-every component and state; released ones remain as instance overrides.
+A state-dependent icon is a theme decision made through a slot resolver, so every
+instance follows one rule.
 
 ### DEC-6 — A selected function's result is final
 
 **Reference:** `spec:AST-087/DEC-6`
-**Decider:** pending
+**Decider:** imdreamrunner, 2026-10-21
 
-Static nullish entries fall through to the next source. Once a function entry is
-selected, its single result answers that source chain, so a theme can
-deliberately draw nothing for a request.
+Once a function entry is selected, its result answers the request, so artwork
+never mixes two sources and a theme can deliberately draw nothing.
 
-Rejected: retrying without `variant` or falling through to a lower source,
-because the result would mix artwork from two sources.
-
-### DEC-7 — Size- and variant-aware resolution stays inside Astryx
+### DEC-7 — Products request size and variant through `Icon`
 
 **Reference:** `spec:AST-087/DEC-7`
-**Decider:** pending
+**Decider:** imdreamrunner, 2026-10-21
 
-Products style icons through `Icon`. The resolver that selects artwork for a size
-and variant serves Astryx components and tooling and is not exported. Public
-reads keep their React-node types by materializing function entries at
-`{size: 'md'}`, the standalone Icon default.
+Size- and variant-aware resolution serves Astryx components and tooling. Public
+reads return React nodes, reading function entries at `{size: 'md'}`, the
+standalone Icon default.
 
-Rejected: public lookups that take size or variant; widening released read types
-to include functions.
-
-### DEC-8 — Malformed resolver output degrades to missing fields
+### DEC-8 — Malformed resolver output is ignored field by field
 
 **Reference:** `spec:AST-087/DEC-8`
-**Decider:** pending
+**Decider:** imdreamrunner, 2026-10-21
 
-An unknown returned `icon`, a non-string `variant`, or an unsupported `size` is
-treated as missing, so the precise fallback still renders, with one
-development-only warning.
-
-Rejected: throwing during render for malformed theme output.
+An invalid field in a resolver result is treated as missing, so the fallback
+still renders, with one development-only warning.
 
 ## Open questions
 
 - **OQ1 — How is `variant` typed?** (`human-api`)
-  - An open `string`: no vocabulary to maintain, no type safety for callers, and
-    an explicit INV14 exception, because the fallback for an unknown value
-    belongs to the entry.
+  - An open `string`: nothing to maintain, no type safety for callers, and the
+    entry owns the fallback for an unknown value.
   - A theme-extensible `IconVariantMap`, augmented by the application or
-    generated by `theme build`: typed values and autocomplete; an unknown value
-    falls back to the request without a variant, which is a theme-independent
-    baseline under INV14; the type is the union across the application's
-    themes.
-- **OQ2 — Which relationships between icon sizes must a theme preserve, and how
-  does a theme author see them?** (`human-design`) For example, whether size
-  order must hold and which components map their own sizes to each icon size,
-  so a theme author knows which values to set.
-- **OQ3 — How do public slot resolvers accept state, and what does public theme
-  data expose for a resolver slot?** (`human-api`) The resolver must stay
-  available to runtime and built-theme resolution. Whether
-  `DefinedTheme['componentIcons']` exposes resolver functions or keeps a static
-  projection is unsettled.
+    generated by `theme build`: typed values; an unknown value falls back to the
+    request without a variant.
+- **OQ2 — Which relationships between icon sizes does a theme keep, and how does
+  a theme author see them?** (`human-design`)
+- **OQ3 — How do public slot resolvers receive state, and what does public theme
+  data expose for a resolver slot?** (`human-api`)
