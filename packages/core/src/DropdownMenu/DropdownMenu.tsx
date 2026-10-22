@@ -339,10 +339,11 @@ export interface DropdownMenuItemData extends Pick<
    * With `items`: content above the sub-menu's rows, as `header` on
    * `DropdownMenuSubMenu` (a filter field, say). With it or `footer` the row
    * stays a sub-menu while `items` is empty, so a filter that matches nothing
-   * keeps its field. The bottom sheet shows it above that level's actions, in
-   * place of the menu's own header, and reads the level from the current
-   * `items` while it shows, by `id`, by a label it has to itself, or, while
-   * its level keeps its row count, by position; give the row an `id` when
+   * keeps its field. The bottom sheet shows it above that level's actions; a
+   * level with a `header` or `footer` of its own shows neither of the menu's.
+   * The sheet reads the level from the current `items` while it shows, by
+   * `id`, by a label it has to itself, or, while its level keeps its row
+   * count, by position; give the row an `id` when
    * another row at its level has the same label, when its label changes while
    * it shows, or when the rows can reorder or grow. Ignored on a row without
    * `items`.
@@ -351,8 +352,8 @@ export interface DropdownMenuItemData extends Pick<
   /**
    * With `items`: content below the sub-menu's rows, as `footer` on
    * `DropdownMenuSubMenu`. The bottom sheet shows it below that level's
-   * actions, in place of the menu's own footer. Ignored on a row without
-   * `items`.
+   * actions, and the level then shows neither of the menu's regions, the
+   * menu's `header` included. Ignored on a row without `items`.
    */
   footer?: ReactNode;
 }
@@ -683,8 +684,9 @@ function DropdownMenuBottomSheet({
   // footer stay live while it shows.
   const currentSubmenu = resolveSheetLevel(items, submenuPath);
   const currentItems = currentSubmenu?.items ?? items;
-  // A level whose row has its own header or footer shows them in place of the
-  // menu's own; every other level shows the menu's.
+  // A level whose row has a header or footer of its own shows its regions and
+  // neither of the menu's (the menu's header filters rows this level does not
+  // show); every other level shows the menu's.
   const levelHasRegions =
     currentSubmenu != null &&
     (isRenderable(currentSubmenu.header) ||

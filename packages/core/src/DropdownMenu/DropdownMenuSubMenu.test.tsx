@@ -2326,6 +2326,33 @@ describe('DropdownMenuSubMenu header and footer', () => {
     expect(screen.queryByRole('textbox', {name: 'Filter labels'})).toBeNull();
   });
 
+  it("the bottom sheet shows neither of the menu's regions at a level with only a footer of its own", async () => {
+    const user = userEvent.setup();
+    render(
+      <DropdownMenu
+        button={{label: 'Session'}}
+        presentation="bottom-sheet"
+        header={<input aria-label="Search actions" />}
+        footer={<button type="button">Settings</button>}
+        items={[
+          {
+            label: 'Labels',
+            footer: <button type="button">Create label</button>,
+            items: [{label: 'Bug'}, {label: 'Feature'}],
+          },
+        ]}
+      />,
+    );
+    await user.click(screen.getByRole('button', {name: /Session/}));
+    await screen.findByRole('dialog', {name: 'Session'});
+    await user.click(screen.getByRole('button', {name: /Labels/}));
+    await screen.findByRole('button', {name: 'Create label'});
+    // A region of its own replaces both of the menu's: the menu-wide search
+    // would filter rows this level does not show.
+    expect(screen.queryByRole('textbox', {name: 'Search actions'})).toBeNull();
+    expect(screen.queryByRole('button', {name: 'Settings'})).toBeNull();
+  });
+
   it("the bottom sheet opens each level's field empty, whatever was typed into the menu's or another level's", async () => {
     const user = userEvent.setup();
     render(
