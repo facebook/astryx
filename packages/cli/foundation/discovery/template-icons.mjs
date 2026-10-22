@@ -286,6 +286,15 @@ function isReference(node, parent, key) {
   }
 }
 
+/**
+ * Whether a module is one of Astryx's own packages (`@astryxdesign/core`,
+ * its subpaths, and every other `@astryxdesign/` package).
+ * @param {string} module
+ */
+function isAstryxModule(module) {
+  return module.startsWith('@astryxdesign/');
+}
+
 /** What a template reads with no icon-set state given: nothing is mapped. */
 export const NO_ICON_SETS = Object.freeze({
   sets: [],
@@ -379,9 +388,15 @@ export function mapTemplateIcons(source, {sets, choice}, declared = {}) {
       }
       const imported = specifier.imported.name ?? specifier.imported.value;
       const fromSet = index.get(`${module}\0${imported}`);
-      const meant = Object.hasOwn(declared, imported)
-        ? declared[imported]
-        : null;
+      // A declared name is the export a template imports from an icon
+      // library. Astryx's own packages ship components, not icons, so a
+      // declaration never matches an import from one (Core's `Table` is not
+      // the icon a template imports as `Table as TableIcon`); an installed
+      // set's icons are matched through the set instead.
+      const meant =
+        !isAstryxModule(module) && Object.hasOwn(declared, imported)
+          ? declared[imported]
+          : null;
       /** @type {SourceIcon | null} */
       const record = fromSet
         ? {

@@ -130,6 +130,27 @@ describe('mapTemplateIcons', () => {
     });
   });
 
+  it("a declaration never matches an import from an Astryx package: Core's Table stays", () => {
+    const source = [
+      "import {Table} from '@astryxdesign/core/Table';",
+      "import {Table as TableIcon, CloseGlyph} from '@acme/library';",
+      'export const A = () => <Table icon={TableIcon} close={CloseGlyph} />;',
+      '',
+    ].join('\n');
+    const declared = {Table: 'search', CloseGlyph: 'close'};
+    const {source: out, icons} = map(source, declared);
+    expect(out).toContain("import {Table} from '@astryxdesign/core/Table';");
+    expect(out).toContain("import {SearchIcon, XIcon} from '@acme/glyphs';");
+    expect(out).not.toContain('@acme/library');
+    expect(out).toContain('<Table icon={SearchIcon} close={XIcon} />');
+    expect(
+      icons.mapped.map(each => [each.source.module, each.source.export]),
+    ).toEqual([
+      ['@acme/library', 'Table'],
+      ['@acme/library', 'CloseGlyph'],
+    ]);
+  });
+
   it('imports under an alias when the mapped name is taken', () => {
     const {source} = map(
       "import {CloseGlyph} from '@acme/library';\nconst XIcon = 1;\nexport const A = () => <CloseGlyph />;\n",
