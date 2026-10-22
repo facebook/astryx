@@ -33,15 +33,15 @@ system_specs: [spec:AST-020/FR1, spec:AST-029/FR3, spec:AST-086/FR2]
 
 ## Contract at a glance
 
-| Area                    | Contract                                                                                                                                                                                                                  |
-| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Public contract         | `EmptyState` renders a required title plus optional description, decorative icon, and caller-owned actions in one root that is not a live region; callers choose heading level and compact layout.                        |
-| Behavior                | Null, undefined, boolean, and empty-string optional values create no slot wrapper. Rendered content follows icon, text, then actions order; compact layout reduces spacing and stacks actions.                            |
-| End-user impact         | A person reaches a named empty-content message and any next action without blank gaps from shallow-empty optional values; the title fits the surrounding document outline.                                                |
-| Builder impact          | Callers supply content and actions, select heading semantics, and may compose supported root props and styling. No additional setup is required.                                                                          |
-| Compatibility/readiness | The root carries no live role (`spec:AST-086` FR2). Otherwise this draft observes shipped behavior plus the narrow scalar-slot remediation; it adds no API or default.                                                    |
-| Review checks           | Reject a live role on the root, a missing heading, an informative icon hidden as decorative, a shallow-empty optional scalar that still changes layout, a dropped root prop/ref/style, or a theme target without anatomy. |
-| Governing rules         | `architecture:public-component-api` INV1 and INV5–INV9; `architecture:component-theming-surface` INV2–INV6; `architecture:component-test-sufficiency` INV1–INV7, INV10–INV11; WCAG 2.2.                                   |
+| Area                    | Contract                                                                                                                                                                                                                                  |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Public contract         | `EmptyState` renders a required title plus optional description, decorative icon, and caller-owned actions in one root that is not a live region; callers choose heading level and compact layout.                                        |
+| Behavior                | Null, undefined, boolean, and empty-string optional values create no slot wrapper. Rendered content follows icon, text, then actions order; compact layout reduces spacing and stacks actions.                                            |
+| End-user impact         | A person reaches a named empty-content message and any next action without blank gaps from shallow-empty optional values; the title fits the surrounding document outline.                                                                |
+| Builder impact          | Callers supply content and actions, select heading semantics, and may compose supported root props and styling. No additional setup is required.                                                                                          |
+| Compatibility/readiness | EmptyState adds no live role to the root (`spec:AST-086` FR2). Otherwise this draft observes shipped behavior plus the narrow scalar-slot remediation; it adds no API or default.                                                         |
+| Review checks           | Reject a component-added live role on the root, a missing heading, an informative icon hidden as decorative, a shallow-empty optional scalar that still changes layout, a dropped root prop/ref/style, or a theme target without anatomy. |
+| Governing rules         | `architecture:public-component-api` INV1 and INV5–INV9; `architecture:component-theming-surface` INV2–INV6; `architecture:component-test-sufficiency` INV1–INV7, INV10–INV11; WCAG 2.2.                                                   |
 
 This table is a review projection; the body below is authoritative.
 
@@ -52,7 +52,7 @@ context, optional decorative visual, and optional caller-owned next actions.
 
 ## Compatibility and migration
 
-- Released default preserved: no; the root carries no live role
+- Released default preserved: no; EmptyState adds no live role to the root
 - Compatibility class: observational and additive documentation; runtime remediation removes wrappers for nullish, boolean, and empty-string optional values and removes the root's live role
 - Controlled/uncontrolled behavior: not applicable
 - Migration decision: none; the code that produced an empty result owns any announcement of it (`spec:AST-086` FR2)
@@ -91,7 +91,7 @@ intentional decision. A `current` contract contains no unresolved rows.
 
 | ID  | Candidate invariant                                                                                                                                                                     | Basis                                                                                | Draft review state |
 | --- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ | ------------------ |
-| FR1 | The component MUST render one root containing the icon, text group, and actions in that reading order when present. The root MUST NOT set a live role or `aria-live`.                   | Current implementation and consumer docs; `spec:AST-086` FR2; WCAG 2.2 SC 1.3.2      | verify             |
+| FR1 | The component MUST render one root containing the icon, text group, and actions in that reading order when present. The component MUST NOT add a live role or `aria-live` to the root.  | Current implementation and consumer docs; `spec:AST-086` FR2; WCAG 2.2 SC 1.3.2      | verify             |
 | FR2 | The required title MUST render at the caller-selected heading level without changing the component's visual type role.                                                                  | Current implementation, tests, and consumer docs; WCAG 2.2 SC 1.3.1 and SC 2.4.6     | verify             |
 | FR3 | Null, undefined, boolean, and empty-string optional values MUST NOT create a wrapper, layout gap, or assistive-technology node; containers that are shallowly non-empty remain wrapped. | React's direct-child rendering semantics; established public optional-slot interface | verify             |
 | FR4 | The decorative icon wrapper MUST be absent when the slot is absent and hidden from assistive technology when rendered.                                                                  | Current implementation and tests; WCAG 2.2 SC 1.1.1                                  | verify             |
@@ -133,8 +133,8 @@ intentional decision. A `current` contract contains no unresolved rows.
 - **AR1 — Heading semantics.** The title is a heading at the caller-selected level.
 - **AR2 — Decorative visual.** The icon slot is hidden from assistive technology;
   callers keep all necessary meaning in the title or description.
-- **AR3 — No live region.** The root carries no live role or `aria-live` and does
-  not move focus. The code that produced the empty result announces it through
+- **AR3 — No live region.** EmptyState adds no live role or `aria-live` to the
+  root and does not move focus. The code that produced the empty result announces it through
   the shared channel when needed (`spec:AST-086` FR2). Action controls keep
   their own names, roles, and behavior.
 
