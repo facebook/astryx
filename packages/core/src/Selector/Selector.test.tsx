@@ -253,6 +253,14 @@ function mockSelectorRects({
   };
 }
 
+/** A busy control's Spinner is decorative and silent (spec:AST-086 FR8). */
+function expectSilentBusySpinner() {
+  const spinner = document.querySelector('.astryx-spinner');
+  expect(spinner).not.toBeNull();
+  expect(spinner).toHaveAttribute('aria-hidden', 'true');
+  expect(screen.queryByRole('status', {name: 'Loading'})).toBeNull();
+}
+
 describe('Selector', () => {
   it('uses a bottom sheet and closes after a selection when requested', async () => {
     const user = userEvent.setup();
@@ -1388,7 +1396,7 @@ describe('Selector', () => {
         <Selector label="Fruit" options={[]} onChange={() => {}} isLoading />,
       );
       const trigger = screen.getByRole('combobox', {name: 'Fruit'});
-      expect(screen.getByRole('status', {name: 'Loading'})).toBeInTheDocument();
+      expectSilentBusySpinner();
 
       await user.click(trigger);
       expect(trigger).toHaveAttribute('aria-expanded', 'true');
@@ -1404,7 +1412,10 @@ describe('Selector', () => {
       // component cannot make; the trigger's spinner carries the state.
       const listbox = screen.getByRole('listbox', h);
       expect(within(listbox).queryByText('No options')).not.toBeInTheDocument();
-      expect(politeRegion()?.textContent ?? '').toBe('');
+      // Only the busy start is spoken (spec:AST-086 FR8), never an empty or
+      // no-results message the panel is suppressing.
+      // (The channel clears its text on a timer, so it may already be empty.)
+      expect(['', 'Loading']).toContain(politeRegion()?.textContent ?? '');
     });
 
     it('announces nothing while isLoading, matching the silent panel', async () => {
@@ -1437,7 +1448,10 @@ describe('Selector', () => {
       expect(
         within(listbox).queryByText('Nothing like that here'),
       ).not.toBeInTheDocument();
-      expect(politeRegion()?.textContent ?? '').toBe('');
+      // Only the busy start is spoken (spec:AST-086 FR8), never an empty or
+      // no-results message the panel is suppressing.
+      // (The channel clears its text on a timer, so it may already be empty.)
+      expect(['', 'Loading']).toContain(politeRegion()?.textContent ?? '');
     });
 
     it('announces the seeded query from type-to-open', async () => {
@@ -1490,7 +1504,10 @@ describe('Selector', () => {
         async () =>
           void (await new Promise(resolve => requestAnimationFrame(resolve))),
       );
-      expect(politeRegion()?.textContent ?? '').toBe('');
+      // Only the busy start is spoken (spec:AST-086 FR8), never an empty or
+      // no-results message the panel is suppressing.
+      // (The channel clears its text on a timer, so it may already be empty.)
+      expect(['', 'Loading']).toContain(politeRegion()?.textContent ?? '');
 
       // The fetch lands empty while the panel is open. The message appears, so
       // the region owes the same words — an open-only announcement misses this.
@@ -2896,7 +2913,7 @@ describe('Selector', () => {
 
       const trigger = screen.getByRole('combobox', {name: 'Fruit'});
       expect(trigger).toHaveAttribute('aria-busy', 'true');
-      expect(screen.getByRole('status', {name: 'Loading'})).toBeInTheDocument();
+      expectSilentBusySpinner();
 
       await user.click(trigger);
       expect(screen.queryByRole('listbox', h)).not.toBeInTheDocument();
