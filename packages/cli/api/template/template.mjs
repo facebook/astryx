@@ -24,6 +24,7 @@ import {
 } from '../../foundation/discovery/template-adapter.mjs';
 import {AstryxError} from '../error.mjs';
 import {ERROR_CODES} from '../../foundation/response/error-codes.mjs';
+import {orderByAffinity} from '../../foundation/text/suggest-order.mjs';
 import {templateList} from './list/list.mjs';
 import {templateShow} from './show/show.mjs';
 import {templateSkeleton} from './skeleton/skeleton.mjs';
@@ -188,7 +189,10 @@ export async function template(name, options = {}) {
   if (name && candidates.length === 0) {
     throw new AstryxError(
       `Unknown template "${name}"`,
-      templates.map(t => ({name: t.dirName, reason: `${t.type} template`})),
+      orderByAffinity(name, templates, t => [t.dirName, t.name]).map(t => ({
+        name: t.dirName,
+        reason: `${t.type} template`,
+      })),
       ERROR_CODES.ERR_UNKNOWN_TEMPLATE,
     );
   }

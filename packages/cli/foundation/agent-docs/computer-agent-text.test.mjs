@@ -27,7 +27,13 @@ import {
   renderComputerAgentText,
   writeComputerAgentText,
 } from './computer-agent-text.mjs';
-import {MARKER_END, MARKER_START} from './agent-doc-state.mjs';
+import {
+  MARKER_END,
+  MARKER_START,
+  SELF_CHECK_CSS,
+  WORKFLOW_STEPS,
+  WORKFLOW_TITLE,
+} from './agent-doc-state.mjs';
 import {runWithCliDoor} from '../env/cli-command.mjs';
 import {runCli} from '../../test-utils/run-cli.mjs';
 import {parse as parseYaml} from 'yaml';
@@ -123,10 +129,25 @@ describe('renderComputerAgentText', () => {
 
   it('stays short, and tells agents to read docs through the CLI', () => {
     const text = renderComputerAgentText({command: 'astryx'});
-    expect(text.split('\n').length).toBeLessThanOrEqual(15);
+    expect(text.split('\n').length).toBeLessThanOrEqual(22);
     expect(text).toContain(
       "Then read `astryx component <Name>` or `astryx docs <topic>`, not the package's files.",
     );
+  });
+
+  // Discovery alone leaves the build to the agent's own page route, which
+  // may not install packages; the skill names the route and the project
+  // agent docs' own workflow lines.
+  it('gives the build workflow: a project with Astryx installed and init run, the shared template steps, then check and deliver the build', () => {
+    const text = renderComputerAgentText({command: 'astryx'});
+    expect(text).toContain(
+      'To build UI, work in a project folder (create one if there is none). Add `@astryxdesign/core` and `@astryxdesign/cli` to a new project or one without `@astryxdesign/core`; to a project that already has `@astryxdesign/core`, add `@astryxdesign/cli` at the same version. Run `astryx init` there and follow the agent docs it writes.',
+    );
+    for (const line of [WORKFLOW_TITLE, ...WORKFLOW_STEPS]) {
+      expect(text).toContain(line);
+    }
+    expect(text).toContain(`re-read each file; ${SELF_CHECK_CSS}.`);
+    expect(text).toContain('deliver that build');
   });
 
   it("uses the host's door when one is set", () => {

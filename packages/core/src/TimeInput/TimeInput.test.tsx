@@ -10,8 +10,10 @@
  */
 
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
-import {render, screen, fireEvent, waitFor} from '@testing-library/react';
+import {act, render, screen, fireEvent, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import * as stylex from '@stylexjs/stylex';
+import {colorVars} from '../theme/tokens.stylex';
 import {TimeInput} from './TimeInput';
 import {InputGroup, InputGroupText} from '../InputGroup';
 import {InternationalizationProvider} from '../i18n';
@@ -141,9 +143,41 @@ describe('TimeInput', () => {
     );
   });
 
-  it('disables input when isDisabled is true', () => {
+  it('keeps a disabled input focusable without native disabled (AST-085 FR1)', () => {
     render(<TimeInput label="Time" isDisabled onChange={() => {}} />);
-    expect(screen.getByRole('textbox')).toBeDisabled();
+    const input = screen.getByRole('textbox');
+    expect(input).not.toHaveAttribute('disabled');
+    expect(input).toHaveAttribute('aria-disabled', 'true');
+    expect(input).toHaveAttribute('readonly');
+    input.focus();
+    expect(input).toHaveFocus();
+  });
+
+  it('restores the focus ring on a focused disabled field (AST-085 FR6)', () => {
+    // The same declarations as the field's ring style compile to the same
+    // atomic classes; the shared disabled style alone drops them.
+    const ringClasses = stylex
+      .props(
+        stylex.create({
+          ring: {
+            borderColor: {
+              default: colorVars['--color-border-emphasized'],
+              ':focus-within': colorVars['--color-accent'],
+            },
+            boxShadow: {
+              default: 'none',
+              ':focus-within': `inset 0px 0px 0px 2px ${colorVars['--color-accent-muted']}`,
+            },
+          },
+        }).ring,
+      )
+      .className!.split(' ')
+      .filter(name => !name.includes('__'));
+    render(<TimeInput label="Time" isDisabled onChange={() => {}} />);
+    const wrapper = screen.getByRole('textbox').closest('.astryx-time-input')!;
+    for (const name of ringClasses) {
+      expect(wrapper).toHaveClass(name);
+    }
   });
 
   it('shows clear button when hasClear is true and value exists', () => {
@@ -645,11 +679,89 @@ describe('TimeInput', () => {
       expect(onChange).not.toHaveBeenCalled();
     });
 
-    it('remains natively disabled when disabled without a reason', () => {
-      render(<TimeInput label="Time" isDisabled />);
+    it('blocks typing, arrows and a caller onClick when disabled without a reason (AST-085 FR2)', async () => {
+      const user = userEvent.setup();
+      const onChange = vi.fn();
+      const onClick = vi.fn();
+      render(
+        <TimeInput
+          label="Time"
+          value={'09:00' as ISOTimeString}
+          onChange={onChange}
+          onClick={onClick}
+          isDisabled
+        />,
+      );
       const input = screen.getByLabelText('Time');
-      expect(input).toBeDisabled();
-      expect(input).not.toHaveAttribute('aria-disabled');
+      await user.click(input);
+      await user.type(input, '1');
+      await user.keyboard('{ArrowUp}');
+      await user.tab();
+      expect(onChange).not.toHaveBeenCalled();
+      expect(onClick).not.toHaveBeenCalled();
+    });
+
+    it.each([
+      ['text-input', false, {isDisabled: true}],
+      ['native', true, {isDisabled: true}],
+      ['bottom-sheet', true, {isDisabled: true}],
+      ['bottom-sheet', true, {isLoading: true}],
+    ] as const)(
+      'does not submit a surrounding form on Enter: %s (coarse %s) %o (AST-085 FR2)',
+      async (presentation, isCoarse, state) => {
+        vi.stubGlobal('matchMedia', (query: string) => ({
+          matches: /pointer:\s*coarse/.test(query)
+            ? isCoarse
+            : /pointer:\s*fine/.test(query) && !isCoarse,
+          media: query,
+          addEventListener: () => {},
+          removeEventListener: () => {},
+          addListener: () => {},
+          removeListener: () => {},
+        }));
+        const user = userEvent.setup();
+        const onSubmit = vi.fn((e: React.FormEvent) => e.preventDefault());
+        render(
+          <form onSubmit={onSubmit}>
+            <TimeInput
+              label="Time"
+              presentation={presentation}
+              value={'09:00' as ISOTimeString}
+              onChange={() => {}}
+              {...state}
+            />
+            <button type="submit">Save</button>
+          </form>,
+        );
+        try {
+          const input = document.querySelector<HTMLInputElement>(
+            '.astryx-time-input input:not([type=hidden])',
+          )!;
+          act(() => input.focus());
+          await user.keyboard('{Enter}');
+          expect(onSubmit).not.toHaveBeenCalled();
+        } finally {
+          vi.unstubAllGlobals();
+        }
+      },
+    );
+
+    it('drops a draft instead of committing it when the field becomes disabled (AST-085 FR2)', async () => {
+      const user = userEvent.setup();
+      const onChange = vi.fn();
+      const value = '09:00' as ISOTimeString;
+      const {rerender} = render(
+        <TimeInput label="Time" value={value} onChange={onChange} />,
+      );
+      const input = screen.getByLabelText('Time');
+      await user.click(input);
+      await user.clear(input);
+      onChange.mockClear();
+      rerender(
+        <TimeInput label="Time" value={value} onChange={onChange} isDisabled />,
+      );
+      await user.tab();
+      expect(onChange).not.toHaveBeenCalled();
     });
 
     it('does not swap in the format-hint placeholder on focus while disabled', () => {
