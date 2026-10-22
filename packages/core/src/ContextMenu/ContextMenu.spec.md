@@ -56,8 +56,8 @@ Consumer migration instructions belong in consumer docs and release notes.
 **Owns**
 
 - The Trigger area's context-menu invocation wiring.
-- The alternative Pointer menu surface and Touch menu surface and their shared
-  current `context-menu` target.
+- The alternative Pointer menu surface (with its surface host) and Touch menu
+  surface and their shared current `context-menu` target.
 - Cursor-anchor placement and current open-state coordination across the two
   presentation paths.
 
@@ -84,7 +84,7 @@ Consumer props, content modes, and presentation policy remain documented in
 | ID   | Candidate invariant                                                                                                                                                                                                                                                                                                                                                                                                             | Basis                                                                        | Draft review state                                  |
 | ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- | --------------------------------------------------- |
 | FR1  | Every render contains a caller-provided Trigger area. Pointer presentation opens a Pointer menu surface at the current local cursor anchor; touch presentation opens a Touch sheet frame containing a Touch menu surface and, for data mode, a Touch action list and Touch action rows.                                                                                                                                         | Current source, docs, and tests                                              | Current behavior; verified                          |
-| FR2  | The current `context-menu` target remains on the painted Pointer menu surface and alternative Touch menu surface, not on the Trigger area or cursor anchor.                                                                                                                                                                                                                                                                     | Current source, docs, and tests                                              | Current inventory; verified                         |
+| FR2  | The current `context-menu` target remains on the painted Pointer menu surface and alternative Touch menu surface, not on the Trigger area or cursor anchor; while a sub-menu's drilled-in view with a header or footer shows, the surface host that paints it in the Pointer menu surface's place carries it too (proposed FR12).                                                                                               | Current source, docs, and tests                                              | Current inventory; verified                         |
 | FR3  | Pointer action rows retain DropdownMenu ownership. The touch frame retains BottomSheet ownership, while data-driven touch lists and rows retain List ownership.                                                                                                                                                                                                                                                                 | Current source and owner docs                                                | Current delegation; verified                        |
 | FR4  | Compound `menuContent` remains a caller-supplied pointer-menu interior and may also render inside the touch frame; the data-driven touch path instead converts the same item data to List and ListItem presentation.                                                                                                                                                                                                            | Current source and tests                                                     | Current branches; verified                          |
 | FR5  | The Pointer menu surface carries `data-astryx-menu-press` and follows `module:DropdownMenu/useMenuPress` FR1–FR7: the row under the release acts, the highlight follows a held pointer, a mouse released outside closes and a finger leaves the menu open, the stray click never acts, and `touch-action` follows overflow. Right-click, Shift+F10, long-press invocation and keyboard navigation keep their existing behavior. | `module:DropdownMenu/useMenuPress`; `ContextMenu.test.tsx` press model suite | Current module projection; verified in jsdom        |
@@ -142,16 +142,18 @@ stack; while a pointer is held in the pointer menu, the highlight is DOM focus p
 | Anatomy or state     | Design requirement                                                                | Representation authority       | Hierarchy role    | Component contract |
 | -------------------- | --------------------------------------------------------------------------------- | ------------------------------ | ----------------- | ------------------ |
 | Trigger area         | Defines the caller-owned region that accepts context-menu input.                  | Caller-supplied content        | Context-dependent | FR1, FR2           |
-| Pointer menu surface | Paints the menu at the current cursor anchor.                                     | Current source and public docs | Prominent         | FR1, FR2           |
+| Pointer menu surface | Paints the menu at the cursor anchor; its surface host paints a view in place.    | Current source and public docs | Prominent         | FR1, FR2           |
 | Pointer action row   | Presents an action, selectable option, or nested-menu entry through DropdownMenu. | `component:DropdownMenu`       | Prominent         | FR1, FR3, FR4      |
 | Touch sheet frame    | Supplies the touch panel, scrolling area, handle, and optional scrim.             | `component:BottomSheet`        | Prominent         | FR1, FR3           |
 | Touch menu surface   | Arranges ContextMenu-owned heading and content inside the sheet.                  | Current source and public docs | Prominent         | FR1, FR2           |
 | Touch action list    | Groups data-driven touch actions using the spacious List presentation.            | `component:List`               | Prominent         | FR1, FR3, FR4      |
 | Touch action row     | Presents one data-driven touch action or drill-in entry using ListItem.           | `component:List`               | Prominent         | FR1, FR3, FR4      |
 
-The `context-menu` target intentionally appears on both alternative painted
-menu surfaces. Trigger area content stays caller-owned and the 1px cursor
-anchor is positioning infrastructure rather than consumer anatomy.
+The `context-menu` target intentionally appears on both alternative painted menu
+surfaces, and on the Pointer menu surface's surface host while it paints a
+sub-menu's drilled-in view in the menu's place (proposed FR12). Trigger area
+content stays caller-owned and the 1px cursor anchor is positioning
+infrastructure rather than consumer anatomy.
 
 ### Theming anatomy
 
@@ -204,7 +206,7 @@ anchor is positioning infrastructure rather than consumer anatomy.
 | Contract            | Verification                                                                                      | Representative states                               | Mutation or failure expectation                                                                    | Audit section                |
 | ------------------- | ------------------------------------------------------------------------------------------------- | --------------------------------------------------- | -------------------------------------------------------------------------------------------------- | ---------------------------- |
 | FR1, FR4            | `ContextMenu.test.tsx` pointer, long-press, bottom-sheet, adaptive, compound, and drill-in suites | Pointer data/compound and touch data/compound       | Collapsing presentation-specific parts or content owners fails structure, role, or behavior tests. | `audit:ContextMenu/anatomy`  |
-| FR2                 | ContextMenu target tests, source inspection, and theming target inventories                       | Pointer and touch menu surfaces                     | Moving `context-menu` to the trigger or removing it from a painted branch fails evidence.          | `audit:ContextMenu/theming`  |
+| FR2                 | ContextMenu target tests, source inspection, and theming target inventories                       | Pointer and touch menu surfaces, surface host       | Moving `context-menu` to the trigger or removing it from a painted branch fails evidence.          | `audit:ContextMenu/theming`  |
 | FR3                 | ContextMenu, DropdownMenu, BottomSheet, and List owner tests                                      | Pointer rows, touch frame, touch list/rows          | A composed part loses its owner target or is documented as a new ContextMenu target.               | `audit:ContextMenu/theming`  |
 | Layer relationships | `ContextMenu.test.tsx` nested-layer case and current layer/dismissal architecture records         | Outside click, Escape, nested context layers, sheet | A Pointer menu bypassing the shared stack or dismissing with its nested child fails.               | `audit:ContextMenu/behavior` |
 | FR5                 | `ContextMenu.test.tsx` press model case; `module:DropdownMenu/useMenuPress` map                   | Finger slide across rows, stray click               | A row acting on the press row or the stray click fails.                                            | `audit:ContextMenu/behavior` |
