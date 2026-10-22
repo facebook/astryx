@@ -86,6 +86,16 @@ describe('useTypeahead', () => {
     expect(onMatch).toHaveBeenLastCalledWith(2);
   });
 
+  it('clears the pending buffer reset when the component unmounts', () => {
+    const {result, unmount} = renderHook(() =>
+      useTypeahead({getItemLabels: () => LABELS, onMatch: vi.fn()}),
+    );
+    result.current.onKeyDown(key('a'));
+    expect(vi.getTimerCount()).toBe(1);
+    unmount();
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
   it('skips disabled items', () => {
     const {onMatch, api} = setup({disabledIndices: [0]}); // Apple disabled
     api.onKeyDown(key('a'));
