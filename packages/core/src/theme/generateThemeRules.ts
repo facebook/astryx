@@ -36,6 +36,8 @@ import {parseStyleKey} from '../utils/parseStyleKey';
 import {getDerivedVars} from './derivedVarRegistry';
 import {cssVar, classPrefix, dataAttrNamespace} from '../naming';
 import {
+  analyzeDeclarationValue,
+  canonicalizeDeclarationName,
   checkDeclarationName,
   checkDeclarationValue,
 } from './declarationBoundary';
@@ -488,162 +490,9 @@ const SCOPED_STATUS_ROLE_DEFAULTS: ReadonlyArray<
 
 type TokenValues = Record<string, unknown>;
 
-function isCSSWhitespace(character: string | undefined): boolean {
-  return character !== undefined && /[\t\n\f\r ]/.test(character);
-}
-
-function consumeCSSEscape(
-  text: string,
-  start: number,
-): {character: string; next: number} | null {
-  if (text[start] !== '\\' || start + 1 >= text.length) {
-    return null;
-  }
-  let next = start + 1;
-  let hex = '';
-  while (hex.length < 6 && /[0-9a-fA-F]/.test(text[next] ?? '')) {
-    hex += text[next];
-    next++;
-  }
-  if (hex.length > 0) {
-    if (isCSSWhitespace(text[next])) {
-      next++;
-    }
-    const codePoint = Number.parseInt(hex, 16);
-    return {
-      character:
-        codePoint === 0 || codePoint > 0x10ffff
-          ? '\uFFFD'
-          : String.fromCodePoint(codePoint),
-      next,
-    };
-  }
-  if (/\r|\n|\f/.test(text[next])) {
-    return null;
-  }
-  return {character: text[next], next: next + 1};
-}
-
-function readCSSIdentifier(
-  text: string,
-  start: number,
-): {value: string; next: number} | null {
-  let next = start;
-  let value = '';
-  while (next < text.length) {
-    const character = text[next];
-    if (/[-_a-zA-Z0-9]/.test(character) || character.charCodeAt(0) > 0x7f) {
-      value += character;
-      next++;
-      continue;
-    }
-    const escape = consumeCSSEscape(text, next);
-    if (escape === null) {
-      break;
-    }
-    value += escape.character;
-    next = escape.next;
-  }
-  return value.length > 0 ? {value, next} : null;
-}
-
-function skipCSSIgnorable(text: string, start: number): number {
-  let next = start;
-  for (;;) {
-    while (isCSSWhitespace(text[next])) {
-      next++;
-    }
-    if (text.startsWith('/*', next)) {
-      const end = text.indexOf('*/', next + 2);
-      return end === -1 ? text.length : skipCSSIgnorable(text, end + 2);
-    }
-    return next;
-  }
-}
-
-function skipCSSString(text: string, start: number): number {
-  const quote = text[start];
-  let next = start + 1;
-  while (next < text.length) {
-    if (text[next] === quote) {
-      return next + 1;
-    }
-    const escape = consumeCSSEscape(text, next);
-    next = escape?.next ?? next + 1;
-  }
-  return next;
-}
-
-function decodeCSSIdentifier(identifier: string): string {
-  return readCSSIdentifier(identifier, 0)?.value ?? identifier;
-}
-
-function tokenReferenceNames(value: unknown): string[] {
-  const references: string[] = [];
-  const text = `${value}`;
-  let index = 0;
-  while (index < text.length) {
-    if (text.startsWith('/*', index)) {
-      index = skipCSSIgnorable(text, index);
-      continue;
-    }
-    if (text[index] === '"' || text[index] === "'") {
-      index = skipCSSString(text, index);
-      continue;
-    }
-    const functionName = readCSSIdentifier(text, index);
-    if (functionName === null) {
-      index++;
-      continue;
-    }
-    const openParen = skipCSSIgnorable(text, functionName.next);
-    if (functionName.value.toLowerCase() === 'var' && text[openParen] === '(') {
-      const tokenStart = skipCSSIgnorable(text, openParen + 1);
-      const token = readCSSIdentifier(text, tokenStart);
-      if (token !== null && token.value.startsWith('--')) {
-        const tokenEnd = skipCSSIgnorable(text, token.next);
-        if (text[tokenEnd] === ',' || text[tokenEnd] === ')') {
-          references.push(token.value);
-        }
-      }
-    }
-    index = functionName.next;
-  }
-  return references;
-}
-
 interface TokenCascadeState {
   values: TokenValues;
   important: Set<string>;
-}
-
-function declarationIsImportant(value: unknown): boolean {
-  const text = `${value}`;
-  let bang = -1;
-  let index = 0;
-  while (index < text.length) {
-    if (text.startsWith('/*', index)) {
-      index = skipCSSIgnorable(text, index);
-      continue;
-    }
-    if (text[index] === '"' || text[index] === "'") {
-      index = skipCSSString(text, index);
-      continue;
-    }
-    if (text[index] === '!') {
-      bang = index;
-    }
-    index++;
-  }
-  if (bang === -1) {
-    return false;
-  }
-  const keywordStart = skipCSSIgnorable(text, bang + 1);
-  const keyword = readCSSIdentifier(text, keywordStart);
-  return (
-    keyword?.value.toLowerCase() === 'important' &&
-    skipCSSIgnorable(text, keyword.next) === text.length
-  );
 }
 
 function assignTokenCascade(
@@ -651,14 +500,20 @@ function assignTokenCascade(
   ...tokenSets: ReadonlyArray<TokenValues | undefined>
 ): void {
   for (const tokens of tokenSets) {
-    for (const [rawToken, value] of Object.entries(tokens ?? {})) {
-      const token = decodeCSSIdentifier(rawToken);
-      const important = declarationIsImportant(value);
-      if (state.important.has(token) && !important) {
+    for (const [rawToken, rawValue] of Object.entries(tokens ?? {})) {
+      const token = canonicalizeDeclarationName(rawToken);
+      const value = `${rawValue}`;
+      const analysis = analyzeDeclarationValue(value);
+      // Match joinDeclarations: declarations that cannot be emitted never
+      // participate in the browser cascade this safety model validates.
+      if (token === null || analysis.reason !== null) {
+        continue;
+      }
+      if (state.important.has(token) && !analysis.important) {
         continue;
       }
       state.values[token] = value;
-      if (important) {
+      if (analysis.important) {
         state.important.add(token);
       } else {
         state.important.delete(token);
@@ -675,38 +530,33 @@ function createTokenCascade(
   return state;
 }
 
-/** Linear-time cycle check over one reachable custom-property cascade. */
-function tokenValuesHaveCycle(tokens: TokenValues): boolean {
-  const canonicalTokens = createTokenCascade(tokens).values;
+/** Linear-time check for a cycle that includes one proposed alias role. */
+function tokenValuesHaveCycleInvolving(
+  tokens: TokenValues,
+  relevantToken: string,
+): boolean {
   const references = new Map(
-    Object.entries(canonicalTokens).map(([token, value]) => [
+    Object.entries(tokens).map(([token, value]) => [
       token,
-      tokenReferenceNames(value).filter(reference =>
-        Object.prototype.hasOwnProperty.call(canonicalTokens, reference),
+      analyzeDeclarationValue(`${value}`).references.filter(reference =>
+        Object.prototype.hasOwnProperty.call(tokens, reference),
       ),
     ]),
   );
-  const states = new Map<string, 'visiting' | 'complete'>();
-
-  const visit = (token: string): boolean => {
-    const state = states.get(token);
-    if (state === 'visiting') {
+  const stack = [...(references.get(relevantToken) ?? [])];
+  const visited = new Set<string>();
+  while (stack.length > 0) {
+    const token = stack.pop()!;
+    if (token === relevantToken) {
       return true;
     }
-    if (state === 'complete') {
-      return false;
+    if (visited.has(token)) {
+      continue;
     }
-    states.set(token, 'visiting');
-    for (const reference of references.get(token) ?? []) {
-      if (visit(reference)) {
-        return true;
-      }
-    }
-    states.set(token, 'complete');
-    return false;
-  };
-
-  return [...references.keys()].some(visit);
+    visited.add(token);
+    stack.push(...(references.get(token) ?? []));
+  }
+  return false;
 }
 
 const WIDTH_CELL_RANK = {
@@ -836,7 +686,7 @@ function generatedScopedStatusRoleDefaults(
     const tentativeEntries: [string, string][] = [...entries, [role, alias]];
     const isSafe = matchSets.every(
       matchingRuleIndexes =>
-        !tokenValuesHaveCycle(
+        !tokenValuesHaveCycleInvolving(
           effectiveAdaptationTokenValues(
             tokens,
             localTokens,
@@ -844,6 +694,7 @@ function generatedScopedStatusRoleDefaults(
             rules,
             matchingRuleIndexes,
           ),
+          role,
         ),
     );
     if (isSafe) {
@@ -908,7 +759,7 @@ function generatedAdaptationStatusRoleDefaults(
       aliases[index].push([role, alias]);
       const isSafe = matchSets.every(
         matchingRuleIndexes =>
-          !tokenValuesHaveCycle(
+          !tokenValuesHaveCycleInvolving(
             effectiveAdaptationTokenValues(
               rootTokens,
               rootLocalTokens,
@@ -917,6 +768,7 @@ function generatedAdaptationStatusRoleDefaults(
               matchingRuleIndexes,
               aliases,
             ),
+            role,
           ),
       );
       if (!isSafe) {
@@ -970,7 +822,7 @@ function generatedMediaStatusRoleDefaults(
           }
         }
       }
-      return !tokenValuesHaveCycle(local.values);
+      return !tokenValuesHaveCycleInvolving(local.values, role);
     });
     if (isSafe) {
       aliases.push([role, alias]);

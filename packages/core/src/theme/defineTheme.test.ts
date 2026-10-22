@@ -138,6 +138,72 @@ describe('defineTheme', () => {
     expect(css).toContain('--color-info: var(--color-accent);');
   });
 
+  it.each([
+    ['escaped space', '--x\\ y'],
+    ['escaped backslash', '--x\\\\y'],
+  ])('canonicalizes an %s declaration key exactly once', (_, localToken) => {
+    const css = generateThemeRules({
+      tokens: {'--color-accent': `var(${localToken})`},
+      localTokens: {[localToken]: 'var(--color-info)'},
+    }).join('\n');
+
+    expect(css).not.toContain('--color-info: var(--color-accent);');
+  });
+
+  it.each([
+    ['CRLF-preprocessed escape', 'v\\61\r\nr(--color-info)', undefined],
+    ['surrogate escape', 'var(--\\d800)', {'--�': 'var(--color-info)'}],
+    ['NUL replacement', 'var(--\0)', {'--�': 'var(--color-info)'}],
+  ])('uses browser preprocessing for %s', (_, accent, localTokens) => {
+    const css = generateThemeRules({
+      tokens: {'--color-accent': accent},
+      localTokens,
+    }).join('\n');
+
+    expect(css).not.toContain('--color-info: var(--color-accent);');
+  });
+
+  it.each(['var (--color-info)', 'var/**/(--color-info)'])(
+    'does not treat non-function text as a reference: %s',
+    accent => {
+      const css = generateThemeRules({tokens: {'--color-accent': accent}}).join(
+        '\n',
+      );
+      expect(css).toContain('--color-info: var(--color-accent);');
+    },
+  );
+
+  it('does not let unquoted URL contents hide a following var() reference', () => {
+    const css = generateThemeRules({
+      tokens: {
+        '--color-accent': 'url(/*) var(--color-info) /* */',
+      },
+    }).join('\n');
+
+    expect(css).not.toContain('--color-info: var(--color-accent);');
+  });
+
+  it('ignores pre-existing unrelated legacy cycles', () => {
+    const css = generateThemeRules({
+      tokens: {
+        '--color-accent': '#123456',
+        '--color-background-body': 'var(--color-background-surface)',
+        '--color-background-surface': 'var(--color-background-body)',
+      },
+    }).join('\n');
+
+    expect(css).toContain('--color-info: var(--color-accent);');
+  });
+
+  it('handles long runs of adjacent comments without recursion', () => {
+    const comments = '/**/'.repeat(10_000);
+    expect(() =>
+      generateThemeRules({
+        tokens: {'--color-accent': `#123456 ${comments}`},
+      }),
+    ).not.toThrow();
+  });
+
   it('checks a reconverging token graph in linear time', () => {
     const localTokens: Record<string, string> = {};
     for (let layer = 0; layer < 26; layer++) {

@@ -473,6 +473,59 @@ describe('rule order and writes', () => {
     expect(rootCss).not.toContain('--color-info: var(--color-accent);');
   });
 
+  it('does not treat an escaped bang as declaration priority', () => {
+    const theme = defineTheme({
+      name: 'escaped-bang-status-reference',
+      tokens: {'--color-accent': '#0099ff'},
+      adaptations: {
+        rules: [
+          {
+            when: {pointer: 'coarse'},
+            value: {
+              tokens: {
+                '--color-accent': 'var(--color-info) \\!important',
+              },
+            },
+          },
+          {
+            when: {pointer: 'coarse'},
+            value: {tokens: {'--color-accent': '#123456'}},
+          },
+        ],
+      },
+    });
+    const rootCss = generateThemeRules(theme).join('\n');
+
+    expect(rootCss).toContain('--color-info: var(--color-accent);');
+  });
+
+  it('does not model a dropped declaration as a cycle repair', () => {
+    const theme = defineTheme({
+      name: 'dropped-status-repair',
+      tokens: {'--color-accent': '#0099ff'},
+      adaptations: {
+        rules: [
+          {
+            when: {pointer: 'coarse'},
+            value: {tokens: {'--color-accent': 'var(--color-info)'}},
+          },
+          {
+            when: {pointer: 'coarse'},
+            value: {tokens: {'--color-accent': '#abcdef;'}},
+          },
+        ],
+      },
+    });
+    const warnings: string[] = [];
+    const rootCss = generateThemeRules(theme, warnings).join('\n');
+
+    expect(rootCss).not.toContain('--color-info: var(--color-accent);');
+    expect(generateAdaptationCSS(theme, warnings).component).not.toContain(
+      '--color-accent: #abcdef;',
+    );
+    expect(warnings.some(warning => warning.includes('dropped'))).toBe(true);
+  });
+
   it('emits a guarded alias when only an adaptation authors the source', () => {
     const theme = defineTheme({
       name: 'adaptation-only-status-source',

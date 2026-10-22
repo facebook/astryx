@@ -52,7 +52,25 @@ function isNameChar(ch: string): boolean {
 
 /** CSS Syntax §3.3 preprocessing, for scanning only; emitted bytes stay intact. */
 function preprocess(input: string): string {
-  return input.replace(/\r\n?|\f/g, '\n').replace(/\0/g, '\uFFFD');
+  const normalized = input.replace(/\r\n?|\f/g, '\n').replace(/\0/g, '\uFFFD');
+  let output = '';
+  for (let index = 0; index < normalized.length; index++) {
+    const code = normalized.charCodeAt(index);
+    if (code >= 0xd800 && code <= 0xdbff) {
+      const next = normalized.charCodeAt(index + 1);
+      if (next >= 0xdc00 && next <= 0xdfff) {
+        output += normalized[index] + normalized[index + 1];
+        index++;
+      } else {
+        output += '\uFFFD';
+      }
+    } else if (code >= 0xdc00 && code <= 0xdfff) {
+      output += '\uFFFD';
+    } else {
+      output += normalized[index];
+    }
+  }
+  return output;
 }
 
 /** Non-printable code points make an unquoted url() a bad-url token. */
@@ -323,6 +341,154 @@ export function checkDeclarationValue(input: string): string | null {
     return `an unclosed "${opener}" would swallow the rest of the rule`;
   }
   return null;
+}
+
+export interface DeclarationValueAnalysis {
+  reason: string | null;
+  references: string[];
+  important: boolean;
+}
+
+function skipWhitespaceAndComments(input: string, start: number): number {
+  let index = start;
+  for (;;) {
+    while (index < input.length && isWhitespace(input[index])) {
+      index++;
+    }
+    if (input[index] !== '/' || input[index + 1] !== '*') {
+      return index;
+    }
+    const close = input.indexOf('*/', index + 2);
+    if (close === -1) {
+      return input.length;
+    }
+    index = close + 2;
+  }
+}
+
+function varReferenceAt(input: string, openParen: number): string | null {
+  const start = skipWhitespaceAndComments(input, openParen + 1);
+  if (!startsIdent(input, start)) {
+    return null;
+  }
+  const token = consumeIdent(input, start);
+  if (!token.name.startsWith('--')) {
+    return null;
+  }
+  const end = skipWhitespaceAndComments(input, token.end);
+  return input[end] === ',' || input[end] === ')' ? token.name : null;
+}
+
+/**
+ * Analyze one accepted declaration value using the same CSS tokenization rules
+ * as the declaration-boundary check.
+ */
+export function analyzeDeclarationValue(
+  input: string,
+): DeclarationValueAnalysis {
+  const reason = checkDeclarationValue(input);
+  if (reason !== null) {
+    return {reason, references: [], important: false};
+  }
+
+  const value = preprocess(input);
+  const references: string[] = [];
+  const open: string[] = [];
+  type TopLevelToken = {
+    type: 'delim' | 'ident' | 'other';
+    value: string;
+  };
+  const topLevelTokens: TopLevelToken[] = [];
+  const recordTopLevel = (token: TopLevelToken): void => {
+    if (open.length === 0) {
+      topLevelTokens.push(token);
+      if (topLevelTokens.length > 2) {
+        topLevelTokens.shift();
+      }
+    }
+  };
+
+  let index = 0;
+  while (index < value.length) {
+    const character = value[index];
+    if (isWhitespace(character)) {
+      index++;
+      continue;
+    }
+    if (character === '/' && value[index + 1] === '*') {
+      index = value.indexOf('*/', index + 2) + 2;
+      continue;
+    }
+    if (character === '"' || character === "'") {
+      recordTopLevel({type: 'other', value: character});
+      const string = consumeString(value, index);
+      index = 'end' in string ? string.end : value.length;
+      continue;
+    }
+    if (startsIdent(value, index)) {
+      const ident = consumeIdent(value, index);
+      recordTopLevel({type: 'ident', value: ident.name});
+      index = ident.end;
+      if (value[index] === '(') {
+        if (ident.name.toLowerCase() === 'var') {
+          const reference = varReferenceAt(value, index);
+          if (reference !== null) {
+            references.push(reference);
+          }
+        }
+        if (ident.name.toLowerCase() === 'url') {
+          let body = index + 1;
+          while (body < value.length && isWhitespace(value[body])) {
+            body++;
+          }
+          if (value[body] !== '"' && value[body] !== "'") {
+            const url = consumeUrl(value, body);
+            index = 'end' in url ? url.end : value.length;
+            continue;
+          }
+        }
+        open.push(')');
+        index++;
+      }
+      continue;
+    }
+    if (character === '(' || character === '[' || character === '{') {
+      recordTopLevel({type: 'other', value: character});
+      open.push(CLOSER[character]);
+      index++;
+      continue;
+    }
+    if (character === ')' || character === ']' || character === '}') {
+      open.pop();
+      index++;
+      continue;
+    }
+    if (character === '!') {
+      recordTopLevel({type: 'delim', value: character});
+    } else {
+      recordTopLevel({type: 'other', value: character});
+    }
+    index++;
+  }
+
+  const previousTopLevel = topLevelTokens.at(-2);
+  const lastTopLevel = topLevelTokens.at(-1);
+  const important =
+    previousTopLevel?.type === 'delim' &&
+    previousTopLevel.value === '!' &&
+    lastTopLevel?.type === 'ident' &&
+    lastTopLevel.value.toLowerCase() === 'important';
+  return {reason: null, references, important};
+}
+
+/** The browser-canonical spelling of one valid declaration name. */
+export function canonicalizeDeclarationName(input: string): string | null {
+  const name = preprocess(input);
+  if (name.length === 0 || !startsIdent(name, 0)) {
+    return null;
+  }
+  const ident = consumeIdent(name, 0);
+  return ident.end === name.length ? ident.name : null;
 }
 
 /**
