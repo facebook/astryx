@@ -136,6 +136,29 @@ describe('rankComponentSuggestions', () => {
     );
   });
 
+  it('names a family only for a structural part', () => {
+    expect(
+      rankComponentSuggestions('SheetMusic', [], all).map(r => r.name),
+    ).not.toContain('Sheet');
+  });
+
+  it('does not let a lifted entry borrow a weaker keyword position', () => {
+    const results = [
+      {name: 'Picker', score: 90, reason: 'keyword', keywordAt: 2},
+      {name: 'MultiPicker', score: 70, reason: 'keyword', keywordAt: 0},
+    ];
+    const ranked = rankComponentSuggestions(
+      'Pick',
+      results,
+      all,
+      new Set(['Picker', 'MultiPicker']),
+    );
+    expect(ranked.map(r => r.name).slice(0, 2)).toEqual([
+      'Picker',
+      'MultiPicker',
+    ]);
+  });
+
   it('never lowers a score search gave', () => {
     const results = [{name: 'Picker', score: 100, reason: 'exact name'}];
     const ranked = rankComponentSuggestions('PickerItem', results, all);

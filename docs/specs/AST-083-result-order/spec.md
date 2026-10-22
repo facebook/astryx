@@ -28,6 +28,10 @@ their counts. The order of matches that are equally strong is not. That order
 is a measured quality, and it may change whenever a measurement shows the new
 order is at least as good as the old one.
 
+The not-found errors of `astryx component`, `astryx template` and
+`astryx docs` work the same way: the facts of a suggestion list hold, and the
+order inside it is a measured quality (FR7).
+
 This record owns that split: the facts every answer must keep, and the rule
 for changing the order inside them. Search owns its own matching.
 `spec:AST-048` owns what build recommends and delegates the order of its
@@ -72,6 +76,16 @@ owns response fields and compatibility.
   shows no row worse than the previous order. A row is worse when the paired
   95% confidence interval of its change lies entirely below zero. FR1–FR5
   hold for every change.
+- **FR7 — not-found suggestions keep their facts.** When `astryx component`,
+  `astryx template` or `astryx docs` names nothing, it suggests at most as
+  many entries as its candidate set gives: for a component, the near-top
+  matches of the component matcher (at most five, and at least two when two
+  exist); for a template, every template; for docs, the routes its error
+  gives (for an unknown route, the set `spec:AST-046` FR6 names). Every suggestion is a real catalog entry for that command, and a
+  name that resolves keeps resolving to the same entry. Which candidates fill
+  a component list and the order of every list change only under FR6,
+  measured on the held-out and fresh failed-lookup evaluation sets. FR5 holds
+  for this order.
 
 ## Current-state impact
 
@@ -82,13 +96,14 @@ owns response fields and compatibility.
 
 ## Verification
 
-| Contract | Verification                                                                                          | Representative states                                    | Mutation or failure expectation                                                                   |
-| -------- | ----------------------------------------------------------------------------------------------------- | -------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
-| FR1, FR2 | `api/search/_order.test.mjs` against the lexical ranker; a replay over every real and synthetic query | multi-word queries, doc sections, domain-priority merges | a non-lexical result, a changed score, reason, or count, a cross-band move, or extra results fail |
-| FR3      | `api/search/_main-searcher.test.mjs` whole-name cases                                                 | exact names, names typed with spaces for dashes          | an answer that differs from the lexical ranker's fails                                            |
-| FR4      | `api/build/blocks/blocks.test.mjs`, `api/build/tree.test.mjs`                                         | named blocks, integration blocks, unknown blocks         | an added block, a changed entry, a moved named block, or more blocks fail                         |
-| FR5      | `_main-searcher.test.mjs` and `tree.test.mjs` offline and repeat checks                               | network stubbed to throw; repeated runs                  | a network call or a differing repeat fails                                                        |
-| FR6      | measured comparison on the evaluation sets, reported in the change's description                      | held-out, fresh, synthetic                               | a row whose paired CI lies below zero blocks the change                                           |
+| Contract | Verification                                                                                                                        | Representative states                                            | Mutation or failure expectation                                                                       |
+| -------- | ----------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| FR1, FR2 | `api/search/_order.test.mjs` against the lexical ranker; a replay over every real and synthetic query                               | multi-word queries, doc sections, domain-priority merges         | a non-lexical result, a changed score, reason, or count, a cross-band move, or extra results fail     |
+| FR3      | `api/search/_main-searcher.test.mjs` whole-name cases                                                                               | exact names, names typed with spaces for dashes                  | an answer that differs from the lexical ranker's fails                                                |
+| FR4      | `api/build/blocks/blocks.test.mjs`, `api/build/tree.test.mjs`                                                                       | named blocks, integration blocks, unknown blocks                 | an added block, a changed entry, a moved named block, or more blocks fail                             |
+| FR5      | `_main-searcher.test.mjs` and `tree.test.mjs` offline and repeat checks                                                             | network stubbed to throw; repeated runs                          | a network call or a differing repeat fails                                                            |
+| FR6      | measured comparison on the evaluation sets, reported in the change's description                                                    | held-out, fresh, synthetic                                       | a row whose paired CI lies below zero blocks the change                                               |
+| FR7      | `foundation/text/suggest-order.test.mjs`; the component, docs and template command tests; a replay over every labeled failed lookup | compound names, other libraries' names, routes under a namespace | a longer list, a suggestion that is not an entry, a changed resolution, or a worse measured row fails |
 
 ## Decision log
 

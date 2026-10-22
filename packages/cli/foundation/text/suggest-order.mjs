@@ -140,6 +140,29 @@ export function synonymMatches(needle, cards) {
   return found;
 }
 
+/** Words that name a structural part of a component (`<Family>Footer`). */
+const PART_WORDS = new Set([
+  'header',
+  'footer',
+  'body',
+  'content',
+  'title',
+  'heading',
+  'description',
+  'item',
+  'trigger',
+  'action',
+  'close',
+  'group',
+  'cell',
+  'row',
+  'column',
+  'label',
+  'icon',
+  'root',
+  'wrapper',
+]);
+
 /** Part words that name the same slot of a component family. */
 const SAME_PART = /** @type {Record<string, string[]>} */ ({
   item: ['item', 'option'],
@@ -155,8 +178,9 @@ const SAME_PART = /** @type {Record<string, string[]>} */ ({
  * part names that do not exist: the family part named with other words
  * (`PickerItem` → `PickerOption`), the part named without its family's
  * first word (`RailItem` → `SideRailItem`), the part named without its family's
- * middle word (`FactItem` → `FactListItem`), and the parent of a part
- * that is not its own component (`SheetFooter` → `Sheet`).
+ * middle word (`FactItem` → `FactListItem`), and the parent of a structural
+ * part that is not its own component (`SheetFooter` → `Sheet`, but not
+ * `SheetMusic`).
  * @param {string[]} typed - {@link nameWords} of the typed name
  * @param {string} name
  * @returns {{score: number, reason: string} | null}
@@ -181,7 +205,11 @@ function compoundMatch(typed, name) {
   if (n > t && words[0] === typed[0] && words[n - 1] === typed[t - 1]) {
     return {score: 82, reason: 'same part of the family'};
   }
-  if (n < t && same(typed.slice(0, n), words)) {
+  if (
+    n < t &&
+    same(typed.slice(0, n), words) &&
+    typed.slice(n).every(w => PART_WORDS.has(w))
+  ) {
     return {score: 75, reason: 'the family this part belongs to'};
   }
   return null;
@@ -229,7 +257,7 @@ export function rankComponentSuggestions(
         name,
         score: SYNONYM_SCORE,
         reason: 'another name for it',
-        keywordAt: prior?.keywordAt ?? Infinity,
+        keywordAt: Infinity,
       });
     }
   }
@@ -242,7 +270,7 @@ export function rankComponentSuggestions(
         name,
         score: match.score,
         reason: match.reason,
-        keywordAt: prior?.keywordAt ?? Infinity,
+        keywordAt: Infinity,
       });
     }
   }
