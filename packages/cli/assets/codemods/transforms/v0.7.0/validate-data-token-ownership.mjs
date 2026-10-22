@@ -5,20 +5,25 @@
  *
  * @input Consumer JavaScript/TypeScript source and generated theme CSS
  * @output No rewritten source. Upgrade errors for stale generated
- *   root-default artifacts and, where Core compiles from source without the
- *   prebuilt Core stylesheet, for fallback-less `var(--color-data-*)` uses
- *   (in JS strings, embedded or whole, and in CSS)
+ *   root-default artifacts and, where the app's build configuration compiles
+ *   Core from source, for fallback-less `var(--color-data-*)` uses (in JS
+ *   strings, embedded or whole, and in CSS)
  * @position Next-release upgrade validation for spec:AST-066 FR18/FR19
  *
  * Prebuilt `@astryxdesign/core/astryx.css` defines all 56 data defaults
  * (spec:AST-066 FR3), so a raw use fails only on positive evidence that Core
- * compiles from source: the project, or a workspace above it up to the
- * repository root, declares `@astryxdesign/core` and `@astryxdesign/build`,
- * and no file in the repository references the prebuilt Core stylesheet.
- * Every documented prebuilt setup loads that stylesheet (spec:AST-080 FR5),
- * and `@astryxdesign/build` is the only supported source build. A tree too
- * large to read, or a skipped symlink or unreadable file, leaves the answer
- * unknown, and an unknown answer never fails.
+ * compiles from source: the app (the nearest folder, up to the repository
+ * root, whose package.json declares `@astryxdesign/core`) has a build
+ * configuration file of its own that loads `@astryxdesign/build`, and that
+ * package is declared there or in a workspace above it. Every
+ * `@astryxdesign/build` integration compiles the installed Core source
+ * (spec:AST-080 FR7). As a further guard, a known app entry or stylesheet
+ * that references the prebuilt Core stylesheet makes the app prebuilt.
+ *
+ * Any doubt counts as prebuilt and never fails: no app folder, no build
+ * configuration, a symlinked or unreadable file, or a file or folder past its
+ * size bound. Only a fixed list of paths in the app folder is read, each
+ * size-checked before reading, and nothing is cached.
  */
 
 import * as fs from 'node:fs';
@@ -27,7 +32,7 @@ import * as path from 'node:path';
 export const meta = {
   title: 'Validate data-token ownership',
   description:
-    'Fails on stale generated theme CSS that still owns root data defaults, and, where Core compiles from source through @astryxdesign/build and nothing loads prebuilt @astryxdesign/core/astryx.css, on fallback-less data-token var() uses in source strings and stylesheets. Apps that load the prebuilt stylesheet get all 56 defaults from it and pass.',
+    "Fails on stale generated theme CSS that still owns root data defaults, and, where the app's own build configuration compiles Core from source with @astryxdesign/build, on fallback-less data-token var() uses in source strings and stylesheets. Apps on prebuilt @astryxdesign/core/astryx.css get all 56 defaults from it and pass; so does any app whose source build cannot be established.",
   fileExtensions: ['.tsx', '.ts', '.jsx', '.js', '.mjs', '.cjs', '.css'],
 };
 
@@ -48,8 +53,53 @@ const DEPENDENCY_FIELDS = [
   'peerDependencies',
 ];
 const REPOSITORY_ROOT_MARKERS = ['.git', '.hg', '.sl'];
-const PREBUILT_CORE_CSS = /@astryxdesign\/core\/(?:dist\/)?astryx\.css/u;
-const SCANNED_EXTENSIONS = new Set([
+
+/** Build configuration files whose tools `@astryxdesign/build` plugs into. */
+export const BUILD_CONFIG_FILES = [
+  'babel.config.js',
+  'babel.config.cjs',
+  'babel.config.mjs',
+  'babel.config.json',
+  '.babelrc',
+  '.babelrc.json',
+  '.babelrc.js',
+  '.babelrc.cjs',
+  'postcss.config.js',
+  'postcss.config.cjs',
+  'postcss.config.mjs',
+  'postcss.config.ts',
+  '.postcssrc',
+  '.postcssrc.json',
+  '.postcssrc.js',
+  '.postcssrc.cjs',
+  'next.config.js',
+  'next.config.cjs',
+  'next.config.mjs',
+  'next.config.ts',
+  'vite.config.js',
+  'vite.config.cjs',
+  'vite.config.mjs',
+  'vite.config.ts',
+  'vite.config.mts',
+  'vite.config.cts',
+];
+const SOURCE_BUILD_REFERENCE =
+  /['"`]@astryxdesign\/build(?:\/(?:babel|postcss|vite|next))?['"`]/u;
+const JS_COMMENT = /\/\*[\s\S]*?\*\/|\/\/[^\n]*/gu;
+
+/** Folders, relative to the app, whose direct files are checked for the
+ * prebuilt Core stylesheet. Not recursive. */
+const ENTRY_DIRS = [
+  '.',
+  'src',
+  'app',
+  'src/app',
+  'pages',
+  'src/pages',
+  'styles',
+  'src/styles',
+];
+const ENTRY_EXTENSIONS = new Set([
   '.tsx',
   '.ts',
   '.jsx',
@@ -60,36 +110,36 @@ const SCANNED_EXTENSIONS = new Set([
   '.cts',
   '.css',
   '.scss',
-  '.sass',
-  '.less',
   '.html',
-  '.htm',
-  '.vue',
-  '.svelte',
-  '.astro',
-  '.mdx',
 ]);
-const SKIPPED_DIRS = new Set([
-  'node_modules',
-  'bower_components',
-  'jspm_packages',
-]);
-// Past either bound the answer is unknown, and an unknown answer never fails.
-export const SCAN_FILE_LIMIT = 20000;
-export const SCAN_BYTE_LIMIT = 64 * 1024 * 1024;
-// One upgrade run asks once per file; reuse a scan only briefly so a
-// long-lived host never answers from an old tree.
-const SCAN_CACHE_MS = 30_000;
+const PREBUILT_CORE_CSS = /@astryxdesign\/core\/(?:dist\/)?astryx\.css/u;
 
-/** @type {Map<string, {at: number, result: 'found'|'absent'|'unknown'}>} */
-const scanCache = new Map();
+export const FILE_BYTE_LIMIT = 1024 * 1024;
+export const ENTRY_DIR_LIMIT = 500;
+export const ENTRY_BYTE_LIMIT = 8 * 1024 * 1024;
+
+/**
+ * Read a regular file of at most FILE_BYTE_LIMIT bytes; `null` for anything
+ * else (missing, a symlink, unreadable, too large).
+ * @param {string} file
+ * @returns {string|null}
+ */
+function readSmallFile(file) {
+  try {
+    const stat = fs.lstatSync(file);
+    if (!stat.isFile() || stat.size > FILE_BYTE_LIMIT) return null;
+    return fs.readFileSync(file, 'utf-8');
+  } catch {
+    return null;
+  }
+}
 
 /** @param {string} dir @returns {Record<string, unknown>|null} */
 function readPackageDependencies(dir) {
+  const text = readSmallFile(path.join(dir, 'package.json'));
+  if (text == null) return null;
   try {
-    const pkg = JSON.parse(
-      fs.readFileSync(path.join(dir, 'package.json'), 'utf-8'),
-    );
+    const pkg = JSON.parse(text);
     /** @type {Record<string, unknown>} */
     const deps = {};
     for (const field of DEPENDENCY_FIELDS) {
@@ -111,99 +161,102 @@ function isRepositoryRoot(dir) {
 }
 
 /**
- * Whether a file under `root` references the prebuilt Core stylesheet:
- * `found`, `absent`, or `unknown` when a bound is reached or a candidate file
- * cannot be read (a symlink, or a read error).
- * @param {string} root
- * @returns {'found'|'absent'|'unknown'}
+ * The app's build configuration file that loads `@astryxdesign/build`, if
+ * any. Comments are ignored; a symlinked, unreadable or oversized file is not
+ * evidence.
+ * @param {string} appDir
+ * @returns {string|null}
  */
-function scanForPrebuiltCoreCss(root) {
-  const cached = scanCache.get(root);
-  if (cached && Date.now() - cached.at < SCAN_CACHE_MS) return cached.result;
-  let files = 0;
-  let bytes = 0;
-  let unreadable = false;
-  /** @type {'found'|'absent'|'unknown'} */
-  let result = 'absent';
-  const stack = [root];
-  scan: while (stack.length > 0) {
-    const dir = /** @type {string} */ (stack.pop());
-    let entries;
-    try {
-      entries = fs.readdirSync(dir, {withFileTypes: true});
-    } catch {
-      unreadable = true;
-      continue;
-    }
-    for (const entry of entries) {
-      if (entry.isDirectory()) {
-        if (!SKIPPED_DIRS.has(entry.name) && !entry.name.startsWith('.')) {
-          stack.push(path.join(dir, entry.name));
-        }
-        continue;
-      }
-      if (!SCANNED_EXTENSIONS.has(path.extname(entry.name))) continue;
-      if (!entry.isFile()) {
-        // A symlinked source file could be the stylesheet import.
-        if (entry.isSymbolicLink()) unreadable = true;
-        continue;
-      }
-      if (++files > SCAN_FILE_LIMIT) {
-        result = 'unknown';
-        break scan;
-      }
-      let contents;
-      try {
-        contents = fs.readFileSync(path.join(dir, entry.name), 'utf-8');
-      } catch {
-        unreadable = true;
-        continue;
-      }
-      bytes += contents.length;
-      if (PREBUILT_CORE_CSS.test(contents)) {
-        result = 'found';
-        break scan;
-      }
-      if (bytes > SCAN_BYTE_LIMIT) {
-        result = 'unknown';
-        break scan;
-      }
+function findSourceBuildConfig(appDir) {
+  for (const name of BUILD_CONFIG_FILES) {
+    const text = readSmallFile(path.join(appDir, name));
+    if (
+      text != null &&
+      SOURCE_BUILD_REFERENCE.test(text.replace(JS_COMMENT, ''))
+    ) {
+      return name;
     }
   }
-  if (result === 'absent' && unreadable) result = 'unknown';
-  scanCache.set(root, {at: Date.now(), result});
-  return result;
+  return null;
 }
 
 /**
- * Whether Core compiles from source for `filePath` without the prebuilt Core
- * stylesheet, so the data defaults are not guaranteed. See the file header.
- * @param {string} filePath
- * @returns {boolean}
+ * Whether a known entry or stylesheet of the app references the prebuilt Core
+ * stylesheet. `true` also when a bound is reached: past it, the answer is not
+ * known, and doubt counts as prebuilt.
+ * @param {string} appDir
  */
-export function dataDefaultsMayBeMissing(filePath) {
+function entryLoadsPrebuiltCoreCss(appDir) {
+  let bytes = 0;
+  for (const rel of ENTRY_DIRS) {
+    const dir = path.join(appDir, rel);
+    let entries;
+    try {
+      if (!fs.lstatSync(dir).isDirectory()) continue;
+      entries = fs.readdirSync(dir, {withFileTypes: true});
+    } catch {
+      continue;
+    }
+    if (entries.length > ENTRY_DIR_LIMIT) return true;
+    for (const entry of entries) {
+      if (!ENTRY_EXTENSIONS.has(path.extname(entry.name))) continue;
+      // A symlinked entry could be the stylesheet import.
+      if (entry.isSymbolicLink()) return true;
+      if (!entry.isFile()) continue;
+      const file = path.join(dir, entry.name);
+      let size;
+      try {
+        size = fs.lstatSync(file).size;
+      } catch {
+        return true;
+      }
+      if (size > FILE_BYTE_LIMIT || bytes + size > ENTRY_BYTE_LIMIT) {
+        return true;
+      }
+      bytes += size;
+      const text = readSmallFile(file);
+      if (text == null || PREBUILT_CORE_CSS.test(text)) return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * The build configuration file that compiles Core from source for
+ * `filePath`, or `null` when there is no such positive evidence. See the file
+ * header for the rule.
+ * @param {string} filePath
+ * @returns {string|null}
+ */
+export function coreSourceBuildConfig(filePath) {
   let dir = path.dirname(path.resolve(filePath));
-  let usesCore = false;
-  let usesSourceBuild = false;
+  /** @type {string|null} */
+  let appDir = null;
+  let declaresBuild = false;
   for (;;) {
     const deps = readPackageDependencies(dir);
     if (deps) {
-      if (Object.hasOwn(deps, CORE_PACKAGE)) usesCore = true;
-      if (Object.hasOwn(deps, SOURCE_BUILD_PACKAGE)) usesSourceBuild = true;
+      if (appDir == null && Object.hasOwn(deps, CORE_PACKAGE)) appDir = dir;
+      if (appDir != null && Object.hasOwn(deps, SOURCE_BUILD_PACKAGE)) {
+        declaresBuild = true;
+      }
     }
     if (isRepositoryRoot(dir)) break;
     const parent = path.dirname(dir);
     if (parent === dir) break;
     dir = parent;
   }
-  if (!usesCore || !usesSourceBuild) return false;
-  return scanForPrebuiltCoreCss(dir) === 'absent';
+  if (appDir == null || !declaresBuild) return null;
+  const config = findSourceBuildConfig(appDir);
+  if (config == null || entryLoadsPrebuiltCoreCss(appDir)) return null;
+  return config;
 }
 
 // --- Transform ---------------------------------------------------------------
 
-const SOURCE_BUILD_REASON =
-  'Core compiles from source here (@astryxdesign/build) and nothing loads @astryxdesign/core/astryx.css, so the data-color defaults exist only when a compiled dataVars import retains them.';
+/** @param {string} config */
+const sourceBuildReason = config =>
+  `Core compiles from source here (${config} loads @astryxdesign/build), so the data-color defaults exist only when a compiled dataVars import retains them.`;
 const MIGRATION =
   'Import dataVars from @astryxdesign/core/theme/dataTokens.stylex in CSS-capable code, load @astryxdesign/core/astryx.css, or add an explicit fallback.';
 
@@ -244,7 +297,8 @@ export default function validateDataTokenOwnership(file, api) {
   }
 
   if (!DIRECT_DATA_VAR.test(file.source)) return undefined;
-  if (!dataDefaultsMayBeMissing(file.path)) return undefined;
+  const config = coreSourceBuildConfig(file.path);
+  if (config == null) return undefined;
 
   if (isStylesheet) {
     const uncommented = file.source.replace(CSS_COMMENT, comment =>
@@ -254,7 +308,7 @@ export default function validateDataTokenOwnership(file, api) {
     if (cssMatch) {
       const line = uncommented.slice(0, cssMatch.index).split('\n').length;
       throw new Error(
-        `Raw var(${cssMatch[1]}) without a fallback at line ${line} has no guaranteed default: ${SOURCE_BUILD_REASON} ${MIGRATION}`,
+        `Raw var(${cssMatch[1]}) without a fallback at line ${line} has no guaranteed default: ${sourceBuildReason(config)} ${MIGRATION}`,
       );
     }
     return undefined;
@@ -285,7 +339,7 @@ export default function validateDataTokenOwnership(file, api) {
   if (found) {
     const {token, line} = found;
     throw new Error(
-      `Direct var(${token})${line == null ? '' : ` at line ${line}`} has no guaranteed default: ${SOURCE_BUILD_REASON} ${MIGRATION} Canvas and other non-CSS APIs use resolveThemeToken() or useTheme().token().`,
+      `Direct var(${token})${line == null ? '' : ` at line ${line}`} has no guaranteed default: ${sourceBuildReason(config)} ${MIGRATION} Canvas and other non-CSS APIs use resolveThemeToken() or useTheme().token().`,
     );
   }
   return undefined;

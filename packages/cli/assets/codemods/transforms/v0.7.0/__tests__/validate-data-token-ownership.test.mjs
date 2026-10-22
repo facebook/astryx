@@ -5,7 +5,9 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 import {afterAll, describe, expect, it} from 'vitest';
 import transform, {
-  dataDefaultsMayBeMissing,
+  ENTRY_DIR_LIMIT,
+  FILE_BYTE_LIMIT,
+  coreSourceBuildConfig,
 } from '../validate-data-token-ownership.mjs';
 import {runCodemods} from '../../../runner.mjs';
 import {upgrade} from '../../../../../api/upgrade/upgrade.mjs';
@@ -45,11 +47,16 @@ const prebuilt = () =>
     'package.json': {dependencies: CORE},
     'src/main.tsx': LOADS_PREBUILT_CORE,
   });
-/** Core compiled from source: the build package and no prebuilt Core CSS. */
-const coreSourceBuilt = () =>
+const VITE_SOURCE_BUILD = `import {astryxStylex} from '@astryxdesign/build/vite';
+export default {plugins: [...astryxStylex()]};
+`;
+/** Core compiled from source: the app's Vite config loads the build. */
+const coreSourceBuilt = (extra = {}) =>
   repo({
     'package.json': {dependencies: CORE, devDependencies: BUILD},
+    'vite.config.ts': VITE_SOURCE_BUILD,
     'src/main.tsx': "import {Theme} from '@astryxdesign/core/theme';\n",
+    ...extra,
   });
 
 afterAll(() => {
@@ -75,65 +82,75 @@ const DIRECT_USES = [
   'const border = `${width}px solid var(--color-data-categorical-green)`;',
 ];
 
-describe('validate-data-token-ownership: data-default availability', () => {
-  it('treats an app that loads prebuilt Core CSS as covered', () => {
-    expect(dataDefaultsMayBeMissing(path.join(prebuilt(), 'src/a.tsx'))).toBe(
-      false,
-    );
+describe('validate-data-token-ownership: source-build evidence', () => {
+  const at = (root, rel = 'src/a.tsx') =>
+    coreSourceBuildConfig(path.join(root, rel));
+
+  it('names the app build config that loads @astryxdesign/build', () => {
+    expect(at(coreSourceBuilt())).toBe('vite.config.ts');
+    for (const [name, contents] of [
+      ['babel.config.js', "const {babel} = require('@astryxdesign/build');\n"],
+      [
+        'postcss.config.js',
+        "module.exports = {plugins: {'@astryxdesign/build/postcss': {}}};\n",
+      ],
+      [
+        'next.config.mjs',
+        "import {withAstryx} from '@astryxdesign/build/next';\n",
+      ],
+      ['.babelrc', '{"plugins": [["@astryxdesign/build/babel", {}]]}'],
+    ]) {
+      const root = repo({
+        'package.json': {dependencies: CORE, devDependencies: BUILD},
+        [name]: contents,
+      });
+      expect(at(root)).toBe(name);
+    }
   });
 
-  it('treats an app with no source build as covered, even without a visible astryx.css import', () => {
-    const root = repo({'package.json': {dependencies: CORE}});
-    expect(dataDefaultsMayBeMissing(path.join(root, 'src/a.tsx'))).toBe(false);
-  });
-
-  it('flags Core compiled from source with no prebuilt Core CSS', () => {
-    expect(
-      dataDefaultsMayBeMissing(path.join(coreSourceBuilt(), 'src/a.tsx')),
-    ).toBe(true);
-  });
-
-  it('treats a source-built non-Core package beside prebuilt Core CSS as covered', () => {
-    const root = repo({
-      'package.json': {
-        dependencies: {...CORE, '@astryxdesign/lab': '0.7.3'},
-        devDependencies: BUILD,
-      },
-      'src/styles.css': "@import '@astryxdesign/core/astryx.css';\n",
-    });
-    expect(dataDefaultsMayBeMissing(path.join(root, 'src/a.tsx'))).toBe(false);
-  });
-
-  it('treats a prebuilt app under a workspace root that declares the build as covered', () => {
+  it('accepts the build package declared at a workspace root above the app', () => {
     const root = repo({
       'package.json': {devDependencies: BUILD},
       'apps/web/package.json': {dependencies: CORE},
-      'apps/web/src/main.tsx': LOADS_PREBUILT_CORE,
+      'apps/web/vite.config.ts': VITE_SOURCE_BUILD,
     });
-    expect(
-      dataDefaultsMayBeMissing(path.join(root, 'apps/web/src/a.tsx')),
-    ).toBe(false);
+    expect(at(root, 'apps/web/src/a.tsx')).toBe('vite.config.ts');
   });
 
-  it('treats an app whose build sits below a shared root stylesheet as covered', () => {
+  it('finds no evidence in a prebuilt app', () => {
+    expect(at(prebuilt())).toBeNull();
+  });
+
+  it('finds no evidence without a build config, whatever the dependencies say', () => {
     const root = repo({
-      'styles/base.css': "@import '@astryxdesign/core/astryx.css';\n",
-      'apps/web/package.json': {dependencies: CORE, devDependencies: BUILD},
+      'package.json': {dependencies: CORE, devDependencies: BUILD},
     });
-    expect(
-      dataDefaultsMayBeMissing(path.join(root, 'apps/web/src/a.tsx')),
-    ).toBe(false);
+    expect(at(root)).toBeNull();
   });
 
-  it('flags a workspace app when the root build compiles Core and nothing loads prebuilt Core CSS', () => {
+  it('finds no evidence when the config loads the build but no package declares it', () => {
+    const root = repo({
+      'package.json': {dependencies: CORE},
+      'vite.config.ts': VITE_SOURCE_BUILD,
+    });
+    expect(at(root)).toBeNull();
+  });
+
+  it('finds no evidence outside an app that declares Core', () => {
     const root = repo({
       'package.json': {devDependencies: BUILD},
-      'apps/web/package.json': {dependencies: CORE},
-      'apps/web/src/main.tsx': 'export {};\n',
+      'vite.config.ts': VITE_SOURCE_BUILD,
     });
-    expect(
-      dataDefaultsMayBeMissing(path.join(root, 'apps/web/src/a.tsx')),
-    ).toBe(true);
+    expect(at(root)).toBeNull();
+  });
+
+  it('reads only the app folder, not a workspace root config', () => {
+    const root = repo({
+      'package.json': {devDependencies: BUILD},
+      'babel.config.js': "const {babel} = require('@astryxdesign/build');\n",
+      'apps/web/package.json': {dependencies: CORE},
+    });
+    expect(at(root, 'apps/web/src/a.tsx')).toBeNull();
   });
 
   it('ignores a build declared outside the repository', () => {
@@ -144,48 +161,137 @@ describe('validate-data-token-ownership: data-default availability', () => {
       path.join(inner, 'package.json'),
       JSON.stringify({dependencies: CORE}),
     );
-    expect(dataDefaultsMayBeMissing(path.join(inner, 'src/a.tsx'))).toBe(false);
+    fs.writeFileSync(path.join(inner, 'vite.config.ts'), VITE_SOURCE_BUILD);
+    expect(at(inner, 'src/a.tsx')).toBeNull();
   });
 
-  it('treats a symlinked source file as unknown, not as proof of a source build', () => {
-    const target = repo({'main.tsx': LOADS_PREBUILT_CORE});
+  it('ignores a commented-out build reference', () => {
     const root = repo({
       'package.json': {dependencies: CORE, devDependencies: BUILD},
+      'vite.config.ts': `// import {astryxStylex} from '@astryxdesign/build/vite';
+/* plugins: [astryxStylex()] from '@astryxdesign/build/vite' */
+export default {};
+`,
     });
-    fs.mkdirSync(path.join(root, 'src'));
+    expect(at(root)).toBeNull();
+  });
+
+  it('treats a symlinked or oversized config as no evidence', () => {
+    // `.babelrc` has no entry extension, so only the config check reads it.
+    const BABELRC = '{"plugins": [["@astryxdesign/build/babel", {}]]}';
+    const target = repo({'.babelrc': BABELRC});
+    const linked = repo({
+      'package.json': {dependencies: CORE, devDependencies: BUILD},
+    });
     fs.symlinkSync(
-      path.join(target, 'main.tsx'),
-      path.join(root, 'src/main.tsx'),
+      path.join(target, '.babelrc'),
+      path.join(linked, '.babelrc'),
     );
-    expect(dataDefaultsMayBeMissing(path.join(root, 'src/a.tsx'))).toBe(false);
+    expect(at(linked)).toBeNull();
+
+    const big = repo({
+      'package.json': {dependencies: CORE, devDependencies: BUILD},
+      '.babelrc': BABELRC + ' '.repeat(FILE_BYTE_LIMIT),
+    });
+    expect(at(big)).toBeNull();
+    fs.writeFileSync(path.join(big, '.babelrc'), BABELRC);
+    expect(at(big)).toBe('.babelrc');
   });
 
   it.skipIf(process.platform === 'win32' || process.getuid?.() === 0)(
-    'treats an unreadable source file as unknown, not as proof of a source build',
+    'treats an unreadable config as no evidence',
     () => {
-      const root = repo({
-        'package.json': {dependencies: CORE, devDependencies: BUILD},
-        'src/main.tsx': LOADS_PREBUILT_CORE,
-      });
-      const entry = path.join(root, 'src/main.tsx');
-      fs.chmodSync(entry, 0o000);
+      const root = coreSourceBuilt();
+      const config = path.join(root, 'vite.config.ts');
+      fs.chmodSync(config, 0o000);
       try {
-        expect(dataDefaultsMayBeMissing(path.join(root, 'src/a.tsx'))).toBe(
-          false,
-        );
+        expect(at(root)).toBeNull();
       } finally {
-        fs.chmodSync(entry, 0o644);
+        fs.chmodSync(config, 0o644);
       }
     },
   );
 
-  it('does not count node_modules or dot folders as loading prebuilt Core CSS', () => {
-    const root = repo({
-      'package.json': {dependencies: CORE, devDependencies: BUILD},
-      'node_modules/x/index.js': LOADS_PREBUILT_CORE,
-      '.cache/a.js': LOADS_PREBUILT_CORE,
+  it('treats an app entry that loads prebuilt Core CSS as prebuilt, mixed source packages included', () => {
+    for (const [rel, contents] of [
+      ['src/main.tsx', LOADS_PREBUILT_CORE],
+      ['src/app/globals.css', "@import '@astryxdesign/core/astryx.css';\n"],
+      [
+        'index.html',
+        '<link href="/node_modules/@astryxdesign/core/dist/astryx.css">',
+      ],
+    ]) {
+      const root = coreSourceBuilt({
+        'package.json': {
+          dependencies: {...CORE, '@astryxdesign/lab': '0.7.3'},
+          devDependencies: BUILD,
+        },
+        [rel]: contents,
+      });
+      expect(at(root)).toBeNull();
+    }
+  });
+
+  it('treats a symlinked, oversized or crowded entry folder as prebuilt', () => {
+    const target = repo({'main.tsx': LOADS_PREBUILT_CORE});
+    const linked = coreSourceBuilt();
+    fs.symlinkSync(
+      path.join(target, 'main.tsx'),
+      path.join(linked, 'src/entry.tsx'),
+    );
+    expect(at(linked)).toBeNull();
+
+    const big = coreSourceBuilt({
+      'src/huge.css': '.a{}'.repeat(FILE_BYTE_LIMIT / 4 + 1),
     });
-    expect(dataDefaultsMayBeMissing(path.join(root, 'src/a.tsx'))).toBe(true);
+    expect(at(big)).toBeNull();
+
+    const crowded = coreSourceBuilt();
+    for (let i = 0; i <= ENTRY_DIR_LIMIT; i++) {
+      fs.writeFileSync(path.join(crowded, 'src', `f${i}.txt`), '');
+    }
+    expect(at(crowded)).toBeNull();
+  });
+
+  it('finds no evidence for prebuilt apps whose stylesheet arrives indirectly, from a hidden folder, or through a symlinked folder', () => {
+    const viaDependency = repo({
+      'package.json': {
+        dependencies: {...CORE, 'ui-kit': '1.0.0'},
+        devDependencies: BUILD,
+      },
+      'node_modules/ui-kit/index.js': LOADS_PREBUILT_CORE,
+      'src/main.tsx': "import 'ui-kit';\n",
+    });
+    expect(at(viaDependency)).toBeNull();
+
+    const hidden = repo({
+      'package.json': {dependencies: CORE, devDependencies: BUILD},
+      '.storybook/preview.ts': LOADS_PREBUILT_CORE,
+    });
+    expect(at(hidden)).toBeNull();
+
+    const shared = repo({
+      'styles/base.css': "@import '@astryxdesign/core/astryx.css';\n",
+    });
+    const symlinked = repo({
+      'package.json': {dependencies: CORE, devDependencies: BUILD},
+    });
+    fs.symlinkSync(path.join(shared, 'styles'), path.join(symlinked, 'styles'));
+    expect(at(symlinked)).toBeNull();
+  });
+
+  it('answers from the current files on every call', () => {
+    const root = coreSourceBuilt();
+    expect(at(root)).toBe('vite.config.ts');
+    fs.writeFileSync(
+      path.join(root, 'src/styles.css'),
+      "@import '@astryxdesign/core/astryx.css';\n",
+    );
+    expect(at(root)).toBeNull();
+    fs.rmSync(path.join(root, 'src/styles.css'));
+    expect(at(root)).toBe('vite.config.ts');
+    fs.rmSync(path.join(root, 'vite.config.ts'));
+    expect(at(root)).toBeNull();
   });
 });
 
@@ -211,7 +317,7 @@ describe('validate-data-token-ownership: transform', () => {
       await expect(
         run(source, path.join(root, 'src/chart.tsx')),
       ).rejects.toThrow(
-        /has no guaranteed default: Core compiles from source.*astryx\.css.*dataVars.*resolveThemeToken/s,
+        /has no guaranteed default: Core compiles from source here \(vite\.config\.ts loads @astryxdesign\/build\).*dataVars.*astryx\.css.*resolveThemeToken/s,
       );
     }
   });
@@ -325,6 +431,7 @@ describe('validate-data-token-ownership: runner', () => {
   it('reports every raw use as an error where Core is source-built, protected files included, writing nothing', async () => {
     const root = repo({
       'package.json': {dependencies: CORE, devDependencies: BUILD},
+      'vite.config.ts': VITE_SOURCE_BUILD,
       ...PROTECTED,
     });
     const result = await runValidator(root);
@@ -371,6 +478,7 @@ describe('validate-data-token-ownership: runner', () => {
     async () => {
       const root = installedProject({
         'package.json': {dependencies: CORE, devDependencies: BUILD},
+        'vite.config.ts': VITE_SOURCE_BUILD,
       });
       await expect(
         upgrade(
