@@ -49,9 +49,10 @@ const JSX_EXT = new Set(['.tsx', '.jsx']);
 
 /**
  * JSX written in a `.js` or `.mjs` source file: an element opened where an
- * expression starts (after `return`, `(`, `=`, `?`, `:`, `,`, `&&` or `=>`).
+ * expression starts (after `return`, `(`, `=`, `?`, `:`, `,`, `&&` or `=>`),
+ * a fragment (`<>`) included.
  */
-const HAS_JSX = /(?:\breturn|[(=?:,]|&&|=>)\s*<[A-Za-z][\w.]*[\s/>]/;
+const HAS_JSX = /(?:\breturn|[(=?:,]|&&|=>)\s*<(?:[A-Za-z][\w.]*[\s/>]|>)/;
 
 /** Built files, read for an Astryx stylesheet. */
 const BUILT_EXT = new Set(['.css', '.html', '.htm', '.js', '.mjs']);
@@ -419,7 +420,9 @@ export function scanBuilt(target, packages) {
     }
     if (JSX_EXT.has(ext) || HAS_JSX.test(text)) {
       scan.jsxFiles++;
-      scan.findings.push(...jsxFindings(text, rel, iconNames));
+      for (const finding of jsxFindings(text, rel, iconNames)) {
+        scan.findings.push(finding);
+      }
     }
   }
   scan.packages = [...imported].sort();
@@ -478,13 +481,21 @@ export function checkBuilt(target, {cwd, packages}) {
         status: 'pass',
         message: `Read ${read}: ${evidence.join('; ')}.`,
       }
-    : {
-        id: 'built-astryx-usage',
-        label: 'Built output uses Astryx',
-        status: 'fail',
-        message: `Read ${read}: no import from an Astryx package, no Astryx component, and no Astryx styles, so this output does not use Astryx.`,
-        fix: `Rebuild the page from an Astryx template: run \`${formatCliCommand('build "<what the page is>"', cwd)}\`, scaffold the template it names, and fill it with Astryx components. Do not deliver this output.`,
-      };
+    : scan.truncated
+      ? {
+          id: 'built-astryx-usage',
+          label: 'Built output uses Astryx',
+          status: 'warn',
+          message: `Read only ${read} and found no Astryx in them; the rest went unread, so this does not show whether the output uses Astryx.`,
+          fix: `Run \`${formatCliCommand('doctor --built <folder>', cwd)}\` on the folder that holds the page itself, or on its build output.`,
+        }
+      : {
+          id: 'built-astryx-usage',
+          label: 'Built output uses Astryx',
+          status: 'fail',
+          message: `Read ${read}: no import from an Astryx package, no Astryx component, and no Astryx styles, so this output does not use Astryx.`,
+          fix: `Rebuild the page from an Astryx template: run \`${formatCliCommand('build "<what the page is>"', cwd)}\`, scaffold the template it names, and fill it with Astryx components. Do not deliver this output.`,
+        };
   /** @type {import('./doctor.type.mjs').DoctorCheck} */
   let purity;
   if (scan.jsxFiles === 0) {

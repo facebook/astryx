@@ -487,12 +487,36 @@ export function readBuiltPath(target) {
       .dirname(target)
       .split(path.sep)
       .some(part => BUILD_OUTPUT_DIRS.has(part));
-    return {
-      files: [
-        {rel: path.basename(target), built: inBuild, read: reader(target)},
-      ],
-      truncated: false,
-    };
+    /** @type {{rel: string, built: boolean, read: () => string | null}[]} */
+    const files = [
+      {rel: path.basename(target), built: inBuild, read: reader(target)},
+    ];
+    // A built page carries its styles and scripts in files it links: read
+    // the local ones beside it, as built output.
+    if (/\.html?$/iu.test(target)) {
+      const page = reader(target)() ?? '';
+      const seen = new Set([path.resolve(target)]);
+      for (const match of page.matchAll(
+        /<(?:link|script)\b[^>]*?\b(?:href|src)\s*=\s*["']([^"'#?]+)/giu,
+      )) {
+        const href = match[1];
+        if (/^(?:[a-z][\w+.-]*:|\/\/)/iu.test(href)) continue;
+        const file = href.startsWith('/')
+          ? path.join(path.dirname(target), href)
+          : path.resolve(path.dirname(target), href);
+        if (seen.has(file) || !fs.existsSync(file)) continue;
+        seen.add(file);
+        files.push({
+          rel: path
+            .relative(path.dirname(target), file)
+            .split(path.sep)
+            .join('/'),
+          built: true,
+          read: reader(file),
+        });
+      }
+    }
+    return {files, truncated: false};
   }
   /** @type {{rel: string, built: boolean, read: () => string | null}[]} */
   const files = [];

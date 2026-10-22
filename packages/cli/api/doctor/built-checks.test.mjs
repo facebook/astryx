@@ -266,6 +266,49 @@ describe('--built limits and speed', () => {
   });
 });
 
+describe('--built edge cases', () => {
+  it('reads the stylesheet a built page links when given the page alone', () => {
+    write({
+      'dist/index.html':
+        '<!doctype html><html><head><link rel="stylesheet" href="/assets/index.css"><script type="module" src="./assets/index.js"></script></head><body><div id="root"></div></body></html>',
+      'dist/assets/index.css': '@layer astryx-base{.x{color:red}}',
+      'dist/assets/index.js': 'console.log(1)',
+    });
+    const {usage} = check('dist/index.html');
+    expect(usage.status).toBe('pass');
+    expect(usage.message).toContain('Astryx styles in assets/index.css');
+  });
+
+  it('inspects a .js page whose JSX starts with a fragment', () => {
+    write({
+      'src/page.js':
+        'export default function Page() {\n  return (\n    <>\n      <div>Hi</div>\n    </>\n  );\n}\n',
+    });
+    const scan = scanBuilt(path.join(dir, 'src'), []);
+    expect(scan.jsxFiles).toBe(1);
+    expect(scan.findings).toHaveLength(1);
+  });
+
+  it('warns, not fails, when the file limit ends the read before any Astryx', () => {
+    for (let i = 0; i < 20_001; i++) {
+      const file = path.join(dir, 'a', String(i % 50), `${i}.txt`);
+      fs.mkdirSync(path.dirname(file), {recursive: true});
+      fs.writeFileSync(file, '');
+    }
+    const {usage} = check('.');
+    expect(usage.status).toBe('warn');
+    expect(usage.message).toContain('the rest went unread');
+  }, 60_000);
+
+  it('survives a file with more findings than a call can spread', () => {
+    write({
+      'src/Rows.tsx': `export const Rows = () => (\n<>\n${'<p/>\n'.repeat(200_000)}</>);\n`,
+    });
+    const scan = scanBuilt(path.join(dir, 'src'), []);
+    expect(scan.findings.length).toBe(200_000);
+  });
+});
+
 describe('doctor --built', () => {
   it('composes with --json: one envelope with the two checks last, exit 1 on a failed build', async () => {
     write({'out/index.html': '<div>no astryx</div>'});
