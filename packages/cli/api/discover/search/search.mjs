@@ -44,6 +44,17 @@ function rank(item, lower) {
   if (name === lower) return 0;
   if (name.startsWith(lower)) return 1;
   if (name.includes(lower)) return 2;
+  // A near-miss name ranks above a match in the title or text: how closely
+  // the name matches decides first (AST-051 FR4).
+  // Typo tolerance: same minimum-length guards as search (api/search/search.mjs).
+  // A one-edit miss is a typo only on words long enough that one edit rarely
+  // makes a different real word.
+  const dist = levenshteinDistance(lower, name);
+  if (dist >= 1 && dist <= 3) {
+    /** @type {Record<number, number>} */
+    const MIN_LENGTHS = {1: 5, 2: 8, 3: 11};
+    if (Math.min(lower.length, name.length) >= MIN_LENGTHS[dist]) return 3;
+  }
   const text = [
     item.title,
     item.summary,
@@ -53,16 +64,7 @@ function rank(item, lower) {
     .filter(Boolean)
     .join('\n')
     .toLowerCase();
-  if (text.includes(lower)) return 3;
-  // Typo tolerance: same minimum-length guards as search (api/search/search.mjs).
-  // A one-edit miss is a typo only on words long enough that one edit rarely
-  // makes a different real word.
-  const dist = levenshteinDistance(lower, name);
-  if (dist >= 1 && dist <= 3) {
-    /** @type {Record<number, number>} */
-    const MIN_LENGTHS = {1: 5, 2: 8, 3: 11};
-    if (Math.min(lower.length, name.length) >= MIN_LENGTHS[dist]) return 4;
-  }
+  if (text.includes(lower)) return 4;
   return null;
 }
 

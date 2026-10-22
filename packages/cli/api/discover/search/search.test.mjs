@@ -150,7 +150,31 @@ describe('discover.search leaf — typo tolerance (parity with api/search)', () 
     expect(res.data.matches.map(m => m.component)).toContain('Alpha');
   });
 
-  it('a two-edit miss on an 8+ letter name returns results', async () => {
+  it("ranks a near-miss name above a match in another item's text", async () => {
+    const items = [
+      {
+        package: '@acme/charts',
+        kind: 'component',
+        name: 'Scheduler',
+        description: 'Lighter than a Calendr widget',
+        installed: false,
+      },
+      {
+        package: '@acme/charts',
+        kind: 'component',
+        name: 'Calendar',
+        installed: false,
+      },
+    ];
+    // 'Calendr' is one edit from the name 'Calendar' and appears word for
+    // word only in Scheduler's description.
+    const res = await search(packages, 'Calendr', {items});
+    const names = res.data.matches.map(m => m.component);
+    expect(names.indexOf('Calendar')).toBeGreaterThanOrEqual(0);
+    expect(names.indexOf('Calendar')).toBeLessThan(names.indexOf('Scheduler'));
+  });
+
+  it('a one-edit miss on a longer name returns results', async () => {
     // 'AlpheCard' vs 'AlphaCard' is distance 1, well above 5 chars
     const res = await search(packages, 'AlpheCard', {});
     expect(res.type).toBe('discover.search');
