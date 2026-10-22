@@ -466,17 +466,25 @@ export function ContextMenu({
     if (!isOpen || usesBottomSheet) {
       return;
     }
-    const handleClickOutside = (e: MouseEvent) => {
+    // Inside a shadow root, even a closed one, the document sees a press on
+    // the menu as a press on the shadow host, so presses in the menu's own
+    // tree are judged by a listener on that tree.
+    const tree = listRef.current?.getRootNode();
+    const shadow = tree instanceof ShadowRoot ? tree : null;
+    const handleClickOutside = (e: Event) => {
       const menu = listRef.current;
-      // The composed path, not the target: inside a shadow root the document
-      // sees the shadow host as the target of a press on the menu.
-      if (menu && !e.composedPath().includes(menu)) {
+      if (e.currentTarget === document && e.target === shadow?.host) {
+        return;
+      }
+      if (menu && !menu.contains(e.target as Node)) {
         closeMenu();
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
+    shadow?.addEventListener('mousedown', handleClickOutside);
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
+      shadow?.removeEventListener('mousedown', handleClickOutside);
     };
   }, [isOpen, closeMenu, listRef, usesBottomSheet]);
 
