@@ -25,6 +25,12 @@
  *
  * Both kinds reuse the shared output validation from runner.mjs and surface a
  * transform throw as an error (strictness contract).
+ *
+ * A core code codemod whose meta sets `advisory: true` only annotates files
+ * for review. Its throws still fail, but a change the runner cannot make (a
+ * protected file, or output that fails validation) is skipped with a note
+ * instead of becoming a protected file or an error, so an annotation never
+ * fails an upgrade.
  */
 
 import * as fs from 'node:fs';
@@ -275,6 +281,7 @@ export function runCodeCodemod(
   const name = `${pkg}:${id}`;
   const resolver = protection ?? createFileProtectionResolver(root);
   const extensions = new Set(codemod.fileExtensions ?? DEFAULT_CODE_EXTENSIONS);
+  const advisory = codemod.advisory === true;
 
   let filesChanged = 0;
   /** @type {string[]} */
@@ -310,6 +317,12 @@ export function runCodeCodemod(
         parse: PARSEABLE_EXTENSIONS.includes(ext),
       });
       if (!validation.valid) {
+        if (advisory) {
+          log.info(
+            `    - ${relativePath} left unannotated (${validation.reason})`,
+          );
+          continue;
+        }
         log.error(`    ✗ ${relativePath} — ${validation.reason}`);
         errors.push({
           file: relativePath,
@@ -355,6 +368,12 @@ export function runCodeCodemod(
         ) === index,
     );
     if (blocked.length > 0) {
+      if (advisory) {
+        log.info(
+          `    - ${candidate.relativePath} left unannotated (${blocked[0].reason}: ${blocked[0].declaration})`,
+        );
+        continue;
+      }
       protectedFiles.push(...blocked);
       logProtected(log, blocked);
       continue;

@@ -204,7 +204,7 @@ export function validateOutput(result, source, j, {parse = true} = {}) {
  * with the same `(file, api) => string | null | undefined` contract used by a
  * `type: 'config'` codemod.
  *
- * @param {{name: string, transform: import('../../authoring/codemod/type').CodemodTransform, meta: {title: string, description?: string, fileExtensions?: string[], codemodType?: string}, optional?: boolean}} transformEntry
+ * @param {{name: string, transform: import('../../authoring/codemod/type').CodemodTransform, meta: {title: string, description?: string, fileExtensions?: string[], codemodType?: string, advisory?: boolean}, optional?: boolean}} transformEntry
  * @param {string} version
  * @returns {import('../../authoring/codemod/type').CodemodEntry}
  */
@@ -219,6 +219,7 @@ function toUnifiedEntry(transformEntry, version) {
       transform,
       fileExtensions: meta.fileExtensions,
       isOptional: !!optional,
+      advisory: meta.advisory === true,
     },
     package: 'core',
     version,
@@ -409,7 +410,7 @@ async function runProjectCodemod(
 /**
  * Run codemods against source files.
  *
- * @param {Array<{version: string, transforms: Array<{name: string, transform: import('../../authoring/codemod/type').CodemodTransform, meta: {title: string, description?: string, fileExtensions?: string[], codemodType?: string}, optional?: boolean}>}>} versionManifests
+ * @param {Array<{version: string, transforms: Array<{name: string, transform: import('../../authoring/codemod/type').CodemodTransform, meta: {title: string, description?: string, fileExtensions?: string[], codemodType?: string, advisory?: boolean}, optional?: boolean}>}>} versionManifests
  * @param {object} options
  * @param {boolean} options.apply - Write changes to disk
  * @param {string} options.path - Source directory to scan
