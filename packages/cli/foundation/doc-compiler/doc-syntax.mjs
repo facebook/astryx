@@ -61,10 +61,12 @@ export const PM_FLAGS = {
 /**
  * A token: `{@name body}`, or one written with more `@`s, which shows with one
  * `@` fewer (`{@@pm …}` shows as `{@pm …}`). The body may hold quoted text
- * and balanced braces (`pkg set 'exports={}'`).
+ * and balanced braces (`pkg set 'exports={}'`), but never a line break or a
+ * backtick: a token sits on one line of one code span or block, and one that
+ * does not is an unclosed opening doctor names.
  */
 const TOKEN =
-  /\{@(@*)([a-z][\w-]*)(?:\s+((?:'[^'\n]*'|"[^"\n]*"|\{[^{}\n]*\}|[^{}'"])*?))?\s*\}/g;
+  /\{@(@*)([a-z][\w-]*)(?:[ \t]+((?:'[^'\n`]*'|"[^"\n`]*"|\{[^{}\n`]*\}|[^{}'"\n`])*?))?[ \t]*\}/g;
 
 /** The token names this module renders (`{@link}` resolves elsewhere). */
 const COMMAND_TOKENS = new Set(['command', 'pm', 'pm-only']);
