@@ -155,8 +155,14 @@ export const Sprite: Story = {
 export const PinnedWeight: Story = {
   render: () => (
     <Stack gap={3}>
-      <div style={{fontWeight: 300, display: 'flex', gap: 12}}>
-        <Text>Light text, icon pinned to 700:</Text>
+      <div
+        style={{
+          fontWeight: 300,
+          display: 'flex',
+          gap: 12,
+          alignItems: 'center',
+        }}>
+        <span>Light text, icon pinned to 700:</span>
         <WeightedSVGIcon icon={starWeightedIcon} weight={700} color="inherit" />
       </div>
       <div
@@ -164,9 +170,10 @@ export const PinnedWeight: Story = {
           fontWeight: 700,
           display: 'flex',
           gap: 12,
+          alignItems: 'center',
           ['--astryx-icon-weight' as string]: '300',
         }}>
-        <Text>Bold text, subtree pinned to 300:</Text>
+        <span>Bold text, subtree pinned to 300:</span>
         {ROW_ICONS.map(icon => (
           <WeightedSVGIcon key={icon.name} icon={icon} color="inherit" />
         ))}
