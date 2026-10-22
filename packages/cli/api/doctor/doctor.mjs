@@ -2136,8 +2136,7 @@ export async function runChecks(options = {}) {
  * Programmatic API: run the doctor and return the same envelope shape that
  * `astryx doctor --json` emits.
  *
- * @param {object} [options]
- * @param {string} [options.cwd]
+ * @param {import('./doctor.type.mjs').DoctorOptions} [options]
  * @returns {Promise<{type: 'doctor', data: DoctorReport}>}
  */
 export async function doctor(options = {}) {

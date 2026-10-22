@@ -227,6 +227,44 @@ describe('what a --built path counts', () => {
   });
 });
 
+describe('--built limits and speed', () => {
+  it('finds an integration hoisted to the workspace root', () => {
+    write({
+      'package.json': JSON.stringify({name: 'root', workspaces: ['apps/*']}),
+      'node_modules/@acme/ui/package.json': '{"name":"@acme/ui"}',
+      'node_modules/@acme/ui/astryx.integration.mjs': 'export default {};\n',
+      'apps/web/package.json': JSON.stringify({
+        name: 'web',
+        dependencies: {'@acme/ui': '1.0.0'},
+      }),
+      'apps/web/out/index.html': '<p>x</p>',
+    });
+    expect(builtIntegrationPackages('apps/web/out', dir)).toEqual(['@acme/ui']);
+  });
+
+  it('says not fully inspected when a source file is over the size limit', () => {
+    write({
+      'src/Page.tsx':
+        "import {Text} from '@astryxdesign/core/Text';\nexport const Page = () => <Text>Hi</Text>;\n",
+      'src/Huge.tsx': `export const Huge = () => null;\n${'// x\n'.repeat(1_100_000)}`,
+    });
+    const {purity} = check('src');
+    expect(purity.status).toBe('info');
+    expect(purity.message).toContain('Not fully inspected');
+    expect(purity.message).toContain('over 5 MB');
+  });
+
+  it('places findings in a large JSX file quickly', () => {
+    const body = '<div>row</div>\n'.repeat(60_000);
+    write({'src/Big.tsx': `export const Big = () => (\n<>\n${body}</>);\n`});
+    const started = performance.now();
+    const scan = scanBuilt(path.join(dir, 'src'), []);
+    expect(scan.findings.length).toBe(60_000);
+    expect(scan.findings.at(-1)?.line).toBe(60_002);
+    expect(performance.now() - started).toBeLessThan(5_000);
+  });
+});
+
 describe('doctor --built', () => {
   it('composes with --json: one envelope with the two checks last, exit 1 on a failed build', async () => {
     write({'out/index.html': '<div>no astryx</div>'});

@@ -25,6 +25,7 @@
 
 import {
   BUILT_FILE_LIMIT,
+  BUILT_FILE_MAX_MB,
   readBuiltPath,
   resolveBuiltPath,
 } from './_adapter.mjs';
@@ -150,6 +151,7 @@ const ICON_PACKAGES = [
  * @property {string[]} stylesheets built files with an Astryx stylesheet
  * @property {BuiltFinding[]} findings
  * @property {boolean} truncated whether the file limit cut the read short
+ * @property {number} unread source files over the size limit, or unreadable
  */
 
 /**
@@ -175,10 +177,28 @@ function isIconSpecifier(spec) {
  * @param {number} at
  */
 function lineAt(text, at) {
-  let line = 1;
-  for (let i = 0; i < at; i++) if (text.charCodeAt(i) === 10) line++;
-  return line;
+  if (text !== lineCache.text) {
+    /** @type {number[]} */
+    const starts = [0];
+    for (let i = text.indexOf('\n'); i >= 0; i = text.indexOf('\n', i + 1)) {
+      starts.push(i + 1);
+    }
+    lineCache = {text, starts};
+  }
+  const {starts} = lineCache;
+  let low = 0;
+  let high = starts.length - 1;
+  while (low < high) {
+    const mid = (low + high + 1) >> 1;
+    if (starts[mid] <= at) low = mid;
+    else high = mid - 1;
+  }
+  return low + 1;
 }
+
+/** The line starts of the last file lineAt read, found once per file. */
+/** @type {{text: string | null, starts: number[]}} */
+let lineCache = {text: null, starts: [0]};
 
 /**
  * Text with comments blanked out, keeping every offset, so a commented-out
@@ -333,6 +353,7 @@ export function scanBuilt(target, packages) {
     stylesheets: [],
     findings: [],
     truncated,
+    unread: 0,
   };
   const imported = new Set();
   for (const {rel, built, read} of files) {
@@ -346,7 +367,10 @@ export function scanBuilt(target, packages) {
     const isBuilt = BUILT_EXT.has(ext) && (built || !isSource);
     if (!isSource && !isBuilt) continue;
     const raw = read();
-    if (raw == null) continue;
+    if (raw == null) {
+      if (isSource) scan.unread++;
+      continue;
+    }
     if (isBuilt) {
       scan.builtFiles++;
       if (STYLESHEET_MARK.test(raw)) scan.stylesheets.push(rel);
@@ -470,6 +494,17 @@ export function checkBuilt(target, {cwd, packages}) {
       status: 'info',
       message: `Not inspected: ${plural(scan.sourceFiles, 'source file')} under ${target} and no JSX among them, so components, icons and styles were not checked. A bundle or other build output is not source.`,
       fix: `Run \`${formatCliCommand('doctor --built <project folder>', cwd)}\` on the folder that holds the page's source.`,
+    };
+  } else if (
+    scan.findings.length === 0 &&
+    (scan.truncated || scan.unread > 0)
+  ) {
+    purity = {
+      id: 'built-astryx-purity',
+      label: 'Source uses Astryx well',
+      status: 'info',
+      message: `Not fully inspected: ${plural(scan.jsxFiles, 'source file')} with JSX had no finding, but ${[scan.truncated ? `only the first ${BUILT_FILE_LIMIT} files were read` : null, scan.unread > 0 ? `${plural(scan.unread, 'source file')} over ${BUILT_FILE_MAX_MB} MB or unreadable went unread` : null].filter(Boolean).join(' and ')}.`,
+      fix: `Run \`${formatCliCommand('doctor --built <folder>', cwd)}\` on the folder that holds the page's own source.`,
     };
   } else if (scan.findings.length === 0) {
     purity = {

@@ -26,8 +26,10 @@ import {
 } from '../../foundation/release/choose.mjs';
 import {readReleaseFacts} from '../../foundation/release/project.mjs';
 import {astryxCommandsOnSearchPath} from '../../foundation/env/search-path.mjs';
-import {readDeclaredDependencies} from '../../foundation/integrations/autolink.mjs';
-import {MANIFEST_BASENAMES} from '../../foundation/integrations/integrations.mjs';
+import {
+  readDeclaredDependencies,
+  scanAutolinkCandidates,
+} from '../../foundation/integrations/autolink.mjs';
 import {
   computerSkillFile,
   displayHomePath,
@@ -447,7 +449,8 @@ const BUILD_OUTPUT_DIRS = new Set(['.next', 'dist', 'build', 'out', '.output']);
 
 /** `doctor --built` reads at most this many files, of at most this size. */
 export const BUILT_FILE_LIMIT = 20000;
-const BUILT_FILE_MAX_BYTES = 5 * 1024 * 1024;
+export const BUILT_FILE_MAX_MB = 5;
+const BUILT_FILE_MAX_BYTES = BUILT_FILE_MAX_MB * 1024 * 1024;
 
 /**
  * The absolute path `doctor --built` checks, or null when it does not exist.
@@ -533,8 +536,10 @@ export function readBuiltPath(target) {
 /**
  * The integration packages whose components count as Astryx for a `--built`
  * path, read without running anything: each dependency the nearest
- * package.json above the path declares whose installed copy holds an
- * integration manifest. Every `@astryxdesign/*` package counts beside them.
+ * package.json above the path declares whose installed copy, resolved the way
+ * the CLI autolinks integrations (a workspace root's hoisted copy included),
+ * holds an integration manifest. Every `@astryxdesign/*` package counts
+ * beside them.
  * @param {string} target the path as given
  * @param {string} cwd
  * @returns {string[]}
@@ -548,13 +553,9 @@ export function builtIntegrationPackages(target, cwd) {
   }
   for (let at = dir; ; at = path.dirname(at)) {
     if (fs.existsSync(path.join(at, 'package.json'))) {
-      return readDeclaredDependencies(at)
-        .map(each => each.name)
-        .filter(name =>
-          MANIFEST_BASENAMES.some(file =>
-            fs.existsSync(path.join(at, 'node_modules', name, file)),
-          ),
-        );
+      return [
+        ...new Set(scanAutolinkCandidates(at).map(candidate => candidate.spec)),
+      ];
     }
     if (path.dirname(at) === at) return [];
   }
