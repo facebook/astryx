@@ -670,7 +670,7 @@ describe('second review follow-ups', () => {
     ).toContain('`before` or `after`');
     expect(
       sectionPositionCliProblem({
-        peerDependencies: {'@astryxdesign/cli': '>=0.7.3'},
+        peerDependencies: {'@astryxdesign/cli': '>=0.7.4'},
       }),
     ).toBeNull();
   });

@@ -76,7 +76,7 @@ export const SECTION_IDS_CLI = '0.6.4';
  * Earlier releases reject the fields and hide every doc topic the package
  * ships.
  */
-export const SECTION_POSITION_CLI = '0.7.3';
+export const SECTION_POSITION_CLI = '0.7.4';
 
 const VERSION_RE = /^v?(\d+|[xX*])(?:\.(\d+|[xX*]))?(?:\.(\d+|[xX*]))?(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/;
 
