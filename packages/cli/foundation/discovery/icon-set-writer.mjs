@@ -895,10 +895,18 @@ export function generatedModuleText(
         'u',
       ),
   );
+  // A re-export binds no local name, so the theme map reads each re-exported
+  // icon through an import that mirrors its re-export. Those imports are
+  // rewritten with the theme map.
+  const themeImport = (/** @type {string} */ line) =>
+    themeName != null &&
+    line.startsWith('import {') &&
+    lines.includes(`export${line.slice('import'.length)}`);
   const managed = (/** @type {string} */ line) =>
     dropped.some(pattern => pattern.test(line)) ||
     adapterImport.test(line) ||
     line === REACT_IMPORT ||
+    themeImport(line) ||
     (themeName != null && line.startsWith(`export const ${themeName} = `));
   const imports = new Set(
     lines.filter(line => line.startsWith('import ') && !managed(line)),
@@ -959,6 +967,8 @@ export function generatedModuleText(
   }
   /** @type {string[]} */
   const theme = [];
+  /** @type {Set<string>} */
+  const themeImports = new Set();
   if (themeName) {
     const byId = new Map(data.icons.map(icon => [icon.id, icon.export]));
     for (const name of Object.keys(data.map ?? {}).sort()) {
@@ -967,6 +977,15 @@ export function generatedModuleText(
         theme.push(
           `  ${name}: createElement(${exportName}, ${THEME_ELEMENT_PROPS}),`,
         );
+        const reexport = [...exports].find(line =>
+          new RegExp(
+            `^export \\{(?:\\w+ as )?${exportName}\\} from `,
+            'u',
+          ).test(line),
+        );
+        if (reexport) {
+          themeImports.add(`import${reexport.slice('export'.length)}`);
+        }
       }
     }
   }
@@ -980,7 +999,7 @@ export function generatedModuleText(
     ...GENERATED_HEADER,
     ...(themeName ? [REACT_IMPORT] : []),
     ...adapterLine,
-    ...[...imports].sort(),
+    ...[...imports, ...themeImports].sort(),
     ...[...exports].sort(),
     ...(themeName
       ? theme.length > 0

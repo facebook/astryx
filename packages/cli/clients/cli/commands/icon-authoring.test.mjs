@@ -10,6 +10,8 @@
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
+import {createRequire} from 'node:module';
+import {pathToFileURL} from 'node:url';
 import {afterEach, beforeEach, describe, expect, it} from 'vitest';
 import {runCli} from '../../../test-utils/run-cli.mjs';
 import {writeIconSetProject} from '../../../test-utils/icon-set-fixture.mjs';
@@ -146,6 +148,52 @@ describe('experimental icon new-set --from', () => {
     expect(again.code).toBe(0);
     expect(dataOf('outline').map).toMatchObject({delete: 'bin'});
   });
+
+  it('the theme map reads each re-exported icon through an import, so the generated module loads', async () => {
+    await json([
+      'experimental',
+      'icon',
+      'new-set',
+      'outline',
+      '--from',
+      '@acme/glyph-library',
+    ]);
+    // `close` is built in, so it lands in the theme map.
+    expect(
+      (await json(['experimental', 'icon', 'map', 'close', 'cross'])).code,
+    ).toBe(0);
+    const file = path.join(pkg, 'icon-sets', 'outline', 'outline.generated.js');
+    const text = fs.readFileSync(file, 'utf-8');
+    // A re-export binds no local name: the theme map's import does.
+    expect(text).toContain(
+      "import {Cross as CrossIcon} from '@acme/glyph-library';",
+    );
+    expect(text).toContain(
+      "export {Cross as CrossIcon} from '@acme/glyph-library';",
+    );
+    expect(text).toContain('close: createElement(CrossIcon,');
+    const check = JSON.stringify(
+      JSON.parse(
+        (await runCli(['integration', 'check', '--json'], pkg)).stdout,
+      ),
+    );
+    expect(check).not.toContain('icon_theme_map_mismatch');
+    expect(check).not.toContain('icon_module_invalid');
+
+    // The module loads and the theme map draws the exported component.
+    const react = path.dirname(
+      createRequire(import.meta.url).resolve('react/package.json'),
+    );
+    fs.symlinkSync(react, path.join(pkg, 'node_modules', 'react'), 'dir');
+    const mod = await import(pathToFileURL(file).href);
+    expect(mod.themeIcons.close.type).toBe(mod.CrossIcon);
+
+    // Remapping drops the import the theme map no longer reads.
+    await json(['experimental', 'icon', 'map', 'close', 'bin']);
+    const remapped = fs.readFileSync(file, 'utf-8');
+    expect(remapped).not.toContain('import {Cross as CrossIcon}');
+    expect(remapped).toContain("import {BinIcon} from '@acme/glyph-library';");
+  }, 60_000);
 });
 
 describe('icon add', () => {
