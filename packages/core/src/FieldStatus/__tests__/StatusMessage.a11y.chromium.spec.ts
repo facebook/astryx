@@ -3,7 +3,7 @@
 /**
  * @file StatusMessage.a11y.chromium.spec.ts
  * @input Uses the shared status-message contract, checked-in stories, Core state inventory, and exact known failures
- * @output Browser/tree evidence for current bindings; name-only live messages remain covered by shared HTML fixtures
+ * @output Real-browser and accessibility-tree evidence for every current Core status-message binding
  * @position Browser migration lane; it makes no claim about assistive-technology speech or timing
  */
 
@@ -87,6 +87,7 @@ async function bindSubject(
       name: facts.initialMessage,
     });
   } else {
+    await expect(candidates).toContainText([facts.initialMessage]);
     const texts = await candidates.evaluateAll(elements =>
       elements.map(element =>
         (element.textContent ?? '').replace(/\s+/g, ' ').trim(),
@@ -189,7 +190,7 @@ for (const state of CORE_STATUS_MESSAGE_BINDING_STATES) {
   });
 }
 
-test('every applicable expectation is exercised by a Core binding state', async ({
+test('every Core-applicable expectation is exercised by a binding state', async ({
   page,
 }) => {
   test.setTimeout(4 * 60 * 1000);
@@ -198,9 +199,6 @@ test('every applicable expectation is exercised by a Core binding state', async 
   for (const state of CORE_STATUS_MESSAGE_BINDING_STATES) {
     results.push(recorded.get(state.id) ?? (await runState(page, cdp, state)));
   }
-  // Spinner now writes text to the shared channel; no current Core binding
-  // delivers a status via its accessible name alone. That contract branch
-  // still has conforming/mutant coverage in status-message.fixtures.ts.
   expect(neverExercised(results)).toEqual([
     'status-message.message.name-exposed',
   ]);

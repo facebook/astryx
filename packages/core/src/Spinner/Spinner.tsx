@@ -4,8 +4,8 @@
 
 /**
  * @file Spinner.tsx
- * @input Uses React, i18n (useTranslator), useAnnounce, StyleX, SVG rendering
- * @output Exports Spinner and its types; standalone loading names use the shared polite channel
+ * @input Uses React, i18n (useTranslator), StyleX, SVG rendering
+ * @output Exports Spinner component, SpinnerProps, SpinnerSize, SpinnerShade types
  * @position Core implementation of spinner loading indicator
  *
  * SYNC: When modified, update these files to stay in sync:
@@ -333,7 +333,7 @@ const styles = stylex.create({
   arc: {
     // Slow the motion dramatically under reduced-motion rather than freezing
     // it (a frozen spinner reads as broken), matching ProgressBar's approach.
-    // The named image and shared-channel message still convey loading.
+    // The indeterminate progressbar and shared-channel message convey loading.
     animationDuration: {
       default: durationVars['--duration-slow-min'],
       '@media (prefers-reduced-motion: reduce)': '3s',
@@ -460,7 +460,7 @@ export interface SpinnerProps extends BaseProps<HTMLSpanElement> {
    * Accepts a string or ReactNode for rich content.
    *
    * When `label` is a string, the visible text also provides the accessible
-   * name of the non-live ring image (via aria-labelledby) unless `aria-label`
+   * name of the non-live progressbar (via aria-labelledby) unless `aria-label`
    * is explicitly set. Standalone spinners send that name to the shared
    * polite announcement channel when they appear.
    *
@@ -480,28 +480,6 @@ export interface SpinnerProps extends BaseProps<HTMLSpanElement> {
 // =============================================================================
 // Component
 // =============================================================================
-
-/** Read only the rendered label siblings, leaving the ring's name unchanged. */
-function renderedLabelText(ring: HTMLSpanElement): string {
-  const copy = ring.parentElement?.cloneNode(true) as HTMLElement | undefined;
-  if (!copy) {
-    return '';
-  }
-  copy.firstElementChild?.remove();
-  for (const hidden of copy.querySelectorAll(
-    '[aria-hidden="true"], [hidden], [inert]',
-  )) {
-    hidden.remove();
-  }
-  // Preserve line boundaries without reading layout or inspecting React children.
-  for (const boundary of copy.querySelectorAll(
-    'br, p, div, li, h1, h2, h3, h4, h5, h6',
-  )) {
-    boundary.before(' ');
-    boundary.after(' ');
-  }
-  return (copy.textContent ?? '').replace(/\s+/g, ' ').trim();
-}
 
 /**
  * An animated loading indicator. Available in four sizes and four color shades.
@@ -542,8 +520,10 @@ export function Spinner({
     [hasLabel, ref],
   );
 
-  // Name the ring from its visible string label without duplicating that
-  // label in an aria-label. Rich content remains outside the image.
+  // When a visible string label renders (and no explicit aria-label is set),
+  // name the status element from the visible Text via aria-labelledby instead
+  // of duplicating the same string as aria-label — the duplicate would be
+  // announced twice by screen readers (WCAG 4.1.2).
   const namedByVisibleLabel =
     hasLabel && typeof label === 'string' && ariaLabel == null;
 
@@ -560,13 +540,9 @@ export function Spinner({
   // hidden or enter a live container without changing its accessible name.
   useEffect(() => {
     const element = spinnerRef.current;
-    // The private marker lets composed loaders retain readable visible labels.
-    // Decorative indicators use aria-hidden instead; neither owns the task.
     if (
       !element ||
-      element.closest(
-        '[aria-hidden="true"], [hidden], [inert], [data-astryx-spinner-silent]',
-      )
+      element.closest('[aria-hidden="true"], [hidden], [inert]')
     ) {
       announcedRef.current = null;
       return;
@@ -578,27 +554,21 @@ export function Spinner({
       announcedRef.current = null;
       return;
     }
-    const message =
-      ariaLabel == null && hasLabel && typeof label !== 'string'
-        ? renderedLabelText(element)
-        : resolvedAriaLabel;
-    if (!message) {
+    if (!resolvedAriaLabel) {
       announcedRef.current = null;
       return;
     }
-    if (announcedRef.current === message) {
+    if (announcedRef.current === resolvedAriaLabel) {
       return;
     }
-    announcedRef.current = message;
-    announce(message, 'polite');
-    // No cleanup clears this shared channel: it can belong to another owner
-    // by the time this Spinner unmounts. The ref survives StrictMode replay.
+    announcedRef.current = resolvedAriaLabel;
+    announce(resolvedAriaLabel, 'polite');
   });
 
   const spinner = (
     <span
       ref={ringRef}
-      role="img"
+      role="progressbar"
       aria-label={namedByVisibleLabel ? undefined : resolvedAriaLabel}
       aria-labelledby={namedByVisibleLabel ? labelId : undefined}
       data-testid={hasLabel ? undefined : testId}
