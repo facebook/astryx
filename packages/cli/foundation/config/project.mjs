@@ -1180,8 +1180,9 @@ export class Project {
         }
       }
 
-      // Each installed icon set's own icon definitions join Astryx's under
-      // the `icon-definitions` namespace, marked with their package.
+      // With the opt-in (`iconSets()` reads no set without it), each installed
+      // icon set's own icon definitions join Astryx's under the
+      // `icon-definitions` namespace, marked with their package.
       const {sets} = await this.iconSets();
       for (const set of sets) {
         if (set.definitions.length === 0) continue;

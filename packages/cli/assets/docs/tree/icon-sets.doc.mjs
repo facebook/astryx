@@ -32,7 +32,7 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'Icon sets are experimental: the `astryx experimental icon` commands, the `experimental.iconSet` key in astryx.config, the `experimental.iconSets` key in an integration manifest, the data file, icon definitions, and the output and JSON of all of them can change, or go away, in any patch release without a deprecation period. A project that does not set `experimental.iconSet` sees no change in any other command: templates, discover, and doctor answer as they always have. `astryx search` never returns icons or these docs; to find an icon by meaning, use `astryx experimental icon <words>`.',
+          text: 'Icon sets are experimental: the `astryx experimental icon` commands, the `experimental.iconSet` key in astryx.config, the `experimental.iconSets` key in an integration manifest, the data file, icon definitions, and the output and JSON of all of them can change, or go away, in any patch release without a deprecation period. A project that does not set `experimental.iconSet` sees no change in any stable command apart from the `experimental` group in help: templates, discover, and doctor answer as they do with no icon set installed. `astryx search` never returns icons or these docs; to find an icon by meaning, use `astryx experimental icon <words>`.',
         },
       ],
     },
@@ -299,7 +299,7 @@ export const brand = defineTheme({name: 'brand', icons: themeIcons});`,
           style: 'unordered',
           items: [
             'Run `astryx integration verify` yourself before publishing. Do not put it in `prepublishOnly`: under `npm publish --dry-run` its own `npm pack` becomes a dry run too, and it checks nothing.',
-            "Declare `@astryxdesign/cli` as an optional peer (`peerDependenciesMeta`). A required peer an app cannot satisfy makes npm remove the app's CLI without a word. Icon sets are experimental, so no version range promises them: any CLI release that has `astryx experimental icon` reads a set, and the format may change in a patch release. A CLI without it reads `experimental` as a manifest key it does not know: `astryx doctor` there warns that your package was published against a newer Astryx CLI, and your icons, icon definitions, and template icon mapping do not appear ({@link generic:versioning}).",
+            "Declare `@astryxdesign/cli` as an optional peer (`peerDependenciesMeta`). A required peer an app cannot satisfy makes npm remove the app's CLI without a word. Icon sets are experimental, so no version range promises them: any CLI release that has `astryx experimental icon` reads a set, and the format may change in a patch release. A CLI without it reads `experimental` as a manifest key it does not know: `astryx doctor` there warns that your package was published against a newer Astryx CLI, other commands print a one-line nudge to run it, and your icons, icon definitions, and template icon mapping do not appear ({@link generic:versioning}).",
             'Your package needs `react` (the theme map and adapter use it): declare it as a peer, as Core does.',
           ],
         },
@@ -363,7 +363,7 @@ astryx experimental icon use outline         # make it the project's icon set`,
             ],
             [
               '`astryx doctor`',
-              'The `icon-sets` check: fails when `experimental.iconSet` names a set that is not installed, and warns when two packages ship a set by that name or a set was withdrawn.',
+              'The `icon-sets` check: fails when `experimental.iconSet` names a set that is not installed or was withdrawn (an invalid set, or one whose module does not resolve), saying why, and warns when two packages ship a set by that name or a set was withdrawn.',
             ],
             [
               'JSON types',

@@ -90,9 +90,10 @@ icon, and the CLI verifies it, writes the files, and checks the set.
   Without `experimental.iconSet`, help (apart from the `experimental` group
   line), the manifest (apart from that group), the `astryx docs cli` listing
   (apart from the `experimental` namespace and the experimental command and
-  function references), `astryx template`, `astryx discover`, Doctor, and
-  `integration check` and `verify` give the output they give without this
-  feature, whatever sets are installed, with two differences, both because a
+  function references), `astryx template`, `astryx discover`, and Doctor
+  give the output they give without this feature, whatever sets are
+  installed, and so do `integration check` and `verify` for a package that
+  declares no `experimental.iconSets`, with two differences, both because a
   CLI without this feature does not know the manifest key `experimental`.
   With a package that declares `experimental.iconSets` installed, that CLI
   warns about the key in Doctor's `integration-issues` check, and in text
@@ -135,7 +136,8 @@ icon, and the CLI verifies it, writes the files, and checks the set.
 
   A data file that fails this shape, repeats an `id`, maps a name that is
   neither an Astryx definition nor one of the set's own, maps to a missing
-  icon, or names a variant the set does not declare is invalid, and the set is withdrawn from every surface.
+  icon, or names a variant the set does not declare is invalid, and the set
+  is withdrawn from every surface.
 
 - **FR4 — Icon definitions are typed doc files in folders.** An
   `IconDefinitionDoc` (`type: 'icon-definition'`) has a camelCase `name`, a
@@ -146,7 +148,8 @@ icon, and the CLI verifies it, writes the files, and checks the set.
   definition needs no change to Astryx and maps only within that set;
   proposing it for every set is a pull request that copies its file into the
   CLI's folder. When names collide, Astryx's wins. The experimental
-  `icon-definitions` namespace lists them all.
+  `icon-definitions` namespace lists Astryx's definitions and, in a project
+  that sets `experimental.iconSet`, each installed set's own.
 - **FR5 — The directory is the boundary.** Discovery reads the descriptor,
   data file, and definitions statically, never runs the icon module, and
   rejects a path that escapes the package (`spec:AST-039/FR5`, FR6).
@@ -222,7 +225,8 @@ icon, and the CLI verifies it, writes the files, and checks the set.
     lists the definitions that fit it, and with `--definition` or
     `--new-definition` adds it and maps it; `--variant <name>` adds it as
     that declared variant of an existing icon.
-  - `experimental icon map <definition> <icon>` writes one `map` entry;
+  - `experimental icon map <definition> <icon>` writes one `map` entry, and
+    `--remove` removes one;
     `new-definition` writes one of the set's own definitions; `use <set>`
     writes `experimental.iconSet`.
   - The generated module re-exports each library component, or wraps a data
@@ -284,7 +288,8 @@ message}`) names each template or namespace doc that sets `stability`, and
   admits a release before 0.7.4; a note is never counted and never fails a
   check (DEC-9). A CLI before 0.7.4 also refuses an astryx.config that sets
   `experimental.iconSet` ("Unrecognized key"), so commands that load the
-  project configuration, such as `doctor` and `discover`, fail in that project. `experimental icon use` adds `warning` to its receipt, printed as a
+  project configuration, such as `doctor` and `discover`, fail in that
+  project. `experimental icon use` adds `warning` to its receipt, printed as a
   `[warn]` line, when the project declares an `@astryxdesign/cli` range (in
   any dependency field) that admits such a release; a project that declares no
   range, or a `workspace:`, `file:`, or `link:` one, gets none.

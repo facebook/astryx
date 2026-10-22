@@ -5,27 +5,34 @@
  * `astryx doctor integration validate` (AST-084 FR12, FR15).
  *
  * For each set under a package's `iconSets` root it proves, without executing
- * anything, that the data file matches the package:
- *   errors   an invalid descriptor, data file, or definition file (which covers
- *            a duplicate id, an icon with no words, a `map` key that is
- *            neither an Astryx icon definition nor one the set declares, a
- *            `map` value that is not an icon id, and a variant or default
- *            naming a variant the set does not declare); a built-in definition missing from `map`; an
- *            `export` its module does not export at runtime (read statically,
- *            re-exports followed); a theme map whose keys or values disagree
- *            with the built-in entries of `map`;
- *   warnings an Astryx definition that is not built in and missing from
- *            `map`; a definition the set declares that is missing from `map`,
- *            or whose name is an Astryx definition; a data file generated from an upstream version
- *            other than the one the package depends on; a set with an
- *            upstream and no license notice file in its directory or package.
+ * anything, that the data file matches the package. The codes below are
+ * exactly FR15's table:
+ *   errors   `invalid_icon_set` (an invalid descriptor, data file, or
+ *            definition file: a duplicate id, an icon with no words, a `map`
+ *            key that is neither an Astryx icon definition nor one the set
+ *            declares, a `map` value that is not an icon id, or a variant or
+ *            default naming a variant the set does not declare);
+ *            `icon_builtin_definition_missing`; `icon_module_not_public`;
+ *            `icon_not_component`; `icon_export_missing` (an export, the
+ *            generated module, or the adapter its module does not have, read
+ *            statically with re-exports followed); `icon_module_invalid`;
+ *            `icon_generated_types_mismatch`; `icon_theme_map_mismatch` (a
+ *            theme map whose keys or values disagree with the built-in
+ *            entries of `map`);
+ *   warnings `icon_export_name` (an export not named `<Name>Icon`);
+ *            `icon_definition_unused` and `icon_definition_shadowed` (a
+ *            definition the set declares that `map` leaves out, or that has
+ *            an Astryx definition's name); `icon_source_version_drift`;
+ *            `icon_license_notice_missing`.
+ * An optional (not built-in) Astryx definition the set leaves unmapped is no
+ * issue: {@link iconSetCoverage} lists it, never counted, never failing.
  * Only what the static reader proves absent fails. What it cannot judge it
  * lists as not checked, never as an issue (`architecture:cli-surface` INV35,
  * DEC-7): an export whose module is a package `exports` target not built
  * yet; an icon or adapter export it cannot prove either way (behind a
  * re-export it cannot follow, bound to a default or namespace import, or
- * imported from a package that does not resolve); and a theme-map entry it
- * cannot read.
+ * imported from a package that does not resolve); and a theme map or
+ * theme-map entry it cannot read.
  *
  * @input A package directory and its loaded integration roots
  * @output Issues in the integration issue format, and the items not checked

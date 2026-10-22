@@ -2,7 +2,7 @@
 
 /**
  * @file The icon-set checks of `integration check` (AST-084 FR12, FR15):
- * every error and warning FR14 lists, read statically, and how `--strict`
+ * every error and warning FR15 lists, read statically, and how `--strict`
  * treats the warnings.
  */
 
@@ -459,7 +459,7 @@ describe('iconSetIssues', () => {
     });
   });
 
-  describe('theme map (FR13)', () => {
+  describe('theme map (FR12)', () => {
     it('an extra key is an error', () => {
       const issues = issuesOf({
         modules: modules({
@@ -842,5 +842,58 @@ describe('modules that do not parse, and generated types', () => {
         setup(generatedTypesText(["export {XIcon} from '../../icons/x.js';"])),
       ),
     ).toEqual([]);
+  });
+});
+
+// FR15's table is the whole list: a code the checks add, drop, or move to
+// another severity fails here until the table says so.
+describe('the codes and severities FR15 lists', () => {
+  it('are exactly the codes this module raises, at the same severity', async () => {
+    const checks = await import('./icon-set-checks.mjs');
+    const source = fs.readFileSync(
+      new URL('./icon-set-checks.mjs', import.meta.url),
+      'utf8',
+    );
+    /** @type {Record<string, string>} */
+    const constants = Object.fromEntries(
+      Object.entries(checks).filter(
+        ([name, value]) =>
+          /^(?:ICON_|INVALID_ICON_SET$)/u.test(name) &&
+          typeof value === 'string' &&
+          /^(?:icon_|invalid_icon_set$)/u.test(value),
+      ),
+    );
+    /** @type {Record<string, string>} */
+    const raised = {};
+    for (const [, kind, name] of source.matchAll(
+      /issue(Error|Warning)\(\s*([A-Z_]+)\b/gu,
+    )) {
+      const code = constants[name];
+      expect(code, `${name} is a code constant`).toBeTypeOf('string');
+      const severity = kind.toLowerCase();
+      expect(raised[code] ?? severity, `${code} has one severity`).toBe(
+        severity,
+      );
+      raised[code] = severity;
+    }
+    expect(Object.keys(constants).length).toBeGreaterThan(10);
+    expect(Object.keys(raised).sort()).toEqual(Object.values(constants).sort());
+
+    const spec = fs.readFileSync(
+      new URL(
+        '../../../../docs/specs/AST-084-icon-sets/spec.md',
+        import.meta.url,
+      ),
+      'utf8',
+    );
+    const fr15 = spec.slice(spec.indexOf('**FR15 '), spec.indexOf('**FR16 '));
+    /** @type {Record<string, string>} */
+    const listed = {};
+    for (const [, code, severity] of fr15.matchAll(
+      /^\s*\| `([a-z_]+)`\s*\| (error|warning)\s*\|/gmu,
+    )) {
+      listed[code] = severity;
+    }
+    expect(listed).toEqual(raised);
   });
 });

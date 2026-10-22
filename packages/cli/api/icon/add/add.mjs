@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file `icon.add` and `icon.definitionMatches` leaf (AST-084 FR3): register
+ * @file `icon.add` and `icon.definitionMatches` leaf (AST-084 FR13): register
  * one icon the caller chose from a source module, against an icon
  * definition.
  *

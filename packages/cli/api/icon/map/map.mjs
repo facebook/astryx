@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file `icon.map` leaf (AST-084 FR3): register which icon of the set being
+ * @file `icon.map` leaf (AST-084 FR13): register which icon of the set being
  * authored draws one icon definition, or remove that entry.
  *
  * @output the `icon.map` envelope

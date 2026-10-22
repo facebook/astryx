@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file Icon-set discovery (AST-084 FR1–FR3, FR5, FR9, FR10): the one seam
+ * @file Icon-set discovery (AST-084 FR1–FR5, FR8, FR17): the one seam
  * every icon surface reads installed icon sets through.
  *
  * An integration's `experimental.iconSets` root holds one lower-kebab directory per set.
@@ -40,7 +40,7 @@ import {
 
 const SET_NAME_RE = /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/u;
 
-/** A license or notice file a set ships beside its data (FR14). */
+/** A license or notice file a set ships beside its data (FR15). */
 export const NOTICE_FILE_RE = /^(?:licen[cs]e|notice|copying)(?:[.-].*)?$/iu;
 
 /**
@@ -75,7 +75,7 @@ export const NOTICE_FILE_RE = /^(?:licen[cs]e|notice|copying)(?:[.-].*)?$/iu;
  */
 
 /**
- * The project's icon set (FR10).
+ * The project's icon set (FR8).
  * @typedef {object} IconSetChoice
  * @property {'selected' | 'none' | 'ambiguous' | 'missing' | 'withdrawn'} status
  *   `selected`: one set is the project's; `none`: no set is installed;
@@ -324,7 +324,7 @@ export function resolveIconModule(specifier, fromDir, self = {}) {
 
 /**
  * Discover one loaded integration's icon sets, and withdraw each one that is
- * invalid or whose module does not resolve from the project (FR9).
+ * invalid or whose module does not resolve from the project (FR3, FR17).
  * @param {import('../integrations/integrations.mjs').LoadedIntegration} integration
  * @param {{projectDir: string}} options
  * @returns {{sets: DiscoveredIconSet[], withdrawn: WithdrawnIconSet[]}}

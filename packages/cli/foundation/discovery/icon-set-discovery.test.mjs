@@ -1,8 +1,8 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file Icon-set discovery and the project's icon-set choice (AST-084 FR1–FR3,
- * FR5, FR9, FR10), over the synthetic fixture package.
+ * @file Icon-set discovery and the project's icon-set choice (AST-084 FR1–FR5,
+ * FR8, FR17), over the synthetic fixture package.
  */
 
 import * as fs from 'node:fs';

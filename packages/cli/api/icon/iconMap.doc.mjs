@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @file FunctionDoc for `iconMap()` / `astryx experimental icon map` (AST-084 FR3). */
+/** @file FunctionDoc for `iconMap()` / `astryx experimental icon map` (AST-084 FR13). */
 
 /** @type {import('@astryxdesign/cli/authoring').FunctionDoc} */
 export const doc = {

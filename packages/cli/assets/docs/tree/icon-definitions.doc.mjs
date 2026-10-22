@@ -2,7 +2,8 @@
 
 /**
  * @file `astryx docs cli/experimental/icon-definitions`: every icon
- * definition, Astryx's and each installed icon set's own. Experimental
+ * definition, Astryx's and, in a project that sets `experimental.iconSet`,
+ * each installed icon set's own. Experimental
  * (spec:AST-017 FR27), with the icon sets that use them.
  *
  * It never lists its children: it adopts every icon definition doc from every

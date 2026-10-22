@@ -2,7 +2,7 @@
 
 /**
  * @file Integration descriptors an older CLI drops (spec:AST-017 FR21, FR27;
- * spec:AST-084 FR9).
+ * spec:AST-084 FR16).
  *
  * Published CLIs before 0.7.4 refuse an unknown field on a page or block
  * template, which they drop, and on a namespace doc, which hides every doc

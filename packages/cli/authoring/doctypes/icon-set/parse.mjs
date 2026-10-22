@@ -10,7 +10,7 @@
  * or a value that is not an icon id in the file, and a variant or default
  * naming a variant the set's `variants` do not declare all make the file
  * invalid,
- * and an invalid file withdraws its set from every surface (FR9). Whether each
+ * and an invalid file withdraws its set from every surface (FR3). Whether each
  * `map` key is Astryx's definition or one the set declares is checked by
  * icon-set discovery, which reads the definition files.
  *

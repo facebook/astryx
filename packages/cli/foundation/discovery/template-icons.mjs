@@ -177,7 +177,7 @@ export function reviewedMatch(source, target, confidences) {
 }
 
 /**
- * The project-set icon a source icon maps to (FR11), or null: a reviewed
+ * The project-set icon a source icon maps to (FR9), or null: a reviewed
  * `exact` or `strong` match, then the icon the project set's `map` names for
  * an Astryx definition the source draws.
  * @param {SourceIcon} source
@@ -400,14 +400,15 @@ export const NO_ICON_SETS = Object.freeze({
 });
 
 /**
- * Rewrite a template's icon imports to the project's icon set (FR11, FR12).
+ * Rewrite a template's icon imports to the project's icon set (FR9, FR10).
  * @param {string} source
  * @param {{sets: DiscoveredIconSet[], choice: IconSetChoice}} iconSets
  * @param {Record<string, string>} [declared] the template's `icons`: the
  *   icon definition each imported icon draws, by its imported name
  * @returns {{source: string, icons: TemplateIconsReport | undefined}} `icons`
- *   is undefined, and the source unchanged, when no icon set is installed and
- *   none is configured: icon sets are experimental (spec:AST-017 FR27), so a
+ *   is undefined, and the source unchanged, when no set is given and none is
+ *   configured, as for every project without the opt-in, whose state carries
+ *   no sets: icon sets are experimental (spec:AST-017 FR27), so a
  *   project that does not use them gets exactly the output it always has.
  */
 export function mapTemplateIcons(source, {sets, choice}, declared = {}) {

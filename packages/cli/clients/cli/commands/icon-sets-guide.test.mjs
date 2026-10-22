@@ -121,4 +121,66 @@ describe('icon-set guide', () => {
       expect(stdout, route).toMatch(/[Ee]xperimental/);
     }
   });
+
+  // The guide's list of JSON types is every `icon.*` response type: a new one
+  // fails here until the guide names it.
+  it("names every icon response type in 'Where icon sets show up'", async () => {
+    const {doc} =
+      await import('../../../foundation/response/response-types.doc.mjs');
+    const types = doc.members
+      .map((/** @type {{value: string}} */ member) => member.value)
+      .filter((/** @type {string} */ value) => value.startsWith('icon.'))
+      .sort();
+    expect(types.length).toBeGreaterThan(5);
+    const {stdout} = await runCli(['docs', GUIDE, '--json']);
+    const section = JSON.parse(stdout).data.sections.find(
+      (/** @type {any} */ each) => each.title === 'Where icon sets show up',
+    );
+    const row = section.content
+      .find((/** @type {any} */ block) => block.type === 'table')
+      .rows.find((/** @type {string[]} */ each) => each[0] === 'JSON types');
+    expect(
+      [...row[1].matchAll(/`(icon\.\w+)`/gu)].map(([, t]) => t).sort(),
+    ).toEqual(types);
+  });
+
+  // A set's own definitions join the namespace only in a project that opts
+  // in, as FR4 says; Astryx's are always there.
+  it("lists a set's own icon definitions only with experimental.iconSet", async () => {
+    const definition = `/** @type {import('@astryxdesign/cli/authoring').IconDefinitionDoc} */
+export default {type: 'icon-definition', name: 'rocketLaunch', description: 'Launch something.', words: ['launch', 'liftoff']};
+`;
+    /** @param {string} name @param {Record<string, unknown>} config */
+    const project = (name, config) => {
+      const dir = writeIconSetProject(path.join(tmp, name), {
+        packages: [{definitions: {rocketLaunch: definition}}],
+        config,
+      });
+      return dir;
+    };
+    const optedIn = project('own-defs-opted-in', {
+      integrations: ['@acme/glyphs'],
+      experimental: {iconSet: 'glyphs'},
+    });
+    const notOptedIn = project('own-defs-no-opt-in', {
+      integrations: ['@acme/glyphs'],
+    });
+    /** @param {string} cwd */
+    const routes = async cwd => {
+      const {status, stdout} = await runCli(
+        ['docs', 'cli/experimental/icon-definitions', '--json'],
+        cwd,
+      );
+      expect(status).toBe(0);
+      return JSON.parse(stdout).data.slots.flatMap((/** @type {any} */ slot) =>
+        slot.children.map((/** @type {any} */ child) => child.name),
+      );
+    };
+    const withOptIn = await routes(optedIn);
+    const without = await routes(notOptedIn);
+    expect(withOptIn).toContain('rocket-launch');
+    expect(without).not.toContain('rocket-launch');
+    expect(without).toContain('close');
+    expect(withOptIn.filter(name => name !== 'rocket-launch')).toEqual(without);
+  });
 });
