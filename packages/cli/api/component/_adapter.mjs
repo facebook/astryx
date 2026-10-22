@@ -44,12 +44,38 @@ import {Project} from '../../foundation/config/project.mjs';
 import {loadComponentDoc as loadValidatedComponentDoc} from '../../foundation/discovery/component-loader.mjs';
 import {resolveComponentReplacements} from '../../foundation/discovery/component-replacement.mjs';
 import {searchComponents} from '../../foundation/text/string-utils.mjs';
+import {
+  rankComponentSuggestions,
+  synonymMatches,
+} from '../../foundation/text/suggest-order.mjs';
 import {AstryxError, coreDirOrThrow} from '../error.mjs';
 import {
   componentLinkProvider,
   linkComponentDoc,
   loadDocsCatalog,
 } from '../docs/_adapter.mjs';
+
+/** @type {Record<string, {synonyms?: string[]}> | undefined} */
+let cards;
+/**
+ * Search's component cards (each component's other names), read once.
+ * @returns {Record<string, {synonyms?: string[]}>}
+ */
+function searchCards() {
+  if (!cards) {
+    try {
+      cards = JSON.parse(
+        fs.readFileSync(
+          new URL('../search/_cards.json', import.meta.url),
+          'utf8',
+        ),
+      );
+    } catch {
+      cards = {};
+    }
+  }
+  return /** @type {Record<string, {synonyms?: string[]}>} */ (cards);
+}
 
 export {CORE_PACKAGE, unscopedComponentOwners};
 
@@ -463,12 +489,20 @@ export async function resolveUnscopedDoc(dirName, {coreDir, cwd, name}) {
         resolvedOwnerPackage = CORE_PACKAGE;
         resolvedSourcePath = findComponentSource(coreDir, resolvedName);
       } else {
+        // How many to suggest: the near-top results, at most five and at
+        // least two. Which ones, and in what order, is the suggestion
+        // ranking's call.
         const threshold = Math.max(topScore - 20, 1);
-        const candidates = results
-          .filter(r => r.score >= threshold)
-          .slice(0, 5);
-        if (candidates.length < 2)
-          candidates.push(...results.slice(candidates.length, 2));
+        const count = Math.max(
+          results.filter(r => r.score >= threshold).slice(0, 5).length,
+          Math.min(2, results.length),
+        );
+        const candidates = rankComponentSuggestions(
+          dirName,
+          results,
+          Object.values(components).flat(),
+          synonymMatches(dirName, searchCards()),
+        ).slice(0, count);
         throw new AstryxError(
           `No component named "${name}"`,
           candidates.map(c => ({name: c.name, reason: c.reason})),

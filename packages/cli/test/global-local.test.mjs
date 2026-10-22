@@ -180,6 +180,16 @@ const notOfficial = discover =>
     (/** @type {any} */ entry) => entry.source !== 'Astryx',
   );
 
+/** doctor's fix where no install command fits (spec AST-081 FR2). */
+const DOCTOR_RUN_FROM_PROJECT =
+  "Run this from the Astryx project's folder, or declare an Astryx package in this folder's package.json to make it a project of its own.";
+
+/**
+ * The hint's advice in a folder whose package.json is not the project's: the
+ * same words as doctor's, naming no command (spec AST-081 FR5).
+ */
+const RUN_FROM_PROJECT = DOCTOR_RUN_FROM_PROJECT;
+
 /**
  * The once-a-day hint in a project with no CLI of its own.
  * @param {string} answered
@@ -418,6 +428,181 @@ describe.skipIf(!POSIX)(
       );
     });
 
+    it("in a tool folder that installs its own Core inside a project, the hint and doctor say to run from the project's folder, and the notice upgrades the project", () => {
+      const pc = computer();
+      const g = globalCli('npm', '9.0.0', {root: pc.home});
+      globalState(pc, {
+        latest: '9.0.7',
+        checkOkAt: Date.now(),
+        firstRunAt: Date.now() - 2 * 24 * 60 * 60_000,
+      });
+      const app = makeProject({core: '9.0.1'});
+      writeJson(path.join(app, 'package-lock.json'), {lockfileVersion: 3});
+      const tool = path.join(app, 'tools', 'codegen');
+      writeJson(path.join(tool, 'package.json'), {name: 'codegen'});
+      installCore(tool, '9.0.5');
+      const before = fs.readFileSync(path.join(tool, 'package.json'), 'utf8');
+
+      const r = run(g.bin, ['--version'], {cwd: tool, pc});
+      expect(r.lines).toContain(
+        `astryx: this project has no Astryx CLI installed; answered by CLI 9.0.0 while its Core is 9.0.5. ${RUN_FROM_PROJECT}`,
+      );
+      expect(r.notice).toEqual([
+        'A new release of Astryx is available: 9.0.1 → 9.0.7',
+        `To upgrade, run: cd ${app} && npm install @astryxdesign/core@9.0.7 @astryxdesign/cli@9.0.7, then cd ${app} && npx astryx upgrade --from 9.0.1 --apply`,
+      ]);
+      const doctor = JSON.parse(
+        run(g.bin, ['doctor', '--json'], {cwd: tool, pc}).stdout,
+      );
+      // The same comparison and Core as the hint: the Core the run reads.
+      expect(
+        doctor.data.checks.find(
+          (/** @type {any} */ c) => c.id === 'version-alignment',
+        ),
+      ).toMatchObject({
+        status: 'warn',
+        message:
+          'This project has no Astryx CLI installed; CLI 9.0.0, the one you started, answered while its Core is 9.0.5.',
+        fix: DOCTOR_RUN_FROM_PROJECT,
+      });
+      expect(doctor.meta.answeredBy.core).toBe('9.0.5');
+      // Nothing above suggests adding Astryx to the tool's own package.json.
+      expect(
+        [...r.lines, ...r.notice].some(line => /run: npm install/u.test(line)),
+      ).toBe(false);
+      expect(fs.readFileSync(path.join(tool, 'package.json'), 'utf8')).toBe(
+        before,
+      );
+    });
+
+    it('in a tool folder whose Core matches the CLI inside a project on another Core, neither the hint nor doctor warns', () => {
+      const pc = computer();
+      const g = globalCli('npm', '9.0.0', {root: pc.home});
+      const app = makeProject({core: '9.0.1'});
+      writeJson(path.join(app, 'package-lock.json'), {lockfileVersion: 3});
+      const tool = path.join(app, 'tools', 'codegen');
+      writeJson(path.join(tool, 'package.json'), {name: 'codegen'});
+      installCore(tool, '9.0.0');
+
+      const r = run(g.bin, ['--version'], {cwd: tool, pc});
+      expect(r.lines.filter(line => line.includes('no Astryx CLI'))).toEqual(
+        [],
+      );
+      const doctor = JSON.parse(
+        run(g.bin, ['doctor', '--json'], {cwd: tool, pc}).stdout,
+      );
+      const check = doctor.data.checks.find(
+        (/** @type {any} */ c) => c.id === 'version-alignment',
+      );
+      expect(check.status).toBe('info');
+      expect(check).not.toHaveProperty('fix');
+    });
+
+    it('in a folder with no package.json inside a home folder that installs Astryx, gives no project advice', () => {
+      const pc = computer();
+      const g = globalCli('npm', '9.0.0', {root: pc.home});
+      globalState(pc, {
+        latest: '9.0.7',
+        checkOkAt: Date.now(),
+        firstRunAt: Date.now() - 2 * 24 * 60 * 60_000,
+      });
+      writeJson(path.join(pc.home, 'package.json'), {
+        name: 'home',
+        dependencies: {'@astryxdesign/core': '9.0.1'},
+      });
+      writeJson(path.join(pc.home, 'package-lock.json'), {lockfileVersion: 3});
+      installCore(pc.home, '9.0.1');
+      const folder = path.join(pc.home, 'notes');
+      fs.mkdirSync(folder, {recursive: true});
+
+      const r = run(g.bin, ['--version'], {cwd: folder, pc});
+      expect(r.lines.filter(line => line.includes('no Astryx CLI'))).toEqual(
+        [],
+      );
+      expect(r.notice).toEqual([]);
+    });
+
+    it("in a tool folder whose project installs its own CLI, doctor's alignment fix points at the project, not at a command that leaves the warning", () => {
+      const pc = computer();
+      const g = globalCli('npm', '9.0.0', {root: pc.home});
+      const app = makeProject({core: '9.0.1', cli: '9.0.0'});
+      writeJson(path.join(app, 'package-lock.json'), {lockfileVersion: 3});
+      const tool = path.join(app, 'tools', 'codegen');
+      writeJson(path.join(tool, 'package.json'), {name: 'codegen'});
+      installCore(tool, '9.0.5');
+
+      const doctor = JSON.parse(
+        run(g.bin, ['doctor', '--json'], {cwd: tool, pc}).stdout,
+      );
+      const check = doctor.data.checks.find(
+        (/** @type {any} */ c) => c.id === 'version-alignment',
+      );
+      expect(check).toMatchObject({
+        status: 'warn',
+        fix: DOCTOR_RUN_FROM_PROJECT,
+      });
+      // The message keeps naming the Core this folder reads.
+      expect(check.message).toContain('Core is 9.0.5');
+    });
+
+    it('in a folder that installs Core with no Astryx project above, gives no install advice', () => {
+      const pc = computer();
+      const g = globalCli('npm', '9.0.0', {root: pc.home});
+      globalState(pc, {
+        latest: '9.0.7',
+        checkOkAt: Date.now(),
+        firstRunAt: Date.now() - 2 * 24 * 60 * 60_000,
+      });
+      const tool = tempDir('tool');
+      writeJson(path.join(tool, 'package.json'), {name: 'codegen'});
+      writeJson(path.join(tool, 'package-lock.json'), {lockfileVersion: 3});
+      installCore(tool, '9.0.5');
+
+      const r = run(g.bin, ['--version'], {cwd: tool, pc});
+      expect(r.lines.filter(line => line.includes('To match'))).toEqual([]);
+      expect(r.notice).toEqual([]);
+      const doctor = JSON.parse(
+        run(g.bin, ['doctor', '--json'], {cwd: tool, pc}).stdout,
+      );
+      expect(
+        doctor.data.checks.find(
+          (/** @type {any} */ c) => c.id === 'version-alignment',
+        ),
+      ).toMatchObject({
+        status: 'warn',
+        fix: DOCTOR_RUN_FROM_PROJECT,
+      });
+      // The skip says why, so doctor does not claim nothing newer is known.
+      expect(readState(pc).noticeSkips?.project?.reason).toBe('no-project');
+    });
+
+    it("in a member its workspace lists, which declares no Astryx package, the advice stays the member's own, as before", () => {
+      const pc = computer();
+      const g = globalCli('npm', '9.0.0', {root: pc.home});
+      globalState(pc, {
+        latest: '9.0.7',
+        checkOkAt: Date.now(),
+        firstRunAt: Date.now() - 2 * 24 * 60 * 60_000,
+      });
+      const root = makeProject({core: '9.0.1'});
+      const rootPkg = JSON.parse(
+        fs.readFileSync(path.join(root, 'package.json'), 'utf8'),
+      );
+      writeJson(path.join(root, 'package.json'), {
+        ...rootPkg,
+        workspaces: ['apps/*'],
+      });
+      writeJson(path.join(root, 'package-lock.json'), {lockfileVersion: 3});
+      const member = path.join(root, 'apps', 'web');
+      writeJson(path.join(member, 'package.json'), {name: 'web'});
+      installCore(member, '9.0.5');
+
+      const r = run(g.bin, ['--version'], {cwd: member, pc});
+      const all = [...r.lines, ...r.notice].join('\n');
+      expect(all).not.toContain(`cd ${root}`);
+      expect(r.lines).toContain(noCliHint('9.0.0', '9.0.5'));
+    });
+
     it('G6 the installed Core wins over a lockfile that disagrees, for the release a project whose CLI cannot start gets', () => {
       const pc = computer();
       const g = globalCli('npm', '9.0.0', {root: pc.home});
@@ -460,6 +645,35 @@ describe.skipIf(!POSIX)(
       for (const cwd of [nested, path.join(root, 'vendor', 'repo')]) {
         expect(run(g.bin, ['--version'], {cwd, pc}).stdout).toBe('9.0.0');
       }
+
+      // What prints there (spec AST-040 FR9): an enclosing project with no
+      // CLI of its own and a Core the global copy does not match. A cloned
+      // repository with its own .git belongs to no project, so it gets no
+      // hint and no notice; a tool folder inside the project is told to run
+      // from the project's folder.
+      const pc2 = computer();
+      const g2 = globalCli('npm', '9.0.0', {root: pc2.home});
+      globalState(pc2, {
+        latest: '9.0.7',
+        checkOkAt: Date.now(),
+        firstRunAt: Date.now() - 2 * 24 * 60 * 60_000,
+      });
+      const app = makeProject({core: '9.0.1'});
+      writeJson(path.join(app, 'package-lock.json'), {lockfileVersion: 3});
+      const clone = path.join(app, 'vendor', 'repo');
+      fs.mkdirSync(path.join(clone, '.git'), {recursive: true});
+      const inClone = run(g2.bin, ['--version'], {cwd: clone, pc: pc2});
+      expect(inClone.stdout).toBe('9.0.0');
+      expect(
+        inClone.lines.filter(line => line.includes('no Astryx CLI')),
+      ).toEqual([]);
+      expect(inClone.notice).toEqual([]);
+      const tool = path.join(app, 'tools', 'codegen');
+      writeJson(path.join(tool, 'package.json'), {name: 'codegen'});
+      installCore(tool, '9.0.5');
+      expect(run(g2.bin, ['--version'], {cwd: tool, pc: pc2}).lines).toContain(
+        `astryx: this project has no Astryx CLI installed; answered by CLI 9.0.0 while its Core is 9.0.5. ${RUN_FROM_PROJECT}`,
+      );
     });
 
     it('G9 outside a project: every copy answers itself, the global copy included, whatever releases are cached', () => {
@@ -1233,6 +1447,76 @@ describe.skipIf(!POSIX)(
         status: 'info',
         fix: 'To use one in this project, run `npm install @acme/widgets`.',
       });
+    });
+
+    it("from a tool folder inside a project (as G36), discover and doctor point an integration installed for the computer at the project's folder, where its command adds it for good; with no project, discover names no command", () => {
+      const pc = computer();
+      const g = globalCli('npm', '9.0.0', {root: pc.home});
+      acmeWidgets(path.resolve(g.dir, '..', '..', '..'), {
+        topic: 'acme-deploying',
+      });
+      pc.path.unshift(g.binDir);
+      const dir = makeProject({core: '9.0.0', cli: '9.0.0'});
+      writeJson(path.join(dir, 'package-lock.json'), {lockfileVersion: 3});
+      const tool = path.join(dir, 'tools', 'codegen');
+      writeJson(path.join(tool, 'package.json'), {name: 'codegen'});
+      const discover = JSON.parse(
+        run(g.bin, ['discover', '--json'], {cwd: tool, pc}).stdout,
+      );
+      // A run there loads integrations from the tool's own package.json, so
+      // a package added to the project would stay unused there: no command,
+      // only the way to the project.
+      expect(notOfficial(discover)).toEqual([
+        {
+          name: '@acme/widgets',
+          components: [],
+          version: '1.0.0',
+          source: 'installed for this computer',
+        },
+      ]);
+      const integrationsCheck = (/** @type {string} */ cwd) =>
+        JSON.parse(
+          run(g.bin, ['doctor', '--json'], {cwd, pc}).stdout,
+        ).data.checks.find(
+          (/** @type {any} */ c) => c.id === 'computer-integrations',
+        );
+      expect(integrationsCheck(tool).fix).toBe(DOCTOR_RUN_FROM_PROJECT);
+
+      // Followed: from the project's folder, the command adds it there, and
+      // once it is installed nothing is offered any more.
+      const fromProject = JSON.parse(
+        run(g.bin, ['discover', '--json'], {cwd: dir, pc}).stdout,
+      );
+      expect(notOfficial(fromProject)[0].install).toBe(
+        'npm install @acme/widgets',
+      );
+      expect(integrationsCheck(dir).fix).toBe(
+        'To use one in this project, run `npm install @acme/widgets`.',
+      );
+      const pkg = JSON.parse(
+        fs.readFileSync(path.join(dir, 'package.json'), 'utf8'),
+      );
+      writeJson(path.join(dir, 'package.json'), {
+        ...pkg,
+        dependencies: {...pkg.dependencies, '@acme/widgets': '1.0.0'},
+      });
+      acmeWidgets(dir, {topic: 'acme-project'});
+      const after = JSON.parse(
+        run(g.bin, ['discover', '--json'], {cwd: dir, pc}).stdout,
+      );
+      expect(notOfficial(after)).toEqual([]);
+      expect(integrationsCheck(dir)).not.toHaveProperty('fix');
+
+      // A folder that installs Core but belongs to no project.
+      const alone = tempDir('alone');
+      writeJson(path.join(alone, 'package.json'), {name: 'alone'});
+      installCore(alone, '9.0.0');
+      const lone = JSON.parse(
+        run(g.bin, ['discover', '--json'], {cwd: alone, pc}).stdout,
+      );
+      for (const entry of notOfficial(lone)) {
+        expect(entry).not.toHaveProperty('install');
+      }
     });
 
     it("G37 a project that installs the same integration uses only its own copy, outside the project's folder rules too", () => {

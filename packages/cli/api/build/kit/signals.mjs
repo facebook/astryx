@@ -103,6 +103,8 @@ const ALWAYS = new Set([...FRAME, ...FOUNDATION]);
  * @property {Map<string, SearchResultEntry>} searchedEntries search's entry for each of those blocks (the first of a name)
  * @property {Map<string, string>} blockText each of those blocks' display name and description, from the catalog
  * @property {string[]} foreign the blocks, named, searched or scaffoldable, whose package is not Core's
+ * @property {import('../_adapter.mjs').BlockTemplate[]} catalog every block the project can scaffold
+ * @property {{name: string, keywords?: string[]}[]} components every component, with its keywords
  */
 
 /**
@@ -232,13 +234,10 @@ export async function kitSignals(query, options = {}) {
   // A part of a page starts where it lives (spec:AST-048/FR3); the project's
   // own components say what a part is. The search above already gathered them
   // unless it was narrowed to templates.
-  const kind = wantsPages
-    ? ideaKind(
-        query,
-        catalog,
-        searchedComponents(result) ?? (await loadComponents(cwd)),
-      )
-    : 'page';
+  const components = wantsPages
+    ? (searchedComponents(result) ?? (await loadComponents(cwd)))
+    : [];
+  const kind = wantsPages ? ideaKind(query, catalog, components) : 'page';
   const chosen = wantsPages
     ? chooseStart(ranked, kind, matchedPages, directMatch, catalog, query)
     : null;
@@ -283,6 +282,8 @@ export async function kitSignals(query, options = {}) {
         .filter(b => searchedBlocks.some(r => r.name === b.name))
         .map(b => [b.name, `${b.displayName} ${b.description}`]),
     ),
+    catalog: templates.blocks,
+    components,
     foreign: [
       ...new Set(
         [...blocksKept, ...searchedBlocks, ...templates.blocks]

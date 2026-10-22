@@ -16,14 +16,12 @@ import {Command, Option} from 'commander';
 import {fileURLToPath} from 'node:url';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import {formatCliCommand, getCliInvocation} from '../../foundation/env/package-manager.mjs';
+import {formatCliCommand, getCliInvocation, quoteCommandArgument} from '../../foundation/env/package-manager.mjs';
 import {hasRecordedProject} from '../../foundation/env/cli-command.mjs';
 import {isOutsideProject} from '../../foundation/env/project-scope.mjs';
 import {API_VERSION, setJsonMode} from '../../foundation/response/json.mjs';
 import {answeredBy, runChoice} from '../../foundation/release/run-context.mjs';
-import {addCliCommand} from '../../foundation/release/notices.mjs';
-import {projectRootOf} from '../../foundation/release/choose.mjs';
-import {readReleaseFacts} from '../../foundation/release/project.mjs';
+import {cliInstallAdvice, installFolder} from '../../foundation/release/notices.mjs';
 import {buildManifest} from './lib/manifest.mjs';
 import {cliError} from './lib/cli-error.mjs';
 import {section, text, records} from './formatters/index.mjs';
@@ -663,13 +661,32 @@ export async function createProgram() {
       // A project with no CLI of its own, answered by another release than its
       // Core's: add the CLI at Core's version first, as the daily hint says,
       // then run that CLI's init (spec AST-081 FR2).
-      const choice = runChoice(cwd);
-      if (choice.copy === 'starting' && choice.coreVersion && choice.coreVersion !== choice.version) {
-        const root = projectRootOf(readReleaseFacts(cwd)) ?? cwd;
+      // A folder that belongs to no project spec:AST-040 FR9 defines gets no
+      // reminder, as outside a project.
+      const target = installFolder(cwd);
+      if (target == null) return;
+      // From a folder inside the project whose package.json is not the
+      // project's, init runs from the project's folder. Only `cd` comes
+      // before it, so the command is the picker's for that folder, never the
+      // bare `astryx` name a package runner would fetch from the registry
+      // (spec AST-081 FR5).
+      if (target.moved) {
         console.error(
-          setupNudge(getCliInvocation(root, {installed: true}), {before: addCliCommand(root, choice.coreVersion)}).trimEnd(),
+          setupNudge(getCliInvocation(target.dir), {before: `cd ${quoteCommandArgument(target.dir)}`}).trimEnd(),
         );
         return;
+      }
+      const choice = runChoice(cwd);
+      if (choice.copy === 'starting' && choice.coreVersion && choice.coreVersion !== choice.version) {
+        // The daily hint's comparison and command: add the CLI at Core's
+        // version, then run that CLI's init.
+        const add = cliInstallAdvice({cwd, core: choice.coreVersion});
+        if (add?.command) {
+          console.error(
+            setupNudge(getCliInvocation(add.root, {installed: true}), {before: add.command}).trimEnd(),
+          );
+          return;
+        }
       }
       console.error(setupNudge(getCliInvocation(cwd)).trimEnd());
     } catch {

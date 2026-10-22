@@ -72,6 +72,7 @@ import {
 import {findCoreDir} from '../../foundation/fs/paths.mjs';
 import {AstryxError} from '../error.mjs';
 import {ERROR_CODES} from '../../foundation/response/error-codes.mjs';
+import {orderRouteSuggestions} from '../../foundation/text/suggest-order.mjs';
 import {formatCliCommand} from '../../foundation/env/package-manager.mjs';
 
 export {OVERLAY_LANGUAGES, overlayLanguages};
@@ -1624,6 +1625,9 @@ export async function unknownTopicError(topic, catalog) {
         .map(root => ({name: root.route, reason: 'docs namespace'})),
       ...catalog.names().map(name => ({name, reason: 'available topic'})),
     ];
+  }
+  if (typeof topic === 'string') {
+    suggestions = orderRouteSuggestions(topic, suggestions);
   }
   // A route that moved names where it went, ahead of the usual suggestions
   // (spec:AST-046 FR9, FR6).

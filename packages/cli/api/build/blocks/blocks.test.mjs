@@ -1,221 +1,238 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file Unit tests for build's block picker on small hand-written weights: its
- * blocks come from build's own list or search's results (never another,
- * never more), a block search returned joins only if it shares a content word
- * with the request, a block the request names keeps its slot, as does a block
- * the weights do not know or an integration ships, and ties keep the order.
+ * @file Unit tests for build's block picker on small hand-written weights: it
+ * lists as many blocks as build's own, from the block catalog, each once; a
+ * block search did not return gets the picker's own entry with a real score
+ * and reason; a block the request writes out by its exact name keeps its slot,
+ * as does a block an integration ships; a block the weights were never fitted
+ * with is still ranked from its own docs; and ties keep build's order.
  */
 
 import {describe, expect, it} from 'vitest';
-import {pickBlocks} from './blocks.mjs';
+import {pickBlocks, stemOf, termsOf, wordsOf} from './blocks.mjs';
+
+/** Two dims, each byte a weight offset by 128: "chart" words on the first, "table" words on the second. */
+const MATRIX = 'goCBgICCgIGAgICAgoA=';
 
 /** @type {import('./blocks.mjs').BlockPickerWeights} */
-const WORDS = {
-  vocab: {chart: 1024, table: 2048, sales: 1536, 'sales chart': 3072, row: 512},
-  classes: ['ChartBar', 'TableBasic', 'CardStat', 'ListPlain', 'CalendarBasic'],
-  bias: [10, -20, 0, -64, 0],
-  words: {
-    chart: [0, 90, 2, 30],
-    table: [1, 120, 3, -40],
-    'sales chart': [0, 60, 2, 50],
-    row: [2, 80],
+const WEIGHTS = {
+  vocab: ['chart', 'sale', 'table', 'row', 'toggle', 'switch', 'sale_chart'],
+  idf: [1024, 1024, 1024, 1024, 2048, 2048, 1024],
+  dims: 2,
+  request: MATRIX,
+  requestScale: 1,
+  doc: MATRIX,
+  docScale: 1,
+  lexical: 2,
+  known: ['ChartBar', 'TableBasic', 'CardStat', 'ListPlain'],
+  theta: {
+    g: 1,
+    grank: 0,
+    gmargin: 0,
+    seen: 0,
+    lex: 1,
+    sscore: 0,
+    scov: 0,
+    srank: 0,
+    inkit: 0,
+    kitpos: 0,
+    mention: 0,
+    show: 0,
   },
-  theta: [0.5, 0.25, 0.5, 0.4, 1.5],
 };
+
+/** @type {import('./blocks.mjs').CatalogBlock[]} */
+const CATALOG = [
+  {
+    name: 'ChartBar',
+    package: '@astryxdesign/core',
+    displayName: 'Chart — Bar',
+    description: 'A bar chart of sales by month.',
+    command: 'astryx template ChartBar --type block',
+  },
+  {
+    name: 'TableBasic',
+    package: '@astryxdesign/core',
+    displayName: 'Table — Basic',
+    description: 'A table of rows.',
+    command: 'astryx template TableBasic --type block',
+  },
+  {
+    name: 'CardStat',
+    package: '@astryxdesign/core',
+    displayName: 'Card — Stat',
+    description: 'A card with one number.',
+    command: 'astryx template CardStat --type block',
+  },
+  {
+    name: 'ListPlain',
+    package: '@astryxdesign/core',
+    displayName: 'List — Plain',
+    description: 'A plain list.',
+    command: 'astryx template ListPlain --type block',
+  },
+  {
+    name: 'SwitchToggle',
+    package: '@astryxdesign/core',
+    displayName: 'Switch — Toggle',
+    description: 'A toggle switch.',
+    command: 'astryx template SwitchToggle --type block',
+  },
+];
+
+/** @type {import('./blocks.mjs').CatalogComponent[]} */
+const COMPONENTS = [
+  {name: 'Chart', keywords: ['graph']},
+  {name: 'Table', keywords: ['grid']},
+  {name: 'Card'},
+  {name: 'List'},
+  {name: 'Switch', keywords: ['toggle']},
+];
+
 /** @type {[string, number, number, number][]} */
 const SEARCHED = [
   ['TableBasic', 96, 1, 3],
   ['ListPlain', 64, 1, 3],
-  ['ChartBar', 50, 1, 3],
   ['CardStat', 40, 1, 3],
 ];
-
-/**
- * Two blocks, no words, and a theta that prefers a block build did not name:
- * a block search returned wins the slot whenever the word check lets it in.
- * @type {import('./blocks.mjs').BlockPickerWeights}
- */
-const TIES_ALL = {
-  vocab: {},
-  classes: ['ListPlain', 'CardStat'],
-  bias: [0, 0],
-  words: {},
-  theta: [0, 0, -1, 0, 0],
-};
-
-/** @type {import('./blocks.mjs').BlockPickerWeights} */
-const TIES = {
-  vocab: {alpha: 1024},
-  classes: ['X', 'Y', 'Z'],
-  bias: [0, 0, 0],
-  words: {},
-  theta: [0, 0, 0, 0, 1],
-};
 
 /**
  * @param {string[]} kitBlocks
  * @param {string[]} [foreign]
  */
-const signals = (kitBlocks, foreign = [], searched = SEARCHED) => ({
+const signals = (kitBlocks, foreign = []) => ({
   kitBlocks,
-  searched,
+  searched: SEARCHED,
   foreign,
-  blockText: new Map([
-    ['ChartBar', 'Bar chart A bar chart of sales by month.'],
-    ['CardStat', 'Stat card A card with one number.'],
-    ['ListPlain', 'Plain list A list of rows.'],
-    ['TableBasic', 'Basic table A table of rows.'],
-  ]),
+  catalog: CATALOG,
+  components: COMPONENTS,
 });
 
 describe('pickBlocks', () => {
-  it('names only blocks from build’s list or search’s, as many as build’s', () => {
+  it('lists as many blocks as build’s own, from the catalog, each once', () => {
     const own = ['TableBasic', 'ListPlain', 'CardStat'];
-    const picks = pickBlocks('sales chart with a row', signals(own), WORDS);
-    const allowed = new Set([...own, ...SEARCHED.map(s => s[0])]);
-    expect(picks).toHaveLength(own.length);
-    for (const b of picks) expect(allowed.has(b)).toBe(true);
-    expect(new Set(picks).size).toBe(picks.length);
+    const {names} = pickBlocks('sales chart', signals(own), WEIGHTS);
+    expect(names).toHaveLength(own.length);
+    expect(new Set(names).size).toBe(names.length);
+    for (const b of names) expect(CATALOG.some(c => c.name === b)).toBe(true);
   });
 
-  it('adds a block search returned that shares a word with the request', () => {
-    const picks = pickBlocks(
-      'sales chart chart chart',
-      signals(['TableBasic', 'ListPlain']),
-      WORDS,
+  it('puts the block that means what the request asks first, even one search did not return', () => {
+    const own = ['TableBasic', 'ListPlain'];
+    const {names, entries} = pickBlocks('sales chart', signals(own), WEIGHTS);
+    expect(names[0]).toBe('ChartBar');
+    const entry = entries.get('ChartBar');
+    expect(entry?.score).toBeGreaterThan(0);
+    expect(entry?.reason).toMatch(/chart|sales/);
+    expect(entry?.description).toBe('A bar chart of sales by month.');
+    // Blocks search returned keep search's entry: the picker adds none.
+    for (const b of names)
+      if (SEARCHED.some(s => s[0] === b)) expect(entries.has(b)).toBe(false);
+  });
+
+  it('keeps a block the request writes out by its exact name in its slot', () => {
+    const own = ['ListPlain', 'TableBasic'];
+    const {names} = pickBlocks(
+      'sales chart beside a ListPlain',
+      signals(own),
+      WEIGHTS,
     );
-    expect(picks).toContain('ChartBar');
-    expect(picks).toHaveLength(2);
+    expect(names[0]).toBe('ListPlain');
   });
 
-  it('never adds a block search did not return, or one sharing no word', () => {
-    const searched = /** @type {[string, number, number, number][]} */ ([
-      ['TableBasic', 96, 1, 3],
-      ['CardStat', 90, 1, 3],
-    ]);
-    const picks = pickBlocks(
-      'sales chart chart chart',
-      signals(['TableBasic', 'ListPlain'], [], searched),
-      WORDS,
+  it('keeps a block with a long name in its slot when the request writes it out', () => {
+    const long = {
+      name: 'ListPlainWithSixWordName',
+      package: '@astryxdesign/core',
+      displayName: 'List — Plain with a long name',
+      description: 'A plain list.',
+      command: 'astryx template ListPlainWithSixWordName --type block',
+    };
+    const s = {
+      ...signals(['ListPlainWithSixWordName', 'TableBasic']),
+      catalog: [...CATALOG, long],
+    };
+    const {names} = pickBlocks(
+      'sales chart starting from ListPlainWithSixWordName',
+      s,
+      WEIGHTS,
     );
-    expect(picks).not.toContain('ChartBar');
-    expect(picks).not.toContain('CardStat');
-    expect([...picks].sort()).toEqual(['ListPlain', 'TableBasic']);
+    expect(names[0]).toBe('ListPlainWithSixWordName');
   });
 
-  it('keeps a block the request names in its slot', () => {
-    const own = ['TableBasic', 'CalendarBasic', 'CardStat'];
-    for (const request of [
-      'sales chart with a calendar',
-      'sales chart with two calendars',
-      'sales chart, calendar basic',
-    ]) {
-      expect(pickBlocks(request, signals(own), WORDS)[1]).toBe('CalendarBasic');
-    }
+  it('does not pin a block for its component’s word alone', () => {
+    const own = ['ListPlain', 'TableBasic'];
+    const {names} = pickBlocks('sales chart list', signals(own), WEIGHTS);
+    expect(names[0]).toBe('ChartBar');
   });
 
-  it('keeps a block the weights do not know or an integration ships in its slot', () => {
-    const own = ['TableBasic', 'AcmeCallout', 'CardStat', 'ListPlain'];
-    const picks = pickBlocks(
-      'sales chart with a row',
+  it('keeps a block an integration ships in its slot', () => {
+    const own = ['ListPlain', 'TableBasic'];
+    const {names} = pickBlocks(
+      'sales chart',
       signals(own, ['ListPlain']),
-      WORDS,
+      WEIGHTS,
     );
-    expect(picks[1]).toBe('AcmeCallout');
-    expect(picks[3]).toBe('ListPlain');
-    expect(picks).toHaveLength(own.length);
+    expect(names[0]).toBe('ListPlain');
   });
 
-  it('keeps build’s order on ties and when no word is known', () => {
-    const own = ['X', 'Y', 'Z'];
-    expect(
-      pickBlocks(
-        '??',
-        {kitBlocks: own, searched: [], foreign: [], blockText: new Map()},
-        TIES,
-      ),
-    ).toEqual(own);
+  it('ranks a block the weights were never fitted with from its own docs', () => {
+    expect(WEIGHTS.known).not.toContain('SwitchToggle');
+    const own = ['TableBasic', 'ListPlain'];
+    const {names, entries} = pickBlocks('toggle switch', signals(own), WEIGHTS);
+    expect(names[0]).toBe('SwitchToggle');
+    expect(entries.get('SwitchToggle')?.reason).toMatch(/toggle|switch/);
+  });
+
+  it('keeps build’s order when nothing in the request is known', () => {
+    const own = ['ListPlain', 'TableBasic', 'CardStat'];
+    const {names} = pickBlocks('zzz qqq', signals(own), WEIGHTS);
+    expect(names).toEqual(own);
   });
 
   it('returns nothing when build names no block, and does not change its input', () => {
-    expect(pickBlocks('sales chart', signals([]), WORDS)).toEqual([]);
+    const s = signals([]);
+    const before = JSON.stringify(s);
+    expect(pickBlocks('sales chart', s, WEIGHTS)).toEqual({
+      names: [],
+      entries: new Map(),
+    });
     const own = ['TableBasic', 'ListPlain'];
-    const copy = [...own];
-    pickBlocks('sales chart', signals(own), WORDS);
-    expect(own).toEqual(copy);
+    const s2 = signals(own);
+    const before2 = JSON.stringify(s2);
+    pickBlocks('sales chart', s2, WEIGHTS);
+    expect(JSON.stringify(s)).toBe(before);
+    expect(JSON.stringify(s2)).toBe(before2);
+  });
+});
+
+describe('the picker’s words', () => {
+  it('stems plurals and verb endings of longer words only', () => {
+    expect(stemOf('tables')).toBe('table');
+    expect(stemOf('classes')).toBe('class');
+    expect(stemOf('entries')).toBe('entry');
+    expect(stemOf('class')).toBe('class');
+    expect(stemOf('rows')).toBe('rows');
   });
 
-  it('reads a request word and a block word as the same up to plural and stem', () => {
-    for (const [word, blockWord] of [
-      ['settings', 'setting'],
-      ['statuses', 'status'],
-      ['tables', 'table'],
-      ['classes', 'class'],
-      ['files', 'file'],
-      ['categories', 'category'],
-    ]) {
-      const sig = {
-        kitBlocks: ['ListPlain'],
-        searched: /** @type {[string, number, number, number][]} */ ([
-          ['ListPlain', 96, 1, 3],
-          ['CardStat', 90, 1, 3],
-        ]),
-        foreign: [],
-        blockText: new Map([['CardStat', `Stat card. A ${blockWord} panel.`]]),
-      };
-      expect(pickBlocks(`one ${word} view`, sig, TIES_ALL)).toEqual([
-        'CardStat',
-      ]);
-    }
-    const none = {
-      kitBlocks: ['ListPlain'],
-      searched: /** @type {[string, number, number, number][]} */ ([
-        ['ListPlain', 96, 1, 3],
-        ['CardStat', 90, 1, 3],
-      ]),
-      foreign: [],
-      blockText: new Map([['CardStat', 'Stat card. A setting panel.']]),
-    };
-    expect(pickBlocks('one widget view', none, TIES_ALL)).toEqual([
-      'ListPlain',
+  it('splits identifiers into words', () => {
+    expect(wordsOf('SideNavNestedItems')).toEqual([
+      'side',
+      'nav',
+      'nested',
+      'items',
     ]);
+    expect(wordsOf('KPICard')).toEqual(['kpi', 'card']);
   });
 
-  it('never adds a block that shares only a function word with the request', () => {
-    const searched = /** @type {[string, number, number, number][]} */ ([
-      ['TableBasic', 96, 1, 3],
-      ['CardStat', 90, 1, 3],
+  it('reads content words and their adjacent pairs, never a function word', () => {
+    expect(termsOf('the sales charts for a team')).toEqual([
+      'sale',
+      'chart',
+      'team',
+      'sale_chart',
+      'chart_team',
     ]);
-    const sig = {
-      kitBlocks: ['TableBasic', 'ListPlain'],
-      searched,
-      foreign: [],
-      blockText: new Map([['CardStat', 'Stat card Each card under a header.']]),
-    };
-    const picks = pickBlocks('each row under which', sig, WORDS);
-    expect(picks).not.toContain('CardStat');
-  });
-  it('never adds a block for a function word alone', () => {
-    const sig = {
-      kitBlocks: ['ListPlain'],
-      searched: /** @type {[string, number, number, number][]} */ ([
-        ['ListPlain', 96, 1, 3],
-        ['CardStat', 90, 1, 3],
-      ]),
-      foreign: [],
-      blockText: new Map([
-        [
-          'CardStat',
-          'Shows which one is done. Each, every, any, some, all, both, either, neither, few, many, much, several, such, that, who, whom, whose.',
-        ],
-      ]),
-    };
-    for (const w of 'which that who whom whose each every any some all both either neither few many much several such'.split(
-      ' ',
-    ))
-      expect(pickBlocks(`a ${w} b`, sig, TIES_ALL)).toEqual(['ListPlain']);
-    expect(pickBlocks('each, which', sig, TIES_ALL)).toEqual(['ListPlain']);
   });
 });
