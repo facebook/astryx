@@ -146,6 +146,18 @@ export type {
 const HORIZONTAL_SEGMENT_BASIS = 196;
 
 const styles = stylex.create({
+  // The shared disabled style drops the focus ring; restore it while a
+  // control inside the field holds focus (spec:AST-085 FR6). Defaults repeat it.
+  disabledFocusRing: {
+    borderColor: {
+      default: colorVars['--color-border-emphasized'],
+      ':focus-within': colorVars['--color-accent'],
+    },
+    boxShadow: {
+      default: 'none',
+      ':focus-within': `inset 0px 0px 0px 2px ${colorVars['--color-accent-muted']}`,
+    },
+  },
   row: {
     display: 'flex',
     flexWrap: 'wrap',
@@ -332,12 +344,12 @@ export interface DateTimeInputProps extends Omit<
   /**
    * Explains why the input is disabled. When set together with
    * `isDisabled`, the input shows a tooltip with this text on hover and
-   * keyboard focus, and the date and time fields stay focusable (via
-   * `aria-disabled`) so the reason is discoverable by keyboard and assistive
-   * technology. Typing and calendar activation stay blocked.
+   * keyboard focus, and the date and time fields are described by it, so the
+   * reason is discoverable by keyboard and assistive technology. Typing and
+   * calendar activation stay blocked.
    *
-   * Use this instead of wrapping a disabled input in `Tooltip` — disabled
-   * controls don't emit the pointer events an external tooltip needs.
+   * Use this instead of wrapping a disabled input in `Tooltip`, so the
+   * reason is tied to the field.
    *
    * @example
    * ```
@@ -704,12 +716,11 @@ function PointerDateTimeField({
   const isEffectivelyDisabled =
     isDisabled || isLoading || (!usesNativePicker && isPendingChange);
 
-  // Disabled-reason tooltip. Disabled controls swallow pointer events, so the
-  // tooltip listeners attach to the outer row container (which already exists)
-  // and both the date and time inputs stay perceivable via aria-disabled
-  // instead of the disabled attribute. Typing is blocked with readOnly and the
-  // value mutation guards; calendar activation is blocked by the
-  // isEffectivelyDisabled guards. Only the persistent isDisabled state (not the
+  // A disabled or busy field never renders native `disabled` (spec:AST-085
+  // FR1): its inputs and buttons stay focusable via aria-disabled. Typing is
+  // blocked with readOnly and the value mutation guards; opening is blocked by
+  // the isEffectivelyDisabled guards. The disabled-reason tooltip's listeners
+  // attach to the outer row. Only the persistent isDisabled state (not the
   // transient busy state) surfaces a reason.
   const showsDisabledMessage = isDisabled && !!disabledMessage;
   const disabledMessageTooltip = useTooltip({
@@ -1032,8 +1043,8 @@ function PointerDateTimeField({
 
   const handleDateInputChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
-      // With a disabledMessage the input drops `disabled` for focusability, so
-      // guard value mutation explicitly (readOnly also blocks typing).
+      // The input is never natively disabled (spec:AST-085 FR1), so guard
+      // value mutation explicitly (readOnly also blocks typing).
       if (isEffectivelyDisabled) {
         return;
       }
@@ -1338,8 +1349,8 @@ function PointerDateTimeField({
   // --- Time handlers ---
   const handleTimeInputChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
-      // With a disabledMessage the input drops `disabled` for focusability, so
-      // guard value mutation explicitly (readOnly also blocks typing).
+      // The input is never natively disabled (spec:AST-085 FR1), so guard
+      // value mutation explicitly (readOnly also blocks typing).
       if (isEffectivelyDisabled) {
         return;
       }
@@ -1664,6 +1675,7 @@ function PointerDateTimeField({
               sizeStyles[size],
               styles.dateWrapper,
               isEffectivelyDisabled && inputWrapperStyles.disabled,
+              isEffectivelyDisabled && styles.disabledFocusRing,
               status && inputStatusBorderStyles[status.type],
               status &&
                 !isEffectivelyDisabled &&
@@ -1682,7 +1694,6 @@ function PointerDateTimeField({
               max={calendarMax}
               isDateDisabled={isDateDisabled}
               isEffectivelyDisabled={isEffectivelyDisabled}
-              hasDisabledMessage={showsDisabledMessage}
               isEffectivelyRequired={isEffectivelyRequired}
               isBusy={isBusy}
               statusType={status?.type}
@@ -1691,7 +1702,7 @@ function PointerDateTimeField({
                 ...controlProps,
                 'aria-labelledby': controlLabelledBy,
                 onBlur: onBlurProp,
-                onClick: onClickProp,
+                onClick: isEffectivelyDisabled ? undefined : onClickProp,
                 onKeyDown: onKeyDownProp,
               }}
             />
@@ -1700,7 +1711,13 @@ function PointerDateTimeField({
               <button
                 type="button"
                 onClick={handleCalendarToggle}
-                disabled={isEffectivelyDisabled}
+                aria-disabled={isEffectivelyDisabled || undefined}
+                // A tab stop while disabled too, so it carries the reason (FR5).
+                aria-describedby={
+                  showsDisabledMessage
+                    ? disabledMessageTooltip.describedBy
+                    : undefined
+                }
                 aria-label={
                   popover.isOpen
                     ? t('@astryx.dateInput.toggleCalendarClose')
@@ -1735,17 +1752,16 @@ function PointerDateTimeField({
                 value={dateDisplayValue}
                 onChange={handleDateInputChange}
                 onBlur={chainEventHandlers(handleDateBlur, onBlurProp)}
-                onClick={chainEventHandlers(handleDateInputClick, onClickProp)}
+                onClick={
+                  isEffectivelyDisabled
+                    ? undefined
+                    : chainEventHandlers(handleDateInputClick, onClickProp)
+                }
                 onKeyDown={chainEventHandlers(handleDateKeyDown, onKeyDownProp)}
                 aria-labelledby={controlLabelledBy}
                 placeholder={placeholder}
-                // With a disabledMessage the input keeps focusability via
-                // aria-disabled so the reason is focus-discoverable; typing is
-                // blocked with readOnly and the mutation guards, and calendar
-                // activation is blocked by the isEffectivelyDisabled guards.
-                disabled={isEffectivelyDisabled && !showsDisabledMessage}
-                aria-disabled={showsDisabledMessage ? 'true' : undefined}
-                readOnly={showsDisabledMessage || undefined}
+                aria-disabled={isEffectivelyDisabled ? 'true' : undefined}
+                readOnly={isEffectivelyDisabled || undefined}
                 aria-describedby={ariaDescribedBy}
                 aria-required={isEffectivelyRequired ? 'true' : undefined}
                 aria-invalid={
@@ -1807,6 +1823,7 @@ function PointerDateTimeField({
               sizeStyles[size],
               styles.timeWrapper,
               isEffectivelyDisabled && inputWrapperStyles.disabled,
+              isEffectivelyDisabled && styles.disabledFocusRing,
               status && inputStatusBorderStyles[status.type],
               status &&
                 !isEffectivelyDisabled &&
@@ -1830,7 +1847,6 @@ function PointerDateTimeField({
               max={timeMax}
               hourFormat={hourFormat}
               isEffectivelyDisabled={isEffectivelyDisabled}
-              hasDisabledMessage={showsDisabledMessage}
               isEffectivelyRequired={isEffectivelyRequired}
               isBusy={isBusy}
               statusType={status?.type}
@@ -1882,12 +1898,8 @@ function PointerDateTimeField({
                     ? timeOptionId(activeTimeIndex)
                     : undefined
                 }
-                // With a disabledMessage the input keeps focusability via
-                // aria-disabled so the reason is focus-discoverable; typing is
-                // blocked with readOnly and the mutation guards.
-                disabled={isEffectivelyDisabled && !showsDisabledMessage}
-                aria-disabled={showsDisabledMessage ? 'true' : undefined}
-                readOnly={showsDisabledMessage || undefined}
+                aria-disabled={isEffectivelyDisabled ? 'true' : undefined}
+                readOnly={isEffectivelyDisabled || undefined}
                 aria-label={resolvedTimeLabel}
                 aria-describedby={ariaDescribedBy}
                 aria-required={isEffectivelyRequired ? 'true' : undefined}
