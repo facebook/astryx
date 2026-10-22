@@ -16,12 +16,12 @@ import {Command, Option} from 'commander';
 import {fileURLToPath} from 'node:url';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import {formatCliCommand, getCliInvocation} from '../../foundation/env/package-manager.mjs';
+import {formatCliCommand, getCliInvocation, quoteCommandArgument} from '../../foundation/env/package-manager.mjs';
 import {hasRecordedProject} from '../../foundation/env/cli-command.mjs';
 import {isOutsideProject} from '../../foundation/env/project-scope.mjs';
 import {API_VERSION, setJsonMode} from '../../foundation/response/json.mjs';
 import {answeredBy, runChoice} from '../../foundation/release/run-context.mjs';
-import {cliInstallAdvice} from '../../foundation/release/notices.mjs';
+import {cliInstallAdvice, installFolder} from '../../foundation/release/notices.mjs';
 import {buildManifest} from './lib/manifest.mjs';
 import {cliError} from './lib/cli-error.mjs';
 import {emit, section, text, records} from './formatters/index.mjs';
@@ -658,14 +658,24 @@ export async function createProgram() {
       // A project with no CLI of its own, answered by another release than its
       // Core's: add the CLI at Core's version first, as the daily hint says,
       // then run that CLI's init (spec AST-081 FR2).
+      // A folder that belongs to no project spec:AST-040 FR9 defines gets no
+      // reminder, as outside a project.
+      if (installFolder(cwd) == null) return;
       const choice = runChoice(cwd);
       if (choice.copy === 'starting' && choice.coreVersion && choice.coreVersion !== choice.version) {
-        // From a folder whose package.json declares no Astryx package, the
-        // CLI goes into the project above; with none, nothing is added.
+        // The daily hint's comparison and advice: from a folder inside the
+        // project whose package.json is not the project's, run from the
+        // project's folder instead of adding the CLI there.
         const add = cliInstallAdvice({cwd, core: choice.coreVersion});
-        if (add && add.core !== choice.version) {
+        if (add?.command) {
           console.error(
             setupNudge(getCliInvocation(add.root, {installed: true}), {before: add.command}).trimEnd(),
+          );
+          return;
+        }
+        if (add) {
+          console.error(
+            setupNudge(getCliInvocation(add.root, {installed: true}), {before: `cd ${quoteCommandArgument(add.root)}`}).trimEnd(),
           );
           return;
         }

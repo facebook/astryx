@@ -12,7 +12,6 @@ import {
 import {
   alignCliAndCore,
   cliInstallAdvice,
-  installFolder,
   globalBehind,
   globalUpgradeCommand,
   lastNoticeSkip,
@@ -357,18 +356,6 @@ export function alignCommand(cwd, cli, core) {
 }
 
 /**
- * Whether install commands for a run in `cwd` run in the project's folder
- * instead of `cwd`'s: `cwd`'s nearest package.json belongs to a project
- * (`spec:AST-040` FR9) without being its package.json, as in a tool folder
- * that installs its own Core (see `installFolder`).
- * @param {string} cwd
- * @returns {boolean}
- */
-export function installMovesToProject(cwd) {
-  return installFolder(cwd)?.moved === true;
-}
-
-/**
  * The Core release the project at `cwd` names: installed, else locked, else
  * declared; the version the daily hint and notice compare against (spec
  * AST-081 FR2). Null outside a project or when it names none.
@@ -399,7 +386,7 @@ export function projectHasOwnCli(cwd) {
  */
 export function addCliCommandFor(cwd, version) {
   const advice = cliInstallAdvice({cwd, core: version});
-  return advice && {command: advice.command, core: advice.core};
+  return advice?.command ? {command: advice.command, core: advice.core} : null;
 }
 
 /**

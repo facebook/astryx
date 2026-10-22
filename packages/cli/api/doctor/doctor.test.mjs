@@ -223,7 +223,13 @@ describe("doctor — the project's own CLI and Core on different releases", () =
   ).version;
   /** @param {string} core */
   const at = core => {
+    // A project as spec:AST-040 FR9 defines it: its package.json declares
+    // an Astryx package.
     const dir = mkProject({
+      'package.json': JSON.stringify({
+        name: 'app',
+        dependencies: {'@astryxdesign/core': core},
+      }),
       'package-lock.json': '{}',
       'node_modules/@astryxdesign/core/package.json': JSON.stringify({
         name: '@astryxdesign/core',
@@ -257,6 +263,10 @@ describe("doctor — the project's own CLI and Core on different releases", () =
 
   it('in a project with no CLI of its own, warns that the started copy answered and names the command that adds the CLI at Core', () => {
     const dir = mkProject({
+      'package.json': JSON.stringify({
+        name: 'app',
+        dependencies: {'@astryxdesign/core': '0.0.1'},
+      }),
       'package-lock.json': '{}',
       'node_modules/@astryxdesign/core/package.json': JSON.stringify({
         name: '@astryxdesign/core',

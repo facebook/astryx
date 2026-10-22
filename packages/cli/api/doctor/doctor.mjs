@@ -66,7 +66,7 @@ import {detailView, indexView} from '../../foundation/doc-compiler/lenses.mjs';
 import {semverCompare, isValidSemver, satisfiesRange} from '../../foundation/env/semver.mjs';
 import {checkAppThemes, checkThemes} from './theme-checks.mjs';
 import {availableLine, upgradeLine} from '../../foundation/release/notices.mjs';
-import {alignCommand, addCliCommandFor, installMovesToProject, computerAgentTextState, installCommandFor, projectCoreVersion, projectHasOwnCli, computerIntegrationsOutside, computerIntegrationsToAdd, displayHomePath, outsideProject, releaseFacts} from './_adapter.mjs';
+import {alignCommand, addCliCommandFor, computerAgentTextState, installCommandFor, projectCoreVersion, projectHasOwnCli, computerIntegrationsOutside, computerIntegrationsToAdd, displayHomePath, outsideProject, releaseFacts} from './_adapter.mjs';
 
 /**
  * @typedef {'pass'|'warn'|'fail'|'info'} DoctorStatus
@@ -286,22 +286,25 @@ export function checkVersionAlignment(ctx) {
   // the run (spec AST-081 FR2): say so, and how to add the CLI at Core's
   // version.
   if (ctx.ownCli === false) {
-    // The command names the project spec:AST-040 FR9 defines and that
-    // project's Core, as the daily hint does (spec AST-081 FR2); a folder
-    // that belongs to no such project gets the way to one instead.
+    // The same comparison as the daily hint: the CLI against the Core the
+    // run reads (spec AST-081 FR2). The command adds the CLI in the project
+    // spec:AST-040 FR9 defines; from a folder inside it whose package.json
+    // is not the project's, or in no project, the fix says how to reach one.
     const add = addCliCommandFor(ctx.cwd, coreVersion);
-    const core = add?.core ?? coreVersion;
+    const matches = coreVersion === cliVersion;
+    const fix = add
+      ? `${matches ? 'To pin it for the team and CI' : 'To match'}, run: ${add.command}.`
+      : matches
+        ? null
+        : NO_PROJECT_FIX;
     return {
       id: 'version-alignment',
       label: '@astryxdesign/core <-> @astryxdesign/cli alignment',
-      status: core === cliVersion ? 'info' : 'warn',
-      message:
-        core === cliVersion
-          ? `This project has no Astryx CLI installed; CLI ${cliVersion}, the one you started, answered and matches its Core.`
-          : `This project has no Astryx CLI installed; CLI ${cliVersion}, the one you started, answered while its Core is ${core}.`,
-      fix: add
-        ? `${add.core === cliVersion ? 'To pin it for the team and CI' : 'To match'}, run: ${add.command}.`
-        : NO_PROJECT_FIX,
+      status: matches ? 'info' : 'warn',
+      message: matches
+        ? `This project has no Astryx CLI installed; CLI ${cliVersion}, the one you started, answered and matches its Core.`
+        : `This project has no Astryx CLI installed; CLI ${cliVersion}, the one you started, answered while its Core is ${coreVersion}.`,
+      ...(fix ? {fix} : {}),
     };
   }
   // The project's own CLI answers this project whatever its version
@@ -328,9 +331,8 @@ export function checkVersionAlignment(ctx) {
  */
 function alignFix(cwd, cli, core) {
   // From a folder inside a project whose package.json is not the project's,
-  // the Core the folder reads is not the project's, so aligning the project
-  // would leave this warning in place: point at the project instead.
-  if (installMovesToProject(cwd)) return {fix: NO_PROJECT_FIX};
+  // aligning the project would leave this warning in place, so no command
+  // fits there (alignCommand returns none): point at the project instead.
   const command = alignCommand(cwd, cli, core);
   return {fix: command ? `To align them, run: ${command}.` : NO_PROJECT_FIX};
 }

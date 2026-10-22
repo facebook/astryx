@@ -180,6 +180,14 @@ const notOfficial = discover =>
     (/** @type {any} */ entry) => entry.source !== 'Astryx',
   );
 
+/** doctor's fix where no install command fits (spec AST-081 FR2). */
+const DOCTOR_RUN_FROM_PROJECT =
+  "Run this from the Astryx project's folder, or declare an Astryx package in this folder's package.json to make it a project of its own.";
+
+/** The hint's advice in a folder whose package.json is not the project's. */
+const RUN_FROM_PROJECT =
+  "Run astryx from the Astryx project's folder, or declare an Astryx package in this folder's package.json to make it a project of its own.";
+
 /**
  * The once-a-day hint in a project with no CLI of its own.
  * @param {string} answered
@@ -418,7 +426,7 @@ describe.skipIf(!POSIX)(
       );
     });
 
-    it("in a tool folder that installs its own Core inside a project, install advice names the project's folder and Core, never the tool's package.json", () => {
+    it("in a tool folder that installs its own Core inside a project, the hint and doctor say to run from the project's folder, and the notice upgrades the project", () => {
       const pc = computer();
       const g = globalCli('npm', '9.0.0', {root: pc.home});
       globalState(pc, {
@@ -435,7 +443,7 @@ describe.skipIf(!POSIX)(
 
       const r = run(g.bin, ['--version'], {cwd: tool, pc});
       expect(r.lines).toContain(
-        `astryx: this project has no Astryx CLI installed; answered by CLI 9.0.0 while its Core is 9.0.1. To match, run: cd ${app} && npm install @astryxdesign/cli@9.0.1`,
+        `astryx: this project has no Astryx CLI installed; answered by CLI 9.0.0 while its Core is 9.0.5. ${RUN_FROM_PROJECT}`,
       );
       expect(r.notice).toEqual([
         'A new release of Astryx is available: 9.0.1 → 9.0.7',
@@ -444,13 +452,18 @@ describe.skipIf(!POSIX)(
       const doctor = JSON.parse(
         run(g.bin, ['doctor', '--json'], {cwd: tool, pc}).stdout,
       );
+      // The same comparison and Core as the hint: the Core the run reads.
       expect(
         doctor.data.checks.find(
           (/** @type {any} */ c) => c.id === 'version-alignment',
-        ).fix,
-      ).toBe(
-        `To match, run: cd ${app} && npm install @astryxdesign/cli@9.0.1.`,
-      );
+        ),
+      ).toMatchObject({
+        status: 'warn',
+        message:
+          'This project has no Astryx CLI installed; CLI 9.0.0, the one you started, answered while its Core is 9.0.5.',
+        fix: DOCTOR_RUN_FROM_PROJECT,
+      });
+      expect(doctor.meta.answeredBy.core).toBe('9.0.5');
       // Nothing above suggests adding Astryx to the tool's own package.json.
       expect(
         [...r.lines, ...r.notice].some(line => /run: npm install/u.test(line)),
@@ -458,6 +471,53 @@ describe.skipIf(!POSIX)(
       expect(fs.readFileSync(path.join(tool, 'package.json'), 'utf8')).toBe(
         before,
       );
+    });
+
+    it('in a tool folder whose Core matches the CLI inside a project on another Core, neither the hint nor doctor warns', () => {
+      const pc = computer();
+      const g = globalCli('npm', '9.0.0', {root: pc.home});
+      const app = makeProject({core: '9.0.1'});
+      writeJson(path.join(app, 'package-lock.json'), {lockfileVersion: 3});
+      const tool = path.join(app, 'tools', 'codegen');
+      writeJson(path.join(tool, 'package.json'), {name: 'codegen'});
+      installCore(tool, '9.0.0');
+
+      const r = run(g.bin, ['--version'], {cwd: tool, pc});
+      expect(r.lines.filter(line => line.includes('no Astryx CLI'))).toEqual(
+        [],
+      );
+      const doctor = JSON.parse(
+        run(g.bin, ['doctor', '--json'], {cwd: tool, pc}).stdout,
+      );
+      const check = doctor.data.checks.find(
+        (/** @type {any} */ c) => c.id === 'version-alignment',
+      );
+      expect(check.status).toBe('info');
+      expect(check).not.toHaveProperty('fix');
+    });
+
+    it('in a folder with no package.json inside a home folder that installs Astryx, gives no project advice', () => {
+      const pc = computer();
+      const g = globalCli('npm', '9.0.0', {root: pc.home});
+      globalState(pc, {
+        latest: '9.0.7',
+        checkOkAt: Date.now(),
+        firstRunAt: Date.now() - 2 * 24 * 60 * 60_000,
+      });
+      writeJson(path.join(pc.home, 'package.json'), {
+        name: 'home',
+        dependencies: {'@astryxdesign/core': '9.0.1'},
+      });
+      writeJson(path.join(pc.home, 'package-lock.json'), {lockfileVersion: 3});
+      installCore(pc.home, '9.0.1');
+      const folder = path.join(pc.home, 'notes');
+      fs.mkdirSync(folder, {recursive: true});
+
+      const r = run(g.bin, ['--version'], {cwd: folder, pc});
+      expect(r.lines.filter(line => line.includes('no Astryx CLI'))).toEqual(
+        [],
+      );
+      expect(r.notice).toEqual([]);
     });
 
     it("in a tool folder whose project installs its own CLI, doctor's alignment fix points at the project, not at a command that leaves the warning", () => {
@@ -477,7 +537,7 @@ describe.skipIf(!POSIX)(
       );
       expect(check).toMatchObject({
         status: 'warn',
-        fix: "Run this from the Astryx project's folder, or declare an Astryx package in this folder's package.json to make it a project of its own.",
+        fix: DOCTOR_RUN_FROM_PROJECT,
       });
       // The message keeps naming the Core this folder reads.
       expect(check.message).toContain('Core is 9.0.5');
@@ -508,7 +568,7 @@ describe.skipIf(!POSIX)(
         ),
       ).toMatchObject({
         status: 'warn',
-        fix: "Run this from the Astryx project's folder, or declare an Astryx package in this folder's package.json to make it a project of its own.",
+        fix: DOCTOR_RUN_FROM_PROJECT,
       });
       // The skip says why, so doctor does not claim nothing newer is known.
       expect(readState(pc).noticeSkips?.project?.reason).toBe('no-project');

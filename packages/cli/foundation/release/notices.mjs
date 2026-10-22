@@ -47,11 +47,7 @@ import {
   detectPackageManager,
   getCliInvocation,
 } from '../env/package-manager.mjs';
-import {
-  declaresAstryx,
-  findAstryxProject,
-  findPackageRoot,
-} from '../fs/paths.mjs';
+import {findAstryxProject, findPackageRoot} from '../fs/paths.mjs';
 import {satisfiesRange, semverCompare} from '../env/semver.mjs';
 import {isInReleaseCache, isReleaseVersion} from './cache.mjs';
 import {
@@ -390,29 +386,16 @@ const ADD = {
  * The commands that bring a project's own CLI and Core to one release, with
  * the project's package manager: when the CLI is newer, Core up to it and then
  * the codemods from Core's release; otherwise the CLI to Core's release.
- * From a folder whose package.json declares no Astryx package, the commands
- * align the Astryx project above, in its folder (see {@link installFolder});
- * null when there is none, or when that project is already aligned.
+ * Null in a folder that belongs to no project, or whose package.json is not
+ * the project's (see {@link installFolder}).
  * @param {{cwd: string, cli: string, core: string}} options
  * @returns {string | null}
  */
 export function alignCliAndCore({cwd, cli, core}) {
   const target = installFolder(cwd);
-  if (target == null) return null;
-  if (!target.moved) {
-    const root = projectRootOf(readReleaseFacts(cwd)) ?? cwd;
-    return alignIn(root, cli, core);
-  }
-  // From a folder inside the project whose package.json is not the
-  // project's, the project is the one to align, with its own releases.
-  const facts = readReleaseFacts(target.dir);
-  const projectCore = coreVersionOf(facts);
-  const projectCli = facts.cli?.version ?? cli;
-  if (!projectCore || projectCore === projectCli) return null;
-  return commandInFolder(
-    target.dir,
-    alignIn(target.dir, projectCli, projectCore),
-  );
+  if (target == null || target.moved) return null;
+  const root = projectRootOf(readReleaseFacts(cwd)) ?? cwd;
+  return alignIn(root, cli, core);
 }
 
 /**
@@ -432,52 +415,47 @@ function alignIn(root, cli, core) {
 }
 
 /**
- * Where a command that adds an Astryx package runs, for a run in `cwd`: the
- * project `spec:AST-040` FR9 defines (spec AST-081 FR2, FR10). A package
- * manager adds to the nearest package.json, so when that one is not the
- * project's (a tool folder that installs its own Core inside a project), the
- * command runs in the project's folder instead, and `moved` says so. Null
- * when the nearest package.json belongs to no such project, so no command
- * adds anything. With no package.json at all, or when the nearest one is the
- * project's, as a folder that declares an Astryx package or a member its
- * workspace lists, it runs where it always did.
+ * Where a command that adds an Astryx package runs, for a run in `cwd`: in
+ * the project `spec:AST-040` FR9 defines, which stops at a repository root
+ * and never counts the home folder (spec AST-081 FR2, FR10). Null when `cwd`
+ * belongs to no such project, so no command adds anything. When `cwd`'s
+ * nearest package.json is not the project's, as in a tool folder that
+ * installs its own Core, a package manager would add to the tool's
+ * package.json, so `moved` says the command runs in the project's folder.
  * @param {string} cwd
  * @returns {{dir: string, moved: boolean} | null}
  */
 export function installFolder(cwd) {
-  const nearest = findPackageRoot(cwd);
-  if (nearest == null || declaresAstryx(nearest)) {
-    return {dir: cwd, moved: false};
-  }
-  const project = findAstryxProject(nearest);
+  const project = findAstryxProject(cwd);
   if (project == null) return null;
-  if (project === nearest) return {dir: cwd, moved: false};
+  const nearest = findPackageRoot(cwd);
+  if (nearest == null || nearest === project) return {dir: cwd, moved: false};
   return {dir: project, moved: true};
 }
 
 /**
+ * What to tell a run in a folder inside a project whose package.json is not
+ * the project's: run from the project's folder, since adding there would make
+ * the folder a project of its own (spec AST-081 FR2).
+ */
+export const RUN_FROM_PROJECT =
+  "Run astryx from the Astryx project's folder, or declare an Astryx package in this folder's package.json to make it a project of its own.";
+
+/**
  * The command that adds the CLI at Core's version, for a run in `cwd` whose
- * Core is `core`: with the project's package manager, in the project root;
- * from a folder inside the project whose package.json is not the project's,
- * in the project's folder and at the project's Core (see
- * {@link installFolder}). Null when the folder belongs to no project.
+ * Core is `core`, with the project's package manager in the project root.
+ * `command` is null in a folder inside the project whose package.json is not
+ * the project's (see {@link installFolder}), where the advice is
+ * {@link RUN_FROM_PROJECT}. Null when the folder belongs to no project.
  * @param {{cwd: string, core: string}} options
- * @returns {{root: string, core: string, command: string} | null}
+ * @returns {{root: string, core: string, command: string | null} | null}
  */
 export function cliInstallAdvice({cwd, core}) {
   const target = installFolder(cwd);
   if (target == null) return null;
-  if (!target.moved) {
-    const root = projectRootOf(readReleaseFacts(cwd)) ?? cwd;
-    return {root, core, command: addCliCommand(root, core)};
-  }
-  const version = coreVersionOf(readReleaseFacts(target.dir));
-  if (!version) return null;
-  return {
-    root: target.dir,
-    core: version,
-    command: commandInFolder(target.dir, addCliCommand(target.dir, version)),
-  };
+  if (target.moved) return {root: target.dir, core, command: null};
+  const root = projectRootOf(readReleaseFacts(cwd)) ?? cwd;
+  return {root, core, command: addCliCommand(root, core)};
 }
 
 /**
@@ -489,11 +467,12 @@ export function cliInstallAdvice({cwd, core}) {
  * @returns {{root: string, line: string} | null}
  */
 export function noCliHint({cwd, answered, core}) {
+  if (core === answered) return null;
   const advice = cliInstallAdvice({cwd, core});
-  if (advice == null || advice.core === answered) return null;
+  if (advice == null) return null;
   return {
     root: advice.root,
-    line: noCliHintLine(answered, advice.core, advice.command),
+    line: noCliHintLine(answered, core, advice.command),
   };
 }
 
@@ -501,11 +480,15 @@ export function noCliHint({cwd, answered, core}) {
  * The hint's text.
  * @param {string} answered
  * @param {string} core
- * @param {string} command the command that adds the CLI at Core's version
+ * @param {string | null} command the command that adds the CLI at Core's
+ *   version; null in a folder whose package.json is not the project's
  * @returns {string}
  */
 export function noCliHintLine(answered, core, command) {
-  return `astryx: this project has no Astryx CLI installed; answered by CLI ${answered} while its Core is ${core}. To match, run: ${command}`;
+  const head = `astryx: this project has no Astryx CLI installed; answered by CLI ${answered} while its Core is ${core}.`;
+  return command
+    ? `${head} To match, run: ${command}`
+    : `${head} ${RUN_FROM_PROJECT}`;
 }
 
 /**
@@ -643,12 +626,7 @@ export function noticeLines({
   try {
     // A project with no CLI of its own, answered by a release other than its
     // Core's: once a day per project, how to match them (FR2).
-    if (
-      choice.inProject &&
-      choice.copy === 'starting' &&
-      choice.coreVersion &&
-      choice.coreVersion !== choice.version
-    ) {
+    if (choice.inProject && choice.copy === 'starting' && choice.coreVersion) {
       const hint = noCliHint({
         cwd,
         answered: choice.version,

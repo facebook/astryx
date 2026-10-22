@@ -202,6 +202,17 @@ describe('enforcement layer 3 — per-command setup nudge', () => {
     expect(r.stderr).toMatch(NUDGE);
   });
 
+  // A nested package.json that is not the project's (spec AST-040 FR9): the
+  // reminder sends the person to the project's folder, never adds the CLI to
+  // the nested package.json (spec AST-081 FR2).
+  it("in a nested package whose package.json is not the project's, says to run from the project's folder", async () => {
+    write('package.json', JSON.stringify({name: 'app', dependencies: {'@astryxdesign/core': '0.7.0'}}));
+    write('functions/package.json', '{"name":"functions"}');
+    const r = await runCli(['docs', 'tokens'], path.join(tmp, 'functions'));
+    expect(r.stderr).toContain(`run \`cd ${tmp}\`, then`);
+    expect(r.stderr).not.toMatch(/install @astryxdesign\/cli/u);
+  });
+
   // Inside a git repository the project-root check above adds nothing to the
   // walk up to the repository root: the same outcomes as without it.
   it('inside a repository, is quiet in a nested package once init has written the docs at the project root', async () => {

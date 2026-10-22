@@ -138,7 +138,9 @@ works on is `spec:AST-040` FR9's.
     another copy MUST hand the run to it (FR9) before loading anything the
     project provides: its `astryx.config`, its integrations, or its Core.
     `doctor` warns when that CLI and the project's Core are different releases
-    and names the command that brings them to one release.
+    and names the command that brings them to one release; from a folder
+    inside the project whose `package.json` is not the project's
+    (`spec:AST-040` FR9), it says to run from the project's folder instead.
   - When the project installs no CLI, as a project with only Core or a fresh
     clone with nothing installed, the copy that started the run answers, as
     it did before global mode (DEC-10), reading the project's Core as it
@@ -148,9 +150,10 @@ works on is `spec:AST-040` FR9's.
     `astryx: this project has no Astryx CLI installed; answered by CLI <version> while its Core is <core>. To match, run: <command>`,
     where the command adds `@astryxdesign/cli` at the Core's version with the
     project's package manager. For this advice, the project is the one
-    `spec:AST-040` FR9 defines: the command runs in that project's folder, at
-    that project's Core, and a folder that belongs to no such project gets no
-    project advice, as outside a project. A machine-readable result carries
+    `spec:AST-040` FR9 defines: from a folder inside it whose `package.json`
+    is not the project's, the line, `doctor` and the setup reminder say to run
+    from that project's folder instead of naming a command, and a folder that
+    belongs to no such project gets no project advice, as outside a project. A machine-readable result carries
     `meta.answeredBy.copy` `starting`. `doctor` warns in the same case and
     names the same command, and the setup reminder of a project that has not
     run `init` names it first, then `astryx init`.
@@ -635,7 +638,7 @@ with another skills folder links it to `.agents/skills/astryx` themselves.
 | G5 Fresh clone: lockfile, nothing installed                                                                                  | The copy that started the run                                                                                                | FR2's daily hint naming the Core the lockfile records; nothing written                                                                                                          | `› G5`                                                                                                |
 | G6 Lockfile and installed Core disagree, in a project whose own CLI cannot start                                             | The release equal to the installed Core                                                                                      | The matched line                                                                                                                                                                | `› G6`                                                                                                |
 | G7 Workspace member with its own Core under a root CLI                                                                       | The root CLI, as for any member (DEC-10)                                                                                     | The hand-off line                                                                                                                                                               | `› G7`                                                                                                |
-| G8 Folder inside another project, such as a nested app or a cloned repository                                                | The enclosing project's release (the released read reach; answering for the folder itself waits for a minor)                 | As for the enclosing project                                                                                                                                                    | `› G8`                                                                                                |
+| G8 Folder inside another project, such as a nested app or a cloned repository                                                | The enclosing project's release (the released read reach; answering for the folder itself waits for a minor)                 | As for the enclosing project; from a folder whose `package.json` is not that project's (`spec:AST-040` FR9), advice says to run from the project's folder                       | `› G8`                                                                                                |
 | G9 Outside a project                                                                                                         | Every copy answers itself, the global copy included                                                                          | `answered by CLI <v> with Core <v>, outside a project`                                                                                                                          | `› G9`                                                                                                |
 | G10 A version typed on a package runner                                                                                      | Outside a project: exactly that release; in a project: the project's release                                                 | The outside or hand-off line                                                                                                                                                    | `› G10`                                                                                               |
 | G11 A global copy that predates the hand-off, in a project                                                                   | That old copy, which this record cannot change                                                                               | Nothing from that copy; FR10's reminder from any newer copy, and `doctor`, name `npm i -g @astryxdesign/cli@latest`                                                             | `› G11`                                                                                               |
