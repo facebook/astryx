@@ -27,7 +27,7 @@ export const docs = {
         {
           type: 'code',
           lang: 'bash',
-          code: 'astryx doctor integration validate && astryx doctor integration components && astryx doctor integration templates && astryx doctor integration docs && astryx integration verify\nnpm publish --dry-run --access public',
+          code: '{@command doctor integration validate} && {@command doctor integration components} && {@command doctor integration templates} && {@command doctor integration docs} && {@command integration verify}\nnpm publish --dry-run --access public',
         },
         {
           type: 'code',
@@ -70,7 +70,7 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'A scoped package is private by default, so publish it with `--access public`. Without `--tag`, npm tags the release `latest`, which is what `npm install @acme/astryx-widgets` installs.',
+          text: 'A scoped package is private by default, so publish it with `--access public`. Without `--tag`, npm tags the release `latest`, which is what `{@pm install @acme/astryx-widgets}` installs.',
         },
         {
           type: 'code',
@@ -99,7 +99,7 @@ export const docs = {
         {
           type: 'code',
           lang: 'bash',
-          code: 'mkdir check-release && cd check-release\nnpm init -y\nnpm install @astryxdesign/core @astryxdesign/cli @acme/astryx-widgets@1.0.0\nastryx component AcmeCarousel\nastryx doctor integration validate @acme/astryx-widgets',
+          code: 'mkdir check-release && cd check-release\nnpm init -y\n{@pm install @astryxdesign/core @astryxdesign/cli @acme/astryx-widgets@1.0.0}\n{@command component AcmeCarousel}\n{@command doctor integration validate @acme/astryx-widgets}',
         },
         {
           type: 'prose',

@@ -104,10 +104,13 @@ async function verifyPackage(program) {
  * it, then one summary: each check's errors, warnings and skipped work, and
  * what decided the exit code.
  * @param {import('commander').Command} program
- * @param {{strict?: boolean}} options
+ * @param {{strict?: boolean, next?: boolean}} options
  */
 async function checkPackage(program, options) {
-  const result = await integrationCheck({strict: options.strict === true});
+  const result = await integrationCheck({
+    strict: options.strict === true,
+    next: options.next === true,
+  });
   if (program.opts().json) {
     jsonOut(result);
   } else {
@@ -182,12 +185,21 @@ async function checkPackage(program, options) {
           ]
         : []),
       section(
-        `Integration check: ${identity ?? '(local package)'}${data.strict ? ' (strict)' : ''}`,
+        `Integration check: ${identity ?? '(local package)'}${data.strict ? ' (strict)' : ''}${data.next ? ' (next)' : ''}`,
       ),
       records(data.checks, {
         fields: ['check', 'failed', 'errors', 'warnings', 'skipped'],
       }),
       text(closing),
+      // Every build runs this check, so this is where a package learns what
+      // the next minor release will fail.
+      ...(data.upcoming > 0 && !data.next
+        ? [
+            text(
+              `${plural(data.upcoming, 'finding')} above (the notes) will fail --strict from the next minor release. Fix ${data.upcoming === 1 ? 'it' : 'them'} ahead: ${formatCliCommand('astryx integration check --strict --next')}`,
+            ),
+          ]
+        : []),
     );
   }
   if (result.data.failed) process.exitCode = 1;

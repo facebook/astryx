@@ -32,7 +32,7 @@ export const docs = {
           style: 'unordered',
           items: [
             'Put the primary or most-used export first.',
-            'Use a full entry when this file owns that export\'s description and signature.',
+            "Use a full entry when this file owns that export's description and signature.",
             'Use `props` for a component entry. Use `params` and `returns` for a hook entry.',
             'Do not add private implementation helpers or exports that people should not use directly.',
           ],
@@ -93,7 +93,7 @@ export default {
         },
         {
           type: 'prose',
-          text: "The public module named by `import` must export every component or hook named by a full entry. Apps then list, search and open each component in the family by its own name. A full entry the module does not export is not listed, and `integration verify` does not report it: check the family with `astryx component --list`. When `import` names output your pack lifecycle builds (such as `dist`), the members are listed once that output exists, and `integration verify` compares them as they are listed after the pack builds it.",
+          text: 'The public module named by `import` must export every component or hook named by a full entry. Apps then list, search and open each component in the family by its own name. A full entry the module does not export is not listed, and `integration verify` does not report it: check the family with `{@command component --list}`. When `import` names output your pack lifecycle builds (such as `dist`), the members are listed once that output exists, and `integration verify` compares them as they are listed after the pack builds it.',
         },
         {
           type: 'prose',
@@ -107,7 +107,7 @@ export default {
       content: [
         {
           type: 'prose',
-          text: 'When one family member needs its own doc, replace its full entry with `{name: \'MemberName\'}` and move the details into a sibling doc. The parent keeps the family relationship without copying the child\'s content. Continue with {@link generic:subcomponent}.',
+          text: "When one family member needs its own doc, replace its full entry with `{name: 'MemberName'}` and move the details into a sibling doc. The parent keeps the family relationship without copying the child's content. Continue with {@link generic:subcomponent}.",
         },
       ],
     },

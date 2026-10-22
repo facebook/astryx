@@ -26,13 +26,17 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: '`astryx template` copies exactly one source file. It does not copy sibling helpers, stylesheets, fonts, icons, images, or media. Plan for that before you add supporting files.',
+          text: '`{@command template}` copies exactly one source file. It does not copy sibling helpers, stylesheets, fonts, icons, images, or media. Plan for that before you add supporting files.',
         },
         {
           type: 'table',
           headers: ['Template', 'Directory target', 'Explicit file target'],
           rows: [
-            ['Page', 'Writes `<target>/page.tsx`', 'Writes the exact file path'],
+            [
+              'Page',
+              'Writes `<target>/page.tsx`',
+              'Writes the exact file path',
+            ],
             [
               'Block',
               'Writes `<target>/<source-basename>.tsx`',
@@ -44,13 +48,13 @@ export const docs = {
           type: 'code',
           lang: 'bash',
           code: `# Page: src/app/account/page.tsx
-astryx template acme-account src/app/account
+{@command template acme-account src/app/account}
 
 # Block: src/features/account/acme-stat-card.tsx
-astryx template acme-stat-card src/features/account
+{@command template acme-stat-card src/features/account}
 
 # Exact destination for either kind
-astryx template acme-stat-card src/features/account/StatusCard.tsx`,
+{@command template acme-stat-card src/features/account/StatusCard.tsx}`,
         },
         {
           type: 'prose',

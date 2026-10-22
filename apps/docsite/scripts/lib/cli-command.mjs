@@ -23,6 +23,12 @@ export {
 /** The command docsite pages show for running the CLI. */
 export const DOCSITE_CLI_COMMAND = 'npx @astryxdesign/cli';
 
+/**
+ * The package manager docsite pages show `{@pm}` steps in: npm, the one every
+ * Node install carries, as the install buttons do.
+ */
+export const DOCSITE_PACKAGE_MANAGER = 'npm';
+
 /** The command the global mode pages show: their readers installed the CLI. */
 export const GLOBAL_PAGE_CLI_COMMAND = 'astryx';
 

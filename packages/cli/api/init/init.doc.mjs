@@ -34,9 +34,9 @@ export const doc = {
     'guidance instead (the theme feature also writes the annotated theme template). ' +
     'With `removeAgents` it removes the managed agent-docs block, at the project root and in `ctx.cwd`, instead of installing. ' +
     'Outside a project it writes the same files but prints no getting-started steps and no step that adds a theme to an app, since those set up a project the folder does not have. ' +
-        "With `user` it sets up the computer instead of the folder: it writes the computer-level agent text, one skill file at `~/.agents/skills/astryx/SKILL.md`, linked into the skill folders of agents that read only their own (`~/.claude/skills` always; Kiro, Windsurf, Letta, Xcode's coding assistant, and `~/.config/agents/skills` when that folder exists), with a managed copy for Continue, whose scanner skips links,, telling agents anywhere on the computer that Astryx is there and when to use it; with `user` and `removeAgents` it removes the file and the links it made and records that the text is turned off. " +
+    "With `user` it sets up the computer instead of the folder: it writes the computer-level agent text, one skill file at `~/.agents/skills/astryx/SKILL.md`, linked into the skill folders of agents that read only their own (`~/.claude/skills` always; Kiro, Windsurf, Letta, Xcode's coding assistant, and `~/.config/agents/skills` when that folder exists), with a managed copy for Continue, whose scanner skips links,, telling agents anywhere on the computer that Astryx is there and when to use it; with `user` and `removeAgents` it removes the file and the links it made and records that the text is turned off. " +
     'The CLI installed for the computer refreshes the file in the background after each upgrade; package install scripts, project setup, and upgrade never write it.' +
-    " In global mode: with `cwd` outside a project, it writes the agent docs and prints no getting-started steps; `user` writes only the agent guide for the computer, in the home folder, and touches nothing in `cwd`. See {@link namespace:global} and {@link generic:computer-agent-guide}.",
+    ' In global mode: with `cwd` outside a project, it writes the agent docs and prints no getting-started steps; `user` writes only the agent guide for the computer, in the home folder, and touches nothing in `cwd`. See {@link namespace:global} and {@link generic:computer-agent-guide}.',
   importPath: '@astryxdesign/cli/api',
   signature:
     'init(options?: InitOptions, ctx?: {cwd?: string}): Promise<InitRunResponse | InitRemoveResponse | InitUserResponse>',
@@ -64,9 +64,9 @@ export const doc = {
       type: 'boolean',
       description:
         "Write or refresh the computer-level agent text instead of setting up `ctx.cwd`: one skill file at `~/.agents/skills/astryx/SKILL.md` in the current user's home folder, linked (a folder symlink with a relative target, a junction on Windows, or a copy where neither can be made) into `~/.claude/skills/astryx`, and into the skills folder of Kiro, Windsurf, Letta, Xcode's coding assistant, and `~/.config/agents/skills` when that folder exists; Continue, whose scanner skips links, gets a managed copy, refreshed with the file. " +
-        'The text uses the `astryx` command, or the command of the host that started the run; an integration\'s `cliCommand` never applies. ' +
+        "The text uses the `astryx` command, or the command of the host that started the run; an integration's `cliCommand` never applies. " +
         'Records the links it made, or with `removeAgents` that the text is turned off, in `astryx/settings.json` in the per-user configuration folder. ' +
-        'A file without the Astryx markers, one edited since Astryx wrote it, or a symlink, is kept as it is, and so is anything at a link target that Astryx did not create. When no `astryx` command on the computer runs the Astryx CLI, the text is still written and the receipt carries a warning to install the CLI for the computer (`npm i -g @astryxdesign/cli`). ' +
+        'A file without the Astryx markers, one edited since Astryx wrote it, or a symlink, is kept as it is, and so is anything at a link target that Astryx did not create. When no `astryx` command on the computer runs the Astryx CLI, the text is still written and the receipt carries a warning to install the CLI for the computer (`{@pm install @astryxdesign/cli --global}`). ' +
         'Cannot be combined with `features`, `all`, `agent`, or `agentDocsPath`.',
     },
     {
@@ -116,11 +116,11 @@ export const doc = {
   throws: [
     {
       code: 'ERR_INVALID_ARGUMENT',
-            when: '--remove-agents is combined with --features, --all, --agent, or --agent-docs-path; --user is combined with --features, --all, --agent, or --agent-docs-path; or --all is combined with --features',
+      when: '--remove-agents is combined with --features, --all, --agent, or --agent-docs-path; --user is combined with --features, --all, --agent, or --agent-docs-path; or --all is combined with --features',
     },
     {
       code: 'ERR_UNKNOWN_AGENT',
-            when: 'the agents feature runs (default mode, features includes agents, or all) and `agent` is not one of claude, cursor, codex, hermes, muse, all',
+      when: 'the agents feature runs (default mode, features includes agents, or all) and `agent` is not one of claude, cursor, codex, hermes, muse, all',
     },
     {
       code: 'ERR_UNKNOWN_FEATURE',
@@ -143,7 +143,10 @@ export const doc = {
     {label: 'Default setup', code: 'const r = await init();'},
     {label: 'All features', code: 'await init({all: true});'},
     {label: 'Remove agent docs', code: 'await init({removeAgents: true});'},
-        {label: 'Agent text for the whole computer', code: 'const r = await init({user: true});\nfor (const w of r.data.warnings) console.warn(w);'},
+    {
+      label: 'Agent text for the whole computer',
+      code: 'const r = await init({user: true});\nfor (const w of r.data.warnings) console.warn(w);',
+    },
   ],
   command: 'init',
   related: ['doctor', 'upgrade', 'build', 'themeTemplate'],

@@ -127,7 +127,10 @@ export function packageJsonFilesUpdate(
     }
   }
 
-  if ((pkg.exports !== undefined || createExports) && publicExports.length > 0) {
+  if (
+    (pkg.exports !== undefined || createExports) &&
+    publicExports.length > 0
+  ) {
     const authored = pkg.exports;
     /** @type {Record<string, unknown>} */
     let exportsMap;

@@ -35,7 +35,7 @@ export const docs = {
             ],
             [
               '`Error: Could not find @astryxdesign/core package`',
-              'Component commands read Core. Run `npm install -D @astryxdesign/core` in the package.',
+              'Component commands read Core. Run `{@pm install @astryxdesign/core --dev}` in the package.',
             ],
             [
               '`core_not_found`: `Could not resolve @astryxdesign/core, so component names could not be checked.`',
@@ -43,11 +43,11 @@ export const docs = {
             ],
             [
               "`Error: unknown subcommand 'integration verify'`, or `Error: Pass --check to verify the integration tarball.`",
-              'Your CLI is older than `integration verify`. Run `npm install -D @astryxdesign/cli@latest`. On the older CLI, the same check is `integration pack --check`.',
+              'Your CLI is older than `integration verify`. Run `{@pm install @astryxdesign/cli@latest --dev}`. On the older CLI, the same check is `integration pack --check`.',
             ],
             [
               'Note: `integration pack --check` is deprecated.',
-              'The old name still runs the same check. Switch to `astryx integration verify`; the old name will be removed in a later release.',
+              'The old name still runs the same check. Switch to `{@command integration verify}`; the old name will be removed in a later release.',
             ],
           ],
         },
@@ -59,7 +59,7 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: '`astryx integration verify` prints each failure as a `[fail]` line. Add `--json` to see its issue code, such as `component_export_missing`.',
+          text: '`{@command integration verify}` prints each failure as a `[fail]` line. Add `--json` to see its issue code, such as `component_export_missing`.',
         },
         {
           type: 'table',
@@ -130,20 +130,20 @@ export const docs = {
               "Its doc still names its file. Set `name` to the export, such as `name: 'AcmeCarousel'` in `acme-carousel.doc.mjs`. A family member is listed only when the module its family doc imports exports it ({@link generic:component-family}).",
             ],
             [
-              "`astryx component Dialog` opens Core's `Dialog`, not yours.",
-              "A name that Core, a legacy docs package, or another package's file already has stays theirs. Run `astryx component Dialog --package @acme/astryx-widgets`, or give your component a name of its own.",
+              "`{@command component Dialog}` opens Core's `Dialog`, not yours.",
+              "A name that Core, a legacy docs package, or another package's file already has stays theirs. Run `{@command component Dialog --package @acme/astryx-widgets}`, or give your component a name of its own.",
             ],
             [
               '`Error: Template "dashboard" is ambiguous — narrow it with --type and/or --package.`',
-              "Your template id matches a Core id. Rename it, such as `acme-dashboard`, or set `replaces: 'dashboard'` to take its place. `astryx doctor integration templates` warns about this before you publish.",
+              "Your template id matches a Core id. Rename it, such as `acme-dashboard`, or set `replaces: 'dashboard'` to take its place. `{@command doctor integration templates}` warns about this before you publish.",
             ],
             [
               '`invalid_doc_graph`: `placement.parent "namespace:nope" names no namespace; @acme/astryx-widgets declares "acme".`',
               'The guide stays hidden until its `placement` names a namespace and slot your package declares. For `"…" names no doc`, fix the link target.',
             ],
             [
-              'Error: Unknown topic "acme". The docs of @acme/astryx-widgets did not load; run `astryx doctor integration docs` in that package to see why.',
-              'One invalid doc hides all of your docs. Run `astryx doctor integration docs` in the package and fix the `invalid_doc` it names.',
+              'Error: Unknown topic "acme". The docs of @acme/astryx-widgets did not load; run `{@command doctor integration docs}` in that package to see why.',
+              'One invalid doc hides all of your docs. Run `{@command doctor integration docs}` in the package and fix the `invalid_doc` it names.',
             ],
             [
               '`cli-command` warns: `Loaded integrations declare different CLI commands`',
@@ -154,7 +154,7 @@ export const docs = {
               'Your `cliCommand` is not one line of plain text of at most 120 characters, so it is ignored. Fix the value; the rest of the manifest still loads.',
             ],
             [
-              '`astryx upgrade` runs none of your codemods',
+              '`{@command upgrade}` runs none of your codemods',
               'The app must list your package in `integrations` in `astryx.config`, or pass `--integration @acme/astryx-widgets`. It runs a codemod folder only when its version is after `--from` and at most the installed `@astryxdesign/core`.',
             ],
             [

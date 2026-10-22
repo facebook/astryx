@@ -15,13 +15,7 @@ export const docs = {
   category: 'guide',
   description:
     'Pick the shell, budget each region, and choose navigation, before any content exists.',
-  keywords: [
-    'shell',
-    'navigation',
-    'frame',
-    'region',
-    'width budget',
-  ],
+  keywords: ['shell', 'navigation', 'frame', 'region', 'width budget'],
 
   sections: [
     {
@@ -132,7 +126,7 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: 'Verify: you can state the reason in one sentence, and the choice still holds if the nav doubles in size. `astryx build "<idea>"` names the template to start from; scaffold it and the pairing is already wired up.',
+          text: 'Verify: you can state the reason in one sentence, and the choice still holds if the nav doubles in size. `{@command build "<idea>"}` names the template to start from; scaffold it and the pairing is already wired up.',
         },
       ],
     },

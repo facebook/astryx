@@ -40,7 +40,7 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: "That's it. The `init --features agents` command generates everything your AI needs (component index, behavioral rules, CLI reference, and package guidance from configured integrations) from the installed project. After a dependency bump, `astryx upgrade --from <old version>` reports a stale block and adding `--apply` refreshes it.",
+          text: "That's it. The `init --features agents` command generates everything your AI needs (component index, behavioral rules, CLI reference, and package guidance from configured integrations) from the installed project. After a dependency bump, `{@command upgrade --from <old version>}` reports a stale block and adding `--apply` refreshes it.",
         },
         {
           type: 'prose',
@@ -50,12 +50,12 @@ export const docs = {
           type: 'code',
           lang: 'bash',
           label: 'Manual options',
-          code: `astryx init --features agents --agent claude    # CLAUDE.md if present, else .claude/CLAUDE.md
-astryx init --features agents --agent cursor    # .cursorrules if present, else AGENTS.md
-astryx init --features agents --agent codex     # AGENTS.md (Copilot, Codex, etc.)
-astryx init --features agents --agent hermes    # .hermes.md or HERMES.md if present, else AGENTS.md
-astryx init --features agents --agent muse      # AGENTS.md (Muse)
-astryx init --features agents --agent all       # every agent file present except GEMINI.md, else AGENTS.md and .claude/CLAUDE.md`,
+          code: `{@command init --features agents --agent claude}    # CLAUDE.md if present, else .claude/CLAUDE.md
+{@command init --features agents --agent cursor}    # .cursorrules if present, else AGENTS.md
+{@command init --features agents --agent codex}     # AGENTS.md (Copilot, Codex, etc.)
+{@command init --features agents --agent hermes}    # .hermes.md or HERMES.md if present, else AGENTS.md
+{@command init --features agents --agent muse}      # AGENTS.md (Muse)
+{@command init --features agents --agent all}       # every agent file present except GEMINI.md, else AGENTS.md and .claude/CLAUDE.md`,
         },
         {
           type: 'prose',
@@ -63,7 +63,7 @@ astryx init --features agents --agent all       # every agent file present excep
         },
         {
           type: 'prose',
-          text: "For agents that work outside any one project, your global install keeps one short Astryx skill, `~/.agents/skills/astryx/SKILL.md`, linked into the skill folders agent tools read, such as `~/.claude/skills/astryx`. It tells agents Astryx is there and when to use it; `astryx init --user` writes it now or, with `--remove-agents`, turns it off. Inside a project, agents follow that project's own agent docs. See {@link generic:computer-agent-guide}.",
+          text: "For agents that work outside any one project, your global install keeps one short Astryx skill, `~/.agents/skills/astryx/SKILL.md`, linked into the skill folders agent tools read, such as `~/.claude/skills/astryx`. It tells agents Astryx is there and when to use it; `{@command init --user}` writes it now or, with `--remove-agents`, turns it off. Inside a project, agents follow that project's own agent docs. See {@link generic:computer-agent-guide}.",
         },
       ],
     },
@@ -78,9 +78,9 @@ astryx init --features agents --agent all       # every agent file present excep
           type: 'list',
           style: 'ordered',
           items: [
-            '`astryx build "<idea>"`: get the page template to start from (always one: the closest match, or the app shell), two other templates, and the blocks and components for the parts it lacks',
-            '`astryx template <name> <path>`: scaffold that template into the project, keep its frame and spacing, and replace its content',
-            '`astryx component <Name>`: read props and examples for every component used',
+            '`{@command build "<idea>"}`: get the page template to start from (always one: the closest match, or the app shell), two other templates, and the blocks and components for the parts it lacks',
+            '`{@command template <name> <path>}`: scaffold that template into the project, keep its frame and spacing, and replace its content',
+            '`{@command component <Name>}`: read props and examples for every component used',
           ],
         },
         {
@@ -100,7 +100,7 @@ astryx init --features agents --agent all       # every agent file present excep
           type: 'code',
           lang: 'bash',
           label: 'Install as a Cursor project rule',
-          code: `astryx init --features agents --agent-docs-path .cursor/rules/astryx.mdc`,
+          code: `{@command init --features agents --agent-docs-path .cursor/rules/astryx.mdc}`,
         },
         {
           type: 'prose',
@@ -113,7 +113,7 @@ astryx init --features agents --agent all       # every agent file present excep
       content: [
         {
           type: 'prose',
-          text: 'Paste this into your AI before writing any component code. If your AI can\'t answer these questions, it\'ll know to install the agent docs first.',
+          text: "Paste this into your AI before writing any component code. If your AI can't answer these questions, it'll know to install the agent docs first.",
         },
         {
           type: 'code',
@@ -146,16 +146,16 @@ If you don't know all three, run \`astryx init --features agents\` to generate a
         },
         {
           type: 'prose',
-          text: 'With this alias, agents run `npm run astryx -- component --list` instead of guessing the binary path. The `--` separator is standard npm convention for passing flags to scripts.',
+          text: 'With this alias, agents run `{@command component --list}` instead of guessing the binary path. The `--` separator is standard npm convention for passing flags to scripts.',
         },
         {
           type: 'code',
           lang: 'bash',
           label: 'Reliable CLI invocation',
-          code: `npm run astryx -- component --list
-npm run astryx -- component Dialog --dense
-npm run astryx -- docs styling --full --detail brief
-npm run astryx -- docs tokens --dense`,
+          code: `{@command component --list}
+{@command component Dialog --dense}
+{@command docs styling --full --detail brief}
+{@command docs tokens --dense}`,
         },
       ],
     },
@@ -171,9 +171,9 @@ npm run astryx -- docs tokens --dense`,
           type: 'code',
           lang: 'bash',
           label: 'Short output for pasting into AI conversations',
-          code: `astryx docs styling --full --detail brief
-astryx component Dialog --detail compact
-astryx docs principles --dense`,
+          code: `{@command docs styling --full --detail brief}
+{@command component Dialog --detail compact}
+{@command docs principles --dense}`,
         },
       ],
     },
@@ -256,7 +256,7 @@ astryx docs principles --dense`,
       content: [
         {
           type: 'prose',
-          text: "In global mode: your global install keeps one Astryx skill in your home folder, linked into the folders agent tools read, so agents outside any project know Astryx is there; inside a project, its own agent docs come first. See {@link namespace:global} and {@link generic:computer-agent-guide}.",
+          text: 'In global mode: your global install keeps one Astryx skill in your home folder, linked into the folders agent tools read, so agents outside any project know Astryx is there; inside a project, its own agent docs come first. See {@link namespace:global} and {@link generic:computer-agent-guide}.',
         },
       ],
     },

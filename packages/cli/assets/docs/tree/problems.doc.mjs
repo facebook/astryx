@@ -92,7 +92,7 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: "The first astryx command on your PATH is a version from before global mode, so it ignores your projects' versions. Run the command shown, or remove that install. `astryx doctor` lists every astryx command on your PATH in its `cli-on-path` check.",
+          text: "The first astryx command on your PATH is a version from before global mode, so it ignores your projects' versions. Run the command shown, or remove that install. `{@command doctor}` lists every astryx command on your PATH in its `cli-on-path` check.",
         },
       ],
     },
@@ -145,7 +145,7 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: "In a project with nothing installed yet, such as a fresh clone, the same commands use that Core too, and offline the error reads `This project has no Core installed, and Core <version> could not be downloaded`: install the project's dependencies (`npm install`, or your package manager's), and the project's own Core answers from then on.",
+          text: "In a project with nothing installed yet, such as a fresh clone, the same commands use that Core too, and offline the error reads `This project has no Core installed, and Core <version> could not be downloaded`: install the project's dependencies (`{@pm install}`, or your package manager's), and the project's own Core answers from then on.",
         },
       ],
     },
@@ -186,7 +186,7 @@ export const docs = {
             "`astryx: command not found` after installing: your package manager's global bin folder is not on your PATH. `npm prefix -g` shows npm's (its `bin` folder on macOS and Linux); `pnpm setup` adds pnpm's.",
             '`pnpm add -g` stops with `ERR_PNPM_NO_GLOBAL_BIN_DIR`, often with Corepack: run `pnpm setup`, open a new terminal, and try again. Yarn 2 and later have no `yarn global`; use `npm i -g` instead.',
             'Windows: npm puts `astryx.cmd` in `%APPDATA%\\npm`, which must be on your PATH. If PowerShell says running scripts is disabled, run `astryx.cmd`, or allow scripts for your user with `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`.',
-            'Two installs, and the wrong one runs: `astryx doctor` outside a project lists every astryx command on your PATH, in the order your shell tries them.',
+            'Two installs, and the wrong one runs: `{@command doctor}` outside a project lists every astryx command on your PATH, in the order your shell tries them.',
           ],
         },
       ],

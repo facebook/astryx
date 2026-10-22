@@ -41,11 +41,11 @@ export const docs = {
 astryx --json template --list --package @acme/astryx-widgets
 
 # Inspect source without writing
-astryx template acme-dashboard --package @acme/astryx-widgets
+{@command template acme-dashboard --package @acme/astryx-widgets}
 
 # Copy a page and a block to their real app locations
-astryx template acme-dashboard --package @acme/astryx-widgets src/app/acme-dashboard
-astryx template acme-stat-card --package @acme/astryx-widgets src/components`,
+{@command template acme-dashboard --package @acme/astryx-widgets src/app/acme-dashboard}
+{@command template acme-stat-card --package @acme/astryx-widgets src/components}`,
         },
         {
           type: 'list',
@@ -64,13 +64,13 @@ astryx template acme-stat-card --package @acme/astryx-widgets src/components`,
       content: [
         {
           type: 'prose',
-          text: "Run the type check (`npx tsc --noEmit`, or the app's own script) and the production build in every framework or bundler the integration supports. One toolchain passing does not prove another.",
+          text: "Run the type check (`{@pm dlx tsc --noEmit}`, or the app's own script) and the production build in every framework or bundler the integration supports. One toolchain passing does not prove another.",
         },
         {
           type: 'code',
           lang: 'bash',
-          code: `npx tsc --noEmit
-npm run build`,
+          code: `{@pm dlx tsc --noEmit}
+{@pm run build}`,
         },
         {
           type: 'list',
@@ -91,7 +91,10 @@ npm run build`,
           type: 'table',
           headers: ['Dimension', 'Required checks'],
           rows: [
-            ['Width', 'Wide and narrow; include the smallest supported viewport'],
+            [
+              'Width',
+              'Wide and narrow; include the smallest supported viewport',
+            ],
             ['Color', 'Every supported color mode and theme'],
             ['Input', 'Keyboard and pointer for the primary task'],
             [

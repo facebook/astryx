@@ -21,13 +21,13 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'Choose a unique PascalCase name, such as `AcmeCarousel`. The name is the component\'s public export and CLI identity, so keep it stable. Use `displayName` when you only want to change the label people read.',
+          text: "Choose a unique PascalCase name, such as `AcmeCarousel`. The name is the component's public export and CLI identity, so keep it stable. Use `displayName` when you only want to change the label people read.",
         },
         {
           type: 'list',
           style: 'unordered',
           items: [
-            'Prefer a name that describes the component\'s purpose in your product.',
+            "Prefer a name that describes the component's purpose in your product.",
             'Avoid a Core component name unless you are deliberately replacing that component.',
             'If replacement is truly required, read {@link generic:replace-a-core-component}.',
           ],
@@ -45,7 +45,7 @@ export const docs = {
         {
           type: 'code',
           lang: 'bash',
-          code: 'astryx integration add component AcmeCarousel',
+          code: '{@command integration add component AcmeCarousel}',
         },
         {
           type: 'code',
@@ -87,7 +87,7 @@ Declare component root ./components in astryx.integration.mjs.
       content: [
         {
           type: 'prose',
-          text: "In global mode: when users install your package for their computer, beside the global CLI, your components show up in folders outside any project; inside a project, only if the project installs your package. See {@link namespace:global} and {@link generic:global-integrations}.",
+          text: 'In global mode: when users install your package for their computer, beside the global CLI, your components show up in folders outside any project; inside a project, only if the project installs your package. See {@link namespace:global} and {@link generic:global-integrations}.',
         },
       ],
     },

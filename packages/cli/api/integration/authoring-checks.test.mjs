@@ -1544,6 +1544,61 @@ describe('validateIntegration runner-command notes', () => {
     );
   });
 
+  it('lists package-manager commands, bare commands and broken tokens with the token to write, all for the next minor', async () => {
+    writeTopic(
+      'Add it with `npm install -D @acme/widgets`, run `astryx docs acme`, then {@pm add x} and {@cmd docs}. Only npm: `npm pkg set name=x`.',
+    );
+
+    const {data} = await validateIntegration(undefined, {cwd: tmpDir});
+    const notes = (data.notes ?? []).filter(
+      (/** @type {any} */ note) => note.code !== 'runner_command',
+    );
+
+    expect(
+      notes.map((/** @type {any} */ note) => [note.code, note.next]),
+    ).toEqual([
+      ['package_manager_command', true],
+      ['plain_command', true],
+      ['doc_token', true],
+      ['doc_token', true],
+      ['package_manager_command', true],
+      // The fixture's install step, in its bash block.
+      ['package_manager_command', true],
+    ]);
+    const messages = notes.map((/** @type {any} */ note) => note.message);
+    expect(messages[0]).toContain('{@pm install @acme/widgets --dev}');
+    expect(messages[1]).toContain('{@command docs acme}');
+    expect(messages[2]).toContain('{@pm}` starts with a verb');
+    expect(messages[3]).toContain('Doc tokens are');
+    expect(messages[4]).toContain(
+      '{@pm-only npm "<why only npm>" pkg set name=x}',
+    );
+    expect(messages[5]).toContain('{@pm dlx @astryxdesign/cli init}');
+    expect(data.issues.map((/** @type {any} */ issue) => issue.code)).toEqual(
+      [],
+    );
+  });
+
+  it('lists nothing for a topic written in the doc syntax', async () => {
+    writeTopic(
+      'Add it with {@pm install @acme/widgets --dev}, run {@command docs acme}, and {@pm-only npm "only npm has pkg" pkg set name=x}. Show the syntax: {@@pm install x}.',
+    );
+    // The fixture's bash block holds a scoped install step; write it as a token.
+    const file = path.join(tmpDir, 'docs', 'acme-setup.doc.mjs');
+    fs.writeFileSync(
+      file,
+      fs
+        .readFileSync(file, 'utf8')
+        .replace(
+          'npx @astryxdesign/cli init',
+          '{@pm dlx @astryxdesign/cli init}',
+        ),
+    );
+
+    const {data} = await validateIntegration(undefined, {cwd: tmpDir});
+    expect(data.notes ?? []).toEqual([]);
+  });
+
   it('lists nothing for bare commands and the scoped install step', async () => {
     writeTopic('Check it with `astryx doctor` first.');
 

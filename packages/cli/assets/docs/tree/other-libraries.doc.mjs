@@ -15,11 +15,7 @@ export const docs = {
   category: 'guide',
   description:
     'Panda, Chakra, MUI, Emotion, styled-components, Theme UI, UnoCSS, and the interop checklist.',
-  keywords: [
-    'UnoCSS',
-    'semantic tokens',
-    'palette',
-  ],
+  keywords: ['UnoCSS', 'semantic tokens', 'palette'],
 
   sections: [
     {
@@ -28,7 +24,7 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'Libraries like Panda CSS and Chakra UI have first-class semantic token objects. Put system CSS variables at the leaves of those objects so product code can use the library\'s semantic names while the system still owns the values.',
+          text: "Libraries like Panda CSS and Chakra UI have first-class semantic token objects. Put system CSS variables at the leaves of those objects so product code can use the library's semantic names while the system still owns the values.",
         },
         {
           type: 'code',
@@ -194,7 +190,7 @@ tokens: {
         },
         {
           type: 'prose',
-          text: 'Static utility extractors cannot see dynamically constructed class names. Prefer explicit class strings or the library\'s safelist/source-registration mechanism.',
+          text: "Static utility extractors cannot see dynamically constructed class names. Prefer explicit class strings or the library's safelist/source-registration mechanism.",
         },
       ],
     },
@@ -205,9 +201,9 @@ tokens: {
           type: 'list',
           style: 'ordered',
           items: [
-            'Import the reset/base CSS and a theme CSS file early enough for first paint. For production SSR, prefer built themes from `astryx theme build` or published `/built` theme imports plus `theme.css`.',
+            'Import the reset/base CSS and a theme CSS file early enough for first paint. For production SSR, prefer built themes from `{@command theme build}` or published `/built` theme imports plus `theme.css`.',
             'Choose one owner for color mode. Theme uses `data-theme="light|dark"` and `color-scheme` to resolve `light-dark()` tokens.',
-            'Map the external library\'s semantic layer to system variables by intent, not by exact naming. For example, MUI `background.paper` maps to `--color-background-surface`.',
+            "Map the external library's semantic layer to system variables by intent, not by exact naming. For example, MUI `background.paper` maps to `--color-background-surface`.",
             'Use {@link namespace:tokens} and focused token docs when building mappings. Keep mappings small at first: text, surface/body/card/popover, border, accent, status, spacing, radius, typography, shadow.',
             'Use token resolver APIs only for non-CSS APIs that need resolved values.',
           ],

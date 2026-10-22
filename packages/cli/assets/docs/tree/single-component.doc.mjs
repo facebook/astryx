@@ -25,7 +25,7 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: '`integration add component` creates the normal doc for one public component. Keep the generated identity and import, then replace its sample text and props with the component\'s real public contract.',
+          text: "`integration add component` creates the normal doc for one public component. Keep the generated identity and import, then replace its sample text and props with the component's real public contract.",
         },
         {
           type: 'code',
@@ -88,12 +88,12 @@ export default {
         },
         {
           type: 'prose',
-          text: "Set `keywords` to the words people search for: synonyms and the task the component does, such as `keywords: ['slider', 'slideshow', 'rotating cards']`. `astryx search` ranks a match on a component's name or keywords above one in its description, so without keywords a search for the component's task can list Core components first. Check with the words a person would type:",
+          text: "Set `keywords` to the words people search for: synonyms and the task the component does, such as `keywords: ['slider', 'slideshow', 'rotating cards']`. `{@command search}` ranks a match on a component's name or keywords above one in its description, so without keywords a search for the component's task can list Core components first. Check with the words a person would type:",
         },
         {
           type: 'code',
           lang: 'bash',
-          code: 'astryx search "rotating cards" --type component',
+          code: '{@command search "rotating cards" --type component}',
         },
       ],
     },
@@ -130,7 +130,7 @@ export default {
             'Set `required: true` only when every caller must pass the prop.',
             'Write `default` exactly as the value should appear in documentation.',
             'Skip styling escape hatches such as `xstyle`, `className`, and `style`.',
-            '`astryx doctor integration components` lists a documented prop the code lacks, a public prop the doc misses, and a wrong `required`. See {@link generic:check-the-props}.',
+            '`{@command doctor integration components}` lists a documented prop the code lacks, a public prop the doc misses, and a wrong `required`. See {@link generic:check-the-props}.',
           ],
         },
       ],
@@ -166,7 +166,7 @@ export default {
         {
           type: 'code',
           lang: 'bash',
-          code: 'astryx component AcmeCarousel\nastryx doctor integration components\nastryx integration verify',
+          code: '{@command component AcmeCarousel}\n{@command doctor integration components}\n{@command integration verify}',
         },
       ],
     },

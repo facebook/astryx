@@ -39,7 +39,7 @@ export const docs = {
         {
           type: 'code',
           lang: 'bash',
-          code: "mkdir acme-widgets && cd acme-widgets\nnpm init -y\nnpm pkg set name=@acme/astryx-widgets type=module\nnpm pkg set 'exports={}' --json\nnpm install -D @astryxdesign/cli @astryxdesign/core typescript@6",
+          code: "mkdir acme-widgets && cd acme-widgets\nnpm init -y\nnpm pkg set name=@acme/astryx-widgets type=module\nnpm pkg set 'exports={}' --json\n{@pm install @astryxdesign/cli @astryxdesign/core typescript@6 --dev}",
         },
         {
           type: 'list',
@@ -64,7 +64,7 @@ export const docs = {
         {
           type: 'code',
           lang: 'bash',
-          code: 'astryx integration add component AcmeCarousel',
+          code: '{@command integration add component AcmeCarousel}',
         },
         {
           type: 'code',
@@ -82,7 +82,7 @@ export const docs = {
         {
           type: 'code',
           lang: 'bash',
-          code: 'astryx component AcmeCarousel',
+          code: '{@command component AcmeCarousel}',
         },
         {
           type: 'prose',
@@ -100,7 +100,7 @@ export const docs = {
         {
           type: 'code',
           lang: 'bash',
-          code: 'npm pkg set scripts.typecheck="astryx integration check --strict"\nnpm run typecheck',
+          code: 'npm pkg set scripts.typecheck="astryx integration check --strict"\n{@pm run typecheck}',
         },
         {
           type: 'code',
@@ -127,7 +127,7 @@ export const docs = {
         {
           type: 'code',
           lang: 'bash',
-          code: 'astryx integration verify\nnpm pack --pack-destination ..',
+          code: '{@command integration verify}\nnpm pack --pack-destination ..',
         },
         {
           type: 'code',
@@ -150,7 +150,7 @@ export const docs = {
         {
           type: 'code',
           lang: 'bash',
-          code: 'cd ..\nmkdir my-app && cd my-app\nnpm init -y\nnpm install @astryxdesign/core @astryxdesign/cli ../acme-astryx-widgets-1.0.0.tgz\nastryx component AcmeCarousel',
+          code: 'cd ..\nmkdir my-app && cd my-app\nnpm init -y\n{@pm install @astryxdesign/core @astryxdesign/cli ../acme-astryx-widgets-1.0.0.tgz}\n{@command component AcmeCarousel}',
         },
         {
           type: 'code',
@@ -290,7 +290,7 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'In global mode: users can also install your package for their computer, beside the global CLI (`npm i -g @astryxdesign/cli your-package`). It then applies in folders outside any project, and inside a project only if the project installs it. See {@link namespace:global} and {@link generic:global-integrations}.',
+          text: 'In global mode: users can also install your package for their computer, beside the global CLI (`{@pm install @astryxdesign/cli your-package --global}`). It then applies in folders outside any project, and inside a project only if the project installs it. See {@link namespace:global} and {@link generic:global-integrations}.',
         },
       ],
     },

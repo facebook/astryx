@@ -40,6 +40,7 @@ import {
 } from './docs-pages.mjs';
 import {
   DOCSITE_CLI_COMMAND,
+  DOCSITE_PACKAGE_MANAGER,
   GLOBAL_PAGE,
   GLOBAL_PAGE_CLI_COMMAND,
   getCliInvocation,
@@ -1927,7 +1928,8 @@ async function generateDocsRegistry() {
     const stem = topic.topic === GLOBAL_PAGE ? globalStem : cliStem;
     topic.sections = withCliCommands(
       topic.sections,
-      (text, lang = null) => prefixCliCommands(text, stem, lang),
+      (text, lang = null) =>
+        prefixCliCommands(text, stem, lang, {pm: DOCSITE_PACKAGE_MANAGER}),
       stem,
     );
   }
