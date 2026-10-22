@@ -130,7 +130,7 @@
  * @property {string | null} data.previous - The `experimental.iconSet` value it replaced.
  * @property {boolean} data.changed - Whether anything was written.
  * @property {string} [data.warning] - Present when the project's
- *   `@astryxdesign/cli` range admits a release before 0.7.3, which refuses
+ *   `@astryxdesign/cli` range admits a release before 0.7.4, which refuses
  *   an astryx.config that sets `experimental.iconSet`: what fails, and the
  *   range to require.
  */

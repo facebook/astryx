@@ -130,7 +130,7 @@
 /**
  * A descriptor an older CLI drops: a page or block template, or a namespace
  * doc, that sets `stability`, or a template that declares `icons`, while the
- * package's `@astryxdesign/cli` peer range admits a release before 0.7.3.
+ * package's `@astryxdesign/cli` peer range admits a release before 0.7.4.
  * Listed beside the issues for the package being authored, and never counted
  * or failing a check.
  * @typedef {object} OlderCliNote

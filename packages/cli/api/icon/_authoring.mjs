@@ -38,6 +38,7 @@ import {
   iconSetDataText,
   libraryIcons,
   resolveIconSource,
+  setModuleNote,
   writeDefinitionFile,
   writeGeneratedIcons,
   writeIconSetData,
@@ -365,8 +366,19 @@ export async function addIconSet(name, options) {
   );
   {
     result.data.icons = icons.length;
+    // The line goes in the package's entry file, relative to it: the
+    // generated path is relative to the package root, which the entry need
+    // not be (exports → ./src/index.js).
+    const moduleNote = setModuleNote(
+      /** @type {import('../../foundation/discovery/icon-set-discovery.mjs').DiscoveredIconSet} */ (
+        /** @type {unknown} */ ({data: {module: pkg.name}})
+      ),
+      {packageDir, pkg},
+      generated,
+      THEME_MAP_NAME,
+    );
     result.data.notes = [
-      `Add \`export * from '${generated}';\` to the module "${pkg.name}" resolves to (and to its types), so the icons and \`${THEME_MAP_NAME}\` import from it.`,
+      ...(moduleNote ? [moduleNote] : []),
       'Run `astryx integration check` to see the icon definitions still to map.',
     ];
   }

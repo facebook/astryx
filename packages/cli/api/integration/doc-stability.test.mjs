@@ -2,7 +2,7 @@
 
 /**
  * @file `doctor integration validate` (and so `integration check`) notes a
- * template or namespace doc that sets `stability`, which a CLI before 0.7.3
+ * template or namespace doc that sets `stability`, which a CLI before 0.7.4
  * refuses and drops (spec:AST-017 FR27), unless the package's CLI peer range
  * admits only CLIs that read it. A note is additive data, never an issue: it
  * is not counted and never fails a check. A component doc or guide that sets
@@ -89,8 +89,8 @@ describe('olderCliNotes', () => {
     );
     expect(data.olderCliNotes).toHaveLength(2);
     for (const note of data.olderCliNotes) {
-      expect(note.message).toContain('CLIs before 0.7.3 drop this descriptor');
-      expect(note.message).toContain('">=0.7.3"');
+      expect(note.message).toContain('CLIs before 0.7.4 drop this descriptor');
+      expect(note.message).toContain('">=0.7.4"');
     }
     expect(
       data.olderCliNotes.find(
@@ -135,14 +135,27 @@ describe('olderCliNotes', () => {
         file: 'templates/stab-hero.doc.mjs',
         kind: 'template',
         field: 'icons',
-        message: expect.stringContaining('declares `icons`: CLIs before 0.7.3'),
+        message: expect.stringContaining('declares `icons`: CLIs before 0.7.4'),
       }),
     ]);
   });
 
-  it('says nothing when the CLI peer range starts at 0.7.3', async () => {
+  it('notes a CLI peer range that starts at 0.7.3, which drops the descriptor', async () => {
     writePackage(
       {peerDependencies: {'@astryxdesign/cli': '>=0.7.3'}},
+      ", stability: 'experimental'",
+    );
+    const data = await validated();
+    expect(data.olderCliNotes).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({kind: 'template', field: 'stability'}),
+      ]),
+    );
+  });
+
+  it('says nothing when the CLI peer range starts at 0.7.4', async () => {
+    writePackage(
+      {peerDependencies: {'@astryxdesign/cli': '>=0.7.4'}},
       ", stability: 'experimental'",
     );
     expect(await validated()).not.toHaveProperty('olderCliNotes');
@@ -156,7 +169,7 @@ describe('olderCliNotes', () => {
 
 describe('template icons a template never imports', () => {
   it('notes each `icons` key the source does not import, never as an issue', async () => {
-    writePackage({peerDependencies: {'@astryxdesign/cli': '>=0.7.3'}}, '');
+    writePackage({peerDependencies: {'@astryxdesign/cli': '>=0.7.4'}}, '');
     const doc = path.join(dir, 'templates', 'stab-hero.doc.mjs');
     fs.writeFileSync(
       doc,

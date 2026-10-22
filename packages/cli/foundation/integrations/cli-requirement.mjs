@@ -73,7 +73,7 @@ export const SECTION_IDS_CLI = '0.6.4';
 
 /**
  * The first stable CLI release that reads `stability` on a doc
- * (spec:AST-017 FR21, FR27). Published 0.7.2 refuses the field on a page or
+ * (spec:AST-017 FR21, FR27). Published 0.7.3 refuses the field on a page or
  * block template, which it drops, and on a namespace doc, which hides every
  * doc topic the package ships; component docs and guides keep loading and
  * ignore it.
@@ -81,16 +81,16 @@ export const SECTION_IDS_CLI = '0.6.4';
  * Tied to the next patch slot: it must equal the first stable release that
  * reads the field.
  */
-export const STABILITY_CLI = '0.7.3';
+export const STABILITY_CLI = '0.7.4';
 
 /**
  * The first stable CLI release that reads a template's `icons` declaration
- * (spec:AST-084 FR9). Published 0.7.2 refuses the field and drops that
+ * (spec:AST-084 FR9). Published 0.7.3 refuses the field and drops that
  * template.
  *
  * Tied to the next patch slot, with {@link STABILITY_CLI}.
  */
-export const TEMPLATE_ICONS_CLI = '0.7.3';
+export const TEMPLATE_ICONS_CLI = '0.7.4';
 
 const VERSION_RE =
   /^v?(\d+|[xX*])(?:\.(\d+|[xX*]))?(?:\.(\d+|[xX*]))?(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/;
@@ -349,13 +349,13 @@ export function templateIconsCliProblem(pkg) {
 
 /**
  * The first stable CLI release that reads `experimental.iconSet` in a
- * project's astryx.config (spec:AST-084 FR16). Published 0.7.2 refuses the
+ * project's astryx.config (spec:AST-084 FR16). Published 0.7.3 refuses the
  * config ("Unrecognized key"), so commands that load the project
  * configuration, such as `doctor` and `discover`, fail in that project.
  *
  * Tied to the next patch slot, with {@link STABILITY_CLI}.
  */
-export const CONFIG_ICON_SET_CLI = '0.7.3';
+export const CONFIG_ICON_SET_CLI = '0.7.4';
 
 /**
  * Why an app project whose astryx.config sets `experimental.iconSet` would be

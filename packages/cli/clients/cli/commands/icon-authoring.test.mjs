@@ -653,7 +653,7 @@ describe('experimental icon use', () => {
     const old = await json(['experimental', 'icon', 'use', 'glyphs'], app);
     expect(old.code).toBe(0);
     expect(old.body.data.warning).toContain(
-      'range "^0.7.0" (devDependencies) admits a release before 0.7.3',
+      'range "^0.7.0" (devDependencies) admits a release before 0.7.4',
     );
     expect(old.body.data.warning).toContain('"Unrecognized key"');
     expect(old.body.data.warning).toContain(
@@ -664,7 +664,14 @@ describe('experimental icon use', () => {
     expect(text.stdout).toContain(
       "[warn] The project's @astryxdesign/cli range",
     );
+    // Published 0.7.3 still refuses the key.
     pkgJson.devDependencies = {'@astryxdesign/cli': '^0.7.3'};
+    fs.writeFileSync(pkgFile, JSON.stringify(pkgJson));
+    const previous = await json(['experimental', 'icon', 'use', 'glyphs'], app);
+    expect(previous.body.data.warning).toContain(
+      'range "^0.7.3" (devDependencies) admits a release before 0.7.4',
+    );
+    pkgJson.devDependencies = {'@astryxdesign/cli': '^0.7.4'};
     fs.writeFileSync(pkgFile, JSON.stringify(pkgJson));
     const current = await json(['experimental', 'icon', 'use', 'glyphs'], app);
     expect(current.body.data).not.toHaveProperty('warning');

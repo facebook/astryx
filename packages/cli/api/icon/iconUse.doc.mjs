@@ -34,7 +34,7 @@ export const doc = {
     {
       type: 'icon.use',
       description:
-        "The value written, the set it names, the config file, whether it was created, the value it replaced, and a `warning` when the project's @astryxdesign/cli range admits a release before 0.7.3, which refuses the key.",
+        "The value written, the set it names, the config file, whether it was created, the value it replaced, and a `warning` when the project's @astryxdesign/cli range admits a release before 0.7.4, which refuses the key.",
     },
   ],
   throws: [

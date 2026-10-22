@@ -45,6 +45,47 @@ afterEach(() => {
 });
 
 describe('iconNewSet (experimental icon new-set)', () => {
+  it('names the line for the entry file, relative to it, when the entry is not at the package root', async () => {
+    setup({license: 'MIT'});
+    const pkgFile = path.join(tmpDir, 'package.json');
+    fs.writeFileSync(
+      pkgFile,
+      JSON.stringify({
+        ...JSON.parse(read('package.json')),
+        type: 'module',
+        exports: {'.': './src/index.js'},
+      }),
+    );
+    fs.mkdirSync(path.join(tmpDir, 'src'));
+    fs.writeFileSync(path.join(tmpDir, 'src', 'index.js'), 'export {};\n');
+    const result = await iconNewSet('outline', {cwd: tmpDir});
+    expect(result.data.notes).toEqual([
+      "Add `export * from '../icon-sets/outline/outline.generated.js';` to src/index.js, so the icons import from @acme/icons.",
+      'Run `astryx integration check` to see the icon definitions still to map.',
+    ]);
+  });
+
+  it('adds no export line when the entry already exports the generated module', async () => {
+    setup({license: 'MIT'});
+    fs.writeFileSync(
+      path.join(tmpDir, 'package.json'),
+      JSON.stringify({
+        ...JSON.parse(read('package.json')),
+        type: 'module',
+        exports: {'.': './src/index.js'},
+      }),
+    );
+    fs.mkdirSync(path.join(tmpDir, 'src'));
+    fs.writeFileSync(
+      path.join(tmpDir, 'src', 'index.js'),
+      "export * from '../icon-sets/outline/outline.generated.js';\n",
+    );
+    const result = await iconNewSet('outline', {cwd: tmpDir});
+    expect(result.data.notes).toEqual([
+      'Run `astryx integration check` to see the icon definitions still to map.',
+    ]);
+  });
+
   it('writes a typed descriptor and a starter data file, declares the root, and adds it to files', async () => {
     setup({license: 'MIT'});
     const result = await iconNewSet('outline', {cwd: tmpDir});
@@ -68,7 +109,8 @@ describe('iconNewSet (experimental icon new-set)', () => {
         dryRun: false,
         icons: 0,
         notes: [
-          'Add `export * from \'./icon-sets/outline/outline.generated.js\';` to the module "@acme/icons" resolves to (and to its types), so the icons and `themeIcons` import from it.',
+          // No exports and no root file: nothing to add the line to yet.
+          '"@acme/icons" does not resolve yet: point its package.json "exports" at a file that has `export * from \'./icon-sets/outline/outline.generated.js\';`.',
           'Run `astryx integration check` to see the icon definitions still to map.',
         ],
       },
