@@ -705,6 +705,14 @@ jobs:
       - uses: ./.github/actions/setup
         if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true'
 
+      # The Build package's Next.js suite checks a theme override in whichever leg
+      # --shard gives it; this variable makes it fail, not skip, without Chromium.
+      - name: Install Playwright for the Node suite's browser checks
+        if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true'
+        run: |
+          npx playwright install chromium
+          echo ASTRYX_REQUIRE_CHROMIUM=1 >> "$GITHUB_ENV"
+
       - run: pnpm vitest run --project node --shard=${{ matrix.shard }}/${{ strategy.job-total }}
         if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true'
 
