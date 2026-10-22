@@ -11,6 +11,7 @@ import * as stylex from '@stylexjs/stylex';
 import {DropdownMenuItem} from './DropdownMenuItem';
 import {DropdownMenuDivider} from './DropdownMenuDivider';
 import {DropdownMenuSubMenu} from './DropdownMenuSubMenu';
+import {opensSubMenu} from './opensSubMenu';
 import {
   spacingVars,
   typographyVars,
@@ -108,10 +109,10 @@ export function renderDropdownItems(items: DropdownMenuOption[]): ReactNode {
     } else if (!('type' in option)) {
       // A plain item that declares nested `items` becomes a submenu (data-mode
       // parity with the compound DropdownMenuSubMenu API); otherwise it's a
-      // leaf. renderDropdownItems owns the recursion and hands the rendered
-      // children to DropdownMenuSubMenu — so DropdownMenuSubMenu never imports
-      // this module back (no import cycle).
-      if (option.items && option.items.length > 0) {
+      // leaf (see opensSubMenu). renderDropdownItems owns the recursion and
+      // hands the rendered children to DropdownMenuSubMenu — so
+      // DropdownMenuSubMenu never imports this module back (no import cycle).
+      if (opensSubMenu(option)) {
         elements.push(
           <DropdownMenuSubMenu
             key={getItemKey(option, i)}
