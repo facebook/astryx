@@ -19,6 +19,7 @@ import {
 } from '../../foundation/release/notices.mjs';
 import {
   coreVersionOf,
+  installPlaceOf,
   isGlobalCopy,
   projectRootOf,
 } from '../../foundation/release/choose.mjs';
@@ -329,7 +330,7 @@ export {displayHomePath};
  * command that upgrades it.
  * @param {string} cwd
  * @param {{project: boolean}} options
- * @returns {{answeredBy: {cli: string, core: string | null, copy: string}, latest: string | null, globalBehind: ReturnType<typeof globalBehind> | null, projectLag: ReturnType<typeof projectLag> | null, lastNoticeSkip: ReturnType<typeof lastNoticeSkip>, lastCheckFailure: ReturnType<typeof lastCheckFailure>, stateLock: ReturnType<typeof stateLockHolder>, searchPathCommands: Array<import('../../foundation/env/search-path.mjs').SearchPathCommand & {upgrade: string | null}>}}
+ * @returns {{answeredBy: {cli: string, core: string | null, copy: string}, latest: string | null, globalBehind: ReturnType<typeof globalBehind> | null, projectLag: ReturnType<typeof projectLag> | null, lastNoticeSkip: ReturnType<typeof lastNoticeSkip>, lastCheckFailure: ReturnType<typeof lastCheckFailure>, stateLock: ReturnType<typeof stateLockHolder>, searchPathCommands: Array<import('../../foundation/env/search-path.mjs').SearchPathCommand & {upgrade: string | null, runner: boolean}>}}
  */
 export function releaseFacts(cwd, {project}) {
   const answered = answeredBy(cwd);
@@ -356,6 +357,9 @@ export function releaseFacts(cwd, {project}) {
     searchPathCommands: astryxCommandsOnSearchPath().map(row => ({
       ...row,
       upgrade: row.cliRoot ? globalUpgradeCommand(row.cliRoot) : null,
+      // A package runner's temporary install, which it puts first on the
+      // search path only for the run it starts.
+      runner: row.cliRoot ? installPlaceOf(row.cliRoot).runner : false,
     })),
   };
 }

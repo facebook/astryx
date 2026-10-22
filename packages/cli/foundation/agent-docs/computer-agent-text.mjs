@@ -67,19 +67,13 @@ export function computerRestoreLine(install) {
 }
 
 /**
- * The install step the text records. Only the CLI installed for the computer
- * chooses it: the command that installs it again with the same package
- * manager into the same folder, as the update notice names it but with no
- * version. Any other copy of a release keeps the step the file in `home`
- * already records, so every copy of one release expects the same text, and
- * names npm's when the file records none.
- * @param {{cliRoot?: string, home?: string}} [options]
- * @returns {string}
+ * The step the CLI installed for the computer names for itself: the command
+ * that installs it again with the same package manager into the same folder,
+ * as the update notice names it but with no version. Null for any other copy.
+ * @param {string} [cliRoot]
+ * @returns {string | null}
  */
-export function computerInstallStep({
-  cliRoot = CLI_ROOT,
-  home = os.homedir(),
-} = {}) {
+function ownInstallStep(cliRoot = CLI_ROOT) {
   try {
     if (isGlobalCopy(cliRoot)) {
       return globalUpgradeCommand(cliRoot).replace(
@@ -88,17 +82,44 @@ export function computerInstallStep({
       );
     }
   } catch {
-    // A copy whose install cannot be read keeps the recorded step.
+    // A copy whose install cannot be read names none of its own.
   }
+  return null;
+}
+
+/**
+ * The step the skill file in `home` records, or null.
+ * @param {string} home
+ * @returns {string | null}
+ */
+function recordedInstallStep(home) {
   try {
-    const recorded = skillInstallStepOf(
-      fs.readFileSync(computerSkillFile(home), 'utf8'),
-    );
-    if (recorded) return recorded;
+    return skillInstallStepOf(fs.readFileSync(computerSkillFile(home), 'utf8'));
   } catch {
-    // No file yet: npm's step.
+    return null;
   }
-  return COMPUTER_INSTALL_STEP;
+}
+
+/**
+ * The install step the text names. `judge`: the step a file is judged by, the
+ * one it records first, so every copy of one release, two global installs
+ * included, finds the same text current. `write`: the step a write records,
+ * the global copy's own first, since only the CLI installed for the computer
+ * chooses it. Either way npm's when there is no other.
+ * @param {{cliRoot?: string, home?: string, for?: 'judge' | 'write'}} [options]
+ * @returns {string}
+ */
+export function computerInstallStep({
+  cliRoot = CLI_ROOT,
+  home = os.homedir(),
+  for: use = 'write',
+} = {}) {
+  const own = ownInstallStep(cliRoot);
+  const recorded = recordedInstallStep(home);
+  return (
+    (use === 'judge' ? (recorded ?? own) : (own ?? recorded)) ??
+    COMPUTER_INSTALL_STEP
+  );
 }
 
 /**
@@ -482,7 +503,7 @@ export function inspectComputerAgentText({
 } = {}) {
   const expected = renderComputerAgentText({
     command,
-    install: computerInstallStep({home}),
+    install: computerInstallStep({home, for: 'judge'}),
   });
   const folder = path.join(home, SKILL_FOLDER);
   const made = new Set(links);
@@ -596,15 +617,24 @@ function writeCopy(at, expected) {
  * @returns {{rows: import('../../api/init/init.type.mjs').InitUserFile[], links: string[]}}
  */
 export function writeComputerAgentText({home = os.homedir(), command} = {}) {
-  const expected = renderComputerAgentText({
+  // Judged by the step the file records, so a file another copy of this
+  // release wrote stays as it is; a write records this copy's own step.
+  const judged = renderComputerAgentText({
     command,
-    install: computerInstallStep({home}),
+    install: computerInstallStep({home, for: 'judge'}),
   });
   const file = computerSkillFile(home);
   const folder = path.dirname(file);
   /** @type {import('../../api/init/init.type.mjs').InitUserFile[]} */
   const rows = [];
-  const state = stateOf(file, expected);
+  const state = stateOf(file, judged);
+  const expected =
+    state === 'current'
+      ? judged
+      : renderComputerAgentText({
+          command,
+          install: computerInstallStep({home, for: 'write'}),
+        });
   if (state === 'foreign' || state === 'edited') {
     rows.push({path: file, action: 'kept', reason: keptReason(state)});
   } else if (state === 'current') {

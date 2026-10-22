@@ -1477,7 +1477,7 @@ export function checkCliCommand(ctx) {
  *   the newest update notice that did not print, and why (diagnostic only)
  * @property {{pid: number | null, host: string | null, since: number} | null} [stateLock]
  *   who holds the state file's lock now (diagnostic only)
-  * @property {Array<import('../../foundation/env/search-path.mjs').SearchPathCommand & {upgrade?: string | null}>} [searchPathCommands]
+  * @property {Array<import('../../foundation/env/search-path.mjs').SearchPathCommand & {upgrade?: string | null, runner?: boolean}>} [searchPathCommands]
  *   every `astryx` on the search path, with the command that upgrades it
  *   the `astryx` commands on the search path, in order
  * @property {import('../../foundation/integrations/computer-integrations.mjs').ComputerIntegrationCandidate[]} [computerIntegrations]
@@ -1724,7 +1724,10 @@ export function checkComputerAgentText(ctx) {
   // one behind another program is cli-on-path's to report. The reinstalled
   // copy refreshes the text too.
   const rows = ctx.searchPathCommands;
-  if (command === COMPUTER_COMMAND && rows && !rows.some(r => r.astryx)) {
+  // A package runner's own copy, first on the search path only for the run
+  // it starts (the way to run the CLI when the global one is gone), does not
+  // count.
+  if (command === COMPUTER_COMMAND && rows && !rows.some(r => r.astryx && !r.runner)) {
     return {
       ...base,
       message: `${status} It tells agents to run \`${COMPUTER_COMMAND}\`, but no \`${COMPUTER_COMMAND}\` command on the search path runs the Astryx CLI, so agents that read it find no CLI to run (as when a restart removes the CLI installed for the computer and keeps the home folder).${linkNote}`,

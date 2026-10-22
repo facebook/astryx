@@ -651,7 +651,74 @@ describe.skipIf(!POSIX)(
         expect(check.fix).toBe(
           `Run \`${step}\`, the step the skill names for when \`astryx\` is not found.`,
         );
+        // The route back without the global CLI: a package runner, which
+        // puts its own temporary `astryx` first on the search path for the
+        // run it starts. That copy does not count, so doctor still names the
+        // step.
+        const runner = placeCli(
+          path.join(
+            tempDir('npx'),
+            '_npx',
+            'r1',
+            'node_modules',
+            '@astryxdesign',
+            'cli',
+          ),
+          '9.0.0',
+        );
+        const runnerBin = path.join(
+          path.dirname(path.dirname(runner.dir)),
+          '.bin',
+        );
+        fs.mkdirSync(runnerBin, {recursive: true});
+        fs.symlinkSync(runner.bin, path.join(runnerBin, 'astryx'));
+        pc.path.unshift(runnerBin);
+        const viaRunner = JSON.parse(
+          run(runner.bin, ['doctor', '--json'], {cwd: empty, pc}).stdout,
+        ).data.checks.find(
+          (/** @type {any} */ c) => c.id === 'computer-agent-text',
+        );
+        expect(viaRunner.fix).toBe(
+          `Run \`${step}\`, the step the skill names for when \`astryx\` is not found.`,
+        );
+        pc.path.shift();
       }
+    });
+
+    it('two global installs of one release find the same skill current, and neither rewrites the step the other wrote', () => {
+      const pc = computer();
+      const npm = globalCli('npm', '9.0.0', {root: pc.home});
+      const pnpm = globalCli('pnpm', '9.0.0', {root: pc.home});
+      pc.path.unshift(npm.binDir, pnpm.binDir);
+      const empty = tempDir('empty');
+      const skill = path.join(
+        pc.home,
+        '.agents',
+        'skills',
+        'astryx',
+        'SKILL.md',
+      );
+      expect(run(npm.bin, ['init', '--user'], {cwd: empty, pc}).status).toBe(0);
+      const written = fs.readFileSync(skill, 'utf8');
+      expect(written).toContain(
+        'run `npm i -g --prefix ~/.npm-global @astryxdesign/cli` first.',
+      );
+      const fromPnpm = JSON.parse(
+        run(pnpm.bin, ['--json', 'init', '--user'], {cwd: empty, pc}).stdout,
+      );
+      expect(
+        fromPnpm.data.files.find((/** @type {any} */ f) => f.path === skill)
+          .action,
+      ).toBe('unchanged');
+      expect(fs.readFileSync(skill, 'utf8')).toBe(written);
+      const doctor = JSON.parse(
+        run(pnpm.bin, ['doctor', '--json'], {cwd: empty, pc}).stdout,
+      );
+      expect(
+        doctor.data.checks.find(
+          (/** @type {any} */ c) => c.id === 'computer-agent-text',
+        ).message,
+      ).toContain('matches this release');
     });
 
     it('G14 a Node version manager: each Node has its own global copy, which answers itself', () => {
