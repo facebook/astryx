@@ -374,8 +374,8 @@ export function CheckboxInput({
   // to match it. See useIndicatorFocusRing.
   const indicatorRef = useRef<HTMLSpanElement>(null);
   const t = useTranslator();
-  // The busy Spinner is decorative; this control announces its busy start
-  // (spec:AST-086 FR8).
+  // The busy Spinner sits in the decorative, aria-hidden indicator, so this
+  // control announces its busy start itself (spec:AST-086 FR8).
   useBusyAnnouncement(isBusy, t('@astryx.spinner.loading'), indicatorRef);
   const {focusProps} = useIndicatorFocusRing(indicatorRef);
 
@@ -524,9 +524,7 @@ export function CheckboxInput({
               }
               size={size}
               isDisabled={isDisabled}>
-              {isBusy ? (
-                <Spinner size="sm" shade="inherit" aria-hidden="true" />
-              ) : null}
+              {isBusy ? <Spinner size="sm" shade="inherit" /> : null}
             </CheckboxControl>
           </span>
         </div>

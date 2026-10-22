@@ -254,7 +254,8 @@ describe.each(OWNERS)('%s busy state (spec:AST-086)', (_name, renderOwner) => {
     const {container} = render(renderOwner(true));
     const spinner = container.querySelector('.astryx-spinner');
     expect(spinner).not.toBeNull();
-    expect(spinner).toHaveAttribute('aria-hidden', 'true');
+    // Hidden itself, or inside a decorative hidden indicator (CheckboxInput).
+    expect(spinner!.closest('[aria-hidden="true"]')).not.toBeNull();
     expect(screen.queryByRole('status', {name: 'Loading'})).toBeNull();
   });
 
