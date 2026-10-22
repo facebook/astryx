@@ -425,6 +425,19 @@ describe('--built edge cases', () => {
     expect(check('dist').usage.status).toBe('fail');
   });
 
+  it('does not count a type-only Astryx import as use', () => {
+    write({
+      'src/Page.tsx': [
+        "import type {ButtonProps} from '@astryxdesign/core/Button';",
+        "import {type TextProps} from '@astryxdesign/core/Text';",
+        "export type {CardProps} from '@astryxdesign/core/Card';",
+        'export const Page = (props: ButtonProps & TextProps) => null;',
+        '',
+      ].join('\n'),
+    });
+    expect(check('src').usage.status).toBe('fail');
+  });
+
   it('does not count an import written only in a string or JSX text', () => {
     write({
       'src/Page.tsx': [

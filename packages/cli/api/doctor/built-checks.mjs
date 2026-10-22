@@ -323,12 +323,17 @@ function astImports(ast) {
   /** @type {{spec: string, names: string[], at: number}[]} */
   const found = [];
   for (const node of ast.program.body) {
+    // A type-only import or re-export is erased from the built page, so it
+    // is not Astryx use.
+    if (node.importKind === 'type' || node.exportKind === 'type') continue;
     if (node.type === 'ImportDeclaration') {
+      const values = node.specifiers.filter(
+        (/** @type {any} */ each) => each.importKind !== 'type',
+      );
+      if (node.specifiers.length > 0 && values.length === 0) continue;
       found.push({
         spec: node.source.value,
-        names: node.specifiers.map(
-          (/** @type {any} */ each) => each.local.name,
-        ),
+        names: values.map((/** @type {any} */ each) => each.local.name),
         at: node.start,
       });
     } else if (
