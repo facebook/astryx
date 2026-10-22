@@ -778,7 +778,6 @@ function TimeField({
           max={max}
           hourFormat={hourFormat}
           isEffectivelyDisabled={isDisabled}
-          hasDisabledMessage={showsDisabledMessage}
           isEffectivelyRequired={isEffectivelyRequired}
           isBusy={isBusy}
           statusType={status?.type}
