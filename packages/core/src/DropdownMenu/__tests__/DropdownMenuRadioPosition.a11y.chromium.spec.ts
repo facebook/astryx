@@ -2,11 +2,13 @@
 
 /**
  * @file DropdownMenuRadioPosition.a11y.chromium.spec.ts
- * @input The `Core/DropdownMenu` RadioGroupMarkAtEnd and RadioGroupMarkAtStart
- *   stories in a built Storybook, real mouse and keyboard input.
+ * @input The `Core/DropdownMenu` RadioGroupMarkAtEnd, RadioGroupMarkAtStart and
+ *   LabRadioGroup stories in a built Storybook, real mouse and keyboard input,
+ *   and a touch-emulating context for a coarse pointer.
  * @output Real-engine proof that a radio group's `indicatorPosition` puts every
- *   row's radio mark on the edge it names, as Selector's does, and that the
- *   rows keep their menuitemradio semantics.
+ *   row's radio mark on the edge it names, as Selector's does, on a fine and a
+ *   coarse pointer (where an unset group moves the mark to the end), and that
+ *   the rows keep their menuitemradio semantics.
  * @position Run with `pnpm test:a11y-contract`; jsdom has no layout to show
  *   where the mark sits.
  */
@@ -80,6 +82,32 @@ test('indicatorPosition="start" keeps every row\'s radio mark before its label',
     const {label, mark} = await boxes(page, name);
     expect(mark.x + mark.width).toBeLessThanOrEqual(label.x);
   }
+});
+
+test.describe('under a coarse pointer', () => {
+  test.use({hasTouch: true});
+
+  test('indicatorPosition="start" keeps every row\'s radio mark before its label, where an unset group moves it to the end', async ({
+    page,
+  }) => {
+    await page.goto(
+      `${storybook.origin}/iframe.html?id=core-dropdownmenu--lab-radio-group&viewMode=story`,
+    );
+    expect(
+      await page.evaluate(() => matchMedia('(pointer: coarse)').matches),
+    ).toBe(true);
+    await page.locator(TRIGGER).click();
+    await expect(page.getByRole('menu')).toBeVisible();
+    // Unset, the mark sits after the label under this pointer.
+    const unset = await boxes(page, 'Newest');
+    expect(unset.mark.x).toBeGreaterThan(unset.label.x + unset.label.width);
+
+    await openStory(page, 'radio-group-mark-at-start');
+    for (const name of ROWS) {
+      const {label, mark} = await boxes(page, name);
+      expect(mark.x + mark.width).toBeLessThanOrEqual(label.x);
+    }
+  });
 });
 
 test('choosing another row with the keyboard moves the checked state', async ({
