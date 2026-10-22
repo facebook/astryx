@@ -95,7 +95,7 @@ export const docs = {
       name: 'isReorderable',
       type: 'boolean',
       description:
-        'Shows a trailing vertical grip after the Remove action. During pointer reordering, list rows stay stationary while the source row and a free-moving duplicate that follows the pointer on both axes appear at 50% opacity as a temporary drag-only state; full opacity returns immediately on drop or cancel. Vertical pointer position determines the accent insertion line and final list placement. The controlled order commits and affected rows animate with Astryx motion tokens only on release. When the grip is focused, Arrow Up or Arrow Down immediately moves the record one position. Space or Enter starts lift mode for Arrow, Home, or End previewing; Space or Enter drops and Escape cancels. Focus and live announcements are preserved.',
+        'Shows a vertical grip beside the first field of each record. The grip is a bare six-dot glyph with no button fill. It hangs in the inline-start gutter, outside the fields, so the fields and their labels never move, and it appears while the record is hovered or holds keyboard focus and stays visible on touch screens. Grip and clearance take 16px, so the grip sits inside the standard 16px container padding; give the list that much free inline-start space in a clipping or edge-to-edge container. During pointer reordering, list rows stay stationary while the source row and a free-moving duplicate that follows the pointer on both axes appear at 50% opacity as a temporary drag-only state; full opacity returns immediately on drop or cancel. Vertical pointer position determines the accent insertion line and final list placement. The controlled order commits and affected rows animate with Astryx motion tokens only on release. When the grip is focused, Arrow Up or Arrow Down immediately moves the record one position. Space or Enter starts lift mode for Arrow, Home, or End previewing; Space or Enter drops and Escape cancels. Focus and live announcements are preserved.',
       default: 'false',
     },
     {
@@ -162,7 +162,7 @@ export const docs = {
       {
         guidance: true,
         description:
-          'Forward both status and statusVariant from every column renderer to the rendered Astryx input so field messages use the control\'s native accessible tooltip pattern.',
+          "Forward both status and statusVariant from every column renderer to the rendered Astryx input so field messages use the control's native accessible tooltip pattern.",
       },
       {
         guidance: true,
@@ -201,7 +201,7 @@ export const docs = {
         name: 'First-record field labels',
         required: true,
         description:
-          'ListInput renders primary-tone column labels without separate table chrome and keeps each rendered control\'s own label visually hidden but semantically associated. At wider widths, repeated labels are visually hidden; when fields stack at 640px or narrower, every record shows its field labels.',
+          "ListInput renders primary-tone column labels without separate table chrome and keeps each rendered control's own label visually hidden but semantically associated. At wider widths, repeated labels are visually hidden; when fields stack at 640px or narrower, every record shows its field labels.",
       },
       {
         name: 'Record fields',
@@ -213,13 +213,13 @@ export const docs = {
         name: 'Remove action',
         required: true,
         description:
-          'Removes its record immediately, moves focus to a predictable neighboring control, and animates surviving rows into their new positions when supported. In the stacked layout, it aligns beside the first field at the top of the record.',
+          'Removes its record immediately, moves focus to a predictable neighboring control, and animates surviving rows into their new positions when supported. It is revealed while the record is hovered or contains keyboard focus and stays visible on touch screens; at rest it is transparent but keeps its column and its place in the tab order, so the fields never shift. In the stacked layout, it aligns beside the first field at the top of the record.',
       },
       {
         name: 'Reorder handle',
         required: false,
         description:
-          'A trailing vertical grip positioned after Remove, with an accessible label and no hover tooltip. In the stacked layout, both actions align beside the first field at the top of the record. Pointer dragging keeps the list stationary, fades both source and duplicate preview to 50%, lets the duplicate follow freely on both axes, and uses vertical position for the insertion line before committing and animating on release. A focused grip moves one position with Arrow Up or Arrow Down; Space or Enter also enables lift mode with Arrow, Home, End, drop, and Escape controls.',
+          "A bare six-dot grip beside the first field of the record, with an accessible label and no hover tooltip or button fill. Its target is 8px wide and as tall as the field, with 8px of clearance to the field, which keeps it within WCAG 2.5.8 through the spacing exception; the glyph uses the primary icon color and shows the standard focus ring. It hangs in the inline-start gutter, outside the fields, so the fields and their labels keep their positions, and grip plus clearance fit the standard 16px container padding. It is revealed while the record is hovered or contains keyboard focus and stays visible on touch screens. At rest it is transparent but stays in the tab order. While a record is being reordered its grip stays visible, and a pointer drag keeps the other records' grips hidden. In the stacked layout, the grip hangs beside the first field and Remove sits on the other side of that field at the top of the record. Pointer dragging keeps the list stationary, fades both source and duplicate preview to 50%, lets the duplicate follow freely on both axes, and uses vertical position for the insertion line before committing and animating on release. A focused grip moves one position with Arrow Up or Arrow Down; Space or Enter also enables lift mode with Arrow, Home, End, drop, and Escape controls.",
       },
       {
         name: 'Empty state',
@@ -237,7 +237,7 @@ export const docs = {
         name: 'Validation messages',
         required: false,
         description:
-          'Explain field-, item-, or list-level errors, warnings, and success states. Field messages use each input\'s native tooltip status affordance and do not change row height. Item messages align to the record fields without extending under reorder or remove controls.',
+          "Explain field-, item-, or list-level errors, warnings, and success states. Field messages use each input's native tooltip status affordance and do not change row height. Item messages align to the record fields without extending under the remove control.",
       },
     ],
   },
@@ -338,7 +338,7 @@ export const docsDense = {
     getFieldStatus:
       'Per-field resolver; complete status plus tooltip variant are forwarded to the rendered input.',
     isReorderable:
-      'Adds a trailing grip without a tooltip. During the temporary drag state, source and free-moving preview use 50% opacity while the list stays stationary; full opacity returns on drop/cancel and tokenized motion animates the committed order. Vertical position controls insertion. Focused Arrow Up/Down moves immediately, and keyboard lift/move/drop/cancel is also supported.',
+      'Adds a bare six-dot grip that hangs in the inline-start gutter beside the first field (fields never move; grip plus clearance take 16px, inside standard container padding), revealed on record hover or focus and always shown on touch, without a tooltip. During the temporary drag state, source and free-moving preview use 50% opacity while the list stays stationary; full opacity returns on drop/cancel and tokenized motion animates the committed order. Vertical position controls insertion. Focused Arrow Up/Down moves immediately, and keyboard lift/move/drop/cancel is also supported.',
     isDisabled: 'Disables collection, actions, and rendered inputs.',
     isLoading: 'Marks busy and prevents changes.',
     maxItems: 'Makes Add unavailable at the limit.',

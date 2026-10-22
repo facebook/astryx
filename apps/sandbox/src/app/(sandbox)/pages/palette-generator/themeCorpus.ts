@@ -3,7 +3,7 @@
 import {palette as butterModePalettes} from '../../../../../../../packages/themes/butter/src/butterPalettes.generated';
 import {palette as gothicModePalettes} from '../../../../../../../packages/themes/gothic/src/gothicPalettes.generated';
 import {palette as stoneModePalettes} from '../../../../../../../packages/themes/stone/src/stonePalettes.generated';
-import {y2kPalettes} from '@astryxdesign/theme-y2k';
+import {palette as y2kModePalettes} from '../../../../../../../packages/themes/y2k/src/y2kPalettes.generated';
 
 import {hexToHct, hctToHex} from '../color-studio/colorUtils';
 import {FULL_21_STOPS, type PaletteMode} from './generator';
@@ -253,19 +253,91 @@ const y2kFamilies = [
   storedFamily(
     'neutral',
     'Y2K Neutral',
-    '#c3b7ab',
-    y2kPalettes.neutral,
+    '#fff6ed',
+    y2kModePalettes.neutral.light,
     'neutral',
+    y2kModePalettes.neutral.dark,
   ),
-  storedFamily('green', 'Green', '#c5e17a', y2kPalettes.green),
-  storedFamily('red', 'Red', '#ff9e9a', y2kPalettes.red),
-  storedFamily('yellow', 'Yellow', '#ffcc55', y2kPalettes.yellow),
-  storedFamily('blue', 'Blue', '#8ecfff', y2kPalettes.blue),
-  storedFamily('pink', 'Pink', '#ffa0c8', y2kPalettes.pink),
-  storedFamily('purple', 'Purple', '#c0aaff', y2kPalettes.purple),
-  storedFamily('cyan', 'Cyan', '#70e8d0', y2kPalettes.cyan),
-  storedFamily('orange', 'Orange', '#ffaa66', y2kPalettes.orange),
-  storedFamily('teal', 'Teal', '#78e0b0', y2kPalettes.teal),
+  storedFamily(
+    'accent',
+    'Periwinkle',
+    '#cccffa',
+    y2kModePalettes.accent.light,
+    'chromatic',
+    y2kModePalettes.accent.dark,
+  ),
+  storedFamily(
+    'red',
+    'Red',
+    '#ff6f7a',
+    y2kModePalettes.red.light,
+    'chromatic',
+    y2kModePalettes.red.dark,
+  ),
+  storedFamily(
+    'orange',
+    'Orange',
+    '#ff9f4a',
+    y2kModePalettes.orange.light,
+    'chromatic',
+    y2kModePalettes.orange.dark,
+  ),
+  storedFamily(
+    'yellow',
+    'Yellow',
+    '#ffd34f',
+    y2kModePalettes.yellow.light,
+    'chromatic',
+    y2kModePalettes.yellow.dark,
+  ),
+  storedFamily(
+    'green',
+    'Green',
+    '#c5e17a',
+    y2kModePalettes.green.light,
+    'chromatic',
+    y2kModePalettes.green.dark,
+  ),
+  storedFamily(
+    'teal',
+    'Teal',
+    '#48c99a',
+    y2kModePalettes.teal.light,
+    'chromatic',
+    y2kModePalettes.teal.dark,
+  ),
+  storedFamily(
+    'cyan',
+    'Cyan',
+    '#42d4d0',
+    y2kModePalettes.cyan.light,
+    'chromatic',
+    y2kModePalettes.cyan.dark,
+  ),
+  storedFamily(
+    'blue',
+    'Blue',
+    '#00a8ff',
+    y2kModePalettes.blue.light,
+    'chromatic',
+    y2kModePalettes.blue.dark,
+  ),
+  storedFamily(
+    'purple',
+    'Purple',
+    '#a589ff',
+    y2kModePalettes.purple.light,
+    'chromatic',
+    y2kModePalettes.purple.dark,
+  ),
+  storedFamily(
+    'pink',
+    'Pink',
+    '#ff72b6',
+    y2kModePalettes.pink.light,
+    'chromatic',
+    y2kModePalettes.pink.dark,
+  ),
 ];
 
 const butterFamilies = [
@@ -403,7 +475,7 @@ export const THEME_REFERENCES: ThemeReference[] = [
     name: 'Y2K',
     description: 'Stored high-chroma pastel pop ramps.',
     referenceKind: 'stored',
-    suggestedVibrancy: {oklch: 45, hct: 34, compare: 39},
+    suggestedVibrancy: {oklch: 72, hct: 53, compare: 72},
     modes: ['light', 'dark'],
     families: y2kFamilies,
   },
