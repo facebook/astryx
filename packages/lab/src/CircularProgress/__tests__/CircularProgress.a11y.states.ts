@@ -20,8 +20,11 @@ export interface CircularProgressBindingState {
   readonly formatsValue?: boolean;
   readonly isIndeterminate?: boolean;
   readonly isDisabled?: boolean;
-  /** Center content rendered beside the ring, outside the progress bar. */
-  readonly centerContent?: string;
+  /**
+   * A focusable link rendered as the ring's center content, which must sit
+   * beside the progress bar rather than inside its presentational subtree.
+   */
+  readonly centerLink?: string;
 }
 
 function facts(
@@ -79,11 +82,11 @@ export const CIRCULAR_PROGRESS_BINDING_STATES = [
   {
     id: 'center-content',
     summary:
-      'a disabled CircularProgress with caller center content: the content sits beside the ring, not inside it',
+      'a disabled CircularProgress whose center content is a focusable link: the link sits beside the ring, not inside it',
     storyId: story('center-content'),
     facts: facts({value: 75, valueText: '75%'}),
     isDisabled: true,
-    centerContent: 'Almost there',
+    centerLink: 'Upload details',
   },
 ] as const satisfies ReadonlyArray<CircularProgressBindingState>;
 

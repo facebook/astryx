@@ -639,9 +639,10 @@ describe('ProgressBar', () => {
       expect(progressbar.getAttribute('aria-valuetext')).toBe('50%');
     });
 
-    it('preserves the fill inside the progressbar when marks are rendered outside it', () => {
-      // Only the fill belongs to the semantic track; the focusable marks
-      // remain independently available outside its presentational subtree.
+    it('keeps the fill as the progressbar child when marks are rendered', () => {
+      // Only the fill belongs to the semantic track. That the focusable marks
+      // stay outside its presentational subtree is the progressbar contract's
+      // target-marks state (progressbar.subtree.no-focusable-descendants).
       const {container} = render(
         <ProgressBar
           value={50}
@@ -653,8 +654,6 @@ describe('ProgressBar', () => {
       const fill = progressbar.firstElementChild as HTMLElement;
       expect(fill.style.width).toBe('50%');
       expect(fill.classList.contains('astryx-progress-bar-mark')).toBe(false);
-      const mark = container.querySelector<HTMLElement>(MARK)!;
-      expect(progressbar).not.toContainElement(mark);
       expect(container.querySelectorAll(MARK)).toHaveLength(1);
     });
 

@@ -32,7 +32,9 @@ export function renderCircularProgressState(
         formatValueLabel={state.formatsValue ? formatSteps : undefined}
         isIndeterminate={state.isIndeterminate}
         isDisabled={state.isDisabled}>
-        {state.centerContent}
+        {state.centerLink != null ? (
+          <a href="#upload-details">{state.centerLink}</a>
+        ) : null}
       </CircularProgress>
     </div>
   );
