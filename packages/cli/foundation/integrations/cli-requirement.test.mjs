@@ -162,7 +162,9 @@ describe('template replaces and keywords floors in the shipped docs', () => {
   ])('gives the %s fix the floor the check asks for', (code, floor) => {
     const row = read('../../assets/docs/tree/troubleshooting.doc.mjs')
       .split('],')
-      .find(part => part.includes(`${code}:`));
+      .find(part => part.includes(`${code}:`))
+      // The doc's single-quoted string escapes the command's own quotes.
+      ?.replaceAll("\\'", "'");
     expect(row).toContain(`@astryxdesign/cli=>=${floor}'`);
   });
 });
@@ -222,7 +224,8 @@ describe('componentReplacesCliProblem', () => {
     );
     const row = troubleshooting
       .split('],')
-      .find(part => part.includes('`component_replaces_needs_cli`'));
+      .find(part => part.includes('`component_replaces_needs_cli`'))
+      ?.replaceAll("\\'", "'");
     expect(row).toContain(`@astryxdesign/cli=>=${COMPONENT_REPLACES_CLI}'`);
     // Every version that row names is the floor.
     expect(new Set(row?.match(/\d+\.\d+\.\d+/g))).toEqual(
