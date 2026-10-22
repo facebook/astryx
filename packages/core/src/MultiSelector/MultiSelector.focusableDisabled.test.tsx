@@ -3,12 +3,13 @@
 /**
  * @file MultiSelector.focusableDisabled.test.tsx
  * @input Uses vitest, @testing-library/react, StyleX, MultiSelector
- * @output Conformance tests for spec:AST-085 FR1–FR4 and FR6 on MultiSelector
+ * @output Conformance tests for spec:AST-085 FR1–FR3 and FR6 on MultiSelector;
+ *   FR4 needs a real engine (MultiSelector.disabledFocus.a11y.chromium.spec.ts)
  * @position Testing; validates the disabled trigger of MultiSelector.tsx
  */
 
 import {describe, it, expect, vi} from 'vitest';
-import {act, render, screen} from '@testing-library/react';
+import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import * as stylex from '@stylexjs/stylex';
 import {colorVars} from '../theme/tokens.stylex';
@@ -87,13 +88,6 @@ describe('MultiSelector disabled (spec:AST-085)', () => {
     expect(new FormData(form()).getAll('fruit')).toEqual(['Banana']);
     rerender(<Harness isDisabled />);
     expect(new FormData(form()).getAll('fruit')).toEqual([]);
-  });
-
-  it('FR4: keeps focus when it becomes disabled while focused', () => {
-    const {rerender} = render(<Harness isDisabled={false} />);
-    act(() => trigger().focus());
-    rerender(<Harness isDisabled />);
-    expect(trigger()).toHaveFocus();
   });
 
   // jsdom cannot match `:focus-visible`: compare the ring's StyleX class hash.
