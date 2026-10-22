@@ -142,6 +142,21 @@ describe('component_without_example', () => {
     expect(avatar?.message).not.toContain('acme-badge-showcase');
   });
 
+  it('suggests a free file name when the showcase path already shows another component', async () => {
+    write({
+      'templates/acme-card-showcase.doc.mjs': blockDoc(
+        'acme-card-showcase',
+        ", exampleFor: 'AcmeOther', isShowcase: true",
+      ),
+      'templates/acme-card-showcase.tsx': 'export default () => null;\n',
+    });
+    const [note] = await notesOf(['component_without_example']);
+    expect(note.message).toContain('add templates/acme-card-showcase-2.tsx');
+    expect(note.message).not.toContain(
+      'to templates/acme-card-showcase.doc.mjs',
+    );
+  });
+
   it('asks for isShowcase when a block already names the component in exampleFor', async () => {
     write({
       'templates/card-demo.doc.mjs': blockDoc(
@@ -525,6 +540,30 @@ describe('template_asset_not_packed', () => {
 });
 
 describe('what npm packs decides', () => {
+  it('names a nested ignore file that drops an asset', async () => {
+    write({
+      'package.json': JSON.stringify({name: '@acme/kit', version: '1.0.0'}),
+      'templates/img/.npmignore': 'hero.png\n',
+      'templates/img/hero.png': 'png',
+      'templates/card.doc.mjs': blockDoc(
+        'card',
+        ", exampleFor: 'AcmeCard', isShowcase: true",
+      ),
+      'templates/card.tsx': [
+        "const hero = new URL('./img/hero.png', import.meta.url);",
+        'export default () => null;',
+        '',
+      ].join('\n'),
+    });
+    const notes = await notesOf(['template_asset_not_packed']);
+    expect(notes).toHaveLength(npmPacks('templates/img/hero.png') ? 0 : 1);
+    if (notes.length > 0) {
+      expect(notes[0].message).toContain(
+        'remove or narrow the line `hero.png` in templates/img/.npmignore',
+      );
+    }
+  });
+
   it('names the ignore-file line, not files, when a package has no files field', async () => {
     write({
       'package.json': JSON.stringify({name: '@acme/kit', version: '1.0.0'}),

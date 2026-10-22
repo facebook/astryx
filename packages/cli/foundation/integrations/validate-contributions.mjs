@@ -1186,32 +1186,62 @@ function npmPackedPaths(base) {
 }
 
 /**
+ * The ignore files npm reads for one path in a package with no `files`
+ * field: in the root and each folder down to the path's own, `.npmignore`,
+ * or `.gitignore` where that folder has none. Root first, each relative to
+ * the package root.
+ * @param {string} base
+ * @param {string} rel POSIX, relative to the package root
+ * @returns {string[]}
+ */
+function ignoreFilesFor(base, rel) {
+  /** @type {string[]} */
+  const found = [];
+  const folders = rel.split('/').slice(0, -1);
+  for (let depth = 0; depth <= folders.length; depth++) {
+    const folder = folders.slice(0, depth).join('/');
+    const file = ['.npmignore', '.gitignore'].find(name =>
+      fs.existsSync(path.join(base, folder, name)),
+    );
+    if (file) found.push(folder ? `${folder}/${file}` : file);
+  }
+  return found;
+}
+
+/**
  * The note for an asset a package with no `files` field leaves out through
- * an ignore file: npm reads `.npmignore`, or `.gitignore` when there is none,
- * and the fix is to remove the line that drops the asset, never to add a
- * `files` field, which would leave out everything else.
+ * an ignore file, naming the line that drops it, never a `files` field,
+ * which would leave out everything else. The deepest file with a matching
+ * line is named; an entry is read relative to its own folder.
  * @param {string} base
  * @param {string} template
  * @param {string} asset
  */
 function ignoreFix(base, template, asset) {
-  const ignoreFile = fs.existsSync(path.join(base, '.npmignore'))
-    ? '.npmignore'
-    : '.gitignore';
-  let lines = /** @type {string[]} */ ([]);
-  try {
-    lines = fs.readFileSync(path.join(base, ignoreFile), 'utf8').split(/\r?\n/);
-  } catch {
-    // named without a line below
+  const files = ignoreFilesFor(base, asset);
+  for (const file of [...files].reverse()) {
+    const folder = path.posix.dirname(file);
+    const within = folder === '.' ? asset : asset.slice(folder.length + 1);
+    /** @type {string[]} */
+    let lines;
+    try {
+      lines = fs.readFileSync(path.join(base, file), 'utf8').split(/\r?\n/);
+    } catch {
+      continue;
+    }
+    const line = lines.find(
+      entry =>
+        entry.trim() !== '' &&
+        !entry.trim().startsWith('#') &&
+        !entry.trim().startsWith('!') &&
+        !outsideFiles(within, [entry.trim()]),
+    );
+    if (line) {
+      return `${template}: loads ${asset}, which npm leaves out of the package because ${file} drops it, so the template breaks once installed. Fix: remove or narrow the line \`${line.trim()}\` in ${file}, and confirm with \`npm pack --dry-run\`.`;
+    }
   }
-  const line = lines.find(
-    entry =>
-      entry.trim() !== '' &&
-      !entry.trim().startsWith('#') &&
-      !entry.trim().startsWith('!') &&
-      !outsideFiles(asset, [entry.trim()]),
-  );
-  return `${template}: loads ${asset}, which npm leaves out of the package because ${ignoreFile} drops it, so the template breaks once installed. Fix: ${line ? `remove or narrow the line \`${line.trim()}\` in ${ignoreFile}` : `remove the ${ignoreFile} line that matches ${asset}`}, and confirm with \`npm pack --dry-run\`.`;
+  const file = files.at(-1) ?? '.npmignore';
+  return `${template}: loads ${asset}, which npm leaves out of the package because an ignore file drops it, so the template breaks once installed. Fix: remove the line in ${file} (or another ignore file on its path) that matches ${asset}, and confirm with \`npm pack --dry-run\`.`;
 }
 
 /**
@@ -1524,12 +1554,11 @@ export async function componentExamplesCheck(integration) {
       const exists = fs.existsSync(asset);
       if (exists) {
         // With no `files` field npm packs everything but what an ignore file
-        // drops, so with no ignore file there is nothing to ask.
+        // drops, in the package root or any folder down to the asset, so
+        // with no ignore file on that path there is nothing to ask.
         if (
           !Array.isArray(packedFiles) &&
-          !['.npmignore', '.gitignore'].some(file =>
-            fs.existsSync(path.join(base, file)),
-          )
+          ignoreFilesFor(base, assetRel).length === 0
         ) {
           continue;
         }
@@ -1547,7 +1576,7 @@ export async function componentExamplesCheck(integration) {
             asset: assetRel,
             reason: Array.isArray(packedFiles)
               ? `${packed.error}, and a \`files\` entry may reach it`
-              : `${packed.error}, and ${fs.existsSync(path.join(base, '.npmignore')) ? '.npmignore' : '.gitignore'} may drop it`,
+              : `${packed.error}, and ${ignoreFilesFor(base, assetRel).at(-1) ?? '.npmignore'} may drop it`,
           });
           continue;
         }
@@ -1666,8 +1695,31 @@ export async function componentExamplesCheck(integration) {
     const showsAnother =
       existing != null && typeof existing.exampleFor === 'string';
     if (existing && !showsAnother) claimed.add(existing);
+    // The stem path is free to suggest unless a block there already shows
+    // another component; then the new files take the next free stem.
+    const stemTemplate = templates.find(
+      template =>
+        typeof template.filePath === 'string' &&
+        path.basename(template.filePath).replace(/\.[^.]+$/u, '') === stem,
+    );
+    const stemShowsAnother =
+      stemTemplate != null &&
+      typeof stemTemplate.exampleFor === 'string' &&
+      stemTemplate.exampleFor !== name;
+    let freeStem = stem;
+    if (stemShowsAnother && root && !rootProblem(root)) {
+      for (
+        let n = 2;
+        fs.existsSync(path.join(root, `${freeStem}.tsx`)) ||
+        fs.existsSync(path.join(root, `${freeStem}.doc.mjs`));
+        n++
+      ) {
+        freeStem = `${stem}-${n}`;
+      }
+    }
     const taken =
       !existing &&
+      !stemShowsAnother &&
       root &&
       !rootProblem(root) &&
       fs.existsSync(path.join(root, `${stem}.tsx`));
@@ -1688,8 +1740,8 @@ export async function componentExamplesCheck(integration) {
         (root
           ? ''
           : " The manifest sets no `templates` root; add `templates: './templates'` to it.") +
-        ` Fix: add ${templatesDir}/${stem}.tsx, a small composition that renders ${name}, and beside it ${templatesDir}/${stem}.doc.mjs:` +
-        ` export default {type: 'block', name: '${stem}', displayName: '${name} showcase', description: 'A ${name} in use.', exampleFor: '${name}', isShowcase: true, aspectRatio: 16 / 10};` +
+        ` Fix: add ${templatesDir}/${freeStem}.tsx, a small composition that renders ${name}, and beside it ${templatesDir}/${freeStem}.doc.mjs:` +
+        ` export default {type: 'block', name: '${freeStem}', displayName: '${name} showcase', description: 'A ${name} in use.', exampleFor: '${name}', isShowcase: true, aspectRatio: 16 / 10};` +
         ' A doc set to `hidden`, `isHiddenFromOverview` or category `Utility` needs no example.',
     });
   }
