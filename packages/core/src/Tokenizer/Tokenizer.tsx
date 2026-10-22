@@ -23,6 +23,7 @@ import React, {
   useRef,
   useState,
   type ReactNode,
+  type RefObject,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
@@ -37,6 +38,7 @@ import {
   useFieldInputStyling,
 } from '../Field/fieldParts';
 import {useMergedRefs} from '../hooks/useMergedRefs';
+import {useBusyAnnouncement} from '../hooks/useBusyAnnouncement';
 import type {SizeValue} from '../utils/types';
 import {BaseTypeahead} from '../Typeahead/BaseTypeahead';
 import {useSize} from '../SizeContext/SizeContext';
@@ -521,6 +523,7 @@ function EndLane({
   laneRef,
   laneXStyle,
   loadingLabel,
+  anchorRef,
   hasStaticContent,
   children,
 }: {
@@ -528,16 +531,21 @@ function EndLane({
   laneRef: (node: HTMLElement | null) => void;
   laneXStyle: stylex.StyleXStyles[];
   loadingLabel: string;
+  anchorRef: RefObject<Element | null>;
   hasStaticContent: boolean;
   children: ReactNode;
 }) {
   const isBusy = useIsBusy(lane);
+  // The search Spinner stays named (family:input-fields FR7) but is not a
+  // live region; the field announces each search's busy start instead
+  // (spec:AST-086 FR8).
+  useBusyAnnouncement(isBusy, loadingLabel, anchorRef);
   if (!isBusy && !hasStaticContent) {
     return null;
   }
   return (
     <div ref={laneRef} {...stylex.props(laneXStyle)}>
-      {isBusy && <Spinner size="sm" aria-label={loadingLabel} />}
+      {isBusy && <Spinner size="sm" aria-label={loadingLabel} role="img" />}
       {children}
     </div>
   );
@@ -1084,6 +1092,7 @@ export function Tokenizer<T extends SearchableItem>({
         laneRef={laneRef}
         laneXStyle={[styles.endSection, endSectionSizeStyles[size]]}
         loadingLabel={t('@astryx.typeahead.loading')}
+        anchorRef={wrapperRef}
         hasStaticContent={hasStaticEndLane}>
         {endContent}
         {hasClearButton && (

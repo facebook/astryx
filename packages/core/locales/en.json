@@ -901,7 +901,7 @@
   },
   "@astryx.typeahead.loading": {
     "defaultMessage": "Loading",
-    "description": "Screen-reader-only name for a spinner shown inside a Typeahead dropdown while suggestions are being fetched. Present-progressive form."
+    "description": "Screen-reader-only name for the spinner a Typeahead, Tokenizer or directly used BaseTypeahead shows while suggestions are being fetched; also announced once through the shared announcement channel when each search starts. Present-progressive form."
   },
   "@astryx.typeahead.searchResults": {
     "defaultMessage": "Search results",
@@ -1169,7 +1169,7 @@
   },
   "@astryx.spinner.loading": {
     "defaultMessage": "Loading",
-    "description": "Screen-reader-only default name for a standalone Spinner's role=\"status\" element, used when the consumer supplies neither `aria-label` nor a visible string label; also announced once when a busy field or selector (TextInput, TextArea, Selector, MultiSelector) starts loading, in place of its decorative Spinner. Present-progressive form. Kept separate from `button.loading` and `typeahead.loading` — translations may diverge."
+    "description": "Screen-reader-only default name for a standalone Spinner's role=\"status\" element, used when the consumer supplies neither `aria-label` nor a visible string label; also announced once when a busy field or selector (TextInput, TextArea, Selector, MultiSelector, ComplexSelector) starts loading, in place of its decorative Spinner. Present-progressive form. Kept separate from `button.loading` and `typeahead.loading` — translations may diverge."
   },
   "@astryx.chatComposerDrawer.expand": {
     "defaultMessage": "Expand {label}",
