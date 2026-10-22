@@ -75,6 +75,7 @@ import {
   rootProblem,
 } from '../../foundation/integrations/validate-contributions.mjs';
 import {formatCliCommand} from '../../foundation/env/package-manager.mjs';
+import {publicImportIssues} from '../../foundation/integrations/public-imports.mjs';
 
 export {validateLoadedIntegration, isListedIssue};
 
@@ -100,6 +101,8 @@ export {validateLoadedIntegration, isListedIssue};
  * @property {import('../../foundation/discovery/icon-set-checks.mjs').IconSetCoverage[]} [iconSets]
  *   Which definitions each icon set leaves unmapped (spec:AST-084 FR15).
  * @property {import('../../foundation/discovery/doc-stability.mjs').OlderCliNote[]} [olderCliNotes]
+ * @property {import('./validate-integration.type.mjs').PublicImportsReport} [publicImports]
+ *   what the public-import check could not judge
  */
 
 /**
@@ -463,6 +466,14 @@ async function validateAtPackageDir(
       packageDir,
     )),
   );
+  // What the package tells apps to import, read from source: package.json
+  // `exports`, docs, examples and template imports.
+  const publicImports = await publicImportIssues(packageDir, loaded);
+  issues.push(...publicImports.issues);
+  // Each finding is a note until the next minor makes it a warning.
+  if (publicImports.notes.length > 0)
+    (result.notes ??= []).push(...publicImports.notes);
+  result.publicImports = publicImports.report;
   if (scanUnreachable) {
     issues.push(
       ...(await findUnreachableContributionIssues(
@@ -783,6 +794,10 @@ export async function validateIntegration(pkg, options = {}) {
       ...(result.found && result.iconSets ? {iconSets: result.iconSets} : {}),
       ...(result.found && result.olderCliNotes
         ? {olderCliNotes: result.olderCliNotes}
+        : {}),
+      // What the public-import check could not judge: listed, never failed on.
+      ...(result.found && result.publicImports
+        ? {publicImports: result.publicImports}
         : {}),
     },
   };

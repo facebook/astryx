@@ -284,6 +284,16 @@ function printIntegrationValidation(data, seen) {
     ...blockComponentsBlocks(data.blockComponents),
     ...iconSetCoverageBlocks(data.iconSets),
     ...olderCliNoteBlocks(data.olderCliNotes),
+    ...(data.publicImports && data.publicImports.unchecked.length > 0
+      ? [
+          text(
+            `[info] Imports not checked: ${data.publicImports.unchecked.length}:`,
+          ),
+          records(data.publicImports.unchecked, {
+            fields: ['file', 'specifier', 'reason'],
+          }),
+        ]
+      : []),
   );
 }
 

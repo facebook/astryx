@@ -37,7 +37,8 @@ integration-check              astryx integration check: The CI check for an int
 integration-pack               astryx integration pack: Deprecated: the old name of `integration verify`
 integration-verify             astryx integration verify: Check the package the way npm will publish it, before you
                                publish
-manifest                       astryx manifest: Print the full CLI capability manifest (use with --json).
+manifest                       astryx manifest: Print the full CLI capability manifest (use with --json)
+postinstall                    astryx postinstall: Print the welcome message shown after install
 search                         astryx search: Search components, hooks, docs, templates, and themes in one ranked list
 swizzle                        astryx swizzle: Copy component source for customization
 template                       astryx template: List, show, or scaffold page and block templates

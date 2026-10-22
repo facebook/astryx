@@ -1,4 +1,4 @@
-Results for "search" (20 of 109)
+Results for "search" (20 of 111)
 
 name:        cli/api/functions/search
 domain:      doc

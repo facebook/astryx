@@ -618,7 +618,7 @@
       "run-every-check-in-ci: Run every check in every build (required)",
       "what-integration-verify-does: Verify the packed package"
     ],
-    "digest": "2d20add51061071ed8aab1c40db6b44e2a698938168c4cb20e88d4c82d7aabe5"
+    "digest": "68e324d024ad52a5cb68b7977ae96e74e70cda321bbfd39eff709f943f6df6c7"
   },
   "authoring/ship/publishing": {
     "type": "docs.detail",
@@ -875,9 +875,10 @@
       "styling-overview",
       "theme",
       "use-a-theme",
+      "use-integrations",
       "working-with-ai"
     ],
-    "digest": "e7c700daf2a3fd72e3b01b57f2d50b81410d576edcfd4fd55de8060c0c97edb8"
+    "digest": "75cc10fa08ff465f1e7b50c1b02f5fa5ed8093384b68f966ae7c2d902c5e1ecc"
   },
   "icons": {
     "type": "docs.detail",
@@ -1385,7 +1386,17 @@
       "nesting-themes: Nested themes",
       "runtime-vs-built-themes: Runtime vs Built Themes"
     ],
-    "digest": "bc7d220b73b13531136dc17406bfcee8ee5ae7906a7da2e7779259a4a5694f7b"
+    "digest": "d129d1d9bfb84ec16d1ad8d969f2a2c476bc94b5a1e9ce319967087813a1c441"
+  },
+  "use-integrations": {
+    "type": "docs.detail",
+    "sections": [
+      "discover-integrations: Discover integrations",
+      "install-an-integration: Install an integration",
+      "use-what-it-adds: Use what it adds",
+      "check-for-problems: Check for problems"
+    ],
+    "digest": "4dde66c92d1ff72dcf65c07b88d3b1abc6735043e45999c54912b6f732370973"
   },
   "working-with-ai": {
     "type": "docs.detail",
@@ -1400,6 +1411,6 @@
       "mcp-server: MCP Server",
       "global-mode: In global mode"
     ],
-    "digest": "67bcb92f683b2d4076364654872c7072c7dab430fe9ecbcac42bc94b79d2466c"
+    "digest": "cc3999f6f17b25ab0d3495b910e6e7b6077631a22cb35799b7828e82cf6f105f"
   }
 }

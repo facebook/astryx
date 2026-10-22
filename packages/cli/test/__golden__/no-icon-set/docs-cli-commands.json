@@ -178,7 +178,15 @@
             "package": "@astryxdesign/cli",
             "kind": "command",
             "title": "astryx manifest",
-            "summary": "Print the full CLI capability manifest (use with --json)."
+            "summary": "Print the full CLI capability manifest (use with --json)"
+          },
+          {
+            "route": "cli/commands/postinstall",
+            "name": "postinstall",
+            "package": "@astryxdesign/cli",
+            "kind": "command",
+            "title": "astryx postinstall",
+            "summary": "Print the welcome message shown after install"
           },
           {
             "route": "cli/commands/search",

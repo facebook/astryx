@@ -76,6 +76,11 @@
       "package": "@astryxdesign/cli"
     },
     {
+      "topic": "use-integrations",
+      "description": "Install, discover, and use integration packages that add components, templates, themes, and docs to your app.",
+      "package": "@astryxdesign/cli"
+    },
+    {
       "topic": "working-with-ai",
       "description": "How to set up AI coding tools to generate correct component code.",
       "package": "@astryxdesign/cli"
@@ -247,7 +252,16 @@
         "nesting-themes: Nested themes",
         "runtime-vs-built-themes: Runtime vs Built Themes"
       ],
-      "digest": "db6dae57e9c082ebad4bfede16cb7ebfa41788353b27cc8cdd27d09c5ec1a306"
+      "digest": "c4c0890261ba96aff57caa24f820f6b88fc0403c2a8660360255949317972d9e"
+    },
+    "use-integrations": {
+      "sections": [
+        "discover-integrations: Discover integrations",
+        "install-an-integration: Install an integration",
+        "use-what-it-adds: Use what it adds",
+        "check-for-problems: Check for problems"
+      ],
+      "digest": "5dee0ecc310bb8349879e967c27f804fba2df8df5444b58acf143a24987656eb"
     },
     "working-with-ai": {
       "sections": [
@@ -261,7 +275,7 @@
         "mcp-server: MCP Server",
         "global-mode: In global mode"
       ],
-      "digest": "0248c6f393b5e63b5575088522624ae310d183c29b290116bcbf733d3538775b"
+      "digest": "c250506d2fd7de11e75748316438ddebaf8b85b165886862fddf0a981cc6fb36"
     }
   }
 }

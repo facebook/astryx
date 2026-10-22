@@ -96,7 +96,7 @@ import {doc as themePaletteGenerateFn} from '../../../api/theme/themePaletteGene
 
 /**
  * Path to this CLI's real entry (clients/cli/bin/astryx.mjs), resolved from
- * this module's location (clients/cli/commands/build-theme.mjs → ../bin/
+ * this module's location (clients/cli/commands/theme.mjs → ../bin/
  * astryx.mjs). Used to re-invoke `theme build` as a child process in watch mode.
  */
 function resolveCliBin() {

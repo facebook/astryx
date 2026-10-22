@@ -110,19 +110,19 @@
         "id": "cli-docs",
         "label": "CLI docs",
         "status": "pass",
-        "message": "All 100 CLI docs are readable: 81 in the `pnpm exec astryx docs cli` tree and 19 in `pnpm exec astryx docs authoring/field-reference`."
+        "message": "All 101 CLI docs are readable: 82 in the `pnpm exec astryx docs cli` tree and 19 in `pnpm exec astryx docs authoring/field-reference`."
       },
       {
         "id": "docs-tree",
         "label": "Docs tree",
         "status": "pass",
-        "message": "The docs tree has 196 docs in 31 sections (12 at the top), each at one route."
+        "message": "The docs tree has 198 docs in 31 sections (12 at the top), each at one route."
       },
       {
         "id": "docs-progressive-disclosure",
         "label": "Documentation navigation and size",
         "status": "pass",
-        "message": "115 topics: every section index and section fits in one 32 KB read."
+        "message": "116 topics: every section index and section fits in one 32 KB read."
       }
     ],
     "summary": {
