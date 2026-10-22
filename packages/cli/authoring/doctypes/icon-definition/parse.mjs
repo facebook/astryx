@@ -41,6 +41,7 @@ const iconDefinitionSchema = z
       )
       .min(1, 'a definition must have at least one word'),
     builtIn: z.literal(true).optional(),
+    stability: z.literal('experimental').optional(),
   })
   .strict();
 

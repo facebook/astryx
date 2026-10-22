@@ -17,6 +17,7 @@ import {
   splitSpecifier,
 } from './icon-set-discovery.mjs';
 import {
+  definitionSource,
   glyphsData,
   writeIconPackage,
   writeIconSetProject,
@@ -64,6 +65,32 @@ describe('discoverIconSetDirectory', () => {
       'trash',
       'home',
     ]);
+  });
+
+  it("keeps a set valid whose own definition is marked stability: 'experimental'", () => {
+    const dir = path.join(tmp, 'pkg');
+    writeIconPackage(dir, {
+      definitions: {
+        rotate: definitionSource('rotate').replace(
+          '"type": "icon-definition",',
+          '"type": "icon-definition",\n  "stability": "experimental",',
+        ),
+      },
+      data: {
+        ...glyphsData(),
+        module: '@acme/glyphs',
+        map: {...glyphsData().map, rotate: 'x'},
+      },
+    });
+    const {sets, errors} = discoverIconSetDirectory(
+      path.join(dir, 'icon-sets'),
+      '@acme/glyphs',
+    );
+    expect(errors).toEqual([]);
+    expect(sets.map(set => set.name)).toEqual(['glyphs']);
+    expect(sets[0].definitions?.map(each => each.doc ?? each)).toContainEqual(
+      expect.objectContaining({name: 'rotate', stability: 'experimental'}),
+    );
   });
 
   it.each([

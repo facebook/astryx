@@ -23,6 +23,10 @@ describe('parseIconDefinition', () => {
     expect(parseIconDefinition(DOC)).toEqual(DOC);
     expect(parseDoc(DOC)).toEqual(DOC);
     expect(parseIconDefinition({...DOC, builtIn: true}).builtIn).toBe(true);
+    expect(
+      parseIconDefinition({...DOC, stability: 'experimental'}).stability,
+    ).toBe('experimental');
+    expect(() => parseIconDefinition({...DOC, stability: 'stable'})).toThrow();
   });
 
   it('rejects a name that is not camelCase, a blank description, no words, and an unknown field', () => {

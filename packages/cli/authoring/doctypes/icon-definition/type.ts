@@ -46,4 +46,10 @@ export interface IconDefinitionDoc {
    * renders (`IconName`), so every icon set maps it.
    */
   builtIn?: true;
+  /**
+   * Marks the definition as experimental (spec:AST-017 FR27): the
+   * `icon-definitions` listing shows it as `[experimental]`. Every icon
+   * definition already belongs to the experimental icon-set feature.
+   */
+  stability?: 'experimental';
 }

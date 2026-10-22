@@ -51,6 +51,13 @@ export const doc = {
         "Only on Astryx's own definitions: the definition is a shared icon name Core renders, so every icon set maps it.",
       required: false,
     },
+    {
+      name: 'stability',
+      type: "'experimental'",
+      description:
+        'Marks the definition as experimental: the icon-definitions listing shows it as `[experimental]`. Omit it for a definition you mean to keep.',
+      required: false,
+    },
   ],
   examples: [
     {
