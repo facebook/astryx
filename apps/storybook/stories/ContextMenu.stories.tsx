@@ -7,8 +7,11 @@ import {
   ContextMenuCheckboxItem,
   ContextMenuRadioGroup,
   ContextMenuRadioItem,
+  ContextMenuSubMenu,
 } from '@astryxdesign/core/ContextMenu';
+import {Button} from '@astryxdesign/core/Button';
 import {Divider} from '@astryxdesign/core/Divider';
+import {TextInput} from '@astryxdesign/core/TextInput';
 import {
   PencilIcon,
   TrashIcon,
@@ -588,4 +591,77 @@ export const InScrollContainer: Story = {
       </ContextMenu>
     </div>
   ),
+};
+
+const LABELS = ['Bug', 'Feature', 'Documentation', 'Design', 'Performance'];
+
+/**
+ * A sub-menu with a header and footer inside a ContextMenu: a field that
+ * filters its rows and a button below them, in a dialog beside the menu. A
+ * press on the field, the button or a row reaches it and keeps the menu open.
+ */
+export const SubMenuHeaderAndFooter: Story = {
+  name: 'Submenu / header and footer',
+  render: () => {
+    const [query, setQuery] = useState('');
+    const [picked, setPicked] = useState<ReadonlyArray<string>>(['Bug']);
+    const [created, setCreated] = useState(0);
+    const visible = LABELS.filter(label =>
+      label.toLowerCase().includes(query.trim().toLowerCase()),
+    );
+    return (
+      <div data-testid="context-submenu-regions-fixture">
+        <ContextMenu
+          label="Row actions"
+          menuContent={
+            <>
+              <ContextMenuItem
+                icon={PencilIcon}
+                label="Rename"
+                onClick={() => {}}
+              />
+              <ContextMenuSubMenu
+                label="Labels"
+                header={
+                  <TextInput
+                    label="Filter labels"
+                    isLabelHidden
+                    placeholder="Filter labels"
+                    value={query}
+                    onChange={setQuery}
+                  />
+                }
+                footer={
+                  <Button
+                    label="Create label"
+                    variant="ghost"
+                    onClick={() => setCreated(count => count + 1)}
+                  />
+                }>
+                {visible.map(label => (
+                  <ContextMenuCheckboxItem
+                    key={label}
+                    label={label}
+                    value={picked.includes(label)}
+                    onChange={isChecked =>
+                      setPicked(current =>
+                        isChecked
+                          ? [...current, label]
+                          : current.filter(item => item !== label),
+                      )
+                    }
+                  />
+                ))}
+              </ContextMenuSubMenu>
+            </>
+          }>
+          <div {...stylex.props(triggerStyles.area)}>
+            Right-click for labels
+          </div>
+        </ContextMenu>
+        <output data-testid="picked">{picked.join(', ')}</output>
+        <output data-testid="created">{created}</output>
+      </div>
+    );
+  },
 };

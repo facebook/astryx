@@ -81,6 +81,7 @@ import {useListFocus} from '../hooks/useListFocus';
 import {useMenuPress} from '../hooks/useMenuPress';
 import {useTypeahead} from '../hooks/useTypeahead';
 import {useLongPress} from '../hooks/useLongPress';
+import {useInteractionModalityTracking} from '../utils/interactionModality';
 import {layerAnimations} from '../Layer/layerAnimations.stylex';
 import {
   colorVars,
@@ -415,6 +416,11 @@ export function ContextMenu({
   // outside.
   const openingGestureRef = useRef<number | null>(null);
 
+  // Records how the user last interacted, so a sub-menu's drilled-in view with
+  // a header or footer shows the keyboard focus ring only after keyboard
+  // input, as in DropdownMenu.
+  useInteractionModalityTracking();
+
   const [isOpen, setIsOpen] = useState(false);
   const [submenuPath, setSubmenuPath] = useState<SheetPathEntry[]>([]);
   // The opened level as the caller renders it now: its rows, header and
@@ -523,6 +529,23 @@ export function ContextMenu({
       ),
   });
 
+  // The surface host is owned through a ref; state keeps only a key that
+  // changes whenever a host element attaches, so sub-menus re-render into it.
+  const surfaceHostRef = useRef<HTMLDivElement | null>(null);
+  const [surfaceHostKey, setSurfaceHostKey] = useState(0);
+  const attachSurfaceHost = useCallback((node: HTMLDivElement | null) => {
+    surfaceHostRef.current = node;
+    if (node != null) {
+      setSurfaceHostKey(key => key + 1);
+    }
+  }, []);
+  const surfaceHost = useMemo<DropdownMenuSurfaceHost>(
+    () => ({
+      getElement: () => (surfaceHostKey > 0 ? surfaceHostRef.current : null),
+    }),
+    [surfaceHostKey],
+  );
+
   // Dismiss on any click outside the menu. We use popover="manual" (not
   // "auto") because the native light-dismiss treats the mouseup from the
   // opening right-click as a dismiss event. Handling it ourselves via
@@ -530,6 +553,8 @@ export function ContextMenu({
   // press that opened the menu (sent mid-hold by iOS, or as a long press
   // lifts by Chromium) belongs to that press's gesture, so it is not read as
   // a press outside; any later press is a new gesture and closes as before.
+  // A sub-menu with a header or footer renders its dialog in the surface
+  // host beside the menu, so a press there is inside too.
   useEffect(() => {
     if (!isOpen || usesBottomSheet) {
       return;
@@ -549,7 +574,12 @@ export function ContextMenu({
       if (currentGesture() === openingGestureRef.current) {
         return;
       }
-      if (menu && !menu.contains(e.target as Node)) {
+      const target = e.target as Node;
+      if (
+        menu &&
+        !menu.contains(target) &&
+        !surfaceHostRef.current?.contains(target)
+      ) {
         closeMenu();
       }
     };
@@ -748,22 +778,6 @@ export function ContextMenu({
   // The drill-in view stack for sub-menus on a phone; the bottom sheet has
   // its own drill-in.
   const {drillIn, wrapContent} = useMenuDrillIn(isOpen && !usesBottomSheet);
-  // The surface host is owned through a ref; state keeps only a key that
-  // changes whenever a host element attaches, so sub-menus re-render into it.
-  const surfaceHostRef = useRef<HTMLDivElement | null>(null);
-  const [surfaceHostKey, setSurfaceHostKey] = useState(0);
-  const attachSurfaceHost = useCallback((node: HTMLDivElement | null) => {
-    surfaceHostRef.current = node;
-    if (node != null) {
-      setSurfaceHostKey(key => key + 1);
-    }
-  }, []);
-  const surfaceHost = useMemo<DropdownMenuSurfaceHost>(
-    () => ({
-      getElement: () => (surfaceHostKey > 0 ? surfaceHostRef.current : null),
-    }),
-    [surfaceHostKey],
-  );
   const contextValue = useMemo<DropdownMenuContextValue>(
     () => ({closeMenu, menuSize: size, drillIn, menuLabel: label}),
     [closeMenu, size, drillIn, label],
