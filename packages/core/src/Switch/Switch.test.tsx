@@ -429,9 +429,7 @@ describe('Switch', () => {
           continue;
         }
         for (const node of record.addedNodes) {
-          if (node.textContent) {
-            written.push(node.textContent);
-          }
+          if (node.textContent) {written.push(node.textContent);}
         }
       }
     });

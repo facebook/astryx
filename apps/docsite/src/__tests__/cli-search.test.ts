@@ -228,7 +228,7 @@ describe('site search links', () => {
         'tokens spacing',
       ]) {
         for (const result of (await api(query)).data.results) {
-          if (result.domain !== 'doc') {continue;}
+          if (result.domain !== 'doc') continue;
           expect(result.siteTitle, `${query}: ${result.name}`).toBeTruthy();
           expect(result.siteTitle).not.toMatch(/Unorganized/);
         }
