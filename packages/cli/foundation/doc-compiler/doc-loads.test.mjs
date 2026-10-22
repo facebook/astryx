@@ -343,6 +343,10 @@ const RUNNERS = {
     runs: "each installed integration's manifest",
     sites: ['importUserModule'],
   },
+  'foundation/integrations/validate-contributions.mjs': {
+    runs: "`npm pack --dry-run --json --ignore-scripts`, to read which files an integration's package holds when a template loads an asset (no lifecycle script runs, nothing is written)",
+    sites: ['child_process.spawnSync'],
+  },
   'foundation/release/cache.mjs': {
     runs: 'npm (under npm-guard.mjs), to install and look up CLI releases in the per-user cache; each installed release once, to check it starts and reports its version; and ps (tasklist on Windows), to confirm the process a stale lock records is node or npm before ending it',
     sites: ['child_process.spawnSync ×5'],
