@@ -9,8 +9,8 @@
  */
 
 import {StrictMode, type ReactElement} from 'react';
-import {beforeEach, describe, expect, it, vi} from 'vitest';
-import {render, screen} from '@testing-library/react';
+import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
+import {act, render, screen} from '@testing-library/react';
 import {TextInput} from '../TextInput';
 import {TextArea} from '../TextArea';
 import {Selector} from '../Selector';
@@ -117,3 +117,43 @@ describe.each(OWNERS)('%s busy state (spec:AST-086)', (_name, renderOwner) => {
     ]);
   });
 });
+
+describe.each(OWNERS)(
+  '%s busy inside an open native modal (spec:AST-086 Platform support)',
+  (_name, renderOwner) => {
+    // jsdom has no showModal(), so an open dialog never matches `:modal`;
+    // stand in for a dialog opened modally.
+    beforeEach(() => {
+      const matches = Element.prototype.matches;
+      vi.spyOn(Element.prototype, 'matches').mockImplementation(function (
+        this: Element,
+        selector: string,
+      ) {
+        return selector === ':modal'
+          ? this instanceof HTMLDialogElement && this.open
+          : matches.call(this, selector);
+      });
+    });
+    afterEach(() => {
+      vi.restoreAllMocks();
+    });
+
+    it('announces its busy start through a persistent region inside the dialog, not the body-level channel', async () => {
+      const {rerender} = render(<dialog open>{renderOwner(false)}</dialog>);
+      const dialog = document.querySelector('dialog') as HTMLDialogElement;
+      rerender(<dialog open>{renderOwner(true)}</dialog>);
+      const region = dialog.querySelector('[data-astryx-modal-busy-region]');
+      expect(region).not.toBeNull();
+      expect(region).toHaveAttribute('role', 'status');
+      expect(region).toHaveAttribute('aria-live', 'polite');
+      // Inserted empty, then filled on the next frame (FR3).
+      expect(region).toHaveTextContent('');
+      await act(
+        async () =>
+          void (await new Promise(resolve => requestAnimationFrame(resolve))),
+      );
+      expect(region).toHaveTextContent('Loading');
+      expect(busyAnnouncements()).toEqual([]);
+    });
+  },
+);

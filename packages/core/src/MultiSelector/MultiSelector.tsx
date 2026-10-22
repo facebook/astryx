@@ -1206,7 +1206,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
   const isBusy = isLoading || optimisticValue !== value;
   // The busy Spinner is decorative; this control announces its busy start
   // (spec:AST-086 FR8).
-  useBusyAnnouncement(isBusy, t('@astryx.spinner.loading'));
+  useBusyAnnouncement(isBusy, t('@astryx.spinner.loading'), triggerRef);
 
   // Disabled-reason tooltip. Disabled controls swallow pointer events, so the
   // tooltip listeners attach to the trigger container (which already exists)

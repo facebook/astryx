@@ -1050,7 +1050,7 @@ export function Selector<T extends SelectorOptionType>(
   const isBusy = isLoading || optimisticValue !== normalizedValue;
   // The busy Spinner is decorative; this control announces its busy start
   // (spec:AST-086 FR8).
-  useBusyAnnouncement(isBusy, t('@astryx.spinner.loading'));
+  useBusyAnnouncement(isBusy, t('@astryx.spinner.loading'), triggerRef);
   const announce = useAnnounce();
 
   // Disabled-reason tooltip. Disabled controls swallow pointer events, so the

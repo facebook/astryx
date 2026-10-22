@@ -441,7 +441,7 @@ export function TextArea({
   const isBusy = isLoading || optimisticValue !== value;
   // The busy Spinner is decorative; this control announces its busy start
   // (spec:AST-086 FR8).
-  useBusyAnnouncement(isBusy, t('@astryx.spinner.loading'));
+  useBusyAnnouncement(isBusy, t('@astryx.spinner.loading'), containerRef);
 
   // Disabled-reason tooltip. Disabled controls swallow pointer events, so the
   // tooltip listeners attach to the textarea container (which already exists)
