@@ -46,7 +46,9 @@ function recordPolite() {
       }
       for (const node of record.addedNodes) {
         const text = node.textContent?.trim() ?? '';
-        if (text !== '') {spoken.push(text);}
+        if (text !== '') {
+          spoken.push(text);
+        }
       }
     }
   });
@@ -123,6 +125,30 @@ describe('EmptyState announcement (spec:AST-086 FR2)', () => {
     expect(
       document.querySelector('[role="status"].astryx-empty-state'),
     ).toBeNull();
+    await act(async () => root.unmount());
+  });
+
+  it('leaves an empty state inside a live container to that container (spec:AST-086 FR4)', async () => {
+    const {EmptyState, paint} = await importEmptyState();
+    paint();
+    let showEmpty!: () => void;
+    function Log() {
+      const [isEmpty, setIsEmpty] = useState(false);
+      showEmpty = () => setIsEmpty(true);
+      return (
+        <div role="log" aria-live="polite">
+          {isEmpty ? <EmptyState title="No messages yet" /> : null}
+        </div>
+      );
+    }
+    const polite = recordPolite();
+    const root = mount();
+    await act(async () => root.render(<Log />));
+    await act(async () => showEmpty());
+    await act(nextFrame);
+    await act(nextFrame);
+    polite.stop();
+    expect(polite.spoken).toEqual([]);
     await act(async () => root.unmount());
   });
 });

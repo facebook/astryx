@@ -37,10 +37,14 @@ export function useIsInsertedAfterLoad(): boolean {
   return isInserted;
 }
 
+const LIVE_CONTAINER =
+  '[role="log"], [role="status"], [role="alert"], [aria-live="polite"], [aria-live="assertive"]';
+
 /**
  * A `div` that, when inserted after the page loaded, announces its rendered
  * text once through the shared polite live region (`spec:AST-086` FR2); one
- * rendered with the page announces nothing. Later changes are not announced.
+ * rendered with the page, or inside a live container that delivers it,
+ * announces nothing. Later changes are not announced.
  * Each child element is read as its own block, so a heading and the text
  * below it are not run together.
  */
@@ -57,6 +61,12 @@ export function AnnounceOnInsert({
   useEffect(() => {
     const element = ref.current;
     if (!isInserted || hasSpokenRef.current || !element) {
+      return;
+    }
+    // Inside a mounted live container, that container delivers what is added
+    // to it; announcing through the channel too would say it twice
+    // (`spec:AST-086` FR4).
+    if (element.parentElement?.closest(LIVE_CONTAINER)) {
       return;
     }
     const text = Array.from(element.children)
