@@ -124,6 +124,21 @@ describe('Popover', () => {
     expect(screen.getByRole('button', {name: 'Open'})).toBeInTheDocument();
   });
 
+  it('does not open from an aria-disabled trigger', () => {
+    render(
+      <Popover content={<span>Content</span>} label="Test">
+        <button type="button" aria-disabled="true">
+          Trigger
+        </button>
+      </Popover>,
+    );
+    const trigger = screen.getByRole('button', {name: 'Trigger'});
+    // A click dispatched straight on the trigger, as element.click() or an
+    // assistive-technology activate command does (spec:AST-085 FR2).
+    act(() => trigger.click());
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+  });
+
   it('sets aria-haspopup on trigger', () => {
     render(
       <Popover content={<span>Content</span>} label="Test">
