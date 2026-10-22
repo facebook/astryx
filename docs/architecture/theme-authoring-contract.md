@@ -121,7 +121,10 @@ Explicit values win within their surface. Component maps merge by component,
 style key, and CSS property rather than replacing the entire inherited target.
 An explicit icon, indicator, or `componentIcons` entry replaces the inherited
 entry for the same key whole. An explicit `iconVariants` list replaces the
-inherited list; an omitted list is inherited.
+inherited list; an omitted list is inherited. An inherited function entry keeps
+the list of the theme that defined it, so it receives a requested variant only
+when both that list and the active theme's list contain it, and `undefined`
+otherwise.
 
 An `icons` entry is a React node or a pure synchronous function of
 `{size, variant}`, and a stateful `componentIcons` entry may be a pure

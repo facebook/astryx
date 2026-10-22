@@ -101,7 +101,9 @@ An entry is a React node or a pure synchronous function of `{size, variant}`.
 A nullish static entry falls through to the next source. Once a function entry
 is selected, its result is final for that resolution: a nullish result renders
 no glyph and never falls through, so artwork never mixes two sources. `component:Icon`
-supplies the resolved size and a variant the active theme lists, or `undefined`.
+supplies the resolved size and a variant the active theme lists, or `undefined`;
+a theme-supplied entry, including an inherited one, receives a variant only when
+the theme that defined it also lists it.
 
 This record does not change which shared or extension keys the general resolver
 accepts. Theme application owns how the active theme is selected. Theme

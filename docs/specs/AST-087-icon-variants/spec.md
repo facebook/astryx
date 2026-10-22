@@ -112,11 +112,14 @@ build` writes an augmentation of that map from the theme it builds, the same
   when an application loads several built themes, TypeScript merges their
   augmentations, and FR4 renders the normal icon wherever the active theme does
   not list a requested name.
-- **FR4 — An unlisted variant renders the normal icon.** `<Icon icon={name}
-variant={value}>` passes `variant` to the selected entry only when the active
-  theme lists it. An omitted variant, an unlisted variant, or a request with no
-  active theme list reaches the entry as `undefined`, so the entry renders its
-  normal artwork. A node entry renders the same node for every variant.
+- **FR4 — An unlisted variant renders the normal icon.** `Icon` passes a
+  requested `variant` to the selected entry only when the active theme lists it
+  and, for an entry a theme supplied, the theme that defined the entry lists it
+  too; an entry a child theme inherits keeps the list of the theme that defined
+  it. Otherwise the entry receives `undefined` and renders its normal artwork:
+  an omitted variant, an unlisted variant, and a request with no active theme
+  list all behave this way. A process-wide registration receives the variants
+  the active theme lists. A node entry renders the same node for every variant.
 - **FR5 — Variant applies to registry icons.** An icon component passed directly
   to `Icon` renders as given and does not receive `variant`; `Icon` does not
   forward `variant` to it or to the DOM. `variant` selects artwork only: the
@@ -130,8 +133,8 @@ variant={value}>` passes `variant` to the selected entry only when the active
   result from their input only, without hooks, DOM or SVG measurement, browser
   globals, network access, mutable module state, or side effects.
 - **FR8 — Build tooling can enumerate a theme's icons.** Every request a theme
-  can receive is a key with one of the four sizes and either no variant or one
-  listed variant. Build tooling that generates or subsets icon artwork may call
+  entry can receive is its key with one of the four sizes and either no variant
+  or one variant the entry can receive under FR4. Build tooling that generates or subsets icon artwork may call
   each entry for exactly that set; the result matches what the entry returns at
   runtime.
 
@@ -275,15 +278,15 @@ size styles renders the same icons. These owners carry the change:
 
 ## Verification
 
-| Contract  | Verification                                                        | Representative states                                                                                       | Mutation or failure expectation                                                                       |
-| --------- | ------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
-| FR1–FR7   | Registry type, resolver, and Icon render tests                      | node; function; null; omitted, listed, and unlisted variant; no active list; theme, global, default; direct | sources mix, an unlisted variant reaches an entry, `variant` reaches a component or the DOM           |
-| FR2–FR3   | Type tests and theme-build augmentation fixtures                    | listed names in entries and resolvers; child replaces list; built augmentation; unknown name                | an entry sees an unlisted name type, a child merges lists, or a type combines two themes              |
-| FR8       | Build enumeration test against runtime resolution                   | every key × four sizes × no variant and each listed variant                                                 | an enumerated request differs from runtime output, or an unlisted variant is enumerated               |
-| FR9–FR10  | Theme styling and size tests                                        | each size with and without theme styles                                                                     | a styled size does not change the glyph dimension, or an unstyled size changes                        |
-| FR11–FR16 | Slot type, state, fallback, indicator, geometry, and metadata tests | `true` slot; state slot; static request; partial and full results; `null`; caller content; documented state | fallback order changes, `null` stops hiding, a slot size changes the control, or a mark is both kinds |
-| FR17–FR19 | Public read, SSR, hydration, and runtime/build/extends tests        | one-argument reads; static view; nested themes; child replacement; built function entries; client theme     | a public read returns a function, built and runtime results differ                                    |
-| FR20      | Type and returned-field tests                                       | invalid state shape; unknown icon; unlisted variant; invalid size                                           | malformed fields change the fallback, or production warns                                             |
+| Contract  | Verification                                                        | Representative states                                                                                                                              | Mutation or failure expectation                                                                              |
+| --------- | ------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| FR1–FR7   | Registry type, resolver, and Icon render tests                      | node; function; null; omitted, listed, and unlisted variant; no active list; inherited entry under a replaced list; theme, global, default; direct | sources mix, an unlisted variant reaches an entry, `variant` reaches a component or the DOM                  |
+| FR2–FR3   | Type tests and theme-build augmentation fixtures                    | listed names in entries and resolvers; child replaces list; built augmentation; unknown name                                                       | an entry sees an unlisted name type, a child merges lists, or Astryx derives one type from two themes' lists |
+| FR8       | Build enumeration test against runtime resolution                   | every key × four sizes × no variant and each listed variant                                                                                        | an enumerated request differs from runtime output, or an unlisted variant is enumerated                      |
+| FR9–FR10  | Theme styling and size tests                                        | each size with and without theme styles                                                                                                            | a styled size does not change the glyph dimension, or an unstyled size changes                               |
+| FR11–FR16 | Slot type, state, fallback, indicator, geometry, and metadata tests | `true` slot; state slot; static request; partial and full results; `null`; caller content; documented state                                        | fallback order changes, `null` stops hiding, a slot size changes the control, or a mark is both kinds        |
+| FR17–FR19 | Public read, SSR, hydration, and runtime/build/extends tests        | one-argument reads; static view; nested themes; child replacement; built function entries; client theme                                            | a public read returns a function, built and runtime results differ                                           |
+| FR20      | Type and returned-field tests                                       | invalid state shape; unknown icon; unlisted variant; invalid size                                                                                  | malformed fields change the fallback, or production warns                                                    |
 
 ## Decision log
 
