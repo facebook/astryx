@@ -1459,6 +1459,16 @@ jobs:
             --project chromium \
             --output menu-header-footer-output
 
+      # A menu inside a shadow root must act on the row under a released
+      # pointer; at the document level a real engine resolves that point to
+      # the shadow host, which jsdom cannot show.
+      - name: Run menu press shadow-root contract
+        run: |
+          pnpm exec playwright test \
+            packages/core/src/hooks/__tests__/MenuPressShadowRoot.a11y.chromium.spec.ts \
+            --project chromium \
+            --output menu-press-shadow-root-output
+
       # A sub-menu with a header or footer is a modal dialog beside the root's
       # menu, outside every role="menu" element. Its Tab order, a header radio
       # group the browser moves focus in after the pointer leaves, the
