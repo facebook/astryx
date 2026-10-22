@@ -5,7 +5,7 @@
  *
  * Validates that the generated registries contain expected data.
  * @input Authored component docs and the generated docsite registries
- * @output Regression coverage for catalog projections, including Lab Drawer demos
+ * @output Regression coverage for catalog projections, including Drawer demos
  * @position Build-time docsite data verification
  * Run: pnpm -F @astryxdesign/docsite test
  */
@@ -15,8 +15,8 @@ import * as path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {describe, it, expect} from 'vitest';
 import {docs as chatDocs} from '../../../../packages/core/src/Chat/Chat.doc.mjs';
-import {docs as drawerDocs} from '../../../../packages/lab/src/Drawer/Drawer.doc.mjs';
-import {docs as drawerHeaderDocs} from '../../../../packages/lab/src/Drawer/DrawerHeader.doc.mjs';
+import {docs as drawerDocs} from '../../../../packages/core/src/Drawer/Drawer.doc.mjs';
+import {docs as drawerHeaderDocs} from '../../../../packages/core/src/Drawer/DrawerHeader.doc.mjs';
 import docsiteConfig from '../../astryx.config.mjs';
 import {packages} from '../generated/packageRegistry';
 import {
@@ -51,7 +51,24 @@ const COMPONENT_REGISTRY_SOURCE = fs.readFileSync(
   COMPONENT_REGISTRY_PATH,
   'utf-8',
 );
-const CONFIGURED_CANARY_PACKAGES = new Set(docsiteConfig.integrations);
+const CONFIGURED_INTEGRATION_PACKAGES = new Set(docsiteConfig.integrations);
+
+/** The workspace manifest of a configured integration package. */
+function integrationManifest(name: string): {
+  private?: boolean;
+  astryx?: {canaryOnly?: boolean};
+} {
+  const entry = packages.find(pkg => pkg.name === name);
+  if (!entry) {
+    throw new Error(`${name} is missing from packageRegistry`);
+  }
+  return JSON.parse(
+    fs.readFileSync(
+      path.join(REPO_ROOT, entry.packagePath, 'package.json'),
+      'utf-8',
+    ),
+  );
+}
 
 function findFiles(dir: string, predicate: (filePath: string) => boolean) {
   const files: string[] = [];
@@ -132,8 +149,12 @@ describe('packageRegistry', () => {
     expect(names).not.toContain('@astryxdesign/theme-chocolate');
     expect(names).not.toContain('@astryxdesign/theme-daily');
     expect(names).not.toContain('@astryxdesign/build');
+    // Every canary-only package is a configured integration; a configured
+    // integration that is a stable release (no `astryx.canaryOnly`) is not.
     expect(packages.filter(pkg => pkg.canaryOnly).map(pkg => pkg.name)).toEqual(
-      [...CONFIGURED_CANARY_PACKAGES].sort(),
+      [...CONFIGURED_INTEGRATION_PACKAGES]
+        .filter(name => integrationManifest(name).astryx?.canaryOnly === true)
+        .sort(),
     );
     expect(packages.length).toBeGreaterThanOrEqual(9);
   });
@@ -263,14 +284,18 @@ describe('componentRegistry', () => {
       'VegaChart',
     ]);
 
+    // Components of a canary-only integration are not ready; components of a
+    // configured integration that is a stable release are, like Core's.
     for (const packageName of [
       '@astryxdesign/lab',
       '@astryxdesign/charts',
       '@astryxdesign/richtext',
       '@astryxdesign/vega',
     ]) {
+      const isReady =
+        integrationManifest(packageName).astryx?.canaryOnly !== true;
       expect(
-        components[packageName].every(comp => !comp.isReady),
+        components[packageName].every(comp => comp.isReady === isReady),
         packageName,
       ).toBe(true);
     }
@@ -1210,22 +1235,22 @@ describe('exampleRegistry', () => {
     expect(exampleRegistry['Dialog']).toBeDefined();
   });
 
-  it('projects Drawer docs into a live showcase and five example blocks', () => {
+  it('projects Drawer docs into a live showcase and runnable example blocks', () => {
     const drawerBlocks = blocks.filter(block => block.exampleFor === 'Drawer');
     const labels = drawerDocs.examples!.map(example => example.label);
-    expect(drawerBlocks).toHaveLength(6);
+    expect(drawerBlocks).toHaveLength(labels.length);
     expect(drawerBlocks.map(block => block.name).sort()).toEqual(
       [...labels].sort(),
     );
-    expect(
-      drawerBlocks.every(block => block.sourcePackage === '@astryxdesign/lab'),
-    ).toBe(true);
+    // Core blocks, not an integration package's.
+    expect(drawerBlocks.every(block => block.sourcePackage == null)).toBe(true);
 
     const showcase = drawerBlocks.filter(block => block.isShowcase);
     expect(showcase.map(block => block.name)).toEqual([labels[0]]);
     expect(showcaseRegistry.Drawer).toBeTypeOf('function');
-    expect(exampleRegistry.Drawer.map(example => example.name).sort()).toEqual(
-      labels.slice(1).sort(),
+    // The page lists the examples in the doc's priority order, not by name.
+    expect(exampleRegistry.Drawer.map(example => example.name)).toEqual(
+      labels.slice(1),
     );
   });
 
@@ -1235,9 +1260,7 @@ describe('exampleRegistry', () => {
     );
     const labels = drawerHeaderDocs.examples!.map(example => example.label);
     expect(headerBlocks).toHaveLength(labels.length + 1);
-    expect(
-      headerBlocks.every(block => block.sourcePackage === '@astryxdesign/lab'),
-    ).toBe(true);
+    expect(headerBlocks.every(block => block.sourcePackage == null)).toBe(true);
 
     // Like DialogHeader, the page leads with a rendered header rather than an
     // empty preview; every authored example also runs live.

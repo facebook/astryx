@@ -5,7 +5,7 @@
 /**
  * @file BaseTypeahead.tsx
  * @input Uses React, StyleX, usePopover, TypeaheadItem
- * @output Exports BaseTypeahead with focused-input menu reactivation
+ * @output Exports BaseTypeahead; focus bootstraps a replaced search source
  * @position Core implementation; used by Typeahead and Tokenizer
  *
  * Pure combobox engine: input, search, keyboard navigation, dropdown.
@@ -33,7 +33,6 @@ import type {StyleXStyles} from '@stylexjs/stylex';
 import {usePopover} from '../Popover/usePopover';
 import {useAnnounce} from '../hooks/useAnnounce';
 import {useAnnounceRenderedText} from '../hooks/useAnnounceRenderedText';
-import {useRenamedProp} from '../hooks/useRenamedProp';
 import {useHighlightedOptionScroll} from '../hooks/useHighlightedOptionScroll';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import {isImeKeyEvent} from '../utils/ime';
@@ -63,6 +62,7 @@ import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
 
 import {useMergedRefs} from '../hooks/useMergedRefs';
+import {useBusyAnnouncement} from '../hooks/useBusyAnnouncement';
 import {layerViewportInset} from '../Layer/layerViewportInset.stylex';
 import {clampInlineSize} from '../Layer/clampInlineSize';
 // =============================================================================
@@ -142,18 +142,6 @@ export interface BaseTypeaheadProps<T extends SearchableItem> extends Omit<
    * @default 'No results found'
    */
   emptySearchText?: ReactNode;
-
-  /**
-   * Text shown when no results found.
-   * @default 'No results found'
-   * @deprecated `DEP-0003`. Renamed to `emptySearchText`, which takes a
-   * `ReactNode` rather than a `string` — every existing value stays valid
-   * (`spec:AST-056` FR1, FR7). Still works exactly as released;
-   * `emptySearchText` wins when both are set. Removal is `CLN-0003`, in a
-   * later minor whose frozen manifest carries both ids (`spec:AST-017`
-   * FR31).
-   */
-  emptySearchResultsText?: string;
 
   /**
    * Whether the input is disabled.
@@ -465,7 +453,6 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
   maxMenuItems = 10,
   menuWidth,
   minQueryLength = 1,
-  emptySearchResultsText: deprecatedEmptySearchResultsText,
   emptySearchText: emptySearchTextFromProps,
   isDisabled = false,
   isFocusableDisabled = false,
@@ -500,13 +487,7 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
   const placeholder =
     placeholderFromProps ?? t('@astryx.typeahead.searchPlaceholder');
   const emptySearchText =
-    useRenamedProp<ReactNode>({
-      component: 'BaseTypeahead',
-      deprecated: 'emptySearchResultsText',
-      deprecatedValue: deprecatedEmptySearchResultsText,
-      replacement: 'emptySearchText',
-      value: emptySearchTextFromProps,
-    }) ?? t('@astryx.typeahead.emptySearchResults');
+    emptySearchTextFromProps ?? t('@astryx.typeahead.emptySearchResults');
   // The empty-state row carries the message visually, and the live region has
   // to speak the same words. `emptySearchText` takes a ReactNode, so they are
   // read off the rendered row after it renders rather than guessed from the
@@ -581,6 +562,14 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
   // A wrapper that owns the inline-end lane subscribes through context; see
   // busyIndicatorLane.tsx for why this is not a prop.
   const busyLane = useBusyIndicatorLane();
+  // Without a wrapper that took the indicator over, this input announces each
+  // search's busy start (spec:AST-086 FR8); its Spinner stays named but is not
+  // a live region (family:input-fields FR7).
+  useBusyAnnouncement(
+    isLoading && busyLane == null,
+    t('@astryx.typeahead.loading'),
+    inputRef,
+  );
   const onLoadingChangeRef = useRef(busyLane?.onBusyChange);
   useIsomorphicLayoutEffect(() => {
     onLoadingChangeRef.current = busyLane?.onBusyChange;
@@ -630,6 +619,10 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
   // in the closure are stale (a selection cleared them) and shouldn't
   // be re-shown.
   const resultsGenRef = useRef(0);
+  // The generation at which the current searchSource took over. Results
+  // populated before it (resultsGenRef below this) came from a replaced
+  // source: they can never be re-shown, so focus bootstraps the new source.
+  const sourceGenRef = useRef(0);
 
   // Results still arriving from a replaced source must not land in the new
   // one's menu.
@@ -637,8 +630,34 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
   if (prevSearchSourceRef.current !== searchSource) {
     prevSearchSourceRef.current.cancel?.();
     prevSearchSourceRef.current = searchSource;
-    searchGenRef.current++;
+    sourceGenRef.current = ++searchGenRef.current;
   }
+
+  // The previous source is remembered in state, not a ref, so a render React
+  // discards cannot consume the comparison without its state updates.
+  const [sourceOfState, setSourceOfState] = useState(searchSource);
+  if (sourceOfState !== searchSource) {
+    setSourceOfState(searchSource);
+    if (isLoading) {
+      setIsLoading(false);
+      setHasSearched(false);
+    }
+    loadingRef.current = false;
+  }
+
+  // When the search source is replaced, any in-flight load from the previous
+  // source is abandoned (generation bumped above). Notify the wrapper's busy lane
+  // in an effect so external store listeners run safely after commit.
+  const isInitialMountRef = useRef(true);
+  useEffect(() => {
+    if (isInitialMountRef.current) {
+      isInitialMountRef.current = false;
+      return;
+    }
+    if (!loadingRef.current) {
+      onLoadingChangeRef.current?.(false);
+    }
+  }, [searchSource]);
 
   // Layer for dropdown
   const handleLayerShow = useCallback(() => {
@@ -909,11 +928,21 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
   // Shared by handleFocus and handleClick: bootstrap entries if none are
   // loaded yet, or re-show cached results that haven't been invalidated by
   // a selection since (comparing the two generation refs catches that).
+  // Results cached from a replaced search source count as none, so focusing
+  // an empty field bootstraps the new source instead of opening nothing.
+  // Results a selection invalidated still keep the menu closed when the
+  // selection returns focus to the input.
   const openIfEligible = useCallback(() => {
     if (isDisabled) {
       return;
     }
-    if (hasEntriesOnFocus && results.length === 0 && query.length === 0) {
+    const hasResultsFromCurrentSource =
+      results.length > 0 && resultsGenRef.current >= sourceGenRef.current;
+    if (
+      hasEntriesOnFocus &&
+      !hasResultsFromCurrentSource &&
+      query.length === 0
+    ) {
       void performBootstrap();
     } else if (
       results.length > 0 &&
@@ -1198,7 +1227,11 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
       />
       {isLoading && busyLane == null && (
         <span {...stylex.props(styles.loadingStatus)}>
-          <Spinner size="sm" aria-label={t('@astryx.typeahead.loading')} />
+          <Spinner
+            size="sm"
+            aria-label={t('@astryx.typeahead.loading')}
+            role="img"
+          />
         </span>
       )}
       {popover.render(

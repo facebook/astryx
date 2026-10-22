@@ -30,6 +30,7 @@
  */
 import {ERROR_CODES, isErrorCode} from './error-codes.mjs';
 import {recordEnvelope, setOutcome} from '../debug/index.mjs';
+import {answeredBy} from '../release/run-context.mjs';
 
 export const API_VERSION = 1;
 
@@ -101,7 +102,9 @@ export function jsonOut(response) {
   const envelope = {apiVersion: API_VERSION, type: response.type};
   if (response.package !== undefined) envelope.package = response.package;
   envelope.data = response.data;
-  if (response.meta !== undefined) envelope.meta = response.meta;
+  // Every successful result names the release that answered (spec AST-081
+  // FR5): the CLI, the Core it paired with, and which copy it was.
+  envelope.meta = {...(response.meta ?? {}), answeredBy: answeredBy()};
   // Serialize BEFORE marking handled. If JSON.stringify throws (a circular
   // reference or a BigInt in `data` — an author bug in a command's return
   // value), the `__xdsJsonHandled` flag must stay unset so the bin error

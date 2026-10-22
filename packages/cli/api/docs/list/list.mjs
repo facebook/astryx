@@ -15,7 +15,12 @@
  */
 
 import {loadTopicFile} from '../../../foundation/doc-compiler/read.mjs';
-import {holdsOwnName, loadDocsCatalog, projectTree} from '../_adapter.mjs';
+import {
+  holdsOwnName,
+  linkDocText,
+  loadDocsCatalog,
+  projectTree,
+} from '../_adapter.mjs';
 
 /**
  * @param {object} [options]
@@ -39,7 +44,12 @@ export async function list({cwd} = {}) {
     /** @type {import('../docs.type.mjs').DocsListEntry} */
     const listed = {
       topic: entry.name,
-      description,
+      // A link in the description reads as the command that opens its doc.
+      description: await linkDocText(
+        catalog,
+        entry.providerId ?? entry.package,
+        description,
+      ),
       package: entry.package,
     };
     if (entry.replaces != null) listed.replaces = entry.replaces;

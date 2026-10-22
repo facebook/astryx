@@ -10,7 +10,9 @@
  *
  * Detects trigger characters (@ / etc.) typed inside a contentEditable,
  * opens a popover at the cursor position with filtered items, handles
- * keyboard navigation, and inserts tokens or text on selection.
+ * keyboard navigation, and inserts tokens or text on selection. Triggers
+ * opt into multi-word queries with hasMultiWordQuery; results apply only
+ * while their query is current (component:ChatComposerInput FR10–FR16).
  *
  * Reuses SearchSource from Typeahead for async/sync search with
  * cancel() support and debounce.
@@ -30,6 +32,7 @@ import {
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {usePopover} from '../Popover/usePopover';
+import {useAnnounce} from '../hooks/useAnnounce';
 import {useHighlightedOptionScroll} from '../hooks/useHighlightedOptionScroll';
 import {
   colorVars,
@@ -38,7 +41,7 @@ import {
   typeScaleVars,
   typographyVars,
 } from '../theme/tokens.stylex';
-import {mergeProps, groupItems} from '../utils';
+import {mergeProps, groupItems, isImeKeyEvent} from '../utils';
 import type {SearchableItem} from '../Typeahead/types';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
@@ -55,6 +58,11 @@ export interface TriggerMenuState {
   items: SearchableItem[];
   highlightedIndex: number;
   isLoading: boolean;
+  /**
+   * The last settled results were an unmatched multi-word query, so the menu
+   * is closed. It stays closed while a newer search for the same query runs.
+   */
+  isHidden: boolean;
 }
 
 export interface UseTriggerMenuOptions {
@@ -74,7 +82,7 @@ export interface UseTriggerMenuReturn {
   state: TriggerMenuState;
   /** Call on every input event to check for trigger activation */
   handleInput: () => void;
-  /** Call on keydown \u2014 returns true if the event was consumed */
+  /** Call on keydown — returns true if the event was consumed */
   handleKeyDown: (e: React.KeyboardEvent) => boolean;
   /** Render the trigger menu popover */
   renderMenu: () => ReactNode;
@@ -169,6 +177,18 @@ const styles = stylex.create({
 // Helpers
 // =============================================================================
 
+/** The text node holding a collapsed caret inside `editable`, if any. */
+function getCaretTextNode(editable: HTMLDivElement): Node | null {
+  const selection = window.getSelection();
+  if (!selection || selection.rangeCount === 0) {
+    return null;
+  }
+  const node = selection.getRangeAt(0).startContainer;
+  return node.nodeType === Node.TEXT_NODE && editable.contains(node)
+    ? node
+    : null;
+}
+
 function getTextBeforeCursor(editable: HTMLDivElement): string | null {
   const selection = window.getSelection();
   if (!selection || selection.rangeCount === 0) {
@@ -191,6 +211,38 @@ function getTextBeforeCursor(editable: HTMLDivElement): string | null {
   return null;
 }
 
+const MAX_MULTI_WORD_QUERY_LENGTH = 64;
+
+/**
+ * An unmatched multi-word query hides the menu instead of covering prose with
+ * an empty panel, unless the trigger supplies its own empty message.
+ */
+function isUnmatchedMultiWordQuery(
+  trigger: ChatComposerTrigger | null,
+  items: SearchableItem[],
+  isLoading: boolean,
+): boolean {
+  return (
+    trigger?.hasMultiWordQuery === true &&
+    // `null` means "not given", exactly as `undefined` does.
+    trigger.emptySearchText == null &&
+    items.length === 0 &&
+    !isLoading
+  );
+}
+
+function isTriggerBoundary(char: string | null): boolean {
+  return char === null || char === ' ' || char === '\t' || char === '\n';
+}
+
+/**
+ * Finds the trigger query the caret is in (component:ChatComposerInput FR10,
+ * FR11). A trigger character activates at the start of the text or after a
+ * space, tab, or line break. A single-token query ends at whitespace. A
+ * multi-word query ends at a line break, past the length bound, or where the
+ * same trigger's character starts a new query; another trigger's character
+ * inside it is ordinary text.
+ */
 function findActiveTrigger(
   textBeforeCursor: string,
   triggers: ChatComposerTrigger[],
@@ -199,25 +251,50 @@ function findActiveTrigger(
   query: string;
   triggerStart: number;
 } | null {
-  for (let i = textBeforeCursor.length - 1; i >= 0; i--) {
+  let active: {trigger: ChatComposerTrigger; triggerStart: number} | null =
+    null;
+
+  for (let i = 0; i < textBeforeCursor.length; i++) {
     const char = textBeforeCursor[i];
 
-    if (char === ' ' || char === '\n') {
-      return null;
+    if (char === '\n') {
+      active = null;
+      continue;
+    }
+    if (active && !active.trigger.hasMultiWordQuery) {
+      if (char === ' ' || char === '\t') {
+        active = null;
+      }
+      continue;
+    }
+    if (active && i - active.triggerStart > MAX_MULTI_WORD_QUERY_LENGTH) {
+      active = null;
     }
 
-    for (const trigger of triggers) {
-      if (char === trigger.character) {
-        const prevChar = i > 0 ? textBeforeCursor[i - 1] : null;
-        if (prevChar === null || prevChar === ' ' || prevChar === '\n') {
-          const query = textBeforeCursor.slice(i + 1);
-          return {trigger, query, triggerStart: i};
-        }
-      }
+    if (!isTriggerBoundary(i > 0 ? textBeforeCursor[i - 1] : null)) {
+      continue;
     }
+    const trigger = triggers.find(t => t.character === char);
+    if (!trigger) {
+      continue;
+    }
+    if (active && trigger.character !== active.trigger.character) {
+      continue;
+    }
+    active = {trigger, triggerStart: i};
   }
 
-  return null;
+  if (!active) {
+    return null;
+  }
+  const query = textBeforeCursor.slice(active.triggerStart + 1);
+  if (
+    active.trigger.hasMultiWordQuery &&
+    query.length > MAX_MULTI_WORD_QUERY_LENGTH
+  ) {
+    return null;
+  }
+  return {trigger: active.trigger, query, triggerStart: active.triggerStart};
 }
 
 function deleteTriggerText(
@@ -274,11 +351,57 @@ export function useTriggerMenu(
     items: [],
     highlightedIndex: 0,
     isLoading: false,
+    isHidden: false,
   });
+
+  // The loading row carries no live role: it mounts already holding its text
+  // and is removed when results arrive, so it would be skipped. The shared
+  // channel announces each loading episode once instead (spec:AST-086 FR2,
+  // FR6), once the row has been painted: the second animation frame runs
+  // after the first paint, and a search that settles before then never shows
+  // the row, so it announces nothing (FR7). The flag clears when the loading
+  // row goes away, so the next search is a new occasion.
+  const announce = useAnnounce();
+  const hasAnnouncedLoadingRef = useRef(false);
+  // Mirrors renderMenu: no row exists without an active trigger or while hidden.
+  const isLoadingRowShown =
+    state.isLoading && !state.isHidden && state.activeTrigger !== null;
+  // One catalog string serves the row and the announcement (FR7).
+  const loadingText =
+    state.activeTrigger?.loadingText ?? t('@astryx.chatTriggerMenu.searching');
+  useEffect(() => {
+    if (!isLoadingRowShown) {
+      hasAnnouncedLoadingRef.current = false;
+      return;
+    }
+    if (hasAnnouncedLoadingRef.current) {
+      return;
+    }
+    let frame = requestAnimationFrame(() => {
+      frame = requestAnimationFrame(() => {
+        hasAnnouncedLoadingRef.current = true;
+        announce(loadingText, 'polite');
+      });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [announce, isLoadingRowShown, loadingText]);
 
   const triggerStartRef = useRef<number>(-1);
   const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const searchRequestIdRef = useRef<number>(0);
+  const dismissedRef = useRef<{
+    character: string;
+    triggerStart: number;
+    dismissedQuery: string;
+    // The text the Escape dismissed. Replacing the draft from outside typing
+    // (a send button, a cleared value) replaces this node, which ends the
+    // dismissal without any extra bookkeeping.
+    textNode: Node | null;
+  } | null>(null);
   const anchorSpanRef = useRef<HTMLSpanElement | null>(null);
+  // True while the popover is closed only because the query is unmatched; the
+  // trigger query itself is still active.
+  const isMenuSuppressedRef = useRef(false);
 
   const removeAnchorSpan = useCallback(() => {
     if (anchorSpanRef.current) {
@@ -289,6 +412,16 @@ export function useTriggerMenu(
 
   const popover = usePopover({
     onHide: useCallback(() => {
+      if (isMenuSuppressedRef.current) {
+        return;
+      }
+      // A search still waiting out its debounce must not start for a menu
+      // that is gone.
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+        searchTimeoutRef.current = null;
+      }
+      searchRequestIdRef.current++;
       removeAnchorSpan();
       setState(prev => ({
         ...prev,
@@ -298,6 +431,7 @@ export function useTriggerMenu(
         items: [],
         highlightedIndex: 0,
         isLoading: false,
+        isHidden: false,
       }));
     }, [removeAnchorSpan]),
     hasLightDismiss: true,
@@ -307,6 +441,7 @@ export function useTriggerMenu(
     // the contenteditable composer, so a modal dialog wrapper is incorrect.
     role: 'none',
   });
+  const {show: showPopover, hide: hidePopover} = popover;
 
   // Cleanup on unmount
   useEffect(() => {
@@ -323,14 +458,29 @@ export function useTriggerMenu(
       clearTimeout(searchTimeoutRef.current);
       searchTimeoutRef.current = null;
     }
+    searchRequestIdRef.current++;
     // Cancel any in-flight search on the active trigger's searchSource
     const trigger = state.activeTrigger;
     if (trigger?.searchSource) {
       trigger.searchSource.cancel?.();
     }
     removeAnchorSpan();
+    isMenuSuppressedRef.current = false;
+    // Ending the query also forgets an Escape on it; a send or clear must not
+    // leave the next message's mention at the same offset suppressed.
+    dismissedRef.current = null;
     popover.hide();
     triggerStartRef.current = -1;
+    setState(prev => ({
+      ...prev,
+      isActive: false,
+      activeTrigger: null,
+      query: '',
+      items: [],
+      highlightedIndex: 0,
+      isLoading: false,
+      isHidden: false,
+    }));
   }, [popover, state.activeTrigger, removeAnchorSpan]);
 
   // Anchor the popover to the cursor position (not the entire input).
@@ -395,28 +545,73 @@ export function useTriggerMenu(
         searchTimeoutRef.current = null;
       }
 
+      const requestId = ++searchRequestIdRef.current;
+      // A result applies only while its request is the latest one and the
+      // caret is still inside the same trigger query. Submitting or clearing
+      // the editor ends the query without an input event, so check the DOM.
+      const isCurrent = () => {
+        if (requestId !== searchRequestIdRef.current) {
+          return false;
+        }
+        const editable = editableRef.current;
+        const textBefore = editable ? getTextBeforeCursor(editable) : null;
+        const found =
+          textBefore === null || !triggers
+            ? null
+            : findActiveTrigger(textBefore, triggers);
+        if (
+          found?.trigger.character !== trigger.character ||
+          found.triggerStart !== triggerStartRef.current
+        ) {
+          reset();
+          return false;
+        }
+        return true;
+      };
+
+      const applyResults = (items: SearchableItem[]) => {
+        const isHidden = isUnmatchedMultiWordQuery(trigger, items, false);
+        setState(prev => ({
+          ...prev,
+          items,
+          highlightedIndex: items.length > 0 ? 0 : -1,
+          isLoading: false,
+          isHidden,
+        }));
+        // A hidden menu closes its popover, which also releases the popover's
+        // Escape and light-dismiss handling; matches reopen it at the caret.
+        if (isHidden && !isMenuSuppressedRef.current) {
+          isMenuSuppressedRef.current = true;
+          hidePopover();
+        } else if (!isHidden && isMenuSuppressedRef.current) {
+          isMenuSuppressedRef.current = false;
+          setAnchor();
+          showPopover();
+        }
+      };
+
       const doSearch = () => {
         if (trigger.searchSource) {
-          // Use SearchSource \u2014 cancel previous, then search
+          // Use SearchSource — cancel previous, then search
           trigger.searchSource.cancel?.();
-          setState(prev => ({...prev, isLoading: true}));
           const result = trigger.searchSource.search(query);
+          // A synchronous source already has its results, so it never shows
+          // or announces the loading row (spec:AST-086 FR7).
+          if (!Array.isArray(result)) {
+            setState(prev => ({...prev, isLoading: true}));
+          }
           Promise.resolve(result).then(
             items => {
-              setState(prev => ({
-                ...prev,
-                items,
-                highlightedIndex: items.length > 0 ? 0 : -1,
-                isLoading: false,
-              }));
+              if (!isCurrent()) {
+                return;
+              }
+              applyResults(items);
             },
             () => {
-              setState(prev => ({
-                ...prev,
-                items: [],
-                highlightedIndex: -1,
-                isLoading: false,
-              }));
+              if (!isCurrent()) {
+                return;
+              }
+              applyResults([]);
             },
           );
         }
@@ -435,7 +630,15 @@ export function useTriggerMenu(
         }
       }
     },
-    [debounceMs],
+    [
+      debounceMs,
+      editableRef,
+      triggers,
+      reset,
+      setAnchor,
+      hidePopover,
+      showPopover,
+    ],
   );
 
   const selectItem = useCallback(
@@ -490,6 +693,7 @@ export function useTriggerMenu(
 
     const textBefore = getTextBeforeCursor(editable);
     if (textBefore === null) {
+      dismissedRef.current = null;
       if (state.isActive) {
         reset();
       }
@@ -498,6 +702,7 @@ export function useTriggerMenu(
 
     const found = findActiveTrigger(textBefore, triggers);
     if (!found) {
+      dismissedRef.current = null;
       if (state.isActive) {
         reset();
       }
@@ -506,20 +711,44 @@ export function useTriggerMenu(
 
     const {trigger, query, triggerStart} = found;
 
-    if (!state.isActive || state.activeTrigger !== trigger) {
+    // After Escape, keep the menu hidden while that same query keeps growing
+    const dismissed = dismissedRef.current;
+    if (
+      dismissed &&
+      dismissed.character === trigger.character &&
+      dismissed.triggerStart === triggerStart &&
+      dismissed.textNode !== null &&
+      dismissed.textNode.isConnected &&
+      dismissed.textNode === getCaretTextNode(editable)
+    ) {
+      if (query.startsWith(dismissed.dismissedQuery)) {
+        return;
+      }
+      dismissedRef.current = null;
+    } else {
+      dismissedRef.current = null;
+    }
+
+    if (
+      !state.isActive ||
+      state.activeTrigger?.character !== trigger.character ||
+      triggerStartRef.current !== triggerStart
+    ) {
       triggerStartRef.current = triggerStart;
+      isMenuSuppressedRef.current = false;
       setState(prev => ({
         ...prev,
         isActive: true,
         activeTrigger: trigger,
         query,
         highlightedIndex: 0,
+        isHidden: false,
       }));
       setAnchor();
       searchItems(trigger, query);
       popover.show();
     } else if (state.query !== query) {
-      setState(prev => ({...prev, query}));
+      setState(prev => ({...prev, query, activeTrigger: trigger}));
       searchItems(trigger, query);
     }
   }, [
@@ -534,9 +763,49 @@ export function useTriggerMenu(
     popover,
   ]);
 
+  const isMenuVisible = state.isActive && !state.isHidden;
+
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent): boolean => {
-      if (!state.isActive || !popover.isOpen) {
+      // Never intercept IME composition keystrokes (e.g. Enter committing candidates)
+      if (isImeKeyEvent(e.nativeEvent)) {
+        return false;
+      }
+
+      // A hidden menu consumes nothing: arrows move the caret, Enter submits,
+      // and Escape reaches the surrounding surface.
+      if (!isMenuVisible) {
+        return false;
+      }
+
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        const editable = editableRef.current;
+        const dismissed = state.activeTrigger
+          ? {
+              character: state.activeTrigger.character,
+              triggerStart: triggerStartRef.current,
+              dismissedQuery: state.query,
+              textNode: editable ? getCaretTextNode(editable) : null,
+            }
+          : null;
+        reset();
+        // Remembered after reset, which clears it: the menu stays hidden while
+        // this same query keeps growing.
+        dismissedRef.current = dismissed;
+        return true;
+      }
+
+      // A visible menu keeps the arrows even when it has nothing to pick (rows
+      // still loading, or the empty message), so they never recall history
+      // under an open panel. Enter and Tab pick only a settled row; otherwise
+      // they keep their editor meaning, so Enter sends the message as typed.
+      const hasPickableRows = !state.isLoading && state.items.length > 0;
+      if (!hasPickableRows && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) {
+        e.preventDefault();
+        return true;
+      }
+      if (!hasPickableRows) {
         return false;
       }
 
@@ -575,20 +844,18 @@ export function useTriggerMenu(
           }
           return false;
         }
-        case 'Escape': {
-          e.preventDefault();
-          reset();
-          return true;
-        }
         default:
           return false;
       }
     },
     [
-      state.isActive,
+      isMenuVisible,
+      editableRef,
+      state.activeTrigger,
+      state.query,
+      state.isLoading,
       state.highlightedIndex,
       state.items,
-      popover.isOpen,
       selectItem,
       reset,
     ],
@@ -621,7 +888,7 @@ export function useTriggerMenu(
   const hasTriggers = (triggers?.length ?? 0) > 0;
   const ariaProps: UseTriggerMenuReturn['ariaProps'] = !hasTriggers
     ? {role: 'textbox', 'aria-multiline': 'true'}
-    : state.isActive && popover.isOpen
+    : isMenuVisible
       ? {
           role: 'combobox',
           'aria-expanded': true as const,
@@ -639,19 +906,21 @@ export function useTriggerMenu(
         };
 
   const renderMenu = useCallback((): ReactNode => {
-    const trigger = state.activeTrigger;
-    const emptyText =
-      trigger?.emptySearchText ??
-      trigger?.emptySearchResultsText ??
-      'No results';
-    const loadingText = trigger?.loadingText ?? 'Searching\u2026';
+    const activeTrigger = state.activeTrigger;
+    if (!activeTrigger) {
+      return null;
+    }
+
+    if (state.isHidden) {
+      return null;
+    }
+
+    const emptyText = activeTrigger.emptySearchText ?? 'No results';
 
     let listContent: ReactNode;
     if (state.isLoading) {
       listContent = (
-        <div role="status" {...stylex.props(styles.loadingState)}>
-          {loadingText}
-        </div>
+        <div {...stylex.props(styles.loadingState)}>{loadingText}</div>
       );
     } else if (state.items.length === 0 && state.isActive) {
       listContent = <div {...stylex.props(styles.emptyState)}>{emptyText}</div>;
@@ -677,8 +946,8 @@ export function useTriggerMenu(
                 styles.item,
                 idx === state.highlightedIndex && styles.itemHighlighted,
               )}>
-              {trigger?.renderItem ? (
-                trigger.renderItem(item)
+              {activeTrigger.renderItem ? (
+                activeTrigger.renderItem(item)
               ) : (
                 <span {...stylex.props(styles.itemLabel)}>{item.label}</span>
               )}
@@ -707,7 +976,7 @@ export function useTriggerMenu(
         id={listboxId}
         role="listbox"
         aria-label={
-          trigger?.menuLabel ?? t('@astryx.chatTriggerMenu.suggestions')
+          activeTrigger.menuLabel ?? t('@astryx.chatTriggerMenu.suggestions')
         }
         {...mergeProps(
           themeProps('trigger-menu'),
@@ -722,7 +991,16 @@ export function useTriggerMenu(
         xstyle: styles.popoverSurface,
       },
     );
-  }, [popover, listboxId, state, selectItem, getItemId, highlightOnHover, t]);
+  }, [
+    popover,
+    listboxId,
+    state,
+    selectItem,
+    getItemId,
+    highlightOnHover,
+    t,
+    loadingText,
+  ]);
 
   return {
     state,

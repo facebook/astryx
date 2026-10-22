@@ -25,6 +25,7 @@ import React, {
   useMemo,
   useState,
   type ReactNode,
+  type RefObject,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
@@ -70,7 +71,7 @@ import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
 
 import {useMergedRefs} from '../hooks/useMergedRefs';
-import {useRenamedProp} from '../hooks/useRenamedProp';
+import {useBusyAnnouncement} from '../hooks/useBusyAnnouncement';
 export type {
   InputStatus as TypeaheadStatus,
   InputStatusType as TypeaheadStatusType,
@@ -160,18 +161,6 @@ export interface TypeaheadProps<T extends SearchableItem> extends Omit<
    * @default 'No results found'
    */
   emptySearchText?: ReactNode;
-
-  /**
-   * Text shown when no results found.
-   * @default 'No results found'
-   * @deprecated `DEP-0002`. Renamed to `emptySearchText`, which takes a
-   * `ReactNode` rather than a `string` — every existing value stays valid
-   * (`spec:AST-056` FR1, FR7). Still works exactly as released;
-   * `emptySearchText` wins when both are set. Removal is `CLN-0002`, in a
-   * later minor whose frozen manifest carries both ids (`spec:AST-017`
-   * FR31).
-   */
-  emptySearchResultsText?: string;
   /** Whether the input is disabled. @default false */
   isDisabled?: boolean;
   /**
@@ -362,19 +351,25 @@ const wrapperSizeStyles = stylex.create({
 function EndLane({
   lane,
   loadingLabel,
+  anchorRef,
   clear,
 }: {
   lane: BusyIndicatorLane;
   loadingLabel: string;
+  anchorRef: RefObject<Element | null>;
   clear: ReactNode;
 }) {
   const isBusy = useIsBusy(lane);
+  // The search Spinner stays named (family:input-fields FR7) but is not a
+  // live region; the field announces each search's busy start instead
+  // (spec:AST-086 FR8).
+  useBusyAnnouncement(isBusy, loadingLabel, anchorRef);
   if (!isBusy && clear == null) {
     return null;
   }
   return (
     <div {...stylex.props(styles.endLane)}>
-      {isBusy && <Spinner size="sm" aria-label={loadingLabel} />}
+      {isBusy && <Spinner size="sm" aria-label={loadingLabel} role="img" />}
       {clear}
     </div>
   );
@@ -399,8 +394,7 @@ export function Typeahead<T extends SearchableItem>({
   hasEntriesOnFocus,
   maxMenuItems,
   minQueryLength,
-  emptySearchResultsText,
-  emptySearchText: emptySearchTextFromProps,
+  emptySearchText,
   isDisabled = false,
   disabledMessage,
   hasClear = true,
@@ -434,16 +428,6 @@ export function Typeahead<T extends SearchableItem>({
   const descriptionId = useId();
   const statusMessageId = useId();
   const inputGroup = useInputGroup();
-
-  // The replacement wins, the released name keeps working, and development
-  // says which one was read (`spec:AST-056` FR7, `spec:AST-017` FR28).
-  const emptySearchText = useRenamedProp<ReactNode>({
-    component: 'Typeahead',
-    deprecated: 'emptySearchResultsText',
-    deprecatedValue: emptySearchResultsText,
-    replacement: 'emptySearchText',
-    value: emptySearchTextFromProps,
-  });
 
   const wrapperRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -543,12 +527,25 @@ export function Typeahead<T extends SearchableItem>({
     [onChange],
   );
 
-  // Handle clear (explicit X button on token)
+  // Handle clear (explicit X button on token). Edit mode copied the label into
+  // the base's query, and the base only resets that query on a selection, so
+  // clearing the value has to empty it the way entering edit mode filled it
+  // (#7038): a native set plus a synthetic input event, which reaches the
+  // base's own change handler and its onChangeQuery.
   const handleClear = useCallback(() => {
+    const input = inputRef.current;
+    if (input && input.value !== '') {
+      const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
+        window.HTMLInputElement.prototype,
+        'value',
+      )?.set;
+      nativeInputValueSetter?.call(input, '');
+      input.dispatchEvent(new Event('input', {bubbles: true}));
+    }
     setIsEditing(false);
     setEditingValue(null);
     onChange(null);
-    inputRef.current?.focus();
+    input?.focus();
   }, [onChange]);
 
   // Handle Escape during edit mode — restore token
@@ -690,6 +687,7 @@ export function Typeahead<T extends SearchableItem>({
         <EndLane
           lane={busyLane}
           loadingLabel={t('@astryx.typeahead.loading')}
+          anchorRef={wrapperRef}
           clear={
             hasClear && value && !isDisabled ? (
               <InputClearButton

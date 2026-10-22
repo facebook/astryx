@@ -783,6 +783,73 @@ describe('TabMenu', () => {
   });
 });
 
+describe('TabMenu host attributes', () => {
+  const menuOptions = [
+    {value: 'analytics', label: 'Analytics'},
+    {value: 'reports', label: 'Reports'},
+  ];
+
+  it('forwards host attributes to the trigger, not the popup', () => {
+    render(
+      <TabList value="home" onChange={() => {}}>
+        <Tab value="home" label="Home" />
+        <TabMenu
+          label="More"
+          options={menuOptions}
+          id="more-tabs"
+          aria-label="More views"
+          data-view="overflow"
+        />
+      </TabList>,
+    );
+
+    const trigger = screen.getByRole('button', {name: 'More views'});
+    expect(trigger).toHaveAttribute('id', 'more-tabs');
+    expect(trigger).toHaveAttribute('data-view', 'overflow');
+    const menu = screen.getByRole('menu', {name: 'More', hidden: true});
+    expect(trigger).toHaveAttribute('aria-controls', menu.id);
+  });
+
+  it('runs drag-and-drop handlers on the trigger', () => {
+    const onDragOver = vi.fn();
+    const onDrop = vi.fn();
+    render(
+      <TabList value="home" onChange={() => {}}>
+        <Tab value="home" label="Home" />
+        <TabMenu
+          label="More"
+          options={menuOptions}
+          onDragOver={onDragOver}
+          onDrop={onDrop}
+        />
+      </TabList>,
+    );
+    const trigger = screen.getByRole('button', {name: 'More'});
+    fireEvent.dragOver(trigger);
+    fireEvent.drop(trigger);
+    expect(onDragOver).toHaveBeenCalledTimes(1);
+    expect(onDrop).toHaveBeenCalledTimes(1);
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('onClick preserves the toggle', async () => {
+    const user = userEvent.setup();
+    const onClick = vi.fn((event: React.MouseEvent<HTMLButtonElement>) => {
+      event.preventDefault();
+    });
+    render(
+      <TabList value="home" onChange={() => {}}>
+        <Tab value="home" label="Home" />
+        <TabMenu label="More" options={menuOptions} onClick={onClick} />
+      </TabList>,
+    );
+    const trigger = screen.getByRole('button', {name: 'More'});
+    await user.click(trigger);
+    expect(onClick).toHaveBeenCalledTimes(1);
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+  });
+});
+
 describe('TabMenu keyboard navigation (roving tabindex)', () => {
   const menuOptions = [
     {value: 'analytics', label: 'Analytics'},

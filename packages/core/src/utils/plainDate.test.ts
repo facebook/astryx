@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import {describe, it, expect} from 'vitest';
+import {describe, it, expect, afterEach} from 'vitest';
 import {
   type PlainDate,
   plainDateCreate,
@@ -30,6 +30,7 @@ import {
   formatSharedDate,
   DATE_FORMAT_WITH_WEEKDAY,
   DATE_FORMAT_MONTH_YEAR,
+  plainDateWeekFieldName,
 } from './plainDate';
 import type {ISODateString} from './dateTypes';
 
@@ -147,6 +148,14 @@ describe('plainDateToDate / plainDateFromDate', () => {
     expect(d.getFullYear()).toBe(2026);
     expect(d.getMonth()).toBe(2); // 0-based
     expect(d.getDate()).toBe(15);
+    expect(plainDateFromDate(d)).toEqual(pd);
+  });
+
+  it('keeps years 1-99 instead of mapping them to 1900-1999', () => {
+    const pd: PlainDate = {year: 1, month: 1, day: 15};
+    const d = plainDateToDate(pd);
+    expect(d.getFullYear()).toBe(1);
+    expect(d.getDay()).toBe(1); // 0001-01-15 is a Monday
     expect(plainDateFromDate(d)).toEqual(pd);
   });
 });
@@ -361,6 +370,15 @@ describe('plainDateDiffDays', () => {
       ),
     ).toBe(2);
   });
+
+  it('counts across the year 99 to 100 boundary', () => {
+    expect(
+      plainDateDiffDays(
+        {year: 99, month: 12, day: 31},
+        {year: 100, month: 1, day: 1},
+      ),
+    ).toBe(1);
+  });
 });
 
 describe('plainDateToInstant / plainDateFromInstant', () => {
@@ -392,6 +410,119 @@ describe('plainDateToInstant / plainDateFromInstant', () => {
         30,
       ),
     ).toBe(Date.UTC(2026, 4, 13, 16, 30));
+  });
+
+  it.each([
+    // Both spring forward from a negative offset at local midnight.
+    [
+      'America/Santiago',
+      {year: 2026, month: 9, day: 6},
+      Date.UTC(2026, 8, 6, 4),
+    ],
+    ['America/Havana', {year: 2026, month: 3, day: 8}, Date.UTC(2026, 2, 8, 5)],
+    // A positive offset already resolved forward; it must not move.
+    ['Asia/Beirut', {year: 2026, month: 3, day: 29}, Date.UTC(2026, 2, 28, 22)],
+  ] as const)(
+    'starts a day whose midnight daylight saving skips at its first instant (%s)',
+    (timezoneID, date, firstInstant) => {
+      const instant = plainDateToInstant(date, timezoneID);
+      expect(instant).toBe(firstInstant);
+      expect(plainDateFromInstant(instant, timezoneID)).toEqual(date);
+      expect(plainDateFromInstant(instant - 1, timezoneID)).not.toEqual(date);
+    },
+  );
+
+  it('resolves any wall time inside a daylight-saving gap forward', () => {
+    // 2:30 AM does not happen on March 8, 2026 in Los Angeles: 3:30 AM PDT.
+    expect(
+      plainDateToInstant(
+        {year: 2026, month: 3, day: 8},
+        'America/Los_Angeles',
+        2,
+        30,
+      ),
+    ).toBe(Date.UTC(2026, 2, 8, 10, 30));
+  });
+
+  it('keeps the earlier instant of a wall time that happens twice', () => {
+    // Havana falls back at 1:00 AM on November 1, 2026: midnight once, then
+    // 12:00–1:00 AM twice; the first 12:30 AM is still daylight time.
+    expect(
+      plainDateToInstant(
+        {year: 2026, month: 11, day: 1},
+        'America/Havana',
+        0,
+        30,
+      ),
+    ).toBe(Date.UTC(2026, 10, 1, 4, 30));
+  });
+
+  it.each([
+    // Berlin falls back at 3:00 AM CEST on October 25, 2026: 2:00–3:00 AM
+    // happens twice, first at +2, then at +1.
+    [
+      'Europe/Berlin',
+      {year: 2026, month: 10, day: 25},
+      2,
+      30,
+      Date.UTC(2026, 9, 25, 0, 30),
+    ],
+    // Sydney falls back at 3:00 AM AEDT on April 5, 2026: first at +11.
+    [
+      'Australia/Sydney',
+      {year: 2026, month: 4, day: 5},
+      2,
+      30,
+      Date.UTC(2026, 3, 4, 15, 30),
+    ],
+  ] as const)(
+    'keeps the earlier instant of a repeated wall time in a positive-offset zone (%s)',
+    (timezoneID, date, hour, minute, earlier) => {
+      expect(plainDateToInstant(date, timezoneID, hour, minute)).toBe(earlier);
+    },
+  );
+
+  it('starts a date the zone skips at the first instant after the gap', () => {
+    // Samoa moved across the date line after December 29, 2011: December 30
+    // never happened in Pacific/Apia, so it resolves to 00:00 on December 31
+    // (+14), the next date.
+    const instant = plainDateToInstant(
+      {year: 2011, month: 12, day: 30},
+      'Pacific/Apia',
+    );
+    expect(instant).toBe(Date.UTC(2011, 11, 30, 10));
+    expect(plainDateFromInstant(instant, 'Pacific/Apia')).toEqual({
+      year: 2011,
+      month: 12,
+      day: 31,
+    });
+  });
+
+  it('moves a wall time in a 30-minute gap forward by 30 minutes', () => {
+    // Lord Howe Island jumps from 2:00 to 2:30 AM on October 4, 2026, from
+    // +10:30 to +11: 2:15 AM does not happen and reads as 2:45 AM.
+    expect(
+      plainDateToInstant(
+        {year: 2026, month: 10, day: 4},
+        'Australia/Lord_Howe',
+        2,
+        15,
+      ),
+    ).toBe(Date.UTC(2026, 9, 3, 15, 45));
+  });
+
+  it('keeps years 1-99 instead of mapping them to 1900-1999', () => {
+    const date: PlainDate = {year: 1, month: 1, day: 15};
+    // 0001-01-01T00:00:00Z is -62135596800000
+    expect(plainDateToInstant(date, 'UTC', 9, 30)).toBe(
+      -62135596800000 + (14 * 24 + 9) * 3600000 + 30 * 60000,
+    );
+    expect(
+      plainDateFromInstant(
+        plainDateToInstant(date, 'America/Los_Angeles'),
+        'America/Los_Angeles',
+      ),
+    ).toEqual(date);
   });
 });
 
@@ -579,6 +710,47 @@ describe('plainDateGetWeekNumber', () => {
   it('returns week 1 for Jan 4 (always in ISO week 1)', () => {
     expect(plainDateGetWeekNumber({year: 2026, month: 1, day: 4})).toBe(1);
   });
+
+  // Regression: the week number must not depend on the host timezone's DST
+  // offset. Zones whose DST ends after New Year (southern hemisphere) used to
+  // add a phantom hour to the Thursday-vs-Jan-1 day count, and in years whose
+  // Jan 1 is a Friday that hour rounded a whole week up.
+  describe('DST independence', () => {
+    const originalTZ = process.env.TZ;
+
+    afterEach(() => {
+      if (originalTZ === undefined) {
+        delete process.env.TZ;
+      } else {
+        process.env.TZ = originalTZ;
+      }
+    });
+
+    it.each(['Australia/Sydney', 'Pacific/Auckland', 'America/Santiago'])(
+      'does not round week 14 up to 15 in %s (DST ends after New Year)',
+      zone => {
+        process.env.TZ = zone;
+        // 2021-01-01 is a Friday, so every ISO Thursday falls on a whole
+        // multiple of 7 days into the year. 2021-04-05..11 is ISO week 14.
+        expect(plainDateGetWeekNumber({year: 2021, month: 4, day: 5})).toBe(14);
+        expect(plainDateGetWeekNumber({year: 2021, month: 4, day: 8})).toBe(14);
+        expect(plainDateGetWeekNumber({year: 2021, month: 4, day: 11})).toBe(
+          14,
+        );
+      },
+    );
+
+    it('keeps late-December weeks correct in Australia/Sydney', () => {
+      process.env.TZ = 'Australia/Sydney';
+      // 2027-12-30 (Thursday) is ISO week 52, not 53.
+      expect(plainDateGetWeekNumber({year: 2027, month: 12, day: 30})).toBe(52);
+    });
+  });
+
+  it('keeps years 1-99 instead of mapping them to 1900-1999', () => {
+    // 0004-01-01 is a Thursday (ISO week 1); 1904-01-01 was a Friday.
+    expect(plainDateGetWeekNumber({year: 4, month: 1, day: 1})).toBe(1);
+  });
 });
 
 describe('plainDateFormat', () => {
@@ -661,5 +833,16 @@ describe('formatSharedDate', () => {
     expect(formatSharedDate(pd, 'date_long', 'es-ES')).toBe(
       '25 de enero de 2026',
     );
+  });
+});
+
+describe('plainDateWeekFieldName', () => {
+  it("returns the locale's CLDR name for the week field", () => {
+    expect(plainDateWeekFieldName('en-US')).toBe('week');
+    expect(plainDateWeekFieldName('de-DE')).toBe('Woche');
+  });
+
+  it('never returns an empty name', () => {
+    expect(plainDateWeekFieldName('zxx').length).toBeGreaterThan(0);
   });
 });

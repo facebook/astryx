@@ -2084,7 +2084,8 @@ function FilterOverflow({
           isOpen={isOpen}
           onOpenChange={setIsOpen}
           label={label}
-          height="hug">
+          height="hug"
+          padding={0}>
           {body}
         </BottomSheet>
       </>
@@ -4087,7 +4088,10 @@ export default function TableFilterTemplate() {
       isOpen={isCompactSurface && isViewOpen}
       onOpenChange={setIsViewOpen}
       label="View options"
-      height="tall">
+      height="tall"
+      // The tab strip compensates against a container inset, so the sheet
+      // publishes none and the wrapper below owns the top band.
+      padding={0}>
       {/* The inset is the wrapper's, so the strip's own box starts at the tab
           row and its scroll arrow lands on the tabs rather than above them. */}
       <VStack gap={0} paddingBlockStart={SHEET_TOP_INSET}>
@@ -4095,7 +4099,7 @@ export default function TableFilterTemplate() {
             restates the selected tab word for word, and the strip already
             marks which one that is. On a phone that is a line of vertical
             space spent saying it twice. The panel keeps the name for anyone
-            not seeing the strip, as its accessible label. */}
+            not seeing the strip: its selected tab labels it. */}
         <TabList
           value={viewSection}
           onChange={value => setViewSection(value as ViewSection)}
@@ -4105,6 +4109,7 @@ export default function TableFilterTemplate() {
           {VIEW_SECTIONS.map(section => (
             <Tab
               key={section.key}
+              id={`${viewPanelId}-tab-${section.key}`}
               value={section.key}
               label={section.label}
               icon={section.icon}
@@ -4122,7 +4127,7 @@ export default function TableFilterTemplate() {
           gap={0}
           id={viewPanelId}
           role="tabpanel"
-          aria-label={activeSection?.title}
+          aria-labelledby={`${viewPanelId}-tab-${viewSection}`}
           paddingBlockStart={3}>
           {viewPanelBody()}
         </VStack>
@@ -4313,7 +4318,8 @@ export default function TableFilterTemplate() {
       isOpen={isCompactSurface && activeJob != null}
       onOpenChange={open => !open && setActiveJobId(null)}
       label="Job details"
-      height="tall">
+      height="tall"
+      padding={0}>
       {detailBody}
     </BottomSheet>
   );

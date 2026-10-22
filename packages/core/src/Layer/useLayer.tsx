@@ -102,15 +102,17 @@ const styles = stylex.create({
   // The cap is on the layer box itself: content wider than the viewport
   // overflows inside the layer, where the composing component decides
   // whether it scrolls or clips; the box never leaves the viewport.
+  // Each constant is wrapped in `calc()` so both declarations ship (see
+  // layerViewportInset).
   viewportFit: {
     boxSizing: 'border-box',
     maxInlineSize: stylex.firstThatWorks(
-      layerViewportInset.maxInlineSize,
-      layerViewportInset.maxInlineSizeFallback,
+      `calc(${layerViewportInset.maxInlineSize})`,
+      `calc(${layerViewportInset.maxInlineSizeFallback})`,
     ),
     maxBlockSize: stylex.firstThatWorks(
-      layerViewportInset.maxBlockSize,
-      layerViewportInset.maxBlockSizeFallback,
+      `calc(${layerViewportInset.maxBlockSize})`,
+      `calc(${layerViewportInset.maxBlockSizeFallback})`,
     ),
   },
   // Alignment-axis gutter (spec:AST-059 FR1): a margin on the far viewport
@@ -120,26 +122,26 @@ const styles = stylex.create({
   // (see layerSlideRules.ts).
   gutterInlineEnd: {
     marginInlineEnd: stylex.firstThatWorks(
-      layerViewportInset.gutterInline,
-      layerViewportInset.gutterInlineFallback,
+      `calc(${layerViewportInset.gutterInline})`,
+      `calc(${layerViewportInset.gutterInlineFallback})`,
     ),
   },
   gutterInlineStart: {
     marginInlineStart: stylex.firstThatWorks(
-      layerViewportInset.gutterInline,
-      layerViewportInset.gutterInlineFallback,
+      `calc(${layerViewportInset.gutterInline})`,
+      `calc(${layerViewportInset.gutterInlineFallback})`,
     ),
   },
   gutterBlockEnd: {
     marginBlockEnd: stylex.firstThatWorks(
-      layerViewportInset.gutterBlock,
-      layerViewportInset.gutterBlockFallback,
+      `calc(${layerViewportInset.gutterBlock})`,
+      `calc(${layerViewportInset.gutterBlockFallback})`,
     ),
   },
   gutterBlockStart: {
     marginBlockStart: stylex.firstThatWorks(
-      layerViewportInset.gutterBlock,
-      layerViewportInset.gutterBlockFallback,
+      `calc(${layerViewportInset.gutterBlock})`,
+      `calc(${layerViewportInset.gutterBlockFallback})`,
     ),
   },
 });
@@ -760,7 +762,16 @@ function useLayerImplementation(
         // hosted away from its trigger then still takes its sequential focus
         // order (and its popover nesting) from the trigger rather than from
         // its own DOM position. Browsers without the option ignore it.
-        popover.showPopover({source: triggerRef.current ?? undefined});
+        // `source` is declared as an `HTMLElement`. A caller-rendered icon
+        // trigger is an `SVGElement`, whose dictionary conversion throws
+        // before the popover opens. Omitting the option for it still anchors
+        // the layer, because positioning reads the anchor-name pair, and only
+        // gives up the invoker's focus order.
+        const trigger =
+          triggerRef.current instanceof HTMLElement
+            ? triggerRef.current
+            : undefined;
+        popover.showPopover({source: trigger});
       });
     } else {
       popover.style.display = 'block';

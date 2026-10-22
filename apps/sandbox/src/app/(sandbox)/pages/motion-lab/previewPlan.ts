@@ -370,7 +370,7 @@ export const PREVIEW_PLAN: ReadonlyArray<PreviewRow> = [
   },
   {
     id: 'drawer',
-    component: 'Drawer (lab)',
+    component: 'Drawer',
     group: 'Overlays & layers',
     verdict: 'PARTIAL',
     motionCost: 'idle',

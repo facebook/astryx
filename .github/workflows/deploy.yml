@@ -61,7 +61,9 @@ jobs:
           pnpm vitest run --project ui packages/core/src/Markdown/Markdown.fr23.perf.test.ts --no-file-parallelism
 
   test-node:
-    runs-on: 2-core-ubuntu-arm
+    # Vitest runs one test file per CPU beyond the first, so the 2-core runner
+    # ran this suite one file at a time (~23 min). Four cores give it three.
+    runs-on: 4-core-ubuntu
     permissions:
       contents: read
     steps:

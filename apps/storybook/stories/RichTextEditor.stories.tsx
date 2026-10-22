@@ -21,9 +21,10 @@ import {
 } from './RichTextEditor.markdownParity';
 import {MarkdownPluginsImportExport as MarkdownPluginsImportExportStory} from './RichTextEditor.markdownPluginsImportExport';
 import {MarkdownPluginsSandbox} from './RichTextEditor.markdownPlugins';
+import {RichTextEditorPlayground} from './RichTextEditor.playground';
 
 const meta: Meta<typeof RichTextEditor> = {
-  title: 'Lab/RichTextEditor',
+  title: 'RichText/RichTextEditor',
   component: RichTextEditor,
   tags: ['autodocs'],
   argTypes: {
@@ -53,6 +54,22 @@ const meta: Meta<typeof RichTextEditor> = {
 
 export default meta;
 type Story = StoryObj<typeof RichTextEditor>;
+
+/**
+ * Every feature on one editor — the Astryx counterpart of
+ * playground.lexical.dev. The other stories each mount their own editor to
+ * show one thing; this one exists so the features can be combined on a single
+ * document and watched for interactions: a toolbar format inside a table
+ * cell, a Markdown shortcut inside a code block, an autolinked URL exported
+ * back to Markdown. The panel beside the editor reads that same editor's
+ * Markdown, HTML, editor state, node tree, and read-only RichTextView render.
+ */
+export const Playground = {
+  // Page-sized, like the parity sandboxes: keep it off the docs page.
+  tags: ['!autodocs'],
+  parameters: {controls: {disable: true}},
+  render: () => <RichTextEditorPlayground />,
+};
 
 export const Default: Story = {
   args: {
@@ -182,7 +199,7 @@ export const CustomTransformers: Story = {
   args: {
     label: 'Comment',
     description:
-      'Restricted markdown: only `*bold*`, `_italic_` and `- ` unordered lists (no headings, quotes or code).',
+      'Restricted markdown: only `**bold**`, `*italic*` and `- ` unordered lists (no headings, quotes or code).',
     placeholder: 'Try typing "# " — it will not become a heading…',
     transformers: [BOLD_STAR, ITALIC_STAR, UNORDERED_LIST],
   },

@@ -36,8 +36,9 @@ import {InternationalizationProvider} from '../i18n';
 import {defineTheme} from '../theme/defineTheme';
 import {Theme} from '../theme/Theme';
 import {generateThemeCSS} from '../theme/generateThemeRules';
-import {spacingVars} from '../theme/tokens.stylex';
+import {colorVars, spacingVars} from '../theme/tokens.stylex';
 import {selectorPresentationStyles} from './selectorPresentation.stylex';
+import {groupStyles} from '../InputGroup/groupStyles';
 
 function generateThemeTestCSS(theme: Parameters<typeof generateThemeCSS>[0]) {
   const {prose, component} = generateThemeCSS(theme);
@@ -252,6 +253,14 @@ function mockSelectorRects({
   };
 }
 
+/** A busy control's Spinner is decorative and silent (spec:AST-086 FR8). */
+function expectSilentBusySpinner() {
+  const spinner = document.querySelector('.astryx-spinner');
+  expect(spinner).not.toBeNull();
+  expect(spinner).toHaveAttribute('aria-hidden', 'true');
+  expect(screen.queryByRole('status', {name: 'Loading'})).toBeNull();
+}
+
 describe('Selector', () => {
   it('uses a bottom sheet and closes after a selection when requested', async () => {
     const user = userEvent.setup();
@@ -300,6 +309,45 @@ describe('Selector', () => {
     expect(trigger.parentElement).toHaveClass(
       stylex.props(selectorPresentationStyles.pointerRestoredFocus).className!,
     );
+  });
+
+  it('shows no disabled focus ring after a pointer pick (spec:AST-085 FR6)', async () => {
+    const field = (isDisabled: boolean) => (
+      <Selector
+        label="Fruit"
+        options={OPTIONS}
+        onChange={() => {}}
+        presentation="bottom-sheet"
+        isDisabled={isDisabled}
+      />
+    );
+    const {rerender} = render(field(false));
+    const trigger = screen.getByRole('combobox');
+    fireEvent.pointerDown(trigger, {pointerType: 'touch'});
+    fireEvent.click(trigger, {detail: 1});
+    const option = await screen.findByRole('option', {name: /Banana/});
+    fireEvent.pointerDown(option, {pointerType: 'touch'});
+    fireEvent.click(option, {detail: 1});
+    rerender(field(true));
+
+    const ring = stylex
+      .props(
+        stylex.create({
+          ring: {
+            boxShadow: {
+              default: null,
+              ':has(> [aria-disabled="true"]:focus-visible)': `inset 0px 0px 0px 2px ${colorVars['--color-accent-muted']}`,
+            },
+          },
+        }).ring,
+      )
+      .className!.split(' ')
+      .pop()!;
+    const wrapper = screen.getByRole('combobox').parentElement!;
+    expect(wrapper).toHaveClass(
+      stylex.props(selectorPresentationStyles.pointerRestoredFocus).className!,
+    );
+    expect(wrapper).not.toHaveClass(ring);
   });
 
   it('uses content-hugging height without extra bottom content padding', () => {
@@ -605,7 +653,7 @@ describe('Selector', () => {
     const inputDropdownClass = screen.getByRole('listbox', h).className;
     unmount();
 
-    render(
+    const ghostRender = render(
       <Selector
         label="Ghost fruit"
         options={OPTIONS}
@@ -616,10 +664,24 @@ describe('Selector', () => {
     );
     await user.click(screen.getByRole('combobox'));
     const ghostDropdownClass = screen.getByRole('listbox', h).className;
+    ghostRender.unmount();
+
+    render(
+      <Selector
+        label="Secondary fruit"
+        options={OPTIONS}
+        value="Banana"
+        variant="secondary"
+        onChange={() => {}}
+      />,
+    );
+    await user.click(screen.getByRole('combobox'));
+    const secondaryDropdownClass = screen.getByRole('listbox', h).className;
 
     // The bordered input gets one extra StyleX rule for its border-width
-    // correction; the borderless ghost keeps the base menu inset.
+    // correction; the borderless secondary/ghost keep the base menu inset.
     expect(inputDropdownClass).not.toBe(ghostDropdownClass);
+    expect(secondaryDropdownClass).toBe(ghostDropdownClass);
   });
 
   it('does not apply selected-item overlay offset when placement is explicit', async () => {
@@ -822,6 +884,58 @@ describe('Selector', () => {
       expect(onChange).toHaveBeenCalledWith(null);
     });
 
+    it('returns focus to the trigger when the clear button is activated by keyboard', async () => {
+      function Controlled() {
+        const [value, setValue] = useState<string | null>('Banana');
+        return (
+          <Selector
+            label="Fruit"
+            options={OPTIONS}
+            value={value}
+            onChange={setValue}
+            hasClear
+          />
+        );
+      }
+      const user = userEvent.setup();
+      render(<Controlled />);
+      screen.getByRole('button', {name: 'Clear Fruit'}).focus();
+      await user.keyboard('{Enter}');
+      expect(
+        screen.queryByRole('button', {name: 'Clear Fruit'}),
+      ).not.toBeInTheDocument();
+      expect(screen.getByRole('combobox')).toHaveFocus();
+    });
+
+    it('leaves focus in the search input when the clear button is clicked with the list open', async () => {
+      function Controlled() {
+        const [value, setValue] = useState<string | null>('Banana');
+        return (
+          <Selector
+            label="Fruit"
+            options={OPTIONS}
+            value={value}
+            onChange={setValue}
+            hasClear
+            hasSearch
+          />
+        );
+      }
+      const user = userEvent.setup();
+      render(<Controlled />);
+      await user.click(screen.getByRole('button', {name: 'Fruit'}));
+      const search = screen.getByRole('combobox', {
+        name: 'Search options',
+        hidden: true,
+      });
+      search.focus();
+      await user.click(screen.getByRole('button', {name: 'Clear Fruit'}));
+      expect(
+        screen.queryByRole('button', {name: 'Clear Fruit'}),
+      ).not.toBeInTheDocument();
+      expect(search).toHaveFocus();
+    });
+
     it('clears the value via Delete on the focused trigger', async () => {
       const user = userEvent.setup();
       const onChange = vi.fn();
@@ -924,7 +1038,10 @@ describe('Selector', () => {
       expect(screen.getByRole('combobox', h)).toBeInTheDocument();
     });
 
-    it('wires the search input as the combobox with activedescendant (comboboxes-4)', async () => {
+    // The search input's expanded state, popup relationship, and active option
+    // are bound to the shared Combobox contract (Selector.combobox.a11y.test.tsx,
+    // search-active); this keeps only the Selector-specific wiring.
+    it('moves combobox semantics to the list-autocomplete search input (comboboxes-4)', async () => {
       const user = userEvent.setup();
       render(
         <Selector
@@ -941,12 +1058,6 @@ describe('Selector', () => {
       await user.click(triggerBtn);
       const search = screen.getByRole('combobox', h);
       expect(search).toHaveAttribute('aria-autocomplete', 'list');
-      expect(search).toHaveAttribute('aria-expanded', 'true');
-      expect(search).toHaveAttribute('aria-controls');
-      // ArrowDown moves the highlight; the search input reports it via
-      // aria-activedescendant (previously silent on the trigger).
-      await user.keyboard('{ArrowDown}');
-      expect(search).toHaveAttribute('aria-activedescendant');
     });
 
     it('PageDown/PageUp jump the highlight to the last/first filtered option', async () => {
@@ -1285,8 +1396,7 @@ describe('Selector', () => {
         <Selector label="Fruit" options={[]} onChange={() => {}} isLoading />,
       );
       const trigger = screen.getByRole('combobox', {name: 'Fruit'});
-      expect(trigger).toHaveAttribute('aria-busy', 'true');
-      expect(screen.getByRole('status', {name: 'Loading'})).toBeInTheDocument();
+      expectSilentBusySpinner();
 
       await user.click(trigger);
       expect(trigger).toHaveAttribute('aria-expanded', 'true');
@@ -1302,7 +1412,10 @@ describe('Selector', () => {
       // component cannot make; the trigger's spinner carries the state.
       const listbox = screen.getByRole('listbox', h);
       expect(within(listbox).queryByText('No options')).not.toBeInTheDocument();
-      expect(politeRegion()?.textContent ?? '').toBe('');
+      // Only the busy start is spoken (spec:AST-086 FR8), never an empty or
+      // no-results message the panel is suppressing.
+      // (The channel clears its text on a timer, so it may already be empty.)
+      expect(['', 'Loading']).toContain(politeRegion()?.textContent ?? '');
     });
 
     it('announces nothing while isLoading, matching the silent panel', async () => {
@@ -1335,7 +1448,10 @@ describe('Selector', () => {
       expect(
         within(listbox).queryByText('Nothing like that here'),
       ).not.toBeInTheDocument();
-      expect(politeRegion()?.textContent ?? '').toBe('');
+      // Only the busy start is spoken (spec:AST-086 FR8), never an empty or
+      // no-results message the panel is suppressing.
+      // (The channel clears its text on a timer, so it may already be empty.)
+      expect(['', 'Loading']).toContain(politeRegion()?.textContent ?? '');
     });
 
     it('announces the seeded query from type-to-open', async () => {
@@ -1388,7 +1504,10 @@ describe('Selector', () => {
         async () =>
           void (await new Promise(resolve => requestAnimationFrame(resolve))),
       );
-      expect(politeRegion()?.textContent ?? '').toBe('');
+      // Only the busy start is spoken (spec:AST-086 FR8), never an empty or
+      // no-results message the panel is suppressing.
+      // (The channel clears its text on a timer, so it may already be empty.)
+      expect(['', 'Loading']).toContain(politeRegion()?.textContent ?? '');
 
       // The fetch lands empty while the panel is open. The message appears, so
       // the region owes the same words — an open-only announcement misses this.
@@ -1758,9 +1877,11 @@ describe('Selector', () => {
       expect(screen.getByRole('combobox')).toHaveFocus();
     });
 
-    it('trigger is not focusable when disabled', () => {
+    it('trigger keeps its tab stop when disabled (spec:AST-085 FR1)', () => {
       render(<Selector label="Fruit" options={OPTIONS} isDisabled />);
-      expect(screen.getByRole('combobox')).toHaveAttribute('tabIndex', '-1');
+      const trigger = screen.getByRole('combobox');
+      expect(trigger).toHaveAttribute('tabIndex', '0');
+      expect(trigger).toHaveAttribute('aria-disabled', 'true');
     });
 
     it('opens the listbox with ArrowDown from a focused trigger', async () => {
@@ -2448,6 +2569,67 @@ describe('Selector', () => {
       expect(screen.getByText('#')).toBeInTheDocument();
     });
 
+    it.each(['input', 'secondary'] as const)(
+      'gives a grouped %s trigger the connected group geometry in every position',
+      variant => {
+        const groupClasses = stylex
+          .props(groupStyles.inGroup)
+          .className!.split(' ');
+        const selector = (label: string) => (
+          <Selector
+            label={label}
+            isLabelHidden
+            variant={variant}
+            options={OPTIONS}
+          />
+        );
+        render(
+          <>
+            <InputGroup label="First">
+              {selector('Channel first')}
+              <InputGroupText>#</InputGroupText>
+            </InputGroup>
+            <InputGroup label="Middle">
+              <InputGroupText>#</InputGroupText>
+              {selector('Channel middle')}
+              <InputGroupText>@</InputGroupText>
+            </InputGroup>
+            <InputGroup label="Last">
+              <InputGroupText>#</InputGroupText>
+              {selector('Channel last')}
+            </InputGroup>
+          </>,
+        );
+
+        // The group's row height, seam radii, and focus stacking all come from
+        // these classes; their :first-child and last-item selectors resolve the
+        // position. A secondary trigger keeps its fill but must not keep its
+        // own standalone edges or width.
+        for (const position of ['first', 'middle', 'last']) {
+          const trigger = screen.getByRole('combobox', {
+            name: new RegExp(`Channel ${position}`),
+          });
+          const box = trigger.closest('.astryx-selector') as HTMLElement;
+          const classes = new Set(box.className.split(' '));
+          expect(groupClasses.every(c => classes.has(c))).toBe(true);
+        }
+      },
+    );
+
+    it('keeps a standalone secondary trigger out of the group geometry', () => {
+      const groupClasses = stylex
+        .props(groupStyles.inGroup)
+        .className!.split(' ');
+      render(
+        <Selector label="Channel" variant="secondary" options={OPTIONS} />,
+      );
+      const box = screen
+        .getByRole('combobox')
+        .closest('.astryx-selector') as HTMLElement;
+      const classes = new Set(box.className.split(' '));
+      expect(groupClasses.some(c => classes.has(c))).toBe(false);
+    });
+
     it('keeps disabled reasons described when grouped', () => {
       render(
         <InputGroup label="Destination">
@@ -2591,11 +2773,12 @@ describe('Selector', () => {
       expect(onChange).not.toHaveBeenCalled();
     });
 
-    it('remains non-focusable when disabled without a reason', () => {
+    it('stays focusable when disabled without a reason (spec:AST-085 FR1)', () => {
       render(<Selector label="Fruit" options={OPTIONS} isDisabled />);
       const trigger = screen.getByRole('combobox');
-      expect(trigger).toBeDisabled();
-      expect(trigger).toHaveAttribute('tabIndex', '-1');
+      expect(trigger).not.toHaveAttribute('disabled');
+      expect(trigger).toHaveAttribute('aria-disabled', 'true');
+      expect(trigger).toHaveAttribute('tabIndex', '0');
     });
   });
   describe('isReadOnly', () => {
@@ -2730,7 +2913,7 @@ describe('Selector', () => {
 
       const trigger = screen.getByRole('combobox', {name: 'Fruit'});
       expect(trigger).toHaveAttribute('aria-busy', 'true');
-      expect(screen.getByRole('status', {name: 'Loading'})).toBeInTheDocument();
+      expectSilentBusySpinner();
 
       await user.click(trigger);
       expect(screen.queryByRole('listbox', h)).not.toBeInTheDocument();
@@ -3081,6 +3264,48 @@ describe('Selector statusVariant forwarding', () => {
       'data-variant',
       'detached',
     );
+  });
+
+  it('detaches attached status by default for the secondary variant', () => {
+    const {container} = render(
+      <Selector
+        label="Fruit"
+        options={['Apple', 'Banana']}
+        variant="secondary"
+        status={{type: 'error', message: 'Required'}}
+      />,
+    );
+    expect(container.querySelector('.astryx-selector')).toHaveAttribute(
+      'data-variant',
+      'secondary',
+    );
+    expect(container.querySelector('.astryx-field-status')).toHaveAttribute(
+      'data-variant',
+      'detached',
+    );
+  });
+
+  it('paints the secondary trigger with its own trigger style', () => {
+    const inputRender = render(
+      <Selector label="Fruit" options={['Apple', 'Banana']} value="Banana" />,
+    );
+    const inputTriggerClass =
+      inputRender.container.querySelector('.astryx-selector')!.className;
+    inputRender.unmount();
+
+    const secondaryRender = render(
+      <Selector
+        label="Fruit"
+        options={['Apple', 'Banana']}
+        value="Banana"
+        variant="secondary"
+      />,
+    );
+    // The neutral-filled secondary trigger must not reuse the bordered
+    // input trigger's classes; it carries the secondary trigger style.
+    expect(
+      secondaryRender.container.querySelector('.astryx-selector')!.className,
+    ).not.toBe(inputTriggerClass);
   });
 
   it('uses a status tooltip for ghost selectors when requested', () => {
@@ -4642,6 +4867,22 @@ describe('Selector in a narrow row', () => {
     const root = container.querySelector('.astryx-field')!;
     expect(root.getAttribute('style')).toContain('80');
     expect(getComputedStyle(root).minWidth).toBe('0');
+  });
+
+  it('lets a narrow list shrink an option so its label can ellipsize', () => {
+    render(
+      <Selector
+        label="Project"
+        options={['An option with a deliberately long readable label']}
+        value={undefined}
+        onChange={() => {}}
+        isDefaultOpen
+      />,
+    );
+    const option = screen
+      .getByRole('option', {hidden: true})
+      .querySelector('.astryx-selector-option')!;
+    expect(getComputedStyle(option).minWidth).toBe('0');
   });
 });
 

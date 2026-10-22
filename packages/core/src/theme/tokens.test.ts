@@ -39,7 +39,7 @@ describe('resolveThemeTokens', () => {
   it('resolves defaults when no theme is provided', () => {
     const tokens = resolveThemeTokens(null, {mode: 'light'});
     expect(tokens['--color-text-primary']).toBe('#0A1317');
-    expect(tokens['--spacing-1']).toBe('4px');
+    expect(tokens['--spacing-1']).toBe('0.25rem');
     expect(tokens['--border-width']).toBe('1px');
   });
 

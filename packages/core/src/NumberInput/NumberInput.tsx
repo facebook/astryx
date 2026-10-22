@@ -977,7 +977,7 @@ export function NumberInput({
         user would get no feedback that their entry was rejected (WCAG 3.3.1).
       */}
       <VisuallyHidden as="div" role="alert" aria-live="assertive">
-        {!isInputValid ? 'Invalid number' : ''}
+        {!isInputValid ? t('@astryx.numberInput.invalidNumber') : ''}
       </VisuallyHidden>
       {hasClear && value != null && !isDisabled && !isReadOnly && (
         <InputClearButton

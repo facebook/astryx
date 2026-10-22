@@ -6,8 +6,12 @@
  * @file hooks.ts
  * @input Uses untransformed DOM layout geometry from the Selector's outer
  *   anchor, listbox, and selected option
- * @output Hooks for Selector
- * @position Internal hooks; used by Selector.tsx
+ * @output Hooks for Selector: useSelectedItemOffset, and useCombobox (public,
+ *   exported from the Selector entry point; also used by CommandPalette)
+ * @position Selector hooks; used by Selector.tsx and CommandPalette
+ *
+ * SYNC: When useCombobox's options or return change, update:
+ * - /packages/core/src/Selector/useCombobox.doc.mjs
  */
 
 import {useCallback, useState} from 'react';

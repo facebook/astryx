@@ -14,6 +14,7 @@ import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import * as stylex from '@stylexjs/stylex';
+import {colorVars} from '../theme/tokens.stylex';
 import {getButton, queryButton} from '../__tests__/fastRoleQueries';
 import {DateTimeInput} from './DateTimeInput';
 import type {ISODateTimeString} from './DateTimeInput';
@@ -288,10 +289,52 @@ describe('DateTimeInput', () => {
     expect(screen.getByRole('combobox')).not.toHaveAttribute('aria-required');
   });
 
-  it('sets disabled on both inputs when isDisabled is true', () => {
+  it('keeps both disabled inputs focusable without native disabled (AST-085 FR1)', () => {
     render(<DateTimeInput label="Meeting" isDisabled onChange={() => {}} />);
-    expect(screen.getByRole('combobox')).toBeDisabled();
-    expect(screen.getByLabelText('Meeting time')).toBeDisabled();
+    for (const input of [
+      screen.getByRole('combobox'),
+      screen.getByLabelText('Meeting time'),
+    ]) {
+      expect(input).not.toHaveAttribute('disabled');
+      expect(input).toHaveAttribute('aria-disabled', 'true');
+      expect(input).toHaveAttribute('readonly');
+      input.focus();
+      expect(input).toHaveFocus();
+    }
+  });
+
+  it('restores the focus ring on a focused disabled field (AST-085 FR6)', () => {
+    // The same declarations as the field's ring style compile to the same
+    // atomic classes; the shared disabled style alone drops them.
+    const ringClasses = stylex
+      .props(
+        stylex.create({
+          ring: {
+            borderColor: {
+              default: colorVars['--color-border-emphasized'],
+              ':focus-within': colorVars['--color-accent'],
+            },
+            boxShadow: {
+              default: 'none',
+              ':focus-within': `inset 0px 0px 0px 2px ${colorVars['--color-accent-muted']}`,
+            },
+          },
+        }).ring,
+      )
+      .className!.split(' ')
+      .filter(name => !name.includes('__'));
+    render(<DateTimeInput label="Meeting" isDisabled onChange={() => {}} />);
+    for (const input of [
+      screen.getByRole('combobox'),
+      screen.getByLabelText('Meeting time'),
+    ]) {
+      const wrapper = input.closest(
+        '.astryx-date-time-input-date-segment, .astryx-date-time-input-time-segment',
+      )!;
+      for (const name of ringClasses) {
+        expect(wrapper).toHaveClass(name);
+      }
+    }
   });
 
   it('is not disabled by default', () => {
@@ -366,14 +409,25 @@ describe('DateTimeInput', () => {
   it('calendar button is disabled when isDisabled is true', () => {
     render(<DateTimeInput label="Meeting" isDisabled onChange={() => {}} />);
     const button = getButton('Open calendar');
-    expect(button).toBeDisabled();
+    expect(button).not.toHaveAttribute('disabled');
+    expect(button).toHaveAttribute('aria-disabled', 'true');
+    fireEvent.click(button);
+    expect(screen.getByRole('combobox')).toHaveAttribute(
+      'aria-expanded',
+      'false',
+    );
   });
 
   it('disables inputs and button when isLoading is true', () => {
     render(<DateTimeInput label="Meeting" isLoading onChange={() => {}} />);
-    expect(screen.getByRole('combobox')).toBeDisabled();
-    expect(screen.getByLabelText('Meeting time')).toBeDisabled();
-    expect(getButton('Open calendar')).toBeDisabled();
+    for (const el of [
+      screen.getByRole('combobox'),
+      screen.getByLabelText('Meeting time'),
+      getButton('Open calendar'),
+    ]) {
+      expect(el).not.toHaveAttribute('disabled');
+      expect(el).toHaveAttribute('aria-disabled', 'true');
+    }
   });
 
   it('sets aria-busy when isLoading is true', () => {
@@ -872,6 +926,12 @@ describe('DateTimeInput', () => {
       );
 
       const tooltip = screen.getByRole('tooltip', h);
+      // The calendar button keeps its enabled tab stop (spec:AST-085 FR1).
+      await user.tab();
+      expect(getButton('Open calendar')).toHaveFocus();
+      expect(
+        getButton('Open calendar').getAttribute('aria-describedby'),
+      ).toContain(tooltip.id);
       await user.tab();
       expect(screen.getByRole('combobox')).toHaveFocus();
       await waitFor(() => {
@@ -948,11 +1008,48 @@ describe('DateTimeInput', () => {
       expect(onChange).not.toHaveBeenCalled();
     });
 
-    it('remains natively disabled when disabled without a reason', () => {
-      render(<DateTimeInput label="When" onChange={() => {}} isDisabled />);
+    it('blocks typing, opening and a caller onClick when disabled without a reason (AST-085 FR2)', async () => {
+      const user = userEvent.setup();
+      const onChange = vi.fn();
+      const onClick = vi.fn();
+      render(
+        <DateTimeInput
+          label="When"
+          onChange={onChange}
+          onClick={onClick}
+          isDisabled
+        />,
+      );
       const dateInput = screen.getByRole('combobox');
-      expect(dateInput).toBeDisabled();
-      expect(dateInput).not.toHaveAttribute('aria-disabled');
+      await user.click(dateInput);
+      await user.type(dateInput, '2026-03-15');
+      await user.keyboard('{ArrowDown}');
+      expect(dateInput).toHaveValue('');
+      expect(dateInput).toHaveAttribute('aria-expanded', 'false');
+      expect(onChange).not.toHaveBeenCalled();
+      expect(onClick).not.toHaveBeenCalled();
+    });
+
+    it('drops a date draft instead of committing it when the field becomes disabled (AST-085 FR2)', async () => {
+      const user = userEvent.setup();
+      const onChange = vi.fn();
+      const value = '2026-03-10T09:00' as ISODateTimeString;
+      const {rerender} = render(
+        <DateTimeInput label="When" value={value} onChange={onChange} />,
+      );
+      const dateInput = screen.getByRole('combobox');
+      await user.click(dateInput);
+      await user.clear(dateInput);
+      rerender(
+        <DateTimeInput
+          label="When"
+          value={value}
+          onChange={onChange}
+          isDisabled
+        />,
+      );
+      await user.tab();
+      expect(onChange).not.toHaveBeenCalled();
     });
 
     it('does not swap in the time format-hint placeholder on focus while disabled', () => {
@@ -1028,6 +1125,24 @@ describe('DateTimeInput', () => {
       await waitFor(() => {
         expect(politeRegion()).toHaveTextContent('2:31 PM');
       });
+    });
+
+    it('announces no step from a disabled time field (AST-085 FR2)', async () => {
+      render(
+        <DateTimeInput
+          label="Meeting"
+          value={'2026-03-15T14:30' as ISODateTimeString}
+          onChange={() => {}}
+          isDisabled
+        />,
+      );
+
+      fireEvent.keyDown(screen.getByLabelText('Meeting time'), {
+        key: 'ArrowUp',
+      });
+
+      await new Promise(resolve => setTimeout(resolve, 50));
+      expect(politeRegion()?.textContent ?? '').not.toContain('2:31 PM');
     });
 
     it('politely announces the new time after ArrowDown stepping', async () => {

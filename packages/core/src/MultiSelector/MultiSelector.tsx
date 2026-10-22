@@ -5,13 +5,14 @@
 /**
  * @file MultiSelector.tsx
  * @input Uses React, StyleX, usePopover, useTooltip, CheckboxInput, Field, Badge, Icon, InputGroupContext
- * @output Exports MultiSelector component
+ * @output Exports MultiSelector with input, secondary, and ghost trigger variants
  * @position Core implementation; consumed by index.ts
  *
  * SYNC: When modified, update:
  * - /packages/core/src/MultiSelector/MultiSelector.doc.mjs
  * - /packages/core/src/MultiSelector/MultiSelector.test.tsx
  * - /packages/core/src/MultiSelector/index.ts
+ * - /apps/storybook/stories/MultiSelector.stories.tsx
  * - /apps/storybook/stories/InputGroup.stories.tsx
  * - /packages/cli/assets/templates/blocks/components/MultiSelector/ (showcase blocks)
  */
@@ -49,6 +50,7 @@ import type {IndicatorPosition} from '../Indicator';
 import {Badge} from '../Badge';
 import {
   colorVars,
+  focusVars,
   sizeVars,
   spacingVars,
   radiusVars,
@@ -73,7 +75,10 @@ import {
 import {useMultiCombobox} from './hooks';
 import {getInputARIA, isImeKeyEvent, mergeProps} from '../utils';
 import {devWarn, warnOnce} from '../utils/devWarning';
-import {FOCUS_OUTLINE_PARTS} from '../utils/focusOutline.stylex';
+import {
+  getInteractionModality,
+  useInteractionModalityTracking,
+} from '../utils/interactionModality';
 import {useAnnounce} from '../hooks/useAnnounce';
 import {FOCUSABLE_SELECTOR} from '../hooks/focusableSelector';
 import {useAnnounceRenderedText} from '../hooks/useAnnounceRenderedText';
@@ -87,6 +92,7 @@ import {useDevWarning} from '../hooks/useDevWarning';
 import {composeEventHandlers} from '../utils/composeEventHandlers';
 import {mergeRefs} from '../utils/mergeRefs';
 import {useMergedRefs} from '../hooks/useMergedRefs';
+import {useBusyAnnouncement} from '../hooks/useBusyAnnouncement';
 import type {SizeValue} from '../utils/types';
 import {useSize} from '../SizeContext/SizeContext';
 import {themeProps} from '../utils/themeProps';
@@ -239,6 +245,46 @@ const styles = stylex.create({
         '@media (pointer: coarse)': 'scale(1)',
       },
       '[data-astryx-press="on"]': 'scale(0.98)',
+    },
+  },
+  // Keep the input-family width contract while reusing ghost's borderless paint
+  // and the neutral resting fill used by secondary buttons.
+  triggerSecondary: {
+    borderWidth: 0,
+    backgroundColor: colorVars['--color-neutral'],
+    boxShadow: {
+      default: 'none',
+      ':hover:not(:focus-within):where(:not(:disabled,[aria-disabled="true"]))':
+        {
+          '@media (hover: hover)': 'none',
+        },
+      ':focus-within': 'none',
+    },
+    fontWeight: fontWeightVars['--font-weight-medium'],
+    transitionProperty:
+      'background-image, background-color, color, opacity, transform',
+    transform: {
+      default: 'scale(1)',
+      ':active': {
+        default: 'scale(0.98)',
+        '@media (pointer: coarse)': 'scale(1)',
+      },
+      '[data-astryx-press="on"]': 'scale(0.98)',
+    },
+  },
+  // A disabled input-variant trigger keeps its tab stop (`spec:AST-085` FR1),
+  // and the shared disabled wrapper style drops the field focus ring, so the
+  // trigger shows keyboard focus here instead (FR6). It keys on the trigger
+  // itself, a direct child, so a focused status button keeps its own outline.
+  triggerDisabledFocus: {
+    borderColor: {
+      default: colorVars['--color-border-emphasized'],
+      ':has(> [aria-disabled="true"]:focus-visible)':
+        colorVars['--color-accent'],
+    },
+    boxShadow: {
+      default: 'none',
+      ':has(> [aria-disabled="true"]:focus-visible)': `inset 0px 0px 0px 2px ${colorVars['--color-accent-muted']}`,
     },
   },
   triggerGhostDisabled: {
@@ -410,11 +456,15 @@ const styles = stylex.create({
     flexShrink: 0,
     borderRadius: radiusVars['--radius-element'],
   },
+  // The standard ring, from the focus tokens themselves: inside
+  // `stylex.create` StyleX resolves an imported `defineVars` group, and a
+  // plain object such as `FOCUS_OUTLINE_PARTS` compiles to variables nothing
+  // defines.
   actionCellActive: {
-    outlineWidth: FOCUS_OUTLINE_PARTS.outlineWidth,
-    outlineStyle: FOCUS_OUTLINE_PARTS.outlineStyle,
-    outlineColor: FOCUS_OUTLINE_PARTS.outlineColor,
-    outlineOffset: FOCUS_OUTLINE_PARTS.outlineOffset,
+    outlineWidth: focusVars['--focus-outline-width'],
+    outlineStyle: focusVars['--focus-outline-style'],
+    outlineColor: focusVars['--focus-outline-color'],
+    outlineOffset: focusVars['--focus-outline-offset'],
   },
 
   // Empty state
@@ -494,7 +544,7 @@ const STATUS_BUTTON_LABEL_KEY: Record<MultiSelectorStatusType, string> = {
 
 export type MultiSelectorSize = 'sm' | 'md' | 'lg';
 
-export type MultiSelectorVariant = 'input' | 'ghost';
+export type MultiSelectorVariant = 'input' | 'secondary' | 'ghost';
 
 export type MultiSelectorPresentation = AdaptivePresentation;
 
@@ -654,8 +704,8 @@ export interface MultiSelectorProps<
    * The selected values stay visible, focusable, and included in form
    * submission, and retain their combobox identity with `aria-readonly`. The
    * selection surface and editing affordances are removed.
-   * Unlike `isDisabled`, a read-only selector is not dimmed and stays in the
-   * tab order. `isDisabled` takes precedence when both are set.
+   * Unlike `isDisabled`, a read-only selector is not dimmed and keeps its
+   * value in form submission. `isDisabled` takes precedence when both are set.
    * @default false
    */
   isReadOnly?: boolean;
@@ -667,8 +717,8 @@ export interface MultiSelectorProps<
    * so the reason is discoverable by keyboard and assistive technology.
    * Activation stays blocked.
    *
-   * Use this instead of wrapping a disabled selector in `Tooltip` — disabled
-   * controls don't emit the pointer events an external tooltip needs.
+   * Use this instead of wrapping a disabled selector in `Tooltip`, so the
+   * reason is attached to the trigger itself.
    *
    * @example
    * ```
@@ -736,7 +786,9 @@ export interface MultiSelectorProps<
   /**
    * Visual style of the selector trigger.
    * - 'input': bordered input-style trigger for forms
-   * - 'ghost': borderless trigger matching ghost buttons, for toolbars
+   * - 'secondary': matches the theme's secondary buttons (borderless and
+   *   neutral-filled by default)
+   * - 'ghost': borderless, transparent trigger matching ghost buttons
    * @default 'input'
    */
   variant?: MultiSelectorVariant;
@@ -750,7 +802,7 @@ export interface MultiSelectorProps<
    * - 'attached': message overlaps directly below the bordered input (input variant only)
    * - 'detached': message floats below as a separate element with spacing
    * - 'tooltip': message is exposed from the on-field status icon
-   * @default 'attached' for input selectors; 'detached' for ghost selectors
+   * @default 'attached' for input selectors; 'detached' for secondary and ghost selectors
    */
   statusVariant?: FieldStatusVariant;
 
@@ -1114,7 +1166,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
     emptySearchTextFromProps ?? t('@astryx.multiSelector.emptySearchResults');
   const size = useSize(sizeProp, 'md');
   const effectiveStatusVariant =
-    variant === 'ghost' && statusVariant === 'attached'
+    variant !== 'input' && statusVariant === 'attached'
       ? 'detached'
       : statusVariant;
   const isEffectivelyReadOnly = isReadOnly && !isDisabled;
@@ -1152,6 +1204,9 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
   const [, startTransition] = useTransition();
   const [optimisticValue, setOptimisticValue] = useOptimistic(value);
   const isBusy = isLoading || optimisticValue !== value;
+  // The busy Spinner is decorative; this control announces its busy start
+  // (spec:AST-086 FR8).
+  useBusyAnnouncement(isBusy, t('@astryx.spinner.loading'), triggerRef);
 
   // Disabled-reason tooltip. Disabled controls swallow pointer events, so the
   // tooltip listeners attach to the trigger container (which already exists)
@@ -1569,6 +1624,14 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
     (e: React.MouseEvent) => {
       e.stopPropagation(); // Don't open dropdown
       clearValues();
+      // A keyboard activation (detail 0) leaves focus on the clear button,
+      // which unmounts once the value is empty and would drop focus to <body>;
+      // hand it to the trigger. A pointer press never focuses the button, so
+      // there is no focus to repair, and moving it would pull focus out of an
+      // open list's search input.
+      if (e.detail === 0) {
+        triggerRef.current?.focus();
+      }
     },
     [clearValues],
   );
@@ -1716,8 +1779,8 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
     getActionCellId,
     activeDescendantId,
     onTriggerClick,
-    onKeyDown,
-    onItemMouseEnter,
+    onKeyDown: onComboboxKeyDown,
+    onItemMouseEnter: onComboboxItemMouseEnter,
   } = useMultiCombobox({
     selectableItems: sortedItems,
     isDisabled: isDisabled || isEffectivelyReadOnly,
@@ -1747,6 +1810,29 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
       [getActionCellIdForActivate],
     ),
   });
+
+  // A hover moves the highlight too, but the focus ring follows the shared
+  // interaction modality (architecture:interaction-modality INV1): it is read
+  // whenever a key or the pointer moves the highlight, so an action cell
+  // highlighted after pointer input keeps the hover treatment and no ring.
+  useInteractionModalityTracking();
+  const [isKeyboardHighlight, setIsKeyboardHighlight] = useState(
+    () => getInteractionModality() === 'keyboard',
+  );
+  const onKeyDown = useCallback(
+    (event: React.KeyboardEvent<HTMLElement>) => {
+      onComboboxKeyDown(event);
+      setIsKeyboardHighlight(getInteractionModality() === 'keyboard');
+    },
+    [onComboboxKeyDown],
+  );
+  const onItemMouseEnter = useCallback(
+    (...args: Parameters<typeof onComboboxItemMouseEnter>) => {
+      onComboboxItemMouseEnter(...args);
+      setIsKeyboardHighlight(getInteractionModality() === 'keyboard');
+    },
+    [onComboboxItemMouseEnter],
+  );
 
   // The trigger button owns its click so a consumer `onClick`, which lands on
   // the button, composes after the built-in toggle. A press elsewhere in the
@@ -2081,6 +2167,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
                   styles.actionCell,
                   isHighlighted &&
                     highlightedCell === 'action' &&
+                    isKeyboardHighlight &&
                     styles.actionCellActive,
                 )}>
                 {isSelectAll || isCreate ? null : item.action}
@@ -2095,6 +2182,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
     [
       isGrid,
       highlightedCell,
+      isKeyboardHighlight,
       getActionCellId,
       renderOption,
       indicatorPosition,
@@ -2340,8 +2428,18 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
     });
   }
 
+  // A disabled trigger stays focusable but, like a natively disabled button,
+  // runs no caller event handler other than focus and blur, and a press on it
+  // reaches no handler at all (`spec:AST-085` FR2).
+  const callerProps = isDisabled
+    ? Object.fromEntries(
+        Object.entries(rest).filter(
+          ([key]) => !/^on[A-Z]/.test(key) || /^on(Focus|Blur)/.test(key),
+        ),
+      )
+    : rest;
   const triggerSharedProps: React.HTMLAttributes<HTMLElement> = {
-    ...rest,
+    ...callerProps,
     id: triggerId,
     // A caller's description is kept alongside the field's own.
     'aria-describedby':
@@ -2354,13 +2452,20 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
     // Newly forwarded handlers compose component first: the built-in toggle
     // and keyboard model always run. `onFocus` keeps its existing caller-first
     // order.
-    onKeyDown: composeEventHandlers(onKeyDown, onKeyDownProp),
+    onKeyDown: isDisabled
+      ? onKeyDown
+      : composeEventHandlers(onKeyDown, onKeyDownProp),
     onFocus: event => {
       onFocus?.(event);
       surface.onTriggerFocus(event);
     },
-    onClick: composeEventHandlers(handleTriggerButtonClick, onClick),
-    tabIndex: isDisabled && !showsDisabledMessage ? -1 : 0,
+    onClick: isDisabled
+      ? event => {
+          event.preventDefault();
+          event.stopPropagation();
+        }
+      : composeEventHandlers(handleTriggerButtonClick, onClick),
+    tabIndex: 0,
     ...stylex.props(
       styles.trigger,
       isEffectivelyReadOnly && styles.triggerReadOnly,
@@ -2427,14 +2532,9 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
       <>
         {renderTrigger(triggerProps)}
         {htmlName != null &&
+          !isDisabled &&
           value.map(v => (
-            <input
-              key={v}
-              type="hidden"
-              name={htmlName}
-              value={v}
-              disabled={isDisabled}
-            />
+            <input key={v} type="hidden" name={htmlName} value={v} />
           ))}
         {selectionSurface}
       </>
@@ -2465,25 +2565,32 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
             inputWrapperStyles.base,
             styles.triggerContainer,
             sizeStyles[size],
+            variant === 'secondary' && styles.triggerSecondary,
             variant === 'ghost' && styles.triggerGhost,
-            variant === 'ghost' && interactionOverlayStyles.backgroundImage,
-            variant === 'ghost' && focusOutlineStyles.focusWithin,
+            variant !== 'input' && interactionOverlayStyles.backgroundImage,
+            variant !== 'input' && focusOutlineStyles.focusWithin,
             surface.isTriggerFocusRingSuppressed &&
               selectorPresentationStyles.pointerRestoredFocus,
             isDisabled && inputWrapperStyles.disabled,
+            variant === 'input' &&
+              isDisabled &&
+              !surface.isTriggerFocusRingSuppressed &&
+              styles.triggerDisabledFocus,
             isEffectivelyReadOnly && styles.triggerReadOnly,
-            variant === 'ghost' && isDisabled && styles.triggerGhostDisabled,
-            variant === 'ghost' &&
+            variant !== 'input' && isDisabled && styles.triggerGhostDisabled,
+            variant !== 'input' &&
               isEffectivelyReadOnly &&
               styles.triggerGhostReadOnly,
             optimisticValue.length === 0 && styles.triggerPlaceholder,
-            variant !== 'ghost' &&
+            variant === 'input' &&
               status &&
               inputStatusBorderStyles[status.type],
-            variant !== 'ghost' &&
+            variant === 'input' &&
               status &&
               !isDisabled &&
               inputStatusHoverShadowStyles[status.type],
+            // Grouped secondary triggers keep their neutral fill but take the
+            // group's row height, connected edge radii, and focus stacking.
             variant !== 'ghost' && inputGroup && groupStyles.inGroup,
             controlXstyle,
           ),
@@ -2526,28 +2633,21 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
               ? activeDescendantId
               : undefined
           }
-          // With a disabledMessage the trigger keeps focusability via
-          // aria-disabled so the reason is focus-discoverable; activation is
-          // still blocked by the isDisabled guards in useMultiCombobox.
-          disabled={isDisabled && !showsDisabledMessage}
-          aria-disabled={showsDisabledMessage ? 'true' : undefined}>
+          // A disabled trigger keeps its tab stop and says so through
+          // aria-disabled (`spec:AST-085` FR1); the isDisabled guards in
+          // useMultiCombobox block every way of opening it.
+          aria-disabled={isDisabled ? 'true' : undefined}>
           <span {...stylex.props(styles.triggerContent)}>
             {renderTriggerContent()}
           </span>
         </button>
+        {/* A disabled selector submits no value (`spec:AST-085` FR3). */}
         {htmlName != null &&
+          !isDisabled &&
           value.map(v => (
-            <input
-              key={v}
-              type="hidden"
-              name={htmlName}
-              value={v}
-              // Disabled native controls are excluded from form submission;
-              // mirror that for the hidden carriers.
-              disabled={isDisabled}
-            />
+            <input key={v} type="hidden" name={htmlName} value={v} />
           ))}
-        {isBusy && <Spinner size="sm" />}
+        {isBusy && <Spinner size="sm" aria-hidden="true" />}
         {hasClear &&
           value.length > 0 &&
           !isDisabled &&

@@ -33,7 +33,11 @@ import {
 } from 'lexical';
 import {HeadingNode} from '@lexical/rich-text';
 import {TRANSFORMERS, $convertFromMarkdownString} from '@lexical/markdown';
-import {RichTextEditor, type RichTextEditorRef} from './RichTextEditor';
+import {
+  RichTextEditor,
+  type RichTextEditorProps,
+  type RichTextEditorRef,
+} from './RichTextEditor';
 import {RichTextView} from './RichTextView';
 import {
   markdownToEditorStateJSON,
@@ -41,6 +45,8 @@ import {
 } from './markdownSerializers';
 import {RichTextEditorToolbar} from './RichTextEditorToolbar';
 import {registerIcons, resetIcons} from '@astryxdesign/core/Icon';
+import {EDGE_COMP_ATTR} from '@astryxdesign/core/Layout';
+import type {BaseProps} from '@astryxdesign/core';
 import {Theme, defineTheme} from '@astryxdesign/core/theme';
 import {rtlStyles} from '@astryxdesign/core/utils';
 import {InternationalizationProvider} from '@astryxdesign/core/i18n';
@@ -288,6 +294,52 @@ const HELLO_STATE = JSON.stringify({
 });
 
 describe('RichTextEditor', () => {
+  it('documents every prop the editor declares', () => {
+    // The doc file is what `astryx component RichTextEditor` and the docsite
+    // read, so a prop missing from it is invisible to builders. The compile-time
+    // check below fails when RichTextEditorProps gains a prop this list lacks;
+    // the runtime check fails when the doc file lacks a listed prop.
+    const ownProps = [
+      'label',
+      'isLabelHidden',
+      'description',
+      'isOptional',
+      'isRequired',
+      'defaultValue',
+      'onChange',
+      'placeholder',
+      'isReadOnly',
+      'isDisabled',
+      'status',
+      'statusVariant',
+      'size',
+      'nodes',
+      'toolbar',
+      'plugins',
+      'hasMarkdownShortcuts',
+      'markdownExtensions',
+      'transformers',
+      'hasAutoFocus',
+      'tabEscapeHint',
+      'maxLength',
+      'width',
+      'minHeight',
+      'labelTooltip',
+      'namespace',
+    ] as const satisfies ReadonlyArray<keyof RichTextEditorProps>;
+    type Unlisted = Exclude<
+      keyof RichTextEditorProps,
+      keyof BaseProps | 'ref' | (typeof ownProps)[number]
+    >;
+    const everyPropListed: [Unlisted] extends [never] ? true : Unlisted = true;
+    expect(everyPropListed).toBe(true);
+
+    const docProps =
+      'props' in richTextEditorDoc ? richTextEditorDoc.props : [];
+    const documented = new Set(docProps.map(({name}) => name));
+    expect(ownProps.filter(name => !documented.has(name))).toEqual([]);
+  });
+
   it('declares exactly the visual props its theme target reflects', () => {
     // The core theming guards walk packages/core/src (and Lab) only, so
     // nothing else compares this package's doc metadata with its
@@ -1313,7 +1365,11 @@ describe('RichTextEditorToolbar', () => {
         Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
     expect(toolbarRegion?.parentElement).toBe(editor);
+    expect(toolbarRegion).toBeInstanceOf(HTMLElement);
     expect(editorBody).toBeInstanceOf(HTMLElement);
+    // The compact gutter is emitted by StyleX; do not regress to a component
+    // inline-style escape hatch. Browser coverage below owns the geometry.
+    expect(toolbarRegion).not.toHaveAttribute('style');
     // Vitest's JSDOM setup does not load compiled StyleX CSS. The WithToolbar
     // story provides visual coverage for flush edges and preserved body inset;
     // here we verify that the dedicated body receives its StyleX layout.
@@ -1420,6 +1476,7 @@ describe('RichTextEditorToolbar', () => {
     const actionRow = screen.getByRole('group', {
       name: 'Formatting actions',
     });
+    expect(actionRow).not.toHaveAttribute(EDGE_COMP_ATTR);
     for (const name of [
       'Bold',
       'Italic',
@@ -1839,7 +1896,41 @@ describe('RichTextEditorToolbar — new-tab links', () => {
     });
   });
 
-  it('omits new-tab attributes when linkOpensInNewTab is false', async () => {
+  it('passes base props and the ref through to the Astryx Toolbar', () => {
+    const ref = createRef<HTMLDivElement>();
+    const onKeyDown = vi.fn();
+    render(
+      <RichTextEditor
+        label="Notes"
+        toolbar={
+          <RichTextEditorToolbar
+            ref={ref}
+            className="product-toolbar"
+            style={{marginBlockEnd: 3}}
+            data-testid="toolbar-root"
+            aria-describedby="toolbar-help"
+            onKeyDown={onKeyDown}
+          />
+        }
+      />,
+    );
+    // Base props land where core Toolbar puts them: the ref and styling on
+    // its root, every other base prop on the role="toolbar" element inside.
+    const toolbar = screen.getByRole('toolbar');
+    const root = ref.current;
+    expect(root).not.toBeNull();
+    expect(root?.contains(toolbar)).toBe(true);
+    expect(root).toHaveClass('product-toolbar');
+    expect(root?.style.marginBlockEnd).toBe('3px');
+    expect(screen.getByTestId('toolbar-root')).toBe(toolbar);
+    expect(toolbar).toHaveAttribute('aria-describedby', 'toolbar-help');
+    // The toolbar's own label and role survive the spread.
+    expect(toolbar).toHaveAccessibleName('Text formatting');
+    fireEvent.keyDown(toolbar, {key: 'x'});
+    expect(onKeyDown).toHaveBeenCalledTimes(1);
+  });
+
+  it('omits new-tab attributes when hasNewTabLinks is false', async () => {
     let editor!: LexicalEditor;
     const promptForUrl = vi.fn(() => 'example.com');
     render(
@@ -1848,7 +1939,7 @@ describe('RichTextEditorToolbar — new-tab links', () => {
         toolbar={
           <RichTextEditorToolbar
             promptForUrl={promptForUrl}
-            linkOpensInNewTab={false}
+            hasNewTabLinks={false}
           />
         }
         plugins={<CaptureEditor onReady={e => (editor = e)} />}

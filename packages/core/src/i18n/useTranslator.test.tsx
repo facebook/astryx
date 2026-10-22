@@ -32,6 +32,12 @@ const FR_MESSAGES: MessagesByLocale = {
 const FR_RUNTIME_MESSAGES: ProviderMessagesByLocale = {
   fr: {'@astryx.pagination.next': 'Page suivante compacte'},
 };
+// One messages value mixing shapes: a generated string map for the active
+// locale and a rich catalog for its parent.
+const MIXED_MESSAGES: ProviderMessagesByLocale = {
+  'fr-CA': {'@astryx.pagination.next': 'Page suivante (CA)'},
+  fr: {'@astryx.pagination.previous': {defaultMessage: 'Page précédente'}},
+};
 const FR_OVERRIDES: Overrides = {
   fr: {'@astryx.pagination.next': 'Suivant'},
 };
@@ -99,6 +105,37 @@ describe('useTranslator — resolution', () => {
     expect(
       result.current.context.messages.fr['@astryx.pagination.next'],
     ).toEqual({defaultMessage: 'Page suivante compacte'});
+  });
+
+  it('resolves rich and runtime catalogs mixed in one messages value', () => {
+    const {result} = renderHook(
+      () => ({
+        context: use(InternationalizationContext),
+        translate: useTranslator(),
+      }),
+      {
+        wrapper: ({children}) => (
+          <InternationalizationProvider
+            locale="fr-CA"
+            messages={MIXED_MESSAGES}>
+            {children}
+          </InternationalizationProvider>
+        ),
+      },
+    );
+
+    expect(result.current.translate('@astryx.pagination.next')).toBe(
+      'Page suivante (CA)',
+    );
+    expect(result.current.translate('@astryx.pagination.previous')).toBe(
+      'Page précédente',
+    );
+    expect(result.current.context.messages).toEqual({
+      'fr-CA': {
+        '@astryx.pagination.next': {defaultMessage: 'Page suivante (CA)'},
+      },
+      fr: {'@astryx.pagination.previous': {defaultMessage: 'Page précédente'}},
+    });
   });
 
   it('lets a provider override beat the provider catalog', () => {

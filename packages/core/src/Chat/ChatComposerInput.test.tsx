@@ -1,6 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import {describe, it, expect, vi, afterEach} from 'vitest';
+import {StrictMode} from 'react';
+import {describe, it, expect, vi, afterEach, beforeEach} from 'vitest';
 import {render, screen, fireEvent, waitFor, act} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {ChatComposer} from './ChatComposer';
@@ -11,7 +12,10 @@ import type {
   ChatComposerInputHandle,
 } from './ChatComposerInput';
 import {createStaticSource} from '../Typeahead/createStaticSource';
-import type {SearchableItem} from '../Typeahead/types';
+import type {SearchableItem, SearchSource} from '../Typeahead/types';
+
+const announce = vi.hoisted(() => vi.fn());
+vi.mock('../hooks/useAnnounce', () => ({useAnnounce: () => announce}));
 
 // =============================================================================
 // Helpers
@@ -1136,7 +1140,7 @@ describe('ChatComposerInput', () => {
 
     it('supports configurable empty/loading text', () => {
       const trigger = createMentionTrigger({
-        emptySearchResultsText: 'Nobody found',
+        emptySearchText: 'Nobody found',
         loadingText: 'Looking up...',
         menuLabel: 'People',
       });
@@ -1146,7 +1150,7 @@ describe('ChatComposerInput', () => {
 
     // A trigger's `emptySearchResultsText` was renamed to `emptySearchText`
     // and widened from `string` to `ReactNode` (`spec:AST-056` FR1). The
-    // released key keeps working through the overlap (`spec:AST-017` FR28).
+    // overlap ended in a minor release (`CLN-0004`, `spec:AST-017` FR31).
     it('renders an element emptySearchText when the query matched nothing', async () => {
       const user = userEvent.setup();
       const trigger = createMentionTrigger({
@@ -1166,10 +1170,11 @@ describe('ChatComposerInput', () => {
       });
     });
 
-    it('keeps the deprecated key working, and says it is deprecated', async () => {
+    it('no longer reads the removed emptySearchResultsText key (CLN-0004)', async () => {
       const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
       const user = userEvent.setup();
       const trigger = createMentionTrigger({
+        // @ts-expect-error -- removed in the minor release (CLN-0004)
         emptySearchResultsText: 'Nobody found',
       });
       render(<ChatComposerInput triggers={[trigger]} />);
@@ -1178,60 +1183,11 @@ describe('ChatComposerInput', () => {
       await user.keyboard('@zzzzz');
 
       await waitFor(() => {
-        expect(screen.getByText('Nobody found')).toBeInTheDocument();
+        expect(screen.getByText('No results')).toBeInTheDocument();
       });
-      expect(warn).toHaveBeenCalledWith(
-        expect.stringContaining(
-          'ChatComposerInput: A trigger sets `emptySearchResultsText`, which is deprecated',
-        ),
-      );
-      warn.mockRestore();
-    });
-
-    it('treats an explicit null key as not given, falling through to the old one', async () => {
-      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
-      const user = userEvent.setup();
-      const trigger = createMentionTrigger({
-        emptySearchResultsText: 'Nobody found',
-        emptySearchText: null,
-      });
-      render(<ChatComposerInput triggers={[trigger]} />);
-
-      await user.click(screen.getByRole('combobox'));
-      await user.keyboard('@zzzzz');
-
-      // The same meaning the typeahead family gives `null`: not given, so
-      // the released key still supplies the message and no warning claims a
-      // winner the menu did not pick.
-      await waitFor(() => {
-        expect(screen.getByText('Nobody found')).toBeInTheDocument();
-      });
+      expect(screen.queryByText('Nobody found')).not.toBeInTheDocument();
       expect(warn).not.toHaveBeenCalledWith(
-        expect.stringContaining('sets both'),
-      );
-      warn.mockRestore();
-    });
-
-    it('lets the new key win when a trigger sets both, and warns', async () => {
-      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
-      const user = userEvent.setup();
-      const trigger = createMentionTrigger({
-        emptySearchResultsText: 'Old copy',
-        emptySearchText: 'New copy',
-      });
-      render(<ChatComposerInput triggers={[trigger]} />);
-
-      await user.click(screen.getByRole('combobox'));
-      await user.keyboard('@zzzzz');
-
-      await waitFor(() => {
-        expect(screen.getByText('New copy')).toBeInTheDocument();
-      });
-      expect(screen.queryByText('Old copy')).not.toBeInTheDocument();
-      expect(warn).toHaveBeenCalledWith(
-        expect.stringContaining(
-          'ChatComposerInput: A trigger sets both `emptySearchResultsText` and `emptySearchText`',
-        ),
+        expect.stringContaining('is deprecated'),
       );
       warn.mockRestore();
     });
@@ -1415,6 +1371,207 @@ describe('ChatComposerInput', () => {
       expect(
         container.querySelector('.astryx-chat-composer-input'),
       ).toBeInTheDocument();
+    });
+  });
+
+  describe('trigger query (component:ChatComposerInput FR13, AR5)', () => {
+    function typeAtEnd(editable: HTMLElement, text: string) {
+      editable.textContent = text;
+      const node = editable.firstChild!;
+      const range = document.createRange();
+      range.setStart(node, text.length);
+      range.collapse(true);
+      const sel = window.getSelection()!;
+      sel.removeAllRanges();
+      sel.addRange(range);
+      fireEvent.input(editable);
+    }
+
+    it('Enter while a newer trigger search is pending sends the typed text, picks no row, and no menu reopens after the send', async () => {
+      const onSubmit = vi.fn();
+      let resolveSlow: (items: SearchableItem[]) => void = () => {};
+      const source: SearchSource = {
+        bootstrap: async () => [],
+        async search(query: string) {
+          if (query === 'ci') {
+            return new Promise(resolve => {
+              resolveSlow = resolve;
+            });
+          }
+          return Promise.resolve(
+            USERS.filter(u => u.label.toLowerCase().includes(query)),
+          );
+        },
+      };
+      render(
+        <ChatComposerInput
+          triggers={[createMentionTrigger({searchSource: source})]}
+          debounceMs={0}
+          onSubmit={onSubmit}
+        />,
+      );
+      const editable = screen.getByRole('combobox');
+      editable.focus();
+
+      typeAtEnd(editable, '@c');
+      await waitFor(() => {
+        expect(editable.getAttribute('aria-activedescendant')).toBeTruthy();
+      });
+
+      // A newer search is pending: Enter sends the draft exactly as typed.
+      typeAtEnd(editable, '@ci');
+      fireEvent.keyDown(editable, {key: 'Enter'});
+      expect(onSubmit).toHaveBeenCalledWith('@ci');
+      expect(editable.querySelector('[data-astryx-token]')).toBeNull();
+      expect(editable.textContent).toBe('');
+
+      // The late result for the sent query must not reopen the menu.
+      await act(async () => {
+        resolveSlow([{id: 'cindy', label: 'Cindy Zhang'}]);
+      });
+      expect(editable).toHaveAttribute('aria-expanded', 'false');
+      expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+      expect(screen.queryByRole('option')).not.toBeInTheDocument();
+    });
+
+    it('forgets an Escape-dismissed mention when the message is sent, so the next message can mention', async () => {
+      const onSubmit = vi.fn();
+      render(
+        <ChatComposerInput
+          triggers={[createMentionTrigger()]}
+          onSubmit={onSubmit}
+        />,
+      );
+      const editable = screen.getByRole('combobox');
+      editable.focus();
+
+      typeAtEnd(editable, '@');
+      await waitFor(() => {
+        expect(editable).toHaveAttribute('aria-expanded', 'true');
+      });
+      fireEvent.keyDown(editable, {key: 'Escape'});
+      await waitFor(() => {
+        expect(editable).toHaveAttribute('aria-expanded', 'false');
+      });
+
+      fireEvent.keyDown(editable, {key: 'Enter'});
+      expect(onSubmit).toHaveBeenCalledWith('@');
+
+      typeAtEnd(editable, '@ci');
+      await waitFor(() => {
+        expect(editable).toHaveAttribute('aria-expanded', 'true');
+      });
+      expect(editable.getAttribute('aria-activedescendant')).toBeTruthy();
+    });
+
+    it('forgets an Escape-dismissed trigger when the send button sends the draft', async () => {
+      const onSubmit = vi.fn();
+      render(
+        <ChatComposer
+          onSubmit={onSubmit}
+          input={<ChatComposerInput triggers={[createCommandTrigger()]} />}
+        />,
+      );
+      const editable = screen.getByRole('combobox');
+      editable.focus();
+
+      typeAtEnd(editable, '/');
+      await waitFor(() => {
+        expect(editable).toHaveAttribute('aria-expanded', 'true');
+      });
+      fireEvent.keyDown(editable, {key: 'Escape'});
+      await waitFor(() => {
+        expect(editable).toHaveAttribute('aria-expanded', 'false');
+      });
+
+      fireEvent.click(screen.getByRole('button', {name: /send/i}));
+      expect(onSubmit).toHaveBeenCalledWith('/');
+      await waitFor(() => {
+        expect(editable.textContent).toBe('');
+      });
+
+      typeAtEnd(editable, '/s');
+      await waitFor(() => {
+        expect(editable).toHaveAttribute('aria-expanded', 'true');
+      });
+    });
+
+    it('drops a late trigger result after the send button sends the draft', async () => {
+      const onSubmit = vi.fn();
+      let resolveSlow: (items: SearchableItem[]) => void = () => {};
+      const source: SearchSource = {
+        bootstrap: async () => [],
+        async search(query: string) {
+          if (query === 'ci') {
+            return new Promise(resolve => {
+              resolveSlow = resolve;
+            });
+          }
+          return Promise.resolve(
+            USERS.filter(u => u.label.toLowerCase().includes(query)),
+          );
+        },
+      };
+      render(
+        <ChatComposer
+          onSubmit={onSubmit}
+          input={
+            <ChatComposerInput
+              triggers={[createMentionTrigger({searchSource: source})]}
+              debounceMs={0}
+            />
+          }
+        />,
+      );
+      const editable = screen.getByRole('combobox');
+      editable.focus();
+
+      typeAtEnd(editable, '@c');
+      await waitFor(() => {
+        expect(editable.getAttribute('aria-activedescendant')).toBeTruthy();
+      });
+      typeAtEnd(editable, '@ci');
+
+      fireEvent.click(screen.getByRole('button', {name: /send/i}));
+      expect(onSubmit).toHaveBeenCalledWith('@ci');
+      await waitFor(() => {
+        expect(editable.textContent).toBe('');
+      });
+
+      await act(async () => {
+        resolveSlow([{id: 'cindy', label: 'Cindy Zhang'}]);
+      });
+      expect(editable).toHaveAttribute('aria-expanded', 'false');
+      expect(screen.queryByRole('option')).not.toBeInTheDocument();
+    });
+
+    it('lets Escape reach the consumer while an unmatched multi-word query hides the menu', async () => {
+      const onKeyDown = vi.fn();
+      render(
+        <ChatComposerInput
+          triggers={[createMentionTrigger({hasMultiWordQuery: true})]}
+          onKeyDown={onKeyDown}
+        />,
+      );
+      const editable = screen.getByRole('combobox');
+      editable.focus();
+
+      typeAtEnd(editable, '@team please');
+      await waitFor(() => {
+        expect(editable).toHaveAttribute('aria-expanded', 'false');
+      });
+      // The hidden menu's results commit outside act, so the popover's Escape
+      // registration is released by a passive effect that can still be pending
+      // when the attribute changes. Flush it before pressing Escape.
+      await act(async () => {});
+
+      // Nothing cancels the key: the closed menu holds no Escape handling,
+      // so a surrounding dialog or drawer still receives it.
+      const notCancelled = fireEvent.keyDown(editable, {key: 'Escape'});
+      expect(notCancelled).toBe(true);
+      expect(onKeyDown).toHaveBeenCalledWith(
+        expect.objectContaining({key: 'Escape'}),
+      );
     });
   });
 
@@ -1669,5 +1826,167 @@ describe('ChatComposerInput', () => {
 
       expect(spy.mock.calls.length).toBeGreaterThan(callsAfterOpen);
     });
+  });
+});
+
+describe('ChatComposerInput trigger loading announcement (spec:AST-086)', () => {
+  function typeAtEnd(editable: HTMLElement, text: string) {
+    editable.textContent = text;
+    const node = editable.firstChild!;
+    const range = document.createRange();
+    range.setStart(node, text.length);
+    range.collapse(true);
+    const sel = window.getSelection()!;
+    sel.removeAllRanges();
+    sel.addRange(range);
+    fireEvent.input(editable);
+  }
+
+  /**
+   * Lets a settled search apply, as the browser would before the next frame,
+   * then lets the loading announcement's two frames run.
+   */
+  async function nextFrame() {
+    await act(async () => {});
+    await act(async () => {
+      for (let frame = 0; frame < 2; frame++) {
+        await new Promise(resolve => requestAnimationFrame(resolve));
+      }
+    });
+  }
+
+  /** An async source whose searches resolve only when the test says so. */
+  function createPendingSource() {
+    const resolvers: ((items: SearchableItem[]) => void)[] = [];
+    const source: SearchSource = {
+      bootstrap: async () => [],
+      search: async () =>
+        new Promise<SearchableItem[]>(resolve => {
+          resolvers.push(resolve);
+        }),
+    };
+    return {source, resolvers};
+  }
+
+  beforeEach(() => {
+    announce.mockClear();
+  });
+
+  it('shows the loading row without a live role (FR2)', () => {
+    const {source} = createPendingSource();
+    render(
+      <ChatComposerInput
+        triggers={[createMentionTrigger({searchSource: source})]}
+        debounceMs={0}
+      />,
+    );
+    const editable = screen.getByRole('combobox');
+    editable.focus();
+    typeAtEnd(editable, '@c');
+
+    const row = screen.getByText('Searching…');
+    expect(row).not.toHaveAttribute('role');
+    expect(screen.queryByRole('status')).toBeNull();
+  });
+
+  it('announces the loading text once per search, not on every keystroke (FR2, FR6)', async () => {
+    const {source, resolvers} = createPendingSource();
+    render(
+      <StrictMode>
+        <ChatComposerInput
+          triggers={[createMentionTrigger({searchSource: source})]}
+          debounceMs={0}
+        />
+      </StrictMode>,
+    );
+    const editable = screen.getByRole('combobox');
+    editable.focus();
+
+    typeAtEnd(editable, '@c');
+    await nextFrame();
+    typeAtEnd(editable, '@ci');
+    await nextFrame();
+    expect(announce.mock.calls).toEqual([['Searching…', 'polite']]);
+
+    await act(async () => {
+      resolvers.forEach(resolve =>
+        resolve([{id: 'cindy', label: 'Cindy Zhang'}]),
+      );
+    });
+    expect(screen.queryByText('Searching…')).toBeNull();
+
+    typeAtEnd(editable, '@cin');
+    await nextFrame();
+    expect(announce.mock.calls).toEqual([
+      ['Searching…', 'polite'],
+      ['Searching…', 'polite'],
+    ]);
+  });
+
+  it('announces nothing for a synchronous source, whose results are already listed (FR7)', async () => {
+    render(
+      <ChatComposerInput triggers={[createMentionTrigger()]} debounceMs={0} />,
+    );
+    const editable = screen.getByRole('combobox');
+    editable.focus();
+
+    typeAtEnd(editable, '@c');
+    await act(async () => {});
+    typeAtEnd(editable, '@ci');
+    await act(async () => {});
+
+    // jsdom gives the popover no semantics, so query the menu by its id.
+    const menu = document.getElementById(
+      editable.getAttribute('aria-controls')!,
+    );
+    expect(menu?.querySelector('[role="option"]')).toHaveTextContent(
+      'Cindy Zhang',
+    );
+    expect(screen.queryByText('Searching…')).toBeNull();
+    expect(announce).not.toHaveBeenCalled();
+  });
+
+  it('announces nothing for a search that settles before the row shows (FR7)', async () => {
+    const settled: SearchSource = {
+      bootstrap: async () => [],
+      search: async () => [{id: 'cindy', label: 'Cindy Zhang'}],
+    };
+    render(
+      <ChatComposerInput
+        triggers={[createMentionTrigger({searchSource: settled})]}
+        debounceMs={0}
+      />,
+    );
+    const editable = screen.getByRole('combobox');
+    editable.focus();
+
+    typeAtEnd(editable, '@c');
+    await nextFrame();
+    typeAtEnd(editable, '@ci');
+    await nextFrame();
+
+    expect(screen.queryByText('Searching…')).toBeNull();
+    expect(announce).not.toHaveBeenCalled();
+  });
+
+  it("announces a trigger's own loadingText", async () => {
+    const {source} = createPendingSource();
+    render(
+      <ChatComposerInput
+        triggers={[
+          createMentionTrigger({
+            searchSource: source,
+            loadingText: 'Looking up people…',
+          }),
+        ]}
+        debounceMs={0}
+      />,
+    );
+    const editable = screen.getByRole('combobox');
+    editable.focus();
+    typeAtEnd(editable, '@c');
+    await nextFrame();
+
+    expect(announce.mock.calls).toEqual([['Looking up people…', 'polite']]);
   });
 });

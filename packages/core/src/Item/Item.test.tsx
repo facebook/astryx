@@ -531,6 +531,67 @@ describe('Item', () => {
     expect(screen.getByTestId('item')).toBeInTheDocument();
   });
 
+  it('reflects the resolved alignment on the item theme target', () => {
+    const {rerender} = render(<Item label="Item" data-testid="item" />);
+    expect(screen.getByTestId('item')).toHaveAttribute('data-align', 'center');
+    for (const align of ['center', 'start', 'first-line'] as const) {
+      rerender(<Item label="Item" align={align} data-testid="item" />);
+      const item = screen.getByTestId('item');
+      expect(item).toHaveClass('astryx-item');
+      expect(item).toHaveAttribute('data-align', align);
+    }
+  });
+
+  it('aligns the row on first baselines only under first-line', () => {
+    const {rerender} = render(<Item label="Item" data-testid="item" />);
+    const declares = (value: string) =>
+      rulesDeclaredFor(screen.getByTestId('item')).some(rule =>
+        rule.includes(`align-items: ${value}`),
+      );
+    expect(declares('baseline')).toBe(false);
+    rerender(<Item label="Item" align="start" data-testid="item" />);
+    expect(declares('baseline')).toBe(false);
+    rerender(<Item label="Item" align="first-line" data-testid="item" />);
+    expect(declares('baseline')).toBe(true);
+  });
+
+  it('gives each first-line slot a strut with no accessible text', () => {
+    render(
+      <Item
+        label="Item"
+        align="first-line"
+        startContent={<span data-testid="start">S</span>}
+        endContent={<span data-testid="end">E</span>}
+      />,
+    );
+    for (const id of ['start', 'end']) {
+      const slot = screen.getByTestId(id).parentElement!;
+      const before = rulesDeclaredFor(slot).filter(rule =>
+        rule.slice(0, rule.indexOf('{')).includes('::before'),
+      );
+      expect(before.some(rule => rule.includes('/ ""'))).toBe(true);
+    }
+  });
+
+  it('leaves center and start slots without a strut', () => {
+    const {rerender} = render(
+      <Item label="Item" startContent={<span data-testid="start">S</span>} />,
+    );
+    const hasStrut = () =>
+      rulesDeclaredFor(screen.getByTestId('start').parentElement!).some(rule =>
+        rule.slice(0, rule.indexOf('{')).includes('::before'),
+      );
+    expect(hasStrut()).toBe(false);
+    rerender(
+      <Item
+        label="Item"
+        align="start"
+        startContent={<span data-testid="start">S</span>}
+      />,
+    );
+    expect(hasStrut()).toBe(false);
+  });
+
   // ===========================================================================
   // Description rendering
   // ===========================================================================

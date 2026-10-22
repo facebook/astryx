@@ -56,12 +56,12 @@ export interface RenamedPropOptions<T> {
  *
  * @example
  * ```
- * const emptySearchText = useRenamedProp({
- *   component: 'Tokenizer',
- *   deprecated: 'emptySearchResultsText',
- *   deprecatedValue: emptySearchResultsText,
- *   replacement: 'emptySearchText',
- *   value: emptySearchTextFromProps,
+ * const label = useRenamedProp({
+ *   component: 'Example',
+ *   deprecated: 'oldLabel',
+ *   deprecatedValue: oldLabel,
+ *   replacement: 'label',
+ *   value: labelFromProps,
  * });
  * ```
  */

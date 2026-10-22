@@ -104,6 +104,10 @@ const styles = stylex.create({
  * "user joined", status changes. Supports a divider variant with horizontal
  * lines on each side of the text.
  *
+ * It carries no live role: a notice added to a `ChatMessageList` is announced
+ * by the list's log, which owns content added inside it (`spec:AST-086` FR4),
+ * and a date or divider row is ordinary transcript content.
+ *
  * @example
  * ```
  * <ChatSystemMessage>Conversation started</ChatSystemMessage>
@@ -131,8 +135,7 @@ export function ChatSystemMessage({
           className,
           styleProp,
         )}
-        {...rest}
-        role="status">
+        {...rest}>
         <Divider label={children} />
       </div>
     );
@@ -147,8 +150,7 @@ export function ChatSystemMessage({
         className,
         styleProp,
       )}
-      {...rest}
-      role="status">
+      {...rest}>
       <span {...stylex.props(styles.content)}>
         {icon != null && <span {...stylex.props(styles.icon)}>{icon}</span>}
         {children}

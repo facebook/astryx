@@ -14,6 +14,7 @@ import {act, render, screen, fireEvent} from '@testing-library/react';
 import {createRef, useState} from 'react';
 import {BottomSheet} from './BottomSheet';
 import {BottomSheetSwitcher} from './BottomSheetSwitcher';
+import {__resetInteractionModalityForTest} from '../utils/interactionModality';
 
 // A sheet has no stops unless its host asks for them, so the tests that
 // exercise detents pass their own. These three — a 14% peek, a half-height
@@ -495,6 +496,35 @@ describe('BottomSheet', () => {
 
     expect(onOpenChange).not.toHaveBeenCalled();
     expect(dialog).toHaveStyle({'--_sheet-scrim-opacity': '1'});
+  });
+
+  it('stays open when a file picker inside it is dismissed, and still closes on its own close request', () => {
+    // A file input fires a bubbling `cancel` at itself when its picker is
+    // dismissed. It reaches the <dialog> like a close request but is not one.
+    const onOpenChange = vi.fn();
+    render(
+      <BottomSheet
+        isOpen
+        purpose="form"
+        onOpenChange={onOpenChange}
+        label="Upload">
+        <input type="file" aria-label="Picture" />
+      </BottomSheet>,
+    );
+
+    const fromPicker = new Event('cancel', {bubbles: true, cancelable: true});
+    fireEvent(screen.getByLabelText('Picture'), fromPicker);
+
+    expect(onOpenChange).not.toHaveBeenCalled();
+    expect(fromPicker.defaultPrevented).toBe(false);
+
+    fireEvent(
+      screen.getByRole('dialog'),
+      new Event('cancel', {cancelable: true}),
+    );
+
+    expect(onOpenChange).toHaveBeenCalledTimes(1);
+    expect(onOpenChange).toHaveBeenCalledWith(false);
   });
 
   it('keeps a standalone modal sheet presented through its exit animation', () => {
@@ -2350,6 +2380,119 @@ describe('BottomSheet', () => {
       finishSheetExit();
 
       expect(document.activeElement).toBe(finalFocusRef.current);
+    });
+
+    // The returned focus shows the focus-visible ring only after keyboard
+    // input (`architecture:interaction-modality` INV1). A plain focus() leaves
+    // that to the browser, which rings it after a pointer close: WebKit after
+    // a tap, and Chromium when the sheet was opened from the keyboard.
+    describe('ring on the returned focus', () => {
+      beforeEach(() => {
+        __resetInteractionModalityForTest();
+      });
+
+      afterEach(() => {
+        vi.restoreAllMocks();
+      });
+
+      function openThenClose(closeWith: 'pointer' | 'keyboard') {
+        render(<Harness />);
+        const opener = screen.getByRole('button', {name: 'Open sheet'});
+        opener.focus();
+        fireEvent.click(opener);
+        const done = screen.getByRole('button', {name: 'Done'});
+        if (closeWith === 'pointer') {
+          fireEvent.pointerDown(done);
+        } else {
+          fireEvent.keyDown(done, {key: 'Enter'});
+        }
+        fireEvent.click(done);
+        return opener;
+      }
+
+      it('asks the browser for no ring after a pointer close', () => {
+        const opener = openThenClose('pointer');
+        const focus = vi.spyOn(opener, 'focus');
+        finishSheetExit();
+
+        expect(opener).toHaveFocus();
+        expect(focus.mock.calls).toEqual([[{focusVisible: false}]]);
+      });
+
+      it('leaves the ring to the browser after a keyboard close', () => {
+        const opener = openThenClose('keyboard');
+        const focus = vi.spyOn(opener, 'focus');
+        finishSheetExit();
+
+        expect(opener).toHaveFocus();
+        expect(focus.mock.calls).toEqual([[]]);
+      });
+
+      it('clears a ring the native close already drew before refocusing', () => {
+        const opener = openThenClose('pointer');
+        // The browser's own dialog close restores focus to the opener, with a
+        // ring, before the sheet moves focus, and focusing the focused element
+        // changes nothing.
+        HTMLDialogElement.prototype.close = vi.fn(function (
+          this: HTMLDialogElement,
+        ) {
+          this.removeAttribute('open');
+          opener.focus();
+        });
+        const matches = HTMLElement.prototype.matches;
+        vi.spyOn(HTMLElement.prototype, 'matches').mockImplementation(function (
+          this: HTMLElement,
+          selector: string,
+        ) {
+          return selector === ':focus-visible'
+            ? this === opener
+            : matches.call(this, selector);
+        });
+        const blur = vi.spyOn(opener, 'blur');
+        const focus = vi.spyOn(opener, 'focus');
+        finishSheetExit();
+
+        expect(blur).toHaveBeenCalledTimes(1);
+        expect(focus.mock.calls.at(-1)).toEqual([{focusVisible: false}]);
+        expect(blur.mock.invocationCallOrder[0]).toBeLessThan(
+          focus.mock.invocationCallOrder.at(-1) ?? 0,
+        );
+        expect(opener).toHaveFocus();
+      });
+
+      it('asks for no ring on an explicit final focus target too', () => {
+        const finalFocusRef = createRef<HTMLButtonElement>();
+        function ExplicitFocusHarness() {
+          const [isOpen, setIsOpen] = useState(true);
+          return (
+            <>
+              <button ref={finalFocusRef} type="button">
+                Adaptive trigger
+              </button>
+              <BottomSheet
+                isOpen={isOpen}
+                onOpenChange={setIsOpen}
+                finalFocusRef={finalFocusRef}
+                label="Filters">
+                <button type="button" onClick={() => setIsOpen(false)}>
+                  Done
+                </button>
+              </BottomSheet>
+            </>
+          );
+        }
+
+        render(<ExplicitFocusHarness />);
+        const done = screen.getByRole('button', {name: 'Done'});
+        fireEvent.pointerDown(done);
+        fireEvent.click(done);
+        const target = finalFocusRef.current!;
+        const focus = vi.spyOn(target, 'focus');
+        finishSheetExit();
+
+        expect(target).toHaveFocus();
+        expect(focus.mock.calls).toEqual([[{focusVisible: false}]]);
+      });
     });
   });
 

@@ -29,7 +29,7 @@ const anatomy = [
     name: 'Code block',
     required: false,
     description:
-      'Fenced code block; a custom code renderer replaces the default part.',
+      'Fenced code block; long lines wrap rather than scroll sideways. A custom code renderer replaces the default part.',
   },
   {
     name: 'Blockquote',

@@ -27,6 +27,7 @@ import {
 } from '../theme/tokens.stylex';
 import type {TextDisplay} from '../theme/types';
 import {CodeBlock, Code} from '../CodeBlock';
+import {parseFenceLanguage} from '../CodeBlock/tokenizer';
 import {CheckboxList} from '../CheckboxList/CheckboxList';
 import {CheckboxListItem} from '../CheckboxList/CheckboxListItem';
 import {Blockquote} from '../Blockquote/Blockquote';
@@ -40,6 +41,7 @@ import {TableHeaderCell} from '../Table/TableHeaderCell';
 import {TableHeader} from '../Table/TableHeader';
 import {TableBody} from '../Table/TableBody';
 import {mergeProps} from '../utils';
+import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import {useStreamingText} from '../hooks/useStreamingText';
 import {computeBoundaries, computeSegments} from './streaming';
 import type {BaseProps} from '../BaseProps';
@@ -403,6 +405,16 @@ const markdownTableCellStyles = stylex.create({
   // and lets the column carry the width instead.
   code: {
     wordBreak: 'normal',
+  },
+  // The grid's outer edge. `dividers="grid"` draws the lines *between* cells
+  // and stops at the table's rim, so without this the top, bottom, and sides
+  // stay open and the grid reads as unfinished. On the table element, not the
+  // wrapper, so `border-collapse: collapse` merges it with the cell lines
+  // into one 1px rule rather than doubling up at the edge.
+  tableOuterEdge: {
+    borderWidth: borderVars['--border-width'],
+    borderStyle: 'solid',
+    borderColor: colorVars['--color-border'],
   },
 });
 
@@ -1475,7 +1487,20 @@ function renderBlock(
     case 'code': {
       // Track codeblock content in cursor for accurate character counting
       cursor.offset += node.value.length;
-      const language = getMarkdownAstLegacyCodeLanguage(node) ?? 'plaintext';
+      // `diff-<lang>` fences are the diff layer over <lang>; `diff` is the
+      // layer over plaintext. The legacy language is the info
+      // string's leading word characters, which stops at the hyphen, so the
+      // diff mapping reads the whole first word and then applies the same
+      // word rule to the language it names.
+      const legacyLanguage =
+        getMarkdownAstLegacyCodeLanguage(node) ?? 'plaintext';
+      const fence = parseFenceLanguage(node.lang ?? legacyLanguage);
+      const isDiff = fence.isDiff;
+      // The language under the diff layer; the default CodeBlock renders it.
+      const diffLanguage = isDiff
+        ? fence.language.match(/^\w*/)?.[0] || 'plaintext'
+        : undefined;
+      const language = diffLanguage ?? legacyLanguage;
       // A semantic-fence proposal claims its fence before the host's code
       // renderer (spec:AST-036 FR17). The host renderer, or the default Code
       // block without one, draws every unclaimed fence and is the fallback
@@ -1485,7 +1510,10 @@ function renderBlock(
         <CodeBlockComp
           key={index}
           code={node.value}
-          language={language}
+          // A supplied renderer's contract is unchanged: it keeps receiving
+          // the leading word characters (`diff` for a `diff-tsx` fence, as
+          // today) and nothing new; only the default path maps the layer.
+          language={legacyLanguage}
           {...lineProp}
         />
       ) : (
@@ -1504,7 +1532,12 @@ function renderBlock(
           <CodeBlock
             code={node.value}
             language={language}
+            isDiff={isDiff}
             isCollapsible
+            // Long lines wrap rather than scroll sideways, as they do in
+            // RichText, so a reader sees whole lines and the read/edit switch
+            // moves no block (spec:AST-061 FR5, DEC-9).
+            isWrapped
             xstyle={[
               contentWidthValue != null
                 ? dynamicStyles.blockWidth(contentWidthValue)
@@ -1883,7 +1916,10 @@ function renderBlock(
             ),
           )}
           {...lineStamps}>
-          <Table dividers="rows" textOverflow="wrap">
+          <Table
+            dividers="grid"
+            textOverflow="wrap"
+            xstyle={markdownTableCellStyles.tableOuterEdge}>
             <TableHeader>
               <TableRow>
                 {header?.children.map((h, i) => (
@@ -2087,6 +2123,21 @@ export function Markdown<
 }: MarkdownProps<Plugins>): React.ReactElement {
   const t = useTranslator();
   const LinkComponent = useLinkComponent();
+  // Links read the caller's handler when clicked, so a handler recreated on
+  // every caller render does not invalidate the memoized document below.
+  // Only whether a handler exists changes the rendered links.
+  const onLinkClickRef = useRef(onLinkClick);
+  useIsomorphicLayoutEffect(() => {
+    onLinkClickRef.current = onLinkClick;
+  });
+  const hasLinkClick = onLinkClick != null;
+  const stableOnLinkClick = useMemo<MarkdownProps['onLinkClick']>(
+    () =>
+      hasLinkClick
+        ? (href, event) => onLinkClickRef.current?.(href, event)
+        : undefined,
+    [hasLinkClick],
+  );
   // Derive the set of source IDs for the parser (stable across renders when sources don't change)
   const sourceIds = useMemo(
     () => (sources ? new Set(Object.keys(sources)) : undefined),
@@ -2292,19 +2343,80 @@ export function Markdown<
     return next;
   }, [display, smoothedLen, maxSpans]);
 
-  const cursor: StreamingCursor = {
-    offset: 0,
-    boundaries,
-    active: isStreaming,
-  };
-
-  // Build citation context — numbers are assigned in encounter order during rendering.
-  // This is recreated each render so numbering stays consistent with the AST.
-  const citationCtx: CitationContext | null = sources
-    ? {sources, numberMap: new Map(), nextNumber: 1, style: citationStyle}
+  const contentWidthValue = contentWidth
+    ? typeof contentWidth === 'number'
+      ? `${contentWidth}px`
+      : contentWidth
     : null;
 
+  // The block document is the expensive part of a long Markdown render. It
+  // depends only on these inputs, so a caller re-render that changes none of
+  // them returns the same elements and React skips the whole subtree. The
+  // cursor and citation numbering are rebuilt inside, from the start of the
+  // document, exactly as a full render builds them.
+  const renderedBlocks = useMemo(() => {
+    if (display === 'inline') {
+      return null;
+    }
+    const blockCursor: StreamingCursor = {
+      offset: 0,
+      boundaries,
+      active: isStreaming,
+    };
+    // Numbers are assigned in encounter order during rendering.
+    const blockCitationCtx: CitationContext | null = sources
+      ? {sources, numberMap: new Map(), nextNumber: 1, style: citationStyle}
+      : null;
+    return blocks.map((block, i) =>
+      renderBlock(
+        block,
+        i,
+        blocks.length,
+        density,
+        headingLevelStart,
+        stableOnLinkClick,
+        blockCursor,
+        blockCitationCtx,
+        contentWidthValue,
+        contentAlign,
+        LinkComponent,
+        inlinePlugins,
+        components,
+        preparedPlugins,
+        t,
+        headingProjection,
+      ),
+    );
+  }, [
+    display,
+    blocks,
+    boundaries,
+    isStreaming,
+    sources,
+    citationStyle,
+    density,
+    headingLevelStart,
+    stableOnLinkClick,
+    contentWidthValue,
+    contentAlign,
+    LinkComponent,
+    inlinePlugins,
+    components,
+    preparedPlugins,
+    t,
+    headingProjection,
+  ]);
+
   if (display === 'inline') {
+    const cursor: StreamingCursor = {
+      offset: 0,
+      boundaries,
+      active: isStreaming,
+    };
+    // Numbers are assigned in encounter order during rendering.
+    const citationCtx: CitationContext | null = sources
+      ? {sources, numberMap: new Map(), nextNumber: 1, style: citationStyle}
+      : null;
     const renderedInline = (
       <span
         ref={ref}
@@ -2322,7 +2434,7 @@ export function Markdown<
           renderInline(
             node,
             i,
-            onLinkClick,
+            stableOnLinkClick,
             cursor,
             citationCtx,
             LinkComponent,
@@ -2356,30 +2468,7 @@ export function Markdown<
         className,
         style,
       )}>
-      {blocks.map((block, i) =>
-        renderBlock(
-          block,
-          i,
-          blocks.length,
-          density,
-          headingLevelStart,
-          onLinkClick,
-          cursor,
-          citationCtx,
-          contentWidth
-            ? typeof contentWidth === 'number'
-              ? `${contentWidth}px`
-              : contentWidth
-            : null,
-          contentAlign,
-          LinkComponent,
-          inlinePlugins,
-          components,
-          preparedPlugins,
-          t,
-          headingProjection,
-        ),
-      )}
+      {renderedBlocks}
     </div>
   );
 

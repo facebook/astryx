@@ -109,10 +109,19 @@ describe('readDocView', () => {
     }
   });
 
-  it("reads a file with no doc as undefined, or as its parser's error when checked", async () => {
+  it('reads a file with no doc as undefined, or, checked, says what it exports instead', async () => {
     const file = write('Empty.doc.mjs', 'export const unrelated = 1;\n');
     await expect(loadDocs(file)).resolves.toBeUndefined();
-    await expect(loadComponentDoc(file)).rejects.toThrow(`${file} is invalid`);
+    await expect(loadComponentDoc(file)).rejects.toThrow(
+      `${file} has no default export or \`docs\` export (it exports \`unrelated\`), so it documents nothing. Fix: export the doc object as the default export`,
+    );
+  });
+
+  it('says a checked doc file is empty', async () => {
+    const file = write('Blank.doc.mjs', '// nothing yet\n');
+    await expect(loadComponentDoc(file)).rejects.toThrow(
+      `${file} is empty, so it documents nothing.`,
+    );
   });
 
   it('applies the translation a module exports for the reading language', async () => {

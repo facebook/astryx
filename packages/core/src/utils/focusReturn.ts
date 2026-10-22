@@ -2,12 +2,17 @@
 
 /**
  * @file focusReturn.ts
- * @input The document's current active element.
- * @output Whether focus is currently "detached" — on nothing in particular.
+ * @input The document's current active element and the shared interaction
+ *   modality.
+ * @output Whether focus is currently "detached" — on nothing in particular —
+ *   and a focus move whose ring follows the last input.
  * @position Utility; used by overlay triggers (e.g. DateInput, DateTimeInput)
  *   that return focus to their control when the overlay closes, but only when
- *   the dismiss did not already move focus somewhere the user chose.
+ *   the dismiss did not already move focus somewhere the user chose, and by
+ *   overlays (Dialog, DropdownMenu) that move focus programmatically.
  */
+
+import {getInteractionModality} from './interactionModality';
 
 /**
  * True when focus rests on nothing in particular — no active element, or the
@@ -28,4 +33,44 @@ export function isFocusDetached(doc: Document = document): boolean {
   return (
     active == null || active === doc.body || active === doc.documentElement
   );
+}
+
+/**
+ * Move focus programmatically so its ring follows the last input
+ * (`architecture:interaction-modality` INV1). After pointer input the browser's
+ * focus option keeps the element from matching `:focus-visible`, which is the
+ * one way to reach an element the overlay does not render: the consumer's
+ * autofocus target, the control that opened a Dialog, or a menu trigger the
+ * caller renders. Pass `options` (for example `preventScroll`) as to `focus()`.
+ *
+ * Make sure modality tracking is active (`useInteractionModalityTracking()`)
+ * in the component that calls this.
+ */
+export function focusForLastInput(
+  element: HTMLElement,
+  options?: FocusOptions,
+): void {
+  // A text-entry field paints its own focus treatment to show where typing
+  // goes, and an extra blur there can run validation or mark it touched.
+  const isTextEntry =
+    element instanceof HTMLInputElement ||
+    element instanceof HTMLTextAreaElement ||
+    element instanceof HTMLSelectElement ||
+    element.isContentEditable;
+  if (isTextEntry || getInteractionModality() !== 'pointer') {
+    if (options === undefined) {
+      element.focus();
+    } else {
+      element.focus(options);
+    }
+    return;
+  }
+  // Focusing the element that already has focus does nothing, so a ring the
+  // browser already drew would stay. WebKit draws one when its own focus
+  // restoration (a dialog's close, a popover's hide) moves focus itself, so
+  // clear that focus first.
+  if (element.matches(':focus-visible')) {
+    element.blur();
+  }
+  element.focus({...options, focusVisible: false});
 }

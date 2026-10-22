@@ -23,6 +23,7 @@ import React, {
   useRef,
   useState,
   type ReactNode,
+  type RefObject,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
@@ -37,6 +38,7 @@ import {
   useFieldInputStyling,
 } from '../Field/fieldParts';
 import {useMergedRefs} from '../hooks/useMergedRefs';
+import {useBusyAnnouncement} from '../hooks/useBusyAnnouncement';
 import type {SizeValue} from '../utils/types';
 import {BaseTypeahead} from '../Typeahead/BaseTypeahead';
 import {useSize} from '../SizeContext/SizeContext';
@@ -68,7 +70,6 @@ import type {SearchableItem, SearchSource} from '../Typeahead/types';
 import {mergeProps} from '../utils';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
-import {useRenamedProp} from '../hooks/useRenamedProp';
 
 // Re-export status types for convenience
 export type {
@@ -206,18 +207,6 @@ export interface TokenizerProps<T extends SearchableItem> extends Omit<
    * @default 'No results found'
    */
   emptySearchText?: ReactNode;
-
-  /**
-   * Text shown when no results found.
-   * @default 'No results found'
-   * @deprecated `DEP-0001`. Renamed to `emptySearchText`, which takes a
-   * `ReactNode` rather than a `string` — every existing value stays valid
-   * (`spec:AST-056` FR1, FR7). Still works exactly as released;
-   * `emptySearchText` wins when both are set. Removal is `CLN-0001`, in a
-   * later minor whose frozen manifest carries both ids (`spec:AST-017`
-   * FR31).
-   */
-  emptySearchResultsText?: string;
   /** Whether the input is disabled. @default false */
   isDisabled?: boolean;
   /**
@@ -534,6 +523,7 @@ function EndLane({
   laneRef,
   laneXStyle,
   loadingLabel,
+  anchorRef,
   hasStaticContent,
   children,
 }: {
@@ -541,16 +531,21 @@ function EndLane({
   laneRef: (node: HTMLElement | null) => void;
   laneXStyle: stylex.StyleXStyles[];
   loadingLabel: string;
+  anchorRef: RefObject<Element | null>;
   hasStaticContent: boolean;
   children: ReactNode;
 }) {
   const isBusy = useIsBusy(lane);
+  // The search Spinner stays named (family:input-fields FR7) but is not a
+  // live region; the field announces each search's busy start instead
+  // (spec:AST-086 FR8).
+  useBusyAnnouncement(isBusy, loadingLabel, anchorRef);
   if (!isBusy && !hasStaticContent) {
     return null;
   }
   return (
     <div ref={laneRef} {...stylex.props(laneXStyle)}>
-      {isBusy && <Spinner size="sm" aria-label={loadingLabel} />}
+      {isBusy && <Spinner size="sm" aria-label={loadingLabel} role="img" />}
       {children}
     </div>
   );
@@ -577,8 +572,7 @@ export function Tokenizer<T extends SearchableItem>({
   maxMenuItems,
   menuWidth,
   minQueryLength,
-  emptySearchResultsText,
-  emptySearchText: emptySearchTextFromProps,
+  emptySearchText,
   isDisabled = false,
   htmlName,
   disabledMessage,
@@ -631,16 +625,6 @@ export function Tokenizer<T extends SearchableItem>({
     // input, so always attach focus listeners.
     focusTrigger: 'always',
     isEnabled: showsDisabledMessage,
-  });
-
-  // The replacement wins, the released name keeps working, and development
-  // says which one was read (`spec:AST-056` FR7, `spec:AST-017` FR28).
-  const emptySearchText = useRenamedProp<ReactNode>({
-    component: 'Tokenizer',
-    deprecated: 'emptySearchResultsText',
-    deprecatedValue: emptySearchResultsText,
-    replacement: 'emptySearchText',
-    value: emptySearchTextFromProps,
   });
 
   useImperativeHandle(handleRef, () => ({
@@ -753,6 +737,18 @@ export function Tokenizer<T extends SearchableItem>({
     [value],
   );
 
+  // Selected labels, lowercased, for the Create entry's duplicate check. The
+  // typed text is a label, not an id: real selections usually carry an opaque
+  // id (`usr_123` under the label "Alice"), so comparing the text against ids
+  // alone misses an already-tokenized label — and the search results cannot
+  // catch it either, because filteredSource has already removed the selected
+  // item from them. The result was a "Create Alice" entry that, when picked,
+  // added a second "Alice" token under a different id.
+  const selectedLabels = useMemo(
+    () => new Set(value.map(item => item.label.toLowerCase())),
+    [value],
+  );
+
   const filteredSource: SearchSource<T> = useMemo(
     () => ({
       search: async (query: string) => {
@@ -783,6 +779,7 @@ export function Tokenizer<T extends SearchableItem>({
       }
       const alreadyExists =
         selectedIds.has(trimmed) ||
+        selectedLabels.has(trimmed.toLowerCase()) ||
         results.some(
           item => item.label.toLowerCase() === trimmed.toLowerCase(),
         );
@@ -797,7 +794,7 @@ export function Tokenizer<T extends SearchableItem>({
         } as unknown as T,
       ];
     },
-    [hasCreate, selectedIds],
+    [hasCreate, selectedIds, selectedLabels],
   );
 
   const emptySource: SearchSource<T> = useMemo(
@@ -831,7 +828,13 @@ export function Tokenizer<T extends SearchableItem>({
         item.id.startsWith(CREATABLE_ID_PREFIX)
       ) {
         const createdValue = item.id.slice(CREATABLE_ID_PREFIX.length);
-        if (selectedIds.has(createdValue)) {
+        // Same domain fix as createEntries: the created value names itself by
+        // label, so a selection carrying an opaque id with that label is also a
+        // duplicate, not just one whose id happens to equal the text.
+        if (
+          selectedIds.has(createdValue) ||
+          selectedLabels.has(createdValue.toLowerCase())
+        ) {
           return;
         }
         const base = {id: createdValue, label: createdValue};
@@ -849,7 +852,16 @@ export function Tokenizer<T extends SearchableItem>({
       onChange(newItems, {item, type: 'add'});
       announce(t('@astryx.tokenizer.tokenAdded', {label: item.label}));
     },
-    [value, onChange, isAtMax, selectedIds, hasCreate, announce, t],
+    [
+      value,
+      onChange,
+      isAtMax,
+      selectedIds,
+      selectedLabels,
+      hasCreate,
+      announce,
+      t,
+    ],
   );
 
   // Handle removing an item. Single removal path: both Backspace on an empty
@@ -1080,6 +1092,7 @@ export function Tokenizer<T extends SearchableItem>({
         laneRef={laneRef}
         laneXStyle={[styles.endSection, endSectionSizeStyles[size]]}
         loadingLabel={t('@astryx.typeahead.loading')}
+        anchorRef={wrapperRef}
         hasStaticContent={hasStaticEndLane}>
         {endContent}
         {hasClearButton && (

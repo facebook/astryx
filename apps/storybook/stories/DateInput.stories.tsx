@@ -2,6 +2,7 @@
 
 import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
+import {expect, userEvent, waitFor, within} from 'storybook/test';
 import {DateInput} from '@astryxdesign/core/DateInput';
 import {FormLayout} from '@astryxdesign/core/FormLayout';
 import {Text} from '@astryxdesign/core/Text';
@@ -71,7 +72,7 @@ const meta: Meta<typeof DateInput> = {
     disabledMessage: {
       control: 'text',
       description:
-        'Explains why the input is disabled. With isDisabled, shows a tooltip on hover/keyboard focus and keeps the field focusable via aria-disabled (activation stays blocked). Use this instead of wrapping a disabled DateInput in Tooltip.',
+        'Explains why the input is disabled. With isDisabled, shows a tooltip on hover/keyboard focus and describes the focusable controls of the field (activation stays blocked). Use this instead of wrapping a disabled DateInput in Tooltip.',
     },
     size: {
       control: 'radio',
@@ -319,9 +320,9 @@ export const Disabled: Story = {
 
 // Disabled with an explanation tooltip. Hover or keyboard-focus the field to
 // see why it's disabled — the reason is announced to assistive tech via
-// aria-describedby, and the field stays focusable (activation is still
-// blocked). Use disabledMessage instead of wrapping a disabled DateInput in Tooltip:
-// disabled controls swallow the pointer events a Tooltip wrapper needs.
+// aria-describedby on the field's focusable controls (activation is still
+// blocked). Use disabledMessage instead of wrapping a disabled DateInput in
+// Tooltip, so the reason is tied to the field.
 export const DisabledWithMessage: Story = {
   render: args => {
     const [value, setValue] = useState<ISODateString | undefined>(undefined);
@@ -555,6 +556,42 @@ export const Clearable: Story = {
   args: {
     label: 'Event date',
     placeholder: 'Select a date',
+  },
+};
+
+/**
+ * Selects a date, clears the controlled value, and reopens the calendar. The
+ * final frame is the regression endpoint: an empty field with no selected day.
+ */
+export const ClearedCalendarSelection: Story = {
+  tags: ['visual-baseline'],
+  render: args => {
+    const [value, setValue] = useState<ISODateString | undefined>('2026-04-06');
+    return <DateInput {...args} value={value} onChange={setValue} />;
+  },
+  args: {
+    label: 'Event date',
+    hasClear: true,
+    min: '2026-04-01',
+    max: '2026-04-30',
+    presentation: 'popover',
+  },
+  play: async ({canvasElement}) => {
+    const canvas = within(canvasElement);
+
+    await userEvent.click(canvas.getByRole('button', {name: 'Open calendar'}));
+    await userEvent.click(canvas.getByRole('button', {name: /April 15, 2026/}));
+    await userEvent.click(
+      canvas.getByRole('button', {name: 'Clear Event date'}),
+    );
+    await expect(canvas.getByRole('combobox')).toHaveValue('');
+    await userEvent.click(canvas.getByRole('button', {name: 'Open calendar'}));
+
+    await waitFor(() => {
+      expect(
+        canvas.queryAllByRole('gridcell', {selected: true, hidden: true}),
+      ).toHaveLength(0);
+    });
   },
 };
 

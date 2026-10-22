@@ -147,6 +147,19 @@ describe('useTooltip — show delay', () => {
 
     expect(onShow).not.toHaveBeenCalled();
   });
+
+  it('drops a pending show when isEnabled turns false before the delay elapses', () => {
+    const onShow = vi.fn();
+    const {rerender} = render(<Harness onShow={onShow} />);
+
+    fireEvent.mouseEnter(trigger());
+    tick(100);
+    rerender(<Harness isEnabled={false} onShow={onShow} />);
+    tick(1000);
+
+    expect(onShow).not.toHaveBeenCalled();
+    expect(tooltipElement().matches(':popover-open')).toBe(false);
+  });
 });
 
 describe('useTooltip — touch suppression', () => {
@@ -198,6 +211,29 @@ describe('useTooltip — hide delay', () => {
     expect(onHide).not.toHaveBeenCalled();
 
     tick(1);
+    expect(onHide).toHaveBeenCalledTimes(1);
+  });
+
+  it('stays open when the pointer crosses onto the tooltip in one step', () => {
+    const onHide = vi.fn();
+    showTooltip(onHide);
+    const surface = tooltipElement();
+
+    // A one-step crossing dispatches in browser order: the trigger's mouseout
+    // (React derives the surface's onMouseEnter from it), then the trigger's
+    // native mouseleave, both pointing at the surface. fireEvent.mouseLeave
+    // would add a mouseout after the leave, so the leave is dispatched raw.
+    fireEvent.mouseOut(trigger(), {relatedTarget: surface});
+    act(() => {
+      trigger().dispatchEvent(
+        new MouseEvent('mouseleave', {relatedTarget: surface}),
+      );
+    });
+    tick(500);
+    expect(onHide).not.toHaveBeenCalled();
+
+    fireEvent.mouseOut(surface, {relatedTarget: document.body});
+    tick(100);
     expect(onHide).toHaveBeenCalledTimes(1);
   });
 

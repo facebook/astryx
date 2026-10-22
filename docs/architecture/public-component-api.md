@@ -113,7 +113,9 @@ guidance owns the process used to propose and test APIs.
   FR10 is one.
 - **INV7 — Event handlers compose deliberately.** Consumer handlers and built-in
   behavior use the shared cancellation contract. A consumer can cancel built-in
-  behavior only where that public API promises cancellation.
+  behavior only where that public API promises cancellation. A component that
+  moves a handler to another element keeps the order and cancellation it
+  released for that handler and documents it (`family:input-fields` DEC-8).
 - **INV8 — Refs follow React 19.** A public DOM component accepts `ref` as a prop
   and connects it to the element promised by its contract.
 - **INV9 — Released APIs change deliberately.** A released prop, type, export,

@@ -130,23 +130,11 @@ describe('stable and canary publication authority', () => {
     expect(lintScope).toContain('chore/merge-v*-to-main');
     expect(lintScope).toContain("grep -Eq '^[0-9]+\\.[0-9]+\\.[0-9]+$'");
 
-    const declared = step(
-      lint.jobs.lint,
+    const requiredLintText = JSON.stringify(lint.jobs.lint);
+    expect(requiredLintText).not.toContain(
       "Keep main's declared version above latest stable",
     );
-    expect(declared.if).toBe(
-      "github.event_name == 'pull_request' && steps.release-merge-back-scope.outputs.required != 'true'",
-    );
-    expect(declared.run).toContain(
-      'git show origin/main:scripts/release/active-release.mjs',
-    );
-    expect(declared.run).toContain("'refs/tags/v*:refs/tags/v*'");
-    expect(declared.run).toContain(
-      "'+refs/heads/release/v*:refs/remotes/origin/release/v*'",
-    );
-    expect(declared.run).not.toContain('allow-bootstrap-equal');
-    expect(declared.run).toContain('validate-main-version');
-    expect(declared.run).toContain('--base origin/main');
+    expect(requiredLintText).not.toContain('validate-main-version');
     expect(JSON.stringify(mergeBack)).not.toContain('validate-main-version');
 
     expect(step(lint.jobs.lint, 'Check Changeset coverage').if).toBe(

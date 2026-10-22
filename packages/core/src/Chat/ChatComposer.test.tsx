@@ -1,15 +1,23 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import {beforeEach, describe, it, expect, vi} from 'vitest';
-import {act, render, fireEvent} from '@testing-library/react';
+import {act, render, fireEvent, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import {useEffect, useRef} from 'react';
+import {StrictMode, useEffect, useRef} from 'react';
 import {ChatComposer} from './ChatComposer';
 import {useChatComposerContext} from './ChatContext';
 import {__resetInteractionModalityForTest} from '../utils/interactionModality';
+import type * as AnnounceModule from '../hooks/useAnnounce';
+
+const announce = vi.fn();
+vi.mock('../hooks/useAnnounce', async importOriginal => ({
+  ...(await importOriginal<typeof AnnounceModule>()),
+  useAnnounce: () => announce,
+}));
 
 beforeEach(() => {
   __resetInteractionModalityForTest();
+  announce.mockClear();
 });
 
 // The composer body — the elevated surface — is the div that wraps the input
@@ -250,5 +258,53 @@ describe('ChatComposer input composition contract', () => {
     const body = textarea.parentElement!.parentElement!;
     fireEvent.click(body);
     expect(document.activeElement).toBe(textarea);
+  });
+});
+
+describe('ChatComposer status announcement (spec:AST-086)', () => {
+  const composer = (status?: {type: 'error' | 'warning'; message?: string}) => (
+    <ChatComposer onSubmit={() => {}} input={<div />} status={status} />
+  );
+
+  it('shows the status message but carries no live role (FR2)', () => {
+    render(composer({type: 'error', message: 'Send failed'}));
+    const message = screen.getByText('Send failed');
+    expect(
+      message.closest('[role="alert"], [role="status"], [aria-live]'),
+    ).toBeNull();
+  });
+
+  it('announces an error assertively and a warning politely (FR5)', () => {
+    const {rerender} = render(composer());
+    expect(announce).not.toHaveBeenCalled();
+    rerender(composer({type: 'error', message: 'Send failed'}));
+    rerender(composer({type: 'warning', message: 'Offline'}));
+    expect(announce.mock.calls).toEqual([
+      ['Send failed', 'assertive'],
+      ['Offline', 'polite'],
+    ]);
+  });
+
+  it('announces a mounted status once, even under StrictMode (FR6)', () => {
+    const status = {type: 'error' as const, message: 'Send failed'};
+    const {rerender} = render(<StrictMode>{composer(status)}</StrictMode>);
+    rerender(<StrictMode>{composer({...status})}</StrictMode>);
+    expect(announce.mock.calls).toEqual([['Send failed', 'assertive']]);
+  });
+
+  it('announces the same message again after the status clears (FR6)', () => {
+    const status = {type: 'error' as const, message: 'Send failed'};
+    const {rerender} = render(composer(status));
+    rerender(composer());
+    rerender(composer(status));
+    expect(announce.mock.calls).toEqual([
+      ['Send failed', 'assertive'],
+      ['Send failed', 'assertive'],
+    ]);
+  });
+
+  it('announces nothing for a status without a message', () => {
+    render(composer({type: 'warning'}));
+    expect(announce).not.toHaveBeenCalled();
   });
 });

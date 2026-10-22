@@ -51,6 +51,7 @@ import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
 import {usePressFeedback} from '../hooks/usePressFeedback';
 
 import {useMergedRefs} from '../hooks/useMergedRefs';
+import {disabledInteractionProps} from '../utils/disabledInteraction';
 // =============================================================================
 // Styles — only the interactive layer, Card handles everything else
 // =============================================================================
@@ -210,8 +211,8 @@ export interface ClickableCardProps extends BaseProps {
 
   /**
    * Set to true to disable the card.
-   * Disabled action cards use a native disabled button. Disabled link cards
-   * render no live destination, leave the tab order, and expose aria-disabled.
+   * Disabled cards keep their tab stop and expose aria-disabled; activation is
+   * blocked, and disabled link cards render no live destination.
    */
   isDisabled?: boolean;
 
@@ -254,10 +255,6 @@ export interface ClickableCardProps extends BaseProps {
 // =============================================================================
 // Component
 // =============================================================================
-
-function preventDisabledLinkClick(event: MouseEvent<HTMLAnchorElement>): void {
-  event.preventDefault();
-}
 
 /**
  * An interactive card that acts as a single navigation or action target.
@@ -376,11 +373,12 @@ export function ClickableCard({
           ref={interactiveRef as React.Ref<HTMLAnchorElement>}
           href={isDisabled ? undefined : href}
           target={isDisabled ? undefined : target}
-          onClick={isDisabled ? preventDisabledLinkClick : undefined}
           role={isDisabled ? 'link' : undefined}
+          {...(isDisabled ? disabledInteractionProps() : null)}
           aria-label={label}
           aria-disabled={isDisabled || undefined}
-          tabIndex={isDisabled ? -1 : 0}
+          // A disabled card keeps its Tab stop (spec:AST-085 FR1).
+          tabIndex={0}
           {...stylex.props(styles.srOnly)}
         />
       ) : (
@@ -388,8 +386,10 @@ export function ClickableCard({
           ref={interactiveRef as React.Ref<HTMLButtonElement>}
           type="button"
           aria-label={label}
-          disabled={isDisabled}
+          aria-disabled={isDisabled || undefined}
           onClick={onClickProp}
+          // Focusable while disabled (FR1), but inert (FR2).
+          {...(isDisabled ? disabledInteractionProps() : null)}
           {...stylex.props(styles.srOnly)}
         />
       )}

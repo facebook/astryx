@@ -31,7 +31,7 @@ architecture:
     architecture:public-component-api,
   ]
 contributing: []
-system_specs: [spec:AST-011/DEC-1]
+system_specs: [spec:AST-011/DEC-1, spec:AST-079/DEC-1]
 ---
 
 # MultiSelector component contract

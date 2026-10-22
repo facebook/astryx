@@ -18,7 +18,7 @@
  *
  * 1. WRAP THE APP. A theme does nothing until it is provided.
  *
- *      import {Theme} from '@astryxdesign/core';
+ *      import {Theme} from '@astryxdesign/core/theme';
  *      import {myTheme} from './theme';
  *
  *      <Theme theme={myTheme} mode="system">   // 'system' | 'light' | 'dark'
@@ -373,7 +373,7 @@ export const myTheme = defineTheme({
   //     {
   //       // Narrow at every pointer precision.
   //       when: {width: {below: 'md'}},
-  //       value: {tokens: {'--spacing-4': '12px'}},
+  //       value: {tokens: {'--spacing-4': '0.75rem'}},
   //     },
   //     {
   //       // Taller controls under a finger or stylus at every width.

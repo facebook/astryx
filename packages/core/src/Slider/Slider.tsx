@@ -558,15 +558,12 @@ export function Slider({ref, ...props}: SliderProps) {
 
   const handleThumbFocus = useCallback(
     (thumbIndex: number, _e: FocusEvent<HTMLDivElement>) => {
-      // A disabled thumb draws no ring even when it stays focusable for its
-      // reason tooltip, so there is nothing to track for one.
+      // A focused disabled thumb still shows the ring (spec:AST-085 FR6).
       setKeyboardFocusThumb(
-        !isDisabled && getInteractionModality() === 'keyboard'
-          ? thumbIndex
-          : null,
+        getInteractionModality() === 'keyboard' ? thumbIndex : null,
       );
     },
-    [isDisabled],
+    [],
   );
 
   const handleThumbBlur = useCallback((_e: FocusEvent<HTMLDivElement>) => {
@@ -668,11 +665,18 @@ export function Slider({ref, ...props}: SliderProps) {
   );
 
   const updateValue = useCallback(
-    (thumbIndex: number, newVal: number) => {
+    (thumbIndex: number, newVal: number, snap = true) => {
       if (isDisabled) {
         return;
       }
-      const clamped = clamp(snapToStep(newVal, min, step), min, max);
+      // Home and End pass the bound itself (`snap: false`). The step grid is
+      // anchored at `min`, so Home always landed there; `max` may lie off the
+      // grid (max 100 with step 3 snapped End to 99, not 100).
+      const clamped = clamp(
+        snap ? snapToStep(newVal, min, step) : newVal,
+        min,
+        max,
+      );
 
       if (isRange) {
         const currentValues = [...values] as [number, number];
@@ -827,12 +831,22 @@ export function Slider({ref, ...props}: SliderProps) {
       const currentVal = values[thumbIndex];
       let newVal: number;
 
+      // On a horizontal track the keyboard follows the track's direction:
+      // under RTL the value grows toward the left, so ArrowLeft increases and
+      // ArrowRight decreases (APG Slider). Up/Down and a vertical track are
+      // direction-free.
+      const towardMax =
+        isHorizontal && isRtlElement(trackRef.current)
+          ? 'ArrowLeft'
+          : 'ArrowRight';
+      const towardMin = towardMax === 'ArrowLeft' ? 'ArrowRight' : 'ArrowLeft';
+
       switch (e.key) {
-        case 'ArrowRight':
+        case towardMax:
         case 'ArrowUp':
           newVal = currentVal + step;
           break;
-        case 'ArrowLeft':
+        case towardMin:
         case 'ArrowDown':
           newVal = currentVal - step;
           break;
@@ -853,8 +867,13 @@ export function Slider({ref, ...props}: SliderProps) {
       }
 
       e.preventDefault();
-      const clamped = clamp(snapToStep(newVal, min, step), min, max);
-      updateValue(thumbIndex, newVal);
+      const toBound = e.key === 'Home' || e.key === 'End';
+      const clamped = clamp(
+        toBound ? newVal : snapToStep(newVal, min, step),
+        min,
+        max,
+      );
+      updateValue(thumbIndex, newVal, !toBound);
 
       // Compute exact post-update values so onChangeEnd reports the correct
       // value even before React batches the state update.
@@ -876,6 +895,7 @@ export function Slider({ref, ...props}: SliderProps) {
     },
     [
       isDisabled,
+      isHorizontal,
       isRange,
       values,
       step,
@@ -937,10 +957,8 @@ export function Slider({ref, ...props}: SliderProps) {
         ref={!isRange ? ref : undefined}
         id={!isRange ? id : undefined}
         role="slider"
-        // With a disabledMessage the thumb keeps focusability so the reason is
-        // focus-discoverable; value changes stay blocked by the isDisabled
-        // guards in the pointer/keyboard handlers.
-        tabIndex={isDisabled && !showsDisabledMessage ? -1 : 0}
+        // A disabled thumb keeps its Tab stop (spec:AST-085 FR1).
+        tabIndex={0}
         aria-valuemin={ariaValueMin}
         aria-valuemax={ariaValueMax}
         aria-valuenow={val}
@@ -976,8 +994,7 @@ export function Slider({ref, ...props}: SliderProps) {
               : rtlStyles.centerInline('50%'),
             !isDisabled && styles.thumbHover,
             !isDisabled && draggingThumb === thumbIndex && styles.thumbPressed,
-            !isDisabled &&
-              keyboardFocusThumb === thumbIndex &&
+            keyboardFocusThumb === thumbIndex &&
               focusOutlineStyles.focusVisible,
             isDisabled && styles.thumbDisabled,
           ),
@@ -1072,7 +1089,9 @@ export function Slider({ref, ...props}: SliderProps) {
           }),
           stylex.props(styles.sliderRow),
         )}>
+        {/* A disabled slider submits no value (spec:AST-085 FR3). */}
         {htmlName != null &&
+          !isDisabled &&
           values.map((v, i) => (
             <input
               // Positional identity: index 0 is the start thumb, 1 the end.
@@ -1080,9 +1099,6 @@ export function Slider({ref, ...props}: SliderProps) {
               type="hidden"
               name={htmlName}
               value={String(v)}
-              // Disabled native controls are excluded from form submission;
-              // mirror that for the hidden carrier.
-              disabled={isDisabled}
             />
           ))}
         <div

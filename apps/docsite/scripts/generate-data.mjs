@@ -24,22 +24,43 @@ import * as path from 'node:path';
 import {execFileSync} from 'node:child_process';
 import {createRequire} from 'node:module';
 import {fileURLToPath, pathToFileURL} from 'node:url';
-import {resolveContentRoot} from './resolve-content-root.mjs';
+import {
+  admittedStableIntegration,
+  resolveContentRoot,
+} from './resolve-content-root.mjs';
 import {
   GUIDE_NAMESPACE_PAGES,
   GUIDE_PAGE_NAMESPACES,
+  ROOT_PAGE_ALIASES,
+  movedGuideRedirects,
   mergeFlatTopics,
   namespacePage,
   routeSlug,
+  sectionAnchors,
+  withCliCommands,
   withoutResolvedTokens,
 } from './docs-pages.mjs';
+import {
+  DOCSITE_CLI_COMMAND,
+  GLOBAL_PAGE,
+  GLOBAL_PAGE_CLI_COMMAND,
+  getCliInvocation,
+  prefixCliCommands,
+  runWithCliDoor,
+} from './lib/cli-command.mjs';
 import {
   docs as readDocs,
   template as queryTemplates,
 } from '@astryxdesign/cli/api';
 import docsiteConfig from '../astryx.config.mjs';
-import {integrationContentEnabled} from '../src/lib/integrationTargets.mjs';
+import {
+  integrationContentEnabled,
+  integrationPackagesForTarget,
+} from '../src/lib/integrationTargets.mjs';
 import {expandWorkspaceDirs} from '../../../scripts/lib/workspace-globs.mjs';
+import {projectThemingDoc} from './lib/theming-doc.mjs';
+import {searchLinkTables} from '../src/lib/searchLinks.mjs';
+import {collectBlogImages} from './lib/blog-images.mjs';
 import {
   buildTypeDefinitionIndex,
   collectPropTypeRefs,
@@ -96,15 +117,33 @@ function writeRegistry(filename, content) {
 }
 
 /**
- * Ask the CLI for the component packages configured by this docsite. The
- * integration list is canary-only: stable production content comes from the
- * published package snapshot and never loads workspace integrations.
+ * The integration packages this build documents. Canary documents every
+ * configured integration and asks the CLI to confirm each one is installed.
+ * `latest` documents only the configured integrations that are stable
+ * releases present in the published content snapshot
+ * (src/lib/integrationTargets.mjs); their component docs are read from the
+ * snapshot like Core's, so no workspace discovery runs.
+ *
+ * The admitted list is written to src/generated/integrationPackages.json so
+ * generate-scope.mjs and generate-playground-types.mjs document the same
+ * packages without resolving the content snapshot again.
  */
 function discoverConfiguredComponentPackages() {
-  // Same gate as generate-scope.mjs (src/lib/integrationTargets.mjs): only the
-  // canary target ever loads workspace integration packages.
-  if (!integrationContentEnabled(DOCSITE_TARGET)) {
+  const admitted = integrationPackagesForTarget(
+    DOCSITE_TARGET,
+    docsiteConfig,
+    admittedStableIntegration(CONTENT_ROOT),
+  );
+  fs.writeFileSync(
+    path.join(OUT_DIR, 'integrationPackages.json'),
+    JSON.stringify({target: DOCSITE_TARGET, packages: admitted}, null, 2) +
+      '\n',
+  );
+  if (admitted.length === 0) {
     return new Set();
+  }
+  if (!integrationContentEnabled(DOCSITE_TARGET)) {
+    return new Set(admitted);
   }
 
   const output = execFileSync(
@@ -595,7 +634,9 @@ async function generateComponentRegistry() {
               isHiddenFromOverview: d.isHiddenFromOverview ?? false,
               topDescription: d.usage?.description || d.description || '',
               usage: d.usage ? sanitizeForJson(d.usage) : null,
-              theming: d.theming ? sanitizeForJson(d.theming) : null,
+              theming: d.theming
+                ? projectThemingDoc(sanitizeForJson(d.theming))
+                : null,
               playground: d.playground ? sanitizeForJson(d.playground) : null,
             };
             break;
@@ -613,6 +654,7 @@ async function generateComponentRegistry() {
           const mod = await import(pathToFileURL(docFile).href);
           doc = mod.docs;
           if (!doc) continue;
+          recordDocExampleOrder(doc);
         } catch (err) {
           console.warn(
             `  warn: failed to import ${docFileName}: ${err.message}`,
@@ -627,7 +669,9 @@ async function generateComponentRegistry() {
         const hidden = doc.hidden ?? false;
         const topDescription = doc.usage?.description || doc.description || '';
         const usage = doc.usage ? sanitizeForJson(doc.usage) : null;
-        const theming = doc.theming ? sanitizeForJson(doc.theming) : null;
+        const theming = doc.theming
+          ? projectThemingDoc(sanitizeForJson(doc.theming))
+          : null;
         const registry = doc.registry ? sanitizeForJson(doc.registry) : null;
         const playground = doc.playground
           ? sanitizeForJson(doc.playground)
@@ -682,7 +726,7 @@ async function generateComponentRegistry() {
               theming: isHookEntry
                 ? null
                 : doc.theming
-                  ? sanitizeForJson(doc.theming)
+                  ? projectThemingDoc(sanitizeForJson(doc.theming))
                   : (parentMeta.theming ?? null),
               params: isHookEntry
                 ? Array.isArray(doc.params)
@@ -967,6 +1011,8 @@ export interface PropDoc {
   default?: string;
   required?: boolean;
   slotElements?: ElementDescriptor[];
+  /** \`'experimental'\` for a prop outside the stable compatibility promise. */
+  stability?: 'experimental';
   /** Names of package-exported types referenced by \`type\`, resolvable
    *  against the owning entry's \`typeDefs\`. */
   typeRefs?: string[];
@@ -1489,7 +1535,10 @@ async function generateBlockRegistry() {
     });
   }
 
-  if (integrationContentEnabled(DOCSITE_TARGET)) {
+  // Showcase blocks are executable content: like Core's CLI templates they are
+  // live-rendered from the workspace install (see resolve-content-root.mjs),
+  // filtered to the integration packages this build documents.
+  if (CONFIGURED_COMPONENT_PACKAGES.size > 0) {
     const templateList = await queryTemplates(undefined, {
       list: true,
       type: 'block',
@@ -1718,10 +1767,16 @@ async function docsTreePages() {
       continue;
     }
     routes.push(...(await treeRoutes(root)));
-    const full = await namespacePage(readDocs, root);
+    const full = await namespacePage(readDocs, root, {
+      aliases: ROOT_PAGE_ALIASES.get(root) ?? [],
+    });
     if (!full) continue;
     pages.push(full.page);
-    Object.assign(redirects, full.redirects);
+    Object.assign(
+      redirects,
+      full.redirects,
+      movedGuideRedirects(root, full.redirects),
+    );
   }
   while (pending.length > 0) {
     const route = pending.shift();
@@ -1842,7 +1897,7 @@ async function generateDocsRegistry() {
   // slug (a former flat topic keeps its URL), and each guide under it
   // redirects to its section there. Guides under GUIDE_PAGE_NAMESPACES keep a
   // flat page whose slug is the route with "/" as "-", so
-  // `cli/integrations/quick-start` is /docs/cli-integrations-quick-start.
+  // `cli/component-lookups` is /docs/cli-component-lookups.
   const tree = await docsTreePages();
   for (const page of tree.pages) {
     if (docTopics.some(topic => topic.topic === page.topic)) {
@@ -1865,6 +1920,24 @@ async function generateDocsRegistry() {
   }
 
   docTopics.sort((a, b) => a.topic.localeCompare(b.topic));
+  // Docs write commands as bare `astryx ...`. The site shows them as
+  // `npx @astryxdesign/cli ...`, which runs before any install, and as plain
+  // `astryx ...` on the global mode page, whose readers installed it. Each is
+  // a docsite door name, and goes through the CLI's picker like any other.
+  const cliStem = runWithCliDoor(DOCSITE_CLI_COMMAND, () =>
+    getCliInvocation(DOCSITE_ROOT),
+  );
+  const globalStem = runWithCliDoor(GLOBAL_PAGE_CLI_COMMAND, () =>
+    getCliInvocation(DOCSITE_ROOT),
+  );
+  for (const topic of docTopics) {
+    const stem = topic.topic === GLOBAL_PAGE ? globalStem : cliStem;
+    topic.sections = withCliCommands(
+      topic.sections,
+      (text, lang = null) => prefixCliCommands(text, stem, lang),
+      stem,
+    );
+  }
 
   const content = `// Auto-generated by scripts/generate-data.mjs — do not edit
 
@@ -1926,6 +1999,46 @@ export const docRedirects: Record<string, string> = ${JSON.stringify(docRedirect
     `${JSON.stringify(docRedirects, null, 2)}\n`,
   );
   return {docTopics, docsCount: docTopics.length};
+}
+
+/**
+ * The tables the search panel opens a CLI search result through
+ * (src/lib/searchLinks.mjs): this build's doc pages, redirects, section
+ * anchors, component and template pages, and the page each block shows on.
+ * The search API (app/api/search/route.ts) reads them.
+ */
+function generateSearchLinks({
+  docTopics,
+  allComponents,
+  templates,
+  blocks,
+  packages,
+}) {
+  const docRedirects = JSON.parse(
+    fs.readFileSync(path.join(OUT_DIR, 'docRedirects.json'), 'utf-8'),
+  );
+  const tables = searchLinkTables({
+    docTopics,
+    docRedirects,
+    components: Object.values(allComponents)
+      .flat()
+      .map(c => c.name),
+    templates: templates.map(t => t.slug),
+    blocks,
+    // The package pages /docs/[topic] serves; theme packages show on /themes.
+    packagePages: packages
+      .map(p => p.name)
+      .filter(name => !name.startsWith('@astryxdesign/theme-'))
+      .map(name => name.replace('@astryxdesign/', '')),
+    sectionAnchors,
+  });
+  fs.writeFileSync(
+    path.join(OUT_DIR, 'searchLinks.json'),
+    `${JSON.stringify(tables)}\n`,
+  );
+  console.log(
+    `  wrote ${path.relative(REPO_ROOT, path.join(OUT_DIR, 'searchLinks.json'))}`,
+  );
 }
 
 async function generateThemeRegistry(packages) {
@@ -2204,6 +2317,38 @@ ${itemPathLines}
 
 // ── Main
 
+// Example labels in authored order, per documented component or sub-component.
+// A component page lists the example blocks named after those labels in the
+// same order as its doc's `examples`, so the snippet list and the runnable
+// demos read as one set; any other example blocks follow in name order.
+const DOC_EXAMPLE_ORDER = new Map();
+
+function recordDocExampleOrder(doc) {
+  const entries = [
+    doc,
+    ...(Array.isArray(doc.components) ? doc.components : []),
+  ];
+  for (const entry of entries) {
+    const name = (entry?.name || '').replace(/^XDS/, '');
+    if (!name || !Array.isArray(entry.examples)) continue;
+    const labels = entry.examples
+      .map(example => example?.label)
+      .filter(label => typeof label === 'string');
+    if (labels.length > 0) DOC_EXAMPLE_ORDER.set(name, labels);
+  }
+}
+
+/** Sorts one component's examples by its doc's example order (stable). */
+function orderExamplesByDoc(component, examples) {
+  const labels = DOC_EXAMPLE_ORDER.get(component);
+  if (!labels) return examples;
+  const rank = name => {
+    const index = labels.indexOf(name);
+    return index === -1 ? labels.length : index;
+  };
+  return [...examples].sort((a, b) => rank(a.name) - rank(b.name));
+}
+
 function generateExampleRegistry(blocks, availableRegistryPaths) {
   console.log('Generating example registry...');
 
@@ -2271,7 +2416,7 @@ function generateExampleRegistry(blocks, availableRegistryPaths) {
 
   const componentLines = Object.entries(grouped)
     .map(([component, examples]) => {
-      const exampleLines = examples
+      const exampleLines = orderExamplesByDoc(component, examples)
         .map(
           entry =>
             `    {name: ${JSON.stringify(entry.name)}, description: ${JSON.stringify(entry.description)}, registryItemPath: ${JSON.stringify(entry.registryItemPath)}, source: ${JSON.stringify(entry.source)}, load: () => import('./examples/${entry.basename}')},`,
@@ -2323,26 +2468,14 @@ async function generateBlogRegistry() {
   const types = collectTypes(posts);
   const tags = collectTags(posts);
 
-  // Definitive set of dark-mode image variants. We scan public/blog/** for
-  // files named "<name>.dark.<ext>" at build time so ThemedImage can decide,
-  // deterministically and with no runtime probe, whether a body image has a
-  // dark counterpart. Paths are stored as site-absolute URLs ("/blog/...").
-  const publicBlogDir = path.join(DOCSITE_ROOT, 'public', 'blog');
-  const darkImages = [];
-  const walkDark = dir => {
-    if (!fs.existsSync(dir)) return;
-    for (const entry of fs.readdirSync(dir, {withFileTypes: true})) {
-      const full = path.join(dir, entry.name);
-      if (entry.isDirectory()) {
-        walkDark(full);
-      } else if (/\.dark\.[a-zA-Z0-9]+$/.test(entry.name)) {
-        const rel = path.relative(path.join(DOCSITE_ROOT, 'public'), full);
-        darkImages.push('/' + rel.split(path.sep).join('/'));
-      }
-    }
-  };
-  walkDark(publicBlogDir);
-  darkImages.sort();
+  // Definitive facts about body images, scanned from public/blog/** at build
+  // time so ThemedImage never probes at runtime: which images have a
+  // "<name>.dark.<ext>" counterpart, and the natural size of every "@2x"
+  // image, which renders at half its pixel width. Paths are site-absolute
+  // URLs ("/blog/...").
+  const {darkImages, imageSizes} = collectBlogImages(
+    path.join(DOCSITE_ROOT, 'public'),
+  );
 
   const content = `// Auto-generated by scripts/generate-data.mjs — do not edit
 import type {BlogPost, BlogPostType} from '../lib/blog/schema';
@@ -2362,6 +2495,15 @@ export const blogPostCount = ${posts.length};
  * build-time list rather than a runtime existence probe.
  */
 export const blogDarkImages: string[] = ${JSON.stringify(darkImages, null, 2)};
+
+/**
+ * Natural pixel size of every body image whose file name ends in "@2x"
+ * (before the extension and the optional ".dark" marker). ThemedImage renders
+ * such an image at half its pixel width, so a Retina screenshot shows the
+ * component at the size it really is on screen.
+ */
+export const blogImageSizes: Record<string, {width: number; height: number}> =
+  ${JSON.stringify(imageSizes, null, 2)};
 `;
   writeRegistry('blogRegistry.ts', content);
   return {blogPostCount: posts.length, blogTypeCount: types.length};
@@ -2428,7 +2570,8 @@ async function main() {
   const {blocks, blockCount} = await generateBlockRegistry();
   generatePackageStyles(packages, blocks, allComponents);
   const {templates, templateCount} = await generateTemplateRegistry();
-  const {docsCount} = await generateDocsRegistry();
+  const {docTopics, docsCount} = await generateDocsRegistry();
+  generateSearchLinks({docTopics, allComponents, templates, blocks, packages});
   const {blogPostCount} = await generateBlogRegistry();
   const shadcnCounts = generateShadcnRegistryForTarget({
     target: DOCSITE_TARGET,

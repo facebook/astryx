@@ -161,6 +161,29 @@ so the decision is made at build time — no runtime request, no flash. If no
 dark variant exists (the common case), the single image is used in both modes.
 The swap follows the site's theme toggle, not just the OS preference.
 
+### Retina screenshots (`@2x`)
+
+A screenshot taken on a 2× display has twice as many pixels as the component
+is wide on screen, so by default it renders at double size, capped only by the
+column. Name the file with an `@2x` suffix and it renders at half its pixel
+width — the component's real size — with `height: auto` and still capped at
+the column width:
+
+```
+public/blog/<slug>/swipe@2x.webp        ← 780 px wide file → 390 CSS px
+public/blog/<slug>/swipe@2x.dark.webp   ← dark variant, same width (optional)
+```
+
+```md
+![Swiping an item reveals its actions](/blog/<slug>/swipe@2x.webp)
+```
+
+How it works: the same build-time scan records the natural size of every
+`@2x` image (PNG, JPEG, or WebP — including an animated WebP's canvas) in a
+`blogImageSizes` manifest, and the renderer sets the image's `width` to half
+of it. The dark variant takes the light image's width, so the theme toggle
+never shifts the layout. Images without the suffix are unchanged.
+
 ## 6. Preview locally
 
 ```bash

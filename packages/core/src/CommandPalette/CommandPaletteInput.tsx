@@ -9,14 +9,15 @@
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /apps/storybook/stories/CommandPalette.stories.tsx
+ * - /apps/storybook/stories/CommandPaletteInput.stories.tsx
  * - /packages/cli/assets/templates/blocks/components/CommandPalette/ (showcase blocks)
  */
 
-import {useCallback, useEffect, useRef, type ReactNode} from 'react';
+import {useCallback, useEffect, useRef, useState, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {Icon} from '../Icon';
 import {Spinner} from '../Spinner';
-import {mergeProps} from '../utils';
+import {isImeKeyEvent, isRenderable, mergeProps} from '../utils';
 import {
   colorVars,
   typeScaleVars,
@@ -27,6 +28,11 @@ import {useCommandPaletteContext} from './CommandPaletteContext';
 import {useDialogContext} from '../Dialog/DialogContext';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
+import {focusOutlineProps} from '../utils/focusOutline.stylex';
+import {
+  getInteractionModality,
+  useInteractionModalityTracking,
+} from '../utils/interactionModality';
 import {useTranslator} from '../i18n';
 
 import {useMergedRefs} from '../hooks/useMergedRefs';
@@ -70,7 +76,6 @@ const styles = stylex.create({
     minWidth: 0,
     borderWidth: 0,
     borderStyle: 'none',
-    outline: 'none',
     backgroundColor: 'transparent',
     color: colorVars['--color-text-primary'],
     fontFamily: typographyVars['--font-family-body'],
@@ -112,14 +117,14 @@ export interface CommandPaletteInputProps extends Omit<
 
   /**
    * Placeholder text for the input.
-   * @default 'Search...'
+   * @default 'Search…'
    */
   placeholder?: string;
 
   /**
-   * Accessible label for the combobox input, announced by screen readers.
-   * Falls back to the placeholder text (`'Search…'` by default), since a
-   * placeholder alone is not a reliable accessible name.
+   * Accessible label for the query field, announced by screen readers. The
+   * placeholder is never the field's name.
+   * @default 'Search commands'
    */
   label?: string;
 
@@ -168,6 +173,8 @@ export function CommandPaletteInput({
   endContent,
   onChange,
   onKeyDown,
+  onFocus,
+  onBlur,
   ref,
   xstyle,
   className,
@@ -178,12 +185,62 @@ export function CommandPaletteInput({
   const placeholder =
     placeholderFromProps ?? t('@astryx.commandPalette.input.placeholder');
   const ctx = useCommandPaletteContext();
+  // Inside CommandPalette the results surface is a listbox only while it holds
+  // selectable results; empty and pending states expose no popup.
+  const hasListbox = ctx ? ctx.selectableItems.length > 0 : true;
   const dialogContext = useDialogContext();
   const inputRef = useRef<HTMLInputElement>(null);
+  const [isKeyboardFocus, setIsKeyboardFocus] = useState(false);
+
+  // Text-entry controls match :focus-visible after pointer focus in Chromium.
+  // Keep the shared selector, but narrow its ring to focus acquired through
+  // keyboard navigation so a click or pointer-opened palette stays unringed.
+  useInteractionModalityTracking();
+  const handleFocus = useCallback(
+    (event: React.FocusEvent<HTMLInputElement>) => {
+      setIsKeyboardFocus(getInteractionModality() === 'keyboard');
+      onFocus?.(event);
+    },
+    [onFocus],
+  );
+  const handleBlur = useCallback(
+    (event: React.FocusEvent<HTMLInputElement>) => {
+      setIsKeyboardFocus(false);
+      onBlur?.(event);
+    },
+    [onBlur],
+  );
 
   // Use context values as fallback
   const value = controlledValue ?? ctx?.search;
   const handleValueChange = onValueChange ?? ctx?.setSearch;
+  const accessibleLabel =
+    props['aria-label'] ?? label ?? t('@astryx.commandPalette.input.label');
+  const hasEndContent = isRenderable(endContent);
+  // A popup attribute the caller passes is caller-owned even while its value
+  // is undefined (`aria-expanded={open || undefined}`), so the role stays
+  // stable as the caller's popup opens and closes, and a present value is
+  // passed through unchanged.
+  // `aria-haspopup` counts unless it says there is no popup.
+  const callerSets = (key: keyof typeof props) => Object.hasOwn(props, key);
+  const callerDeclaresPopup =
+    callerSets('aria-haspopup') &&
+    props['aria-haspopup'] !== false &&
+    props['aria-haspopup'] !== 'false';
+  const callerOwnsPopup =
+    !ctx &&
+    (props.role === 'combobox' ||
+      callerSets('aria-expanded') ||
+      callerSets('aria-autocomplete') ||
+      callerSets('aria-controls') ||
+      callerSets('aria-owns') ||
+      callerSets('aria-activedescendant') ||
+      callerDeclaresPopup);
+  const standaloneRole = callerSets('role')
+    ? props.role
+    : callerOwnsPopup
+      ? 'combobox'
+      : 'searchbox';
 
   // When rendered inside an inline dialog, disable auto-focus by default
   // to avoid stealing focus from the surrounding page.
@@ -202,7 +259,10 @@ export function CommandPaletteInput({
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLInputElement>) => {
       onKeyDown?.(e);
-      if (e.defaultPrevented) {
+      if (e.defaultPrevented || isImeKeyEvent(e.nativeEvent)) {
+        // An in-progress IME composition owns Enter, Escape, and arrows. Let
+        // the input method finish or cancel composition without selecting or
+        // dismissing palette content.
         return;
       }
       // Delegate to useCombobox's keyboard handler from context
@@ -223,20 +283,43 @@ export function CommandPaletteInput({
         <Icon icon="search" size="sm" color="inherit" />
       </span>
       <input
+        {...props}
         ref={useMergedRefs(ref, inputRef)}
+        {...(isKeyboardFocus
+          ? focusOutlineProps.focusVisible(styles.input)
+          : focusOutlineProps.suppressed(styles.input))}
         type="text"
-        role="combobox"
-        aria-expanded={ctx?.isOpen ?? true}
-        aria-autocomplete="list"
-        aria-controls={ctx?.listId}
-        aria-activedescendant={
-          ctx && ctx.highlightedIndex >= 0
-            ? ctx.getItemId(ctx.highlightedIndex)
-            : undefined
+        role={ctx ? 'combobox' : standaloneRole}
+        aria-expanded={
+          ctx
+            ? ctx.isOpen && hasListbox
+            : callerSets('aria-expanded')
+              ? props['aria-expanded']
+              : callerOwnsPopup || undefined
         }
-        // A placeholder alone is not a reliable accessible name; give the
-        // combobox an explicit one (consumer aria-label via rest props wins).
-        aria-label={label ?? placeholder}
+        aria-autocomplete={
+          ctx
+            ? 'list'
+            : callerSets('aria-autocomplete')
+              ? props['aria-autocomplete']
+              : callerOwnsPopup
+                ? 'list'
+                : undefined
+        }
+        aria-controls={
+          ctx ? (hasListbox ? ctx.listId : undefined) : props['aria-controls']
+        }
+        aria-activedescendant={
+          ctx
+            ? hasListbox &&
+              ctx.highlightedIndex >= 0 &&
+              ctx.highlightedIndex < ctx.selectableItems.length
+              ? ctx.getItemId(ctx.highlightedIndex)
+              : undefined
+            : props['aria-activedescendant']
+        }
+        // Placeholder text is never the field's name (AST-056 AR2).
+        aria-label={accessibleLabel}
         placeholder={placeholder}
         value={value}
         data-autofocus={effectiveAutoFocus || undefined}
@@ -245,19 +328,19 @@ export function CommandPaletteInput({
           onChange?.(e);
         }}
         onKeyDown={handleKeyDown}
-        {...stylex.props(styles.input)}
-        {...props}
+        onFocus={handleFocus}
+        onBlur={handleBlur}
       />
-      {(ctx?.isBusy || endContent) && (
+      {(ctx?.isBusy || hasEndContent) && (
         <span {...stylex.props(styles.end)}>
           {ctx?.isBusy && (
             <span {...stylex.props(styles.icon, styles.spinner)}>
               <Spinner size="sm" />
             </span>
           )}
-          {endContent}
+          {hasEndContent && endContent}
         </span>
-      )}{' '}
+      )}
     </div>
   );
 }

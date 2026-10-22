@@ -42,7 +42,7 @@ describe('useTheme', () => {
     expect(result.current.name).toBe('default');
     // Should resolve default light-dark() tokens for light mode (useMediaQuery mocked to false = light)
     expect(result.current.token('--color-text-primary')).toBe('#0A1317');
-    expect(result.current.token('--spacing-1')).toBe('4px');
+    expect(result.current.token('--spacing-1')).toBe('0.25rem');
     expect(result.current.mode).toBe('light');
   });
 
@@ -78,8 +78,8 @@ describe('useTheme', () => {
     const {result} = renderHook(() => useTheme(), {
       wrapper: ({children}) => wrapper({children, mode: 'light'}),
     });
-    // --spacing-1 is not overridden — should be the default '4px'
-    expect(result.current.token('--spacing-1')).toBe('4px');
+    // --spacing-1 is not overridden — should be the default '0.25rem'
+    expect(result.current.token('--spacing-1')).toBe('0.25rem');
     expect(result.current.token('--border-width')).toBe('1px');
   });
 
@@ -139,7 +139,7 @@ describe('useTheme', () => {
     const tokens = result.current.tokens;
     expect(tokens['--color-accent']).toBe('#AA0000');
     expect(tokens['--spacing-4']).toBe('20px');
-    expect(tokens['--spacing-1']).toBe('4px');
+    expect(tokens['--spacing-1']).toBe('0.25rem');
   });
 
   it('uses the same token resolution as resolveThemeTokens', () => {

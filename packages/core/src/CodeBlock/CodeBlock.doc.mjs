@@ -57,6 +57,13 @@ export const docs = {
       description: '1-indexed line numbers to highlight.',
     },
     {
+      name: 'isDiff',
+      type: 'boolean',
+      default: 'false',
+      description:
+        'Render the code as a unified diff over `language`: lines starting with + are added, - removed, @@ is a hunk header (a `--- `/`+++ ` file-header pair directly before one is a header too), anything else is context. The language label reads `diff` or `<language> diff`. The glyph sits in its own column and the rest of each line keeps syntax highlighting; copy returns the exact source. Markdown ```diff and ```diff-<lang> fences set this.',
+    },
+    {
       name: 'hasCopyButton',
       type: 'boolean',
       description: 'Show a copy-to-clipboard button.',
