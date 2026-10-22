@@ -202,6 +202,71 @@ describe('icon add', () => {
     expect(again.body.data.changed).toBe(false);
   });
 
+  it('adds a declared variant of an existing icon with --variant, refusing one the set does not declare', async () => {
+    await json([
+      'experimental',
+      'icon',
+      'add',
+      'Bin',
+      '--from',
+      '@acme/glyph-library',
+      '--definition',
+      'delete',
+    ]);
+    const args = [
+      'experimental',
+      'icon',
+      'add',
+      'Cross',
+      '--from',
+      '@acme/glyph-library',
+      '--id',
+      'bin',
+      '--variant',
+      'solid',
+    ];
+    const before = dataOf('outline');
+    const refused = await json(args);
+    expect(refused.code).toBe(1);
+    expect(refused.body.code).toBe('ERR_INVALID_ARGUMENT');
+    expect(refused.body.error).toContain('variant "solid" is not in variants');
+    expect(refused.body.error).toContain('Declare it in "variants"');
+    expect(dataOf('outline')).toEqual(before);
+
+    const dataPath = path.join(
+      pkg,
+      'icon-sets',
+      'outline',
+      'outline.icons.json',
+    );
+    fs.writeFileSync(
+      dataPath,
+      JSON.stringify({
+        ...before,
+        variants: ['outline', 'solid'],
+        default: {variant: 'outline'},
+      }),
+    );
+    const added = await json(args);
+    expect(added.code).toBe(0);
+    expect(added.body.data).toMatchObject({
+      icon: {id: 'bin', export: 'BinSolidIcon'},
+      variant: 'solid',
+      changed: true,
+    });
+    const data = dataOf('outline');
+    expect(Object.keys(data)).toContain('variants');
+    expect(data.icons[0].variants).toEqual([
+      {variant: 'solid', export: 'BinSolidIcon'},
+    ]);
+    expect(
+      fs.readFileSync(
+        path.join(pkg, 'icon-sets', 'outline', 'outline.generated.js'),
+        'utf-8',
+      ),
+    ).toContain("export {Cross as BinSolidIcon} from '@acme/glyph-library';");
+  });
+
   it("adds the set's own definition with --new-definition, refusing one Astryx has", async () => {
     const added = await json([
       'experimental',

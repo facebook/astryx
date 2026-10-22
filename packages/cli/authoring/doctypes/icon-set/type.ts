@@ -49,29 +49,20 @@ export interface IconSetDoc {
   license: string;
 }
 
-/** The weights a set supplies: a list of values, or a continuous range. */
-export type IconSetWeights =
-  {values: number[]} | {range: {min: number; max: number}};
-
-/** The appearances, sizes, and weights an icon set supplies. */
-export interface IconSetAxes {
-  /** Appearance names, such as `outline` or `solid`. */
-  appearances?: string[];
-  /** Sizes in pixels. */
-  sizes?: number[];
-  /** Stroke or optical weights. */
-  weights?: IconSetWeights;
+/**
+ * The variant an icon's own `export` draws, when the set declares variants.
+ * A variant is a named look the set supplies (for example outline or solid);
+ * size comes from CSS.
+ */
+export interface IconSetDefault {
+  /** One of the set's declared `variants`. */
+  variant?: string;
 }
 
-/** One point on a set's axes: which appearance, size, and weight. */
-export interface IconSetAxisValues {
-  appearance?: string;
-  size?: number;
-  weight?: number;
-}
-
-/** A variant of one icon, drawn by its own export. */
-export interface IconSetVariant extends IconSetAxisValues {
+/** Another variant of one icon, drawn by its own export. */
+export interface IconSetVariant {
+  /** One of the set's declared `variants`. */
+  variant: string;
   /** The named export that draws this variant. */
   export: string;
   /** The import specifier, when it differs from the icon's module. */
@@ -91,7 +82,7 @@ export interface IconSetMatch {
   set: string;
   /** The export that draws the equivalent icon in that set. */
   export: string;
-  /** Which variant of that set, such as `24/outline`, when it has several. */
+  /** Which of that set's variants, such as `solid`, when it has several. */
   variant?: string;
   /** How sure the match is. */
   confidence: IconSetMatchConfidence;
@@ -107,7 +98,7 @@ export interface IconSetIcon {
   module?: string;
   /** Lower-case terms a person might search for; at least one. */
   words: string[];
-  /** Other variants, each naming its axis values and its own export. */
+  /** Other variants, each naming a declared variant and its own export. */
   variants?: IconSetVariant[];
   /** Reviewed equivalents of this icon in other sets. */
   matches?: IconSetMatch[];
@@ -138,10 +129,14 @@ export interface IconSetData {
   module: string;
   /** The upstream library, absent for a set with no upstream. */
   source?: IconSetSource;
-  /** The axes the set varies on; absent when it varies on nothing. */
-  axes?: IconSetAxes;
+  /**
+   * The variants the set supplies, lower-kebab names such as `outline` and
+   * `solid`; absent when it has one look. A variant is a named look the set
+   * supplies; size comes from CSS.
+   */
+  variants?: string[];
   /** The variant an icon's own `export` draws. */
-  default?: IconSetAxisValues;
+  default?: IconSetDefault;
   /** The export that maps each built-in definition in `map` to its artwork. */
   themeMap?: string;
   /**

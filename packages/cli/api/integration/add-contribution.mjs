@@ -1692,9 +1692,10 @@ async function addIconDefinition(name, options) {
       files.push(projectPath(path.relative(packageDir, set.dataPath)));
     if (!dryRun) {
       const undo = writeDefinitionFile(set, doc);
+      let undoMap = () => {};
       if (icon != null) {
         try {
-          writeIconSetData(
+          undoMap = writeIconSetData(
             set,
             {...set.data, map: {...(set.data.map ?? {}), [doc.name]: icon}},
             {extraDefinitions: [doc.name]},
@@ -1704,11 +1705,12 @@ async function addIconDefinition(name, options) {
           throw error;
         }
       }
-      // Discovery reads the set, its new definition included, or the write
-      // is undone.
+      // Discovery reads the set, its new definition included, or every
+      // write is undone: the data file first, then the definition.
       try {
         await findLocalIconSet(cwd, set.name);
       } catch (error) {
+        undoMap();
         undo();
         throw error;
       }

@@ -33,7 +33,7 @@ describe('astryx experimental icon', () => {
       /import: +import \{TrashIcon\} from '@acme\/glyphs';/,
     );
     expect(res.stdout).toMatch(/package: +@acme\/glyphs/);
-    expect(res.stdout).toMatch(/appearance: +solid/);
+    expect(res.stdout).toMatch(/variant: +solid/);
     const many = await runCli(
       ['experimental', 'icon', 'magni', 'fier', '--json'],
       cwd,

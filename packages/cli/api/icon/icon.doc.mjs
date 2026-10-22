@@ -64,7 +64,7 @@ export const doc = {
     {
       type: 'icon.list',
       description:
-        "The project's icon-set state, each installed set with its package, license, icon count, default variant, axes, and the icon definitions its `map` covers, and each withdrawn set with its reason.",
+        "The project's icon-set state, each installed set with its package, license, icon count, default variant, declared variants, and the icon definitions its `map` covers, and each withdrawn set with its reason.",
     },
   ],
   throws: [

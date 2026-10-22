@@ -153,7 +153,7 @@ describe('iconSetIssues', () => {
             {
               set: 'heroicons',
               export: 'XMarkIcon',
-              variant: '24/outline',
+              variant: 'outline',
               confidence: 'exact',
             },
           ]),

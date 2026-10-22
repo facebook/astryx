@@ -7,7 +7,8 @@
  *
  *   The goldens under `__golden__/no-icon-set/` were written by the CLI
  *   without the icon-set feature, so a byte that an experimental surface adds
- *   to search, a template copy, or doctor's doc counts fails here. Help, the
+ *   to search, a template copy, doctor's doc counts, or an integration's
+ *   verify report fails here. Help, the
  *   manifest, and the `astryx docs cli` listing gain only the experimental
  *   group or namespace, the one marked entry point FR27 allows.
  *
@@ -20,6 +21,7 @@
 import {afterAll, beforeAll, describe, expect, it} from 'vitest';
 import {spawnSync} from 'node:child_process';
 import * as fs from 'node:fs';
+import * as os from 'node:os';
 import * as path from 'node:path';
 import {CLI_ROOT} from '../foundation/fs/paths.mjs';
 import {writeIconSetProject} from '../test-utils/icon-set-fixture.mjs';
@@ -217,6 +219,63 @@ describe('with no icon set, stable output is unchanged', () => {
     const res = astryx(['integration', 'add', 'icon-set', 'outline', '--json']);
     expect(res.status).toBe(1);
     expect(JSON.parse(res.stdout).code).toBe('ERR_INVALID_ARGUMENT');
+  });
+});
+
+describe('an integration package without experimental.iconSets', () => {
+  /** @type {string} */
+  let pkg;
+  beforeAll(() => {
+    // Outside the repo, so this CLI answers, as the CLI without icon sets
+    // that wrote the golden did.
+    pkg = fs.mkdtempSync(path.join(os.tmpdir(), 'astryx-no-icon-sets-pkg-'));
+    fs.writeFileSync(
+      path.join(pkg, 'package.json'),
+      `${JSON.stringify({
+        name: '@acme/widgets',
+        version: '1.0.0',
+        files: ['astryx.integration.mjs', 'docs'],
+        exports: {'./package.json': './package.json'},
+      })}\n`,
+    );
+    fs.writeFileSync(
+      path.join(pkg, 'astryx.integration.mjs'),
+      "export default {\n  docs: './docs'\n};\n",
+    );
+    fs.mkdirSync(path.join(pkg, 'docs'));
+    fs.writeFileSync(
+      path.join(pkg, 'docs', 'local-guide.doc.mjs'),
+      `/** @type {import('@astryxdesign/cli/authoring').ReferenceDoc} */
+export default {
+  type: 'generic',
+  name: 'local-guide',
+  title: 'Local Guide',
+  description: 'Local Guide documentation.',
+  sections: [
+    {
+      title: 'Overview',
+      content: [{type: 'prose', text: 'Local Guide documentation.'}],
+    },
+  ],
+};
+`,
+    );
+  });
+  afterAll(() => {
+    fs.rmSync(pkg, {recursive: true, force: true});
+  });
+
+  // The golden was written by the CLI without icon sets; only the gzip size
+  // of the tarball, which depends on the machine's zlib, is a placeholder.
+  it('integration verify --json answers as it does without icon sets: no iconSets identities', async () => {
+    const res = astryx(['integration', 'verify', '--json'], pkg);
+    expect(res.status).toBe(0);
+    const body = JSON.parse(res.stdout);
+    expect(body.data.contributions.local).not.toHaveProperty('iconSets');
+    expect(body.data.contributions.packed).not.toHaveProperty('iconSets');
+    await expect(
+      res.stdout.replace(/("size": )\d+/u, '$1"<gzip>"'),
+    ).toMatchFileSnapshot(path.join(GOLDEN, 'integration-verify.json'));
   });
 });
 

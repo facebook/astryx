@@ -50,20 +50,10 @@ export const doc = {
         "The module's default export is the icon; your set's module must re-export it under <export>",
     },
     {
-      flag: '--appearance <name>',
-      param: 'options.appearance',
+      flag: '--variant <name>',
+      param: 'options.variant',
       description:
-        'Add the export as a variant of an existing icon with this appearance',
-    },
-    {
-      flag: '--size <n>',
-      param: 'options.size',
-      description: "The variant's size in pixels",
-    },
-    {
-      flag: '--weight <n>',
-      param: 'options.weight',
-      description: "The variant's weight",
+        "Add the export as this variant of an existing icon: one of the set's declared variants, such as solid",
     },
     {
       flag: '--id <id>',
@@ -91,7 +81,7 @@ export const doc = {
     },
     {
       label: 'Add a solid variant',
-      cli: 'astryx experimental icon add Bin --from @acme/glyph-library/solid --id bin --appearance solid',
+      cli: 'astryx experimental icon add Bin --from @acme/glyph-library/solid --id bin --variant solid',
     },
   ],
   outsideProject: 'refuse',
@@ -102,7 +92,7 @@ export const doc = {
     },
     {
       code: 1,
-      when: 'the export is missing or is data, the definition is unknown, the id is taken, or a variant value is outside axes',
+      when: 'the export is missing or is data, the definition is unknown, the id is taken, or the variant is not one the set declares',
     },
   ],
   related: ['experimental icon map', 'integration add', 'integration check'],

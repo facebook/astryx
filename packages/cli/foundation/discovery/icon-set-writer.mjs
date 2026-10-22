@@ -88,19 +88,17 @@ export function iconExportName(name) {
 
 /**
  * The name an icon set exports a variant as: the icon's name, then the
- * variant's values, then `Icon` (`TrashIcon` solid 20 → `TrashSolid20Icon`).
+ * variant's name, then `Icon` (`TrashIcon` solid → `TrashSolidIcon`).
  * @param {string} iconName the icon's own export
- * @param {{appearance?: string, size?: number, weight?: number}} values
+ * @param {string} variant one of the set's declared variants
  */
-export function variantExportName(iconName, values) {
+export function variantExportName(iconName, variant) {
   const base = iconName.replace(/Icon$/u, '');
-  const appearance = (values.appearance ?? '')
+  const name = variant
     .split('-')
     .map(part => (part ? part[0].toUpperCase() + part.slice(1) : ''))
     .join('');
-  const weight =
-    values.weight != null ? `W${String(values.weight).replace('.', '_')}` : '';
-  return `${base}${appearance}${values.size ?? ''}${weight}Icon`;
+  return `${base}${name}Icon`;
 }
 
 /**
@@ -211,7 +209,7 @@ const DATA_KEYS = [
   'source',
   'generated',
   'adapter',
-  'axes',
+  'variants',
   'default',
   'themeMap',
   'map',

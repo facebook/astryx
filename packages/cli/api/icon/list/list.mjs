@@ -38,7 +38,7 @@ export async function iconList({cwd}) {
           license: set.license,
           iconCount: set.data.icons.length,
           default: set.data.default ?? null,
-          axes: set.data.axes ?? null,
+          variants: set.data.variants ?? null,
           coverage: {
             builtIn: {
               mapped: builtIn.filter(name => mapped.has(name)).length,

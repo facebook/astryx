@@ -118,7 +118,7 @@ const DEPENDENCY_FIELDS = [
  * @property {string} description
  * @property {string} license
  * @property {number} iconCount
- * @property {{appearance?: string, size?: number, weight?: number}} [default]
+ * @property {{variant?: string}} [default]
  * @property {string[]} definitions the icon definitions its `map` covers
  */
 

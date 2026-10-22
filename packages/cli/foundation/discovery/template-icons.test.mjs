@@ -171,22 +171,22 @@ describe('icons another installed set ships', () => {
     data: {
       schemaVersion: 1,
       module: '@acme/lines',
-      axes: {appearances: ['outline', 'solid']},
-      default: {appearance: 'outline'},
+      variants: ['outline', 'solid'],
+      default: {variant: 'outline'},
       map: {close: 'cross'},
       icons: [
         {
           id: 'cross',
           export: 'CrossIcon',
           words: ['cross'],
-          variants: [{appearance: 'solid', export: 'CrossSolidIcon'}],
+          variants: [{variant: 'solid', export: 'CrossSolidIcon'}],
         },
         {id: 'bin', export: 'BinIcon', words: ['bin']},
       ],
     },
   });
 
-  it("maps by the source set's map, with no declaration, and keeps the variant's appearance", () => {
+  it("maps by the source set's map, with no declaration, and keeps the variant", () => {
     const {source, icons} = map(
       "import {CrossIcon, CrossSolidIcon, BinIcon} from '@acme/lines';\nexport const A = () => <><CrossIcon /><CrossSolidIcon /><BinIcon /></>;\n",
       {},

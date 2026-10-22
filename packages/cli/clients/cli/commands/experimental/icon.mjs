@@ -53,56 +53,12 @@ import {doc as iconNewSetFn} from '../../../../api/icon/iconNewSet.doc.mjs';
 import {doc as iconNewDefinitionFn} from '../../../../api/icon/iconNewDefinition.doc.mjs';
 import {NO_RESULT_SET} from '../../../../foundation/debug/index.mjs';
 
-/** @typedef {import('../../../../api/icon/icon.type.mjs').IconVariantEntry} IconVariantEntry */
-
-/**
- * A variant's axis values, as one short label: `solid 20 2`.
- * @param {IconVariantEntry} variant
- */
-function axisLabel(variant) {
-  return [variant.appearance, variant.size, variant.weight]
-    .filter(value => value != null)
-    .join(' ');
-}
+/** @param {unknown} value */
+const defaultVariantText = value =>
+  /** @type {{variant?: string} | null} */ (value)?.variant ?? '';
 
 /** @param {unknown} value */
-const axisValuesText = value =>
-  value == null
-    ? ''
-    : Object.entries(/** @type {Record<string, unknown>} */ (value))
-        .map(([key, each]) => `${key} ${each}`)
-        .join(', ');
-
-/** @param {unknown} value */
-const axesText = value => {
-  if (value == null) return '';
-  const axes =
-    /** @type {import('../../../../api/icon/icon.type.mjs').IconAxes} */ (
-      value
-    );
-  const parts = [];
-  if (axes.appearances) parts.push(`appearances ${axes.appearances.join('/')}`);
-  if (axes.sizes) parts.push(`sizes ${axes.sizes.join('/')}`);
-  if (axes.weights) {
-    parts.push(
-      'values' in axes.weights
-        ? `weights ${axes.weights.values.join('/')}`
-        : `weights ${axes.weights.range.min}-${axes.weights.range.max}`,
-    );
-  }
-  return parts.join(', ');
-};
-
-/**
- * The variant axes `experimental icon add` takes, as numbers where they are numeric.
- * @param {Record<string, unknown>} options
- */
-function axisOptions(options) {
-  const appearance = /** @type {string | undefined} */ (options.appearance);
-  const size = options.size != null ? Number(options.size) : undefined;
-  const weight = options.weight != null ? Number(options.weight) : undefined;
-  return {appearance, size, weight};
-}
+const variantsText = value => (Array.isArray(value) ? value.join('/') : '');
 
 /**
  * Register `icon` and its subcommands under the `experimental` group.
@@ -181,7 +137,7 @@ export function registerExperimentalIcon(group, program) {
             matches.map(({variants, ...match}) => ({
               ...match,
               ...(variants.length > 0
-                ? {appearance: variants.map(axisLabel).join(', ')}
+                ? {variant: variants.map(each => each.variant).join(', ')}
                 : {}),
             })),
             {
@@ -192,7 +148,7 @@ export function registerExperimentalIcon(group, program) {
                 'import',
                 'words',
                 'definitions',
-                'appearance',
+                'variant',
                 'reason',
               ],
             },
@@ -223,14 +179,7 @@ export function registerExperimentalIcon(group, program) {
             ? [
                 section('Variants'),
                 records(variants, {
-                  fields: [
-                    'appearance',
-                    'size',
-                    'weight',
-                    'module',
-                    'export',
-                    'import',
-                  ],
+                  fields: ['variant', 'module', 'export', 'import'],
                 }),
               ]
             : []),
@@ -263,7 +212,7 @@ export function registerExperimentalIcon(group, program) {
                     'license',
                     'iconCount',
                     'default',
-                    'axes',
+                    'variants',
                     'builtIn',
                     'definitions',
                     'own',
@@ -271,7 +220,7 @@ export function registerExperimentalIcon(group, program) {
                     'project',
                     'description',
                   ],
-                  format: {default: axisValuesText, axes: axesText},
+                  format: {default: defaultVariantText, variants: variantsText},
                 },
               ),
             ]
@@ -386,7 +335,7 @@ export function registerExperimentalIcon(group, program) {
                 ? options.words.split(',')
                 : undefined,
             useDefault: options.default === true,
-            ...axisOptions(options),
+            variant: /** @type {string | undefined} */ (options.variant),
             id: /** @type {string | undefined} */ (options.id),
           }),
         result => {
@@ -432,7 +381,7 @@ export function registerExperimentalIcon(group, program) {
           emit(
             text(
               data.changed
-                ? `[ok] Added ${data.icon.export} as "${data.icon.id}"${data.variant ? ` (variant ${Object.values(data.variant).join(' ')})` : ''}${data.definition ? `, map.${data.definition} = "${data.icon.id}"` : ''}.`
+                ? `[ok] Added ${data.icon.export} as "${data.icon.id}"${data.variant ? ` (variant ${data.variant})` : ''}${data.definition ? `, map.${data.definition} = "${data.icon.id}"` : ''}.`
                 : `[ok] ${data.icon.export} is already "${data.icon.id}"${data.definition ? ` and map.${data.definition} names it` : ''}.`,
             ),
             ...(data.files.length > 0 ? [list(data.files)] : []),

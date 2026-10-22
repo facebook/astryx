@@ -28,7 +28,7 @@
  * @property {{version: string, id: string}[]} codemods
  * @property {string[]} docs
  * @property {string[]} agentDocsAppend
- * @property {string[]} iconSets
+ * @property {string[]} [iconSets] - Icon set names; present only when the package declares `experimental.iconSets`. @experimental May change or be removed in a patch release.
  */
 
 /**

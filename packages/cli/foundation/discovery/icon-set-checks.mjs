@@ -10,7 +10,7 @@
  *            a duplicate id, an icon with no words, a `map` key that is
  *            neither an Astryx icon definition nor one the set declares, a
  *            `map` value that is not an icon id, and a variant or default
- *            outside `axes`); a built-in definition missing from `map`; an
+ *            naming a variant the set does not declare); a built-in definition missing from `map`; an
  *            `export` its module does not export at runtime (read statically,
  *            re-exports followed); a theme map whose keys or values disagree
  *            with the built-in entries of `map`;

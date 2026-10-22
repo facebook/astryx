@@ -138,6 +138,7 @@ export const docs = {
           style: 'unordered',
           items: [
             "The data file's `module` is your package name or one of its package.json `exports` subpaths, never a file path. `integration check` fails otherwise.",
+            "A variant is a named look the set supplies (for example outline or solid); size comes from CSS. List the names in `variants` in the data file and the one each icon's own export draws in `default`.",
             'Each export is named `<Name>Icon`, and a variant `<Name><Variant>Icon`, such as `TrashSolidIcon`. `experimental icon add` names them that way; `integration check` warns on another name.',
             'Each export is a React component: a function, a class, `forwardRef` or `memo`, or what your adapter returns. `integration check` fails on a plain object or string.',
             'It accepts SVG props (`className`, `style`, `aria-*`, `width`, `height`), draws with `currentColor`, and fills its box (`1em` or `100%`), so `<Icon icon={TrashIcon} size="sm" />` sizes and colors it like a built-in icon. The CLI cannot check this statically; the test below can.',
@@ -190,7 +191,7 @@ for (const [name, Icon] of Object.entries(icons)) {
             ],
             [
               'A subpath per style',
-              '`experimental icon add Bin --from @acme/glyph-library/solid --id bin --appearance solid` (a variant of an icon you added; the value must be in `axes`)',
+              '`experimental icon add Bin --from @acme/glyph-library/solid --id bin --variant solid` (a variant of an icon you added; the set must declare it in `variants`)',
             ],
             [
               'One file per icon, default export',

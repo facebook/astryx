@@ -52,16 +52,18 @@ export const doc = {
       example: "{module: './src/adapt.js', export: 'adapt'}",
     },
     {
-      name: 'axes',
-      type: '{appearances?: string[], sizes?: number[], weights?: {values: number[]} | {range: {min: number, max: number}}}',
+      name: 'variants',
+      type: 'string[]',
       description:
-        'The appearances, sizes (in pixels), and weights the set supplies. Every axis is optional; omit `axes` when the set varies on nothing.',
+        'The named looks the set offers, in lower-kebab case, such as `outline` and `solid`. Icon size is never a variant: CSS sets it. Omit it when the set has one look.',
+      example: "['outline', 'solid']",
     },
     {
       name: 'default',
-      type: '{appearance?: string, size?: number, weight?: number}',
+      type: '{variant?: string}',
       description:
-        "The variant each icon's own `export` draws. Its values must be in `axes`.",
+        "The variant each icon's own `export` draws; one of `variants`.",
+      example: "{variant: 'outline'}",
     },
     {
       name: 'themeMap',
@@ -114,9 +116,9 @@ export const doc = {
         },
         {
           name: 'icons[].variants',
-          type: '{appearance?, size?, weight?, export, module?}[]',
+          type: '{variant, export, module?}[]',
           description:
-            'Other variants, each naming its axis values (all in `axes`) and its own export.',
+            'Other variants of the icon: each names one of `variants`, never the default, and the export that draws it. At most one export per variant.',
         },
         {
           name: 'icons[].matches',
@@ -134,8 +136,8 @@ export const doc = {
   "schemaVersion": 1,
   "module": "@acme/outline-icons",
   "generated": "./icon-sets/outline/outline.generated.js",
-  "axes": {"appearances": ["outline", "solid"], "sizes": [24]},
-  "default": {"appearance": "outline", "size": 24},
+  "variants": ["outline", "solid"],
+  "default": {"variant": "outline"},
   "themeMap": "themeIcons",
   "map": {"close": "x", "delete": "trash"},
   "icons": [
@@ -144,7 +146,7 @@ export const doc = {
       "id": "trash",
       "export": "TrashIcon",
       "words": ["trash", "delete", "remove", "bin"],
-      "variants": [{"appearance": "solid", "export": "TrashSolidIcon"}]
+      "variants": [{"variant": "solid", "export": "TrashSolidIcon"}]
     }
   ]
 }`,
@@ -153,7 +155,7 @@ export const doc = {
   notes: [
     {
       type: 'prose',
-      text: 'A file that fails this schema, repeats an id, gives an icon no words, has a `map` key that is not camelCase or a `map` value that is not an icon id in the file, or names an axis value `axes` does not list is invalid, and its set is withdrawn from every surface until it is fixed. `astryx doctor` names the reason.',
+      text: 'A file that fails this schema, repeats an id, gives an icon no words, has a `map` key that is not camelCase or a `map` value that is not an icon id in the file, or names a variant `variants` does not declare is invalid, and its set is withdrawn from every surface until it is fixed. `astryx doctor` names the reason.',
     },
     {
       type: 'prose',

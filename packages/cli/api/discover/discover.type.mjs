@@ -135,7 +135,7 @@
  *   keywords?: string[],
  *   license?: string,
  *   iconCount?: number,
- *   default?: {appearance?: string, size?: number, weight?: number},
+ *   default?: {variant?: string},
  *   definitions?: string[],
  *   command?: string,
  *   installed: boolean,

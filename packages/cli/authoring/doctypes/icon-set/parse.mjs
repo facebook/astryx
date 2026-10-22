@@ -8,7 +8,8 @@
  * The data parser checks the whole file, not only its shape: a duplicate id,
  * an icon with no words, a `map` key that is not a camelCase definition name
  * or a value that is not an icon id in the file, and a variant or default
- * whose axis values the set's `axes` do not list all make the file invalid,
+ * naming a variant the set's `variants` do not declare all make the file
+ * invalid,
  * and an invalid file withdraws its set from every surface (FR9). Whether each
  * `map` key is Astryx's definition or one the set declares is checked by
  * icon-set discovery, which reads the definition files.
@@ -92,18 +93,13 @@ const moduleSchema = z
 const exportSchema = z
   .string()
   .regex(EXPORT_RE, 'export must be a JavaScript identifier');
-const sizeSchema = z.number().int().positive();
-const weightSchema = z.number().positive();
-
-const axisValuesShape = {
-  appearance: z.string().regex(KEBAB_RE).optional(),
-  size: sizeSchema.optional(),
-  weight: weightSchema.optional(),
-};
+const variantNameSchema = z
+  .string()
+  .regex(KEBAB_RE, 'a variant must be lowercase kebab-case');
 
 const variantSchema = z
   .object({
-    ...axisValuesShape,
+    variant: variantNameSchema,
     export: exportSchema,
     module: moduleSchema.optional(),
   })
@@ -138,15 +134,6 @@ const iconSchema = z
   })
   .strict();
 
-const weightsSchema = z.union([
-  z.object({values: z.array(weightSchema).min(1)}).strict(),
-  z
-    .object({
-      range: z.object({min: weightSchema, max: weightSchema}).strict(),
-    })
-    .strict(),
-]);
-
 const dataSchema = z
   .object({
     schemaVersion: z.literal(1),
@@ -158,15 +145,11 @@ const dataSchema = z
       })
       .strict()
       .optional(),
-    axes: z
-      .object({
-        appearances: z.array(z.string().regex(KEBAB_RE)).min(1).optional(),
-        sizes: z.array(sizeSchema).min(1).optional(),
-        weights: weightsSchema.optional(),
-      })
+    variants: z.array(variantNameSchema).min(1).optional(),
+    default: z
+      .object({variant: variantNameSchema.optional()})
       .strict()
       .optional(),
-    default: z.object(axisValuesShape).strict().optional(),
     themeMap: exportSchema.optional(),
     map: z.record(z.string(), z.string()).optional(),
     generated: packagePathSchema
@@ -182,62 +165,33 @@ const dataSchema = z
   })
   .strict()
   .superRefine((data, ctx) => {
+    const declared = data.variants ?? [];
     /**
-     * Whether one point on the axes is one the set supplies.
-     * @param {{appearance?: string, size?: number, weight?: number}} values
+     * Whether a named variant is one the set declares.
+     * @param {string | undefined} variant
      * @param {(string|number)[]} at
      */
-    const checkAxes = (values, at) => {
-      const axes = data.axes ?? {};
-      if (
-        values.appearance != null &&
-        !(axes.appearances ?? []).includes(values.appearance)
-      ) {
+    const checkVariant = (variant, at) => {
+      if (variant != null && !declared.includes(variant)) {
         ctx.addIssue({
           code: 'custom',
-          path: [...at, 'appearance'],
-          message: `appearance "${values.appearance}" is not in axes.appearances`,
+          path: [...at, 'variant'],
+          message: `variant "${variant}" is not in variants`,
         });
-      }
-      if (values.size != null && !(axes.sizes ?? []).includes(values.size)) {
-        ctx.addIssue({
-          code: 'custom',
-          path: [...at, 'size'],
-          message: `size ${values.size} is not in axes.sizes`,
-        });
-      }
-      if (values.weight != null) {
-        const weights = axes.weights;
-        const supplied =
-          weights == null
-            ? false
-            : 'values' in weights
-              ? weights.values.includes(values.weight)
-              : values.weight >= weights.range.min &&
-                values.weight <= weights.range.max;
-        if (!supplied) {
-          ctx.addIssue({
-            code: 'custom',
-            path: [...at, 'weight'],
-            message: `weight ${values.weight} is not in axes.weights`,
-          });
-        }
       }
     };
 
-    const weights = data.axes?.weights;
-    if (
-      weights &&
-      'range' in weights &&
-      weights.range.min > weights.range.max
-    ) {
-      ctx.addIssue({
-        code: 'custom',
-        path: ['axes', 'weights', 'range'],
-        message: 'range.min must not be greater than range.max',
-      });
-    }
-    if (data.default) checkAxes(data.default, ['default']);
+    declared.forEach((variant, at) => {
+      if (declared.indexOf(variant) !== at) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['variants', at],
+          message: `variant "${variant}" is listed twice`,
+        });
+      }
+    });
+    if (data.default) checkVariant(data.default.variant, ['default']);
+    const defaultVariant = data.default?.variant;
 
     /** @type {Map<string, number>} */
     const ids = new Map();
@@ -265,20 +219,25 @@ const dataSchema = z
         }
         named.add(key);
       });
-      (icon.variants ?? []).forEach((variant, at) => {
+      /** @type {Set<string>} */
+      const drawn = new Set();
+      (icon.variants ?? []).forEach((entry, at) => {
         const where = ['icons', index, 'variants', at];
-        if (
-          variant.appearance == null &&
-          variant.size == null &&
-          variant.weight == null
-        ) {
+        checkVariant(entry.variant, where);
+        if (entry.variant === defaultVariant) {
           ctx.addIssue({
             code: 'custom',
-            path: where,
-            message: 'a variant must name at least one axis value',
+            path: [...where, 'variant'],
+            message: `variant "${entry.variant}" is the default: the icon's own export draws it`,
+          });
+        } else if (drawn.has(entry.variant)) {
+          ctx.addIssue({
+            code: 'custom',
+            path: [...where, 'variant'],
+            message: `variant "${entry.variant}" is listed twice`,
           });
         }
-        checkAxes(variant, where);
+        drawn.add(entry.variant);
       });
     });
 

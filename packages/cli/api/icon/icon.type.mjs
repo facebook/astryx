@@ -8,27 +8,15 @@
  */
 
 /**
- * One point on a set's axes: which appearance, size, and weight.
- * @typedef {object} IconAxisValues
- * @property {string} [appearance]
- * @property {number} [size]
- * @property {number} [weight]
- */
-
-/**
- * The axes a set supplies.
- * @typedef {object} IconAxes
- * @property {string[]} [appearances]
- * @property {number[]} [sizes]
- * @property {{values: number[]} | {range: {min: number, max: number}}} [weights]
+ * The variant an icon's own export draws.
+ * @typedef {object} IconSetDefaultVariant
+ * @property {string} [variant] - One of the set's declared variants.
  */
 
 /**
  * One variant of an icon.
  * @typedef {object} IconVariantEntry
- * @property {string} [appearance]
- * @property {number} [size]
- * @property {number} [weight]
+ * @property {string} variant - Which of the set's declared variants it draws.
  * @property {string} module - The import specifier the variant is read from.
  * @property {string} export - The named export that draws the variant.
  */
@@ -84,8 +72,8 @@
  * @property {string} package
  * @property {string} license
  * @property {number} iconCount
- * @property {IconAxisValues | null} default
- * @property {IconAxes | null} axes
+ * @property {IconSetDefaultVariant | null} default
+ * @property {string[] | null} variants - The variants the set declares: named looks such as outline or solid; size comes from CSS.
  * @property {IconSetCoverage} coverage - Which icon definitions the set's `map` covers.
  * @property {boolean} project - Whether this is the project's icon set.
  */
@@ -165,9 +153,7 @@
  * @property {string} [description] - With `newDefinition`: what the icon is for.
  * @property {string[]} [words] - With `newDefinition`: words people search for.
  * @property {boolean} [useDefault] - The module's default export is the icon.
- * @property {string} [appearance] - Add the export as a variant of an existing icon with this appearance.
- * @property {number} [size] - The variant's size.
- * @property {number} [weight] - The variant's weight.
+ * @property {string} [variant] - Add the export as this declared variant of an existing icon.
  * @property {string} [id] - The icon's id, instead of the one its name gives.
  */
 
@@ -179,7 +165,7 @@
  * @property {string} data.set
  * @property {string} data.package
  * @property {{id: string, export: string, module: string}} data.icon
- * @property {IconAxisValues} [data.variant] - When the export was added as a variant.
+ * @property {string} [data.variant] - The variant, when the export was added as one.
  * @property {string | null} data.definition - The definition mapped to the icon.
  * @property {string} [data.newDefinition] - The set's own definition the command wrote.
  * @property {string[]} data.files - Files written, relative to the package.

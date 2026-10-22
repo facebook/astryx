@@ -18,9 +18,8 @@
  * applied: a kept icon names it as a suggestion.
  * The import and every reference to the imported name use the mapped export;
  * a name that would collide with another binding in the file is imported
- * under an alias. An icon from an installed set that names a variant (a solid
- * appearance) maps to the target's variant with that appearance, else its
- * default. An icon with no match keeps its original import and is reported as
+ * under an alias. An icon from an installed set that draws a variant (such as
+ * solid) maps to the target's variant of that name, else its default. An icon with no match keeps its original import and is reported as
  * kept. Without a project icon set the source is unchanged and the report
  * says why.
  *
@@ -44,11 +43,10 @@ import {astryxDefinitionsByName} from './icon-definition-discovery.mjs';
  * @property {string | null} setName the installed set it comes from, as a
  *   reviewed match names it; null for an icon only the template declares
  * @property {string} export the export the template imports
- * @property {string} [variant] which variant of its set, as a reviewed match
- *   names it: an installed set's appearance
+ * @property {string} [variant] which of its set's declared variants the
+ *   export draws, as a reviewed match names it
  * @property {string} id
  * @property {string[]} definitions the Astryx definitions it draws
- * @property {string} [appearance]
  * @property {DiscoveredIconSet} [set] the set it came from, when installed
  */
 
@@ -86,7 +84,7 @@ import {astryxDefinitionsByName} from './icon-definition-discovery.mjs';
 
 /**
  * Index every installed set's exports: `<module>\0<export>` → the icon it
- * draws and the appearance of that export.
+ * draws and the variant that export draws.
  * @param {DiscoveredIconSet[]} sets
  * @returns {Map<string, SourceIcon>}
  */
@@ -110,22 +108,20 @@ function indexSets(sets) {
       };
       const key = `${module}\0${icon.export}`;
       if (!index.has(key)) {
-        const appearance = set.data.default?.appearance;
+        const variant = set.data.default?.variant;
         index.set(key, {
           ...base,
           export: icon.export,
-          ...(appearance ? {appearance, variant: appearance} : {}),
+          ...(variant ? {variant} : {}),
         });
       }
-      for (const variant of icon.variants ?? []) {
-        const variantKey = `${variant.module ?? module}\0${variant.export}`;
+      for (const entry of icon.variants ?? []) {
+        const variantKey = `${entry.module ?? module}\0${entry.export}`;
         if (!index.has(variantKey)) {
           index.set(variantKey, {
             ...base,
-            export: variant.export,
-            ...(variant.appearance
-              ? {appearance: variant.appearance, variant: variant.appearance}
-              : {}),
+            export: entry.export,
+            variant: entry.variant,
           });
         }
       }
@@ -193,21 +189,18 @@ export function matchIcon(source, target) {
 }
 
 /**
- * The export a mapped icon uses: the variant with the source's appearance
- * when the target has one, else the default.
+ * The export a mapped icon uses: the target's variant of the source's
+ * variant name when it has one, else the default.
  * @param {IconSetIcon} icon
  * @param {DiscoveredIconSet} set
- * @param {string | undefined} appearance
+ * @param {string | undefined} variant
  */
-function targetExport(icon, set, appearance) {
+function targetExport(icon, set, variant) {
   const module = icon.module ?? set.data.module;
-  const defaultAppearance = set.data.default?.appearance;
-  if (appearance && appearance !== defaultAppearance) {
-    const variant = (icon.variants ?? []).find(
-      each => each.appearance === appearance,
-    );
-    if (variant) {
-      return {module: variant.module ?? module, export: variant.export};
+  if (variant && variant !== set.data.default?.variant) {
+    const entry = (icon.variants ?? []).find(each => each.variant === variant);
+    if (entry) {
+      return {module: entry.module ?? module, export: entry.export};
     }
   }
   return {module, export: icon.export};
@@ -449,7 +442,7 @@ export function mapTemplateIcons(source, {sets, choice}, declared = {}) {
                 suggestion: {
                   set: target.name,
                   id: likely.id,
-                  ...targetExport(likely, target, record.appearance),
+                  ...targetExport(likely, target, record.variant),
                   confidence: /** @type {const} */ ('likely'),
                 },
               }
@@ -457,7 +450,7 @@ export function mapTemplateIcons(source, {sets, choice}, declared = {}) {
         });
         continue;
       }
-      const chosen = targetExport(match.icon, target, record.appearance);
+      const chosen = targetExport(match.icon, target, record.variant);
       const key = `${chosen.module}\0${chosen.export}`;
       let entry = added.get(key);
       if (!entry) {

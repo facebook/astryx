@@ -131,7 +131,7 @@ export const doc = {
       value: 'icon.list',
       stability: 'experimental',
       description:
-        "The project's icon-set state (status, projectSet, reason), each installed set with its package, license, icon count, default variant, axes, and the icon definitions its `map` covers (built-in, all of Astryx's, and its own), and each withdrawn set with its reason.",
+        "The project's icon-set state (status, projectSet, reason), each installed set with its package, license, icon count, default variant, declared variants, and the icon definitions its `map` covers (built-in, all of Astryx's, and its own), and each withdrawn set with its reason.",
     },
     {
       value: 'icon.use',
@@ -149,7 +149,7 @@ export const doc = {
       value: 'icon.add',
       stability: 'experimental',
       description:
-        "One icon registered in the icon set being authored: the set, its package, the icon {id, export, module}, the variant values when it was added as a variant, the definition mapped to it, the definition file written when it added the set's own, the files written, and whether anything changed.",
+        "One icon registered in the icon set being authored: the set, its package, the icon {id, export, module}, the variant when it was added as one, the definition mapped to it, the definition file written when it added the set's own, the files written, and whether anything changed.",
     },
     {
       value: 'icon.definitionMatches',

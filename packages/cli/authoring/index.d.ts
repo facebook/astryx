@@ -174,14 +174,12 @@ export type {
   // enum
   EnumMemberDoc,
   // icon set
-  IconSetAxes,
-  IconSetAxisValues,
+  IconSetDefault,
   IconSetIcon,
   IconSetMatch,
   IconSetMatchConfidence,
   IconSetSource,
   IconSetVariant,
-  IconSetWeights,
   IconSetAdapter,
 } from './doctypes/types.js';
 export type {PostCodemodHook, DebugConfig} from './config/type.js';

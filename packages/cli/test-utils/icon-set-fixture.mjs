@@ -28,8 +28,8 @@ export function glyphsData() {
   return /** @type {IconSetData} */ ({
     schemaVersion: 1,
     module: '@acme/glyphs',
-    axes: {appearances: ['outline', 'solid'], sizes: [24]},
-    default: {appearance: 'outline', size: 24},
+    variants: ['outline', 'solid'],
+    default: {variant: 'outline'},
     themeMap: 'themeIcons',
     map: {close: 'x', search: 'search'},
     icons: [
@@ -47,7 +47,7 @@ export function glyphsData() {
         id: 'trash',
         export: 'TrashIcon',
         words: ['delete', 'remove', 'bin', 'garbage'],
-        variants: [{appearance: 'solid', export: 'TrashSolidIcon'}],
+        variants: [{variant: 'solid', export: 'TrashSolidIcon'}],
       },
       {
         id: 'home',

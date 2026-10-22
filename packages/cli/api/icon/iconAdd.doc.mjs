@@ -13,7 +13,7 @@ export const doc = {
   summary:
     'Register one icon you chose from a library in the set being authored.',
   description:
-    "Run inside an icon-set package. The caller picks the export; the CLI never searches the library. It proves the export is a runtime component of `from` (a package, a package subpath, or a relative path this package exports), read without running it. With no definition it answers the icon definitions that fit the export, Astryx's and the set's own, and writes nothing. With `definition` it adds the icon (id from its name, `module` the source unless the set's own module already exports it, words from its name and the definition) and maps the definition to it. With `newDefinition` it first writes the set's own definition file. Variant values add the export as a variant of an existing icon. Running it again changes nothing. Experimental: it may change or be removed in a patch release.",
+    "Run inside an icon-set package. The caller picks the export; the CLI never searches the library. It proves the export is a runtime component of `from` (a package, a package subpath, or a relative path this package exports), read without running it. With no definition it answers the icon definitions that fit the export, Astryx's and the set's own, and writes nothing. With `definition` it adds the icon (id from its name, `module` the source unless the set's own module already exports it, words from its name and the definition) and maps the definition to it. With `newDefinition` it first writes the set's own definition file. A `variant` adds the export as that declared variant of an existing icon. Running it again changes nothing. Experimental: it may change or be removed in a patch release.",
   importPath: '@astryxdesign/cli/api',
   signature:
     'iconAdd(exportName: string, options: IconAddOptions): Promise<IconAddResponse | IconDefinitionMatchesResponse>',
@@ -72,16 +72,10 @@ export const doc = {
         "The module's default export is the icon; the set's module must re-export it as `exportName`.",
     },
     {
-      name: 'options.appearance',
+      name: 'options.variant',
       type: 'string',
       description:
-        'Add the export as a variant of an existing icon with this appearance.',
-    },
-    {name: 'options.size', type: 'number', description: "The variant's size."},
-    {
-      name: 'options.weight',
-      type: 'number',
-      description: "The variant's weight.",
+        "Add the export as this variant of an existing icon: one of the set's declared variants, such as `solid`.",
     },
     {
       name: 'options.id',
@@ -113,7 +107,7 @@ export const doc = {
     },
     {
       code: 'ERR_INVALID_ARGUMENT',
-      when: 'the export is data rather than a component, a new definition is named like an Astryx one, or a variant value is outside axes',
+      when: 'the export is data rather than a component, a new definition is named like an Astryx one, or the variant is not one the set declares',
     },
     {code: 'ERR_FILE_EXISTS', when: 'another icon already has the id'},
   ],

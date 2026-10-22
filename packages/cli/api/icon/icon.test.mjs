@@ -101,7 +101,7 @@ describe('icon.search ranking', () => {
       words: ['delete', 'remove', 'bin', 'garbage'],
       definitions: [],
       variants: [
-        {appearance: 'solid', module: '@acme/glyphs', export: 'TrashSolidIcon'},
+        {variant: 'solid', module: '@acme/glyphs', export: 'TrashSolidIcon'},
       ],
       reason: 'word "delete"',
       score: 90,
@@ -252,7 +252,7 @@ describe('icon.detail', () => {
     expect(result.package).toBe('@acme/glyphs');
     expect(result.data.variants).toEqual([
       {
-        appearance: 'solid',
+        variant: 'solid',
         module: '@acme/glyphs',
         export: 'TrashSolidIcon',
         import: "import {TrashSolidIcon} from '@acme/glyphs';",
@@ -293,7 +293,8 @@ describe('icon.list', () => {
       package: '@acme/glyphs',
       license: 'MIT',
       iconCount: 4,
-      default: {appearance: 'outline', size: 24},
+      default: {variant: 'outline'},
+      variants: ['outline', 'solid'],
       project: true,
     });
     expect(set.coverage.builtIn.mapped).toBe(2);

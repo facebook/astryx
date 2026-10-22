@@ -78,25 +78,43 @@ describe('parseIconSetData', () => {
       /Unrecognized key/,
     ],
     [
-      'a variant outside axes',
-      d => (d.icons[2].variants[0].appearance = 'duotone'),
-      /"duotone" is not in axes.appearances/,
+      'an undeclared variant',
+      d => (d.icons[2].variants[0].variant = 'duotone'),
+      /"duotone" is not in variants/,
     ],
     [
-      'a variant size outside axes',
-      d => (d.icons[2].variants[0].size = 20),
-      /size 20 is not in axes.sizes/,
-    ],
-    [
-      'a variant with no axis value',
+      'a variant entry that names no variant',
       d => (d.icons[2].variants = [{export: 'TrashAltIcon'}]),
-      /at least one axis value/,
+      /variant/,
     ],
     [
-      'a default outside axes',
-      d => (d.default.size = 16),
-      /size 16 is not in axes.sizes/,
+      'a variant entry for the default variant',
+      d => (d.icons[2].variants[0].variant = 'outline'),
+      /"outline" is the default/,
     ],
+    [
+      'two exports for one variant',
+      d =>
+        d.icons[2].variants.push({variant: 'solid', export: 'TrashFillIcon'}),
+      /"solid" is listed twice/,
+    ],
+    [
+      'a variant declared twice',
+      d => (d.variants = ['outline', 'solid', 'solid']),
+      /"solid" is listed twice/,
+    ],
+    [
+      'a variant name that is not kebab-case',
+      d => (d.variants = ['outline', 'Solid']),
+      /kebab-case/,
+    ],
+    [
+      'an undeclared default',
+      d => (d.default.variant = 'duotone'),
+      /"duotone" is not in variants/,
+    ],
+    ['a size axis', d => (d.sizes = [24]), /Unrecognized key/],
+    ['the retired axes field', d => (d.axes = {}), /Unrecognized key/],
     [
       'a match with an unknown confidence',
       d =>
@@ -122,11 +140,6 @@ describe('parseIconSetData', () => {
         ]),
       /Unrecognized key/,
     ],
-    [
-      'an inverted weight range',
-      d => (d.axes.weights = {range: {min: 3, max: 1}}),
-      /range.min/,
-    ],
   ])('rejects %s', (_label, change, message) => {
     expect(() => parseIconSetData(dataWith(change))).toThrow(message);
   });
@@ -137,7 +150,7 @@ describe('parseIconSetData', () => {
         {
           set: 'other-set',
           export: 'XMarkIcon',
-          variant: '24/outline',
+          variant: 'outline',
           confidence: 'exact',
         },
         {set: 'other-set', export: 'X', confidence: 'likely'},
@@ -146,15 +159,21 @@ describe('parseIconSetData', () => {
     expect(parseIconSetData(data).icons[0].matches).toHaveLength(2);
   });
 
-  it('accepts a weight inside a declared range', () => {
+  it('accepts the declared variants and a default among them', () => {
+    const data = parseIconSetData(glyphsData());
+    expect(data.variants).toEqual(['outline', 'solid']);
+    expect(data.default).toEqual({variant: 'outline'});
+    expect(data.icons[2].variants).toEqual([
+      {variant: 'solid', export: 'TrashSolidIcon'},
+    ]);
+  });
+
+  it('accepts a set with one look: no variants and no default', () => {
     const data = dataWith(d => {
-      d.axes.weights = {range: {min: 0.5, max: 3}};
-      d.default.weight = 2;
+      delete d.variants;
+      delete d.default;
+      delete d.icons[2].variants;
     });
-    expect(parseIconSetData(data).default).toEqual({
-      appearance: 'outline',
-      size: 24,
-      weight: 2,
-    });
+    expect(parseIconSetData(data).variants).toBeUndefined();
   });
 });

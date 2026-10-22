@@ -64,7 +64,7 @@ describe('discover icon sets', () => {
         name: 'glyphs',
         license: expect.any(String),
         iconCount: glyphsData().icons.length,
-        default: {appearance: 'outline', size: 24},
+        default: {variant: 'outline'},
         definitions: ['close', 'search'],
         command: 'astryx experimental icon <words> --set @acme/glyphs/glyphs',
         installed: true,

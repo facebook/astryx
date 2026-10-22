@@ -77,9 +77,7 @@ export function iconAdd(exportName, options) {
     description,
     words,
     useDefault = false,
-    appearance,
-    size,
-    weight,
+    variant,
     id: givenId,
   } = options ?? {};
   refuseOutsideProject(cwd, 'experimental icon add', 'the icon-set package');
@@ -150,17 +148,12 @@ export function iconAdd(exportName, options) {
       ? {id: known.id, name: known.export}
       : iconNaming(exportName, prefix);
     const id = givenId ?? naming.id;
-    const variantValues = {
-      ...(appearance != null ? {appearance} : {}),
-      ...(size != null ? {size} : {}),
-      ...(weight != null ? {weight} : {}),
-    };
-    const asVariant = Object.keys(variantValues).length > 0;
+    const asVariant = variant != null;
     // The name the set exports it as: `<Name>Icon`, or for a variant the
-    // icon's name with the variant's values.
+    // icon's name with the variant's name.
     const baseIcon = set.data.icons.find(each => each.id === id);
     const setName = asVariant
-      ? variantExportName(baseIcon?.export ?? naming.name, variantValues)
+      ? variantExportName(baseIcon?.export ?? naming.name, variant)
       : naming.name;
     if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/u.test(id)) {
       throw new AstryxError(
@@ -230,7 +223,7 @@ export function iconAdd(exportName, options) {
       const variants = [...(existing.variants ?? [])];
       const same = variants.find(each => each.export === setName);
       if (!same) {
-        variants.push({...variantValues, export: setName});
+        variants.push({variant, export: setName});
         existing.variants = variants;
       }
     } else if (existing) {
@@ -299,9 +292,9 @@ export function iconAdd(exportName, options) {
     } catch (error) {
       undoGenerated();
       undoDefinition();
-      if (error instanceof Error && /is not in axes\./u.test(error.message)) {
+      if (error instanceof Error && /is not in variants/u.test(error.message)) {
         throw new AstryxError(
-          `${error.message} Add the value to "axes" in ${set.name}.icons.json first.`,
+          `${error.message} Declare it in "variants" in ${set.name}.icons.json first.`,
           undefined,
           ERROR_CODES.ERR_INVALID_ARGUMENT,
         );
@@ -319,7 +312,7 @@ export function iconAdd(exportName, options) {
         set: set.name,
         package: set.package,
         icon: {id, export: setName, module},
-        ...(asVariant ? {variant: variantValues} : {}),
+        ...(asVariant ? {variant} : {}),
         definition: mapped,
         ...(created ? {newDefinition: created.name} : {}),
         files,

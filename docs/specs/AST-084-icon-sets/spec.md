@@ -39,8 +39,10 @@ icon, and the CLI verifies it, writes the files, and checks the set.
 
 ## Non-goals
 
-- Choose artwork at render time by appearance, weight, or size; that belongs
-  to the Icon component contract.
+- Choose a variant at render time; that belongs to the Icon component
+  contract.
+- Declare sizes in the data file: icon size is CSS, and the artwork scales
+  with its box.
 - Grow the shared `IconName` set: the built-in definitions are exactly its
   values.
 - Make each icon its own discoverable item: the set is the item.
@@ -93,17 +95,22 @@ discover`, Doctor, and `integration check` and `verify` give the output they
   - `module`: the import specifier every export is read from, the package's
     name or one of its `exports` subpaths;
   - `icons`: each with a unique lower-kebab `id`, an `export`, at least one
-    search word in `words`, optional `variants` (axis values and an export),
+    search word in `words`, optional `variants` (each a declared variant and
+    the export that draws it, at most one export per variant),
     and optional `matches`, reviewed equivalents in other installed sets with
     a confidence of `exact`, `strong`, or `likely`;
   - `map`: icon definition name to icon `id`; one icon MAY draw several
     definitions;
-  - optional `axes`, `default`, `source` (the upstream library and version),
-    `generated` (FR13), `adapter` (FR13), and `themeMap` (FR12).
+  - optional `variants`, the lower-kebab variant names the set declares, and
+    `default.variant`, the one each icon's own `export` draws. A variant is a
+    named look the set supplies (for example outline or solid); size comes
+    from CSS;
+  - optional `source` (the upstream library and version), `generated`
+    (FR13), `adapter` (FR13), and `themeMap` (FR12).
 
   A data file that fails this shape, repeats an `id`, maps a name that is
-  neither an Astryx definition nor one of the set's own, or maps to a missing
-  icon is invalid, and the set is withdrawn from every surface.
+  neither an Astryx definition nor one of the set's own, maps to a missing
+  icon, or names a variant the set does not declare is invalid, and the set is withdrawn from every surface.
 
 - **FR4 — Icon definitions are typed doc files in folders.** An
   `IconDefinitionDoc` (`type: 'icon-definition'`) has a camelCase `name`, a
@@ -178,7 +185,8 @@ discover`, Doctor, and `integration check` and `verify` give the output they
     again, it refreshes the icons and keeps `map` entries whose icon exists.
   - `experimental icon add <Export> --from <module>` verifies the export,
     lists the definitions that fit it, and with `--definition` or
-    `--new-definition` adds it and maps it.
+    `--new-definition` adds it and maps it; `--variant <name>` adds it as
+    that declared variant of an existing icon.
   - `experimental icon map <definition> <icon>` writes one `map` entry;
     `new-definition` writes one of the set's own definitions; `use <set>`
     writes `experimental.iconSet`.

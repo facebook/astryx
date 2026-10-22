@@ -245,7 +245,8 @@ export function computeRequiredFiles(loaded) {
  * @property {{version: string, id: string}[]} codemods
  * @property {string[]} docs
  * @property {string[]} agentDocsAppend
- * @property {string[]} iconSets icon set names
+ * @property {string[]} [iconSets] icon set names; present only when the
+ *   package declares `experimental.iconSets` (experimental)
  */
 
 /**
@@ -292,7 +293,9 @@ export async function collectIdentities(loaded) {
     agentDocsAppend: loaded.agentDocs?.append
       ? [...loaded.agentDocs.append]
       : [],
-    iconSets: [],
+    // Experimental: only a package that declares `experimental.iconSets`
+    // gains the field, so every other package's inventory is unchanged.
+    ...(loaded.iconSets ? {iconSets: []} : {}),
   };
   /** @type {Array<{kind: string, message: string}>} */
   const errors = [];

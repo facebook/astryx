@@ -72,9 +72,7 @@ export function iconRecord(set, icon, definitions) {
       ...(definitions ?? definitionsByIcon(set.data).get(icon.id) ?? []),
     ],
     variants: (icon.variants ?? []).map(variant => ({
-      ...(variant.appearance == null ? {} : {appearance: variant.appearance}),
-      ...(variant.size == null ? {} : {size: variant.size}),
-      ...(variant.weight == null ? {} : {weight: variant.weight}),
+      variant: variant.variant,
       module: variant.module ?? module,
       export: variant.export,
     })),
