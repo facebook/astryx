@@ -239,6 +239,8 @@ export function CommentComposerBase({
   latestValueRef.current = value;
   const isMountedRef = useRef(true);
   const actionPendingRef = useRef(false);
+  const isSubmittingRef = useRef(isSubmitting);
+  isSubmittingRef.current = isSubmitting;
   const imageInputRef = useRef<HTMLInputElement>(null);
   const inputRef = useRef<ChatComposerInputHandle | null>(null);
   // Focus lands once per `focusKey`, when the input attaches: the handle ref
@@ -323,7 +325,15 @@ export function CommentComposerBase({
       setActionError({
         title: t('@astryx.commentComposer.imagesOnly'),
         actionLabel: t('@astryx.commentComposer.chooseImages'),
-        onAction: () => imageInputRef.current?.click(),
+        onAction: () => {
+          // The picker input is never natively disabled, so its click() would
+          // open the file chooser while busy and the busy guard would drop
+          // the pick.
+          if (isSubmittingRef.current || actionPendingRef.current) {
+            return;
+          }
+          imageInputRef.current?.click();
+        },
       });
       return;
     }
@@ -439,10 +449,12 @@ export function CommentComposerBase({
                     accept="image/*"
                     multiple
                     hidden
-                    disabled={isBusy}
                     onChange={event => {
                       const files = Array.from(event.currentTarget.files ?? []);
                       event.currentTarget.value = '';
+                      if (isBusy) {
+                        return;
+                      }
                       beginImageUpload(files);
                     }}
                   />
