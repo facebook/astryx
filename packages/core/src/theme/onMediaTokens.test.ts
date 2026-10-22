@@ -207,6 +207,44 @@ describe('generateOnMediaCSS', () => {
     );
   });
 
+  it('avoids a descendant-local cycle while replaying an adaptation role', () => {
+    const theme = defineTheme({
+      name: 'status-role-media-replay-cycle',
+      adaptations: {
+        rules: [
+          {
+            when: {contrast: 'more'},
+            value: {
+              tokens: {'--color-info': 'var(--color-text-blue)'},
+            },
+          },
+        ],
+      },
+      onDark: {tokens: {'--color-text-blue': 'var(--color-info)'}},
+    });
+    const css = generateOnMediaCSS(theme);
+    const darkBlocks = Array.from(
+      css.matchAll(/\[data-astryx-media="dark"\] \{([\s\S]*?)\n\s*\}/g),
+      match => match[1],
+    );
+
+    expect(darkBlocks.length).toBeGreaterThan(0);
+    for (const block of darkBlocks) {
+      expect(block).not.toContain('--color-info: var(--color-accent);');
+      expect(block).not.toContain('--color-info: var(--color-text-blue);');
+    }
+  });
+
+  it('stringifies a legacy non-string media status source without throwing', () => {
+    const theme = defineTheme({
+      name: 'legacy-media-status-source',
+      onDark: {tokens: {'--color-accent': null as never}},
+    });
+
+    expect(() => generateOnMediaCSS(theme)).not.toThrow();
+    expect(generateOnMediaCSS(theme)).toContain('--color-accent: null;');
+  });
+
   it('emits component override rules', () => {
     const theme = defineTheme({
       name: 'test',

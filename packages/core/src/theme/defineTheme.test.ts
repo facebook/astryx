@@ -61,6 +61,46 @@ describe('defineTheme', () => {
     expect(css).not.toContain('--color-info: var(--color-accent);');
   });
 
+  it('checks the complete generated alias graph for cycles', () => {
+    const theme = defineTheme({
+      name: 'generated-role-cycle',
+      tokens: {
+        '--color-accent': 'var(--color-status-foreground-info)',
+        '--color-text-blue': 'var(--color-info)',
+      },
+    });
+    const css = generateThemeRules(theme).join('\n');
+
+    expect(css).toContain('--color-info: var(--color-accent);');
+    expect(css).not.toContain(
+      '--color-status-foreground-info: var(--color-text-blue);',
+    );
+  });
+
+  it('includes theme-local references in generated alias cycle checks', () => {
+    const css = generateThemeRules({
+      tokens: {'--color-accent': 'var(--local-info-loop)'},
+      localTokens: {'--local-info-loop': 'var(--color-info)'},
+    }).join('\n');
+
+    expect(css).not.toContain('--color-info: var(--color-accent);');
+  });
+
+  it.each([null, 16, false])(
+    'stringifies a legacy non-string status source without throwing (%s)',
+    value => {
+      const theme = defineTheme({
+        name: `legacy-status-source-${String(value)}`,
+        tokens: {'--color-accent': value as never},
+      });
+
+      expect(() => generateThemeRules(theme)).not.toThrow();
+      expect(generateThemeRules(theme).join('\n')).toContain(
+        `--color-accent: ${String(value)};`,
+      );
+    },
+  );
+
   it('emits every source-derived status role without counting it as authored', () => {
     const theme = defineTheme({
       name: 'custom-status-sources',

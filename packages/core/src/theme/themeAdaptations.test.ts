@@ -322,6 +322,53 @@ describe('rule order and writes', () => {
     expect(css.lastIndexOf(authored)).toBeGreaterThan(css.lastIndexOf(alias));
   });
 
+  it('suppresses a root alias that an adaptation would turn into a cycle', () => {
+    const theme = defineTheme({
+      name: 'adaptation-closes-root-role-cycle',
+      tokens: {'--color-accent': '#0074e2'},
+      adaptations: {
+        rules: [
+          {
+            when: {contrast: 'more'},
+            value: {tokens: {'--color-accent': 'var(--color-info)'}},
+          },
+        ],
+      },
+    });
+    const css = generateThemeCSS(theme).component;
+
+    expect(css).toContain('--color-accent: var(--color-info);');
+    expect(css).not.toContain('--color-info: var(--color-accent);');
+  });
+
+  it('checks generated aliases across overlapping adaptation rules', () => {
+    const theme = defineTheme({
+      name: 'overlapping-generated-role-cycle',
+      adaptations: {
+        rules: [
+          {
+            when: {contrast: 'more'},
+            value: {
+              tokens: {
+                '--color-accent': 'var(--color-status-foreground-info)',
+              },
+            },
+          },
+          {
+            when: {pointer: 'coarse'},
+            value: {tokens: {'--color-text-blue': 'var(--color-info)'}},
+          },
+        ],
+      },
+    });
+    const css = generateAdaptationCSS(theme).component;
+
+    expect(css).toContain('--color-info: var(--color-accent);');
+    expect(css).not.toContain(
+      '--color-status-foreground-info: var(--color-text-blue);',
+    );
+  });
+
   it('emits a guarded alias when only an adaptation authors the source', () => {
     const theme = defineTheme({
       name: 'adaptation-only-status-source',

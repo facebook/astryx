@@ -486,9 +486,48 @@ const SCOPED_STATUS_ROLE_DEFAULTS: ReadonlyArray<
   ['--color-on-error-muted', '--color-text-red'],
 ];
 
-/** Whether following authored var() references from source reaches target. */
-function tokenReferences(
-  tokens: Record<string, string>,
+/** CSS custom-property references, including conditional alternatives. */
+type TokenReferenceGraph = Map<string, Set<string>>;
+type TokenValues = Record<string, unknown>;
+
+function tokenReferenceNames(value: unknown): string[] {
+  const text = `${value}`;
+  return Array.from(
+    text.matchAll(/var\(\s*(--[-_a-zA-Z0-9]+)/g),
+    match => match[1],
+  );
+}
+
+function addTokenReferences(
+  graph: TokenReferenceGraph,
+  tokens: TokenValues,
+): void {
+  for (const [token, value] of Object.entries(tokens)) {
+    const references = graph.get(token) ?? new Set<string>();
+    for (const reference of tokenReferenceNames(value)) {
+      references.add(reference);
+    }
+    if (references.size > 0) {
+      graph.set(token, references);
+    }
+  }
+}
+
+function createTokenReferenceGraph(
+  tokenSets: ReadonlyArray<TokenValues | undefined>,
+): TokenReferenceGraph {
+  const graph: TokenReferenceGraph = new Map();
+  for (const tokens of tokenSets) {
+    if (tokens !== undefined) {
+      addTokenReferences(graph, tokens);
+    }
+  }
+  return graph;
+}
+
+/** Whether following var() references from source reaches target. */
+function graphReferences(
+  graph: TokenReferenceGraph,
   source: string,
   target: string,
   seen: ReadonlySet<string> = new Set(),
@@ -499,34 +538,78 @@ function tokenReferences(
   if (seen.has(source)) {
     return false;
   }
-  const value = tokens[source];
-  if (value === undefined) {
-    return false;
-  }
   const nextSeen = new Set(seen).add(source);
-  for (const match of value.matchAll(/var\(\s*(--[-_a-zA-Z0-9]+)/g)) {
-    const reference = match[1];
-    if (
-      reference === target ||
-      tokenReferences(tokens, reference, target, nextSeen)
-    ) {
+  for (const reference of graph.get(source) ?? []) {
+    if (graphReferences(graph, reference, target, nextSeen)) {
       return true;
     }
   }
   return false;
 }
 
+/** Whether adding another possible declaration would introduce a cycle. */
+function wouldCreateUnionCycle(
+  graph: TokenReferenceGraph,
+  token: string,
+  value: unknown,
+): boolean {
+  return tokenReferenceNames(value).some(reference =>
+    graphReferences(graph, reference, token),
+  );
+}
+
+/** Whether a later same-scope declaration would introduce a cycle. */
+function wouldCreateOverrideCycle(
+  graph: TokenReferenceGraph,
+  token: string,
+  value: unknown,
+): boolean {
+  const graphWithoutOverriddenToken = new Map(graph);
+  graphWithoutOverriddenToken.delete(token);
+  return tokenReferenceNames(value).some(reference =>
+    graphReferences(graphWithoutOverriddenToken, reference, token),
+  );
+}
+
+function adaptationTokenSets(
+  rules: ReadonlyArray<ResolvedThemeAdaptationRule>,
+): TokenValues[] {
+  return rules.flatMap(rule =>
+    [rule.tokens, rule.localTokens].filter(
+      (tokens): tokens is Record<string, string> => tokens !== undefined,
+    ),
+  );
+}
+
+function retainedAdaptationTokenSets(theme: ThemeRuleSource): TokenValues[] {
+  if (!('__adaptations' in theme) && !('__adaptationRules' in theme)) {
+    return [];
+  }
+  return adaptationTokenSets(resolvedAdaptationRules(theme as DefinedTheme));
+}
+
 function generatedScopedStatusRoleDefaults(
   tokens: Record<string, string>,
+  localTokens: Record<string, string> = {},
+  conditionalTokenSets: ReadonlyArray<TokenValues> = [],
 ): [string, string][] {
   const entries: [string, string][] = [];
+  const effectiveTokens: TokenValues = {...tokens, ...localTokens};
+  const graph = createTokenReferenceGraph([
+    tokens,
+    localTokens,
+    ...conditionalTokenSets,
+  ]);
   for (const [role, source] of SCOPED_STATUS_ROLE_DEFAULTS) {
+    const alias = `var(${source})`;
     if (
-      tokens[role] === undefined &&
-      tokens[source] !== undefined &&
-      !tokenReferences(tokens, source, role)
+      effectiveTokens[role] === undefined &&
+      effectiveTokens[source] !== undefined &&
+      !wouldCreateUnionCycle(graph, role, alias)
     ) {
-      entries.push([role, `var(${source})`]);
+      entries.push([role, alias]);
+      effectiveTokens[role] = alias;
+      addTokenReferences(graph, {[role]: alias});
     }
   }
   return entries;
@@ -534,10 +617,16 @@ function generatedScopedStatusRoleDefaults(
 
 function tokenEntriesWithScopedStatusRoleDefaults(
   tokens: Record<string, string>,
+  localTokens: Record<string, string> = {},
+  conditionalTokenSets: ReadonlyArray<TokenValues> = [],
 ): [string, string][] {
   return [
     ...Object.entries(tokens),
-    ...generatedScopedStatusRoleDefaults(tokens),
+    ...generatedScopedStatusRoleDefaults(
+      tokens,
+      localTokens,
+      conditionalTokenSets,
+    ),
   ];
 }
 
@@ -549,42 +638,113 @@ function authoredStatusRoleEntries(
   );
 }
 
+interface ConditionalStatusRoleOptions {
+  currentLocalTokens?: Record<string, string>;
+  rootLocalTokens?: Record<string, string>;
+  conditionalTokenSets?: ReadonlyArray<TokenValues>;
+  rootAliases?: ReadonlyArray<readonly [string, string]>;
+  sharedGraph?: TokenReferenceGraph;
+  replayRoles?: ReadonlyArray<readonly [string, unknown]>;
+}
+
 function generatedConditionalStatusRoleDefaults(
   tokens: Record<string, string>,
   rootTokens: Record<string, string>,
   scope: 'adaptation' | 'media',
+  options: ConditionalStatusRoleOptions = {},
 ): [string, string][] {
+  const currentLocalTokens = options.currentLocalTokens ?? {};
+  const rootLocalTokens = options.rootLocalTokens ?? {};
+  const conditionalTokenSets = options.conditionalTokenSets ?? [];
+  const rootAliases =
+    options.rootAliases ??
+    generatedScopedStatusRoleDefaults(
+      rootTokens,
+      rootLocalTokens,
+      conditionalTokenSets,
+    );
+  const effectiveRootTokens: TokenValues = {
+    ...rootTokens,
+    ...rootLocalTokens,
+    ...Object.fromEntries(rootAliases),
+  };
+  const currentTokens: TokenValues = {...tokens, ...currentLocalTokens};
+  const graph =
+    options.sharedGraph ??
+    createTokenReferenceGraph([
+      rootTokens,
+      rootLocalTokens,
+      ...conditionalTokenSets,
+      Object.fromEntries(rootAliases),
+      tokens,
+      currentLocalTokens,
+    ]);
+  const localGraph = createTokenReferenceGraph([tokens, currentLocalTokens]);
   const entries: [string, string][] = [];
-  const effectiveTokens = {...rootTokens, ...tokens};
+
   for (const [role, source] of SCOPED_STATUS_ROLE_DEFAULTS) {
-    const rootRole = rootTokens[role];
-    const rootAllowsDefault =
-      rootRole === undefined || rootRole === `var(${source})`;
-    const rootAlreadyCarriesAlias =
-      rootRole === `var(${source})` ||
-      (rootRole === undefined && rootTokens[source] !== undefined);
+    const alias = `var(${source})`;
+    const rootRole = effectiveRootTokens[role];
+    const rootAllowsDefault = rootRole === undefined || rootRole === alias;
+    const rootAlreadyCarriesAlias = rootRole === alias;
     if (
-      tokens[role] === undefined &&
-      tokens[source] !== undefined &&
-      rootAllowsDefault &&
-      (scope === 'media' || !rootAlreadyCarriesAlias) &&
-      !tokenReferences(effectiveTokens, source, role)
+      currentTokens[role] !== undefined ||
+      currentTokens[source] === undefined ||
+      !rootAllowsDefault ||
+      (scope === 'adaptation' && rootAlreadyCarriesAlias) ||
+      wouldCreateUnionCycle(graph, role, alias)
     ) {
-      entries.push([role, `var(${source})`]);
+      continue;
     }
+
+    const tentativeLocalGraph = createTokenReferenceGraph([]);
+    for (const [token, references] of localGraph) {
+      tentativeLocalGraph.set(token, new Set(references));
+    }
+    addTokenReferences(tentativeLocalGraph, {[role]: alias});
+    const unsafeReplay = (options.replayRoles ?? []).some(
+      ([replayRole, replayValue]) =>
+        replayRole === role &&
+        wouldCreateOverrideCycle(tentativeLocalGraph, replayRole, replayValue),
+    );
+    if (unsafeReplay) {
+      continue;
+    }
+
+    entries.push([role, alias]);
+    currentTokens[role] = alias;
+    addTokenReferences(graph, {[role]: alias});
+    addTokenReferences(localGraph, {[role]: alias});
   }
   return entries;
 }
 
-function tokenEntriesWithConditionalStatusRoleDefaults(
+function withoutUnsafeMediaReplayAliases(
+  aliases: [string, string][],
   tokens: Record<string, string>,
-  rootTokens: Record<string, string>,
-  scope: 'adaptation' | 'media',
+  localTokens: Record<string, string> | undefined,
+  replayRoles: ReadonlyArray<readonly [string, unknown]>,
 ): [string, string][] {
-  return [
-    ...Object.entries(tokens),
-    ...generatedConditionalStatusRoleDefaults(tokens, rootTokens, scope),
-  ];
+  let safeAliases = aliases;
+  for (;;) {
+    const localGraph = createTokenReferenceGraph([
+      tokens,
+      localTokens,
+      Object.fromEntries(safeAliases),
+    ]);
+    const nextAliases = safeAliases.filter(
+      ([role]) =>
+        !replayRoles.some(
+          ([replayRole, replayValue]) =>
+            replayRole === role &&
+            wouldCreateOverrideCycle(localGraph, replayRole, replayValue),
+        ),
+    );
+    if (nextAliases.length === safeAliases.length) {
+      return safeAliases;
+    }
+    safeAliases = nextAliases;
+  }
 }
 
 /** The `:scope` token block for portable and theme-local token values. */
@@ -663,7 +823,11 @@ export function generateThemeRules(
     theme,
     '',
     sink,
-    tokenEntriesWithScopedStatusRoleDefaults(theme.tokens),
+    tokenEntriesWithScopedStatusRoleDefaults(
+      theme.tokens,
+      theme.localTokens,
+      retainedAdaptationTokenSets(theme),
+    ),
   );
   if (tokenRules !== null) {
     parts.push(tokenRules);
@@ -1180,6 +1344,20 @@ export function generateOnMediaCSS(
   const parts: string[] = [];
   const scopeSelector = themeScopeStart(theme.name);
   const sink = diagnosticSink(warnings);
+  const rules = resolvedAdaptationRules(theme);
+  const conditionalTokenSets = adaptationTokenSets(rules);
+  const rootAliases = generatedScopedStatusRoleDefaults(
+    theme.tokens,
+    theme.localTokens,
+    conditionalTokenSets,
+  );
+  const replayRoles = rules.flatMap(rule =>
+    authoredStatusRoleEntries(rule.tokens),
+  );
+  const mediaStatusRoleDefaults = new Map<
+    'dark' | 'light',
+    [string, string][]
+  >();
 
   for (const surface of ['dark', 'light'] as const) {
     const onMedia = surface === 'dark' ? theme.__onDark : theme.__onLight;
@@ -1190,11 +1368,27 @@ export function generateOnMediaCSS(
 
     // Token overrides. MediaTheme writes on a descendant surface, so a source
     // alias must be local unless an authored root/adaptation role owns it.
-    const tokenEntries = tokenEntriesWithConditionalStatusRoleDefaults(
+    const statusRoleDefaults = withoutUnsafeMediaReplayAliases(
+      generatedConditionalStatusRoleDefaults(
+        onMedia.tokens,
+        theme.tokens,
+        'media',
+        {
+          rootLocalTokens: theme.localTokens,
+          conditionalTokenSets,
+          rootAliases,
+          replayRoles,
+        },
+      ),
       onMedia.tokens,
-      theme.tokens,
-      'media',
+      undefined,
+      replayRoles,
     );
+    mediaStatusRoleDefaults.set(surface, statusRoleDefaults);
+    const tokenEntries = [
+      ...Object.entries(onMedia.tokens),
+      ...statusRoleDefaults,
+    ];
     if (tokenEntries.length > 0) {
       const declarations = joinDeclarations(
         tokenEntries,
@@ -1227,7 +1421,7 @@ export function generateOnMediaCSS(
   }
 
   const adaptationMediaRoleBlocks: string[] = [];
-  for (const [index, rule] of resolvedAdaptationRules(theme).entries()) {
+  for (const [index, rule] of rules.entries()) {
     const authoredRoles = authoredStatusRoleEntries(rule.tokens);
     if (authoredRoles.length === 0) {
       continue;
@@ -1239,11 +1433,7 @@ export function generateOnMediaCSS(
         continue;
       }
       const generatedRoles = new Set(
-        generatedConditionalStatusRoleDefaults(
-          onMedia.tokens,
-          theme.tokens,
-          'media',
-        ).map(([role]) => role),
+        (mediaStatusRoleDefaults.get(surface) ?? []).map(([role]) => role),
       );
       const restorationEntries = authoredRoles.filter(([role]) =>
         generatedRoles.has(role),
@@ -1283,21 +1473,15 @@ export function generateOnMediaCSS(
 /** Generate only the declarations one adaptation rule writes. */
 function generateAdaptationRuleRules(
   rule: ThemeRuleSource,
-  rootTokens: Record<string, string>,
   location: string,
   sink: DiagnosticSink,
+  statusRoleDefaults: [string, string][],
 ): string[] {
   const parts: string[] = [];
-  const tokens = tokenBlock(
-    rule,
-    location,
-    sink,
-    tokenEntriesWithConditionalStatusRoleDefaults(
-      rule.tokens,
-      rootTokens,
-      'adaptation',
-    ),
-  );
+  const tokens = tokenBlock(rule, location, sink, [
+    ...Object.entries(rule.tokens),
+    ...statusRoleDefaults,
+  ]);
   if (tokens !== null) {
     parts.push(tokens);
   }
@@ -1363,6 +1547,33 @@ export function generateAdaptationCSS(
     hasHeadingComponentRules(rule.components),
   );
 
+  const conditionalTokenSets = adaptationTokenSets(rules);
+  const rootAliases = generatedScopedStatusRoleDefaults(
+    theme.tokens,
+    theme.localTokens,
+    conditionalTokenSets,
+  );
+  const sharedStatusRoleGraph = createTokenReferenceGraph([
+    theme.tokens,
+    theme.localTokens,
+    ...conditionalTokenSets,
+    Object.fromEntries(rootAliases),
+  ]);
+  const statusRoleDefaults = rules.map(rule =>
+    generatedConditionalStatusRoleDefaults(
+      rule.tokens,
+      theme.tokens,
+      'adaptation',
+      {
+        currentLocalTokens: rule.localTokens,
+        rootLocalTokens: theme.localTokens,
+        conditionalTokenSets,
+        rootAliases,
+        sharedGraph: sharedStatusRoleGraph,
+      },
+    ),
+  );
+
   // Emit ordinary rule writes first, without inherited Heading weight
   // fallbacks. Carrying an earlier weight into a later block makes that value
   // active whenever the later condition matches, even if the earlier condition
@@ -1371,9 +1582,9 @@ export function generateAdaptationCSS(
   for (const [index, rule] of rules.entries()) {
     const parts = generateAdaptationRuleRules(
       rule,
-      theme.tokens,
       `adaptations[${index}].`,
       sink,
+      statusRoleDefaults[index],
     );
     if (parts.length === 0) {
       continue;
