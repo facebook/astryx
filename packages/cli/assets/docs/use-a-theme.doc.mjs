@@ -39,7 +39,7 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: "Customize a package theme with `defineTheme({extends: importedTheme, ...})`, then build and add that local theme. Use `theme eject` only when you want an independent source fork that no longer receives the package owner's updates. For the full authoring guide, see {@link generic:author-a-theme}.",
+          text: 'Customize a package theme with `defineTheme({extends: importedTheme, ...})`, then build and add that local theme. Use `theme eject` only when you want an independent source fork that no longer receives the package owner\'s updates. For the full authoring guide, see {@link generic:author-a-theme}.',
         },
       ],
     },
@@ -71,47 +71,19 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: "Install the theme package you want with `{@pm install @astryxdesign/theme-<name>}`, then import its slug with `theme add <slug>`. The CLI imports the package's built outputs for you.",
+          text: 'Install the theme package you want with `{@pm install @astryxdesign/theme-<name>}`, then import its slug with `theme add <slug>`. The CLI imports the package\'s built outputs for you.',
         },
         {
           type: 'table',
           headers: ['Theme', 'Add command', 'Description'],
           rows: [
-            [
-              'Neutral',
-              '{@command theme add neutral}',
-              'Muted, minimal aesthetic with Figtree typography. A good starting point.',
-            ],
-            [
-              'Butter',
-              'astryx theme add butter',
-              'Golden, buttery surfaces with blue accents; Sarina + Outfit type.',
-            ],
-            [
-              'Chocolate',
-              'astryx theme add chocolate',
-              'Warm brown tones and cozy beige; Fraunces + Albert Sans type.',
-            ],
-            [
-              'Gothic',
-              'astryx theme add gothic',
-              'Dark-only atmospheric theme; deep blue-gray surfaces, distressed display type.',
-            ],
-            [
-              'Matcha',
-              'astryx theme add matcha',
-              'Earthy greens; DM Sans + Playwrite US Trad type.',
-            ],
-            [
-              'Stone',
-              'astryx theme add stone',
-              'Warm stone and slate tones; Montserrat + Figtree type.',
-            ],
-            [
-              'Y2K',
-              'astryx theme add y2k',
-              'Playful Y2K pop; periwinkle body, holographic accents, Poppins + Crimson Text.',
-            ],
+            ['Neutral', '{@command theme add neutral}', 'Muted, minimal aesthetic with Figtree typography. A good starting point.'],
+            ['Butter', 'astryx theme add butter', 'Golden, buttery surfaces with blue accents; Sarina + Outfit type.'],
+            ['Chocolate', 'astryx theme add chocolate', 'Warm brown tones and cozy beige; Fraunces + Albert Sans type.'],
+            ['Gothic', 'astryx theme add gothic', 'Dark-only atmospheric theme; deep blue-gray surfaces, distressed display type.'],
+            ['Matcha', 'astryx theme add matcha', 'Earthy greens; DM Sans + Playwrite US Trad type.'],
+            ['Stone', 'astryx theme add stone', 'Warm stone and slate tones; Montserrat + Figtree type.'],
+            ['Y2K', 'astryx theme add y2k', 'Playful Y2K pop; periwinkle body, holographic accents, Poppins + Crimson Text.'],
           ],
         },
         {
@@ -187,7 +159,7 @@ export const docs = {
           type: 'code',
           lang: 'tsx',
           label: 'Dark sidebar with light content',
-          code: '<Theme theme={lightTheme} mode="light">\n  <Layout\n    header={<LayoutHeader>...</LayoutHeader>}\n    start={\n      <Theme theme={darkTheme} mode="dark">\n        <LayoutPanel>{/* Dark sidebar */}</LayoutPanel>\n      </Theme>\n    }\n    content={<LayoutContent>{/* Light content */}</LayoutContent>}\n  />\n</Theme>',
+          code: "<Theme theme={lightTheme} mode=\"light\">\n  <Layout\n    header={<LayoutHeader>...</LayoutHeader>}\n    start={\n      <Theme theme={darkTheme} mode=\"dark\">\n        <LayoutPanel>{/* Dark sidebar */}</LayoutPanel>\n      </Theme>\n    }\n    content={<LayoutContent>{/* Light content */}</LayoutContent>}\n  />\n</Theme>",
         },
       ],
     },
@@ -202,36 +174,12 @@ export const docs = {
           type: 'table',
           headers: ['', 'Runtime (source)', 'Built'],
           rows: [
-            [
-              'Import (published theme)',
-              '@astryxdesign/theme-{name}',
-              '@astryxdesign/theme-{name}/built + theme.css',
-            ],
-            [
-              'Import (custom theme)',
-              'defineTheme() directly',
-              'Built .js + .css from `{@command theme build}`',
-            ],
-            [
-              'How it works',
-              'useInsertionEffect injects <style> at hydration',
-              'Pre-compiled .css file loaded with the page',
-            ],
-            [
-              'Component overrides',
-              'Injected client-only',
-              'In static CSS: present during SSR',
-            ],
-            [
-              'SSR safe',
-              'Tokens yes, component overrides flash on hydration',
-              'Fully SSR safe: no flash',
-            ],
-            [
-              'Best for',
-              'Authoring input for `{@command theme build}`',
-              'App wiring, in development and production',
-            ],
+            ['Import (published theme)', '@astryxdesign/theme-{name}', '@astryxdesign/theme-{name}/built + theme.css'],
+            ['Import (custom theme)', 'defineTheme() directly', 'Built .js + .css from `{@command theme build}`'],
+            ['How it works', 'useInsertionEffect injects <style> at hydration', 'Pre-compiled .css file loaded with the page'],
+            ['Component overrides', 'Injected client-only', 'In static CSS: present during SSR'],
+            ['SSR safe', 'Tokens yes, component overrides flash on hydration', 'Fully SSR safe: no flash'],
+            ['Best for', 'Authoring input for `{@command theme build}`', 'App wiring, in development and production'],
           ],
         },
         {
