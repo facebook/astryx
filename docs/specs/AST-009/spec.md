@@ -169,8 +169,10 @@ When real-AT follow-up runs, its pairings are selected from the outcome and supp
   checked-in scenarios (`Read-only dialog focus`; `CommandPalette / Audit
 Matrix`) and pairings stay valid for a real-AT run and hold no release.
 - `spec:AST-086` status-announcement fixes merge on FR4 evidence (FR17, FR19).
-- `spec:AST-056`, `spec:AST-021`, `spec:AST-086`, and `component:FieldStatus`
-  stop describing real-AT receipts as a release boundary or a pending gate.
+- `spec:AST-001`, `spec:AST-020`, `spec:AST-021`, `spec:AST-056`, `spec:AST-086`,
+  `component:FieldStatus`, `module:Table/useTableRowStatus`, and
+  `module:Table/useTableColumnResize` describe real-AT observation as
+  recommended follow-up, not a merge or release requirement.
 - No contributing record owns assistive-technology verification. When one is
   authored, it links back to `spec:AST-009` rather than copying its policy.
 
