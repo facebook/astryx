@@ -322,7 +322,9 @@ export interface DropdownMenuItemData extends Pick<
    * `TreeListItemData`). Omit it and the row is keyed by position, which is
    * correct for a fixed menu; set it when `items` can reorder, filter, or grow,
    * so a row keeps its DOM node — and therefore keyboard focus — as the array
-   * changes around it.
+   * changes around it. The bottom sheet also needs it on a row with nested
+   * `items` whose label another row at its level shares, to find that row's
+   * level again while it shows.
    */
   id?: string;
   /** Primary label content. */
