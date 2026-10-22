@@ -71,6 +71,7 @@ import {
   rootProblem,
 } from '../../foundation/integrations/validate-contributions.mjs';
 import {formatCliCommand} from '../../foundation/env/package-manager.mjs';
+import {publicImportIssues} from '../../foundation/integrations/public-imports.mjs';
 
 export {validateLoadedIntegration, isListedIssue};
 
@@ -93,6 +94,8 @@ export {validateLoadedIntegration, isListedIssue};
  *   may not fail `--strict` until the next (architecture:cli-surface INV35);
  *   `integration verify` still fails on a package.json npm cannot pack.
  * @property {import('../../foundation/integrations/integrations.mjs').LoadedIntegration} [integration]
+ * @property {import('./validate-integration.type.mjs').PublicImportsReport} [publicImports]
+ *   what the public-import check could not judge
  */
 
 /**
@@ -445,6 +448,17 @@ async function validateAtPackageDir(
       packageDir,
     )),
   );
+  // What the package tells apps to import, read from source: package.json
+  // `exports`, docs, examples and template imports.
+  const publicImports = await publicImportIssues(packageDir, loaded);
+  issues.push(...publicImports.issues);
+  // Each finding is a note until the next minor makes it a warning.
+  // Listed now, a warning from the next minor release: `next`.
+  if (publicImports.notes.length > 0)
+    (result.notes ??= []).push(
+      ...publicImports.notes.map(note => ({...note, next: true})),
+    );
+  result.publicImports = publicImports.report;
   if (scanUnreachable) {
     issues.push(
       ...(await findUnreachableContributionIssues(
@@ -758,6 +772,10 @@ export async function validateIntegration(pkg, options = {}) {
       ...(docTypes ? {docTypes} : {}),
       ...(docNames ? {docNames} : {}),
       ...(blockComponents ? {blockComponents} : {}),
+      // What the public-import check could not judge: listed, never failed on.
+      ...(result.found && result.publicImports
+        ? {publicImports: result.publicImports}
+        : {}),
     },
   };
 }

@@ -60,6 +60,25 @@ const SHADCN_ENTRY = createRequire(
   path.join(DOCSITE_ROOT, 'package.json'),
 ).resolve('shadcn');
 
+// Before it writes files, ShadCN installs an item's npm dependencies with the
+// project's package manager. These tests check what ShadCN writes, not what a
+// registry install resolves, so no-op package managers first on PATH keep them
+// off the network. A real install of the items' pinned packages downloaded the
+// full registry metadata for @astryxdesign/core and could stall past the spawn
+// timeout.
+const NOOP_PACKAGE_MANAGERS = mkdtempSync(
+  path.join(tmpdir(), 'astryx-noop-pm-'),
+);
+for (const name of ['pnpm', 'npm', 'yarn', 'bun']) {
+  writeFileSync(path.join(NOOP_PACKAGE_MANAGERS, name), '#!/bin/sh\nexit 0\n', {
+    mode: 0o755,
+  });
+}
+const SHADCN_ENV = {
+  ...process.env,
+  PATH: `${NOOP_PACKAGE_MANAGERS}${path.delimiter}${process.env.PATH ?? ''}`,
+};
+
 const packages = [
   {
     name: '@astryxdesign/cli',
@@ -538,7 +557,7 @@ describe('buildShadcnRegistry', () => {
       await execFileAsync(
         process.execPath,
         [SHADCN_ENTRY, 'add', itemPath, '--yes'],
-        {cwd: project, timeout: 30_000},
+        {cwd: project, timeout: 30_000, env: SHADCN_ENV},
       );
 
       expect(
@@ -631,7 +650,7 @@ describe('buildShadcnRegistry', () => {
       await execFileAsync(
         process.execPath,
         [SHADCN_ENTRY, 'add', itemPath, '--yes'],
-        {cwd: project, timeout: 30_000},
+        {cwd: project, timeout: 30_000, env: SHADCN_ENV},
       );
 
       const sourcePath = path.join(
@@ -712,7 +731,7 @@ describe('buildShadcnRegistry', () => {
       await execFileAsync(
         process.execPath,
         [SHADCN_ENTRY, 'add', itemPath, '--yes'],
-        {cwd: project, timeout: 30_000},
+        {cwd: project, timeout: 30_000, env: SHADCN_ENV},
       );
       await new Promise((resolve, reject) => {
         server.once('error', reject);
@@ -861,7 +880,7 @@ describe('buildShadcnRegistry', () => {
       await execFileAsync(
         process.execPath,
         [SHADCN_ENTRY, 'add', itemPath, '--yes'],
-        {cwd: project, timeout: 30_000},
+        {cwd: project, timeout: 30_000, env: SHADCN_ENV},
       );
 
       expect(
@@ -942,7 +961,7 @@ describe('buildShadcnRegistry', () => {
           cwd: project,
           timeout: 30_000,
           env: {
-            ...process.env,
+            ...SHADCN_ENV,
             NO_PROXY: '127.0.0.1,localhost',
             no_proxy: '127.0.0.1,localhost',
           },
