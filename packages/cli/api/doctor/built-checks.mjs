@@ -195,6 +195,7 @@ const ICON_PACKAGES = [
  * @property {boolean} truncated whether the file limit cut the read short
  * @property {number} unread source files over the size limit, unreadable, or
  *   not parsed
+ * @property {string[]} unreadFiles those files, relative to the path
  * @property {number} missingLinks local files a built page links that are not
  *   there
  */
@@ -270,7 +271,7 @@ function withoutComments(text, ext = '', parsed = commentRanges(text, ext)) {
  * @param {string} ext
  * @returns {Array<[number, number]> | null}
  */
-function commentRanges(text, ext) {
+function parseSource(text, ext) {
   const typescript = /^\.[cm]?tsx?$/.test(ext);
   const jsx = ext === '.tsx' || !typescript;
   const base = [...(typescript ? ['typescript'] : []), ...(jsx ? ['jsx'] : [])];
@@ -282,20 +283,85 @@ function commentRanges(text, ext) {
       : [['jsx', 'flow', ['decorators', {decoratorsBeforeExport: true}]]]),
   ])) {
     try {
-      const ast = parseModule(text, {
+      return parseModule(text, {
         sourceType: 'unambiguous',
         plugins,
         errorRecovery: true,
       });
-      return (ast.comments ?? []).map(
-        (/** @type {any} */ c) =>
-          /** @type {[number, number]} */ ([c.start, c.end]),
-      );
     } catch {
       // try the next set of syntax plugins
     }
   }
   return null;
+}
+
+/**
+ * The comment ranges `@babel/parser` finds in a source file, or null when it
+ * cannot parse the file.
+ * @param {string} text
+ * @param {string} ext
+ * @param {any} [ast]
+ * @returns {Array<[number, number]> | null}
+ */
+function commentRanges(text, ext, ast = parseSource(text, ext)) {
+  if (!ast) return null;
+  return (ast.comments ?? []).map(
+    (/** @type {any} */ c) =>
+      /** @type {[number, number]} */ ([c.start, c.end]),
+  );
+}
+
+/**
+ * The imports a parsed source file makes, read from its syntax tree so that
+ * an import written in a string, a template literal or JSX text (a code
+ * sample on a page) is not one: import and export-from declarations, and
+ * `require()` and `import()` of a string.
+ * @param {any} ast
+ * @returns {{spec: string, names: string[], at: number}[]}
+ */
+function astImports(ast) {
+  /** @type {{spec: string, names: string[], at: number}[]} */
+  const found = [];
+  for (const node of ast.program.body) {
+    if (node.type === 'ImportDeclaration') {
+      found.push({
+        spec: node.source.value,
+        names: node.specifiers.map(
+          (/** @type {any} */ each) => each.local.name,
+        ),
+        at: node.start,
+      });
+    } else if (
+      (node.type === 'ExportNamedDeclaration' ||
+        node.type === 'ExportAllDeclaration') &&
+      node.source
+    ) {
+      found.push({spec: node.source.value, names: [], at: node.start});
+    }
+  }
+  /** @type {any[]} */
+  const stack = [ast.program];
+  while (stack.length > 0) {
+    const node = stack.pop();
+    if (!node || typeof node.type !== 'string') continue;
+    if (
+      node.type === 'CallExpression' &&
+      (node.callee?.type === 'Import' ||
+        (node.callee?.type === 'Identifier' &&
+          node.callee.name === 'require')) &&
+      node.arguments?.[0]?.type === 'StringLiteral'
+    ) {
+      found.push({spec: node.arguments[0].value, names: [], at: node.start});
+    }
+    for (const key of Object.keys(node)) {
+      if (key === 'loc' || key.endsWith('Comments')) continue;
+      const value = node[key];
+      if (Array.isArray(value)) {
+        for (const child of value) stack.push(child);
+      } else if (value && typeof value === 'object') stack.push(value);
+    }
+  }
+  return found;
 }
 
 /**
@@ -481,6 +547,7 @@ export function scanBuilt(target, packages) {
     findings: [],
     truncated,
     unread: 0,
+    unreadFiles: [],
     missingLinks: missing,
   };
   const imported = new Set();
@@ -496,7 +563,10 @@ export function scanBuilt(target, packages) {
     if (!isSource && !isBuilt) continue;
     const raw = read();
     if (raw == null) {
-      if (isSource) scan.unread++;
+      if (isSource) {
+        scan.unread++;
+        scan.unreadFiles.push(rel);
+      }
       continue;
     }
     if (isBuilt) {
@@ -527,12 +597,13 @@ export function scanBuilt(target, packages) {
     }
     if (!isSource) continue;
     scan.sourceFiles++;
-    const ranges = commentRanges(raw, ext);
+    const ast = parseSource(raw, ext);
+    const ranges = commentRanges(raw, ext, ast);
     const text = withoutComments(raw, ext, ranges);
     const astryxNames = new Set();
     const iconNames = new Set();
     let fileImports = 0;
-    for (const {spec, names, at} of importsOf(text)) {
+    for (const {spec, names, at} of ast ? astImports(ast) : importsOf(text)) {
       if (isAstryxSpecifier(spec, packages)) {
         fileImports++;
         imported.add(
@@ -572,11 +643,13 @@ export function scanBuilt(target, packages) {
     // count, but no finding is read from it.
     if (ranges === null && (JSX_EXT.has(ext) || /\.[cm]?js$/u.test(ext))) {
       scan.unread++;
+      scan.unreadFiles.push(rel);
       continue;
     }
     const jsx = /\.[cm]?js$/u.test(ext) ? hasJsx(text) : false;
     if (jsx === null) {
       scan.unread++;
+      scan.unreadFiles.push(rel);
       continue;
     }
     if (JSX_EXT.has(ext) || jsx) {
@@ -668,6 +741,15 @@ export function checkBuilt(target, {cwd, packages}) {
             message: `Read ${read}: no import from an Astryx package, no Astryx component, and no Astryx styles, so this output does not use Astryx.`,
             fix: `Rebuild the page from an Astryx template: run \`${formatCliCommand('build "<what the page is>"', cwd)}\`, scaffold the template it names, and fill it with Astryx components. Do not deliver this output.`,
           };
+  const unreadNames =
+    scan.unreadFiles.slice(0, SHOWN).join(', ') +
+    (scan.unreadFiles.length > SHOWN
+      ? ` and ${scan.unreadFiles.length - SHOWN} more`
+      : '');
+  const unreadNote =
+    scan.unread > 0
+      ? ` ${plural(scan.unread, 'source file')} went unread (over ${BUILT_FILE_MAX_MB} MB, unreadable or not parsed), so ${scan.unread === 1 ? 'it was' : 'they were'} not inspected: ${unreadNames}.`
+      : '';
   /** @type {import('./doctor.type.mjs').DoctorCheck} */
   let purity;
   if (scan.jsxFiles === 0) {
@@ -675,7 +757,7 @@ export function checkBuilt(target, {cwd, packages}) {
       id: 'built-astryx-purity',
       label: 'Source uses Astryx well',
       status: 'info',
-      message: `Not inspected: ${plural(scan.sourceFiles, 'source file')} under ${target} and no JSX among them, so components, icons and styles were not checked. A bundle or other build output is not source.`,
+      message: `Not inspected: ${plural(scan.sourceFiles, 'source file')} under ${target} and no JSX read among them, so components, icons and styles were not checked. A bundle or other build output is not source.${unreadNote}`,
       fix: `Run \`${formatCliCommand('doctor --built <project folder>', cwd)}\` on the folder that holds the page's source.`,
     };
   } else if (
@@ -686,7 +768,7 @@ export function checkBuilt(target, {cwd, packages}) {
       id: 'built-astryx-purity',
       label: 'Source uses Astryx well',
       status: 'info',
-      message: `Not fully inspected: ${plural(scan.jsxFiles, 'source file')} with JSX had no finding, but ${[scan.truncated ? `only the first ${BUILT_FILE_LIMIT} files were read` : null, scan.unread > 0 ? `${plural(scan.unread, 'source file')} over ${BUILT_FILE_MAX_MB} MB, unreadable or unparsed went unread` : null].filter(Boolean).join(' and ')}.`,
+      message: `Not fully inspected: ${plural(scan.jsxFiles, 'source file')} with JSX had no finding${scan.truncated ? `, but only the first ${BUILT_FILE_LIMIT} files were read` : ''}.${unreadNote}`,
       fix: `Run \`${formatCliCommand('doctor --built <folder>', cwd)}\` on the folder that holds the page's own source.`,
     };
   } else if (scan.findings.length === 0) {
@@ -717,7 +799,7 @@ export function checkBuilt(target, {cwd, packages}) {
       id: 'built-astryx-purity',
       label: 'Source uses Astryx well',
       status: 'warn',
-      message: `${plural(scan.findings.length, 'finding')} (${counts}): ${shown}${more}.`,
+      message: `${plural(scan.findings.length, 'finding')} (${counts}): ${shown}${more}.${unreadNote}${scan.truncated ? ` Only the first ${BUILT_FILE_LIMIT} files were read.` : ''}`,
       fix: `Replace each with the Astryx component, icon surface, prop or token it names; \`${formatCliCommand('docs is-my-code-good', cwd)}\` has the full rubric. Keep a raw element only where its native meaning is needed.`,
     };
   }

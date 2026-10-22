@@ -425,6 +425,42 @@ describe('--built edge cases', () => {
     expect(check('dist').usage.status).toBe('fail');
   });
 
+  it('does not count an import written only in a string or JSX text', () => {
+    write({
+      'src/Page.tsx': [
+        "const sample = `import {Button} from '@astryxdesign/core/Button';`;",
+        'export const Page = () => (',
+        "  <pre>import {Text} from '@astryxdesign/core/Text';</pre>",
+        ');',
+        '',
+      ].join('\n'),
+    });
+    expect(check('src').usage.status).toBe('fail');
+  });
+
+  it('ignores a stylesheet link inside an HTML comment', () => {
+    write({
+      'out/index.html':
+        '<!-- <link rel="stylesheet" href="./astryx.css"> --><!-- <link rel="stylesheet" href="./gone.css"> --><p>x</p>',
+      'out/astryx.css': '@layer astryx-base{.x{color:red}}',
+    });
+    expect(check('out/index.html').usage.status).toBe('fail');
+  });
+
+  it('names unread source files in purity, with findings and without JSX', () => {
+    write({
+      'src/Page.tsx': 'export const Page = () => <div>Hi</div>;\n',
+      'src/Broken.tsx': 'export const B = () => <div>{</div>;\n@@ enum ;\n',
+    });
+    const withFindings = check('src').purity;
+    expect(withFindings.status).toBe('warn');
+    expect(withFindings.message).toContain('not inspected: Broken.tsx');
+    fs.rmSync(path.join(dir, 'src', 'Page.tsx'));
+    const none = check('src').purity;
+    expect(none.status).toBe('info');
+    expect(none.message).toContain('Broken.tsx');
+  });
+
   it('survives a file with more findings than a call can spread', () => {
     write({
       'src/Rows.tsx': `export const Rows = () => (\n<>\n${'<p/>\n'.repeat(200_000)}</>);\n`,

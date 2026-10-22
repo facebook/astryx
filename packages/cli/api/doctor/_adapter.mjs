@@ -495,7 +495,8 @@ export function readBuiltPath(target) {
     // A built page carries its styles and scripts in files it links: read
     // the local ones beside it, as built output.
     if (/\.html?$/iu.test(target)) {
-      const page = reader(target)() ?? '';
+      // A link inside an HTML comment is not one the page loads.
+      const page = (reader(target)() ?? '').replace(/<!--[\s\S]*?-->/g, ' ');
       const seen = new Set([path.resolve(target)]);
       for (const match of page.matchAll(
         /<(?:link|script)\b[^>]*?\b(?:href|src)\s*=\s*(?:"([^"#?]+)|'([^'#?]+)|([^\s"'#?>]+))/giu,
