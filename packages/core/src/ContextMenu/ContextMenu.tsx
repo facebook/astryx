@@ -466,16 +466,18 @@ export function ContextMenu({
     if (!isOpen || usesBottomSheet) {
       return;
     }
-    // Inside a shadow root, even a closed one, the document sees a press on
-    // the menu as a press on the shadow host, so presses in the menu's own
-    // tree are judged by a listener on that tree.
+    // Inside a shadow root, even a closed or nested one, the document sees a
+    // press on the menu as a press on an outer shadow host, so the menu's own
+    // tree judges its presses first and the document skips those.
     const tree = listRef.current?.getRootNode();
     const shadow = tree instanceof ShadowRoot ? tree : null;
+    const judged = new WeakSet<Event>();
     const handleClickOutside = (e: Event) => {
       const menu = listRef.current;
-      if (e.currentTarget === document && e.target === shadow?.host) {
+      if (judged.has(e)) {
         return;
       }
+      judged.add(e);
       if (menu && !menu.contains(e.target as Node)) {
         closeMenu();
       }

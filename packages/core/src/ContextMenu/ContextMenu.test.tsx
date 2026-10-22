@@ -346,13 +346,19 @@ describe('ContextMenu', () => {
     expect(HTMLElement.prototype.hidePopover).toHaveBeenCalled();
   });
 
-  it.each(['open', 'closed'] as const)(
-    'stays open for a press on the menu inside a %s shadow root',
+  it.each(['open', 'closed', 'nested'] as const)(
+    'judges presses once inside a %s shadow root',
     mode => {
       const host = document.createElement('div');
       document.body.append(host);
+      let root = host.attachShadow({mode: mode === 'open' ? 'open' : 'closed'});
+      if (mode === 'nested') {
+        const innerHost = document.createElement('div');
+        root.append(innerHost);
+        root = innerHost.attachShadow({mode: 'closed'});
+      }
       const container = document.createElement('div');
-      host.attachShadow({mode}).append(container);
+      root.append(container);
       try {
         render(
           <ContextMenu items={[{label: 'Item 1'}]}>
@@ -361,11 +367,13 @@ describe('ContextMenu', () => {
           {container},
         );
         fireEvent.contextMenu(container.querySelector('div div')!);
-        expect(HTMLElement.prototype.showPopover).toHaveBeenCalled();
-        // At the document this press is retargeted to the shadow host.
+        // At the document a press on the menu is retargeted to a shadow host.
         const item = container.querySelector('[role="menuitem"]')!;
         fireEvent.mouseDown(item, {composed: true});
         expect(HTMLElement.prototype.hidePopover).not.toHaveBeenCalled();
+        // A press on the host itself is outside the menu.
+        fireEvent.mouseDown(host);
+        expect(HTMLElement.prototype.hidePopover).toHaveBeenCalled();
       } finally {
         host.remove();
       }
