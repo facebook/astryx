@@ -37,7 +37,7 @@ export const docs = {
         {
           type: 'code',
           lang: 'bash',
-          code: '{@pm install @astryxdesign/cli @acme/widgets --global}\n# or: pnpm add -g · yarn global add · bun add -g',
+          code: '{@pm install @astryxdesign/cli @acme/widgets --global}',
         },
         {
           type: 'prose',

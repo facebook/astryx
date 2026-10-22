@@ -135,7 +135,7 @@ describe('a token whose body holds braces or quotes', () => {
     const text =
       'Run {@pm-only npm "edits package.json" pkg set \'exports={}\' --json} first.';
     expect(renderCommandTokens(text, {stem: 'astryx', pm: 'pnpm'})).toBe(
-      "Run `npm pkg set 'exports={}' --json` first. (only with npm: edits package.json)",
+      "Run `npm pkg set 'exports={}' --json` (only with npm: edits package.json) first.",
     );
     expect(commandTokensIn(text).map(each => each.name)).toEqual(['pm-only']);
   });

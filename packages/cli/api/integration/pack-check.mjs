@@ -25,6 +25,7 @@ import * as os from 'node:os';
 import {fileURLToPath} from 'node:url';
 import {spawnSync} from 'node:child_process';
 import {assertWithin} from '../../foundation/fs/path-safety.mjs';
+import {commandTokensIn} from '../../foundation/doc-compiler/doc-syntax.mjs';
 import {resolvePackageDir} from '../../foundation/integrations/integrations.mjs';
 import {
   literalThemeName,
@@ -37,6 +38,7 @@ import {
   keywordsCliProblem,
   replacesCliProblem,
   sectionIdsCliProblem,
+  docTokensCliProblem,
   themesCliProblem,
 } from '../../foundation/integrations/cli-requirement.mjs';
 import {
@@ -320,6 +322,23 @@ function extractTarball(tgzPath, extractDir) {
       `tar extraction failed (exit ${result.status})${stderr ? `: ${stderr}` : ''}.`,
     );
   }
+}
+
+/**
+ * Whether any of these doc files writes a doc token (`{@command …}`, `{@pm …}`
+ * or `{@pm-only …}`; an escaped `{@@…}` is not one).
+ * @param {unknown[]} files
+ * @returns {boolean}
+ */
+function writesDocTokens(files) {
+  return files.some(file => {
+    if (typeof file !== 'string') return false;
+    try {
+      return commandTokensIn(fs.readFileSync(file, 'utf8')).length > 0;
+    } catch {
+      return false;
+    }
+  });
 }
 
 /**
@@ -1381,6 +1400,20 @@ export async function integrationPackCheck(options = {}) {
       const idProblem = sectionIdsCliProblem(pkg);
       if (idProblem != null) {
         issues.push(error('section_ids_need_cli', idProblem));
+      }
+    }
+    // A doc token shows as written on a CLI before the one that renders
+    // them, so the declared CLI range must start there.
+    if (
+      problem == null &&
+      writesDocTokens([
+        ...records.map(record => record.path),
+        ...guides.map(guide => /** @type {any} */ (guide.ref).topicFile),
+      ])
+    ) {
+      const tokenProblem = docTokensCliProblem(pkg);
+      if (tokenProblem != null) {
+        issues.push(error('doc_tokens_need_cli', tokenProblem));
       }
     }
   }

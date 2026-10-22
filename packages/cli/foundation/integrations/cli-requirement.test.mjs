@@ -9,6 +9,7 @@ import {
   KEYWORDS_CLI,
   NAMESPACE_DOCS_CLI,
   SECTION_IDS_CLI,
+  DOC_TOKENS_CLI,
   TEMPLATE_REPLACES_CLI,
   cliRangeProblem,
   componentReplacesCliProblem,
@@ -18,6 +19,7 @@ import {
   keywordsCliProblem,
   replacesCliProblem,
   sectionIdsCliProblem,
+  docTokensCliProblem,
   themesCliProblem,
   withCliPeer,
   withDocsTreeCli,
@@ -255,6 +257,18 @@ describe('themesCliProblem and sectionIdsCliProblem', () => {
     }
   });
 
+  it('asks for a CLI from 0.7.4 for doc tokens', () => {
+    expect(docTokensCliProblem({name: '@acme/kit'})).toContain('writes doc tokens');
+    for (const range of ['>=0.7.4', '^0.7.4', '>=0.8.0']) {
+      expect(docTokensCliProblem({peerDependencies: {'@astryxdesign/cli': range}})).toBeNull();
+    }
+    for (const range of ['>=0.6.4', '^0.7.0', '>=0.7.3']) {
+      expect(
+        docTokensCliProblem({peerDependencies: {'@astryxdesign/cli': range}}),
+      ).toContain('admits a stable CLI before 0.7.4');
+    }
+  });
+
   it('gives replaces and keywords their own floors', () => {
     // `>=0.6.4` admits published 0.6.4 and 0.6.5, which drop a template that
     // sets `keywords` but apply one that sets `replaces`.
@@ -277,6 +291,7 @@ describe('themesCliProblem and sectionIdsCliProblem', () => {
       NAMESPACE_DOCS_CLI,
       THEMES_CLI,
       SECTION_IDS_CLI,
+      DOC_TOKENS_CLI,
       TEMPLATE_REPLACES_CLI,
       KEYWORDS_CLI,
     ]) {
@@ -324,6 +339,8 @@ describe('every feature check names its CLI floor', () => {
     keywordsCliProblem: KEYWORDS_CLI,
     sectionIdsCliProblem: '0.6.4',
     themesCliProblem: '0.6.4',
+    // The release doc tokens ship in.
+    docTokensCliProblem: '0.7.4',
   };
 
   it('asks each feature for the CLI release this table names', () => {

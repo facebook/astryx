@@ -225,7 +225,8 @@ function printIntegrationValidation(data) {
         ]
       : [text('[ok] No integration issues found.')]),
     ...(data.notes ?? []).map(note =>
-      text(`note (${note.code}): ${note.message}`),
+      // A note marked next fails --strict from the next minor release.
+      text(`note (${note.code}): ${note.next ? '[next minor] ' : ''}${note.message}`),
     ),
     text(
       `Summary: ${errors} error${errors === 1 ? '' : 's'}, ` +
