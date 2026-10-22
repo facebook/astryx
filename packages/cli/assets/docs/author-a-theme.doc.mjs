@@ -28,7 +28,7 @@ export const docs = {
         {type: 'code', lang: 'json', label: 'Minimal palette config (palette.config.json)', code: '{"families": [{"id": "ocean", "seed": "#0074e2"}]}'},
         {type: 'code', lang: 'bash', label: 'Generate and preview', code: '# Print the palette without writing files\nastryx theme palette generate palette.config.json\n\n# Write palette + receipt, and open a visual preview\nastryx theme palette generate palette.config.json \\\n  --out src/themes/ocean/tokens/ocean.palette.ts \\\n  --preview preview.html'},
         {type: 'prose', text: "The command writes a `.ts` file exporting 21 shades (stops 0–100) for both light and dark, plus a `.receipt.json` to regenerate later. Point your theme's tokens at the palette, then run defineTheme (see below)."},
-        {type: 'prose', text: 'For the full palette config fields and CLI flags, run `astryx docs cli/commands/theme-palette-generate`. For the integration-authoring walkthrough of connecting a palette to theme tokens, run `astryx docs cli/integrations/building-blocks/themes/generate-a-palette`.'},
+        {type: 'prose', text: 'For the full palette config fields and CLI flags, run `astryx docs cli/commands/theme-palette-generate`. For the integration-authoring walkthrough of connecting a palette to theme tokens, run `astryx docs authoring/building-blocks/themes/generate-a-palette`.'},
       ],
     },
     {
@@ -61,7 +61,7 @@ export const docs = {
           ['adaptations', 'Width-breakpoint overrides merge by fixed name. Inherited ordered rules keep their relative order; child rules append and re-resolve against the child root axes.'],
         ]},
         {type: 'prose', text: "Inheritance is resolved when the theme is defined, so an extended theme is flat: `astryx theme build` emits one self-contained stylesheet holding everything the child inherited, and the base theme's CSS does not need to be loaded next to it. A base that is not a theme (most often an import that missed) throws when `defineTheme` runs, rather than producing a theme that silently inherits nothing."},
-        {type: 'prose', text: 'For the integration-specific guidance on mapping a palette to tokens when extending, see `astryx docs cli/integrations/building-blocks/themes/define-the-theme`.'},
+        {type: 'prose', text: 'For the integration-specific guidance on mapping a palette to tokens when extending, see `astryx docs authoring/building-blocks/themes/define-the-theme`.'},
       ],
     },
     {

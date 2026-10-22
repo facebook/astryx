@@ -134,8 +134,10 @@ describe('Token', () => {
       />,
     );
     const button = screen.getByRole('button', {name: 'Disabled'});
-    expect(button).toBeDisabled();
+    expect(button).not.toHaveAttribute('disabled');
+    expect(button).toHaveAttribute('aria-disabled', 'true');
     expect(button.tagName).toBe('BUTTON');
+    fireEvent.click(button);
     // Container click is also disabled
     const container = screen.getByTestId('token');
     fireEvent.click(container);
@@ -254,14 +256,34 @@ describe('Token accessibility', () => {
     ).toBeInTheDocument();
   });
 
-  it('disables both buttons when isDisabled is true', () => {
+  it('keeps both buttons focusable and inert when isDisabled is true', async () => {
+    const user = userEvent.setup();
+    const handleClick = vi.fn();
+    const handleRemove = vi.fn();
     render(
-      <Token label="Token" onClick={() => {}} onRemove={() => {}} isDisabled />,
+      <Token
+        label="Token"
+        onClick={handleClick}
+        onRemove={handleRemove}
+        isDisabled
+      />,
     );
     const buttons = screen.getAllByRole('button');
+    expect(buttons).toHaveLength(2);
     for (const button of buttons) {
-      expect(button).toBeDisabled();
+      expect(button).not.toHaveAttribute('disabled');
+      expect(button).toHaveAttribute('aria-disabled', 'true');
+      // A wrapping Popover listens for clicks on the button itself.
+      const nativeClick = vi.fn();
+      button.addEventListener('click', nativeClick);
+      await user.tab();
+      expect(button).toHaveFocus();
+      await user.keyboard('{Enter} ');
+      expect(nativeClick).not.toHaveBeenCalled();
+      fireEvent.click(button);
     }
+    expect(handleClick).not.toHaveBeenCalled();
+    expect(handleRemove).not.toHaveBeenCalled();
   });
 
   it('does not fire onClick or onRemove when disabled', () => {

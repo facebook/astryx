@@ -591,8 +591,14 @@ export function BottomSheetSwitcher({
       ? undefined
       : sheetLabels.get(visibleTransition.retainedSheet));
 
+  // A `cancel` that bubbles up from a step is not a close request for the
+  // flow: a file input fires one when its picker is dismissed, and a step
+  // renders no dialog of its own, so it lands here. It is left alone.
   const handleCancel = useCallback(
     (event: SyntheticEvent<HTMLDialogElement>) => {
+      if (event.target !== event.currentTarget) {
+        return;
+      }
       event.preventDefault();
       if (shouldDismissOnCloseRequest()) {
         dismissOnEscape();

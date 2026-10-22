@@ -37,6 +37,7 @@ import {assertWithin} from '../../foundation/fs/path-safety.mjs';
 import {normalizeProviderId} from '../../foundation/identity/provider-identity.mjs';
 import {integrationDocTypes} from '../docs/_adapter.mjs';
 import {integrationDocConsistency} from '../../foundation/discovery/doc-consistency.mjs';
+import {integrationRunnerCommands} from './_adapter.mjs';
 import {
   THEME_SLUG_RE,
   unreadThemeFolders,
@@ -69,6 +70,12 @@ import {
   rootProblem,
 } from '../../foundation/integrations/validate-contributions.mjs';
 import {formatCliCommand} from '../../foundation/env/package-manager.mjs';
+import {cliPeerVersionProblem} from '../../foundation/integrations/cli-peer-version.mjs';
+import {publicImportIssues} from '../../foundation/integrations/public-imports.mjs';
+import {runChoice} from '../../foundation/release/run-context.mjs';
+
+/** The running CLI is outside the package's `@astryxdesign/cli` peer range. */
+const CLI_PEER_VERSION = 'cli_peer_version';
 
 export {validateLoadedIntegration, isListedIssue};
 
@@ -91,6 +98,8 @@ export {validateLoadedIntegration, isListedIssue};
  *   may not fail `--strict` until the next (architecture:cli-surface INV35);
  *   `integration verify` still fails on a package.json npm cannot pack.
  * @property {import('../../foundation/integrations/integrations.mjs').LoadedIntegration} [integration]
+ * @property {import('./validate-integration.type.mjs').PublicImportsReport} [publicImports]
+ *   what the public-import check could not judge
  */
 
 /**
@@ -277,13 +286,15 @@ async function findUnreachableContributionIssues(
  * Shared core for the local and installed entry points.
  * @param {string} packageDir
  * @param {{name: string, version?: string}} identity
- * @param {{scanUnreachable?: boolean}} [options]
+ * @param {{scanUnreachable?: boolean, own?: boolean, cwd?: string}} [options]
+ *   `own`: the package is the one being authored in the current folder;
+ *   `cwd`: the folder whose package manager an install command names
  * @returns {Promise<ValidateResult>}
  */
 async function validateAtPackageDir(
   packageDir,
   identity,
-  {scanUnreachable = false} = {},
+  {scanUnreachable = false, own = false, cwd = packageDir} = {},
 ) {
   /** @type {Issue[]} */
   const issues = [];
@@ -425,6 +436,24 @@ async function validateAtPackageDir(
       issues.push(issue);
     }
   }
+  // The running CLI outside the package's `@astryxdesign/cli` peer range is a
+  // note for the same reason. It is built here, not among the contribution
+  // checks, so `integration verify` (which reports their layout findings)
+  // does not see it.
+  // The version an upgrade starts from is the project's: its own CLI's, or,
+  // with none, its Core's, as the project-upgrade notice takes it.
+  const choice = runChoice(cwd);
+  const from =
+    choice.inProject && choice.copy === 'starting' && choice.coreVersion
+      ? choice.coreVersion
+      : undefined;
+  const peerProblem = cliPeerVersionProblem(loaded, undefined, cwd, {
+    own,
+    from,
+  });
+  if (peerProblem) {
+    (result.notes ??= []).push({code: CLI_PEER_VERSION, message: peerProblem});
+  }
   if (loaded.themes && !rootProblem(loaded.themes))
     issues.push(...unreadThemeFolderIssues(packageDir, loaded));
   // What the docs say that no reader serves: a prop listed twice, an
@@ -443,6 +472,14 @@ async function validateAtPackageDir(
       packageDir,
     )),
   );
+  // What the package tells apps to import, read from source: package.json
+  // `exports`, docs, examples and template imports.
+  const publicImports = await publicImportIssues(packageDir, loaded);
+  issues.push(...publicImports.issues);
+  // Each finding is a note until the next minor makes it a warning.
+  if (publicImports.notes.length > 0)
+    (result.notes ??= []).push(...publicImports.notes);
+  result.publicImports = publicImports.report;
   if (scanUnreachable) {
     issues.push(
       ...(await findUnreachableContributionIssues(
@@ -506,7 +543,7 @@ export async function validateLocalIntegration(cwd = process.cwd()) {
   const result = await validateAtPackageDir(
     packageDir,
     {name, version: pkg.version},
-    {scanUnreachable: true},
+    {scanUnreachable: true, own: true},
   );
   (result.listed ??= []).unshift(
     ...fields,
@@ -641,10 +678,29 @@ export async function validateInstalledIntegration(spec, cwd = process.cwd()) {
     };
   }
 
-  return validateAtPackageDir(packageDir, {
-    name: pkg.name ?? spec,
-    version: pkg.version,
-  });
+  return validateAtPackageDir(
+    packageDir,
+    {name: pkg.name ?? spec, version: pkg.version},
+    {cwd},
+  );
+}
+
+/**
+ * The runner-command notes for a package's topics: each Astryx command a topic
+ * writes with a package runner, where the doc file is, and the bare command to
+ * write.
+ * @param {any} integration a loaded integration
+ * @returns {Promise<Array<{code: string, message: string}>>}
+ */
+async function runnerCommandNotes(integration) {
+  const packageDir = integration.__packageDir;
+  return (await integrationRunnerCommands(integration)).map(each => ({
+    code: 'runner_command',
+    message:
+      typeof packageDir === 'string'
+        ? `${path.relative(packageDir, each.file).split(path.sep).join('/')}: ${each.message}`
+        : each.message,
+  }));
 }
 
 /**
@@ -697,6 +753,11 @@ export async function validateIntegration(pkg, options = {}) {
         ...(names ?? []).flatMap(each => each.notes),
       ]
     : [];
+  // Each Astryx command a topic writes with a package runner, as a
+  // `runner_command` note with its fix, the same way.
+  if (integration?.docs) {
+    notes.push(...(await runnerCommandNotes(integration)));
+  }
   return {
     type: 'integration.validate',
     data: {
@@ -720,6 +781,10 @@ export async function validateIntegration(pkg, options = {}) {
       ...(docTypes ? {docTypes} : {}),
       ...(docNames ? {docNames} : {}),
       ...(blockComponents ? {blockComponents} : {}),
+      // What the public-import check could not judge: listed, never failed on.
+      ...(result.found && result.publicImports
+        ? {publicImports: result.publicImports}
+        : {}),
     },
   };
 }

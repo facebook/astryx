@@ -447,7 +447,7 @@ describe('integration-contributed topics', () => {
     // places it.
     expect(top).toContain('troubleshooting');
     expect(
-      top.some(name => /^cli\/integrations\/(?:.+\/)?troubleshooting$/.test(name)),
+      top.some(name => /^authoring\/(?:.+\/)?troubleshooting$/.test(name)),
       top.join(', '),
     ).toBe(true);
   }, SLOW);

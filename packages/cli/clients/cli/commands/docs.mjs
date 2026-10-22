@@ -535,7 +535,7 @@ function emitNode(node, detail, run) {
       text(
         [
           // A child's route is its parent's route and its name, except a flat
-          // topic in the Unorganized level, which keeps its own name.
+          // topic in a topic level, which keeps its own name.
           node.slots.every(slot =>
             slot.children.every(child => child.route.startsWith(`${node.route}/`)),
           )

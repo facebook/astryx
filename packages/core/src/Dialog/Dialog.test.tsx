@@ -286,6 +286,45 @@ describe('Dialog', () => {
     });
   });
 
+  describe('a cancel from inside the dialog', () => {
+    // A file input fires a bubbling `cancel` at itself when its picker is
+    // dismissed (Escape, or Cancel in the chooser). It reaches the <dialog>
+    // like a close request but is not one.
+    function DialogWithFilePicker({onOpenChange}: {onOpenChange: () => void}) {
+      return (
+        <Dialog isOpen onOpenChange={onOpenChange} aria-label="Upload">
+          <input type="file" aria-label="Picture" />
+        </Dialog>
+      );
+    }
+
+    it('stays open when a file picker inside it is dismissed', () => {
+      const onOpenChange = vi.fn();
+      render(<DialogWithFilePicker onOpenChange={onOpenChange} />);
+
+      const fromPicker = new Event('cancel', {bubbles: true, cancelable: true});
+      screen.getByLabelText('Picture').dispatchEvent(fromPicker);
+
+      expect(onOpenChange).not.toHaveBeenCalled();
+      expect(fromPicker.defaultPrevented).toBe(false);
+    });
+
+    it('still closes on its own close request', () => {
+      const onOpenChange = vi.fn();
+      render(<DialogWithFilePicker onOpenChange={onOpenChange} />);
+
+      screen
+        .getByLabelText('Picture')
+        .dispatchEvent(new Event('cancel', {bubbles: true, cancelable: true}));
+      screen
+        .getByRole('dialog')
+        .dispatchEvent(new Event('cancel', {cancelable: true}));
+
+      expect(onOpenChange).toHaveBeenCalledTimes(1);
+      expect(onOpenChange).toHaveBeenCalledWith(false);
+    });
+  });
+
   describe('IME composition', () => {
     // A CJK user presses Escape to cancel a half-formed character several times
     // a sentence. jsdom models neither composition nor the close watcher, so

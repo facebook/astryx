@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file `astryx docs cli/integrations/building-blocks/templates/build-the-template/write-the-template-file`:
+ * @file `astryx docs authoring/building-blocks/templates/build-the-template/write-the-template-file`:
  * what gets copied, where the copied file lands, and the imports and
  * export a copied template needs.
  */

@@ -9,7 +9,7 @@
  *   `authoring` reference topic with one section per self-doc, and an audit
  *   naming any self-doc the topic cannot reach, any that fails to load, and any
  *   section over the docs output budget.
- * @position Read by assets/docs/authoring.doc.mjs (the topic) and by Doctor
+ * @position Read by assets/docs/tree/field-reference.doc.mjs (the guide) and by Doctor
  *   (the audit). Lives in foundation because authoring/ holds only contracts.
  *   A new `*.doc.mjs` under authoring/ must be added to the list, or Doctor and
  *   the self-doc tests fail.
@@ -26,6 +26,15 @@ import {
 
 /** The directory the self-docs live under. */
 export const AUTHORING_ROOT = path.join(CLI_ROOT, 'authoring');
+
+/** The guide that holds every authoring schema, one section each. */
+export const AUTHORING_REFERENCE_NAME = 'field-reference';
+
+/**
+ * Its route. `astryx docs authoring <name>` reads one of its sections through
+ * the authoring namespace (spec:AST-046 FR6).
+ */
+export const AUTHORING_REFERENCE_ROUTE = `authoring/${AUTHORING_REFERENCE_NAME}`;
 
 /** Every authoring self-doc, relative to {@link AUTHORING_ROOT}, in reading order. */
 export const AUTHORING_SELF_DOCS = [
@@ -189,11 +198,14 @@ export function selfDocSection(doc) {
  */
 export function buildAuthoringReferenceDoc(docs) {
   return /** @type {any} */ ({
-    name: 'authoring',
-    title: 'Authoring Reference',
+    type: 'generic',
+    name: AUTHORING_REFERENCE_NAME,
+    placement: {parent: 'namespace:authoring', slot: 'reference', order: 10},
+    title: 'Field reference',
     category: 'guide',
+    keywords: ['authoring reference', 'field reference', 'every field'],
     description:
-      'Every file an integration author writes, field by field: the integration manifest, astryx.config, codemods, identity, and each doc type. The step-by-step guides are under `astryx docs cli/integrations`.',
+      'Every file an integration author writes, field by field: the integration manifest, astryx.config, codemods, identity, and each doc type. The guides that use them are the rest of {@link namespace:authoring}.',
     sections: docs.map(selfDocSection),
   });
 }

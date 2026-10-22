@@ -22,6 +22,7 @@
  * SYNC: When Switch.tsx changes, update tests to match new behavior
  */
 
+import {StrictMode} from 'react';
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -415,6 +416,61 @@ describe('Switch', () => {
         document.querySelector('[data-astryx-live-region="polite"]'),
       ).toHaveTextContent('Loading');
     });
+  });
+
+  it('announces one busy start once under StrictMode, from the switch alone', async () => {
+    // Count every message the shared polite region is given. Each announce
+    // writes its text in a later frame, so two announces add it twice.
+    const written: string[] = [];
+    const observer = new MutationObserver(records => {
+      for (const record of records) {
+        const target = record.target as Element;
+        if (target.getAttribute?.('data-astryx-live-region') !== 'polite') {
+          continue;
+        }
+        for (const node of record.addedNodes) {
+          if (node.textContent) {written.push(node.textContent);}
+        }
+      }
+    });
+    observer.observe(document.body, {childList: true, subtree: true});
+
+    const {container} = render(
+      <StrictMode>
+        <Switch
+          label="Sync photos"
+          value={false}
+          onChange={() => {}}
+          isLoading
+        />
+      </StrictMode>,
+    );
+    await waitFor(() => {
+      expect(written).toContain('Loading');
+    });
+    await new Promise(resolve => setTimeout(resolve, 50));
+    observer.disconnect();
+
+    expect(written.filter(text => text === 'Loading')).toHaveLength(1);
+    // The thumb's spinner is a silent indicator: no live role reaches
+    // assistive technology from inside the switch.
+    for (const status of container.querySelectorAll('[role="status"]')) {
+      expect(status.closest('[aria-hidden="true"]')).not.toBeNull();
+    }
+    expect(container.querySelector('[aria-live]')).toBeNull();
+  });
+
+  it('announces again when the switch becomes busy again after settling', async () => {
+    const polite = () =>
+      document.querySelector('[data-astryx-live-region="polite"]');
+    const props = {label: 'Sync photos', value: false, onChange: () => {}};
+    const {rerender} = render(<Switch {...props} isLoading />);
+    await waitFor(() => expect(polite()).toHaveTextContent('Loading'));
+
+    rerender(<Switch {...props} />);
+    polite()!.textContent = '';
+    rerender(<Switch {...props} isLoading />);
+    await waitFor(() => expect(polite()).toHaveTextContent('Loading'));
   });
 
   it('localizes the loading announcement through the i18n catalog', async () => {

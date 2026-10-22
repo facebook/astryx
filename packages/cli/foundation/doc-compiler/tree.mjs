@@ -12,7 +12,7 @@
  * @position Between discovery and the readers: `astryx docs <route>`,
  *   `astryx doctor`, and the docsite build all read this tree. The CLI's docs
  *   and each integration's have a home here, and a flat topic's home is the
- *   generated Unorganized level.
+ *   generated level for its category: Guides or Foundations.
  *   A namespace never scans files and never lists its children: a child names
  *   its parent, or a namespace adopts a discovery group.
  */
@@ -113,20 +113,49 @@ export const KIND_GROUPS = Object.freeze({
 
 /**
  * A flat topic: a reference topic that no namespace places. The tree gives it
- * a home in the generated Unorganized level, under its own name.
+ * a home in the generated level for its category (Guides or Foundations),
+ * under its own name.
  * @typedef {object} TreeTopicInput
  * @property {string} provider the package that owns the topic
  * @property {string} providerId the provider's ProviderId
  * @property {string} name the topic's name, which stays its route
  * @property {string} title
  * @property {string} summary
+ * @property {string | null} [category] the topic's sidebar group:
+ *   `foundations` puts it in Foundations; anything else, in Guides
  * @property {string} source where the topic comes from, for diagnostics
  * @property {string[]} [aliases] every other name the topic answers to: the
  *   topics it replaced, directly or through a chain
  */
 
-/** The route of the generated level that holds every flat topic. */
-export const UNORGANIZED = 'unorganized';
+/**
+ * The generated levels that hold the flat topics, by category
+ * (spec:AST-046 FR12). A topic keeps its own name as its route; its level is
+ * only where it sits. Readers see these titles in a topic's path, so each is
+ * a plain name for what the topics are.
+ */
+export const TOPIC_LEVELS = Object.freeze({
+  guides: Object.freeze({
+    route: 'guides',
+    title: 'Guides',
+    summary:
+      'Guides that stand on their own: getting started, principles, theming, and working with AI. Each topic keeps its own name; open one by it.',
+  }),
+  foundations: Object.freeze({
+    route: 'foundations',
+    title: 'Foundations',
+    summary:
+      'Color, elevation, icons, illustrations, motion, shape, and spacing: the visual foundations every component builds on. Each topic keeps its own name; open one by it.',
+  }),
+});
+
+/**
+ * The generated level a flat topic sits in.
+ * @param {string | null | undefined} category
+ * @returns {'guides' | 'foundations'}
+ */
+export const topicLevel = category =>
+  category === 'foundations' ? 'foundations' : 'guides';
 
 /**
  * @typedef {object} TreeNode
@@ -145,7 +174,7 @@ export const UNORGANIZED = 'unorganized';
  * @property {string | null} slot the parent slot this node sits in
  * @property {number | null} order
  * @property {boolean} generated made by the compiler (a `groupBy: 'kind'`
- *   level, or the Unorganized level), not authored
+ *   level, or a flat topics' level), not authored
  * @property {TreeSlot[]} slots a namespace's slots; empty for a leaf
  * @property {string} source
  * @property {any} [ref]
@@ -216,7 +245,7 @@ function resolveParent(parent, provider, declared) {
  * the one adoption rule in its package that matches its group and kind. A
  * placement that fails withdraws the doc; it never falls back to adoption. A
  * doc with neither is a flat topic: it keeps its flat name as its route, and its
- * home is the generated Unorganized level. The CLI keeps its own routes: an
+ * home is the generated level for its category. The CLI keeps its own routes: an
  * integration's node that would take one is withdrawn with a diagnostic.
  *
  * @param {{namespaces: TreeNamespaceInput[], docs: TreeDocInput[], topics?: TreeTopicInput[]}} inputs
@@ -237,10 +266,15 @@ export function buildDocsTree({namespaces, docs, topics = []}) {
     );
 
   // Routes the CLI's own docs keep (spec:AST-046 FR11): the name of each of
-  // its flat topics, and the generated Unorganized level. Its namespaces keep
-  // theirs by rank, because they go into the tree first. Routes compare
-  // without case, as topic names do, so `CLI` claims `cli`.
-  const cliRoutes = new Set(topics.length > 0 ? [UNORGANIZED] : []);
+  // its flat topics, and the generated levels that hold flat topics. Its
+  // namespaces keep theirs by rank, because they go into the tree first.
+  // Routes compare without case, as topic names do, so `CLI` claims `cli`.
+  /** @type {Set<string>} */
+  const cliRoutes = new Set(
+    topics.length > 0
+      ? Object.values(TOPIC_LEVELS).map(level => level.route)
+      : [],
+  );
   for (const topic of topics) {
     if (topic.provider === CLI_PROVIDER)
       cliRoutes.add(topic.name.toLowerCase());
@@ -592,20 +626,21 @@ export function buildDocsTree({namespaces, docs, topics = []}) {
     );
   }
 
-  // The generated Unorganized level (spec:AST-046 FR12): every flat topic sits
-  // here, in the order the topic list reads, so every doc has a home in the
-  // tree. A topic keeps its own name as its route.
-  if (topics.length > 0) {
+  // The generated levels (spec:AST-046 FR12): every flat topic sits in the
+  // level for its category, in the order the topic list reads, so every doc
+  // has a named home in the tree. A topic keeps its own name as its route.
+  for (const [key, level] of Object.entries(TOPIC_LEVELS)) {
+    const members = topics.filter(topic => topicLevel(topic.category) === key);
+    if (members.length === 0) continue;
     const home = {
       id: null,
-      route: UNORGANIZED,
+      route: level.route,
       kind: 'namespace',
       provider: CLI_PROVIDER,
       providerId: CLI_PROVIDER_ID,
-      name: UNORGANIZED,
-      title: 'Unorganized',
-      summary:
-        'Every topic that no section places yet. Each keeps its own name; open one by it.',
+      name: level.route,
+      title: level.title,
+      summary: level.summary,
       parent: null,
       slot: null,
       order: null,
@@ -613,30 +648,29 @@ export function buildDocsTree({namespaces, docs, topics = []}) {
       slots: [{name: 'topics', title: 'Topics', children: []}],
       source: 'generated',
     };
-    if (addNode(home, {provider: CLI_PROVIDER, source: 'generated'})) {
-      topics.forEach((topic, i) => {
-        addNode(
-          {
-            id: createDocId(topic.providerId, 'generic', topic.name),
-            route: topic.name,
-            kind: 'generic',
-            provider: topic.provider,
-            providerId: topic.providerId,
-            name: topic.name,
-            title: topic.title,
-            summary: topic.summary,
-            parent: UNORGANIZED,
-            slot: 'topics',
-            order: i,
-            generated: false,
-            slots: [],
-            source: topic.source,
-            ref: {flatTopic: topic.name},
-          },
-          topic,
-        );
-      });
-    }
+    if (!addNode(home, {provider: CLI_PROVIDER, source: 'generated'})) continue;
+    members.forEach((topic, i) => {
+      addNode(
+        {
+          id: createDocId(topic.providerId, 'generic', topic.name),
+          route: topic.name,
+          kind: 'generic',
+          provider: topic.provider,
+          providerId: topic.providerId,
+          name: topic.name,
+          title: topic.title,
+          summary: topic.summary,
+          parent: level.route,
+          slot: 'topics',
+          order: i,
+          generated: false,
+          slots: [],
+          source: topic.source,
+          ref: {flatTopic: topic.name},
+        },
+        topic,
+      );
+    });
   }
 
   // Children, per slot, in reading order: order, then title, then id.

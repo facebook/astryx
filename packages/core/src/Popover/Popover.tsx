@@ -481,12 +481,22 @@ export function Popover({
   }, [content, popover.isOpen, scheduleOverflowMeasurement]);
 
   // Shared handler for click events on the trigger button.
-  const handleTriggerClick = useCallback(() => {
-    if (!isEnabled) {
-      return;
-    }
-    popover.toggle();
-  }, [isEnabled, popover]);
+  const handleTriggerClick = useCallback(
+    (event?: {currentTarget: EventTarget | null}) => {
+      // An aria-disabled trigger stays focusable but opens nothing
+      // (spec:AST-085 FR2), even for a click dispatched straight on it.
+      const trigger = event?.currentTarget;
+      if (
+        !isEnabled ||
+        (trigger instanceof Element &&
+          trigger.getAttribute('aria-disabled') === 'true')
+      ) {
+        return;
+      }
+      popover.toggle();
+    },
+    [isEnabled, popover],
+  );
 
   // Shared handler for keydown events on role="button" elements.
   // Native <button> synthesizes click on Enter/Space, but role="button"
@@ -495,7 +505,7 @@ export function Popover({
     (e: KeyboardEvent) => {
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
-        handleTriggerClick();
+        handleTriggerClick(e);
       }
     },
     [handleTriggerClick],
@@ -662,7 +672,8 @@ export function Popover({
   if (isRenderProp) {
     const triggerProps: PopoverTriggerRenderProps = {
       ref: popover.triggerRef,
-      onClick: handleTriggerClick,
+      // The caller renders and owns this trigger element.
+      onClick: () => handleTriggerClick(),
       'aria-haspopup': 'dialog',
       'aria-expanded': popover.isOpen,
       'aria-controls': popover.id,

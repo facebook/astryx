@@ -643,11 +643,16 @@ export function Dialog({
   // Escape presses the stack owns never arrive here — it preventDefault()s
   // those, which suppresses the close watcher.
   //
-  // Always preventDefault so the browser cannot close a controlled <dialog>
-  // behind React's back, then answer the request with the stack's own rules:
-  // only the top-most layer dismisses, a `required` dialog swallows it, and
-  // nothing dismisses while an IME composition is in progress.
+  // A `cancel` that bubbles up from inside is not a close request for this
+  // dialog: a file input fires one when its picker is dismissed. It is left
+  // alone. Otherwise always preventDefault so the browser cannot close a
+  // controlled <dialog> behind React's back, then answer the request with the
+  // stack's own rules: only the top-most layer dismisses, a `required` dialog
+  // swallows it, and nothing dismisses while an IME composition is in progress.
   const handleCancel = (event: React.SyntheticEvent<HTMLDialogElement>) => {
+    if (event.target !== event.currentTarget) {
+      return;
+    }
     event.preventDefault();
     if (!shouldDismissOnCloseRequest()) {
       return;

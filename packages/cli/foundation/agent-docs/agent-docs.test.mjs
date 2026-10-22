@@ -209,12 +209,13 @@ describe('generateCompressedIndex', () => {
     expect(line).toContain('astryx docs');
   });
 
-  it('points to the CLI docs tree on a line of its own', () => {
-    // The integration guide lives in the docs tree now (cli/integrations), so
-    // the topic line no longer names it; the tree's entry point does.
+  it('points to the CLI docs and the authoring docs on lines of their own', () => {
+    // The integration guides live under `authoring` in the docs tree, so the
+    // topic line does not name them; the tree's entry points do.
     const block = generateCompressedIndex('1.0.0');
+    expect(block).toContain('  docs cli           commands and API reference');
     expect(block).toContain(
-      '  docs cli           commands, API reference, integration authoring',
+      '  docs authoring     build an integration package, and every field it holds',
     );
     expect(topicLine(block)).not.toContain('cli-integrations');
   });
