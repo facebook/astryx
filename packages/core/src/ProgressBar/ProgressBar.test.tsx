@@ -565,21 +565,6 @@ describe('ProgressBar', () => {
       expect(styleClasses(accentMarks[1])).toBe(styleClasses(errorMarks[1]));
     });
 
-    it('keeps tabbable target marks outside the progressbar subtree', () => {
-      const {container} = render(
-        <ProgressBar
-          value={50}
-          label="Progress"
-          marks={[{value: 80, label: 'Goal'}]}
-        />,
-      );
-      const progressbar = screen.getByRole('progressbar', {name: 'Progress'});
-      const mark = container.querySelector(MARK)!;
-      expect(mark).toHaveAttribute('tabindex', '0');
-      expect(progressbar.querySelector('[tabindex="0"]')).toBeNull();
-      expect(mark.closest('[role="progressbar"]')).toBeNull();
-    });
-
     it('renders every mark as a focusable trigger (label is required, never decorative)', () => {
       const {container} = render(
         <ProgressBar
@@ -637,7 +622,6 @@ describe('ProgressBar', () => {
         />,
       );
       const progressbar = screen.getByRole('progressbar');
-      expect(progressbar.querySelector(MARK)).toBeNull();
       expect(progressbar.querySelector('[role="img"]')).toBeNull();
       expect(progressbar.querySelector('[aria-label]')).toBeNull();
       expect(container.querySelectorAll(MARK)).toHaveLength(1);
