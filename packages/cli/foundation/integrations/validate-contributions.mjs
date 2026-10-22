@@ -1127,9 +1127,11 @@ function globSource(pattern) {
  * (everything without one), and the entry that decided it: the last entry
  * that matches, as npm reads them. Globs follow npm's matching, without
  * regard to case: `*`, `**`, `?`, `[…]` classes and `{a,b}` braces. A folder
- * an entry names brings everything inside it; a pattern with no slash names a
- * file or folder by its own name, at the root or inside a folder another
- * entry includes, unless a leading `/` or `./` anchors it at the root. `package.json`,
+ * an entry names with no glob brings everything inside it; a glob that names
+ * a folder does not. A pattern with no slash names a file or folder by its
+ * own name in every folder npm walks into: the root, a folder an entry names,
+ * and a folder a path entry names files in. A leading `/` or `./` anchors a
+ * pattern at the root. `package.json`,
  * the README and the license are always packed and never asked about here.
  * @param {string} rel POSIX, relative to the package root
  * @param {unknown} files
@@ -1137,6 +1139,7 @@ function globSource(pattern) {
  */
 function packedBy(rel, files) {
   if (!Array.isArray(files)) return {packed: true, entry: null};
+  const GLOB = /[*?[\]{}]/u;
   const entries = files
     .filter(entry => typeof entry === 'string')
     .map(entry => {
@@ -1144,50 +1147,122 @@ function packedBy(rel, files) {
       const raw = entry.slice(negated ? 1 : 0);
       const anchored = /^\.?\//u.test(raw);
       const trimmed = raw.replace(/^\.?\//u, '').replace(/\/+$/u, '');
-      // npm matches without regard to case. An unanchored pattern with no
-      // slash names a file or folder by its own name, at the root or inside
-      // a folder another entry includes; any other pattern names a path
-      // from the root, and a folder it names brings everything inside.
-      const byName = !anchored && !trimmed.includes('/');
-      const patterns = expandBraces(trimmed).map(
-        spelling =>
-          new RegExp(
-            byName
-              ? `^${globSource(spelling)}$`
-              : `^${globSource(spelling)}(?:/.*)?$`,
-            'iu',
-          ),
-      );
-      return {entry, negated, byName, patterns};
+      const spellings = expandBraces(trimmed);
+      return {
+        entry,
+        negated,
+        // A pattern with no slash names a file or folder by its own name in
+        // any folder npm walks into; any other names a path from the root.
+        byName: !anchored && !trimmed.includes('/'),
+        // Only an entry with no glob brings a folder's whole contents.
+        literal: !GLOB.test(trimmed),
+        whole: spellings.map(
+          spelling => new RegExp(`^${globSource(spelling)}$`, 'iu'),
+        ),
+        segments: spellings.map(spelling =>
+          spelling
+            .split('/')
+            .map(part =>
+              part === '**' ? '**' : new RegExp(`^${globSource(part)}$`, 'iu'),
+            ),
+        ),
+      };
     });
-  /** @type {Map<string, {packed: boolean, entry: string | null}>} */
-  const memo = new Map();
+  const live = entries.filter(each => !each.negated);
+  /** @param {string} at */
+  const parentOf = at =>
+    at.includes('/') ? at.slice(0, at.lastIndexOf('/')) : '';
+  /** @param {string} at */
+  const nameOf = at => at.slice(at.lastIndexOf('/') + 1);
   /**
-   * @param {string} at a file or folder, relative to the package root
-   * @returns {{packed: boolean, entry: string | null}}
+   * Whether a path entry names files inside folder `dir`, so npm walks in.
+   * @param {Array<RegExp | '**'>} segments
+   * @param {string[]} dir
    */
-  const state = at => {
-    const known = memo.get(at);
-    if (known) return known;
-    const slash = at.lastIndexOf('/');
-    const parent = slash < 0 ? null : at.slice(0, slash);
-    const name = at.slice(slash + 1);
-    const inherited = parent == null ? null : state(parent);
-    /** @type {{packed: boolean, entry: string | null}} */
-    let result = inherited?.packed
-      ? inherited
-      : {packed: false, entry: inherited?.entry ?? null};
-    for (const {entry, negated, byName, patterns} of entries) {
-      const matches = byName
-        ? (parent == null || inherited?.packed === true) &&
-          patterns.some(pattern => pattern.test(name))
-        : patterns.some(pattern => pattern.test(at));
-      if (matches) result = {packed: !negated, entry};
+  const reaches = (segments, dir) => {
+    for (let i = 0; i < dir.length; i++) {
+      const segment = segments[i];
+      if (segment === '**') return true;
+      if (segment == null || i === segments.length - 1) return false;
+      if (!segment.test(dir[i])) return false;
     }
-    memo.set(at, result);
-    return result;
+    return dir.length < segments.length;
   };
-  return state(rel);
+  /** @type {Map<string, boolean>} */
+  const named = new Map();
+  /** @type {Map<string, boolean>} */
+  const walked = new Map();
+  /**
+   * Whether a literal entry names folder `dir`, so its contents come in.
+   * @param {string} dir
+   */
+  const folderNamed = dir => {
+    if (!named.has(dir)) {
+      let result = false;
+      for (const each of entries) {
+        if (!each.literal) continue;
+        const hit = each.byName
+          ? isWalked(parentOf(dir)) &&
+            each.whole.some(pattern => pattern.test(nameOf(dir)))
+          : each.whole.some(pattern => pattern.test(dir));
+        if (hit) result = !each.negated;
+      }
+      named.set(dir, result);
+    }
+    return /** @type {boolean} */ (named.get(dir));
+  };
+  /**
+   * Whether npm walks into folder `dir` (the root always).
+   * @param {string} dir
+   */
+  const isWalked = dir => {
+    if (dir === '') return true;
+    if (!walked.has(dir)) {
+      const parts = dir.split('/');
+      walked.set(
+        dir,
+        isWalked(parentOf(dir)) &&
+          (folderNamed(dir) ||
+            parts.some((_, i) =>
+              folderNamed(parts.slice(0, i + 1).join('/')),
+            ) ||
+            live.some(
+              each =>
+                !each.byName &&
+                each.segments.some(segments => reaches(segments, parts)),
+            )),
+      );
+    }
+    return /** @type {boolean} */ (walked.get(dir));
+  };
+  /** @type {{packed: boolean, entry: string | null}} */
+  let result = {packed: false, entry: null};
+  const parts = rel.split('/');
+  // Inside a folder a literal entry names: packed until an entry says not.
+  for (let i = 1; i < parts.length; i++) {
+    const dir = parts.slice(0, i).join('/');
+    if (folderNamed(dir)) {
+      const naming = [...entries]
+        .reverse()
+        .find(
+          each =>
+            each.literal &&
+            !each.negated &&
+            each.whole.some(pattern =>
+              pattern.test(each.byName ? nameOf(dir) : dir),
+            ),
+        );
+      result = {packed: true, entry: naming?.entry ?? null};
+    }
+  }
+  for (const each of entries) {
+    const hit = each.byName
+      ? isWalked(parentOf(rel)) &&
+        each.whole.some(pattern => pattern.test(nameOf(rel)))
+      : each.whole.some(pattern => pattern.test(rel));
+    if (hit) result = {packed: !each.negated, entry: each.entry};
+  }
+  return result;
 }
 
 /**

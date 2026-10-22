@@ -314,6 +314,66 @@ describe('template_asset_not_packed', () => {
     expect(await notesOf(['template_asset_not_packed'])).toEqual([]);
   });
 
+  it.each([
+    [
+      [
+        'components',
+        'astryx.integration.mjs',
+        'templates/*.tsx',
+        'templates/*.mjs',
+        '*.png',
+      ],
+      true,
+    ],
+    [['templates/**/*.tsx', 'templates/**/*.mjs', '*.png'], true],
+    [['templates/*.tsx', 'templates/*.mjs', 'templates/*.PNG'], true],
+    [['templates/*.tsx', 'templates/*.mjs', 'assets*'], false],
+  ])('under %j, templates/hero.png packed: %s', async (files, packed) => {
+    write({
+      'package.json': JSON.stringify({
+        name: '@acme/kit',
+        version: '1.0.0',
+        files,
+      }),
+      'templates/hero.png': 'png',
+      'templates/card.doc.mjs': blockDoc(
+        'card',
+        ", exampleFor: 'AcmeCard', isShowcase: true",
+      ),
+      'templates/card.tsx': [
+        "const hero = new URL('./hero.png', import.meta.url);",
+        'export default () => null;',
+        '',
+      ].join('\n'),
+    });
+    expect(await notesOf(['template_asset_not_packed'])).toHaveLength(
+      packed ? 0 : 1,
+    );
+  });
+
+  it('brings a folder in only for an entry with no glob', async () => {
+    write({
+      'package.json': JSON.stringify({
+        name: '@acme/kit',
+        version: '1.0.0',
+        files: ['templates', 'assets*'],
+      }),
+      'assets/cat.png': 'png',
+      'templates/card.doc.mjs': blockDoc(
+        'card',
+        ", exampleFor: 'AcmeCard', isShowcase: true",
+      ),
+      'templates/card.tsx': [
+        "const cat = new URL('../assets/cat.png', import.meta.url);",
+        'export default () => null;',
+        '',
+      ].join('\n'),
+    });
+    const notes = await notesOf(['template_asset_not_packed']);
+    expect(notes).toHaveLength(1);
+    expect(notes[0].message).toContain('loads assets/cat.png');
+  });
+
   it('matches without regard to case, and applies a bare *.png only inside folders another entry packs', async () => {
     write({
       'package.json': JSON.stringify({
