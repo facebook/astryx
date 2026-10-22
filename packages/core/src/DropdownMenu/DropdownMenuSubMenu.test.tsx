@@ -2726,6 +2726,33 @@ describe('DropdownMenuSubMenu header and footer', () => {
     expect(screen.queryByRole('button', {name: /Rename/})).toBeNull();
   });
 
+  it('the bottom sheet reads an open level from the current items with no regions anywhere, so a row the caller adds while it shows appears', async () => {
+    const user = userEvent.setup();
+    function LabelsMenu({labels}: {labels: string[]}) {
+      return (
+        <DropdownMenu
+          button={{label: 'Session'}}
+          presentation="bottom-sheet"
+          items={[
+            {label: 'Rename'},
+            {label: 'Labels', items: labels.map(label => ({label}))},
+          ]}
+        />
+      );
+    }
+    const {rerender} = render(<LabelsMenu labels={['Bug']} />);
+    await user.click(screen.getByRole('button', {name: /Session/}));
+    await user.click(await screen.findByRole('button', {name: /Labels/}));
+    await screen.findByRole('button', {name: /Bug/});
+
+    rerender(<LabelsMenu labels={['Bug', 'Feature']} />);
+    expect(
+      await screen.findByRole('button', {name: /Feature/}),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('heading', {name: 'Labels'})).toBeInTheDocument();
+    expect(screen.queryByRole('button', {name: /Rename/})).toBeNull();
+  });
+
   describe('on a phone', () => {
     const originalMatchMedia = window.matchMedia;
     beforeEach(() => {
