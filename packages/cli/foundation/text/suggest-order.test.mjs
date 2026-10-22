@@ -4,6 +4,7 @@ import {describe, expect, it} from 'vitest';
 import {
   nameWords,
   orderByAffinity,
+  orderRouteSuggestions,
   rankComponentSuggestions,
   synonymMatches,
 } from './suggest-order.mjs';
@@ -204,5 +205,40 @@ describe('synonymMatches', () => {
       new Set(['Picker', 'NotInCatalog']),
     );
     expect(ranked.map(r => r.name)).toEqual(['Picker', 'Gadget']);
+  });
+});
+
+describe('orderRouteSuggestions', () => {
+  const kids = [
+    'guide/start',
+    'guide/building-blocks',
+    'guide/ship',
+    'guide/help',
+  ].map(name => ({name}));
+  const names = (/** @type {{name: string}[]} */ list) => list.map(s => s.name);
+
+  it('keeps tree order when no child matches, at any depth', () => {
+    expect(names(orderRouteSuggestions('guide/theme', kids))).toEqual(
+      names(kids),
+    );
+    expect(names(orderRouteSuggestions('guide/theme/colors', kids))).toEqual(
+      names(kids),
+    );
+  });
+
+  it('puts the child the route names first', () => {
+    expect(names(orderRouteSuggestions('guide/ship-it', kids))[0]).toBe(
+      'guide/ship',
+    );
+    expect(names(orderRouteSuggestions('guide/help/extra', kids))[0]).toBe(
+      'guide/help',
+    );
+  });
+
+  it('compares whole routes when the suggestions share no namespace', () => {
+    const roots = [{name: 'cli'}, {name: 'guide'}, {name: 'theme'}];
+    expect(names(orderRouteSuggestions('theme/quick-start', roots))[0]).toBe(
+      'theme',
+    );
   });
 });

@@ -98,6 +98,29 @@ export function orderByAffinity(typedName, items, namesOf) {
   return scored.map(s => s.item);
 }
 
+/**
+ * Docs route suggestions, closest to the typed route first. When every
+ * suggestion sits under one namespace the typed route also starts with, that
+ * shared part is left out of the comparison: it says nothing about which page
+ * was meant. Equal matches keep their order.
+ * @template {{name: string}} T
+ * @param {string} topic - the typed route
+ * @param {T[]} suggestions
+ * @returns {T[]}
+ */
+export function orderRouteSuggestions(topic, suggestions) {
+  let shared = suggestions.length > 0 ? suggestions[0].name : '';
+  for (const {name} of suggestions) {
+    while (shared && !name.startsWith(shared)) shared = shared.slice(0, -1);
+  }
+  const namespace = shared.slice(0, shared.lastIndexOf('/') + 1);
+  return namespace && topic.startsWith(namespace)
+    ? orderByAffinity(topic.slice(namespace.length), suggestions, s => [
+        s.name.slice(namespace.length),
+      ])
+    : orderByAffinity(topic, suggestions, s => [s.name]);
+}
+
 /** Library names a synonym may start with (`MUI TextField`). */
 const LIBRARY_WORDS = new Set([
   'mui',

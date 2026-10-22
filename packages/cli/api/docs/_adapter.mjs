@@ -71,7 +71,7 @@ import {
 import {findCoreDir} from '../../foundation/fs/paths.mjs';
 import {AstryxError} from '../error.mjs';
 import {ERROR_CODES} from '../../foundation/response/error-codes.mjs';
-import {orderByAffinity} from '../../foundation/text/suggest-order.mjs';
+import {orderRouteSuggestions} from '../../foundation/text/suggest-order.mjs';
 import {formatCliCommand} from '../../foundation/env/package-manager.mjs';
 
 export {OVERLAY_LANGUAGES, overlayLanguages};
@@ -1624,18 +1624,7 @@ export async function unknownTopicError(topic, catalog) {
     ];
   }
   if (typeof topic === 'string') {
-    // When the suggestions are one namespace's children, the route's last
-    // part names the page: the namespace they share says nothing about which
-    // one was meant. Otherwise the whole route counts.
-    const cut = topic.lastIndexOf('/');
-    const leaf = (/** @type {string} */ route) =>
-      route.slice(route.lastIndexOf('/') + 1);
-    const children =
-      cut > 0 &&
-      suggestions.every(s => s.name.startsWith(topic.slice(0, cut + 1)));
-    suggestions = children
-      ? orderByAffinity(leaf(topic), suggestions, s => [leaf(s.name)])
-      : orderByAffinity(topic, suggestions, s => [s.name]);
+    suggestions = orderRouteSuggestions(topic, suggestions);
   }
   // A route that moved names where it went, ahead of the usual suggestions
   // (spec:AST-046 FR9, FR6).
