@@ -159,6 +159,17 @@ const sizeStyles = stylex.create({
 const HORIZONTAL_SEGMENT_BASIS = 196;
 
 const styles = stylex.create({
+  // Same as DateTimeInput's: the focus ring for a focused disabled field.
+  disabledFocusRing: {
+    borderColor: {
+      default: colorVars['--color-border-emphasized'],
+      ':focus-within': colorVars['--color-accent'],
+    },
+    boxShadow: {
+      default: 'none',
+      ':focus-within': `inset 0px 0px 0px 2px ${colorVars['--color-accent-muted']}`,
+    },
+  },
   iconButton: {
     display: 'flex',
     alignItems: 'center',
@@ -1330,6 +1341,7 @@ export function TouchDateTimeField({
               sizeStyles[size],
               styles.touchDateWrapper,
               isEffectivelyDisabled && inputWrapperStyles.disabled,
+              isEffectivelyDisabled && styles.disabledFocusRing,
               status && inputStatusBorderStyles[status.type],
               status &&
                 !isEffectivelyDisabled &&
@@ -1340,7 +1352,7 @@ export function TouchDateTimeField({
           <button
             type="button"
             onClick={() => openSheet('date')}
-            disabled={isEffectivelyDisabled}
+            aria-disabled={isEffectivelyDisabled || undefined}
             aria-label={t('@astryx.dateInput.openCalendar')}
             tabIndex={-1}
             {...stylex.props(
@@ -1367,7 +1379,11 @@ export function TouchDateTimeField({
             readOnly
             inputMode="none"
             onChange={() => {}}
-            onClick={chainEventHandlers(() => openSheet('date'), onClickProp)}
+            onClick={
+              isEffectivelyDisabled
+                ? undefined
+                : chainEventHandlers(() => openSheet('date'), onClickProp)
+            }
             onKeyDown={chainEventHandlers(
               (event: React.KeyboardEvent<HTMLInputElement>) =>
                 handleInputKeyDown(event, 'date'),
@@ -1375,8 +1391,7 @@ export function TouchDateTimeField({
             )}
             aria-labelledby={controlLabelledBy}
             placeholder={placeholder}
-            disabled={isEffectivelyDisabled && !showsDisabledMessage}
-            aria-disabled={showsDisabledMessage ? 'true' : undefined}
+            aria-disabled={isEffectivelyDisabled ? 'true' : undefined}
             aria-describedby={ariaDescribedBy}
             aria-required={isEffectivelyRequired ? 'true' : undefined}
             aria-invalid={status?.type === 'error' ? 'true' : undefined}
@@ -1417,6 +1432,7 @@ export function TouchDateTimeField({
               sizeStyles[size],
               styles.touchTimeWrapper,
               isEffectivelyDisabled && inputWrapperStyles.disabled,
+              isEffectivelyDisabled && styles.disabledFocusRing,
               status && inputStatusBorderStyles[status.type],
               status &&
                 !isEffectivelyDisabled &&
@@ -1427,7 +1443,7 @@ export function TouchDateTimeField({
           <button
             type="button"
             onClick={() => openSheet('time')}
-            disabled={isEffectivelyDisabled}
+            aria-disabled={isEffectivelyDisabled || undefined}
             aria-label={t('@astryx.dateTimeInput.openTimePicker', {
               label: resolvedTimeLabel,
             })}
@@ -1456,8 +1472,7 @@ export function TouchDateTimeField({
             onClick={() => openSheet('time')}
             onKeyDown={event => handleInputKeyDown(event, 'time')}
             placeholder={timePlaceholder}
-            disabled={isEffectivelyDisabled && !showsDisabledMessage}
-            aria-disabled={showsDisabledMessage ? 'true' : undefined}
+            aria-disabled={isEffectivelyDisabled ? 'true' : undefined}
             aria-label={resolvedTimeLabel}
             aria-describedby={ariaDescribedBy}
             aria-required={isEffectivelyRequired ? 'true' : undefined}

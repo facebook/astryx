@@ -58,6 +58,9 @@ import {
   discoverAgentDocs,
   isAstryxInitialized,
   isAstryxPromptInReach,
+  SELF_CHECK_CSS,
+  WORKFLOW_STEPS,
+  WORKFLOW_TITLE,
 } from './agent-doc-state.mjs';
 
 // The agent-doc locations, markers, and the setup-state predicates
@@ -762,10 +765,7 @@ export function generateCompressedIndex(
   // Workflow — `build` is the front door, and every page starts from the
   // template it names. build/template/component are covered here, so they are
   // intentionally omitted from the command reference below.
-  lines.push('WORKFLOW — start every page from a template, never from scratch:');
-  lines.push('1. `astryx build "<idea>"` — names the template to scaffold from and the parts it lacks.');
-  lines.push('2. `astryx template <name> <path>` — scaffold it; keep its frame, gap and padding; replace the content.');
-  lines.push('3. `astryx template <Block>` for parts it lacks; `astryx component <Name>` to read props before using one.');
+  lines.push(WORKFLOW_TITLE, ...WORKFLOW_STEPS);
   lines.push('Changing an existing page? Keep it: skip step 2 and add blocks/components inside its sections.');
   lines.push('');
 
@@ -793,7 +793,7 @@ export function generateCompressedIndex(
       'replace any className=, style={{…}}, raw <div>/<span>, imported .css/@apply, or hardcoded #hex/px with the component or the xstyle prop + a token',
     tailwind:
       'replace any style={{…}}, raw <div>/<span>, imported .css/@apply, or hardcoded/arbitrary value (bg-[#fff], p-[13px]) with the component or a token-backed utility',
-    css: 'replace any raw <div>/<span>, imported .css/@apply, or hardcoded #hex/px with the component or a token',
+    css: SELF_CHECK_CSS,
   };
   lines.push(
     `- SELF-CHECK: re-read the file; ${selfCheckFix[stylingSystem] ?? selfCheckFix.css}.`,
