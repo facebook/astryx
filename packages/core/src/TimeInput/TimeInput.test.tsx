@@ -10,7 +10,7 @@
  */
 
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
-import {render, screen, fireEvent, waitFor} from '@testing-library/react';
+import {act, render, screen, fireEvent, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import * as stylex from '@stylexjs/stylex';
 import {colorVars} from '../theme/tokens.stylex';
@@ -700,6 +700,51 @@ describe('TimeInput', () => {
       expect(onChange).not.toHaveBeenCalled();
       expect(onClick).not.toHaveBeenCalled();
     });
+
+    it.each([
+      ['text-input', false, {isDisabled: true}],
+      ['native', true, {isDisabled: true}],
+      ['bottom-sheet', true, {isDisabled: true}],
+      ['bottom-sheet', true, {isLoading: true}],
+    ] as const)(
+      'does not submit a surrounding form on Enter: %s (coarse %s) %o (AST-085 FR2)',
+      async (presentation, isCoarse, state) => {
+        vi.stubGlobal('matchMedia', (query: string) => ({
+          matches: /pointer:\s*coarse/.test(query)
+            ? isCoarse
+            : /pointer:\s*fine/.test(query) && !isCoarse,
+          media: query,
+          addEventListener: () => {},
+          removeEventListener: () => {},
+          addListener: () => {},
+          removeListener: () => {},
+        }));
+        const user = userEvent.setup();
+        const onSubmit = vi.fn((e: React.FormEvent) => e.preventDefault());
+        render(
+          <form onSubmit={onSubmit}>
+            <TimeInput
+              label="Time"
+              presentation={presentation}
+              value={'09:00' as ISOTimeString}
+              onChange={() => {}}
+              {...state}
+            />
+            <button type="submit">Save</button>
+          </form>,
+        );
+        try {
+          const input = document.querySelector<HTMLInputElement>(
+            '.astryx-time-input input:not([type=hidden])',
+          )!;
+          act(() => input.focus());
+          await user.keyboard('{Enter}');
+          expect(onSubmit).not.toHaveBeenCalled();
+        } finally {
+          vi.unstubAllGlobals();
+        }
+      },
+    );
 
     it('drops a draft instead of committing it when the field becomes disabled (AST-085 FR2)', async () => {
       const user = userEvent.setup();

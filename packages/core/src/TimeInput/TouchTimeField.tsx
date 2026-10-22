@@ -24,6 +24,7 @@ import {
   useRef,
   useState,
   useTransition,
+  type KeyboardEvent,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {BottomSheet} from '../BottomSheet';
@@ -492,6 +493,12 @@ export function TouchTimeField({
             ? undefined
             : chainEventHandlers(openSheet, onClickProp)
         }
+        // Enter would submit a surrounding form while disabled (FR2).
+        onKeyDown={chainEventHandlers((e: KeyboardEvent<HTMLInputElement>) => {
+          if (isEffectivelyDisabled && e.key === 'Enter') {
+            e.preventDefault();
+          }
+        }, controlProps.onKeyDown)}
         placeholder={placeholder}
         aria-disabled={isEffectivelyDisabled ? 'true' : undefined}
         aria-describedby={ariaDescribedBy}

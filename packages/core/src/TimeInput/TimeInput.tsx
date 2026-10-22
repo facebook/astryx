@@ -654,6 +654,13 @@ function TimeField({
   );
 
   // Handle keyboard navigation on input
+  // Enter in a focused disabled field would submit a surrounding form (FR2).
+  const preventDisabledEnter = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (isDisabled && e.key === 'Enter') {
+      e.preventDefault();
+    }
+  };
+
   const handleInputKeyDown = useCallback(
     (e: KeyboardEvent<HTMLInputElement>) => {
       // ArrowUp/ArrowDown step the time and preventDefault; an IME candidate
@@ -804,7 +811,7 @@ function TimeField({
             ...controlProps,
             onFocus: onFocusProp,
             onBlur: onBlurProp,
-            onKeyDown: onKeyDownProp,
+            onKeyDown: chainEventHandlers(preventDisabledEnter, onKeyDownProp),
             onClick: isDisabled ? undefined : controlProps.onClick,
           }}
         />
@@ -822,7 +829,11 @@ function TimeField({
             onChange={handleInputChange}
             onFocus={chainEventHandlers(handleFocus, onFocusProp)}
             onBlur={chainEventHandlers(handleBlur, onBlurProp)}
-            onKeyDown={chainEventHandlers(handleInputKeyDown, onKeyDownProp)}
+            onKeyDown={chainEventHandlers(
+              preventDisabledEnter,
+              handleInputKeyDown,
+              onKeyDownProp,
+            )}
             placeholder={displayPlaceholder}
             aria-disabled={isDisabled ? 'true' : undefined}
             readOnly={isDisabled || undefined}
