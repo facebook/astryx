@@ -152,11 +152,15 @@ contract does not claim token-granular pruning that the compiler does not provid
   FR13. The generated compatibility view keeps that resolver derived from the
   same canonical `.stylex.ts` source.
 
-  Raw CSS and generated examples that cannot consume a TypeScript object MAY
-  reference the same stable custom-property names only when their setup already
-  guarantees that a source-compiled data-variable consumer retained the group or
-  that the prebuilt Core stylesheet is loaded, or when they provide an explicit
-  local fallback. Documentation MUST not imply that a theme stylesheet itself
+  In prebuilt mode, raw CSS and consumer code MAY reference the stable
+  `var(--color-data-*)` names with no fallback: the prebuilt Core stylesheet
+  defines the complete group under FR3. A source-built product reads data colors
+  through `dataVars`, which retains the group in the source graph. The
+  `@astryxdesign/build` PostCSS integration compiles the whole published Core
+  source, so it always emits the group; a source build that neither imports
+  `dataVars` nor emits the group through that integration leaves raw references
+  undefined, which is unsupported. An explicit local fallback remains valid in
+  every mode. Documentation MUST not imply that a theme stylesheet itself
   materializes the defaults.
 
 - **FR5 — Direct SVG and DOM values paint correctly.** A `dataVars` value passed
@@ -316,17 +320,12 @@ contract does not claim token-granular pruning that the compiler does not provid
 - **FR18 — Migration prefers public imports, not compatibility CSS.** Astryx
   component, fixture, example, and test migrations MUST replace constructible
   literal strings with `dataVars` references when the source is StyleX-capable.
-  Upgrade tooling and regeneration MUST reject stale raw root defaults. When
-  Core's prebuilt stylesheet is loaded, FR3 guarantees direct raw consumers,
-  and upgrade tooling MUST accept them. When the app's own build configuration
-  compiles Core from source through `@astryxdesign/build`, upgrade tooling MUST
-  reject a direct raw consumer that has no fallback and recommend the public
-  StyleX import when appropriate. In every other state, including one it
-  cannot establish, upgrade tooling treats the defaults as guaranteed. Raw CSS
-  and generated templates that already carry explicit fallbacks remain valid
-  after review. Migration MUST NOT add a legacy
-  global-data theme mode, provider prop, sidecar stylesheet, arbitrary Theme
-  wrapper, or invented fallback color.
+  Upgrade tooling and regeneration MUST reject stale raw root defaults. Upgrade
+  tooling does not inspect direct raw consumers and MUST NOT require a fallback
+  for them. Raw CSS and generated templates that already carry explicit
+  fallbacks remain valid. Migration MUST NOT add a legacy global-data theme mode,
+  provider prop, sidecar stylesheet, arbitrary Theme wrapper, or invented
+  fallback color.
 
 - **FR19 — Theme input validation and CLI output remain truthful.** Every stable
   data name remains valid theme input and every unknown name remains rejected.
@@ -336,11 +335,12 @@ contract does not claim token-granular pruning that the compiler does not provid
   still contains the canonical root block or a theme-scoped un-authored default.
 
 - **FR20 — Consumer docs distinguish three paths.** Documentation MUST show:
-  (1) `dataVars` for StyleX-capable component code; (2) JavaScript token
-  resolution for APIs that need concrete mode-resolved values; and (3) raw CSS
-  custom-property use only with an explicit availability guarantee or fallback.
-  It MUST state whole-group tree-shaking honestly and keep `@astryxdesign/build`,
-  color-scheme compatibility, and release work outside this change.
+  (1) `dataVars` for StyleX-capable component code, the path a source build
+  uses; (2) JavaScript token resolution for APIs that need concrete
+  mode-resolved values; and (3) raw CSS custom-property use in prebuilt mode,
+  where `@astryxdesign/core/astryx.css` supplies the defaults, or with an
+  explicit fallback. It MUST state whole-group tree-shaking honestly and keep
+  color-scheme compatibility and release work outside this change.
 
 ### Platform support
 
@@ -371,14 +371,14 @@ This record does not govern `@astryxdesign/build`.
 
 ## Verification
 
-| Contract  | Verification                                                                | Representative states                                                                                                                                                                                              | Mutation or failure expectation                                                                                                                                  |
-| --------- | --------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| FR1–FR3   | generator drift, public export, graph-aware compiler, and package CSS tests | source graphs without imports; prebuilt Core; one retained member; cross-package provider pair; raw/gzip size                                                                                                      | plain defaults drift; public key changes; unused source graph emits data vars; prebuilt Core omits any; one use emits fewer/more than 56; duplicate group        |
-| FR4–FR5   | source audit, compiler fixture, component tests, real Chromium              | direct SVG fill/stroke; DOM style; Canvas concrete resolution; explicit props; canonical green/red; authored override                                                                                              | literal construction remains; direct CSS value does not retain definitions; Canvas receives `var()`; body paints black or wick disappears                        |
-| FR6–FR7   | runtime/static/family structure and layer-order tests                       | zero/one/many authored names; all 56 canonical names; `:root`/html/body scan; theme CSS before/after component CSS                                                                                                 | omitted default serialized; authored value outside donut; raw defaults remain; layer order flips                                                                 |
-| FR8–FR11  | real-browser cascade matrix                                                 | same/different nesting; parent/child subsets; siblings; dynamic switch; light/dark/system/MediaTheme; portals; layered and unlayered source CSS                                                                    | omission resets; sibling leaks; order/mode changes winner; unlayered root silently claims override parity                                                        |
-| FR12–FR16 | compiler/runtime/build parity and environment-policy tests                  | no data consumer; retained layered group; runtime and built themes; standalone and family color-scheme composition                                                                                                 | Theme presence emits defaults; built/runtime differ; family repeats defaults; global policy diverges                                                             |
-| FR17–FR20 | Changeset, codemod, CLI check, docs, and regeneration fixtures              | literal component/fixture use; raw CSS with/without fallback with prebuilt Core CSS loaded, a Core source-build configuration, mixed packages, and undeterminable setups; old root artifact; ordinary/family build | no breaking note; unsafe auto-rewrite; stale artifact passes; raw use fails a prebuilt upgrade; docs claim theme CSS supplies defaults or token-granular pruning |
+| Contract  | Verification                                                                | Representative states                                                                                                                           | Mutation or failure expectation                                                                                                                           |
+| --------- | --------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| FR1–FR3   | generator drift, public export, graph-aware compiler, and package CSS tests | source graphs without imports; prebuilt Core; one retained member; cross-package provider pair; raw/gzip size                                   | plain defaults drift; public key changes; unused source graph emits data vars; prebuilt Core omits any; one use emits fewer/more than 56; duplicate group |
+| FR4–FR5   | source audit, compiler fixture, component tests, real Chromium              | direct SVG fill/stroke; DOM style; Canvas concrete resolution; explicit props; canonical green/red; authored override                           | literal construction remains; direct CSS value does not retain definitions; Canvas receives `var()`; body paints black or wick disappears                 |
+| FR6–FR7   | runtime/static/family structure and layer-order tests                       | zero/one/many authored names; all 56 canonical names; `:root`/html/body scan; theme CSS before/after component CSS                              | omitted default serialized; authored value outside donut; raw defaults remain; layer order flips                                                          |
+| FR8–FR11  | real-browser cascade matrix                                                 | same/different nesting; parent/child subsets; siblings; dynamic switch; light/dark/system/MediaTheme; portals; layered and unlayered source CSS | omission resets; sibling leaks; order/mode changes winner; unlayered root silently claims override parity                                                 |
+| FR12–FR16 | compiler/runtime/build parity and environment-policy tests                  | no data consumer; retained layered group; runtime and built themes; standalone and family color-scheme composition                              | Theme presence emits defaults; built/runtime differ; family repeats defaults; global policy diverges                                                      |
+| FR17–FR20 | Changeset, codemod, CLI check, docs, and regeneration fixtures              | literal component/fixture use; raw CSS with/without fallback in prebuilt and source builds; old root artifact; ordinary/family build            | no breaking note; unsafe auto-rewrite; stale artifact passes; raw use fails upgrade; docs claim theme CSS supplies defaults or token-granular pruning     |
 
 Real-browser verification MUST independently assert canonical and authored values,
 not reuse generator output as the oracle. It MUST reproduce the
@@ -567,7 +567,7 @@ it defeats the prebuilt-CSS contract and its documented import path.
 | matrix        | Theme with no authored data colors: every canonical default before; none after. Authored override: emitted before and after, scoped to its theme. StyleX `dataVars` consumers: same painted values before and after. Global `color-scheme` rules: unchanged |
 | coexistence   | The public `dataVars` group supplies canonical values through retained source compilation or the prebuilt Core stylesheet; a compiled import alone does not emit CSS.                                                                                       |
 | migration     | Read data colors through the public `dataVars` group, or author the needed values in the theme. Regenerate built theme CSS                                                                                                                                  |
-| codemod       | `astryx upgrade` runs a validator that rejects stale generated CSS and, where the app's build configuration compiles Core from source, direct raw consumers; the rewrite depends on whether the consumer compiles StyleX                                    |
+| codemod       | `astryx upgrade` runs a validator that rejects stale generated CSS; direct raw consumers need no codemod                                                                                                                                                    |
 | downstream    | Maintained docs and templates read data colors through `dataVars`                                                                                                                                                                                           |
 | rollback      | Restore the raw default block in runtime and `theme build` output from the final-patch baseline                                                                                                                                                             |
 | harm of delay | Every theme keeps shipping a second global palette that survives without any consumer and can disagree with the canonical StyleX group                                                                                                                      |
