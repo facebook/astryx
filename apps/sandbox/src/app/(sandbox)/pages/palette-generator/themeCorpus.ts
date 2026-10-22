@@ -1,8 +1,8 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import {butterPalettes} from '@astryxdesign/theme-butter';
-import {gothicPalettes} from '@astryxdesign/theme-gothic';
-import {stonePalettes} from '@astryxdesign/theme-stone';
+import {palette as gothicModePalettes} from '../../../../../../../packages/themes/gothic/src/gothicPalettes.generated';
+import {palette as stoneModePalettes} from '../../../../../../../packages/themes/stone/src/stonePalettes.generated';
 import {y2kPalettes} from '@astryxdesign/theme-y2k';
 
 import {hexToHct, hctToHex} from '../color-studio/colorUtils';
@@ -152,37 +152,101 @@ const stoneFamilies = [
     'neutral',
     'Stone Neutral',
     '#e2e2e2',
-    stonePalettes.neutral,
+    stoneModePalettes.neutral.light,
     'neutral',
+    stoneModePalettes.neutral.dark,
   ),
-  storedFamily('blue', 'Blue', '#d7e4f5', stonePalettes.blue),
-  storedFamily('cyan', 'Cyan', '#cce8e5', stonePalettes.cyan),
-  storedFamily('green', 'Green', '#d0e9ce', stonePalettes.green),
-  storedFamily('teal', 'Teal', '#d4e7dc', stonePalettes.teal),
-  storedFamily('yellow', 'Yellow', '#f4e1b7', stonePalettes.yellow),
-  storedFamily('orange', 'Orange', '#ffdcbb', stonePalettes.orange),
-  storedFamily('red', 'Red', '#f9dcd7', stonePalettes.red),
-  storedFamily('pink', 'Pink', '#f0dde8', stonePalettes.pink),
-  storedFamily('purple', 'Purple', '#e8dff3', stonePalettes.purple),
+  storedFamily(
+    'blue',
+    'Blue',
+    '#d7e4f5',
+    stoneModePalettes.blue.light,
+    'chromatic',
+    stoneModePalettes.blue.dark,
+  ),
+  storedFamily(
+    'cyan',
+    'Cyan',
+    '#cce8e5',
+    stoneModePalettes.cyan.light,
+    'chromatic',
+    stoneModePalettes.cyan.dark,
+  ),
+  storedFamily(
+    'green',
+    'Green',
+    '#d0e9ce',
+    stoneModePalettes.green.light,
+    'chromatic',
+    stoneModePalettes.green.dark,
+  ),
+  storedFamily(
+    'teal',
+    'Teal',
+    '#d4e7dc',
+    stoneModePalettes.teal.light,
+    'chromatic',
+    stoneModePalettes.teal.dark,
+  ),
+  storedFamily(
+    'yellow',
+    'Yellow',
+    '#f4e1b7',
+    stoneModePalettes.yellow.light,
+    'chromatic',
+    stoneModePalettes.yellow.dark,
+  ),
+  storedFamily(
+    'orange',
+    'Orange',
+    '#ffdcbb',
+    stoneModePalettes.orange.light,
+    'chromatic',
+    stoneModePalettes.orange.dark,
+  ),
+  storedFamily(
+    'red',
+    'Red',
+    '#f9dcd7',
+    stoneModePalettes.red.light,
+    'chromatic',
+    stoneModePalettes.red.dark,
+  ),
+  storedFamily(
+    'pink',
+    'Pink',
+    '#f0dde8',
+    stoneModePalettes.pink.light,
+    'chromatic',
+    stoneModePalettes.pink.dark,
+  ),
+  storedFamily(
+    'purple',
+    'Purple',
+    '#e8dff3',
+    stoneModePalettes.purple.light,
+    'chromatic',
+    stoneModePalettes.purple.dark,
+  ),
 ];
 
 const gothicFamilies = [
   storedFamily(
     'neutral',
     'Gothic Neutral',
-    '#96a0ab',
-    gothicPalettes.neutral,
+    '#5d646b',
+    gothicModePalettes.neutral.dark,
     'neutral',
   ),
-  storedFamily('green', 'Green', '#b3c79a', gothicPalettes.green),
-  storedFamily('red', 'Red', '#c6a6a2', gothicPalettes.red),
-  storedFamily('yellow', 'Yellow', '#d3c490', gothicPalettes.yellow),
-  storedFamily('blue', 'Blue', '#a3b5d6', gothicPalettes.blue),
-  storedFamily('purple', 'Purple', '#b29bc4', gothicPalettes.purple),
-  storedFamily('pink', 'Pink', '#c89aab', gothicPalettes.pink),
-  storedFamily('cyan', 'Cyan', '#a3c2cf', gothicPalettes.cyan),
-  storedFamily('orange', 'Orange', '#d3b89a', gothicPalettes.orange),
-  storedFamily('teal', 'Teal', '#a3c2b6', gothicPalettes.teal),
+  storedFamily('green', 'Green', '#779e5d', gothicModePalettes.green.dark),
+  storedFamily('red', 'Red', '#7d5e51', gothicModePalettes.red.dark),
+  storedFamily('yellow', 'Yellow', '#cca74c', gothicModePalettes.yellow.dark),
+  storedFamily('blue', 'Blue', '#6170bf', gothicModePalettes.blue.dark),
+  storedFamily('purple', 'Purple', '#a363bd', gothicModePalettes.purple.dark),
+  storedFamily('pink', 'Pink', '#b15876', gothicModePalettes.pink.dark),
+  storedFamily('cyan', 'Cyan', '#6a9eb1', gothicModePalettes.cyan.dark),
+  storedFamily('orange', 'Orange', '#c87a4a', gothicModePalettes.orange.dark),
+  storedFamily('teal', 'Teal', '#5aa091', gothicModePalettes.teal.dark),
 ].map(family => ({...family, light: undefined, sharedAcrossModes: false}));
 
 const y2kFamilies = [

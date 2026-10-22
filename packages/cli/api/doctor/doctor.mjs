@@ -67,7 +67,8 @@ import {semverCompare, isValidSemver, satisfiesRange} from '../../foundation/env
 import {checkAppThemes, checkThemes} from './theme-checks.mjs';
 import {availableLine, RUN_FROM_PROJECT, upgradeLine} from '../../foundation/release/notices.mjs';
 import {COMPUTER_COMMAND, COMPUTER_INSTALL_STEP} from '../../foundation/agent-docs/computer-agent-text.mjs';
-import {alignCommand, addCliCommandFor, computerAgentTextState, installCommandFor, insideProjectElsewhere, projectCoreVersion, projectHasOwnCli, computerIntegrationsOutside, computerIntegrationsToAdd, displayHomePath, outsideProject, releaseFacts} from './_adapter.mjs';
+import {alignCommand, addCliCommandFor, computerAgentTextState, installCommandFor, insideProjectElsewhere, projectCoreVersion, projectHasOwnCli, computerIntegrationsOutside, computerIntegrationsToAdd, displayHomePath, outsideProject, releaseFacts, builtIntegrationPackages} from './_adapter.mjs';
+import {checkBuilt} from './built-checks.mjs';
 
 /**
  * @typedef {'pass'|'warn'|'fail'|'info'} DoctorStatus
@@ -1910,9 +1911,24 @@ export const SYNC_CHECKS = [
  *
  * @param {object} [options]
  * @param {string} [options.cwd] - Directory to diagnose (default: process.cwd()).
+ * @param {string} [options.built] - A finished build to check for Astryx
+ *   use: a project folder, a build output folder, or one built file
+ *   (built-checks.mjs). Without it, the checks are unchanged.
  * @returns {Promise<DoctorReport>}
  */
 export async function runChecks(options = {}) {
+  if (options.built != null) {
+    const {built, ...rest} = options;
+    const report = await runChecks(rest);
+    const cwd = rest.cwd ?? process.cwd();
+    const checks = [
+      ...report.checks,
+      ...checkBuilt(built, {cwd, packages: builtIntegrationPackages(built, cwd)}),
+    ];
+    const summary = {pass: 0, warn: 0, fail: 0, info: 0};
+    for (const c of checks) summary[c.status] += 1;
+    return {checks, summary};
+  }
   const cwd = options.cwd ?? process.cwd();
   if (outsideProject(cwd)) return runComputerChecks(cwd);
   const coreDir = findProjectCoreDir(cwd);
@@ -2120,8 +2136,7 @@ export async function runChecks(options = {}) {
  * Programmatic API: run the doctor and return the same envelope shape that
  * `astryx doctor --json` emits.
  *
- * @param {object} [options]
- * @param {string} [options.cwd]
+ * @param {import('./doctor.type.mjs').DoctorOptions} [options]
  * @returns {Promise<{type: 'doctor', data: DoctorReport}>}
  */
 export async function doctor(options = {}) {
