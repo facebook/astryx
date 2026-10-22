@@ -286,17 +286,18 @@ export function rankIcons(sets, query) {
         reason: match.reason,
         score,
       },
-      // Within an exact score: a name match keeps whole id before id part,
-      // a meaning match its tag position.
+      // Within an exact score and one set: a name match keeps whole id
+      // before id part, a meaning match its tag position.
       rank: match.tier === 'exact' ? match.rank : 0,
       setIndex,
     };
   });
   found.sort(
     (a, b) =>
+      // Equal scores keep set order, so the project's set leads (FR6, FR8).
       b.entry.score - a.entry.score ||
-      a.rank - b.rank ||
       a.setIndex - b.setIndex ||
+      a.rank - b.rank ||
       (a.entry.id < b.entry.id ? -1 : a.entry.id > b.entry.id ? 1 : 0),
   );
   return found.map(({entry}) => entry);

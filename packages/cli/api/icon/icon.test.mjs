@@ -88,6 +88,31 @@ describe('icon.search ranking', () => {
     ]);
   });
 
+  it("equal scores keep set order before tag position: the project's set leads", () => {
+    const glyphs = /** @type {any} */ ({
+      name: 'glyphs',
+      package: '@acme/glyphs',
+      data: {
+        module: '@acme/glyphs',
+        icons: [{id: 'bin', export: 'BinIcon', words: ['garbage', 'delete']}],
+      },
+    });
+    const other = /** @type {any} */ ({
+      name: 'other',
+      package: '@acme/other',
+      data: {
+        module: '@acme/other',
+        icons: [{id: 'trash', export: 'TrashIcon', words: ['delete']}],
+      },
+    });
+    const ranked = rankIcons([glyphs, other], 'delete');
+    expect(ranked.map(m => [m.set, m.id])).toEqual([
+      ['glyphs', 'bin'],
+      ['other', 'trash'],
+    ]);
+    expect(ranked[0].score).toBe(ranked[1].score);
+  });
+
   it('returns every field, with the import line', async () => {
     const data = await search('delete');
     expect(data).toMatchObject({query: 'delete', matchCount: 1});

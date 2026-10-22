@@ -137,11 +137,14 @@ icon, and the CLI verifies it, writes the files, and checks the set.
 - **FR6 — `astryx experimental icon <words>` ranks icons by meaning.** It
   answers `icon.search`, each match with its `set`, `id`, `package`, `module`,
   `export`, `import` line, `words`, `definitions`, `variants`, `reason`, and
-  `score`: 100 for a definition the set maps to the icon, 90 or 80 for an exact
-  name or meaning match (the reading most of the searched icons use leads),
-  60 when the query starts one of its words, 40 for a partial match. An icon also answers
-  to the name and words of every definition it draws. Ties keep the set order
-  (FR8) and then `id`. `--set` keeps one set and `--limit` caps the list.
+  `score`: 100 for a definition the set maps to the icon, 90 or 80 for an
+  exact name or meaning match (the reading most of the searched icons use
+  leads), 60 when the query starts one of its words, 40 for a partial match.
+  An icon also answers to the name and words of every definition it draws.
+  Equal scores are ordered by set order (FR8), so the project's set leads;
+  then, within a set, an exact name match on the whole id before one on an id
+  part and an exact meaning match by its tag position; then by `id`. `--set`
+  keeps one set and `--limit` caps the list.
 - **FR7 — One icon and the installed sets.** `<set>/<id>` answers
   `icon.detail` with every variant's import line; `--list` answers `icon.list`
   with each set's coverage of built-in, Astryx, and its own definitions, the
