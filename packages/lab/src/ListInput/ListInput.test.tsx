@@ -3,7 +3,7 @@
 /**
  * @file ListInput.test.tsx
  * @input Uses Vitest, Testing Library, and the controlled ListInput API
- * @output Behavioral coverage for list editing, pointer-stable adding, tokenized mutation motion, validation, focus, and free-floating stationary-list reordering
+ * @output Behavioral coverage for list editing, pointer-stable adding, tokenized mutation motion, validation, focus, the hover-revealed reorder grip that hangs beside the first field, and free-floating stationary-list reordering
  * @position Lab tests; validates ListInput.tsx
  *
  * SYNC: When ListInput.tsx behavior changes, update these tests.
@@ -14,10 +14,12 @@ import {useState} from 'react';
 import {
   fireEvent,
   render,
+  renderHook,
   screen,
   waitFor,
   within,
 } from '@testing-library/react';
+import {useContainerReveal} from '@astryxdesign/core/hooks';
 import {TextInput} from '@astryxdesign/core/TextInput';
 import {
   ListInput,
@@ -112,6 +114,39 @@ function renderListInput(overrides: Partial<ListInputProps<Guest>> = {}) {
   };
 
   return render(<ListInput<Guest> {...props} />);
+}
+
+function classTokens(element: Element | null): string[] {
+  return element?.getAttribute('class')?.split(/\s+/).filter(Boolean) ?? [];
+}
+
+// The reveal is CSS-only, so jsdom can only prove the wiring: each element
+// carries the classes the hook hands out for its role. The browser proves the
+// pixels (Storybook).
+function revealClasses() {
+  const {result} = renderHook(() => useContainerReveal());
+  const reveal = result.current;
+  const tokensOf = (props: {className?: string}) =>
+    props.className?.split(/\s+/).filter(Boolean) ?? [];
+  const container = tokensOf(reveal.getContainerProps());
+  const grip = tokensOf(
+    reveal.getContentRevealProps({isLayoutPreserved: true}),
+  );
+  const containerInactive = tokensOf(
+    reveal.getContainerProps({forceState: 'inactive'}),
+  );
+  const gripShown = tokensOf(
+    reveal.getContentRevealProps({
+      isLayoutPreserved: true,
+      forceVisibility: 'shown',
+    }),
+  );
+  return {
+    container,
+    grip,
+    onlyInactive: containerInactive.filter(token => !container.includes(token)),
+    onlyShown: gripShown.filter(token => !grip.includes(token)),
+  };
 }
 
 const originalAnimateDescriptor = Object.getOwnPropertyDescriptor(
@@ -695,6 +730,151 @@ describe('ListInput', () => {
     ).not.toBeInTheDocument();
   });
 
+  it('hangs the grip beside the first field and reveals it on hover or focus', () => {
+    const reveal = revealClasses();
+    const {container} = renderListInput({isReorderable: true});
+    const row = container.querySelector<HTMLElement>('[data-list-input-row]');
+    const handle = screen.getByRole('button', {name: 'Reorder guest 1'});
+    const remove = screen.getByRole('button', {name: 'Remove guest 1'});
+    const [firstField] = within(row!).getAllByRole('textbox');
+
+    // The grip is the record's first control in reading and tab order. It sits
+    // in the first field's cell but hangs in the inline-start gutter, out of the
+    // flow, so the fields keep their columns.
+    expect(within(row!).getAllByRole('button')).toEqual([handle, remove]);
+    expect(row!.querySelector('[data-list-input-cell="0"]')).toContainElement(
+      handle,
+    );
+    expect(
+      handle.compareDocumentPosition(firstField) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+
+    // The row is the reveal container; the grip fades with opacity alone, so
+    // at rest it stays mounted, named, and focusable.
+    expect(reveal.container.length).toBeGreaterThan(0);
+    expect(classTokens(row)).toEqual(expect.arrayContaining(reveal.container));
+    expect(classTokens(handle.parentElement)).toEqual(
+      expect.arrayContaining(reveal.grip),
+    );
+    expect(handle).toBeEnabled();
+    expect(handle).not.toHaveAttribute('tabindex', '-1');
+  });
+
+  it('reveals Remove on hover or focus, with or without reordering', () => {
+    const reveal = revealClasses();
+    for (const isReorderable of [false, true]) {
+      const {container, unmount} = renderListInput({isReorderable});
+      const rows = container.querySelectorAll<HTMLElement>(
+        '[data-list-input-row]',
+      );
+      rows.forEach((row, index) => {
+        const remove = within(row).getByRole('button', {
+          name: `Remove guest ${index + 1}`,
+        });
+        // The row's direct child holding Remove is its control cell. It fades
+        // with opacity alone, so the button keeps its column, stays mounted,
+        // and stays in the tab order.
+        const removeCell = [...row.children].find(child =>
+          child.contains(remove),
+        );
+        expect(classTokens(row)).toEqual(
+          expect.arrayContaining(reveal.container),
+        );
+        expect(classTokens(removeCell ?? null)).toEqual(
+          expect.arrayContaining(reveal.grip),
+        );
+        expect(remove).toBeEnabled();
+        expect(remove).not.toHaveAttribute('tabindex', '-1');
+      });
+      unmount();
+    }
+  });
+
+  it('keeps the moving grip shown and quiets other rows during a pointer drag', () => {
+    const reveal = revealClasses();
+    expect(reveal.onlyShown.length).toBeGreaterThan(0);
+    expect(reveal.onlyInactive.length).toBeGreaterThan(0);
+    const {container} = renderListInput({isReorderable: true});
+    const rows = container.querySelectorAll<HTMLElement>(
+      '[data-list-input-row]',
+    );
+    const handle = screen.getByRole('button', {name: 'Reorder guest 1'});
+    const hasAll = (element: Element | null, tokens: string[]) =>
+      tokens.every(token => classTokens(element).includes(token));
+    const hasAny = (element: Element | null, tokens: string[]) =>
+      tokens.some(token => classTokens(element).includes(token));
+
+    fireEvent.pointerDown(handle, {
+      button: 0,
+      pointerId: 4,
+      clientX: 10,
+      clientY: 10,
+    });
+
+    expect(hasAll(handle.parentElement, reveal.onlyShown)).toBe(true);
+    expect(hasAny(rows[0], reveal.onlyInactive)).toBe(false);
+    expect(hasAll(rows[1], reveal.onlyInactive)).toBe(true);
+    // The duplicate under the pointer shows its grip too.
+    const previewGrip = document.querySelector(
+      '[data-list-input-drag-preview] [data-list-input-cell="0"] button',
+    );
+    expect(hasAll(previewGrip?.parentElement ?? null, reveal.onlyShown)).toBe(
+      true,
+    );
+
+    fireEvent.pointerUp(handle, {pointerId: 4, clientX: 10, clientY: 10});
+
+    expect(hasAny(handle.parentElement, reveal.onlyShown)).toBe(false);
+    expect(hasAny(rows[1], reveal.onlyInactive)).toBe(false);
+  });
+
+  it('keeps a lifted grip shown without quieting rows during keyboard reorder', () => {
+    const reveal = revealClasses();
+    const {container} = renderListInput({isReorderable: true});
+    const handle = screen.getByRole('button', {name: 'Reorder guest 1'});
+    const otherRow = container.querySelectorAll('[data-list-input-row]')[1];
+
+    handle.focus();
+    fireEvent.keyDown(handle, {key: ' ', code: 'Space'});
+    expect(classTokens(handle.parentElement)).toEqual(
+      expect.arrayContaining(reveal.onlyShown),
+    );
+    expect(
+      classTokens(otherRow).some(token => reveal.onlyInactive.includes(token)),
+    ).toBe(false);
+
+    fireEvent.keyDown(handle, {key: 'Escape'});
+    expect(
+      classTokens(handle.parentElement).some(token =>
+        reveal.onlyShown.includes(token),
+      ),
+    ).toBe(false);
+  });
+
+  it('focuses the first field of an added record, not its grip', () => {
+    function ReorderableList() {
+      const [value, setValue] = useState(guests);
+      return (
+        <ListInput<Guest>
+          label="Guests"
+          itemName="guest"
+          value={value}
+          onChange={setValue}
+          getItemKey={guest => guest.id}
+          createItem={() => createdGuest}
+          columns={columns}
+          isReorderable
+        />
+      );
+    }
+
+    render(<ReorderableList />);
+    fireEvent.click(screen.getByRole('button', {name: 'Add guest'}));
+
+    expect(screen.getByDisplayValue('Linus')).toHaveFocus();
+  });
+
   it('supports consumer-owned validation that appears after blur', () => {
     function BlurValidatedList() {
       const [value, setValue] = useState<Guest[]>([guests[0]]);
@@ -819,7 +999,7 @@ describe('ListInput', () => {
 
     render(<ArrowReorderList />);
     const handle = screen.getByRole('button', {name: 'Reorder guest 1'});
-    expect(handle).toHaveAttribute('data-size', 'md');
+    expect(handle).toHaveAttribute('type', 'button');
     expect(
       screen
         .queryAllByRole('tooltip', {hidden: true})
@@ -931,7 +1111,7 @@ describe('ListInput', () => {
     });
     const remove = screen.getByRole('button', {name: 'Remove guest 2'});
     const handle = screen.getByRole('button', {name: 'Reorder guest 2'});
-    expect(within(rows[1]).getAllByRole('button')).toEqual([remove, handle]);
+    expect(within(rows[1]).getAllByRole('button')).toEqual([handle, remove]);
 
     fireEvent.pointerDown(handle, {
       button: 0,
