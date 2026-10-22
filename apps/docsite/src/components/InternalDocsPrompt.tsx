@@ -3,47 +3,34 @@
 'use client';
 
 /**
- * @input Positive reachability, mounted-view dismissal, and the current docs route
- * @output A compact, non-modal utility bar fixed at the bottom center
- * @position Client leaf mounted once inside the docsite's server root layout
+ * @input Build target, exact-origin reachability, and the current docs view
+ * @output One dismissible info banner with the available docs destinations
+ * @position Root-owned detection; banner content lives in the page shell
  */
 
-import {useState} from 'react';
+import {createContext, Suspense, useContext, type ReactNode} from 'react';
 import {usePathname, useSearchParams} from 'next/navigation';
-import * as stylex from '@stylexjs/stylex';
-import {Card} from '@astryxdesign/core/Card';
-import {Divider} from '@astryxdesign/core/Divider';
+import {Banner} from '@astryxdesign/core/Banner';
+import {Button} from '@astryxdesign/core/Button';
 import {Icon} from '@astryxdesign/core/Icon';
-import {IconButton} from '@astryxdesign/core/IconButton';
-import {HStack} from '@astryxdesign/core/Layout';
-import {Link} from '@astryxdesign/core/Link';
+import {CURRENT_TARGET, urlForTarget} from '../lib/docsVersions';
 import {
   INTERNAL_DOCS_ORIGIN,
   useInternalDocsPrompt,
 } from '../lib/useInternalDocsPrompt';
 
-const styles = stylex.create({
-  prompt: {
-    position: 'fixed',
-    bottom: 'max(var(--spacing-4), env(safe-area-inset-bottom))',
-    left: '50%',
-    transform: 'translateX(-50%)',
-    width: 'fit-content',
-    maxWidth:
-      'calc(100vw - max(var(--spacing-4), env(safe-area-inset-left)) - max(var(--spacing-4), env(safe-area-inset-right)))',
-    borderRadius: 'var(--radius-element)',
-    overflow: 'visible',
-    zIndex: 100,
-    whiteSpace: 'nowrap',
-  },
-  link: {
-    minHeight: 'var(--size-element-sm)',
-    paddingInline: 'var(--spacing-2)',
-  },
-  divider: {
-    height: 'var(--spacing-4)',
-  },
-});
+const ReachabilityContext = createContext(false);
+
+export function InternalDocsReachabilityProvider({
+  children,
+}: {
+  children: ReactNode;
+}) {
+  const isReachable = useInternalDocsPrompt();
+  return (
+    <ReachabilityContext value={isReachable}>{children}</ReachabilityContext>
+  );
+}
 
 export function internalDocsHref(pathname: string, search: string): string {
   // Shared route families use the same topic/name/slug semantics. Public-only
@@ -60,53 +47,94 @@ export function internalDocsHref(pathname: string, search: string): string {
   return url.href;
 }
 
+export function DocsBanner() {
+  return (
+    <Suspense fallback={<CanaryNotice />}>
+      <InternalDocsPrompt />
+    </Suspense>
+  );
+}
+
+function CanaryNotice() {
+  const pathname = usePathname();
+  return CURRENT_TARGET === 'canary' ? (
+    <DocsInfoBanner productionHref={urlForTarget('latest', pathname)} />
+  ) : null;
+}
+
 export function InternalDocsPrompt() {
-  const isReachable = useInternalDocsPrompt();
+  const isReachable = useContext(ReachabilityContext);
   const pathname = usePathname();
   const search = useSearchParams().toString();
+  const isCanary = CURRENT_TARGET === 'canary';
+  const view = `${pathname}${search ? `?${search}` : ''}`;
 
-  // Keep detection mounted across navigation, but reset only the indicator's
-  // local dismissal state when the current path/query changes.
-  return isReachable ? (
-    <InternalDocsUtilityBar
-      key={`${pathname}?${search}`}
-      href={internalDocsHref(pathname, search)}
+  return isCanary || isReachable ? (
+    <DocsInfoBanner
+      key={view}
+      internalHref={
+        isReachable ? internalDocsHref(pathname, search) : undefined
+      }
+      productionHref={isCanary ? urlForTarget('latest', view) : null}
     />
   ) : null;
 }
 
-function InternalDocsUtilityBar({href}: {href: string}) {
-  const [isDismissed, setIsDismissed] = useState(false);
-  if (isDismissed) {
-    return null;
-  }
-
+function DocsInfoBanner({
+  internalHref,
+  productionHref,
+}: {
+  internalHref?: string;
+  productionHref: string | null;
+}) {
+  const isCanary = CURRENT_TARGET === 'canary';
   return (
-    <Card
-      role="complementary"
-      aria-label="Meta internal docs"
-      elevation="none"
-      padding={0.5}
-      xstyle={styles.prompt}>
-      <HStack gap={1} vAlign="center">
-        <Link
-          href={href}
-          isStandalone
-          isExternalLink
-          color="primary"
-          xstyle={styles.link}>
-          Meta internal docs
-        </Link>
-        <Divider orientation="vertical" xstyle={styles.divider} />
-        <IconButton
-          label="Dismiss Meta internal docs for this page view"
-          tooltip="Dismiss for this page view"
-          icon={<Icon icon="close" size="xsm" color="secondary" />}
-          variant="ghost"
-          size="sm"
-          onClick={() => setIsDismissed(true)}
-        />
-      </HStack>
-    </Card>
+    <Banner
+      role="region"
+      aria-label="Documentation notice"
+      container="section"
+      status="info"
+      isDismissable
+      dismissLabel="Dismiss documentation notice for this page view"
+      title={
+        isCanary
+          ? "You're viewing Canary docs"
+          : 'Meta internal docs are available'
+      }
+      description={
+        <>
+          {isCanary && (
+            <>
+              Canary includes unreleased components and props; production docs
+              match the stable packages.
+              <br />
+            </>
+          )}
+          Meta internal docs include Meta-specific components and guidance.
+        </>
+      }
+      endContent={
+        <>
+          {internalHref && (
+            <Button
+              label="Meta internal docs"
+              aria-label="Meta internal docs (opens in a new tab)"
+              endContent={<Icon icon="externalLink" size="xsm" />}
+              variant="secondary"
+              href={internalHref}
+              target="_blank"
+              rel="noopener noreferrer"
+            />
+          )}
+          {productionHref && (
+            <Button
+              label="View production"
+              variant="secondary"
+              href={productionHref}
+            />
+          )}
+        </>
+      }
+    />
   );
 }

@@ -1,9 +1,9 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @input A local production docsite and exact-origin companion endpoint fixtures
- * @output Browser proof of bottom-center geometry, dynamic origins, and dismissal
- * @position Docsite integration tests; no live network access is inferred here
+ * @input A production docsite build and exact-origin reachability fixtures
+ * @output Browser evidence of unified banner CTAs and page-view-only dismissal
+ * @position Docsite integration tests; run against both latest and canary builds
  */
 
 import {expect, test, type Page} from '@playwright/test';
@@ -17,13 +17,14 @@ const deployments = [
   },
   {name: 'canary', origin: 'https://astryx-canary.vercel.app'},
 ];
+const isCanary = process.env.DOCSITE_TEST_TARGET !== 'latest';
+const target = isCanary ? 'canary' : 'latest';
 const internalOrigin = 'https://astryx.internalmeta.com';
 const probeOrigin = 'https://codebunny.internalmeta.com';
-const promptName = 'Meta internal docs';
+const noticeName = 'Documentation notice';
+const dismissName = 'Dismiss documentation notice for this page view';
 
 test.afterEach(async ({page}) => {
-  // The fixture proxies Next.js prefetches too. Drain the final navigation's
-  // network work before Playwright disposes its fetched response bodies.
   await page.waitForLoadState('networkidle');
 });
 
@@ -35,7 +36,6 @@ async function servePublicOrigin(
   if (!baseURL) {
     throw new Error('A local docsite baseURL is required');
   }
-  // Exercise the shipped origin gate without granting localhost access.
   await page.route(`${origin}/**`, async route => {
     const url = new URL(route.request().url());
     const response = await route.fetch({
@@ -75,7 +75,7 @@ async function serveReachability(page: Page, origin: string) {
 for (const {name, origin} of deployments) {
   for (const width of [1440, 390]) {
     for (const colorScheme of ['light', 'dark'] as const) {
-      test(`${name}: bottom-center utility bar at ${width}px in ${colorScheme} never shifts content and dismissal stays view-local`, async ({
+      test(`${target} ${name}: one info banner at ${width}px in ${colorScheme}`, async ({
         page,
         baseURL,
       }, testInfo) => {
@@ -92,125 +92,96 @@ for (const {name, origin} of deployments) {
         });
         await expect(heading).toBeVisible();
         await page.evaluate(() => document.fonts.ready);
-        const before = await heading.boundingBox();
-        const prompt = page.getByRole('complementary', {name: promptName});
-        await expect(prompt).toHaveCount(0);
+        const notice = page.getByRole('region', {name: noticeName});
+        const internal = notice.getByRole('link', {
+          name: 'Meta internal docs (opens in a new tab)',
+          exact: true,
+        });
+        const production = notice.getByRole('link', {
+          name: 'View production',
+          exact: true,
+        });
+        await expect(notice).toHaveCount(isCanary ? 1 : 0);
+        await expect(internal).toHaveCount(0);
+        if (isCanary) {
+          await expect(production).toHaveAttribute(
+            'href',
+            'https://astryx.atmeta.com/docs/getting-started?source=test',
+          );
+          await expect(notice).toContainText('unreleased components and props');
+          await expect(notice).toContainText(
+            'Meta-specific components and guidance',
+          );
+        }
         await expect(
           page.locator(
             'iframe[title="Astryx documentation reachability check"]',
           ),
         ).toHaveAttribute('sandbox', 'allow-scripts allow-same-origin');
         probe.allowReply();
-        await expect(prompt).toBeVisible();
-        const after = await heading.boundingBox();
-        expect(after).toEqual(before);
-        const link = prompt.getByRole('link', {
-          name: /Meta internal docs/,
-        });
-        await expect(link).toContainText('Meta internal docs');
-        await page.keyboard.press('Tab');
-        await expect(
-          page.getByRole('link', {name: 'Skip to content', exact: true}),
-        ).toBeFocused();
-        await expect(
-          prompt.getByText("On Meta's network?", {exact: true}),
-        ).toHaveCount(0);
-        await expect(prompt.getByText(/Meta-specific components/)).toHaveCount(
-          0,
-        );
-        await expect(prompt.getByRole('link')).toHaveCount(1);
-        await expect(prompt.getByRole('button')).toHaveCount(1);
-        await expect(link).toHaveAttribute(
+        await expect(notice).toHaveCount(1);
+        await expect(internal).toBeVisible();
+        await expect(internal).toHaveAttribute(
           'href',
           `${internalOrigin}/docs/getting-started?source=test`,
         );
+        await expect(internal).toHaveAttribute('target', '_blank');
+        await expect(internal).toHaveAttribute('rel', /noopener/);
+        await expect(production).toHaveCount(isCanary ? 1 : 0);
+        await expect(notice.getByRole('link')).toHaveCount(isCanary ? 2 : 1);
+        await expect(page.locator('[data-status="warning"]')).toHaveCount(0);
+        await expect(notice.locator('[data-status="info"]')).toHaveCount(2);
+        await expect(page.getByRole('banner')).toHaveCount(1);
+        await expect(
+          page.getByRole('banner').getByRole('complementary'),
+        ).toHaveCount(0);
+        const box = await notice.boundingBox();
+        if (!box) {
+          throw new Error('The info banner must have a visible box');
+        }
+        expect(box.x).toBeGreaterThanOrEqual(0);
+        expect(box.x + box.width).toBeLessThanOrEqual(width);
+        expect(box.width).toBeGreaterThan(width * 0.9);
+        expect(box.y).toBeLessThan(1);
+        await expect(notice).not.toHaveCSS('position', 'fixed');
         await expect(
           page.locator(
             'iframe[title="Astryx documentation reachability check"]',
           ),
         ).toHaveCount(0);
         expect(probe.requests()).toBe(1);
-
-        const box = await prompt.boundingBox();
-        if (!box) {
-          throw new Error('The prompt must have a visible bounding box');
+        await page.keyboard.press('Tab');
+        await expect(
+          page.getByRole('link', {name: 'Skip to content', exact: true}),
+        ).toBeFocused();
+        await page.keyboard.press('Tab');
+        await expect(internal).toBeFocused();
+        await page.screenshot({
+          path: testInfo.outputPath(
+            `docs-banner-focus-${target}-${name}-${width}-${colorScheme}.png`,
+          ),
+        });
+        if (isCanary) {
+          await page.keyboard.press('Tab');
+          await expect(production).toBeFocused();
         }
-        expect(box.x).toBeGreaterThanOrEqual(0);
-        expect(box.x + box.width).toBeLessThanOrEqual(width);
-        expect(box.y + box.height).toBeLessThanOrEqual(900);
-        expect(box.width).toBeLessThan(240);
-        expect(box.height).toBeLessThanOrEqual(40);
-        expect(Math.abs(box.x + box.width / 2 - width / 2)).toBeLessThan(1);
-        expect(900 - box.y - box.height).toBeGreaterThanOrEqual(16);
-        expect(box.y).toBeGreaterThan(900 / 2);
-        const appearance = await prompt.evaluate(element => {
-          const style = getComputedStyle(element);
-          return {
-            position: style.position,
-            elevation: element.getAttribute('data-elevation'),
-            borderWidth: style.borderTopWidth,
-          };
-        });
-        expect(appearance).toEqual({
-          position: 'fixed',
-          elevation: 'none',
-          borderWidth: '1px',
-        });
-        await expect(prompt.getByRole('separator')).toHaveAttribute(
-          'aria-orientation',
-          'vertical',
-        );
-        expect(
-          await prompt.evaluate(element =>
-            Number(getComputedStyle(element).zIndex),
-          ),
-        ).toBeGreaterThan(1);
-        await heading.click();
-        await link.focus();
-        await page.keyboard.press('Shift+Tab');
         await page.keyboard.press('Tab');
-        await expect(link).toBeFocused();
-        await page.screenshot({
-          path: testInfo.outputPath(
-            `meta-internal-docs-link-focus-${name}-${width}-${colorScheme}.png`,
-          ),
-        });
-        await page.keyboard.press('Tab');
-        const dismiss = prompt.getByRole('button', {
-          name: 'Dismiss Meta internal docs for this page view',
-        });
+        const dismiss = notice.getByRole('button', {name: dismissName});
         await expect(dismiss).toBeFocused();
-        await expect(prompt).toHaveCSS('overflow', 'visible');
-        await page.screenshot({
-          path: testInfo.outputPath(
-            `meta-internal-docs-dismiss-focus-${name}-${width}-${colorScheme}.png`,
-          ),
-        });
         await heading.click();
         await expect(page.getByRole('tooltip')).toHaveCount(0);
         await page.screenshot({
           path: testInfo.outputPath(
-            `meta-internal-docs-${name}-${width}-${colorScheme}.png`,
+            `docs-banner-${target}-${name}-${width}-${colorScheme}.png`,
           ),
-        });
-        await prompt.screenshot({
-          path: testInfo.outputPath(
-            `meta-internal-docs-detail-${name}-${width}-${colorScheme}.png`,
-          ),
-        });
-
-        const close = prompt.getByRole('button', {
-          name: 'Dismiss Meta internal docs for this page view',
         });
         const storageBefore = await page.evaluate(() => ({
           session: {...sessionStorage},
           local: {...localStorage},
           cookie: document.cookie,
         }));
-        await close.focus();
-        await expect(close).toBeFocused();
-        await page.keyboard.press('Enter');
-        await expect(prompt).toHaveCount(0);
+        await dismiss.click();
+        await expect(notice).toHaveCount(0);
         expect(
           await page.evaluate(() => ({
             session: {...sessionStorage},
@@ -218,31 +189,35 @@ for (const {name, origin} of deployments) {
             cookie: document.cookie,
           })),
         ).toEqual(storageBefore);
-
-        // Next.js' native history integration updates the client URL view without
-        // reloading the document or repeating the successful reachability probe.
         await page.evaluate(() =>
           window.history.pushState(null, '', '?source=after-dismiss'),
         );
-        await expect(prompt).toBeVisible();
-        await expect(link).toHaveAttribute(
+        await expect(notice).toHaveCount(1);
+        await expect(internal).toHaveAttribute(
           'href',
           `${internalOrigin}/docs/getting-started?source=after-dismiss`,
         );
+        if (isCanary) {
+          await expect(production).toHaveAttribute(
+            'href',
+            'https://astryx.atmeta.com/docs/getting-started?source=after-dismiss',
+          );
+        }
         expect(probe.requests()).toBe(1);
-        await close.click();
-        await expect(prompt).toHaveCount(0);
-
+        await dismiss.click();
         await page.reload();
         await expect(heading).toBeVisible();
-        await expect(prompt).toBeVisible();
+        await expect(internal).toBeVisible();
         expect(probe.requests()).toBe(2);
       });
     }
   }
 }
 
-test('unreachable visitors never see a prompt', async ({page, baseURL}) => {
+test(`${target}: failed reachability never offers internal docs`, async ({
+  page,
+  baseURL,
+}) => {
   const origin = deployments[0].origin;
   await servePublicOrigin(page, baseURL, origin);
   await page.route(`${probeOrigin}/**`, route => route.abort());
@@ -250,13 +225,20 @@ test('unreachable visitors never see a prompt', async ({page, baseURL}) => {
   await expect(
     page.getByRole('heading', {name: 'Getting Started', exact: true}),
   ).toBeVisible();
-  await expect(page.getByRole('complementary', {name: promptName})).toHaveCount(
-    0,
-  );
   await expect(
     page.locator('iframe[title="Astryx documentation reachability check"]'),
   ).toHaveCount(0, {timeout: 10_000});
-  await expect(page.getByRole('complementary', {name: promptName})).toHaveCount(
-    0,
-  );
+  const notice = page.getByRole('region', {name: noticeName});
+  await expect(notice).toHaveCount(isCanary ? 1 : 0);
+  await expect(
+    page.getByRole('link', {
+      name: 'Meta internal docs (opens in a new tab)',
+      exact: true,
+    }),
+  ).toHaveCount(0);
+  if (isCanary) {
+    await expect(
+      notice.getByRole('link', {name: 'View production', exact: true}),
+    ).toBeVisible();
+  }
 });

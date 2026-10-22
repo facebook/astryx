@@ -42,20 +42,31 @@ const message = {type: 'codebunny:access-check:v1', reachable: true};
 beforeEach(async () => {
   vi.resetModules();
   vi.useFakeTimers();
+  vi.stubEnv('NEXT_PUBLIC_DOCS_TARGET', 'latest');
   jsdom.reconfigure({
     url: 'https://astryx.atmeta.com/components/Button?tab=props',
   });
   route.pathname = '/components/Button';
   route.search = 'tab=props';
-  const module = await import('../components/InternalDocsPrompt');
-  Prompt = module.InternalDocsPrompt;
-  href = module.internalDocsHref;
+  await loadPrompt();
 });
+
+async function loadPrompt() {
+  vi.resetModules();
+  const module = await import('../components/InternalDocsPrompt');
+  Prompt = () => (
+    <module.InternalDocsReachabilityProvider>
+      <module.InternalDocsPrompt />
+    </module.InternalDocsReachabilityProvider>
+  );
+  href = module.internalDocsHref;
+}
 
 afterEach(() => {
   cleanup();
   vi.restoreAllMocks();
   vi.useRealTimers();
+  vi.unstubAllEnvs();
 });
 
 async function mount() {
@@ -92,19 +103,20 @@ function showPrompt() {
 }
 
 function prompt() {
-  return screen.queryByRole('complementary', {
-    name: 'Meta internal docs',
+  return screen.queryByRole('region', {
+    name: 'Documentation notice',
   });
 }
 
 describe('InternalDocsPrompt', () => {
-  it('mounts once in a leaf Suspense boundary without converting the server layout', () => {
+  it('keeps detection at the server root without making the layout URL-aware', () => {
     const layout = readFileSync(join(__dirname, '../app/layout.tsx'), 'utf8');
     expect(layout).not.toContain("'use client'");
-    expect(layout.match(/<InternalDocsPrompt\s*\/>/g)).toHaveLength(1);
+    expect(layout.match(/<InternalDocsReachabilityProvider>/g)).toHaveLength(1);
     expect(layout).toMatch(
-      /\{children\}\s*<Suspense fallback=\{null\}>\s*<InternalDocsPrompt \/>\s*<\/Suspense>/,
+      /<InternalDocsReachabilityProvider>\s*\{children\}\s*<\/InternalDocsReachabilityProvider>/,
     );
+    expect(layout).not.toContain('<InternalDocsPrompt');
   });
 
   it('does not start another probe inside an embedded document', async () => {
@@ -149,11 +161,14 @@ describe('InternalDocsPrompt', () => {
     });
     expect(screen.getByText('Meta internal docs', {exact: true})).toBeTruthy();
     expect(prompt()?.textContent).not.toContain("On Meta's network?");
-    expect(prompt()?.textContent).not.toContain('Meta-specific components');
+    expect(prompt()?.textContent).toContain(
+      'Meta-specific components and guidance',
+    );
     expect(prompt()?.querySelectorAll('a')).toHaveLength(1);
     expect(prompt()?.querySelectorAll('button')).toHaveLength(1);
-    expect(link.getAttribute('aria-label')).toBeNull();
-    expect(link.textContent).toContain('opens in new tab');
+    expect(link.getAttribute('aria-label')).toBe(
+      'Meta internal docs (opens in a new tab)',
+    );
     expect(link.getAttribute('href')).toBe(
       `${internalOrigin}/components/Button?tab=props`,
     );
@@ -304,7 +319,7 @@ describe('InternalDocsPrompt', () => {
       cookie: document.cookie,
     };
     const close = screen.getByRole('button', {
-      name: 'Dismiss Meta internal docs for this page view',
+      name: 'Dismiss documentation notice for this page view',
     });
     expect(close.getAttribute('tabindex')).not.toBe('-1');
     fireEvent.click(close);
@@ -336,7 +351,7 @@ describe('InternalDocsPrompt', () => {
     ]) {
       fireEvent.click(
         screen.getByRole('button', {
-          name: 'Dismiss Meta internal docs for this page view',
+          name: 'Dismiss documentation notice for this page view',
         }),
       );
       expect(prompt()).toBeNull();
@@ -365,6 +380,84 @@ describe('InternalDocsPrompt', () => {
     fireEvent.load(target);
     send(target);
     expect(prompt()).not.toBeNull();
+  });
+
+  it('shows one canary notice before reachability, with only the production CTA', async () => {
+    vi.stubEnv('NEXT_PUBLIC_DOCS_TARGET', 'canary');
+    await loadPrompt();
+    await mount();
+    expect(prompt()?.textContent).toContain('unreleased components and props');
+    expect(prompt()?.textContent).toContain(
+      'Meta-specific components and guidance',
+    );
+    expect(
+      screen.getByRole('link', {name: 'View production'}).getAttribute('href'),
+    ).toBe('https://astryx.atmeta.com/components/Button?tab=props');
+    expect(
+      screen.queryByRole('link', {
+        name: 'Meta internal docs (opens in a new tab)',
+      }),
+    ).toBeNull();
+    await act(async () => vi.advanceTimersByTime(5000));
+    expect(prompt()).not.toBeNull();
+    expect(
+      screen.queryByRole('link', {
+        name: 'Meta internal docs (opens in a new tab)',
+      }),
+    ).toBeNull();
+  });
+
+  it('adds the internal CTA to the existing canary notice after a valid probe', async () => {
+    vi.stubEnv('NEXT_PUBLIC_DOCS_TARGET', 'canary');
+    await loadPrompt();
+    await mount();
+    showPrompt();
+    expect(
+      screen.getAllByRole('region', {name: 'Documentation notice'}),
+    ).toHaveLength(1);
+    expect(screen.getAllByRole('link')).toHaveLength(2);
+    expect(
+      screen
+        .getByRole('link', {name: 'Meta internal docs (opens in a new tab)'})
+        .getAttribute('href'),
+    ).toBe(`${internalOrigin}/components/Button?tab=props`);
+    expect(
+      screen.getByRole('link', {name: 'View production'}).getAttribute('href'),
+    ).toBe('https://astryx.atmeta.com/components/Button?tab=props');
+  });
+
+  it('does not revive a dismissed canary notice when the probe finishes', async () => {
+    vi.stubEnv('NEXT_PUBLIC_DOCS_TARGET', 'canary');
+    await loadPrompt();
+    const view = await mount();
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'Dismiss documentation notice for this page view',
+      }),
+    );
+    expect(prompt()).toBeNull();
+    showPrompt();
+    expect(prompt()).toBeNull();
+    route.search = 'tab=examples';
+    view.rerender(
+      <StrictMode>
+        <Prompt />
+      </StrictMode>,
+    );
+    expect(prompt()).not.toBeNull();
+    expect(
+      screen
+        .getByRole('link', {name: 'Meta internal docs (opens in a new tab)'})
+        .getAttribute('href'),
+    ).toBe(`${internalOrigin}/components/Button?tab=examples`);
+  });
+
+  it('offers only internal docs on a reachable production view', async () => {
+    await mount();
+    showPrompt();
+    expect(prompt()?.textContent).toContain('Meta internal docs are available');
+    expect(screen.queryByRole('link', {name: 'View production'})).toBeNull();
+    expect(screen.getAllByRole('link')).toHaveLength(1);
   });
 
   it('updates the link on client navigation without probing again', async () => {

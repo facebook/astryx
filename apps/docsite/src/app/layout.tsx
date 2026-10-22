@@ -2,13 +2,12 @@
 
 /**
  * @input Page content and site-wide metadata
- * @output Server-rendered document with an isolated optional client prompt
- * @position Docsite root; page content stays outside the URL-aware boundary
+ * @output Server-rendered document with root-owned optional reachability
+ * @position Docsite root; page shells own the URL-aware info banner
  */
 
 import type {Metadata} from 'next';
-import {Suspense} from 'react';
-import {InternalDocsPrompt} from '../components/InternalDocsPrompt';
+import {InternalDocsReachabilityProvider} from '../components/InternalDocsPrompt';
 import {Analytics} from '@vercel/analytics/next';
 import {SpeedInsights} from '@vercel/speed-insights/next';
 import './globals.css';
@@ -102,11 +101,9 @@ export default function RootLayout({children}: {children: React.ReactNode}) {
         <Analytics />
         <SpeedInsights />
         <Providers>
-          {/* Keep URL-aware prompt state in a client leaf, after page content. */}
-          {children}
-          <Suspense fallback={null}>
-            <InternalDocsPrompt />
-          </Suspense>
+          <InternalDocsReachabilityProvider>
+            {children}
+          </InternalDocsReachabilityProvider>
         </Providers>
       </body>
     </html>
