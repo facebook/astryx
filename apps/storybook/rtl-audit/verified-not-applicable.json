@@ -406,5 +406,14 @@
       "packages/core/src/DropdownMenu/index.ts": "sha256:59bf02be4a577cbecf3ad7e981e2577602375892f74548593aa9b998cae733fa",
       "packages/core/src/Divider/Divider.tsx": "sha256:37bfa57103fdc546226fe751844bb193490439bd990b6bc9bced8f6ced99618d"
     }
+  },
+  {
+    "component": "core/DropdownMenuRadioGroup",
+    "reason": "DropdownMenuRadioGroup owns one block-axis role=group wrapper whose children remain in document order with a symmetric tokenized gap. It renders no component-owned text, directional glyph, physical inline placement, reordered control, horizontal scroll or drag, side-placed overlay, or horizontal keyboard behavior; DropdownMenu owns placement and navigation, while DropdownMenuRadioItem owns each row and indicator. Exact-head frames still render RTL to confirm inherited direction without adding a component-owned RTL dimension.",
+    "evidence": {
+      "apps/storybook/stories/DropdownMenuRadioGroup.stories.tsx": "sha256:7548ad7bf7c06f438e243774a8f41d4043defc1a122467747c5ff955f202aee1",
+      "packages/core/src/DropdownMenu/DropdownMenuRadioGroup.tsx": "sha256:3be897ab21dcc6a37fb7ab8a1b6d48254e406c544d95a3b939dfc6593ea99cf1",
+      "packages/core/src/DropdownMenu/index.ts": "sha256:59bf02be4a577cbecf3ad7e981e2577602375892f74548593aa9b998cae733fa"
+    }
   }
 ]

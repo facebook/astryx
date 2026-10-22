@@ -2927,6 +2927,38 @@ jobs:
           retention-days: 30
           if-no-files-found: error
 
+      # DropdownMenuRadioGroup owns controlled value propagation, the named
+      # role=group wrapper, close policy, and the tokenized gap between radio
+      # rows. Parent DropdownMenu owns keyboard navigation; each radio item owns
+      # menuitemradio semantics and indicator paint.
+      - name: Run DropdownMenuRadioGroup audit browser evidence
+        if: ${{ !cancelled() && github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, '[Component Audit] DropdownMenuRadioGroup:') }}
+        env:
+          ASTRYX_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          status=0
+          node .github/scripts/accessibility-audit.js \
+            --storybook-dir apps/storybook/dist \
+            --output dropdown-menu-radio-group-a11y-report.json \
+            --components DropdownMenuRadioGroup \
+            --baseline .github/a11y-baseline.json \
+            --fail-on-new || status=1
+          pnpm exec playwright test \
+            packages/core/src/DropdownMenu/__tests__/DropdownMenuRadioGroupAudit.a11y.chromium.spec.ts \
+            --project chromium || status=1
+          exit "$status"
+
+      - name: Upload DropdownMenuRadioGroup audit evidence
+        if: always() && github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, '[Component Audit] DropdownMenuRadioGroup:')
+        uses: actions/upload-artifact@v7
+        with:
+          name: dropdown-menu-radio-group-audit-evidence-${{ needs.build-storybook.outputs.short_hash }}
+          path: |
+            dropdown-menu-radio-group-a11y-report.json
+            dropdown-menu-radio-group-audit-evidence/
+          retention-days: 30
+          if-no-files-found: error
+
       # ContextMenu owns pointer and touch presentations across cursor anchoring,
       # selectable rows, sections, inline triggers, RTL, and narrow viewports.
       # Its audit lane binds the rendered matrix to the exact pull-request head.
