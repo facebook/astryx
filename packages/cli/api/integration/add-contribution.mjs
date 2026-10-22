@@ -392,20 +392,14 @@ async function addDoc(name, options) {
       ERROR_CODES.ERR_INVALID_ARGUMENT,
     );
   }
-  if (
-    options.parent != null &&
-    (options.replaces != null || options.extends != null)
-  ) {
+  if (options.parent != null && (options.replaces != null || options.extends != null)) {
     throw new AstryxError(
       'A guide placed in a namespace has its own route: it cannot also replace or extend a topic.',
       undefined,
       ERROR_CODES.ERR_INVALID_ARGUMENT,
     );
   }
-  if (
-    options.parent != null &&
-    !/^[a-z0-9]+(?:-[a-z0-9]+)*$/u.test(options.parent)
-  ) {
+  if (options.parent != null && !/^[a-z0-9]+(?:-[a-z0-9]+)*$/u.test(options.parent)) {
     throw new AstryxError(
       '--parent must name a namespace in lowercase letters and digits joined by single hyphens, such as "acme".',
       undefined,
@@ -534,11 +528,7 @@ async function addDoc(name, options) {
   /** @type {import('./add-helpers.mjs').WritePlan[]} */
   const plans = [{path: docFile, contents: docContents, createOnly: true}];
   if (namespaceFile != null && writeNamespace) {
-    plans.push({
-      path: namespaceFile,
-      contents: namespaceContents,
-      createOnly: true,
-    });
+    plans.push({path: namespaceFile, contents: namespaceContents, createOnly: true});
   }
   let pkgUpdate = packageJsonUpdate(
     packageFile,

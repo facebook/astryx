@@ -361,6 +361,8 @@ export function combineChecks(responses, strict, next = false) {
   const upcoming = notes.filter(note => note.next === true);
   if (next) {
     warnings += upcoming.length;
+    // validate's own row counts them too, so the summary shows what fails.
+    checks[0].warnings += upcoming.length;
     if (strict) {
       for (const note of upcoming) {
         failures.push({

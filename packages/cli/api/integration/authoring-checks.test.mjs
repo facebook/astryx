@@ -1579,6 +1579,29 @@ describe('validateIntegration runner-command notes', () => {
     );
   });
 
+  it('reads a verb named alone as a mention, and TSDoc tags in a TypeScript sample as code', async () => {
+    writeTopic('Scripts run with `npm run`, and `pnpm dlx` fetches a package.');
+    const file = path.join(tmpDir, 'docs', 'acme-setup.doc.mjs');
+    fs.writeFileSync(
+      file,
+      fs.readFileSync(file, 'utf8').replace(
+        /\{"type":"code"[^}]*\}/,
+        JSON.stringify({
+          type: 'code',
+          lang: 'ts',
+          code: '/** {@inheritDoc Base.render} */\nexport const x = 1;',
+        }),
+      ),
+    );
+
+    const {data} = await validateIntegration(undefined, {cwd: tmpDir});
+    expect(
+      (data.notes ?? []).filter((/** @type {any} */ note) =>
+        ['package_manager_command', 'doc_token'].includes(note.code),
+      ),
+    ).toEqual([]);
+  });
+
   it('lists a {@command} token that names no Astryx command', async () => {
     writeTopic('Run {@command dcotor} before you ship.');
 
