@@ -643,6 +643,35 @@ describe.skipIf(!POSIX)(
       for (const cwd of [nested, path.join(root, 'vendor', 'repo')]) {
         expect(run(g.bin, ['--version'], {cwd, pc}).stdout).toBe('9.0.0');
       }
+
+      // What prints there (spec AST-040 FR9): an enclosing project with no
+      // CLI of its own and a Core the global copy does not match. A cloned
+      // repository with its own .git belongs to no project, so it gets no
+      // hint and no notice; a tool folder inside the project is told to run
+      // from the project's folder.
+      const pc2 = computer();
+      const g2 = globalCli('npm', '9.0.0', {root: pc2.home});
+      globalState(pc2, {
+        latest: '9.0.7',
+        checkOkAt: Date.now(),
+        firstRunAt: Date.now() - 2 * 24 * 60 * 60_000,
+      });
+      const app = makeProject({core: '9.0.1'});
+      writeJson(path.join(app, 'package-lock.json'), {lockfileVersion: 3});
+      const clone = path.join(app, 'vendor', 'repo');
+      fs.mkdirSync(path.join(clone, '.git'), {recursive: true});
+      const inClone = run(g2.bin, ['--version'], {cwd: clone, pc: pc2});
+      expect(inClone.stdout).toBe('9.0.0');
+      expect(
+        inClone.lines.filter(line => line.includes('no Astryx CLI')),
+      ).toEqual([]);
+      expect(inClone.notice).toEqual([]);
+      const tool = path.join(app, 'tools', 'codegen');
+      writeJson(path.join(tool, 'package.json'), {name: 'codegen'});
+      installCore(tool, '9.0.5');
+      expect(run(g2.bin, ['--version'], {cwd: tool, pc: pc2}).lines).toContain(
+        `astryx: this project has no Astryx CLI installed; answered by CLI 9.0.0 while its Core is 9.0.5. ${RUN_FROM_PROJECT}`,
+      );
     });
 
     it('G9 outside a project: every copy answers itself, the global copy included, whatever releases are cached', () => {
