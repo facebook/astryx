@@ -1125,9 +1125,11 @@ function globSource(pattern) {
 /**
  * Whether npm packs a package-relative path, by the package's `files` field
  * (everything without one), and the entry that decided it: the last entry
- * that matches, as npm reads them. Globs follow npm's matching: `*`, `**`,
- * `?`, `[…]` classes and `{a,b}` braces, and a pattern with no slash matches
- * a name at any depth unless a leading `/` or `./` anchors it. `package.json`,
+ * that matches, as npm reads them. Globs follow npm's matching, without
+ * regard to case: `*`, `**`, `?`, `[…]` classes and `{a,b}` braces. A folder
+ * an entry names brings everything inside it; a pattern with no slash names a
+ * file or folder by its own name, at the root or inside a folder another
+ * entry includes, unless a leading `/` or `./` anchors it at the root. `package.json`,
  * the README and the license are always packed and never asked about here.
  * @param {string} rel POSIX, relative to the package root
  * @param {unknown} files
@@ -1135,22 +1137,57 @@ function globSource(pattern) {
  */
 function packedBy(rel, files) {
   if (!Array.isArray(files)) return {packed: true, entry: null};
-  /** @type {{packed: boolean, entry: string | null}} */
-  let result = {packed: false, entry: null};
-  for (const entry of files) {
-    if (typeof entry !== 'string') continue;
-    const negated = entry.startsWith('!');
-    const raw = entry.slice(negated ? 1 : 0);
-    const anchored = /^\.?\//u.test(raw);
-    const trimmed = raw.replace(/^\.?\//u, '').replace(/\/+$/u, '');
-    const matches = expandBraces(trimmed).some(spelling => {
-      const pattern =
-        !anchored && !spelling.includes('/') ? `**/${spelling}` : spelling;
-      return new RegExp(`^${globSource(pattern)}(?:/.*)?$`, 'u').test(rel);
+  const entries = files
+    .filter(entry => typeof entry === 'string')
+    .map(entry => {
+      const negated = entry.startsWith('!');
+      const raw = entry.slice(negated ? 1 : 0);
+      const anchored = /^\.?\//u.test(raw);
+      const trimmed = raw.replace(/^\.?\//u, '').replace(/\/+$/u, '');
+      // npm matches without regard to case. An unanchored pattern with no
+      // slash names a file or folder by its own name, at the root or inside
+      // a folder another entry includes; any other pattern names a path
+      // from the root, and a folder it names brings everything inside.
+      const byName = !anchored && !trimmed.includes('/');
+      const patterns = expandBraces(trimmed).map(
+        spelling =>
+          new RegExp(
+            byName
+              ? `^${globSource(spelling)}$`
+              : `^${globSource(spelling)}(?:/.*)?$`,
+            'iu',
+          ),
+      );
+      return {entry, negated, byName, patterns};
     });
-    if (matches) result = {packed: !negated, entry};
-  }
-  return result;
+  /** @type {Map<string, {packed: boolean, entry: string | null}>} */
+  const memo = new Map();
+  /**
+   * @param {string} at a file or folder, relative to the package root
+   * @returns {{packed: boolean, entry: string | null}}
+   */
+  const state = at => {
+    const known = memo.get(at);
+    if (known) return known;
+    const slash = at.lastIndexOf('/');
+    const parent = slash < 0 ? null : at.slice(0, slash);
+    const name = at.slice(slash + 1);
+    const inherited = parent == null ? null : state(parent);
+    /** @type {{packed: boolean, entry: string | null}} */
+    let result = inherited?.packed
+      ? inherited
+      : {packed: false, entry: inherited?.entry ?? null};
+    for (const {entry, negated, byName, patterns} of entries) {
+      const matches = byName
+        ? (parent == null || inherited?.packed === true) &&
+          patterns.some(pattern => pattern.test(name))
+        : patterns.some(pattern => pattern.test(at));
+      if (matches) result = {packed: !negated, entry};
+    }
+    memo.set(at, result);
+    return result;
+  };
+  return state(rel);
 }
 
 /**

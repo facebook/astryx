@@ -285,7 +285,6 @@ describe('template_asset_not_packed', () => {
 
   it.each([
     [['templates/**/*', 'astryx.integration.mjs']],
-    [['templates', '*.png']],
     [['./assets/', 'templates/']],
     [['/assets', '/templates']],
     [['assets', 'templates/*.{tsx,mjs,png}']],
@@ -313,6 +312,31 @@ describe('template_asset_not_packed', () => {
       ].join('\n'),
     });
     expect(await notesOf(['template_asset_not_packed'])).toEqual([]);
+  });
+
+  it('matches without regard to case, and applies a bare *.png only inside folders another entry packs', async () => {
+    write({
+      'package.json': JSON.stringify({
+        name: '@acme/kit',
+        version: '1.0.0',
+        files: ['templates', '*.png', 'logos/*.png'],
+      }),
+      'assets/cat.png': 'png',
+      'logos/Hero.PNG': 'png',
+      'templates/card.doc.mjs': blockDoc(
+        'card',
+        ", exampleFor: 'AcmeCard', isShowcase: true",
+      ),
+      'templates/card.tsx': [
+        "const hero = new URL('../logos/Hero.PNG', import.meta.url);",
+        "const cat = new URL('../assets/cat.png', import.meta.url);",
+        'export default () => null;',
+        '',
+      ].join('\n'),
+    });
+    const notes = await notesOf(['template_asset_not_packed']);
+    expect(notes).toHaveLength(1);
+    expect(notes[0].message).toContain('loads assets/cat.png');
   });
 });
 
