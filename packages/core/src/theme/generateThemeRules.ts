@@ -532,32 +532,34 @@ function createTokenCascade(
   return state;
 }
 
-/** Linear-time check for a cycle that includes one proposed alias role. */
-function tokenValuesHaveCycleInvolving(
+/** Check whether one candidate value closes a cycle through its own role. */
+function tokenValuesWouldHaveCycleWithValue(
   tokens: TokenValues,
   relevantToken: string,
+  candidateValue: string,
 ): boolean {
-  const references = new Map(
-    Object.entries(tokens).map(([token, value]) => [
-      token,
-      analyzeDeclarationValue(`${value}`).references.filter(reference =>
-        Object.prototype.hasOwnProperty.call(tokens, reference),
-      ),
-    ]),
-  );
-  const stack = [...(references.get(relevantToken) ?? [])];
+  const stack = [...analyzeDeclarationValue(candidateValue).references];
   const visited = new Set<string>();
   while (stack.length > 0) {
     const token = stack.pop()!;
     if (token === relevantToken) {
       return true;
     }
-    if (visited.has(token)) {
+    if (
+      visited.has(token) ||
+      !Object.prototype.hasOwnProperty.call(tokens, token)
+    ) {
       continue;
     }
     visited.add(token);
-    for (const reference of references.get(token) ?? []) {
-      stack.push(reference);
+    for (const reference of analyzeDeclarationValue(`${tokens[token]}`)
+      .references) {
+      if (
+        reference === relevantToken ||
+        Object.prototype.hasOwnProperty.call(tokens, reference)
+      ) {
+        stack.push(reference);
+      }
     }
   }
   return false;
@@ -688,7 +690,16 @@ function generatedScopedStatusRoleDefaults(
 ): [string, string][] {
   const entries: [string, string][] = [];
   const authoredRoot = createTokenCascade(tokens, localTokens).values;
-  const matchSets = reachableAdaptationMatchSets(rules);
+  const states = reachableAdaptationMatchSets(rules).map(indexes => ({
+    indexes,
+    values: effectiveAdaptationTokenValues(
+      tokens,
+      localTokens,
+      entries,
+      rules,
+      indexes,
+    ),
+  }));
 
   for (const [role, source] of SCOPED_STATUS_ROLE_DEFAULTS) {
     const alias = `var(${source})`;
@@ -698,43 +709,21 @@ function generatedScopedStatusRoleDefaults(
     ) {
       continue;
     }
-    const tentativeEntries: [string, string][] = [...entries, [role, alias]];
-    const isSafe = matchSets.every(matchingRuleIndexes => {
-      const withAlias = effectiveAdaptationTokenValues(
-        tokens,
-        localTokens,
-        tentativeEntries,
-        rules,
-        matchingRuleIndexes,
-      );
-      const withoutAlias = effectiveAdaptationTokenValues(
-        tokens,
-        localTokens,
-        entries,
-        rules,
-        matchingRuleIndexes,
-      );
-      return (
-        withAlias[role] === withoutAlias[role] ||
-        !tokenValuesHaveCycleInvolving(withAlias, role)
-      );
-    });
+    const isSafe = states.every(
+      ({values}) =>
+        values[role] !== undefined ||
+        !tokenValuesWouldHaveCycleWithValue(values, role, alias),
+    );
     if (isSafe) {
       entries.push([role, alias]);
+      for (const {values} of states) {
+        if (values[role] === undefined) {
+          values[role] = alias;
+        }
+      }
     }
   }
   return entries;
-}
-
-function tokenEntriesWithScopedStatusRoleDefaults(
-  tokens: Record<string, string>,
-  localTokens: Record<string, string> = {},
-  rules: ReadonlyArray<ResolvedThemeAdaptationRule> = [],
-): [string, string][] {
-  return [
-    ...Object.entries(tokens),
-    ...generatedScopedStatusRoleDefaults(tokens, localTokens, rules),
-  ];
 }
 
 function authoredStatusRoleEntries(
@@ -770,7 +759,17 @@ function generatedAdaptationStatusRoleDefaults(
     Object.fromEntries(rootAliases),
     rootLocalTokens,
   ).values;
-  const matchSets = reachableAdaptationMatchSets(rules);
+  const states = reachableAdaptationMatchSets(rules).map(indexes => ({
+    indexes,
+    values: effectiveAdaptationTokenValues(
+      rootTokens,
+      rootLocalTokens,
+      rootAliases,
+      rules,
+      indexes,
+      aliases,
+    ),
+  }));
 
   for (const [index, rule] of rules.entries()) {
     const authoredRule = createTokenCascade(
@@ -788,32 +787,21 @@ function generatedAdaptationStatusRoleDefaults(
         continue;
       }
 
-      const aliasesWithoutCandidate = aliases.map(entries => [...entries]);
-      aliases[index].push([role, alias]);
-      const isSafe = matchSets.every(matchingRuleIndexes => {
-        const withAlias = effectiveAdaptationTokenValues(
-          rootTokens,
-          rootLocalTokens,
-          rootAliases,
-          rules,
-          matchingRuleIndexes,
-          aliases,
-        );
-        const withoutAlias = effectiveAdaptationTokenValues(
-          rootTokens,
-          rootLocalTokens,
-          rootAliases,
-          rules,
-          matchingRuleIndexes,
-          aliasesWithoutCandidate,
-        );
-        return (
-          withAlias[role] === withoutAlias[role] ||
-          !tokenValuesHaveCycleInvolving(withAlias, role)
-        );
-      });
-      if (!isSafe) {
-        aliases[index].pop();
+      const matchingStates = states.filter(({indexes}) =>
+        indexes.includes(index),
+      );
+      const isSafe = matchingStates.every(
+        ({values}) =>
+          values[role] !== undefined ||
+          !tokenValuesWouldHaveCycleWithValue(values, role, alias),
+      );
+      if (isSafe) {
+        aliases[index].push([role, alias]);
+        for (const {values} of matchingStates) {
+          if (values[role] === undefined) {
+            values[role] = alias;
+          }
+        }
       }
     }
   }
@@ -833,29 +821,29 @@ function generatedMediaStatusRoleDefaults(
     Object.fromEntries(rootAliases),
     rootLocalTokens,
   ).values;
-  const matchSets = reachableAdaptationMatchSets(rules);
   const authoredMedia = createTokenCascade(tokens).values;
-  const effectiveMediaValues = (
-    statusAliases: ReadonlyArray<readonly [string, string]>,
+  const authoredRolesByRule = rules.map(
+    rule => new Map(authoredStatusRoleEntries(rule.tokens)),
+  );
+  const states = reachableAdaptationMatchSets(rules).map(indexes => ({
+    indexes,
+    values: {...authoredMedia},
+  }));
+  const candidateValueFor = (
+    role: string,
+    alias: string,
     matchingRuleIndexes: ReadonlyArray<number>,
-  ): TokenValues => {
-    const local = createTokenCascade(tokens, Object.fromEntries(statusAliases));
-    const generatedRoles = new Set(statusAliases.map(([name]) => name));
+  ): string => {
+    const candidate = createTokenCascade({[role]: alias});
     for (const index of matchingRuleIndexes) {
-      for (const [authoredRole, authoredValue] of authoredStatusRoleEntries(
-        rules[index].tokens,
-      )) {
-        if (generatedRoles.has(authoredRole)) {
-          assignTokenCascade(local, {
-            [authoredRole]: mediaRoleRestorationValue(
-              authoredRole,
-              authoredValue,
-            ),
-          });
-        }
+      const authoredValue = authoredRolesByRule[index].get(role);
+      if (authoredValue !== undefined) {
+        assignTokenCascade(candidate, {
+          [role]: mediaRoleRestorationValue(role, authoredValue),
+        });
       }
     }
-    return local.values;
+    return `${candidate.values[role]}`;
   };
 
   for (const [role, source] of SCOPED_STATUS_ROLE_DEFAULTS) {
@@ -872,20 +860,20 @@ function generatedMediaStatusRoleDefaults(
       continue;
     }
 
-    const tentativeAliases: [string, string][] = [...aliases, [role, alias]];
-    const isSafe = matchSets.every(matchingRuleIndexes => {
-      const withAlias = effectiveMediaValues(
-        tentativeAliases,
-        matchingRuleIndexes,
-      );
-      const withoutAlias = effectiveMediaValues(aliases, matchingRuleIndexes);
-      return (
-        withAlias[role] === withoutAlias[role] ||
-        !tokenValuesHaveCycleInvolving(withAlias, role)
-      );
-    });
+    const candidateValues = states.map(({indexes, values}) => ({
+      values,
+      candidate: candidateValueFor(role, alias, indexes),
+    }));
+    const isSafe = candidateValues.every(
+      ({values, candidate}) =>
+        values[role] === candidate ||
+        !tokenValuesWouldHaveCycleWithValue(values, role, candidate),
+    );
     if (isSafe) {
       aliases.push([role, alias]);
+      for (const {values, candidate} of candidateValues) {
+        values[role] = candidate;
+      }
     }
   }
   return aliases;
@@ -949,6 +937,93 @@ export interface ThemeRuleSource {
   components?: ComponentStyleMap;
 }
 
+interface StatusRoleGenerationContext {
+  theme: DefinedTheme;
+  rules: ResolvedThemeAdaptationRule[];
+  rootAliases: [string, string][];
+  adaptationAliases?: [string, string][][];
+}
+
+interface StatusRoleGenerationCacheEntry {
+  signature: string;
+  context: StatusRoleGenerationContext;
+}
+
+const STATUS_ROLE_GENERATION_CACHE = new WeakMap<
+  DefinedTheme,
+  StatusRoleGenerationCacheEntry
+>();
+
+let activeStatusRoleGeneration: StatusRoleGenerationContext | undefined;
+
+function tokenSetSignature(
+  tokens: Record<string, unknown> | undefined,
+): unknown {
+  return Object.entries(tokens ?? {}).map(([name, value]) => [
+    name,
+    typeof value,
+    `${value}`,
+  ]);
+}
+
+function statusRoleGenerationSignature(
+  theme: DefinedTheme,
+  rules: ReadonlyArray<ResolvedThemeAdaptationRule>,
+): string {
+  return JSON.stringify([
+    tokenSetSignature(theme.tokens),
+    tokenSetSignature(theme.localTokens),
+    rules.map(rule => [
+      rule.query,
+      rule.when,
+      tokenSetSignature(rule.tokens),
+      tokenSetSignature(rule.localTokens),
+    ]),
+  ]);
+}
+
+function createStatusRoleGenerationContext(
+  theme: DefinedTheme,
+): StatusRoleGenerationContext {
+  const rules = resolvedAdaptationRules(theme);
+  const signature = statusRoleGenerationSignature(theme, rules);
+  const cached = STATUS_ROLE_GENERATION_CACHE.get(theme);
+  if (cached?.signature === signature) {
+    return cached.context;
+  }
+  const context: StatusRoleGenerationContext = {
+    theme,
+    rules,
+    rootAliases: generatedScopedStatusRoleDefaults(
+      theme.tokens,
+      theme.localTokens,
+      rules,
+    ),
+  };
+  STATUS_ROLE_GENERATION_CACHE.set(theme, {signature, context});
+  return context;
+}
+
+function statusRoleGenerationContext(
+  theme: DefinedTheme,
+): StatusRoleGenerationContext {
+  return activeStatusRoleGeneration?.theme === theme
+    ? activeStatusRoleGeneration
+    : createStatusRoleGenerationContext(theme);
+}
+
+function adaptationStatusRoleDefaults(
+  context: StatusRoleGenerationContext,
+): [string, string][][] {
+  context.adaptationAliases ??= generatedAdaptationStatusRoleDefaults(
+    context.theme.tokens,
+    context.theme.localTokens,
+    context.rules,
+    context.rootAliases,
+  );
+  return context.adaptationAliases;
+}
+
 export function generateThemeRules(
   theme: ThemeRuleSource,
   warnings?: string[],
@@ -963,16 +1038,18 @@ export function generateThemeRules(
 
   // 1. Token block — CSS custom properties on :scope. Source-derived status
   // aliases live here once; conditional rules only emit authored writes.
-  const tokenRules = tokenBlock(
-    theme,
-    '',
-    sink,
-    tokenEntriesWithScopedStatusRoleDefaults(
-      theme.tokens,
-      theme.localTokens,
-      retainedAdaptationRules(theme),
-    ),
-  );
+  const context =
+    activeStatusRoleGeneration?.theme === theme
+      ? activeStatusRoleGeneration
+      : undefined;
+  const rules = context?.rules ?? retainedAdaptationRules(theme);
+  const rootAliases =
+    context?.rootAliases ??
+    generatedScopedStatusRoleDefaults(theme.tokens, theme.localTokens, rules);
+  const tokenRules = tokenBlock(theme, '', sink, [
+    ...Object.entries(theme.tokens),
+    ...rootAliases,
+  ]);
   if (tokenRules !== null) {
     parts.push(tokenRules);
   }
@@ -1488,12 +1565,8 @@ export function generateOnMediaCSS(
   const parts: string[] = [];
   const scopeSelector = themeScopeStart(theme.name);
   const sink = diagnosticSink(warnings);
-  const rules = resolvedAdaptationRules(theme);
-  const rootAliases = generatedScopedStatusRoleDefaults(
-    theme.tokens,
-    theme.localTokens,
-    rules,
-  );
+  const context = statusRoleGenerationContext(theme);
+  const {rules, rootAliases} = context;
   const mediaStatusRoleDefaults = new Map<
     'dark' | 'light',
     [string, string][]
@@ -1667,7 +1740,8 @@ export function generateAdaptationCSS(
   // Built themes can reach this compiler without passing through defineTheme.
   // Resolve retained metadata so width points remain observable through
   // AppShell and inheritance even when a rule emits no CSS.
-  const rules = resolvedAdaptationRules(theme);
+  const context = statusRoleGenerationContext(theme);
+  const {rules} = context;
   if (rules.length === 0) {
     return {prose: '', component: ''};
   }
@@ -1678,17 +1752,7 @@ export function generateAdaptationCSS(
     hasHeadingComponentRules(rule.components),
   );
 
-  const rootAliases = generatedScopedStatusRoleDefaults(
-    theme.tokens,
-    theme.localTokens,
-    rules,
-  );
-  const statusRoleDefaults = generatedAdaptationStatusRoleDefaults(
-    theme.tokens,
-    theme.localTokens,
-    rules,
-    rootAliases,
-  );
+  const statusRoleDefaults = adaptationStatusRoleDefaults(context);
 
   // Emit ordinary rule writes first, without inherited Heading weight
   // fallbacks. Carrying an earlier weight into a later block makes that value
@@ -1789,6 +1853,22 @@ function indentRule(rule: string): string {
  * generator emits only a theme's explicitly authored token overrides.
  */
 export function generateThemeCSS(
+  theme: DefinedTheme,
+  warnings?: string[],
+): ThemeCSSOutput {
+  if (activeStatusRoleGeneration?.theme === theme) {
+    return generateThemeCSSWithContext(theme, warnings);
+  }
+  const previous = activeStatusRoleGeneration;
+  activeStatusRoleGeneration = createStatusRoleGenerationContext(theme);
+  try {
+    return generateThemeCSSWithContext(theme, warnings);
+  } finally {
+    activeStatusRoleGeneration = previous;
+  }
+}
+
+function generateThemeCSSWithContext(
   theme: DefinedTheme,
   warnings?: string[],
 ): ThemeCSSOutput {

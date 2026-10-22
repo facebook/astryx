@@ -568,6 +568,21 @@ describe('rule order and writes', () => {
     );
   });
 
+  it('invalidates cached status aliases after legacy token mutation', () => {
+    const theme = defineTheme({
+      name: 'mutated-status-alias-cache',
+      tokens: {'--color-accent': '#0074e2'},
+    });
+
+    expect(generateThemeCSS(theme).component).toContain(
+      '--color-info: var(--color-accent);',
+    );
+    theme.tokens['--color-accent'] = 'var(--color-info)';
+    expect(generateThemeCSS(theme).component).not.toContain(
+      '--color-info: var(--color-accent);',
+    );
+  });
+
   it('emits a guarded alias when only an adaptation authors the source', () => {
     const theme = defineTheme({
       name: 'adaptation-only-status-source',
