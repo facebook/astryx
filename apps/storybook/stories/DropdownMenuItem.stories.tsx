@@ -55,7 +55,9 @@ function ItemStatesFixture() {
         label="Duplicate project"
         description="Create an editable copy"
         endContent={
-          <span aria-hidden="true">{hasCopied ? 'Copied' : '⌘D'}</span>
+          <span aria-live="polite" role="status">
+            {hasCopied ? 'Copied' : <span aria-hidden="true">⌘D</span>}
+          </span>
         }
         hasCloseOnSelect={false}
         onClick={() => setHasCopied(true)}
