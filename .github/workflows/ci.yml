@@ -1411,6 +1411,16 @@ jobs:
             --project chromium \
             --output multiselector-disabled-focus-output
 
+      # A MultiSelector panel with a footer is a modal dialog: its name, the
+      # trigger's wiring, the Tab walk that wraps through the footer, and focus
+      # moving into the listbox without search exist only in a real engine.
+      - name: Run MultiSelector panel footer contract
+        run: |
+          pnpm exec playwright test \
+            packages/core/src/MultiSelector/PanelFooter.a11y.chromium.spec.ts \
+            --project chromium \
+            --output multiselector-panel-footer-output
+
       # The same guard for Selector and ComplexSelector triggers.
       - name: Run disabled trigger focus contract
         run: |
