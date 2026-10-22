@@ -942,7 +942,7 @@ describe('ContextMenu compound mode', () => {
     );
   });
 
-  it("a right-click in a regioned sub-menu's dialog keeps the browser's own menu, and one on a row does not", async () => {
+  it("a right-click on a regioned sub-menu's field keeps the browser's own menu, and one on a row, the sub-menu's included, does not", async () => {
     const user = userEvent.setup();
     render(
       <ContextMenu
@@ -973,6 +973,13 @@ describe('ContextMenu compound mode', () => {
     expect(
       fireEvent.contextMenu(
         screen.getByRole('menuitem', {name: 'Rename', hidden: true}),
+      ),
+    ).toBe(false);
+    // The sub-menu's rows render in its dialog, outside the root's menu, and
+    // stay cancelled as on a sub-menu without regions.
+    expect(
+      fireEvent.contextMenu(
+        screen.getByRole('menuitem', {name: 'Bug', hidden: true}),
       ),
     ).toBe(false);
   });
