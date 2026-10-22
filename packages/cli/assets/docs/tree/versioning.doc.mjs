@@ -120,6 +120,10 @@ export const docs = {
           type: 'prose',
           text: '`integration verify` fails a package that needs the CLI peer and lacks it, or whose range admits a stable CLI too old for what it ships. `integration add doc --parent` and `integration add theme` write the peer for you.',
         },
+        {
+          type: 'prose',
+          text: "When the CLI is outside that range, `doctor integration validate` and `integration check` list a `cli_peer_version` note naming your package. A note fails nothing, `--strict` included, and `integration verify` does not report it. Below the range the note gives the commands that install a newer Core and CLI together, as dev dependencies in your own package folder, and then run `upgrade --apply`. Above it, in an app the note asks for a release of your package that supports that CLI, and in your own package folder it asks you to test your package with that CLI and widen the range.",
+        },
       ],
     },
     {

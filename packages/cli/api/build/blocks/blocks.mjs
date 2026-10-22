@@ -16,19 +16,24 @@
  *
  * How it scores. The request's words and adjacent word pairs, each weighted
  * (1 + ln count) x its vocabulary weight and scaled to unit length, give every
- * block a linear score (its bias plus the weighted words' rows). Only the
- * blocks build already names are re-ranked: never another block, never more.
- * Each one's final score combines five numbers: search's score / 100, the
- * share of the request search matched, whether the kit names it, 1 / (1 + its
- * place in build's list), and the block's log-share of the linear scores.
- * Ties keep build's order. A block the request names (its name, or the
- * component its name starts with, written out, joined, or plural), a block the
- * weights do not know, and a block whose package is not Core's keep the slot
- * build gave them; the picker re-orders the rest within the other slots.
+ * block a linear score (its bias plus the weighted words' rows). The
+ * candidates are build's own blocks and search's first 100 block results
+ * (each a block search returned, with its real score and reason); a block
+ * build does not name joins only if it shares a content word (the same word
+ * up to plural and stem form, as search's sameWord reads it) with the
+ * request (its display name and description against the request's words).
+ * Each candidate's final score combines five numbers: search's score / 100,
+ * the share of the request search matched, whether build names it, 1 / (1 +
+ * its place in build's list, then search's), and the block's log-share of the
+ * linear scores. Ties keep that order. A block the request names (its name,
+ * or the component its name starts with, written out, joined, or plural), a
+ * block the weights do not know, and a block whose package is not Core's keep
+ * the slot build gave them; the picker's best fill the other slots, so the
+ * kit never lists more blocks than build's own.
  */
 
-import {pluralOf} from '../../search/_query.mjs';
-import {wordsOf} from '../../search/_words.mjs';
+import {pluralOf, STOPWORDS} from '../../search/_query.mjs';
+import {sameWord, wordsOf} from '../../search/_words.mjs';
 
 /**
  * @typedef {object} BlockPickerWeights
@@ -100,6 +105,66 @@ function linearScores(request, weights) {
   return {z, lse: max + Math.log(sum)};
 }
 
+/** How many of search's block results are candidates. */
+const SEARCH_POOL = 100;
+
+/**
+ * Generic English function words (pronouns, relative pronouns, determiners,
+ * quantifiers, auxiliaries, conjunctions, prepositions): never a reason to tie
+ * a block to a request.
+ */
+const FUNCTION_WORDS = (
+  'about above across after again against all along already also although ' +
+  'always am among amongst an and another any anyone anything anywhere are ' +
+  'around as at be because been before behind being below beneath beside ' +
+  'besides between beyond both but by can could despite did do does doing ' +
+  'down during each either else enough even ever every everyone everything ' +
+  'everywhere except few following for from further had has have having he ' +
+  'her here hers herself him himself his how however if in inside instead ' +
+  'into is it its itself just least less little lot lots many may maybe me ' +
+  'might more most much must my myself near neither never no nobody none ' +
+  'nor not nothing now nowhere of off often on once one ones only onto or ' +
+  'other others ought our ours ourselves out outside over own past per ' +
+  'perhaps quite rather same several shall she should since so some someone ' +
+  'something sometimes somewhat somewhere still such than that the their ' +
+  'theirs them themselves then there these they this those though through ' +
+  'throughout thus till to together too toward towards under underneath ' +
+  'unless unlike until up upon usually very via was we were what whatever ' +
+  'when whenever where whereas whether which whichever while who whoever ' +
+  'whom whomever whose why will with within without would yet you your ' +
+  'yours yourself yourselves'
+).split(' ');
+
+/**
+ * Words too common to tie a block to a request: search's own stopwords, the
+ * function words, and words every build request or block shares.
+ */
+const STOP = new Set([
+  ...STOPWORDS,
+  ...FUNCTION_WORDS,
+  ...(
+    'a an the and or of for to in on with by at from as is are be this that ' +
+    'it its my our your their me we you i into via per each all any some page ' +
+    'app screen ui view build make create need want like show shows showing ' +
+    'using use one two new add list item items basic simple showcase example ' +
+    'default variant'
+  ).split(' '),
+]);
+
+/**
+ * The content words of a text: its lowercase words of three or more letters
+ * that are not in {@link STOP}.
+ * @param {string} text
+ * @returns {string[]}
+ */
+function contentWords(text) {
+  const words =
+    String(text)
+      .toLowerCase()
+      .match(/[a-z0-9]{3,}/g) ?? [];
+  return [...new Set(words.filter(w => !STOP.has(w)))];
+}
+
 /**
  * Whether a request names a block: a run of one to three adjacent words of
  * the request, joined, is the block's name, the start of its name that names
@@ -130,13 +195,14 @@ function names(words, block) {
 /**
  * The blocks build names for a request, re-ranked by the picker.
  * @param {string} request
- * @param {{kitBlocks: string[], searched: BlockScore[], foreign: string[]}} signals
+ * @param {{kitBlocks: string[], searched: BlockScore[], foreign: string[], blockText: Map<string, string>}} signals
  *   build's signals: the kit's blocks, search's block results [id, score,
- *   matched, total] in order, and the blocks whose package is not Core's
+ *   matched, total] in order, the blocks whose package is not Core's, and
+ *   each searched block's display name and description
  * @param {BlockPickerWeights} weights
- * @returns {string[]} the kit's blocks in a new order: a block the request
+ * @returns {string[]} as many blocks as build's own list: a block the request
  *   names, one the weights do not know, or one an integration ships keeps its
- *   slot; the others, best first, fill the remaining slots
+ *   slot; the picker's best, from build's blocks and search's, fill the others
  */
 export function pickBlocks(request, signals, weights) {
   const own = signals.kitBlocks;
@@ -151,17 +217,34 @@ export function pickBlocks(request, signals, weights) {
   const keeps = own.map(
     b => !classIndex.has(b) || foreign.has(b) || names(words, b),
   );
+  /** @type {Map<string, number>} */
+  const place = new Map();
+  for (const b of [...own, ...signals.searched.map(s => s[0])])
+    if (!place.has(b)) place.set(b, place.size);
+  const requestWords = contentWords(request);
+  // The same word, up to plural and stem form, as search reads it.
+  const shares = (/** @type {string} */ b) =>
+    contentWords(
+      `${wordsOf(b).join(' ')} ${signals.blockText.get(b) ?? ''}`,
+    ).some(v => requestWords.some(w => sameWord(w, v)));
+  const pool = own.filter((_, k) => !keeps[k]);
+  for (const [b] of signals.searched.slice(0, SEARCH_POOL)) {
+    if (own.includes(b) || pool.includes(b)) continue;
+    if (!classIndex.has(b) || foreign.has(b) || !shares(b)) continue;
+    pool.push(b);
+  }
   const [t0, t1, t2, t3, t4] = weights.theta;
-  const scored = own
-    .map((b, pos) => ({b, pos}))
-    .filter((_, k) => !keeps[k])
-    .map(({b, pos}) => {
+  const scored = pool
+    .map((b, pos) => {
       const s = found.get(b);
       const c = classIndex.get(b);
+      const at = place.get(b);
       const f0 = s ? s[1] / 100 : 0;
       const f1 = s ? (s[2] ?? 0) / Math.max(s[3] ?? 0, 1) : 0;
+      const f2 = own.includes(b) ? 1 : 0;
+      const f3 = at === undefined ? 0 : 1 / (1 + at);
       const f4 = (c === undefined ? UNSCORED : z[c]) - lse;
-      return {b, pos, s: t0 * f0 + t1 * f1 + t2 + t3 / (1 + pos) + t4 * f4};
+      return {b, pos, s: t0 * f0 + t1 * f1 + t2 * f2 + t3 * f3 + t4 * f4};
     })
     .sort((a, b) => b.s - a.s || a.pos - b.pos);
   let next = 0;

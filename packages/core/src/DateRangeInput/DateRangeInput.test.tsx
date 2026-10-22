@@ -1047,13 +1047,19 @@ describe('DateRangeInput range-span forwarding', () => {
     fireEvent.click(getButton('Open calendar'));
 
     // Before a start is picked, a far-off day is selectable.
-    expect(dayButton('2026-01-20')).not.toBeDisabled();
+    expect(dayButton('2026-01-20')).not.toHaveAttribute(
+      'aria-disabled',
+      'true',
+    );
 
     fireEvent.click(dayButton('2026-01-10') as HTMLButtonElement);
 
     // A 7-day window spans start ± 6 days: Jan 16 is the edge, Jan 17 is out.
-    expect(dayButton('2026-01-16')).not.toBeDisabled();
-    expect(dayButton('2026-01-17')).toBeDisabled();
+    expect(dayButton('2026-01-16')).not.toHaveAttribute(
+      'aria-disabled',
+      'true',
+    );
+    expect(dayButton('2026-01-17')).toHaveAttribute('aria-disabled', 'true');
   });
 
   it('disables a preset whose range violates the span cap', () => {

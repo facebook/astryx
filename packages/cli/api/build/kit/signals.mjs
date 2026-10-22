@@ -100,6 +100,8 @@ const ALWAYS = new Set([...FRAME, ...FOUNDATION]);
  * @property {SearchResultEntry[]} domain
  * @property {string[]} kitBlocks the names of `blocks`
  * @property {BlockScore[]} searched every block search returned, in its order
+ * @property {Map<string, SearchResultEntry>} searchedEntries search's entry for each of those blocks (the first of a name)
+ * @property {Map<string, string>} blockText each of those blocks' display name and description, from the catalog
  * @property {string[]} foreign the blocks, named, searched or scaffoldable, whose package is not Core's
  */
 
@@ -273,6 +275,14 @@ export async function kitSignals(query, options = {}) {
     domain: domainKept,
     kitBlocks: blocksKept.map(r => r.name),
     searched: searchedBlocks.map(blockScore),
+    searchedEntries: new Map(
+      [...searchedBlocks].reverse().map(r => [r.name, r]),
+    ),
+    blockText: new Map(
+      templates.blocks
+        .filter(b => searchedBlocks.some(r => r.name === b.name))
+        .map(b => [b.name, `${b.displayName} ${b.description}`]),
+    ),
     foreign: [
       ...new Set(
         [...blocksKept, ...searchedBlocks, ...templates.blocks]
