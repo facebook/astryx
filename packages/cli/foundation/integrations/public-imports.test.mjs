@@ -844,8 +844,14 @@ describe('type-only imports', () => {
       {'types/size.d.ts': 'export type AcmeWidgetSize = "sm" | "md";\n'},
       "import {AcmeWidgetSize} from '@acme/widgets/types/size';",
     ],
+    [
+      'a statement-level import type (types beside only require)',
+      {'./legacy': {types: './legacy.d.ts', require: './legacy.cjs'}},
+      {'legacy.d.ts': 'export type AcmeLegacy = string;\n'},
+      "import type {AcmeLegacy} from '@acme/widgets/legacy';",
+    ],
   ])(
-    'accepts %s from a types-only subpath',
+    'accepts %s from a subpath with a types target',
     async (_label, entries, files, typeImport) => {
       pkg(p => {
         Object.assign(p.exports, entries);
@@ -863,6 +869,21 @@ describe('type-only imports', () => {
       expect(report?.unchecked).toEqual([]);
     },
   );
+
+  it('still notes a value import from a subpath with types beside only require', async () => {
+    pkg(p => {
+      p.exports['./legacy'] = {types: './legacy.d.ts', require: './legacy.cjs'};
+    });
+    write('legacy.d.ts', 'export declare const acmeLegacy: string;\n');
+    write(
+      'components/AcmeWidget.doc.mjs',
+      DOC(
+        undefined,
+        "import {acmeLegacy} from '@acme/widgets/legacy';\\nimport {AcmeWidget} from '@acme/widgets/components/AcmeWidget';\\n<AcmeWidget />",
+      ),
+    );
+    expect(await codes()).not.toEqual([]);
+  });
 
   it('lists a value or unreadable import from a types-only subpath as not checked, never a note', async () => {
     pkg(p => {
