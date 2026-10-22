@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file `astryx docs cli/integrations/ship/versioning`: version an integration
+ * @file `astryx docs authoring/ship/versioning`: version an integration
  * package, know which changes break apps, declare peer ranges, keep apps on
  * older CLIs working, and match codemod folders to versions.
  */

@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file `astryx docs cli/integrations/building-blocks/docs/sections-and-placement`:
+ * @file `astryx docs authoring/building-blocks/docs/sections-and-placement`:
  * give an integration package its own section in the docs tree, place guides
  * in it, and fix a placement that fails.
  */

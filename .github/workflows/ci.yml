@@ -1401,6 +1401,16 @@ jobs:
             --project chromium \
             --output empty-state-announcement-output
 
+      # A disabled MultiSelector trigger keeps focus when it is disabled while
+      # focused. jsdom never moves focus off a newly disabled element, so only
+      # a real engine shows the loss this guards against.
+      - name: Run MultiSelector disabled-focus contract
+        run: |
+          pnpm exec playwright test \
+            packages/core/src/MultiSelector/MultiSelector.disabledFocus.a11y.chromium.spec.ts \
+            --project chromium \
+            --output multiselector-disabled-focus-output
+
       # Table merges a consumer min-width with its column floors through CSS
       # max(). jsdom keeps any string, so only a real engine shows whether the
       # emitted declaration parses; an invalid one drops the floors entirely.

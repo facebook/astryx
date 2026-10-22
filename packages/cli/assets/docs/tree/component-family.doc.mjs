@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file `astryx docs cli/integrations/building-blocks/components/describe-the-component/component-family`:
+ * @file `astryx docs authoring/building-blocks/components/describe-the-component/component-family`:
  * author one ComponentDoc for several public exports in a component family.
  */
 

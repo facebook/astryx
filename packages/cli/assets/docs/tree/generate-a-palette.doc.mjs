@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file `astryx docs cli/integrations/building-blocks/themes/generate-a-palette`:
+ * @file `astryx docs authoring/building-blocks/themes/generate-a-palette`:
  * turn a few seed colors into a full light and dark color palette.
  */
 
