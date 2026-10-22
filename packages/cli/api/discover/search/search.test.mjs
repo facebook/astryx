@@ -174,6 +174,16 @@ describe('discover.search leaf — typo tolerance (parity with api/search)', () 
     expect(names.indexOf('Calendar')).toBeLessThan(names.indexOf('Scheduler'));
   });
 
+  it('orders near misses by how many edits away they are', async () => {
+    const items = [
+      {package: '@acme/charts', kind: 'component', name: 'Paginaters', installed: false},
+      {package: '@acme/charts', kind: 'component', name: 'Paginator', installed: false},
+    ];
+    const res = await search(packages, 'Paginatr', {items});
+    const names = res.data.matches.map(m => m.component);
+    expect(names.indexOf('Paginator')).toBeLessThan(names.indexOf('Paginaters'));
+  });
+
   it('a one-edit miss on a longer name returns results', async () => {
     // 'AlpheCard' vs 'AlphaCard' is distance 1, well above 5 chars
     const res = await search(packages, 'AlpheCard', {});

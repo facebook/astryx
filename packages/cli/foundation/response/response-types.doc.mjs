@@ -132,7 +132,7 @@ export const doc = {
     {
       value: 'discover.item',
       description:
-        'One item that is not an installed component, for an @scope/name/<item> query: its kind, name, package, version, and whether the project has the package.',
+        'One item that is not an installed component, for an @scope/name/<item> query: its kind, name, package, version, and whether the project has the package. The envelope\'s package names the same package.',
     },
     {
       value: 'discover.search',

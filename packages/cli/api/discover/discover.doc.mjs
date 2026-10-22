@@ -106,7 +106,7 @@ export const doc = {
     {
       type: 'discover.item',
       description:
-        'One item that is not an installed component: its kind, name, the package and version that add it, and whether the project has the package.',
+        'One item that is not an installed component: its kind, name, the package and version that add it, and whether the project has the package. The envelope\'s package names the same package.',
     },
     {
       type: 'discover.search',

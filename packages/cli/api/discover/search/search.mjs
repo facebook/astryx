@@ -34,7 +34,8 @@ const KIND_ORDER = ['package', ...DISCOVER_KINDS];
 
 /**
  * How well an item matches: 0 exact name, 1 name prefix, 2 name substring,
- * 3 title, summary, keyword, or description; null for no match.
+ * 3 a near-miss name (3.0, 3.1, 3.2 for one, two or three edits), 4 title,
+ * summary, keyword, or description; null for no match.
  * @param {SearchItem} item
  * @param {string} lower
  * @returns {number | null}
@@ -53,7 +54,9 @@ function rank(item, lower) {
   if (dist >= 1 && dist <= 3) {
     /** @type {Record<number, number>} */
     const MIN_LENGTHS = {1: 5, 2: 8, 3: 11};
-    if (Math.min(lower.length, name.length) >= MIN_LENGTHS[dist]) return 3;
+    if (Math.min(lower.length, name.length) >= MIN_LENGTHS[dist]) {
+      return 3 + (dist - 1) / 10;
+    }
   }
   const text = [
     item.title,
