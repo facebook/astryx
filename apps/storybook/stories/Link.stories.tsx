@@ -250,7 +250,7 @@ export const ButtonFallbackDisabled: Story = {
     docs: {
       description: {
         story:
-          'The button fallback supports the `isDisabled` prop with native `disabled` attribute.',
+          'The button fallback supports the `isDisabled` prop: it stays focusable with `aria-disabled` and ignores clicks, Enter and Space.',
       },
     },
   },
