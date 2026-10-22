@@ -108,6 +108,6 @@ export function subpathDeclaration(exportsField, subpath) {
   if (!hit) return {state: 'missing'};
   if (hit.value == null) return {state: 'blocked'};
   if (!importable(hit.value))
-    return {state: 'not_importable', value: hit.value};
+    return {state: 'not_importable', value: hit.value, wildcard: hit.wildcard};
   return {state: 'declared', value: hit.value, wildcard: hit.wildcard};
 }
