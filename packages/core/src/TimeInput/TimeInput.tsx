@@ -70,6 +70,7 @@ import {
 import type {SizeValue} from '../utils/types';
 import {useSize} from '../SizeContext/SizeContext';
 import {useAnnounce} from '../hooks/useAnnounce';
+import {useBusyAnnouncement} from '../hooks/useBusyAnnouncement';
 import {useInputContainer} from '../hooks/useInputContainer';
 import {useMediaQuery} from '../hooks/useMediaQuery';
 import {useInputStatusIcon} from '../hooks/useInputStatusIcon';
@@ -475,6 +476,9 @@ function TimeField({
   const [, startTransition] = useTransition();
   const [optimisticValue, setOptimisticValue] = useOptimistic(value);
   const isBusy = isLoading || optimisticValue !== value;
+  // The busy Spinner is decorative; this control announces its busy start
+  // (spec:AST-086 FR8).
+  useBusyAnnouncement(isBusy, t('@astryx.spinner.loading'), containerRef);
 
   // In grouped mode the status message renders as a visually-hidden node that
   // exists only for aria-describedby. Announce it through the persistent
@@ -865,7 +869,7 @@ function TimeField({
           </VisuallyHidden>
         </>
       )}
-      {isBusy && <Spinner size="sm" />}
+      {isBusy && <Spinner size="sm" aria-hidden="true" />}
       {hasClear && optimisticValue && !isDisabled && (
         <InputClearButton
           label={t('@astryx.timeInput.clearLabel', {label})}
