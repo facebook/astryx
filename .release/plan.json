@@ -1,0 +1,960 @@
+{
+  "schemaVersion": 2,
+  "version": "0.7.3",
+  "branch": "release/v0.7.3",
+  "cutSha": "cac3d8dca37d9be9a7c23f21b35dc517e656d2eb",
+  "changesets": [
+    {
+      "path": ".changeset/adjusttime-returns-the-time-unchanged-for-a-frac-7bdh.md",
+      "sha256": "f683a5c9d3a1752a201ad8d2d1fafbec19341eee445df70856378feb588fcb21",
+      "packages": [
+        {
+          "name": "@astryxdesign/core",
+          "bump": "patch"
+        }
+      ],
+      "category": "fix",
+      "headline": "adjustTime returns the time unchanged for a fractional minute delta instead of a malformed value such as \"14:30.5\", so TimeInput's arrow keys ignore a fractional increment (#7823)",
+      "contributors": [
+        "aashish254"
+      ],
+      "body": ""
+    },
+    {
+      "path": ".changeset/build-blocks-by-meaning.md",
+      "sha256": "2e9d505f1e5346929353ca921bb89d16c4b5901545aed0891b2fdf861b1d4565",
+      "packages": [
+        {
+          "name": "@astryxdesign/cli",
+          "bump": "patch"
+        }
+      ],
+      "category": "feat",
+      "headline": "`astryx build` names the right block first far more often: it now ranks every block in the catalog by what the request means, read from each block's own name, description, and component, so a block search's words missed can still come first, with its own score and reason. A block the request names by its exact name, and a block from an integration, keep their place; the kit never lists more blocks than before, and the page call, start template, and alternatives are unchanged.",
+      "contributors": [
+        "josephfarina"
+      ],
+      "body": ""
+    },
+    {
+      "path": ".changeset/build-blocks-picker-refit.md",
+      "sha256": "ac7ef04f2ded72f44171c91086c693f0e2d92ca76d75677d9a9fa5c7d83ecd3d",
+      "packages": [
+        {
+          "name": "@astryxdesign/cli",
+          "bump": "patch"
+        }
+      ],
+      "category": "feat",
+      "headline": "`astryx build` names the right block first more often, especially for requests worded in a product's own terms: the block picker's fixed values are refitted on a larger, more varied set of written example requests. Which fields the kit returns, its block count, the page call, start template, and alternatives are unchanged.",
+      "contributors": [
+        "josephfarina"
+      ],
+      "body": ""
+    },
+    {
+      "path": ".changeset/build-search-routing.md",
+      "sha256": "669d3c1baa65ea10d5a4184e9f07f08ef79687d8aa48666a224f43b4fcda59b6",
+      "packages": [
+        {
+          "name": "@astryxdesign/cli",
+          "bump": "patch"
+        }
+      ],
+      "category": "feat",
+      "headline": "`astryx search` orders the matches inside each score band so the entry you are after comes first more often; every result keeps its match score and reason, and a query that is an entry's exact name still answers with that entry first. Introduced in [#7752](https://github.com/facebook/astryx/pull/7752); final-state evidence: [#7895](https://github.com/facebook/astryx/pull/7895) and [#7897](https://github.com/facebook/astryx/pull/7897).",
+      "contributors": [
+        "josephfarina"
+      ],
+      "body": "`astryx build` names the right block first more often; its page call, start template, and alternatives are unchanged."
+    },
+    {
+      "path": ".changeset/build-unlisted-template-own-words.md",
+      "sha256": "e363ad1d257469d70134276e36c259df0ed096806c18bfff45cb2ed6bcb12b5f",
+      "packages": [
+        {
+          "name": "@astryxdesign/cli",
+          "bump": "patch"
+        }
+      ],
+      "category": "fix",
+      "headline": "`astryx build` starts from a page template its word weights do not list (an integration's template, or one added since the weights were fit) only when the request names as many words of that template's own display name, category and keywords (search's stopwords aside) as of the best listed template, or names that template's family (the first part of its category) before the listed template's family and at most two fewer of its words; otherwise it starts from that listed template and offers the other as the first alternative.",
+      "contributors": [
+        "josephfarina"
+      ],
+      "body": ""
+    },
+    {
+      "path": ".changeset/button-loading-region-mounts-empty.md",
+      "sha256": "97dd65fc44b1eac4985109840881e12f4c2af3dcddf1fb06b1d28c1591dc76ab",
+      "packages": [
+        {
+          "name": "@astryxdesign/core",
+          "bump": "patch"
+        }
+      ],
+      "category": "fix",
+      "headline": "A `Button` first rendered with `isLoading` (for example after a remount) now mounts its visually hidden loading live region empty and writes \"Loading\" into it on the next frame, so screen readers announce the busy start instead of skipping a live region born holding its text (`spec:AST-086` FR3). A Button that becomes loading after it mounts is unchanged, and a Button mounted idle does no extra render.",
+      "contributors": [
+        "cixzhang"
+      ],
+      "body": ""
+    },
+    {
+      "path": ".changeset/chat-composer-status-announcement.md",
+      "sha256": "9e0ff547db1bd8a5b4551b45fec99612bf1e4d158597c29de64549d3b4a92f68",
+      "packages": [
+        {
+          "name": "@astryxdesign/core",
+          "bump": "patch"
+        }
+      ],
+      "category": "fix",
+      "headline": "ChatComposer: a status message is announced through the shared announcement channel, errors assertively and warnings politely, once per occasion: a rerender does not repeat it, and a status that clears and then returns is announced again. Before, the status bar mounted as a `role=\"alert\"` or `role=\"status\"` region already holding its text, which screen readers often skip. The visible bar no longer carries a live role. No API changes.",
+      "contributors": [
+        "kyu-rong"
+      ],
+      "body": ""
+    },
+    {
+      "path": ".changeset/chatsystemmessage-no-live-role.md",
+      "sha256": "3638b98259a426bebd906983bed8fe3f60c6a741f0f49d96f75169f66e757abc",
+      "packages": [
+        {
+          "name": "@astryxdesign/core",
+          "bump": "patch"
+        }
+      ],
+      "category": "fix",
+      "headline": "`ChatSystemMessage` no longer forces `role=\"status\"` on its root, in either variant, so a new chat notice inside a `ChatMessageList` has one live owner, the list's polite log, instead of being a second live region nested in it (WCAG 2.2 SC 4.1.3 Status Messages; `spec:AST-086` FR1 and FR4). Date and divider rows are no longer presented as status messages. Before, every system message was a status region inside the list's polite log; now the log owns content added inside it, and a `role` passed to the component reaches its root. Tests that found a system message by the `status` role should query it by its text instead.",
+      "contributors": [
+        "cixzhang"
+      ],
+      "body": ""
+    },
+    {
+      "path": ".changeset/choice-controls-focusable-disabled.md",
+      "sha256": "e5481740f71da479add7464e366a41d15a9cc1e592e8b80e85c090fc740ef05c",
+      "packages": [
+        {
+          "name": "@astryxdesign/core",
+          "bump": "patch"
+        }
+      ],
+      "category": "fix",
+      "headline": "Disabled CheckboxInput, CheckboxList items, Switch, Slider and FileInput stay focusable. Before, they rendered the native `disabled` attribute unless a `disabledMessage` was set, so keyboard and screen-reader users could not reach them. Now every disabled control exposes `aria-disabled=\"true\"` and keeps the Tab stop it has when enabled, while toggling, selecting, dragging, opening the file picker and any `onClick` stay blocked, and its value is still left out of form submission. A focused disabled checkbox, switch, slider thumb or file input shows its keyboard focus indicator. This meets the focusable-disabled requirement in spec:AST-085 (FR1–FR3, FR6). No API changes.",
+      "contributors": [
+        "cixzhang"
+      ],
+      "body": ""
+    },
+    {
+      "path": ".changeset/cli-command-layout-check.md",
+      "sha256": "63d005db598da4823f8fefe31c13c68d9bed99e137c663cbac4d5b9e72ec73f1",
+      "packages": [
+        {
+          "name": "@astryxdesign/cli",
+          "bump": "patch"
+        }
+      ],
+      "category": "docs",
+      "headline": "`astryx docs cli/commands/postinstall` now documents the hidden `postinstall` hook, `astryx docs cli/commands` lists it, and `astryx postinstall --help` shows its exit code and an example. The summary of `astryx docs cli/commands/manifest` (text and `--json`) drops its final period, so it matches the description the manifest has always printed. What each command prints when it runs, its JSON and its exit codes are unchanged.",
+      "contributors": [
+        "josephfarina"
+      ],
+      "body": ""
+    },
+    {
+      "path": ".changeset/cli-component-doc-name-check.md",
+      "sha256": "1dcaa11993aba1d0b7f07f0e4bcda27cb4da71b8284fe93909ec292ceea71e93",
+      "packages": [
+        {
+          "name": "@astryxdesign/cli",
+          "bump": "patch"
+        }
+      ],
+      "category": "feat",
+      "headline": "`astryx doctor integration validate` and `astryx integration check` check the component names a package's docs and blocks give, and list what they find as notes beside validate's issues, each with its fix. Nothing counts a note and `integration check --strict` does not fail on them; they become failing warnings in the next minor release:",
+      "contributors": [
+        "josephfarina"
+      ],
+      "body": "- `doc_name_mismatch` lists a component doc whose `name` is not the name the component is listed under when the module its printed import names (the doc's `import`, the published subpath, or the package root) provably does not export that name, so `astryx component` would print a broken import. The `Fix:` proposes the file name when that module exports it, otherwise the component it exports. A name that module's exports cannot prove or rule out (a re-export from another package, `export =`, a destructured binding, a namespace, an import that resolves to no file, or, when no import can be resolved, a source that only exports a default) is listed as not checked, with the reason, in validate's new `docNames` report.\n- `unknown_block_component` lists a name a template's `exampleFor` or `componentsUsed` gives that neither the package nor Core has (every doc `astryx component` resolves in Core counts) and the template does not import it. Imports the template's local helpers make count too, including through a barrel such as `parts/index.ts`. A name is judged only where the template reaches components solely through named imports and re-exports from Core, React, StyleX, local helpers read in full, or the package's own name (followed through its `exports` like a helper): anything else (an import from another package, which may render other components, any `default` binding (other than React's or StyleX's), a namespace import, an alias of or member read off an imported binding, a component held in a variable, `require()`, a dynamic `import()`, a file that does not parse cleanly, or a local module this check cannot read), and, without Core installed, any name only Core could resolve, is listed as not checked in validate's new `blockComponents` report.\n\n`integration check --strict` does not fail on anything listed as not checked."
+    },
+    {
+      "path": ".changeset/cli-find-core-from-any-folder.md",
+      "sha256": "d942a5629e52a58c9c3348735fd9ba94d884069e3905a0979289a71d26d5cc2d",
+      "packages": [
+        {
+          "name": "@astryxdesign/cli",
+          "bump": "patch"
+        }
+      ],
+      "category": "fix",
+      "headline": "The CLI finds the project's `@astryxdesign/core` from any folder inside the project. `component`, `hook`, `build`, `search`, `swizzle`, `theme targets` and `doctor` still search the folders they searched before, and past them continue up to the workspace root of the nearest folder whose package.json declares an Astryx package. They now work five or more folders deep, in workspace members whose Core the workspace installs at its root, and in Yarn Plug'n'Play projects. `upgrade --from` run from any folder in a project upgrades that project, the nearest folder whose package.json declares an Astryx package or that an Astryx workspace lists, found without passing a repository root or counting the home folder: it scans the project's `src` by default, reads a `--path` you type from the folder you ran in, names the files in its `--json` result relative to that folder, and refreshes the project's agent docs. It targets only the project's own Core: the one in its `node_modules`, or for a member its workspace lists, the one the workspace installs. With no such project, `upgrade` reads only the current folder, as before. It names the project root and the source folder it scans before it changes anything. An `upgrade` run in a folder that installs Core but declares no Astryx package now upgrades the Astryx project above it instead of that folder alone: a compatible fix under `architecture:cli-surface` INV10b, since such a folder was never a separate upgrade root. To keep a sub-folder that installs Core its own project, declare an Astryx package in that folder's package.json. A `packages/core` folder that holds another package is no longer read as Core, and an integration named in `astryx.config` now loads when the workspace installs it at its root, as an autolinked one already did.",
+      "contributors": [
+        "josephfarina"
+      ],
+      "body": ""
+    },
+    {
+      "path": ".changeset/cli-host-entry.md",
+      "sha256": "0528110e81f7420ae67027d105a00a763d44728127244705e52ded736c591cb2",
+      "packages": [
+        {
+          "name": "@astryxdesign/cli",
+          "bump": "patch"
+        }
+      ],
+      "category": "feat",
+      "headline": "Add the `@astryxdesign/cli/host` entry: `runHostedCli` runs the CLI once per process for a tool that carries it, with the command name that tool's users type (printed commands start with it) and, when the tool skipped the project's own CLI, the reason, so that CLI is never run",
+      "contributors": [
+        "josephfarina"
+      ],
+      "body": ""
+    },
+    {
+      "path": ".changeset/cli-install-advice-non-astryx-folder.md",
+      "sha256": "38380f74cbd82ad107534001694a9e9213c6b272489d8344577d5a921012a85d",
+      "packages": [
+        {
+          "name": "@astryxdesign/cli",
+          "bump": "patch"
+        }
+      ],
+      "category": "fix",
+      "headline": "The daily hint, the setup reminder, the update notice, `astryx doctor`'s version-alignment and integration fixes, and `astryx discover`'s install command for an integration installed for the computer no longer add a package to a `package.json` that is not an Astryx project's. The project is the one `spec:AST-040` FR9 finds: the nearest folder whose `package.json` declares an Astryx package, or a member its workspace lists, never the home folder and never past a repository root. Run from a folder inside such a project whose own `package.json` is not the project's, such as a tool folder that installs its own `@astryxdesign/core`, the daily hint that matches a project's CLI to its Core, the setup reminder and `astryx doctor`'s version-alignment fix used to name a command that added the CLI to that folder's `package.json`, making it a separate Astryx project. They now compare the CLI with the Core the run reads, as before, and when the two differ they say to run from the project's folder, or to declare an Astryx package in that folder; the update notice upgrades the project from its folder, with the project's release. For an integration installed for the computer, `astryx discover` gives no install command from such a folder, and `astryx doctor`'s fix says to run from the project's folder, where the command adds it for the project; in a folder that belongs to no project, neither names a command. The official packages `astryx discover` lists and the theme packages `astryx doctor` suggests still use the folder the command runs in. A member its workspace lists keeps its own advice. In a folder that belongs to no Astryx project, the hint, the setup reminder and the update notice no longer print, and `astryx doctor`'s fix says how to reach a project. In a folder whose `package.json` declares an Astryx package, the advice is unchanged. No JSON shape or exit code changes.",
+      "contributors": [
+        "josephfarina"
+      ],
+      "body": ""
+    },
+    {
+      "path": ".changeset/cli-integration-check-gaps.md",
+      "sha256": "c08192cc3c54b57d54cfc67551af79d5566ee9fcae2b3640ce5e3312db1934cb",
+      "packages": [
+        {
+          "name": "@astryxdesign/cli",
+          "bump": "patch"
+        }
+      ],
+      "category": "fix",
+      "headline": "`astryx doctor integration validate`, `astryx integration check` and `astryx integration verify` catch more package mistakes, and each new finding ends in a `Fix:` that clears it. Findings that 0.7.2 did not fail on are listed as notes beside validate's issues, which nothing counts, until the next minor:",
+      "contributors": [
+        "josephfarina"
+      ],
+      "body": "- Two docs for one component (`AcmeWidget.doc.mjs` and `AcmeWidget.doc.js`) are listed as `duplicate_component_doc`, naming the one read; discovery now always reads the same one.\n- A component doc whose file name differs from its source only in letter case is one finding that says which file to rename: an error where the pair fails (Linux), a listed `source_without_component_doc` where it still pairs (a case-insensitive disk); a hidden doc that does not pair keeps the source warning it had.\n- A root reached through a symlinked folder is listed as `symlinked_root`: npm pack does not follow it.\n- An absolute root says roots are relative and gives the relative path; a root that is a file is reported by every check instead of crashing it.\n- A package.json without `name` or `version` is listed with a fix, instead of a crash; `verify` fails on it. A package whose `name` and manifest `providerId` give no provider ID is listed as `no_provider_id`.\n- A contribution file Astryx cannot read is listed as `unreadable_file`, before npm pack fails on it."
+    },
+    {
+      "path": ".changeset/cli-integration-clearer-messages.md",
+      "sha256": "8c1a70a50c3ad3fb1ecae85d831c4b99afe55b624143cce0cca3503bab3448de",
+      "packages": [
+        {
+          "name": "@astryxdesign/cli",
+          "bump": "patch"
+        }
+      ],
+      "category": "fix",
+      "headline": "`astryx doctor integration validate`, `astryx integration check` and `astryx integration verify` say more plainly what is wrong in findings they already reported, and how to fix it:",
+      "contributors": [
+        "josephfarina"
+      ],
+      "body": "- An empty doc or manifest, or one with no default export, says so and names what it does export, instead of \"(root): Invalid input\".\n- A manifest key one or two letters off a known key asks \"did you mean `components`?\" before suggesting a newer CLI.\n- A theme descriptor named for the built file (`ocean.doc.mjs` beside a built `ocean.js` that lacks the `ocean` export) says it must share its stem with the `defineTheme` source, naming that source when the built module's `Source:` line or the source's `defineTheme` name confirms it.\n- A template doc with no source, a theme descriptor with no source, a theme source with no descriptor, and a component whose source is `.jsx` get a `Fix:`.\n- A theme source named for its theme (`brand.ts`) beside the module the build writes (`brand.js`) is told to take the `brandTheme` stem.\n- `verify` names packed files by their path in the package, not the scratch copy's; says npm pack does not follow a symlinked root instead of asking for a `files` entry; and, when a theme's `defineTheme` name differs from the files its package exports, says a rebuild writes files under the new name."
+    },
+    {
+      "path": ".changeset/cli-integration-import-names.md",
+      "sha256": "1e5dab658b1d716f2752f98eca9715485a0f1e0d5dbb5d6d5f892a9a5cff6db7",
+      "packages": [
+        {
+          "name": "@astryxdesign/cli",
+          "bump": "patch"
+        }
+      ],
+      "category": "feat",
+      "headline": "`astryx doctor integration validate` now also lists, from source and without a build, an import that names something its module does not export, as notes on its result (`data.notes`, each with its fix in the message). The notes are listed only: neither `doctor integration validate` nor `astryx integration check --strict` counts them or fails on them in 0.7.3, and they become failing warnings in the next minor release, so fix them now. It notes a component's import (the doc's `import`, or the one the CLI derives when the doc has none) that leads to a module that does not export the component, naming the subpath that does or the `exports` entry to add; a component example or a template that imports a name the package does not export; and a template source with no default export (`astryx template` still copies it, but its public import and anything that renders it get nothing), suggesting an exported PascalCase function, class or `const` (never a hook such as `useAccount`, a helper such as `formatBalance`, an ALL-CAPS constant or a type; with none, the fix stays generic). A name is judged only when a file the `exports` entry names is there to read in full: `export *` is followed, cycles included; a built module's declaration file (`x.d.ts` beside `x.js`, and the `.d.ts` files a declaration file's `export *` names) is read for the types it exports; and `export import Alias = Inner.Value` counts as an export. TypeScript source resolves a `./x.js` specifier to `./x.ts`, and a declaration file that is a module exports every top-level declaration unless it has an export list, `export *`, `export =` or a default export of an expression, as TypeScript does. Whatever the reader does not fully model is listed under `unchecked` in the `publicImports` report instead of as a note: a file the `exports` entry names that does not exist yet, a module whose list cannot be read in full (CommonJS, `export *` from another package), a declaration file with no import or export (a global script), every name it would report (other than a component doc's own component, which is always judged) while a TypeScript file in the package (outside `node_modules`) has a parsed `declare module` block for a relative path or the package's own name or a subpath of it, since such an augmentation can add names to that module (the reason names that file; `declare global`, a wildcard spec such as `'*.css'`, another package's name and a `declare module` in a comment do not count, and a file with `declare module` in its text that cannot be parsed counts), or a name missing from a JavaScript module with no declaration file, which may be a type.",
+      "contributors": [
+        "josephfarina"
+      ],
+      "body": ""
+    },
+    {
+      "path": ".changeset/cli-integration-layout-listed.md",
+      "sha256": "02b80360a68f88aa7274ab5a83c3dce89bf751843aeca96d67267f29cadfeb0d",
+      "packages": [
+        {
+          "name": "@astryxdesign/cli",
+          "bump": "patch"
+        }
+      ],
+      "category": "fix",
+      "headline": "`astryx integration check` lists the pairing, root and package.json findings without failing `--strict`; they become failures in the next minor. `astryx doctor integration validate` lists them as notes beside its issues (two docs for one component, a root reached through a symlink, a contribution file that cannot be read, a package.json without `name` or `version`, no provider ID, and a doc whose file name differs from its source only in letter case where the two still pair), each with its fix; nothing counts a note. A hidden component doc that does not pair with its source keeps the source warning it had. `astryx integration verify` still fails on a package.json npm cannot pack.",
+      "contributors": [
+        "josephfarina"
+      ],
+      "body": ""
+    },
+    {
+      "path": ".changeset/cli-integration-public-imports.md",
+      "sha256": "42db0b3c4f7943b6a481bbd3d93b13094394b0637b2bc2c0e09881b73f475050",
+      "packages": [
+        {
+          "name": "@astryxdesign/cli",
+          "bump": "patch"
+        }
+      ],
+      "category": "feat",
+      "headline": "`astryx doctor integration validate` now lists, from source and without a build, what an integration package tells apps to import that they cannot import, as notes on its result (`data.notes`, each with its fix in the message), the way it lists an ignored `cliCommand`. The notes are listed only: neither `doctor integration validate` nor `astryx integration check --strict` counts them or fails on them in 0.7.3, and they become failing warnings in the next minor release, so fix them now. It lists a component's import (the doc's `import`, or the one the CLI derives when the doc has none) or a template's public import whose subpath package.json `exports` does not declare (a missing key, a key whose only conditions an ES module import does not load, such as `require` or `types`, an `exports` that is a single string, a wildcard that does not match; an empty `exports` map declares nothing) or that names another package; a component example that imports a subpath the package does not declare; and a template that imports a relative path outside the templates root, or a path its own package or Core does not export. Each note names the fix, such as the exact `exports` entry to add. A subpath is judged from its `exports` declaration alone, never by its target file, so `exports` may point at build output that does not exist yet; whether the module there exports the names an import asks for is noted too, also listed only in 0.7.3, when a target file is there to read in full (see the import-names note). Wildcards and condition objects with `import` or `default` pass, an import of a subpath whose `exports` entry has only `types` targets is never judged as a run-time import (it passes when it is `import type`, when every binding is an inline `type`, or when every name it imports is one the `types` file declares as a type, and is listed under `unchecked` otherwise), a subpath an ES module import reaches only through `types` (such as `types` beside `require`) is judged the same way, and a `types` target under `require` does not count, and a package with no `exports` keeps its deep paths to files it ships. What it cannot judge (in a package with no `exports`, a deep path into build output not built yet, such as `dist/`; a template import of Core when `@astryxdesign/core` is not installed beside the package; every import of the package's own name when package.json has no `name`) is listed under `unchecked` in a new `publicImports` report on the result (`{status: 'checked', findings: [], unchecked: [{file, specifier, reason}]}`), which `integration check` counts as not compared.",
+      "contributors": [
+        "josephfarina"
+      ],
+      "body": ""
+    },
+    {
+      "path": ".changeset/cli-peer-version-warning.md",
+      "sha256": "da3786127cce9ca2fdea338184135f243986eec9a15197dbbfd5b37a05b526e1",
+      "packages": [
+        {
+          "name": "@astryxdesign/cli",
+          "bump": "patch"
+        }
+      ],
+      "category": "fix",
+      "headline": "`astryx doctor integration validate` and `astryx integration check` now list a `cli_peer_version` note when the running CLI is outside the package's `@astryxdesign/cli` peer range, naming the package, the range and the running version. Below the range the note gives the project's commands to install a newer `@astryxdesign/core` and `@astryxdesign/cli` together (as dev dependencies in the package's own folder) and then run `astryx upgrade --from <version> --apply`. Above the range it asks for a release of an installed package that supports this CLI, or asks the author of the package in the current folder to test with this CLI and widen the range. A note fails nothing: `--strict`, `integration verify`, `doctor`, and exit codes are unchanged.",
+      "contributors": [
+        "josephfarina"
+      ],
+      "body": ""
+    },
+    {
+      "path": ".changeset/cli-scoped-core-member.md",
+      "sha256": "3bcfe09fc5e03fa5a323aa77d2db884ac4e3ca1c11f3775571f01a0e89216e28",
+      "packages": [
+        {
+          "name": "@astryxdesign/cli",
+          "bump": "patch"
+        }
+      ],
+      "category": "fix",
+      "headline": "`astryx component <Member> --package @astryxdesign/core` now answers with that member, as the unscoped lookup does. A Core component documented in its family's doc (HStack and VStack in the Stack doc) used to come back as the family doc, named after the family and with no props.",
+      "contributors": [
+        "cixzhang"
+      ],
+      "body": ""
+    },
+    {
+      "path": ".changeset/cli-skill-build-workflow.md",
+      "sha256": "ae3bf6bc8458a3cc4809c1a34b889f066bef5f6fb091209c26822d1a60e47d58",
+      "packages": [
+        {
+          "name": "@astryxdesign/cli",
+          "bump": "patch"
+        },
+        {
+          "name": "@astryxdesign/core",
+          "bump": "patch"
+        }
+      ],
+      "category": "fix",
+      "headline": "The agent guide that global mode writes to the home folder now says how to build, not only how to find things. It tells agents to work in a project folder (creating one if there is none) with `@astryxdesign/core` and `@astryxdesign/cli` added to a new project or one without Core, or, in a project that already has `@astryxdesign/core`, the CLI at the same version, and `astryx init` run there, then gives the same template-first workflow and self-check the project agent docs give, and ends with building the project and delivering that build. Before, agents that found the right template could still build the page with a tool that cannot install packages and deliver a page with no Astryx in it. The guide stays version-free and names only commands every release keeps. The project agent docs are unchanged, and so is what `@astryxdesign/core`'s install script prints: its copy of the shared agent-docs file only gains the same workflow lines.",
+      "contributors": [
+        "josephfarina"
+      ],
+      "body": ""
+    },
+    {
+      "path": ".changeset/cli-skill-restore-step.md",
+      "sha256": "bd8bd0c41acbaa6e5f8ffda22be3d801338166b95b0b2e43f8f1962beb288d85",
+      "packages": [
+        {
+          "name": "@astryxdesign/cli",
+          "bump": "patch"
+        }
+      ],
+      "category": "fix",
+      "headline": "The agent guide that global mode writes to the home folder now says what to do when `astryx` is not found: run the command that installed the CLI for the computer first, with the same package manager and folder, such as `npm i -g @astryxdesign/cli` or `pnpm add -g @astryxdesign/cli`. On machines that keep the home folder but reset system folders on restart, the guide outlived the CLI installed for the computer and told agents to run a command that was gone. Outside a project, when the guide names `astryx` and no `astryx` command is on the search path, apart from a package runner's own copy, `astryx doctor` now says so and names the install step the guide records, or npm's when it records none. The global-mode guide for CI and containers explains how to keep the CLI across restarts. A guide written for a host's own command is unchanged. No JSON shape or exit code changes.",
+      "contributors": [
+        "josephfarina"
+      ],
+      "body": ""
+    },
+    {
+      "path": ".changeset/codeblock-highlight-styles-early.md",
+      "sha256": "26537999aba1eb45e7b341dea36b49872c6d93ccb7b5df132837d89ba7c90b1f",
+      "packages": [
+        {
+          "name": "@astryxdesign/core",
+          "bump": "patch"
+        }
+      ],
+      "category": "perf",
+      "headline": "CodeBlock inserts its syntax-highlight rules before the first layout read instead of after it, so a page with many code blocks, such as a long Markdown document, paints about a fifth sooner on first load; the rules and the highlighted output are unchanged.",
+      "contributors": [
+        "cixzhang"
+      ],
+      "body": ""
+    },
+    {
+      "path": ".changeset/complexselector-focusable-disabled.md",
+      "sha256": "bf203355c6e862312a0f9a43bd8c74e350876a3cdae6b7c79cd9d36a06f657e7",
+      "packages": [
+        {
+          "name": "@astryxdesign/core",
+          "bump": "patch"
+        }
+      ],
+      "category": "fix",
+      "headline": "A disabled `ComplexSelector` keeps its place in the tab order, so keyboard and screen-reader users can reach it and hear that it is unavailable (WCAG 2.2 SC 2.1.1 Keyboard and 4.1.2 Name, Role, Value; `spec:AST-085` FR1, FR2 and FR4). Before, its trigger rendered the native `disabled` attribute, so Tab skipped it and a focused trigger lost focus when disabled; now it exposes `aria-disabled=\"true\"`, keeps focus, shows its keyboard focus outline, and still opens nothing. A press or key on it reaches no handler: not the toggle, not a caller's `onClick` or `onKeyDown`, and not an ancestor's click handler.",
+      "contributors": [
+        "cixzhang"
+      ],
+      "body": ""
+    },
+    {
+      "path": ".changeset/complexselector-theme-disabled-guard.md",
+      "sha256": "cc4be7f11178f36693282296a8b609e40663307f5a75bb0e795de9bc3629e682",
+      "packages": [
+        {
+          "name": "@astryxdesign/theme-butter",
+          "bump": "patch"
+        },
+        {
+          "name": "@astryxdesign/theme-stone",
+          "bump": "patch"
+        },
+        {
+          "name": "@astryxdesign/theme-y2k",
+          "bump": "patch"
+        },
+        {
+          "name": "@astryxdesign/cli",
+          "bump": "patch"
+        }
+      ],
+      "category": "fix",
+      "headline": "The butter, stone, and y2k themes keep the secondary hover fill off a disabled `ComplexSelector` trigger whether the trigger is natively disabled or exposes `aria-disabled=\"true\"`, the focusable disabled form `spec:AST-085` gives every control (FR6: no hover affordance on a disabled control). Before, the guard only recognized a natively disabled trigger. The themes `astryx theme eject` copies carry the same guard.",
+      "contributors": [
+        "cixzhang"
+      ],
+      "body": ""
+    },
+    {
+      "path": ".changeset/composites-focusable-disabled.md",
+      "sha256": "c0b7b4fbf4e171dacad06c615923a13619c99609802a9107bf8b0587a7ab1aef",
+      "packages": [
+        {
+          "name": "@astryxdesign/core",
+          "bump": "patch"
+        }
+      ],
+      "category": "fix",
+      "headline": "Disabled TreeList rows' expand toggle and action button, disabled Pagination dots and disabled Calendar days no longer render the native `disabled` attribute. Each exposes `aria-disabled=\"true\"` instead, so a disabled Calendar day or Pagination dot can take focus and be announced as disabled, while clicks, Enter and Space still do nothing and arrow keys still skip disabled days as before. This meets the focusable-disabled requirement in spec:AST-085 (FR1, FR2). No API changes.",
+      "contributors": [
+        "cixzhang"
+      ],
+      "body": ""
+    },
+    {
+      "path": ".changeset/date-input-focusable-disabled.md",
+      "sha256": "ce037b3b98acc8b0e1ae1ff6a5fce4efd784dba3ce930bdde71f16c5265e8ceb",
+      "packages": [
+        {
+          "name": "@astryxdesign/core",
+          "bump": "patch"
+        }
+      ],
+      "category": "fix",
+      "headline": "DateInput: a disabled or busy field no longer renders native `disabled`. Its input and calendar button keep their place in the focus order and expose `aria-disabled`, while typing and opening stay blocked. A focused disabled field shows its focus ring, so keyboard and screen-reader users can reach a disabled date field and hear that it is disabled. Tests that query a disabled DateInput with `toBeDisabled()` or `:disabled` should check `aria-disabled=\"true\"` instead.",
+      "contributors": [
+        "cixzhang"
+      ],
+      "body": ""
+    },
+    {
+      "path": ".changeset/date-range-input-focusable-disabled.md",
+      "sha256": "f5b45985362d0df58617b269caac95276a6d0fdaf12c81f0b4a1c1a15fdd85dc",
+      "packages": [
+        {
+          "name": "@astryxdesign/core",
+          "bump": "patch"
+        }
+      ],
+      "category": "fix",
+      "headline": "DateRangeInput: a disabled or busy field and a disabled preset no longer render native `disabled`. The trigger, calendar button and presets keep their place in the focus order and expose `aria-disabled`, while opening and selecting stay blocked, and a focused disabled field shows its focus ring. This meets the focusable-disabled requirement in spec:AST-085 (FR1, FR2, FR6) and DateRangeInput AR3. Tests that query them with `toBeDisabled()` or `:disabled` should check `aria-disabled=\"true\"` instead. Introduced in [#7866](https://github.com/facebook/astryx/pull/7866); final-state evidence: [#7887](https://github.com/facebook/astryx/pull/7887).",
+      "contributors": [
+        "cixzhang"
+      ],
+      "body": ""
+    },
+    {
+      "path": ".changeset/date-time-input-focusable-disabled.md",
+      "sha256": "f16b6c8b7cdb77be738f8d05e9953ec40b1215d8c828e61d0acb02d73402660a",
+      "packages": [
+        {
+          "name": "@astryxdesign/core",
+          "bump": "patch"
+        }
+      ],
+      "category": "fix",
+      "headline": "DateTimeInput: a disabled or busy field no longer renders native `disabled` on its text, native-picker or touch fields, or on its calendar and clock buttons. They keep their place in the focus order and expose `aria-disabled`, while typing, picking, opening and a caller's `onClick` stay blocked, and a focused disabled field shows its focus ring. This meets the focusable-disabled requirement in spec:AST-085 (FR1, FR2, FR6). TimeInput's native picker button, which shares the time segment and stays out of the tab order, also moves from `disabled` to `aria-disabled` and stays inert. Tests that query a disabled DateTimeInput with `toBeDisabled()` or `:disabled` should check `aria-disabled=\"true\"` instead.",
+      "contributors": [
+        "cixzhang"
+      ],
+      "body": ""
+    },
+    {
+      "path": ".changeset/define-the-canonical-datavars-defaults-in-prebui-6x0i.md",
+      "sha256": "73f5d973139f56635f52bb5bc5876af50c060175e5f8fe6f678daf5366d8d3ab",
+      "packages": [
+        {
+          "name": "@astryxdesign/core",
+          "bump": "patch"
+        },
+        {
+          "name": "@astryxdesign/cli",
+          "bump": "patch"
+        }
+      ],
+      "category": "fix",
+      "headline": "Define the canonical dataVars defaults in prebuilt Core CSS so compiled imports and raw CSS references paint correctly without a StyleX build step.",
+      "contributors": [
+        "ejhammond"
+      ],
+      "body": ""
+    },
+    {
+      "path": ".changeset/dialog-sheet-ignore-descendant-cancel.md",
+      "sha256": "ec5438b8a2b1196794485340895c968b4b355d47cbba4e0a2f679b1eeef8e09b",
+      "packages": [
+        {
+          "name": "@astryxdesign/core",
+          "bump": "patch"
+        }
+      ],
+      "category": "fix",
+      "headline": "Dialog, BottomSheet and BottomSheetSwitcher stay open when a file picker inside them is dismissed. A file input fires a bubbling `cancel` event when its picker closes without a choice, and all three took that event for a close request of their own and closed (a switcher closed its whole flow). They now act only on a `cancel` aimed at their own `<dialog>`, so Escape and platform close requests (the Android back gesture) behave as before. No API changes.",
+      "contributors": [
+        "vjeux"
+      ],
+      "body": ""
+    },
+    {
+      "path": ".changeset/docs-authoring-home.md",
+      "sha256": "507fc43cbd42f45bba8905f38ac47f923ebaf8ed0b6cf0729d2a50eb14090adb",
+      "packages": [
+        {
+          "name": "@astryxdesign/cli",
+          "bump": "patch"
+        }
+      ],
+      "category": "docs",
+      "headline": "Everything an integration author reads now lives under one home, `astryx docs authoring`: the integration guides' routes moved from `cli/integrations/…` to `authoring/…` (for example, `cli/integrations/quick-start` is now `authoring/quick-start`), beside the field reference at `astryx docs authoring/field-reference`. `astryx docs authoring <name>` still opens one field reference section, and an old `cli/integrations/…` route's error names its new route. The loose topics now sit in Guides or Foundations instead of Unorganized, under the same names: `astryx docs getting-started` still opens, and its Up is `astryx docs guides`.",
+      "contributors": [
+        "josephfarina"
+      ],
+      "body": ""
+    },
+    {
+      "path": ".changeset/dropdown-menu-item-audit-docs.md",
+      "sha256": "d2aebd2ba45f417aa741200794816af5c6ae82139775acd33785c67ad9ef4bfb",
+      "packages": [
+        {
+          "name": "@astryxdesign/core",
+          "bump": "patch"
+        }
+      ],
+      "category": "docs",
+      "headline": "Clarify DropdownMenuItem action, destination, disabled, and supporting-content guidance.",
+      "contributors": [
+        "cixzhang"
+      ],
+      "body": ""
+    },
+    {
+      "path": ".changeset/dropdown-menu-radio-group-audit-docs.md",
+      "sha256": "50013b09055cf439fd55c64ddefe9b95c1224ede65ea49827c997bfc51df2d07",
+      "packages": [
+        {
+          "name": "@astryxdesign/core",
+          "bump": "patch"
+        }
+      ],
+      "category": "fix",
+      "headline": "Forward DropdownMenuRadioGroup refs and clarify its controlled selection, naming, close policy, and root composition guidance.",
+      "contributors": [
+        "cixzhang"
+      ],
+      "body": ""
+    },
+    {
+      "path": ".changeset/dropdown-menu-submenu-regions.md",
+      "sha256": "80e7cd069383b077a860cc0cdee242c5671c57c15597319f4487923b4f0d5b83",
+      "packages": [
+        {
+          "name": "@astryxdesign/core",
+          "bump": "patch"
+        }
+      ],
+      "category": "feat",
+      "headline": "`DropdownMenuSubMenu` takes `header` and `footer`, as the root `DropdownMenu` does: a field that filters a sub-menu's rows, or a door below them, sits beside the sub-menu's menu rather than inside it. With either, the sub-menu's surface (the flyout, or the drilled-in view on a phone) is a modal dialog named by its row: the row says `aria-haspopup=\"dialog\"`, Tab and Shift+Tab walk the header, the rows and the footer and wrap, Escape returns to the row, and a pointer leaving the flyout closes it only once focus leaves too. A `ContextMenu` does not show a sub-menu's `header` or `footer`. Without them nothing changes.",
+      "contributors": [
+        "vjeux"
+      ],
+      "body": ""
+    },
+    {
+      "path": ".changeset/init-agent-docs-one-copy.md",
+      "sha256": "b4f9d33f34343b58bff3c24c4a4e0f2783fda2b92f2589645e0fe186f03b88be",
+      "packages": [
+        {
+          "name": "@astryxdesign/cli",
+          "bump": "patch"
+        },
+        {
+          "name": "@astryxdesign/core",
+          "bump": "patch"
+        }
+      ],
+      "category": "fix",
+      "headline": "`astryx init` writes the agent docs at the project root, in files the project commits, so that Codex, Gemini CLI, Copilot CLI and Claude Code all read the block, from the project root or any folder below it. It no longer writes agent docs into a project's subfolder, the home folder, or a settings folder in it such as `~/.gemini`. Introduced in [#7497](https://github.com/facebook/astryx/pull/7497); final-state evidence: [#7888](https://github.com/facebook/astryx/pull/7888).",
+      "contributors": [
+        "josephfarina"
+      ],
+      "body": "- `AGENTS.md` holds the block, created when missing. Before, a project with only `CLAUDE.md` got the block only there, so Codex and Gemini CLI never saw it.\n- Claude Code skips `AGENTS.md` in a folder that has a `CLAUDE.md` or `.claude/CLAUDE.md`, so the Claude Code file the project already has keeps a full copy: root `CLAUDE.md`, else `.claude/CLAUDE.md`. It keeps the copy even when it imports `AGENTS.md`, because Claude Code does not follow that import in a session started in a subfolder; started at the root, Claude Code then reads two. When both exist, the copy goes in root `CLAUDE.md`, which projects commit even when they ignore `.claude/`, and a block in `.claude/CLAUDE.md` is removed. Init creates no Claude file. `astryx upgrade` refreshes every copy, except in a project at the top of a home settings folder (below).\n- Gemini CLI reads only `GEMINI.md`: init adds a one-line import, `@./AGENTS.md`, creating `GEMINI.md` when it is missing. It adds none when `GEMINI.md` already imports `AGENTS.md`, inline or on its own line. It adds the import even when the project's `.gemini/settings.json` has Gemini read `AGENTS.md` through `context.fileName`: Gemini loads those settings only when it starts at the project root, so a session started in a subfolder would otherwise get no copy. Started at the root, Gemini then reads two.\n- The project root is the nearest folder at or above where init runs whose `package.json` declares an `@astryxdesign` package, else the nearest with any `package.json`. The search stops at a repository root and never counts the home folder. With no `package.json` found, init writes where it runs, as before. `docsWritten` still lists each file relative to where init ran, for example `../../AGENTS.md`.\n- In the home folder, or in a settings folder in it such as `~/.gemini` or `~/.claude` outside a project, init writes no agent docs, reports `docsError` as `install-failed` with the reason, and still exits 0. This is a compatible fix under `architecture:cli-surface` INV31 (where init writes, and that no mode writes agent docs into the home folder or a settings folder in it) and INV10a (a refusal of a write outside its confined root, made before anything is written). The refused inputs: the home folder itself, and the top of a folder of the home folder whose name starts with a dot (every such folder is a settings folder), even when it holds a `package.json`; a folder below it with its own `package.json` is a project. With `--agent-docs-path`, each file's own folder is checked: from the home folder, `notes/AI.md` is written as before, while `AI.md` or `.claude/CLAUDE.md` is refused. How it fails: no agent docs are written, `docsError` is `install-failed` with the reason, and the exit status stays 0, as before. Migration: run `astryx init` from the project's own folder, or add the block to the file by hand. A project inside a settings folder, such as an agent worktree in `~/.codex/worktrees/` or `~/.cursor/worktrees/`, is set up normally, and `astryx upgrade` refreshes it. Agents read the files in those folders in every project. Run `astryx init --remove-agents` in the home folder to remove a block an earlier version wrote into `~/.claude/CLAUDE.md`. `astryx upgrade` refuses the same folders when it would refresh a block there (INV10a), with or without `--apply`, and with no block there it gives the same reason instead of suggesting `astryx init`; `astryx doctor`'s agent-docs fix and the setup reminder after each command do the same, the reminder by staying quiet. The refused input: a project whose root is the home folder or the top of a settings folder, such as `~/.dotfiles` with a `package.json`. How it fails: the block is left as it is, `agentDocs.action` is `error` (never `would-refresh`), and the warning names the folder and why; the upgrade's other steps and its exit status are as before. Migration: move the project into a folder of its own, or update or remove the block there by hand.\n- A `GEMINI.md` that resolves outside the project, for example a link to a shared file, is skipped and reported in `docsError` with one note (not an error line), in the default layout and in a project's own layout; the rest is written and init exits 0.\n- The managed block is Astryx-owned (`architecture:cli-surface` INV31): init and `astryx upgrade` write, refresh, and remove only the block, whatever ignore rules or generated markers say, as 0.7.1 did, and never change the text around it. Every write stays inside the project (INV10): run in the folder 0.7.1 wrote, an agent file 0.7.1 wrote there whose path leaves the project still refuses the run with exit 1. The project's Claude Code file (root `CLAUDE.md`, or `.claude/CLAUDE.md` when there is no root one) that resolves outside the project and is a block-less import of an existing `AGENTS.md`, which 0.7.1 left alone, is skipped and reported in `docsError` with one note, and init exits 0. Run from a folder below the project root, where 0.7.1 wrote in that folder instead, a project-root file whose path leaves the project is skipped and reported in `docsError` with one note, the rest is written, and init exits 0.\n- While root `CLAUDE.md` is untracked and ignored by the repository's ignore rules (its ignore files from the repository root down, such as a monorepo's root `.gitignore`, its local exclude file, and configured excludes; init asks git, Sapling or Mercurial), a `.claude/CLAUDE.md` the project commits gets the copy too: one the repository tracks counts as committed whatever the ignore rules say, as git and Mercurial ignore only untracked files, and when the repository cannot answer the copy is kept, on the first run as on later ones, and `--agent claude` and `--agent all` write it there, so a fresh clone still gives Claude Code a copy. Such a copy that resolves outside the project refuses the run with exit 1 where 0.7.1 wrote it too; one 0.7.1 did not write (the one `--agent claude` adds, or a block-less import of an existing `AGENTS.md`) is skipped and reported in `docsError` with one note, and init exits 0. So is a `.claude/CLAUDE.md` whose block `--agent claude` would remove beside a `CLAUDE.md`, since 0.7.1's `claude` preset wrote only `CLAUDE.md` there. Beside a committed root `CLAUDE.md`, with `.claude` linked outside the project, three cases that 0.7.1 refused now exit 0 with nothing written: the default with a `.claude/CLAUDE.md` of plain text, and `--agent all` with one of plain text or a block-less import of `AGENTS.md`. 0.7.1 wrote that `.claude/CLAUDE.md`; now root `CLAUDE.md` holds the copy and the linked file gets none, so no write leaves the project and none needs refusing. In a project that keeps its own layout, a `GEMINI.md` that imports no agent file now gets a copy, as the other agent files do.\n- The copy in `.claude/CLAUDE.md` is removed only once root `CLAUDE.md` holds the same block, and only the managed block between its markers: the rest of the file stays, and the file is deleted only when nothing but whitespace is left. `astryx init --remove-agents` deletes a file it created only when nothing but whitespace or init's own heading is left; 0.7.0 also deleted a file whose remaining text had a heading and any line with the word \"guidance\".\n- `astryx init --remove-agents` removes the block at the project root, where `init` writes it, and in the folder it runs in. Run from a subfolder, it removes what `init` wrote at the root, and a block an earlier version left in that subfolder; a root agent file with a block that resolves outside the project is left as it is with a note, and the run exits 0, as 0.7.1 did when it touched only the subfolder. Exit codes and the JSON shape are unchanged.\n- `--agent claude` and `--agent all` never leave a block in both `CLAUDE.md` and `.claude/CLAUDE.md`, unless the project ignores `CLAUDE.md`: when `CLAUDE.md` gets the block, a block in `.claude/CLAUDE.md` is removed. `--agent all` keeps the `GEMINI.md` import. The `--agent` help and the working-with-AI guide say so. `--agent-docs-path` writes where init runs, as before.\n- `astryx doctor` fails when the `GEMINI.md` import points at an `AGENTS.md` with no block. The setup check in the CLI and in `@astryxdesign/core` no longer counts that import as set up, and looks at `GEMINI.md`. The reminder to run `init` that commands print looks at the project root too, so it stops once `init` has run in a nested package."
+    },
+    {
+      "path": ".changeset/is-my-code-good.md",
+      "sha256": "ae5080fc8113f58dd4997a6b6a3a8bc0b13126e664473da62fd5808c3986133f",
+      "packages": [
+        {
+          "name": "@astryxdesign/cli",
+          "bump": "patch"
+        }
+      ],
+      "category": "docs",
+      "headline": "Add `astryx docs is-my-code-good`, one shareable guide that checks component use, icons, custom styles, layout, assets, and code health from source and rendered evidence. It includes an agent prompt and requires missing evidence to stay visible. The template grading rubric now links each category to these shared criteria instead of repeating them, and keeps its own weights, counting rules, and version 1.4.",
+      "contributors": [
+        "josephfarina"
+      ],
+      "body": ""
+    },
+    {
+      "path": ".changeset/lookup-suggestion-order.md",
+      "sha256": "4bf713f234fddcae9b9f8e36ee7f64fc00aa4b43b66fd0580df677cdfa390648",
+      "packages": [
+        {
+          "name": "@astryxdesign/cli",
+          "bump": "patch"
+        }
+      ],
+      "category": "feat",
+      "headline": "A failed `astryx component`, `template` or `docs` lookup lists the entry you most likely meant first. Components that tie on match score are ordered by how early the name you typed appears in their keywords and by how close their names are, instead of alphabetically; among the suggestions offered, a component one of whose other names was typed (including another library's name for it, such as `MUI TextField`, with or without the library's name) comes first; a compound name that does not exist (a family part named with other words, or without one of its family's words) suggests the real part or its family. Templates are ordered by how closely their id or title matches the name you typed, and unknown docs routes by how closely the route matches. Suggestion lists never get longer, every suggestion is a real entry, and a name that resolved before still resolves to the same entry.",
+      "contributors": [
+        "josephfarina"
+      ],
+      "body": ""
+    },
+    {
+      "path": ".changeset/markdown-skip-unchanged-rerender.md",
+      "sha256": "49a789fba3ec54c416be9834e8b7b31b1707098d9465b009fedfed68cebdb032",
+      "packages": [
+        {
+          "name": "@astryxdesign/core",
+          "bump": "patch"
+        }
+      ],
+      "category": "perf",
+      "headline": "Markdown skips re-rendering its document when a parent re-renders without changing the text or any rendering prop, so pages that update around a long document stay responsive; a link handler passed as a new function on each render no longer forces that work, and the rendered output is unchanged.",
+      "contributors": [
+        "cixzhang"
+      ],
+      "body": ""
+    },
+    {
+      "path": ".changeset/multiselector-focusable-disabled.md",
+      "sha256": "73b966ff38c9d3d193d732816e7e4a20b6b731a1414f54c5f5d7e15db25b4a1d",
+      "packages": [
+        {
+          "name": "@astryxdesign/core",
+          "bump": "patch"
+        }
+      ],
+      "category": "fix",
+      "headline": "A disabled `MultiSelector` keeps its place in the tab order, so keyboard and screen-reader users can reach it and hear that it is unavailable (WCAG 2.2 SC 2.1.1 Keyboard and 4.1.2 Name, Role, Value; `spec:AST-085` FR1–FR4). Before, its trigger rendered the native `disabled` attribute and `tabIndex={-1}`, so Tab skipped it and a focused trigger lost focus when disabled; now it exposes `aria-disabled=\"true\"`, keeps focus, still opens nothing, and submits no form value. Like a natively disabled button, it runs no caller event handler other than focus and blur, and a press on it reaches no handler. A focused disabled trigger shows a keyboard focus ring, dimmed with the rest of the control (SC 2.4.7 Focus Visible; `spec:AST-085` FR6).",
+      "contributors": [
+        "cixzhang"
+      ],
+      "body": ""
+    },
+    {
+      "path": ".changeset/nav-items-focusable-disabled.md",
+      "sha256": "ab74ec65233f228223f2832d414edec238554cd5a1aeaa56c44be37b9f425459",
+      "packages": [
+        {
+          "name": "@astryxdesign/core",
+          "bump": "patch"
+        }
+      ],
+      "category": "fix",
+      "headline": "Disabled Link and ClickableCard, and the buttons of a disabled Token, stay focusable. Before, they rendered the native `disabled` attribute or `tabIndex={-1}`, so keyboard and screen-reader users could not reach them. Now each disabled control exposes `aria-disabled=\"true\"` and keeps the Tab stop it has when enabled, while activation by click, Enter or Space, `onClick`, removal and navigation stay blocked; a disabled Link keeps no live destination and is exposed with the link role. A `Popover` no longer opens from a wrapped or `anchorRef` trigger marked `aria-disabled=\"true\"` (for example a disabled `Button` with a `tooltip`), including for a click dispatched straight on the trigger; before, such a click opened it. This meets the focusable-disabled requirement in spec:AST-085 (FR1, FR2, FR5). No API changes.",
+      "contributors": [
+        "cixzhang"
+      ],
+      "body": ""
+    },
+    {
+      "path": ".changeset/runner-commands.md",
+      "sha256": "436bf4fb5d1a8912e9b8c308e685598130299280a920c7548aa3848ae617e326",
+      "packages": [
+        {
+          "name": "@astryxdesign/cli",
+          "bump": "patch"
+        }
+      ],
+      "category": "feat",
+      "headline": "From 0.7.3, `doctor integration validate` (and so `integration check`) lists each Astryx command a topic writes with a package runner as a `runner_command` note in `data.notes`, with its file, line and the bare `astryx <command>` to write. A note fails nothing, so `integration check --strict` exits as before. The unscoped name after a download runner (`npx astryx`) always counts, because it fetches an unrelated package; the scoped `npx @astryxdesign/cli`, for install steps, does not.",
+      "contributors": [
+        "josephfarina"
+      ],
+      "body": ""
+    },
+    {
+      "path": ".changeset/search-consumer-ranking.md",
+      "sha256": "c62529797bd6e575528fd1c66c702462b17a558adbdc159c3c1419c37fc1be3e",
+      "packages": [
+        {
+          "name": "@astryxdesign/cli",
+          "bump": "patch"
+        }
+      ],
+      "category": "docs",
+      "headline": "A new \"Use integrations\" guide, so consumer queries find consumer docs first, not authoring content.",
+      "contributors": [
+        "josephfarina"
+      ],
+      "body": "Added a \"Use integrations\" guide (`use-integrations.doc.mjs`) that covers\ndiscovering, installing, and using integration packages in an app. Search\nnow ranks it above authoring and API-function docs for consumer-phrased\nqueries like \"add an integration\" or \"install a package\". Authoring\nqueries like \"build an integration\" still rank authoring content first."
+    },
+    {
+      "path": ".changeset/search-entry-cache-guard.md",
+      "sha256": "6832688e9a088ced156692ed2d6da3337b796e552b67d91d97fb667eedf9d067",
+      "packages": [
+        {
+          "name": "@astryxdesign/cli",
+          "bump": "patch"
+        }
+      ],
+      "category": "fix",
+      "headline": "`astryx search` ties its entry-index reuse to one list of the fields the index reads, so the index is never reused after any of them changes; answers are unchanged.",
+      "contributors": [
+        "josephfarina"
+      ],
+      "body": ""
+    },
+    {
+      "path": ".changeset/search-entry-cache.md",
+      "sha256": "070cfdc8c0c5f0d3fb14347cf582cedcc354a072a8f7a198d3f80033358900fe",
+      "packages": [
+        {
+          "name": "@astryxdesign/cli",
+          "bump": "patch"
+        }
+      ],
+      "category": "fix",
+      "headline": "`astryx search` reuses its entry index across searches in one process while the catalog is unchanged, so repeated searches answer faster; every answer is unchanged.",
+      "contributors": [
+        "josephfarina"
+      ],
+      "body": ""
+    },
+    {
+      "path": ".changeset/search-function-trace.md",
+      "sha256": "c0b3d45a97171d032d99dac5fefce0fedd961e3fafa1bd0e7ea2fe5760c0ae9d",
+      "packages": [
+        {
+          "name": "@astryxdesign/cli",
+          "bump": "patch"
+        }
+      ],
+      "category": "fix",
+      "headline": "Hosts that bundle the CLI into a server function no longer pack their whole project folder into it: one path in `integration check`'s import checks was built in a way file tracers cannot follow. The path and its results are unchanged.",
+      "contributors": [
+        "josephfarina"
+      ],
+      "body": ""
+    },
+    {
+      "path": ".changeset/search-reuses-gathered-catalog.md",
+      "sha256": "2b46cabfe66d7ab3fd7dd74119276b2e55e8eb26a9b9315300220f9142b70c9d",
+      "packages": [
+        {
+          "name": "@astryxdesign/cli",
+          "bump": "patch"
+        }
+      ],
+      "category": "fix",
+      "headline": "`search()` from `@astryxdesign/cli/api` answers faster when one process searches again: it reuses the components, docs, templates and themes it gathered for the same folder and `type` while no file it read, and no folder it listed, has changed since (a linked workspace package included). To see those reads, the first such search in a process wraps `node:fs`'s read functions for that process; outside a search they behave exactly as before. Results are unchanged. Short-lived runs are unaffected: each `astryx search` command gathers once, as before. Introduced in [#7830](https://github.com/facebook/astryx/pull/7830); final-state evidence: [#7885](https://github.com/facebook/astryx/pull/7885).",
+      "contributors": [
+        "josephfarina"
+      ],
+      "body": ""
+    },
+    {
+      "path": ".changeset/search-template-display-name.md",
+      "sha256": "22b4dc2ba8e4e192c03a1576f23ca6bfdcb6163fd9fbe17d71fa696b00dac1cc",
+      "packages": [
+        {
+          "name": "@astryxdesign/cli",
+          "bump": "patch"
+        }
+      ],
+      "category": "fix",
+      "headline": "`astryx search` and `astryx build` find a block by its authored display name when that name has two words or more and holds every word of the component the block shows: a query naming it, such as \"rich text editor\" for an integration's Rich Text Editor block, ranks it first. A display name that labels only the variant, such as \"Inside a card\", is not read.",
+      "contributors": [
+        "josephfarina"
+      ],
+      "body": ""
+    },
+    {
+      "path": ".changeset/selector-focusable-disabled.md",
+      "sha256": "31d7effbeba01e73c98c3ced2b429baa98473252e9e7369f6e4a25ed36e1481e",
+      "packages": [
+        {
+          "name": "@astryxdesign/core",
+          "bump": "patch"
+        }
+      ],
+      "category": "fix",
+      "headline": "A disabled `Selector` keeps its place in the tab order, so keyboard and screen-reader users can reach it and hear that it is unavailable (WCAG 2.2 SC 2.1.1 Keyboard and 4.1.2 Name, Role, Value; `spec:AST-085` FR1–FR4). Before, its trigger rendered the native `disabled` attribute and `tabIndex={-1}`, so Tab skipped it and a focused trigger lost focus when disabled; now it exposes `aria-disabled=\"true\"`, keeps focus, still opens nothing, and submits no form value. Like a natively disabled button, it runs no caller event handler other than focus and blur, and a press on it reaches no handler. A focused disabled trigger shows a keyboard focus ring, dimmed with the rest of the control (SC 2.4.7 Focus Visible; `spec:AST-085` FR6).",
+      "contributors": [
+        "cixzhang"
+      ],
+      "body": ""
+    },
+    {
+      "path": ".changeset/selector-option-narrow-ellipsis.md",
+      "sha256": "294ea554e6890c4654419f7d3dea61899da193bb704aa0418fcda49da3d789a7",
+      "packages": [
+        {
+          "name": "@astryxdesign/core",
+          "bump": "patch"
+        }
+      ],
+      "category": "fix",
+      "headline": "Selector options in a narrow list now shrink and truncate a long label with an ellipsis instead of being clipped past the list edge",
+      "contributors": [
+        "kyu-rong"
+      ],
+      "body": ""
+    },
+    {
+      "path": ".changeset/switch-busy-one-announcement.md",
+      "sha256": "0813ca7bb5ec4e47eb502c8af64dd840101656b232b353d253b759819f341bab",
+      "packages": [
+        {
+          "name": "@astryxdesign/core",
+          "bump": "patch"
+        }
+      ],
+      "category": "fix",
+      "headline": "Switch: a busy switch announces \"Loading\" once per busy start. Under React StrictMode the announcement used to be made twice.",
+      "contributors": [
+        "cixzhang"
+      ],
+      "body": ""
+    },
+    {
+      "path": ".changeset/time-input-focusable-disabled.md",
+      "sha256": "d922be512df82ac7b4b982dcf99e07095e58071ffd1468e29bb7097ed99baf45",
+      "packages": [
+        {
+          "name": "@astryxdesign/core",
+          "bump": "patch"
+        }
+      ],
+      "category": "fix",
+      "headline": "TimeInput: a disabled field, or a busy bottom-sheet field, no longer renders native `disabled` on its typed, native-picker or touch input or its picker button. They keep their place in the focus order and expose `aria-disabled`, while typing, arrow-key adjustment, opening, submitting a surrounding form with Enter, and a caller's `onClick` stay blocked, a draft typed before the field became disabled is dropped, and a focused disabled field shows its focus ring. This meets the focusable-disabled requirement in spec:AST-085 (FR1, FR2, FR6). Tests that query a disabled or busy TimeInput with `toBeDisabled()` or `:disabled` should check `aria-disabled=\"true\"` instead.",
+      "contributors": [
+        "cixzhang"
+      ],
+      "body": ""
+    },
+    {
+      "path": ".changeset/timestamp-server-clock.md",
+      "sha256": "38ca73ef9aaaad4bf0525f07b17e5f3bdf2efe2aafe8474fd0fcc9cd4bb9df99",
+      "packages": [
+        {
+          "name": "@astryxdesign/core",
+          "bump": "patch"
+        }
+      ],
+      "category": "fix",
+      "headline": "Timestamp no longer reads the current time while rendering on the server. Absolute formats (`date`, `time`, `date_time` and the other fixed formats) never read the clock, so pages that use them prerender in Next.js with `cacheComponents` turned on, the default for new Next.js 16 apps, where they used to fail the build. `relative`, `relative_short` and `auto` read the clock on the client only: a server render or static prerender shows the full date and time in UTC, labelled, and the client switches to the format's normal output right after hydration, so server and client markup now always match. Client-only rendering is unchanged. No API changes. Introduced in [#7883](https://github.com/facebook/astryx/pull/7883); current release evidence: [#7921](https://github.com/facebook/astryx/pull/7921), not the Timestamp implementation.",
+      "contributors": [
+        "josephfarina"
+      ],
+      "body": ""
+    },
+    {
+      "path": ".changeset/tooltip-hover-bridge-one-step.md",
+      "sha256": "5db472723cfe3000a6bc2f62b835ee1d4532a26984750c841508737519b27bc4",
+      "packages": [
+        {
+          "name": "@astryxdesign/core",
+          "bump": "patch"
+        }
+      ],
+      "category": "fix",
+      "headline": "Tooltip: moving the pointer straight from the trigger onto the tooltip in one step no longer hides it, so it stays open while hovered (WCAG 1.4.13).",
+      "contributors": [
+        "cixzhang"
+      ],
+      "body": ""
+    },
+    {
+      "path": ".changeset/tooltip-sibling-anchor-attaches-when-rendered-inside.md",
+      "sha256": "87af0064d7e9e66fba172376fdc8f4a677d84149299a6a6ea3b62059c6d90ff2",
+      "packages": [
+        {
+          "name": "@astryxdesign/core",
+          "bump": "patch"
+        }
+      ],
+      "category": "fix",
+      "headline": "Tooltip: attach sibling-mode anchors that render inside their own anchor (#7692)",
+      "contributors": [
+        "Pushpak731"
+      ],
+      "body": "A `Tooltip` with an `anchorRef` that renders inside the very element the ref points at (how `SideNavItem` anchors its collapsed rail tooltip) never attached: React attaches an ancestor's ref after its descendants' layout effects, so the sibling-mode effect read `anchorRef.current` as `null` on mount, and its dependencies never changed to re-run it. An item that mounted inside an already-collapsed `SideNav` — the common case for persisted collapse state — showed no tooltip on hover and never got `aria-describedby`, while an item that collapsed after mounting worked because the anchor ref was already set by then.\n\nThe effect now re-checks the anchor once the commit has finished attaching refs, so the tooltip attaches however it mounted. The attach/detach bookkeeping (event listeners, `aria-describedby` merge and restore) is unchanged."
+    },
+    {
+      "path": ".changeset/top-nav-mobile-long-heading.md",
+      "sha256": "cfe837e14fca2b9fab9e8428b36caa5ac0219e2cbf46c1deeaa888e487159731",
+      "packages": [
+        {
+          "name": "@astryxdesign/core",
+          "bump": "patch"
+        }
+      ],
+      "category": "fix",
+      "headline": "`TopNav` on narrow screens: a long `TopNavHeading` now gives way (it truncates with an ellipsis, or wraps when the heading is a link) instead of pushing the end content and the menu toggle past the edge of the bar, and the mobile drawer's close button is back on screen.",
+      "contributors": [
+        "josephfarina"
+      ],
+      "body": ""
+    },
+    {
+      "path": ".changeset/typeahead-clear-in-edit-mode.md",
+      "sha256": "3a620da99ca71b8c8819ec96aa9688085bac189d4771ed65ce595b1526b3a562",
+      "packages": [
+        {
+          "name": "@astryxdesign/core",
+          "bump": "patch"
+        }
+      ],
+      "category": "fix",
+      "headline": "Typeahead: clearing the value while editing it now empties the input and reports `onChangeQuery('')`, instead of leaving the old label in a field with no value. Fixes #7038.",
+      "contributors": [
+        "HelloOjasMutreja"
+      ],
+      "body": ""
+    }
+  ]
+}
