@@ -146,16 +146,16 @@ If you don't know all three, run \`astryx init --features agents\` to generate a
         },
         {
           type: 'prose',
-          text: 'With this alias, agents run `{@command component --list}` instead of guessing the binary path. The `--` separator is standard npm convention for passing flags to scripts.',
+          text: 'With this alias, agents run `npm run astryx -- component --list` instead of guessing the binary path. The `--` separator is standard npm convention for passing flags to scripts.',
         },
         {
           type: 'code',
           lang: 'bash',
           label: 'Reliable CLI invocation',
-          code: `{@command component --list}
-{@command component Dialog --dense}
-{@command docs styling --full --detail brief}
-{@command docs tokens --dense}`,
+          code: `npm run astryx -- component --list
+npm run astryx -- component Dialog --dense
+npm run astryx -- docs styling --full --detail brief
+npm run astryx -- docs tokens --dense`,
         },
       ],
     },
