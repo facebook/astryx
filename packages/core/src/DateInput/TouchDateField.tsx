@@ -630,9 +630,6 @@ export function TouchDateField({
   const [, startTransition] = useTransition();
   const [optimisticValue, setOptimisticValue] = useOptimistic(value);
   const isBusy = isLoading || optimisticValue !== value;
-  // The busy Spinner is decorative; this control announces its busy start
-  // (spec:AST-086 FR8).
-  useBusyAnnouncement(isBusy, t('@astryx.spinner.loading'), inputRef);
   const isEffectivelyDisabled = isDisabled || isBusy;
 
   // Same contract as DateInput: a disabled or busy field never renders native
@@ -669,6 +666,15 @@ export function TouchDateField({
   );
 
   const [isSheetOpen, setIsSheetOpen] = useState(false);
+  const sheetBodyRef = useRef<HTMLDivElement | null>(null);
+  // The busy Spinner is decorative; this control announces its busy start
+  // (spec:AST-086 FR8). A date picked under a pending changeAction starts it
+  // while the modal sheet is open, so it is announced from inside the sheet.
+  useBusyAnnouncement(
+    isBusy,
+    t('@astryx.spinner.loading'),
+    isSheetOpen ? sheetBodyRef : inputRef,
+  );
   const [isWheelOpen, setIsWheelOpen] = useState(false);
   const scrollerHandleRef = useRef<MonthScrollerHandle | null>(null);
   // Pending focus handoff from the clear button; see handleClear.
@@ -1318,7 +1324,9 @@ export function TouchDateField({
         height="hug"
         // sheetBody owns the inset, including the band under the grab handle.
         padding={0}>
-        <div {...stylex.props(styles.sheetBody)}>{surface}</div>
+        <div ref={sheetBodyRef} {...stylex.props(styles.sheetBody)}>
+          {surface}
+        </div>
       </BottomSheet>
       {showsDisabledMessage &&
         disabledMessageTooltip.renderTooltip(disabledMessage)}

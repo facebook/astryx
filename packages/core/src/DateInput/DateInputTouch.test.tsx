@@ -666,6 +666,51 @@ describe('DateInput — field parity', () => {
     resolve();
   });
 
+  it('announces a busy start from a pick inside the open sheet, not behind it (spec:AST-086 FR8, Platform support)', async () => {
+    // The stubbed showModal() opens the dialog but jsdom cannot match
+    // `:modal`; stand in for the sheet the browser presents modally.
+    const matches = Element.prototype.matches;
+    const modalSpy = vi
+      .spyOn(Element.prototype, 'matches')
+      .mockImplementation(function (this: Element, selector: string) {
+        return selector === ':modal'
+          ? this instanceof HTMLDialogElement && this.open
+          : matches.call(this, selector);
+      });
+    const changeAction = vi.fn(async () => new Promise<void>(() => {}));
+    withLayout(() => {
+      render(
+        <DateInput
+          nativePicker="never"
+          label="Ship date"
+          value="2026-03-10"
+          min="2026-03-01"
+          max="2026-03-31"
+          onChange={() => {}}
+          changeAction={changeAction}
+        />,
+      );
+      fireEvent.click(field());
+      fireEvent.click(
+        within(pane('March 2026')).getByRole('button', {
+          name: /March 25, 2026/,
+        }),
+      );
+    });
+    const sheet = document.querySelector('dialog[open]');
+    expect(sheet).not.toBeNull();
+    await waitFor(() => {
+      expect(
+        sheet!.querySelector('[data-astryx-modal-busy-region]'),
+      ).toHaveTextContent('Loading');
+    });
+    expect(
+      document.querySelector('[data-astryx-live-region="polite"]')
+        ?.textContent ?? '',
+    ).toBe('');
+    modalSpy.mockRestore();
+  });
+
   it('drops the Field wrapper inside an InputGroup', () => {
     render(
       <InputGroup label="Range">
