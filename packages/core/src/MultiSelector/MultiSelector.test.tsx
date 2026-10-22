@@ -515,9 +515,7 @@ describe('MultiSelector', () => {
         isDisabled
       />,
     );
-    const trigger = screen.getByRole('combobox');
-    expect(trigger).not.toHaveAttribute('disabled');
-    expect(trigger).toHaveAttribute('aria-disabled', 'true');
+    expect(screen.getByRole('combobox')).toBeDisabled();
   });
 
   it('has correct ARIA attributes', () => {
@@ -1604,7 +1602,7 @@ describe('MultiSelector', () => {
       expect(screen.getByRole('combobox')).toHaveFocus();
     });
 
-    it('trigger keeps its tab stop when disabled (spec:AST-085 FR1)', () => {
+    it('trigger is not focusable when disabled', () => {
       render(
         <MultiSelector
           label="Fruit"
@@ -1614,7 +1612,7 @@ describe('MultiSelector', () => {
           isDisabled
         />,
       );
-      expect(screen.getByRole('combobox')).toHaveAttribute('tabIndex', '0');
+      expect(screen.getByRole('combobox')).toHaveAttribute('tabIndex', '-1');
     });
 
     it('opens the listbox with ArrowDown from a focused trigger', async () => {
@@ -2078,7 +2076,7 @@ describe('MultiSelector', () => {
       expect(onChange).not.toHaveBeenCalled();
     });
 
-    it('stays focusable when disabled without a reason (spec:AST-085 FR1)', () => {
+    it('remains non-focusable when disabled without a reason', () => {
       render(
         <MultiSelector
           label="Fruit"
@@ -2089,9 +2087,8 @@ describe('MultiSelector', () => {
         />,
       );
       const trigger = screen.getByRole('combobox');
-      expect(trigger).not.toHaveAttribute('disabled');
-      expect(trigger).toHaveAttribute('aria-disabled', 'true');
-      expect(trigger).toHaveAttribute('tabIndex', '0');
+      expect(trigger).toBeDisabled();
+      expect(trigger).toHaveAttribute('tabIndex', '-1');
     });
   });
   describe('isReadOnly', () => {

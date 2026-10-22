@@ -1887,11 +1887,24 @@ export function Selector<T extends SelectorOptionType>(
     });
   }
 
+  // A disabled trigger stays focusable but, like a natively disabled button,
+  // runs no caller event handler other than focus and blur, and a press on it
+  // reaches no handler at all (`spec:AST-085` FR2).
+  const callerProps = isDisabled
+    ? Object.fromEntries(
+        Object.entries(rest).filter(
+          ([key]) => !/^on[A-Z]/.test(key) || /^on(Focus|Blur)/.test(key),
+        ),
+      )
+    : rest;
   const triggerSharedProps: React.HTMLAttributes<HTMLElement> = {
-    ...rest,
-    // A disabled trigger stays focusable, so it must not run a caller's
-    // press handler either (`spec:AST-085` FR2).
-    onClick: isDisabled ? undefined : rest.onClick,
+    ...callerProps,
+    onClick: isDisabled
+      ? event => {
+          event.preventDefault();
+          event.stopPropagation();
+        }
+      : rest.onClick,
     id: triggerId,
     // A caller's description is kept alongside the field's own.
     'aria-describedby':
@@ -1905,7 +1918,9 @@ export function Selector<T extends SelectorOptionType>(
     // it leaves uncancelled. A caller `onClick` arrives through `rest` and
     // runs on the trigger before the press bubbles to the control box's
     // toggle, as it always has.
-    onKeyDown: composeEventHandlers(handleTriggerKeyDown, onKeyDownProp),
+    onKeyDown: isDisabled
+      ? handleTriggerKeyDown
+      : composeEventHandlers(handleTriggerKeyDown, onKeyDownProp),
     onFocus: event => {
       onFocus?.(event);
       surface.onTriggerFocus(event);
