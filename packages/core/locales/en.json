@@ -1169,7 +1169,7 @@
   },
   "@astryx.spinner.loading": {
     "defaultMessage": "Loading",
-    "description": "Screen-reader-only default name for a standalone Spinner's role=\"status\" element, used when the consumer supplies neither `aria-label` nor a visible string label; also announced once when a busy field or selector (TextInput, TextArea, Selector, MultiSelector, ComplexSelector) starts loading, in place of its decorative Spinner. Present-progressive form. Kept separate from `button.loading` and `typeahead.loading` — translations may diverge."
+    "description": "Screen-reader-only default name for a standalone Spinner's role=\"status\" element, used when the consumer supplies neither `aria-label` nor a visible string label; also announced once when a busy input or selector starts loading, in place of its decorative Spinner. Present-progressive form. Kept separate from `button.loading` and `typeahead.loading` — translations may diverge."
   },
   "@astryx.chatComposerDrawer.expand": {
     "defaultMessage": "Expand {label}",

@@ -73,6 +73,7 @@ import {
 } from '../Field';
 import {useInputStatusIcon, useMergedRefs} from '../hooks';
 import {useResolvedRequired} from '../hooks/useResolvedRequired';
+import {useBusyAnnouncement} from '../hooks/useBusyAnnouncement';
 import {Icon} from '../Icon';
 import {IconButton} from '../IconButton';
 import {useLocale, useTranslator} from '../i18n';
@@ -665,6 +666,15 @@ export function TouchDateField({
   );
 
   const [isSheetOpen, setIsSheetOpen] = useState(false);
+  const sheetBodyRef = useRef<HTMLDivElement | null>(null);
+  // The busy Spinner is decorative; this control announces its busy start
+  // (spec:AST-086 FR8). A date picked under a pending changeAction starts it
+  // while the modal sheet is open, so it is announced from inside the sheet.
+  useBusyAnnouncement(
+    isBusy,
+    t('@astryx.spinner.loading'),
+    isSheetOpen ? sheetBodyRef : inputRef,
+  );
   const [isWheelOpen, setIsWheelOpen] = useState(false);
   const scrollerHandleRef = useRef<MonthScrollerHandle | null>(null);
   // Pending focus handoff from the clear button; see handleClear.
@@ -1303,7 +1313,7 @@ export function TouchDateField({
           onClick={handleClear}
         />
       )}
-      {isBusy && <Spinner size="sm" />}
+      {isBusy && <Spinner size="sm" aria-hidden="true" />}
       {statusIcon}
       <BottomSheet
         isOpen={isSheetOpen}
@@ -1314,7 +1324,9 @@ export function TouchDateField({
         height="hug"
         // sheetBody owns the inset, including the band under the grab handle.
         padding={0}>
-        <div {...stylex.props(styles.sheetBody)}>{surface}</div>
+        <div ref={sheetBodyRef} {...stylex.props(styles.sheetBody)}>
+          {surface}
+        </div>
       </BottomSheet>
       {showsDisabledMessage &&
         disabledMessageTooltip.renderTooltip(disabledMessage)}
