@@ -101,6 +101,18 @@ describe('defineTheme', () => {
     },
   );
 
+  it('preserves JavaScript string coercion for legacy object token values', () => {
+    const value = {toString: () => '#123456'};
+    const theme = defineTheme({
+      name: 'legacy-object-status-source',
+      tokens: {'--color-accent': value as never},
+    });
+
+    expect(generateThemeRules(theme).join('\n')).toContain(
+      '--color-accent: #123456;',
+    );
+  });
+
   it.each([
     ['uppercase VAR()', 'VAR(--color-info)', undefined],
     ['mixed-case var()', 'vAr(--color-info)', undefined],

@@ -496,29 +496,9 @@ function stringifyTokenValue(value: unknown): string {
   if (typeof value === 'string') {
     return value;
   }
-  if (
-    value === null ||
-    value === undefined ||
-    typeof value === 'number' ||
-    typeof value === 'bigint' ||
-    typeof value === 'boolean'
-  ) {
-    return String(value);
-  }
-  if (typeof value === 'symbol') {
-    return value.toString();
-  }
-  if (typeof value === 'function') {
-    return Function.prototype.toString.call(value);
-  }
-  if (Array.isArray(value)) {
-    return value.map(stringifyTokenValue).join(',');
-  }
-  try {
-    return JSON.stringify(value) ?? Object.prototype.toString.call(value);
-  } catch {
-    return Object.prototype.toString.call(value);
-  }
+  // Preserve the exact JavaScript interpolation behavior legacy themes received
+  // before declaration analysis accepted non-string token values.
+  return String(value);
 }
 
 interface TokenCascadeState {
