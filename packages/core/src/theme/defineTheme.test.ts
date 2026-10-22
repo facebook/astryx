@@ -16,17 +16,66 @@ describe('defineTheme', () => {
     expect(theme.name).toBe('test');
   });
 
-  it('stores only specified token overrides', () => {
+  it('stores only authored token overrides while CSS scopes derived role defaults', () => {
     const theme = defineTheme({
       name: 'custom',
       tokens: {
         '--color-accent': '#FF0000',
       },
     });
-    // Override should be present
     expect(theme.tokens['--color-accent']).toBe('#FF0000');
-    // Defaults should NOT be in tokens
+    expect(theme.tokens['--color-info']).toBeUndefined();
+    expect(generateThemeTestCSS(theme)).toContain(
+      '--color-info: var(--color-accent);',
+    );
+    // Unrelated defaults remain owned by StyleX rather than copied into every
+    // theme scope.
     expect(theme.tokens['--color-background-surface']).toBeUndefined();
+  });
+
+  it('keeps an explicit semantic role above its scoped default', () => {
+    const theme = defineTheme({
+      name: 'custom-info',
+      tokens: {
+        '--color-accent': '#FF0000',
+        '--color-info': '#0066CC',
+      },
+    });
+
+    expect(theme.tokens['--color-info']).toBe('#0066CC');
+  });
+
+  it('emits every source-derived status role without counting it as authored', () => {
+    const theme = defineTheme({
+      name: 'custom-status-sources',
+      tokens: {
+        '--color-accent': '#100001',
+        '--color-accent-muted': '#100002',
+        '--color-on-accent': '#100003',
+        '--color-text-blue': '#200001',
+        '--color-text-green': '#200002',
+        '--color-text-yellow': '#200003',
+        '--color-text-red': '#200004',
+      },
+    });
+    const css = generateThemeTestCSS(theme);
+
+    expect(theme.tokens['--color-info']).toBeUndefined();
+    for (const declaration of [
+      '--color-info: var(--color-accent);',
+      '--color-info-muted: var(--color-accent-muted);',
+      '--color-on-info: var(--color-on-accent);',
+      '--color-status-foreground-info: var(--color-text-blue);',
+      '--color-status-foreground-success: var(--color-text-green);',
+      '--color-status-foreground-warning: var(--color-text-yellow);',
+      '--color-status-foreground-error: var(--color-text-red);',
+      '--color-on-info-muted: var(--color-text-blue);',
+      '--color-on-success-muted: var(--color-text-green);',
+      '--color-on-warning-muted: var(--color-text-yellow);',
+      '--color-on-error-muted: var(--color-text-red);',
+    ]) {
+      expect(css).toContain(declaration);
+    }
   });
 
   it('converts [light, dark] tuples to light-dark()', () => {

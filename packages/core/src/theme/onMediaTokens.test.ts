@@ -146,6 +146,7 @@ describe('generateOnMediaCSS', () => {
     expect(css).toContain('[data-astryx-media="dark"]');
     expect(css).toContain('color-scheme: dark');
     expect(css).toContain('var(--color-on-dark)');
+    expect(css).toContain('--color-info: var(--color-accent);');
   });
 
   it('emits light media rules', () => {
@@ -153,6 +154,53 @@ describe('generateOnMediaCSS', () => {
     const css = generateOnMediaCSS(theme);
     expect(css).toContain('[data-astryx-media="light"]');
     expect(css).toContain('color-scheme: light');
+  });
+
+  it('keeps concrete root roles while rebinding default aliases on media surfaces', () => {
+    const concrete = defineTheme({
+      name: 'status-role-media',
+      tokens: {
+        '--color-accent': '#0074E2',
+        '--color-info': '#6D9CFE',
+      },
+      onDark: {tokens: {'--color-accent': '#FFFFFF'}},
+    });
+    const concreteCss = generateOnMediaCSS(concrete);
+
+    expect(concreteCss).toContain('--color-accent: #FFFFFF;');
+    expect(concreteCss).not.toContain('--color-info: var(--color-accent);');
+
+    const canonical = defineTheme({
+      name: 'status-role-media-alias',
+      tokens: {
+        '--color-accent': '#0074E2',
+        '--color-info': 'var(--color-accent)',
+      },
+      onDark: {tokens: {'--color-accent': '#FFFFFF'}},
+    });
+    const canonicalCss = generateOnMediaCSS(canonical);
+
+    expect(canonicalCss).toContain('--color-accent: #FFFFFF;');
+    expect(canonicalCss).toContain('--color-info: var(--color-accent);');
+  });
+
+  it('does not let a media alias override an adaptation-authored role', () => {
+    const theme = defineTheme({
+      name: 'status-role-media-adaptation',
+      adaptations: {
+        rules: [
+          {
+            when: {contrast: 'more'},
+            value: {tokens: {'--color-info': '#123456'}},
+          },
+        ],
+      },
+      onDark: {tokens: {'--color-accent': '#FFFFFF'}},
+    });
+    const css = generateOnMediaCSS(theme);
+
+    expect(css).toContain('--color-accent: #FFFFFF;');
+    expect(css).not.toContain('--color-info: var(--color-accent);');
   });
 
   it('emits component override rules', () => {

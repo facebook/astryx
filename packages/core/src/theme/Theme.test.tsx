@@ -213,6 +213,34 @@ describe('Theme', () => {
     expect(nestedWrapper?.getAttribute('data-theme')).toBe('light');
   });
 
+  it('rebinds a default status role inside a nested theme that authors its source token', () => {
+    const outer = defineTheme({
+      name: 'status-role-outer',
+      tokens: {
+        '--color-accent': '#0074E2',
+        '--color-info': '#0074E2',
+      },
+    });
+    const inner = defineTheme({
+      name: 'status-role-inner',
+      tokens: {'--color-accent': '#A000C8'},
+    });
+
+    render(
+      <Theme theme={outer}>
+        <Theme theme={inner}>
+          <span>nested</span>
+        </Theme>
+      </Theme>,
+    );
+
+    const innerCss = document.head.querySelector(
+      'style[data-astryx-theme="status-role-inner"]',
+    )?.textContent;
+    expect(innerCss).toContain('--color-accent: #A000C8;');
+    expect(innerCss).toContain('--color-info: var(--color-accent);');
+  });
+
   // =========================================================================
   // Data token ownership — StyleX defaults, sparse Theme overrides
   // =========================================================================
