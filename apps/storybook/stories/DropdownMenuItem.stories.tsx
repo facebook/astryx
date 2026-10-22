@@ -8,6 +8,7 @@
  */
 
 import type {Meta, StoryObj} from '@storybook/react';
+import {useState} from 'react';
 import {expect, userEvent, within} from 'storybook/test';
 import {DropdownMenu, DropdownMenuItem} from '@astryxdesign/core/DropdownMenu';
 import {
@@ -35,8 +36,9 @@ const meta: Meta<typeof DropdownMenuItem> = {
 export default meta;
 type Story = StoryObj<typeof DropdownMenuItem>;
 
-export const ItemStates: Story = {
-  render: () => (
+function ItemStatesFixture() {
+  const [hasCopied, setHasCopied] = useState(false);
+  return (
     <DropdownMenu
       button={{label: 'Open item evidence'}}
       menuWidth={280}
@@ -52,9 +54,11 @@ export const ItemStates: Story = {
         icon={DocumentDuplicateIcon}
         label="Duplicate project"
         description="Create an editable copy"
-        endContent={<span aria-hidden="true">⌘D</span>}
+        endContent={
+          <span aria-hidden="true">{hasCopied ? 'Copied' : '⌘D'}</span>
+        }
         hasCloseOnSelect={false}
-        onClick={() => {}}
+        onClick={() => setHasCopied(true)}
       />
       <DropdownMenuItem
         data-testid="destructive-row"
@@ -76,7 +80,11 @@ export const ItemStates: Story = {
         href="/settings"
       />
     </DropdownMenu>
-  ),
+  );
+}
+
+export const ItemStates: Story = {
+  render: () => <ItemStatesFixture />,
   play: async ({canvasElement}) => {
     const canvas = within(canvasElement);
     await userEvent.click(

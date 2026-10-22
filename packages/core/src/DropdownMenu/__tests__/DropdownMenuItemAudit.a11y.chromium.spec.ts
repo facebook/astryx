@@ -277,9 +277,18 @@ for (const item of cases) {
     const paintPass =
       observed.rows[2]?.color !== observed.rows[0]?.color &&
       Number(observed.rows[3]?.opacity ?? 1) < 1;
+    const interactionPaintPass =
+      item.interaction === 'rest' ||
+      (item.interaction === 'focus' &&
+        observed.rows[0]?.backgroundColor !==
+          observed.rows[1]?.backgroundColor) ||
+      (item.interaction === 'hover' &&
+        observed.rows[1]?.backgroundColor !==
+          observed.rows[0]?.backgroundColor);
     const interactionPass =
-      item.interaction !== 'focus' ||
-      observed.activeText?.includes('Edit project');
+      (item.interaction !== 'focus' ||
+        observed.activeText?.includes('Edit project')) &&
+      interactionPaintPass;
 
     const png = await page.screenshot({animations: 'disabled', fullPage: true});
     const image = `${item.key}.png`;
@@ -301,7 +310,12 @@ for (const item of cases) {
         width: png.readUInt32BE(16),
         height: png.readUInt32BE(20),
       },
-      checks: {semanticPass, paintPass, interactionPass},
+      checks: {
+        semanticPass,
+        paintPass,
+        interactionPaintPass,
+        interactionPass,
+      },
       passed:
         storybookSha === checkoutSha &&
         pageErrors.length === 0 &&

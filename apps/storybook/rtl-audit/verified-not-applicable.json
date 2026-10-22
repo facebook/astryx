@@ -383,7 +383,7 @@
     "component": "core/DropdownMenuItem",
     "reason": "DropdownMenuItem owns one interactive pointer-menu row whose label, icon, description, and end content follow logical document direction. Its insets use logical properties and its text uses start alignment; it renders no component-owned directional glyph, physical inline placement, reordered controls, horizontal scrolling or dragging, side-placed overlay, or horizontal keyboard behavior. DropdownMenu owns directional placement and keyboard navigation. Exact-head frames still render RTL to confirm inherited direction without adding a component-owned RTL dimension.",
     "evidence": {
-      "apps/storybook/stories/DropdownMenuItem.stories.tsx": "sha256:dd97b988b7d8c22b7b4a7bfecb7d332deed0f26ec8226c6dee8bfb2a75d164ba",
+      "apps/storybook/stories/DropdownMenuItem.stories.tsx": "sha256:cfa350ce17096147145c36dfe4748a92f200502551289fc499b7a47145b710be",
       "packages/core/src/DropdownMenu/DropdownMenuItem.tsx": "sha256:3d5ee9cb5422c7fa560a3546ec6783c9473c925a795dd266a8757fe420555d44",
       "packages/core/src/DropdownMenu/index.ts": "sha256:59bf02be4a577cbecf3ad7e981e2577602375892f74548593aa9b998cae733fa"
     }

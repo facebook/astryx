@@ -8,7 +8,7 @@ export const docs = {
   displayName: 'Dropdown Menu Item',
   isHiddenFromOverview: true,
   description:
-    'One action or destination row in the pointer presentation of DropdownMenu. The parent menu owns keyboard navigation; the row owns activation, disabled state, destination behavior, content layout, and its theme target.',
+    'One action or destination row in the pointer presentation of DropdownMenu. The parent menu owns keyboard navigation; the row owns activation, disabled state, destination behavior, content layout, and its theme target. Supported host attributes, DOM handlers, className, style, xstyle, and ref reach or compose on the role="menuitem" root.',
   usage: {
     description:
       'Use DropdownMenuItem inside DropdownMenu compound mode for one action or destination. Keep label, description, icon, and endContent non-interactive; controls belong in separate rows or the menu header/footer.',
@@ -45,7 +45,12 @@ export const docs = {
     ],
   },
   theming: {
-    targets: [{className: 'astryx-dropdown-menu-item'}],
+    targets: [
+      {
+        className: 'astryx-dropdown-menu-item',
+        visualProps: ['size', 'variant'],
+      },
+    ],
   },
   playground: {
     // Standalone DropdownMenuItem has no required props, so the properties-tab
@@ -141,7 +146,7 @@ export const docsZh = {
   isHiddenFromOverview: true,
   displayName: 'Dropdown Menu Item',
   description:
-    '用于自定义项渲染的辅助组件，提供一致的样式。宿主属性和 DOM 事件处理器（aria-*、data-*、id、拖放）会落在行根元素上，即带 role="menuitem" 的元素。',
+    'DropdownMenu 指针呈现中的一个操作或目标行。父菜单负责键盘导航；该行负责激活、禁用状态、目标行为、内容布局和主题目标。支持的宿主属性、DOM 处理程序、className、style、xstyle 和 ref 会落在或组合到 role="menuitem" 根元素上。',
   props: [
     {
       name: 'icon',
@@ -222,7 +227,8 @@ export const docsZh = {
 export const docsDense = {
   name: 'DropdownMenuItem',
   displayName: 'Dropdown Menu Item',
-  description: 'helper for custom item rendering w/ consistent styling',
+  description:
+    'one pointer-menu action/destination row; parent owns keyboard, row owns activation, state, destination, content, and root inputs',
   propDescriptions: {
     icon: 'icon before label',
     label: 'primary label text',
