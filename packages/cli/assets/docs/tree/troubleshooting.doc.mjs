@@ -31,7 +31,7 @@ export const docs = {
           rows: [
             [
               '`No package.json found. Run this command inside an integration package.`',
-              'Run `npm init -y` and `npm pkg set name=@acme/astryx-widgets` first, in the package folder.',
+              'Run `{@pm-only npm "writes package.json" init -y}` and `{@pm-only npm "edits package.json" pkg set name=@acme/astryx-widgets}` first, in the package folder.',
             ],
             [
               '`Error: Could not find @astryxdesign/core package`',
@@ -67,15 +67,15 @@ export const docs = {
           rows: [
             [
               '`component_export_missing`: `Component "AcmeCarousel" advertises import "@acme/astryx-widgets/components/AcmeCarousel", but that packed module does not export "AcmeCarousel".`',
-              "package.json has no `exports` map, or the module does not export the name. Keep `export function AcmeCarousel`, and add the entry: `npm pkg set 'exports[./components/AcmeCarousel]=./components/AcmeCarousel.tsx'`. When the quoted name is a file name, such as `acme-carousel`, set the doc's `name` to the component the file exports. A type-only export does not count.",
+              "package.json has no `exports` map, or the module does not export the name. Keep `export function AcmeCarousel`, and add the entry: `{@pm-only npm \"edits package.json\" pkg set 'exports[./components/AcmeCarousel]=./components/AcmeCarousel.tsx'}`. When the quoted name is a file name, such as `acme-carousel`, set the doc's `name` to the component the file exports. A type-only export does not count.",
             ],
             [
               '`template_export_missing`: `Template "acme-dashboard" public import "@acme/astryx-widgets/templates/acme-dashboard" does not have a default export.`',
-              'Run `npm pkg set \'exports[./templates/acme-dashboard]=./templates/acme-dashboard.tsx\'`, and keep `export default` in the source. Start new packages with `"exports": {}` so each add writes these.',
+              'Run `{@pm-only npm "edits package.json" pkg set \'exports[./templates/acme-dashboard]=./templates/acme-dashboard.tsx\'}`, and keep `export default` in the source. Start new packages with `"exports": {}` so each add writes these.',
             ],
             [
               '`component_import_unresolvable` or `template_import_unresolvable`: `…Package subpath \'./components/AcmeCarousel\' is not defined by "exports"…`',
-              "The `exports` map has no entry for it. Run `npm pkg set 'exports[./components/AcmeCarousel]=./components/AcmeCarousel.tsx'`, or `'exports[./templates/acme-dashboard]=./templates/acme-dashboard.tsx'` for a template.",
+              "The `exports` map has no entry for it. Run `{@pm-only npm \"edits package.json\" pkg set 'exports[./components/AcmeCarousel]=./components/AcmeCarousel.tsx'}`, or `'exports[./templates/acme-dashboard]=./templates/acme-dashboard.tsx'` for a template.",
             ],
             [
               "`component_import_unresolvable`: `…but a consumer cannot resolve it: Cannot find package '@acme/old-name'`",
@@ -83,27 +83,27 @@ export const docs = {
             ],
             [
               '`Declared templates root "templates" has 0 of 2 expected files in the pack list. Add "templates" to "files" in package.json.`',
-              "Run `npm pkg set 'files[]=templates'`.",
+              'Run `{@pm-only npm "edits package.json" pkg set \'files[]=templates\'}`.',
             ],
             [
               '`docs_tree_needs_cli`: `The package ships a namespace doc or a placed guide but declares no @astryxdesign/cli peer.`',
-              "Run `npm pkg set 'peerDependencies.@astryxdesign/cli=>=0.6.4'` and `npm pkg set 'peerDependenciesMeta.@astryxdesign/cli.optional=true' --json`.",
+              'Run `{@pm-only npm "edits package.json" pkg set \'peerDependencies.@astryxdesign/cli=>=0.6.4\'}` and `{@pm-only npm "edits package.json" pkg set \'peerDependenciesMeta.@astryxdesign/cli.optional=true\' --json}`.',
             ],
             [
               '`replaces_needs_cli`: The package has a template that sets `replaces` but declares no @astryxdesign/cli peer.',
-              "Run `npm pkg set 'peerDependencies.@astryxdesign/cli=>=0.6.4'` and `npm pkg set 'peerDependenciesMeta.@astryxdesign/cli.optional=true' --json`. A stable CLI before 0.6.4 rejects `replaces`, drops that template, and hides your doc topics.",
+              'Run `{@pm-only npm "edits package.json" pkg set \'peerDependencies.@astryxdesign/cli=>=0.6.4\'}` and `{@pm-only npm "edits package.json" pkg set \'peerDependenciesMeta.@astryxdesign/cli.optional=true\' --json}`. A stable CLI before 0.6.4 rejects `replaces`, drops that template, and hides your doc topics.',
             ],
             [
               '`component_replaces_needs_cli` (a warning): The package has a component that sets `replaces` but declares no @astryxdesign/cli peer, or a peer range that admits an earlier CLI.',
-              "Run `npm pkg set 'peerDependencies.@astryxdesign/cli=>=0.6.7'` and `npm pkg set 'peerDependenciesMeta.@astryxdesign/cli.optional=true' --json` to turn the replacement on. Until then apps see no change ({@link generic:replace-a-core-component}).",
+              'Run `{@pm-only npm "edits package.json" pkg set \'peerDependencies.@astryxdesign/cli=>=0.6.7\'}` and `{@pm-only npm "edits package.json" pkg set \'peerDependenciesMeta.@astryxdesign/cli.optional=true\' --json}` to turn the replacement on. Until then apps see no change ({@link generic:replace-a-core-component}).',
             ],
             [
               '`keywords_needs_cli`: The package has a template that sets `keywords` but declares no @astryxdesign/cli peer.',
-              "Run `npm pkg set 'peerDependencies.@astryxdesign/cli=>=0.6.6'` and `npm pkg set 'peerDependenciesMeta.@astryxdesign/cli.optional=true' --json`. What an older CLI does with the field is in {@link generic:template-doc-overview}.",
+              'Run `{@pm-only npm "edits package.json" pkg set \'peerDependencies.@astryxdesign/cli=>=0.6.6\'}` and `{@pm-only npm "edits package.json" pkg set \'peerDependenciesMeta.@astryxdesign/cli.optional=true\' --json}`. What an older CLI does with the field is in {@link generic:template-doc-overview}.',
             ],
             [
               '`themes_need_cli`: The package ships a theme but declares no @astryxdesign/cli peer.',
-              "Run `npm pkg set 'peerDependencies.@astryxdesign/cli=>=0.6.4'` and `npm pkg set 'peerDependenciesMeta.@astryxdesign/cli.optional=true' --json`. A CLI older than published 0.6.4 cannot read typed theme descriptors, so it drops your themes and can hide your doc topics.",
+              'Run `{@pm-only npm "edits package.json" pkg set \'peerDependencies.@astryxdesign/cli=>=0.6.4\'}` and `{@pm-only npm "edits package.json" pkg set \'peerDependenciesMeta.@astryxdesign/cli.optional=true\' --json}`. A CLI older than published 0.6.4 cannot read typed theme descriptors, so it drops your themes and can hide your doc topics.',
             ],
             [
               '`section_ids_need_cli`: The package has a doc section that sets `id` but declares no @astryxdesign/cli peer.',

@@ -51,7 +51,7 @@ export const docs = {
         {
           type: 'code',
           lang: 'bash',
-          code: "npm pkg set 'files[]=components' 'files[]=templates' 'files[]=themes' 'files[]=docs' 'files[]=codemods' 'files[]=astryx.integration.mjs'\nnpm pack --dry-run",
+          code: "{@pm-only npm \"edits package.json\" pkg set 'files[]=components' 'files[]=templates' 'files[]=themes' 'files[]=docs' 'files[]=codemods' 'files[]=astryx.integration.mjs'}\n{@pm-only npm \"builds the tarball npm publishes\" pack --dry-run}",
         },
         {
           type: 'list',

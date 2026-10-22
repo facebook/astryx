@@ -28,7 +28,7 @@ export const docs = {
         {
           type: 'code',
           lang: 'bash',
-          code: "# 1. Build and test against the new release\n{@pm install @astryxdesign/cli@latest @astryxdesign/core@latest --dev}\n# 2. Rerun the checks\n{@command doctor integration validate}\n{@command doctor integration docs}\n{@command integration verify}\n# 3. Admit the new Core once the checks pass\nnpm pkg set 'peerDependencies.@astryxdesign/core=^0.6.0 || ^0.7.0'\n# 4. Migrate apps across a change that breaks them\n{@command integration add codemod rename-delay --to 0.7.0}",
+          code: '# 1. Build and test against the new release\n{@pm install @astryxdesign/cli@latest @astryxdesign/core@latest --dev}\n# 2. Rerun the checks\n{@command doctor integration validate}\n{@command doctor integration docs}\n{@command integration verify}\n# 3. Admit the new Core once the checks pass\n{@pm-only npm "edits package.json" pkg set \'peerDependencies.@astryxdesign/core=^0.6.0 || ^0.7.0\'}\n# 4. Migrate apps across a change that breaks them\n{@command integration add codemod rename-delay --to 0.7.0}',
         },
         {
           type: 'list',

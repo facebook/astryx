@@ -684,7 +684,7 @@ export async function linkSearchResponse(response, cwd) {
       result =>
         result?.domain === 'component' &&
         typeof result.description === 'string' &&
-        result.description.includes('{@link'),
+        result.description.includes('{@'),
     )
   ) {
     return response;
@@ -694,7 +694,7 @@ export async function linkSearchResponse(response, cwd) {
     if (
       result?.domain !== 'component' ||
       typeof result.description !== 'string' ||
-      !result.description.includes('{@link')
+      !result.description.includes('{@')
     ) {
       linked.push(result);
       continue;
@@ -733,7 +733,8 @@ export async function linkComponentResponse(response, cwd) {
   ) {
     return response;
   }
-  if (!JSON.stringify(response.data ?? null).includes('{@link')) {
+  // Doc tokens render in the same pass as links.
+  if (!JSON.stringify(response.data ?? null).includes('{@')) {
     return response;
   }
   const catalog = await loadDocsCatalog(cwd);

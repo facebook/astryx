@@ -1580,7 +1580,9 @@ describe('validateIntegration runner-command notes', () => {
   });
 
   it('reads a verb named alone as a mention, and TSDoc tags in a TypeScript sample as code', async () => {
-    writeTopic('Scripts run with `npm run`, and `pnpm dlx` fetches a package.');
+    writeTopic(
+      'Scripts run with `npm run`, `pnpm dlx` fetches a package, and `npm i -g`, `yarn global add` and `npm pkg set` each take one.',
+    );
     const file = path.join(tmpDir, 'docs', 'acme-setup.doc.mjs');
     fs.writeFileSync(
       file,
