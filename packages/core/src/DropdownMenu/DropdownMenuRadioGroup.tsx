@@ -14,7 +14,7 @@
  * menuitemradio rows.
  */
 
-import {useMemo, type ReactNode} from 'react';
+import {useMemo, type ReactNode, type Ref} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {spacingVars} from '../theme/tokens.stylex';
 import {mergeProps} from '../utils';
@@ -64,6 +64,10 @@ export interface DropdownMenuRadioGroupProps extends Omit<
    */
   hasCloseOnSelect?: boolean;
   /**
+   * Ref forwarded to the role="group" root.
+   */
+  ref?: Ref<HTMLDivElement>;
+  /**
    * The `DropdownMenuRadioItem`s that make up the group.
    */
   children: ReactNode;
@@ -92,6 +96,7 @@ export function DropdownMenuRadioGroup({
   label,
   hasCloseOnSelect = true,
   children,
+  ref,
   xstyle,
   className,
   style,
@@ -105,6 +110,7 @@ export function DropdownMenuRadioGroup({
   return (
     <div
       {...rest}
+      ref={ref}
       role="group"
       aria-label={label}
       {...mergeProps(stylex.props(styles.group, xstyle), {className, style})}>
