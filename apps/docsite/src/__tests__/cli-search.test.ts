@@ -18,7 +18,11 @@ import type {SearchResponse} from '@astryxdesign/cli/api';
 import {GET} from '../app/api/search/route';
 import {searchResultHref} from '../lib/searchLinks.mjs';
 import type {SearchLinkTables} from '../lib/searchLinks.mjs';
-import {createCliSearchSource, toSearchItem} from '../lib/cliSearchSource';
+import {
+  createCliSearchSource,
+  searchTarget,
+  toSearchItem,
+} from '../lib/cliSearchSource';
 import type {SiteSearchResult} from '../lib/cliSearchTypes';
 import docsiteConfig from '../../astryx.config.mjs';
 import {docTopics, docRedirects} from '../generated/docsRegistry';
@@ -235,7 +239,7 @@ describe('site search links', () => {
 
 describe('search panel order', () => {
   it(
-    'keeps the CLI order: no groups, one item per result',
+    'keeps the CLI order: no groups, one item per place',
     async () => {
       const {data} = await api('button');
       const urls: string[] = [];
@@ -246,8 +250,13 @@ describe('search panel order', () => {
       expect(source.bootstrap()).toEqual([]);
       const items = await source.search('button');
       expect(urls).toEqual(['/api/search?q=button']);
+      const results = data.results as SiteSearchResult[];
+      const firstPerPlace = results.filter(
+        (result, i) =>
+          results.findIndex(other => other.href === result.href) === i,
+      );
       expect(items.map(item => item.auxiliaryData.name)).toEqual(
-        data.results.map(result => result.name),
+        firstPerPlace.map(result => result.name),
       );
       expect(new Set(items.map(item => item.id)).size).toBe(items.length);
       for (const item of items) {
@@ -258,6 +267,44 @@ describe('search panel order', () => {
     },
     SLOW,
   );
+
+  it(
+    'lists each place once, with a label no other row has',
+    async () => {
+      for (const query of ['dark mode', 'authoring', 'tokens spacing']) {
+        const {data} = await api(query);
+        const source = createCliSearchSource(
+          async () => new Response(JSON.stringify({data})),
+        );
+        const items = await source.search(query);
+        const hrefs = items.map(item => item.auxiliaryData.href);
+        expect(new Set(hrefs).size, `${query}: ${hrefs}`).toBe(hrefs.length);
+        const docLabels = items
+          .filter(item => item.auxiliaryData.domain === 'doc')
+          .map(item => item.label);
+        expect(new Set(docLabels).size, `${query}: ${docLabels}`).toBe(
+          docLabels.length,
+        );
+      }
+    },
+    SLOW,
+  );
+
+  it('reports a selection by what it opens, as the registries name it', () => {
+    expect(searchTarget('/components/Button')).toEqual({
+      item: 'Button',
+      type: 'component',
+    });
+    expect(searchTarget('/docs/theme#dark-mode')).toEqual({
+      item: 'theme',
+      type: 'doc',
+    });
+    expect(searchTarget('/templates/login')).toEqual({
+      item: 'login',
+      type: 'template',
+    });
+    expect(searchTarget('/themes')).toEqual({item: 'themes', type: 'theme'});
+  });
 
   it('sends only the last query typed', async () => {
     const urls: string[] = [];

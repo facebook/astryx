@@ -7,7 +7,7 @@
  * @position Consumed by SearchPalette.tsx.
  *
  * Items carry no `group`, since CommandPalette orders grouped items by group
- * and the CLI's order is the answer.
+ * and the CLI's order is the answer. Each place on the site is listed once.
  */
 
 import type {SearchSource, SearchableItem} from '@astryxdesign/core/Typeahead';
@@ -17,6 +17,26 @@ export interface CliSearchItem extends SearchableItem<SiteSearchResult> {
   id: string;
   label: string;
   auxiliaryData: SiteSearchResult;
+}
+
+/**
+ * What a selected result opens, as the site's registries name it: the page's
+ * type and its identifier (component name, template slug, doc topic).
+ */
+export function searchTarget(href: string): {item: string; type: string} {
+  const [pathname] = href.split('#');
+  const [, area = '', slug = ''] = pathname.split('/');
+  const type =
+    area === 'components'
+      ? 'component'
+      : area === 'templates'
+        ? 'template'
+        : area === 'themes'
+          ? 'theme'
+          : area === 'docs'
+            ? 'doc'
+            : 'page';
+  return {item: slug || area || 'home', type};
 }
 
 /** The kind a result is, as the panel labels it. */
@@ -103,7 +123,17 @@ export function createCliSearchSource(
         const body = (await response.json()) as {
           data: {results: SiteSearchResult[]};
         };
-        const items = body.data.results.map(toSearchItem);
+        // Two results can open the same place on the site (a topic and the
+        // page that shows it): the panel lists each place once, at its
+        // first result, keeping the CLI's order.
+        const opened = new Set<string>();
+        const items = body.data.results
+          .filter(result => {
+            if (opened.has(result.href)) return false;
+            opened.add(result.href);
+            return true;
+          })
+          .map(toSearchItem);
         shown = new Map(items.map(item => [item.id, item]));
         return items;
       } catch (error) {

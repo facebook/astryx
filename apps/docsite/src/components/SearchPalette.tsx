@@ -7,7 +7,11 @@ import {useRouter} from 'next/navigation';
 import {CommandPalette} from '@astryxdesign/core/CommandPalette';
 import {Text} from '@astryxdesign/core/Text';
 import {trackSearch} from '../lib/analytics';
-import {createCliSearchSource, resultKind} from '../lib/cliSearchSource';
+import {
+  createCliSearchSource,
+  resultKind,
+  searchTarget,
+} from '../lib/cliSearchSource';
 
 interface SearchPaletteProps {
   isOpen: boolean;
@@ -29,11 +33,7 @@ export function SearchPalette({isOpen, onOpenChange}: SearchPaletteProps) {
       if (!result) {
         return;
       }
-      trackSearch({
-        target: 'select',
-        item: result.name,
-        type: result.domain === 'hook' ? 'component' : result.domain,
-      });
+      trackSearch({target: 'select', ...searchTarget(result.href)});
       router.push(result.href);
       onOpenChange(false);
     },
