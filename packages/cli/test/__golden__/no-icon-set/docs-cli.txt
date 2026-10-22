@@ -8,14 +8,15 @@ Core. See `pnpm exec astryx docs global`.
 
 Guides
 
-component-lookups  Look up one or several exact component identities, choose a focused projection, and handle complete batch receipts.
-host-entry  Run the Astryx CLI from your own command-line tool: the inputs `runHostedCli` takes, what it returns, and when the process ends instead.
+component-lookups  Look up one or several exact component identities, choose a focused projection, and handle complete
+                   batch receipts.
+host-entry         Run the Astryx CLI from your own command-line tool: the inputs `runHostedCli` takes, what it returns,
+                   and when the process ends instead.
 
 Reference
 
 commands  Every command and subcommand: usage, options, examples, exit codes, and what it does outside a project.
-api  The programmatic API: functions, the JSON output envelope, error codes, and response types.
+api       The programmatic API: functions, the JSON output envelope, error codes, and response types.
 
 Open one: pnpm exec astryx docs cli/<name>
 Up: pnpm exec astryx docs
-

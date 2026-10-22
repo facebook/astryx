@@ -476,7 +476,7 @@ function emitIndex(index, owner, run) {
  * name (`assert-response  assertResponse()`).
  * @param {import('../../../api/docs/docs.type.mjs').DocsNodeChild} child
  * @param {string} owner the package that owns the namespace
- * @returns {{name: string, summary: string}}
+ * @returns {{name: string, summary: string, experimental: boolean}}
  */
 function childRow(child, owner) {
   const titleAddsIdentity =
@@ -493,6 +493,7 @@ function childRow(child, owner) {
       }`,
       getCliInvocation(),
     ),
+    experimental: child.stability === 'experimental',
   };
 }
 
@@ -530,10 +531,17 @@ function emitNode(node, detail, run) {
         ...(node.slots.length === 1 && slot.title === node.title
           ? []
           : [section(slot.title)]),
-        records(slot.children.map(child => childRow(child, node.package)), {
-          fields: ['name', 'summary'],
-          layout: 'inline',
-        }),
+        records(
+          slot.children.map(child => childRow(child, node.package)),
+          {
+            fields: ['name', 'summary'],
+            layout: 'inline',
+            // Stable rows set the column, so an experimental entry changes no
+            // stable line (spec:AST-017 FR27); a long experimental name
+            // overhangs.
+            sizesColumn: row => !row.experimental,
+          },
+        ),
       ]),
       text(
         [

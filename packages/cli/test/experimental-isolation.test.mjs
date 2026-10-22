@@ -212,9 +212,9 @@ describe('with no icon set, stable output is unchanged', () => {
 
   // The `cli` listings are FR0's one docs exception: they gain the
   // experimental group, commands, and API functions, each marked as help marks
-  // the command group. Every entry not marked experimental reads as it does
-  // without the feature: its JSON, and its text row (name and summary; the
-  // column width follows the longest name, so rows are compared unwrapped).
+  // the command group. Every entry not marked experimental reads exactly as it
+  // does without the feature, in JSON and byte for byte in text: stable rows
+  // set the name column, and an experimental row overhangs it.
   it.each(['cli', 'cli/commands', 'cli/api/functions'])(
     'docs %s: every entry not marked experimental, text and JSON',
     async route => {
@@ -229,21 +229,21 @@ describe('with no icon set, stable output is unchanged', () => {
       await expect(`${JSON.stringify(json, null, 2)}\n`).toMatchFileSnapshot(
         path.join(GOLDEN, `docs-${slug}.json`),
       );
+      // An experimental row and the lines it wraps onto are left out; every
+      // other line is compared as printed.
       /** @type {string[]} */
-      const rows = [];
+      const lines = [];
+      let inExperimental = false;
       for (const line of astryx(['docs', route]).stdout.split('\n')) {
-        const continued = /^ {8,}(\S.*)$/u.exec(line);
-        if (continued && rows.length > 0) {
-          rows[rows.length - 1] += ` ${continued[1]}`;
+        if (/^\S+ {2,}\[experimental\] /u.test(line)) {
+          inExperimental = true;
           continue;
         }
-        const row = /^(\S+) {2,}(\S.*)$/u.exec(line);
-        rows.push(row ? `${row[1]}  ${row[2]}` : line);
+        if (inExperimental && /^ {8,}\S/u.test(line)) continue;
+        inExperimental = false;
+        lines.push(line);
       }
-      const stable = rows.filter(
-        row => !/^\S+ {2}\[experimental\] /u.test(row),
-      );
-      await expect(`${stable.join('\n')}\n`).toMatchFileSnapshot(
+      await expect(lines.join('\n')).toMatchFileSnapshot(
         path.join(GOLDEN, `docs-${slug}.txt`),
       );
     },

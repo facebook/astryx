@@ -3,51 +3,68 @@ Every function: its signature, parameters, returns, and errors.
 
 package: @astryxdesign/cli
 
-assert-response  assertResponse(): Parse and assert one expected response type, throwing on an error or a mismatch.
-blog  blog(): List blog posts, or read one, from the published RSS feed.
-build  build(): Page-building assistant: the how-to-build playbook, or the page template to start from for an idea.
-component  component(): Resolve one or several components by name, or list the catalog, with optional focused slices (props, source, showcase, blocks).
-discover  discover(): Browse and search integrations: the ones a project has and, through the official list and discover sources, the ones it could add.
-docs  docs(): Read the reference docs: list every topic, one topic's sections, one section, or a whole topic.
-doctor  doctor(): Check a project's Astryx setup and get a pass/warn/fail report per check. Use it as a CI gate or before debugging a broken install.
-gap-report  gapReport(): Report a missing or hard-to-use design-system capability to the package that owns it.
-generate-tonal-palette  generateTonalPalette(): Generate candidate tonal palette data without filesystem effects.
-hook  hook(): Resolve a hook by name, or list the catalog, with an optional params-only slice.
-init  init(): Non-interactive project setup: install agent docs and point at the theme + build workflows.
-integration-add  integrationAdd(): Add one working contribution to an integration package.
-integration-add-agent-doc  integrationAddAgentDoc(): Append one validated agent-guidance line.
-integration-add-codemod  integrationAddCodemod(): Add a safe identity codemod at an exact target version.
-integration-add-component  integrationAddComponent(): Add a complete component contribution.
-integration-add-doc  integrationAddDoc(): Add a complete reference-doc contribution.
-integration-add-template  integrationAddTemplate(): Add a complete page or block template contribution.
-integration-add-theme  integrationAddTheme(): Add a source theme to an integration package.
-integration-check  integrationCheck(): Run every source check against the integration package in the current folder, as its build does: validate, components, templates, and docs.
-integration-component-conflicts  integrationComponentConflicts(): Check integration component names, replaces declarations, and documented props.
-integration-doc-conflicts  integrationDocConflicts(): Check an integration's docs: the docs tree they add, every link, and overlaps with Core topics.
-integration-pack-check  integrationPackCheck(): Check an integration package the way npm will publish it.
-integration-template-conflicts  integrationTemplateConflicts(): Find integration template ids that also exist in Core.
-is-error  isError(): Did the CLI return an error envelope?
-list-themes  listThemes(): Read the CLI bundled-theme descriptors.
-parse-response  parseResponse(): Parse `pnpm exec astryx --json` stdout into the structural response envelope.
-search  search(): Unified ranked search across components, hooks, docs, templates, and themes.
-summarize-issues  summarizeIssues(): Tally integration issues by severity into error and warning counts.
-swizzle  swizzle(): Eject a component's source into your project for customization.
-template  template(): List, inspect, or scaffold page and block templates.
-theme-add  themeAdd(): Add a built theme to the app.
-theme-build  themeBuild(): Compile a defineTheme() file to scoped CSS, a JS module, and type declarations, or check committed outputs for drift in CI.
-theme-eject  themeEject(): Eject an available theme into a project as editable source.
-theme-list  themeList(): List themes bundled with this CLI build.
-theme-list-available  themeListAvailable(): List bundled, package, and local themes.
-theme-list-copy-sources  themeListCopySources(): List themes the source-copy form of theme add can copy.
-theme-palette-generate  themePaletteGenerate(): Generate an author-reviewable palette candidate from JSON input.
-theme-remove  themeRemove(): Remove a non-default theme from an app's generated theme module.
-theme-targets  themeTargets(): List every component theming target a theme can override.
-theme-template  themeTemplate(): Write the annotated theme template into a project.
-theme-use  themeUse(): Choose an app's default added theme.
-upgrade  upgrade(): After bumping @astryxdesign/core, migrate project source with codemods and update copied compositions.
-validate-integration  validateIntegration(): Validate a single Astryx integration package and report its issues.
+assert-response                  assertResponse(): Parse and assert one expected response type, throwing on an error or
+                                 a mismatch.
+blog                             blog(): List blog posts, or read one, from the published RSS feed.
+build                            build(): Page-building assistant: the how-to-build playbook, or the page template to
+                                 start from for an idea.
+component                        component(): Resolve one or several components by name, or list the catalog, with
+                                 optional focused slices (props, source, showcase, blocks).
+discover                         discover(): Browse and search integrations: the ones a project has and, through the
+                                 official list and discover sources, the ones it could add.
+docs                             docs(): Read the reference docs: list every topic, one topic's sections, one section,
+                                 or a whole topic.
+doctor                           doctor(): Check a project's Astryx setup and get a pass/warn/fail report per check. Use
+                                 it as a CI gate or before debugging a broken install.
+gap-report                       gapReport(): Report a missing or hard-to-use design-system capability to the package
+                                 that owns it.
+generate-tonal-palette           generateTonalPalette(): Generate candidate tonal palette data without filesystem
+                                 effects.
+hook                             hook(): Resolve a hook by name, or list the catalog, with an optional params-only
+                                 slice.
+init                             init(): Non-interactive project setup: install agent docs and point at the theme +
+                                 build workflows.
+integration-add                  integrationAdd(): Add one working contribution to an integration package.
+integration-add-agent-doc        integrationAddAgentDoc(): Append one validated agent-guidance line.
+integration-add-codemod          integrationAddCodemod(): Add a safe identity codemod at an exact target version.
+integration-add-component        integrationAddComponent(): Add a complete component contribution.
+integration-add-doc              integrationAddDoc(): Add a complete reference-doc contribution.
+integration-add-template         integrationAddTemplate(): Add a complete page or block template contribution.
+integration-add-theme            integrationAddTheme(): Add a source theme to an integration package.
+integration-check                integrationCheck(): Run every source check against the integration package in the
+                                 current folder, as its build does: validate, components, templates, and docs.
+integration-component-conflicts  integrationComponentConflicts(): Check integration component names, replaces
+                                 declarations, and documented props.
+integration-doc-conflicts        integrationDocConflicts(): Check an integration's docs: the docs tree they add, every
+                                 link, and overlaps with Core topics.
+integration-pack-check           integrationPackCheck(): Check an integration package the way npm will publish it.
+integration-template-conflicts   integrationTemplateConflicts(): Find integration template ids that also exist in Core.
+is-error                         isError(): Did the CLI return an error envelope?
+list-themes                      listThemes(): Read the CLI bundled-theme descriptors.
+parse-response                   parseResponse(): Parse `pnpm exec astryx --json` stdout into the structural response
+                                 envelope.
+search                           search(): Unified ranked search across components, hooks, docs, templates, and themes.
+summarize-issues                 summarizeIssues(): Tally integration issues by severity into error and warning counts.
+swizzle                          swizzle(): Eject a component's source into your project for customization.
+template                         template(): List, inspect, or scaffold page and block templates.
+theme-add                        themeAdd(): Add a built theme to the app.
+theme-build                      themeBuild(): Compile a defineTheme() file to scoped CSS, a JS module, and type
+                                 declarations, or check committed outputs for drift in CI.
+theme-eject                      themeEject(): Eject an available theme into a project as editable source.
+theme-list                       themeList(): List themes bundled with this CLI build.
+theme-list-available             themeListAvailable(): List bundled, package, and local themes.
+theme-list-copy-sources          themeListCopySources(): List themes the source-copy form of theme add can copy.
+theme-palette-generate           themePaletteGenerate(): Generate an author-reviewable palette candidate from JSON
+                                 input.
+theme-remove                     themeRemove(): Remove a non-default theme from an app's generated theme module.
+theme-targets                    themeTargets(): List every component theming target a theme can override.
+theme-template                   themeTemplate(): Write the annotated theme template into a project.
+theme-use                        themeUse(): Choose an app's default added theme.
+upgrade                          upgrade(): After bumping @astryxdesign/core, migrate project source with codemods and
+                                 update copied compositions.
+validate-integration             validateIntegration(): Validate a single Astryx integration package and report its
+                                 issues.
 
 Open one: pnpm exec astryx docs cli/api/functions/<name>
 Up: pnpm exec astryx docs cli/api
 Next: pnpm exec astryx docs cli/api/schemas
-
