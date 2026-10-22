@@ -152,6 +152,18 @@ describe('weighStart', () => {
       expect(start).toBe('gauge-fleet');
     });
 
+    it('starts from it when the idea names its family first', () => {
+      const ranked = [page('gauge-fleet', 9, 'Gauges'), ...RANKED];
+      const start = weighStart(
+        'gauges page with a kanban board',
+        ranked,
+        ranked[0],
+        catalog,
+        {weights: WEIGHTS},
+      );
+      expect(start).toBe('gauge-fleet');
+    });
+
     it('yields to the listed template whose own words the idea names more', () => {
       const ranked = [page('gauge-fleet', 9, 'Gauges'), ...RANKED];
       const start = weighStart(

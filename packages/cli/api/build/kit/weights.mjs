@@ -253,6 +253,27 @@ function ownWords(name, catalog, words) {
   return n;
 }
 
+/** How many fewer own words a template whose family the idea names first may
+ * name than the listed template it competes with, and still start. */
+const FAMILY_SLACK = 2;
+
+/**
+ * Where the idea first names a template's family, the part of its category
+ * before ` - ` ("Dashboard" in "Dashboard - Analytics"): the index of that
+ * word among the idea's stemmed words, or Infinity when it does not.
+ * @param {string} name
+ * @param {DescribedTemplate[]} catalog
+ * @param {string[]} order the idea's stemmed words, in order
+ */
+function familyAt(name, catalog, order) {
+  const t = catalog.find(c => c.name === name);
+  const family = weightWords(String(t?.category ?? '').split(' - ')[0]).map(
+    stem,
+  );
+  const at = family.length ? order.findIndex(w => family.includes(w)) : -1;
+  return at < 0 ? Infinity : at;
+}
+
 /**
  * Where an idea starts, by the blended weights.
  * @param {string} idea
@@ -326,12 +347,21 @@ export function weighStart(
   // template, or one added since they were fit), so its own descriptor
   // decides: the ranker's pick stands when the idea names as many words of its
   // display name, category and keywords as of the tables' first listed
-  // template's; otherwise that listed template starts. Nothing learned about
-  // the template is involved, so a new template competes on its own words.
+  // template's, or names its family first and nearly as many; otherwise that
+  // listed template starts. Nothing learned about the template is involved,
+  // so a new template competes on its own words.
   if (kept && !position.has(kept)) {
     const listed = best(c => c !== SHELL && position.has(c));
     if (!listed) return kept;
-    return ownWords(kept, catalog, words) >= ownWords(listed, catalog, words)
+    const mine = ownWords(kept, catalog, words);
+    const theirs = ownWords(listed, catalog, words);
+    if (mine >= theirs) return kept;
+    // An idea that names the template's family before the listed one's
+    // ("a dashboard with a data table") is that family's page, unless it
+    // names far more of the listed template's words.
+    const order = weightWords(idea).map(stem);
+    return familyAt(kept, catalog, order) < familyAt(listed, catalog, order) &&
+      mine >= theirs - FAMILY_SLACK
       ? kept
       : listed;
   }
