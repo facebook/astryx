@@ -19,6 +19,8 @@ import {levenshteinDistance} from './levenshtein.mjs';
 
 /** The score a synonym match gets: an exact keyword's. */
 const SYNONYM_SCORE = 90;
+/** The score a name with exactly the typed words gets: an exact name's. */
+const SAME_WORDS_SCORE = 100;
 
 /**
  * A word with one trailing plural `s` removed (`tabs` → `tab`), leaving short
@@ -220,20 +222,20 @@ function compoundMatch(typed, name) {
     same(words.slice(0, -1), typed.slice(0, -1)) &&
     (SAME_PART[typed[t - 1]] ?? []).includes(words[n - 1])
   ) {
-    return {score: 88, reason: 'same part of the family'};
+    return {score: 79, reason: 'same part of the family'};
   }
   if (n > t && same(words.slice(n - t), typed)) {
-    return {score: 85, reason: `name ends with "${typed.join(' ')}"`};
+    return {score: 78, reason: `name ends with "${typed.join(' ')}"`};
   }
   if (n > t && words[0] === typed[0] && words[n - 1] === typed[t - 1]) {
-    return {score: 82, reason: 'same part of the family'};
+    return {score: 77, reason: 'same part of the family'};
   }
   if (
     n < t &&
     same(typed.slice(0, n), words) &&
     typed.slice(n).every(w => PART_WORDS.has(w))
   ) {
-    return {score: 75, reason: 'the family this part belongs to'};
+    return {score: 72, reason: 'the family this part belongs to'};
   }
   return null;
 }
@@ -241,10 +243,12 @@ function compoundMatch(typed, name) {
 /**
  * Rank component suggestions for a name that resolved to nothing.
  *
- * Every component `searchComponents` scored keeps its score; a component one
- * of whose synonyms is the typed name (see {@link synonymMatches}), or whose
- * name shares the typed compound name's words (see {@link compoundMatch}), may
- * score higher. Equal scores put synonym matches first, then order by how many of the typed words the
+ * Every component `searchComponents` scored keeps its score. A component whose
+ * name has exactly the typed words (`chat-messages` for `ChatMessage`) scores
+ * like an exact name; one of whose synonyms is the typed name (see
+ * {@link synonymMatches}) like an exact keyword; one whose name shares the
+ * typed compound name's words (see {@link compoundMatch}) just below a
+ * one-letter typo of a name. Equal scores put synonym matches first, then order by how many of the typed words the
  * name carries, then by how early the keyword that matched sits in the
  * component's keywords, then by edit distance, then by shared leading letters,
  * then by name. The caller decides how many to print.
@@ -271,6 +275,19 @@ export function rankComponentSuggestions(
       reason: r.reason,
       keywordAt: r.keywordAt ?? Infinity,
     });
+  }
+  // The typed words are a name's words (`chat-messages` is `ChatMessage`):
+  // that name is meant, ahead of every rule below.
+  const joined = typed.join('');
+  for (const name of allNames) {
+    if (joined && nameWords(name).join('') === joined) {
+      byName.set(name, {
+        name,
+        score: SAME_WORDS_SCORE,
+        reason: 'same name',
+        keywordAt: -1,
+      });
+    }
   }
   for (const name of synonyms) {
     if (!allNames.includes(name)) continue;

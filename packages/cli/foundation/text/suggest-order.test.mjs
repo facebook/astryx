@@ -137,6 +137,20 @@ describe('rankComponentSuggestions', () => {
     );
   });
 
+  it('puts a name with exactly the typed words first, ahead of every rule', () => {
+    const results = [{name: 'Picker', score: 80, reason: 'similar name'}];
+    const ranked = rankComponentSuggestions(
+      'pickers',
+      results,
+      all,
+      new Set(['Gadget']),
+    );
+    expect(ranked[0].name).toBe('Picker');
+    expect(rankComponentSuggestions('side-rail-item', [], all)[0].name).toBe(
+      'SideRailItem',
+    );
+  });
+
   it('names a family only for a structural part', () => {
     expect(
       rankComponentSuggestions('SheetMusic', [], all).map(r => r.name),
