@@ -72,6 +72,7 @@ import {Item} from '../Item';
 import {useLayer} from '../Layer/useLayer';
 import {layerAnimations} from '../Layer/layerAnimations.stylex';
 import {useListFocus} from '../hooks/useListFocus';
+import {useBusyAnnouncement} from '../hooks/useBusyAnnouncement';
 import {useMenuHover} from '../hooks/useMenuHover';
 import {
   isMenuPressActivation,
@@ -532,6 +533,9 @@ export function DropdownMenuSubMenu(
   // A caller's `id` names the row; the flyout stays labelled by it.
   const triggerId = idProp ?? generatedTriggerId;
   const triggerRef = useRef<HTMLDivElement | null>(null);
+  // The loading Spinner on the trigger is decorative; the submenu announces
+  // its busy start instead (spec:AST-086 FR8).
+  useBusyAnnouncement(hasSpinner, t('@astryx.spinner.loading'), triggerRef);
 
   // Drill-in: the root keeps a view stack; this row pushes its
   // view and the root shows it in place of its rows. Decided from the root's
@@ -1033,7 +1037,7 @@ export function DropdownMenuSubMenu(
 
   const endAffordance = hasSpinner ? (
     <span {...stylex.props(triggerStyles.caret)}>
-      <Spinner size="sm" />
+      <Spinner size="sm" aria-hidden="true" />
     </span>
   ) : (
     <span {...stylex.props(triggerStyles.caret)}>
