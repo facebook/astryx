@@ -894,8 +894,8 @@ describe.skipIf(!POSIX)(
     });
 
     // Volta's command is a shim of its own, not a link into the package, so
-    // the search-path scan cannot trace it; the working global copy answering
-    // doctor is the proof that the computer has its CLI.
+    // the search-path scan cannot trace it; an astryx on the search path that
+    // cannot be traced may run the CLI, so doctor never calls it gone.
     it("on a working Volta install, doctor does not report the skill's CLI as gone", () => {
       const pc = computer();
       const g = globalCli('volta', '9.0.0', {root: pc.home});
@@ -978,6 +978,22 @@ describe.skipIf(!POSIX)(
       ).data.checks.find(
         (/** @type {any} */ c) => c.id === 'computer-agent-text',
       );
+      expect(check.message).not.toContain('no `astryx` command');
+      expect(check.fix).toBeUndefined();
+    });
+
+    it('with the global copy on the search path, doctor gives no restore report', () => {
+      const pc = computer();
+      const g = globalCli('npm', '9.0.0', {root: pc.home});
+      pc.path.unshift(g.binDir);
+      const empty = tempDir('empty');
+      expect(run(g.bin, ['init', '--user'], {cwd: empty, pc}).status).toBe(0);
+      const check = JSON.parse(
+        run(g.bin, ['doctor', '--json'], {cwd: empty, pc}).stdout,
+      ).data.checks.find(
+        (/** @type {any} */ c) => c.id === 'computer-agent-text',
+      );
+      expect(check.message).toContain('matches this release');
       expect(check.message).not.toContain('no `astryx` command');
       expect(check.fix).toBeUndefined();
     });

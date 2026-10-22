@@ -330,7 +330,7 @@ export {displayHomePath};
  * command that upgrades it.
  * @param {string} cwd
  * @param {{project: boolean}} options
- * @returns {{answeredBy: {cli: string, core: string | null, copy: string}, latest: string | null, globalBehind: ReturnType<typeof globalBehind> | null, projectLag: ReturnType<typeof projectLag> | null, lastNoticeSkip: ReturnType<typeof lastNoticeSkip>, lastCheckFailure: ReturnType<typeof lastCheckFailure>, stateLock: ReturnType<typeof stateLockHolder>, selfGlobal: boolean, searchPathCommands: Array<import('../../foundation/env/search-path.mjs').SearchPathCommand & {upgrade: string | null, runner: boolean}>}}
+ * @returns {{answeredBy: {cli: string, core: string | null, copy: string}, latest: string | null, globalBehind: ReturnType<typeof globalBehind> | null, projectLag: ReturnType<typeof projectLag> | null, lastNoticeSkip: ReturnType<typeof lastNoticeSkip>, lastCheckFailure: ReturnType<typeof lastCheckFailure>, stateLock: ReturnType<typeof stateLockHolder>, searchPathCommands: Array<import('../../foundation/env/search-path.mjs').SearchPathCommand & {upgrade: string | null, runner: boolean}>}}
  */
 export function releaseFacts(cwd, {project}) {
   const answered = answeredBy(cwd);
@@ -340,9 +340,6 @@ export function releaseFacts(cwd, {project}) {
     lastNoticeSkip: lastNoticeSkip(),
     lastCheckFailure: lastCheckFailure(),
     stateLock: stateLockHolder(),
-    // Whether the copy answering is the CLI installed for the computer, so
-    // the computer has one, however its command is found on the search path.
-    selfGlobal: isGlobalCopy(CLI_ROOT),
     globalBehind:
       !project && isGlobalCopy(CLI_ROOT)
         ? globalBehind({self: {version: answered.cli, root: CLI_ROOT}})
