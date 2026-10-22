@@ -366,8 +366,11 @@ export function docCommandsIn(text, lang) {
         code: 'doc_token',
         fix: step.error,
       });
-    } else if (step.kind === 'command' && !namesCommand(step.args)) {
-      const word = step.args.find(arg => !arg.startsWith('-')) ?? '';
+    } else if (
+      step.kind === 'command' &&
+      !CLI_COMMANDS.includes(commandWord(step.args))
+    ) {
+      const word = commandWord(step.args);
       found.push({
         at: source.indexOf(token),
         written: token,
@@ -496,17 +499,24 @@ export async function findRunnerCommands(discovered) {
   );
 }
 
+/** The CLI's global flags that take a value (`--detail full`). */
+const VALUED_GLOBAL_FLAGS = new Set(['--detail', '--lang']);
+
 /**
- * Whether a `{@command}` token's words name an Astryx command: the first word
- * that is not a flag, or the one after it when a leading flag takes a value
- * (`--json component Button`, `--detail full component Button`).
+ * The word a `{@command}` token names as its command: the first word that is
+ * not a global flag or the value of one (`--json component Button`,
+ * `--detail full docs acme`).
  * @param {string[]} args
+ * @returns {string}
  */
-function namesCommand(args) {
-  const words = args.filter(arg => !arg.startsWith('-'));
-  return (
-    CLI_COMMANDS.includes(/** @type {string} */ (words[0])) ||
-    (Boolean(args[0]?.startsWith('-')) &&
-      CLI_COMMANDS.includes(/** @type {string} */ (words[1])))
-  );
+function commandWord(args) {
+  for (let i = 0; i < args.length; i++) {
+    const arg = args[i];
+    if (VALUED_GLOBAL_FLAGS.has(arg)) {
+      i++;
+      continue;
+    }
+    if (!arg.startsWith('-')) return arg;
+  }
+  return '';
 }
