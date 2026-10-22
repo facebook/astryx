@@ -767,6 +767,10 @@ export function generateCompressedIndex(
   // intentionally omitted from the command reference below.
   lines.push(WORKFLOW_TITLE, ...WORKFLOW_STEPS);
   lines.push('Changing an existing page? Keep it: skip step 2 and add blocks/components inside its sections.');
+  // Project block only: the project's own CLI writes and answers this block,
+  // so the option exists; the computer-level skill names only entry points
+  // every release keeps (AST-081 FR8).
+  lines.push("Before you deliver a build, run `astryx doctor --built <dir>`; don't deliver it if it fails.");
   lines.push('');
 
   // Rules — the top error-preventers.

@@ -4,6 +4,7 @@ import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as os from 'node:os';
+import {renderComputerAgentText} from './computer-agent-text.mjs';
 import {
   generateCompressedIndex,
   detectStylingSystem,
@@ -93,6 +94,15 @@ describe('generateCompressedIndex', () => {
     expect(result).toContain('Astryx v1.2.3');
     expect(result).toContain('<!-- ASTRYX:START -->');
     expect(result).toContain('<!-- ASTRYX:END -->');
+  });
+
+  it('tells agents to check a build with doctor --built; the computer-level skill does not', () => {
+    const line =
+      "Before you deliver a build, run `astryx doctor --built <dir>`; don't deliver it if it fails.";
+    expect(generateCompressedIndex('1.0.0')).toContain(line);
+    expect(renderComputerAgentText({command: 'astryx'})).not.toContain(
+      'doctor --built',
+    );
   });
 
   it('includes theme nudge rule', () => {
