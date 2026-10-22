@@ -247,11 +247,61 @@ let lineCache = {text: null, starts: [0]};
 
 /**
  * Text with comments blanked out, keeping every offset, so a commented-out
- * tag or import is not read. A `//` or `/*` inside a string is not a
- * comment.
+ * tag or import is not read. The comments are the ones `@babel/parser`
+ * finds, so a `//` or `/*` in a string or in JSX text is not one; a file it
+ * cannot parse falls back to a scan that skips string literals.
  * @param {string} text
  */
-function withoutComments(text) {
+function withoutComments(text, ext = '') {
+  const parsed = commentRanges(text, ext);
+  if (parsed) {
+    const out = text.split('');
+    for (const [start, end] of parsed) {
+      for (let j = start; j < end; j++) if (out[j] !== '\n') out[j] = ' ';
+    }
+    return out.join('');
+  }
+  return scanOutComments(text);
+}
+
+/**
+ * The comment ranges `@babel/parser` finds in a source file, or null when it
+ * cannot parse the file.
+ * @param {string} text
+ * @param {string} ext
+ * @returns {Array<[number, number]> | null}
+ */
+function commentRanges(text, ext) {
+  if (!/\/[/*]/.test(text)) return [];
+  const typescript = /^\.[cm]?tsx?$/.test(ext);
+  const jsx = ext === '.tsx' || !typescript;
+  for (const plugins of /** @type {any[][]} */ ([
+    [...(typescript ? ['typescript'] : []), ...(jsx ? ['jsx'] : [])],
+    ['jsx', 'flow', ['decorators', {decoratorsBeforeExport: true}]],
+  ])) {
+    try {
+      const ast = parseModule(text, {
+        sourceType: 'unambiguous',
+        plugins,
+        errorRecovery: true,
+      });
+      return (ast.comments ?? []).map(
+        (/** @type {any} */ c) =>
+          /** @type {[number, number]} */ ([c.start, c.end]),
+      );
+    } catch {
+      // try the next set of syntax plugins
+    }
+  }
+  return null;
+}
+
+/**
+ * Text with comments blanked by a scan that skips string literals, for a
+ * file the parser cannot read.
+ * @param {string} text
+ */
+function scanOutComments(text) {
   const out = text.split('');
   /** @type {string | null} the quote of the string being read */
   let quote = null;
@@ -316,6 +366,16 @@ function importsOf(text) {
       if (/^[A-Za-z_$][\w$]*$/.test(name)) names.push(name);
     }
     found.push({spec: match[2], names, at});
+  }
+  // A barrel that re-exports a package reaches it as an import does.
+  for (const match of text.matchAll(
+    /\bexport\s+(?:type\s+)?(?:\*(?:\s+as\s+[\w$]+)?|\{[^}]*\})\s*from\s+['"]([^'"]+)['"]/g,
+  )) {
+    found.push({
+      spec: match[1],
+      names: [],
+      at: /** @type {number} */ (match.index),
+    });
   }
   for (const match of text.matchAll(
     /\brequire\(\s*['"]([^'"]+)['"]\s*\)|\bimport\(\s*['"]([^'"]+)['"]\s*\)/g,
@@ -440,10 +500,27 @@ export function scanBuilt(target, packages) {
     if (isBuilt) {
       scan.builtFiles++;
       if (STYLESHEET_MARK.test(raw)) scan.stylesheets.push(rel);
+      // A stylesheet that imports an Astryx package's CSS, as the
+      // getting-started setup does, uses Astryx.
+      if (ext === '.css') {
+        for (const match of raw.matchAll(
+          /@import\s+(?:url\(\s*)?['"]?([^'")\s;]+)/g,
+        )) {
+          if (!isAstryxSpecifier(match[1], packages)) continue;
+          scan.imports++;
+          scan.importFiles++;
+          imported.add(
+            match[1]
+              .split('/')
+              .slice(0, match[1].startsWith('@') ? 2 : 1)
+              .join('/'),
+          );
+        }
+      }
     }
     if (!isSource) continue;
     scan.sourceFiles++;
-    const text = withoutComments(raw);
+    const text = withoutComments(raw, ext);
     const astryxNames = new Set();
     const iconNames = new Set();
     let fileImports = 0;

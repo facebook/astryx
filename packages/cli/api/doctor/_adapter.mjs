@@ -498,9 +498,9 @@ export function readBuiltPath(target) {
       const page = reader(target)() ?? '';
       const seen = new Set([path.resolve(target)]);
       for (const match of page.matchAll(
-        /<(?:link|script)\b[^>]*?\b(?:href|src)\s*=\s*["']([^"'#?]+)/giu,
+        /<(?:link|script)\b[^>]*?\b(?:href|src)\s*=\s*(?:"([^"#?]+)|'([^'#?]+)|([^\s"'#?>]+))/giu,
       )) {
-        const href = match[1];
+        const href = match[1] ?? match[2] ?? match[3];
         if (/^(?:[a-z][\w+.-]*:|\/\/)/iu.test(href)) continue;
         // A root-relative link names a file from the build root: the page's
         // folder or the nearest folder above it that holds the file.

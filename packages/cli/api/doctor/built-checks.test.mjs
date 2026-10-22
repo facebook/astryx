@@ -374,6 +374,37 @@ describe('--built edge cases', () => {
     expect(scan.findings.map(f => f.line)).toContain(2);
   });
 
+  it('keeps JSX after a URL or a glob in JSX text', () => {
+    write({
+      'src/page.js':
+        'export const A = () => (\n  <section>\n    <p>See https://example.com and src/*</p>\n    <div>Box</div>\n  </section>\n);\n',
+    });
+    const scan = scanBuilt(path.join(dir, 'src'), []);
+    expect(scan.unread).toBe(0);
+    expect(scan.findings.map(f => f.line)).toEqual(
+      expect.arrayContaining([3, 4]),
+    );
+  });
+
+  it('reads a page whose link attributes are unquoted', () => {
+    write({
+      'dist/index.html':
+        '<!doctype html><link rel=stylesheet href=/assets/index.css><div id=root></div>',
+      'dist/assets/index.css': '@layer astryx-base{.x{color:red}}',
+    });
+    expect(check('dist/index.html').usage.status).toBe('pass');
+  });
+
+  it('counts a barrel re-export and a CSS @import of an Astryx package', () => {
+    write({
+      'src/ui.ts': "export {Button, Card} from '@astryxdesign/core';\n",
+      'src/index.css': "@import '@astryxdesign/core/styles.css';\n",
+    });
+    const {usage} = check('src');
+    expect(usage.status).toBe('pass');
+    expect(usage.message).toContain('@astryxdesign/core');
+  });
+
   it('survives a file with more findings than a call can spread', () => {
     write({
       'src/Rows.tsx': `export const Rows = () => (\n<>\n${'<p/>\n'.repeat(200_000)}</>);\n`,

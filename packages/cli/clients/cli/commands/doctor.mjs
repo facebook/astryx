@@ -709,20 +709,30 @@ export function registerDoctor(program) {
       return NO_RESULT_SET;
     },
   });
+  // `--built` checks a project's build; an integration check has none.
+  const refuseBuilt = () =>
+    doctorCmd.opts().built != null
+      ? cliError(
+          '`--built` checks a finished build and goes with `doctor` alone, not with a `doctor integration` check',
+          {code: ERROR_CODES.ERR_INVALID_OPTION},
+        )
+      : null;
   defineCommand(integrationCmd, doctorIntegrationValidateCommand, {
     fn: validateIntegrationFn,
-    action: async pkg => runIntegrationValidation(program, pkg),
+    action: async pkg => refuseBuilt() ?? runIntegrationValidation(program, pkg),
   });
   defineCommand(integrationCmd, doctorIntegrationTemplatesCommand, {
     fn: integrationTemplateConflictsFn,
-    action: async pkg => runAuthoringCheck(program, pkg, 'templates'),
+    action: async pkg =>
+      refuseBuilt() ?? runAuthoringCheck(program, pkg, 'templates'),
   });
   defineCommand(integrationCmd, doctorIntegrationComponentsCommand, {
     fn: integrationComponentConflictsFn,
-    action: async pkg => runAuthoringCheck(program, pkg, 'components'),
+    action: async pkg =>
+      refuseBuilt() ?? runAuthoringCheck(program, pkg, 'components'),
   });
   defineCommand(integrationCmd, doctorIntegrationDocsCommand, {
     fn: integrationDocConflictsFn,
-    action: async pkg => runAuthoringCheck(program, pkg, 'docs'),
+    action: async pkg => refuseBuilt() ?? runAuthoringCheck(program, pkg, 'docs'),
   });
 }
