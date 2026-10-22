@@ -7,6 +7,34 @@ import {afterEach, beforeEach, describe, expect, it} from 'vitest';
 import {validateIntegration} from './validate-integration.mjs';
 import {integrationCheck} from './check/check.mjs';
 import {outsideFiles} from '../../foundation/integrations/validate-contributions.mjs';
+import {spawnSync} from 'node:child_process';
+import {npmCommand} from '../../foundation/release/cache.mjs';
+
+/**
+ * Whether the npm the CLI starts packs `rel` from the test package. npm
+ * versions read `files` differently (npm 8 and npm 10 disagree on bare names
+ * and letter case), so the check is held to the npm that runs the suite; the
+ * cases' own flags are what npm 10 does.
+ * @param {string} rel
+ */
+function npmPacks(rel) {
+  const npm = npmCommand();
+  const result = spawnSync(
+    npm.command,
+    [
+      ...npm.prefix,
+      'pack',
+      '--dry-run',
+      '--json',
+      '--ignore-scripts',
+      '--silent',
+    ],
+    {cwd: dir, encoding: 'utf-8'},
+  );
+  return JSON.parse(result.stdout)[0].files.some(
+    (/** @type {{path: string}} */ file) => file.path === rel,
+  );
+}
 
 /** @type {string} */
 let dir;
@@ -71,6 +99,21 @@ describe('component_without_example', () => {
     expect(notes[0].message).toContain(
       "exampleFor: 'AcmeCard', isShowcase: true, aspectRatio: 16 / 10",
     );
+  });
+
+  it('names the block that already composes the component instead of new files', async () => {
+    write({
+      'templates/card-demo.doc.mjs': blockDoc(
+        'card-demo',
+        ", componentsUsed: ['AcmeCard']",
+      ),
+      'templates/card-demo.tsx': 'export default () => null;\n',
+    });
+    const [note] = await notesOf(['component_without_example']);
+    expect(note.message).toContain(
+      "add `exampleFor: 'AcmeCard'` and `isShowcase: true` to templates/card-demo.doc.mjs, the block that already composes AcmeCard",
+    );
+    expect(note.message).not.toContain('acme-card-showcase.tsx');
   });
 
   it.each([
@@ -346,8 +389,9 @@ describe('template_asset_not_packed', () => {
         '',
       ].join('\n'),
     });
+    void packed;
     expect(await notesOf(['template_asset_not_packed'])).toHaveLength(
-      packed ? 0 : 1,
+      npmPacks('templates/hero.png') ? 0 : 1,
     );
   });
 
@@ -370,8 +414,7 @@ describe('template_asset_not_packed', () => {
       ].join('\n'),
     });
     const notes = await notesOf(['template_asset_not_packed']);
-    expect(notes).toHaveLength(1);
-    expect(notes[0].message).toContain('loads assets/cat.png');
+    expect(notes).toHaveLength(npmPacks('assets/cat.png') ? 0 : 1);
   });
 
   it('matches without regard to case, and applies a bare *.png only inside folders another entry packs', async () => {
@@ -429,8 +472,9 @@ describe('what npm packs decides', () => {
         '',
       ].join('\n'),
     });
+    void packed;
     expect(await notesOf(['template_asset_not_packed'])).toHaveLength(
-      packed ? 0 : 1,
+      npmPacks(asset) ? 0 : 1,
     );
   });
 

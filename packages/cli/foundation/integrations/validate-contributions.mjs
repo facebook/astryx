@@ -51,6 +51,7 @@ import {
   TEMPLATE_CANDIDATE_RE,
 } from './contribution-fixes.mjs';
 import {MANIFEST_BASENAMES} from './integrations.mjs';
+import {npmCommand} from '../release/cache.mjs';
 import {discoverIntegrationCodemods} from '../../assets/codemods/integration-discovery.mjs';
 import {discoverIntegrationTemplatesForOne} from '../discovery/template-adapter.mjs';
 import * as componentDiscovery from '../discovery/component-discovery.mjs';
@@ -1126,25 +1127,62 @@ function globSource(pattern) {
 /**
  * The paths npm packs for the package in `base`, read from
  * `npm pack --dry-run --json --ignore-scripts` (nothing runs, nothing is
- * written), or null when npm cannot answer.
+ * written), started the way the CLI starts npm everywhere else, or why npm
+ * could not answer.
  * @param {string} base
- * @returns {Set<string> | null}
+ * @returns {{paths: Set<string>} | {error: string}}
  */
 function npmPackedPaths(base) {
+  let npm;
+  try {
+    npm = npmCommand();
+  } catch {
+    return {error: 'npm was not found'};
+  }
   const result = spawnSync(
-    'npm',
-    ['pack', '--dry-run', '--json', '--ignore-scripts', '--silent'],
-    {cwd: base, encoding: 'utf-8', timeout: 60_000},
+    npm.command,
+    [
+      ...npm.prefix,
+      'pack',
+      '--dry-run',
+      '--json',
+      '--ignore-scripts',
+      '--silent',
+    ],
+    {
+      cwd: base,
+      encoding: 'utf-8',
+      shell: false,
+      timeout: 60_000,
+      // One line per packed file: room for a very large package.
+      maxBuffer: 256 * 1024 * 1024,
+    },
   );
-  if (result.error || result.status !== 0) return null;
+  if (result.error) return {error: `npm did not run (${result.error.message})`};
+  if (result.status !== 0) {
+    let code = '';
+    try {
+      code = JSON.parse(result.stdout)?.error?.code ?? '';
+    } catch {
+      // not JSON
+    }
+    return {
+      error: `npm pack failed${code ? ` (${code})` : ` with exit ${result.status}`}`,
+    };
+  }
   try {
     const [info] = JSON.parse(result.stdout);
-    return Array.isArray(info?.files)
-      ? new Set(info.files.map((/** @type {{path: string}} */ f) => f.path))
-      : null;
+    if (Array.isArray(info?.files)) {
+      return {
+        paths: new Set(
+          info.files.map((/** @type {{path: string}} */ f) => f.path),
+        ),
+      };
+    }
   } catch {
-    return null;
+    // fall through
   }
+  return {error: 'npm pack printed no file list'};
 }
 
 /**
@@ -1361,10 +1399,11 @@ function readModule(source, builtins) {
  *   through the app. Only the showcase's own file is read.
  * - `template_asset_not_packed`: a file a template loads with `new URL(…,
  *   import.meta.url)` that does not exist, or that npm leaves out of the
- *   package (`npm pack --dry-run`; without npm, only one no `files` entry
- *   can reach).
+ *   package (`npm pack --dry-run`). When npm cannot answer, an asset no
+ *   `files` entry can reach is still a note, and any other is returned in
+ *   `unchecked`.
  * @param {LoadedIntegration} integration
- * @returns {Promise<{notes: Note[]}>}
+ * @returns {Promise<{notes: Note[], unchecked: Array<{file: string, asset: string, reason: string}>}>}
  */
 export async function componentExamplesCheck(integration) {
   /** @type {Note[]} */
@@ -1378,7 +1417,7 @@ export async function componentExamplesCheck(integration) {
       ({templates} = await discoverIntegrationTemplatesForOne(integration));
     } catch {
       // Templates that cannot be read are reported by the template check.
-      return {notes};
+      return {notes, unchecked: []};
     }
   }
   const rel = (/** @type {string} */ file) => slash(path.relative(base, file));
@@ -1402,8 +1441,10 @@ export async function componentExamplesCheck(integration) {
   } catch {
     packedFiles = undefined;
   }
-  /** @type {Set<string> | false | undefined} what npm packs, read once */
+  /** @type {{paths: Set<string>} | {error: string} | undefined} what npm packs, read once */
   let packed;
+  /** @type {Array<{file: string, asset: string, reason: string}>} */
+  const unchecked = [];
   // A bare builtin name the package installs from npm (`buffer`, `events`)
   // is that package, which bundlers ship to the browser.
   const builtins = new Set(builtinModules.filter(name => !declared.has(name)));
@@ -1454,12 +1495,17 @@ export async function componentExamplesCheck(integration) {
       const exists = fs.existsSync(asset);
       if (exists) {
         if (!Array.isArray(packedFiles)) continue;
-        // What npm packs decides; without npm, only an asset no entry can
-        // reach is reported.
-        packed ??= npmPackedPaths(base) ?? false;
-        if (
-          packed ? packed.has(assetRel) : !outsideFiles(assetRel, packedFiles)
-        ) {
+        // What npm packs decides. Without npm's answer, an asset no entry
+        // can reach is reported, and any other is listed as not checked.
+        packed ??= npmPackedPaths(base);
+        if ('paths' in packed) {
+          if (packed.paths.has(assetRel)) continue;
+        } else if (!outsideFiles(assetRel, packedFiles)) {
+          unchecked.push({
+            file: rel(template.filePath),
+            asset: assetRel,
+            reason: `${packed.error}, and a \`files\` entry may reach it`,
+          });
           continue;
         }
       }
@@ -1476,14 +1522,14 @@ export async function componentExamplesCheck(integration) {
     }
   }
   if (!integration.components || rootProblem(integration.components)) {
-    return {notes};
+    return {notes, unchecked};
   }
   /** @type {any[]} */
   let records;
   try {
     records = componentDiscovery.discoverIntegrationComponents(integration);
   } catch {
-    return {notes};
+    return {notes, unchecked};
   }
   const templatesDir = root ? rel(root) || '.' : 'templates';
   for (const record of records) {
@@ -1499,6 +1545,28 @@ export async function componentExamplesCheck(integration) {
     if (doc?.category === 'Utility') continue;
     const name = record.name;
     const stem = `${name.replace(/([a-z0-9])([A-Z])/gu, '$1-$2').toLowerCase()}-showcase`;
+    // A block that already composes the component only needs the fields.
+    const existing = templates.find(
+      template =>
+        template.type === 'block' &&
+        Array.isArray(template.componentsUsed) &&
+        template.componentsUsed.includes(name),
+    );
+    const taken =
+      !existing &&
+      root &&
+      !rootProblem(root) &&
+      fs.existsSync(path.join(root, `${stem}.tsx`));
+    if (existing || taken) {
+      const doc = existing
+        ? rel(existing.docPath ?? existing.filePath)
+        : `${templatesDir}/${stem}.doc.mjs`;
+      notes.push({
+        code: 'component_without_example',
+        message: `${rel(record.docPath)}: no block template shows "${name}" (\`exampleFor: '${name}'\` with \`isShowcase: true\`), so template lists, docs pages and catalog cards have no example of it. Fix: add \`exampleFor: '${name}'\` and \`isShowcase: true\` to ${doc}${existing ? `, the block that already composes ${name}` : ''}. A doc set to \`hidden\`, \`isHiddenFromOverview\` or category \`Utility\` needs no example.`,
+      });
+      continue;
+    }
     notes.push({
       code: 'component_without_example',
       message:
@@ -1511,7 +1579,7 @@ export async function componentExamplesCheck(integration) {
         ' A doc set to `hidden`, `isHiddenFromOverview` or category `Utility` needs no example.',
     });
   }
-  return {notes};
+  return {notes, unchecked};
 }
 
 /**

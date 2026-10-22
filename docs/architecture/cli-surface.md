@@ -876,15 +876,16 @@ Template lists, docs pages and catalog cards show a package through its
 examples, each block alone and from the packed package, so a package must ship
 what they need, as Core does. `validate` lists, as `next` notes with the fix
 to paste: a published component no block template shows with `exampleFor` and
-`isShowcase: true` (`component_without_example`; hidden docs, family members,
+`isShowcase: true` or names in `alsoShowcaseFor` (`component_without_example`; hidden docs, family members,
 `isHiddenFromOverview` docs and `Utility` components are exempt), a template
 category written as a path such as `components/X` (`template_category`; INV34
 still lets a package author any category, and this note only names a
 `"<Group> - <Variant>"` one), a showcase that imports server-only code or
 reads `process.env` past `NODE_ENV` (`showcase_not_standalone`; live data
 through the app is fine), and an asset loaded with `new URL(…,
-import.meta.url)` that is missing or outside `files`
-(`template_asset_not_packed`). Each fails `--strict --next` now and `--strict`
+import.meta.url)` that is missing or that `npm pack --dry-run` leaves out
+(`template_asset_not_packed`; when npm cannot answer, one no `files` entry
+can reach is still reported and any other is listed as not checked, INV35). Each fails `--strict --next` now and `--strict`
 from the next minor release (DEC-11). The CLI finds a component's showcase by
 `exampleFor` first, then by folder and `componentsUsed`.
 

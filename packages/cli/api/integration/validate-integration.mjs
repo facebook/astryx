@@ -802,6 +802,16 @@ export async function validateIntegration(pkg, options = {}) {
       ...(docTypes ? {docTypes} : {}),
       ...(docNames ? {docNames} : {}),
       ...(blockComponents ? {blockComponents} : {}),
+      // Template assets npm could not place, when there are any.
+      ...(examples && examples.unchecked.length > 0
+        ? {
+            exampleAssets: {
+              status: 'checked',
+              findings: [],
+              unchecked: examples.unchecked,
+            },
+          }
+        : {}),
       // What the public-import check could not judge: listed, never failed on.
       ...(result.found && result.publicImports
         ? {publicImports: result.publicImports}
