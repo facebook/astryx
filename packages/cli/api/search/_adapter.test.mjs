@@ -3,15 +3,28 @@
 /**
  * @file Tests for search's adapter: a long-running caller reuses the gathered
  * candidates while their inputs are unchanged (gatherCandidatesReused), and
- * gathers again when an input changes, for another folder or `type`, or once
- * the reuse window passes.
+ * gathers again when an input changes or for another folder or `type`.
+ *
+ * Whether inputs changed is read-record's answer (tested in
+ * read-record.test.mjs). Other tests running at the same time change shared
+ * folders a gather reads (the temp folder, the repository root), so here the
+ * reuse case holds that answer at "unchanged", and every other case only
+ * checks that a change forces a new gather, which concurrent changes cannot
+ * undo.
  */
 
-import {describe, it, expect} from 'vitest';
+import {describe, it, expect, vi} from 'vitest';
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
+import * as readRecord from '../../foundation/fs/read-record.mjs';
 import {gatherCandidates, gatherCandidatesReused} from './_adapter.mjs';
+
+vi.mock('../../foundation/fs/read-record.mjs', async original => {
+  const real = /** @type {typeof readRecord} */ (await original());
+  return {...real, unchangedSince: vi.fn(real.unchangedSince)};
+});
+const unchangedSince = vi.mocked(readRecord.unchangedSince);
 
 const SLOW = 60_000;
 
@@ -22,27 +35,14 @@ function scratchProject() {
   return dir;
 }
 
-/**
- * A gather that is then reused. Other tests running at the same time can
- * change a folder a gather read (the system temp folder, the repository
- * root), which rightly makes the next call gather again; so a reuse check
- * gathers once more and expects the call after that to reuse it.
- * @param {{cwd: string, type: string}} options
- */
-async function reusedGather(options) {
-  for (let attempt = 0; attempt < 5; attempt++) {
-    const gathered = await gatherCandidatesReused(options);
-    if ((await gatherCandidatesReused(options)) === gathered) return gathered;
-  }
-  throw new Error('a gather was never reused');
-}
-
 describe('gatherCandidatesReused', () => {
   it(
     'reuses the gathered candidates while the inputs are unchanged',
     async () => {
       const cwd = scratchProject();
-      const first = await reusedGather({cwd, type: 'doc'});
+      const first = await gatherCandidatesReused({cwd, type: 'doc'});
+      unchangedSince.mockReturnValueOnce(true);
+      expect(await gatherCandidatesReused({cwd, type: 'doc'})).toBe(first);
       expect(first.all.length).toBeGreaterThan(0);
       // The same candidates a fresh gather finds.
       expect(JSON.parse(JSON.stringify(first))).toEqual(
@@ -56,7 +56,7 @@ describe('gatherCandidatesReused', () => {
     'gathers again when an input file changes',
     async () => {
       const cwd = scratchProject();
-      const first = await reusedGather({cwd, type: 'doc'});
+      const first = await gatherCandidatesReused({cwd, type: 'doc'});
       const later = new Date(Date.now() + 5_000);
       fs.utimesSync(path.join(cwd, 'package.json'), later, later);
       expect(await gatherCandidatesReused({cwd, type: 'doc'})).not.toBe(first);
@@ -137,7 +137,7 @@ describe('gatherCandidatesReused', () => {
           'dir',
         );
         const options = {cwd: dir, type: 'component'};
-        const first = await reusedGather(options);
+        const first = await gatherCandidatesReused(options);
         expect(first.all.map(c => c.name)).toContain('FancyGizmo');
 
         // A new component in the linked package: its folder changed.
@@ -155,8 +155,8 @@ describe('gatherCandidatesReused', () => {
           path.join(pkg, 'components', 'TinySprocket.tsx'),
           'export function TinySprocket() { return null; }\n',
         );
-        expect(await gatherCandidatesReused(options)).not.toBe(first);
-        const second = await reusedGather(options);
+        const second = await gatherCandidatesReused(options);
+        expect(second).not.toBe(first);
         expect(second.all.map(c => c.name)).toContain('TinySprocket');
 
         // An edited file the gather read: the linked package's manifest.
