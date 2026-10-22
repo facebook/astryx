@@ -2,7 +2,7 @@
 
 /**
  * @file `debug` accepts handlers from integrations, so both public entries for
- * it — the exported `AstryxConfig` type and `astryx docs authoring config` —
+ * it — the exported `AstryxConfig` type and `astryx docs make-an-integration config` —
  * must state how those handlers combine with the app's own: the contribution
  * form, the order, what a failing handler does, and the refusal control.
  */
@@ -59,7 +59,7 @@ const schemaField = doc.fields.find(field => field.name === 'debug');
 
 const ENTRIES = {
   'the AstryxConfig type': jsdocText(debugMember),
-  'astryx docs authoring config': schemaField?.description ?? '',
+  'astryx docs make-an-integration config': schemaField?.description ?? '',
 };
 
 describe.each(Object.entries(ENTRIES))('debug entry in %s', (_, text) => {

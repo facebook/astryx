@@ -5,7 +5,7 @@ export const doc = {
   type: 'function',
   kind: 'api',
   name: 'integrationAddAgentDoc',
-  namespace: 'cli/api',
+  namespace: 'reference/api',
   displayName: 'integrationAddAgentDoc()',
   summary: 'Append one validated agent-guidance line.',
   description:

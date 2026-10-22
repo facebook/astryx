@@ -3,7 +3,7 @@
 /**
  * @file SchemaDoc for DebugEvent, the record of one CLI run.
  * @input The DebugEvent type beside it (`type.ts`), which `parse.mjs` reads.
- * @output The `debug-event` section of `astryx docs authoring`.
+ * @output The `debug-event` section of `astryx docs make-an-integration`.
  * @position packages/cli/authoring/debug — schema documentation
  */
 

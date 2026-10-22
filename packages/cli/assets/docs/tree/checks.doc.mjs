@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file `astryx docs authoring/ship/checks`: what each package check
+ * @file `astryx docs make-an-integration/ship/checks`: what each package check
  * proves, what fails and what only warns, and one command to run them all.
  */
 

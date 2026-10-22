@@ -12,7 +12,7 @@ export const doc = {
   type: 'function',
   kind: 'api',
   name: 'themeTemplate',
-  namespace: 'cli/api',
+  namespace: 'reference/api',
   displayName: 'themeTemplate()',
   summary: 'Write the annotated theme template into a project.',
   description:

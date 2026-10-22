@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file `astryx docs authoring` must describe the published authoring types
+ * @file `astryx docs make-an-integration` must describe the published authoring types
  * exactly. For each self-doc this checks, against the TypeScript types
  * themselves: every field of the type is documented, every documented field
  * exists, each documented `type` string is the same type as the real field,
@@ -174,7 +174,7 @@ function parentOf(root, steps) {
   return expr;
 }
 
-describe('astryx docs authoring matches the published types', () => {
+describe('astryx docs make-an-integration matches the published types', () => {
   it.each(Object.entries(SELF_DOCS))(
     '%s',
     async (file, root) => {

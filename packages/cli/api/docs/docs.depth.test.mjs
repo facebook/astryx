@@ -33,7 +33,7 @@ describe('docs() depth', () => {
   it(
     'reads one level down, as it always has, without a depth',
     async () => {
-      const plain = await docs('cli/api');
+      const plain = await docs('reference/api');
       expect(plain.type).toBe('docs.node');
       if (plain.type !== 'docs.node') return;
       expect(plain.data).not.toHaveProperty('childCount');
@@ -54,12 +54,12 @@ describe('docs() depth', () => {
   it(
     'goes as many levels down as asked, each doc below as its identity',
     async () => {
-      const result = await docs('cli/api', undefined, {depth: 2});
+      const result = await docs('reference/api', undefined, {depth: 2});
       if (result.type !== 'docs.node') throw new Error(result.type);
-      const functions = findRoute(result.data, 'cli/api/functions');
+      const functions = findRoute(result.data, 'reference/api/functions');
       expect(functions).not.toHaveProperty('childCount');
-      expect(findRoute(result.data, 'cli/api/functions/search')).toEqual({
-        route: 'cli/api/functions/search',
+      expect(findRoute(result.data, 'reference/api/functions/search')).toEqual({
+        route: 'reference/api/functions/search',
         name: 'search',
         package: '@astryxdesign/cli',
         kind: 'function',
@@ -73,13 +73,13 @@ describe('docs() depth', () => {
   it(
     'says how many docs sit below where the read stops',
     async () => {
-      const one = await docs('cli/api', undefined, {depth: 1});
+      const one = await docs('reference/api', undefined, {depth: 1});
       if (one.type !== 'docs.node') throw new Error(one.type);
-      const functions = findRoute(one.data, 'cli/api/functions');
+      const functions = findRoute(one.data, 'reference/api/functions');
       expect(functions).not.toHaveProperty('slots');
       expect(functions.childCount).toBeGreaterThan(1);
 
-      const zero = await docs('cli/api', undefined, {depth: 0});
+      const zero = await docs('reference/api', undefined, {depth: 0});
       if (zero.type !== 'docs.node') throw new Error(zero.type);
       expect(zero.data.slots).toEqual([]);
       expect(zero.data.childCount).toBe(children(one.data).length);
@@ -90,15 +90,15 @@ describe('docs() depth', () => {
   it(
     "reads every level with 'all', and each doc's text at full detail",
     async () => {
-      const result = await docs('cli/api', undefined, {
+      const result = await docs('reference/api', undefined, {
         depth: 'all',
         detail: 'full',
       });
       if (result.type !== 'docs.node') throw new Error(result.type);
       expect(JSON.stringify(result.data)).not.toContain('"childCount"');
-      const search = findRoute(result.data, 'cli/api/functions/search');
+      const search = findRoute(result.data, 'reference/api/functions/search');
       expect(JSON.stringify(search.content)).toContain(
-        '`astryx search` runs it. Read it with `astryx docs cli/commands/search`.',
+        '`astryx search` runs it. Read it with `astryx docs reference/commands/search`.',
       );
     },
     SLOW,
@@ -108,8 +108,8 @@ describe('docs() depth', () => {
     'reads a doc with nothing below it the same at any depth',
     async () => {
       expect(
-        await docs('cli/api/functions/search', undefined, {depth: 3}),
-      ).toEqual(await docs('cli/api/functions/search'));
+        await docs('reference/api/functions/search', undefined, {depth: 3}),
+      ).toEqual(await docs('reference/api/functions/search'));
     },
     SLOW,
   );
@@ -119,11 +119,11 @@ describe('docs() depth', () => {
     async () => {
       for (const depth of [-1, 1.5, 'deep', '2']) {
         await expect(
-          docs('cli/api', undefined, {depth: /** @type {any} */ (depth)}),
+          docs('reference/api', undefined, {depth: /** @type {any} */ (depth)}),
         ).rejects.toMatchObject({code: 'ERR_INVALID_ARGUMENT'});
       }
       await expect(
-        docs('cli/api', undefined, {
+        docs('reference/api', undefined, {
           depth: 1,
           detail: /** @type {any} */ ('huge'),
         }),

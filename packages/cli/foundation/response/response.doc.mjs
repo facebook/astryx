@@ -12,7 +12,7 @@ export const doc = {
   type: 'schema',
   name: 'output',
   displayName: 'Output Envelope',
-  namespace: 'cli/api',
+  namespace: 'reference/api',
   description:
     'The single JSON envelope every command emits under --json. Success is ' +
     '{ apiVersion, type, package?, data, meta? }; failure is { apiVersion, error, code, ' +

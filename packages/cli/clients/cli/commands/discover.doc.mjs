@@ -13,7 +13,7 @@ export const doc = {
   type: 'command',
   name: 'discover',
   displayName: 'astryx discover',
-  namespace: 'cli/commands',
+  namespace: 'reference/commands',
   summary:
     'Browse and search integrations: the ones you have and the ones you could add',
   description:
@@ -91,7 +91,7 @@ export const doc = {
   notes: [
     {
       type: 'prose',
-      text: "In global mode: outside a project, integrations installed next to your global install are listed as installed and their items show up; inside a project, only the project's integrations are, and the global ones the project could add are listed under available, with the project's install command. In a project, the project's version of Astryx runs it, whichever astryx command you start. See {@link namespace:global} and {@link generic:computer-integrations}.",
+      text: "In global mode: outside a project, integrations installed next to your global install are listed as installed and their items show up; inside a project, only the project's integrations are, and the global ones the project could add are listed under available, with the project's install command. In a project, the project's version of Astryx runs it, whichever astryx command you start. See {@link namespace:on-your-computer} and {@link generic:computer-integrations}.",
     },
   ],
 };

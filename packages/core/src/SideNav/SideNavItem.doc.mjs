@@ -26,12 +26,12 @@ export const docs = {
     {
       name: 'icon',
       type: 'IconType',
-      description: 'Icon displayed in the outline (unselected) variant. See `astryx docs icons` for valid semantic names.',
+      description: 'Icon displayed in the outline (unselected) variant. See `astryx docs foundations/icons` for valid semantic names.',
     },
     {
       name: 'selectedIcon',
       type: 'IconType',
-      description: 'Icon displayed when the item is selected (filled variant). See `astryx docs icons` for valid semantic names.',
+      description: 'Icon displayed when the item is selected (filled variant). See `astryx docs foundations/icons` for valid semantic names.',
     },
     {
       name: 'isSelected',

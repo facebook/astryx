@@ -7,7 +7,7 @@ export const doc = {
   type: 'command',
   name: 'doctor integration docs',
   displayName: 'astryx doctor integration docs',
-  namespace: 'cli/commands',
+  namespace: 'reference/commands',
   summary:
     "Check an integration's docs: the docs tree they add, every link, and overlaps with Core topics",
   description:

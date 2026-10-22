@@ -109,7 +109,7 @@ export const doc = {
   notes: [
     {
       type: 'prose',
-      text: "In global mode: a manifest loads the same way when users install your package for their computer, beside the global CLI, and then applies in folders outside any project; inside a project, only if the project installs it. Peer ranges for `@astryxdesign/core` and `@astryxdesign/cli` are checked against the global CLI's release. See {@link namespace:global} and {@link generic:global-integrations}.",
+      text: "In global mode: a manifest loads the same way when users install your package for their computer, beside the global CLI, and then applies in folders outside any project; inside a project, only if the project installs it. Peer ranges for `@astryxdesign/core` and `@astryxdesign/cli` are checked against the global CLI's release. See {@link namespace:on-your-computer} and {@link generic:global-integrations}.",
     },
     {
       type: 'prose',
@@ -131,7 +131,7 @@ export const doc = {
     },
     {
       type: 'prose',
-      text: "Set `cliCommand` only when your users run the CLI with a command other than their package manager's, such as `acme astryx`. The CLI picks the command it prints in this order: the `cliCommand` of the loaded integrations when they name one command, then the command a host tool names, then the package manager's. Two different `cliCommand` values cancel out, and `astryx doctor` warns in its `cli-command` check. See `astryx docs authoring/building-blocks/configuration/cli-command`.",
+      text: "Set `cliCommand` only when your users run the CLI with a command other than their package manager's, such as `acme astryx`. The CLI picks the command it prints in this order: the `cliCommand` of the loaded integrations when they name one command, then the command a host tool names, then the package manager's. Two different `cliCommand` values cancel out, and `astryx doctor` warns in its `cli-command` check. See `astryx docs make-an-integration/building-blocks/configuration/cli-command`.",
     },
     {
       type: 'prose',

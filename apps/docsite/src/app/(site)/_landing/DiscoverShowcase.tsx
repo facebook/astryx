@@ -291,7 +291,7 @@ export function DiscoverShowcase() {
                 variant="primary"
                 size="lg"
                 label="Get started"
-                href="/docs/getting-started"
+                href="/docs/get-started"
               />
               <Button
                 variant="secondary"

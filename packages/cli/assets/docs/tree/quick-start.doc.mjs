@@ -5,7 +5,7 @@ export const docs = {
   type: 'generic',
   name: 'quick-start',
   placement: {
-    parent: 'namespace:authoring',
+    parent: 'namespace:make-an-integration',
     slot: 'guides',
     order: 10,
   },
@@ -290,7 +290,7 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'In global mode: users can also install your package for their computer, beside the global CLI (`npm i -g @astryxdesign/cli your-package`). It then applies in folders outside any project, and inside a project only if the project installs it. See {@link namespace:global} and {@link generic:global-integrations}.',
+          text: 'In global mode: users can also install your package for their computer, beside the global CLI (`npm i -g @astryxdesign/cli your-package`). It then applies in folders outside any project, and inside a project only if the project installs it. See {@link namespace:on-your-computer} and {@link generic:global-integrations}.',
         },
       ],
     },

@@ -256,6 +256,6 @@ function fontLoadingRecipe(families) {
       font-display: swap;
     }
 
-  Recipe and fallback-stack guidance: ${formatCliCommand('docs typography')}
+  Recipe and fallback-stack guidance: ${formatCliCommand('docs foundations/typography')}
 `;
 }

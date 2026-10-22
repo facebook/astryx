@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file `astryx docs global/ci-and-containers`: Astryx in CI and containers: no
+ * @file `astryx docs get-started/on-your-computer/ci-and-containers`: Astryx in CI and containers: no
  * update checks, caching versions, read-only home folders (spec AST-081 FR6,
  * FR7, FR10).
  */
@@ -11,7 +11,7 @@ export const docs = {
   type: 'generic',
   name: 'ci-and-containers',
   placement: {
-    parent: 'namespace:global',
+    parent: 'namespace:on-your-computer',
     slot: 'guides',
     order: 8,
   },
@@ -80,7 +80,7 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'This page is part of {@link namespace:global}, which explains what global mode is and how each part works.',
+          text: 'This page is part of {@link namespace:on-your-computer}, which explains what global mode is and how each part works.',
         },
       ],
     },

@@ -14,5 +14,4 @@ Cards use the core tokens.
 
 [token-ref: unknown topic "no-such-topic"]
 
-Up: pnpm exec astryx docs guides
-Previous: pnpm exec astryx docs working-with-ai
+Up: pnpm exec astryx docs more-topics

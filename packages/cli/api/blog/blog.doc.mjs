@@ -11,7 +11,7 @@ export const doc = {
   type: 'function',
   kind: 'api',
   name: 'blog',
-  namespace: 'cli/api',
+  namespace: 'reference/api',
   displayName: 'blog()',
   summary: 'List blog posts, or read one, from the published RSS feed.',
   description:

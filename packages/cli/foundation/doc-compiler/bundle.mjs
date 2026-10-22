@@ -118,11 +118,29 @@ export async function compileDocs(project, {lang = null} = {}) {
       );
     }
   }
-  // Guides placed in a namespace, lowered, so a token reference to the
-  // namespace (a flat topic split into guides, such as `tokens`) reads them
-  // in placement order as one topic, as the docs API does.
+  // Guides placed in a namespace, lowered, so a token reference to a guide by
+  // its route, or to a namespace (its guides in placement order as one
+  // topic), reads them as the docs API does.
+  /**
+   * A tree guide as the catalog reads it: a CLI guide an integration
+   * replaced reads the replacement's file, and one it extended carries the
+   * extension.
+   * @param {import('./inputs.mjs').DocInput} input
+   */
+  const guideAt = input => {
+    const changed =
+      input.owner === '@astryxdesign/cli' ? catalog.guide(input.name) : null;
+    return {
+      name: input.name,
+      package: changed?.package ?? input.owner,
+      path: changed?.path ?? input.file,
+      extensions: changed?.extensions ?? [],
+    };
+  };
   /** @type {Map<string, Array<{order: number, node: CompiledReferenceNode}>>} */
   const placedGuides = new Map();
+  /** @type {Map<string, CompiledReferenceNode>} each placed guide, by name */
+  const guideNodes = new Map();
   for (const input of inputs) {
     if (
       input.root !== 'tree' ||
@@ -130,16 +148,7 @@ export async function compileDocs(project, {lang = null} = {}) {
     ) {
       continue;
     }
-    const topic = await loadTopicInput(
-      {
-        name: input.name,
-        package: input.owner,
-        path: input.file,
-        extensions: [],
-        tree: true,
-      },
-      lang,
-    );
+    const topic = await loadTopicInput({...guideAt(input), tree: true}, lang);
     if ('error' in topic.base || 'overlayError' in topic.base) continue;
     const parent = /^namespace:(.+)$/u.exec(
       topic.base.doc?.placement?.parent ?? '',
@@ -147,6 +156,7 @@ export async function compileDocs(project, {lang = null} = {}) {
     if (!parent) continue;
     try {
       const node = lowerReferenceTopic(topic);
+      guideNodes.set(input.name.toLowerCase(), node);
       const list = placedGuides.get(parent.toLowerCase()) ?? [];
       list.push({order: topic.base.doc.placement.order ?? 0, node});
       placedGuides.set(parent.toLowerCase(), list);
@@ -158,6 +168,14 @@ export async function compileDocs(project, {lang = null} = {}) {
   const lowerTarget = async name => {
     const target = catalog.resolve(name);
     if (target) return topics.get(target.name.toLowerCase()) ?? null;
+    // A guide by its route (`foundations/all-tokens`): a route ends in the
+    // guide's name, which is unique among the CLI's guides.
+    if (name.includes('/')) {
+      return (
+        guideNodes.get(name.slice(name.lastIndexOf('/') + 1).toLowerCase()) ??
+        null
+      );
+    }
     const guides = placedGuides.get(name.toLowerCase());
     if (!guides) return null;
     const ordered = [...guides].sort((a, b) => a.order - b.order);
@@ -184,13 +202,7 @@ export async function compileDocs(project, {lang = null} = {}) {
       input.root === 'tree' &&
       (await treeDocType(input.file)) === 'generic'
     ) {
-      const entry = {
-        name: input.name,
-        package: input.owner,
-        path: input.file,
-        extensions: [],
-        tree: true,
-      };
+      const entry = {...guideAt(input), tree: true};
       const topic = await loadTopicInput(entry, lang);
       if ('error' in topic.base || 'overlayError' in topic.base) {
         const failure =
@@ -202,6 +214,25 @@ export async function compileDocs(project, {lang = null} = {}) {
             message: `${topic.base.file}: ${messageOf(failure)}`,
           }),
         );
+        continue;
+      }
+      // An extension an integration put on a CLI guide that fails to load is
+      // reported against the extension, and withdraws the guide, as a read
+      // does.
+      const brokenExtensions = topic.extensions.filter(
+        file => 'error' in file || 'overlayError' in file,
+      );
+      if (brokenExtensions.length > 0) {
+        for (const file of brokenExtensions) {
+          const at = topic.extensions.indexOf(file);
+          diagnostics.push(
+            diagnostic('error' in file ? 'load_failed' : 'overlay_failed', {
+              provider: file.provider ?? entry.extensions[at]?.package,
+              source: packageSource(entry.extensions[at].path),
+              message: `${file.file}: ${messageOf('error' in file ? file.error : file.overlayError)}`,
+            }),
+          );
+        }
         continue;
       }
       try {

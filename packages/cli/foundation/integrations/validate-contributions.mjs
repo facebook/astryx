@@ -1042,7 +1042,7 @@ function checkTemplateSourcesWithoutDoc(integration, issues) {
     issues.push(
       issueWarning(
         'source_without_template_doc',
-        `Template source "${file}" has no same-stem metadata file ${stem}.doc.mjs, so \`astryx template\` never lists it. Fix: add ${stem}.doc.mjs beside it with type: 'page' or 'block'; \`astryx docs authoring integration-template-doc\` lists its fields. If it is not a template, move it out of the templates root.`,
+        `Template source "${file}" has no same-stem metadata file ${stem}.doc.mjs, so \`astryx template\` never lists it. Fix: add ${stem}.doc.mjs beside it with type: 'page' or 'block'; \`astryx docs make-an-integration integration-template-doc\` lists its fields. If it is not a template, move it out of the templates root.`,
       ),
     );
   }
@@ -1165,7 +1165,7 @@ async function checkComponents(integration, issues) {
       issues.push(
         issueWarning(
           'source_without_component_doc',
-          `Component source "${name}.tsx" has no same-stem metadata file ${name}.doc.mjs, so Astryx ignores it. Fix: add ${name}.doc.mjs beside it with type: 'component'; \`astryx docs authoring component-doc\` lists its fields.${overlap}`,
+          `Component source "${name}.tsx" has no same-stem metadata file ${name}.doc.mjs, so Astryx ignores it. Fix: add ${name}.doc.mjs beside it with type: 'component'; \`astryx docs make-an-integration component-doc\` lists its fields.${overlap}`,
         ),
       );
     }

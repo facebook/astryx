@@ -523,12 +523,12 @@ describe('Project discovery', () => {
       name: 'deploying',
       package: '@acme/widgets',
     });
-    // The CLI's own topics are still there.
-    expect(catalog.resolve('color').package).toBe('@astryxdesign/cli');
+    // The CLI's own guides are still there.
+    expect(catalog.guide('color').package).toBe('@astryxdesign/cli');
     expect(await project.issues()).toEqual([]);
   });
 
-  it('docs() lets an integration replace a built-in topic, aliasing the old name', async () => {
+  it('docs() lets an integration replace a built-in guide, by its old topic name', async () => {
     scaffold({
       docs: {
         'setup.doc.mjs': topicDoc({name: 'setup', replaces: 'getting-started'}),
@@ -536,8 +536,13 @@ describe('Project discovery', () => {
     });
     const project = await Project.load(tmpDir);
     const catalog = await project.docs();
-    expect(catalog.resolve('setup').package).toBe('@acme/widgets');
-    expect(catalog.resolve('getting-started').name).toBe('setup');
+    // `getting-started` became the add-to-a-project guide, which keeps its
+    // route; the replacement's file is what opens there.
+    expect(catalog.guide('getting-started')).toMatchObject({
+      name: 'add-to-a-project',
+      package: '@acme/widgets',
+    });
+    expect(catalog.resolve('setup')).toBeUndefined();
   });
 
   it('docs() records an unusable topic as an issue and contributes none', async () => {

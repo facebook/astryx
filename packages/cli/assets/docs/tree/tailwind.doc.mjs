@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file `astryx docs styling-libraries/tailwind`: the Tailwind v4 bridge,
+ * @file `astryx docs style-components/tailwind`: the Tailwind v4 bridge,
  * cascade layer order, and utility-class usage backed by system tokens.
  */
 
@@ -11,7 +11,7 @@ export const docs = {
   type: 'generic',
   name: 'tailwind',
   title: 'Tailwind',
-  placement: {parent: 'namespace:styling-libraries', slot: 'guides', order: 20},
+  placement: {parent: 'namespace:style-components', slot: 'guides', order: 50},
   category: 'guide',
   description:
     'The Tailwind v4 bridge, cascade layer order, and utility-class usage backed by system tokens.',

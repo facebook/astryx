@@ -9,9 +9,9 @@ const SLOW = 60_000;
 
 describe('docs.index leaf', () => {
   it('lists each section by key, title, and summary', async () => {
-    const res = await index('theme');
+    const res = await index('foundations/principles');
     expect(res.type).toBe('docs.index');
-    expect(res.data).toMatchObject({name: 'theme', title: expect.any(String)});
+    expect(res.data).toMatchObject({name: 'foundations/principles', title: expect.any(String)});
     const keys = res.data.sections.map(s => s.id);
     expect(new Set(keys).size).toBe(keys.length);
     for (const entry of res.data.sections) {
@@ -22,17 +22,17 @@ describe('docs.index leaf', () => {
   }, SLOW);
 
   it('names the sections the full topic has, with the same keys', async () => {
-    const full = await docs('theme');
-    const {data} = await index('theme');
+    const full = await docs('foundations/principles');
+    const {data} = await index('foundations/principles');
     expect(data.sections.map(s => [s.id, s.title])).toEqual(
       full.data.sections.map(s => [s.id, s.title]),
     );
   }, SLOW);
 
   it('keeps every key the same in every language', async () => {
-    const english = (await index('theme')).data.sections.map(s => s.id);
+    const english = (await index('foundations/principles')).data.sections.map(s => s.id);
     for (const lang of ['zh', 'dense']) {
-      const localized = await index('theme', {lang});
+      const localized = await index('foundations/principles', {lang});
       expect(localized.data.sections.map(s => s.id)).toEqual(english);
     }
   }, SLOW);
@@ -55,13 +55,13 @@ describe('docs.index leaf', () => {
 
 describe('docs() topic reads', () => {
   it('returns the whole topic by default', async () => {
-    const res = await docs('theme');
+    const res = await docs('foundations/principles');
     expect(res.type).toBe('docs.detail');
     expect(res.data.sections[0].content.length).toBeGreaterThan(0);
   }, SLOW);
 
   it('returns the section index on request', async () => {
-    const res = await docs('theme', undefined, {index: true});
+    const res = await docs('foundations/principles', undefined, {index: true});
     expect(res.type).toBe('docs.index');
   }, SLOW);
 });

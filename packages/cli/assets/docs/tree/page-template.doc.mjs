@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file `astryx docs authoring/building-blocks/templates/document-the-template/page-template`:
+ * @file `astryx docs make-an-integration/building-blocks/templates/document-the-template/page-template`:
  * the page-only fields that help people find a page.
  */
 

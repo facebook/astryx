@@ -18,7 +18,7 @@ import {
 /** A resolver over two docs, the second from another provider. */
 const resolve = async (/** @type {string} */ target) => {
   const docs = {
-    'command:doctor': {route: 'cli/commands/doctor', title: 'astryx doctor'},
+    'command:doctor': {route: 'reference/commands/doctor', title: 'astryx doctor'},
     '@acme/kit:generic:setup': {route: 'acme/setup', title: 'Set up Acme'},
   };
   const doc = /** @type {any} */ (docs)[target];
@@ -72,10 +72,10 @@ describe('linkBlocks', () => {
     );
     expect(problems).toEqual([]);
     expect(content[0].text).toBe(
-      'Check it with `astryx docs cli/commands/doctor`.',
+      'Check it with `astryx docs reference/commands/doctor`.',
     );
     expect(content[1].items).toEqual(['See `astryx docs acme/setup`']);
-    expect(content[2].rows).toEqual([['`astryx docs cli/commands/doctor`']]);
+    expect(content[2].rows).toEqual([['`astryx docs reference/commands/doctor`']]);
     // Code is an example: it is shown as written.
     expect(content[3].code).toBe('{@link command:doctor}');
   });
@@ -92,7 +92,7 @@ describe('linkBlocks', () => {
     );
     expect(problems).toEqual([]);
     expect(content[0].text).toBe(
-      'Write `{@link <target>}` to link; `astryx docs cli/commands/doctor` checks it.',
+      'Write `{@link <target>}` to link; `astryx docs reference/commands/doctor` checks it.',
     );
   });
 
@@ -109,12 +109,12 @@ describe('linkBlocks', () => {
     );
     expect(problems).toEqual([]);
     expect(content[0].link).toMatchObject({
-      route: 'cli/commands/doctor',
-      command: 'astryx docs cli/commands/doctor',
+      route: 'reference/commands/doctor',
+      command: 'astryx docs reference/commands/doctor',
       title: 'astryx doctor',
     });
     expect(content[1].steps[0].links[0].command).toBe(
-      'astryx docs cli/commands/doctor',
+      'astryx docs reference/commands/doctor',
     );
   });
 
@@ -145,7 +145,7 @@ describe('linkBlocks', () => {
     // A target that names no doc is never handed to the includer.
     expect(asked).toEqual(['command:doctor', 'command:doctor']);
     expect(content[0]).toMatchObject({
-      link: {command: 'astryx docs cli/commands/doctor'},
+      link: {command: 'astryx docs reference/commands/doctor'},
       content: [{type: 'prose', text: 'The doctor command.'}],
     });
     expect(content[2]).toEqual({
@@ -237,13 +237,13 @@ describe('linkFields', () => {
     const {doc, problems} = await linkFields(DOC, resolve);
     expect(doc).toEqual({
       ...DOC,
-      description: 'Run `astryx docs cli/commands/doctor` first.',
+      description: 'Run `astryx docs reference/commands/doctor` first.',
       usage: {
         description: 'Set it up: `astryx docs acme/setup`.',
         bestPractices: [
           {
             guidance: true,
-            description: 'Check with `astryx docs cli/commands/doctor`.',
+            description: 'Check with `astryx docs reference/commands/doctor`.',
           },
         ],
       },
@@ -254,10 +254,10 @@ describe('linkFields', () => {
             'Like `{@link command:doctor}`, or {@link generic:nope}.',
         },
       ],
-      propDescriptions: {tone: 'See `astryx docs cli/commands/doctor`.'},
+      propDescriptions: {tone: 'See `astryx docs reference/commands/doctor`.'},
       examples: [
         {
-          label: 'From `astryx docs cli/commands/doctor`',
+          label: 'From `astryx docs reference/commands/doctor`',
           code: '{@link command:doctor}',
         },
       ],

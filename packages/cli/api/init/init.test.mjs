@@ -5,7 +5,7 @@
  * harness) against a throwaway cwd, asserting the receipt, the on-disk effects,
  * cwd honoring, silence-by-default, and the exact lines emitted through the
  * injected logger (the CLI's byte-for-byte source). Command-level behavior
- * (flag parsing, exit codes) is covered by cli/commands/init.behavior.test.mjs.
+ * (flag parsing, exit codes) is covered by reference/commands/init.behavior.test.mjs.
  */
 
 import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';

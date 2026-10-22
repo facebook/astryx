@@ -604,7 +604,7 @@ describe('formatCliCommand', () => {
     const dir = makeTmpDir();
     fs.writeFileSync(path.join(dir, 'package-lock.json'), '{}');
     linkCliBin(dir);
-    expect(formatCliCommand('docs tokens', dir)).toBe('npx astryx docs tokens');
+    expect(formatCliCommand('docs foundations/all-tokens', dir)).toBe('npx astryx docs foundations/all-tokens');
   });
 
   it('rewrites to the scoped package for one-off invocations', () => {
@@ -641,8 +641,8 @@ describe('the picker: declared cliCommand, then the door, then the guess', () =>
       {name: '@acme/b', cliCommand: 'acme astryx'},
     ]);
     expect(getCliInvocation(dir)).toBe('acme astryx');
-    expect(formatCliCommand('astryx docs tokens', dir)).toBe(
-      'acme astryx docs tokens',
+    expect(formatCliCommand('astryx docs foundations/all-tokens', dir)).toBe(
+      'acme astryx docs foundations/all-tokens',
     );
     expect(guessCliInvocation(dir)).toBe('pnpm exec astryx');
   });
@@ -692,9 +692,9 @@ describe('prefixCliCommands', () => {
 
   it('prefixes inline code spans that run the CLI', () => {
     expect(
-      shown('Run `astryx docs theme`, then `astryx`. Not `astryx.config.ts`.'),
+      shown('Run `astryx docs theme-your-app`, then `astryx`. Not `astryx.config.ts`.'),
     ).toBe(
-      'Run `acme astryx docs theme`, then `acme astryx`. Not `astryx.config.ts`.',
+      'Run `acme astryx docs theme-your-app`, then `acme astryx`. Not `astryx.config.ts`.',
     );
   });
 
@@ -725,8 +725,8 @@ describe('prefixCliCommands', () => {
 
   it("follows one code block's language", () => {
     expect(shown('astryx docs', 'bash')).toBe('acme astryx docs');
-    expect(shown('1. Read `astryx docs cli`.', 'text')).toBe(
-      '1. Read `acme astryx docs cli`.',
+    expect(shown('1. Read `astryx docs reference`.', 'text')).toBe(
+      '1. Read `acme astryx docs reference`.',
     );
     expect(shown("const run = 'astryx docs';", 'ts')).toBe(
       "const run = 'astryx docs';",

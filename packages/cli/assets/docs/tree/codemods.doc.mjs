@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file `astryx docs authoring/building-blocks/codemods`: add codemods to an
+ * @file `astryx docs make-an-integration/building-blocks/codemods`: add codemods to an
  * integration package, and know which of them `astryx upgrade` runs in an app.
  */
 
@@ -149,7 +149,7 @@ Applying integration codemods...
       content: [
         {
           type: 'prose',
-          text: "In global mode: inside an app, `upgrade` runs with the release equal to the app's Core, whichever copy of the CLI the user starts, and only the codemods of integrations the app installs run. Outside a project, `upgrade` lists codemods and migrates nothing. See {@link namespace:global} and {@link command:upgrade}.",
+          text: "In global mode: inside an app, `upgrade` runs with the release equal to the app's Core, whichever copy of the CLI the user starts, and only the codemods of integrations the app installs run. Outside a project, `upgrade` lists codemods and migrates nothing. See {@link namespace:on-your-computer} and {@link command:upgrade}.",
         },
       ],
     },

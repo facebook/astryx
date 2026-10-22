@@ -10,7 +10,7 @@ export const doc = {
   type: 'function',
   kind: 'api',
   name: 'gapReport',
-  namespace: 'cli/api',
+  namespace: 'reference/api',
   displayName: 'gapReport()',
   summary:
     'Report a missing or hard-to-use design-system capability to the package that owns it.',

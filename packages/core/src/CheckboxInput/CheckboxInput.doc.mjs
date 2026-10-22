@@ -126,7 +126,7 @@ export const docs = {
       name: 'labelIcon',
       type: 'ReactNode | IconType',
       description:
-        'Semantic icon name or custom content displayed before the label text. See `astryx docs icons` for valid semantic names.',
+        'Semantic icon name or custom content displayed before the label text. See `astryx docs foundations/icons` for valid semantic names.',
     },
     {
       name: 'status',

@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file `astryx docs authoring/building-blocks/templates/start-a-template`:
+ * @file `astryx docs make-an-integration/building-blocks/templates/start-a-template`:
  * what a template is, why an integration shares one, whether it is a page or
  * a block, and how to add one.
  */
@@ -145,7 +145,7 @@ Declare template root ./templates in astryx.integration.mjs.
       content: [
         {
           type: 'prose',
-          text: 'In global mode: when users install your package for their computer, beside the global CLI, your templates show up in folders outside any project; inside a project, only if the project installs your package. See {@link namespace:global} and {@link generic:global-integrations}.',
+          text: 'In global mode: when users install your package for their computer, beside the global CLI, your templates show up in folders outside any project; inside a project, only if the project installs your package. See {@link namespace:on-your-computer} and {@link generic:global-integrations}.',
         },
       ],
     },

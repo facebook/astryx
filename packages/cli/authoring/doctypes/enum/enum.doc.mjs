@@ -51,7 +51,7 @@ export const doc = {
       name: 'namespace',
       type: 'string',
       description:
-        "Optional in the type, but every doc the CLI ships declares it. The group that reads this doc. The CLI's enums use 'cli/api', which the docs tree adopts by kind: each is the leaf `cli/api/enums/<name>`. Every enum doc the CLI ships declares one, and `astryx doctor` fails on one that is missing or that nothing reads.",
+        "Optional in the type, but every doc the CLI ships declares it. The group that reads this doc. The CLI's enums use 'reference/api', which the docs tree adopts by kind: each is the leaf `reference/api/enums/<name>`. Every enum doc the CLI ships declares one, and `astryx doctor` fails on one that is missing or that nothing reads.",
     },
     {
       name: 'aliases',
@@ -94,7 +94,7 @@ export const doc = {
   type: 'enum',
   name: 'error-codes',
   displayName: 'Error Codes',
-  namespace: 'cli/api',
+  namespace: 'reference/api',
   description: 'Stable error codes thrown by the CLI/API and surfaced in the JSON envelope.',
   members: [
     {value: 'ERR_UNKNOWN_TOPIC', description: 'The requested docs topic does not exist.'},

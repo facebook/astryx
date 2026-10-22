@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file `astryx docs authoring/building-blocks/configuration/agent-guidance`: add short lines of
+ * @file `astryx docs make-an-integration/building-blocks/configuration/agent-guidance`: add short lines of
  * guidance that apps put in front of their AI agents, within the limits.
  */
 
@@ -144,7 +144,7 @@ astryx upgrade --from <version> --apply`,
       content: [
         {
           type: 'prose',
-          text: "In global mode: the agent guide the CLI keeps for the computer carries no integration's guidance, because it serves every folder; your guidance reaches agents through the agent docs `init` writes in an app that installs your package. See {@link namespace:global} and {@link generic:computer-agent-guide}.",
+          text: "In global mode: the agent guide the CLI keeps for the computer carries no integration's guidance, because it serves every folder; your guidance reaches agents through the agent docs `init` writes in an app that installs your package. See {@link namespace:on-your-computer} and {@link generic:computer-agent-guide}.",
         },
       ],
     },

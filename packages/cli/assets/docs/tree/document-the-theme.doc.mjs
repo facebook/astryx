@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file `astryx docs authoring/building-blocks/themes/document-the-theme`:
+ * @file `astryx docs make-an-integration/building-blocks/themes/document-the-theme`:
  * document a theme by extending the core theme topic, not in agent guidance.
  */
 
@@ -13,15 +13,15 @@ export const docs = {
   title: 'Document the theme',
   category: 'guide',
   description:
-    'Document a theme by extending the core theme topic, so an app reads it in {@link generic:theme}.',
+    'Document a theme by extending the Core use-a-theme guide, so an app reads it in {@link generic:use-a-theme}.',
   sections: [
     {
       id: 'extend-the-theme-topic',
-      title: 'Extend the core theme topic',
+      title: 'Extend the Core theme guide',
       content: [
         {
           type: 'prose',
-          text: "Give your theme a doc topic that extends the core `theme` topic, so an app that lists your package sees your theme at the end of {@link generic:theme}. Add it with `extends: 'theme'` ({@link generic:extend-or-replace}).",
+          text: "Give your theme a doc topic that extends the Core `use-a-theme` guide, so an app that lists your package sees your theme at the end of {@link generic:use-a-theme}. Add it with `extends: 'use-a-theme'` ({@link generic:extend-or-replace}).",
         },
         {
           type: 'code',
@@ -31,7 +31,7 @@ export const docs = {
 export default {
   type: 'generic',
   name: 'ocean-theme',
-  extends: 'theme',
+  extends: 'use-a-theme',
   title: 'Ocean theme',
   description: 'Use the Ocean theme from @acme/astryx-widgets.',
   sections: [

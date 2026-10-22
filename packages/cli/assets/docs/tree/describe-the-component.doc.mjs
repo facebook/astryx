@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file `astryx docs authoring/building-blocks/components/describe-the-component`:
+ * @file `astryx docs make-an-integration/building-blocks/components/describe-the-component`:
  * choose and maintain the ComponentDoc shape that matches a component's public
  * source.
  */

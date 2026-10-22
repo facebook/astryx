@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file `astryx docs global/computer-integrations`: integrations installed next to the
+ * @file `astryx docs get-started/on-your-computer/computer-integrations`: integrations installed next to the
  * global install, where they work, and how to see them (spec AST-081 FR12).
  */
 
@@ -10,7 +10,7 @@ export const docs = {
   type: 'generic',
   name: 'computer-integrations',
   placement: {
-    parent: 'namespace:global',
+    parent: 'namespace:on-your-computer',
     slot: 'guides',
     order: 6,
   },
@@ -85,7 +85,7 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'This page is part of {@link namespace:global}, which explains what global mode is and how each part works. Building an integration: {@link generic:global-integrations}.',
+          text: 'This page is part of {@link namespace:on-your-computer}, which explains what global mode is and how each part works. Building an integration: {@link generic:global-integrations}.',
         },
       ],
     },

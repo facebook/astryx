@@ -9,7 +9,7 @@ export const doc = {
   type: 'function',
   kind: 'api',
   name: 'themeEject',
-  namespace: 'cli/api',
+  namespace: 'reference/api',
   displayName: 'themeEject()',
   summary: 'Eject an available theme into a project as editable source.',
   description:

@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file `astryx docs layout/side-panels`: add a master-detail side panel
+ * @file `astryx docs build-a-page/side-panels`: add a master-detail side panel
  * that opens on row select instead of navigating away.
  */
 
@@ -11,7 +11,7 @@ export const docs = {
   type: 'generic',
   name: 'side-panels',
   title: 'Side panels',
-  placement: {parent: 'namespace:layout', slot: 'guides', order: 35},
+  placement: {parent: 'namespace:build-a-page', slot: 'guides', order: 35},
   category: 'guide',
   description:
     'Add a master-detail side panel that opens on row select instead of navigating away.',

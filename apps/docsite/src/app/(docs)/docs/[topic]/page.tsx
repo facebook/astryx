@@ -12,7 +12,7 @@
 
 import type {Metadata} from 'next';
 import {notFound} from 'next/navigation';
-import {docTopics} from '../../../../generated/docsRegistry';
+import {docGuides, docTopics} from '../../../../generated/docsRegistry';
 import {
   packages,
   type PackageMeta,
@@ -21,6 +21,7 @@ import {components} from '../../../../generated/componentRegistry';
 import {ReferenceDocView} from '../../../../components/docs/ReferenceDocView';
 import {TokensDocView} from '../../../../components/docs/TokensDocView';
 import {PackageStubPage} from '../../../../components/docs/PackageStubPage';
+import {AskYourAgent} from '../../../../components/docs/AskYourAgent';
 import {type InstallStep} from '../../../../components/docs/PackageActions';
 import {linkifyDocSections} from '../../../../components/docs/docsLinkify';
 import {pageMetadata} from '../../../../lib/pageMetadata';
@@ -31,15 +32,8 @@ const componentNames = Object.values(components)
   .flat()
   .map(c => c.name);
 
-const TOKEN_TOPICS = new Set([
-  'tokens',
-  'color',
-  'elevation',
-  'motion',
-  'shape',
-  'spacing',
-  'typography',
-]);
+/** Pages whose token sections render as live token tables. */
+const TOKEN_TOPICS = new Set(['foundations']);
 
 function slugToPackageName(slug: string): string {
   return `@astryxdesign/${slug}`;
@@ -126,9 +120,10 @@ export default async function DocPage({
 
   const topic = docTopics.find(d => d.topic === slug);
   if (topic) {
-    const isTokenTopic =
-      topic.category === 'foundations' && TOKEN_TOPICS.has(topic.topic);
+    const isTokenTopic = TOKEN_TOPICS.has(topic.topic);
     const sections = linkifyDocSections(topic.sections, componentNames);
+    const guide = docGuides.find(each => each.topic === topic.topic);
+    const footer = guide ? <AskYourAgent command={guide.command} /> : null;
 
     return isTokenTopic ? (
       <TokensDocView
@@ -136,12 +131,14 @@ export default async function DocPage({
         description={topic.description}
         sections={sections}
         topic={topic.topic}
+        footer={footer}
       />
     ) : (
       <ReferenceDocView
         title={topic.title}
         description={topic.description}
         sections={sections}
+        footer={footer}
       />
     );
   }

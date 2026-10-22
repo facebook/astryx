@@ -9,7 +9,7 @@ export const doc = {
   type: 'function',
   kind: 'api',
   name: 'themeListCopySources',
-  namespace: 'cli/api',
+  namespace: 'reference/api',
   displayName: 'themeListCopySources()',
   summary: 'List themes the source-copy form of theme add can copy.',
   description:

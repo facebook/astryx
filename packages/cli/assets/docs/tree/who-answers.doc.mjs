@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file `astryx docs global/who-answers`: which version answers in each folder, the
+ * @file `astryx docs get-started/on-your-computer/who-answers`: which version answers in each folder, the
  * hand-off, and how to see who answered (spec AST-081 FR2, FR3, FR5, FR9).
  */
 
@@ -10,7 +10,7 @@ export const docs = {
   type: 'generic',
   name: 'who-answers',
   placement: {
-    parent: 'namespace:global',
+    parent: 'namespace:on-your-computer',
     slot: 'guides',
     order: 3,
   },
@@ -86,7 +86,7 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: 'With `--json` nothing extra prints; every result carries `meta.answeredBy` instead ({@link generic:reference}):',
+          text: 'With `--json` nothing extra prints; every result carries `meta.answeredBy` instead ({@link generic:global-mode}):',
         },
         {
           type: 'code',
@@ -111,7 +111,7 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'This page is part of {@link namespace:global}, which explains what global mode is and how each part works. To check your computer, run `astryx doctor` outside any project ({@link command:doctor}). Monorepos: {@link generic:monorepos}.',
+          text: 'This page is part of {@link namespace:on-your-computer}, which explains what global mode is and how each part works. To check your computer, run `astryx doctor` outside any project ({@link command:doctor}). Monorepos: {@link generic:monorepos}.',
         },
       ],
     },

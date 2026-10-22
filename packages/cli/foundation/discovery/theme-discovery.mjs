@@ -1361,7 +1361,7 @@ export function discoverThemeDirectory(
           : evidence.includes('/')
             ? `; "${evidence}" is in a subfolder`
             : ` beside "${evidence}"`;
-      const themeDoc = formatCliCommand('docs authoring theme-doc', sourceDir);
+      const themeDoc = formatCliCommand('docs make-an-integration theme-doc', sourceDir);
       const fix =
         docs.length > 1
           ? `Fix: keep the one descriptor that shares its stem with the theme's source and delete the rest.`

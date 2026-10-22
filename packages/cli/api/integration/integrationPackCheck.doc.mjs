@@ -5,7 +5,7 @@ export const doc = {
   type: 'function',
   kind: 'api',
   name: 'integrationPackCheck',
-  namespace: 'cli/api',
+  namespace: 'reference/api',
   displayName: 'integrationPackCheck()',
   summary: 'Check an integration package the way npm will publish it.',
   description:

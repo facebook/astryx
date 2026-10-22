@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file `astryx docs migration/migration-setup`: theme and CSS setup,
+ * @file `astryx docs upgrade-and-migrate/from-tailwind-shadcn-radix/migration-setup`: theme and CSS setup,
  * cascade layer safety, layer audit, and the foundation smoke test.
  */
 
@@ -11,18 +11,16 @@ export const docs = {
   type: 'generic',
   name: 'migration-setup',
   title: 'Setup',
-  placement: {parent: 'namespace:migration', slot: 'guides', order: 10},
+  placement: {parent: 'namespace:from-tailwind-shadcn-radix', slot: 'guides', order: 10},
   category: 'guide',
   description:
     'Install the theme, wire CSS layers, audit resets, and run the foundation smoke test before migrating any surface.',
   keywords: [
-    'setup',
-    'theme',
     'reset',
     'smoke test',
     'layer audit',
     'cascade layers',
-    'Tailwind coexistence',
+    'Tailwind coexistence'
   ],
 
   sections: [
@@ -70,9 +68,9 @@ export const docs = {
           type: 'code',
           lang: 'bash',
           label: 'Migration-oriented CLI pass',
-          code: `astryx docs migration
-astryx docs theme
-astryx docs styling
+          code: `astryx docs upgrade-and-migrate/from-tailwind-shadcn-radix
+astryx docs theme-your-app
+astryx docs style-components
 astryx template --list --type block
 astryx template AppShellTopNavWithSideNav --skeleton
 astryx template PopoverSettingsPanel --skeleton
@@ -85,13 +83,13 @@ astryx component TextInput`,
         },
         {
           type: 'prose',
-          text: 'For a shorter read to paste into an AI coding tool, see {@link generic:working-with-ai}. Use `--json` when building automated migration reports.',
+          text: 'For a shorter read to paste into an AI coding tool, see {@link generic:agent-setup}. Use `--json` when building automated migration reports.',
         },
         {
           type: 'code',
           lang: 'bash',
           label: 'Short and JSON modes',
-          code: `astryx docs migration --full --detail brief
+          code: `astryx docs upgrade-and-migrate/from-tailwind-shadcn-radix --full --detail brief
 astryx component Button --json`,
         },
       ],

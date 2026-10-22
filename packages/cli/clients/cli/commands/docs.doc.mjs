@@ -12,7 +12,7 @@ export const doc = {
   type: 'command',
   name: 'docs',
   displayName: 'astryx docs',
-  namespace: 'cli/commands',
+  namespace: 'reference/commands',
   summary: 'Print reference docs',
   description:
     'Reads the reference docs one level at a time: with no topic it lists every topic; a ' +
@@ -20,10 +20,10 @@ export const doc = {
     'prints whole); a topic plus a section prints that section; `--full` prints the whole ' +
     'topic, as does `--dense`. With `--json`, a topic returns its whole doc, as docs() ' +
     'does, and `--index` its section index. A route ' +
-    'opens a node of the docs tree: `cli` lists its guides and reference, ' +
-    '`cli/api/functions` lists every API function, and `cli/api/functions/search` prints ' +
+    'opens a node of the docs tree: `build-a-page` lists its guides, ' +
+    '`reference/api/functions` lists every API function, and `reference/api/functions/search` prints ' +
     'one. A namespace plus a section prints that section from the one guide below it ' +
-    'that has it (`astryx docs layout side-panels`). `--depth` reads as far down the tree as you ask, from the doc alone (0) to ' +
+    'that has it (`astryx docs build-a-page side-panels`). `--depth` reads as far down the tree as you ask, from the doc alone (0) to ' +
     'everything below it (all), and with it `--detail` sets how much of each doc below ' +
     'shows: one line (brief, the default), its sections (compact), or all of it (full).',
   fn: 'docs',
@@ -51,17 +51,17 @@ export const doc = {
   ],
   examples: [
     {label: 'List topics', cli: 'astryx docs'},
-    {label: "A topic's sections", cli: 'astryx docs theme'},
-    {label: 'A whole topic as JSON', cli: 'astryx docs spacing --json'},
-    {label: 'One section', cli: 'astryx docs theme quick-start'},
-    {label: 'The CLI docs tree', cli: 'astryx docs cli'},
-    {label: 'Every CLI doc, one line each', cli: 'astryx docs cli --depth all'},
+    {label: "A topic's sections", cli: 'astryx docs theme-your-app'},
+    {label: 'A whole topic as JSON', cli: 'astryx docs foundations/spacing --json'},
+    {label: 'One section', cli: 'astryx docs theme-your-app quick-start'},
+    {label: 'The CLI docs tree', cli: 'astryx docs reference'},
+    {label: 'Every CLI doc, one line each', cli: 'astryx docs reference --depth all'},
     {
       label: 'The integration guides as one read',
-      cli: 'astryx docs authoring --depth all --detail full',
+      cli: 'astryx docs make-an-integration --depth all --detail full',
     },
-    {label: 'One API function', cli: 'astryx docs cli/api/functions/search'},
-    {label: 'A whole guide', cli: 'astryx docs authoring/quick-start --full'},
+    {label: 'One API function', cli: 'astryx docs reference/api/functions/search'},
+    {label: 'A whole guide', cli: 'astryx docs make-an-integration/quick-start --full'},
   ],
   outsideProject: 'same',
   exitCodes: [

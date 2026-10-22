@@ -13,6 +13,7 @@
 import fs from 'node:fs';
 
 import {builtinGuideFiles, loadTopicModule} from './docs-discovery.mjs';
+import {RENAMED_TOPICS} from './renamed-docs.mjs';
 
 /** The shortest run of identical words reported as a copy. */
 export const PASSAGE_WORDS = 10;
@@ -494,7 +495,14 @@ export async function findCopiedPassages(discovered) {
    * The page a topic's sections show on: its own, or the one it extends.
    * @param {GuideWords} each
    */
-  const pageOf = each => (each.extendsTopic ?? each.name).toLowerCase();
+  const pageOf = each => {
+    const page = (each.extendsTopic ?? each.name).toLowerCase();
+    // A former Core topic's name lands on the guide that took its text,
+    // unless a package topic of that name replaces it.
+    return each.extendsTopic != null && !packageNames.has(page)
+      ? (RENAMED_TOPICS[page] ?? page)
+      : page;
+  };
   /** @type {import('../../api/integration/authoring-checks.type.mjs').CopiedPassage[]} */
   const found = [];
   /**

@@ -154,7 +154,7 @@ describe('analyzeTemplateNeeds', () => {
     expect(result.notes).toEqual(
       expect.arrayContaining([
         expect.stringContaining('StyleX'),
-        expect.stringContaining('styling-overview'),
+        expect.stringContaining('style-components/css-setup'),
       ]),
     );
   });

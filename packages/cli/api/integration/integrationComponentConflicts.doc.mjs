@@ -7,7 +7,7 @@ export const doc = {
   type: 'function',
   kind: 'api',
   name: 'integrationComponentConflicts',
-  namespace: 'cli/api',
+  namespace: 'reference/api',
   displayName: 'integrationComponentConflicts()',
   summary:
     'Check integration component names, replaces declarations, and documented props.',

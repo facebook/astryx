@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file `astryx docs migration/component-migration`: migrate the app frame,
+ * @file `astryx docs upgrade-and-migrate/from-tailwind-shadcn-radix/component-migration`: migrate the app frame,
  * map shadcn/Radix primitives, and wire up command palette, settings, and
  * theme controls.
  */
@@ -12,7 +12,7 @@ export const docs = {
   type: 'generic',
   name: 'component-migration',
   title: 'Component Migration',
-  placement: {parent: 'namespace:migration', slot: 'guides', order: 20},
+  placement: {parent: 'namespace:from-tailwind-shadcn-radix', slot: 'guides', order: 20},
   category: 'guide',
   description:
     'Move the app frame first, map shadcn and Radix primitives to components, and wire up command palette, settings, and theme controls.',

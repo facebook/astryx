@@ -614,7 +614,7 @@ Start here:
 - **Empty positional arguments are rejected** → omit `""` when the intended operation is to list entries.
 - **Integration validation needs a package** → run it where `package.json` exists, or handle exit 1.
 - **Astryx-prefixed agent variables are removed** → use `AGENT` and `AGENT_SESSION_ID`; agent metadata has no replacement.
-- **The `layout` command group is removed** → use `astryx build`, `astryx template`, or `astryx docs layout`.
+- **The `layout` command group is removed** → use `astryx build`, `astryx template`, or `astryx docs build-a-page`.
 - **Private theme variables fail the build** → fix every reported private `--_*` input instead of relying on exit 0.
 - **Doctor fails on unloadable configured projects** → install or repair the named integration, remove it from config, or fix the reported field.
 
@@ -655,7 +655,7 @@ Start here:
 15. **Standalone filter editors do not save on open** ([#7347](https://github.com/facebook/astryx/pull/7347)) — save at the callsite that opens an already-complete empty-operator filter, or skip opening it; no codemod.
 16. **Astryx-prefixed agent variables are removed** ([#7127](https://github.com/facebook/astryx/pull/7127)) — replace `ASTRYX_AGENT_ID` and `ASTRYX_AGENT_SESSION_ID` with `AGENT` and `AGENT_SESSION_ID`; metadata has no replacement and no codemod.
 17. **Theme styling uses current names and data attributes** ([#7302](https://github.com/facebook/astryx/pull/7302)) — replace 21 old styling names and bare state classes; `migrate-deprecated-theme-surface` rewrites known keys and selectors and marks ambiguous cases.
-18. **The `layout` command group is removed** ([#7137](https://github.com/facebook/astryx/pull/7137)) — use `astryx build`, `astryx template`, and `astryx docs layout`; no codemod.
+18. **The `layout` command group is removed** ([#7137](https://github.com/facebook/astryx/pull/7137)) — use `astryx build`, `astryx template`, and `astryx docs build-a-page`; no codemod.
 19. **`reset.css` reaches pseudo-elements and search fields** ([#7355](https://github.com/facebook/astryx/pull/7355)) — add your own later-layer `box-sizing`, border, placeholder color, or search appearance only when you need the old browser result; no codemod.
 20. **Private theme variables fail the build** ([#6872](https://github.com/facebook/astryx/pull/6872)) — fix every reported private `--_*` input instead of relying on exit 0; no codemod.
 21. **BottomSheet adds default content padding** ([#6884](https://github.com/facebook/astryx/pull/6884)) — remove duplicate caller padding or pass `padding={0}` for the old box; `preserve-bottom-sheet-content-padding` skips a sole Section or Layout, marks nested Layouts with a TODO, and otherwise adds `padding={0}`. Remove that added prop when your theme already sets BottomSheet padding so the theme inset remains.

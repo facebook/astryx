@@ -239,10 +239,10 @@ describe('site search links', () => {
 
   it('opens a doc section at its anchor', () => {
     const href = searchResultHref(
-      {domain: 'doc', name: 'author-a-theme', section: 'palette'},
+      {domain: 'doc', name: 'theme-your-app/author-a-theme', section: 'palette'},
       links,
     );
-    expect(href).toMatch(/^\/docs\/theme#/);
+    expect(href).toMatch(/^\/docs\/theme-your-app#/);
   });
 });
 

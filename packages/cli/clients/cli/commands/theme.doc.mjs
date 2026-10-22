@@ -10,7 +10,7 @@ export const doc = {
   type: 'command',
   name: 'theme',
   displayName: 'astryx theme',
-  namespace: 'cli/commands',
+  namespace: 'reference/commands',
   summary: 'Add, switch, build, and author themes',
   description:
     'The theme command group. Add built themes to an app, choose its default, remove them, list available and added themes, or eject source to make a local fork. The authoring commands build themes, generate palettes, write the annotated template, and list component theme targets.',

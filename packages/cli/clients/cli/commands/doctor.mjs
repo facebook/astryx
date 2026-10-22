@@ -149,7 +149,7 @@ function docTypesBlocks(report, failed) {
       }),
       text(
         `${report.findings.length} doc field(s) in ${files} file(s) do not match the authoring types. ` +
-          'These are warnings; `astryx docs authoring` lists every field.',
+          'These are warnings; `astryx docs make-an-integration` lists every field.',
       ),
     );
   }

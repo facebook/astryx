@@ -5,7 +5,7 @@ export const doc = {
   type: 'command',
   name: 'integration pack',
   displayName: 'astryx integration pack',
-  namespace: 'cli/commands',
+  namespace: 'reference/commands',
   summary: 'Deprecated: the old name of `integration verify`',
   description:
     '`astryx integration pack --check` is the name this check had before {@link command:integration verify}. It still runs the same check, with the same output, JSON, and exit codes, and prints a note that names `integration verify`. It will be removed in a later release. Outside a package it writes nothing and reports one failed check, no_package, naming the integration package it needs (exit 1).',
@@ -31,7 +31,7 @@ export const doc = {
   notes: [
     {
       type: 'prose',
-      text: "In global mode: outside a package, `integration pack --check` writes nothing, reports one failed check, `no_package`, and exits 1. In a project, the project's version of Astryx runs it, whichever astryx command you start. See {@link namespace:global} and {@link generic:global-integrations}.",
+      text: "In global mode: outside a package, `integration pack --check` writes nothing, reports one failed check, `no_package`, and exits 1. In a project, the project's version of Astryx runs it, whichever astryx command you start. See {@link namespace:on-your-computer} and {@link generic:global-integrations}.",
     },
   ],
 };

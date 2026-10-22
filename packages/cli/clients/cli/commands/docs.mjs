@@ -21,7 +21,7 @@
  *   astryx docs <topic> <section>        Print one section
  *   astryx docs <topic> --full           Print the whole topic
  *   astryx docs <route>                  Open a node of the docs tree, such as
- *                                        cli, cli/api, or cli/api/functions/search
+ *                                        cli, reference/api, or reference/api/functions/search
  *   astryx docs <route> --depth <n|all>  Read that many levels below it
  */
 
@@ -31,6 +31,9 @@ import {
   prefixCliCommands,
 } from '../../../foundation/env/package-manager.mjs';
 import {jsonOut} from '../../../foundation/response/json.mjs';
+
+/** The package that owns the CLI's own docs: its guides print unlabeled. */
+const CLI_PACKAGE = '@astryxdesign/cli';
 import {
   emit,
   section,
@@ -659,35 +662,45 @@ export function registerDocs(program) {
 
       switch (result.type) {
         case 'docs.list': {
-          // The text view mirrors the JSON list, with the docs tree's
-          // namespaces (`meta.namespaces`) first under their own heading: that
-          // is where the CLI's own docs start, and a namespace reads
-          // differently from a topic.
-          const namespaces = result.meta?.namespaces ?? [];
+          // The text view mirrors the JSON list: the docs tree's roots
+          // (`meta.namespaces`) first, in reading order — the twelve guides,
+          // then Reference — each with its one-line promise. A package other
+          // than the CLI is named on its own entries, and an integration's
+          // flat topics follow under their own heading.
+          const roots = (result.meta?.namespaces ?? []).map(entry =>
+            entry.package === CLI_PACKAGE
+              ? {topic: entry.topic, description: entry.description}
+              : entry,
+          );
           const topics = result.data;
           emit(
-            ...(namespaces.length > 0
+            ...(roots.length > 0
               ? [
-                  section('Docs tree'),
-                  records(namespaces, {
+                  section('Guides'),
+                  records(roots, {
                     fields: ['topic', 'description', 'package'],
                     layout: 'inline',
                   }),
                 ]
               : []),
-            section('Topics'),
-            records(topics, {
-              fields: ['topic', 'description', 'package'],
-              layout: 'inline',
-            }),
+            ...(topics.length > 0
+              ? [
+                  section('Topics'),
+                  records(topics, {
+                    fields: ['topic', 'description', 'package'],
+                    layout: 'inline',
+                  }),
+                ]
+              : []),
             text(
               [
                 `Usage: ${run} docs <topic>                  list a topic's sections`,
                 `       ${run} docs <topic> <section>        read one section`,
                 `       ${run} docs <topic> --full           read the whole topic`,
-                `       ${run} docs cli/api                  go down the docs tree one level at a time`,
-                `       ${run} docs cli --depth all          every doc below cli, one line each`,
-                `With --json, a topic returns its whole doc; add --index for its section list.`,
+                `       ${run} docs build-a-page/scaffold    go down the docs tree one level at a time`,
+                `       ${run} docs reference --depth all    every doc below reference, one line each`,
+                `With --json, a read returns the whole guide; add --index for its section list.`,
+                `Every command and API function is under reference.`,
               ].join('\n'),
             ),
             // A package whose doc files did not load has no topics here; say

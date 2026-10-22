@@ -192,7 +192,7 @@ export function addDocHelp(cmd, doc) {
       ...(label ? [`  # ${label}`] : []),
       `  ${formatCliCommand(cli)}`,
     ]);
-    const more = `More: ${formatCliCommand(`docs cli/commands/${routeSegment(doc.name)}`)}`;
+    const more = `More: ${formatCliCommand(`docs reference/commands/${routeSegment(doc.name)}`)}`;
     const blocks = examples.length > 0 ? [['Examples:', ...examples].join('\n'), more] : [more];
     return `\n${text(blocks.join('\n\n')).toString()}`;
   });

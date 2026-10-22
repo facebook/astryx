@@ -7,7 +7,7 @@ export const doc = {
   type: 'command',
   name: 'doctor integration components',
   displayName: 'astryx doctor integration components',
-  namespace: 'cli/commands',
+  namespace: 'reference/commands',
   summary:
     'Check integration component names, replacements, and documented props',
   description:

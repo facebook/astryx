@@ -72,7 +72,7 @@ const SETUP = {
           target: '@astryxdesign/cli:function:docs',
           presentation: 'summary',
         },
-        {type: 'reference', target: '@astryxdesign/cli:generic:theme'},
+        {type: 'reference', target: '@astryxdesign/cli:generic:use-a-theme'},
       ],
     },
   ],
@@ -107,7 +107,7 @@ const BROKEN = {
         },
         {
           type: 'reference',
-          target: '@astryxdesign/cli:generic:theme',
+          target: '@astryxdesign/cli:generic:use-a-theme',
           presentation: 'full',
         },
       ],
@@ -184,7 +184,7 @@ describe('a reference block in a topic section', () => {
       expect(table.rows.map(row => row[0])).toEqual(['components', 'docs']);
       expect(section.content[2]).toEqual({
         type: 'prose',
-        text: 'From Astryx Integration: `astryx docs authoring integration`',
+        text: 'From Astryx Integration: `astryx docs make-an-integration integration`',
       });
     },
     SLOW,
@@ -195,7 +195,7 @@ describe('a reference block in a topic section', () => {
     async () => {
       scaffold({'acme-setup.doc.mjs': SETUP});
       const included = (await read('acme-setup', 'manifest')).content[1].rows;
-      const schema = (await docs('authoring', 'integration')).data.content.find(
+      const schema = (await docs('make-an-integration', 'integration')).data.content.find(
         block => block.type === 'table',
       );
       expect(included).toEqual(
@@ -245,21 +245,21 @@ describe('a reference block in a topic section', () => {
           block =>
             block.type === 'prose' &&
             block.text.includes(
-              'Read it with `astryx docs cli/api/functions/integration-doc-conflicts`.',
+              'Read it with `astryx docs reference/api/functions/integration-doc-conflicts`.',
             ),
         ),
       ).toBe(true);
       expect(check.at(-1)).toEqual({
         type: 'prose',
-        text: 'From astryx doctor integration docs: `astryx docs cli/commands/doctor-integration-docs`',
+        text: 'From astryx doctor integration docs: `astryx docs reference/commands/doctor-integration-docs`',
       });
       const more = (await read('acme-setup', 'more')).content;
       expect(more).toHaveLength(2);
       expect(more[0].text).toMatch(
-        /^docs\(\): Read the reference docs: .* Read it with `astryx docs cli\/api\/functions\/docs`\.$/,
+        /^docs\(\): Read the reference docs: .* Read it with `astryx docs reference\/api\/functions\/docs`\.$/,
       );
       expect(more[1].text).toMatch(
-        /^Theme System: .* Read it with `astryx docs theme`\.$/,
+        /^Use a theme: .* Read it with `astryx docs theme-your-app\/use-a-theme`\.$/,
       );
     },
     SLOW,
@@ -276,7 +276,7 @@ describe('a reference block in a topic section', () => {
       expect(status).toBe(0);
       expect(stdout).toMatch(/^Field +\| Type +\| Required +\| Description/m);
       expect(stdout).toMatch(/^components +\| string +\| no +\| /m);
-      expect(stdout).toContain(' docs authoring integration`');
+      expect(stdout).toContain(' docs make-an-integration integration`');
     },
     SLOW,
   );
@@ -304,11 +304,11 @@ describe('what a reference block names', () => {
     const resolve = await linkResolver(builtinCatalog(), CLI_PROVIDER_ID);
     expect(await resolve('schema:integration')).toMatchObject({
       id: createDocId(CLI_PROVIDER_ID, 'schema', 'integration'),
-      route: 'authoring/field-reference',
+      route: 'make-an-integration/field-reference',
       title: 'Astryx Integration',
-      command: 'astryx docs authoring integration',
+      command: 'astryx docs make-an-integration integration',
     });
-    const opened = await docs('authoring', 'integration');
+    const opened = await docs('make-an-integration', 'integration');
     expect(opened.type).toBe('docs.detail.section');
     expect(opened.data.id).toBe('integration');
   });
@@ -350,7 +350,7 @@ describe('a reference block that cannot include what it names', () => {
       );
       expect(messages[3]).toMatch(/projection\.sections: /);
       expect(messages[4]).toMatch(
-        /"@astryxdesign\/cli:generic:theme" is a topic/,
+        /"@astryxdesign\/cli:generic:use-a-theme" is a topic/,
       );
       // They are not also reported as links that print as written.
       expect(

@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file `astryx docs internationalization/i18n-rtl-and-testing`: text
+ * @file `astryx docs translate-your-app/i18n-rtl-and-testing`: text
  * direction (RTL), pseudo-locale testing, and contributor guidance.
  */
 
@@ -11,7 +11,7 @@ export const docs = {
   type: 'generic',
   name: 'i18n-rtl-and-testing',
   title: 'RTL & Testing',
-  placement: {parent: 'namespace:internationalization', slot: 'guides', order: 30},
+  placement: {parent: 'namespace:translate-your-app', slot: 'guides', order: 30},
   category: 'guide',
   description:
     'Text direction (RTL), pseudo-locale testing, and contributor guidance for developers and translators.',

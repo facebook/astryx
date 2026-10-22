@@ -7,7 +7,7 @@ export const doc = {
   type: 'function',
   kind: 'api',
   name: 'themeAdd',
-  namespace: 'cli/api',
+  namespace: 'reference/api',
   displayName: 'themeAdd()',
   summary: 'Add a built theme to the app.',
   description:

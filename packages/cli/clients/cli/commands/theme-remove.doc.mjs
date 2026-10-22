@@ -7,7 +7,7 @@ export const doc = {
   type: 'command',
   name: 'theme remove',
   displayName: 'astryx theme remove',
-  namespace: 'cli/commands',
+  namespace: 'reference/commands',
   summary: 'Remove a non-default theme from the app',
   description:
     'Removes one added theme from the generated module and regenerates the whole module. Choose another default with theme use before removing the current default.',
@@ -23,7 +23,7 @@ export const doc = {
   notes: [
     {
       type: 'prose',
-      text: "In global mode: outside a project, theme remove writes nothing and stops with `ERR_THEME_INVALID`: \"No package.json found. Run this command inside an app project.\" In a project, the project's version of Astryx runs it, whichever astryx command you start. See {@link namespace:global} and {@link generic:problems}.",
+      text: "In global mode: outside a project, theme remove writes nothing and stops with `ERR_THEME_INVALID`: \"No package.json found. Run this command inside an app project.\" In a project, the project's version of Astryx runs it, whichever astryx command you start. See {@link namespace:on-your-computer} and {@link generic:global-mode-messages}.",
     },
   ],
 };

@@ -772,7 +772,7 @@ export function generateCompressedIndex(
   // Rules — the top error-preventers.
   lines.push('RULES:');
   lines.push('- No <div> — components handle all layout and spacing.');
-  lines.push('- Read `astryx docs layout` before changing a template\'s frame.');
+  lines.push('- Read `astryx docs build-a-page` before changing a template\'s frame.');
   lines.push('- Dense data = rows (Table, List/Item), not Card-wrapped lists. Badge = counts only.');
   // Styling guidance tailored to the project's configured system — never
   // recommend a path that isn't compiled here (xstyle needs the StyleX compiler;
@@ -782,9 +782,9 @@ export function generateCompressedIndex(
   } else if (stylingSystem === 'tailwind') {
     lines.push('- Style with component props first, then Tailwind utilities backed by tokens. No raw hex/px.');
   } else {
-    lines.push("- Style with component props first, then tokens (var(--color-*|--spacing-*|--radius-*)). No raw hex/px. No StyleX/Tailwind compiler here — don't use xstyle/utility classes directly. Some templates use StyleX and need a compiler plugin; see `astryx docs styling-overview`.");
+    lines.push("- Style with component props first, then tokens (var(--color-*|--spacing-*|--radius-*)). No raw hex/px. No StyleX/Tailwind compiler here — don't use xstyle/utility classes directly. Some templates use StyleX and need a compiler plugin; see `astryx docs style-components/css-setup`.");
   }
-  lines.push('- Palettes and custom colors go through the theme, never :root overrides. Run `astryx theme add <slug>` to import; `theme eject <slug>` only forks source. See `astryx docs theme`.');
+  lines.push('- Palettes and custom colors go through the theme, never :root overrides. Run `astryx theme add <slug>` to import; `theme eject <slug>` only forks source. See `astryx docs theme-your-app`.');
   // Self-check — post-generation pass. Validated via vibe tests (internal/vibe-tests/
   // prompt-purity-test): on complex multi-step UIs the rules above alone still leave raw
   // CSS in ~11-13% of runs; a re-read-and-fix pass cuts that ~4x at negligible token cost.
@@ -818,14 +818,22 @@ export function generateCompressedIndex(
           .sort()
       : []);
   if (resolvedTopics.length > 0) {
-    // Show key topics inline, point at `astryx docs` for the full list.
-    const keyTopics = ['getting-started', 'principles', 'tokens', 'theme'];
+    // The guides most work starts from, by what the reader wants to do;
+    // `astryx docs` lists all twelve and Reference.
+    const keyTopics = [
+      'get-started',
+      'build-a-page',
+      'find-a-component',
+      'theme-your-app',
+      'check-your-code',
+      'upgrade-and-migrate',
+      'make-an-integration',
+    ];
     const shown = keyTopics.filter(t => resolvedTopics.includes(t));
     const suffix = resolvedTopics.length > shown.length ? ' …' : '';
-    lines.push(`  docs <topic>       ${shown.join(', ')}${suffix} (\`astryx docs\` lists all)`);
+    lines.push(`  docs <guide>       ${shown.join(', ')}${suffix} (\`astryx docs\` lists all)`);
   }
-  lines.push('  docs cli           commands and API reference');
-  lines.push('  docs authoring     build an integration package, and every field it holds');
+  lines.push('  docs reference     every command, API function, and JSON field');
   lines.push('  upgrade --from <old version> --apply   run after a dependency bump');
   const appendCount = agentDocs.reduce(
     (count, contribution) => count + contribution.append.length,

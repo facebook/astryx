@@ -10,7 +10,7 @@ export const doc = {
   type: 'command',
   name: 'gap-report',
   displayName: 'astryx gap-report',
-  namespace: 'cli/commands',
+  namespace: 'reference/commands',
   summary: 'Report a missing component or feature to the package that owns it',
   description:
     'Reports a missing component, variant, layout, styling, accessibility, API, or documentation capability to the package that owns it: the --package you name, else the integration whose component replaces it, else the one package that provides the component, else Core. ' +

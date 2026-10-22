@@ -148,7 +148,7 @@ describe('DebugEvent result summary', () => {
   it(
     'reports a lookup that resolved exactly one thing',
     async () => {
-      const {event} = await runWithDebug(['docs', 'tokens']);
+      const {event} = await runWithDebug(['docs', 'foundations/all-tokens']);
       expect(event.outcome).toBe('ok');
       expect(event.output).toMatchObject({
         resultCount: 1,

@@ -12,7 +12,7 @@ export const doc = {
   type: 'command',
   name: 'doctor',
   displayName: 'astryx doctor',
-  namespace: 'cli/commands',
+  namespace: 'reference/commands',
   summary: 'Diagnose Astryx projects and integration packages',
   description:
     'Runs read-only project health diagnostics by default: Node version, @astryxdesign/core ' +
@@ -54,7 +54,7 @@ export const doc = {
   notes: [
     {
       type: 'prose',
-      text: "In global mode: outside a project, doctor checks your computer instead of a folder: `node-version`, `answering-release` (the version that answered), `newest-release`, `cli-on-path` (every astryx command on your PATH), `computer-integrations` (integrations installed globally), and `computer-agent-text` (the agent guide). It never fails a check because the folder has no project. In a project, the project's version of Astryx runs it, whichever astryx command you start. See {@link namespace:global} and {@link generic:who-answers}.",
+      text: "In global mode: outside a project, doctor checks your computer instead of a folder: `node-version`, `answering-release` (the version that answered), `newest-release`, `cli-on-path` (every astryx command on your PATH), `computer-integrations` (integrations installed globally), and `computer-agent-text` (the agent guide). It never fails a check because the folder has no project. In a project, the project's version of Astryx runs it, whichever astryx command you start. See {@link namespace:on-your-computer} and {@link generic:who-answers}.",
     },
   ],
 };

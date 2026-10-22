@@ -1626,13 +1626,13 @@ describe.skipIf(!POSIX)(
       );
     });
 
-    it('G46 docs global inside a project whose release predates it: the copy that started the run answers, for this computer, never handed off', () => {
+    it('G46 docs get-started/on-your-computer inside a project whose release predates it: the copy that started the run answers, for this computer, never handed off', () => {
       const pc = computer();
       const g = globalCli('npm', '9.0.5', {root: pc.home});
       const dir = makeProject({core: '9.0.0', cli: '9.0.0'});
       for (const args of [
-        ['docs', 'global'],
-        ['docs', 'global/problems'],
+        ['docs', 'get-started/on-your-computer'],
+        ['docs', 'fix-a-problem/global-mode-messages'],
       ]) {
         const r = run(g.bin, args, {cwd: dir, pc});
         expect(r.status).toBe(0);

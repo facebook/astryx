@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file `astryx docs authoring/building-blocks/templates/document-the-template/replace-a-core-template`:
+ * @file `astryx docs make-an-integration/building-blocks/templates/document-the-template/replace-a-core-template`:
  * deliberately replace one Core template through template metadata.
  */
 

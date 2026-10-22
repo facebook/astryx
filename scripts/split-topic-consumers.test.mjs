@@ -24,12 +24,12 @@ const REPO_ROOT = path.resolve(
 );
 const SLOW = 60_000;
 
-/** The CLI's root namespaces other than `cli`, its command and API reference. */
-const splitTopics = cliRootNamespaceNames().filter(name => name !== 'cli');
+/** The CLI's root namespaces other than `reference`, its command and API reference. */
+const splitTopics = cliRootNamespaceNames().filter(name => name !== 'reference');
 
 describe('consumers of a topic split into a namespace', () => {
   it('finds the split topics', () => {
-    expect(splitTopics).toContain('layout');
+    expect(splitTopics).toContain('build-a-page');
   });
 
   it(
@@ -49,10 +49,10 @@ describe('consumers of a topic split into a namespace', () => {
   it('lists each one in the agent docs block, as a flat topic is listed', () => {
     const line = generateCompressedIndex('1.0.0')
       .split('\n')
-      .find(l => l.trimStart().startsWith('docs <topic>'));
-    // The block names a few key topics; each one that is a split topic must
-    // still appear, so a split never drops it from every AGENTS.md.
-    for (const key of ['getting-started', 'principles', 'tokens', 'theme']) {
+      .find(l => l.trimStart().startsWith('docs <guide>'));
+    // The block names the guides most work starts from, so a restructure
+    // never drops them from every AGENTS.md.
+    for (const key of ['get-started', 'build-a-page', 'find-a-component', 'theme-your-app']) {
       expect(line, key).toContain(key);
     }
   });

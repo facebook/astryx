@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file `astryx docs authoring/building-blocks/docs/links`: link one doc
+ * @file `astryx docs make-an-integration/building-blocks/docs/links`: link one doc
  * to another by identity, link the CLI's docs, and fix a link that names no
  * doc.
  */

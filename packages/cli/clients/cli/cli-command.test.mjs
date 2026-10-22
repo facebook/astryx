@@ -100,7 +100,7 @@ describe('the setup nudge in a project with no CLI of its own', () => {
         }
       }
 
-      const {stderr} = await runCli(['docs', 'tokens'], app);
+      const {stderr} = await runCli(['docs', 'foundations/all-tokens'], app);
       expect(stderr).toContain(
         'Next step: run `npm install @astryxdesign/cli@0.0.1`, then `acme astryx init`',
       );
@@ -139,12 +139,12 @@ describe('help', () => {
 describe("a host's door", () => {
   it('prefixes doc commands in text and leaves them bare in JSON', async () => {
     const text = await runWithCliDoor('acme astryx', () =>
-      runCli(['docs', 'getting-started', '--full']),
+      runCli(['docs', 'get-started/add-to-a-project', '--full']),
     );
     expect(text.stdout).toContain('acme astryx init');
 
     const json = await runWithCliDoor('acme astryx', () =>
-      runCli(['docs', 'getting-started', '--json']),
+      runCli(['docs', 'get-started/add-to-a-project', '--json']),
     );
     expect(json.stdout).toContain('astryx init');
     expect(json.stdout).not.toContain('acme astryx');

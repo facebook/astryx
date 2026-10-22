@@ -3,7 +3,7 @@
 /**
  * Direct API tests for `upgrade()` — the programmatic surface (`@astryxdesign/cli/api`).
  *
- * The CLI suites (cli/commands/upgrade*.test.mjs) drive `registerUpgrade` and
+ * The CLI suites (reference/commands/upgrade*.test.mjs) drive `registerUpgrade` and
  * cover behavior end-to-end; these assert the API contract you get when calling
  * `upgrade()` in code: the typed receipt shape, thrown AstryxError codes, that
  * it honors the `cwd` option for detection/agent-docs, and that it stays SILENT

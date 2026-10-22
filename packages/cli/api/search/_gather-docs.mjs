@@ -26,7 +26,7 @@ import {sectionProse, codeTerms, headings, plain} from './_doc-text.mjs';
  * topic, whose command reads just that section; each topic as a whole, whose
  * command lists its sections; and each docs-tree node by its route. The tree's
  * guides split into sections like topics, and its typed docs also match by
- * their own name, so `assertResponse` finds `cli/api/functions/assert-response`.
+ * their own name, so `assertResponse` finds `reference/api/functions/assert-response`.
  *
  * Reads the project's catalog rather than the CLI's own docs directory, so a
  * topic an integration contributed (or replaced) is searchable exactly like a
@@ -106,7 +106,7 @@ export async function gatherDocs(cwd) {
     if (node.kind === 'generic') {
       let doc = null;
       try {
-        doc = (await lowerTopic(catalog, guideEntry(node))).doc;
+        doc = (await lowerTopic(catalog, guideEntry(node, catalog))).doc;
       } catch {
         // As above: the owning commands report it.
       }
@@ -197,7 +197,7 @@ function topicCandidates(
   const docTitle = path || doc?.title || title || name;
   const split = sections.length > 1;
   // A placed guide also answers to its last route segment's words:
-  // `quick start` is authoring/quick-start.
+  // `quick start` is make-an-integration/quick-start.
   const leaf = name.slice(name.lastIndexOf('/') + 1);
   /** @type {Candidate[]} */
   const out = [

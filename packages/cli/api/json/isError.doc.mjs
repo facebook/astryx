@@ -11,7 +11,7 @@ export const doc = {
   type: 'function',
   kind: 'api',
   name: 'isError',
-  namespace: 'cli/api',
+  namespace: 'reference/api',
   displayName: 'isError()',
   summary: 'Did the CLI return an error envelope?',
   description:

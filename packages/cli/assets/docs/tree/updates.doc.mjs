@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file `astryx docs global/updates`: how the global install learns of newer
+ * @file `astryx docs get-started/on-your-computer/updates`: how the global install learns of newer
  * versions, and the notice it prints (spec AST-081 FR6, FR10).
  */
 
@@ -10,7 +10,7 @@ export const docs = {
   type: 'generic',
   name: 'updates',
   placement: {
-    parent: 'namespace:global',
+    parent: 'namespace:on-your-computer',
     slot: 'guides',
     order: 4,
   },
@@ -18,13 +18,11 @@ export const docs = {
   category: 'guide',
   keywords: [
     'update',
-    'upgrade',
     'upgrade astryx',
     'update notice',
     'new release',
-    'new version',
     'NO_UPDATE_NOTIFIER',
-    'latest',
+    'latest'
   ],
   description:
     'Your global install checks for a newer version once a day and prints a two-line notice after a command succeeds. It never upgrades itself or a project.',
@@ -74,7 +72,7 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: '`astryx doctor` shows the same thing at any time, in its `newest-release` check, along with why the last notice did not print, if one did not. When the last check ran, and when each notice printed, are kept in `state.json` in the settings folder ({@link generic:reference}).',
+          text: '`astryx doctor` shows the same thing at any time, in its `newest-release` check, along with why the last notice did not print, if one did not. When the last check ran, and when each notice printed, are kept in `state.json` in the settings folder ({@link generic:global-mode}).',
         },
       ],
     },
@@ -84,7 +82,7 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'This page is part of {@link namespace:global}, which explains what global mode is and how each part works. Upgrading a project: {@link command:upgrade}.',
+          text: 'This page is part of {@link namespace:on-your-computer}, which explains what global mode is and how each part works. Upgrading a project: {@link command:upgrade}.',
         },
       ],
     },

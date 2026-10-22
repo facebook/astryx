@@ -69,7 +69,7 @@ requirements. Assistive-technology evidence remains separately owned.
 - **FR2 — Compatibility rows are generated.** Browser/version rows are generated
   from the approved Baseline data and authoritative browser release data; they are
   never maintained as handwritten version claims. The generated rows live in the
-  public [Browser Support guide](../../../packages/cli/assets/docs/browser-support.doc.mjs)
+  public [Browser Support guide](../../../packages/cli/assets/docs/tree/browser-support.doc.mjs)
   and record their source and refresh date. TypeScript targets, build targets, and
   feature tables are not support evidence.
 - **FR3 — Two explicit browser support rows are always included.** Independently

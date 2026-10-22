@@ -8,8 +8,8 @@ Run it one-off with the scoped package (works whether or not it's installed):
 npx @astryxdesign/cli --help
 npx @astryxdesign/cli search button
 npx @astryxdesign/cli component Button
-npx @astryxdesign/cli docs tokens
-npx @astryxdesign/cli docs migration
+npx @astryxdesign/cli docs foundations/all-tokens
+npx @astryxdesign/cli docs upgrade-and-migrate/from-tailwind-shadcn-radix
 npx @astryxdesign/cli template --list
 ```
 
@@ -23,9 +23,9 @@ npm i -g @astryxdesign/cli
 
 Then `astryx` works in any folder, for you and for every coding agent on your computer. In a project, Astryx runs the project's own version, so a global install never changes what a project gets; outside a project, your global version answers. It tells you when a newer version is out, and never upgrades itself or a project.
 
-- Project install, global install, or both (recommended)? `astryx docs global/project-global-or-both` compares them.
-- How it works, and what it prints: `astryx docs global`.
-- Something looks wrong: `astryx docs global/problems`. Uninstall: `astryx docs global/uninstall`.
+- Project install, global install, or both (recommended)? `astryx docs get-started/on-your-computer/project-global-or-both` compares them.
+- How it works, and what it prints: `astryx docs get-started/on-your-computer`.
+- Something looks wrong: `astryx docs fix-a-problem/global-mode-messages`. Uninstall: `astryx docs get-started/on-your-computer/uninstall`.
 
 ## Reading the CLI's own docs
 
@@ -33,16 +33,16 @@ The CLI documents itself, so these commands print what the installed version doe
 
 - `astryx <command> --help`: one command's arguments and options.
 - `astryx manifest --json`: every command, option, and response type, as JSON.
-- `astryx docs cli`: the CLI's docs tree, one level at a time.
-  `astryx docs cli/commands` lists every command, `astryx docs cli/api` lists
+- `astryx docs reference`: the CLI's docs tree, one level at a time.
+  `astryx docs reference/commands` lists every command, `astryx docs reference/api` lists
   the API's functions, schemas, and enums, and a route such as
-  `astryx docs cli/api/functions/search` prints one.
-- `astryx docs authoring/field-reference --index`: the field reference, with one
+  `astryx docs reference/api/functions/search` prints one.
+- `astryx docs make-an-integration/field-reference --index`: the field reference, with one
   section for each file an author writes: the `astryx.config.*` file, the
   `astryx.integration.*` manifest, codemods, and every doc type (`ComponentDoc`,
   `TemplateDoc`, `ThemeDoc`, and the rest). Read one section with
-  `astryx docs authoring <section>`, for example `astryx docs authoring config`.
-- `astryx docs authoring`: the guides to building an integration package,
+  `astryx docs make-an-integration <section>`, for example `astryx docs make-an-integration config`.
+- `astryx docs make-an-integration`: the guides to building an integration package,
   from a quick start to publishing.
 - `astryx docs`: every docs topic, including the design-system guides (for
   example `tokens`, `theme`, and `layout`).
@@ -92,7 +92,7 @@ Options:
 
 ## Commands
 
-Each command declares what it does in a folder outside any project, and `astryx manifest --json` publishes it as `outsideProject`: `same` gives the answer a new project on this release would get, `refuse` writes nothing and fails with `ERR_PROJECT_REQUIRED` (or the code its earlier releases used), and `own` does something else that its docs (`astryx docs cli/commands/<name>`) describe.
+Each command declares what it does in a folder outside any project, and `astryx manifest --json` publishes it as `outsideProject`: `same` gives the answer a new project on this release would get, `refuse` writes nothing and fails with `ERR_PROJECT_REQUIRED` (or the code its earlier releases used), and `own` does something else that its docs (`astryx docs reference/commands/<name>`) describe.
 
 <!-- BEGIN GENERATED: commands -->
 
@@ -122,7 +122,7 @@ Each command declares what it does in a folder outside any project, and `astryx 
 `--json` works with every command listed in `jsonSupported` (`astryx manifest --json`), which is every command except the bare groups such as `astryx theme`. The other four change only the reads named here; other commands ignore them:
 
 - `--json`: Output as typed JSON envelope: `{ apiVersion, type, package?, data, meta? }` (errors: `{ apiVersion, error, code, suggestions? }`)
-- `--detail <level>`: Detail level for `component`, `hook`, and docs tree reads (such as `astryx docs cli/commands/build`), increasing in size: `brief` (names only, default for lists) < `compact` (names + 1-line descriptions) < `full` (full docs per entry). Single-item views default to `full`.
+- `--detail <level>`: Detail level for `component`, `hook`, and docs tree reads (such as `astryx docs reference/commands/build`), increasing in size: `brief` (names only, default for lists) < `compact` (names + 1-line descriptions) < `full` (full docs per entry). Single-item views default to `full`.
 - `--zh`: Simplified Chinese for component reads and for docs topics that have a translation (English otherwise)
 - `--dense`: Token-efficient dense text for `astryx component <Name>` and `astryx docs <topic>`
 - `--lang <locale>`: Language or format for component and docs reads: `en` (default), `zh` (as `--zh`), or `dense` (as `--dense`)
@@ -360,7 +360,7 @@ btn.data.name; // 'Button' (typed as ComponentDoc)
 const list = await component(undefined, {list: true});
 list.data; // Record<string, string[]>
 
-// Same result as: astryx --json docs principles
+// Same result as: astryx --json docs foundations/principles
 const principles = await docs('principles');
 principles.data.title; // 'Principles'
 
@@ -407,7 +407,7 @@ process.exitCode = status;
 
 It resolves with `{status, packages}`: the exit status the bin would exit with, and each package the run resolved with its version and whether it came from the project or a package set. When another package set's release answers through its own host entry, that entry runs in the same process with the same inputs, and the call resolves with its result. It rejects with a `TypeError` before anything runs for an unknown option or an invalid value, and with an `Error` before anything runs when a run already started in the process.
 
-Like the bin, a run ends the process with its exit status, and the call never resolves, when it prints help or the version (`--help`, `-h`, `help`, `--version`, `-V`, `--version --json`), rejects the command line, reports an error it stops on (every error in `--json` mode included), meets an unexpected error, or hands the run to another CLI's bin: the project's own CLI when `declinedProjectCli` is absent, or a package set whose CLI ships no host entry. `astryx docs cli/host-entry` has the same guide.
+Like the bin, a run ends the process with its exit status, and the call never resolves, when it prints help or the version (`--help`, `-h`, `help`, `--version`, `-V`, `--version --json`), rejects the command line, reports an error it stops on (every error in `--json` mode included), meets an unexpected error, or hands the run to another CLI's bin: the project's own CLI when `declinedProjectCli` is absent, or a package set whose CLI ships no host entry. `astryx docs reference/host-entry` has the same guide.
 
 ### Consumer utilities
 
@@ -741,6 +741,6 @@ For the full walkthrough, from an empty folder to a published package, see the
 guides:
 
 ```bash
-astryx docs authoring
-astryx docs authoring/quick-start
+astryx docs make-an-integration
+astryx docs make-an-integration/quick-start
 ```

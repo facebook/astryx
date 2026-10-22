@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file `astryx docs authoring/building-blocks/components/see-it-in-an-app`: inspect an
+ * @file `astryx docs make-an-integration/building-blocks/components/see-it-in-an-app`: inspect an
  * integration component from an app that installs the package.
  */
 
@@ -63,7 +63,7 @@ Cycles through slides one at a time. Use it for a small set of related cards.
       content: [
         {
           type: 'prose',
-          text: 'In global mode: to check your package in an app, install it in that app; a copy installed for your computer is not used inside a project. To check it outside projects, install it for your computer beside the CLI. See {@link namespace:global} and {@link generic:global-integrations}.',
+          text: 'In global mode: to check your package in an app, install it in that app; a copy installed for your computer is not used inside a project. To check it outside projects, install it for your computer beside the CLI. See {@link namespace:on-your-computer} and {@link generic:global-integrations}.',
         },
       ],
     },

@@ -60,11 +60,14 @@ export function ReferenceDocView({
   description,
   sections,
   sectionOverrides,
+  footer,
 }: {
   title: string;
   description: string;
   sections: DocSection[];
   sectionOverrides?: SectionOverrides;
+  /** Shown after the last section, such as a guide's "Ask your agent". */
+  footer?: ReactNode;
 }) {
   const {sectionIds, blockIds, outline} = buildOutline(sections);
 
@@ -74,7 +77,7 @@ export function ReferenceDocView({
         const id = sectionIds[i];
         const override = sectionOverrides?.[section.title];
         return (
-          <VStack gap={4} key={section.title}>
+          <VStack gap={4} key={`${i}:${section.title}`}>
             {override ? (
               override(section, id)
             ) : isBestPracticesSection(section) ? (
@@ -131,6 +134,7 @@ export function ReferenceDocView({
           </VStack>
         );
       })}
+      {footer}
     </DocPageLayout>
   );
 }

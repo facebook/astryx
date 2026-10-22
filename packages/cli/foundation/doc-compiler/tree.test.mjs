@@ -17,6 +17,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {
   buildDocsTree,
+  GUIDE_ORDER,
   KIND_GROUPS,
   loadDocsTree,
   loadTreeInputs,
@@ -154,20 +155,25 @@ describe('buildDocsTree', () => {
       source: `${provider}/${name}.doc.mjs`,
     });
     const cliNs = {...ns('cli'), provider: CLI, providerId: CLI, source: `${CLI}/tree/cli.doc.mjs`};
-    // An integration's topics named `CLI` and `GUIDES` claim the CLI's
-    // namespace and a generated level; both are withdrawn.
+    // An integration's topics named `CLI`, `MORE-TOPICS`, and `GUIDES` claim
+    // the CLI's namespace, the generated level, and a route the CLI keeps;
+    // all are withdrawn.
     const tree = buildDocsTree({
       namespaces: [cliNs],
       docs: [],
-      topics: [topic('theme', CLI), topic('CLI'), topic('GUIDES')],
+      topics: [topic('theme', CLI), topic('CLI'), topic('MORE-TOPICS'), topic('GUIDES')],
+      reserved: ['guides'],
     });
     expect(tree.get('cli')?.provider).toBe(CLI);
-    expect(tree.get('guides')?.provider).toBe(CLI);
+    expect(tree.get('more-topics')?.provider).toBe(CLI);
+    expect(tree.isReserved('GUIDES')).toBe(true);
     expect(routes(tree)).not.toContain('CLI');
+    expect(routes(tree)).not.toContain('MORE-TOPICS');
     expect(routes(tree)).not.toContain('GUIDES');
     expect(problems(tree)).toEqual(
       expect.arrayContaining([
         ['duplicate_route', expect.stringContaining('both have the route "CLI"')],
+        ['duplicate_route', expect.stringContaining('takes the route "MORE-TOPICS", which the CLI\'s own docs keep')],
         ['duplicate_route', expect.stringContaining('takes the route "GUIDES", which the CLI\'s own docs keep')],
       ]),
     );
@@ -498,11 +504,11 @@ describe('routeSegment', () => {
 
 describe("the CLI's own docs tree", () => {
   it(
-    'builds with no diagnostic, rooted at cli',
+    'builds with no diagnostic, rooted at the twelve guides and Reference',
     async () => {
       const tree = await loadDocsTree({fresh: true});
       expect(tree.diagnostics).toEqual([]);
-      expect(tree.roots().map(node => node.route)).toEqual(['authoring', 'cli', 'global', 'internationalization', 'layout', 'migration', 'styling', 'styling-libraries', 'tokens', 'typography']);
+      expect(tree.roots().map(node => node.route)).toEqual([...GUIDE_ORDER]);
       // Every slot child is a node one level below the namespace that places
       // it, and every node but the root is placed. Read from the tree, so a
       // restructure of the guides does not need this test edited.
@@ -533,34 +539,34 @@ describe("the CLI's own docs tree", () => {
       ).toEqual([]);
       // The reference groups the CLI generates from its own typed docs.
       expect(
-        tree.get('cli')?.slots.find(slot => slot.name === 'reference')
+        tree.get('reference')?.slots.find(slot => slot.name === 'reference')
           ?.children,
-      ).toEqual(['cli/commands', 'cli/api']);
-      expect(tree.get('cli/api')?.slots[0].children).toEqual([
-        'cli/api/functions',
-        'cli/api/schemas',
-        'cli/api/enums',
+      ).toEqual(['reference/commands', 'reference/api']);
+      expect(tree.get('reference/api')?.slots[0].children).toEqual([
+        'reference/api/functions',
+        'reference/api/schemas',
+        'reference/api/enums',
       ]);
     },
     SLOW,
   );
 
   it(
-    'gives every CLI typed doc in a cli group one route, by its kind',
+    'gives every CLI typed doc in a reference group one route, by its kind',
     async () => {
       const tree = await loadDocsTree();
       const {loaded} = await loadCliSelfDocs();
       const inTree = loaded.filter(({doc}) =>
-        String(doc.namespace).startsWith('cli/'),
+        String(doc.namespace).startsWith('reference/'),
       );
       expect(inTree.length).toBeGreaterThan(0);
       const expected = inTree.map(({doc}) =>
         doc.type === 'command'
-          ? `cli/commands/${routeSegment(doc.name)}`
-          : `cli/api/${KIND_GROUPS[doc.type].segment}/${routeSegment(doc.name)}`,
+          ? `reference/commands/${routeSegment(doc.name)}`
+          : `reference/api/${KIND_GROUPS[doc.type].segment}/${routeSegment(doc.name)}`,
       );
       expect(expected.filter(route => tree.get(route) == null)).toEqual([]);
-      // A doc in the authoring group stays a section of `astryx docs authoring`.
+      // A doc in the authoring group stays a section of `astryx docs make-an-integration`.
       const authoring = loaded.filter(({doc}) => doc.namespace === 'authoring');
       expect(authoring.length).toBeGreaterThan(0);
       const ids = new Set([...tree.nodes.values()].map(node => node.id));
@@ -584,7 +590,7 @@ describe("the CLI's own docs tree", () => {
             Object.getOwnPropertyDescriptor(value, 'prototype')?.writable !==
               false,
         )
-        .map(([name]) => `cli/api/functions/${routeSegment(name)}`);
+        .map(([name]) => `reference/api/functions/${routeSegment(name)}`);
       expect(exported.length).toBeGreaterThan(0);
       expect(exported.filter(route => tree.get(route) == null)).toEqual([]);
     },

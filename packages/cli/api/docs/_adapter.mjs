@@ -20,6 +20,7 @@
 import * as path from 'node:path';
 import {Project} from '../../foundation/config/project.mjs';
 import {DocsCatalog} from '../../foundation/discovery/docs-discovery.mjs';
+import {RENAMED_DOC_IDENTITIES} from '../../foundation/discovery/renamed-docs.mjs';
 import {checkDocTypes} from '../../foundation/discovery/doc-types.mjs';
 import {integrationDocFiles} from '../../foundation/discovery/integration-doc-files.mjs';
 import {
@@ -435,6 +436,10 @@ async function buildProjectTree(catalog, fresh) {
     namespaces: [...cli.namespaces, ...added.flatMap(each => each.namespaces)],
     docs: [...cli.docs, ...added.flatMap(each => each.guides)],
     topics: await flatTopicInputs(catalog),
+    // The top-level routes the CLI's docs moved from stay the CLI's.
+    reserved: MOVED_ROUTES.map(([from]) => from).filter(
+      from => !from.includes('/'),
+    ),
   });
   // A summary is a doc's text too: each link in it reads as the command that
   // opens its doc, wherever the tree's summaries print (spec:AST-047 FR9).
@@ -513,7 +518,7 @@ function identitiesOf(tree) {
 
 /**
  * The CLI's authoring docs, by kind and name. The field reference under
- * `astryx docs authoring` reads each as one section keyed by its name, so a
+ * `astryx docs make-an-integration` reads each as one section keyed by its name, so a
  * link to one opens that section. Loaded once per process, like the CLI's
  * tree files.
  * @type {Promise<Map<string, any>> | undefined}
@@ -521,7 +526,7 @@ function identitiesOf(tree) {
 let authoringDocs;
 
 /**
- * The CLI authoring doc a link names. The `authoring` namespace is the CLI's
+ * The CLI authoring doc a link names. The `make-an-integration` namespace is the CLI's
  * own, so no integration can take its route.
  * @param {string} kind
  * @param {string} name
@@ -543,13 +548,13 @@ async function authoringDoc(kind, name) {
  * @property {string} kind the doc's kind
  * @property {{doc: any, providerId: string, tree: boolean} | null} typed a
  *   schema, command, function, or enum doc: a leaf of the docs tree (`tree`),
- *   or a section of `astryx docs authoring`; null for any other kind
+ *   or a section of `astryx docs make-an-integration`; null for any other kind
  */
 
 /**
  * How a doc's links find their targets (spec:AST-047 FR9): a doc in the
  * project's docs tree by its identity, a CLI authoring doc (a section of
- * `astryx docs authoring`), or a flat topic by its provider and name. A
+ * `astryx docs make-an-integration`), or a flat topic by its provider and name. A
  * target that matches none is a problem, never a guess.
  * @param {DocsCatalog} catalog
  * @param {string} fromProvider the provider id of the doc the links sit in
@@ -592,9 +597,17 @@ function docFinderOver(catalog, tree, fromProvider, summaries = true) {
         problem: `"${target}" names "${parsed.provider}", which is not a provider id: an npm package name, or the \`providerId\` its manifest declares`,
       };
     }
-    const node = identities.get(
-      identityKey(provider, parsed.kind, parsed.name),
-    );
+    // A CLI doc that took another name answers to the old one too.
+    const renamed =
+      provider === CLI_PROVIDER_ID
+        ? RENAMED_DOC_IDENTITIES[`${parsed.kind}:${parsed.name}`]
+        : undefined;
+    const [kind, name] = renamed
+      ? renamed.split(':')
+      : [parsed.kind, parsed.name];
+    const node =
+      identities.get(identityKey(provider, parsed.kind, parsed.name)) ??
+      identities.get(identityKey(provider, kind, name));
     if (node) {
       return {
         link: {
@@ -623,7 +636,7 @@ function docFinderOver(catalog, tree, fromProvider, summaries = true) {
           route: AUTHORING_REFERENCE_ROUTE,
           title: authored.displayName ?? authored.name,
           summary: authored.description ?? '',
-          command: `astryx docs authoring ${authored.name}`,
+          command: `astryx docs make-an-integration ${authored.name}`,
         },
         kind: parsed.kind,
         typed: {doc: authored, providerId: CLI_PROVIDER_ID, tree: false},
@@ -1102,10 +1115,26 @@ export async function docsLinkProblems(
     }
   }
   for (const node of tree.nodes.values()) {
-    if (owner != null && node.provider !== owner) continue;
-    if (node.kind === 'generic' && node.ref?.topicFile) {
+    const entry =
+      node.kind === 'generic' && node.ref?.topicFile
+        ? guideEntry(node, catalog)
+        : null;
+    // A package owns a guide it wrote, a CLI guide it replaced, and the
+    // sections it adds to a CLI guide.
+    if (
+      owner != null &&
+      node.provider !== owner &&
+      !(
+        entry &&
+        (entry.package === owner ||
+          entry.extensions.some(extension => extension.package === owner))
+      )
+    ) {
+      continue;
+    }
+    if (entry) {
       try {
-        note(node.route, await topicLinkProblems(catalog, guideEntry(node)));
+        note(node.route, await topicLinkProblems(catalog, entry));
       } catch {
         // As above.
       }
@@ -1249,11 +1278,10 @@ export function referenceTargets(catalog, lang) {
 }
 
 /**
- * A docs-tree namespace as the target of a token reference: every guide placed
- * below it, lowered for `lang` and read in tree order as one topic. A flat
- * topic split into a namespace keeps answering the references its readers
- * wrote, so `{type: 'token-ref', topic: 'tokens', section: 'Color Tokens'}`
- * finds the guide that now holds that table. Null for any other route.
+ * A docs-tree route as the target of a token reference: a guide, lowered for
+ * `lang`, so `{type: 'token-ref', topic: 'foundations/all-tokens', section:
+ * 'Color Tokens'}` finds that table; or a namespace, every guide placed below
+ * it read in tree order as one topic. Null for any other route.
  * @param {DocsCatalog} catalog
  * @param {string} route
  * @param {string | null} lang
@@ -1262,6 +1290,11 @@ export function referenceTargets(catalog, lang) {
 async function namespaceReferenceTarget(catalog, route, lang) {
   const tree = await projectTree(catalog);
   const node = tree.get(route) ?? tree.getFolded(route);
+  if (node?.kind === 'generic' && node.ref?.topicFile) {
+    // A guide the tree places, by its route: the token tables are one guide,
+    // `foundations/all-tokens`, that each Foundations page reads from.
+    return lowerTopic(catalog, guideEntry(node, catalog), lang);
+  }
   if (!node || node.kind !== 'namespace' || node.generated) return null;
   /** @type {any[]} */
   const sections = [];
@@ -1276,7 +1309,11 @@ async function namespaceReferenceTarget(catalog, route, lang) {
         if (child.kind === 'namespace') {
           await walk(child);
         } else if (child.kind === 'generic' && child.ref?.topicFile) {
-          const lowered = await lowerTopic(catalog, guideEntry(child), lang);
+          const lowered = await lowerTopic(
+            catalog,
+            guideEntry(child, catalog),
+            lang,
+          );
           sections.push(...lowered.doc.sections);
           for (const [key, title] of Object.entries(lowered.sourceTitles)) {
             sourceTitles[key] ??= title;
@@ -1335,16 +1372,22 @@ export async function compileTopic(catalog, entry, lang = null) {
  * A guide the docs tree places, as a topic entry the topic readers open by its
  * route. It is never a flat topic: `astryx docs <route>` is its only name.
  * @param {import('../../foundation/doc-compiler/tree.mjs').TreeNode} node
+ * @param {DocsCatalog | null} [catalog] what integrations changed: a CLI guide
+ *   an integration topic extends or replaces reads that topic's file too
  * @returns {import('../../foundation/discovery/docs-discovery.mjs').DocsTopicEntry}
  */
-export function guideEntry(node) {
+export function guideEntry(node, catalog = null) {
+  // An integration topic can extend or replace a CLI guide by its name; the
+  // catalog holds what that changed (spec:AST-046).
+  const changed =
+    node.provider === '@astryxdesign/cli' ? catalog?.guide(node.name) : null;
   return {
     name: node.route,
     route: node.route,
-    package: node.provider,
-    providerId: node.providerId,
-    path: node.ref.topicFile,
-    extensions: [],
+    package: changed?.package ?? node.provider,
+    providerId: changed?.providerId ?? node.providerId,
+    path: changed?.path ?? node.ref.topicFile,
+    extensions: changed?.extensions ?? [],
     tree: true,
     parent: node.parent ?? undefined,
   };
@@ -1489,6 +1532,9 @@ export function nameOwner(tree, catalog, name) {
   }
   const entry = catalog.resolve(name);
   if (entry == null) return null;
+  // A route the CLI's docs moved from stays the CLI's: it names where its doc
+  // went, whatever topic answers to it.
+  if (tree.isReserved?.(name) || tree.isReserved?.(entry.name)) return null;
   const owner = routeOwner(tree, entry);
   return owner == null ? {kind: 'topic', entry} : {kind: 'node', node: owner};
 }
@@ -1520,7 +1566,7 @@ export function holdsOwnName(tree, catalog, entry) {
  */
 function treeArgument(catalog, tree, node) {
   if (node.kind === 'generic') {
-    return {kind: 'topic', catalog, entry: guideEntry(node)};
+    return {kind: 'topic', catalog, entry: guideEntry(node, catalog)};
   }
   return {kind: 'node', catalog, tree, node};
 }
@@ -1543,15 +1589,67 @@ export function routeOwner(tree, entry) {
 }
 
 /**
- * Routes that moved, old prefix first: the integration guides moved from
- * `cli/integrations` (and, before that, the `cli-integrations` topic) into
- * `authoring`, the one home for integration authors.
- * Only the not-found error reads this, to name where a doc went; an old route
- * opens nothing.
+ * Routes that moved (spec:AST-046 FR6), most specific first: the docs are
+ * organized into twelve guides by what a reader wants to do, plus Reference.
+ * An old route opens nothing: only the not-found error reads this, to name
+ * where its doc went. A prefix carries what is below it, so
+ * `layout/scaffold` names `build-a-page/scaffold`.
  */
 const MOVED_ROUTES = [
-  ['cli/integrations', 'authoring'],
-  ['cli-integrations', 'authoring'],
+  // Integration authoring: `cli/integrations`, the `cli-integrations` topic,
+  // then `authoring`.
+  ['cli/integrations', 'make-an-integration'],
+  ['cli-integrations', 'make-an-integration'],
+  ['authoring', 'make-an-integration'],
+  // The old flat topics, and the generated levels that held them.
+  ['getting-started', 'get-started/add-to-a-project'],
+  ['working-with-ai', 'work-with-agents/agent-setup'],
+  ['theme', 'theme-your-app'],
+  ['use-a-theme', 'theme-your-app/use-a-theme'],
+  ['author-a-theme', 'theme-your-app/author-a-theme'],
+  ['styling-overview', 'style-components/css-setup'],
+  ['principles', 'foundations/principles'],
+  ['color', 'foundations/color'],
+  ['spacing', 'foundations/spacing'],
+  ['shape', 'foundations/shape'],
+  ['elevation', 'foundations/elevation'],
+  ['motion', 'foundations/motion'],
+  ['icons', 'foundations/icons'],
+  ['illustrations', 'foundations/illustrations'],
+  ['is-my-code-good', 'check-your-code/agent-review'],
+  ['use-integrations', 'find-a-component/use-integrations'],
+  ['browser-support', 'reference/browser-support'],
+  ['guides', 'get-started'],
+  ['unorganized', 'get-started'],
+  // Namespaces that moved under a guide.
+  ['layout', 'build-a-page'],
+  ['styling-libraries', 'style-components'],
+  ['styling/styling-basics', 'style-components/styling-basics'],
+  ['styling/styling-advanced', 'style-components/styling-advanced'],
+  ['styling/tokens-and-setup', 'style-components/tokens-and-setup'],
+  ['styling', 'style-components'],
+  [
+    'typography/typography-best-practices',
+    'foundations/typography/best-practices',
+  ],
+  ['typography', 'foundations/typography'],
+  ['tokens/tokens-color', 'foundations/color'],
+  ['tokens/tokens-spacing', 'foundations/spacing'],
+  ['tokens/tokens-radius', 'foundations/shape'],
+  ['tokens/tokens-shadow', 'foundations/elevation'],
+  ['tokens/tokens-duration', 'foundations/motion'],
+  ['tokens/tokens-ease', 'foundations/motion'],
+  ['tokens/tokens-type-scale', 'foundations/typography/type-scale'],
+  ['tokens', 'foundations/all-tokens'],
+  ['tokens-usage', 'foundations/all-tokens'],
+  ['internationalization', 'translate-your-app'],
+  ['migration', 'upgrade-and-migrate/from-tailwind-shadcn-radix'],
+  ['global/computer-agent-guide', 'work-with-agents/computer-agent-guide'],
+  ['global/problems', 'fix-a-problem/global-mode-messages'],
+  ['global/reference', 'reference/global-mode'],
+  ['global', 'get-started/on-your-computer'],
+  ['cli/component-lookups', 'find-a-component/search-and-read'],
+  ['cli', 'reference'],
 ];
 
 /**
@@ -1565,7 +1663,10 @@ function movedRoute(topic, tree) {
   const wanted = topic.toLowerCase();
   for (const [from, to] of MOVED_ROUTES) {
     if (wanted !== from && !wanted.startsWith(`${from}/`)) continue;
-    const node = tree.getFolded(`${to}${wanted.slice(from.length)}`);
+    // The doc below the prefix, else the prefix's own new home: a token
+    // table that folded into one guide names that guide.
+    const node =
+      tree.getFolded(`${to}${wanted.slice(from.length)}`) ?? tree.getFolded(to);
     if (node) return node;
   }
   return null;

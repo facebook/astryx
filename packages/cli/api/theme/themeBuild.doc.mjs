@@ -15,7 +15,7 @@ export const doc = {
   type: 'function',
   kind: 'api',
   name: 'themeBuild',
-  namespace: 'cli/api',
+  namespace: 'reference/api',
   displayName: 'themeBuild()',
   summary:
     'Compile a defineTheme() file to scoped CSS, a JS module, and type declarations, or check committed outputs for drift in CI.',

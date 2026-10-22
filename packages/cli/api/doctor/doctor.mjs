@@ -363,7 +363,7 @@ export async function checkConfig(ctx) {
         label: 'astryx.config.mjs',
         status: 'fail',
         message: `astryx.config.mjs loads, but the CLI could not load the project from it: ${firstLine(ctx.projectError)}`,
-        fix: `Fix what the message names. \`${formatCliCommand('docs authoring config', ctx.cwd)}\` lists every field astryx.config accepts.`,
+        fix: `Fix what the message names. \`${formatCliCommand('docs make-an-integration config', ctx.cwd)}\` lists every field astryx.config accepts.`,
       };
     }
     return {
@@ -1049,7 +1049,7 @@ function nameTypes(names) {
 
 /**
  * The section keys the field reference lists (`astryx docs
- * authoring/field-reference --index`), read the way that command reads them.
+ * make-an-integration/field-reference --index`), read the way that command reads them.
  * @returns {Promise<{keys: Set<string>} | {keys: null, error: string}>}
  */
 async function authoringTopicKeys() {
@@ -1061,7 +1061,7 @@ async function authoringTopicKeys() {
     if (!node?.ref?.topicFile) {
       return {keys: null, error: 'the docs tree has no field reference'};
     }
-    const index = indexView(await lowerTopic(catalog, guideEntry(node)));
+    const index = indexView(await lowerTopic(catalog, guideEntry(node, catalog)));
     return {keys: new Set(index.sections.map(section => section.id))};
   } catch (err) {
     return {
@@ -1080,7 +1080,7 @@ function surfaceProblems(surface) {
   const problems = [];
   if (surface.types === 0 && surface.untraced.length === 0) {
     problems.push(
-      `@astryxdesign/cli/authoring exports no types, so nothing was compared with \`${formatCliCommand('docs authoring/field-reference')}\``,
+      `@astryxdesign/cli/authoring exports no types, so nothing was compared with \`${formatCliCommand('docs make-an-integration/field-reference')}\``,
     );
   }
   for (const {module, names, reason, source, key} of surface.unreadable) {
@@ -1093,7 +1093,7 @@ function surfaceProblems(surface) {
             ? `${source} does not load`
             : `${source} renders section "${key}", which the topic's index does not list`;
     problems.push(
-      `${nameTypes(names)} from ${module} ${names.length === 1 ? 'has' : 'have'} no doc in \`${formatCliCommand('docs authoring/field-reference')}\`: ${why}`,
+      `${nameTypes(names)} from ${module} ${names.length === 1 ? 'has' : 'have'} no doc in \`${formatCliCommand('docs make-an-integration/field-reference')}\`: ${why}`,
     );
   }
   for (const {name, reason} of surface.untraced) {
@@ -1112,7 +1112,7 @@ function surfaceProblems(surface) {
 }
 
 /**
- * Every authoring self-doc is reachable from `astryx docs authoring`, loads,
+ * Every authoring self-doc is reachable from `astryx docs make-an-integration`, loads,
  * and fits in one read, and every type `@astryxdesign/cli/authoring` exports
  * has its doc there: the self-doc beside the module that declares it. The
  * audits are imported here, inside the try, so a malformed self-doc is
@@ -1134,7 +1134,7 @@ export async function checkAuthoringDocs(_ctx, options = {}) {
     const audit = await auditAuthoringSelfDocs({root, sources});
     const problems = [
       ...audit.unreachable.map(
-        source => `${source} is not in \`${formatCliCommand('docs authoring/field-reference')}\``,
+        source => `${source} is not in \`${formatCliCommand('docs make-an-integration/field-reference')}\``,
       ),
       ...audit.failed.map(
         ({source, error}) => `${source} failed to load: ${error}`,
@@ -1150,7 +1150,7 @@ export async function checkAuthoringDocs(_ctx, options = {}) {
         : {keys: options.topicKeys};
     const surface = [
       ...('error' in topic
-        ? [`\`${formatCliCommand('docs authoring/field-reference')}\` could not be read: ${topic.error}`]
+        ? [`\`${formatCliCommand('docs make-an-integration/field-reference')}\` could not be read: ${topic.error}`]
         : []),
       ...surfaceProblems(
         await auditAuthoringSurface({root, sources, topicKeys: topic.keys}),
@@ -1174,7 +1174,7 @@ export async function checkAuthoringDocs(_ctx, options = {}) {
       id,
       label,
       status: 'pass',
-      message: `All ${audit.sections} authoring schemas are readable in \`${formatCliCommand('docs authoring/field-reference')}\`.`,
+      message: `All ${audit.sections} authoring schemas are readable in \`${formatCliCommand('docs make-an-integration/field-reference')}\`.`,
     };
   } catch (err) {
     return {
@@ -1189,7 +1189,7 @@ export async function checkAuthoringDocs(_ctx, options = {}) {
 
 /** How the CLI-docs audit's problems are fixed. */
 const CLI_DOCS_FIX =
-  "Set `namespace` on each CLI doc to the one that reads it: cli/commands for a command, cli/api for an API function or the output schema, error codes, and response types, and authoring for a file an author writes (and list it in AUTHORING_SELF_DOCS).";
+  "Set `namespace` on each CLI doc to the one that reads it: reference/commands for a command, reference/api for an API function or the output schema, error codes, and response types, and authoring for a file an author writes (and list it in AUTHORING_SELF_DOCS).";
 
 /** How the docs-tree check's problems are fixed. */
 const DOCS_TREE_FIX =
@@ -1197,8 +1197,8 @@ const DOCS_TREE_FIX =
 
 /**
  * Every command, API function, schema, and enum doc the CLI ships declares a
- * namespace, and something reads it: the docs tree under `astryx docs cli`
- * for `cli/commands` and `cli/api`, `astryx docs authoring` for `authoring`.
+ * namespace, and something reads it: the docs tree under `astryx docs reference`
+ * for `reference/commands` and `reference/api`, `astryx docs make-an-integration` for `authoring`.
  * @param {DoctorContext | Partial<DoctorContext>} _ctx
  * @param {{root?: string, sources?: string[], authoringSources?: string[]}} [options]
  *   test seams: the CLI root, the docs to audit, and the authoring topic's list
@@ -1242,7 +1242,7 @@ export async function checkCliDocs(_ctx, options = {}) {
       id,
       label,
       status: 'pass',
-      message: `All ${audit.docs} CLI docs are readable: ${audit.tree} in the \`${formatCliCommand('docs cli')}\` tree and ${audit.authoring} in \`${formatCliCommand('docs authoring/field-reference')}\`.`,
+      message: `All ${audit.docs} CLI docs are readable: ${audit.tree} in the \`${formatCliCommand('docs reference')}\` tree and ${audit.authoring} in \`${formatCliCommand('docs make-an-integration/field-reference')}\`.`,
     };
   } catch (err) {
     return {
@@ -1256,7 +1256,7 @@ export async function checkCliDocs(_ctx, options = {}) {
 }
 
 /**
- * The docs tree builds with no error, and every CLI typed doc in a `cli/...`
+ * The docs tree builds with no error, and every CLI typed doc in a `reference/...`
  * group has a route in it (spec:AST-046): each placement names a namespace of
  * its own package and a slot that accepts it, exactly one namespace adopts
  * each doc, and each route belongs to one doc.
@@ -1361,7 +1361,7 @@ export async function checkDocsProgressiveDisclosure(ctx) {
     const guides = [...(await projectTree(catalog)).nodes.values()]
       // A flat topic in a topic level is checked above, as a topic.
       .filter(node => node.kind === 'generic' && !node.ref?.flatTopic)
-      .map(guideEntry);
+      .map(node => guideEntry(node, catalog));
     for (const entry of [...catalog.entries(), ...guides]) {
       for (const lang of [null, ...overlayLanguages(entry)]) {
         const where = lang ? `${entry.name} [${lang}]` : entry.name;
@@ -1499,7 +1499,7 @@ export function checkAnsweringRelease(ctx) {
       core
         ? `CLI ${cli} with Core ${core} answered, outside a project.`
         : `CLI ${cli} answered, outside a project. It installs Core ${cli} into the per-user cache the first time a command needs it.`
-    } How each folder is answered: \`${formatCliCommand('astryx docs global', ctx.cwd)}\`.`,
+    } How each folder is answered: \`${formatCliCommand('astryx docs get-started/on-your-computer', ctx.cwd)}\`.`,
   };
 }
 

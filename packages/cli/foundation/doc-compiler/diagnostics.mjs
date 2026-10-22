@@ -93,7 +93,7 @@ export const DIAGNOSTIC_CODES = Object.freeze(
       severity: 'error',
       scope: 'node',
       remediation:
-        'Fix the fields the message names; `astryx docs authoring` lists every field of each doc kind.',
+        'Fix the fields the message names; `astryx docs make-an-integration` lists every field of each doc kind.',
     },
     wrong_kind: {
       phase: 'parse',
@@ -135,7 +135,7 @@ export const DIAGNOSTIC_CODES = Object.freeze(
       severity: 'error',
       scope: 'node',
       remediation:
-        'Point placement.parent at a namespace of the same package ("namespace:<name>"), name one of its slots, and use a slot that accepts the doc\'s kind; `astryx docs authoring namespace-doc` lists the fields.',
+        'Point placement.parent at a namespace of the same package ("namespace:<name>"), name one of its slots, and use a slot that accepts the doc\'s kind; `astryx docs make-an-integration namespace-doc` lists the fields.',
     },
     overlapping_adoption: {
       phase: 'link',

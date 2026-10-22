@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file `astryx docs authoring/ship/publishing`: publish an integration to
+ * @file `astryx docs make-an-integration/ship/publishing`: publish an integration to
  * npm, use release tags, and check the package before and after.
  */
 

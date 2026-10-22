@@ -484,7 +484,7 @@ export function registerTheme(program) {
     `\nComponent style overrides:\n` +
       `  ${getCliInvocation()} theme targets            Every themeable class, with its props and states\n` +
       `  ${getCliInvocation()} component <Name>         One component's theming table\n` +
-      `  ${getCliInvocation()} docs theme               How component overrides work\n`,
+      `  ${getCliInvocation()} docs theme-your-app               How component overrides work\n`,
   );
 
   const palette = defineCommand(theme, themePaletteGroup, {

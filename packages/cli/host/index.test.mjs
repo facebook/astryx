@@ -221,7 +221,7 @@ describe('the command name', () => {
       cliCommand: 'acme astryx',
     });
     expect(hosted.status).toBe(0);
-    expect(hosted.stdout).toContain('See acme astryx docs global.');
+    expect(hosted.stdout).toContain('See acme astryx docs get-started/on-your-computer.');
     const direct = host({argv: ['--help'], cwd: empty});
     expect(direct.stdout).not.toContain('acme astryx');
   });

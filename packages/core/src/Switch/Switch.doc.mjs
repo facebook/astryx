@@ -161,7 +161,7 @@ export const docs = {
       name: 'labelIcon',
       type: 'IconType',
       description:
-        'Icon displayed before the label text. See `astryx docs icons` for valid semantic names.',
+        'Icon displayed before the label text. See `astryx docs foundations/icons` for valid semantic names.',
     },
     {
       name: 'labelTooltip',

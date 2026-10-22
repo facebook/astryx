@@ -101,8 +101,8 @@ describe('a section read on a namespace', () => {
     'returns the one guide section, by key and by title, as the guide read does',
     async () => {
       for (const query of ['side-panels', 'Side panels', 'side panels']) {
-        const read = await docs('layout', query);
-        expect(read).toEqual(await docs('layout/side-panels', 'side-panels'));
+        const read = await docs('build-a-page', query);
+        expect(read).toEqual(await docs('build-a-page/side-panels', 'side-panels'));
         expect(read).toMatchObject({
           type: 'docs.detail.section',
           package: '@astryxdesign/cli',
@@ -110,8 +110,8 @@ describe('a section read on a namespace', () => {
         });
       }
       // A section in a guide of its own, and a section past a guide's first.
-      expect((await docs('layout', 'shell')).data.id).toBe('shell');
-      expect((await docs('layout', 'responsive-contract')).data.id).toBe(
+      expect((await docs('build-a-page', 'shell')).data.id).toBe('shell');
+      expect((await docs('build-a-page', 'responsive-contract')).data.id).toBe(
         'responsive-contract',
       );
     },
@@ -122,8 +122,8 @@ describe('a section read on a namespace', () => {
     'reads dense and Chinese the way the guide read does',
     async () => {
       for (const options of [{dense: true}, {zh: true}, {lang: 'dense'}]) {
-        expect(await docs('layout', 'side-panels', options)).toEqual(
-          await docs('layout/side-panels', 'side-panels', options),
+        expect(await docs('build-a-page', 'side-panels', options)).toEqual(
+          await docs('build-a-page/side-panels', 'side-panels', options),
         );
       }
     },
@@ -150,20 +150,20 @@ describe('a section read on a namespace', () => {
   it(
     'fails on a miss, naming every guide below the namespace',
     async () => {
-      const err = await docs('layout', 'zzzz-nope').catch(e => e);
+      const err = await docs('build-a-page', 'zzzz-nope').catch(e => e);
       expect(err.code).toBe('ERR_UNKNOWN_SECTION');
       const names = err.suggestions.map(s => s.name);
-      expect(names).toContain('layout/scaffold');
-      expect(names).toContain('layout/side-panels');
-      expect(names.every(name => name.startsWith('layout/'))).toBe(true);
+      expect(names).toContain('build-a-page/scaffold');
+      expect(names).toContain('build-a-page/side-panels');
+      expect(names.every(name => name.startsWith('build-a-page/'))).toBe(true);
       // At any depth: guides under nested namespaces are named, namespaces are not.
-      const authoring = await docs('authoring', 'zzzz-nope').catch(e => e);
+      const authoring = await docs('make-an-integration', 'zzzz-nope').catch(e => e);
       expect(authoring.code).toBe('ERR_UNKNOWN_SECTION');
       expect(authoring.suggestions.map(s => s.name)).toContain(
-        'authoring/building-blocks/components/add-a-component',
+        'make-an-integration/building-blocks/components/add-a-component',
       );
       expect(authoring.suggestions.map(s => s.name)).not.toContain(
-        'authoring/building-blocks',
+        'make-an-integration/building-blocks',
       );
     },
     SLOW,
@@ -172,9 +172,9 @@ describe('a section read on a namespace', () => {
   it(
     'still fails a section on a typed doc, naming the doc',
     async () => {
-      const err = await docs('cli/commands/docs', 'anything').catch(e => e);
+      const err = await docs('reference/commands/docs', 'anything').catch(e => e);
       expect(err.code).toBe('ERR_UNKNOWN_SECTION');
-      expect(err.suggestions.map(s => s.name)).toEqual(['cli/commands/docs']);
+      expect(err.suggestions.map(s => s.name)).toEqual(['reference/commands/docs']);
     },
     SLOW,
   );
@@ -220,9 +220,9 @@ describe('a namespace read answers what the guide read answers', () => {
   it(
     'names the children of a namespace with no guide below it',
     async () => {
-      const err = await docs('cli/api', 'anything').catch(e => e);
+      const err = await docs('reference/api', 'anything').catch(e => e);
       expect(err.code).toBe('ERR_UNKNOWN_SECTION');
-      const api = (await docs('cli/api')).data;
+      const api = (await docs('reference/api')).data;
       expect(err.suggestions.map(s => s.name)).toEqual(
         api.slots.flatMap(slot => slot.children.map(child => child.route)),
       );

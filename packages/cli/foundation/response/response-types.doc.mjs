@@ -18,7 +18,7 @@ export const doc = {
   type: 'enum',
   name: 'response-types',
   displayName: 'Response Types',
-  namespace: 'cli/api',
+  namespace: 'reference/api',
   description:
     'The `type` discriminant present on every --json success envelope. Consumers switch on it to narrow `data`.',
   members: [

@@ -223,23 +223,13 @@ describe('mergeFlatTopics', () => {
     sections: titles.map(t => section(t)),
   });
 
-  it('shows the theme split on one theme page', () => {
+  it('passes flat topics through when none is merged into another', () => {
     const {topics, redirects} = mergeFlatTopics([
-      flat('theme', ['Wrap your app in a theme']),
-      flat('use-a-theme', ['Wrap your app in a theme', 'Dark mode']),
-      flat('author-a-theme', ['Custom themes']),
+      flat('acme-notes', ['Overview']),
       flat('color', ['Overview']),
     ]);
-    expect(topics.map(t => t.topic)).toEqual(['theme', 'color']);
-    expect(topics[0].sections.map((s: {title: string}) => s.title)).toEqual([
-      'Wrap your app in a theme',
-      'Dark mode',
-      'Custom themes',
-    ]);
-    expect(redirects).toEqual({
-      'use-a-theme': '/docs/theme#wrap-your-app-in-a-theme',
-      'author-a-theme': '/docs/theme#custom-themes',
-    });
+    expect(topics.map(t => t.topic)).toEqual(['acme-notes', 'color']);
+    expect(redirects).toEqual({});
   });
 
   it('leaves the topics alone before the split', () => {
@@ -299,7 +289,7 @@ describe('CLI commands on docsite pages', () => {
   });
 
   it('shows the Authoring page a command that runs before any install', () => {
-    const page = docTopics.find(topic => topic.topic === 'authoring');
+    const page = docTopics.find(topic => topic.topic === 'make-an-integration');
     const section = page?.sections.find(
       each => each.title === 'Verify the packed import',
     );

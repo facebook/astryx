@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file `astryx docs styling/styling-basics`: overview of styling approaches,
+ * @file `astryx docs style-components/styling-basics`: overview of styling approaches,
  * xstyle prop, Tailwind integration, className/style props, and rest props.
  */
 
@@ -11,7 +11,7 @@ export const docs = {
   type: 'generic',
   name: 'styling-basics',
   title: 'Basics',
-  placement: {parent: 'namespace:styling', slot: 'guides', order: 10},
+  placement: {parent: 'namespace:style-components', slot: 'guides', order: 20},
   category: 'guide',
   description:
     'Overview of styling approaches, xstyle prop, Tailwind integration, className/style props, and rest props.',
@@ -42,7 +42,7 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: 'Theming and dark mode work whichever you choose. For external styling libraries, see {@link namespace:styling-libraries}; it covers Tailwind, StyleX, Panda, Chakra, MUI, CSS-in-JS, CSS Modules, Sass, and `useTheme()` for non-CSS processing.',
+          text: 'Theming and dark mode work whichever you choose. For external styling libraries, see {@link namespace:style-components}; it covers Tailwind, StyleX, Panda, Chakra, MUI, CSS-in-JS, CSS Modules, Sass, and `useTheme()` for non-CSS processing.',
         },
       ],
     },
@@ -118,7 +118,7 @@ const overrides = stylex.create({
         },
         {
           type: 'prose',
-          text: 'The bridge is pure CSS with zero JS. Theme changes (dark mode, custom themes) apply automatically because the utilities reference the same CSS custom properties that components use. This is the paved Tailwind path; for other styling libraries that follow the same aliasing pattern, see {@link namespace:styling-libraries}.',
+          text: 'The bridge is pure CSS with zero JS. Theme changes (dark mode, custom themes) apply automatically because the utilities reference the same CSS custom properties that components use. This is the paved Tailwind path; for other styling libraries that follow the same aliasing pattern, see {@link namespace:style-components}.',
         },
       ],
     },

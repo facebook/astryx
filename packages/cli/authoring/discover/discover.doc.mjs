@@ -5,7 +5,7 @@
  * learn which integrations a project could add.
  * @input The DiscoverSource type and the catalog types beside it (`type.ts`),
  *   which `parse.mjs` validates.
- * @output The `discover-source` section of `astryx docs authoring`.
+ * @output The `discover-source` section of `astryx docs make-an-integration`.
  * @position packages/cli/authoring/discover — schema documentation
  */
 
@@ -138,7 +138,7 @@ export const doc = {
   notes: [
     {
       type: 'prose',
-      text: "In global mode: the discover source of an integration installed for the computer is called in folders outside any project; inside a project, only the sources of integrations the project installs are. See {@link namespace:global} and {@link generic:global-integrations}.",
+      text: "In global mode: the discover source of an integration installed for the computer is called in folders outside any project; inside a project, only the sources of integrations the project installs are. See {@link namespace:on-your-computer} and {@link generic:global-integrations}.",
     },
   ],
 };

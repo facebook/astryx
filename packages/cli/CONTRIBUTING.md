@@ -61,7 +61,7 @@ and what exit code to set.
 
 **Yes** if the command returns data that consumers might want programmatically — component docs, template source, lists, search results. Put the logic in `api/`, export from `@astryxdesign/cli/api`, and make the CLI handler a thin wrapper.
 
-**No** if the command is purely interactive or only makes sense in a terminal — `init` (interactive prompts). The interactive shell can live in `cli/commands/`, but any reusable core (the actual scaffolding work) still belongs in `api/`.
+**No** if the command is purely interactive or only makes sense in a terminal — `init` (interactive prompts). The interactive shell can live in `reference/commands/`, but any reusable core (the actual scaffolding work) still belongs in `api/`.
 
 **Rule of thumb:** if it supports `--json`, it should have an API function. The parity test (`api-cli-parity-test.mjs`) will flag any `--json` type that doesn't have API coverage.
 
@@ -98,7 +98,7 @@ export {myCommand} from './my-command/my-command.mjs';
 The CLI handler just parses args, calls the API function, and formats the result. No business logic here:
 
 ```javascript
-// cli/commands/my-command.mjs
+// reference/commands/my-command.mjs
 import {jsonOut, jsonError} from '../../lib/json.mjs';
 import {myCommand} from '../../api/my-command/my-command.mjs';
 
@@ -205,7 +205,7 @@ packages/cli/assets/templates/{name}/
 ### Adding a new option to an existing API function
 
 1. Add the option to the API function in `api/{command}/{command}.mjs`
-2. Pass it through from the CLI handler in `cli/commands/{command}.mjs`
+2. Pass it through from the CLI handler in `reference/commands/{command}.mjs`
 3. Add the option to the `{Command}Options` typedef in `api/{command}/{command}.type.mjs` — this JSDoc is the source of truth; the public `./api` type surface regenerates from it via `pnpm sync:api-types`
 
 ### Adding a new response type (e.g. `component.detail.variants`)

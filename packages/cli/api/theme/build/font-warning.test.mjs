@@ -256,7 +256,7 @@ describe('formatFontLoadingHelp', () => {
   });
 
   it('points at the docs recipe', () => {
-    expect(help).toContain(formatCliCommand('docs typography'));
+    expect(help).toContain(formatCliCommand('docs foundations/typography'));
   });
 
   it('percent-encodes family names in the css2 URL', () => {

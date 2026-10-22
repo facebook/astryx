@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file `astryx docs authoring/building-blocks/templates/document-the-template/template-doc-overview`:
+ * @file `astryx docs make-an-integration/building-blocks/templates/document-the-template/template-doc-overview`:
  * the source and doc file pair, the fields every template doc shares, and how
  * to check what Astryx lists.
  */

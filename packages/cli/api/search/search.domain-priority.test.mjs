@@ -78,7 +78,7 @@ describe('search domain priority — the rule', () => {
   it('gives a doc no priority for a heading match or a one-word keyword', () => {
     const topic = {
       domain: 'doc',
-      name: 'typography/font-setup',
+      name: 'foundations/typography/font-setup',
       keywords: ['size'],
       titles: ['Font Setup', 'Font Sizes'],
     };
@@ -112,11 +112,11 @@ describe('search domain priority — the rule', () => {
     // terms its text mentions; `missing_field` reads as two words.
     const reference = {
       domain: 'doc',
-      name: 'cli/api/functions/validate-integration',
+      name: 'reference/api/functions/validate-integration',
       titles: ['validateIntegration'],
       keywords: ['validate-integration', 'missing_field', 'file required'],
       _declared: [],
-      _topic: 'cli/api/functions/validate-integration',
+      _topic: 'reference/api/functions/validate-integration',
     };
     expect(priority('missing field', reference)).toBe(0);
     expect(priority('file required', reference)).toBe(0);
@@ -147,10 +147,10 @@ describe('search domain priority — the rule', () => {
   });
 
   it('gives a doc priority when the query names it', () => {
-    const topic = {domain: 'doc', name: 'typography/font-setup'};
+    const topic = {domain: 'doc', name: 'foundations/typography/font-setup'};
     // The whole query spells its last route segment.
     expect(priority('font setup', topic)).toBe(2);
-    expect(priority('typography/font-setup', topic)).toBe(2);
+    expect(priority('foundations/typography/font-setup', topic)).toBe(2);
     // A word of a longer query is a flat topic's name, or its plural.
     expect(
       priority('product illustration', {domain: 'doc', name: 'illustrations'}),
@@ -160,7 +160,7 @@ describe('search domain priority — the rule', () => {
   it('names a doc by its route or title whatever the plural', () => {
     const guide = {
       domain: 'doc',
-      name: 'layout/side-panels',
+      name: 'build-a-page/side-panels',
       titles: ['Side panels'],
     };
     expect(priority('side panel', guide)).toBe(2);
@@ -203,7 +203,7 @@ describe('search domain priority — the rule', () => {
   it('gives a doc priority when the query holds one of its titles whole', () => {
     const guide = {
       domain: 'doc',
-      name: 'layout/side-panels',
+      name: 'build-a-page/side-panels',
       titles: ['Side panels'],
     };
     expect(priority('resizable side panels with a toolbar', guide)).toBe(1);
@@ -255,7 +255,7 @@ describe('search domain priority — real docs and components', () => {
     async () => {
       const results = (await search('font size', {cwd})).data.results;
       expect(results[0]).toMatchObject({domain: 'doc'});
-      expect(results[0].name).toMatch(/^typography(?:\/|$)/);
+      expect(results[0].name).toMatch(/^foundations\/typography(?:\/|$)/);
       // The component the phrase points to stays near the top.
       expect(
         results
@@ -283,11 +283,11 @@ describe('search domain priority — real docs and components', () => {
       const [layers] = (await search('cascade layers', {cwd})).data.results;
       expect(layers).toMatchObject({
         domain: 'doc',
-        name: 'migration/migration-setup',
+        name: 'upgrade-and-migrate/from-tailwind-shadcn-radix/migration-setup',
       });
       const [keyboard] = (await search('keyboard navigation', {cwd})).data
         .results;
-      expect(keyboard?.name).not.toBe('migration/migration-verification');
+      expect(keyboard?.name).not.toBe('upgrade-and-migrate/from-tailwind-shadcn-radix/migration-verification');
     },
     SLOW,
   );
@@ -311,15 +311,17 @@ describe('search domain priority — real docs and components', () => {
   );
 
   it(
-    'still finds a flat guide first by its name',
+    'still finds a guide first by its name',
     async () => {
       for (const [q, name] of [
-        ['motion', 'motion'],
-        ['icons', 'icons'],
-        ['tokens', 'tokens'],
-        ['illustration', 'illustrations'],
-        ['use a theme', 'use-a-theme'],
-        ['author a theme', 'author-a-theme'],
+        ['motion', 'foundations/motion'],
+        ['icons', 'foundations/icons'],
+        ['all tokens', 'foundations/all-tokens'],
+        ['illustration', 'foundations/illustrations'],
+        ['use a theme', 'theme-your-app/use-a-theme'],
+        ['author a theme', 'theme-your-app/author-a-theme'],
+        ['upgrade and migrate', 'upgrade-and-migrate'],
+        ['make an integration', 'make-an-integration'],
       ]) {
         const results = (await search(q, {cwd})).data.results;
         expect(results[0], q).toMatchObject({domain: 'doc', name});
@@ -332,9 +334,9 @@ describe('search domain priority — real docs and components', () => {
     'still finds each layout guide first by its own name',
     async () => {
       // Each search reads the whole index, so this checks one split namespace
-      // (layout, six guides) rather than every guide in the tree.
-      const guides = await placedGuides('layout');
-      expect(guides).toContain('layout/layout-spacing');
+      // (build-a-page, six guides) rather than every guide in the tree.
+      const guides = await placedGuides('build-a-page');
+      expect(guides).toContain('build-a-page/layout-spacing');
       /** @type {string[]} */
       const misses = [];
       for (const route of guides) {

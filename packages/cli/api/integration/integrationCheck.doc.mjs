@@ -11,7 +11,7 @@ export const doc = {
   type: 'function',
   kind: 'api',
   name: 'integrationCheck',
-  namespace: 'cli/api',
+  namespace: 'reference/api',
   displayName: 'integrationCheck()',
   summary:
     'Run every source check against the integration package in the current folder, as its build does: validate, components, templates, and docs.',

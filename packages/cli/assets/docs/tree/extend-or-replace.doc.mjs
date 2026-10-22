@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file `astryx docs authoring/building-blocks/docs/extend-or-replace`:
+ * @file `astryx docs make-an-integration/building-blocks/docs/extend-or-replace`:
  * take over an existing topic with `replaces`, merge sections into one with
  * `extends`, and check overlaps with Core topics.
  */
@@ -21,18 +21,18 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: "Set `replaces` to take over an existing topic, such as Core's `getting-started`. Readers who open the old name get your topic.",
+          text: "Set `replaces` to take over an existing topic or Core guide, such as Core's `add-to-a-project`. Readers who open its route get your topic. A Core topic's former name, such as `getting-started` or `theme`, still lands on the guide that took its text.",
         },
         {
           type: 'code',
           lang: 'bash',
-          code: 'astryx integration add doc acme-getting-started --replaces getting-started\n# The old name now opens your topic\nastryx docs getting-started',
+          code: 'astryx integration add doc acme-getting-started --replaces add-to-a-project\n# The guide\'s route now opens your topic\nastryx docs get-started/add-to-a-project',
         },
         {
           type: 'code',
           lang: 'javascript',
           label: 'docs/acme-getting-started.doc.mjs',
-          code: "export default {\n  type: 'generic',\n  name: 'acme-getting-started',\n  replaces: 'getting-started',\n  title: 'Acme getting started',\n  description: 'Install Acme widgets and render your first carousel.',\n  sections: [/* ... */],\n};",
+          code: "export default {\n  type: 'generic',\n  name: 'acme-getting-started',\n  replaces: 'add-to-a-project',\n  title: 'Acme getting started',\n  description: 'Install Acme widgets and render your first carousel.',\n  sections: [/* ... */],\n};",
         },
         {
           type: 'prose',
@@ -51,13 +51,13 @@ export const docs = {
         {
           type: 'code',
           lang: 'bash',
-          code: 'astryx integration add doc acme-theming --extends theme\nastryx docs theme --index',
+          code: 'astryx integration add doc acme-theming --extends use-a-theme\nastryx docs theme-your-app/use-a-theme --index',
         },
         {
           type: 'code',
           lang: 'javascript',
           label: 'docs/acme-theming.doc.mjs',
-          code: "export default {\n  type: 'generic',\n  name: 'acme-theming',\n  extends: 'theme',\n  title: 'Acme theming',\n  description: 'Theme an app that uses Acme widgets.',\n  sections: [\n    {id: 'quick-start', title: 'Quick Start', content: [/* replaces the base section */]},\n    {id: 'use-the-ocean-theme', title: 'Use the ocean theme', content: [/* added at the end */]},\n  ],\n};",
+          code: "export default {\n  type: 'generic',\n  name: 'acme-theming',\n  extends: 'use-a-theme',\n  title: 'Acme theming',\n  description: 'Theme an app that uses Acme widgets.',\n  sections: [\n    {id: 'quick-start', title: 'Quick Start', content: [/* replaces the base section */]},\n    {id: 'use-the-ocean-theme', title: 'Use the ocean theme', content: [/* added at the end */]},\n  ],\n};",
         },
         {
           type: 'list',
@@ -87,7 +87,7 @@ export const docs = {
         {
           type: 'code',
           lang: 'text',
-          code: 'severity:     [info]\ntopic:        acme-getting-started\nrelationship: replaces\ncoreTopic:    getting-started\nmessage:      Intentional override: "acme-getting-started" replaces the Core topic "getting-started".\n\nseverity:     [fail]\ntopic:        color\nrelationship: accidental\ncoreTopic:    color\nmessage:      Accidental conflict: "color" is already a Core topic. Rename it, declare replaces: \'color\' to take it over, or declare extends: \'color\' to merge sections.',
+          code: 'severity:     [info]\ntopic:        acme-getting-started\nrelationship: replaces\ncoreTopic:    add-to-a-project\nmessage:      Intentional override: "acme-getting-started" replaces the Core topic "add-to-a-project".\n\nseverity:     [fail]\ntopic:        color\nrelationship: accidental\ncoreTopic:    color\nmessage:      Accidental conflict: "color" is already a Core topic. Rename it, declare replaces: \'color\' to take it over, or declare extends: \'color\' to merge sections.',
         },
         {
           type: 'list',
@@ -105,7 +105,7 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'In global mode: a doc that extends or replaces a topic from a package installed for the computer applies in folders outside any project; inside a project, only those from packages the project installs apply. See {@link namespace:global} and {@link generic:global-integrations}.',
+          text: 'In global mode: a doc that extends or replaces a topic from a package installed for the computer applies in folders outside any project; inside a project, only those from packages the project installs apply. See {@link namespace:on-your-computer} and {@link generic:global-integrations}.',
         },
       ],
     },

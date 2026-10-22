@@ -112,7 +112,7 @@ const FOOTER_LINKS: ReadonlyArray<{
   label: string;
   href: string;
 }> = [
-  {label: 'Docs', href: '/docs/getting-started'},
+  {label: 'Docs', href: '/docs'},
   {label: 'Components', href: '/components'},
   {label: 'Templates', href: '/templates'},
   {label: 'Themes', href: '/themes'},

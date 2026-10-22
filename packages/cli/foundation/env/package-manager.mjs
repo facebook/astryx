@@ -555,7 +555,7 @@ export function guessCliInvocation(targetDir) {
  * `astryx` token is stripped) and prepends the install-aware invocation stem
  * from {@link getCliInvocation}.
  *
- * @param {string} command e.g. 'astryx component Button' | 'docs tokens'
+ * @param {string} command e.g. 'astryx component Button' | 'docs foundations/all-tokens'
  * @param {string} [targetDir]
  * @returns {string}
  */

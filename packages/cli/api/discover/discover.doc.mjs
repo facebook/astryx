@@ -11,7 +11,7 @@ export const doc = {
   type: 'function',
   kind: 'api',
   name: 'discover',
-  namespace: 'cli/api',
+  namespace: 'reference/api',
   displayName: 'discover()',
   summary:
     'Browse and search integrations: the ones a project has and, through the official list and discover sources, the ones it could add.',
@@ -22,7 +22,7 @@ export const doc = {
     'version its source knows; @scope/name@version shows one version; @scope/name/Component returns an installed ' +
     "component's validated doc, and any other item path returns that item. A free-text term searches every item and " +
     'package. Discover only reads: it prints the command that adds a package and never runs it.' +
-    " In global mode: with `cwd` outside a project, integrations installed next to this CLI package globally are listed as installed; inside a project, only the project's own are, and the compatible global ones are listed in `meta.available` with source `installed for this computer` and an `install` command. See {@link namespace:global} and {@link generic:computer-integrations}.",
+    " In global mode: with `cwd` outside a project, integrations installed next to this CLI package globally are listed as installed; inside a project, only the project's own are, and the compatible global ones are listed in `meta.available` with source `installed for this computer` and an `install` command. See {@link namespace:on-your-computer} and {@link generic:computer-integrations}.",
   importPath: '@astryxdesign/cli/api',
   signature:
     'discover(query?: string, options?: DiscoverOptions): Promise<DiscoverListResponse | DiscoverDetailResponse | DiscoverDetailDocResponse | DiscoverItemResponse | DiscoverSearchResponse>',

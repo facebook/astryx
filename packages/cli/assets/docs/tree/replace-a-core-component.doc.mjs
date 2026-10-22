@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file `astryx docs authoring/building-blocks/components/replace-a-core-component`:
+ * @file `astryx docs make-an-integration/building-blocks/components/replace-a-core-component`:
  * intentionally make an integration component the default for a Core identity.
  */
 
@@ -121,7 +121,7 @@ export default {
       content: [
         {
           type: 'prose',
-          text: 'In global mode: a replacement from a package installed for the computer applies in folders outside any project; inside a project, only replacements from packages the project installs apply. See {@link namespace:global} and {@link generic:global-integrations}.',
+          text: 'In global mode: a replacement from a package installed for the computer applies in folders outside any project; inside a project, only replacements from packages the project installs apply. See {@link namespace:on-your-computer} and {@link generic:global-integrations}.',
         },
       ],
     },

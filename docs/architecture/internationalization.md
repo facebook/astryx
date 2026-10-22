@@ -96,7 +96,7 @@ framework. Applications continue to own product copy and may use any application
 i18n runtime alongside Astryx.
 
 This record defines the library's catalog and locale boundaries. Consumer setup
-and examples remain in `astryx docs internationalization`.
+and examples remain in `astryx docs translate-your-app`.
 
 ### Cross-cutting component contract
 

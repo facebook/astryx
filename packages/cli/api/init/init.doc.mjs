@@ -11,7 +11,7 @@ export const doc = {
   type: 'function',
   kind: 'api',
   name: 'init',
-  namespace: 'cli/api',
+  namespace: 'reference/api',
   displayName: 'init()',
   summary:
     'Non-interactive project setup: install agent docs and point at the theme + build workflows.',
@@ -36,7 +36,7 @@ export const doc = {
     'Outside a project it writes the same files but prints no getting-started steps and no step that adds a theme to an app, since those set up a project the folder does not have. ' +
         "With `user` it sets up the computer instead of the folder: it writes the computer-level agent text, one skill file at `~/.agents/skills/astryx/SKILL.md`, linked into the skill folders of agents that read only their own (`~/.claude/skills` always; Kiro, Windsurf, Letta, Xcode's coding assistant, and `~/.config/agents/skills` when that folder exists), with a managed copy for Continue, whose scanner skips links,, telling agents anywhere on the computer that Astryx is there and when to use it; with `user` and `removeAgents` it removes the file and the links it made and records that the text is turned off. " +
     'The CLI installed for the computer refreshes the file in the background after each upgrade; package install scripts, project setup, and upgrade never write it.' +
-    " In global mode: with `cwd` outside a project, it writes the agent docs and prints no getting-started steps; `user` writes only the agent guide for the computer, in the home folder, and touches nothing in `cwd`. See {@link namespace:global} and {@link generic:computer-agent-guide}.",
+    " In global mode: with `cwd` outside a project, it writes the agent docs and prints no getting-started steps; `user` writes only the agent guide for the computer, in the home folder, and touches nothing in `cwd`. See {@link namespace:on-your-computer} and {@link generic:computer-agent-guide}.",
   importPath: '@astryxdesign/cli/api',
   signature:
     'init(options?: InitOptions, ctx?: {cwd?: string}): Promise<InitRunResponse | InitRemoveResponse | InitUserResponse>',

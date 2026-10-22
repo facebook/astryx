@@ -11,7 +11,7 @@ export const doc = {
   type: 'function',
   kind: 'api',
   name: 'build',
-  namespace: 'cli/api',
+  namespace: 'reference/api',
   displayName: 'build()',
   summary:
     'Page-building assistant: the how-to-build playbook, or the page template to start from for an idea.',

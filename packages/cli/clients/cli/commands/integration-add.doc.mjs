@@ -5,7 +5,7 @@ export const doc = {
   type: 'command',
   name: 'integration add',
   displayName: 'astryx integration add',
-  namespace: 'cli/commands',
+  namespace: 'reference/commands',
   summary: 'Add one working contribution to an integration package',
   description:
     'Writes the files one contribution needs, creates the integration manifest on first use, and declares a root only after a contribution the CLI can read exists behind it. A component or template import also needs an `exports` entry: add writes one only when package.json already has an `exports` map, so start a new package with `"exports": {}`. See {@link generic:quick-start}.',
@@ -89,11 +89,11 @@ export const doc = {
     },
     {
       label: 'Replace a doc topic',
-      cli: 'astryx integration add doc acme-getting-started --replaces getting-started',
+      cli: 'astryx integration add doc acme-getting-started --replaces add-to-a-project',
     },
     {
       label: 'Extend a doc topic',
-      cli: 'astryx integration add doc acme-theming --extends theme',
+      cli: 'astryx integration add doc acme-theming --extends use-a-theme',
     },
     {
       label: 'Add a guide to the package\'s own docs section',
@@ -125,7 +125,7 @@ export const doc = {
   notes: [
     {
       type: 'prose',
-      text: "In global mode: outside a package, integration add writes nothing and stops with `ERR_FILE_NOT_FOUND`: \"No package.json found. Run this command inside an integration package.\" In a project, the project's version of Astryx runs it, whichever astryx command you start. See {@link namespace:global} and {@link generic:global-integrations}.",
+      text: "In global mode: outside a package, integration add writes nothing and stops with `ERR_FILE_NOT_FOUND`: \"No package.json found. Run this command inside an integration package.\" In a project, the project's version of Astryx runs it, whichever astryx command you start. See {@link namespace:on-your-computer} and {@link generic:global-integrations}.",
     },
   ],
 };

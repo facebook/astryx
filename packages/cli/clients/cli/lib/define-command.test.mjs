@@ -81,7 +81,7 @@ describe('defineCommand', () => {
         `  ${stem} grp sub x`,
         `  ${stem} grp sub y --json`,
         '',
-        `More: ${stem} docs cli/commands/grp-sub`,
+        `More: ${stem} docs reference/commands/grp-sub`,
         '',
       ].join('\n'),
     );
@@ -98,6 +98,6 @@ describe('defineCommand', () => {
     cmd.configureOutput({writeOut: s => (out += s)});
     cmd.outputHelp();
     expect(out).not.toContain('Examples:');
-    expect(out.endsWith(`\n\nMore: ${formatCliCommand('docs cli/commands/solo')}\n`)).toBe(true);
+    expect(out.endsWith(`\n\nMore: ${formatCliCommand('docs reference/commands/solo')}\n`)).toBe(true);
   });
 });

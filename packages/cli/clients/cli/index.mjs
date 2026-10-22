@@ -398,7 +398,7 @@ export async function createProgram() {
         ),
         text(
           "Global mode: in a project, the project's own CLI answers (this copy hands the run to it); a copy installed for the computer checks for updates once a day and keeps an agent skill in your home folder. " +
-            `See ${formatCliCommand('docs global')}.`,
+            `See ${formatCliCommand('docs get-started/on-your-computer')}.`,
         ),
       ]
         .map(block => block.toString())
@@ -425,7 +425,7 @@ export async function createProgram() {
     .addOption(
       new Option(
         '--detail <level>',
-        'Detail level for component, hook, and docs tree reads (e.g. docs cli/commands/build), and for theme build reports. Lists default to brief; theme build prints one line per built theme unless full, which adds the install example and font recipe',
+        'Detail level for component, hook, and docs tree reads (e.g. docs reference/commands/build), and for theme build reports. Lists default to brief; theme build prints one line per built theme unless full, which adds the install example and font recipe',
       )
         .choices(['full', 'compact', 'brief'])
         .default('full'),

@@ -117,23 +117,23 @@ describe('search leaf — docs at the grain a reader reads them', () => {
         .find(result => result.section === 'which-codemods-run');
       expect(hit).toMatchObject({
         domain: 'doc',
-        name: expect.stringMatching(/^authoring\/(?:.+\/)?codemods$/),
+        name: expect.stringMatching(/^make-an-integration\/(?:.+\/)?codemods$/),
         title: expect.stringMatching(/ › Codemods › Choose when a codemod runs$/),
       });
       expect(hit.parent).toBe(`astryx docs ${hit.name} --index`);
       expect(hit.command).toBe(`astryx docs ${hit.name} which-codemods-run`);
       const block = await search('token-ref', {cwd});
       expect(block.data.results[0]).toMatchObject({
-        name: 'authoring/field-reference',
+        name: 'make-an-integration/field-reference',
         section: 'reference-doc',
-        command: 'astryx docs authoring/field-reference reference-doc',
+        command: 'astryx docs make-an-integration/field-reference reference-doc',
       });
       const fn = await search('assertResponse', {cwd, type: 'doc'});
       expect(fn.data.results[0]).toMatchObject({
-        name: 'cli/api/functions/assert-response',
-        title: 'Astryx CLI › API › Functions › assertResponse()',
-        parent: 'astryx docs cli/api/functions',
-        command: 'astryx docs cli/api/functions/assert-response',
+        name: 'reference/api/functions/assert-response',
+        title: 'Reference › API › Functions › assertResponse()',
+        parent: 'astryx docs reference/api/functions',
+        command: 'astryx docs reference/api/functions/assert-response',
       });
       expect(fn.data.results[0]).not.toHaveProperty('section');
     },
@@ -148,13 +148,13 @@ describe('search leaf — docs at the grain a reader reads them', () => {
       // keywords and the title the guides declare. A namespace's own
       // keywords count, and a plural name is the name.
       for (const [query, route] of [
-        ['make an integration', /^authoring$/],
-        ['build an integration', /^authoring$/],
-        ['create an integration', /^authoring$/],
-        ['integration', /^authoring$/],
-        ['publish an integration', /^authoring$/],
+        ['make an integration', /^make-an-integration$/],
+        ['build an integration', /^make-an-integration$/],
+        ['create an integration', /^make-an-integration$/],
+        ['integration', /^make-an-integration$/],
+        ['publish an integration', /^make-an-integration$/],
         // The troubleshooting guide, wherever the tree places it.
-        ['troubleshoot integration', /^authoring\/(?:.+\/)?troubleshooting$/],
+        ['troubleshoot integration', /^make-an-integration\/(?:.+\/)?troubleshooting$/],
       ]) {
         const r = await search(query, {cwd, type: 'doc'});
         const names = r.data.results.slice(0, 3).map(result => result.name);
@@ -167,7 +167,7 @@ describe('search leaf — docs at the grain a reader reads them', () => {
   it(
     'gives a top-level namespace hit the topic list as its parent',
     async () => {
-      for (const [query, route] of [['foundations', 'foundations'], ['Astryx CLI', 'cli']]) {
+      for (const [query, route] of [['foundations', 'foundations'], ['reference', 'reference']]) {
         const r = await search(query, {cwd, type: 'doc'});
         expect(r.data.results).toContainEqual(
           expect.objectContaining({
@@ -185,7 +185,7 @@ describe('search leaf — docs at the grain a reader reads them', () => {
     'points a topic hit at its index, never a whole-topic read',
     async () => {
       // A guide the tree places, read from the tree rather than named.
-      const {data: integrations} = await docs('authoring');
+      const {data: integrations} = await docs('make-an-integration');
       const guide = integrations.slots
         .flatMap(slot => slot.children)
         .find(child => child.kind === 'generic').route;
@@ -208,7 +208,7 @@ describe('search leaf — docs at the grain a reader reads them', () => {
       try {
         const r = await search('assertResponse', {cwd: bare, type: 'doc'});
         expect(r.data.results[0].name).toBe(
-          'cli/api/functions/assert-response',
+          'reference/api/functions/assert-response',
         );
       } finally {
         fs.rmSync(bare, {recursive: true, force: true});
@@ -371,7 +371,7 @@ describe('search leaf — a whole-query phrase in a title or heading is top tier
       // The topic-level hit and the section can tie; either is correct.
       const top = r.data.results[0];
       const hasDarkMode = top.section === 'light-dark-mode' ||
-        top.name === 'use-a-theme' || top.name === 'theme';
+        top.name === 'theme-your-app/use-a-theme' || top.name === 'theme-your-app';
       expect(hasDarkMode).toBe(true);
     }
   }, SLOW);
@@ -437,12 +437,12 @@ describe('search leaf — a candidate that matches every word outranks a partial
       const r = await search(query, {cwd});
       expect(r.data.results[0], query).toMatchObject({domain: 'component', name});
     }
-    const tokens = await search('tokens', {cwd});
-    expect(tokens.data.results[0]).toMatchObject({domain: 'doc', name: 'tokens'});
+    const tokens = await search('all tokens', {cwd});
+    expect(tokens.data.results[0]).toMatchObject({domain: 'doc', name: 'foundations/all-tokens'});
     for (const [query, route] of [
-      ['codemods', /^authoring\/(?:.+\/)?codemods$/],
-      ['quick start', /^authoring\/(?:.+\/)?quick-start$/],
-      ['test in an app', /^authoring\/(?:.+\/)?test-in-an-app$/],
+      ['codemods', /^make-an-integration\/(?:.+\/)?codemods$/],
+      ['quick start', /^make-an-integration\/(?:.+\/)?quick-start$/],
+      ['test in an app', /^make-an-integration\/(?:.+\/)?test-in-an-app$/],
     ]) {
       const r = await search(query, {cwd, type: 'doc'});
       // The guide is among the hits that share the top score: two guides

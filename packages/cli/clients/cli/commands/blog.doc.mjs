@@ -12,7 +12,7 @@ export const doc = {
   type: 'command',
   name: 'blog',
   displayName: 'astryx blog',
-  namespace: 'cli/commands',
+  namespace: 'reference/commands',
   summary: 'Read the Astryx blog from the published feed',
   description:
     'Reads the design-system blog over its published RSS feed (never the source ' +

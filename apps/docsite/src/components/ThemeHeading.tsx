@@ -90,7 +90,7 @@ export function ThemeHeading({
         <Link
           type="body"
           color="secondary"
-          href="/docs/theme"
+          href="/docs/theme-your-app"
           hasUnderline
           tabIndex={isLoading ? -1 : undefined}>
           Learn how theming works

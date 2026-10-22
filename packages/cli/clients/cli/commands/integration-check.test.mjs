@@ -419,7 +419,7 @@ describe('a stray doc pointer', () => {
         {
           title: 'Overview',
           content: [
-            {type: 'prose', text: 'The theme is in `astryx docs theme`.'},
+            {type: 'prose', text: 'The theme is in `astryx docs theme-your-app`.'},
           ],
         },
       ],
@@ -432,7 +432,7 @@ describe('a stray doc pointer', () => {
     const doctor = await runCli(['doctor', 'integration', 'docs'], tmpDir);
     expect(doctor.status).toBe(0);
     expect(doctor.stdout).toContain('1 stray doc pointer(s)');
-    expect(doctor.stdout).toContain('{@link @astryxdesign/cli:generic:theme}');
+    expect(doctor.stdout).toContain('{@link @astryxdesign/cli:namespace:theme-your-app}');
 
     const strict = await runCli(['integration', 'check', '--strict'], tmpDir);
     expect(strict.status).toBe(1);

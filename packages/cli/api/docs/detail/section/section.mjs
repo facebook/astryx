@@ -177,7 +177,7 @@ export async function namespaceSection(
     return sectionResponse(chosen.resolved, chosen.sections, chosen.match);
 
   if (guides.length === 0) {
-    // A namespace with no guide below it (a reference level such as cli/api)
+    // A namespace with no guide below it (a reference level such as reference/api)
     // has no sections to read: name its children, as before.
     throw new AstryxError(
       `"${namespace.route}" has no sections. Open one of its children instead.`,

@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file `astryx docs global/project-global-or-both`: which setup to use, project,
+ * @file `astryx docs get-started/on-your-computer/project-global-or-both`: which setup to use, project,
  * global, or both (recommended), with what each costs and how to set it up.
  */
 
@@ -10,7 +10,7 @@ export const docs = {
   type: 'generic',
   name: 'project-global-or-both',
   placement: {
-    parent: 'namespace:global',
+    parent: 'namespace:on-your-computer',
     slot: 'guides',
     order: 1,
   },
@@ -123,7 +123,7 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'This page is part of {@link namespace:global}, which explains what global mode is and how each part works. To start an app: {@link generic:getting-started}.',
+          text: 'This page is part of {@link namespace:on-your-computer}, which explains what global mode is and how each part works. To start an app: {@link generic:add-to-a-project}.',
         },
       ],
     },

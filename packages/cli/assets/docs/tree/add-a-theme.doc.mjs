@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file `astryx docs authoring/building-blocks/themes/add-a-theme`:
+ * @file `astryx docs make-an-integration/building-blocks/themes/add-a-theme`:
  * scaffold a theme in a package — blank, or forked from an existing theme.
  */
 
@@ -91,7 +91,7 @@ Declare theme root ./themes in astryx.integration.mjs.
       content: [
         {
           type: 'prose',
-          text: 'In global mode: when users install your package for their computer, beside the global CLI, your themes are listed in folders outside any project, where `theme add` lists but writes nothing; inside a project, only if the project installs your package. See {@link namespace:global} and {@link generic:global-integrations}.',
+          text: 'In global mode: when users install your package for their computer, beside the global CLI, your themes are listed in folders outside any project, where `theme add` lists but writes nothing; inside a project, only if the project installs your package. See {@link namespace:on-your-computer} and {@link generic:global-integrations}.',
         },
       ],
     },

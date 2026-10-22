@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file `astryx docs internationalization/i18n-quick-start`: wrap your app in
+ * @file `astryx docs translate-your-app/i18n-quick-start`: wrap your app in
  * a provider, load a locale catalog, and swap languages at runtime.
  */
 
@@ -11,14 +11,13 @@ export const docs = {
   type: 'generic',
   name: 'i18n-quick-start',
   title: 'Quick Start',
-  placement: {parent: 'namespace:internationalization', slot: 'guides', order: 10},
+  placement: {parent: 'namespace:translate-your-app', slot: 'guides', order: 10},
   category: 'guide',
   description:
     'Wrap your app in InternationalizationProvider, load a locale catalog, and swap languages at runtime.',
   keywords: [
     'InternationalizationProvider',
-    'quick start',
-    'language swap',
+    'language swap'
   ],
 
   sections: [

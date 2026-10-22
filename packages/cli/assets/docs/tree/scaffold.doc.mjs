@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file `astryx docs layout/scaffold`: pick the shell, budget each region,
+ * @file `astryx docs build-a-page/scaffold`: pick the shell, budget each region,
  * and choose navigation — before any content exists.
  */
 
@@ -11,7 +11,7 @@ export const docs = {
   type: 'generic',
   name: 'scaffold',
   title: 'Scaffold',
-  placement: {parent: 'namespace:layout', slot: 'guides', order: 10},
+  placement: {parent: 'namespace:build-a-page', slot: 'guides', order: 10},
   category: 'guide',
   description:
     'Pick the shell, budget each region, and choose navigation, before any content exists.',

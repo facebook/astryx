@@ -486,10 +486,10 @@ validate` MUST warn on a PascalCase `.tsx` at the top of the components root
   source answers: that owner keeps it unless a declared replacement claims it.
 - **INV25 — Every CLI doc names the group that reads it.** Each command, API
   function, schema, and enum doc the CLI ships declares a `namespace`. The docs
-  tree adopts `cli/commands` and `cli/api` docs, one route each under
-  `cli/commands` and `cli/api/<kind>s`; `authoring` docs are sections of the
-  field reference, `astryx docs authoring/field-reference`, and appear in its
-  list; `astryx docs authoring <name>` reads one. `astryx doctor` fails when a
+  tree adopts `reference/commands` and `reference/api` docs, one route each under
+  `reference/commands` and `reference/api/<kind>s`; `authoring` docs are sections of the
+  field reference, `astryx docs make-an-integration/field-reference`, and appear in its
+  list; `astryx docs make-an-integration <name>` reads one. `astryx doctor` fails when a
   CLI doc has no namespace, names one nothing reads, or disagrees with the
   authoring list, so every doc the CLI ships stays readable from the CLI.
 - **INV26 — The docs tree gives each doc one home (`spec:AST-046`).** The tree

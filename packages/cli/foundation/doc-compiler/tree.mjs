@@ -11,8 +11,9 @@
  *   failed. {@link loadDocsTree} builds the CLI's own tree once per process.
  * @position Between discovery and the readers: `astryx docs <route>`,
  *   `astryx doctor`, and the docsite build all read this tree. The CLI's docs
- *   and each integration's have a home here, and a flat topic's home is the
- *   generated level for its category: Guides or Foundations.
+ *   and each integration's have a home here: every Core doc sits under one
+ *   of the twelve guides or Reference ({@link GUIDE_ORDER}), and an
+ *   integration's flat topic sits in the generated More topics level.
  *   A namespace never scans files and never lists its children: a child names
  *   its parent, or a namespace adopts a discovery group.
  */
@@ -112,50 +113,81 @@ export const KIND_GROUPS = Object.freeze({
  */
 
 /**
- * A flat topic: a reference topic that no namespace places. The tree gives it
- * a home in the generated level for its category (Guides or Foundations),
- * under its own name.
+ * A flat topic: a reference topic that no namespace places. An integration
+ * writes one with no `placement`; the tree gives it a home in the generated
+ * More topics level, under its own name.
  * @typedef {object} TreeTopicInput
  * @property {string} provider the package that owns the topic
  * @property {string} providerId the provider's ProviderId
  * @property {string} name the topic's name, which stays its route
  * @property {string} title
  * @property {string} summary
- * @property {string | null} [category] the topic's sidebar group:
- *   `foundations` puts it in Foundations; anything else, in Guides
+ * @property {string | null} [category] the topic's sidebar group, carried for
+ *   readers; it does not change the topic's home
  * @property {string} source where the topic comes from, for diagnostics
  * @property {string[]} [aliases] every other name the topic answers to: the
  *   topics it replaced, directly or through a chain
  */
 
 /**
- * The generated levels that hold the flat topics, by category
- * (spec:AST-046 FR12). A topic keeps its own name as its route; its level is
- * only where it sits. Readers see these titles in a topic's path, so each is
- * a plain name for what the topics are.
+ * The CLI's root namespaces, in reading order (spec:AST-046 FR12): twelve
+ * guides named for what a reader wants to do, then Reference. `astryx docs`
+ * lists them in this order, and the docsite sidebar follows it. Every Core
+ * doc sits under exactly one of them.
+ */
+export const GUIDE_ORDER = Object.freeze([
+  'get-started',
+  'work-with-agents',
+  'build-a-page',
+  'find-a-component',
+  'theme-your-app',
+  'style-components',
+  'foundations',
+  'check-your-code',
+  'upgrade-and-migrate',
+  'translate-your-app',
+  'make-an-integration',
+  'fix-a-problem',
+  'reference',
+]);
+
+/**
+ * The generated level that holds flat topics (spec:AST-046 FR12). Core has
+ * none: its docs all sit under the guides. An integration's flat topic keeps
+ * its own name as its route; this level is only where it sits.
  */
 export const TOPIC_LEVELS = Object.freeze({
-  guides: Object.freeze({
-    route: 'guides',
-    title: 'Guides',
+  topics: Object.freeze({
+    route: 'more-topics',
+    title: 'More topics',
     summary:
-      'Guides that stand on their own: getting started, principles, theming, and working with AI. Each topic keeps its own name; open one by it.',
-  }),
-  foundations: Object.freeze({
-    route: 'foundations',
-    title: 'Foundations',
-    summary:
-      'Color, elevation, icons, illustrations, motion, shape, and spacing: the visual foundations every component builds on. Each topic keeps its own name; open one by it.',
+      'Topics your integrations add outside the guides. Each keeps its own name; open one by it.',
   }),
 });
 
 /**
- * The generated level a flat topic sits in.
- * @param {string | null | undefined} category
- * @returns {'guides' | 'foundations'}
+ * The generated level a flat topic sits in: there is one.
+ * @param {string | null | undefined} _category
+ * @returns {'topics'}
  */
-export const topicLevel = category =>
-  category === 'foundations' ? 'foundations' : 'guides';
+export const topicLevel = _category => 'topics';
+
+/**
+ * Roots in reading order: the CLI's guides in {@link GUIDE_ORDER}, then every
+ * other root (an integration's namespace, the More topics level) by route.
+ * @param {TreeNode[]} roots
+ * @returns {TreeNode[]}
+ */
+export function orderRoots(roots) {
+  const rank = (/** @type {TreeNode} */ node) => {
+    const at =
+      node.provider === CLI_PROVIDER ? GUIDE_ORDER.indexOf(node.route) : -1;
+    return at === -1 ? GUIDE_ORDER.length : at;
+  };
+  return [...roots].sort(
+    (a, b) => rank(a) - rank(b) || byText(a.route, b.route),
+  );
+}
 
 /**
  * @typedef {object} TreeNode
@@ -187,7 +219,11 @@ export const topicLevel = category =>
  * @property {(route: string) => TreeNode | undefined} get
  * @property {(route: string) => TreeNode | undefined} getFolded the node at a
  *   route compared without case, as topic names are
- * @property {() => TreeNode[]} roots the namespaces with no parent
+ * @property {(route: string) => boolean} isReserved whether the CLI keeps a
+ *   route though no doc holds it (a route its docs moved from), compared
+ *   without case
+ * @property {() => TreeNode[]} roots the namespaces with no parent, in
+ *   reading order ({@link orderRoots})
  * @property {(node: TreeNode) => TreeNode[]} ancestors top first, not the node
  */
 
@@ -245,13 +281,16 @@ function resolveParent(parent, provider, declared) {
  * the one adoption rule in its package that matches its group and kind. A
  * placement that fails withdraws the doc; it never falls back to adoption. A
  * doc with neither is a flat topic: it keeps its flat name as its route, and its
- * home is the generated level for its category. The CLI keeps its own routes: an
+ * home is the generated More topics level. The CLI keeps its own routes: an
  * integration's node that would take one is withdrawn with a diagnostic.
  *
- * @param {{namespaces: TreeNamespaceInput[], docs: TreeDocInput[], topics?: TreeTopicInput[]}} inputs
+ * @param {{namespaces: TreeNamespaceInput[], docs: TreeDocInput[], topics?: TreeTopicInput[], reserved?: string[]}} inputs
+ *   `reserved`: routes the CLI keeps though no doc holds them, such as the
+ *   routes its docs moved from, so `astryx docs <old route>` keeps naming
+ *   where its doc went instead of opening another package's doc
  * @returns {DocsTree}
  */
-export function buildDocsTree({namespaces, docs, topics = []}) {
+export function buildDocsTree({namespaces, docs, topics = [], reserved = []}) {
   /** @type {CompilerDiagnostic[]} */
   const diagnostics = [];
   /** @param {string} code @param {{provider: string, source: string}} at @param {string} message @param {string} [field] */
@@ -270,11 +309,13 @@ export function buildDocsTree({namespaces, docs, topics = []}) {
   // namespaces keep theirs by rank, because they go into the tree first.
   // Routes compare without case, as topic names do, so `CLI` claims `cli`.
   /** @type {Set<string>} */
-  const cliRoutes = new Set(
-    topics.length > 0
+  const reservedRoutes = new Set(reserved.map(route => route.toLowerCase()));
+  const cliRoutes = new Set([
+    ...(topics.length > 0
       ? Object.values(TOPIC_LEVELS).map(level => level.route)
-      : [],
-  );
+      : []),
+    ...reserved.map(route => route.toLowerCase()),
+  ]);
   for (const topic of topics) {
     if (topic.provider === CLI_PROVIDER)
       cliRoutes.add(topic.name.toLowerCase());
@@ -626,9 +667,9 @@ export function buildDocsTree({namespaces, docs, topics = []}) {
     );
   }
 
-  // The generated levels (spec:AST-046 FR12): every flat topic sits in the
-  // level for its category, in the order the topic list reads, so every doc
-  // has a named home in the tree. A topic keeps its own name as its route.
+  // The generated level (spec:AST-046 FR12): every flat topic sits in More
+  // topics, in the order the topic list reads, so every doc has a named home
+  // in the tree. A topic keeps its own name as its route.
   for (const [key, level] of Object.entries(TOPIC_LEVELS)) {
     const members = topics.filter(topic => topicLevel(topic.category) === key);
     if (members.length === 0) continue;
@@ -701,7 +742,10 @@ export function buildDocsTree({namespaces, docs, topics = []}) {
     if (topic.provider === CLI_PROVIDER) continue;
     for (const alias of topic.aliases ?? []) {
       const holder = byFoldedRoute.get(alias.toLowerCase());
-      if (holder != null && holder.provider === CLI_PROVIDER) {
+      if (
+        (holder != null && holder.provider === CLI_PROVIDER) ||
+        reservedRoutes.has(alias.toLowerCase())
+      ) {
         report(
           'duplicate_route',
           topic,
@@ -717,7 +761,9 @@ export function buildDocsTree({namespaces, docs, topics = []}) {
     diagnostics: sortDiagnostics(diagnostics),
     get: route => sorted.get(route),
     getFolded: route => byFoldedRoute.get(String(route).toLowerCase()),
-    roots: () => [...sorted.values()].filter(node => node.parent == null),
+    isReserved: route => reservedRoutes.has(String(route).toLowerCase()),
+    roots: () =>
+      orderRoots([...sorted.values()].filter(node => node.parent == null)),
     ancestors: node => {
       /** @type {TreeNode[]} */
       const chain = [];

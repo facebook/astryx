@@ -19,7 +19,7 @@
  * - /packages/core/src/theme/generateThemeRules.ts (`generateAdaptationCSS`)
  * - /packages/core/src/AppShell/AppShell.tsx (named breakpoint consumption)
  * - /packages/cli/assets/theme.template.ts
- * - /packages/cli/assets/docs/theme.doc.mjs
+ * - /packages/cli/assets/docs/tree/author-a-theme.doc.mjs
  * - /packages/cli/api/theme/build/build.mjs
  */
 

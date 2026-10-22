@@ -718,7 +718,7 @@ describe('red arm — #7125: shipped CLI docs changed without a Changeset', () =
   const base = repo();
   const head = repo({
     'packages/cli/assets/docs/layout.doc.mjs':
-      'export default {title: "Layout", children: ["layout/scaffold"]};\n',
+      'export default {title: "Layout", children: ["build-a-page/scaffold"]};\n',
     'packages/cli/assets/docs/tree/scaffold.doc.mjs':
       'export default {title: "Scaffold"};\n',
     'packages/cli/assets/docs/tree/side-panels.doc.mjs':
@@ -729,7 +729,7 @@ describe('red arm — #7125: shipped CLI docs changed without a Changeset', () =
       type: 'docs.list',
       data: [
         {
-          topic: 'layout/scaffold',
+          topic: 'build-a-page/scaffold',
           description: 'Scaffold.',
           package: '@astryxdesign/cli',
         },

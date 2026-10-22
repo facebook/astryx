@@ -207,7 +207,7 @@ export const docs = {
       name: 'startIcon',
       type: 'IconType',
       description:
-        'Icon component rendered inside the leading edge of the textarea wrapper. See `astryx docs icons` for valid semantic names.',
+        'Icon component rendered inside the leading edge of the textarea wrapper. See `astryx docs foundations/icons` for valid semantic names.',
     },
     {
       name: 'hasSpellCheck',

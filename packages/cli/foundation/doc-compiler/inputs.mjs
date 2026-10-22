@@ -140,7 +140,23 @@ export async function collectDocInputs(project) {
     list.add('themes', theme.slug, themeImportPackage(theme), theme.docPath);
   }
 
-  for (const topic of (await project.docs()).entries()) {
+  const catalog = await project.docs();
+  // A CLI guide an integration replaces or extends ships those files too.
+  for (const guide of catalog.guides?.() ?? []) {
+    if (guide.package !== CLI_PACKAGE) {
+      list.add('docs', guide.name, guide.package, guide.path, 'base');
+    }
+    for (const extension of guide.extensions) {
+      list.add(
+        'docs',
+        guide.name,
+        extension.package,
+        extension.path,
+        'extension',
+      );
+    }
+  }
+  for (const topic of catalog.entries()) {
     list.add('docs', topic.name, topic.package, topic.path, 'base');
     for (const extension of topic.extensions) {
       list.add(

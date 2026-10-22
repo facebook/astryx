@@ -175,7 +175,7 @@ function textOf(res) {
 
 /**
  * Every `astryx ...` command a text shows: in code ticks, or on a line of its
- * own (a code block line, or a hint line such as `Up: npx astryx docs cli`).
+ * own (a code block line, or a hint line such as `Up: npx astryx docs reference`).
  * A hint's description, after two spaces or a `#`, is cut off.
  * @param {string} text
  * @returns {string[]}
@@ -326,7 +326,7 @@ const AWAITING_DECISION = new Map([
 const HINT_READS = [
   ['docs'],
   ['docs', 'cli'],
-  ['docs', 'cli/api/functions/search'],
+  ['docs', 'reference/api/functions/search'],
   ['docs', 'theme'],
   ['docs', 'authoring', 'codemods'],
   ['search', 'token-ref', '--type', 'doc'],
@@ -403,12 +403,12 @@ describe('the docs graph', () => {
     /** @type {string[]} */
     const unreached = [];
     // Command, API, schema, enum, and authoring docs: a tree leaf, or a section
-    // of the field reference, which `astryx docs authoring <name>` reads.
+    // of the field reference, which `astryx docs make-an-integration <name>` reads.
     const {loaded, failed} = await loadCliSelfDocs(discoverCliSelfDocSources(CLI), CLI);
     expect(failed).toEqual([]);
     const authoring =
-      reads.get(`${TOP} authoring/field-reference --index`)?.data.sections ??
-      reads.get(`${TOP} authoring/field-reference`)?.data.sections ??
+      reads.get(`${TOP} make-an-integration/field-reference --index`)?.data.sections ??
+      reads.get(`${TOP} make-an-integration/field-reference`)?.data.sections ??
       [];
     expect(authoring.length).toBeGreaterThan(10);
     for (const {source, doc} of loaded) {
@@ -422,9 +422,9 @@ describe('the docs graph', () => {
         ? reached(`${TOP} ${leaf.route}`)
         : section
           ? reached(`${TOP} authoring ${section.id}`) ||
-            reached(`${TOP} authoring/field-reference ${section.id}`) ||
+            reached(`${TOP} make-an-integration/field-reference ${section.id}`) ||
             // The walk opens the field reference whole, with every section.
-            reached(`${TOP} authoring/field-reference`)
+            reached(`${TOP} make-an-integration/field-reference`)
           : false;
       if (!ok) unreached.push(source);
     }

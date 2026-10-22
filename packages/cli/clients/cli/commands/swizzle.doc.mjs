@@ -12,7 +12,7 @@ export const doc = {
   type: 'command',
   name: 'swizzle',
   displayName: 'astryx swizzle',
-  namespace: 'cli/commands',
+  namespace: 'reference/commands',
   summary: 'Copy component source for customization',
   description:
     "Ejects a component's source from the resolved @astryxdesign/core (or its owning " +
@@ -69,7 +69,7 @@ export const doc = {
   notes: [
     {
       type: 'prose',
-      text: 'In global mode: outside a project, swizzle writes nothing and stops with `ERR_CORE_NOT_FOUND`: "Could not find @astryxdesign/core package. Make sure you are inside the design system monorepo or have @astryxdesign/core installed." In a project, the project\'s version of Astryx runs it, whichever astryx command you start. See {@link namespace:global} and {@link generic:problems}.',
+      text: 'In global mode: outside a project, swizzle writes nothing and stops with `ERR_CORE_NOT_FOUND`: "Could not find @astryxdesign/core package. Make sure you are inside the design system monorepo or have @astryxdesign/core installed." In a project, the project\'s version of Astryx runs it, whichever astryx command you start. See {@link namespace:on-your-computer} and {@link generic:global-mode-messages}.',
     },
   ],
 };

@@ -118,7 +118,7 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'Start with {@link generic:is-my-code-good}: it owns the shared Astryx quality criteria. This rubric adds template weights, counting rules, and template-only checks, and each category that scores a shared criterion names it.',
+          text: 'Start with {@link generic:agent-review}: it owns the shared Astryx quality criteria. This rubric adds template weights, counting rules, and template-only checks, and each category that scores a shared criterion names it.',
         },
         {
           type: 'prose',
@@ -145,7 +145,7 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'This category scores the Astryx components criterion in {@link generic:is-my-code-good}. Count every JSX opening tag in the copied `.tsx` source. An Astryx element is a component imported from `@astryxdesign/core` or from a public component export of the integration package. A raw HTML element is any lowercase intrinsic JSX tag. Count occurrences, not only unique tag names.',
+          text: 'This category scores the Astryx components criterion in {@link generic:agent-review}. Count every JSX opening tag in the copied `.tsx` source. An Astryx element is a component imported from `@astryxdesign/core` or from a public component export of the integration package. A raw HTML element is any lowercase intrinsic JSX tag. Count occurrences, not only unique tag names.',
         },
         {
           type: 'prose',
@@ -181,7 +181,7 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'This category scores the Icons criterion in {@link generic:is-my-code-good}. Count raw icon markup in the copied file. {@link generic:template-icons} shows how to render icons through Astryx instead.',
+          text: 'This category scores the Icons criterion in {@link generic:agent-review}. Count raw icon markup in the copied file. {@link generic:template-icons} shows how to render icons through Astryx instead.',
         },
         {
           type: 'list',
@@ -210,7 +210,7 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'This category scores the Styling criterion in {@link generic:is-my-code-good}. Count individual CSS properties inside `stylex.create` and inline `style` objects. Count each `className` and `stylex.props` use once. Do not count Astryx props such as `gap`, `padding`, `variant`, `size`, `color`, `level`, `columns`, `contentPadding`, or `height`.',
+          text: 'This category scores the Styling criterion in {@link generic:agent-review}. Count individual CSS properties inside `stylex.create` and inline `style` objects. Count each `className` and `stylex.props` use once. Do not count Astryx props such as `gap`, `padding`, `variant`, `size`, `color`, `level`, `columns`, `contentPadding`, or `height`.',
         },
         {
           type: 'table',
@@ -239,7 +239,7 @@ export const docs = {
           type: 'list',
           style: 'ordered',
           items: [
-            'Choose the page root with the Layout criterion in {@link generic:is-my-code-good}. In a template, only a category that starts with `Shell -` owns global chrome, so it uses `AppShell`; every other page template uses `Layout` or `Center`.',
+            'Choose the page root with the Layout criterion in {@link generic:agent-review}. In a template, only a category that starts with `Shell -` owns global chrome, so it uses `AppShell`; every other page template uses `Layout` or `Center`.',
             'Outside a `Shell -` template, leave global navigation to the host app. Put in-page navigation in a `LayoutPanel` and page headings in `LayoutHeader`.',
             'Use `Grid` with `columns={{minWidth: 280}}` for responsive collections. Do not fix the column count or rebuild the grid in raw CSS.',
             'Use `Center` for centered content instead of custom flexbox workarounds.',
@@ -364,7 +364,7 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'This category scores the Images and assets criterion in {@link generic:is-my-code-good}. Inspect every image reference in the copied file against {@link generic:template-images-media}.',
+          text: 'This category scores the Images and assets criterion in {@link generic:agent-review}. Inspect every image reference in the copied file against {@link generic:template-images-media}.',
         },
         {
           type: 'table',
@@ -392,7 +392,7 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'This category scores the Code health criterion in {@link generic:is-my-code-good}, plus conditions only a template has. Award 2 points for each condition. Grade the copied file, not only the package source.',
+          text: 'This category scores the Code health criterion in {@link generic:agent-review}, plus conditions only a template has. Award 2 points for each condition. Grade the copied file, not only the package source.',
         },
         {
           type: 'table',

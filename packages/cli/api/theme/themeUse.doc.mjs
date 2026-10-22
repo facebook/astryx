@@ -7,7 +7,7 @@ export const doc = {
   type: 'function',
   kind: 'api',
   name: 'themeUse',
-  namespace: 'cli/api',
+  namespace: 'reference/api',
   displayName: 'themeUse()',
   summary: "Choose an app's default added theme.",
   description:

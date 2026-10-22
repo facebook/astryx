@@ -223,7 +223,14 @@ describe('global-mode pages show only lines the CLI prints', () => {
     for (const name of fs.readdirSync(TREE).sort()) {
       if (!name.endsWith('.doc.mjs')) continue;
       const doc = await load(path.join(TREE, name));
-      if (doc.placement?.parent !== 'namespace:global') continue;
+      // The global-mode pages: the install guides, and the agent guide,
+      // messages, and paths that live in other guides.
+      if (
+        doc.placement?.parent !== 'namespace:on-your-computer' &&
+        !['computer-agent-guide', 'global-mode-messages', 'global-mode'].includes(doc.name)
+      ) {
+        continue;
+      }
       for (const section of doc.sections ?? []) {
         for (const block of section.content ?? []) {
           if (block.type !== 'code' || block.lang !== 'text') continue;
@@ -241,8 +248,9 @@ describe('global-mode pages show only lines the CLI prints', () => {
 
 describe('search finds the global-mode pages', () => {
   it.each([
-    ['global', 'global'],
-    ['global mode', 'global'],
+    ['global', 'global-mode'],
+    ['global mode', 'global-mode'],
+    ['install globally', 'on-your-computer'],
     ['uninstall', 'uninstall'],
     ['ci', 'ci-and-containers'],
     ['which setup', 'project-global-or-both'],

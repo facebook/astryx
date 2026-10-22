@@ -7,7 +7,7 @@ export const doc = {
   type: 'command',
   name: 'theme add',
   displayName: 'astryx theme add',
-  namespace: 'cli/commands',
+  namespace: 'reference/commands',
   summary:
     "Add a built theme to the app. To copy a theme's source as an editable fork, run `theme eject <slug> [path] [--overwrite]`.",
   description:
@@ -50,7 +50,7 @@ export const doc = {
   notes: [
     {
       type: 'prose',
-      text: 'In global mode: outside a project, theme add with no slug lists the themes available, as in a new project; with a slug it writes nothing and stops with `ERR_THEME_INVALID`: "No package.json found. Run this command inside an app project." In a project, the project\'s version of Astryx runs it, whichever astryx command you start. See {@link namespace:global} and {@link generic:problems}.',
+      text: 'In global mode: outside a project, theme add with no slug lists the themes available, as in a new project; with a slug it writes nothing and stops with `ERR_THEME_INVALID`: "No package.json found. Run this command inside an app project." In a project, the project\'s version of Astryx runs it, whichever astryx command you start. See {@link namespace:on-your-computer} and {@link generic:global-mode-messages}.',
     },
   ],
 };

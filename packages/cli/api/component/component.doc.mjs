@@ -12,7 +12,7 @@ export const doc = {
   type: 'function',
   kind: 'api',
   name: 'component',
-  namespace: 'cli/api',
+  namespace: 'reference/api',
   displayName: 'component()',
   summary:
     'Resolve one or several components by name, or list the catalog, with optional focused slices (props, source, showcase, blocks).',
@@ -25,7 +25,7 @@ export const doc = {
     'component (its doc sets replaces, and its package declares the CLI range that ' +
     'turns replacement on) answers to the Core name in detail, batch, and list ' +
     "results; use options.package '@astryxdesign/core' for the original." +
-    " In global mode: with `cwd` outside a project, components from integrations installed next to this CLI package globally resolve too; inside a project, only the project's own integrations count. See {@link namespace:global} and {@link generic:computer-integrations}.",
+    " In global mode: with `cwd` outside a project, components from integrations installed next to this CLI package globally resolve too; inside a project, only the project's own integrations count. See {@link namespace:on-your-computer} and {@link generic:computer-integrations}.",
   importPath: '@astryxdesign/cli/api',
   signature:
     'component(name?: string | string[], options?: ComponentOptions): Promise<ComponentListResponse | ComponentBatchResponse | ComponentDetailResponse | ComponentDetailPropsResponse | ComponentDetailSourceResponse | ComponentDetailShowcaseResponse | ComponentDetailBlocksResponse>',

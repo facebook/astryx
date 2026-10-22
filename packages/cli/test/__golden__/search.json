@@ -22,9 +22,9 @@
         "score": 50,
         "reason": "description mentions \"zorblax\"",
         "description": "How zorblax cards fit together.",
-        "title": "Guides › Acme guide",
+        "title": "More topics › Acme guide",
         "command": "astryx docs acme-guide --index",
-        "parent": "astryx docs guides"
+        "parent": "astryx docs more-topics"
       },
       {
         "domain": "template",

@@ -26,5 +26,8 @@ export const DOCSITE_CLI_COMMAND = 'npx @astryxdesign/cli';
 /** The command the global mode pages show: their readers installed the CLI. */
 export const GLOBAL_PAGE_CLI_COMMAND = 'astryx';
 
-/** The page whose readers run the CLI they installed for their computer. */
-export const GLOBAL_PAGE = 'global';
+/**
+ * The docs route whose readers run the CLI they installed for their computer:
+ * its sections, wherever a guide page shows them, show plain `astryx`.
+ */
+export const GLOBAL_ROUTE = 'get-started/on-your-computer';

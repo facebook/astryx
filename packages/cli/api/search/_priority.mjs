@@ -31,7 +31,7 @@ import {scoreCandidate} from './_candidate-score.mjs';
  * A doc has priority when the reader asked for that doc:
  * - 2: the whole query is the topic's name, its last route segment, or its
  *   own title, as words and whatever the plural (`font setup` is
- *   typography/font-setup, `side panel` is "Side panels");
+ *   foundations/typography/font-setup, `side panel` is "Side panels");
  * - 1: a word of the query is the topic's name (`illustration` in a longer
  *   question is the illustrations guide);
  * - 1: a query of two or more words is one of the topic's own declared
@@ -70,7 +70,7 @@ export function domainPriority(
     const topic = String(candidate._topic ?? candidate.name).toLowerCase();
     // The whole query, read as words, is the topic's route, its last
     // segment, or its own title, whatever the plural: `side panel` is
-    // layout/side-panels, and `header and footer` is "Headers and footers".
+    // build-a-page/side-panels, and `header and footer` is "Headers and footers".
     // A section's title is a heading inside a topic, not the topic's name.
     const named = [topic, topic.slice(topic.lastIndexOf('/') + 1)];
     if (candidate._section == null && candidate.titles?.[0]) {

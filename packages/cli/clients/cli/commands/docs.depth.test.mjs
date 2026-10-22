@@ -79,12 +79,12 @@ describe('astryx docs --depth', () => {
   it(
     'lists every doc below a namespace, one line each, by where it sits',
     async () => {
-      const result = await runCli(['docs', 'cli/api', '--depth', 'all']);
+      const result = await runCli(['docs', 'reference/api', '--depth', 'all']);
       expect(result.status).toBe(0);
       expect(result.stdout).toMatch(/^functions\s+\S/m);
       expect(result.stdout).toMatch(/^functions\/search\s+search\(\): /m);
       expect(result.stdout).toContain('Open one: ');
-      expect(result.stdout).toContain('docs cli/api/<name>');
+      expect(result.stdout).toContain('docs reference/api/<name>');
       // One line each: no doc's body.
       expect(result.stdout).not.toContain('`astryx search` runs it.');
     },
@@ -94,14 +94,14 @@ describe('astryx docs --depth', () => {
   it(
     'says how many docs sit below where the read stops',
     async () => {
-      const zero = await runCli(['docs', 'cli/api', '--depth', '0']);
+      const zero = await runCli(['docs', 'reference/api', '--depth', '0']);
       expect(zero.status).toBe(0);
       expect(zero.stdout).toMatch(
-        /^\d+ docs below\. Read them: .*docs cli\/api --depth 1$/m,
+        /^\d+ docs below\. Read them: .*docs reference\/api --depth 1$/m,
       );
       expect(zero.stdout).not.toMatch(/^functions\s/m);
 
-      const one = await runCli(['docs', 'cli/api', '--depth', '1']);
+      const one = await runCli(['docs', 'reference/api', '--depth', '1']);
       expect(one.status).toBe(0);
       expect(one.stdout).toMatch(/^functions\s+.*\(\d+ docs below\)$/m);
       expect(one.stdout).not.toMatch(/^functions\/search\s/m);
@@ -145,27 +145,27 @@ describe('astryx docs --depth', () => {
   it(
     'returns the same tree as JSON, with text only when --detail asks',
     async () => {
-      const brief = await runCli(['--json', 'docs', 'cli/api', '--depth', '2']);
+      const brief = await runCli(['--json', 'docs', 'reference/api', '--depth', '2']);
       expect(brief.status).toBe(0);
       const briefData = JSON.parse(brief.stdout);
       expect(briefData.type).toBe('docs.node');
       const functions = briefData.data.slots
         .flatMap((/** @type {any} */ slot) => slot.children)
         .find(
-          (/** @type {any} */ child) => child.route === 'cli/api/functions',
+          (/** @type {any} */ child) => child.route === 'reference/api/functions',
         );
       const search = functions.slots
         .flatMap((/** @type {any} */ slot) => slot.children)
         .find(
           (/** @type {any} */ child) =>
-            child.route === 'cli/api/functions/search',
+            child.route === 'reference/api/functions/search',
         );
       expect(search).not.toHaveProperty('content');
 
       const full = await runCli([
         '--json',
         'docs',
-        'cli/api',
+        'reference/api',
         '--depth',
         '2',
         '--detail',
@@ -180,10 +180,10 @@ describe('astryx docs --depth', () => {
   it(
     'composes with --index and --full, and leaves a topic read as it was',
     async () => {
-      const depth = await runCli(['docs', 'cli/api', '--depth', '1']);
+      const depth = await runCli(['docs', 'reference/api', '--depth', '1']);
       expect(depth.status).toBe(0);
       for (const flag of ['--index', '--full']) {
-        const both = await runCli(['docs', 'cli/api', '--depth', '1', flag]);
+        const both = await runCli(['docs', 'reference/api', '--depth', '1', flag]);
         expect(both.status).toBe(0);
         expect(both.stdout).toBe(depth.stdout);
       }
@@ -207,7 +207,7 @@ describe('astryx docs --depth', () => {
       const result = await runCli([
         '--json',
         'docs',
-        'cli/api',
+        'reference/api',
         '--depth',
         'deep',
       ]);

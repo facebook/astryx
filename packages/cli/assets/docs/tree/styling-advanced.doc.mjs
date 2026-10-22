@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file `astryx docs styling/styling-advanced`: compound component styling,
+ * @file `astryx docs style-components/styling-advanced`: compound component styling,
  * data-attribute selectors, deprecated bare classes, and what not to do.
  */
 
@@ -11,7 +11,7 @@ export const docs = {
   type: 'generic',
   name: 'styling-advanced',
   title: 'Advanced',
-  placement: {parent: 'namespace:styling', slot: 'guides', order: 20},
+  placement: {parent: 'namespace:style-components', slot: 'guides', order: 30},
   category: 'guide',
   description:
     'Compound component styling, data-attribute selectors, migrating removed theme compatibility selectors, and common anti-patterns.',

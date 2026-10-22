@@ -36,7 +36,7 @@
  * a field means updating:
  * - /packages/cli/assets/theme.template.ts (documents every field; the
  *   drift guard is scripts/check-theme-template.test.mjs)
- * - /packages/cli/assets/docs/theme.doc.mjs (`astryx docs theme`)
+ * - /packages/cli/assets/docs/tree/author-a-theme.doc.mjs (`astryx docs theme-your-app/author-a-theme`)
  */
 
 import type {ReactNode} from 'react';

@@ -13,7 +13,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {findCoreDir} from '../../foundation/fs/paths.mjs';
-import {docs as gettingStarted} from '../../assets/docs/getting-started.doc.mjs';
+import {docs as gettingStarted} from '../../assets/docs/tree/add-to-a-project.doc.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, '../../../..');
@@ -25,7 +25,7 @@ const REPO_ROOT = path.resolve(__dirname, '../../../..');
 const SURFACES =
   'update every surface that names the supported React version: README.md ' +
   '(repo root), packages/core/README.md, ' +
-  'packages/cli/assets/docs/getting-started.doc.mjs, and the docsite hero ' +
+  'packages/cli/assets/docs/tree/add-to-a-project.doc.mjs, and the docsite hero ' +
   'in apps/docsite/src/app/(site)/page.tsx';
 
 describe('documented React version matches the core peer dependency', () => {

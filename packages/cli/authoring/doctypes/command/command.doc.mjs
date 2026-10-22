@@ -55,7 +55,7 @@ export const doc = {
       name: 'namespace',
       type: 'string',
       description:
-        "Optional in the type, but every doc the CLI ships declares it. The group that reads this doc. The CLI's commands use 'cli/commands', which the docs tree adopts: each is the leaf `cli/commands/<name>`, spaces as hyphens (`theme build` is `cli/commands/theme-build`). Every command doc the CLI ships declares one, and `astryx doctor` fails on one that is missing or that nothing reads.",
+        "Optional in the type, but every doc the CLI ships declares it. The group that reads this doc. The CLI's commands use 'reference/commands', which the docs tree adopts: each is the leaf `reference/commands/<name>`, spaces as hyphens (`theme build` is `reference/commands/theme-build`). Every command doc the CLI ships declares one, and `astryx doctor` fails on one that is missing or that nothing reads.",
     },
     {
       name: 'aliases',
@@ -229,7 +229,7 @@ export const doc = {
   name: 'search',
   displayName: 'astryx search',
   summary: 'Find components, hooks, docs, templates, and themes.',
-  namespace: 'cli/commands',
+  namespace: 'reference/commands',
   fn: 'search',
   args: [{name: 'query', param: 'query', required: true}],
   options: [

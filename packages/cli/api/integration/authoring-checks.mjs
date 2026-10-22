@@ -41,6 +41,7 @@ import {
   discoverBuiltinTopics,
   discoverIntegrationDocs,
 } from '../../foundation/discovery/docs-discovery.mjs';
+import {FORMER_TOPICS} from '../../foundation/discovery/renamed-docs.mjs';
 import {
   applyTemplateReplacements,
   discoverCoreTemplates,
@@ -453,9 +454,15 @@ export async function integrationDocConflicts(pkg, options = {}) {
   ]);
   const {records, errors} = discovered;
   addErrors(issues, errors, 'invalid_doc');
+  // Core's topics: any flat one, and each former topic by its old name and
+  // by the guide that took its text (spec:AST-046 FR12).
   const coreTopicsByKey = new Map(
     Object.keys(builtinTopics).map(topic => [topic.toLowerCase(), topic]),
   );
+  for (const [from, guide] of Object.entries(FORMER_TOPICS)) {
+    coreTopicsByKey.set(from, guide);
+    coreTopicsByKey.set(guide, guide);
+  }
 
   /** @type {import('./authoring-checks.type.mjs').IntegrationDocFinding[]} */
   const findings = [];

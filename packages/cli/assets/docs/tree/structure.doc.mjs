@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file `astryx docs layout/structure`: rank the content in each region,
+ * @file `astryx docs build-a-page/structure`: rank the content in each region,
  * then pick the weakest container that groups it.
  */
 
@@ -11,7 +11,7 @@ export const docs = {
   type: 'generic',
   name: 'structure',
   title: 'Structure',
-  placement: {parent: 'namespace:layout', slot: 'guides', order: 20},
+  placement: {parent: 'namespace:build-a-page', slot: 'guides', order: 20},
   category: 'guide',
   description:
     'Rank the content in each region, then pick the weakest container that groups it.',

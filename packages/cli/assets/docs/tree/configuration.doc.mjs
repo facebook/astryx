@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @file astryx docs authoring/building-blocks/configuration — set how your integration behaves. */
+/** @file astryx docs make-an-integration/building-blocks/configuration — set how your integration behaves. */
 
 /** @type {import('@astryxdesign/cli/authoring').NamespaceDoc} */
 export const docs = {
@@ -17,7 +17,7 @@ export const docs = {
   blocks: [
     {
       type: 'prose',
-      text: "In global mode: installed for the computer, beside the global CLI, your package's manifest is read as it is in a project and applies in folders outside any project; peer ranges are checked against the global CLI's release. See {@link namespace:global} and {@link generic:global-integrations}.",
+      text: "In global mode: installed for the computer, beside the global CLI, your package's manifest is read as it is in a project and applies in folders outside any project; peer ranges are checked against the global CLI's release. See {@link namespace:on-your-computer} and {@link generic:global-integrations}.",
     },
     {
       type: 'prose',

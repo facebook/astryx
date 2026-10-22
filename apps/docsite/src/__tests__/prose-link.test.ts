@@ -69,11 +69,11 @@ function findElement(
 
 describe('linkified code chips', () => {
   it('wrap a resolvable span in Link with the shared treatment', () => {
-    const el = InlineCode({children: 'astryx docs tokens'});
+    const el = InlineCode({children: 'astryx docs foundations/all-tokens'});
     expect(el.type).toBe(Link);
 
     const props = el.props as React.ComponentProps<typeof Link>;
-    expect(props.href).toBe('/docs/tokens');
+    expect(props.href).toMatch(/^\/docs\/foundations#/);
     expect(props.hasUnderline).toBe(true);
     expect(props.xstyle).toContain(proseLinkStyles.underline);
     expect(props.xstyle).toContain(proseLinkStyles.color);

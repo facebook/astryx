@@ -4,7 +4,7 @@ import {DocsShell} from '../../components/DocsShell';
 import {SiteFooter} from '../../components/SiteFooter';
 import {getCopyrightYear} from '../../lib/copyrightYear';
 import {packages} from '../../generated/packageRegistry';
-import {docTopics} from '../../generated/docsRegistry';
+import {docGuides} from '../../generated/docsRegistry';
 
 export default async function DocsLayout({
   children,
@@ -14,7 +14,7 @@ export default async function DocsLayout({
   const year = await getCopyrightYear();
 
   return (
-    <DocsShell packages={packages} docTopics={docTopics}>
+    <DocsShell packages={packages} docGuides={docGuides}>
       {children}
       <SiteFooter year={year} />
     </DocsShell>

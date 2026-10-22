@@ -11,7 +11,7 @@ export const doc = {
   type: 'function',
   kind: 'api',
   name: 'upgrade',
-  namespace: 'cli/api',
+  namespace: 'reference/api',
   displayName: 'upgrade()',
   summary:
     'After bumping @astryxdesign/core, migrate project source with codemods and update copied compositions.',
@@ -25,7 +25,7 @@ export const doc = {
     'copied compositions. Core codemods ship inside the CLI, so a CLI older than the installed ' +
     'Core has none for the releases after its own version: the result then carries ' +
     '`cliBehindCore` with the command that runs the same upgrade on the matching CLI.' +
-    " In global mode: in a project, the CLI runs `upgrade` with the project's own CLI, whichever astryx command started it (in a project with no CLI of its own, the one you started); this function runs the codemods of the package it is imported from. With `cwd` outside a project, `list` lists this release's codemods, `registry` finds no copied compositions, and a migration writes nothing and fails with `ERR_VERSION_DETECT`. See {@link namespace:global} and {@link generic:who-answers}.",
+    " In global mode: in a project, the CLI runs `upgrade` with the project's own CLI, whichever astryx command started it (in a project with no CLI of its own, the one you started); this function runs the codemods of the package it is imported from. With `cwd` outside a project, `list` lists this release's codemods, `registry` finds no copied compositions, and a migration writes nothing and fails with `ERR_VERSION_DETECT`. See {@link namespace:on-your-computer} and {@link generic:who-answers}.",
   importPath: '@astryxdesign/cli/api',
   signature:
     'upgrade(options?: UpgradeOptions, ctx?: {cwd?: string}): Promise<UpgradeListResponse | UpgradeRegistryResponse | UpgradeStatusResponse | UpgradeRunResponse>',

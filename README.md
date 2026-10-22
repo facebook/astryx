@@ -61,7 +61,7 @@ You can also install the CLI once for your computer, so `astryx` works in any fo
 npm i -g @astryxdesign/cli
 ```
 
-Project install, global install, or both? `astryx docs global/project-global-or-both` compares them (both is recommended), and `astryx docs global` explains how global mode works.
+Project install, global install, or both? `astryx docs get-started/on-your-computer/project-global-or-both` compares them (both is recommended), and `astryx docs get-started/on-your-computer` explains how global mode works.
 
 The simplest setup is a few CSS imports plus a theme provider — no build plugin, no PostCSS or Babel config. See the **[@astryxdesign/core README](packages/core/README.md#quick-start)** for the full guide (Next.js, Tailwind, Vite, and CDN).
 

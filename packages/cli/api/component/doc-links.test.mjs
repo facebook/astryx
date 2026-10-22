@@ -117,7 +117,7 @@ describe("a link in a component doc's text", () => {
       );
       expect(read.type).toBe('component.detail');
       expect(read.data.usage.description).toBe(
-        'A button. Set it up as `astryx docs acme-setup` says; theme it with `astryx docs theme`.',
+        'A button. Set it up as `astryx docs acme-setup` says; theme it with `astryx docs theme-your-app/use-a-theme`.',
       );
       expect(read.data.usage.bestPractices[0].description).toBe(
         'Pair it with `astryx component AcmeButton --package @acme/widgets`.',
@@ -145,7 +145,7 @@ describe("a link in a component doc's text", () => {
       );
       expect(json.status).toBe(0);
       expect(JSON.parse(json.stdout).data.usage.description).toBe(
-        'A button. Set it up as `astryx docs acme-setup` says; theme it with `astryx docs theme`.',
+        'A button. Set it up as `astryx docs acme-setup` says; theme it with `astryx docs theme-your-app/use-a-theme`.',
       );
     },
     SLOW,
@@ -162,7 +162,7 @@ describe("a link in a component doc's text", () => {
         (/** @type {any} */ result) => result.name === 'AcmeButton',
       );
       expect(hit.description).toBe(
-        'A button. Set it up as `astryx docs acme-setup` says; theme it with `astryx docs theme`.',
+        'A button. Set it up as `astryx docs acme-setup` says; theme it with `astryx docs theme-your-app/use-a-theme`.',
       );
     },
     SLOW,
@@ -212,7 +212,7 @@ describe("a link in a component doc's text", () => {
       tmpDir,
     );
     expect(read.data.usage.description).toBe(
-      'Theme it with `astryx docs theme`.',
+      'Theme it with `astryx docs theme-your-app/use-a-theme`.',
     );
     // A link that names no doc prints as written.
     expect(read.data.props[0].description).toBe('See {@link generic:nope}.');
@@ -228,7 +228,7 @@ describe("a link in a topic's description", () => {
         await docs('acme-setup', undefined, {cwd: tmpDir, full: true})
       );
       expect(detail.data.description).toBe(
-        'Set up Acme, then theme it as `astryx docs theme` says.',
+        'Set up Acme, then theme it as `astryx docs theme-your-app/use-a-theme` says.',
       );
       const listed = /** @type {any} */ (
         await docs(undefined, undefined, {cwd: tmpDir})
@@ -236,7 +236,7 @@ describe("a link in a topic's description", () => {
       expect(
         listed.data.find((/** @type {any} */ t) => t.topic === 'acme-setup')
           .description,
-      ).toBe('Set up Acme, then theme it as `astryx docs theme` says.');
+      ).toBe('Set up Acme, then theme it as `astryx docs theme-your-app/use-a-theme` says.');
     },
     SLOW,
   );
@@ -247,17 +247,17 @@ describe("a link in a guide's description, as the docs tree shows it", () => {
     'reads as the command that opens its doc in the guide and its namespace',
     async () => {
       const expected =
-        'Document a theme by extending the core theme topic, so an app reads it in `astryx docs theme`.';
+        'Document a theme by extending the Core use-a-theme guide, so an app reads it in `astryx docs theme-your-app/use-a-theme`.';
       const guide = /** @type {any} */ (
         await docs(
-          'authoring/building-blocks/themes/document-the-theme',
+          'make-an-integration/building-blocks/themes/document-the-theme',
           undefined,
           {cwd: tmpDir, full: true},
         )
       );
       expect(guide.data.description).toBe(expected);
       const namespace = /** @type {any} */ (
-        await docs('authoring/building-blocks/themes', undefined, {
+        await docs('make-an-integration/building-blocks/themes', undefined, {
           cwd: tmpDir,
         })
       );

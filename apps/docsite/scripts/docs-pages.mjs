@@ -17,52 +17,50 @@
  */
 
 /**
- * Root namespaces that have no page of their own at their slug: /docs/cli is
- * the @astryxdesign/cli package page. Their pages are listed in
- * GUIDE_NAMESPACE_PAGES; a guide below them that no such page holds keeps a
- * page of its own.
+ * Root namespaces that have no page of their own at their slug. Their pages
+ * are listed in GUIDE_NAMESPACE_PAGES; a guide below them that no such page
+ * holds keeps a page of its own. Every root is a guide page today, so none is
+ * listed; `/docs/cli` stays the @astryxdesign/cli package page because no root
+ * is named `cli`.
  */
-export const GUIDE_PAGE_NAMESPACES = new Set(['cli']);
+export const GUIDE_PAGE_NAMESPACES = new Set();
 
 /**
  * The pages a root namespace in GUIDE_PAGE_NAMESPACES shows besides one page
  * per guide: each is one full page of the namespace at `route` (minus the
  * routes in `except`, which another page holds), at `slug`, so every guide
  * slug below it redirects to its section there. `aliases` are older slugs
- * that redirect to the page. The integration guides that `cli` once held as
- * two such pages now sit under `authoring`, an ordinary root namespace.
+ * that redirect to the page.
  * @type {Map<string, Array<{route: string, slug: string, title: string, except?: string[], aliases?: string[]}>>}
  */
 export const GUIDE_NAMESPACE_PAGES = new Map();
 
 /**
- * Older slugs of a root namespace's page, which redirect to it: global mode
- * was `cli/global`, and before that the `cli/install-once` guide; the
- * integration guides were the CLI Integrations page before `authoring` took
- * them.
+ * Older slugs of a root namespace's page that MOVED_PAGES cannot spell, which
+ * redirect to it: global mode was `cli/global`, and before that the
+ * `cli/install-once` guide; the integration guides were the CLI Integrations
+ * page.
  * @type {Map<string, string[]>}
  */
 export const ROOT_PAGE_ALIASES = new Map([
-  ['global', ['cli-global', 'cli-install-once']],
-  ['authoring', ['cli-integrations', 'cli-integrations-overview']],
+  ['make-an-integration', ['cli-integrations-overview']],
 ]);
 
 /**
- * Older guide slugs of a root namespace, from before its guides moved there:
- * the integration guides were `cli/integrations/…` (/docs/cli-integrations-…)
- * before `authoring` took them, and the Writing docs page and one older alias
- * pointed into them. Each opens where its guide's new slug does.
+ * Older guide slugs that pointed into a root namespace from outside its old
+ * prefix: the Writing docs page and one older alias. Each opens where its
+ * guide's new slug does.
  * @type {Map<string, {prefix: string, pages: Record<string, string>}>}
  */
 export const MOVED_GUIDE_SLUGS = new Map([
   [
-    'authoring',
+    'make-an-integration',
     {
       prefix: 'cli-integrations',
       pages: {
-        'cli-writing-docs': 'authoring-building-blocks-docs',
+        'cli-writing-docs': 'make-an-integration-building-blocks-docs',
         'cli-integrations-docs-add-a-topic':
-          'authoring-building-blocks-docs-add-a-topic',
+          'make-an-integration-building-blocks-docs-add-a-topic',
       },
     },
   ],
@@ -80,11 +78,6 @@ export function movedGuideRedirects(root, redirects) {
   if (!moved) return {};
   /** @type {Record<string, string>} */
   const out = {};
-  for (const [slug, href] of Object.entries(redirects)) {
-    if (slug.startsWith(`${root}-`)) {
-      out[`${moved.prefix}-${slug.slice(root.length + 1)}`] = href;
-    }
-  }
   for (const [old, now] of Object.entries(moved.pages)) {
     if (Object.hasOwn(redirects, now)) out[old] = redirects[now];
   }
@@ -92,14 +85,147 @@ export function movedGuideRedirects(root, redirects) {
 }
 
 /**
- * Flat topics whose full text the site shows on another topic's page. The
- * theme split (before namespaces) left `theme` as a short overview and moved
- * its text to two flat topics, so the theme page shows those two in order in
- * place of the overview's pointers to them.
+ * The docs routes that moved when the docs were organized into twelve guides
+ * by what a reader wants to do, plus Reference (the CLI's not-found error
+ * names the same moves). Old route prefix first, its new route second; a
+ * prefix carries what is below it. Every page the site had keeps working:
+ * its old slug redirects to the guide page, at the section its text starts.
+ * @type {Array<[string, string]>}
  */
-export const MERGED_TOPICS = new Map([
-  ['theme', ['use-a-theme', 'author-a-theme']],
-]);
+export const MOVED_PAGES = [
+  ['cli/integrations', 'make-an-integration'],
+  ['cli/writing-docs', 'make-an-integration/building-blocks/docs'],
+  ['authoring', 'make-an-integration'],
+  ['getting-started', 'get-started/add-to-a-project'],
+  ['working-with-ai', 'work-with-agents/agent-setup'],
+  ['theme', 'theme-your-app'],
+  ['use-a-theme', 'theme-your-app/use-a-theme'],
+  ['author-a-theme', 'theme-your-app/author-a-theme'],
+  ['styling-overview', 'style-components/css-setup'],
+  ['principles', 'foundations/principles'],
+  ['color', 'foundations/color'],
+  ['spacing', 'foundations/spacing'],
+  ['shape', 'foundations/shape'],
+  ['elevation', 'foundations/elevation'],
+  ['motion', 'foundations/motion'],
+  ['icons', 'foundations/icons'],
+  ['illustrations', 'foundations/illustrations'],
+  ['is-my-code-good', 'check-your-code/agent-review'],
+  ['use-integrations', 'find-a-component/use-integrations'],
+  ['browser-support', 'reference/browser-support'],
+  ['layout', 'build-a-page'],
+  ['styling-libraries', 'style-components'],
+  ['styling', 'style-components'],
+  [
+    'typography/typography-best-practices',
+    'foundations/typography/best-practices',
+  ],
+  ['typography', 'foundations/typography'],
+  ['tokens/tokens-color', 'foundations/color'],
+  ['tokens/tokens-spacing', 'foundations/spacing'],
+  ['tokens/tokens-radius', 'foundations/shape'],
+  ['tokens/tokens-shadow', 'foundations/elevation'],
+  ['tokens/tokens-duration', 'foundations/motion'],
+  ['tokens/tokens-ease', 'foundations/motion'],
+  ['tokens/tokens-type-scale', 'foundations/typography/type-scale'],
+  ...[
+    'border',
+    'data',
+    'focus',
+    'font-weight',
+    'size',
+    'syntax',
+    'text-size',
+    'typography',
+    'usage',
+  ].map(
+    (/** @type {string} */ name) =>
+      /** @type {[string, string]} */ ([
+        `tokens/tokens-${name}`,
+        'foundations/all-tokens',
+      ]),
+  ),
+  ['tokens', 'foundations/all-tokens'],
+  ['internationalization', 'translate-your-app'],
+  ['migration', 'upgrade-and-migrate/from-tailwind-shadcn-radix'],
+  ['global/computer-agent-guide', 'work-with-agents/computer-agent-guide'],
+  ['global/problems', 'fix-a-problem/global-mode-messages'],
+  ['global/reference', 'reference/global-mode'],
+  ['global', 'get-started/on-your-computer'],
+  ['cli/global', 'get-started/on-your-computer'],
+  ['cli/install-once', 'get-started/on-your-computer'],
+  ['cli/component-lookups', 'find-a-component/search-and-read'],
+  ['cli/host-entry', 'reference/host-entry'],
+];
+
+/**
+ * Redirects for every slug MOVED_PAGES moved: each old route, and each route
+ * below it, as a slug, to where its new route opens (its own page, or its
+ * section on a guide page). A slug that is still a page, or already a
+ * redirect, keeps what it has; an old child with no new home opens where its
+ * old parent's new home does.
+ * @param {string[]} routes every route the tree has
+ * @param {Record<string, string>} redirects the guide pages' own redirects
+ * @param {Set<string>} pages every page slug
+ * @returns {Record<string, string>}
+ */
+export function movedPageRedirects(routes, redirects, pages) {
+  /** @param {string} route */
+  const hrefOf = route => {
+    const slug = routeSlug(route);
+    if (pages.has(slug)) return `/docs/${slug}`;
+    return redirects[slug] ?? null;
+  };
+  /** @type {Record<string, string>} */
+  const out = {};
+  for (const [from, to] of MOVED_PAGES) {
+    const target = hrefOf(to);
+    if (target == null) continue;
+    for (const route of routes) {
+      if (route !== to && !route.startsWith(`${to}/`)) continue;
+      const old = routeSlug(`${from}${route.slice(to.length)}`);
+      const href = hrefOf(route);
+      if (href == null || pages.has(old)) continue;
+      if (!Object.hasOwn(redirects, old) && !Object.hasOwn(out, old)) {
+        out[old] = href;
+      }
+    }
+    const old = routeSlug(from);
+    if (!pages.has(old) && !Object.hasOwn(redirects, old)) {
+      out[old] ??= target;
+    }
+  }
+  return out;
+}
+
+/**
+ * The one CLI line an agent runs for each guide, shown at the end of its page
+ * ("Ask your agent") and on its card on the docs home: the visible join
+ * between the site and the CLI.
+ * @type {Record<string, string>}
+ */
+export const GUIDE_AGENT_COMMANDS = {
+  'get-started': 'astryx init',
+  'work-with-agents': 'astryx init --features agents',
+  'build-a-page': 'astryx build "<your page idea>"',
+  'find-a-component': 'astryx search "<what it should do>"',
+  'theme-your-app': 'astryx theme add <theme>',
+  'style-components': 'astryx docs style-components/css-setup',
+  foundations: 'astryx docs foundations/all-tokens',
+  'check-your-code': 'astryx doctor',
+  'upgrade-and-migrate': 'astryx upgrade --from <old version> --apply',
+  'translate-your-app': 'astryx docs translate-your-app/i18n-quick-start',
+  'make-an-integration': 'astryx docs make-an-integration/quick-start',
+  'fix-a-problem': 'astryx gap-report --list-categories',
+  reference: 'astryx help',
+};
+
+/**
+ * Flat topics whose full text the site shows on another topic's page, host
+ * first. Core has no flat topics now; every Core doc is a guide page.
+ * @type {Map<string, string[]>}
+ */
+export const MERGED_TOPICS = new Map();
 
 /**
  * Flat topics that are data for other docs, not pages: `token-tables` is what
@@ -221,13 +347,26 @@ export function namespaceCategory(own, guideCategories) {
  * no page.
  * @param {(topic?: string, section?: string, options?: object) => Promise<any>} readDocs
  * @param {string} route
- * @param {{slug?: string, title?: string, except?: string[], aliases?: string[]}} [options]
+ * @param {{slug?: string, title?: string, except?: string[], aliases?: string[], globalRoute?: string}} [options]
  *   the page's slug and title when they are not the route's, routes below it
- *   that another page holds, and older slugs that redirect to it
+ *   that another page holds, older slugs that redirect to it, and the route
+ *   whose sections are marked `globalMode`
  * @returns {Promise<{page: object, redirects: Record<string, string>} | null>}
  */
 export async function namespacePage(readDocs, route, options = {}) {
-  const {slug = route, title, except = [], aliases = []} = options;
+  const {
+    slug = route,
+    title,
+    except = [],
+    aliases = [],
+    globalRoute = 'get-started/on-your-computer',
+  } = options;
+  // Sections from the global mode guides carry `globalMode`, so the site
+  // shows their commands as the installed `astryx`.
+  const marked = (childRoute, list) =>
+    childRoute === globalRoute || childRoute.startsWith(`${globalRoute}/`)
+      ? list.map(section => ({...section, globalMode: true}))
+      : list;
   const excluded = child =>
     except.some(skip => child === skip || child.startsWith(`${skip}/`));
   const read = await readDocs(route, undefined, {depth: 'all', detail: 'full'});
@@ -249,11 +388,17 @@ export async function namespacePage(readDocs, route, options = {}) {
           const detail = await readDocs(child.route);
           guideCategories.push(detail?.data?.category ?? null);
           starts.push([routeSlug(child.route), sections.length]);
-          sections.push(...withoutResolvedTokens(child.sections ?? []));
+          sections.push(
+            ...marked(child.route, withoutResolvedTokens(child.sections ?? [])),
+          );
         } else if (child.kind === 'namespace') {
           starts.push([routeSlug(child.route), sections.length]);
           if (child.content?.length > 0) {
-            sections.push({title: child.title, content: child.content});
+            sections.push(
+              ...marked(child.route, [
+                {title: child.title, content: child.content},
+              ]),
+            );
           }
           await walk(child.slots);
         }

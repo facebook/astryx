@@ -359,7 +359,7 @@ Add a semantic icon name only for a glyph the whole system shares:
    `packages/core/src/Icon/globalIconRegistry.tsx`.
 2. Add the default SVG to `packages/core/src/Icon/defaultIcons.tsx`.
 3. Add a row to the Available Names table in
-   `packages/cli/assets/docs/icons.doc.mjs`.
+   `packages/cli/assets/docs/tree/icons.doc.mjs`.
 
 A glyph that belongs to one component takes a namespaced key instead
 (`numberInput:stepperDown`), so the shared `IconName` list does not grow. Ship

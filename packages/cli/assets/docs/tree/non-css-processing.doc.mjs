@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file `astryx docs styling-libraries/non-css-processing`: resolve token
+ * @file `astryx docs style-components/non-css-processing`: resolve token
  * values outside the DOM for charts, canvas, SVG, and config objects.
  */
 
@@ -11,18 +11,16 @@ export const docs = {
   type: 'generic',
   name: 'non-css-processing',
   title: 'Non-CSS Processing',
-  placement: {parent: 'namespace:styling-libraries', slot: 'guides', order: 40},
+  placement: {parent: 'namespace:style-components', slot: 'guides', order: 80},
   category: 'guide',
   description:
     'Resolve token values outside the DOM for charts, canvas, SVG, and config objects using resolveThemeTokens() and useTheme().',
   keywords: [
-    'resolveThemeTokens',
     'resolveThemeToken',
-    'useTheme',
     'chart',
     'canvas',
     'SVG',
-    'non-CSS',
+    'non-CSS'
   ],
 
   sections: [

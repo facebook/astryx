@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file `astryx docs authoring/building-blocks/configuration/cli-command`:
+ * @file `astryx docs make-an-integration/building-blocks/configuration/cli-command`:
  * name the command an integration's users run the CLI with, so every command
  * the CLI prints in their apps starts with it.
  */
@@ -134,7 +134,7 @@ message: Loaded integrations declare different CLI commands: @acme/astryx-widget
       content: [
         {
           type: 'prose',
-          text: "In global mode: outside a project, the `cliCommand` of integrations installed for the computer applies; when none is declared, commands start with the plain command of the CLI installed for the computer. Inside a project, only the project's integrations count, so a `cliCommand` from a package installed for the computer never changes the project's printed commands. See {@link namespace:global} and {@link generic:global-integrations}.",
+          text: "In global mode: outside a project, the `cliCommand` of integrations installed for the computer applies; when none is declared, commands start with the plain command of the CLI installed for the computer. Inside a project, only the project's integrations count, so a `cliCommand` from a package installed for the computer never changes the project's printed commands. See {@link namespace:on-your-computer} and {@link generic:global-integrations}.",
         },
       ],
     },

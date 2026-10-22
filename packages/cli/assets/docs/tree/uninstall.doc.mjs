@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file `astryx docs global/uninstall`: uninstall the global install with each package
+ * @file `astryx docs get-started/on-your-computer/uninstall`: uninstall the global install with each package
  * manager, remove the agent guide, and reset the cache and settings folders.
  */
 
@@ -10,7 +10,7 @@ export const docs = {
   type: 'generic',
   name: 'uninstall',
   placement: {
-    parent: 'namespace:global',
+    parent: 'namespace:on-your-computer',
     slot: 'guides',
     order: 10,
   },
@@ -101,7 +101,7 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'This page is part of {@link namespace:global}, which explains what global mode is and how each part works.',
+          text: 'This page is part of {@link namespace:on-your-computer}, which explains what global mode is and how each part works.',
         },
       ],
     },

@@ -610,9 +610,21 @@ const OUTSIDE = Object.freeze({
 const VALUE_OPTIONS = new Set(['--lang', '--detail', '--depth']);
 
 /**
+ * The docs routes of the global-mode pages, read for this computer: the
+ * install guides, and the pages on the computer's agent guide, its messages,
+ * and its paths.
+ */
+const COMPUTER_DOCS = [
+  'get-started/on-your-computer',
+  'work-with-agents/computer-agent-guide',
+  'fix-a-problem/global-mode-messages',
+  'reference/global-mode',
+];
+
+/**
  * Is this run a command that acts on the computer rather than the folder it
  * runs in? `astryx init --user`, which writes the computer-level agent text,
- * and `astryx docs global[/…]`, the docs of global mode itself, which the copy
+ * and `astryx docs get-started/on-your-computer[/…]`, the docs of global mode itself, which the copy
  * that started the run answers, so they are readable inside a project whose
  * release predates them (spec AST-081 FR8, FR9).
  * @param {string[]} argv arguments after `astryx`
@@ -633,7 +645,9 @@ export function isComputerLevel(argv) {
   return (
     command === 'docs' &&
     typeof topic === 'string' &&
-    (topic === 'global' || topic.startsWith('global/'))
+    COMPUTER_DOCS.some(
+      route => topic === route || topic.startsWith(`${route}/`),
+    )
   );
 }
 

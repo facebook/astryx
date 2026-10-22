@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file `astryx docs authoring/building-blocks/components/component-imports`: make an
+ * @file `astryx docs make-an-integration/building-blocks/components/component-imports`: make an
  * integration component's documented import resolve from the packed package.
  */
 
@@ -79,7 +79,7 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: "In global mode: outside a project, imports the CLI prints name packages installed for the computer, which a new app must install before it can build them; inside a project, only packages the project installs are printed. See {@link namespace:global} and {@link generic:global-integrations}.",
+          text: "In global mode: outside a project, imports the CLI prints name packages installed for the computer, which a new app must install before it can build them; inside a project, only packages the project installs are printed. See {@link namespace:on-your-computer} and {@link generic:global-integrations}.",
         },
       ],
     },

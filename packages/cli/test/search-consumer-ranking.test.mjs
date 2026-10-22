@@ -15,18 +15,18 @@ import {search} from '../api/search/search.mjs';
 // Each case: [query, expected-name-in-top-3, must-NOT-be-first]
 /** @type {Array<[string, string, string?]>} */
 const CONSUMER_QUERIES = [
-  ['add an integration', 'use-integrations'],
-  ['use an integration', 'use-integrations'],
-  ['install a package', 'use-integrations'],
-  ['discover integrations', 'use-integrations'],
-  ['install an integration', 'use-integrations'],
-  ['how to use a theme', 'use-a-theme'],
+  ['add an integration', 'find-a-component/use-integrations'],
+  ['use an integration', 'find-a-component/use-integrations'],
+  ['install a package', 'find-a-component/use-integrations'],
+  ['discover integrations', 'find-a-component/use-integrations'],
+  ['install an integration', 'find-a-component/use-integrations'],
+  ['how to use a theme', 'theme-your-app/use-a-theme'],
 ];
 
 /** @type {Array<[string, string]>} */
 const AUTHORING_QUERIES = [
-  ['build an integration', 'authoring'],
-  ['create an integration', 'authoring'],
+  ['build an integration', 'make-an-integration'],
+  ['create an integration', 'make-an-integration'],
 ];
 
 describe('consumer queries rank consumer docs first', () => {

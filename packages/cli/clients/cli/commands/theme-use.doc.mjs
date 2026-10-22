@@ -7,7 +7,7 @@ export const doc = {
   type: 'command',
   name: 'theme use',
   displayName: 'astryx theme use',
-  namespace: 'cli/commands',
+  namespace: 'reference/commands',
   summary: 'Choose the app default from its added themes',
   description:
     'Sets one added slug as the default and regenerates the generated theme module. Add the theme first if it is not already in the app.',
@@ -23,7 +23,7 @@ export const doc = {
   notes: [
     {
       type: 'prose',
-      text: "In global mode: outside a project, theme use writes nothing and stops with `ERR_THEME_INVALID`: \"No package.json found. Run this command inside an app project.\" In a project, the project's version of Astryx runs it, whichever astryx command you start. See {@link namespace:global} and {@link generic:problems}.",
+      text: "In global mode: outside a project, theme use writes nothing and stops with `ERR_THEME_INVALID`: \"No package.json found. Run this command inside an app project.\" In a project, the project's version of Astryx runs it, whichever astryx command you start. See {@link namespace:on-your-computer} and {@link generic:global-mode-messages}.",
     },
   ],
 };

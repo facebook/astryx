@@ -13,7 +13,7 @@ export const doc = {
   type: 'command',
   name: 'theme list',
   displayName: 'astryx theme list',
-  namespace: 'cli/commands',
+  namespace: 'reference/commands',
   summary: 'List themes available to add',
   description:
     'Lists bundled, package, and local themes with their owner, source, added state, and default state. ' +

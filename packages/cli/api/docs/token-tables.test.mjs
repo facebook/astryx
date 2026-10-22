@@ -1,9 +1,10 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file The design tokens are written once. Each category's table lives in its
- * guide under the tokens namespace; a token reference to `tokens` reads that
- * guide, so no flat copy of the tables is listed, searched, or compiled.
+ * @file The design tokens are written once, so each value has one home: every
+ * category's table is a section of `foundations/all-tokens`, and a
+ * Foundations value page shows its table through a token reference to that
+ * guide, so no copy of the tables is listed, searched, or compiled.
  */
 
 import fs from 'node:fs';
@@ -58,7 +59,7 @@ describe('the design tokens', () => {
       const listed = await docs();
       const names = listed.data.map(entry => entry.topic);
       expect(names).not.toContain('token-tables');
-      expect(listed.meta.namespaces.map(entry => entry.topic)).toContain(
+      expect(listed.meta.namespaces.map(entry => entry.topic)).not.toContain(
         'tokens',
       );
 
@@ -68,24 +69,24 @@ describe('the design tokens', () => {
         .filter(
           hit =>
             hit.section === 'spacing-tokens' ||
-            hit.name === 'tokens/tokens-spacing',
+            hit.name === 'foundations/all-tokens',
         )
         .map(hit => hit.name);
-      expect(new Set(holders)).toEqual(new Set(['tokens/tokens-spacing']));
+      expect(new Set(holders)).toEqual(new Set(['foundations/all-tokens']));
     },
     SLOW,
   );
 
   it(
-    'still answer a token reference to `tokens`, in every language',
+    "answer a value page's token reference, in every language",
     async () => {
       for (const options of [{}, {dense: true}, {zh: true}]) {
-        const read = await docs('color', null, options);
+        const read = await docs('foundations/color', null, options);
         const text = JSON.stringify(read.data.sections);
         expect(text).not.toContain('[token-ref');
         expect(text).toContain('--color-accent');
       }
-      const section = await docs('spacing', 'scale');
+      const section = await docs('foundations/spacing', 'scale');
       expect(JSON.stringify(section.data)).toContain('--spacing-4');
     },
     SLOW,

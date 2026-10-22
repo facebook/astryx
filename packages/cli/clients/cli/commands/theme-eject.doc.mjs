@@ -7,7 +7,7 @@ export const doc = {
   type: 'command',
   name: 'theme eject',
   displayName: 'astryx theme eject',
-  namespace: 'cli/commands',
+  namespace: 'reference/commands',
   summary: 'Fork a theme as editable local source',
   description:
     "Copies a bundled or installed package theme's complete source into the local themes root, including a local descriptor. Writes are atomic. Existing files require --overwrite. Use --package when package themes share a slug.",

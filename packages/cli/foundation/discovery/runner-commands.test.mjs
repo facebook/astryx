@@ -19,7 +19,7 @@ const COMMAND_DOCS = path.resolve(
 
 describe('runnerCommandsIn', () => {
   it('finds an Astryx command after a project runner, with the bare command', () => {
-    expect(runnerCommandsIn('Run `pnpm exec astryx docs theme`.')).toEqual([
+    expect(runnerCommandsIn('Run `pnpm exec astryx docs theme-your-app`.')).toEqual([
       {written: 'pnpm exec astryx docs', bare: 'astryx docs', download: false},
     ]);
     expect(runnerCommandsIn('yarn astryx component Button')).toEqual([

@@ -16,7 +16,7 @@
  *
  * This module also re-exports the leaf symbols the CLI + tests import by name
  * (`getNextSteps`) so api/index.mjs, the command handler
- * (cli/commands/init.mjs), and the test suite stay unchanged.
+ * (reference/commands/init.mjs), and the test suite stay unchanged.
  */
 
 import {run} from './run/run.mjs';
@@ -29,7 +29,7 @@ export {getNextSteps} from './run/run.mjs';
 
 /**
  * Re-exported types so callers can keep referencing them off the init barrel
- * (e.g. cli/commands/init.mjs uses `import('../../api/init/init.mjs').InitOptions`).
+ * (e.g. reference/commands/init.mjs uses `import('../../api/init/init.mjs').InitOptions`).
  * The canonical shapes stay colocated in api/init/init.type.mjs.
  * @typedef {import('./init.type.mjs').InitOptions} InitOptions
  * @typedef {import('./init.type.mjs').InitRunData} InitRunData

@@ -7,7 +7,7 @@ export const doc = {
   type: 'function',
   kind: 'api',
   name: 'integrationDocConflicts',
-  namespace: 'cli/api',
+  namespace: 'reference/api',
   displayName: 'integrationDocConflicts()',
   summary:
     "Check an integration's docs: the docs tree they add, every link, and overlaps with Core topics.",

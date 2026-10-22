@@ -15,6 +15,7 @@ import fs from 'node:fs';
 
 import {textFields} from '../doc-compiler/links.mjs';
 import {builtinGuideFiles} from './docs-discovery.mjs';
+import {RENAMED_TOPICS} from './renamed-docs.mjs';
 import {
   fileWords,
   lineAtOffset,
@@ -132,7 +133,7 @@ export function pointersIn(text) {
 /**
  * Where a string's words start among a file's words, from `from` on. A
  * one-line string the file holds as a quoted literal is found at that
- * literal, so a list item that is only `astryx docs theme` is not placed at a
+ * literal, so a list item that is only `astryx docs theme-your-app` is not placed at a
  * summary or code block that writes the same words.
  *
  * @param {string[]} lines the file's lines
@@ -206,11 +207,13 @@ export async function findStrayPointers(discovered) {
   }
   /** @param {string} target */
   const linkFor = target => {
-    const page = extendsOf.get(target);
-    if (page != null) {
-      if (own.has(page) && !extendsOf.has(page)) {
-        return `{@link ${own.get(page)}:${page}}`;
+    const extended = extendsOf.get(target);
+    if (extended != null) {
+      if (own.has(extended) && !extendsOf.has(extended)) {
+        return `{@link ${own.get(extended)}:${extended}}`;
       }
+      // A former Core topic's name lands on the guide that took its text.
+      const page = RENAMED_TOPICS[extended.toLowerCase()] ?? extended;
       return core.has(page)
         ? `{@link @astryxdesign/cli:${core.get(page)}:${page}}`
         : null;

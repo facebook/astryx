@@ -103,7 +103,7 @@ describe('generateCompressedIndex', () => {
 
   it('sends frame choice to the layout doc rather than naming a shell', () => {
     const result = generateCompressedIndex('1.0.0');
-    const frameRule = result.split('\n').find(l => l.includes('astryx docs layout'));
+    const frameRule = result.split('\n').find(l => l.includes('astryx docs build-a-page'));
     expect(frameRule).toBeDefined();
     expect(result).not.toMatch(/AppShell/);
     expect(frameRule).not.toMatch(/https?:/);
@@ -145,7 +145,7 @@ describe('generateCompressedIndex', () => {
     expect(result).toMatch(/No StyleX\/Tailwind compiler/);
     // Must acknowledge that some templates use StyleX and point at the doc.
     expect(result).toMatch(/templates.*StyleX/i);
-    expect(result).toMatch(/styling-overview/);
+    expect(result).toMatch(/style-components\/css-setup/);
   });
 
   it('recommends xstyle when StyleX is configured', () => {
@@ -192,43 +192,48 @@ describe('generateCompressedIndex', () => {
     expect(result).not.toContain('npx astryx <cmd>');
   });
 
-  /** The `docs <topic>  a, b, c` line of the block. */
+  /** The `docs <guide>  a, b, c` line of the block. */
   function topicLine(block) {
     return (
-      block.split('\n').find(line => line.trimStart().startsWith('docs <topic>')) ?? ''
+      block.split('\n').find(line => line.trimStart().startsWith('docs <guide>')) ?? ''
     );
   }
 
-  it('keeps hyphenated key topics visible and points at astryx docs for the rest', () => {
-    // The compact block shows key topics inline; the full list is via
-    // `astryx docs`. `getting-started` is a hyphenated key topic that the old
-    // \w+ scan used to drop — it must stay visible.
+  it('names the guides by what an agent wants to do, and points at astryx docs for the rest', () => {
+    // The compact block shows the guides most work starts from; the full
+    // list of twelve and Reference is via `astryx docs`.
     const line = topicLine(generateCompressedIndex('1.0.0'));
-    expect(line).toContain('getting-started');
-    expect(line).toContain('principles');
+    for (const guide of [
+      'get-started',
+      'build-a-page',
+      'find-a-component',
+      'theme-your-app',
+      'check-your-code',
+      'upgrade-and-migrate',
+      'make-an-integration',
+    ]) {
+      expect(line).toContain(guide);
+    }
     expect(line).toContain('astryx docs');
   });
 
-  it('points to the CLI docs and the authoring docs on lines of their own', () => {
-    // The integration guides live under `authoring` in the docs tree, so the
-    // topic line does not name them; the tree's entry points do.
+  it('points to the reference on a line of its own', () => {
     const block = generateCompressedIndex('1.0.0');
-    expect(block).toContain('  docs cli           commands and API reference');
     expect(block).toContain(
-      '  docs authoring     build an integration package, and every field it holds',
+      '  docs reference     every command, API function, and JSON field',
     );
     expect(topicLine(block)).not.toContain('cli-integrations');
   });
 
   it('shows key topics from the given list and points at astryx docs for the rest', () => {
     const line = topicLine(
-      generateCompressedIndex('1.0.0', {topics: ['tokens', 'deploying']}),
+      generateCompressedIndex('1.0.0', {topics: ['build-a-page', 'deploying']}),
     );
-    // 'tokens' is a key topic present in the given list, so it appears inline.
-    expect(line).toContain('tokens');
-    // The project's catalog replaces the built-in scan: a built-in topic not
+    // 'build-a-page' is a key guide present in the given list, so it appears.
+    expect(line).toContain('build-a-page');
+    // The project's catalog replaces the built-in scan: a built-in guide not
     // in the given list must not appear.
-    expect(line).not.toContain('typography');
+    expect(line).not.toContain('theme-your-app');
     // Agents reach the full list via 'astryx docs'.
     expect(line).toContain('astryx docs');
   });

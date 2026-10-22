@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file `astryx docs authoring/building-blocks/docs/check-your-docs`:
+ * @file `astryx docs make-an-integration/building-blocks/docs/check-your-docs`:
  * what each check proves about an integration's docs: the docs check, each
  * doc's fields, the read size, and the CLI peer.
  */

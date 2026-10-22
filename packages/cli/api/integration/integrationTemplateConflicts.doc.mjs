@@ -12,7 +12,7 @@ export const doc = {
   type: 'function',
   kind: 'api',
   name: 'integrationTemplateConflicts',
-  namespace: 'cli/api',
+  namespace: 'reference/api',
   displayName: 'integrationTemplateConflicts()',
   summary: 'Find integration template ids that also exist in Core.',
   description:

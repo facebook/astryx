@@ -255,8 +255,8 @@ describe(
         // theme topic-level and section tie; either is correct
         const top = env.data.results[0];
         expect(
-          top.name === 'theme' ||
-            top.name === 'use-a-theme' ||
+          top.name === 'theme-your-app' ||
+            top.name === 'theme-your-app/use-a-theme' ||
             top.section === 'light-dark-mode',
         ).toBe(true);
         const text = await runCli(

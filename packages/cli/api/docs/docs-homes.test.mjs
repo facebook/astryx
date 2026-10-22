@@ -3,123 +3,157 @@
 /**
  * @file Every Core doc has a named home in the docs tree (spec:AST-046 FR12).
  *
- * A reader sees a doc's home in its path (`Guides › Getting started`) and in
- * its Up move. A flat Core topic sits in Guides or Foundations by the
- * category it declares, so a new topic with no category, or one the levels
- * do not know, fails here instead of landing in a catch-all. The integration
- * guides and their field reference live under `authoring`, and the routes
- * they left name where they went.
+ * The root of the docs is twelve guides, each named for what a reader wants
+ * to do, then Reference. Every Core doc sits under exactly one of them: a new
+ * doc placed nowhere, a flat Core topic, a catch-all level, or a second list
+ * at the root fails here. Integration authoring lives under
+ * make-an-integration, and every route a doc left names where it went.
  */
 
 import {describe, expect, it} from 'vitest';
 import {docs} from './docs.mjs';
-import {TOPIC_LEVELS} from '../../foundation/doc-compiler/tree.mjs';
+import {GUIDE_ORDER} from '../../foundation/doc-compiler/tree.mjs';
 
 const CLI = '@astryxdesign/cli';
 const SLOW = 60_000;
 
 describe('every Core doc has a named home', () => {
   it(
-    'puts each flat Core topic in Guides or Foundations by its category',
+    'lists the twelve guides and Reference at the root, in order, and nothing else',
     async () => {
       const list = await docs();
-      const core = list.data.filter(topic => topic.package === CLI);
-      expect(core.length).toBeGreaterThan(10);
-      /** @type {string[]} */
-      const unfiled = [];
-      for (const topic of core) {
-        const read = await docs(topic.topic);
-        const {category} = read.data;
-        if (category !== 'guide' && category !== 'foundations') {
-          unfiled.push(`${topic.topic} (category ${String(category)})`);
-          continue;
-        }
-        const level =
-          category === 'foundations'
-            ? TOPIC_LEVELS.foundations
-            : TOPIC_LEVELS.guides;
-        expect(read.data.links.up, topic.topic).toBe(
-          `astryx docs ${level.route}`,
-        );
+      // No flat Core topic: the topic list, the second list at the root, is
+      // empty for Core.
+      expect(list.data.filter(topic => topic.package === CLI)).toEqual([]);
+      const roots = list.meta?.namespaces ?? [];
+      expect(roots.map(entry => entry.topic)).toEqual([...GUIDE_ORDER]);
+      expect(GUIDE_ORDER).toHaveLength(13);
+      for (const root of roots) {
+        expect(root.package).toBe(CLI);
+        // Each guide's summary is its one-line promise.
+        expect(root.description, root.topic).toMatch(/^[A-Z].{10,100}\.$/);
       }
-      expect(unfiled, 'Core topics with no home: give each a category').toEqual(
-        [],
-      );
+      for (const gone of ['guides', 'unorganized', 'more-topics', 'cli']) {
+        await expect(docs(gone), gone).rejects.toMatchObject({
+          code: 'ERR_UNKNOWN_TOPIC',
+        });
+      }
     },
     SLOW,
   );
 
   it(
-    'lists each level under a plain name, and no catch-all',
+    'puts every Core doc under exactly one guide or Reference',
     async () => {
-      const list = await docs();
-      const roots = (list.meta.namespaces ?? []).map(entry => entry.topic);
-      expect(roots).toEqual(expect.arrayContaining(['guides', 'foundations']));
-      expect(roots).not.toContain('unorganized');
-      const guides = await docs('guides');
-      expect(guides.data).toMatchObject({route: 'guides', title: 'Guides'});
-      expect(guides.data.slots[0].children.map(child => child.route)).toEqual(
-        expect.arrayContaining(['getting-started', 'principles', 'theme']),
-      );
-      const foundations = await docs('foundations');
-      expect(foundations.data.title).toBe('Foundations');
-      expect(
-        foundations.data.slots[0].children.map(child => child.route),
-      ).toEqual(expect.arrayContaining(['color', 'icons', 'spacing']));
-      await expect(docs('unorganized')).rejects.toMatchObject({
-        code: 'ERR_UNKNOWN_TOPIC',
-      });
+      /** @type {Map<string, string>} each route and the root it sits under */
+      const homes = new Map();
+      for (const root of GUIDE_ORDER) {
+        const read = await docs(root, undefined, {depth: 'all'});
+        expect(read.data).toMatchObject({
+          route: root,
+          kind: 'namespace',
+          breadcrumb: [],
+          links: {up: 'astryx docs'},
+        });
+        /** @param {any[]} slots */
+        const walk = slots => {
+          for (const slot of slots ?? []) {
+            for (const child of slot.children) {
+              expect(child.route.startsWith(`${root}/`), child.route).toBe(
+                true,
+              );
+              expect(homes.has(child.route), child.route).toBe(false);
+              homes.set(child.route, root);
+              walk(child.slots);
+            }
+          }
+        };
+        walk(read.data.slots);
+      }
+      // Every guide has something below it.
+      for (const root of GUIDE_ORDER) {
+        expect(
+          [...homes.values()].filter(home => home === root).length,
+          root,
+        ).toBeGreaterThan(0);
+      }
+      // A child's name never repeats its parent's.
+      for (const route of homes.keys()) {
+        const parts = route.split('/');
+        const [parent, child] = parts.slice(-2);
+        expect(child.startsWith(`${parent}-`), route).toBe(false);
+      }
     },
     SLOW,
   );
 
   it(
-    'keeps everything for integration authors under authoring, and names where an old route went',
+    'keeps everything for integration authors under make-an-integration',
     async () => {
-      const authoring = await docs('authoring');
-      expect(authoring.data).toMatchObject({
-        route: 'authoring',
-        kind: 'namespace',
-        breadcrumb: [],
-        links: {up: 'astryx docs'},
-      });
+      const authoring = await docs('make-an-integration');
       const children = authoring.data.slots.flatMap(slot =>
         slot.children.map(child => child.route),
       );
       expect(children).toEqual(
         expect.arrayContaining([
-          'authoring/quick-start',
-          'authoring/building-blocks',
-          'authoring/ship',
-          'authoring/help',
-          'authoring/field-reference',
+          'make-an-integration/quick-start',
+          'make-an-integration/building-blocks',
+          'make-an-integration/ship',
+          'make-an-integration/help',
+          'make-an-integration/field-reference',
         ]),
       );
       // Every field reference section still opens from the namespace by its
-      // key, as `astryx docs authoring <name>` did on the topic (FR13).
-      const reference = await docs('authoring/field-reference', undefined, {
-        index: true,
-      });
+      // key (FR13).
+      const reference = await docs(
+        'make-an-integration/field-reference',
+        undefined,
+        {index: true},
+      );
       const keys = reference.data.sections.map(section => section.id);
       expect(keys.length).toBeGreaterThan(15);
       for (const key of keys) {
-        const section = await docs('authoring', key);
+        const section = await docs('make-an-integration', key);
         expect(section.type, key).toBe('docs.detail.section');
         expect(section.data.id, key).toBe(key);
       }
+    },
+    SLOW,
+  );
+
+  it(
+    'names where every old route went, ahead of the usual suggestions',
+    async () => {
       for (const [old, now] of [
-        ['cli/integrations', 'authoring'],
-        ['cli/integrations/quick-start', 'authoring/quick-start'],
-        ['cli/integrations/ship/publishing', 'authoring/ship/publishing'],
+        ['cli/integrations', 'make-an-integration'],
+        ['cli/integrations/quick-start', 'make-an-integration/quick-start'],
+        ['authoring/ship/publishing', 'make-an-integration/ship/publishing'],
+        ['getting-started', 'get-started/add-to-a-project'],
+        ['theme', 'theme-your-app'],
+        ['use-a-theme', 'theme-your-app/use-a-theme'],
+        ['principles', 'foundations/principles'],
+        ['is-my-code-good', 'check-your-code/agent-review'],
+        ['layout/scaffold', 'build-a-page/scaffold'],
+        ['styling-libraries/tailwind', 'style-components/tailwind'],
+        ['tokens', 'foundations/all-tokens'],
+        ['tokens/tokens-color', 'foundations/color'],
+        ['tokens/tokens-data', 'foundations/all-tokens'],
+        ['global', 'get-started/on-your-computer'],
+        ['global/problems', 'fix-a-problem/global-mode-messages'],
+        ['cli/commands/upgrade', 'reference/commands/upgrade'],
+        ['cli/component-lookups', 'find-a-component/search-and-read'],
+        [
+          'migration/migration-setup',
+          'upgrade-and-migrate/from-tailwind-shadcn-radix/migration-setup',
+        ],
       ]) {
         const error = await docs(old).catch(e => e);
-        expect(error).toMatchObject({
+        expect(error, old).toMatchObject({
           code: 'ERR_UNKNOWN_TOPIC',
           message: expect.stringContaining(`It moved to "${now}"`),
         });
-        // The new route comes first, ahead of the suggestions any unknown
-        // route gets (FR6).
-        expect(error.suggestions[0]).toMatchObject({name: now});
+        // The new route comes first (FR6).
+        expect(error.suggestions[0], old).toMatchObject({name: now});
       }
     },
     SLOW,

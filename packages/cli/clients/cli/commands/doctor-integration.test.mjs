@@ -18,7 +18,6 @@ import * as path from 'node:path';
 import {Command} from 'commander';
 import {discoverCoreTemplates} from '../../../foundation/discovery/template-adapter.mjs';
 import {discoverOwnedComponents} from '../../../foundation/discovery/component-discovery.mjs';
-import {discoverBuiltinTopics} from '../../../foundation/discovery/docs-discovery.mjs';
 import {
   findCoreDir,
   findProjectCoreDir,
@@ -1359,7 +1358,7 @@ describe('doctor integration — command', () => {
   });
 
   it('docs reports an intentional replacement as info', async () => {
-    const [coreTopic] = Object.keys(discoverBuiltinTopics());
+    const coreTopic = 'principles';
     writeDocIntegration({name: 'acme-setup', replaces: coreTopic});
     process.chdir(tmpDir);
 
@@ -1378,7 +1377,7 @@ describe('doctor integration — command', () => {
   });
 
   it('docs reports an intentional extension as info', async () => {
-    const [coreTopic] = Object.keys(discoverBuiltinTopics());
+    const coreTopic = 'principles';
     writeDocIntegration({name: 'acme-extra', extendsTopic: coreTopic});
     process.chdir(tmpDir);
 
@@ -1420,7 +1419,7 @@ describe('doctor integration — command', () => {
   });
 
   it('docs exits 1 for an accidental same-name Core topic', async () => {
-    const [coreTopic] = Object.keys(discoverBuiltinTopics());
+    const coreTopic = 'principles';
     writeDocIntegration({name: coreTopic});
     process.chdir(tmpDir);
 

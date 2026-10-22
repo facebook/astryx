@@ -187,7 +187,7 @@ source, packages}`. `source` has `name`, `generatedAt`, and `complete`. Each
 - `spec:AST-031`: `discover` is a second named-export feature, without the
   consent gate (FR6).
 - Consumer docs: `authoring` gains the `discover` named export and config
-  field, and `astryx docs authoring` gains the `discover-source` section.
+  field, and `astryx docs make-an-integration` gains the `discover-source` section.
 - `astryx discover` with no source configured listed only the project's
   integrations. It also lists the official packages, first, each with the
   command that adds it, and a declared official package the official list
@@ -199,7 +199,7 @@ source, packages}`. `source` has `name`, `generatedAt`, and `complete`. Each
   answers with the list, as it does without the official list (FR1).
 - Release: the CLI build generates the official list from the packages the
   release publishes, and a drift check fails when the committed list is stale
-  (FR11). `astryx docs authoring` `discover-source` says the official list comes
+  (FR11). `astryx docs make-an-integration` `discover-source` says the official list comes
   before every source.
 
 ## Verification

@@ -40,7 +40,7 @@ async function route(query) {
 
 describe('search tree', () => {
   it('sends a doc question to the doc searcher', async () => {
-    const {steps, answer} = await route('how do I install a theme');
+    const {steps, answer} = await route('how do I switch to dark mode');
     expect(steps).toEqual(['root', 'doc']);
     expect(answer.data.results[0].domain).toBe('doc');
   });

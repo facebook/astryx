@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file `astryx docs styling/tokens-and-setup`: using design tokens in custom
+ * @file `astryx docs style-components/tokens-and-setup`: using design tokens in custom
  * styles and configuring a StyleX compiler for swizzled components.
  */
 
@@ -11,7 +11,7 @@ export const docs = {
   type: 'generic',
   name: 'tokens-and-setup',
   title: 'Tokens & Setup',
-  placement: {parent: 'namespace:styling', slot: 'guides', order: 30},
+  placement: {parent: 'namespace:style-components', slot: 'guides', order: 40},
   category: 'guide',
   description:
     'Using design tokens in custom styles and configuring a StyleX compiler for swizzled components.',
@@ -61,7 +61,7 @@ const styles = stylex.create({
         },
         {
           type: 'prose',
-          text: 'See {@link namespace:tokens} for the full token reference (all spacing, color, radius, shadow, and typography tokens with values). See {@link generic:author-a-theme} for how to override tokens via defineTheme.',
+          text: 'See {@link generic:all-tokens} for the full token reference (all spacing, color, radius, shadow, and typography tokens with values). See {@link generic:author-a-theme} for how to override tokens via defineTheme.',
         },
       ],
     },

@@ -11,7 +11,7 @@ export const doc = {
   type: 'function',
   kind: 'api',
   name: 'hook',
-  namespace: 'cli/api',
+  namespace: 'reference/api',
   displayName: 'hook()',
   summary:
     'Resolve a hook by name, or list the catalog, with an optional params-only slice.',

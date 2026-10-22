@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file `astryx docs styling-libraries/other-libraries`: Panda, Chakra, MUI,
+ * @file `astryx docs style-components/other-libraries`: Panda, Chakra, MUI,
  * Emotion, styled-components, UnoCSS, and the interop checklist.
  */
 
@@ -11,14 +11,13 @@ export const docs = {
   type: 'generic',
   name: 'other-libraries',
   title: 'Other Libraries',
-  placement: {parent: 'namespace:styling-libraries', slot: 'guides', order: 30},
+  placement: {parent: 'namespace:style-components', slot: 'guides', order: 70},
   category: 'guide',
   description:
     'Panda, Chakra, MUI, Emotion, styled-components, Theme UI, UnoCSS, and the interop checklist.',
   keywords: [
     'UnoCSS',
-    'semantic tokens',
-    'palette',
+    'semantic tokens'
   ],
 
   sections: [
@@ -208,7 +207,7 @@ tokens: {
             'Import the reset/base CSS and a theme CSS file early enough for first paint. For production SSR, prefer built themes from `astryx theme build` or published `/built` theme imports plus `theme.css`.',
             'Choose one owner for color mode. Theme uses `data-theme="light|dark"` and `color-scheme` to resolve `light-dark()` tokens.',
             'Map the external library\'s semantic layer to system variables by intent, not by exact naming. For example, MUI `background.paper` maps to `--color-background-surface`.',
-            'Use {@link namespace:tokens} and focused token docs when building mappings. Keep mappings small at first: text, surface/body/card/popover, border, accent, status, spacing, radius, typography, shadow.',
+            'Use {@link generic:all-tokens} and focused token docs when building mappings. Keep mappings small at first: text, surface/body/card/popover, border, accent, status, spacing, radius, typography, shadow.',
             'Use token resolver APIs only for non-CSS APIs that need resolved values.',
           ],
         },

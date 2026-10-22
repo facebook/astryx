@@ -270,7 +270,7 @@ const INDICATOR_GUTTER = spacingVars['--spacing-6'];
 // What is left is the one gesture where the movement carries the meaning: the
 // flow went forward one step, and the line grows to show it. That span takes
 // the medium band — a fill crossing a whole segment is a spatial change, not a
-// micro-interaction, so per `astryx docs motion` it sits above the fast band
+// micro-interaction, so per `astryx docs foundations/motion` it sits above the fast band
 // reserved for high-frequency states like hover.
 const FILL_SPAN_TIME = durationVars['--duration-medium'];
 

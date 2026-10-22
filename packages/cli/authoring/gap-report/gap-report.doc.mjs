@@ -4,7 +4,7 @@
  * @file SchemaDoc for GapReportHandler, the handler `astryx gap-report` calls.
  * @input The GapReportHandler type beside it (`type.ts`), which `parse.mjs`
  *   validates.
- * @output The `gap-report-handler` section of `astryx docs authoring`.
+ * @output The `gap-report-handler` section of `astryx docs make-an-integration`.
  * @position packages/cli/authoring/gap-report — schema documentation
  */
 

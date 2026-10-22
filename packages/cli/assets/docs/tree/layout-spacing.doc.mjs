@@ -11,20 +11,18 @@ export const docs = {
   type: 'generic',
   name: 'layout-spacing',
   title: 'Layout spacing',
-  placement: {parent: 'namespace:layout', slot: 'guides', order: 40},
+  placement: {parent: 'namespace:build-a-page', slot: 'guides', order: 40},
   category: 'guide',
   description: 'Hold one content line per region, then tune gaps and density.',
   keywords: [
     'alignment',
     'content line',
     'rhythm',
-    'gap',
     'density',
-    'padding',
     'inset',
     'compact',
     'spacious',
-    'FormLayout',
+    'FormLayout'
   ],
 
   sections: [

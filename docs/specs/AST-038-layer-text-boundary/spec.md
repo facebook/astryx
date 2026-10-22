@@ -333,7 +333,7 @@ leaks above therefore survive the proposed text-only reset.
 ### Platform support
 
 - Supported feature/engine floor: the existing
-  [browser support policy](../../../packages/cli/assets/docs/browser-support.doc.mjs)
+  [browser support policy](../../../packages/cli/assets/docs/tree/browser-support.doc.mjs)
   applies; this spec raises no engine floor. Native hosting still follows its
   own support contract.
 - Unsupported behavior: the existing display fallback must retain the same text

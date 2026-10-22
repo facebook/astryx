@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file `astryx docs global/computer-agent-guide`: the one skill file the global
+ * @file `astryx docs work-with-agents/computer-agent-guide`: the one skill file the global
  * install keeps for the whole computer, its links, and `init --user` (spec
  * AST-081 FR8).
  */
@@ -10,11 +10,7 @@
 export const docs = {
   type: 'generic',
   name: 'computer-agent-guide',
-  placement: {
-    parent: 'namespace:global',
-    slot: 'guides',
-    order: 5,
-  },
+  placement: {parent: 'namespace:work-with-agents', slot: 'guides', order: 20},
   title: 'The agent guide on your computer',
   category: 'guide',
   keywords: [
@@ -23,13 +19,9 @@ export const docs = {
     'SKILL.md',
     'skills',
     'remove-agents',
-    'claude',
-    'codex',
-    'cursor',
-    'agents',
     'other agents',
     'symlink',
-    'link skills',
+    'link skills'
   ],
   description:
     'Your global install keeps one short Astryx skill in your home folder and links it into the folders agent tools read, so agents anywhere know Astryx is there. `astryx init --user` writes it now or turns it off.',
@@ -152,7 +144,7 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: "This page is part of {@link namespace:global}, which explains what global mode is and how each part works. A project's own agent docs: {@link command:init}.",
+          text: "This page is part of {@link namespace:on-your-computer}, which explains what global mode is and how each part works. A project's own agent docs: {@link command:init}.",
         },
       ],
     },

@@ -104,7 +104,9 @@ export function scoreCandidate(
   for (const candidateName of [name, ...aliases.filter(Boolean)]) {
     const nameLower = candidateName.toLowerCase();
     // A placed guide's name is its route, and the route's last segment is its
-    // name too, as a flat topic's is: `codemods` is authoring/building-blocks/codemods.
+    // name too, plural included, as a flat topic's is: `codemods` is
+    // make-an-integration/building-blocks/codemods, and `illustration` is
+    // foundations/illustrations.
     const leafLower = nameLower.slice(nameLower.lastIndexOf('/') + 1);
 
     // A plural of the name is the name: `integration` is the `integrations`
@@ -128,7 +130,12 @@ export function scoreCandidate(
       // Most of the name typed as words, cut short: `complex select` is
       // ComplexSelector, ahead of a one-word keyword elsewhere.
       consider(95, `name "${candidateName}" spelled`, 'partial');
-    } else if (pluralOf(nameLower, term) || pluralOf(term, nameLower)) {
+    } else if (
+      pluralOf(nameLower, term) ||
+      pluralOf(term, nameLower) ||
+      pluralOf(leafLower, term) ||
+      pluralOf(term, leafLower)
+    ) {
       // One point under the exact spelling, so the doc named `tokens` still
       // outranks the Token component for `tokens`.
       consider(99, 'plural of the name');

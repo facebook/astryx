@@ -1,11 +1,11 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file `astryx docs cli/api`: the programmatic API of `@astryxdesign/cli/api`.
+ * @file `astryx docs reference/api`: the programmatic API of `@astryxdesign/cli/api`.
  *
- * Adopts each function, schema, and enum doc whose `namespace` is `cli/api`,
- * one generated level per kind: `cli/api/functions`, `cli/api/schemas`, and
- * `cli/api/enums`.
+ * Adopts each function, schema, and enum doc whose `namespace` is `reference/api`,
+ * one generated level per kind: `reference/api/functions`, `reference/api/schemas`, and
+ * `reference/api/enums`.
  */
 
 /** @type {import('@astryxdesign/cli/authoring').NamespaceDoc} */
@@ -16,7 +16,7 @@ export const docs = {
   summary:
     'The programmatic API: functions, the JSON output envelope, error codes, and response types.',
   keywords: ['api', 'functions', 'schemas', 'enums', 'json'],
-  placement: {parent: 'namespace:cli', slot: 'reference', order: 20},
+  placement: {parent: 'namespace:reference', slot: 'reference', order: 20},
   slots: {
     kinds: {title: 'Reference', accepts: {kinds: ['namespace']}},
   },
@@ -28,7 +28,7 @@ export const docs = {
   ],
   adopts: [
     {
-      source: {group: 'cli/api', kinds: ['function', 'schema', 'enum']},
+      source: {group: 'reference/api', kinds: ['function', 'schema', 'enum']},
       into: 'kinds',
       groupBy: 'kind',
     },

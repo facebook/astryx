@@ -45,7 +45,7 @@ import {doc as manifestDoc} from '../commands/manifest.doc.mjs';
  * `spec:AST-017` FR14), and where it is explained.
  */
 export const GLOBAL_MODE = Object.freeze({
-  docs: 'astryx docs global',
+  docs: 'astryx docs get-started/on-your-computer',
   summary:
     "In a folder that belongs to a project, the project's own CLI answers: this copy hands the run to it. In a project with no CLI of its own, and outside any project, this copy answers. A copy installed for the computer checks the registry for a newer release once a day in the background, and keeps one agent skill file in the home folder.",
 });

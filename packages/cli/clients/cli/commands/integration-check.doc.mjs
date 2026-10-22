@@ -9,7 +9,7 @@ export const doc = {
   type: 'command',
   name: 'integration check',
   displayName: 'astryx integration check',
-  namespace: 'cli/commands',
+  namespace: 'reference/commands',
   summary:
     "The CI check for an integration package's own build: every source check, run in continuous integration or a typecheck script, against the package in the current folder",
   description:
@@ -87,7 +87,7 @@ export const doc = {
   notes: [
     {
       type: 'prose',
-      text: "In global mode: outside a package, it writes nothing, its `validate` check reports one `no_package` issue, and it exits 1. In a project, the project's version of Astryx runs it, whichever astryx command you start. See {@link namespace:global} and {@link generic:global-integrations}.",
+      text: "In global mode: outside a package, it writes nothing, its `validate` check reports one `no_package` issue, and it exits 1. In a project, the project's version of Astryx runs it, whichever astryx command you start. See {@link namespace:on-your-computer} and {@link generic:global-integrations}.",
     },
   ],
 };

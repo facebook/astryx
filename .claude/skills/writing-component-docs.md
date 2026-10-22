@@ -137,9 +137,9 @@ To add a new reference doc: create `packages/cli/assets/docs/mytopic.doc.mjs` ex
 
 ```bash
 astryx docs                          # list topics
-astryx docs tokens                   # full output
-astryx docs tokens --index           # section index, one key per section
-astryx docs tokens spacing           # single section, by key or title
-astryx --detail compact docs tokens  # agent-friendly
-astryx --lang dense docs tokens      # compressed prose
+astryx docs foundations/all-tokens                   # full output
+astryx docs foundations/all-tokens --index           # section index, one key per section
+astryx docs foundations/all-tokens spacing           # single section, by key or title
+astryx --detail compact docs foundations/all-tokens  # agent-friendly
+astryx --lang dense docs foundations/all-tokens      # compressed prose
 ```

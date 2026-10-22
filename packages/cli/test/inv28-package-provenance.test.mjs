@@ -86,10 +86,10 @@ describe('INV28: a result about one artifact names its package after `type`', ()
     ['component.detail.source', ['component', 'Button', '--source'], CORE],
     ['component.detail.showcase', ['component', 'Button', '--showcase'], CORE],
     ['component.detail.blocks', ['component', 'Button', '--blocks'], CORE],
-    ['docs.detail', ['docs', 'theme'], CLI],
-    ['docs.index', ['docs', 'theme', '--index'], CLI],
-    ['docs.detail.section', ['docs', 'theme', 'quick-start'], CLI],
-    ['docs.node', ['docs', 'cli'], CLI],
+    ['docs.detail', ['docs', 'theme-your-app/use-a-theme'], CLI],
+    ['docs.index', ['docs', 'theme-your-app/use-a-theme', '--index'], CLI],
+    ['docs.detail.section', ['docs', 'theme-your-app/use-a-theme', 'quick-start'], CLI],
+    ['docs.node', ['docs', 'reference'], CLI],
     ['template.show', ['template', 'dashboard'], CORE],
     ['template.skeleton', ['template', 'dashboard', '--skeleton'], CORE],
     ['hook.detail', ['hook', 'useCollapsible'], CORE],
@@ -142,14 +142,14 @@ describe('INV28: a result that lists artifacts names each one', () => {
   });
 
   it('docs.index and docs.detail: each section', async () => {
-    const index = await json(['docs', 'theme', '--index']);
+    const index = await json(['docs', 'theme-your-app/use-a-theme', '--index']);
     for (const s of index.data.sections) expect(s.package, s.id).toBe(CLI);
-    const detail = await json(['docs', 'theme']);
+    const detail = await json(['docs', 'theme-your-app/use-a-theme']);
     for (const s of detail.data.sections) expect(s.package, s.id).toBe(CLI);
   });
 
   it('docs.node: each child', async () => {
-    const {data} = await json(['docs', 'cli']);
+    const {data} = await json(['docs', 'reference']);
     const children = data.slots.flatMap((/** @type {any} */ s) => s.children);
     expect(children.length).toBeGreaterThan(0);
     for (const child of children) expectPackage(child, child.route);
@@ -188,8 +188,8 @@ describe('INV28: text names the same package', () => {
   it('a read of one artifact names its package', async () => {
     expect(await text(['component', 'Button'])).toContain(`package: ${CORE}`);
     expect(await text(['component', 'Button', '--props'])).toContain(`package: ${CORE}`);
-    expect(await text(['docs', 'theme', '--index'])).toContain(`package: ${CLI}`);
-    expect(await text(['docs', 'theme', 'quick-start'])).toContain(`package: ${CLI}`);
+    expect(await text(['docs', 'theme-your-app/use-a-theme', '--index'])).toContain(`package: ${CLI}`);
+    expect(await text(['docs', 'theme-your-app/use-a-theme', 'quick-start'])).toContain(`package: ${CLI}`);
     expect(await text(['template', 'dashboard', '--skeleton'])).toContain(`package: ${CORE}`);
     expect(await text(['hook', 'useCollapsible'])).toContain(`package: ${CORE}`);
   });

@@ -4,7 +4,7 @@
  * Direct API tests for `themeBuild()` — the programmatic surface behind
  * `astryx theme build` (`@astryxdesign/cli/api`).
  *
- * The CLI suites (cli/commands/build-theme.*.test.mjs) drive `registerTheme`
+ * The CLI suites (reference/commands/build-theme.*.test.mjs) drive `registerTheme`
  * end-to-end; these assert the API contract you get calling `themeBuild()` in
  * code: the typed `theme.build` receipt (with files actually written to disk),
  * that it honors the `cwd` option, stays SILENT under the default noopLogger,

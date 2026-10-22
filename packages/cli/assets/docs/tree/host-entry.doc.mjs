@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file `astryx docs cli/host-entry`: run the CLI from a tool that carries it,
+ * @file `astryx docs reference/host-entry`: run the CLI from a tool that carries it,
  * through `@astryxdesign/cli/host` (spec AST-081 FR1,
  * architecture:cli-surface INV30).
  */
@@ -10,7 +10,7 @@
 export const docs = {
   type: 'generic',
   name: 'host-entry',
-  placement: {parent: 'namespace:cli', slot: 'guides', order: 15},
+  placement: {parent: 'namespace:reference', slot: 'guides', order: 30},
   title: 'Host entry',
   category: 'guide',
   keywords: [

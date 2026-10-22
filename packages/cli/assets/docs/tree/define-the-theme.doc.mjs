@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file `astryx docs authoring/building-blocks/themes/define-the-theme`:
+ * @file `astryx docs make-an-integration/building-blocks/themes/define-the-theme`:
  * map the palette to tokens, keep light-dark() to colors, and avoid Core internals.
  */
 

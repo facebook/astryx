@@ -96,7 +96,7 @@ describe('response-types EnumDoc names every field', () => {
   });
 
   it('docs.index', async () => {
-    const res = await data(['docs', 'theme', '--index']);
+    const res = await data(['docs', 'foundations/principles', '--index']);
     expect(res.type).toBe('docs.index');
     expectNamed('docs.index', fieldsOf(res.data));
   });

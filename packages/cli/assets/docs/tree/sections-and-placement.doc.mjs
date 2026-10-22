@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file `astryx docs authoring/building-blocks/docs/sections-and-placement`:
+ * @file `astryx docs make-an-integration/building-blocks/docs/sections-and-placement`:
  * give an integration package its own section in the docs tree, place guides
  * in it, and fix a placement that fails.
  */
@@ -89,13 +89,13 @@ export const docs = {
         {
           type: 'code',
           lang: 'text',
-          code: 'severity: [fail]\ncode:     invalid_doc_graph\nmessage:  @acme/astryx-widgets/deploying.doc.mjs: placement.parent "namespace:cli" names no namespace; @acme/astryx-widgets declares "acme".',
+          code: 'severity: [fail]\ncode:     invalid_doc_graph\nmessage:  @acme/astryx-widgets/deploying.doc.mjs: placement.parent "namespace:reference" names no namespace; @acme/astryx-widgets declares "acme".',
         },
         {
           type: 'list',
           style: 'unordered',
           items: [
-            'A `parent` your package does not ship, such as `namespace:cli`, "names no namespace".',
+            'A `parent` your package does not ship, such as `namespace:reference`, "names no namespace".',
             'A `slot` the namespace does not declare "is not a slot of namespace"; the message lists the declared slots.',
             'The check exits 1; see {@link generic:check-your-docs}.',
           ],

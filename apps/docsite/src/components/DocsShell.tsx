@@ -21,7 +21,7 @@ import {SharedTopNav} from './SharedTopNav';
 import {CanaryBanner} from './CanaryBanner';
 import {CURRENT_TARGET} from '../lib/docsVersions';
 import type {PackageMeta} from '../generated/packageRegistry';
-import type {DocTopic} from '../generated/docsRegistry';
+import type {DocGuide} from '../generated/docsRegistry';
 import {
   getComponentSidebarData,
   type ComponentSidebarEntry,
@@ -31,7 +31,8 @@ import {
 interface DocsShellProps {
   children: React.ReactNode;
   packages: PackageMeta[];
-  docTopics: DocTopic[];
+  /** The twelve guides and Reference, in reading order. */
+  docGuides: DocGuide[];
 }
 
 const styles = stylex.create({
@@ -51,17 +52,6 @@ function CanaryCategoryMarker() {
     </span>
   );
 }
-
-/** Foundations: tokens first, then alphabetical */
-const foundationsSort = (a: DocTopic, b: DocTopic) => {
-  if (a.topic === 'tokens') {
-    return -1;
-  }
-  if (b.topic === 'tokens') {
-    return 1;
-  }
-  return a.title.localeCompare(b.title);
-};
 
 // Seed the full header height while parsing, before restored scroll can put
 // the sidebar under it, and refresh once its fonts settle. CSSOM leaves React's
@@ -83,7 +73,7 @@ const initialHeaderHeightScript = `(() => {
 
 // ── Shell ──────────────────────────────────────────────────────────────
 
-export function DocsShell({children, packages, docTopics}: DocsShellProps) {
+export function DocsShell({children, packages, docGuides}: DocsShellProps) {
   const pathname = usePathname();
   const [componentQuery, setComponentQuery] = useState('');
 
@@ -124,15 +114,6 @@ export function DocsShell({children, packages, docTopics}: DocsShellProps) {
   const isTheme = (p: PackageMeta) => p.name.includes('theme-');
   const libraryPackages = packages.filter(p => !isTheme(p) && !p.canaryOnly);
   const canaryPackages = packages.filter(p => !isTheme(p) && p.canaryOnly);
-
-  // Classify doc topics by category (from data). Getting Started is promoted
-  // to a top-level nav item, so it is excluded from the Guide section.
-  const guideTopics = docTopics
-    .filter(d => d.category === 'guide' && d.topic !== 'getting-started')
-    .sort((a, b) => a.title.localeCompare(b.title));
-  const foundationTopics = docTopics
-    .filter(d => d.category === 'foundations')
-    .sort(foundationsSort);
 
   // True for the /components index AND every /components/[name] detail page.
   // On these routes we hide every non-Components section so the sidebar is
@@ -201,54 +182,41 @@ export function DocsShell({children, packages, docTopics}: DocsShellProps) {
         <SideNav topContent={isOnComponentsRoute ? componentSearch : undefined}>
           {!isOnComponentsRoute && (
             <>
-              {/* Getting Started */}
-              <SideNavSection title="Documentation" isHeaderHidden>
+              {/* Home, then the guides in reading order (not A-Z): the
+                  order `astryx docs` lists them, Reference last. */}
+              <SideNavSection title="Guides" isHeaderHidden>
                 <SideNavItem
-                  label="Getting Started"
-                  href="/docs/getting-started"
-                  isSelected={pathname === '/docs/getting-started'}
+                  label="Home"
+                  href="/docs"
+                  isSelected={pathname === '/docs'}
+                />
+                {docGuides.map(guide => (
+                  <SideNavItem
+                    key={guide.topic}
+                    label={guide.title}
+                    href={`/docs/${guide.topic}`}
+                    isSelected={pathname === `/docs/${guide.topic}`}
+                  />
+                ))}
+              </SideNavSection>
+
+              {/* The catalog */}
+              <SideNavSection title="Catalog" isHeaderHidden>
+                <SideNavItem
+                  label="Components"
+                  href="/components"
+                  isSelected={pathname === '/components'}
                 />
                 <SideNavItem
-                  label="What's New"
-                  href="/changelog"
-                  isSelected={pathname === '/changelog'}
+                  label="Templates"
+                  href="/templates"
+                  isSelected={pathname === '/templates'}
                 />
-              </SideNavSection>
-
-              {/* Guide */}
-              <SideNavSection title="Guide" isHeaderHidden>
                 <SideNavItem
-                  label="Guide"
-                  collapsible={{defaultIsCollapsed: false}}>
-                  {guideTopics.map(d => (
-                    <SideNavItem
-                      key={d.topic}
-                      label={d.title}
-                      href={`/docs/${d.topic}`}
-                      isSelected={pathname === `/docs/${d.topic}`}
-                    />
-                  ))}
-                </SideNavItem>
-              </SideNavSection>
-
-              {/* Foundations */}
-              <SideNavSection title="Foundations" isHeaderHidden>
-                <SideNavItem
-                  label="Foundations"
-                  collapsible={{defaultIsCollapsed: false}}>
-                  {foundationTopics.map(d => (
-                    <SideNavItem
-                      key={d.topic}
-                      label={d.title}
-                      href={`/docs/${d.topic}`}
-                      isSelected={pathname === `/docs/${d.topic}`}
-                    />
-                  ))}
-                </SideNavItem>
-              </SideNavSection>
-
-              {/* Stable libraries */}
-              <SideNavSection title="Libraries" isHeaderHidden>
+                  label="Themes"
+                  href="/themes"
+                  isSelected={pathname === '/themes'}
+                />
                 <SideNavItem
                   label="Libraries"
                   collapsible={{defaultIsCollapsed: false}}>
@@ -282,6 +250,19 @@ export function DocsShell({children, packages, docTopics}: DocsShellProps) {
                   ))}
                 </SideNavSection>
               )}
+
+              <SideNavSection title="News" isHeaderHidden>
+                <SideNavItem
+                  label="What's New"
+                  href="/changelog"
+                  isSelected={pathname === '/changelog'}
+                />
+                <SideNavItem
+                  label="Blog"
+                  href="/blog"
+                  isSelected={pathname.startsWith('/blog')}
+                />
+              </SideNavSection>
             </>
           )}
 

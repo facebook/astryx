@@ -108,7 +108,7 @@ describe('passageWords and pointers', () => {
   it('reads a link and a written docs command as no words', () => {
     expect(
       passageWords(
-        'See {@link generic:theme} or `astryx docs theme` (Share it).',
+        'See {@link generic:theme} or `astryx docs theme-your-app` (Share it).',
       ),
     ).toEqual(['see', 'or', 'share', 'it']);
   });

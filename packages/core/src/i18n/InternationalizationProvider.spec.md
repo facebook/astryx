@@ -94,7 +94,7 @@ Consumer migration instructions belong in consumer docs and release notes.
 | Direction | `ltr` or `rtl`                         | Exposes the provider's semantic direction default                                                                                                                         | Every provider subtree                    | derived from locale; `ltr` without provider | `component:InternationalizationProvider` | stable    | Invalid values are rejected by the type contract                                                                                                                                                           |
 
 Consumer prop syntax and examples remain in
-`InternationalizationProvider.doc.mjs` and `astryx docs internationalization`.
+`InternationalizationProvider.doc.mjs` and `astryx docs translate-your-app`.
 
 ## Behavioral and layout contract
 

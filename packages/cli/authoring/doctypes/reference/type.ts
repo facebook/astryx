@@ -136,7 +136,7 @@ export interface ReferenceDoc extends AuthoredDocGraphFields {
    *  integration whose guide should be served instead of the built-in one —
    *  `replaces: 'getting-started'` on a doc named `getting-started` swaps the
    *  content, and on a doc named something else swaps it and leaves the old
-   *  name as an alias, so `astryx docs getting-started` still resolves.
+   *  name as an alias, so `astryx docs get-started/add-to-a-project` still resolves.
    *  Ignored on a built-in topic (there is nothing above it to replace). */
   replaces?: string;
   /** Name of an existing topic this doc merges onto, section by section: a
@@ -216,7 +216,7 @@ export interface ReferenceTranslationDoc {
    *  matter, and an overlay may cover any subset — sections it does not name
    *  keep their base content. (These used to be matched by array index, which
    *  meant a reordered or partial overlay grafted every title onto the wrong
-   *  body: `docs tokens --dense` printed the colour table under a "Spacing"
+   *  body: `docs foundations/all-tokens --dense` printed the colour table under a "Spacing"
    *  heading. See #2182.) */
   sections: {
     /** Title of the BASE section this entry overrides, verbatim and in English

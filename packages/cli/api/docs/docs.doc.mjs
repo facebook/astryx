@@ -11,7 +11,7 @@ export const doc = {
   type: 'function',
   kind: 'api',
   name: 'docs',
-  namespace: 'cli/api',
+  namespace: 'reference/api',
   displayName: 'docs()',
   summary:
     'Read the reference docs: list every topic, one topic\'s sections, one section, or a whole topic.',
@@ -25,17 +25,17 @@ export const doc = {
     'ones the project\'s configured integrations contribute, including any ' +
     'topic an integration replaces or extends, so it depends on the cwd. ' +
     'A route opens a node of the docs tree instead: a namespace such as ' +
-    '`cli/api` returns its children one level down (`depth` reads as many ' +
+    '`reference/api` returns its children one level down (`depth` reads as many ' +
     'levels as asked, and `detail` how much of each doc below), a typed doc such as ' +
-    "`cli/api/functions/search` returns its content, and a guide the tree " +
-    'places (`authoring/quick-start`) reads like any topic. ' +
+    "`reference/api/functions/search` returns its content, and a guide the tree " +
+    'places (`make-an-integration/quick-start`) reads like any topic. ' +
     'Every read but the list carries `links`, the commands that move from it: ' +
     '`up` to the level it sits in, `previous` and `next` to its neighbors, and, ' +
     'for a typed doc, `related` to the docs it names (its command or function, ' +
     'and its related docs); `previous` and `next` ' +
     'to the section or node before and after it. ' +
     'Overlay options select localized or dense variants.' +
-    " In global mode: with `cwd` outside a project, doc topics from integrations installed next to this CLI package globally are listed too; inside a project, only the project's own integrations count. See {@link namespace:global} and {@link generic:computer-integrations}.",
+    " In global mode: with `cwd` outside a project, doc topics from integrations installed next to this CLI package globally are listed too; inside a project, only the project's own integrations count. See {@link namespace:on-your-computer} and {@link generic:computer-integrations}.",
   importPath: '@astryxdesign/cli/api',
   signature:
     'docs(topic?: string, section?: string, options?: DocsOptions): Promise<DocsListResponse | DocsIndexResponse | DocsDetailResponse | DocsDetailSectionResponse | DocsNodeResponse>',
@@ -46,6 +46,7 @@ export const doc = {
     'guide',
     'topic',
     'section',
+    'guides',
     'principles',
     'tokens',
   ],
@@ -54,7 +55,7 @@ export const doc = {
       name: 'topic',
       type: 'string',
       description:
-        "Doc topic to load (e.g. 'principles'), or a docs-tree route (e.g. 'cli/api/functions/search'). Omit to list all topics.",
+        "Docs-tree route to read (e.g. 'foundations/principles' or 'reference/api/functions/search'), or an integration's topic. Omit to list the guides and topics.",
     },
     {
       name: 'section',
@@ -150,24 +151,24 @@ export const doc = {
   ],
   examples: [
     {label: 'List topics', code: 'const r = await docs();'},
-    {label: 'A whole topic', code: "await docs('principles');"},
+    {label: 'A whole guide', code: "await docs('foundations/principles');"},
     {
-      label: "A topic's sections",
-      code: "await docs('principles', undefined, {index: true});",
+      label: "A guide's sections",
+      code: "await docs('foundations/principles', undefined, {index: true});",
     },
-    {label: 'A docs-tree namespace', code: "await docs('cli/api');"},
+    {label: 'A docs-tree namespace', code: "await docs('reference/api');"},
     {
       label: 'Every doc below a namespace, one entry each',
-      code: "await docs('cli', undefined, {depth: 'all'});",
+      code: "await docs('reference', undefined, {depth: 'all'});",
     },
     {
       label: 'A namespace and everything below it, in full',
-      code: "await docs('authoring', undefined, {depth: 'all', detail: 'full'});",
+      code: "await docs('make-an-integration', undefined, {depth: 'all', detail: 'full'});",
     },
-    {label: 'One API function', code: "await docs('cli/api/functions/search');"},
+    {label: 'One API function', code: "await docs('reference/api/functions/search');"},
     {
       label: 'A whole guide from the docs tree',
-      code: "await docs('authoring/quick-start');",
+      code: "await docs('make-an-integration/quick-start');",
     },
     {label: 'One section by key', code: "await docs('spacing', 'scale');"},
   ],

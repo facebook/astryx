@@ -13,7 +13,22 @@ owners: [josephfarina]
 affects_architecture: [architecture:cli-surface]
 affects_families: []
 affects_contributing: []
-affects_consumer_docs: [authoring, guides, foundations]
+affects_consumer_docs:
+  [
+    get-started,
+    work-with-agents,
+    build-a-page,
+    find-a-component,
+    theme-your-app,
+    style-components,
+    foundations,
+    check-your-code,
+    upgrade-and-migrate,
+    translate-your-app,
+    make-an-integration,
+    fix-a-problem,
+    reference,
+  ]
 ---
 
 # Documentation tree system spec
@@ -23,9 +38,9 @@ affects_consumer_docs: [authoring, guides, foundations]
 ## Intent
 
 A reader who opens the Astryx docs should find every doc in one tree and move
-through it one level at a time: `astryx docs cli` lists the CLI's guides and
-reference, `astryx docs cli/api` lists the API's functions, schemas, and enums,
-and `astryx docs cli/api/functions/search` prints one function. Each doc keeps
+through it one level at a time: `astryx docs` lists twelve guides named for
+what a reader wants to do, then Reference; `astryx docs reference/api` lists the API's functions, schemas, and enums,
+and `astryx docs reference/api/functions/search` prints one function. Each doc keeps
 its own file and becomes one node with one route. The compiler builds the tree
 from the typed docs that already exist; no one keeps a list of children by hand.
 Search leads into the same tree: a hit names the smallest part that answers, so
@@ -41,9 +56,10 @@ follow.
 This record owns how a doc gets its one home in the tree, how a route is formed,
 how `astryx docs` reads the tree, and what `astryx doctor` checks. It rolls out
 in phases: phase 1 places the CLI's own docs and the namespace docs and guides
-each integration ships, and gives every other doc a home in a generated
-level named for its category, Guides or Foundations; later phases may move
-those docs into real sections.
+each integration ships, places every Core doc under one of the twelve guides
+or Reference (FR12), and gives each integration's flat topic a home in a
+generated More topics level; later phases may move those topics into real
+sections.
 
 A long flat topic can become a namespace of short guides, so a reader loads only
 the guide that answers. The split keeps the unambiguous reads a released
@@ -90,8 +106,8 @@ and references from other packages are an open question (OQ2).
   declares its slots and its adoption rules. It MUST NOT enumerate its
   children, and the compiler MUST NOT infer a parent from a folder. A child
   names its parent with `placement`, or a namespace adopts a discovery group: a
-  CLI typed doc's group is the `namespace` it declares (`cli/commands`,
-  `cli/api`). An adoption rule with `groupBy: 'kind'` MUST add one generated
+  CLI typed doc's group is the `namespace` it declares (`reference/commands`,
+  `reference/api`). An adoption rule with `groupBy: 'kind'` MUST add one generated
   namespace per kind (`functions`, `schemas`, `enums`), in the order the rule
   lists the kinds.
 - **FR4 — Routes are unique.** Two nodes MUST NOT share a route. When they
@@ -141,18 +157,20 @@ and references from other packages are an open question (OQ2).
   route, and when a link between docs names no doc (`spec:AST-047` FR9). These
   checks warn, so a project that passed without them keeps passing. The progressive-disclosure check MUST hold each guide the tree
   places to the same size budget as every topic.
-- **FR9 — Phase 1 places the CLI's own docs.** The CLI MUST ship the `cli`
-  namespace with the `commands` and `api` namespaces under it, and the
-  `authoring` namespace, the one home for integration authors. Every command
-  doc MUST have a route under `cli/commands`, and every function, schema, and
-  enum doc in the `cli/api` group a route under `cli/api/<kind>s`. The
-  integration guides MUST live under `authoring`, one short guide per task,
-  beside the field reference whose sections `astryx docs authoring <name>`
-  reads, and no flat topic is named `cli-integrations` or `authoring`. An old
-  `cli/integrations` route MUST stay unknown, and its not-found error MUST name
-  the guide's new route under `authoring`. Under `spec:AST-017/FR45`, a CLI route or name MAY
-  change like this when every reference changes with it: links name docs by
-  identity (`spec:AST-047` FR9), and the graph walk fails on a reference
+- **FR9 — Phase 1 places the CLI's own docs.** The CLI MUST ship the
+  `reference` namespace with the `commands` and `api` namespaces under it, and
+  the `make-an-integration` namespace, the one home for integration authors.
+  Every command doc MUST have a route under `reference/commands`, and every
+  function, schema, and enum doc in the `reference/api` group a route under
+  `reference/api/<kind>s`. The integration guides MUST live under
+  `make-an-integration`, one short guide per task, beside the field reference
+  whose sections `astryx docs make-an-integration <name>` reads, and no flat
+  topic is named `cli-integrations`, `authoring`, or `make-an-integration`. A
+  route a doc left (`cli/integrations`, `authoring`, a former flat topic's
+  name, a token table's old route) MUST stay unknown, and its not-found error
+  MUST name the doc's new route. Under `spec:AST-017/FR45`, a CLI route or name
+  MAY change like this when every reference changes with it: links name docs
+  by identity (`spec:AST-047` FR9), and the graph walk fails on a reference
   left behind (`spec:AST-047` FR11, FR12).
 - **FR10 — Search finds the smallest part that answers.** `astryx search` MUST
   index each section of each topic and placed guide, and each namespace and
@@ -189,17 +207,26 @@ and references from other packages are an open question (OQ2).
   covers a template that sets `replaces` (`spec:AST-035`), a doc section that
   sets `id`, and a theme, whose typed descriptor an older CLI rejects along
   with the package's doc topics; `integration add theme` declares the peer.
-- **FR12 — Every doc has a named home.** Every flat topic, the CLI's and
-  each integration's, MUST sit in the generated level for its category, in the
-  order the topic list reads: `foundations` (Foundations) for a foundations
-  topic, and `guides` (Guides) for any other. A level has no authored doc, so
+- **FR12 — Every doc has a named home.** The CLI's root namespaces MUST be
+  twelve guides, each named for what a reader wants to do, then `reference`,
+  in this order: `get-started`, `work-with-agents`, `build-a-page`,
+  `find-a-component`, `theme-your-app`, `style-components`, `foundations`,
+  `check-your-code`, `upgrade-and-migrate`, `translate-your-app`,
+  `make-an-integration`, `fix-a-problem`, `reference`. `astryx docs` lists
+  them in that order, each with its summary, its one-line promise, and an
+  integration's roots after them. Every Core doc MUST sit under exactly one of
+  them, so the CLI ships no flat topic, and the repository's tests MUST fail
+  on a Core doc outside them or on a second list at the root. Every
+  integration's flat topic MUST sit in the generated `more-topics` level (More
+  topics), in the order the topic list reads. A level has no authored doc, so
   its `id` is `null`, and it lists its topics one level down with the command
-  that opens each. A topic keeps its own name as its route, so no name
-  changes; a read of it offers Up to its level and Previous and Next among its
-  level's topics, as any tree node does. Placing a topic in a real section
-  takes it out of its level. Every flat topic the CLI ships MUST declare the
-  `guide` or `foundations` category, and the repository's tests MUST fail on
-  one that does not.
+  that opens each. A topic keeps its own name as its route; a read of it
+  offers Up to its level and Previous and Next among its level's topics, as
+  any tree node does. Placing a topic in a real section takes it out of its
+  level. An integration topic that `extends` or `replaces` a Core guide names
+  the guide by its name; a name a Core topic had before it became a guide
+  (`theme`, `getting-started`, `working-with-ai`, `styling-overview`,
+  `is-my-code-good`) lands on the guide that took its text.
 - **FR13 — A flat topic becomes a namespace without breaking an unambiguous
   read.** A
   provider's flat topic MAY become a namespace of guides only when every rule
@@ -242,9 +269,10 @@ and references from other packages are an open question (OQ2).
   namespace below it (its route with `/` as `-`) MUST be a temporary redirect
   to where its text starts on the page. A root namespace whose slug is a
   package's page (`cli` is the CLI package's page) keeps one page per guide,
-  at the guide's slug, and has no namespace page. A namespace page's sidebar
-  group MUST be the namespace's own `category`; without one, `foundations`
-  when every guide below it is a foundations doc, and `guide` otherwise. A
+  at the guide's slug, and has no namespace page. The sidebar MUST list the
+  CLI's root namespace pages in FR12's order, and `/docs` MUST list the twelve
+  guides, each with its promise. Every slug a moved route had (FR9) MUST
+  redirect to where its doc's text starts on its new page. A
   namespace with no guide below it, such as a generated topic level (FR12), has
   no page. The docsite build MUST fail when a slug is both a page and a
   redirect, or both a flat topic and a namespace page.
@@ -276,9 +304,10 @@ Phase 1 changes these surfaces:
   with it;
 - the integration guides then move from `cli/integrations` to `authoring`,
   beside the field reference, and every reference moves with them; an old
-  route's not-found error names its new one (FR9);
-- every flat topic sits in the generated level for its category, Guides or
-  Foundations, as FR12 states;
+  route's not-found error names its new one (FR9); `authoring` then becomes
+  `make-an-integration`, unchanged inside;
+- every Core doc sits under one of the twelve guides or Reference, and each
+  integration's flat topic in More topics, as FR12 states;
 - a flat topic that becomes a namespace keeps its unambiguous reads inside
   its own package, as FR13 and FR6 state;
 - the docsite reads the tree through `docs()`: each root namespace is one page
@@ -295,7 +324,7 @@ Phase 1 changes these surfaces:
 | ------------- | ----------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | FR1, FR3, FR4 | Tree builder fixture tests                                                    | three authored levels; adoption with and without `groupBy`; reversed input order; order and title sort                                                                 | A route that ignores the parent, a folder that implies a parent, or a tree that depends on input order                                                                                   |
 | FR2           | Tree builder failure fixtures                                                 | no slot; unknown slot; a slot that refuses the kind; another package's parent; not a reference; two adopters; a cycle                                                  | A failed placement that falls back to adoption, or a failure without a diagnostic                                                                                                        |
-| FR5, FR6, FR7 | `docs()` dispatcher tests and CLI runs                                        | `cli`, `cli/api`, one function, the placed guide and its sections, the old name, a typo route; a section on a namespace that one guide, no guide, and two guides hold  | A namespace that inlines grandchildren, a lost section read, a section read that picks one of two guides, or a wrong error code                                                          |
+| FR5, FR6, FR7 | `docs()` dispatcher tests and CLI runs                                        | `reference`, `reference/api`, one function, the placed guide and its sections, the old name, a typo route; a section on a namespace that one guide, no guide, and two guides hold  | A namespace that inlines grandchildren, a lost section read, a section read that picks one of two guides, or a wrong error code                                                          |
 | FR8           | Doctor tests                                                                  | this repo; a fixture tree with a broken placement                                                                                                                      | A broken tree or an unplaced CLI doc that passes                                                                                                                                         |
 | FR9           | Real-tree tests and the route inventory                                       | every command, function, schema, and enum doc; every exported API function                                                                                             | A CLI typed doc without its route, or a route inventory row the tree contradicts                                                                                                         |
 | FR10          | Search tests and CLI runs                                                     | a guide section; a typed doc by its own name; an error code; a topic hit; no core installed                                                                            | A section hit whose command reads the whole topic, or a docs-only search that needs core                                                                                                 |
@@ -407,21 +436,19 @@ slug already belongs to the package.
 Rejected: one docsite page per guide; it moves each split topic's address and
 thins its page.
 
-### DEC-8 — Authoring owns integration authoring, and every doc has a named home
+### DEC-8 — Twelve guides by intent; make-an-integration owns integration authoring
 
 **Reference:** `spec:AST-046/DEC-8`
 **Decider:** `josephfarina`, `2026-10-21`
 
-Maintainer decision: everything an integration author reads lives under one
-top-level home, `authoring`, which holds the integration guides and the field
-reference. No doc sits in a catch-all:
-a flat topic's home is named for what it is, Guides or Foundations, after the
-docsite's sidebar groups. Routes move with every reference, as DEC-3 allows,
-and topic names do not change.
+Maintainer decision: the root of the docs is twelve guides, each named for
+what a reader wants to do, then Reference (FR12). Everything an integration
+author reads lives under one of them, `make-an-integration`, which holds the
+integration guides and the field reference. No doc sits in a catch-all, and
+no doc is listed twice. Routes move with every reference, as DEC-3 allows.
 
-Rejected: keeping the integration guides under `cli` beside a separate
-reference, which gave authors two top-level homes; and a generated level a
-reader sees as "Unorganized".
+Rejected: integration guides under `cli`; a catch-all level; a root sorted by
+doc type, which gave picking a component or upgrading no entry.
 
 ## Open questions
 

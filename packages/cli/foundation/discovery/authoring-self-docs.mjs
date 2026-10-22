@@ -31,10 +31,10 @@ export const AUTHORING_ROOT = path.join(CLI_ROOT, 'authoring');
 export const AUTHORING_REFERENCE_NAME = 'field-reference';
 
 /**
- * Its route. `astryx docs authoring <name>` reads one of its sections through
- * the authoring namespace (spec:AST-046 FR6).
+ * Its route. `astryx docs make-an-integration <name>` reads one of its sections through
+ * the make-an-integration namespace (spec:AST-046 FR6).
  */
-export const AUTHORING_REFERENCE_ROUTE = `authoring/${AUTHORING_REFERENCE_NAME}`;
+export const AUTHORING_REFERENCE_ROUTE = `make-an-integration/${AUTHORING_REFERENCE_NAME}`;
 
 /** Every authoring self-doc, relative to {@link AUTHORING_ROOT}, in reading order. */
 export const AUTHORING_SELF_DOCS = [
@@ -200,12 +200,12 @@ export function buildAuthoringReferenceDoc(docs) {
   return /** @type {any} */ ({
     type: 'generic',
     name: AUTHORING_REFERENCE_NAME,
-    placement: {parent: 'namespace:authoring', slot: 'reference', order: 10},
+    placement: {parent: 'namespace:make-an-integration', slot: 'reference', order: 10},
     title: 'Field reference',
     category: 'guide',
     keywords: ['authoring reference', 'field reference', 'every field'],
     description:
-      'Every file an integration author writes, field by field: the integration manifest, astryx.config, codemods, identity, and each doc type. The guides that use them are the rest of {@link namespace:authoring}.',
+      'Every file an integration author writes, field by field: the integration manifest, astryx.config, codemods, identity, and each doc type. The guides that use them are the rest of {@link namespace:make-an-integration}.',
     sections: docs.map(selfDocSection),
   });
 }
@@ -221,7 +221,7 @@ export async function buildAuthoringTopic() {
 }
 
 /**
- * What stands between a self-doc and a reader of `astryx docs authoring`.
+ * What stands between a self-doc and a reader of `astryx docs make-an-integration`.
  * @param {{root?: string, sources?: string[], budget?: number}} [options]
  * @returns {Promise<{
  *   sections: number,

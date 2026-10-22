@@ -17,7 +17,7 @@ import * as path from 'node:path';
 import {validateIntegration} from './validate-integration.mjs';
 import {discoverCoreTemplates} from '../../foundation/discovery/template-adapter.mjs';
 import {discoverOwnedComponents} from '../../foundation/discovery/component-discovery.mjs';
-import {discoverBuiltinTopics} from '../../foundation/discovery/docs-discovery.mjs';
+import {FORMER_TOPICS} from '../../foundation/discovery/renamed-docs.mjs';
 import {findCoreDir} from '../../foundation/fs/paths.mjs';
 import {
   builtinGuideFiles,
@@ -504,7 +504,7 @@ describe('integrationComponentConflicts', () => {
 
 describe('integrationDocConflicts', () => {
   it('marks an explicit Core replacement as intentional', async () => {
-    const [coreTopic] = Object.keys(discoverBuiltinTopics());
+    const coreTopic = 'principles';
     expect(coreTopic).toBeDefined();
     writeDocIntegration({name: 'acme-setup', replaces: coreTopic});
 
@@ -523,7 +523,7 @@ describe('integrationDocConflicts', () => {
   });
 
   it('marks an explicit Core extension as intentional', async () => {
-    const [coreTopic] = Object.keys(discoverBuiltinTopics());
+    const coreTopic = 'principles';
     expect(coreTopic).toBeDefined();
     writeDocIntegration({name: 'acme-extra', extendsTopic: coreTopic});
 
@@ -540,7 +540,7 @@ describe('integrationDocConflicts', () => {
   });
 
   it('reports a same-name Core topic without a relationship as accidental', async () => {
-    const [coreTopic] = Object.keys(discoverBuiltinTopics());
+    const coreTopic = 'principles';
     expect(coreTopic).toBeDefined();
     writeDocIntegration({name: coreTopic});
 
@@ -563,7 +563,7 @@ describe('integrationDocConflicts', () => {
   });
 
   it('reports a Core name as accidental when replacing a different topic', async () => {
-    const [replacedCore, nameCore] = Object.keys(discoverBuiltinTopics());
+    const [replacedCore, nameCore] = ['principles', 'color'];
     expect(replacedCore).toBeDefined();
     expect(nameCore).toBeDefined();
     writeDocIntegration({name: nameCore, replaces: replacedCore});
@@ -588,8 +588,23 @@ describe('integrationDocConflicts', () => {
     );
   });
 
+  it('treats a former Core topic name as the guide that took its text', async () => {
+    expect(FORMER_TOPICS.theme).toBe('use-a-theme');
+    writeDocIntegration({name: 'acme-extra', extendsTopic: 'theme'});
+
+    const result = await integrationDocConflicts(undefined, {cwd: tmpDir});
+
+    expect(result.data.findings).toEqual([
+      expect.objectContaining({
+        topic: 'acme-extra',
+        relationship: 'extends',
+        coreTopic: 'use-a-theme',
+      }),
+    ]);
+  });
+
   it('matches Core topic identity case-insensitively like docs lookup', async () => {
-    const [coreTopic] = Object.keys(discoverBuiltinTopics());
+    const coreTopic = 'principles';
     expect(coreTopic).toBeDefined();
     const mixedCase = coreTopic.toUpperCase();
     writeDocIntegration({name: mixedCase});
@@ -726,7 +741,7 @@ describe('integrationDocConflicts copied passages and extensions', () => {
 
     expect(issue).toMatchObject({topic: 'acme-setup', owner: 'acme-menus'});
     expect(issue.message).toContain(
-      'with {@link @astryxdesign/cli:generic:theme}.',
+      'with {@link @astryxdesign/cli:generic:use-a-theme}.',
     );
   });
 
@@ -757,7 +772,7 @@ describe('integrationDocConflicts copied passages and extensions', () => {
       await integrationDocConflicts(undefined, {cwd: tmpDir}),
     );
 
-    expect(issue.message).toContain('show on the same page ("theme")');
+    expect(issue.message).toContain('show on the same page ("use-a-theme")');
     expect(issue.message).not.toContain('{@link');
   });
 
@@ -1076,7 +1091,7 @@ describe('integrationDocConflicts stray doc pointers', () => {
     expect(rest).toEqual([]);
     expect(hit).toMatchObject({
       topic: 'acme-menus',
-      link: '{@link @astryxdesign/cli:generic:theme}',
+      link: '{@link @astryxdesign/cli:generic:use-a-theme}',
     });
   });
 
@@ -1113,7 +1128,7 @@ describe('integrationDocConflicts stray doc pointers', () => {
       {name: 'acme-setup', text: 'Install it first.'},
       {
         name: 'acme-menus',
-        text: 'Set it up as `astryx docs acme-setup` says; the theme is in `astryx docs theme`.',
+        text: 'Set it up as `astryx docs acme-setup` says; the theme is in `astryx docs theme-your-app`.',
       },
     ]);
 
@@ -1132,7 +1147,7 @@ describe('integrationDocConflicts stray doc pointers', () => {
     expect(own.message).toContain(
       'Replace `astryx docs acme-setup`, code ticks included, with {@link generic:acme-setup}',
     );
-    expect(core.link).toBe('{@link @astryxdesign/cli:generic:theme}');
+    expect(core.link).toBe('{@link @astryxdesign/cli:namespace:theme-your-app}');
     expect(result.data.issues).toEqual([
       {code: 'stray_doc_pointer', severity: 'warning', message: own.message},
       {code: 'stray_doc_pointer', severity: 'warning', message: core.message},
@@ -1141,14 +1156,14 @@ describe('integrationDocConflicts stray doc pointers', () => {
 
   it('names a namespace doc by its kind', async () => {
     writeTopics([
-      {name: 'acme-setup', text: 'Lay it out as `astryx docs layout` says.'},
+      {name: 'acme-setup', text: 'Lay it out as `astryx docs build-a-page` says.'},
     ]);
 
     const [hit] = stray(
       await integrationDocConflicts(undefined, {cwd: tmpDir}),
     );
 
-    expect(hit.link).toBe('{@link @astryxdesign/cli:namespace:layout}');
+    expect(hit.link).toBe('{@link @astryxdesign/cli:namespace:build-a-page}');
   });
 
   it('finds each line in the string that holds the pointer, not in code', async () => {
@@ -1160,10 +1175,10 @@ describe('integrationDocConflicts stray doc pointers', () => {
         "  type: 'generic',",
         "  name: 'acme-lines',",
         "  title: 'Fixture',",
-        "  description: 'Read `astryx docs theme` first.',",
+        "  description: 'Read `astryx docs theme-your-app` first.',",
         "  sections: [{title: 'Overview', content: [",
-        "    {type: 'code', lang: 'bash', code: 'astryx docs theme'},",
-        "    {type: 'prose', text: 'The colors your package sets show up in `astryx docs theme` for every app.'},",
+        "    {type: 'code', lang: 'bash', code: 'astryx docs theme-your-app'},",
+        "    {type: 'prose', text: 'The colors your package sets show up in `astryx docs theme-your-app` for every app.'},",
         '  ]}],',
         '};',
         '',
@@ -1244,7 +1259,7 @@ describe('links in component docs and topic descriptions', () => {
   it("warns on a component doc's link that names no doc, and passes one to its own topic", async () => {
     writeLinkedComponent({
       usage:
-        'Set it up as {@link generic:acme-setup} says, theme it with {@link @astryxdesign/cli:generic:theme}, then {@link generic:acme-nothing}.',
+        'Set it up as {@link generic:acme-setup} says, theme it with {@link @astryxdesign/cli:generic:use-a-theme}, then {@link generic:acme-nothing}.',
       topicDescription: 'Install Acme.',
     });
 
@@ -1287,7 +1302,7 @@ describe('links in component docs and topic descriptions', () => {
   });
 
   it('lists a written pointer in a component doc, with the link that replaces it', async () => {
-    writeLinkedComponent({usage: 'Theme it as `astryx docs theme` says.'});
+    writeLinkedComponent({usage: 'Theme it as `astryx docs theme-your-app` says.'});
 
     const {data} = await integrationDocConflicts(undefined, {cwd: tmpDir});
     const [pointer, ...rest] = data.strayPointers;
@@ -1299,13 +1314,13 @@ describe('links in component docs and topic descriptions', () => {
       section: null,
       field: 'usage.description',
       file: 'components/AcmeButton.doc.mjs',
-      pointer: 'astryx docs theme',
-      link: '{@link @astryxdesign/cli:generic:theme}',
+      pointer: 'astryx docs theme-your-app',
+      link: '{@link @astryxdesign/cli:namespace:theme-your-app}',
     });
     expect(pointer.line).toEqual(expect.any(Number));
     expect(pointer.message).toBe(
-      `component "AcmeButton" (field usage.description, line ${pointer.line}) points at a doc with the written command \`astryx docs theme\`. ` +
-        'Replace `astryx docs theme`, code ticks included, with {@link @astryxdesign/cli:generic:theme}: the CLI prints the command that opens the doc, and doctor checks the link.',
+      `component "AcmeButton" (field usage.description, line ${pointer.line}) points at a doc with the written command \`astryx docs theme-your-app\`. ` +
+        'Replace `astryx docs theme-your-app`, code ticks included, with {@link @astryxdesign/cli:namespace:theme-your-app}: the CLI prints the command that opens the doc, and doctor checks the link.',
     );
     expect(data.issues).toContainEqual({
       code: 'stray_doc_pointer',
@@ -1317,7 +1332,7 @@ describe('links in component docs and topic descriptions', () => {
   it("lists a written pointer in a topic's description", async () => {
     writeLinkedComponent({
       usage: 'A button.',
-      topicDescription: 'Install Acme; theme it as `astryx docs theme` says.',
+      topicDescription: 'Install Acme; theme it as `astryx docs theme-your-app` says.',
     });
 
     const {data} = await integrationDocConflicts(undefined, {cwd: tmpDir});
@@ -1327,7 +1342,7 @@ describe('links in component docs and topic descriptions', () => {
         topic: 'acme-setup',
         kind: 'topic',
         field: 'description',
-        link: '{@link @astryxdesign/cli:generic:theme}',
+        link: '{@link @astryxdesign/cli:namespace:theme-your-app}',
       }),
     ]);
   });

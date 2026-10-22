@@ -1095,31 +1095,29 @@ describe('docsRegistry', () => {
   });
 
   it('title differs from slug (human-readable)', () => {
-    const gettingStarted = docTopics.find(d => d.topic === 'getting-started');
-    expect(gettingStarted).toBeDefined();
-    expect(gettingStarted?.title).toBe('Getting Started');
+    const start = docTopics.find(d => d.topic === 'get-started');
+    expect(start).toBeDefined();
+    expect(start?.title).toBe('Get started');
 
-    const theme = docTopics.find(d => d.topic === 'theme');
+    const theme = docTopics.find(d => d.topic === 'theme-your-app');
     expect(theme).toBeDefined();
-    expect(theme?.title).toBe('Theme System');
+    expect(theme?.title).toBe('Theme your app');
   });
 
   it('known topics are present', () => {
     const topics = docTopics.map(d => d.topic);
-    expect(topics).toContain('getting-started');
-    expect(topics).toContain('tokens');
-    expect(topics).toContain('spacing');
-    expect(topics).toContain('color');
+    expect(topics).toContain('get-started');
+    expect(topics).toContain('foundations');
+    expect(topics).toContain('find-a-component');
+    expect(topics).toContain('reference');
   });
 
   it('doc topics have category (guide or foundations)', () => {
     for (const d of docTopics) {
       expect(d.category === 'guide' || d.category === 'foundations').toBe(true);
     }
-    const guide = docTopics.filter(d => d.category === 'guide');
-    const foundations = docTopics.filter(d => d.category === 'foundations');
-    expect(guide.length).toBeGreaterThanOrEqual(4);
-    expect(foundations.length).toBeGreaterThanOrEqual(7);
+    // Every page is one of the twelve guides or Reference.
+    expect(docTopics.length).toBe(13);
   });
 
   it('no duplicate topics', () => {

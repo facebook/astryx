@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file `astryx docs layout/responsive`: decide what each region does as
+ * @file `astryx docs build-a-page/responsive`: decide what each region does as
  * width changes.
  */
 
@@ -11,7 +11,7 @@ export const docs = {
   type: 'generic',
   name: 'responsive',
   title: 'Responsive',
-  placement: {parent: 'namespace:layout', slot: 'guides', order: 50},
+  placement: {parent: 'namespace:build-a-page', slot: 'guides', order: 50},
   category: 'guide',
   description:
     'Decide what each region does as width changes: divide, reveal, resize, or swap.',

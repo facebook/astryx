@@ -46,9 +46,9 @@ describe('the keywords of a split topic', () => {
       return doc?.name;
     };
     const roots = [...docs.values()]
-      .filter(doc => doc.type === 'namespace' && !parentOf(doc) && !['cli', 'authoring'].includes(doc.name))
+      .filter(doc => doc.type === 'namespace' && !parentOf(doc) && !['reference', 'make-an-integration'].includes(doc.name))
       .map(doc => doc.name);
-    expect(roots).toContain('layout');
+    expect(roots).toContain('build-a-page');
 
     /** @type {Map<string, any[]>} */
     const owners = new Map();

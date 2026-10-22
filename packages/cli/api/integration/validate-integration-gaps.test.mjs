@@ -1114,7 +1114,7 @@ describe('template and theme pairing', () => {
 
     const message = only(await issuesOf(dir), 'invalid_theme');
     expect(message).toBe(
-      `Theme "ocean" for @acme/kit must contain exactly one same-stem .doc.mjs descriptor; found 0 beside "oceanTheme.ts". Fix: add oceanTheme.doc.mjs beside it with type: 'theme' and name: 'ocean'; \`${formatCliCommand('docs authoring theme-doc', path.join(dir, 'themes', 'ocean'))}\` lists its fields.`,
+      `Theme "ocean" for @acme/kit must contain exactly one same-stem .doc.mjs descriptor; found 0 beside "oceanTheme.ts". Fix: add oceanTheme.doc.mjs beside it with type: 'theme' and name: 'ocean'; \`${formatCliCommand('docs make-an-integration theme-doc', path.join(dir, 'themes', 'ocean'))}\` lists its fields.`,
     );
     const fixed = follow(dir, {
       write: {'themes/ocean/oceanTheme.doc.mjs': themeDoc},

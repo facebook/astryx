@@ -412,11 +412,14 @@ describe('isComputerLevel', () => {
     expect(isComputerLevel(['docs', 'init', '--user'])).toBe(false);
   });
 
-  it('is docs global and its pages, whatever the options', () => {
-    expect(isComputerLevel(['docs', 'global'])).toBe(true);
-    expect(isComputerLevel(['--json', 'docs', 'global/problems'])).toBe(true);
-    expect(isComputerLevel(['docs', '--depth', '2', 'global'])).toBe(true);
-    expect(isComputerLevel(['docs', '--lang', 'zh', 'global/updates'])).toBe(
+  it('is docs get-started/on-your-computer and its pages, whatever the options', () => {
+    expect(isComputerLevel(['docs', 'get-started/on-your-computer'])).toBe(true);
+    expect(isComputerLevel(['docs', 'reference/global-mode'])).toBe(true);
+    expect(isComputerLevel(['--json', 'docs', 'fix-a-problem/global-mode-messages'])).toBe(true);
+    expect(isComputerLevel(['docs', '--depth', '2', 'get-started/on-your-computer'])).toBe(true);
+    expect(isComputerLevel(['docs', 'global'])).toBe(false);
+    expect(isComputerLevel(['docs', 'get-started'])).toBe(false);
+    expect(isComputerLevel(['docs', '--lang', 'zh', 'get-started/on-your-computer/updates'])).toBe(
       true,
     );
     expect(isComputerLevel(['docs'])).toBe(false);

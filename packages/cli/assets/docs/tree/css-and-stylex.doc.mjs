@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file `astryx docs styling-libraries/css-and-stylex`: core integration
+ * @file `astryx docs style-components/css-and-stylex`: core integration
  * principle, plain CSS / CSS Modules, and StyleX typed-token imports.
  */
 
@@ -11,7 +11,7 @@ export const docs = {
   type: 'generic',
   name: 'css-and-stylex',
   title: 'CSS & StyleX',
-  placement: {parent: 'namespace:styling-libraries', slot: 'guides', order: 10},
+  placement: {parent: 'namespace:style-components', slot: 'guides', order: 60},
   category: 'guide',
   description:
     'Core integration principle, plain CSS / CSS Modules, and StyleX typed-token imports.',
@@ -30,7 +30,7 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: 'For available token names and values, run {@link namespace:tokens}. Focused references are also available with {@link generic:color}, {@link generic:spacing}, {@link generic:shape}, {@link namespace:typography}, {@link generic:elevation}, and {@link generic:motion}.',
+          text: 'For available token names and values, run {@link generic:all-tokens}. Focused references are also available with {@link generic:color}, {@link generic:spacing}, {@link generic:shape}, {@link namespace:typography}, {@link generic:elevation}, and {@link generic:motion}.',
         },
       ],
     },

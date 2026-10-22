@@ -163,7 +163,7 @@
  * @property {string | null} id the doc's DocId, built from its provider's
  *   ProviderId, kind, and name (see the provider-identity authoring doc);
  *   unchanged when the node moves. Always present; null on a generated level,
- *   such as `cli/api/functions`, which has no authored doc
+ *   such as `reference/api/functions`, which has no authored doc
  * @property {string} route pass it to `astryx docs`
  * @property {string} kind `namespace`, or the typed doc's kind: `command`,
  *   `function`, `schema`, or `enum`

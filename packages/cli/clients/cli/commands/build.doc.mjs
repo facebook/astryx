@@ -12,7 +12,7 @@ export const doc = {
   type: 'command',
   name: 'build',
   displayName: 'astryx build',
-  namespace: 'cli/commands',
+  namespace: 'reference/commands',
   summary:
     'Build a page: the template to start from, or the workflow playbook (no query)',
   description:

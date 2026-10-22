@@ -2,14 +2,14 @@
 
 /**
  * @file Guards the --dense / --zh reference-doc overlays against drift (#2182).
- * @input packages/cli/assets/docs/{topic}.doc.mjs and its .doc.dense.mjs / .doc.zh.mjs overlays.
+ * @input packages/cli/assets/docs/tree/{name}.doc.mjs and its .doc.dense.mjs / .doc.zh.mjs overlays.
  * @output Vitest failures naming any overlay section that does not anchor to a
  *   real base section, or whose content overrides land on the wrong block type.
  * @position Regression gate for the docs API. Sits with the loader it guards.
  *
  * The overlays used to be applied BY ARRAY POSITION, so an overlay whose
  * sections were ordered differently from the base grafted every title onto the
- * wrong body. `docs tokens --dense` printed the entire colour table under a
+ * wrong body. `docs foundations/all-tokens --dense` printed the entire colour table under a
  * heading that said "## Spacing", above prose reading "gap props use
  * space0-space12" — teaching any agent that spacing tokens are named
  * `--color-*`. CLAUDE.md tells every agent to run that exact command at
@@ -25,7 +25,14 @@ import * as path from 'node:path';
 import {pathToFileURL} from 'node:url';
 import {docs} from './docs.mjs';
 
-const DOCS_DIR = path.join(import.meta.dirname, '..', '..', 'assets', 'docs');
+const DOCS_DIR = path.join(
+  import.meta.dirname,
+  '..',
+  '..',
+  'assets',
+  'docs',
+  'tree',
+);
 
 /** Every base reference doc that has at least one overlay. */
 function overlayPairs() {
@@ -112,11 +119,11 @@ describe('reference doc overlays (#2182)', () => {
   }
 });
 
-describe('the reported defect: docs tokens --dense (#2182)', () => {
+describe('the reported defect: docs foundations/all-tokens --dense (#2182)', () => {
   it('does not print the colour table under the Spacing heading', async () => {
-    // The spacing table lives in its own guide; the spacing topic shows it
-    // through a token reference to the tokens namespace. Both, read dense.
-    for (const topic of ['tokens/tokens-spacing', 'spacing']) {
+    // The spacing table lives in the all-tokens guide; the spacing page shows
+    // it through a token reference to that guide. Both, read dense.
+    for (const topic of ['foundations/all-tokens', 'foundations/spacing']) {
       const result = await docs(topic, null, {dense: true});
       const spacing = result.data.sections.find(s =>
         JSON.stringify(s).includes('--spacing-'),
@@ -133,30 +140,27 @@ describe('the reported defect: docs tokens --dense (#2182)', () => {
   });
 
   it('keeps every base section reachable, even without an overlay entry', async () => {
-    // The tokens overlays compress 5 of 15 category tables. Read through the
-    // namespace, the other 10 must still render (in English), not vanish or
-    // absorb a neighbour's title.
-    const full = await docs('tokens', null, {depth: 'all', detail: 'full'});
-    const dense = await docs('tokens', null, {depth: 'all', detail: 'full', dense: true});
-    const titles = read =>
-      read.data.slots.flatMap(slot =>
-        slot.children.flatMap(child => (child.sections ?? []).map(s => s.title)),
-      );
+    // The all-tokens overlay compresses 5 of 15 category tables. The other 10
+    // must still render (in English), not vanish or absorb a neighbour's
+    // title.
+    const full = await docs('foundations/all-tokens');
+    const dense = await docs('foundations/all-tokens', null, {dense: true});
+    const titles = read => read.data.sections.map(s => s.title);
     expect(titles(dense).length).toBe(titles(full).length);
     expect(titles(dense)).toContain('Color');
     expect(titles(dense)).toContain('Font Size Tokens');
   });
 
-  it('does not lose a section from docs theme --dense', async () => {
-    const full = await docs('theme');
-    const dense = await docs('theme', null, {dense: true});
+  it('does not lose a section from a dense read', async () => {
+    const full = await docs('foundations/principles');
+    const dense = await docs('foundations/principles', null, {dense: true});
     const titles = dense.data.sections.map(s => s.title);
     // The dense overlay keeps every base section.
     expect(titles.length).toBe(full.data.sections.length);
   });
 
-  it('does not emit a duplicate heading in docs theme --dense', async () => {
-    const dense = await docs('theme', null, {dense: true});
+  it('does not emit a duplicate heading in a dense read', async () => {
+    const dense = await docs('foundations/principles', null, {dense: true});
     const titles = dense.data.sections.map(s => s.title.toLowerCase());
     const counts = new Map();
     for (const t of titles) counts.set(t, (counts.get(t) ?? 0) + 1);
@@ -164,25 +168,19 @@ describe('the reported defect: docs tokens --dense (#2182)', () => {
     expect(dupes).toEqual([]);
   });
 
-  it('does not leak English headings into docs theme --zh', async () => {
-    const zh = await docs('theme', null, {zh: true});
+  it('does not leak English headings into a --zh read', async () => {
+    const zh = await docs('foundations/principles', null, {zh: true});
     const titles = zh.data.sections.map(s => s.title);
     // Every section the overlay translates must appear once, in Chinese only.
-    expect(titles).not.toContain('Dark mode');
-    expect(titles).toContain('深色模式');
+    expect(titles).not.toContain('Rules');
+    expect(titles).toContain('规则');
   });
 
-  it('teaches committed palette references in every theme-doc variant', async () => {
-    for (const options of [{}, {dense: true}, {zh: true}]) {
-      const result = await docs('theme', null, options);
-      const rendered = JSON.stringify(result.data.sections);
-      expect(rendered).toContain(
-        'astryx theme palette generate palette.config.json --out palette.generated.ts',
-      );
-      expect(rendered).toContain(
-        "import {palette} from './palette.generated';",
-      );
-      expect(rendered).toContain('palette.neutral.light[100]');
-    }
+  it('teaches committed palette references in the theme guide', async () => {
+    const result = await docs('theme-your-app/author-a-theme');
+    const rendered = JSON.stringify(result.data.sections);
+    expect(rendered).toContain('astryx theme palette generate palette.config.json');
+    expect(rendered).toContain("import {palette} from './palette.generated';");
+    expect(rendered).toContain('palette.neutral.light[100]');
   });
 });

@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file `astryx docs internationalization/i18n-library-integration`: override
+ * @file `astryx docs translate-your-app/i18n-library-integration`: override
  * default text, coexist with your own i18n library, or use astryx as your
  * i18n library.
  */
@@ -12,7 +12,7 @@ export const docs = {
   type: 'generic',
   name: 'i18n-library-integration',
   title: 'Library Integration',
-  placement: {parent: 'namespace:internationalization', slot: 'guides', order: 20},
+  placement: {parent: 'namespace:translate-your-app', slot: 'guides', order: 20},
   category: 'guide',
   description:
     "Override astryx's default text, coexist with react-intl / i18next / next-intl / LinguiJS, or use astryx as your i18n library.",

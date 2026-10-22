@@ -5,10 +5,10 @@ export const doc = {
   type: 'command',
   name: 'integration',
   displayName: 'astryx integration',
-  namespace: 'cli/commands',
+  namespace: 'reference/commands',
   summary: 'Author and verify an Astryx integration package',
   description:
-    'Add contributions to your package, check them on every build with `integration check --strict`, then check the packed package the way an app receives it. The guides start at {@link namespace:authoring}.',
+    'Add contributions to your package, check them on every build with `integration check --strict`, then check the packed package the way an app receives it. The guides start at {@link namespace:make-an-integration}.',
   subcommands: ['add', 'check', 'verify', 'pack'],
   examples: [
     {

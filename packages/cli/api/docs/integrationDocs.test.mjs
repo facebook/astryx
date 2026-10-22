@@ -89,6 +89,11 @@ afterEach(() => {
   fs.rmSync(tmpDir, {recursive: true, force: true});
 });
 
+/** The guide `theme` became; an extension of `theme` lands on it. */
+const THEME = 'theme-your-app/use-a-theme';
+/** A guide with dense and Chinese overlays. */
+const PRINCIPLES = 'foundations/principles';
+
 describe('integration-contributed topics', () => {
   it('lists and reads like a built-in topic, naming its owner', async () => {
     scaffold({'deploying.doc.mjs': topic()});
@@ -100,8 +105,8 @@ describe('integration-contributed topics', () => {
       description: 'How to ship an app built with Acme widgets.',
       package: '@acme/widgets',
     });
-    // The built-in topics keep their own owner.
-    expect(listed.data.find(t => t.topic === 'color').package).toBe('@astryxdesign/cli');
+    // Core lists no flat topic: its docs are guides, read by route.
+    expect(listed.data.filter(t => t.package === '@astryxdesign/cli')).toEqual([]);
 
     const detail = await docs('deploying', undefined, {cwd: tmpDir, full: true});
     expect(detail.type).toBe('docs.detail');
@@ -240,7 +245,7 @@ describe('integration-contributed topics', () => {
     expect(listed.data.some(t => t.topic === 'deploying')).toBe(false);
   }, SLOW);
 
-  it('serves the replacement of a built-in topic, and says what it replaced', async () => {
+  it('serves the replacement of a built-in guide at its route, under the old topic name', async () => {
     scaffold({
       'getting-started.doc.mjs': topic({
         name: 'getting-started',
@@ -253,31 +258,33 @@ describe('integration-contributed topics', () => {
       }),
     });
 
-    const detail = await docs('getting-started', undefined, {cwd: tmpDir, full: true});
+    // `getting-started` became the guide get-started/add-to-a-project, which
+    // keeps its route; the replacement's text opens there.
+    const detail = await docs('get-started/add-to-a-project', undefined, {cwd: tmpDir, full: true});
+    expect(detail.package).toBe('@acme/widgets');
     expect(detail.data.sections.map(s => s.title)).toEqual(['Install']);
     expect(detail.data.sections[0].content[0].text).toBe('yarn add @acme/widgets');
 
+    // It is not a second topic beside the guide.
     const listed = await docs(undefined, undefined, {cwd: tmpDir});
-    const entries = listed.data.filter(t => t.topic === 'getting-started');
-    expect(entries).toHaveLength(1);
-    expect(entries[0]).toMatchObject({
-      package: '@acme/widgets',
-      replaces: 'getting-started',
-    });
+    expect(listed.data.filter(t => t.topic === 'getting-started')).toEqual([]);
   }, SLOW);
 
-  it('keeps the replaced name resolving when the replacement renames it', async () => {
+  it('replaces a built-in guide by its own name, which keeps its one route', async () => {
     scaffold({
-      'setup.doc.mjs': topic({name: 'setup', replaces: 'getting-started'}),
+      'setup.doc.mjs': topic({name: 'setup', replaces: 'add-to-a-project'}),
     });
-    const byOldName = await docs('getting-started', undefined, {cwd: tmpDir, full: true});
-    const byNewName = await docs('setup', undefined, {cwd: tmpDir, full: true});
-    expect(byOldName.data.name).toBe('setup');
-    expect(byNewName.data.name).toBe('setup');
+    const read = await docs('get-started/add-to-a-project', undefined, {cwd: tmpDir, full: true});
+    expect(read.package).toBe('@acme/widgets');
+    expect(read.data.sections[0].content[0].text).toBe('Push the button.');
+    // A guide has one route: the replacement's own name opens nothing.
+    await expect(docs('setup', undefined, {cwd: tmpDir})).rejects.toMatchObject({
+      code: 'ERR_UNKNOWN_TOPIC',
+    });
   }, SLOW);
 
-  it('merges an extension into the topic it extends', async () => {
-    const builtin = await docs('theme', undefined, {full: true});
+  it('merges an extension into the guide it extends, by the old topic name too', async () => {
+    const builtin = await docs(THEME, undefined, {full: true});
     const baseSectionTitle = builtin.data.sections[0].title;
     scaffold({
       'theme-internal.doc.mjs': topic({
@@ -290,7 +297,7 @@ describe('integration-contributed topics', () => {
       }),
     });
 
-    const extended = await docs('theme', undefined, {cwd: tmpDir, full: true});
+    const extended = await docs(THEME, undefined, {cwd: tmpDir, full: true});
     // The extension is not a topic of its own.
     expect((await docs(undefined, undefined, {cwd: tmpDir})).data.some(
       t => t.topic === 'theme-internal',
@@ -302,16 +309,16 @@ describe('integration-contributed topics', () => {
   }, SLOW);
 
   it('migrates a real built-in section to a stable ID without duplicating it', async () => {
-    const builtin = await docs('theme', undefined, {full: true});
+    const builtin = await docs(THEME, undefined, {full: true});
     // Readers see a key on every section; the migration case is one whose
     // source authors no id.
-    const {docs: authored} = await import('../../assets/docs/theme.doc.mjs');
+    const {docs: authored} = await import('../../assets/docs/tree/use-a-theme.doc.mjs');
     const target = authored.sections.find(section => section.id == null);
     expect(target).toBeDefined();
     scaffold({
       'theme-internal.doc.mjs': topic({
         name: 'theme-internal',
-        extends: 'theme',
+        extends: 'use-a-theme',
         sections: [
           {
             id: 'acme-theme-setup',
@@ -322,7 +329,7 @@ describe('integration-contributed topics', () => {
       }),
     });
 
-    const extended = await docs('theme', undefined, {cwd: tmpDir, full: true});
+    const extended = await docs(THEME, undefined, {cwd: tmpDir, full: true});
     expect(extended.data.sections).toHaveLength(builtin.data.sections.length);
     const matches = extended.data.sections.filter(
       section => section.title === target.title,
@@ -336,12 +343,12 @@ describe('integration-contributed topics', () => {
   }, SLOW);
 
   it('replaces a real built-in section by the key its index shows', async () => {
-    const index = await docs('theme', undefined, {index: true});
+    const index = await docs(THEME, undefined, {index: true});
     const target = index.data.sections[0];
     scaffold({
       'theme-internal.doc.mjs': topic({
         name: 'theme-internal',
-        extends: 'theme',
+        extends: 'use-a-theme',
         sections: [
           {
             id: target.id,
@@ -352,56 +359,56 @@ describe('integration-contributed topics', () => {
       }),
     });
 
-    const extended = await docs('theme', undefined, {cwd: tmpDir, full: true});
+    const extended = await docs(THEME, undefined, {cwd: tmpDir, full: true});
     expect(extended.data.sections).toHaveLength(index.data.sections.length);
     expect(extended.data.sections.filter(s => s.id === target.id)).toEqual([
       expect.objectContaining({content: [{type: 'prose', text: 'Acme first.'}]}),
     ]);
-    const read = await docs('theme', target.id, {cwd: tmpDir});
+    const read = await docs(THEME, target.id, {cwd: tmpDir});
     expect(read.data.title).toBe(`${target.title} with Acme`);
   }, SLOW);
 
   it.each(['zh', 'dense'])(
     'replaces translated real sections by their authored titles under --%s',
     async lang => {
-      const english = await docs('theme', undefined, {full: true});
+      const english = await docs(PRINCIPLES, undefined, {full: true});
       const englishTitles = english.data.sections.map(section => section.title);
       expect(englishTitles).toEqual(
-        expect.arrayContaining(['Wrap your app in a theme', 'Dark mode']),
+        expect.arrayContaining(['Design Philosophy', 'Rules']),
       );
       scaffold({
-        'theme-internal.doc.mjs': topic({
-          name: 'theme-internal',
-          extends: 'theme',
+        'principles-internal.doc.mjs': topic({
+          name: 'principles-internal',
+          extends: 'principles',
           sections: [
             {
-              id: 'quick-start',
-              title: 'Wrap your app in a theme',
-              content: [{type: 'prose', text: 'Acme themes.'}],
+              id: 'design-philosophy',
+              title: 'Design Philosophy',
+              content: [{type: 'prose', text: 'Acme philosophy.'}],
             },
             {
-              id: 'light-dark-mode',
-              title: 'Dark mode',
-              content: [{type: 'prose', text: 'Acme props.'}],
+              id: 'rules',
+              title: 'Rules',
+              content: [{type: 'prose', text: 'Acme rules.'}],
             },
           ],
         }),
       });
 
-      const base = await docs('theme', undefined, {lang, full: true});
+      const base = await docs(PRINCIPLES, undefined, {lang, full: true});
       expect(base.data.sections.map(section => section.title)).not.toEqual(
         englishTitles,
       );
-      const extended = await docs('theme', undefined, {cwd: tmpDir, lang, full: true});
+      const extended = await docs(PRINCIPLES, undefined, {cwd: tmpDir, lang, full: true});
       expect(extended.data.sections).toHaveLength(base.data.sections.length);
       expect(
         extended.data.sections.filter(
-          section => section.id === 'quick-start',
+          section => section.id === 'design-philosophy',
         ),
       ).toHaveLength(1);
       expect(
         extended.data.sections.filter(
-          section => section.content[0]?.text === 'Acme props.',
+          section => section.content[0]?.text === 'Acme rules.',
         ),
       ).toHaveLength(1);
     },
@@ -447,7 +454,7 @@ describe('integration-contributed topics', () => {
     // places it.
     expect(top).toContain('troubleshooting');
     expect(
-      top.some(name => /^authoring\/(?:.+\/)?troubleshooting$/.test(name)),
+      top.some(name => /^make-an-integration\/(?:.+\/)?troubleshooting$/.test(name)),
       top.join(', '),
     ).toBe(true);
   }, SLOW);
@@ -455,7 +462,7 @@ describe('integration-contributed topics', () => {
   it("falls back to the CLI's own topics when the project config is unreadable", async () => {
     scaffold({'deploying.doc.mjs': topic()}, {config: 'export default {integrations: 42};\n'});
     const catalog = await loadDocsCatalog(tmpDir);
-    expect(catalog.resolve('color')).toBeTruthy();
+    expect(catalog.guide('color')).toBeTruthy();
     expect(catalog.resolve('deploying')).toBeUndefined();
   }, SLOW);
 });

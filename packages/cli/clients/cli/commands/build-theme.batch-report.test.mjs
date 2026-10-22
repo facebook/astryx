@@ -52,7 +52,7 @@ const FONT_NOTE =
   '[note] Fonts named but not loaded: ' +
   '"Space Grotesk" (amber, basil, fjord, grove, kelp, lagoon), ' +
   '"JetBrains Mono" (amber, dune, grove, iris, juniper, meadow, nimbus), ' +
-  '"Figtree" (cedar, harbor, meadow). Load them in your app (recipe: astryx docs typography).';
+  '"Figtree" (cedar, harbor, meadow). Load them in your app (recipe: astryx docs foundations/typography).';
 const HINT = 'Run with --detail full for the install example and font recipe.';
 const OK_LINE =
   /^\[ok\] themes\/([a-z]+)\.css \(\d+(\.\d+)? KB, \d+ token overrides, \d+ component overrides\)$/;
@@ -95,14 +95,14 @@ function lines(stdout) {
 }
 
 /**
- * The font recipe names `docs typography` with the project's CLI invocation,
+ * The font recipe names `docs foundations/typography` with the project's CLI invocation,
  * which depends on where the test runs; compare it as bare `astryx`.
  * @param {string} stdout
  */
 function bareRecipe(stdout) {
   return stdout.replace(
-    /(recipe: |guidance: )\S.*? docs typography/g,
-    '$1astryx docs typography',
+    /(recipe: |guidance: )\S.*? docs foundations\/typography/g,
+    '$1astryx docs foundations/typography',
   );
 }
 
@@ -239,7 +239,7 @@ describe('theme build report', () => {
     const amber = await runCli(['theme', 'build', 'themes/amber.mjs'], dir);
     expect(amber.status).toBe(0);
     expect(lines(amber.stdout).slice(1)).toEqual([
-      '[note] Fonts named but not loaded: "Space Grotesk", "JetBrains Mono". Load them in your app (recipe: astryx docs typography).',
+      '[note] Fonts named but not loaded: "Space Grotesk", "JetBrains Mono". Load them in your app (recipe: astryx docs foundations/typography).',
       HINT,
     ]);
   }, 120_000);
@@ -332,8 +332,8 @@ describe('theme build report', () => {
     expect(
       JSON.parse(plain.stdout).data.results[0].receipt.data.notices,
     ).toEqual([
-      'Font "Space Grotesk" is named by this theme but not loaded; add a <link> or @font-face in your app (recipe: astryx docs typography)',
-      'Font "JetBrains Mono" is named by this theme but not loaded; add a <link> or @font-face in your app (recipe: astryx docs typography)',
+      'Font "Space Grotesk" is named by this theme but not loaded; add a <link> or @font-face in your app (recipe: astryx docs foundations/typography)',
+      'Font "JetBrains Mono" is named by this theme but not loaded; add a <link> or @font-face in your app (recipe: astryx docs foundations/typography)',
     ]);
 
     const check = await runCli(['theme', 'build', '--check', ...FILES], dir);

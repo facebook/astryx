@@ -622,7 +622,7 @@ const START_HERE: ReadonlyArray<StartHerePath> = [
     title: 'Build a theme',
     description:
       'Full visual control through defineTheme(). Tokens, component overrides, and mode switching.',
-    href: '/docs/theme',
+    href: '/docs/theme-your-app',
     effort: '~1 day',
     preview: <ThemesPreview />,
   },
@@ -654,7 +654,7 @@ const RESOURCE_CATEGORIES: ReadonlyArray<ResourceCategory> = [
       {
         title: 'Dev Setup',
         description: 'Clone, install, build, and run Storybook locally.',
-        href: '/docs/getting-started',
+        href: '/docs/get-started',
         icon: FileText,
       },
       {

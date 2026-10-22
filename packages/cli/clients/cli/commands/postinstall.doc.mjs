@@ -11,7 +11,7 @@ export const doc = {
   type: 'command',
   name: 'postinstall',
   displayName: 'astryx postinstall',
-  namespace: 'cli/commands',
+  namespace: 'reference/commands',
   summary: 'Print the welcome message shown after install',
   description:
     'Prints a short welcome box that names the first commands to run. It is hidden ' +

@@ -239,9 +239,9 @@ describe('MCP search simulation', () => {
   });
 
   it('finds doc topics by name', () => {
-    const results = simulateSearch('spacing');
+    const results = simulateSearch('foundations');
     const spacingDoc = results.find(
-      r => r.type === 'doc' && r.name === 'spacing',
+      r => r.type === 'doc' && r.name === 'foundations',
     );
     expect(spacingDoc).toBeDefined();
     expect(spacingDoc!.score).toBe(100);

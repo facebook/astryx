@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file `astryx docs authoring/building-blocks/themes`: author a theme
+ * @file `astryx docs make-an-integration/building-blocks/themes`: author a theme
  * in an integration; apps install, apply, and extend it like any theme.
  */
 
@@ -23,7 +23,7 @@ export const docs = {
   blocks: [
     {
       type: 'prose',
-      text: 'In global mode: outside projects, the theme list includes themes from integrations installed for the computer, and `theme add` there only shows them; inside a project, it lists only themes from integrations the project installs. See {@link namespace:global} and {@link generic:global-integrations}.',
+      text: 'In global mode: outside projects, the theme list includes themes from integrations installed for the computer, and `theme add` there only shows them; inside a project, it lists only themes from integrations the project installs. See {@link namespace:on-your-computer} and {@link generic:global-integrations}.',
     },
     {
       type: 'prose',

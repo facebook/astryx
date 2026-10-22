@@ -8,22 +8,22 @@ describe('pointersIn', () => {
   it('finds a code span that is exactly the command opening one doc', () => {
     expect(
       pointersIn(
-        'Read `astryx docs theme`, then `astryx docs layout-spacing`.',
+        'Read `astryx docs theme-your-app`, then `astryx docs layout-spacing`.',
       ),
-    ).toEqual(['theme', 'layout-spacing']);
+    ).toEqual(['theme-your-app', 'layout-spacing']);
   });
 
   it('leaves a walkthrough alone: more words, a flag, or a route', () => {
     expect(
       pointersIn(
-        'Run `astryx docs theme overview`, `astryx docs --json`, `astryx docs authoring/quick-start`, or `astryx docs`.',
+        'Run `astryx docs theme-your-app overview`, `astryx docs --json`, `astryx docs make-an-integration/quick-start`, or `astryx docs`.',
       ),
     ).toEqual([]);
   });
 
   it('leaves the bare name and a runner-written command alone', () => {
     expect(
-      pointersIn('See astryx docs theme, or `pnpm astryx docs theme`.'),
+      pointersIn('See astryx docs theme-your-app, or `pnpm astryx docs theme-your-app`.'),
     ).toEqual([]);
   });
 });
@@ -32,7 +32,7 @@ describe('linkableStrings', () => {
   it("reads a topic's description and summary, then prose, headings, list items and table cells, not code", () => {
     const strings = linkableStrings({
       name: 'acme',
-      description: 'Read `astryx docs theme`.',
+      description: 'Read `astryx docs theme-your-app`.',
       summary: 'In short.',
       sections: [
         {
@@ -42,13 +42,13 @@ describe('linkableStrings', () => {
             {type: 'heading', level: 3, text: 'heading'},
             {type: 'list', style: 'unordered', items: ['item']},
             {type: 'table', headers: ['head'], rows: [['cell']]},
-            {type: 'code', lang: 'bash', code: 'astryx docs theme'},
+            {type: 'code', lang: 'bash', code: 'astryx docs theme-your-app'},
           ],
         },
       ],
     });
     expect(strings).toEqual([
-      {text: 'Read `astryx docs theme`.', section: null, field: 'description'},
+      {text: 'Read `astryx docs theme-your-app`.', section: null, field: 'description'},
       {text: 'In short.', section: null, field: 'summary'},
       {text: 'prose', section: 'Use it', field: null},
       {text: 'heading', section: 'Use it', field: null},
@@ -70,7 +70,7 @@ describe('linkableStrings', () => {
       props: [
         {name: 'tone', type: 'string', default: "'a'", description: 'prop'},
       ],
-      examples: [{label: 'example', code: 'astryx docs theme'}],
+      examples: [{label: 'example', code: 'astryx docs theme-your-app'}],
     });
     expect(strings).toEqual([
       {text: 'usage', section: null, field: 'usage.description'},

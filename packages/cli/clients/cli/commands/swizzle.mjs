@@ -101,7 +101,7 @@ export function registerSwizzle(program) {
               `${WARN} These components use StyleX and require a StyleX compiler in your build.`,
               `  Without one, importing them throws "Unexpected 'stylex.create' call at runtime"`,
               '  and the page does not render. See setup per framework:',
-              `  ${run} docs styling`,
+              `  ${run} docs style-components`,
               '  Next.js note: the StyleX Babel plugin disables SWC and breaks next/font -',
               '  use an SWC-based StyleX transform instead (covered in the guide).',
             ].join('\n'),

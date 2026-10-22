@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file `astryx docs authoring/building-blocks/themes/use-a-theme-in-an-app`:
+ * @file `astryx docs make-an-integration/building-blocks/themes/use-a-theme-in-an-app`:
  * an app installs the integration and applies or extends the theme, like any theme.
  */
 
@@ -72,7 +72,7 @@ export const productTheme = defineTheme({
       content: [
         {
           type: 'prose',
-          text: 'In global mode: install the theme package in each app that uses the theme; inside a project, the CLI ignores packages installed for the computer. See {@link namespace:global} and {@link generic:global-integrations}.',
+          text: 'In global mode: install the theme package in each app that uses the theme; inside a project, the CLI ignores packages installed for the computer. See {@link namespace:on-your-computer} and {@link generic:global-integrations}.',
         },
       ],
     },

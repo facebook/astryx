@@ -7,7 +7,7 @@ export const doc = {
   type: 'function',
   kind: 'api',
   name: 'themeRemove',
-  namespace: 'cli/api',
+  namespace: 'reference/api',
   displayName: 'themeRemove()',
   summary: "Remove a non-default theme from an app's generated theme module.",
   description:

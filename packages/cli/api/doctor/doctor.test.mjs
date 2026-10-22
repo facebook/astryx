@@ -652,13 +652,13 @@ describe('checkAuthoringDocs', () => {
   it('passes when every authoring self-doc is reachable and fits one read', async () => {
     const c = await checkAuthoringDocs();
     expect(c).toMatchObject({id: 'authoring-docs', status: 'pass'});
-    expect(c.message).toContain(formatCliCommand('docs authoring/field-reference'));
+    expect(c.message).toContain(formatCliCommand('docs make-an-integration/field-reference'));
   }, SLOW);
 });
 
 describe('checkCliDocs', () => {
   const CLI_DOCS_FIX =
-    'Set `namespace` on each CLI doc to the one that reads it: cli/commands for a command, cli/api for an API function or the output schema, error codes, and response types, and authoring for a file an author writes (and list it in AUTHORING_SELF_DOCS).';
+    'Set `namespace` on each CLI doc to the one that reads it: reference/commands for a command, reference/api for an API function or the output schema, error codes, and response types, and authoring for a file an author writes (and list it in AUTHORING_SELF_DOCS).';
 
   /** A doc tree under the working directory, as the CLI root. */
   function writeRoot(/** @type {Record<string, any>} */ docsByPath) {
@@ -680,7 +680,7 @@ describe('checkCliDocs', () => {
         id: 'cli-docs',
         label: 'CLI docs',
         status: 'pass',
-        message: `All ${audit.docs} CLI docs are readable: ${audit.tree} in the \`${formatCliCommand('docs cli')}\` tree and ${audit.authoring} in \`${formatCliCommand('docs authoring/field-reference')}\`.`,
+        message: `All ${audit.docs} CLI docs are readable: ${audit.tree} in the \`${formatCliCommand('docs reference')}\` tree and ${audit.authoring} in \`${formatCliCommand('docs make-an-integration/field-reference')}\`.`,
       });
     },
     SLOW,
@@ -790,7 +790,7 @@ describe('checkDocsTree', () => {
 describe('checkAuthoringDocs against the public authoring surface', () => {
   const NAMESPACE = 'doctypes/namespace/namespace.doc.mjs';
   const NAMESPACE_TYPES =
-    `NamespaceDoc, NamespaceProviderScope, NamespaceSlotAcceptance, NamespaceSlot, NamespaceAdoptionSource, NamespaceAdoptionRule from doctypes/namespace/type.ts have no doc in \`${formatCliCommand('docs authoring/field-reference')}\``;
+    `NamespaceDoc, NamespaceProviderScope, NamespaceSlotAcceptance, NamespaceSlot, NamespaceAdoptionSource, NamespaceAdoptionRule from doctypes/namespace/type.ts have no doc in \`${formatCliCommand('docs make-an-integration/field-reference')}\``;
   const SURFACE_FIX =
     'Put a self-doc beside each module whose types @astryxdesign/cli/authoring exports and list it in AUTHORING_SELF_DOCS; export what each listed self-doc documents, or remove that self-doc.';
 
@@ -820,7 +820,7 @@ describe('checkAuthoringDocs against the public authoring surface', () => {
         id: 'authoring-docs',
         label: 'Authoring docs',
         status: 'pass',
-        message: `All ${AUTHORING_SELF_DOCS.length} authoring schemas are readable in \`${formatCliCommand('docs authoring/field-reference')}\`.`,
+        message: `All ${AUTHORING_SELF_DOCS.length} authoring schemas are readable in \`${formatCliCommand('docs make-an-integration/field-reference')}\`.`,
       });
     },
     SLOW,
@@ -849,7 +849,7 @@ describe('checkAuthoringDocs against the public authoring surface', () => {
       });
       expect(c.status).toBe('fail');
       expect(c.message).toBe(
-        `2 problems: ${NAMESPACE} is not in \`${formatCliCommand('docs authoring/field-reference')}\`; ${NAMESPACE_TYPES}: ${NAMESPACE} is not listed in AUTHORING_SELF_DOCS`,
+        `2 problems: ${NAMESPACE} is not in \`${formatCliCommand('docs make-an-integration/field-reference')}\`; ${NAMESPACE_TYPES}: ${NAMESPACE} is not listed in AUTHORING_SELF_DOCS`,
       );
     },
     SLOW,
@@ -858,7 +858,7 @@ describe('checkAuthoringDocs against the public authoring surface', () => {
   it(
     "fails when the topic's index no longer exposes the NamespaceDoc section",
     async () => {
-      const index = await docs('authoring/field-reference', undefined, {index: true});
+      const index = await docs('make-an-integration/field-reference', undefined, {index: true});
       const topicKeys = new Set(
         index.data.sections
           .map((/** @type {any} */ s) => s.id)
@@ -947,7 +947,7 @@ describe('checkAuthoringDocs against the public authoring surface', () => {
       expect(c.fix).toBe(SURFACE_FIX);
       expect(c.message).toMatch(
         new RegExp(
-          `^[A-Za-z, ]+ from ${escape(module)} have no doc in \`${escape(formatCliCommand('docs authoring/field-reference'))}\`: no self-doc sits beside ${escape(module)}$`,
+          `^[A-Za-z, ]+ from ${escape(module)} have no doc in \`${escape(formatCliCommand('docs make-an-integration/field-reference'))}\`: no self-doc sits beside ${escape(module)}$`,
         ),
       );
       for (const name of names) {
@@ -990,7 +990,7 @@ describe('checkAuthoringDocs against the public authoring surface', () => {
         expect(await checkAuthoringDocs()).toMatchObject({
           status: 'fail',
           message:
-            `\`${formatCliCommand('docs authoring/field-reference')}\` could not be read: no built-in docs`,
+            `\`${formatCliCommand('docs make-an-integration/field-reference')}\` could not be read: no built-in docs`,
           fix: SURFACE_FIX,
         });
       } finally {
@@ -1011,7 +1011,7 @@ describe('checkAuthoringDocs against the public authoring surface', () => {
       const c = await checkAuthoringDocs(undefined, {root});
       expect(c.status).toBe('fail');
       expect(c.message).toContain(
-        `@astryxdesign/cli/authoring exports no types, so nothing was compared with \`${formatCliCommand('docs authoring/field-reference')}\``,
+        `@astryxdesign/cli/authoring exports no types, so nothing was compared with \`${formatCliCommand('docs make-an-integration/field-reference')}\``,
       );
     },
     SLOW,
@@ -1221,7 +1221,7 @@ describe('doctor says why it skipped and what it checked', () => {
       expect(by.config.message).toMatch(
         /^astryx\.config\.mjs loads, but the CLI could not load the project from it: .*integrations/,
       );
-      expect(by.config.fix).toContain(' docs authoring config`');
+      expect(by.config.fix).toContain(' docs make-an-integration config`');
       for (const id of ['implicit-integrations', 'provider-identity']) {
         expect(by[id].message).toMatch(
           /^Skipped — the project configuration could not be read: .*integrations/,

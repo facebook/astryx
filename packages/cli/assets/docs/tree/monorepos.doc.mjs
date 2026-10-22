@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file `astryx docs global/monorepos`: how a folder's project is found, in
+ * @file `astryx docs get-started/on-your-computer/monorepos`: how a folder's project is found, in
  * workspaces and nested folders (spec AST-081 FR2).
  */
 
@@ -10,7 +10,7 @@ export const docs = {
   type: 'generic',
   name: 'monorepos',
   placement: {
-    parent: 'namespace:global',
+    parent: 'namespace:on-your-computer',
     slot: 'guides',
     order: 7,
   },
@@ -76,7 +76,7 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'Part of {@link namespace:global}: what global mode is and how each part works.',
+          text: 'Part of {@link namespace:on-your-computer}: what global mode is and how each part works.',
         },
       ],
     },

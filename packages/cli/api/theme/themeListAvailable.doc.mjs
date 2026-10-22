@@ -9,7 +9,7 @@ export const doc = {
   type: 'function',
   kind: 'api',
   name: 'themeListAvailable',
-  namespace: 'cli/api',
+  namespace: 'reference/api',
   displayName: 'themeListAvailable()',
   summary: 'List bundled, package, and local themes.',
   description:

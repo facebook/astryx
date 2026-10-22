@@ -7,7 +7,7 @@
  * integration that applies only outside projects when installed for the
  * computer. Each such doc carries one note in a single shared form, a prose
  * block that starts with `In global mode:` and links the global guide with
- * `{@link namespace:global}`, so a reader of any of them finds the guide.
+ * `{@link namespace:on-your-computer}`, so a reader of any of them finds the guide.
  *
  * - Every command doc whose `outsideProject` is not `same` carries one.
  * - So does every authoring doc on integration manifests and their
@@ -24,7 +24,7 @@ import {fileURLToPath, pathToFileURL} from 'node:url';
 import {describe, expect, it} from 'vitest';
 
 const CLI = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const NOTE = /^In global mode: [\s\S]*\{@link namespace:global\}/;
+const NOTE = /^In global mode: [\s\S]*\{@link namespace:on-your-computer\}/;
 
 /**
  * Every prose text in a doc, wherever it sits.
@@ -149,32 +149,40 @@ describe('global mode notes', () => {
 
   it('the global guide links down to every child and each child links back up', async () => {
     const tree = path.join(CLI, 'assets/docs/tree');
-    const global = await load(path.join(tree, 'global.doc.mjs'));
+    const global = await load(path.join(tree, 'on-your-computer.doc.mjs'));
     const text =
       proseTexts(global.blocks).join('\n') + JSON.stringify(global.blocks);
     const children = [];
     for (const name of fs.readdirSync(tree).sort()) {
       if (!name.endsWith('.doc.mjs')) continue;
       const doc = await load(path.join(tree, name));
-      if (doc.placement?.parent === 'namespace:global') children.push(doc);
+      if (doc.placement?.parent === 'namespace:on-your-computer') {
+        children.push(doc);
+      }
     }
     expect(children.map(c => c.name).sort()).toEqual([
       'ci-and-containers',
-      'computer-agent-guide',
       'computer-integrations',
       'install-once',
       'monorepos',
-      'problems',
       'project-global-or-both',
-      'reference',
       'uninstall',
       'updates',
       'who-answers',
     ]);
-    for (const child of children) {
+    // The global-mode pages that live in other guides (the agent guide, the
+    // messages, the paths) are linked from it too, and link back.
+    const elsewhere = await Promise.all(
+      ['computer-agent-guide', 'global-mode-messages', 'global-mode'].map(
+        name => load(path.join(tree, `${name}.doc.mjs`)),
+      ),
+    );
+    for (const child of [...children, ...elsewhere]) {
       expect(text, child.name).toContain(`{@link generic:${child.name}}`);
       expect(
-        proseTexts(child).some(t => t.includes('{@link namespace:global}')),
+        proseTexts(child).some(t =>
+          t.includes('{@link namespace:on-your-computer}'),
+        ),
         child.name,
       ).toBe(true);
     }

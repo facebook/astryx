@@ -1232,7 +1232,7 @@ export function PlaygroundClient() {
                               </a>
                             )}
                           </HStack>
-                          <Link href="/docs/theme" hasUnderline>
+                          <Link href="/docs/theme-your-app" hasUnderline>
                             Learn about using themes
                           </Link>
                         </VStack>

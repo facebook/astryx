@@ -47,7 +47,7 @@ export interface SchemaDoc extends AuthoredDocGraphFields {
   displayName: string;
   /** One-line summary shown in listings. */
   description: string;
-  /** The group that reads this doc: 'authoring' for a file an author writes (a section of `astryx docs authoring`), or 'cli/api' for a shape the CLI returns (the docs tree adopts it by kind, as the leaf `cli/api/schemas/<name>`). Every schema doc the CLI ships declares one, and `astryx doctor` fails on one that is missing or that nothing reads. */
+  /** The group that reads this doc: 'authoring' for a file an author writes (a section of `astryx docs make-an-integration`), or 'reference/api' for a shape the CLI returns (the docs tree adopts it by kind, as the leaf `reference/api/schemas/<name>`). Every schema doc the CLI ships declares one, and `astryx doctor` fails on one that is missing or that nothing reads. */
   namespace?: string;
   /** Alternate slugs that also resolve to this doc (back-compat). */
   aliases?: string[];

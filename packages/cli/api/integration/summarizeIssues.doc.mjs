@@ -12,7 +12,7 @@ export const doc = {
   type: 'function',
   kind: 'api',
   name: 'summarizeIssues',
-  namespace: 'cli/api',
+  namespace: 'reference/api',
   displayName: 'summarizeIssues()',
   summary:
     'Tally integration issues by severity into error and warning counts.',

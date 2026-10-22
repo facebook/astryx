@@ -99,7 +99,7 @@ const styles = stylex.create({
 
 // Primary navigation links, shared by the desktop bar and the mobile drawer.
 const NAV_ITEMS = [
-  {key: 'docs', label: 'Docs', href: '/docs/getting-started'},
+  {key: 'docs', label: 'Docs', href: '/docs'},
   {key: 'components', label: 'Components', href: '/components'},
   {key: 'templates', label: 'Templates', href: '/templates'},
   {key: 'themes', label: 'Themes', href: '/themes'},
@@ -285,7 +285,7 @@ export function SharedTopNav() {
             <Button
               label="Get started"
               variant="primary"
-              href="/docs/getting-started"
+              href="/docs/get-started"
               onClick={() =>
                 trackClickCta({page: 'landing', target: 'get_started'})
               }

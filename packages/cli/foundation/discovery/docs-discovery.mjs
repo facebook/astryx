@@ -34,6 +34,7 @@ import * as path from 'node:path';
 import {CLI_ROOT} from '../fs/paths.mjs';
 import {importDocModule} from '../doc-compiler/import.mjs';
 import {CLI_PROVIDER_ID} from '../identity/providers.mjs';
+import {RENAMED_TOPICS} from './renamed-docs.mjs';
 import {parseReadableDoc} from '../doc-compiler/parse-readable.mjs';
 import {
   sectionKey,
@@ -46,6 +47,30 @@ export {withSourceTitle};
 
 /** Where the CLI's own topics live. */
 const BUILTIN_DOCS_DIR = path.join(CLI_ROOT, 'assets', 'docs');
+
+/** Where the CLI keeps the guides its docs tree places. */
+const BUILTIN_TREE_DIR = path.join(BUILTIN_DOCS_DIR, 'tree');
+
+/**
+ * The CLI's own placed guides, by name (a guide file is named after its doc):
+ * what an integration topic can extend or replace now that every Core topic is
+ * a guide. Read from the file text without loading it; namespaces are skipped.
+ * @returns {Record<string, string>} guide name → absolute path
+ */
+export function discoverBuiltinGuides() {
+  /** @type {Record<string, string>} */
+  const guides = {};
+  if (!fs.existsSync(BUILTIN_TREE_DIR)) return guides;
+  for (const file of fs.readdirSync(BUILTIN_TREE_DIR).sort()) {
+    const match = /^([\w-]+)\.doc\.mjs$/u.exec(file);
+    if (!match) continue;
+    const full = path.join(BUILTIN_TREE_DIR, file);
+    const text = fs.readFileSync(full, 'utf8');
+    if (/["']?type["']?\s*:\s*["']namespace["']/u.test(text)) continue;
+    guides[match[1]] = full;
+  }
+  return guides;
+}
 
 /**
  * Owner package recorded for the built-in topics. They ship inside the CLI
@@ -723,6 +748,8 @@ export class DocsCatalog {
   #treeInputs = [];
   /** @type {Array<{package: string, message: string}>} */
   #issues = [];
+  /** @type {Map<string, DocsTopicEntry>} the CLI's placed guides, by name */
+  #guides = new Map();
 
   /**
    * Record a doc file a package ships that did not load. Its package's docs
@@ -786,7 +813,10 @@ export class DocsCatalog {
    * @param {Record<string, string>} [builtins] topic name → absolute path
    * @returns {DocsCatalog}
    */
-  static fromBuiltins(builtins = discoverBuiltinTopics()) {
+  static fromBuiltins(
+    builtins = discoverBuiltinTopics(),
+    guides = discoverBuiltinGuides(),
+  ) {
     const catalog = new DocsCatalog();
     for (const [name, file] of Object.entries(builtins)) {
       catalog.#topics.set(name.toLowerCase(), {
@@ -796,7 +826,38 @@ export class DocsCatalog {
         extensions: [],
       });
     }
+    for (const [name, file] of Object.entries(guides)) {
+      catalog.#guides.set(name.toLowerCase(), {
+        name,
+        package: BUILTIN_DOCS_PACKAGE,
+        path: file,
+        extensions: [],
+      });
+    }
     return catalog;
+  }
+
+  /**
+   * Every CLI guide an integration topic can extend or replace, with what
+   * the configured integrations changed in it.
+   * @returns {DocsTopicEntry[]}
+   */
+  guides() {
+    return [...this.#guides.values()];
+  }
+
+  /**
+   * The CLI guide an integration topic's `extends` or `replaces` lands on:
+   * the guide of that name, or the guide that took a renamed topic's text
+   * ({@link RENAMED_TOPICS}). What it holds (its file, its extensions) is
+   * what a read of the guide's route uses.
+   * @param {unknown} name
+   * @returns {DocsTopicEntry | undefined}
+   */
+  guide(name) {
+    if (typeof name !== 'string') return undefined;
+    const key = name.toLowerCase();
+    return this.#guides.get(RENAMED_TOPICS[key] ?? key);
   }
 
   /**
@@ -809,7 +870,8 @@ export class DocsCatalog {
    */
   add(record) {
     if (record.extendsTopic != null) {
-      const target = this.resolve(record.extendsTopic);
+      const target =
+        this.resolve(record.extendsTopic) ?? this.guide(record.extendsTopic);
       if (!target) {
         return {
           code: 'invalid_doc',
@@ -826,6 +888,27 @@ export class DocsCatalog {
     }
 
     if (record.replaces != null) {
+      const guide = this.resolve(record.replaces)
+        ? undefined
+        : this.guide(record.replaces);
+      if (guide) {
+        // A CLI guide keeps its route and its place in the tree; the
+        // replacement's text is what opens there.
+        const warning =
+          guide.package === BUILTIN_DOCS_PACKAGE
+            ? null
+            : {
+                code: 'duplicate_doc',
+                severity: /** @type {const} */ ('warning'),
+                message: `Topic "${record.replaces}" is replaced by both ${guide.package} and ${record.package}. ${record.package} is configured later, so it wins.`,
+              };
+        guide.package = record.package;
+        guide.path = record.path;
+        guide.replaces = guide.name;
+        if (record.providerId) guide.providerId = record.providerId;
+        guide.extensions = [];
+        return warning;
+      }
       const target = this.resolve(record.replaces);
       if (!target) {
         return {

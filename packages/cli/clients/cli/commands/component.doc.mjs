@@ -13,7 +13,7 @@ export const doc = {
   type: 'command',
   name: 'component',
   displayName: 'astryx component',
-  namespace: 'cli/commands',
+  namespace: 'reference/commands',
   summary: 'List components or print component docs',
   description:
     'Resolves one or several components by exact selector across core and integration ' +

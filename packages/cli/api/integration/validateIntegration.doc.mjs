@@ -12,7 +12,7 @@ export const doc = {
   type: 'function',
   kind: 'api',
   name: 'validateIntegration',
-  namespace: 'cli/api',
+  namespace: 'reference/api',
   displayName: 'validateIntegration()',
   summary:
     'Validate a single Astryx integration package and report its issues.',

@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file `astryx docs authoring/building-blocks/docs/add-a-topic`: add a
+ * @file `astryx docs make-an-integration/building-blocks/docs/add-a-topic`: add a
  * doc topic to an integration package, write its sections, and pick the doc
  * kind for each thing the package ships.
  */
@@ -181,7 +181,7 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'In global mode: when users install your package for their computer, beside the global CLI, your doc topics show up in folders outside any project; inside a project, only if the project installs your package. See {@link namespace:global} and {@link generic:global-integrations}.',
+          text: 'In global mode: when users install your package for their computer, beside the global CLI, your doc topics show up in folders outside any project; inside a project, only if the project installs your package. See {@link namespace:on-your-computer} and {@link generic:global-integrations}.',
         },
       ],
     },

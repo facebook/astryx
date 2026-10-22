@@ -11,7 +11,7 @@ export const doc = {
   type: 'function',
   kind: 'api',
   name: 'search',
-  namespace: 'cli/api',
+  namespace: 'reference/api',
   displayName: 'search()',
   summary:
     'Unified ranked search across components, hooks, docs, templates, and themes.',
@@ -24,7 +24,7 @@ export const doc = {
     'description match can lead a keyword match in the same band (55–99 holds both). ' +
     'A component\'s usage guidance (its best practices) is indexed one tier below ' +
     'its description, so the words a reader types still find it.' +
-    " In global mode: with `cwd` outside a project, items from integrations installed next to this CLI package globally are searched too, and theme results name no step that adds a theme to an app; inside a project, only the project's own integrations count. See {@link namespace:global} and {@link generic:computer-integrations}.",
+    " In global mode: with `cwd` outside a project, items from integrations installed next to this CLI package globally are searched too, and theme results name no step that adds a theme to an app; inside a project, only the project's own integrations count. See {@link namespace:on-your-computer} and {@link generic:computer-integrations}.",
   importPath: '@astryxdesign/cli/api',
   signature:
     'search(query: string, options?: SearchOptions): Promise<SearchResponse>',

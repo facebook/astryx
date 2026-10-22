@@ -2,12 +2,12 @@
 
 /**
  * @file The public type surface of `@astryxdesign/cli/authoring`, and whether
- *   a reader of `astryx docs authoring` can reach the doc for each type in it.
+ *   a reader of `astryx docs make-an-integration` can reach the doc for each type in it.
  *
  * @input authoring/index.d.ts and the type modules it re-exports, parsed with
  *   jscodeshift and never imported or type-checked (consumer installs have no
  *   TypeScript); the self-docs on disk and in AUTHORING_SELF_DOCS; and the
- *   section keys `astryx docs authoring/field-reference --index` lists.
+ *   section keys `astryx docs make-an-integration/field-reference --index` lists.
  * @output {@link tracePublicAuthoringTypes}: each exported type and the module
  *   that declares it. {@link auditAuthoringSurface}: each module whose exported
  *   types a reader cannot reach and why, each export that cannot be traced,
@@ -418,13 +418,13 @@ function declaredIn(t, folder, name) {
 
 /**
  * What stands between each type `@astryxdesign/cli/authoring` exports and a
- * reader of `astryx docs authoring`. A type is readable when a self-doc beside
+ * reader of `astryx docs make-an-integration`. A type is readable when a self-doc beside
  * the module that declares it is listed in AUTHORING_SELF_DOCS, loads, and
  * renders a section the topic's index lists. A registered self-doc must
  * document something public: a public type declared beside it, and, when its
  * title is the name of a type declared beside it, that type.
  * @param {{root?: string, sources?: string[], topicKeys?: Set<string> | null}} [options]
- *   `topicKeys` are the keys `astryx docs authoring/field-reference --index` lists; null skips
+ *   `topicKeys` are the keys `astryx docs make-an-integration/field-reference --index` lists; null skips
  *   that comparison.
  * @returns {Promise<{
  *   types: number,

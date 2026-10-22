@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file `astryx docs authoring/building-blocks/docs`: the guides to
+ * @file `astryx docs make-an-integration/building-blocks/docs`: the guides to
  * writing docs for an integration package, which join the same docs tree as
  * the CLI's own (spec:AST-046, spec:AST-047).
  */
@@ -21,7 +21,7 @@ export const docs = {
   blocks: [
     {
       type: 'prose',
-      text: 'In global mode: docs from an integration installed for the computer show up outside projects; inside a project, only docs from integrations the project installs. See {@link namespace:global} and {@link generic:global-integrations}.',
+      text: 'In global mode: docs from an integration installed for the computer show up outside projects; inside a project, only docs from integrations the project installs. See {@link namespace:on-your-computer} and {@link generic:global-integrations}.',
     },
   ],
 };

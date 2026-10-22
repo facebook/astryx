@@ -3,8 +3,8 @@
 /**
  * @file docs.node leaf — one namespace or typed doc in the docs tree.
  *
- * @input A route the docs tree resolves: a namespace such as `cli/api`, or a
- *   typed doc such as `cli/api/functions/search`, plus {cwd}.
+ * @input A route the docs tree resolves: a namespace such as `reference/api`, or a
+ *   typed doc such as `reference/api/functions/search`, plus {cwd}.
  * @output { type: 'docs.node', data: DocsNode } — the node's identity, title
  *   and summary, the namespaces above it, and either its slots with their
  *   children (a namespace) or its content (a typed doc). By default a
@@ -177,7 +177,7 @@ async function childBelow(catalog, tree, child, level, read) {
 async function childText(catalog, tree, child, lang) {
   if (child.kind === 'generic') {
     const entry = child.ref?.topicFile
-      ? guideEntry(child)
+      ? guideEntry(child, catalog)
       : child.ref?.flatTopic
         ? catalog.resolve(child.ref.flatTopic)
         : null;

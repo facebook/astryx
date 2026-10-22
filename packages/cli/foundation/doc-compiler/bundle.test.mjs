@@ -243,7 +243,7 @@ describe('compileDocs over a broken integration', () => {
     // it; compile the entry as the catalog would have if it had loaded.
     const project = await Project.load(tmpDir);
     const catalog = await project.docs();
-    const theme = /** @type {any} */ (catalog.resolve('theme'));
+    const theme = /** @type {any} */ (catalog.guide('theme'));
     theme.extensions.push({
       package: '@acme/kit',
       path: path.join(
@@ -261,6 +261,6 @@ describe('compileDocs over a broken integration', () => {
       ['@acme/kit', '@acme/kit/docs/theme-notes.doc.mjs'],
     ]);
     // The broken extension withdraws the topic it extends, as a docs read does.
-    expect(bundle.nodes.some(node => node.id === 'theme')).toBe(false);
+    expect(bundle.nodes.some(node => node.id === 'use-a-theme')).toBe(false);
   });
 });

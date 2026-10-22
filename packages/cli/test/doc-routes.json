@@ -12,7 +12,7 @@
       "name": "cli",
       "decision": "create",
       "evidence": "cli/integrations documents the CLI's integration surface (see its row), and the NamespaceDoc contract's own example is a 'cli' namespace for commands, APIs and integration authoring.",
-      "note": "`astryx docs cli` reads the docs tree (spec:AST-046): its guides and the commands and api namespaces, one level at a time. /docs/cli is still the @astryxdesign/cli package page on the docsite; the namespace page must take that URL before the docsite publishes it. Considered and left out: authoring, whose section docs declare namespace 'authoring', a sibling of 'cli' in the SchemaDoc contract."
+      "note": "`astryx docs reference` reads the docs tree (spec:AST-046): its guides and the commands and api namespaces, one level at a time. /docs/cli is still the @astryxdesign/cli package page on the docsite; the namespace page must take that URL before the docsite publishes it. Considered and left out: authoring, whose section docs declare namespace 'authoring', a sibling of 'cli' in the SchemaDoc contract."
     },
     {
       "name": "unorganized",
@@ -50,7 +50,7 @@
     {
       "kind": "topic",
       "id": "authoring",
-      "oldCliRoute": "astryx docs authoring",
+      "oldCliRoute": "astryx docs make-an-integration",
       "oldDocsiteUrl": "/docs/authoring",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -60,7 +60,7 @@
     {
       "kind": "section",
       "id": "authoring#integration",
-      "oldCliRoute": "astryx docs authoring integration",
+      "oldCliRoute": "astryx docs make-an-integration integration",
       "oldDocsiteUrl": "/docs/authoring#astryx-integration",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -70,7 +70,7 @@
     {
       "kind": "section",
       "id": "authoring#config",
-      "oldCliRoute": "astryx docs authoring config",
+      "oldCliRoute": "astryx docs make-an-integration config",
       "oldDocsiteUrl": "/docs/authoring#astryx-config",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -80,7 +80,7 @@
     {
       "kind": "section",
       "id": "authoring#debug-event",
-      "oldCliRoute": "astryx docs authoring debug-event",
+      "oldCliRoute": "astryx docs make-an-integration debug-event",
       "oldDocsiteUrl": "/docs/authoring#debugevent",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -90,7 +90,7 @@
     {
       "kind": "section",
       "id": "authoring#gap-report-handler",
-      "oldCliRoute": "astryx docs authoring gap-report-handler",
+      "oldCliRoute": "astryx docs make-an-integration gap-report-handler",
       "oldDocsiteUrl": "/docs/authoring#gapreporthandler",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -100,7 +100,7 @@
     {
       "kind": "section",
       "id": "authoring#codemod",
-      "oldCliRoute": "astryx docs authoring codemod",
+      "oldCliRoute": "astryx docs make-an-integration codemod",
       "oldDocsiteUrl": "/docs/authoring#astryx-codemod",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -110,7 +110,7 @@
     {
       "kind": "section",
       "id": "authoring#provider-identity",
-      "oldCliRoute": "astryx docs authoring provider-identity",
+      "oldCliRoute": "astryx docs make-an-integration provider-identity",
       "oldDocsiteUrl": "/docs/authoring#provider-and-artifact-identity",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -120,7 +120,7 @@
     {
       "kind": "section",
       "id": "authoring#authored-doc-graph-fields",
-      "oldCliRoute": "astryx docs authoring authored-doc-graph-fields",
+      "oldCliRoute": "astryx docs make-an-integration authored-doc-graph-fields",
       "oldDocsiteUrl": "/docs/authoring#authored-doc-graph-fields",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -130,7 +130,7 @@
     {
       "kind": "section",
       "id": "authoring#component-doc",
-      "oldCliRoute": "astryx docs authoring component-doc",
+      "oldCliRoute": "astryx docs make-an-integration component-doc",
       "oldDocsiteUrl": "/docs/authoring#componentdoc",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -140,7 +140,7 @@
     {
       "kind": "section",
       "id": "authoring#hook-doc",
-      "oldCliRoute": "astryx docs authoring hook-doc",
+      "oldCliRoute": "astryx docs make-an-integration hook-doc",
       "oldDocsiteUrl": "/docs/authoring#hookdoc",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -150,7 +150,7 @@
     {
       "kind": "section",
       "id": "authoring#function-doc",
-      "oldCliRoute": "astryx docs authoring function-doc",
+      "oldCliRoute": "astryx docs make-an-integration function-doc",
       "oldDocsiteUrl": "/docs/authoring#functiondoc",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -160,7 +160,7 @@
     {
       "kind": "section",
       "id": "authoring#command-doc",
-      "oldCliRoute": "astryx docs authoring command-doc",
+      "oldCliRoute": "astryx docs make-an-integration command-doc",
       "oldDocsiteUrl": "/docs/authoring#commanddoc",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -170,7 +170,7 @@
     {
       "kind": "section",
       "id": "authoring#enum-doc",
-      "oldCliRoute": "astryx docs authoring enum-doc",
+      "oldCliRoute": "astryx docs make-an-integration enum-doc",
       "oldDocsiteUrl": "/docs/authoring#enumdoc",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -180,7 +180,7 @@
     {
       "kind": "section",
       "id": "authoring#namespace-doc",
-      "oldCliRoute": "astryx docs authoring namespace-doc",
+      "oldCliRoute": "astryx docs make-an-integration namespace-doc",
       "oldDocsiteUrl": "/docs/authoring#namespacedoc",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -190,7 +190,7 @@
     {
       "kind": "section",
       "id": "authoring#reference-doc",
-      "oldCliRoute": "astryx docs authoring reference-doc",
+      "oldCliRoute": "astryx docs make-an-integration reference-doc",
       "oldDocsiteUrl": "/docs/authoring#referencedoc",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -200,7 +200,7 @@
     {
       "kind": "section",
       "id": "authoring#schema-doc",
-      "oldCliRoute": "astryx docs authoring schema-doc",
+      "oldCliRoute": "astryx docs make-an-integration schema-doc",
       "oldDocsiteUrl": "/docs/authoring#schemadoc",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -210,7 +210,7 @@
     {
       "kind": "section",
       "id": "authoring#template-doc",
-      "oldCliRoute": "astryx docs authoring template-doc",
+      "oldCliRoute": "astryx docs make-an-integration template-doc",
       "oldDocsiteUrl": "/docs/authoring#templatedoc",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -220,7 +220,7 @@
     {
       "kind": "section",
       "id": "authoring#theme-doc",
-      "oldCliRoute": "astryx docs authoring theme-doc",
+      "oldCliRoute": "astryx docs make-an-integration theme-doc",
       "oldDocsiteUrl": "/docs/authoring#themedoc",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -230,66 +230,66 @@
     {
       "kind": "namespace",
       "id": "cli",
-      "oldCliRoute": "astryx docs cli",
+      "oldCliRoute": "astryx docs reference",
       "oldDocsiteUrl": null,
       "placement": "namespace:cli",
       "aliasNeeded": false,
-      "evidence": "assets/docs/tree/cli.doc.mjs declares it; astryx doctor fails when the tree does not build or a CLI doc in a cli group has no route.",
-      "rationale": "The top of the CLI docs tree: its guides (cli/integrations) and its reference (cli/commands and cli/api), one level at a time. The docsite does not publish it yet, because /docs/cli is the @astryxdesign/cli package page.",
+      "evidence": "assets/docs/tree/reference.doc.mjs declares it; astryx doctor fails when the tree does not build or a CLI doc in a cli group has no route.",
+      "rationale": "The top of the CLI docs tree: its guides (cli/integrations) and its reference (reference/commands and reference/api), one level at a time. The docsite does not publish it yet, because /docs/cli is the @astryxdesign/cli package page.",
       "status": "proposed"
     },
     {
       "kind": "namespace",
-      "id": "cli/commands",
-      "oldCliRoute": "astryx docs cli/commands",
+      "id": "reference/commands",
+      "oldCliRoute": "astryx docs reference/commands",
       "oldDocsiteUrl": null,
-      "placement": "namespace:cli/commands",
+      "placement": "namespace:reference/commands",
       "aliasNeeded": false,
       "evidence": "assets/docs/tree/commands.doc.mjs declares it.",
-      "rationale": "Adopts every command doc whose namespace is cli/commands, one leaf each at cli/commands/<name>. The docsite does not publish it yet.",
+      "rationale": "Adopts every command doc whose namespace is reference/commands, one leaf each at reference/commands/<name>. The docsite does not publish it yet.",
       "status": "proposed"
     },
     {
       "kind": "namespace",
-      "id": "cli/api",
-      "oldCliRoute": "astryx docs cli/api",
+      "id": "reference/api",
+      "oldCliRoute": "astryx docs reference/api",
       "oldDocsiteUrl": null,
-      "placement": "namespace:cli/api",
+      "placement": "namespace:reference/api",
       "aliasNeeded": false,
       "evidence": "assets/docs/tree/api.doc.mjs declares it.",
-      "rationale": "Adopts every function, schema, and enum doc whose namespace is cli/api, one generated level per kind. The docsite does not publish it yet.",
+      "rationale": "Adopts every function, schema, and enum doc whose namespace is reference/api, one generated level per kind. The docsite does not publish it yet.",
       "status": "proposed"
     },
     {
       "kind": "namespace",
-      "id": "cli/api/functions",
-      "oldCliRoute": "astryx docs cli/api/functions",
+      "id": "reference/api/functions",
+      "oldCliRoute": "astryx docs reference/api/functions",
       "oldDocsiteUrl": null,
-      "placement": "namespace:cli/api/functions",
+      "placement": "namespace:reference/api/functions",
       "aliasNeeded": false,
-      "evidence": "The api namespace adopts cli/api with groupBy kind.",
-      "rationale": "Generated by the api namespace for its function docs, one leaf each at cli/api/functions/<name>. The docsite does not publish it yet.",
+      "evidence": "The api namespace adopts reference/api with groupBy kind.",
+      "rationale": "Generated by the api namespace for its function docs, one leaf each at reference/api/functions/<name>. The docsite does not publish it yet.",
       "status": "proposed"
     },
     {
       "kind": "namespace",
-      "id": "cli/api/schemas",
-      "oldCliRoute": "astryx docs cli/api/schemas",
+      "id": "reference/api/schemas",
+      "oldCliRoute": "astryx docs reference/api/schemas",
       "oldDocsiteUrl": null,
-      "placement": "namespace:cli/api/schemas",
+      "placement": "namespace:reference/api/schemas",
       "aliasNeeded": false,
-      "evidence": "The api namespace adopts cli/api with groupBy kind.",
+      "evidence": "The api namespace adopts reference/api with groupBy kind.",
       "rationale": "Generated by the api namespace for its schema docs (the JSON output envelope). The docsite does not publish it yet.",
       "status": "proposed"
     },
     {
       "kind": "namespace",
-      "id": "cli/api/enums",
-      "oldCliRoute": "astryx docs cli/api/enums",
+      "id": "reference/api/enums",
+      "oldCliRoute": "astryx docs reference/api/enums",
       "oldDocsiteUrl": null,
-      "placement": "namespace:cli/api/enums",
+      "placement": "namespace:reference/api/enums",
       "aliasNeeded": false,
-      "evidence": "The api namespace adopts cli/api with groupBy kind.",
+      "evidence": "The api namespace adopts reference/api with groupBy kind.",
       "rationale": "Generated by the api namespace for its enum docs (error codes and response types). The docsite does not publish it yet.",
       "status": "proposed"
     },
@@ -307,7 +307,7 @@
     {
       "kind": "topic",
       "id": "browser-support",
-      "oldCliRoute": "astryx docs browser-support",
+      "oldCliRoute": "astryx docs reference/browser-support",
       "oldDocsiteUrl": "/docs/browser-support",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -317,7 +317,7 @@
     {
       "kind": "section",
       "id": "browser-support#overview",
-      "oldCliRoute": "astryx docs browser-support overview",
+      "oldCliRoute": "astryx docs reference/browser-support overview",
       "oldDocsiteUrl": "/docs/browser-support#overview",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -327,7 +327,7 @@
     {
       "kind": "section",
       "id": "browser-support#support-tiers",
-      "oldCliRoute": "astryx docs browser-support support-tiers",
+      "oldCliRoute": "astryx docs reference/browser-support support-tiers",
       "oldDocsiteUrl": "/docs/browser-support#support-tiers",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -337,7 +337,7 @@
     {
       "kind": "section",
       "id": "browser-support#which-features-set-the-floor",
-      "oldCliRoute": "astryx docs browser-support which-features-set-the-floor",
+      "oldCliRoute": "astryx docs reference/browser-support which-features-set-the-floor",
       "oldDocsiteUrl": "/docs/browser-support#which-features-set-the-floor",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -347,7 +347,7 @@
     {
       "kind": "section",
       "id": "browser-support#which-components-are-affected",
-      "oldCliRoute": "astryx docs browser-support which-components-are-affected",
+      "oldCliRoute": "astryx docs reference/browser-support which-components-are-affected",
       "oldDocsiteUrl": "/docs/browser-support#which-components-are-affected",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -357,7 +357,7 @@
     {
       "kind": "section",
       "id": "browser-support#what-astryx-guarantees",
-      "oldCliRoute": "astryx docs browser-support what-astryx-guarantees",
+      "oldCliRoute": "astryx docs reference/browser-support what-astryx-guarantees",
       "oldDocsiteUrl": "/docs/browser-support#what-astryx-guarantees",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -367,7 +367,7 @@
     {
       "kind": "section",
       "id": "browser-support#supporting-older-browsers",
-      "oldCliRoute": "astryx docs browser-support supporting-older-browsers",
+      "oldCliRoute": "astryx docs reference/browser-support supporting-older-browsers",
       "oldDocsiteUrl": "/docs/browser-support#supporting-older-browsers",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -377,7 +377,7 @@
     {
       "kind": "section",
       "id": "browser-support#how-these-tiers-move-over-time",
-      "oldCliRoute": "astryx docs browser-support how-these-tiers-move-over-time",
+      "oldCliRoute": "astryx docs reference/browser-support how-these-tiers-move-over-time",
       "oldDocsiteUrl": "/docs/browser-support#how-these-tiers-move-over-time",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -2587,7 +2587,7 @@
     {
       "kind": "topic",
       "id": "color",
-      "oldCliRoute": "astryx docs color",
+      "oldCliRoute": "astryx docs foundations/color",
       "oldDocsiteUrl": "/docs/color",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -2597,7 +2597,7 @@
     {
       "kind": "section",
       "id": "color#overview",
-      "oldCliRoute": "astryx docs color overview",
+      "oldCliRoute": "astryx docs foundations/color overview",
       "oldDocsiteUrl": "/docs/color#overview",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -2607,7 +2607,7 @@
     {
       "kind": "section",
       "id": "color#surface-colors",
-      "oldCliRoute": "astryx docs color surface-colors",
+      "oldCliRoute": "astryx docs foundations/color surface-colors",
       "oldDocsiteUrl": "/docs/color#color-tokens",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -2617,7 +2617,7 @@
     {
       "kind": "section",
       "id": "color#usage",
-      "oldCliRoute": "astryx docs color usage",
+      "oldCliRoute": "astryx docs foundations/color usage",
       "oldDocsiteUrl": "/docs/color#use-color-tokens-in-stylex",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -2627,7 +2627,7 @@
     {
       "kind": "section",
       "id": "color#best-practices",
-      "oldCliRoute": "astryx docs color best-practices",
+      "oldCliRoute": "astryx docs foundations/color best-practices",
       "oldDocsiteUrl": "/docs/color#best-practices",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -2637,7 +2637,7 @@
     {
       "kind": "topic",
       "id": "elevation",
-      "oldCliRoute": "astryx docs elevation",
+      "oldCliRoute": "astryx docs foundations/elevation",
       "oldDocsiteUrl": "/docs/elevation",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -2647,7 +2647,7 @@
     {
       "kind": "section",
       "id": "elevation#overview",
-      "oldCliRoute": "astryx docs elevation overview",
+      "oldCliRoute": "astryx docs foundations/elevation overview",
       "oldDocsiteUrl": "/docs/elevation#overview",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -2657,7 +2657,7 @@
     {
       "kind": "section",
       "id": "elevation#elevation-scale",
-      "oldCliRoute": "astryx docs elevation elevation-scale",
+      "oldCliRoute": "astryx docs foundations/elevation elevation-scale",
       "oldDocsiteUrl": "/docs/elevation#elevation-scale",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -2667,7 +2667,7 @@
     {
       "kind": "section",
       "id": "elevation#choosing-a-level",
-      "oldCliRoute": "astryx docs elevation choosing-a-level",
+      "oldCliRoute": "astryx docs foundations/elevation choosing-a-level",
       "oldDocsiteUrl": "/docs/elevation#choosing-a-level",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -2677,7 +2677,7 @@
     {
       "kind": "section",
       "id": "elevation#the-elevation-prop",
-      "oldCliRoute": "astryx docs elevation the-elevation-prop",
+      "oldCliRoute": "astryx docs foundations/elevation the-elevation-prop",
       "oldDocsiteUrl": "/docs/elevation#the-elevation-prop",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -2687,7 +2687,7 @@
     {
       "kind": "section",
       "id": "elevation#usage",
-      "oldCliRoute": "astryx docs elevation usage",
+      "oldCliRoute": "astryx docs foundations/elevation usage",
       "oldDocsiteUrl": "/docs/elevation#usage",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -2697,7 +2697,7 @@
     {
       "kind": "section",
       "id": "elevation#best-practices",
-      "oldCliRoute": "astryx docs elevation best-practices",
+      "oldCliRoute": "astryx docs foundations/elevation best-practices",
       "oldDocsiteUrl": "/docs/elevation#best-practices",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -2707,7 +2707,7 @@
     {
       "kind": "topic",
       "id": "getting-started",
-      "oldCliRoute": "astryx docs getting-started",
+      "oldCliRoute": "astryx docs get-started/add-to-a-project",
       "oldDocsiteUrl": "/docs/getting-started",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -2717,7 +2717,7 @@
     {
       "kind": "section",
       "id": "getting-started#quick-start-with-ai",
-      "oldCliRoute": "astryx docs getting-started quick-start-with-ai",
+      "oldCliRoute": "astryx docs get-started/add-to-a-project quick-start-with-ai",
       "oldDocsiteUrl": "/docs/getting-started#quick-start-with-ai",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -2727,7 +2727,7 @@
     {
       "kind": "section",
       "id": "getting-started#install",
-      "oldCliRoute": "astryx docs getting-started install",
+      "oldCliRoute": "astryx docs get-started/add-to-a-project install",
       "oldDocsiteUrl": "/docs/getting-started#install",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -2737,7 +2737,7 @@
     {
       "kind": "section",
       "id": "getting-started#add-base-css-and-a-theme",
-      "oldCliRoute": "astryx docs getting-started add-base-css-and-a-theme",
+      "oldCliRoute": "astryx docs get-started/add-to-a-project add-base-css-and-a-theme",
       "oldDocsiteUrl": "/docs/getting-started#add-base-css-and-a-theme",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -2747,7 +2747,7 @@
     {
       "kind": "section",
       "id": "getting-started#add-your-first-component",
-      "oldCliRoute": "astryx docs getting-started add-your-first-component",
+      "oldCliRoute": "astryx docs get-started/add-to-a-project add-your-first-component",
       "oldDocsiteUrl": "/docs/getting-started#add-your-first-component",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -2757,7 +2757,7 @@
     {
       "kind": "section",
       "id": "getting-started#customize-with-stylex",
-      "oldCliRoute": "astryx docs getting-started customize-with-stylex",
+      "oldCliRoute": "astryx docs get-started/add-to-a-project customize-with-stylex",
       "oldDocsiteUrl": "/docs/getting-started#customize-with-stylex",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -2767,7 +2767,7 @@
     {
       "kind": "section",
       "id": "getting-started#example-apps",
-      "oldCliRoute": "astryx docs getting-started example-apps",
+      "oldCliRoute": "astryx docs get-started/add-to-a-project example-apps",
       "oldDocsiteUrl": "/docs/getting-started#example-apps",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -2777,7 +2777,7 @@
     {
       "kind": "section",
       "id": "getting-started#explore-the-cli",
-      "oldCliRoute": "astryx docs getting-started explore-the-cli",
+      "oldCliRoute": "astryx docs get-started/add-to-a-project explore-the-cli",
       "oldDocsiteUrl": "/docs/getting-started#explore-the-cli",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -2787,7 +2787,7 @@
     {
       "kind": "topic",
       "id": "icons",
-      "oldCliRoute": "astryx docs icons",
+      "oldCliRoute": "astryx docs foundations/icons",
       "oldDocsiteUrl": "/docs/icons",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -2797,7 +2797,7 @@
     {
       "kind": "section",
       "id": "icons#available-names",
-      "oldCliRoute": "astryx docs icons available-names",
+      "oldCliRoute": "astryx docs foundations/icons available-names",
       "oldDocsiteUrl": "/docs/icons#available-names",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -2807,7 +2807,7 @@
     {
       "kind": "section",
       "id": "icons#custom-icons",
-      "oldCliRoute": "astryx docs icons custom-icons",
+      "oldCliRoute": "astryx docs foundations/icons custom-icons",
       "oldDocsiteUrl": "/docs/icons#custom-icons",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -2817,7 +2817,7 @@
     {
       "kind": "section",
       "id": "icons#theme-overrides",
-      "oldCliRoute": "astryx docs icons theme-overrides",
+      "oldCliRoute": "astryx docs foundations/icons theme-overrides",
       "oldDocsiteUrl": "/docs/icons#theme-overrides",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -2827,7 +2827,7 @@
     {
       "kind": "section",
       "id": "icons#component-and-library-icons",
-      "oldCliRoute": "astryx docs icons component-and-library-icons",
+      "oldCliRoute": "astryx docs foundations/icons component-and-library-icons",
       "oldDocsiteUrl": "/docs/icons#component-and-library-icons",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -2837,7 +2837,7 @@
     {
       "kind": "topic",
       "id": "illustrations",
-      "oldCliRoute": "astryx docs illustrations",
+      "oldCliRoute": "astryx docs foundations/illustrations",
       "oldDocsiteUrl": "/docs/illustrations",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -2847,7 +2847,7 @@
     {
       "kind": "section",
       "id": "illustrations#when-to-use",
-      "oldCliRoute": "astryx docs illustrations when-to-use",
+      "oldCliRoute": "astryx docs foundations/illustrations when-to-use",
       "oldDocsiteUrl": "/docs/illustrations#when-to-use",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -2857,7 +2857,7 @@
     {
       "kind": "section",
       "id": "illustrations#guidelines",
-      "oldCliRoute": "astryx docs illustrations guidelines",
+      "oldCliRoute": "astryx docs foundations/illustrations guidelines",
       "oldDocsiteUrl": "/docs/illustrations#guidelines",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -2867,7 +2867,7 @@
     {
       "kind": "section",
       "id": "illustrations#placement",
-      "oldCliRoute": "astryx docs illustrations placement",
+      "oldCliRoute": "astryx docs foundations/illustrations placement",
       "oldDocsiteUrl": "/docs/illustrations#placement",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -2877,7 +2877,7 @@
     {
       "kind": "topic",
       "id": "internationalization",
-      "oldCliRoute": "astryx docs internationalization",
+      "oldCliRoute": "astryx docs translate-your-app",
       "oldDocsiteUrl": "/docs/internationalization",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -2887,7 +2887,7 @@
     {
       "kind": "section",
       "id": "internationalization#quick-start",
-      "oldCliRoute": "astryx docs internationalization quick-start",
+      "oldCliRoute": "astryx docs translate-your-app quick-start",
       "oldDocsiteUrl": "/docs/internationalization#set-the-locale",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -2897,7 +2897,7 @@
     {
       "kind": "section",
       "id": "internationalization#runtime-language-swap",
-      "oldCliRoute": "astryx docs internationalization runtime-language-swap",
+      "oldCliRoute": "astryx docs translate-your-app runtime-language-swap",
       "oldDocsiteUrl": "/docs/internationalization#change-the-language-at-runtime",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -2907,7 +2907,7 @@
     {
       "kind": "section",
       "id": "internationalization#text-direction-rtl",
-      "oldCliRoute": "astryx docs internationalization text-direction-rtl",
+      "oldCliRoute": "astryx docs translate-your-app text-direction-rtl",
       "oldDocsiteUrl": "/docs/internationalization#text-direction-rtl",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -2917,7 +2917,7 @@
     {
       "kind": "section",
       "id": "internationalization#override-text",
-      "oldCliRoute": "astryx docs internationalization override-text",
+      "oldCliRoute": "astryx docs translate-your-app override-text",
       "oldDocsiteUrl": "/docs/internationalization#overriding-astryx-s-default-text",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -2927,7 +2927,7 @@
     {
       "kind": "section",
       "id": "internationalization#own-i18n-library",
-      "oldCliRoute": "astryx docs internationalization own-i18n-library",
+      "oldCliRoute": "astryx docs translate-your-app own-i18n-library",
       "oldDocsiteUrl": "/docs/internationalization#using-astryx-with-your-own-i18n-library",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -2937,7 +2937,7 @@
     {
       "kind": "section",
       "id": "internationalization#astryx-as-i18n",
-      "oldCliRoute": "astryx docs internationalization astryx-as-i18n",
+      "oldCliRoute": "astryx docs translate-your-app astryx-as-i18n",
       "oldDocsiteUrl": "/docs/internationalization#using-astryx-as-your-i18n-library",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -2947,7 +2947,7 @@
     {
       "kind": "section",
       "id": "internationalization#testing-your-translations",
-      "oldCliRoute": "astryx docs internationalization testing-your-translations",
+      "oldCliRoute": "astryx docs translate-your-app testing-your-translations",
       "oldDocsiteUrl": "/docs/internationalization#testing-your-translations",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -2957,7 +2957,7 @@
     {
       "kind": "topic",
       "id": "layout",
-      "oldCliRoute": "astryx docs layout",
+      "oldCliRoute": "astryx docs build-a-page",
       "oldDocsiteUrl": "/docs/layout",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -2967,7 +2967,7 @@
     {
       "kind": "section",
       "id": "layout#overview",
-      "oldCliRoute": "astryx docs layout overview",
+      "oldCliRoute": "astryx docs build-a-page overview",
       "oldDocsiteUrl": "/docs/layout#overview",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -2977,7 +2977,7 @@
     {
       "kind": "section",
       "id": "layout#scaffold",
-      "oldCliRoute": "astryx docs layout scaffold",
+      "oldCliRoute": "astryx docs build-a-page scaffold",
       "oldDocsiteUrl": "/docs/layout#scaffold",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -2987,7 +2987,7 @@
     {
       "kind": "section",
       "id": "layout#shell",
-      "oldCliRoute": "astryx docs layout shell",
+      "oldCliRoute": "astryx docs build-a-page shell",
       "oldDocsiteUrl": "/docs/layout#shell",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -2997,7 +2997,7 @@
     {
       "kind": "section",
       "id": "layout#navigation",
-      "oldCliRoute": "astryx docs layout navigation",
+      "oldCliRoute": "astryx docs build-a-page navigation",
       "oldDocsiteUrl": "/docs/layout#navigation",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3007,7 +3007,7 @@
     {
       "kind": "section",
       "id": "layout#structure",
-      "oldCliRoute": "astryx docs layout structure",
+      "oldCliRoute": "astryx docs build-a-page structure",
       "oldDocsiteUrl": "/docs/layout#structure",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3017,7 +3017,7 @@
     {
       "kind": "section",
       "id": "layout#type-hierarchy",
-      "oldCliRoute": "astryx docs layout type-hierarchy",
+      "oldCliRoute": "astryx docs build-a-page type-hierarchy",
       "oldDocsiteUrl": "/docs/layout#type-hierarchy",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3027,7 +3027,7 @@
     {
       "kind": "section",
       "id": "layout#containers",
-      "oldCliRoute": "astryx docs layout containers",
+      "oldCliRoute": "astryx docs build-a-page containers",
       "oldDocsiteUrl": "/docs/layout#card-or-rows",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3037,7 +3037,7 @@
     {
       "kind": "section",
       "id": "layout#headers-and-footers",
-      "oldCliRoute": "astryx docs layout headers-and-footers",
+      "oldCliRoute": "astryx docs build-a-page headers-and-footers",
       "oldDocsiteUrl": "/docs/layout#headers-and-footers",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3047,7 +3047,7 @@
     {
       "kind": "section",
       "id": "layout#side-panels",
-      "oldCliRoute": "astryx docs layout side-panels",
+      "oldCliRoute": "astryx docs build-a-page side-panels",
       "oldDocsiteUrl": "/docs/layout#side-panels",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3057,7 +3057,7 @@
     {
       "kind": "section",
       "id": "layout#spacing",
-      "oldCliRoute": "astryx docs layout spacing",
+      "oldCliRoute": "astryx docs build-a-page spacing",
       "oldDocsiteUrl": "/docs/layout#spacing",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3067,7 +3067,7 @@
     {
       "kind": "section",
       "id": "layout#alignment",
-      "oldCliRoute": "astryx docs layout alignment",
+      "oldCliRoute": "astryx docs build-a-page alignment",
       "oldDocsiteUrl": "/docs/layout#alignment",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3077,7 +3077,7 @@
     {
       "kind": "section",
       "id": "layout#rhythm",
-      "oldCliRoute": "astryx docs layout rhythm",
+      "oldCliRoute": "astryx docs build-a-page rhythm",
       "oldDocsiteUrl": "/docs/layout#rhythm",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3087,7 +3087,7 @@
     {
       "kind": "section",
       "id": "layout#density",
-      "oldCliRoute": "astryx docs layout density",
+      "oldCliRoute": "astryx docs build-a-page density",
       "oldDocsiteUrl": "/docs/layout#density-and-size",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3097,7 +3097,7 @@
     {
       "kind": "section",
       "id": "layout#breakpoints",
-      "oldCliRoute": "astryx docs layout breakpoints",
+      "oldCliRoute": "astryx docs build-a-page breakpoints",
       "oldDocsiteUrl": "/docs/layout#breakpoints",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3107,7 +3107,7 @@
     {
       "kind": "section",
       "id": "layout#responsive-contract",
-      "oldCliRoute": "astryx docs layout responsive-contract",
+      "oldCliRoute": "astryx docs build-a-page responsive-contract",
       "oldDocsiteUrl": "/docs/layout#responsive-contract",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3117,7 +3117,7 @@
     {
       "kind": "topic",
       "id": "migration",
-      "oldCliRoute": "astryx docs migration",
+      "oldCliRoute": "astryx docs upgrade-and-migrate/from-tailwind-shadcn-radix",
       "oldDocsiteUrl": "/docs/migration",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3127,7 +3127,7 @@
     {
       "kind": "section",
       "id": "migration#overview",
-      "oldCliRoute": "astryx docs migration overview",
+      "oldCliRoute": "astryx docs upgrade-and-migrate/from-tailwind-shadcn-radix overview",
       "oldDocsiteUrl": "/docs/migration#overview",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3137,7 +3137,7 @@
     {
       "kind": "section",
       "id": "migration#recommended-order",
-      "oldCliRoute": "astryx docs migration recommended-order",
+      "oldCliRoute": "astryx docs upgrade-and-migrate/from-tailwind-shadcn-radix recommended-order",
       "oldDocsiteUrl": "/docs/migration#recommended-order",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3147,7 +3147,7 @@
     {
       "kind": "section",
       "id": "migration#cli-workflow",
-      "oldCliRoute": "astryx docs migration cli-workflow",
+      "oldCliRoute": "astryx docs upgrade-and-migrate/from-tailwind-shadcn-radix cli-workflow",
       "oldDocsiteUrl": "/docs/migration#cli-workflow",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3157,7 +3157,7 @@
     {
       "kind": "section",
       "id": "migration#theme-and-css-setup",
-      "oldCliRoute": "astryx docs migration theme-and-css-setup",
+      "oldCliRoute": "astryx docs upgrade-and-migrate/from-tailwind-shadcn-radix theme-and-css-setup",
       "oldDocsiteUrl": "/docs/migration#theme-and-css-setup",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3167,7 +3167,7 @@
     {
       "kind": "section",
       "id": "migration#cascade-layer-safety",
-      "oldCliRoute": "astryx docs migration cascade-layer-safety",
+      "oldCliRoute": "astryx docs upgrade-and-migrate/from-tailwind-shadcn-radix cascade-layer-safety",
       "oldDocsiteUrl": "/docs/migration#why-resets-break-cascade-layers",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3177,7 +3177,7 @@
     {
       "kind": "section",
       "id": "migration#layer-audit",
-      "oldCliRoute": "astryx docs migration layer-audit",
+      "oldCliRoute": "astryx docs upgrade-and-migrate/from-tailwind-shadcn-radix layer-audit",
       "oldDocsiteUrl": "/docs/migration#cascade-layer-audit",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3187,7 +3187,7 @@
     {
       "kind": "section",
       "id": "migration#foundation-smoke-test",
-      "oldCliRoute": "astryx docs migration foundation-smoke-test",
+      "oldCliRoute": "astryx docs upgrade-and-migrate/from-tailwind-shadcn-radix foundation-smoke-test",
       "oldDocsiteUrl": "/docs/migration#foundation-smoke-test",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3197,7 +3197,7 @@
     {
       "kind": "section",
       "id": "migration#move-the-app-frame-first",
-      "oldCliRoute": "astryx docs migration move-the-app-frame-first",
+      "oldCliRoute": "astryx docs upgrade-and-migrate/from-tailwind-shadcn-radix move-the-app-frame-first",
       "oldDocsiteUrl": "/docs/migration#move-the-app-frame-first",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3207,7 +3207,7 @@
     {
       "kind": "section",
       "id": "migration#map-shadcn-and-radix-primitives",
-      "oldCliRoute": "astryx docs migration map-shadcn-and-radix-primitives",
+      "oldCliRoute": "astryx docs upgrade-and-migrate/from-tailwind-shadcn-radix map-shadcn-and-radix-primitives",
       "oldDocsiteUrl": "/docs/migration#map-shadcn-and-radix-primitives",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3217,7 +3217,7 @@
     {
       "kind": "section",
       "id": "migration#command-palette",
-      "oldCliRoute": "astryx docs migration command-palette",
+      "oldCliRoute": "astryx docs upgrade-and-migrate/from-tailwind-shadcn-radix command-palette",
       "oldDocsiteUrl": "/docs/migration#command-palette-settings-and-theme",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3227,7 +3227,7 @@
     {
       "kind": "section",
       "id": "migration#verification-checklist",
-      "oldCliRoute": "astryx docs migration verification-checklist",
+      "oldCliRoute": "astryx docs upgrade-and-migrate/from-tailwind-shadcn-radix verification-checklist",
       "oldDocsiteUrl": "/docs/migration#verification-checklist",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3237,7 +3237,7 @@
     {
       "kind": "section",
       "id": "migration#ai-migration-prompt",
-      "oldCliRoute": "astryx docs migration ai-migration-prompt",
+      "oldCliRoute": "astryx docs upgrade-and-migrate/from-tailwind-shadcn-radix ai-migration-prompt",
       "oldDocsiteUrl": "/docs/migration#ai-migration-prompt",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3247,7 +3247,7 @@
     {
       "kind": "topic",
       "id": "motion",
-      "oldCliRoute": "astryx docs motion",
+      "oldCliRoute": "astryx docs foundations/motion",
       "oldDocsiteUrl": "/docs/motion",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3257,7 +3257,7 @@
     {
       "kind": "section",
       "id": "motion#overview",
-      "oldCliRoute": "astryx docs motion overview",
+      "oldCliRoute": "astryx docs foundations/motion overview",
       "oldDocsiteUrl": "/docs/motion#overview",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3267,7 +3267,7 @@
     {
       "kind": "section",
       "id": "motion#duration",
-      "oldCliRoute": "astryx docs motion duration",
+      "oldCliRoute": "astryx docs foundations/motion duration",
       "oldDocsiteUrl": "/docs/motion#duration",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3277,7 +3277,7 @@
     {
       "kind": "section",
       "id": "motion#easing",
-      "oldCliRoute": "astryx docs motion easing",
+      "oldCliRoute": "astryx docs foundations/motion easing",
       "oldDocsiteUrl": "/docs/motion#easing",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3287,7 +3287,7 @@
     {
       "kind": "section",
       "id": "motion#where-motion-helps",
-      "oldCliRoute": "astryx docs motion where-motion-helps",
+      "oldCliRoute": "astryx docs foundations/motion where-motion-helps",
       "oldDocsiteUrl": "/docs/motion#where-motion-helps",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3297,7 +3297,7 @@
     {
       "kind": "section",
       "id": "motion#where-motion-hurts",
-      "oldCliRoute": "astryx docs motion where-motion-hurts",
+      "oldCliRoute": "astryx docs foundations/motion where-motion-hurts",
       "oldDocsiteUrl": "/docs/motion#where-motion-hurts",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3307,7 +3307,7 @@
     {
       "kind": "section",
       "id": "motion#movement-principles",
-      "oldCliRoute": "astryx docs motion movement-principles",
+      "oldCliRoute": "astryx docs foundations/motion movement-principles",
       "oldDocsiteUrl": "/docs/motion#movement-principles",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3317,7 +3317,7 @@
     {
       "kind": "section",
       "id": "motion#respecting-user-preferences",
-      "oldCliRoute": "astryx docs motion respecting-user-preferences",
+      "oldCliRoute": "astryx docs foundations/motion respecting-user-preferences",
       "oldDocsiteUrl": "/docs/motion#respecting-user-preferences",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3327,7 +3327,7 @@
     {
       "kind": "section",
       "id": "motion#usage",
-      "oldCliRoute": "astryx docs motion usage",
+      "oldCliRoute": "astryx docs foundations/motion usage",
       "oldDocsiteUrl": "/docs/motion#animate-with-motion-tokens",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3337,7 +3337,7 @@
     {
       "kind": "section",
       "id": "motion#best-practices",
-      "oldCliRoute": "astryx docs motion best-practices",
+      "oldCliRoute": "astryx docs foundations/motion best-practices",
       "oldDocsiteUrl": "/docs/motion#best-practices",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3347,7 +3347,7 @@
     {
       "kind": "topic",
       "id": "principles",
-      "oldCliRoute": "astryx docs principles",
+      "oldCliRoute": "astryx docs foundations/principles",
       "oldDocsiteUrl": "/docs/principles",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3357,7 +3357,7 @@
     {
       "kind": "section",
       "id": "principles#design-philosophy",
-      "oldCliRoute": "astryx docs principles design-philosophy",
+      "oldCliRoute": "astryx docs foundations/principles design-philosophy",
       "oldDocsiteUrl": "/docs/principles#design-philosophy",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3367,7 +3367,7 @@
     {
       "kind": "section",
       "id": "principles#rules",
-      "oldCliRoute": "astryx docs principles rules",
+      "oldCliRoute": "astryx docs foundations/principles rules",
       "oldDocsiteUrl": "/docs/principles#rules",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3377,7 +3377,7 @@
     {
       "kind": "section",
       "id": "principles#styling-approach",
-      "oldCliRoute": "astryx docs principles styling-approach",
+      "oldCliRoute": "astryx docs foundations/principles styling-approach",
       "oldDocsiteUrl": "/docs/principles#styling-approach",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3387,7 +3387,7 @@
     {
       "kind": "section",
       "id": "principles#anti-patterns",
-      "oldCliRoute": "astryx docs principles anti-patterns",
+      "oldCliRoute": "astryx docs foundations/principles anti-patterns",
       "oldDocsiteUrl": "/docs/principles#anti-patterns",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3397,7 +3397,7 @@
     {
       "kind": "section",
       "id": "principles#design-tokens",
-      "oldCliRoute": "astryx docs principles design-tokens",
+      "oldCliRoute": "astryx docs foundations/principles design-tokens",
       "oldDocsiteUrl": "/docs/principles#design-tokens",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3407,7 +3407,7 @@
     {
       "kind": "topic",
       "id": "shape",
-      "oldCliRoute": "astryx docs shape",
+      "oldCliRoute": "astryx docs foundations/shape",
       "oldDocsiteUrl": "/docs/shape",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3417,7 +3417,7 @@
     {
       "kind": "section",
       "id": "shape#overview",
-      "oldCliRoute": "astryx docs shape overview",
+      "oldCliRoute": "astryx docs foundations/shape overview",
       "oldDocsiteUrl": "/docs/shape#overview",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3427,7 +3427,7 @@
     {
       "kind": "section",
       "id": "shape#radius-scale",
-      "oldCliRoute": "astryx docs shape radius-scale",
+      "oldCliRoute": "astryx docs foundations/shape radius-scale",
       "oldDocsiteUrl": "/docs/shape#radius-scale",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3437,7 +3437,7 @@
     {
       "kind": "section",
       "id": "shape#concentric-radius",
-      "oldCliRoute": "astryx docs shape concentric-radius",
+      "oldCliRoute": "astryx docs foundations/shape concentric-radius",
       "oldDocsiteUrl": "/docs/shape#concentric-radius",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3447,7 +3447,7 @@
     {
       "kind": "section",
       "id": "shape#best-practices",
-      "oldCliRoute": "astryx docs shape best-practices",
+      "oldCliRoute": "astryx docs foundations/shape best-practices",
       "oldDocsiteUrl": "/docs/shape#best-practices",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3457,7 +3457,7 @@
     {
       "kind": "topic",
       "id": "spacing",
-      "oldCliRoute": "astryx docs spacing",
+      "oldCliRoute": "astryx docs foundations/spacing",
       "oldDocsiteUrl": "/docs/spacing",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3467,7 +3467,7 @@
     {
       "kind": "section",
       "id": "spacing#overview",
-      "oldCliRoute": "astryx docs spacing overview",
+      "oldCliRoute": "astryx docs foundations/spacing overview",
       "oldDocsiteUrl": "/docs/spacing#overview",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3477,7 +3477,7 @@
     {
       "kind": "section",
       "id": "spacing#scale",
-      "oldCliRoute": "astryx docs spacing scale",
+      "oldCliRoute": "astryx docs foundations/spacing scale",
       "oldDocsiteUrl": "/docs/spacing#scale",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3487,7 +3487,7 @@
     {
       "kind": "section",
       "id": "spacing#usage",
-      "oldCliRoute": "astryx docs spacing usage",
+      "oldCliRoute": "astryx docs foundations/spacing usage",
       "oldDocsiteUrl": "/docs/spacing#usage",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3497,7 +3497,7 @@
     {
       "kind": "section",
       "id": "spacing#best-practices",
-      "oldCliRoute": "astryx docs spacing best-practices",
+      "oldCliRoute": "astryx docs foundations/spacing best-practices",
       "oldDocsiteUrl": "/docs/spacing#best-practices",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3507,7 +3507,7 @@
     {
       "kind": "topic",
       "id": "styling-libraries",
-      "oldCliRoute": "astryx docs styling-libraries",
+      "oldCliRoute": "astryx docs style-components",
       "oldDocsiteUrl": "/docs/styling-libraries",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3517,7 +3517,7 @@
     {
       "kind": "section",
       "id": "styling-libraries#core-principle",
-      "oldCliRoute": "astryx docs styling-libraries core-principle",
+      "oldCliRoute": "astryx docs style-components core-principle",
       "oldDocsiteUrl": "/docs/styling-libraries#core-principle",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3527,7 +3527,7 @@
     {
       "kind": "section",
       "id": "styling-libraries#choose-an-integration-path",
-      "oldCliRoute": "astryx docs styling-libraries choose-an-integration-path",
+      "oldCliRoute": "astryx docs style-components choose-an-integration-path",
       "oldDocsiteUrl": "/docs/styling-libraries#choose-an-integration-path",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3537,7 +3537,7 @@
     {
       "kind": "section",
       "id": "styling-libraries#best-practices",
-      "oldCliRoute": "astryx docs styling-libraries best-practices",
+      "oldCliRoute": "astryx docs style-components best-practices",
       "oldDocsiteUrl": "/docs/styling-libraries#best-practices",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3547,7 +3547,7 @@
     {
       "kind": "section",
       "id": "styling-libraries#plain-css-and-css-modules",
-      "oldCliRoute": "astryx docs styling-libraries plain-css-and-css-modules",
+      "oldCliRoute": "astryx docs style-components plain-css-and-css-modules",
       "oldDocsiteUrl": "/docs/styling-libraries#plain-css-and-css-modules",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3557,7 +3557,7 @@
     {
       "kind": "section",
       "id": "styling-libraries#stylex",
-      "oldCliRoute": "astryx docs styling-libraries stylex",
+      "oldCliRoute": "astryx docs style-components stylex",
       "oldDocsiteUrl": "/docs/styling-libraries#stylex",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3567,7 +3567,7 @@
     {
       "kind": "section",
       "id": "styling-libraries#tailwind",
-      "oldCliRoute": "astryx docs styling-libraries tailwind",
+      "oldCliRoute": "astryx docs style-components tailwind",
       "oldDocsiteUrl": "/docs/styling-libraries#tailwind",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3577,7 +3577,7 @@
     {
       "kind": "section",
       "id": "styling-libraries#semantic-token-systems",
-      "oldCliRoute": "astryx docs styling-libraries semantic-token-systems",
+      "oldCliRoute": "astryx docs style-components semantic-token-systems",
       "oldDocsiteUrl": "/docs/styling-libraries#panda-chakra-and-other-semantic-token-systems",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3587,7 +3587,7 @@
     {
       "kind": "section",
       "id": "styling-libraries#mui-and-palette-based-themes",
-      "oldCliRoute": "astryx docs styling-libraries mui-and-palette-based-themes",
+      "oldCliRoute": "astryx docs style-components mui-and-palette-based-themes",
       "oldDocsiteUrl": "/docs/styling-libraries#mui-and-palette-based-themes",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3597,7 +3597,7 @@
     {
       "kind": "section",
       "id": "styling-libraries#css-in-js",
-      "oldCliRoute": "astryx docs styling-libraries css-in-js",
+      "oldCliRoute": "astryx docs style-components css-in-js",
       "oldDocsiteUrl": "/docs/styling-libraries#emotion-styled-components-theme-ui-and-styled-system",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3607,7 +3607,7 @@
     {
       "kind": "section",
       "id": "styling-libraries#unocss",
-      "oldCliRoute": "astryx docs styling-libraries unocss",
+      "oldCliRoute": "astryx docs style-components unocss",
       "oldDocsiteUrl": "/docs/styling-libraries#unocss-and-custom-utility-systems",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3617,7 +3617,7 @@
     {
       "kind": "section",
       "id": "styling-libraries#non-css-processing",
-      "oldCliRoute": "astryx docs styling-libraries non-css-processing",
+      "oldCliRoute": "astryx docs style-components non-css-processing",
       "oldDocsiteUrl": "/docs/styling-libraries#non-css-processing",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3627,7 +3627,7 @@
     {
       "kind": "section",
       "id": "styling-libraries#non-css-best-practices",
-      "oldCliRoute": "astryx docs styling-libraries non-css-best-practices",
+      "oldCliRoute": "astryx docs style-components non-css-best-practices",
       "oldDocsiteUrl": "/docs/styling-libraries#non-css-processing-best-practices",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3637,7 +3637,7 @@
     {
       "kind": "section",
       "id": "styling-libraries#interop-checklist",
-      "oldCliRoute": "astryx docs styling-libraries interop-checklist",
+      "oldCliRoute": "astryx docs style-components interop-checklist",
       "oldDocsiteUrl": "/docs/styling-libraries#interop-checklist",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3647,7 +3647,7 @@
     {
       "kind": "topic",
       "id": "styling",
-      "oldCliRoute": "astryx docs styling",
+      "oldCliRoute": "astryx docs style-components",
       "oldDocsiteUrl": "/docs/styling",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3657,7 +3657,7 @@
     {
       "kind": "section",
       "id": "styling#overview",
-      "oldCliRoute": "astryx docs styling overview",
+      "oldCliRoute": "astryx docs style-components overview",
       "oldDocsiteUrl": "/docs/styling#overview",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3667,7 +3667,7 @@
     {
       "kind": "section",
       "id": "styling#xstyle-prop",
-      "oldCliRoute": "astryx docs styling xstyle-prop",
+      "oldCliRoute": "astryx docs style-components xstyle-prop",
       "oldDocsiteUrl": "/docs/styling#xstyle-prop",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3677,7 +3677,7 @@
     {
       "kind": "section",
       "id": "styling#tailwind-integration",
-      "oldCliRoute": "astryx docs styling tailwind-integration",
+      "oldCliRoute": "astryx docs style-components tailwind-integration",
       "oldDocsiteUrl": "/docs/styling#tailwind-integration",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3687,7 +3687,7 @@
     {
       "kind": "section",
       "id": "styling#classname-and-style-props",
-      "oldCliRoute": "astryx docs styling classname-and-style-props",
+      "oldCliRoute": "astryx docs style-components classname-and-style-props",
       "oldDocsiteUrl": "/docs/styling#classname-and-style-props",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3697,7 +3697,7 @@
     {
       "kind": "section",
       "id": "styling#rest-props-prop-drilling",
-      "oldCliRoute": "astryx docs styling rest-props-prop-drilling",
+      "oldCliRoute": "astryx docs style-components rest-props-prop-drilling",
       "oldDocsiteUrl": "/docs/styling#rest-props-prop-drilling",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3707,7 +3707,7 @@
     {
       "kind": "section",
       "id": "styling#compound-components",
-      "oldCliRoute": "astryx docs styling compound-components",
+      "oldCliRoute": "astryx docs style-components compound-components",
       "oldDocsiteUrl": "/docs/styling#compound-components",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3717,7 +3717,7 @@
     {
       "kind": "section",
       "id": "styling#preferred-selector-surface-data-attributes",
-      "oldCliRoute": "astryx docs styling preferred-selector-surface-data-attributes",
+      "oldCliRoute": "astryx docs style-components preferred-selector-surface-data-attributes",
       "oldDocsiteUrl": "/docs/styling#data-attribute-selectors",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3727,7 +3727,7 @@
     {
       "kind": "section",
       "id": "styling#deprecated-classes",
-      "oldCliRoute": "astryx docs styling deprecated-classes",
+      "oldCliRoute": "astryx docs style-components deprecated-classes",
       "oldDocsiteUrl": "/docs/styling#deprecated-bare-prop-and-state-classes",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3737,7 +3737,7 @@
     {
       "kind": "section",
       "id": "styling#design-tokens",
-      "oldCliRoute": "astryx docs styling design-tokens",
+      "oldCliRoute": "astryx docs style-components design-tokens",
       "oldDocsiteUrl": "/docs/styling#design-tokens",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3747,7 +3747,7 @@
     {
       "kind": "section",
       "id": "styling#stylex-setup",
-      "oldCliRoute": "astryx docs styling stylex-setup",
+      "oldCliRoute": "astryx docs style-components stylex-setup",
       "oldDocsiteUrl": "/docs/styling#stylex-build-setup-required-for-swizzled-components",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3757,7 +3757,7 @@
     {
       "kind": "section",
       "id": "styling#what-not-to-do",
-      "oldCliRoute": "astryx docs styling what-not-to-do",
+      "oldCliRoute": "astryx docs style-components what-not-to-do",
       "oldDocsiteUrl": "/docs/styling#what-not-to-do",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3767,7 +3767,7 @@
     {
       "kind": "topic",
       "id": "theme",
-      "oldCliRoute": "astryx docs theme",
+      "oldCliRoute": "astryx docs theme-your-app",
       "oldDocsiteUrl": "/docs/theme",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3777,7 +3777,7 @@
     {
       "kind": "section",
       "id": "theme#quick-start",
-      "oldCliRoute": "astryx docs theme quick-start",
+      "oldCliRoute": "astryx docs theme-your-app quick-start",
       "oldDocsiteUrl": "/docs/theme#wrap-your-app-in-a-theme",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3787,7 +3787,7 @@
     {
       "kind": "section",
       "id": "theme#available-themes",
-      "oldCliRoute": "astryx docs theme available-themes",
+      "oldCliRoute": "astryx docs theme-your-app available-themes",
       "oldDocsiteUrl": "/docs/theme#available-themes",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3797,7 +3797,7 @@
     {
       "kind": "section",
       "id": "theme#migrating-earlier-theme-copies",
-      "oldCliRoute": "astryx docs theme migrating-earlier-theme-copies",
+      "oldCliRoute": "astryx docs theme-your-app migrating-earlier-theme-copies",
       "oldDocsiteUrl": "/docs/theme#migrating-earlier-theme-copies",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3807,7 +3807,7 @@
     {
       "kind": "section",
       "id": "theme#theme-props",
-      "oldCliRoute": "astryx docs theme theme-props",
+      "oldCliRoute": "astryx docs theme-your-app theme-props",
       "oldDocsiteUrl": "/docs/theme#theme-props",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3817,7 +3817,7 @@
     {
       "kind": "section",
       "id": "theme#integration-themes",
-      "oldCliRoute": "astryx docs theme integration-themes",
+      "oldCliRoute": "astryx docs theme-your-app integration-themes",
       "oldDocsiteUrl": "/docs/theme#using-a-theme-from-an-integration",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3827,7 +3827,7 @@
     {
       "kind": "section",
       "id": "theme#creating-a-custom-theme",
-      "oldCliRoute": "astryx docs theme creating-a-custom-theme",
+      "oldCliRoute": "astryx docs theme-your-app creating-a-custom-theme",
       "oldDocsiteUrl": "/docs/theme#custom-themes",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3837,7 +3837,7 @@
     {
       "kind": "section",
       "id": "theme#definetheme",
-      "oldCliRoute": "astryx docs theme definetheme",
+      "oldCliRoute": "astryx docs theme-your-app definetheme",
       "oldDocsiteUrl": "/docs/theme#definetheme",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3847,7 +3847,7 @@
     {
       "kind": "section",
       "id": "theme#extending-a-theme",
-      "oldCliRoute": "astryx docs theme extending-a-theme",
+      "oldCliRoute": "astryx docs theme-your-app extending-a-theme",
       "oldDocsiteUrl": "/docs/theme#extending-a-theme",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3857,7 +3857,7 @@
     {
       "kind": "section",
       "id": "theme#theme-adaptations",
-      "oldCliRoute": "astryx docs theme theme-adaptations",
+      "oldCliRoute": "astryx docs theme-your-app theme-adaptations",
       "oldDocsiteUrl": "/docs/theme#theme-adaptations",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3867,7 +3867,7 @@
     {
       "kind": "section",
       "id": "theme#adaptation-rules",
-      "oldCliRoute": "astryx docs theme adaptation-rules",
+      "oldCliRoute": "astryx docs theme-your-app adaptation-rules",
       "oldDocsiteUrl": "/docs/theme#adaptation-order-and-validation",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3877,7 +3877,7 @@
     {
       "kind": "section",
       "id": "theme#component-style-overrides",
-      "oldCliRoute": "astryx docs theme component-style-overrides",
+      "oldCliRoute": "astryx docs theme-your-app component-style-overrides",
       "oldDocsiteUrl": "/docs/theme#component-style-overrides",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3887,7 +3887,7 @@
     {
       "kind": "section",
       "id": "theme#custom-variants",
-      "oldCliRoute": "astryx docs theme custom-variants",
+      "oldCliRoute": "astryx docs theme-your-app custom-variants",
       "oldDocsiteUrl": "/docs/theme#custom-variants",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3897,7 +3897,7 @@
     {
       "kind": "section",
       "id": "theme#building-themes-for-production",
-      "oldCliRoute": "astryx docs theme building-themes-for-production",
+      "oldCliRoute": "astryx docs theme-your-app building-themes-for-production",
       "oldDocsiteUrl": "/docs/theme#build-a-theme",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3907,7 +3907,7 @@
     {
       "kind": "section",
       "id": "theme#icon-registry",
-      "oldCliRoute": "astryx docs theme icon-registry",
+      "oldCliRoute": "astryx docs theme-your-app icon-registry",
       "oldDocsiteUrl": "/docs/theme#built-themes-with-an-icon-registry",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3917,7 +3917,7 @@
     {
       "kind": "section",
       "id": "theme#building-a-theme-family",
-      "oldCliRoute": "astryx docs theme building-a-theme-family",
+      "oldCliRoute": "astryx docs theme-your-app building-a-theme-family",
       "oldDocsiteUrl": "/docs/theme#building-a-theme-family",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3927,7 +3927,7 @@
     {
       "kind": "section",
       "id": "theme#runtime-vs-built-themes",
-      "oldCliRoute": "astryx docs theme runtime-vs-built-themes",
+      "oldCliRoute": "astryx docs theme-your-app runtime-vs-built-themes",
       "oldDocsiteUrl": "/docs/theme#runtime-vs-built-themes",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3937,7 +3937,7 @@
     {
       "kind": "section",
       "id": "theme#light-dark-mode",
-      "oldCliRoute": "astryx docs theme light-dark-mode",
+      "oldCliRoute": "astryx docs theme-your-app light-dark-mode",
       "oldDocsiteUrl": "/docs/theme#dark-mode",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3947,7 +3947,7 @@
     {
       "kind": "section",
       "id": "theme#nesting-themes",
-      "oldCliRoute": "astryx docs theme nesting-themes",
+      "oldCliRoute": "astryx docs theme-your-app nesting-themes",
       "oldDocsiteUrl": "/docs/theme#nested-themes",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3957,7 +3957,7 @@
     {
       "kind": "section",
       "id": "theme#token-utilities",
-      "oldCliRoute": "astryx docs theme token-utilities",
+      "oldCliRoute": "astryx docs theme-your-app token-utilities",
       "oldDocsiteUrl": "/docs/theme#token-utilities",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3967,7 +3967,7 @@
     {
       "kind": "section",
       "id": "theme#usetheme-hook",
-      "oldCliRoute": "astryx docs theme usetheme-hook",
+      "oldCliRoute": "astryx docs theme-your-app usetheme-hook",
       "oldDocsiteUrl": "/docs/theme#usetheme-hook",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3977,7 +3977,7 @@
     {
       "kind": "topic",
       "id": "tokens",
-      "oldCliRoute": "astryx docs tokens",
+      "oldCliRoute": "astryx docs foundations/all-tokens",
       "oldDocsiteUrl": "/docs/tokens",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3987,7 +3987,7 @@
     {
       "kind": "section",
       "id": "tokens#color-tokens",
-      "oldCliRoute": "astryx docs tokens color-tokens",
+      "oldCliRoute": "astryx docs foundations/all-tokens color-tokens",
       "oldDocsiteUrl": "/docs/tokens#color-tokens",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -3997,7 +3997,7 @@
     {
       "kind": "section",
       "id": "tokens#data-visualization-tokens",
-      "oldCliRoute": "astryx docs tokens data-visualization-tokens",
+      "oldCliRoute": "astryx docs foundations/all-tokens data-visualization-tokens",
       "oldDocsiteUrl": "/docs/tokens#data-visualization-tokens",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -4007,7 +4007,7 @@
     {
       "kind": "section",
       "id": "tokens#syntax-tokens",
-      "oldCliRoute": "astryx docs tokens syntax-tokens",
+      "oldCliRoute": "astryx docs foundations/all-tokens syntax-tokens",
       "oldDocsiteUrl": "/docs/tokens#syntax-tokens",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -4017,7 +4017,7 @@
     {
       "kind": "section",
       "id": "tokens#spacing-tokens",
-      "oldCliRoute": "astryx docs tokens spacing-tokens",
+      "oldCliRoute": "astryx docs foundations/all-tokens spacing-tokens",
       "oldDocsiteUrl": "/docs/tokens#spacing-tokens",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -4027,7 +4027,7 @@
     {
       "kind": "section",
       "id": "tokens#size-tokens",
-      "oldCliRoute": "astryx docs tokens size-tokens",
+      "oldCliRoute": "astryx docs foundations/all-tokens size-tokens",
       "oldDocsiteUrl": "/docs/tokens#size-tokens",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -4037,7 +4037,7 @@
     {
       "kind": "section",
       "id": "tokens#border-tokens",
-      "oldCliRoute": "astryx docs tokens border-tokens",
+      "oldCliRoute": "astryx docs foundations/all-tokens border-tokens",
       "oldDocsiteUrl": "/docs/tokens#border-tokens",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -4047,7 +4047,7 @@
     {
       "kind": "section",
       "id": "tokens#focus-tokens",
-      "oldCliRoute": "astryx docs tokens focus-tokens",
+      "oldCliRoute": "astryx docs foundations/all-tokens focus-tokens",
       "oldDocsiteUrl": "/docs/tokens#focus-tokens",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -4057,7 +4057,7 @@
     {
       "kind": "section",
       "id": "tokens#radius-tokens",
-      "oldCliRoute": "astryx docs tokens radius-tokens",
+      "oldCliRoute": "astryx docs foundations/all-tokens radius-tokens",
       "oldDocsiteUrl": "/docs/tokens#radius-tokens",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -4067,7 +4067,7 @@
     {
       "kind": "section",
       "id": "tokens#shadow-tokens",
-      "oldCliRoute": "astryx docs tokens shadow-tokens",
+      "oldCliRoute": "astryx docs foundations/all-tokens shadow-tokens",
       "oldDocsiteUrl": "/docs/tokens#shadow-tokens",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -4077,7 +4077,7 @@
     {
       "kind": "section",
       "id": "tokens#duration-tokens",
-      "oldCliRoute": "astryx docs tokens duration-tokens",
+      "oldCliRoute": "astryx docs foundations/all-tokens duration-tokens",
       "oldDocsiteUrl": "/docs/tokens#duration-tokens",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -4087,7 +4087,7 @@
     {
       "kind": "section",
       "id": "tokens#easing-tokens",
-      "oldCliRoute": "astryx docs tokens easing-tokens",
+      "oldCliRoute": "astryx docs foundations/all-tokens easing-tokens",
       "oldDocsiteUrl": "/docs/tokens#easing-tokens",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -4097,7 +4097,7 @@
     {
       "kind": "section",
       "id": "tokens#font-family-tokens",
-      "oldCliRoute": "astryx docs tokens font-family-tokens",
+      "oldCliRoute": "astryx docs foundations/all-tokens font-family-tokens",
       "oldDocsiteUrl": "/docs/tokens#font-family-tokens",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -4107,7 +4107,7 @@
     {
       "kind": "section",
       "id": "tokens#font-size-tokens",
-      "oldCliRoute": "astryx docs tokens font-size-tokens",
+      "oldCliRoute": "astryx docs foundations/all-tokens font-size-tokens",
       "oldDocsiteUrl": "/docs/tokens#font-size-tokens",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -4117,7 +4117,7 @@
     {
       "kind": "section",
       "id": "tokens#font-weight-tokens",
-      "oldCliRoute": "astryx docs tokens font-weight-tokens",
+      "oldCliRoute": "astryx docs foundations/all-tokens font-weight-tokens",
       "oldDocsiteUrl": "/docs/tokens#font-weight-tokens",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -4127,7 +4127,7 @@
     {
       "kind": "section",
       "id": "tokens#type-scale-tokens",
-      "oldCliRoute": "astryx docs tokens type-scale-tokens",
+      "oldCliRoute": "astryx docs foundations/all-tokens type-scale-tokens",
       "oldDocsiteUrl": "/docs/tokens#type-scale-tokens",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -4137,7 +4137,7 @@
     {
       "kind": "section",
       "id": "tokens#usage-in-stylex",
-      "oldCliRoute": "astryx docs tokens usage-in-stylex",
+      "oldCliRoute": "astryx docs foundations/all-tokens usage-in-stylex",
       "oldDocsiteUrl": "/docs/tokens#usage-in-stylex",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -4147,7 +4147,7 @@
     {
       "kind": "topic",
       "id": "typography",
-      "oldCliRoute": "astryx docs typography",
+      "oldCliRoute": "astryx docs foundations/typography",
       "oldDocsiteUrl": "/docs/typography",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -4157,7 +4157,7 @@
     {
       "kind": "section",
       "id": "typography#overview",
-      "oldCliRoute": "astryx docs typography overview",
+      "oldCliRoute": "astryx docs foundations/typography overview",
       "oldDocsiteUrl": "/docs/typography#overview",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -4167,7 +4167,7 @@
     {
       "kind": "section",
       "id": "typography#font-families",
-      "oldCliRoute": "astryx docs typography font-families",
+      "oldCliRoute": "astryx docs foundations/typography font-families",
       "oldDocsiteUrl": "/docs/typography#font-families",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -4177,7 +4177,7 @@
     {
       "kind": "section",
       "id": "typography#loading-custom-fonts",
-      "oldCliRoute": "astryx docs typography loading-custom-fonts",
+      "oldCliRoute": "astryx docs foundations/typography loading-custom-fonts",
       "oldDocsiteUrl": "/docs/typography#custom-fonts",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -4187,7 +4187,7 @@
     {
       "kind": "section",
       "id": "typography#font-sizes",
-      "oldCliRoute": "astryx docs typography font-sizes",
+      "oldCliRoute": "astryx docs foundations/typography font-sizes",
       "oldDocsiteUrl": "/docs/typography#font-sizes",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -4197,7 +4197,7 @@
     {
       "kind": "section",
       "id": "typography#font-weights",
-      "oldCliRoute": "astryx docs typography font-weights",
+      "oldCliRoute": "astryx docs foundations/typography font-weights",
       "oldDocsiteUrl": "/docs/typography#font-weights",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -4207,7 +4207,7 @@
     {
       "kind": "section",
       "id": "typography#line-height",
-      "oldCliRoute": "astryx docs typography line-height",
+      "oldCliRoute": "astryx docs foundations/typography line-height",
       "oldDocsiteUrl": "/docs/typography#line-height",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -4217,7 +4217,7 @@
     {
       "kind": "section",
       "id": "typography#type-scale",
-      "oldCliRoute": "astryx docs typography type-scale",
+      "oldCliRoute": "astryx docs foundations/typography type-scale",
       "oldDocsiteUrl": "/docs/typography#type-scale",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -4227,7 +4227,7 @@
     {
       "kind": "section",
       "id": "typography#display-text",
-      "oldCliRoute": "astryx docs typography display-text",
+      "oldCliRoute": "astryx docs foundations/typography display-text",
       "oldDocsiteUrl": "/docs/typography#display-text",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -4237,7 +4237,7 @@
     {
       "kind": "section",
       "id": "typography#usage",
-      "oldCliRoute": "astryx docs typography usage",
+      "oldCliRoute": "astryx docs foundations/typography usage",
       "oldDocsiteUrl": "/docs/typography#headings-and-text",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -4247,7 +4247,7 @@
     {
       "kind": "section",
       "id": "typography#custom-type-scale",
-      "oldCliRoute": "astryx docs typography custom-type-scale",
+      "oldCliRoute": "astryx docs foundations/typography custom-type-scale",
       "oldDocsiteUrl": "/docs/typography#custom-type-scale",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -4257,7 +4257,7 @@
     {
       "kind": "section",
       "id": "typography#best-practices",
-      "oldCliRoute": "astryx docs typography best-practices",
+      "oldCliRoute": "astryx docs foundations/typography best-practices",
       "oldDocsiteUrl": "/docs/typography#best-practices",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -4267,7 +4267,7 @@
     {
       "kind": "topic",
       "id": "working-with-ai",
-      "oldCliRoute": "astryx docs working-with-ai",
+      "oldCliRoute": "astryx docs work-with-agents/agent-setup",
       "oldDocsiteUrl": "/docs/working-with-ai",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -4277,7 +4277,7 @@
     {
       "kind": "section",
       "id": "working-with-ai#overview",
-      "oldCliRoute": "astryx docs working-with-ai overview",
+      "oldCliRoute": "astryx docs work-with-agents/agent-setup overview",
       "oldDocsiteUrl": "/docs/working-with-ai#overview",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -4287,7 +4287,7 @@
     {
       "kind": "section",
       "id": "working-with-ai#quick-start",
-      "oldCliRoute": "astryx docs working-with-ai quick-start",
+      "oldCliRoute": "astryx docs work-with-agents/agent-setup quick-start",
       "oldDocsiteUrl": "/docs/working-with-ai#set-up-agent-docs",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -4297,7 +4297,7 @@
     {
       "kind": "section",
       "id": "working-with-ai#what-gets-generated",
-      "oldCliRoute": "astryx docs working-with-ai what-gets-generated",
+      "oldCliRoute": "astryx docs work-with-agents/agent-setup what-gets-generated",
       "oldDocsiteUrl": "/docs/working-with-ai#what-gets-generated",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -4307,7 +4307,7 @@
     {
       "kind": "section",
       "id": "working-with-ai#cursor-setup",
-      "oldCliRoute": "astryx docs working-with-ai cursor-setup",
+      "oldCliRoute": "astryx docs work-with-agents/agent-setup cursor-setup",
       "oldDocsiteUrl": "/docs/working-with-ai#cursor-setup",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -4317,7 +4317,7 @@
     {
       "kind": "section",
       "id": "working-with-ai#checking-your-setup",
-      "oldCliRoute": "astryx docs working-with-ai checking-your-setup",
+      "oldCliRoute": "astryx docs work-with-agents/agent-setup checking-your-setup",
       "oldDocsiteUrl": "/docs/working-with-ai#checking-your-setup",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -4327,7 +4327,7 @@
     {
       "kind": "section",
       "id": "working-with-ai#the-astryx-pattern",
-      "oldCliRoute": "astryx docs working-with-ai the-astryx-pattern",
+      "oldCliRoute": "astryx docs work-with-agents/agent-setup the-astryx-pattern",
       "oldDocsiteUrl": "/docs/working-with-ai#the-astryx-pattern",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -4337,7 +4337,7 @@
     {
       "kind": "section",
       "id": "working-with-ai#the-dense-flag",
-      "oldCliRoute": "astryx docs working-with-ai the-dense-flag",
+      "oldCliRoute": "astryx docs work-with-agents/agent-setup the-dense-flag",
       "oldDocsiteUrl": "/docs/working-with-ai#shorter-output-detail-and-dense",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -4347,7 +4347,7 @@
     {
       "kind": "section",
       "id": "working-with-ai#mcp-server",
-      "oldCliRoute": "astryx docs working-with-ai mcp-server",
+      "oldCliRoute": "astryx docs work-with-agents/agent-setup mcp-server",
       "oldDocsiteUrl": "/docs/working-with-ai#mcp-server",
       "placement": "keep-flat",
       "aliasNeeded": false,
@@ -4535,10 +4535,10 @@
       "count": 34,
       "oldCliRoute": "astryx <id> --help",
       "oldDocsiteUrl": null,
-      "placement": "namespace:cli/commands",
+      "placement": "namespace:reference/commands",
       "aliasNeeded": false,
-      "evidence": "Every command doc declares namespace cli/commands, which the commands namespace adopts.",
-      "rationale": "Each CommandDoc builds its command's --help, and is read as the leaf cli/commands/<name> of the docs tree.",
+      "evidence": "Every command doc declares namespace reference/commands, which the commands namespace adopts.",
+      "rationale": "Each CommandDoc builds its command's --help, and is read as the leaf reference/commands/<name> of the docs tree.",
       "status": "proposed"
     },
     {
@@ -4548,10 +4548,10 @@
       "count": 41,
       "oldCliRoute": null,
       "oldDocsiteUrl": null,
-      "placement": "namespace:cli/api/functions",
+      "placement": "namespace:reference/api/functions",
       "aliasNeeded": false,
-      "evidence": "Every function doc declares namespace cli/api, which the api namespace adopts by kind.",
-      "rationale": "API reference for @astryxdesign/cli/api, read as the leaf cli/api/functions/<name> of the docs tree.",
+      "evidence": "Every function doc declares namespace reference/api, which the api namespace adopts by kind.",
+      "rationale": "API reference for @astryxdesign/cli/api, read as the leaf reference/api/functions/<name> of the docs tree.",
       "status": "proposed"
     },
     {
@@ -4563,8 +4563,8 @@
       "oldDocsiteUrl": null,
       "placement": "generated:@astryxdesign/cli/schema",
       "aliasNeeded": false,
-      "evidence": "No schema doc authors a placement; output declares cli/api and the other 17 declare authoring.",
-      "rationale": "17 declare namespace 'authoring' and are read as sections of `astryx docs authoring`; `output` declares cli/api and is read as the leaf cli/api/schemas/output. Their home in the tree for authoring is a later phase.",
+      "evidence": "No schema doc authors a placement; output declares reference/api and the other 17 declare authoring.",
+      "rationale": "17 declare namespace 'authoring' and are read as sections of `astryx docs make-an-integration`; `output` declares reference/api and is read as the leaf reference/api/schemas/output. Their home in the tree for authoring is a later phase.",
       "status": "proposed"
     },
     {
@@ -4574,10 +4574,10 @@
       "count": 2,
       "oldCliRoute": null,
       "oldDocsiteUrl": null,
-      "placement": "namespace:cli/api/enums",
+      "placement": "namespace:reference/api/enums",
       "aliasNeeded": false,
-      "evidence": "Both enum docs declare namespace cli/api, which the api namespace adopts by kind.",
-      "rationale": "Error codes and response types, read as the leaves cli/api/enums/error-codes and cli/api/enums/response-types.",
+      "evidence": "Both enum docs declare namespace reference/api, which the api namespace adopts by kind.",
+      "rationale": "Error codes and response types, read as the leaves reference/api/enums/error-codes and reference/api/enums/response-types.",
       "status": "proposed"
     }
   ]

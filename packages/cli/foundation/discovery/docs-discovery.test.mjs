@@ -16,6 +16,7 @@ import * as path from 'node:path';
 import {
   BUILTIN_DOCS_PACKAGE,
   DocsCatalog,
+  discoverBuiltinGuides,
   discoverBuiltinTopics,
   discoverIntegrationDocs,
   mergeTopic,
@@ -62,11 +63,17 @@ afterEach(() => {
 });
 
 describe('discoverBuiltinTopics', () => {
-  it("finds the CLI's own topics and not their localization overlays", () => {
-    const topics = discoverBuiltinTopics();
-    expect(Object.keys(topics).length).toBeGreaterThan(0);
-    expect(topics.color).toMatch(/assets[/\\]docs[/\\]color\.doc\.mjs$/);
-    for (const name of Object.keys(topics)) {
+  it('finds no flat Core topic: every Core doc is a guide in the tree', () => {
+    expect(discoverBuiltinTopics()).toEqual({});
+  });
+
+  it("finds the CLI's own guides by name, and not their overlays or namespaces", () => {
+    const guides = discoverBuiltinGuides();
+    expect(guides.color).toMatch(/assets[/\\]docs[/\\]tree[/\\]color\.doc\.mjs$/);
+    expect(guides['use-a-theme']).toBeDefined();
+    // A namespace is not a guide an integration topic extends.
+    expect(guides.foundations).toBeUndefined();
+    for (const name of Object.keys(guides)) {
       expect(name).not.toMatch(/\.(zh|dense)$/);
     }
   });

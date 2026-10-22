@@ -5,7 +5,7 @@ export const doc = {
   type: 'function',
   kind: 'api',
   name: 'integrationAddDoc',
-  namespace: 'cli/api',
+  namespace: 'reference/api',
   displayName: 'integrationAddDoc()',
   summary: 'Add a complete reference-doc contribution.',
   description:

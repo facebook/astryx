@@ -25,7 +25,7 @@ describe('doc searcher', () => {
     };
     const answer = /** @type {any} */ (
       await doc.run(
-        {query: 'how do I install a theme', options: {cwd: REPO}},
+        {query: 'how do I switch to dark mode', options: {cwd: REPO}},
         catalog,
         null,
       )

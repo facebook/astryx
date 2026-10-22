@@ -101,7 +101,7 @@ export const docs = {
     },
   },
   adopts: [{
-    source: {group: 'cli/commands', kinds: ['command']},
+    source: {group: 'reference/commands', kinds: ['command']},
     into: 'reference',
   }],
 };`,

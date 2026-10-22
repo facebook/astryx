@@ -11,12 +11,35 @@ import {parseCompiledReferenceNode} from '../../foundation/doc-compiler/ir.mjs';
 import {detailView, indexView} from '../../foundation/doc-compiler/lenses.mjs';
 import {
   compileTopic,
+  guideEntry,
   loadDocsCatalog,
   lowerTopic,
   overlayLanguages,
+  projectTree,
 } from './_adapter.mjs';
 
 const SLOW = 60_000;
+
+/**
+ * Every guide the CLI's docs tree places, as the topic entry a read opens.
+ * @param {any} catalog
+ */
+async function guideEntries(catalog) {
+  const tree = await projectTree(catalog);
+  return [...tree.nodes.values()]
+    .filter(node => node.kind === 'generic' && node.ref?.topicFile)
+    .map(node => guideEntry(node, catalog));
+}
+
+/**
+ * One guide by its route, as a read opens it.
+ * @param {any} catalog
+ * @param {string} route
+ */
+async function guide(catalog, route) {
+  const tree = await projectTree(catalog);
+  return guideEntry(/** @type {any} */ (tree.get(route)), catalog);
+}
 
 describe('every shipped topic compiles to plain JSON', () => {
   it(
@@ -24,7 +47,8 @@ describe('every shipped topic compiles to plain JSON', () => {
     async () => {
       const catalog = await loadDocsCatalog();
       let compiled = 0;
-      for (const entry of catalog.entries()) {
+      const entries = await guideEntries(catalog);
+      for (const entry of entries) {
         for (const lang of [null, ...overlayLanguages(entry)]) {
           const lowered = await lowerTopic(catalog, entry, lang);
           expect(parseCompiledReferenceNode(lowered)).toBe(lowered);
@@ -42,7 +66,7 @@ describe('every shipped topic compiles to plain JSON', () => {
           compiled += 1;
         }
       }
-      expect(compiled).toBeGreaterThan(catalog.entries().length);
+      expect(compiled).toBeGreaterThan(entries.length);
     },
     SLOW,
   );
@@ -52,7 +76,10 @@ describe('author-a-theme color guidance', () => {
   it('teaches committed generated palette references as the main example', async () => {
     const catalog = await loadDocsCatalog();
     const topic = detailView(
-      await compileTopic(catalog, catalog.resolve('author-a-theme')),
+      await compileTopic(
+        catalog,
+        await guide(catalog, 'theme-your-app/author-a-theme'),
+      ),
     );
     const rendered = JSON.stringify(topic);
 
@@ -69,7 +96,7 @@ describe('reads that share a catalog', () => {
     'never let one read change another',
     async () => {
       const catalog = await loadDocsCatalog();
-      const tokens = catalog.resolve('color');
+      const tokens = await guide(catalog, 'foundations/color');
       const first = detailView(await compileTopic(catalog, tokens));
       for (const section of first.sections) {
         section.title = 'EDITED';
@@ -81,7 +108,10 @@ describe('reads that share a catalog', () => {
       const again = detailView(await compileTopic(catalog, tokens));
       const index = indexView(await lowerTopic(catalog, tokens));
       const spacing = detailView(
-        await compileTopic(catalog, catalog.resolve('spacing')),
+        await compileTopic(
+          catalog,
+          await guide(catalog, 'foundations/spacing'),
+        ),
       );
       for (const read of [again, index, spacing]) {
         expect(JSON.stringify(read)).not.toContain('EDITED');

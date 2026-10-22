@@ -213,7 +213,7 @@ const columns: AboutColumn[] = [
     description:
       'Foundations you can trust, speed you can feel. The system is built so teams stop reinventing the basics and start shipping the ideas that matter.',
     ctaLabel: 'Get started in minutes →',
-    ctaHref: '/docs/getting-started',
+    ctaHref: '/docs/get-started',
     shape: <PinkBlobShape />,
   },
   {

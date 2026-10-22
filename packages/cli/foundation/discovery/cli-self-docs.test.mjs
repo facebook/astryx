@@ -54,7 +54,7 @@ const command = (/** @type {string} */ name, extra = {}) => ({
   type: 'command',
   name,
   displayName: `astryx ${name}`,
-  namespace: 'cli/commands',
+  namespace: 'reference/commands',
   summary: `Do ${name}`,
   ...extra,
 });
@@ -64,7 +64,7 @@ const fn = (/** @type {string} */ name, extra = {}) => ({
   kind: 'api',
   name,
   displayName: `${name}()`,
-  namespace: 'cli/api',
+  namespace: 'reference/api',
   summary: `The ${name} function.`,
   importPath: '@astryxdesign/cli/api',
   params: [],
@@ -76,7 +76,7 @@ const enumDoc = (/** @type {string} */ name, extra = {}) => ({
   type: 'enum',
   name,
   displayName: name,
-  namespace: 'cli/api',
+  namespace: 'reference/api',
   description: `The ${name}.`,
   members: [{value: 'A', description: 'The a.'}],
   ...extra,
@@ -141,13 +141,13 @@ describe('auditCliSelfDocs', () => {
   it('holds the authoring namespace to the authoring topic list', async () => {
     const root = writeTree({
       'authoring/x/x.doc.mjs': docModule(schema('x')),
-      'authoring/y/y.doc.mjs': docModule(schema('y', {namespace: 'cli/api'})),
+      'authoring/y/y.doc.mjs': docModule(schema('y', {namespace: 'reference/api'})),
       'authoring/z/z.doc.mjs': docModule(schema('z')),
     });
     const result = await audit(root, ['y/y.doc.mjs', 'z/z.doc.mjs']);
     expect(result.misfiled.map(entry => entry.message)).toEqual([
-      `authoring/x/x.doc.mjs has namespace "authoring", but \`${formatCliCommand('docs authoring/field-reference')}\` does not list it`,
-      `authoring/y/y.doc.mjs is read in \`${formatCliCommand('docs authoring/field-reference')}\`, but its namespace is "cli/api"`,
+      `authoring/x/x.doc.mjs has namespace "authoring", but \`${formatCliCommand('docs make-an-integration/field-reference')}\` does not list it`,
+      `authoring/y/y.doc.mjs is read in \`${formatCliCommand('docs make-an-integration/field-reference')}\`, but its namespace is "reference/api"`,
     ]);
     expect(result.authoring).toBe(1);
     expect(result.tree).toBe(0);
@@ -187,8 +187,8 @@ describe('auditCliSelfDocs', () => {
 
   it('names every namespace a CLI doc may declare, and what reads it', () => {
     expect(CLI_DOC_NAMESPACES).toEqual({
-      'cli/commands': {reader: 'tree'},
-      'cli/api': {reader: 'tree'},
+      'reference/commands': {reader: 'tree'},
+      'reference/api': {reader: 'tree'},
       authoring: {reader: 'authoring'},
     });
   });
@@ -201,9 +201,9 @@ describe('auditCliSelfDocs', () => {
 const indexOf = docs =>
   cliDocIndex(docs, (kind, name) =>
     kind === 'command'
-      ? `cli/commands/${routeSegment(name)}`
+      ? `reference/commands/${routeSegment(name)}`
       : kind === 'function'
-        ? `cli/api/functions/${routeSegment(name)}`
+        ? `reference/api/functions/${routeSegment(name)}`
         : null,
   );
 
@@ -269,8 +269,8 @@ describe('cliDocSection', () => {
       kind === 'command' && name === 'grp gone'
         ? null
         : kind === 'command'
-          ? `cli/commands/${routeSegment(name)}`
-          : `cli/api/functions/${routeSegment(name)}`,
+          ? `reference/commands/${routeSegment(name)}`
+          : `reference/api/functions/${routeSegment(name)}`,
     );
     const group = cliDocSection(docs[0], index);
     const sub = cliDocSection(docs[1], index);
@@ -350,7 +350,7 @@ describe('cliDocSection', () => {
         {value: 'B', description: 'The b.', deprecated: 'Use A.'},
       ],
     });
-    const output = schema('output', {namespace: 'cli/api'});
+    const output = schema('output', {namespace: 'reference/api'});
     const index = indexOf([alpha, codes, output]);
     expect(cliDocSection(alpha, index).content).toEqual([
       {type: 'prose', text: 'The alpha function.'},

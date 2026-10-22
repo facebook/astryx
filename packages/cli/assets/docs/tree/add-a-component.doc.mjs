@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file `astryx docs authoring/building-blocks/components/add-a-component`: choose a
+ * @file `astryx docs make-an-integration/building-blocks/components/add-a-component`: choose a
  * component name and generate its first source and doc files.
  */
 
@@ -87,7 +87,7 @@ Declare component root ./components in astryx.integration.mjs.
       content: [
         {
           type: 'prose',
-          text: "In global mode: when users install your package for their computer, beside the global CLI, your components show up in folders outside any project; inside a project, only if the project installs your package. See {@link namespace:global} and {@link generic:global-integrations}.",
+          text: "In global mode: when users install your package for their computer, beside the global CLI, your components show up in folders outside any project; inside a project, only if the project installs your package. See {@link namespace:on-your-computer} and {@link generic:global-integrations}.",
         },
       ],
     },

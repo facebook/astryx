@@ -66,7 +66,7 @@ describe('command exit codes', () => {
         );
         expect(section.slice(examples)).toContain(line);
       }
-      const route = `docs cli/commands/${name.replace(/ /g, '-')}`;
+      const route = `docs reference/commands/${name.replace(/ /g, '-')}`;
       expect(section, stdout).toMatch(
         new RegExp(`\\n\\nMore: \\S.* ${route}\\n`),
       );

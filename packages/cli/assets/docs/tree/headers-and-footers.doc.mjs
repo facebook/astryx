@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file `astryx docs layout/headers-and-footers`: pin a header or footer
+ * @file `astryx docs build-a-page/headers-and-footers`: pin a header or footer
  * while the body scrolls.
  */
 
@@ -11,7 +11,7 @@ export const docs = {
   type: 'generic',
   name: 'headers-and-footers',
   title: 'Headers and footers',
-  placement: {parent: 'namespace:layout', slot: 'guides', order: 30},
+  placement: {parent: 'namespace:build-a-page', slot: 'guides', order: 30},
   category: 'guide',
   description:
     'Pin a header or footer while the body scrolls, so the title and commit actions stay reachable.',

@@ -11,7 +11,7 @@ export const doc = {
   type: 'function',
   kind: 'api',
   name: 'template',
-  namespace: 'cli/api',
+  namespace: 'reference/api',
   displayName: 'template()',
   summary: 'List, inspect, or scaffold page and block templates.',
   description:

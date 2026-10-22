@@ -5,7 +5,7 @@ export const doc = {
   type: 'function',
   kind: 'api',
   name: 'integrationAddTheme',
-  namespace: 'cli/api',
+  namespace: 'reference/api',
   displayName: 'integrationAddTheme()',
   summary: 'Add a source theme to an integration package.',
   description:

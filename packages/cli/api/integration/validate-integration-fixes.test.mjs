@@ -1062,7 +1062,7 @@ describe('component fixes never leave another root reading the new files', () =>
 
     const message = only(await issuesOf(dir), 'source_without_component_doc');
     expect(message).toBe(
-      `Component source "Helper.tsx" has no same-stem metadata file Helper.doc.mjs, so Astryx ignores it. Fix: add Helper.doc.mjs beside it with type: 'component'; \`astryx docs authoring component-doc\` lists its fields. The docs root is also src/; move the components there into components/ and set \`components: './components'\` in astryx.integration.mjs.`,
+      `Component source "Helper.tsx" has no same-stem metadata file Helper.doc.mjs, so Astryx ignores it. Fix: add Helper.doc.mjs beside it with type: 'component'; \`astryx docs make-an-integration component-doc\` lists its fields. The docs root is also src/; move the components there into components/ and set \`components: './components'\` in astryx.integration.mjs.`,
     );
 
     const fixed = follow(dir, {
@@ -1113,7 +1113,7 @@ describe('source_without_component_doc fixes hold when followed', () => {
 
     const message = only(await issuesOf(dir), 'source_without_component_doc');
     expect(message).toBe(
-      'Component source "Widget.tsx" has no same-stem metadata file Widget.doc.mjs, so Astryx ignores it. Fix: add Widget.doc.mjs beside it with type: \'component\'; `astryx docs authoring component-doc` lists its fields.',
+      'Component source "Widget.tsx" has no same-stem metadata file Widget.doc.mjs, so Astryx ignores it. Fix: add Widget.doc.mjs beside it with type: \'component\'; `astryx docs make-an-integration component-doc` lists its fields.',
     );
 
     const fixed = follow(dir, {
@@ -1144,7 +1144,7 @@ describe('source_without_template_doc fixes hold when followed', () => {
 
     const message = only(await issuesOf(dir), 'source_without_template_doc');
     expect(message).toBe(
-      "Template source \"hero.tsx\" has no same-stem metadata file hero.doc.mjs, so `astryx template` never lists it. Fix: add hero.doc.mjs beside it with type: 'page' or 'block'; `astryx docs authoring integration-template-doc` lists its fields. If it is not a template, move it out of the templates root.",
+      "Template source \"hero.tsx\" has no same-stem metadata file hero.doc.mjs, so `astryx template` never lists it. Fix: add hero.doc.mjs beside it with type: 'page' or 'block'; `astryx docs make-an-integration integration-template-doc` lists its fields. If it is not a template, move it out of the templates root.",
     );
 
     const fixed = follow(dir, {

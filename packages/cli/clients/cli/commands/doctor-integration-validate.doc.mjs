@@ -9,7 +9,7 @@ export const doc = {
   type: 'command',
   name: 'doctor integration validate',
   displayName: 'astryx doctor integration validate',
-  namespace: 'cli/commands',
+  namespace: 'reference/commands',
   summary: 'Validate an integration manifest and its contributions',
   description:
     'Validates one integration at a time: the local package rooted at cwd, or an ' +
@@ -57,7 +57,7 @@ export const doc = {
   notes: [
     {
       type: 'prose',
-      text: "In global mode: outside a package, with no package named, it writes nothing, reports one `no_package` issue, and exits 1; a package name is looked up as it is in a project. In a project, the project's version of Astryx runs it, whichever astryx command you start. See {@link namespace:global} and {@link generic:global-integrations}.",
+      text: "In global mode: outside a package, with no package named, it writes nothing, reports one `no_package` issue, and exits 1; a package name is looked up as it is in a project. In a project, the project's version of Astryx runs it, whichever astryx command you start. See {@link namespace:on-your-computer} and {@link generic:global-integrations}.",
     },
   ],
 };

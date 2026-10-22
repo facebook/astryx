@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file `astryx docs authoring/global-integrations`: make an
+ * @file `astryx docs make-an-integration/global-integrations`: make an
  * integration work when people install it next to their global Astryx
  * install; a checklist and the commands to try it (spec AST-081 FR12).
  */
@@ -11,7 +11,7 @@ export const docs = {
   type: 'generic',
   name: 'global-integrations',
   placement: {
-    parent: 'namespace:authoring',
+    parent: 'namespace:make-an-integration',
     slot: 'guides',
     order: 25,
   },
@@ -116,7 +116,7 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'How global mode works for the people who install your package: {@link namespace:global}. Their side of global integrations: {@link generic:computer-integrations}.',
+          text: 'How global mode works for the people who install your package: {@link namespace:on-your-computer}. Their side of global integrations: {@link generic:computer-integrations}.',
         },
       ],
     },

@@ -130,8 +130,8 @@ describe('--json shim: invalid --detail choice', () => {
 });
 
 describe('--json shim: invalid --lang choice', () => {
-  it('astryx docs color --lang fr --json emits a single error envelope, exit 1', async () => {
-    const {status, stdout} = await runCli(['docs', 'color', '--lang', 'fr', '--json']);
+  it('astryx docs foundations/color --lang fr --json emits a single error envelope, exit 1', async () => {
+    const {status, stdout} = await runCli(['docs', 'foundations/color', '--lang', 'fr', '--json']);
     expect(status).toBe(1);
     const parsed = parseJson(stdout);
     expect(parsed.apiVersion).toBe(1);
@@ -142,20 +142,20 @@ describe('--json shim: invalid --lang choice', () => {
     expect(topLevelBraces).toBe(1);
   });
 
-  it('astryx docs color --lang fr (no --json) writes to stderr and exits 1', async () => {
-    const {status, stdout, stderr} = await runCli(['docs', 'color', '--lang', 'fr']);
+  it('astryx docs foundations/color --lang fr (no --json) writes to stderr and exits 1', async () => {
+    const {status, stdout, stderr} = await runCli(['docs', 'foundations/color', '--lang', 'fr']);
     expect(status).toBe(1);
     expect(stdout).toBe('');
     expect(stderr).toMatch(/--lang/);
   });
 
-  it('astryx docs color --lang zh is accepted (exit 0)', async () => {
-    const {status} = await runCli(['docs', 'color', '--lang', 'zh']);
+  it('astryx docs foundations/color --lang zh is accepted (exit 0)', async () => {
+    const {status} = await runCli(['docs', 'foundations/color', '--lang', 'zh']);
     expect(status).toBe(0);
   });
 
-  it('astryx docs color --lang en is accepted (exit 0)', async () => {
-    const {status} = await runCli(['docs', 'color', '--lang', 'en']);
+  it('astryx docs foundations/color --lang en is accepted (exit 0)', async () => {
+    const {status} = await runCli(['docs', 'foundations/color', '--lang', 'en']);
     expect(status).toBe(0);
   });
 });

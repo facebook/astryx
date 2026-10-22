@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file `astryx docs authoring/building-blocks/templates`: guides for adding,
+ * @file `astryx docs make-an-integration/building-blocks/templates`: guides for adding,
  * documenting, packaging, and testing templates in an integration package.
  */
 
@@ -34,7 +34,7 @@ export const docs = {
   blocks: [
     {
       type: 'prose',
-      text: 'In global mode: templates from an integration installed for the computer show up outside projects; inside a project, only templates from integrations the project installs. See {@link namespace:global} and {@link generic:global-integrations}.',
+      text: 'In global mode: templates from an integration installed for the computer show up outside projects; inside a project, only templates from integrations the project installs. See {@link namespace:on-your-computer} and {@link generic:global-integrations}.',
     },
   ],
 };

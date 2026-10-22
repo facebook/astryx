@@ -77,7 +77,7 @@ export interface CommandDoc extends AuthoredDocGraphFields {
   summary: string;
   /** Longer help body / when-to-use. */
   description?: string;
-  /** The group that reads this doc. The CLI's commands use 'cli/commands', which the docs tree adopts: each is the leaf `cli/commands/<name>`. Every command doc the CLI ships declares one, and `astryx doctor` fails on one that is missing or that nothing reads. */
+  /** The group that reads this doc. The CLI's commands use 'reference/commands', which the docs tree adopts: each is the leaf `reference/commands/<name>`. Every command doc the CLI ships declares one, and `astryx doctor` fails on one that is missing or that nothing reads. */
   namespace?: string;
   /** Alternate slugs that also resolve to this doc. */
   aliases?: string[];

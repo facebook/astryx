@@ -194,7 +194,7 @@ folder that is not a project, and its docs have to say which.
    global-mode page must be one the CLI prints; `test/global-mode-docs.test.mjs`
    builds those lines from the CLI's own strings.
 
-The user-facing explanation lives in `astryx docs global`.
+The user-facing explanation lives in `astryx docs get-started/on-your-computer`.
 
 ## Every integration item ships a typed doc
 
