@@ -62,10 +62,16 @@ export function MenuBottomSheetActionList({
   items,
   onSelect,
   onOpenSubmenu,
+  showsLevelRegions = false,
 }: {
   items: DropdownMenuOption[];
   onSelect: (item: DropdownMenuItemData, event: React.MouseEvent) => void;
   onOpenSubmenu: (item: DropdownMenuItemData) => void;
+  /**
+   * The sheet shows a level's own header and footer, so a row with either
+   * opens its level while that level's `items` is empty (see opensSubMenu).
+   */
+  showsLevelRegions?: boolean;
 }) {
   const listRef = useRef<HTMLUListElement>(null);
   // The press model: the row under a finger's RELEASE acts, and the
@@ -80,7 +86,7 @@ export function MenuBottomSheetActionList({
     item: DropdownMenuItemData,
     index: number,
   ): ReactElement => {
-    const isSubmenu = opensSubMenu(item);
+    const isSubmenu = opensSubMenu(item, {showsRegions: showsLevelRegions});
     const isDestructive = item.variant === 'destructive';
     const isLink = !isSubmenu && item.href != null;
 

@@ -295,6 +295,45 @@ describe('ContextMenu', () => {
     );
   });
 
+  it('keeps a data item with a header and empty items a plain row, as ContextMenu shows no sub-menu regions', async () => {
+    const user = userEvent.setup();
+    const onLabels = vi.fn();
+    const items = [
+      {label: 'Rename', onClick: () => {}},
+      {
+        label: 'Labels',
+        header: <input aria-label="Filter labels" />,
+        items: [],
+        onClick: onLabels,
+      },
+    ];
+    const {unmount} = render(
+      <ContextMenu label="Row actions" items={items}>
+        <div>Right-click me</div>
+      </ContextMenu>,
+    );
+    fireEvent.contextMenu(screen.getByText('Right-click me'));
+    expect(
+      screen.getByRole('menuitem', {name: 'Labels', hidden: true}),
+    ).not.toHaveAttribute('aria-haspopup');
+    unmount();
+
+    render(
+      <ContextMenu
+        presentation="bottom-sheet"
+        label="Row actions"
+        items={items}>
+        <div>Right-click me</div>
+      </ContextMenu>,
+    );
+    fireEvent.contextMenu(screen.getByText('Right-click me'));
+    await user.click(await screen.findByRole('button', {name: 'Labels'}));
+    expect(onLabels).toHaveBeenCalledOnce();
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+    );
+  });
+
   it('keeps only the top content padding in a menu BottomSheet', () => {
     const source = readFileSync(
       'packages/core/src/DropdownMenu/MenuBottomSheet.tsx',
