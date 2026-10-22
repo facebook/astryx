@@ -36,7 +36,7 @@ describe('template icon mapping', () => {
     expect(res.stdout).not.toMatch(/\bXMarkIcon\b/);
     expect(res.stdout).not.toContain('icons: ');
     expect(res.stderr).toContain(
-      'icons: mapped XMarkIcon (@heroicons/react/24/outline) -> XIcon (@acme/glyphs) by definition',
+      'icons: mapped XMarkIcon (@astryxdesign/icons-heroicons) -> XIcon (@acme/glyphs) by definition',
     );
     expect(res.stderr).toMatch(
       /icons: kept \w+ \(@heroicons\/react\/24\/outline\)/,
@@ -59,7 +59,7 @@ describe('template icon mapping', () => {
     );
     expect(copied.data.icons).toEqual(shown.data.icons);
     expect(copied.data.icons.mapped[0]).toMatchObject({
-      source: {module: '@heroicons/react/24/outline', export: 'XMarkIcon'},
+      source: {module: '@astryxdesign/icons-heroicons', export: 'XMarkIcon'},
       target: {set: 'glyphs', id: 'x', export: 'XIcon'},
       by: 'definition',
     });
@@ -67,6 +67,8 @@ describe('template icon mapping', () => {
     expect(copied.data.missingPackages).toContain('@heroicons/react');
     const written = fs.readFileSync(path.join(cwd, 'out', 'page.tsx'), 'utf-8');
     expect(written).toBe(shown.data.source);
+    // The reference set is not installed: nothing imports it (AST-084 FR20).
+    expect(written).not.toContain("from '@astryxdesign/icons-heroicons'");
   });
 
   it('experimental.iconSet that two packages ship: source unchanged, status ambiguous', async () => {

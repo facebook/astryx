@@ -20,7 +20,7 @@ import {
   SparklesIcon,
   ClipboardDocumentIcon,
   ChevronDownIcon,
-} from '@heroicons/react/24/outline';
+} from '@astryxdesign/icons-heroicons';
 
 // ---------------------------------------------------------------------------
 // Main component

@@ -6,7 +6,11 @@ import {TopNav, TopNavHeading, TopNavItem} from '@astryxdesign/core/TopNav';
 import {NavIcon} from '@astryxdesign/core/NavIcon';
 import {Button} from '@astryxdesign/core/Button';
 import {Icon} from '@astryxdesign/core/Icon';
-import {BellIcon, CubeIcon, UserCircleIcon} from '@heroicons/react/24/outline';
+import {
+  BellIcon,
+  CubeIcon,
+  UserCircleIcon,
+} from '@astryxdesign/icons-heroicons';
 
 export default function TopNavShowcase() {
   return (

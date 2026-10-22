@@ -142,6 +142,7 @@
   "devDependencies": {
     "@astryxdesign/charts": "*",
     "@astryxdesign/core": "*",
+    "@astryxdesign/icons-heroicons": "*",
     "@astryxdesign/lab": "*",
     "@astryxdesign/theme-neutral": "*",
     "@heroicons/react": "^2.2.0",

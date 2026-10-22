@@ -5,7 +5,7 @@
 import {ChatSendButton} from '@astryxdesign/core/Chat';
 import {Icon} from '@astryxdesign/core/Icon';
 import {Stack} from '@astryxdesign/core/Layout';
-import {SparklesIcon} from '@heroicons/react/24/solid';
+import {SparklesSolidIcon as SparklesIcon} from '@astryxdesign/icons-heroicons';
 
 export default function ChatSendButtonShowcase() {
   return (

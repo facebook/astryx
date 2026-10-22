@@ -24,6 +24,7 @@ import {discoverTemplates} from '../template/template.mjs';
 import {componentKeywords} from '../search/search.mjs';
 import {findCoreDir, requireCoreDir} from '../../foundation/fs/paths.mjs';
 import {analyzeTemplateNeeds} from '../../foundation/discovery/template-needs.mjs';
+import {lowerReferenceIcons} from '../../foundation/discovery/template-reference-icons.mjs';
 
 /**
  * Runs one build with a single directory listing per path: the kit resolves
@@ -282,7 +283,11 @@ function isBlockPickerWeights(w) {
  */
 export function templateSetupNotes(template, cwd) {
   try {
-    const source = fs.readFileSync(template.filePath, 'utf-8');
+    // The packages the written file needs: the reference icon set's imports
+    // are written as their upstream imports (spec:AST-084 FR20).
+    const source = lowerReferenceIcons(
+      fs.readFileSync(template.filePath, 'utf-8'),
+    );
     return analyzeTemplateNeeds(source, cwd).notes;
   } catch {
     // Best-effort: a read failure does not break the recommendation.

@@ -24,7 +24,7 @@ export const doc = {
     Cog6ToothIcon: 'settings',
     CubeIcon: 'package',
     FolderIcon: 'folder',
-    HomeIcon: 'home',
+    HomeSolidIcon: 'home',
     UsersIcon: 'users',
   },
 };

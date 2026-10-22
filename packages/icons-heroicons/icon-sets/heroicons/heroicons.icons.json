@@ -1,0 +1,6052 @@
+{
+  "schemaVersion": 1,
+  "module": "@astryxdesign/icons-heroicons",
+  "source": {
+    "package": "@heroicons/react",
+    "version": "2.2.0"
+  },
+  "generated": "./icon-sets/heroicons/heroicons.generated.js",
+  "variants": [
+    "outline",
+    "solid",
+    "mini"
+  ],
+  "default": {
+    "variant": "outline"
+  },
+  "themeMap": "themeIcons",
+  "map": {
+    "activity": "signal",
+    "add": "plus",
+    "adjustments": "adjustments-horizontal",
+    "announcement": "megaphone",
+    "apps": "squares-plus",
+    "archive": "archive-box",
+    "arrowDown": "arrow-down",
+    "arrowLeft": "arrow-left",
+    "arrowRight": "arrow-right",
+    "arrowUp": "arrow-up",
+    "arrowsUpDown": "arrows-up-down",
+    "attach": "paper-clip",
+    "audio": "speaker-wave",
+    "bank": "building-library",
+    "bold": "bold",
+    "bolt": "bolt",
+    "book": "book-open",
+    "bookmark": "bookmark",
+    "bug": "bug-ant",
+    "building": "building-office-2",
+    "calendar": "calendar",
+    "cart": "shopping-cart",
+    "chart": "chart-bar",
+    "check": "check",
+    "checkDouble": "check-badge",
+    "chevronDown": "chevron-down",
+    "chevronLeft": "chevron-left",
+    "chevronRight": "chevron-right",
+    "chevronUp": "chevron-up",
+    "chevronsLeft": "chevron-double-left",
+    "chevronsRight": "chevron-double-right",
+    "click": "cursor-arrow-rays",
+    "clipboard": "clipboard",
+    "clock": "clock",
+    "close": "x-mark",
+    "code": "code-bracket",
+    "collapse": "arrows-pointing-in",
+    "compose": "pencil-square",
+    "conversation": "chat-bubble-left-right",
+    "copy": "document-duplicate",
+    "creditCard": "credit-card",
+    "database": "circle-stack",
+    "delete": "trash",
+    "desktop": "computer-desktop",
+    "discount": "receipt-percent",
+    "document": "document-text",
+    "download": "arrow-down-tray",
+    "edit": "pencil",
+    "emoji": "face-smile",
+    "error": "x-circle",
+    "expand": "arrows-pointing-out",
+    "experiment": "beaker",
+    "externalLink": "arrow-top-right-on-square",
+    "eye": "eye",
+    "eyeSlash": "eye-slash",
+    "file": "document",
+    "flag": "flag",
+    "folder": "folder",
+    "folderAdd": "folder-plus",
+    "funnel": "funnel",
+    "globe": "globe-alt",
+    "gridView": "squares-2-x2",
+    "heart": "heart",
+    "home": "home",
+    "image": "photo",
+    "inbox": "inbox",
+    "info": "information-circle",
+    "italic": "italic",
+    "key": "key",
+    "language": "language",
+    "lightbulb": "light-bulb",
+    "link": "link",
+    "list": "list-bullet",
+    "location": "map-pin",
+    "lock": "lock-closed",
+    "mail": "envelope",
+    "mention": "at-symbol",
+    "menu": "bars-3",
+    "message": "chat-bubble-left",
+    "microphone": "microphone",
+    "mobile": "device-phone-mobile",
+    "money": "banknotes",
+    "moon": "moon",
+    "moreHorizontal": "ellipsis-horizontal",
+    "notification": "bell",
+    "notificationActive": "bell-alert",
+    "notificationOff": "bell-slash",
+    "package": "cube",
+    "pause": "pause",
+    "play": "play",
+    "raiseHand": "hand-raised",
+    "redo": "arrow-uturn-right",
+    "refresh": "arrow-path",
+    "remove": "minus",
+    "rocket": "rocket-launch",
+    "save": "arrow-down-on-square",
+    "search": "magnifying-glass",
+    "send": "paper-airplane",
+    "server": "server",
+    "settings": "cog-6-tooth",
+    "share": "share",
+    "shield": "shield-check",
+    "shipping": "truck",
+    "shoppingBag": "shopping-bag",
+    "sparkles": "sparkles",
+    "star": "star",
+    "stop": "stop",
+    "strikethrough": "strikethrough",
+    "success": "check-circle",
+    "sun": "sun",
+    "swatch": "swatch",
+    "table": "table-cells",
+    "tag": "tag",
+    "thumbsDown": "hand-thumb-down",
+    "thumbsUp": "hand-thumb-up",
+    "trendDown": "arrow-trending-down",
+    "trendUp": "arrow-trending-up",
+    "underline": "underline",
+    "undo": "arrow-uturn-left",
+    "unlock": "lock-open",
+    "upload": "arrow-up-tray",
+    "user": "user",
+    "userAdd": "user-plus",
+    "userCircle": "user-circle",
+    "users": "users",
+    "video": "video-camera",
+    "viewColumns": "view-columns",
+    "warning": "exclamation-triangle",
+    "work": "briefcase",
+    "wrench": "wrench"
+  },
+  "icons": [
+    {
+      "id": "academic-cap",
+      "export": "AcademicCapIcon",
+      "words": [
+        "academic",
+        "cap"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "AcademicCapSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "AcademicCapMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "adjustments-horizontal",
+      "export": "AdjustmentsHorizontalIcon",
+      "words": [
+        "adjustments",
+        "horizontal"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "AdjustmentsHorizontalSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "AdjustmentsHorizontalMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "adjustments-vertical",
+      "export": "AdjustmentsVerticalIcon",
+      "words": [
+        "adjustments",
+        "vertical"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "AdjustmentsVerticalSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "AdjustmentsVerticalMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "archive-box",
+      "export": "ArchiveBoxIcon",
+      "words": [
+        "archive",
+        "box"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "ArchiveBoxSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "ArchiveBoxMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "archive-box-arrow-down",
+      "export": "ArchiveBoxArrowDownIcon",
+      "words": [
+        "archive",
+        "box",
+        "arrow",
+        "down"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "ArchiveBoxArrowDownSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "ArchiveBoxArrowDownMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "archive-box-x-mark",
+      "export": "ArchiveBoxXMarkIcon",
+      "words": [
+        "archive",
+        "box",
+        "x",
+        "mark"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "ArchiveBoxXMarkSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "ArchiveBoxXMarkMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "arrow-down",
+      "export": "ArrowDownIcon",
+      "words": [
+        "arrow",
+        "down"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "ArrowDownSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "ArrowDownMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "arrow-down-circle",
+      "export": "ArrowDownCircleIcon",
+      "words": [
+        "arrow",
+        "down",
+        "circle"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "ArrowDownCircleSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "ArrowDownCircleMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "arrow-down-left",
+      "export": "ArrowDownLeftIcon",
+      "words": [
+        "arrow",
+        "down",
+        "left"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "ArrowDownLeftSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "ArrowDownLeftMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "arrow-down-on-square",
+      "export": "ArrowDownOnSquareIcon",
+      "words": [
+        "arrow",
+        "down",
+        "on",
+        "square"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "ArrowDownOnSquareSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "ArrowDownOnSquareMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "arrow-down-on-square-stack",
+      "export": "ArrowDownOnSquareStackIcon",
+      "words": [
+        "arrow",
+        "down",
+        "on",
+        "square",
+        "stack"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "ArrowDownOnSquareStackSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "ArrowDownOnSquareStackMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "arrow-down-right",
+      "export": "ArrowDownRightIcon",
+      "words": [
+        "arrow",
+        "down",
+        "right"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "ArrowDownRightSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "ArrowDownRightMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "arrow-down-tray",
+      "export": "ArrowDownTrayIcon",
+      "words": [
+        "arrow",
+        "down",
+        "tray"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "ArrowDownTraySolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "ArrowDownTrayMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "arrow-left",
+      "export": "ArrowLeftIcon",
+      "words": [
+        "arrow",
+        "left"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "ArrowLeftSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "ArrowLeftMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "arrow-left-circle",
+      "export": "ArrowLeftCircleIcon",
+      "words": [
+        "arrow",
+        "left",
+        "circle"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "ArrowLeftCircleSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "ArrowLeftCircleMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "arrow-left-end-on-rectangle",
+      "export": "ArrowLeftEndOnRectangleIcon",
+      "words": [
+        "arrow",
+        "left",
+        "end",
+        "on",
+        "rectangle"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "ArrowLeftEndOnRectangleSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "ArrowLeftEndOnRectangleMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "arrow-left-on-rectangle",
+      "export": "ArrowLeftOnRectangleIcon",
+      "words": [
+        "arrow",
+        "left",
+        "on",
+        "rectangle"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "ArrowLeftOnRectangleSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "ArrowLeftOnRectangleMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "arrow-left-start-on-rectangle",
+      "export": "ArrowLeftStartOnRectangleIcon",
+      "words": [
+        "arrow",
+        "left",
+        "start",
+        "on",
+        "rectangle"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "ArrowLeftStartOnRectangleSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "ArrowLeftStartOnRectangleMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "arrow-long-down",
+      "export": "ArrowLongDownIcon",
+      "words": [
+        "arrow",
+        "long",
+        "down"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "ArrowLongDownSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "ArrowLongDownMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "arrow-long-left",
+      "export": "ArrowLongLeftIcon",
+      "words": [
+        "arrow",
+        "long",
+        "left"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "ArrowLongLeftSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "ArrowLongLeftMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "arrow-long-right",
+      "export": "ArrowLongRightIcon",
+      "words": [
+        "arrow",
+        "long",
+        "right"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "ArrowLongRightSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "ArrowLongRightMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "arrow-long-up",
+      "export": "ArrowLongUpIcon",
+      "words": [
+        "arrow",
+        "long",
+        "up"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "ArrowLongUpSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "ArrowLongUpMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "arrow-path",
+      "export": "ArrowPathIcon",
+      "words": [
+        "arrow",
+        "path"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "ArrowPathSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "ArrowPathMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "arrow-path-rounded-square",
+      "export": "ArrowPathRoundedSquareIcon",
+      "words": [
+        "arrow",
+        "path",
+        "rounded",
+        "square"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "ArrowPathRoundedSquareSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "ArrowPathRoundedSquareMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "arrow-right",
+      "export": "ArrowRightIcon",
+      "words": [
+        "arrow",
+        "right"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "ArrowRightSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "ArrowRightMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "arrow-right-circle",
+      "export": "ArrowRightCircleIcon",
+      "words": [
+        "arrow",
+        "right",
+        "circle"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "ArrowRightCircleSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "ArrowRightCircleMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "arrow-right-end-on-rectangle",
+      "export": "ArrowRightEndOnRectangleIcon",
+      "words": [
+        "arrow",
+        "right",
+        "end",
+        "on",
+        "rectangle"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "ArrowRightEndOnRectangleSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "ArrowRightEndOnRectangleMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "arrow-right-on-rectangle",
+      "export": "ArrowRightOnRectangleIcon",
+      "words": [
+        "arrow",
+        "right",
+        "on",
+        "rectangle"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "ArrowRightOnRectangleSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "ArrowRightOnRectangleMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "arrow-right-start-on-rectangle",
+      "export": "ArrowRightStartOnRectangleIcon",
+      "words": [
+        "arrow",
+        "right",
+        "start",
+        "on",
+        "rectangle"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "ArrowRightStartOnRectangleSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "ArrowRightStartOnRectangleMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "arrow-small-down",
+      "export": "ArrowSmallDownIcon",
+      "words": [
+        "arrow",
+        "small",
+        "down"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "ArrowSmallDownSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "ArrowSmallDownMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "arrow-small-left",
+      "export": "ArrowSmallLeftIcon",
+      "words": [
+        "arrow",
+        "small",
+        "left"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "ArrowSmallLeftSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "ArrowSmallLeftMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "arrow-small-right",
+      "export": "ArrowSmallRightIcon",
+      "words": [
+        "arrow",
+        "small",
+        "right"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "ArrowSmallRightSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "ArrowSmallRightMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "arrow-small-up",
+      "export": "ArrowSmallUpIcon",
+      "words": [
+        "arrow",
+        "small",
+        "up"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "ArrowSmallUpSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "ArrowSmallUpMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "arrow-top-right-on-square",
+      "export": "ArrowTopRightOnSquareIcon",
+      "words": [
+        "arrow",
+        "top",
+        "right",
+        "on",
+        "square"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "ArrowTopRightOnSquareSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "ArrowTopRightOnSquareMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "arrow-trending-down",
+      "export": "ArrowTrendingDownIcon",
+      "words": [
+        "arrow",
+        "trending",
+        "down"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "ArrowTrendingDownSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "ArrowTrendingDownMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "arrow-trending-up",
+      "export": "ArrowTrendingUpIcon",
+      "words": [
+        "arrow",
+        "trending",
+        "up"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "ArrowTrendingUpSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "ArrowTrendingUpMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "arrow-turn-down-left",
+      "export": "ArrowTurnDownLeftIcon",
+      "words": [
+        "arrow",
+        "turn",
+        "down",
+        "left"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "ArrowTurnDownLeftSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "ArrowTurnDownLeftMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "arrow-turn-down-right",
+      "export": "ArrowTurnDownRightIcon",
+      "words": [
+        "arrow",
+        "turn",
+        "down",
+        "right"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "ArrowTurnDownRightSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "ArrowTurnDownRightMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "arrow-turn-left-down",
+      "export": "ArrowTurnLeftDownIcon",
+      "words": [
+        "arrow",
+        "turn",
+        "left",
+        "down"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "ArrowTurnLeftDownSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "ArrowTurnLeftDownMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "arrow-turn-left-up",
+      "export": "ArrowTurnLeftUpIcon",
+      "words": [
+        "arrow",
+        "turn",
+        "left",
+        "up"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "ArrowTurnLeftUpSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "ArrowTurnLeftUpMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "arrow-turn-right-down",
+      "export": "ArrowTurnRightDownIcon",
+      "words": [
+        "arrow",
+        "turn",
+        "right",
+        "down"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "ArrowTurnRightDownSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "ArrowTurnRightDownMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "arrow-turn-right-up",
+      "export": "ArrowTurnRightUpIcon",
+      "words": [
+        "arrow",
+        "turn",
+        "right",
+        "up"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "ArrowTurnRightUpSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "ArrowTurnRightUpMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "arrow-turn-up-left",
+      "export": "ArrowTurnUpLeftIcon",
+      "words": [
+        "arrow",
+        "turn",
+        "up",
+        "left"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "ArrowTurnUpLeftSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "ArrowTurnUpLeftMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "arrow-turn-up-right",
+      "export": "ArrowTurnUpRightIcon",
+      "words": [
+        "arrow",
+        "turn",
+        "up",
+        "right"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "ArrowTurnUpRightSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "ArrowTurnUpRightMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "arrow-up",
+      "export": "ArrowUpIcon",
+      "words": [
+        "arrow",
+        "up"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "ArrowUpSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "ArrowUpMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "arrow-up-circle",
+      "export": "ArrowUpCircleIcon",
+      "words": [
+        "arrow",
+        "up",
+        "circle"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "ArrowUpCircleSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "ArrowUpCircleMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "arrow-up-left",
+      "export": "ArrowUpLeftIcon",
+      "words": [
+        "arrow",
+        "up",
+        "left"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "ArrowUpLeftSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "ArrowUpLeftMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "arrow-up-on-square",
+      "export": "ArrowUpOnSquareIcon",
+      "words": [
+        "arrow",
+        "up",
+        "on",
+        "square"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "ArrowUpOnSquareSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "ArrowUpOnSquareMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "arrow-up-on-square-stack",
+      "export": "ArrowUpOnSquareStackIcon",
+      "words": [
+        "arrow",
+        "up",
+        "on",
+        "square",
+        "stack"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "ArrowUpOnSquareStackSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "ArrowUpOnSquareStackMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "arrow-up-right",
+      "export": "ArrowUpRightIcon",
+      "words": [
+        "arrow",
+        "up",
+        "right"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "ArrowUpRightSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "ArrowUpRightMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "arrow-up-tray",
+      "export": "ArrowUpTrayIcon",
+      "words": [
+        "arrow",
+        "up",
+        "tray"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "ArrowUpTraySolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "ArrowUpTrayMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "arrow-uturn-down",
+      "export": "ArrowUturnDownIcon",
+      "words": [
+        "arrow",
+        "uturn",
+        "down"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "ArrowUturnDownSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "ArrowUturnDownMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "arrow-uturn-left",
+      "export": "ArrowUturnLeftIcon",
+      "words": [
+        "arrow",
+        "uturn",
+        "left"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "ArrowUturnLeftSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "ArrowUturnLeftMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "arrow-uturn-right",
+      "export": "ArrowUturnRightIcon",
+      "words": [
+        "arrow",
+        "uturn",
+        "right"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "ArrowUturnRightSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "ArrowUturnRightMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "arrow-uturn-up",
+      "export": "ArrowUturnUpIcon",
+      "words": [
+        "arrow",
+        "uturn",
+        "up"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "ArrowUturnUpSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "ArrowUturnUpMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "arrows-pointing-in",
+      "export": "ArrowsPointingInIcon",
+      "words": [
+        "arrows",
+        "pointing",
+        "in"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "ArrowsPointingInSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "ArrowsPointingInMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "arrows-pointing-out",
+      "export": "ArrowsPointingOutIcon",
+      "words": [
+        "arrows",
+        "pointing",
+        "out"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "ArrowsPointingOutSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "ArrowsPointingOutMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "arrows-right-left",
+      "export": "ArrowsRightLeftIcon",
+      "words": [
+        "arrows",
+        "right",
+        "left"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "ArrowsRightLeftSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "ArrowsRightLeftMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "arrows-up-down",
+      "export": "ArrowsUpDownIcon",
+      "words": [
+        "arrows",
+        "up",
+        "down"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "ArrowsUpDownSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "ArrowsUpDownMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "at-symbol",
+      "export": "AtSymbolIcon",
+      "words": [
+        "at",
+        "symbol"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "AtSymbolSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "AtSymbolMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "backspace",
+      "export": "BackspaceIcon",
+      "words": [
+        "backspace"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "BackspaceSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "BackspaceMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "backward",
+      "export": "BackwardIcon",
+      "words": [
+        "backward"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "BackwardSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "BackwardMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "banknotes",
+      "export": "BanknotesIcon",
+      "words": [
+        "banknotes"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "BanknotesSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "BanknotesMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "bars-2",
+      "export": "Bars2Icon",
+      "words": [
+        "bars",
+        "2"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "Bars2SolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "Bars2MiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "bars-3",
+      "export": "Bars3Icon",
+      "words": [
+        "bars",
+        "3"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "Bars3SolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "Bars3MiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "bars-3-bottom-left",
+      "export": "Bars3BottomLeftIcon",
+      "words": [
+        "bars",
+        "3",
+        "bottom",
+        "left"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "Bars3BottomLeftSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "Bars3BottomLeftMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "bars-3-bottom-right",
+      "export": "Bars3BottomRightIcon",
+      "words": [
+        "bars",
+        "3",
+        "bottom",
+        "right"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "Bars3BottomRightSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "Bars3BottomRightMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "bars-3-center-left",
+      "export": "Bars3CenterLeftIcon",
+      "words": [
+        "bars",
+        "3",
+        "center",
+        "left"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "Bars3CenterLeftSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "Bars3CenterLeftMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "bars-4",
+      "export": "Bars4Icon",
+      "words": [
+        "bars",
+        "4"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "Bars4SolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "Bars4MiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "bars-arrow-down",
+      "export": "BarsArrowDownIcon",
+      "words": [
+        "bars",
+        "arrow",
+        "down"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "BarsArrowDownSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "BarsArrowDownMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "bars-arrow-up",
+      "export": "BarsArrowUpIcon",
+      "words": [
+        "bars",
+        "arrow",
+        "up"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "BarsArrowUpSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "BarsArrowUpMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "battery-0",
+      "export": "Battery0Icon",
+      "words": [
+        "battery",
+        "0"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "Battery0SolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "Battery0MiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "battery-100",
+      "export": "Battery100Icon",
+      "words": [
+        "battery",
+        "100"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "Battery100SolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "Battery100MiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "battery-50",
+      "export": "Battery50Icon",
+      "words": [
+        "battery",
+        "50"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "Battery50SolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "Battery50MiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "beaker",
+      "export": "BeakerIcon",
+      "words": [
+        "beaker"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "BeakerSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "BeakerMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "bell",
+      "export": "BellIcon",
+      "words": [
+        "bell"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "BellSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "BellMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "bell-alert",
+      "export": "BellAlertIcon",
+      "words": [
+        "bell",
+        "alert"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "BellAlertSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "BellAlertMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "bell-slash",
+      "export": "BellSlashIcon",
+      "words": [
+        "bell",
+        "slash"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "BellSlashSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "BellSlashMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "bell-snooze",
+      "export": "BellSnoozeIcon",
+      "words": [
+        "bell",
+        "snooze"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "BellSnoozeSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "BellSnoozeMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "bold",
+      "export": "BoldIcon",
+      "words": [
+        "bold"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "BoldSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "BoldMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "bolt",
+      "export": "BoltIcon",
+      "words": [
+        "bolt"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "BoltSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "BoltMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "bolt-slash",
+      "export": "BoltSlashIcon",
+      "words": [
+        "bolt",
+        "slash"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "BoltSlashSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "BoltSlashMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "book-open",
+      "export": "BookOpenIcon",
+      "words": [
+        "book",
+        "open"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "BookOpenSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "BookOpenMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "bookmark",
+      "export": "BookmarkIcon",
+      "words": [
+        "bookmark"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "BookmarkSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "BookmarkMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "bookmark-slash",
+      "export": "BookmarkSlashIcon",
+      "words": [
+        "bookmark",
+        "slash"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "BookmarkSlashSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "BookmarkSlashMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "bookmark-square",
+      "export": "BookmarkSquareIcon",
+      "words": [
+        "bookmark",
+        "square"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "BookmarkSquareSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "BookmarkSquareMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "briefcase",
+      "export": "BriefcaseIcon",
+      "words": [
+        "briefcase"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "BriefcaseSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "BriefcaseMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "bug-ant",
+      "export": "BugAntIcon",
+      "words": [
+        "bug",
+        "ant"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "BugAntSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "BugAntMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "building-library",
+      "export": "BuildingLibraryIcon",
+      "words": [
+        "building",
+        "library"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "BuildingLibrarySolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "BuildingLibraryMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "building-office",
+      "export": "BuildingOfficeIcon",
+      "words": [
+        "building",
+        "office"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "BuildingOfficeSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "BuildingOfficeMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "building-office-2",
+      "export": "BuildingOffice2Icon",
+      "words": [
+        "building",
+        "office",
+        "2"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "BuildingOffice2SolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "BuildingOffice2MiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "building-storefront",
+      "export": "BuildingStorefrontIcon",
+      "words": [
+        "building",
+        "storefront"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "BuildingStorefrontSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "BuildingStorefrontMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "cake",
+      "export": "CakeIcon",
+      "words": [
+        "cake"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "CakeSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "CakeMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "calculator",
+      "export": "CalculatorIcon",
+      "words": [
+        "calculator"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "CalculatorSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "CalculatorMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "calendar",
+      "export": "CalendarIcon",
+      "words": [
+        "calendar"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "CalendarSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "CalendarMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "calendar-date-range",
+      "export": "CalendarDateRangeIcon",
+      "words": [
+        "calendar",
+        "date",
+        "range"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "CalendarDateRangeSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "CalendarDateRangeMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "calendar-days",
+      "export": "CalendarDaysIcon",
+      "words": [
+        "calendar",
+        "days"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "CalendarDaysSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "CalendarDaysMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "camera",
+      "export": "CameraIcon",
+      "words": [
+        "camera"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "CameraSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "CameraMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "chart-bar",
+      "export": "ChartBarIcon",
+      "words": [
+        "chart",
+        "bar"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "ChartBarSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "ChartBarMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "chart-bar-square",
+      "export": "ChartBarSquareIcon",
+      "words": [
+        "chart",
+        "bar",
+        "square"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "ChartBarSquareSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "ChartBarSquareMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "chart-pie",
+      "export": "ChartPieIcon",
+      "words": [
+        "chart",
+        "pie"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "ChartPieSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "ChartPieMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "chat-bubble-bottom-center",
+      "export": "ChatBubbleBottomCenterIcon",
+      "words": [
+        "chat",
+        "bubble",
+        "bottom",
+        "center"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "ChatBubbleBottomCenterSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "ChatBubbleBottomCenterMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "chat-bubble-bottom-center-text",
+      "export": "ChatBubbleBottomCenterTextIcon",
+      "words": [
+        "chat",
+        "bubble",
+        "bottom",
+        "center",
+        "text"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "ChatBubbleBottomCenterTextSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "ChatBubbleBottomCenterTextMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "chat-bubble-left",
+      "export": "ChatBubbleLeftIcon",
+      "words": [
+        "chat",
+        "bubble",
+        "left"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "ChatBubbleLeftSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "ChatBubbleLeftMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "chat-bubble-left-ellipsis",
+      "export": "ChatBubbleLeftEllipsisIcon",
+      "words": [
+        "chat",
+        "bubble",
+        "left",
+        "ellipsis"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "ChatBubbleLeftEllipsisSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "ChatBubbleLeftEllipsisMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "chat-bubble-left-right",
+      "export": "ChatBubbleLeftRightIcon",
+      "words": [
+        "chat",
+        "bubble",
+        "left",
+        "right"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "ChatBubbleLeftRightSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "ChatBubbleLeftRightMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "chat-bubble-oval-left",
+      "export": "ChatBubbleOvalLeftIcon",
+      "words": [
+        "chat",
+        "bubble",
+        "oval",
+        "left"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "ChatBubbleOvalLeftSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "ChatBubbleOvalLeftMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "chat-bubble-oval-left-ellipsis",
+      "export": "ChatBubbleOvalLeftEllipsisIcon",
+      "words": [
+        "chat",
+        "bubble",
+        "oval",
+        "left",
+        "ellipsis"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "ChatBubbleOvalLeftEllipsisSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "ChatBubbleOvalLeftEllipsisMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "check",
+      "export": "CheckIcon",
+      "words": [
+        "check"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "CheckSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "CheckMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "check-badge",
+      "export": "CheckBadgeIcon",
+      "words": [
+        "check",
+        "badge"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "CheckBadgeSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "CheckBadgeMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "check-circle",
+      "export": "CheckCircleIcon",
+      "words": [
+        "check",
+        "circle"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "CheckCircleSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "CheckCircleMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "chevron-double-down",
+      "export": "ChevronDoubleDownIcon",
+      "words": [
+        "chevron",
+        "double",
+        "down"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "ChevronDoubleDownSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "ChevronDoubleDownMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "chevron-double-left",
+      "export": "ChevronDoubleLeftIcon",
+      "words": [
+        "chevron",
+        "double",
+        "left"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "ChevronDoubleLeftSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "ChevronDoubleLeftMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "chevron-double-right",
+      "export": "ChevronDoubleRightIcon",
+      "words": [
+        "chevron",
+        "double",
+        "right"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "ChevronDoubleRightSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "ChevronDoubleRightMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "chevron-double-up",
+      "export": "ChevronDoubleUpIcon",
+      "words": [
+        "chevron",
+        "double",
+        "up"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "ChevronDoubleUpSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "ChevronDoubleUpMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "chevron-down",
+      "export": "ChevronDownIcon",
+      "words": [
+        "chevron",
+        "down"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "ChevronDownSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "ChevronDownMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "chevron-left",
+      "export": "ChevronLeftIcon",
+      "words": [
+        "chevron",
+        "left"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "ChevronLeftSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "ChevronLeftMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "chevron-right",
+      "export": "ChevronRightIcon",
+      "words": [
+        "chevron",
+        "right"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "ChevronRightSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "ChevronRightMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "chevron-up",
+      "export": "ChevronUpIcon",
+      "words": [
+        "chevron",
+        "up"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "ChevronUpSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "ChevronUpMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "chevron-up-down",
+      "export": "ChevronUpDownIcon",
+      "words": [
+        "chevron",
+        "up",
+        "down"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "ChevronUpDownSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "ChevronUpDownMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "circle-stack",
+      "export": "CircleStackIcon",
+      "words": [
+        "circle",
+        "stack"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "CircleStackSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "CircleStackMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "clipboard",
+      "export": "ClipboardIcon",
+      "words": [
+        "clipboard"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "ClipboardSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "ClipboardMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "clipboard-document",
+      "export": "ClipboardDocumentIcon",
+      "words": [
+        "clipboard",
+        "document"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "ClipboardDocumentSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "ClipboardDocumentMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "clipboard-document-check",
+      "export": "ClipboardDocumentCheckIcon",
+      "words": [
+        "clipboard",
+        "document",
+        "check"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "ClipboardDocumentCheckSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "ClipboardDocumentCheckMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "clipboard-document-list",
+      "export": "ClipboardDocumentListIcon",
+      "words": [
+        "clipboard",
+        "document",
+        "list"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "ClipboardDocumentListSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "ClipboardDocumentListMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "clock",
+      "export": "ClockIcon",
+      "words": [
+        "clock"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "ClockSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "ClockMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "cloud",
+      "export": "CloudIcon",
+      "words": [
+        "cloud"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "CloudSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "CloudMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "cloud-arrow-down",
+      "export": "CloudArrowDownIcon",
+      "words": [
+        "cloud",
+        "arrow",
+        "down"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "CloudArrowDownSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "CloudArrowDownMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "cloud-arrow-up",
+      "export": "CloudArrowUpIcon",
+      "words": [
+        "cloud",
+        "arrow",
+        "up"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "CloudArrowUpSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "CloudArrowUpMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "code-bracket",
+      "export": "CodeBracketIcon",
+      "words": [
+        "code",
+        "bracket"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "CodeBracketSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "CodeBracketMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "code-bracket-square",
+      "export": "CodeBracketSquareIcon",
+      "words": [
+        "code",
+        "bracket",
+        "square"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "CodeBracketSquareSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "CodeBracketSquareMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "cog",
+      "export": "CogIcon",
+      "words": [
+        "cog"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "CogSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "CogMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "cog-6-tooth",
+      "export": "Cog6ToothIcon",
+      "words": [
+        "cog",
+        "6",
+        "tooth"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "Cog6ToothSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "Cog6ToothMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "cog-8-tooth",
+      "export": "Cog8ToothIcon",
+      "words": [
+        "cog",
+        "8",
+        "tooth"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "Cog8ToothSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "Cog8ToothMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "command-line",
+      "export": "CommandLineIcon",
+      "words": [
+        "command",
+        "line"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "CommandLineSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "CommandLineMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "computer-desktop",
+      "export": "ComputerDesktopIcon",
+      "words": [
+        "computer",
+        "desktop"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "ComputerDesktopSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "ComputerDesktopMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "cpu-chip",
+      "export": "CpuChipIcon",
+      "words": [
+        "cpu",
+        "chip"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "CpuChipSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "CpuChipMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "credit-card",
+      "export": "CreditCardIcon",
+      "words": [
+        "credit",
+        "card"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "CreditCardSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "CreditCardMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "cube",
+      "export": "CubeIcon",
+      "words": [
+        "cube"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "CubeSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "CubeMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "cube-transparent",
+      "export": "CubeTransparentIcon",
+      "words": [
+        "cube",
+        "transparent"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "CubeTransparentSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "CubeTransparentMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "currency-bangladeshi",
+      "export": "CurrencyBangladeshiIcon",
+      "words": [
+        "currency",
+        "bangladeshi"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "CurrencyBangladeshiSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "CurrencyBangladeshiMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "currency-dollar",
+      "export": "CurrencyDollarIcon",
+      "words": [
+        "currency",
+        "dollar"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "CurrencyDollarSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "CurrencyDollarMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "currency-euro",
+      "export": "CurrencyEuroIcon",
+      "words": [
+        "currency",
+        "euro"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "CurrencyEuroSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "CurrencyEuroMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "currency-pound",
+      "export": "CurrencyPoundIcon",
+      "words": [
+        "currency",
+        "pound"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "CurrencyPoundSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "CurrencyPoundMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "currency-rupee",
+      "export": "CurrencyRupeeIcon",
+      "words": [
+        "currency",
+        "rupee"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "CurrencyRupeeSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "CurrencyRupeeMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "currency-yen",
+      "export": "CurrencyYenIcon",
+      "words": [
+        "currency",
+        "yen"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "CurrencyYenSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "CurrencyYenMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "cursor-arrow-rays",
+      "export": "CursorArrowRaysIcon",
+      "words": [
+        "cursor",
+        "arrow",
+        "rays"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "CursorArrowRaysSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "CursorArrowRaysMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "cursor-arrow-ripple",
+      "export": "CursorArrowRippleIcon",
+      "words": [
+        "cursor",
+        "arrow",
+        "ripple"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "CursorArrowRippleSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "CursorArrowRippleMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "device-phone-mobile",
+      "export": "DevicePhoneMobileIcon",
+      "words": [
+        "device",
+        "phone",
+        "mobile"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "DevicePhoneMobileSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "DevicePhoneMobileMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "device-tablet",
+      "export": "DeviceTabletIcon",
+      "words": [
+        "device",
+        "tablet"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "DeviceTabletSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "DeviceTabletMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "divide",
+      "export": "DivideIcon",
+      "words": [
+        "divide"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "DivideSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "DivideMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "document",
+      "export": "DocumentIcon",
+      "words": [
+        "document"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "DocumentSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "DocumentMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "document-arrow-down",
+      "export": "DocumentArrowDownIcon",
+      "words": [
+        "document",
+        "arrow",
+        "down"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "DocumentArrowDownSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "DocumentArrowDownMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "document-arrow-up",
+      "export": "DocumentArrowUpIcon",
+      "words": [
+        "document",
+        "arrow",
+        "up"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "DocumentArrowUpSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "DocumentArrowUpMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "document-chart-bar",
+      "export": "DocumentChartBarIcon",
+      "words": [
+        "document",
+        "chart",
+        "bar"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "DocumentChartBarSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "DocumentChartBarMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "document-check",
+      "export": "DocumentCheckIcon",
+      "words": [
+        "document",
+        "check"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "DocumentCheckSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "DocumentCheckMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "document-currency-bangladeshi",
+      "export": "DocumentCurrencyBangladeshiIcon",
+      "words": [
+        "document",
+        "currency",
+        "bangladeshi"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "DocumentCurrencyBangladeshiSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "DocumentCurrencyBangladeshiMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "document-currency-dollar",
+      "export": "DocumentCurrencyDollarIcon",
+      "words": [
+        "document",
+        "currency",
+        "dollar"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "DocumentCurrencyDollarSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "DocumentCurrencyDollarMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "document-currency-euro",
+      "export": "DocumentCurrencyEuroIcon",
+      "words": [
+        "document",
+        "currency",
+        "euro"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "DocumentCurrencyEuroSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "DocumentCurrencyEuroMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "document-currency-pound",
+      "export": "DocumentCurrencyPoundIcon",
+      "words": [
+        "document",
+        "currency",
+        "pound"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "DocumentCurrencyPoundSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "DocumentCurrencyPoundMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "document-currency-rupee",
+      "export": "DocumentCurrencyRupeeIcon",
+      "words": [
+        "document",
+        "currency",
+        "rupee"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "DocumentCurrencyRupeeSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "DocumentCurrencyRupeeMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "document-currency-yen",
+      "export": "DocumentCurrencyYenIcon",
+      "words": [
+        "document",
+        "currency",
+        "yen"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "DocumentCurrencyYenSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "DocumentCurrencyYenMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "document-duplicate",
+      "export": "DocumentDuplicateIcon",
+      "words": [
+        "document",
+        "duplicate"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "DocumentDuplicateSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "DocumentDuplicateMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "document-magnifying-glass",
+      "export": "DocumentMagnifyingGlassIcon",
+      "words": [
+        "document",
+        "magnifying",
+        "glass"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "DocumentMagnifyingGlassSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "DocumentMagnifyingGlassMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "document-minus",
+      "export": "DocumentMinusIcon",
+      "words": [
+        "document",
+        "minus"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "DocumentMinusSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "DocumentMinusMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "document-plus",
+      "export": "DocumentPlusIcon",
+      "words": [
+        "document",
+        "plus"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "DocumentPlusSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "DocumentPlusMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "document-text",
+      "export": "DocumentTextIcon",
+      "words": [
+        "document",
+        "text"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "DocumentTextSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "DocumentTextMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "ellipsis-horizontal",
+      "export": "EllipsisHorizontalIcon",
+      "words": [
+        "ellipsis",
+        "horizontal"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "EllipsisHorizontalSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "EllipsisHorizontalMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "ellipsis-horizontal-circle",
+      "export": "EllipsisHorizontalCircleIcon",
+      "words": [
+        "ellipsis",
+        "horizontal",
+        "circle"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "EllipsisHorizontalCircleSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "EllipsisHorizontalCircleMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "ellipsis-vertical",
+      "export": "EllipsisVerticalIcon",
+      "words": [
+        "ellipsis",
+        "vertical"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "EllipsisVerticalSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "EllipsisVerticalMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "envelope",
+      "export": "EnvelopeIcon",
+      "words": [
+        "envelope"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "EnvelopeSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "EnvelopeMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "envelope-open",
+      "export": "EnvelopeOpenIcon",
+      "words": [
+        "envelope",
+        "open"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "EnvelopeOpenSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "EnvelopeOpenMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "equals",
+      "export": "EqualsIcon",
+      "words": [
+        "equals"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "EqualsSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "EqualsMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "exclamation-circle",
+      "export": "ExclamationCircleIcon",
+      "words": [
+        "exclamation",
+        "circle"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "ExclamationCircleSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "ExclamationCircleMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "exclamation-triangle",
+      "export": "ExclamationTriangleIcon",
+      "words": [
+        "exclamation",
+        "triangle"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "ExclamationTriangleSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "ExclamationTriangleMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "eye",
+      "export": "EyeIcon",
+      "words": [
+        "eye"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "EyeSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "EyeMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "eye-dropper",
+      "export": "EyeDropperIcon",
+      "words": [
+        "eye",
+        "dropper"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "EyeDropperSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "EyeDropperMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "eye-slash",
+      "export": "EyeSlashIcon",
+      "words": [
+        "eye",
+        "slash"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "EyeSlashSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "EyeSlashMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "face-frown",
+      "export": "FaceFrownIcon",
+      "words": [
+        "face",
+        "frown"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "FaceFrownSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "FaceFrownMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "face-smile",
+      "export": "FaceSmileIcon",
+      "words": [
+        "face",
+        "smile"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "FaceSmileSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "FaceSmileMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "film",
+      "export": "FilmIcon",
+      "words": [
+        "film"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "FilmSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "FilmMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "finger-print",
+      "export": "FingerPrintIcon",
+      "words": [
+        "finger",
+        "print"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "FingerPrintSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "FingerPrintMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "fire",
+      "export": "FireIcon",
+      "words": [
+        "fire"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "FireSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "FireMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "flag",
+      "export": "FlagIcon",
+      "words": [
+        "flag"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "FlagSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "FlagMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "folder",
+      "export": "FolderIcon",
+      "words": [
+        "folder"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "FolderSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "FolderMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "folder-arrow-down",
+      "export": "FolderArrowDownIcon",
+      "words": [
+        "folder",
+        "arrow",
+        "down"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "FolderArrowDownSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "FolderArrowDownMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "folder-minus",
+      "export": "FolderMinusIcon",
+      "words": [
+        "folder",
+        "minus"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "FolderMinusSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "FolderMinusMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "folder-open",
+      "export": "FolderOpenIcon",
+      "words": [
+        "folder",
+        "open"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "FolderOpenSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "FolderOpenMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "folder-plus",
+      "export": "FolderPlusIcon",
+      "words": [
+        "folder",
+        "plus"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "FolderPlusSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "FolderPlusMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "forward",
+      "export": "ForwardIcon",
+      "words": [
+        "forward"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "ForwardSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "ForwardMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "funnel",
+      "export": "FunnelIcon",
+      "words": [
+        "funnel"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "FunnelSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "FunnelMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "gif",
+      "export": "GifIcon",
+      "words": [
+        "gif"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "GifSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "GifMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "gift",
+      "export": "GiftIcon",
+      "words": [
+        "gift"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "GiftSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "GiftMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "gift-top",
+      "export": "GiftTopIcon",
+      "words": [
+        "gift",
+        "top"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "GiftTopSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "GiftTopMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "globe-alt",
+      "export": "GlobeAltIcon",
+      "words": [
+        "globe",
+        "alt"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "GlobeAltSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "GlobeAltMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "globe-americas",
+      "export": "GlobeAmericasIcon",
+      "words": [
+        "globe",
+        "americas"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "GlobeAmericasSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "GlobeAmericasMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "globe-asia-australia",
+      "export": "GlobeAsiaAustraliaIcon",
+      "words": [
+        "globe",
+        "asia",
+        "australia"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "GlobeAsiaAustraliaSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "GlobeAsiaAustraliaMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "globe-europe-africa",
+      "export": "GlobeEuropeAfricaIcon",
+      "words": [
+        "globe",
+        "europe",
+        "africa"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "GlobeEuropeAfricaSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "GlobeEuropeAfricaMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "h1",
+      "export": "H1Icon",
+      "words": [
+        "h1"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "H1SolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "H1MiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "h2",
+      "export": "H2Icon",
+      "words": [
+        "h2"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "H2SolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "H2MiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "h3",
+      "export": "H3Icon",
+      "words": [
+        "h3"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "H3SolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "H3MiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "hand-raised",
+      "export": "HandRaisedIcon",
+      "words": [
+        "hand",
+        "raised"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "HandRaisedSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "HandRaisedMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "hand-thumb-down",
+      "export": "HandThumbDownIcon",
+      "words": [
+        "hand",
+        "thumb",
+        "down"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "HandThumbDownSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "HandThumbDownMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "hand-thumb-up",
+      "export": "HandThumbUpIcon",
+      "words": [
+        "hand",
+        "thumb",
+        "up"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "HandThumbUpSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "HandThumbUpMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "hashtag",
+      "export": "HashtagIcon",
+      "words": [
+        "hashtag"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "HashtagSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "HashtagMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "heart",
+      "export": "HeartIcon",
+      "words": [
+        "heart"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "HeartSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "HeartMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "home",
+      "export": "HomeIcon",
+      "words": [
+        "home"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "HomeSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "HomeMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "home-modern",
+      "export": "HomeModernIcon",
+      "words": [
+        "home",
+        "modern"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "HomeModernSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "HomeModernMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "identification",
+      "export": "IdentificationIcon",
+      "words": [
+        "identification"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "IdentificationSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "IdentificationMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "inbox",
+      "export": "InboxIcon",
+      "words": [
+        "inbox"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "InboxSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "InboxMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "inbox-arrow-down",
+      "export": "InboxArrowDownIcon",
+      "words": [
+        "inbox",
+        "arrow",
+        "down"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "InboxArrowDownSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "InboxArrowDownMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "inbox-stack",
+      "export": "InboxStackIcon",
+      "words": [
+        "inbox",
+        "stack"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "InboxStackSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "InboxStackMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "information-circle",
+      "export": "InformationCircleIcon",
+      "words": [
+        "information",
+        "circle"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "InformationCircleSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "InformationCircleMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "italic",
+      "export": "ItalicIcon",
+      "words": [
+        "italic"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "ItalicSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "ItalicMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "key",
+      "export": "KeyIcon",
+      "words": [
+        "key"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "KeySolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "KeyMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "language",
+      "export": "LanguageIcon",
+      "words": [
+        "language"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "LanguageSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "LanguageMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "lifebuoy",
+      "export": "LifebuoyIcon",
+      "words": [
+        "lifebuoy"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "LifebuoySolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "LifebuoyMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "light-bulb",
+      "export": "LightBulbIcon",
+      "words": [
+        "light",
+        "bulb"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "LightBulbSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "LightBulbMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "link",
+      "export": "LinkIcon",
+      "words": [
+        "link"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "LinkSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "LinkMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "link-slash",
+      "export": "LinkSlashIcon",
+      "words": [
+        "link",
+        "slash"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "LinkSlashSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "LinkSlashMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "list-bullet",
+      "export": "ListBulletIcon",
+      "words": [
+        "list",
+        "bullet"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "ListBulletSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "ListBulletMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "lock-closed",
+      "export": "LockClosedIcon",
+      "words": [
+        "lock",
+        "closed"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "LockClosedSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "LockClosedMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "lock-open",
+      "export": "LockOpenIcon",
+      "words": [
+        "lock",
+        "open"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "LockOpenSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "LockOpenMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "magnifying-glass",
+      "export": "MagnifyingGlassIcon",
+      "words": [
+        "magnifying",
+        "glass"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "MagnifyingGlassSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "MagnifyingGlassMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "magnifying-glass-circle",
+      "export": "MagnifyingGlassCircleIcon",
+      "words": [
+        "magnifying",
+        "glass",
+        "circle"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "MagnifyingGlassCircleSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "MagnifyingGlassCircleMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "magnifying-glass-minus",
+      "export": "MagnifyingGlassMinusIcon",
+      "words": [
+        "magnifying",
+        "glass",
+        "minus"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "MagnifyingGlassMinusSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "MagnifyingGlassMinusMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "magnifying-glass-plus",
+      "export": "MagnifyingGlassPlusIcon",
+      "words": [
+        "magnifying",
+        "glass",
+        "plus"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "MagnifyingGlassPlusSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "MagnifyingGlassPlusMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "map",
+      "export": "MapIcon",
+      "words": [
+        "map"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "MapSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "MapMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "map-pin",
+      "export": "MapPinIcon",
+      "words": [
+        "map",
+        "pin"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "MapPinSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "MapPinMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "megaphone",
+      "export": "MegaphoneIcon",
+      "words": [
+        "megaphone"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "MegaphoneSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "MegaphoneMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "microphone",
+      "export": "MicrophoneIcon",
+      "words": [
+        "microphone"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "MicrophoneSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "MicrophoneMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "minus",
+      "export": "MinusIcon",
+      "words": [
+        "minus"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "MinusSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "MinusMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "minus-circle",
+      "export": "MinusCircleIcon",
+      "words": [
+        "minus",
+        "circle"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "MinusCircleSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "MinusCircleMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "minus-small",
+      "export": "MinusSmallIcon",
+      "words": [
+        "minus",
+        "small"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "MinusSmallSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "MinusSmallMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "moon",
+      "export": "MoonIcon",
+      "words": [
+        "moon"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "MoonSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "MoonMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "musical-note",
+      "export": "MusicalNoteIcon",
+      "words": [
+        "musical",
+        "note"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "MusicalNoteSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "MusicalNoteMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "newspaper",
+      "export": "NewspaperIcon",
+      "words": [
+        "newspaper"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "NewspaperSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "NewspaperMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "no-symbol",
+      "export": "NoSymbolIcon",
+      "words": [
+        "no",
+        "symbol"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "NoSymbolSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "NoSymbolMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "numbered-list",
+      "export": "NumberedListIcon",
+      "words": [
+        "numbered",
+        "list"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "NumberedListSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "NumberedListMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "paint-brush",
+      "export": "PaintBrushIcon",
+      "words": [
+        "paint",
+        "brush"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "PaintBrushSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "PaintBrushMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "paper-airplane",
+      "export": "PaperAirplaneIcon",
+      "words": [
+        "paper",
+        "airplane"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "PaperAirplaneSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "PaperAirplaneMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "paper-clip",
+      "export": "PaperClipIcon",
+      "words": [
+        "paper",
+        "clip"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "PaperClipSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "PaperClipMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "pause",
+      "export": "PauseIcon",
+      "words": [
+        "pause"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "PauseSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "PauseMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "pause-circle",
+      "export": "PauseCircleIcon",
+      "words": [
+        "pause",
+        "circle"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "PauseCircleSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "PauseCircleMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "pencil",
+      "export": "PencilIcon",
+      "words": [
+        "pencil"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "PencilSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "PencilMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "pencil-square",
+      "export": "PencilSquareIcon",
+      "words": [
+        "pencil",
+        "square"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "PencilSquareSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "PencilSquareMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "percent-badge",
+      "export": "PercentBadgeIcon",
+      "words": [
+        "percent",
+        "badge"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "PercentBadgeSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "PercentBadgeMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "phone",
+      "export": "PhoneIcon",
+      "words": [
+        "phone"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "PhoneSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "PhoneMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "phone-arrow-down-left",
+      "export": "PhoneArrowDownLeftIcon",
+      "words": [
+        "phone",
+        "arrow",
+        "down",
+        "left"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "PhoneArrowDownLeftSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "PhoneArrowDownLeftMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "phone-arrow-up-right",
+      "export": "PhoneArrowUpRightIcon",
+      "words": [
+        "phone",
+        "arrow",
+        "up",
+        "right"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "PhoneArrowUpRightSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "PhoneArrowUpRightMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "phone-x-mark",
+      "export": "PhoneXMarkIcon",
+      "words": [
+        "phone",
+        "x",
+        "mark"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "PhoneXMarkSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "PhoneXMarkMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "photo",
+      "export": "PhotoIcon",
+      "words": [
+        "photo"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "PhotoSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "PhotoMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "play",
+      "export": "PlayIcon",
+      "words": [
+        "play"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "PlaySolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "PlayMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "play-circle",
+      "export": "PlayCircleIcon",
+      "words": [
+        "play",
+        "circle"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "PlayCircleSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "PlayCircleMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "play-pause",
+      "export": "PlayPauseIcon",
+      "words": [
+        "play",
+        "pause"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "PlayPauseSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "PlayPauseMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "plus",
+      "export": "PlusIcon",
+      "words": [
+        "plus"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "PlusSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "PlusMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "plus-circle",
+      "export": "PlusCircleIcon",
+      "words": [
+        "plus",
+        "circle"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "PlusCircleSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "PlusCircleMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "plus-small",
+      "export": "PlusSmallIcon",
+      "words": [
+        "plus",
+        "small"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "PlusSmallSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "PlusSmallMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "power",
+      "export": "PowerIcon",
+      "words": [
+        "power"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "PowerSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "PowerMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "presentation-chart-bar",
+      "export": "PresentationChartBarIcon",
+      "words": [
+        "presentation",
+        "chart",
+        "bar"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "PresentationChartBarSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "PresentationChartBarMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "presentation-chart-line",
+      "export": "PresentationChartLineIcon",
+      "words": [
+        "presentation",
+        "chart",
+        "line"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "PresentationChartLineSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "PresentationChartLineMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "printer",
+      "export": "PrinterIcon",
+      "words": [
+        "printer"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "PrinterSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "PrinterMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "puzzle-piece",
+      "export": "PuzzlePieceIcon",
+      "words": [
+        "puzzle",
+        "piece"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "PuzzlePieceSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "PuzzlePieceMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "qr-code",
+      "export": "QrCodeIcon",
+      "words": [
+        "qr",
+        "code"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "QrCodeSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "QrCodeMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "question-mark-circle",
+      "export": "QuestionMarkCircleIcon",
+      "words": [
+        "question",
+        "mark",
+        "circle"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "QuestionMarkCircleSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "QuestionMarkCircleMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "queue-list",
+      "export": "QueueListIcon",
+      "words": [
+        "queue",
+        "list"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "QueueListSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "QueueListMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "radio",
+      "export": "RadioIcon",
+      "words": [
+        "radio"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "RadioSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "RadioMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "receipt-percent",
+      "export": "ReceiptPercentIcon",
+      "words": [
+        "receipt",
+        "percent"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "ReceiptPercentSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "ReceiptPercentMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "receipt-refund",
+      "export": "ReceiptRefundIcon",
+      "words": [
+        "receipt",
+        "refund"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "ReceiptRefundSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "ReceiptRefundMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "rectangle-group",
+      "export": "RectangleGroupIcon",
+      "words": [
+        "rectangle",
+        "group"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "RectangleGroupSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "RectangleGroupMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "rectangle-stack",
+      "export": "RectangleStackIcon",
+      "words": [
+        "rectangle",
+        "stack"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "RectangleStackSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "RectangleStackMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "rocket-launch",
+      "export": "RocketLaunchIcon",
+      "words": [
+        "rocket",
+        "launch"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "RocketLaunchSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "RocketLaunchMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "rss",
+      "export": "RssIcon",
+      "words": [
+        "rss"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "RssSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "RssMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "scale",
+      "export": "ScaleIcon",
+      "words": [
+        "scale"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "ScaleSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "ScaleMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "scissors",
+      "export": "ScissorsIcon",
+      "words": [
+        "scissors"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "ScissorsSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "ScissorsMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "server",
+      "export": "ServerIcon",
+      "words": [
+        "server"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "ServerSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "ServerMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "server-stack",
+      "export": "ServerStackIcon",
+      "words": [
+        "server",
+        "stack"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "ServerStackSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "ServerStackMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "share",
+      "export": "ShareIcon",
+      "words": [
+        "share"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "ShareSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "ShareMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "shield-check",
+      "export": "ShieldCheckIcon",
+      "words": [
+        "shield",
+        "check"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "ShieldCheckSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "ShieldCheckMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "shield-exclamation",
+      "export": "ShieldExclamationIcon",
+      "words": [
+        "shield",
+        "exclamation"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "ShieldExclamationSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "ShieldExclamationMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "shopping-bag",
+      "export": "ShoppingBagIcon",
+      "words": [
+        "shopping",
+        "bag"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "ShoppingBagSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "ShoppingBagMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "shopping-cart",
+      "export": "ShoppingCartIcon",
+      "words": [
+        "shopping",
+        "cart"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "ShoppingCartSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "ShoppingCartMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "signal",
+      "export": "SignalIcon",
+      "words": [
+        "signal"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "SignalSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "SignalMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "signal-slash",
+      "export": "SignalSlashIcon",
+      "words": [
+        "signal",
+        "slash"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "SignalSlashSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "SignalSlashMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "slash",
+      "export": "SlashIcon",
+      "words": [
+        "slash"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "SlashSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "SlashMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "sparkles",
+      "export": "SparklesIcon",
+      "words": [
+        "sparkles"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "SparklesSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "SparklesMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "speaker-wave",
+      "export": "SpeakerWaveIcon",
+      "words": [
+        "speaker",
+        "wave"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "SpeakerWaveSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "SpeakerWaveMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "speaker-x-mark",
+      "export": "SpeakerXMarkIcon",
+      "words": [
+        "speaker",
+        "x",
+        "mark"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "SpeakerXMarkSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "SpeakerXMarkMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "square-2-stack",
+      "export": "Square2StackIcon",
+      "words": [
+        "square",
+        "2",
+        "stack"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "Square2StackSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "Square2StackMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "square-3-stack-3-d",
+      "export": "Square3Stack3DIcon",
+      "words": [
+        "square",
+        "3",
+        "stack",
+        "3",
+        "d"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "Square3Stack3DSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "Square3Stack3DMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "squares-2-x2",
+      "export": "Squares2X2Icon",
+      "words": [
+        "squares",
+        "2",
+        "x2"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "Squares2X2SolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "Squares2X2MiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "squares-plus",
+      "export": "SquaresPlusIcon",
+      "words": [
+        "squares",
+        "plus"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "SquaresPlusSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "SquaresPlusMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "star",
+      "export": "StarIcon",
+      "words": [
+        "star"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "StarSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "StarMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "stop",
+      "export": "StopIcon",
+      "words": [
+        "stop"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "StopSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "StopMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "stop-circle",
+      "export": "StopCircleIcon",
+      "words": [
+        "stop",
+        "circle"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "StopCircleSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "StopCircleMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "strikethrough",
+      "export": "StrikethroughIcon",
+      "words": [
+        "strikethrough"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "StrikethroughSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "StrikethroughMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "sun",
+      "export": "SunIcon",
+      "words": [
+        "sun"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "SunSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "SunMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "swatch",
+      "export": "SwatchIcon",
+      "words": [
+        "swatch"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "SwatchSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "SwatchMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "table-cells",
+      "export": "TableCellsIcon",
+      "words": [
+        "table",
+        "cells"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "TableCellsSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "TableCellsMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "tag",
+      "export": "TagIcon",
+      "words": [
+        "tag"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "TagSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "TagMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "ticket",
+      "export": "TicketIcon",
+      "words": [
+        "ticket"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "TicketSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "TicketMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "trash",
+      "export": "TrashIcon",
+      "words": [
+        "trash"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "TrashSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "TrashMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "trophy",
+      "export": "TrophyIcon",
+      "words": [
+        "trophy"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "TrophySolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "TrophyMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "truck",
+      "export": "TruckIcon",
+      "words": [
+        "truck"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "TruckSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "TruckMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "tv",
+      "export": "TvIcon",
+      "words": [
+        "tv"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "TvSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "TvMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "underline",
+      "export": "UnderlineIcon",
+      "words": [
+        "underline"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "UnderlineSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "UnderlineMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "user",
+      "export": "UserIcon",
+      "words": [
+        "user"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "UserSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "UserMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "user-circle",
+      "export": "UserCircleIcon",
+      "words": [
+        "user",
+        "circle"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "UserCircleSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "UserCircleMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "user-group",
+      "export": "UserGroupIcon",
+      "words": [
+        "user",
+        "group"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "UserGroupSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "UserGroupMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "user-minus",
+      "export": "UserMinusIcon",
+      "words": [
+        "user",
+        "minus"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "UserMinusSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "UserMinusMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "user-plus",
+      "export": "UserPlusIcon",
+      "words": [
+        "user",
+        "plus"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "UserPlusSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "UserPlusMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "users",
+      "export": "UsersIcon",
+      "words": [
+        "users"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "UsersSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "UsersMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "variable",
+      "export": "VariableIcon",
+      "words": [
+        "variable"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "VariableSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "VariableMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "video-camera",
+      "export": "VideoCameraIcon",
+      "words": [
+        "video",
+        "camera"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "VideoCameraSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "VideoCameraMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "video-camera-slash",
+      "export": "VideoCameraSlashIcon",
+      "words": [
+        "video",
+        "camera",
+        "slash"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "VideoCameraSlashSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "VideoCameraSlashMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "view-columns",
+      "export": "ViewColumnsIcon",
+      "words": [
+        "view",
+        "columns"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "ViewColumnsSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "ViewColumnsMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "viewfinder-circle",
+      "export": "ViewfinderCircleIcon",
+      "words": [
+        "viewfinder",
+        "circle"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "ViewfinderCircleSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "ViewfinderCircleMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "wallet",
+      "export": "WalletIcon",
+      "words": [
+        "wallet"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "WalletSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "WalletMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "wifi",
+      "export": "WifiIcon",
+      "words": [
+        "wifi"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "WifiSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "WifiMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "window",
+      "export": "WindowIcon",
+      "words": [
+        "window"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "WindowSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "WindowMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "wrench",
+      "export": "WrenchIcon",
+      "words": [
+        "wrench"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "WrenchSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "WrenchMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "wrench-screwdriver",
+      "export": "WrenchScrewdriverIcon",
+      "words": [
+        "wrench",
+        "screwdriver"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "WrenchScrewdriverSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "WrenchScrewdriverMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "x-circle",
+      "export": "XCircleIcon",
+      "words": [
+        "x",
+        "circle"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "XCircleSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "XCircleMiniIcon"
+        }
+      ]
+    },
+    {
+      "id": "x-mark",
+      "export": "XMarkIcon",
+      "words": [
+        "x",
+        "mark"
+      ],
+      "variants": [
+        {
+          "variant": "solid",
+          "export": "XMarkSolidIcon"
+        },
+        {
+          "variant": "mini",
+          "export": "XMarkMiniIcon"
+        }
+      ]
+    }
+  ]
+}

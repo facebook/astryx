@@ -16,5 +16,10 @@ export const doc = {
   ],
   isReady: true,
   category: 'Content - Product Detail',
-  icons: {MinusIcon: 'remove', PlusIcon: 'add', StarIcon: 'star'},
+  icons: {
+    MinusIcon: 'remove',
+    PlusIcon: 'add',
+    StarIcon: 'star',
+    StarSolidIcon: 'star',
+  },
 };

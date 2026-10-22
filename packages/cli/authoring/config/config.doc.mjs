@@ -84,6 +84,14 @@ export const doc = {
           example: "'@acme/outline-icons/outline'",
         },
         {
+          name: 'experimental.templateIcons',
+          type: 'boolean',
+          stability: 'experimental',
+          description:
+            "Experimental: may change or be removed in a patch release. With no `experimental.iconSet`, `true` makes `astryx template` swap each icon a template declares for Core's built-in icon of that meaning, or a neutral placeholder when Core has none, and note how to install an icon set. Without it, templates are written as they always are.",
+          example: 'true',
+        },
+        {
           name: 'experimental.xle.components',
           type: 'Record<string, XleComponent>',
           description:

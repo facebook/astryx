@@ -17,7 +17,7 @@ export const doc = {
     ChevronRightIcon: 'chevronRight',
     DocumentIcon: 'file',
     EllipsisHorizontalIcon: 'moreHorizontal',
-    FolderIcon: 'folder',
+    FolderSolidIcon: 'folder',
     MagnifyingGlassIcon: 'search',
     ShareIcon: 'share',
     Squares2X2Icon: 'gridView',

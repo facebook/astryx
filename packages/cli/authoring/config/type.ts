@@ -130,5 +130,14 @@ export interface AstryxConfig {
      * @experimental May change or be removed in a patch release.
      */
     iconSet?: string;
+    /**
+     * Experimental template icons (spec:AST-084 FR21): with no `iconSet`,
+     * `true` makes copied and printed templates swap each icon for Core's
+     * built-in icon of its meaning, or a neutral placeholder, and note how to
+     * install an icon set. Without it, templates are written as they always
+     * are.
+     * @experimental May change or be removed in a patch release.
+     */
+    templateIcons?: boolean;
   };
 }

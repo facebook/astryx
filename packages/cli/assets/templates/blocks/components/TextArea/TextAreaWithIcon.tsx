@@ -4,7 +4,7 @@
 
 import {useState} from 'react';
 import {TextArea} from '@astryxdesign/core/TextArea';
-import {PencilSquareIcon} from '@heroicons/react/24/outline';
+import {PencilSquareIcon} from '@astryxdesign/icons-heroicons';
 
 export default function TextAreaWithIcon() {
   const [value, setValue] = useState('');

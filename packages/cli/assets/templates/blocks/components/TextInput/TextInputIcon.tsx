@@ -9,7 +9,7 @@ import {
   EnvelopeIcon,
   LockClosedIcon,
   UserIcon,
-} from '@heroicons/react/24/outline';
+} from '@astryxdesign/icons-heroicons';
 
 export default function TextInputIcon() {
   const [name, setName] = useState('');

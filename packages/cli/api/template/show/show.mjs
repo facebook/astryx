@@ -18,13 +18,13 @@ import {
 } from '../../../foundation/discovery/template-adapter.mjs';
 import {
   NO_ICON_SETS,
-  mapTemplateIcons,
+  writeTemplateIcons,
 } from '../../../foundation/discovery/template-icons.mjs';
 
 /**
  * Build the `template.show` envelope for an already-resolved template.
  * @param {import('../../../foundation/discovery/template-adapter.mjs').DiscoveredTemplate} match
- * @param {{iconSets?: Parameters<typeof mapTemplateIcons>[1]}} [options]
+ * @param {{iconSets?: Parameters<typeof writeTemplateIcons>[1]}} [options]
  *   the project's icon sets; without them the template's icons are unchanged
  * @returns {import('../template.type.mjs').TemplateShowResponse}
  */
@@ -43,8 +43,9 @@ export function templateShow(match, {iconSets = NO_ICON_SETS} = {}) {
   const {source: withMedia, demoMediaReplaced} = replaceDemoMedia(
     fs.readFileSync(match.filePath, 'utf-8'),
   );
-  // Icons follow the project's icon set, as template.copy writes them.
-  const {source, icons} = mapTemplateIcons(withMedia, iconSets, match.icons);
+  // Icons follow the project's icon set, as template.copy writes them; without
+  // one, the reference set's imports become their upstream imports (FR20).
+  const {source, icons} = writeTemplateIcons(withMedia, iconSets, match.icons);
 
   return {
     type: 'template.show',

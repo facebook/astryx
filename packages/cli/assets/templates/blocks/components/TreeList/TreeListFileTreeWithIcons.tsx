@@ -4,7 +4,7 @@
 
 import {TreeList} from '@astryxdesign/core/TreeList';
 import {Icon} from '@astryxdesign/core/Icon';
-import {FolderIcon, DocumentIcon} from '@heroicons/react/24/outline';
+import {FolderIcon, DocumentIcon} from '@astryxdesign/icons-heroicons';
 
 export default function TreeListFileTreeWithIcons() {
   return (

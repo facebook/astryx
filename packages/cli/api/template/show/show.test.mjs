@@ -14,6 +14,7 @@ import * as path from 'node:path';
 import {discoverAll, template} from '../template.mjs';
 import {templateCopy} from '../copy/copy.mjs';
 import {templateShow} from './show.mjs';
+import {lowerReferenceIcons} from '../../../foundation/discovery/template-reference-icons.mjs';
 
 const SLOW = 60_000;
 /** Astryx's demo-media namespace: only its own previews serve these files. */
@@ -51,7 +52,9 @@ describe('template.show', () => {
   it('reports a replaced count when the source changed, and 0 when it did not', () => {
     let reported = 0;
     for (const match of templates) {
-      const raw = read(match.filePath);
+      // Without an icon set, the reference set's imports print as their
+      // upstream imports (AST-084 FR20); only demo media changes beyond that.
+      const raw = lowerReferenceIcons(read(match.filePath));
       const {source, demoMediaReplaced} = templateShow(match).data;
       if (source === raw) expect(demoMediaReplaced, match.dirName).toBe(0);
       else expect(demoMediaReplaced, match.dirName).toBeGreaterThan(0);

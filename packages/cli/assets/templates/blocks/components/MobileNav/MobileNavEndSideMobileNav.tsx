@@ -6,7 +6,7 @@ import {useState} from 'react';
 import {MobileNav} from '@astryxdesign/core/MobileNav';
 import {SideNavSection, SideNavItem} from '@astryxdesign/core/SideNav';
 import {Button} from '@astryxdesign/core/Button';
-import {Cog6ToothIcon, UsersIcon} from '@heroicons/react/24/outline';
+import {Cog6ToothIcon, UsersIcon} from '@astryxdesign/icons-heroicons';
 
 export default function MobileNavEndSideMobileNav() {
   const [isOpen, setIsOpen] = useState(false);

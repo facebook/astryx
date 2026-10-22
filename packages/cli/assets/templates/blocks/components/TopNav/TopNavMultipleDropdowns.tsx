@@ -14,7 +14,7 @@ import {
   CubeIcon,
   ChartBarIcon,
   ShieldCheckIcon,
-} from '@heroicons/react/24/outline';
+} from '@astryxdesign/icons-heroicons';
 
 export default function TopNavMultipleDropdowns() {
   return (

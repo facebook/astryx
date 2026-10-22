@@ -7,11 +7,11 @@ import {Icon} from '@astryxdesign/core/Icon';
 import {Stack} from '@astryxdesign/core/Layout';
 import {Text} from '@astryxdesign/core/Text';
 import {
-  CheckIcon,
-  PaperAirplaneIcon,
-  SparklesIcon,
-} from '@heroicons/react/24/solid';
-import {XCircleIcon} from '@heroicons/react/24/outline';
+  CheckSolidIcon as CheckIcon,
+  PaperAirplaneSolidIcon as PaperAirplaneIcon,
+  SparklesSolidIcon as SparklesIcon,
+} from '@astryxdesign/icons-heroicons';
+import {XCircleIcon} from '@astryxdesign/icons-heroicons';
 
 export default function ChatSendButtonCustomIcon() {
   return (

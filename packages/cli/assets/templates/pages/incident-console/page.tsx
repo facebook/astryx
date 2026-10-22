@@ -51,7 +51,7 @@ import {StatusDot} from '@astryxdesign/core/StatusDot';
 import {Timestamp} from '@astryxdesign/core/Timestamp';
 import {Token} from '@astryxdesign/core/Token';
 import {useMediaQuery} from '@astryxdesign/core/hooks';
-import {BellAlertIcon, PlusIcon} from '@heroicons/react/24/outline';
+import {BellAlertIcon, PlusIcon} from '@astryxdesign/icons-heroicons';
 
 const styles: Record<string, CSSProperties> = {
   contentFill: {

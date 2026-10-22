@@ -38,7 +38,7 @@ import {
   PencilSquareIcon,
   ArrowLeftIcon,
   ViewColumnsIcon,
-} from '@heroicons/react/24/outline';
+} from '@astryxdesign/icons-heroicons';
 
 // ─── Styles ─────────────────────────────────────────────────────────────────
 import type {CSSProperties} from 'react';

@@ -5,7 +5,7 @@
 import {useState} from 'react';
 import {TextInput} from '@astryxdesign/core/TextInput';
 import {Stack} from '@astryxdesign/core/Layout';
-import {MagnifyingGlassIcon} from '@heroicons/react/24/outline';
+import {MagnifyingGlassIcon} from '@astryxdesign/icons-heroicons';
 
 export default function TextInputSearch() {
   const [query, setQuery] = useState('');

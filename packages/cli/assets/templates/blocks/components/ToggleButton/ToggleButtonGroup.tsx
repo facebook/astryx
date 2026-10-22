@@ -11,13 +11,13 @@ import {
   ListBulletIcon,
   Squares2X2Icon,
   TableCellsIcon,
-} from '@heroicons/react/24/outline';
+} from '@astryxdesign/icons-heroicons';
 import {
   BoldIcon,
   ItalicIcon,
   UnderlineIcon,
   StrikethroughIcon,
-} from '@heroicons/react/24/outline';
+} from '@astryxdesign/icons-heroicons';
 
 export default function ToggleButtonGroupBlock() {
   const [view, setView] = useState<string | null>('list');

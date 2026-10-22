@@ -7,7 +7,7 @@ import {VStack} from '@astryxdesign/core/Stack';
 import {Heading, Text} from '@astryxdesign/core/Text';
 import {TopNav, TopNavHeading, TopNavItem} from '@astryxdesign/core/TopNav';
 import {NavIcon} from '@astryxdesign/core/NavIcon';
-import {CubeIcon} from '@heroicons/react/24/outline';
+import {CubeIcon} from '@astryxdesign/icons-heroicons';
 
 export default function AppShellTopNavOnly() {
   return (

@@ -17,15 +17,15 @@ import {
   BookmarkIcon,
   HeartIcon,
   BellIcon,
-} from '@heroicons/react/24/outline';
+} from '@astryxdesign/icons-heroicons';
 import {
-  BoldIcon as BoldSolid,
-  ItalicIcon as ItalicSolid,
-  UnderlineIcon as UnderlineSolid,
-  StarIcon as StarSolid,
-  BookmarkIcon as BookmarkSolid,
-  HeartIcon as HeartSolid,
-} from '@heroicons/react/24/solid';
+  BoldSolidIcon as BoldSolid,
+  ItalicSolidIcon as ItalicSolid,
+  UnderlineSolidIcon as UnderlineSolid,
+  StarSolidIcon as StarSolid,
+  BookmarkSolidIcon as BookmarkSolid,
+  HeartSolidIcon as HeartSolid,
+} from '@astryxdesign/icons-heroicons';
 
 export default function ToggleButtonColor() {
   const [toolbar, setToolbar] = useState<Record<string, boolean>>({

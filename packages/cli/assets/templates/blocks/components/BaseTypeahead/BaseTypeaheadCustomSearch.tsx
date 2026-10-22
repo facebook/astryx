@@ -16,7 +16,7 @@ import {
   radiusVars,
   spacingVars,
 } from '@astryxdesign/core/theme/tokens.stylex';
-import {MagnifyingGlassIcon} from '@heroicons/react/24/outline';
+import {MagnifyingGlassIcon} from '@astryxdesign/icons-heroicons';
 
 const frameworks: SearchableItem[] = [
   {id: 'react', label: 'React'},

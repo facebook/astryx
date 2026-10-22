@@ -6,7 +6,7 @@ import {Button} from '@astryxdesign/core/Button';
 import {Icon} from '@astryxdesign/core/Icon';
 import {Stack} from '@astryxdesign/core/Layout';
 import {Text} from '@astryxdesign/core/Text';
-import {PlusIcon} from '@heroicons/react/24/outline';
+import {PlusIcon} from '@astryxdesign/icons-heroicons';
 
 const VARIANTS = [
   {variant: 'primary' as const, label: 'Primary'},

@@ -21,7 +21,7 @@ import {
   MicrophoneIcon,
   PaperClipIcon,
   SparklesIcon,
-} from '@heroicons/react/24/outline';
+} from '@astryxdesign/icons-heroicons';
 
 export default function ChatComposerFullFeatured() {
   const [isStreaming, setIsStreaming] = useState(false);

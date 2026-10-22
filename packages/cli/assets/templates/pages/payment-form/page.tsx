@@ -31,10 +31,10 @@ import {Section} from '@astryxdesign/core/Section';
 import {Center} from '@astryxdesign/core/Center';
 import {Thumbnail} from '@astryxdesign/core/Thumbnail';
 import {Icon} from '@astryxdesign/core/Icon';
-import {ShieldCheckIcon} from '@heroicons/react/24/outline';
-import {LockClosedIcon} from '@heroicons/react/24/outline';
-import {CheckCircleIcon} from '@heroicons/react/24/outline';
-import {TruckIcon} from '@heroicons/react/24/outline';
+import {ShieldCheckIcon} from '@astryxdesign/icons-heroicons';
+import {LockClosedIcon} from '@astryxdesign/icons-heroicons';
+import {CheckCircleIcon} from '@astryxdesign/icons-heroicons';
+import {TruckIcon} from '@astryxdesign/icons-heroicons';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 

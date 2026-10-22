@@ -7,7 +7,10 @@ import {Card} from '@astryxdesign/core/Card';
 import {HStack, VStack} from '@astryxdesign/core/Layout';
 import {Text} from '@astryxdesign/core/Text';
 import {Icon} from '@astryxdesign/core/Icon';
-import {ArrowUpIcon, ArrowDownIcon} from '@heroicons/react/24/solid';
+import {
+  ArrowUpSolidIcon as ArrowUpIcon,
+  ArrowDownSolidIcon as ArrowDownIcon,
+} from '@astryxdesign/icons-heroicons';
 
 const stats = [
   {label: 'Revenue', value: '$48.2k', delta: '+12%', direction: 'up'},

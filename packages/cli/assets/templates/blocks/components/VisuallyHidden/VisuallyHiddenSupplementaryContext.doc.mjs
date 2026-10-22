@@ -18,5 +18,5 @@ export const doc = {
     'Text',
     'Icon',
   ],
-  icons: {ArrowDownIcon: 'arrowDown', ArrowUpIcon: 'arrowUp'},
+  icons: {ArrowDownSolidIcon: 'arrowDown', ArrowUpSolidIcon: 'arrowUp'},
 };

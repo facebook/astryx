@@ -8,7 +8,7 @@ import {Icon} from '@astryxdesign/core/Icon';
 import {Heading} from '@astryxdesign/core/Text';
 import {Stack} from '@astryxdesign/core/Layout';
 import {Card} from '@astryxdesign/core/Card';
-import {FunnelIcon, PlusIcon} from '@heroicons/react/24/outline';
+import {FunnelIcon, PlusIcon} from '@astryxdesign/icons-heroicons';
 
 const SIZES = [
   {size: 'sm' as const, label: 'Small'},

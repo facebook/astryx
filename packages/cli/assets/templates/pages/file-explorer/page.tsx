@@ -30,8 +30,8 @@ import {
   TableCellsIcon,
   AdjustmentsHorizontalIcon,
   DocumentIcon,
-} from '@heroicons/react/24/outline';
-import {FolderIcon} from '@heroicons/react/24/solid';
+} from '@astryxdesign/icons-heroicons';
+import {FolderSolidIcon as FolderIcon} from '@astryxdesign/icons-heroicons';
 
 interface FileSystemItem {
   id: string;

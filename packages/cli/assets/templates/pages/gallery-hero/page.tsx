@@ -9,7 +9,7 @@ import {Button} from '@astryxdesign/core/Button';
 import {Icon} from '@astryxdesign/core/Icon';
 import {Grid} from '@astryxdesign/core/Grid';
 import {AspectRatio} from '@astryxdesign/core/AspectRatio';
-import {ArrowRightIcon} from '@heroicons/react/20/solid';
+import {ArrowRightMiniIcon as ArrowRightIcon} from '@astryxdesign/icons-heroicons';
 
 const IMAGES = [
   {

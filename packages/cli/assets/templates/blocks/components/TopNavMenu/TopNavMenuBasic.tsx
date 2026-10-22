@@ -8,7 +8,7 @@ import {
   TopNavItem,
   TopNavMenu,
 } from '@astryxdesign/core/TopNav';
-import {ChartBarIcon, Cog6ToothIcon} from '@heroicons/react/24/outline';
+import {ChartBarIcon, Cog6ToothIcon} from '@astryxdesign/icons-heroicons';
 
 export default function TopNavMenuBasic() {
   return (

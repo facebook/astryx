@@ -7,7 +7,7 @@ import {Token} from '@astryxdesign/core/Token';
 import {Button} from '@astryxdesign/core/Button';
 import {Icon} from '@astryxdesign/core/Icon';
 import {Stack} from '@astryxdesign/core/Layout';
-import {PaperClipIcon} from '@heroicons/react/24/outline';
+import {PaperClipIcon} from '@astryxdesign/icons-heroicons';
 import type {CSSProperties} from 'react';
 
 const drawerBorder: CSSProperties = {

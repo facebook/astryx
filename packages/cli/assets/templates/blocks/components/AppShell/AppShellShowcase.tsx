@@ -16,9 +16,9 @@ import {
   ChartBarIcon,
   DocumentTextIcon,
   UsersIcon,
-} from '@heroicons/react/24/outline';
-import {HomeIcon} from '@heroicons/react/24/solid';
-import {CubeIcon} from '@heroicons/react/24/outline';
+} from '@astryxdesign/icons-heroicons';
+import {HomeSolidIcon as HomeIcon} from '@astryxdesign/icons-heroicons';
+import {CubeIcon} from '@astryxdesign/icons-heroicons';
 
 export default function AppShellShowcase() {
   return (

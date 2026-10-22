@@ -9,7 +9,7 @@ import {Button} from '@astryxdesign/core/Button';
 import {Icon} from '@astryxdesign/core/Icon';
 import {AspectRatio} from '@astryxdesign/core/AspectRatio';
 import {Section} from '@astryxdesign/core/Section';
-import {ArrowRightIcon} from '@heroicons/react/20/solid';
+import {ArrowRightMiniIcon as ArrowRightIcon} from '@astryxdesign/icons-heroicons';
 
 const IMAGE_URL =
   '/template-assets/light-scene-horizontal-1.png';

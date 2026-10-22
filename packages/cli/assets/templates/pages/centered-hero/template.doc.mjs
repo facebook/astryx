@@ -10,5 +10,5 @@ export const doc = {
   keywords: ['hero', 'banner', 'splash', 'landing image', 'marketing masthead'],
   isReady: true,
   category: 'Gallery - Hero',
-  icons: {ArrowRightIcon: 'arrowRight'},
+  icons: {ArrowRightMiniIcon: 'arrowRight'},
 };

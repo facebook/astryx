@@ -39,7 +39,7 @@ import {
   FireIcon,
   GlobeAltIcon,
   MoonIcon,
-} from '@heroicons/react/24/outline';
+} from '@astryxdesign/icons-heroicons';
 
 const styles = stylex.create({
   // Cap + center the page body so wide screens show whitespace gutters.

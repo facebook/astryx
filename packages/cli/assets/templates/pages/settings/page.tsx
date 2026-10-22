@@ -22,7 +22,7 @@ import {Button} from '@astryxdesign/core/Button';
 import {Divider} from '@astryxdesign/core/Divider';
 import {CheckboxInput} from '@astryxdesign/core/CheckboxInput';
 import {Typeahead} from '@astryxdesign/core/Typeahead';
-import {MagnifyingGlassIcon} from '@heroicons/react/24/outline';
+import {MagnifyingGlassIcon} from '@astryxdesign/icons-heroicons';
 import type {SearchableItem, SearchSource} from '@astryxdesign/core/Typeahead';
 
 const NAV_ITEMS = [

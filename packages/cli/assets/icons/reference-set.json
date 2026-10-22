@@ -1,0 +1,662 @@
+{
+  "package": "@astryxdesign/icons-heroicons",
+  "set": "heroicons",
+  "exports": {
+    "AdjustmentsHorizontalIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "AdjustmentsHorizontalIcon"
+    },
+    "ArchiveBoxIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "ArchiveBoxIcon"
+    },
+    "ArrowDownIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "ArrowDownIcon"
+    },
+    "ArrowDownOnSquareIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "ArrowDownOnSquareIcon"
+    },
+    "ArrowDownSolidIcon": {
+      "module": "@heroicons/react/24/solid",
+      "export": "ArrowDownIcon"
+    },
+    "ArrowDownTrayIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "ArrowDownTrayIcon"
+    },
+    "ArrowLeftIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "ArrowLeftIcon"
+    },
+    "ArrowPathIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "ArrowPathIcon"
+    },
+    "ArrowRightIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "ArrowRightIcon"
+    },
+    "ArrowRightMiniIcon": {
+      "module": "@heroicons/react/20/solid",
+      "export": "ArrowRightIcon"
+    },
+    "ArrowRightSolidIcon": {
+      "module": "@heroicons/react/24/solid",
+      "export": "ArrowRightIcon"
+    },
+    "ArrowTopRightOnSquareIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "ArrowTopRightOnSquareIcon"
+    },
+    "ArrowTrendingDownIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "ArrowTrendingDownIcon"
+    },
+    "ArrowUpIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "ArrowUpIcon"
+    },
+    "ArrowUpSolidIcon": {
+      "module": "@heroicons/react/24/solid",
+      "export": "ArrowUpIcon"
+    },
+    "ArrowUturnLeftIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "ArrowUturnLeftIcon"
+    },
+    "ArrowsPointingOutIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "ArrowsPointingOutIcon"
+    },
+    "ArrowsRightLeftIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "ArrowsRightLeftIcon"
+    },
+    "ArrowsUpDownIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "ArrowsUpDownIcon"
+    },
+    "AtSymbolIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "AtSymbolIcon"
+    },
+    "BanknotesIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "BanknotesIcon"
+    },
+    "Bars3BottomLeftIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "Bars3BottomLeftIcon"
+    },
+    "Bars3Icon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "Bars3Icon"
+    },
+    "Bars4Icon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "Bars4Icon"
+    },
+    "BeakerIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "BeakerIcon"
+    },
+    "BellAlertIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "BellAlertIcon"
+    },
+    "BellIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "BellIcon"
+    },
+    "BellSlashIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "BellSlashIcon"
+    },
+    "BoldIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "BoldIcon"
+    },
+    "BoldSolidIcon": {
+      "module": "@heroicons/react/24/solid",
+      "export": "BoldIcon"
+    },
+    "BoltIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "BoltIcon"
+    },
+    "BookOpenIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "BookOpenIcon"
+    },
+    "BookmarkIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "BookmarkIcon"
+    },
+    "BookmarkSolidIcon": {
+      "module": "@heroicons/react/24/solid",
+      "export": "BookmarkIcon"
+    },
+    "BriefcaseIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "BriefcaseIcon"
+    },
+    "BuildingLibraryIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "BuildingLibraryIcon"
+    },
+    "BuildingOffice2Icon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "BuildingOffice2Icon"
+    },
+    "CalendarDaysIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "CalendarDaysIcon"
+    },
+    "CalendarIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "CalendarIcon"
+    },
+    "ChartBarIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "ChartBarIcon"
+    },
+    "ChartBarSolidIcon": {
+      "module": "@heroicons/react/24/solid",
+      "export": "ChartBarIcon"
+    },
+    "ChatBubbleLeftIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "ChatBubbleLeftIcon"
+    },
+    "ChatBubbleLeftRightIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "ChatBubbleLeftRightIcon"
+    },
+    "CheckBadgeIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "CheckBadgeIcon"
+    },
+    "CheckCircleIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "CheckCircleIcon"
+    },
+    "CheckSolidIcon": {
+      "module": "@heroicons/react/24/solid",
+      "export": "CheckIcon"
+    },
+    "ChevronDownIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "ChevronDownIcon"
+    },
+    "ChevronLeftIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "ChevronLeftIcon"
+    },
+    "ChevronRightIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "ChevronRightIcon"
+    },
+    "ChevronUpIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "ChevronUpIcon"
+    },
+    "CircleStackIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "CircleStackIcon"
+    },
+    "ClipboardDocumentCheckIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "ClipboardDocumentCheckIcon"
+    },
+    "ClipboardDocumentIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "ClipboardDocumentIcon"
+    },
+    "ClipboardIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "ClipboardIcon"
+    },
+    "ClockIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "ClockIcon"
+    },
+    "CloudIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "CloudIcon"
+    },
+    "CodeBracketIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "CodeBracketIcon"
+    },
+    "Cog6ToothIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "Cog6ToothIcon"
+    },
+    "CommandLineIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "CommandLineIcon"
+    },
+    "ComputerDesktopIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "ComputerDesktopIcon"
+    },
+    "CpuChipIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "CpuChipIcon"
+    },
+    "CreditCardIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "CreditCardIcon"
+    },
+    "CubeIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "CubeIcon"
+    },
+    "CurrencyDollarIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "CurrencyDollarIcon"
+    },
+    "CursorArrowRaysIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "CursorArrowRaysIcon"
+    },
+    "DevicePhoneMobileIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "DevicePhoneMobileIcon"
+    },
+    "DeviceTabletIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "DeviceTabletIcon"
+    },
+    "DocumentDuplicateIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "DocumentDuplicateIcon"
+    },
+    "DocumentIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "DocumentIcon"
+    },
+    "DocumentMagnifyingGlassIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "DocumentMagnifyingGlassIcon"
+    },
+    "DocumentTextIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "DocumentTextIcon"
+    },
+    "EllipsisHorizontalIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "EllipsisHorizontalIcon"
+    },
+    "EnvelopeIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "EnvelopeIcon"
+    },
+    "ExclamationTriangleIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "ExclamationTriangleIcon"
+    },
+    "EyeIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "EyeIcon"
+    },
+    "EyeSlashIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "EyeSlashIcon"
+    },
+    "FaceSmileIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "FaceSmileIcon"
+    },
+    "FingerPrintIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "FingerPrintIcon"
+    },
+    "FireIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "FireIcon"
+    },
+    "FlagIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "FlagIcon"
+    },
+    "FolderArrowDownIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "FolderArrowDownIcon"
+    },
+    "FolderIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "FolderIcon"
+    },
+    "FolderPlusIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "FolderPlusIcon"
+    },
+    "FolderSolidIcon": {
+      "module": "@heroicons/react/24/solid",
+      "export": "FolderIcon"
+    },
+    "FunnelIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "FunnelIcon"
+    },
+    "GiftIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "GiftIcon"
+    },
+    "GlobeAltIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "GlobeAltIcon"
+    },
+    "HandRaisedIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "HandRaisedIcon"
+    },
+    "HandThumbDownIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "HandThumbDownIcon"
+    },
+    "HandThumbUpIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "HandThumbUpIcon"
+    },
+    "HashtagIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "HashtagIcon"
+    },
+    "HeartIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "HeartIcon"
+    },
+    "HeartSolidIcon": {
+      "module": "@heroicons/react/24/solid",
+      "export": "HeartIcon"
+    },
+    "HomeIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "HomeIcon"
+    },
+    "HomeModernIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "HomeModernIcon"
+    },
+    "HomeSolidIcon": {
+      "module": "@heroicons/react/24/solid",
+      "export": "HomeIcon"
+    },
+    "InboxIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "InboxIcon"
+    },
+    "InformationCircleIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "InformationCircleIcon"
+    },
+    "ItalicIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "ItalicIcon"
+    },
+    "ItalicSolidIcon": {
+      "module": "@heroicons/react/24/solid",
+      "export": "ItalicIcon"
+    },
+    "KeyIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "KeyIcon"
+    },
+    "LanguageIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "LanguageIcon"
+    },
+    "LightBulbIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "LightBulbIcon"
+    },
+    "LinkIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "LinkIcon"
+    },
+    "ListBulletIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "ListBulletIcon"
+    },
+    "LockClosedIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "LockClosedIcon"
+    },
+    "MagnifyingGlassIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "MagnifyingGlassIcon"
+    },
+    "MapPinIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "MapPinIcon"
+    },
+    "MegaphoneIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "MegaphoneIcon"
+    },
+    "MicrophoneIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "MicrophoneIcon"
+    },
+    "MinusIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "MinusIcon"
+    },
+    "MoonIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "MoonIcon"
+    },
+    "PaintBrushIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "PaintBrushIcon"
+    },
+    "PaperAirplaneIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "PaperAirplaneIcon"
+    },
+    "PaperAirplaneSolidIcon": {
+      "module": "@heroicons/react/24/solid",
+      "export": "PaperAirplaneIcon"
+    },
+    "PaperClipIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "PaperClipIcon"
+    },
+    "PencilIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "PencilIcon"
+    },
+    "PencilSquareIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "PencilSquareIcon"
+    },
+    "PhotoIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "PhotoIcon"
+    },
+    "PlayCircleIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "PlayCircleIcon"
+    },
+    "PlayIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "PlayIcon"
+    },
+    "PlusCircleIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "PlusCircleIcon"
+    },
+    "PlusIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "PlusIcon"
+    },
+    "PresentationChartLineIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "PresentationChartLineIcon"
+    },
+    "PuzzlePieceIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "PuzzlePieceIcon"
+    },
+    "QuestionMarkCircleIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "QuestionMarkCircleIcon"
+    },
+    "ReceiptPercentIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "ReceiptPercentIcon"
+    },
+    "RectangleStackIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "RectangleStackIcon"
+    },
+    "RocketLaunchIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "RocketLaunchIcon"
+    },
+    "ScissorsIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "ScissorsIcon"
+    },
+    "ServerStackIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "ServerStackIcon"
+    },
+    "ShareIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "ShareIcon"
+    },
+    "ShieldCheckIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "ShieldCheckIcon"
+    },
+    "ShoppingBagIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "ShoppingBagIcon"
+    },
+    "ShoppingCartIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "ShoppingCartIcon"
+    },
+    "SignalIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "SignalIcon"
+    },
+    "SparklesIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "SparklesIcon"
+    },
+    "SparklesSolidIcon": {
+      "module": "@heroicons/react/24/solid",
+      "export": "SparklesIcon"
+    },
+    "SpeakerWaveIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "SpeakerWaveIcon"
+    },
+    "SpeakerWaveSolidIcon": {
+      "module": "@heroicons/react/24/solid",
+      "export": "SpeakerWaveIcon"
+    },
+    "Squares2X2Icon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "Squares2X2Icon"
+    },
+    "SquaresPlusIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "SquaresPlusIcon"
+    },
+    "StarIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "StarIcon"
+    },
+    "StarSolidIcon": {
+      "module": "@heroicons/react/24/solid",
+      "export": "StarIcon"
+    },
+    "StopSolidIcon": {
+      "module": "@heroicons/react/24/solid",
+      "export": "StopIcon"
+    },
+    "StrikethroughIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "StrikethroughIcon"
+    },
+    "SunIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "SunIcon"
+    },
+    "SwatchIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "SwatchIcon"
+    },
+    "TableCellsIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "TableCellsIcon"
+    },
+    "TagIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "TagIcon"
+    },
+    "TrashIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "TrashIcon"
+    },
+    "TruckIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "TruckIcon"
+    },
+    "UnderlineIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "UnderlineIcon"
+    },
+    "UnderlineSolidIcon": {
+      "module": "@heroicons/react/24/solid",
+      "export": "UnderlineIcon"
+    },
+    "UserCircleIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "UserCircleIcon"
+    },
+    "UserGroupIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "UserGroupIcon"
+    },
+    "UserIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "UserIcon"
+    },
+    "UserMinusIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "UserMinusIcon"
+    },
+    "UserPlusIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "UserPlusIcon"
+    },
+    "UsersIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "UsersIcon"
+    },
+    "ViewColumnsIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "ViewColumnsIcon"
+    },
+    "WrenchScrewdriverIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "WrenchScrewdriverIcon"
+    },
+    "XCircleIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "XCircleIcon"
+    },
+    "XMarkIcon": {
+      "module": "@heroicons/react/24/outline",
+      "export": "XMarkIcon"
+    }
+  }
+}

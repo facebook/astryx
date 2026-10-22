@@ -41,6 +41,16 @@ export {discoverTemplates, listTemplates} from '../../../api/template/template.m
  */
 function iconLines(icons) {
   if (icons == null) return [];
+  // No icon set, with experimental.templateIcons: Core's icons (FR21).
+  if (icons.core) {
+    return [
+      ...icons.core.map(
+        each =>
+          `icons: core ${each.source.export} (${each.source.module}) -> ${each.icon ? `Core's "${each.icon}" icon` : 'a placeholder'}${each.definition ? ` for "${each.definition}"` : ''}`,
+      ),
+      `icons: ${icons.note}`,
+    ];
+  }
   if (icons.status !== 'selected') {
     return icons.status === 'none'
       ? []

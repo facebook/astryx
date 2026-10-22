@@ -8,7 +8,7 @@ import {Icon} from '@astryxdesign/core/Icon';
 import {Heading} from '@astryxdesign/core/Text';
 import {Card} from '@astryxdesign/core/Card';
 import {Section} from '@astryxdesign/core/Section';
-import {FunnelIcon, PlusIcon} from '@heroicons/react/24/outline';
+import {FunnelIcon, PlusIcon} from '@astryxdesign/icons-heroicons';
 
 export default function ToolbarCardHeader() {
   return (

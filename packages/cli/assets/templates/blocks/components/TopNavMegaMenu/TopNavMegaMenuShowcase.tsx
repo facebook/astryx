@@ -16,7 +16,7 @@ import {
   CodeBracketIcon,
   ShieldCheckIcon,
   MagnifyingGlassIcon,
-} from '@heroicons/react/24/outline';
+} from '@astryxdesign/icons-heroicons';
 
 export default function TopNavMegaMenuShowcase() {
   return (

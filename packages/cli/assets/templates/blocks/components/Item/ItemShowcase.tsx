@@ -8,7 +8,7 @@ import {Badge} from '@astryxdesign/core/Badge';
 import {Icon} from '@astryxdesign/core/Icon';
 import {Text} from '@astryxdesign/core/Text';
 import {Stack} from '@astryxdesign/core/Layout';
-import {UserIcon, DocumentIcon, BellIcon} from '@heroicons/react/24/outline';
+import {UserIcon, DocumentIcon, BellIcon} from '@astryxdesign/icons-heroicons';
 
 export default function ItemShowcase() {
   return (

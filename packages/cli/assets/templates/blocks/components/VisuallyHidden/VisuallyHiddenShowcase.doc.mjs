@@ -21,7 +21,7 @@ export const doc = {
   icons: {
     ArrowDownTrayIcon: 'download',
     ShareIcon: 'share',
-    SpeakerWaveIcon: 'audio',
+    SpeakerWaveSolidIcon: 'audio',
     TrashIcon: 'delete',
   },
 };

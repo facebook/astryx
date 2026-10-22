@@ -11,7 +11,7 @@ import {Button} from '@astryxdesign/core/Button';
 import {Card} from '@astryxdesign/core/Card';
 import {Icon} from '@astryxdesign/core/Icon';
 import {Banner} from '@astryxdesign/core/Banner';
-import {CubeIcon} from '@heroicons/react/24/outline';
+import {CubeIcon} from '@astryxdesign/icons-heroicons';
 
 // Standalone auth page paints its own body background (no host shell).
 const pageStyle: CSSProperties = {

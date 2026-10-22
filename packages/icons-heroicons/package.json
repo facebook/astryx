@@ -1,0 +1,61 @@
+{
+  "name": "@astryxdesign/icons-heroicons",
+  "version": "0.7.3",
+  "private": true,
+  "description": "Experimental. The official Heroicons icon set for Astryx: every Heroicons icon as a <Name>Icon component, mapped to Astryx icon definitions.",
+  "author": "Meta Open Source",
+  "license": "MIT",
+  "homepage": "https://github.com/facebook/astryx#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/facebook/astryx.git",
+    "directory": "packages/icons-heroicons"
+  },
+  "bugs": {
+    "url": "https://github.com/facebook/astryx/issues"
+  },
+  "keywords": [
+    "astryx",
+    "icons",
+    "icon-set",
+    "heroicons"
+  ],
+  "type": "module",
+  "sideEffects": false,
+  "main": "./index.js",
+  "types": "./index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./index.d.ts",
+      "default": "./index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "index.js",
+    "index.d.ts",
+    "README.md",
+    "LICENSE",
+    "icon-sets",
+    "astryx.integration.mjs"
+  ],
+  "scripts": {
+    "check": "astryx integration check --strict",
+    "verify": "astryx integration verify"
+  },
+  "dependencies": {
+    "@heroicons/react": "^2.2.0"
+  },
+  "peerDependencies": {
+    "@astryxdesign/cli": "0.7.3",
+    "react": ">=19"
+  },
+  "peerDependenciesMeta": {
+    "@astryxdesign/cli": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@astryxdesign/cli": "workspace:*"
+  }
+}

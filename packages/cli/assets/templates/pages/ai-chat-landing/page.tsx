@@ -36,7 +36,7 @@ import {
   LockClosedIcon,
   ClockIcon,
   LightBulbIcon,
-} from '@heroicons/react/24/outline';
+} from '@astryxdesign/icons-heroicons';
 
 // Fill the content area so the greeting and composer stay vertically centered.
 const pageStyle: CSSProperties = {minHeight: '100%'};

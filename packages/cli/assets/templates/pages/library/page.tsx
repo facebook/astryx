@@ -15,7 +15,7 @@ import {HStack, VStack, StackItem} from '@astryxdesign/core/Stack';
 import {DropdownMenu} from '@astryxdesign/core/DropdownMenu';
 import {OverflowList} from '@astryxdesign/core/OverflowList';
 import {Center} from '@astryxdesign/core/Center';
-import {MagnifyingGlassIcon} from '@heroicons/react/24/outline';
+import {MagnifyingGlassIcon} from '@astryxdesign/icons-heroicons';
 
 interface LibraryItem {
   id: string;

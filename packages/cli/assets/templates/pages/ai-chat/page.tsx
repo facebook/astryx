@@ -48,7 +48,7 @@ import {
   PaperClipIcon,
   XMarkIcon,
   ChevronRightIcon,
-} from '@heroicons/react/24/outline';
+} from '@astryxdesign/icons-heroicons';
 
 // Below this width the split-pane collapses to a single chat column. Shared by
 // the CSS container query and the JS check in openArtifact so they can't drift.

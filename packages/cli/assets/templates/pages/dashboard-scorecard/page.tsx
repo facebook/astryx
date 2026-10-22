@@ -38,13 +38,13 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from 'recharts';
-import {ArrowDownTrayIcon} from '@heroicons/react/24/outline';
+import {ArrowDownTrayIcon} from '@astryxdesign/icons-heroicons';
 import {
-  ArrowUpIcon,
-  ArrowDownIcon,
-  ArrowRightIcon,
-  StopIcon,
-} from '@heroicons/react/24/solid';
+  ArrowUpSolidIcon as ArrowUpIcon,
+  ArrowDownSolidIcon as ArrowDownIcon,
+  ArrowRightSolidIcon as ArrowRightIcon,
+  StopSolidIcon as StopIcon,
+} from '@astryxdesign/icons-heroicons';
 
 // ============= TYPES =============
 

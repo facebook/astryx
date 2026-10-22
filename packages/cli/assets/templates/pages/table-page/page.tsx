@@ -225,7 +225,7 @@ import type {
 import {
   ArrowDownTrayIcon,
   MagnifyingGlassIcon,
-} from '@heroicons/react/24/outline';
+} from '@astryxdesign/icons-heroicons';
 
 // ============= DATA =============
 

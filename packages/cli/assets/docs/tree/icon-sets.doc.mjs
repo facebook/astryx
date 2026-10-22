@@ -330,12 +330,49 @@ astryx experimental icon use outline         # make it the project's icon set`,
       ],
     },
     {
+      id: 'official-set',
+      title: 'The official set and templates',
+      content: [
+        {
+          type: 'prose',
+          text: "Astryx's own templates import their icons from the official set, `@astryxdesign/icons-heroicons`: every Heroicons icon as `<Name>Icon`, in the `outline`, `solid` (`TrashSolidIcon`), and `mini` (`TrashMiniIcon`) variants, mapped to every built-in definition. What `astryx template` writes depends on the project:",
+        },
+        {
+          type: 'table',
+          headers: ['The project', 'The template it writes'],
+          rows: [
+            [
+              'Sets `experimental.iconSet` to `heroicons`',
+              'The imports from `@astryxdesign/icons-heroicons`, as the template has them.',
+            ],
+            [
+              'Sets `experimental.iconSet` to another set',
+              "Each icon becomes that set's icon for its definition; an icon the set does not map is written as the upstream Heroicons import.",
+            ],
+            [
+              'Sets `experimental.templateIcons: true` and no `experimental.iconSet`',
+              "Each icon becomes a local component of the same name: Core's built-in icon for a built-in definition, else a neutral placeholder. `icons` lists each in `core` and carries the note to install a set.",
+            ],
+            [
+              'Sets neither',
+              'The upstream Heroicons imports (`@heroicons/react/24/outline` and so on), exactly the file the template wrote before it used the set, and no `icons` report.',
+            ],
+          ],
+        },
+        {
+          type: 'code',
+          lang: 'bash',
+          code: 'npm install @astryxdesign/icons-heroicons\nastryx experimental icon use heroicons',
+        },
+      ],
+    },
+    {
       id: 'reference',
       title: 'Where icon sets show up',
       content: [
         {
           type: 'prose',
-          text: 'Every place the CLI reads or reports icon sets, all experimental. Outside `astryx experimental icon`, each appears only in a project that sets `experimental.iconSet`; `astryx search` never returns icons:',
+          text: 'Every place the CLI reads or reports icon sets, all experimental. Outside `astryx experimental icon`, each appears only in a project that sets `experimental.iconSet` (or, for templates, `experimental.templateIcons`); `astryx search` never returns icons:',
         },
         {
           type: 'table',
@@ -344,6 +381,10 @@ astryx experimental icon use outline         # make it the project's icon set`,
             [
               '`experimental.iconSet` in astryx.config',
               "The project's icon set, by set name or as `<package>/<set>`, and the opt-in: templates, discover, and doctor read icon sets only when it is set. `astryx experimental icon` ranks its icons first, and without it treats the only installed set as the project's. `astryx experimental icon use` writes it.",
+            ],
+            [
+              '`experimental.templateIcons` in astryx.config',
+              "With no `experimental.iconSet`, `true` makes `astryx template` swap each icon for Core's built-in icon of its definition, or a neutral placeholder, and note how to install a set.",
             ],
             [
               '`experimental.iconSets` in the integration manifest',

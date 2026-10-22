@@ -30,7 +30,7 @@ import {
   UserIcon,
   BuildingOffice2Icon,
   CodeBracketIcon,
-} from '@heroicons/react/24/outline';
+} from '@astryxdesign/icons-heroicons';
 
 type Conversation = {
   label: string;

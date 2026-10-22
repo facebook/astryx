@@ -48,8 +48,8 @@ const thumbImage: CSSProperties = {
   display: 'block',
 };
 
-import {MinusIcon, PlusIcon, StarIcon} from '@heroicons/react/24/outline';
-import {StarIcon as StarIconSolid} from '@heroicons/react/24/solid';
+import {MinusIcon, PlusIcon, StarIcon} from '@astryxdesign/icons-heroicons';
+import {StarSolidIcon as StarIconSolid} from '@astryxdesign/icons-heroicons';
 
 // ─── Star Rating ─────────────────────────────────────────────────────────────
 function StarRating({rating, count}: {rating: number; count: number}) {

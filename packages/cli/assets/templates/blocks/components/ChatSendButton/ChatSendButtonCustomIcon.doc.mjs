@@ -11,9 +11,9 @@ export const doc = {
   aspectRatio: 16 / 9,
   componentsUsed: ['Chat', 'ChatSendButton', 'Icon', 'Layout', 'Text'],
   icons: {
-    CheckIcon: 'check',
-    PaperAirplaneIcon: 'send',
-    SparklesIcon: 'sparkles',
+    CheckSolidIcon: 'check',
+    PaperAirplaneSolidIcon: 'send',
+    SparklesSolidIcon: 'sparkles',
     XCircleIcon: 'error',
   },
 };

@@ -20,7 +20,7 @@ import {
   BoltIcon,
   CodeBracketIcon,
   GlobeAltIcon,
-} from '@heroicons/react/24/outline';
+} from '@astryxdesign/icons-heroicons';
 
 export default function TopNavMegaMenuBlock() {
   return (

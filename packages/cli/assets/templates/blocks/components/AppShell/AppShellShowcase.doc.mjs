@@ -22,7 +22,7 @@ export const doc = {
     ChartBarIcon: 'chart',
     CubeIcon: 'package',
     DocumentTextIcon: 'document',
-    HomeIcon: 'home',
+    HomeSolidIcon: 'home',
     UsersIcon: 'users',
   },
 };

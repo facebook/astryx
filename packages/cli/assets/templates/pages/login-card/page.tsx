@@ -3,7 +3,7 @@
 'use client';
 
 import {useState, type CSSProperties} from 'react';
-import {CubeIcon} from '@heroicons/react/24/outline';
+import {CubeIcon} from '@astryxdesign/icons-heroicons';
 import {VStack} from '@astryxdesign/core/Layout';
 import {Center} from '@astryxdesign/core/Center';
 import {Text, Heading} from '@astryxdesign/core/Text';

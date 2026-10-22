@@ -41,7 +41,7 @@ import {
   ShareIcon,
   ArrowLeftIcon,
   ChevronRightIcon,
-} from '@heroicons/react/24/outline';
+} from '@astryxdesign/icons-heroicons';
 
 // Anchor the page to the viewport height so the sidebar + content fill the
 // screen. Layout height="fill" is min-height:100% which collapses when the

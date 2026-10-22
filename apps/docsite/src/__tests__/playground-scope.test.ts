@@ -20,6 +20,7 @@ import * as path from 'node:path';
 import {describe, it, expect, beforeAll} from 'vitest';
 import docsiteConfig from '../../astryx.config.mjs';
 import {blocks} from '../generated/blockRegistry';
+import {lowerReferenceIcons} from '../../../../packages/cli/foundation/discovery/template-reference-icons.mjs';
 
 const GENERATED_SCOPE_PATH = path.resolve(
   __dirname,
@@ -409,7 +410,9 @@ describe('playground-scope', () => {
       if (!fs.existsSync(page)) {
         continue;
       }
-      const source = fs.readFileSync(page, 'utf-8');
+      // The playground runs a template as the site shows it: with the
+      // reference icon set's imports written as their upstream imports.
+      const source = lowerReferenceIcons(fs.readFileSync(page, 'utf-8'));
       for (const match of source.matchAll(IMPORT_RE)) {
         const id = match[1];
         // Relative paths resolve within the template, and assets are stubbed

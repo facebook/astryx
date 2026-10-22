@@ -126,7 +126,7 @@ import {
   BuildingLibraryIcon,
   CreditCardIcon,
   PresentationChartLineIcon,
-} from '@heroicons/react/24/outline';
+} from '@astryxdesign/icons-heroicons';
 
 // ============= SHARED VOCABULARY =============
 

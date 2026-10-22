@@ -29,7 +29,7 @@ import {
   ArrowTopRightOnSquareIcon,
   ArrowsPointingOutIcon,
   PlusIcon,
-} from '@heroicons/react/24/outline';
+} from '@astryxdesign/icons-heroicons';
 
 const tabListFlush: CSSProperties = {marginInlineStart: '-12px'};
 const outlinePanel: CSSProperties = {

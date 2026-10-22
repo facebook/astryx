@@ -13,12 +13,18 @@ export const doc = {
   icons: {
     BellIcon: 'notification',
     BoldIcon: 'bold',
+    BoldSolidIcon: 'bold',
     BookmarkIcon: 'bookmark',
+    BookmarkSolidIcon: 'bookmark',
     HeartIcon: 'heart',
+    HeartSolidIcon: 'heart',
     ItalicIcon: 'italic',
+    ItalicSolidIcon: 'italic',
     LinkIcon: 'link',
     StarIcon: 'star',
+    StarSolidIcon: 'star',
     StrikethroughIcon: 'strikethrough',
     UnderlineIcon: 'underline',
+    UnderlineSolidIcon: 'underline',
   },
 };

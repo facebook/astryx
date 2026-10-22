@@ -21,7 +21,7 @@ import {
   ArrowUturnLeftIcon,
   FlagIcon,
   MapPinIcon,
-} from '@heroicons/react/24/outline';
+} from '@astryxdesign/icons-heroicons';
 
 // Half the viewport is a working surface — the sheet lays its content out at
 // that height and keeps a full scrim. The 96px stop is a peek: a sliver, so the

@@ -27,6 +27,6 @@ export const doc = {
     ArrowDownIcon: 'arrowDown',
     ArrowPathIcon: 'refresh',
     ArrowUpIcon: 'arrowUp',
-    StopIcon: 'stop',
+    StopSolidIcon: 'stop',
   },
 };

@@ -23,6 +23,7 @@
     "@astryxdesign/charts": "*",
     "@astryxdesign/cli": "*",
     "@astryxdesign/core": "*",
+    "@astryxdesign/icons-heroicons": "*",
     "@astryxdesign/lab": "*",
     "@astryxdesign/richtext": "*",
     "@astryxdesign/theme-butter": "*",

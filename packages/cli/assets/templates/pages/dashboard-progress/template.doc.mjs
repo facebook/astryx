@@ -30,6 +30,6 @@ export const doc = {
     CheckCircleIcon: 'success',
     ExclamationTriangleIcon: 'warning',
     FlagIcon: 'flag',
-    StopIcon: 'stop',
+    StopSolidIcon: 'stop',
   },
 };

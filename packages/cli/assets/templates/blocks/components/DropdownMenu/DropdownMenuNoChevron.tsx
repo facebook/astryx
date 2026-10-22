@@ -7,7 +7,7 @@ import {DropdownMenu} from '@astryxdesign/core/DropdownMenu';
 import {Icon} from '@astryxdesign/core/Icon';
 import {VStack} from '@astryxdesign/core/Layout';
 import {Text} from '@astryxdesign/core/Text';
-import {EllipsisHorizontalIcon} from '@heroicons/react/24/outline';
+import {EllipsisHorizontalIcon} from '@astryxdesign/icons-heroicons';
 
 export default function DropdownMenuNoChevron() {
   const [lastAction, setLastAction] = useState<string | null>(null);

@@ -11,11 +11,11 @@ import {
   BookmarkIcon as BookmarkOutline,
   BellIcon,
   BellSlashIcon,
-} from '@heroicons/react/24/outline';
+} from '@astryxdesign/icons-heroicons';
 import {
-  StarIcon as StarSolid,
-  BookmarkIcon as BookmarkSolid,
-} from '@heroicons/react/24/solid';
+  StarSolidIcon as StarSolid,
+  BookmarkSolidIcon as BookmarkSolid,
+} from '@astryxdesign/icons-heroicons';
 
 export default function ToggleButtonShowcase() {
   const [isFavorited, setIsFavorited] = useState(false);

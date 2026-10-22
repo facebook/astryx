@@ -8,7 +8,7 @@ import {ProgressBar} from '@astryxdesign/core/ProgressBar';
 import {Stack} from '@astryxdesign/core/Layout';
 import {Button} from '@astryxdesign/core/Button';
 import {Icon} from '@astryxdesign/core/Icon';
-import {PaperClipIcon, AtSymbolIcon} from '@heroicons/react/24/outline';
+import {PaperClipIcon, AtSymbolIcon} from '@astryxdesign/icons-heroicons';
 
 export default function ChatComposerDrawerWithProgress() {
   return (

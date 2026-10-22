@@ -6,8 +6,8 @@ import {ToggleButton} from '@astryxdesign/core/ToggleButton';
 import {Stack} from '@astryxdesign/core/Layout';
 import {Text} from '@astryxdesign/core/Text';
 import {Icon} from '@astryxdesign/core/Icon';
-import {StarIcon as StarOutline} from '@heroicons/react/24/outline';
-import {StarIcon as StarSolid} from '@heroicons/react/24/solid';
+import {StarIcon as StarOutline} from '@astryxdesign/icons-heroicons';
+import {StarSolidIcon as StarSolid} from '@astryxdesign/icons-heroicons';
 
 export default function ToggleButtonStates() {
   return (

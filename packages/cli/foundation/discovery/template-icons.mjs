@@ -32,6 +32,12 @@
 import {parse} from '@babel/parser';
 import {definitionsByIcon} from './icon-set-discovery.mjs';
 import {astryxDefinitionsByName} from './icon-definition-discovery.mjs';
+import {
+  NO_ICON_SET_NOTE,
+  coreTemplateIcons,
+  lowerReferenceIcons,
+  referenceIconSet,
+} from './template-reference-icons.mjs';
 
 /** @typedef {import('./icon-set-discovery.mjs').DiscoveredIconSet} DiscoveredIconSet */
 /** @typedef {import('./icon-set-discovery.mjs').IconSetChoice} IconSetChoice */
@@ -80,6 +86,11 @@ import {astryxDefinitionsByName} from './icon-definition-discovery.mjs';
  * @property {string} reason
  * @property {MappedIcon[]} mapped
  * @property {KeptIcon[]} kept
+ * @property {string} [note] with no icon set and `experimental.templateIcons`:
+ *   how to install one (FR21)
+ * @property {import('./template-reference-icons.mjs').CoreIcon[]} [core] with
+ *   no icon set and `experimental.templateIcons`: each icon swapped for Core's
+ *   built-in icon of its definition, or the neutral placeholder (FR21)
  */
 
 /**
@@ -295,6 +306,26 @@ function isAstryxModule(module) {
   return module.startsWith('@astryxdesign/');
 }
 
+/**
+ * Whether a declaration may match an import from this module: any icon
+ * library, and the bundled templates' reference set (FR19), whose icons are
+ * declared by definition whether or not it is installed; never another
+ * Astryx package.
+ * @param {string} module
+ */
+function declarable(module) {
+  return !isAstryxModule(module) || module === referenceIconSet().package;
+}
+
+/**
+ * The project's icon-set state a template is written with.
+ * @typedef {object} TemplateIconSets
+ * @property {DiscoveredIconSet[]} sets
+ * @property {IconSetChoice} choice
+ * @property {boolean} [coreIcons] `experimental.templateIcons`: with no icon
+ *   set, swap each icon for Core's (FR21)
+ */
+
 /** What a template reads with no icon-set state given: nothing is mapped. */
 export const NO_ICON_SETS = Object.freeze({
   sets: [],
@@ -394,7 +425,7 @@ export function mapTemplateIcons(source, {sets, choice}, declared = {}) {
       // the icon a template imports as `Table as TableIcon`); an installed
       // set's icons are matched through the set instead.
       const meant =
-        !isAstryxModule(module) && Object.hasOwn(declared, imported)
+        declarable(module) && Object.hasOwn(declared, imported)
           ? declared[imported]
           : null;
       /** @type {SourceIcon | null} */
@@ -565,4 +596,62 @@ export function mapTemplateIcons(source, {sets, choice}, declared = {}) {
     out = out.slice(0, edit.start) + edit.text + out.slice(edit.end);
   }
   return {source: out, icons};
+}
+
+/**
+ * Write a bundled or integration template's icons for a project (FR9, FR10,
+ * FR19–FR21):
+ *
+ *   - no `experimental.iconSet` and no `experimental.templateIcons`: every
+ *     reference-set import becomes the upstream import it re-exports, and
+ *     nothing else changes; there is no report;
+ *   - no `experimental.iconSet` with `experimental.templateIcons`: each
+ *     declared icon becomes Core's built-in icon of its definition, or a
+ *     neutral placeholder, and the report carries the note;
+ *   - `experimental.iconSet`: icons map to the project's set (FR9); a
+ *     reference-set icon still imported afterwards becomes its upstream
+ *     import unless the reference set is installed.
+ * @param {string} source
+ * @param {TemplateIconSets} iconSets
+ * @param {Record<string, string>} [declared]
+ * @returns {{source: string, icons: TemplateIconsReport | undefined}}
+ */
+export function writeTemplateIcons(source, iconSets, declared = {}) {
+  const reference = referenceIconSet();
+  const {sets, choice} = iconSets;
+  if (choice.configured == null && sets.length === 0) {
+    if (!iconSets.coreIcons) {
+      return {source: lowerReferenceIcons(source, reference), icons: undefined};
+    }
+    const swapped = coreTemplateIcons(source, declared, reference);
+    return {
+      source: swapped.source,
+      icons: {
+        status: 'none',
+        set: null,
+        reason:
+          "astryx.config sets no experimental.iconSet, and experimental.templateIcons swaps each icon for Core's.",
+        note: NO_ICON_SET_NOTE,
+        mapped: [],
+        kept: [],
+        core: swapped.core,
+      },
+    };
+  }
+  const mapped = mapTemplateIcons(source, {sets, choice}, declared);
+  if (sets.some(set => set.package === reference.package)) return mapped;
+  for (const kept of mapped.icons?.kept ?? []) {
+    const upstream =
+      kept.module === reference.package
+        ? reference.exports.get(kept.export)
+        : undefined;
+    if (upstream) {
+      kept.module = upstream.module;
+      kept.export = upstream.export;
+    }
+  }
+  return {
+    source: lowerReferenceIcons(mapped.source, reference),
+    icons: mapped.icons,
+  };
 }

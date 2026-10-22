@@ -49,6 +49,9 @@ export {
   extractComponents,
   pkgOf,
 } from '../../foundation/discovery/template-adapter.mjs';
+// The reference icon set's imports, written for a project without an icon
+// set (AST-084 FR20); read by the component showcase.
+export {lowerReferenceIcons} from '../../foundation/discovery/template-reference-icons.mjs';
 
 /**
  * @typedef {import('../../foundation/discovery/template-adapter.mjs').DiscoveredTemplate} DiscoveredTemplate

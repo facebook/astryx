@@ -9,7 +9,7 @@ import {Icon} from '@astryxdesign/core/Icon';
 import {TabList, Tab} from '@astryxdesign/core/TabList';
 import {Card} from '@astryxdesign/core/Card';
 import {Section} from '@astryxdesign/core/Section';
-import {PlusIcon} from '@heroicons/react/24/outline';
+import {PlusIcon} from '@astryxdesign/icons-heroicons';
 
 const card: CSSProperties = {
   width: '100%',

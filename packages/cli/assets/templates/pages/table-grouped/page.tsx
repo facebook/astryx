@@ -55,9 +55,9 @@ import {
   UserIcon,
   TrashIcon,
   EllipsisHorizontalIcon,
-} from '@heroicons/react/24/outline';
-import {XMarkIcon} from '@heroicons/react/24/outline';
-import {ChartBarIcon} from '@heroicons/react/24/solid';
+} from '@astryxdesign/icons-heroicons';
+import {XMarkIcon} from '@astryxdesign/icons-heroicons';
+import {ChartBarSolidIcon as ChartBarIcon} from '@astryxdesign/icons-heroicons';
 
 // Plain inline styles using Astryx design-token CSS variables (declared at
 // :root by `@astryxdesign/core/astryx.css`). No StyleX compiler required.

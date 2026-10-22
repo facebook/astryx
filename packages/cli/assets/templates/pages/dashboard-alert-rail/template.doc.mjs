@@ -37,6 +37,6 @@ export const doc = {
     BellAlertIcon: 'notificationActive',
     CheckCircleIcon: 'success',
     ServerStackIcon: 'server',
-    StopIcon: 'stop',
+    StopSolidIcon: 'stop',
   },
 };

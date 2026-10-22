@@ -15,7 +15,7 @@ import {astryxDefinitionsByName} from '../foundation/discovery/icon-definition-d
 
 /** The icon libraries the bundled templates import. */
 const ICON_MODULE_RE =
-  /^(?:@heroicons\/react\/(?:16|20|24)\/(?:outline|solid)|lucide-react)$/u;
+  /^(?:@astryxdesign\/icons-heroicons|@heroicons\/react\/(?:16|20|24)\/(?:outline|solid)|lucide-react)$/u;
 
 /**
  * Icons no Astryx icon definition fits yet. A template keeps these as it

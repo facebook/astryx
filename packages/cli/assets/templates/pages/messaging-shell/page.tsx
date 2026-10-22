@@ -66,7 +66,7 @@ import {
   PencilSquareIcon,
   UserGroupIcon,
   XMarkIcon,
-} from '@heroicons/react/24/outline';
+} from '@astryxdesign/icons-heroicons';
 
 // ---------------------------------------------------------------------------
 // Styles — plain CSS properties with semantic tokens only.

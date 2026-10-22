@@ -22,14 +22,14 @@ import {pkgOf, replaceDemoMedia} from '../../../foundation/discovery/template-ad
 import {analyzeTemplateNeeds} from '../../../foundation/discovery/template-needs.mjs';
 import {
   NO_ICON_SETS,
-  mapTemplateIcons,
+  writeTemplateIcons,
 } from '../../../foundation/discovery/template-icons.mjs';
 
 /**
  * Scaffold an already-resolved template to `targetPath` (relative to `cwd`) and
  * return the `template.copy` receipt.
  * @param {import('../../../foundation/discovery/template-adapter.mjs').DiscoveredTemplate} match
- * @param {{targetPath: string, cwd: string, overwrite?: boolean, iconSets?: Parameters<typeof mapTemplateIcons>[1]}} ctx
+ * @param {{targetPath: string, cwd: string, overwrite?: boolean, iconSets?: Parameters<typeof writeTemplateIcons>[1]}} ctx
  *   `iconSets`: the project's icon sets; without them the icons are unchanged
  * @returns {import('../template.type.mjs').TemplateCopyResponse}
  */
@@ -95,9 +95,11 @@ export function templateCopy(
   const {source: withMedia, demoMediaReplaced} = replaceDemoMedia(
     fs.readFileSync(match.filePath, 'utf-8'),
   );
-  // Icons follow the project's icon set (AST-084 FR9). An icon with no match
-  // keeps its import, so its library stays a needed dependency below.
-  const {source: outputSource, icons} = mapTemplateIcons(
+  // Icons follow the project's icon set (AST-084 FR9); without one, the
+  // reference set's imports become their upstream imports (FR20). An icon
+  // with no match keeps its import, so its library stays a needed dependency
+  // below.
+  const {source: outputSource, icons} = writeTemplateIcons(
     withMedia,
     iconSets,
     match.icons,

@@ -4,7 +4,7 @@
 
 import {Breadcrumbs, BreadcrumbItem} from '@astryxdesign/core/Breadcrumbs';
 import {Icon} from '@astryxdesign/core/Icon';
-import {HomeIcon, Cog6ToothIcon} from '@heroicons/react/24/outline';
+import {HomeIcon, Cog6ToothIcon} from '@astryxdesign/icons-heroicons';
 
 export default function BreadcrumbsWithIcons() {
   return (

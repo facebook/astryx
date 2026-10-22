@@ -12,8 +12,8 @@ import {
   ArrowDownTrayIcon,
   ShareIcon,
   TrashIcon,
-} from '@heroicons/react/24/outline';
-import {SpeakerWaveIcon} from '@heroicons/react/24/solid';
+} from '@astryxdesign/icons-heroicons';
+import {SpeakerWaveSolidIcon as SpeakerWaveIcon} from '@astryxdesign/icons-heroicons';
 
 const actions = [
   {label: 'Download', icon: ArrowDownTrayIcon},

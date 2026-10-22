@@ -24,7 +24,7 @@ export const doc = {
   category: 'Table - Grouped',
   icons: {
     ArrowRightIcon: 'arrowRight',
-    ChartBarIcon: 'chart',
+    ChartBarSolidIcon: 'chart',
     ChevronDownIcon: 'chevronDown',
     ChevronRightIcon: 'chevronRight',
     DocumentDuplicateIcon: 'copy',

@@ -4,7 +4,7 @@
 
 import {TopNavMegaMenuItem} from '@astryxdesign/core/TopNav';
 import {Grid} from '@astryxdesign/core/Grid';
-import {BoltIcon, CircleStackIcon} from '@heroicons/react/24/outline';
+import {BoltIcon, CircleStackIcon} from '@astryxdesign/icons-heroicons';
 
 export default function TopNavMegaMenuItemBasic() {
   return (

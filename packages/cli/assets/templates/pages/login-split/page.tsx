@@ -11,7 +11,7 @@ import {Section} from '@astryxdesign/core/Section';
 import {Text} from '@astryxdesign/core/Text';
 import {Icon} from '@astryxdesign/core/Icon';
 import {EmptyState} from '@astryxdesign/core/EmptyState';
-import {SquaresPlusIcon, CheckCircleIcon} from '@heroicons/react/24/outline';
+import {SquaresPlusIcon, CheckCircleIcon} from '@astryxdesign/icons-heroicons';
 import {TextInput} from '@astryxdesign/core/TextInput';
 import {Button} from '@astryxdesign/core/Button';
 import {Link} from '@astryxdesign/core/Link';

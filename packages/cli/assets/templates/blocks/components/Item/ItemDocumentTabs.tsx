@@ -12,7 +12,7 @@ import {IconButton} from '@astryxdesign/core/IconButton';
 import {Item} from '@astryxdesign/core/Item';
 import {HStack} from '@astryxdesign/core/Layout';
 import {mergeProps} from '@astryxdesign/core/utils';
-import {DocumentIcon, PlusIcon, XMarkIcon} from '@heroicons/react/24/outline';
+import {DocumentIcon, PlusIcon, XMarkIcon} from '@astryxdesign/icons-heroicons';
 
 const TABS = [
   {name: 'Project brief', isActive: true},

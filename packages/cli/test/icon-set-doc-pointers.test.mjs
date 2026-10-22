@@ -24,6 +24,7 @@ const SOURCES = [
   'foundation/discovery/icon-set-checks.mjs',
   'foundation/discovery/icon-definition-discovery.mjs',
   'foundation/discovery/template-icons.mjs',
+  'foundation/discovery/template-reference-icons.mjs',
 ];
 
 /** @param {string} entry @returns {string[]} */

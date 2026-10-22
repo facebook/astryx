@@ -11,7 +11,10 @@
 import * as fs from 'node:fs';
 import {AstryxError} from '../../../error.mjs';
 import {ERROR_CODES} from '../../../../foundation/response/error-codes.mjs';
-import {findShowcase} from '../../../template/template.mjs';
+import {
+  findShowcase,
+  lowerReferenceIcons,
+} from '../../../template/template.mjs';
 
 /**
  * Resolve and read a component's showcase block into the
@@ -41,7 +44,9 @@ export async function componentDetailShowcase(componentName, {cwd, name, package
     data: {
       component: componentName,
       aspectRatio: /** @type {number} */ (match.aspectRatio),
-      source: fs.readFileSync(match.filePath, 'utf-8'),
+      // Written as `astryx template` writes it for a project without an icon
+      // set (spec:AST-084 FR20).
+      source: lowerReferenceIcons(fs.readFileSync(match.filePath, 'utf-8')),
     },
   };
 }

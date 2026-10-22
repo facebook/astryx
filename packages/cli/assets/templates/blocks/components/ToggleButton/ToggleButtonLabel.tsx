@@ -12,7 +12,7 @@ import {
   EyeSlashIcon,
   FunnelIcon,
   MapPinIcon,
-} from '@heroicons/react/24/outline';
+} from '@astryxdesign/icons-heroicons';
 
 export default function ToggleButtonLabel() {
   const [isVisible, setIsVisible] = useState(true);

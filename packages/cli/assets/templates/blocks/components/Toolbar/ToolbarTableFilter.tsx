@@ -24,7 +24,10 @@ import {Section} from '@astryxdesign/core/Section';
 import {Table, pixel, proportional} from '@astryxdesign/core/Table';
 import type {TableColumn} from '@astryxdesign/core/Table';
 import {EmptyState} from '@astryxdesign/core/EmptyState';
-import {Columns3Cog, Search} from 'lucide-react';
+import {
+  ViewColumnsIcon,
+  MagnifyingGlassIcon,
+} from '@astryxdesign/icons-heroicons';
 
 interface Job extends Record<string, unknown> {
   id: string;
@@ -293,7 +296,7 @@ export default function ToolbarTableFilter() {
                 width="100%"
                 value={search}
                 onChange={setSearch}
-                startIcon={Search}
+                startIcon={MagnifyingGlassIcon}
                 hasClear
               />
             </StackItem>
@@ -377,7 +380,9 @@ export default function ToolbarTableFilter() {
                 isIconOnly
                 variant="ghost"
                 size="sm"
-                icon={<Icon icon={Columns3Cog} size="sm" color="secondary" />}
+                icon={
+                  <Icon icon={ViewColumnsIcon} size="sm" color="secondary" />
+                }
               />
             </Popover>
           </HStack>

@@ -54,7 +54,7 @@ import {
   BellIcon,
   ShareIcon,
   EyeIcon,
-} from '@heroicons/react/24/outline';
+} from '@astryxdesign/icons-heroicons';
 
 const styles = stylex.create({
   // A vertical rule has no intrinsic height and the breadcrumb row centers its

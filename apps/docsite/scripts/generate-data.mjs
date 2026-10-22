@@ -64,6 +64,10 @@ import {
   collectPropTypeRefs,
 } from '../src/lib/typeDefinitions.mjs';
 import {generateShadcnRegistryForTarget} from './generate-shadcn-registry.mjs';
+// Bundled templates import their icons from the reference icon set; the site
+// shows, previews, and publishes each one as `astryx template` writes it for
+// a project without an icon set: with the upstream icon imports.
+import {lowerReferenceIcons} from '../../../packages/cli/foundation/discovery/template-reference-icons.mjs';
 import {
   blockRegistryIdentity,
   resolveShadcnRegistryOrigin,
@@ -1503,7 +1507,7 @@ async function generateBlockRegistry() {
 
     let source = '';
     try {
-      source = fs.readFileSync(tsxPath, 'utf-8');
+      source = lowerReferenceIcons(fs.readFileSync(tsxPath, 'utf-8'));
     } catch {
       /* ignore */
     }
@@ -1663,7 +1667,7 @@ async function generateTemplateRegistry() {
 
     let source = '';
     try {
-      source = fs.readFileSync(pagePath, 'utf-8');
+      source = lowerReferenceIcons(fs.readFileSync(pagePath, 'utf-8'));
     } catch {
       /* ignore */
     }

@@ -6,7 +6,7 @@ import {useState} from 'react';
 import {Tokenizer} from '@astryxdesign/core/Tokenizer';
 import {Stack} from '@astryxdesign/core/Layout';
 import {Text} from '@astryxdesign/core/Text';
-import {MagnifyingGlassIcon} from '@heroicons/react/24/outline';
+import {MagnifyingGlassIcon} from '@astryxdesign/icons-heroicons';
 import type {SearchableItem, SearchSource} from '@astryxdesign/core/Typeahead';
 
 const users: SearchableItem[] = [

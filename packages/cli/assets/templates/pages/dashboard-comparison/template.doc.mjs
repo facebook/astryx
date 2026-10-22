@@ -22,7 +22,7 @@ export const doc = {
     ArrowDownTrayIcon: 'download',
     ArrowUpIcon: 'arrowUp',
     CursorArrowRaysIcon: 'click',
-    StopIcon: 'stop',
+    StopSolidIcon: 'stop',
     UsersIcon: 'users',
   },
 };

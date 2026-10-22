@@ -4,7 +4,7 @@
 
 import {TreeList} from '@astryxdesign/core/TreeList';
 import {Icon} from '@astryxdesign/core/Icon';
-import {Cog6ToothIcon, ChevronRightIcon} from '@heroicons/react/24/outline';
+import {Cog6ToothIcon, ChevronRightIcon} from '@astryxdesign/icons-heroicons';
 
 export default function TreeListInteractiveSettings() {
   return (

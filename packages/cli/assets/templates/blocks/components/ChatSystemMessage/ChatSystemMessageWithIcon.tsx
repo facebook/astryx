@@ -11,7 +11,7 @@ import {
   ShieldCheckIcon,
   SparklesIcon,
   UserPlusIcon,
-} from '@heroicons/react/24/outline';
+} from '@astryxdesign/icons-heroicons';
 
 export default function ChatSystemMessageWithIcon() {
   return (

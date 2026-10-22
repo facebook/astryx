@@ -23,6 +23,6 @@ export const doc = {
     ArrowDownTrayIcon: 'download',
     ArrowTrendingDownIcon: 'trendDown',
     ArrowUpIcon: 'arrowUp',
-    StopIcon: 'stop',
+    StopSolidIcon: 'stop',
   },
 };

@@ -11,10 +11,10 @@ export const doc = {
   isReady: true,
   category: 'Dashboard - Scorecard',
   icons: {
-    ArrowDownIcon: 'arrowDown',
+    ArrowDownSolidIcon: 'arrowDown',
     ArrowDownTrayIcon: 'download',
-    ArrowRightIcon: 'arrowRight',
-    ArrowUpIcon: 'arrowUp',
-    StopIcon: 'stop',
+    ArrowRightSolidIcon: 'arrowRight',
+    ArrowUpSolidIcon: 'arrowUp',
+    StopSolidIcon: 'stop',
   },
 };

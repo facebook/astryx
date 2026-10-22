@@ -3,7 +3,7 @@
 'use client';
 
 import {useState, type CSSProperties} from 'react';
-import {ShieldCheckIcon} from '@heroicons/react/24/outline';
+import {ShieldCheckIcon} from '@astryxdesign/icons-heroicons';
 import {VStack, HStack} from '@astryxdesign/core/Layout';
 import {Center} from '@astryxdesign/core/Center';
 import {Text} from '@astryxdesign/core/Text';

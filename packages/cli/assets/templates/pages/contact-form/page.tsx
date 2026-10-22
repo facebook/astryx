@@ -24,7 +24,7 @@ import {
   RocketLaunchIcon,
   AdjustmentsHorizontalIcon,
   HandRaisedIcon,
-} from '@heroicons/react/24/outline';
+} from '@astryxdesign/icons-heroicons';
 
 const CAMPAIGN_GOALS = [
   'Brand Awareness',

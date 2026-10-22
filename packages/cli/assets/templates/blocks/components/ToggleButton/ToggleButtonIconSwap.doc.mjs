@@ -14,6 +14,8 @@ export const doc = {
     BellIcon: 'notification',
     BellSlashIcon: 'notificationOff',
     BookmarkIcon: 'bookmark',
+    BookmarkSolidIcon: 'bookmark',
     StarIcon: 'star',
+    StarSolidIcon: 'star',
   },
 };

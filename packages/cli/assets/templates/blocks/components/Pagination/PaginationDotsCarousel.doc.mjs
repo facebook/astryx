@@ -11,5 +11,5 @@ export const doc = {
   isReady: true,
   aspectRatio: 4 / 3,
   componentsUsed: ['Pagination', 'Card', 'Text', 'Layout', 'Icon', 'Avatar'],
-  icons: {StarIcon: 'star'},
+  icons: {StarSolidIcon: 'star'},
 };

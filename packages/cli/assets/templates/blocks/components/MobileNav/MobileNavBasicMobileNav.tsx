@@ -13,7 +13,7 @@ import {
   ChartBarIcon,
   Cog6ToothIcon,
   UsersIcon,
-} from '@heroicons/react/24/outline';
+} from '@astryxdesign/icons-heroicons';
 
 export default function MobileNavBasicMobileNav() {
   const [isOpen, setIsOpen] = useState(false);

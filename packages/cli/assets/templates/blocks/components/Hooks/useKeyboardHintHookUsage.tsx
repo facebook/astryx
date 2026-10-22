@@ -9,7 +9,11 @@ import {Card} from '@astryxdesign/core/Card';
 import {Section} from '@astryxdesign/core/Section';
 import {Text} from '@astryxdesign/core/Text';
 import {VStack} from '@astryxdesign/core/Layout';
-import {BoldIcon, ItalicIcon, UnderlineIcon} from '@heroicons/react/24/outline';
+import {
+  BoldIcon,
+  ItalicIcon,
+  UnderlineIcon,
+} from '@astryxdesign/icons-heroicons';
 
 export default function UseKeyboardHintHookUsage() {
   return (

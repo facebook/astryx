@@ -12,7 +12,7 @@ import {
   ScissorsIcon,
   ClipboardIcon,
   ChevronDownIcon,
-} from '@heroicons/react/24/outline';
+} from '@astryxdesign/icons-heroicons';
 
 export default function ButtonGroupShowcase() {
   return (

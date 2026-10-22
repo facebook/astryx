@@ -104,6 +104,7 @@ const configSchema = z
           .strict()
           .optional(),
         iconSet: z.string().min(1).optional(),
+        templateIcons: z.boolean().optional(),
       })
       .strict()
       .optional(),

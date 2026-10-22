@@ -171,6 +171,9 @@ export default defineConfig({
             // The CLI dissolved its src/ wrapper (pillars live at the package
             // root), so collect its colocated tests wherever they now live.
             'packages/cli/**/*.test.{ts,tsx,mjs}',
+            // The experimental Heroicons icon set ships no src/: its test
+            // checks the published entry and the set beside it.
+            'packages/icons-heroicons/test/**/*.test.mjs',
             'internal/**/*.test.{ts,tsx,mjs}',
             'scripts/**/*.test.{ts,tsx,mjs}',
             '.github/scripts/**/*.test.{ts,tsx,mjs}',

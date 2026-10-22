@@ -69,8 +69,8 @@ import {
   ExclamationTriangleIcon,
   ArrowDownTrayIcon,
   FlagIcon,
-} from '@heroicons/react/24/outline';
-import {StopIcon} from '@heroicons/react/24/solid';
+} from '@astryxdesign/icons-heroicons';
+import {StopSolidIcon as StopIcon} from '@astryxdesign/icons-heroicons';
 
 // ============= TYPES =============
 

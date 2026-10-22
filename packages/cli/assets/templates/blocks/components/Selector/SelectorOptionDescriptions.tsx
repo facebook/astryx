@@ -7,7 +7,7 @@ import {Selector, SelectorOption} from '@astryxdesign/core/Selector';
 import {InputGroup} from '@astryxdesign/core/InputGroup';
 import {Button} from '@astryxdesign/core/Button';
 import {Stack} from '@astryxdesign/core/Layout';
-import {LockClosedIcon, GlobeAltIcon} from '@heroicons/react/24/outline';
+import {LockClosedIcon, GlobeAltIcon} from '@astryxdesign/icons-heroicons';
 
 const VISIBILITY = [
   {

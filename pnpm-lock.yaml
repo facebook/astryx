@@ -188,6 +188,9 @@ importers:
       '@astryxdesign/core':
         specifier: '*'
         version: link:../../packages/core
+      '@astryxdesign/icons-heroicons':
+        specifier: '*'
+        version: link:../../packages/icons-heroicons
       '@astryxdesign/lab':
         specifier: '*'
         version: link:../../packages/lab
@@ -821,6 +824,9 @@ importers:
       '@astryxdesign/core':
         specifier: '*'
         version: link:../core
+      '@astryxdesign/icons-heroicons':
+        specifier: '*'
+        version: link:../icons-heroicons
       '@astryxdesign/lab':
         specifier: '*'
         version: link:../lab
@@ -897,6 +903,19 @@ importers:
       tailwindcss:
         specifier: ^4.3.2
         version: 4.3.2
+
+  packages/icons-heroicons:
+    dependencies:
+      '@heroicons/react':
+        specifier: ^2.2.0
+        version: 2.2.0(react@19.2.7)
+      react:
+        specifier: '>=19'
+        version: 19.2.7
+    devDependencies:
+      '@astryxdesign/cli':
+        specifier: workspace:*
+        version: link:../cli
 
   packages/lab:
     dependencies:
