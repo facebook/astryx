@@ -230,8 +230,8 @@ validate` MUST warn on a PascalCase `.tsx` at the top of the components root
   raise a conflict with a package's own name. Each `doctor integration`
   subcommand MUST keep its exit codes, and its JSON MAY change only by
   additions. Because builds fail on its findings, it MUST NOT report a finding
-  the package's code does not contradict, other than the doc faults of DEC-8
-  and the doc-syntax findings of DEC-12:
+  the package's code does not contradict, other than the doc faults of DEC-8,
+  the doc-syntax findings of DEC-12 and the example findings of DEC-13:
   a check that cannot judge an item lists it as not checked instead (DEC-7).
   A finding that would newly fail a build MUST first ship as a note marked
   `next` in `validate`'s `data.notes`, which fails nothing by default:
@@ -774,7 +774,8 @@ false finding fails a package for a fault it does not have, and its only way
 out, dropping `--strict`, also drops the check for every real fault. A check
 that cannot tell whether the code contradicts a doc lists the item as not
 checked, which `--strict` does not fail. The exceptions are the doc-quality
-findings of DEC-8 and the doc-syntax findings of DEC-12.
+findings of DEC-8, the doc-syntax findings of DEC-12 and the example findings
+of DEC-13.
 Rejected: reporting a doubtful item as a warning (`--strict` fails it).
 
 ### DEC-8 — The strict check fails on copied passages, fluff and stray pointers in docs
@@ -784,7 +785,8 @@ Rejected: reporting a doubtful item as a warning (`--strict` fails it).
 People and agents read integration docs on a budget. A fact written in two
 topics goes stale in one of them at the next edit, and padding costs every
 reader. So these doc-quality findings fail `--strict` by owner decision, as
-an exception to DEC-7; DEC-12's doc-syntax findings are the other. A copied passage (a run of identical words, after
+an exception to DEC-7, beside DEC-12's doc-syntax findings and DEC-13's
+example findings. A copied passage (a run of identical words, after
 the filters for function-word runs and for boilerplate that three or more
 topics share) and a listed padding phrase (outside code and quotes) are exact
 matches. The density floor is a threshold, not a contradiction, and a section
