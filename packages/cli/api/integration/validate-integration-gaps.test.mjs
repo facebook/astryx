@@ -169,6 +169,7 @@ const writeNamed = files =>
     version: '1.0.0',
     exports: {
       './components/*': './components/*.tsx',
+      './templates/*': './templates/*.tsx',
       '.': './index.ts',
     },
   });
@@ -534,7 +535,14 @@ describe('block component names', () => {
           'export function Panel() { return null; }\nexport const UI = {};\nexport const Lib = {};\nexport function pick() { return null; }\n',
         ...files,
       },
-      {name: '@acme/kit', version: '1.0.0', exports: {'.': './index.tsx'}},
+      {
+        name: '@acme/kit',
+        version: '1.0.0',
+        exports: {
+          '.': './index.tsx',
+          './templates/*': './templates/*.tsx',
+        },
+      },
     );
   /** @param {string} extra */
   const block = extra =>

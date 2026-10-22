@@ -26,11 +26,16 @@
  *      *.doc.mjs    the FunctionDoc
  *      *.test.mjs   coverage (may be nested, e.g. api/theme/build/build.test.mjs)
  *
- * Deliberately NOT checked here: command <-> CommandDoc pairing. That is not a
- * filename convention — subcommand docs (layout-expand, theme-add, ...) live
- * inside their group's handler and `manifest` registers in index.mjs — and the
- * drift harness already validates it semantically against the live manifest,
- * which is strictly stronger than matching filenames.
+ * 3. Every CLI command and CommandDoc sits where cli-surface INV6 puts it:
+ *      clients/cli/commands/<name>.mjs   (or <name>/index.mjs for a group:
+ *                                         a CommandDoc that lists subcommands)
+ *      clients/cli/commands/<name>.doc.mjs
+ *      clients/cli/commands/<parent>-<child>.doc.mjs   for each subcommand
+ *    Top-level commands come from clients/cli/index.mjs (its `commands`
+ *    registry and any literal `.command()` call there); subcommands come from
+ *    each CommandDoc's `subcommands`. The docs drift harness holds those docs
+ *    equal to the live CLI (args, options, subcommands); this check owns where
+ *    the files are.
  *
  * Usage: node scripts/check-cli-structure.mjs
  */
@@ -67,6 +72,30 @@ function walk(dir) {
   for (const entry of fs.readdirSync(dir, {withFileTypes: true})) {
     if (entry.isDirectory()) out.push(...walk(path.join(dir, entry.name)));
     else out.push(entry.name);
+  }
+  return out;
+}
+
+/**
+ * Every `*.doc.mjs` under `dir`, group folders included, as `/`-separated paths
+ * relative to `dir`, sorted.
+ * @param {string} dir
+ * @returns {string[]}
+ */
+function docFilesUnder(dir) {
+  /** @type {string[]} */
+  const out = [];
+  const entries = fs
+    .readdirSync(dir, {withFileTypes: true})
+    .sort((a, b) => a.name.localeCompare(b.name));
+  for (const entry of entries) {
+    if (entry.isDirectory()) {
+      for (const file of docFilesUnder(path.join(dir, entry.name))) {
+        out.push(`${entry.name}/${file}`);
+      }
+    } else if (entry.name.endsWith('.doc.mjs')) {
+      out.push(entry.name);
+    }
   }
   return out;
 }
@@ -313,11 +342,11 @@ const HANDLER_DIR = path.join(CLI, 'clients/cli/commands');
 /** @type {Map<string, Set<string>>} known gaps recorded in AST-042;
  *  remove an entry when the file is fixed; do not add entries */
 const INV22_KNOWN_GAPS = new Map([
-  ['build-theme.mjs', new Set(['fs', 'child_process', 'project'])],
-  ['component/index.mjs', new Set(['project', 'discovery'])],
+  ['theme.mjs', new Set(['fs', 'child_process', 'project'])],
+  ['component.mjs', new Set(['project', 'discovery'])],
   ['discover.mjs', new Set(['project'])],
   ['ensure-core-built.mjs', new Set(['fs', 'child_process'])],
-  ['hook/index.mjs', new Set(['discovery'])],
+  ['hook.mjs', new Set(['discovery'])],
   // remove with the layout command
   ['layout.mjs', new Set(['fs'])],
   ['search.mjs', new Set(['project'])],
@@ -670,21 +699,179 @@ for (const name of apiExports) {
   }
 }
 
-if (errors.length > 0) {
-  console.error('❌ CLI structure violations:\n');
-  for (const e of errors) console.error(`  ${e}`);
-  console.error(
-    `\n${errors.length} error(s). See CONTRIBUTING > "Working on the astryx CLI".`,
+// ── 6. INV6: command files and CommandDocs ──────────────────────────
+/**
+ * Check INV6 (docs/architecture/cli-surface.md) for the CLI rooted at
+ * `cliRoot`: every registered command's file and CommandDoc, every
+ * subcommand's CommandDoc, and no CommandDoc anywhere else.
+ *
+ * @param {string} cliRoot the `packages/cli` directory
+ * @returns {Promise<{errors: string[], commands: number}>}
+ */
+export async function checkCommandLayout(cliRoot) {
+  const {default: ts} = await import('typescript');
+  const {pathToFileURL} = await import('node:url');
+  const COMMANDS = 'clients/cli/commands';
+  const INDEX = 'clients/cli/index.mjs';
+  /** @type {string[]} */
+  const errors = [];
+
+  const indexFile = path.join(cliRoot, INDEX);
+  const source = ts.createSourceFile(
+    indexFile,
+    fs.readFileSync(indexFile, 'utf8'),
+    ts.ScriptTarget.Latest,
+    true,
+    ts.ScriptKind.JS,
   );
-  process.exit(1);
+  /** @type {{name: string, file: string | null}[]} */
+  const registered = [];
+  let registryFound = false;
+  /** @param {import('typescript').Node} node */
+  const visit = node => {
+    if (
+      ts.isVariableDeclaration(node) &&
+      ts.isIdentifier(node.name) &&
+      node.name.text === 'commands' &&
+      node.initializer &&
+      ts.isArrayLiteralExpression(node.initializer)
+    ) {
+      registryFound = true;
+      for (const entry of node.initializer.elements) {
+        if (!ts.isObjectLiteralExpression(entry)) continue;
+        /** @param {string} key */
+        const field = key => {
+          const prop = entry.properties.find(
+            p => ts.isPropertyAssignment(p) && p.name.getText(source) === key,
+          );
+          return prop &&
+            ts.isPropertyAssignment(prop) &&
+            ts.isStringLiteralLike(prop.initializer)
+            ? prop.initializer.text
+            : null;
+        };
+        const name = field('name');
+        const file = field('path');
+        if (name && file) registered.push({name, file});
+      }
+    }
+    // A command registered by hand, e.g. `program.command('manifest')`.
+    if (
+      ts.isCallExpression(node) &&
+      ts.isPropertyAccessExpression(node.expression) &&
+      node.expression.name.text === 'command' &&
+      node.arguments.length > 0 &&
+      ts.isStringLiteralLike(node.arguments[0])
+    ) {
+      registered.push({name: node.arguments[0].text.split(' ')[0], file: null});
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(source);
+  if (!registryFound) {
+    errors.push(
+      `found no \`commands\` registry in ${INDEX} — has it moved? Update this check.`,
+    );
+  }
+
+  /** @type {Set<string>} */
+  const expectedDocs = new Set();
+  let commands = 0;
+  /**
+   * Check `name`'s CommandDoc and, through its `subcommands`, theirs.
+   * @param {string} name
+   * @returns {Promise<any>} the CommandDoc, or null when it is missing or
+   *   documents another command
+   */
+  const checkDoc = async name => {
+    const docPath = `${COMMANDS}/${name.replaceAll(' ', '-')}.doc.mjs`;
+    expectedDocs.add(docPath);
+    const docFile = path.join(cliRoot, docPath);
+    if (!fs.existsSync(docFile)) {
+      errors.push(`command "${name}" has no CommandDoc at ${docPath}`);
+      return null;
+    }
+    const mod = await import(pathToFileURL(docFile).href);
+    const doc = mod.doc ?? mod.docs ?? mod.default;
+    if (doc?.name !== name) {
+      errors.push(`${docPath} documents "${doc?.name}", not "${name}"`);
+      return null;
+    }
+    commands++;
+    for (const child of doc.subcommands ?? [])
+      await checkDoc(`${name} ${child}`);
+    return doc;
+  };
+
+  for (const {name, file} of registered) {
+    const flat = `${COMMANDS}/${name}.mjs`;
+    const group = `${COMMANDS}/${name}/index.mjs`;
+    const doc = await checkDoc(name);
+    // INV6 allows the folder form only for a group: a command whose
+    // CommandDoc lists subcommands. With no readable doc, that error is
+    // already reported, so the folder is not judged.
+    const isGroup = doc == null || (doc.subcommands ?? []).length > 0;
+    if (file === null) {
+      errors.push(
+        `command "${name}" is registered in ${INDEX}, not in its own ${flat}`,
+      );
+    } else {
+      const actual = path.posix.join('clients/cli', file);
+      if (actual === group && !isGroup) {
+        errors.push(
+          `command "${name}" is registered from ${actual}, but only a group (a CommandDoc that lists subcommands) uses a folder; move it to ${flat}`,
+        );
+      } else if (actual !== flat && actual !== group) {
+        errors.push(
+          isGroup
+            ? `command "${name}" is registered from ${actual}, not ${flat} or ${group}`
+            : `command "${name}" is registered from ${actual}, not ${flat}`,
+        );
+      } else if (!fs.existsSync(path.join(cliRoot, actual))) {
+        errors.push(
+          `command "${name}" is registered from ${actual}, which does not exist`,
+        );
+      }
+    }
+  }
+
+  for (const file of docFilesUnder(path.join(cliRoot, COMMANDS))) {
+    const docPath = `${COMMANDS}/${file}`;
+    if (!expectedDocs.has(docPath)) {
+      errors.push(`${docPath} is not the CommandDoc of any registered command`);
+    }
+  }
+
+  return {errors, commands};
 }
 
-console.log(
-  [
-    `✅ CLI structure is intact:`,
-    `   ${doctypeCount} doc-type(s), ${apiCount} api folder(s),`,
-    `   ${inv22Count} handler(s) checked for INV22, ${clientHelperBoundaryCount} client helper boundary, ${inv21Count} api module(s) for INV21,`,
-    `   ${inv23Count} handler(s) checked for INV23,`,
-    `   ${fr1Count} CommandDoc fn(s) checked for FR1, ${fr2Count} api export(s) for FR2.`,
-  ].join('\n'),
-);
+// Run as a script; stay importable for the tests.
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  const layout = await checkCommandLayout(CLI);
+  errors.push(...layout.errors);
+  if (layout.commands === 0) {
+    errors.push(
+      'found no CommandDocs under packages/cli/clients/cli/commands — has the directory moved? Update this check.',
+    );
+  }
+
+  if (errors.length > 0) {
+    console.error('❌ CLI structure violations:\n');
+    for (const e of errors) console.error(`  ${e}`);
+    console.error(
+      `\n${errors.length} error(s). See CONTRIBUTING > "Working on the astryx CLI".`,
+    );
+    process.exit(1);
+  }
+
+  console.log(
+    [
+      `✅ CLI structure is intact:`,
+      `   ${doctypeCount} doc-type(s), ${apiCount} api folder(s),`,
+      `   ${inv22Count} handler(s) checked for INV22, ${clientHelperBoundaryCount} client helper boundary, ${inv21Count} api module(s) for INV21,`,
+      `   ${inv23Count} handler(s) checked for INV23,`,
+      `   ${fr1Count} CommandDoc fn(s) checked for FR1, ${fr2Count} api export(s) for FR2,`,
+      `   ${layout.commands} command(s) checked for INV6.`,
+    ].join('\n'),
+  );
+}

@@ -21,6 +21,7 @@ import {
   useOptimistic,
   useTransition,
   useEffect,
+  useRef,
   type ChangeEvent,
   type FocusEvent,
   type ReactNode,
@@ -587,10 +588,20 @@ export function Switch({
   const isBusy = isLoading || optimisticValue !== value;
 
   const announce = useAnnounce();
+  // One announcement per busy start (spec:AST-086 FR6). The ref outlives
+  // StrictMode's effect replay and rerenders, so only a new busy start (busy
+  // again after settling) speaks again.
+  const announcedBusyRef = useRef(false);
   useEffect(() => {
-    if (isBusy) {
-      announce(t('@astryx.switch.loading'));
+    if (!isBusy) {
+      announcedBusyRef.current = false;
+      return;
     }
+    if (announcedBusyRef.current) {
+      return;
+    }
+    announcedBusyRef.current = true;
+    announce(t('@astryx.switch.loading'));
   }, [announce, isBusy, t]);
 
   const isOn = optimisticValue === true;

@@ -237,6 +237,15 @@ function cliSurface() {
     }
   };
   add(manifest.commands);
+  // Hidden commands (a package-script hook) are documented but left out of
+  // the manifest; they are still real commands.
+  for (const command of program.commands) {
+    if (!(/** @type {any} */ (command)._hidden)) continue;
+    commands.set(
+      command.name(),
+      flagsOf(command.options.map(option => ({flag: option.flags}))),
+    );
+  }
   return {commands, groups, global: flagsOf(manifest.globalOptions)};
 }
 
