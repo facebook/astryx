@@ -141,8 +141,8 @@ const LIBRARY_WORDS = new Set([
 
 /**
  * The components whose synonyms name what was typed. A synonym matches when
- * its words, without a leading library name, are the typed words
- * (`MUI TextField` matches `TextField` and `text-field`).
+ * its words, with or without a leading library name, are the typed words
+ * (`MUI TextField` matches `MUI TextField`, `TextField` and `text-field`).
  * @param {string} needle
  * @param {Record<string, {synonyms?: string[]}>} cards - component name → its search card
  * @returns {Set<string>}
@@ -155,8 +155,9 @@ export function synonymMatches(needle, cards) {
   for (const [name, card] of Object.entries(cards ?? {})) {
     for (const synonym of card?.synonyms ?? []) {
       const words = nameWords(synonym);
+      const whole = words.join('');
       while (words.length > 1 && LIBRARY_WORDS.has(words[0])) words.shift();
-      if (words.join('') === typed) {
+      if (whole === typed || words.join('') === typed) {
         found.add(name);
         break;
       }
@@ -225,7 +226,7 @@ function compoundMatch(typed, name) {
     return {score: 79, reason: 'same part of the family'};
   }
   if (n > t && same(words.slice(n - t), typed)) {
-    return {score: 78, reason: `name ends with "${typed.join(' ')}"`};
+    return {score: 78, reason: 'name ends with the words typed'};
   }
   if (n > t && words[0] === typed[0] && words[n - 1] === typed[t - 1]) {
     return {score: 77, reason: 'same part of the family'};

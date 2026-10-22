@@ -200,6 +200,7 @@ describe('synonymMatches', () => {
     expect([...synonymMatches('ChoiceField', cards)]).toEqual(['Picker']);
     expect([...synonymMatches('choice-box', cards)]).toEqual(['Picker']);
     expect([...synonymMatches('SideSheets', cards)]).toEqual(['Sheet']);
+    expect([...synonymMatches('MUI Choice Field', cards)]).toEqual(['Picker']);
   });
 
   it('needs every word to match', () => {
