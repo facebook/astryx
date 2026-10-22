@@ -766,6 +766,7 @@ export function Item({
         // A disabled link is a plain href-less <a>, as in Link: nothing can
         // navigate, and a router link that needs a live href is not rendered.
         // It keeps a Tab stop and the link role (spec:AST-085 FR1, FR2, FR5).
+        // eslint-disable-next-line @astryx/no-hardcoded-anchor -- a disabled row has no destination, so no router link is rendered.
         <a
           role="link"
           aria-disabled

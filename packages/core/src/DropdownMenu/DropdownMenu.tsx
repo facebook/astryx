@@ -700,7 +700,8 @@ function DropdownMenuBottomSheet({
     }
     const findFirstAction = () =>
       actionListRef.current?.querySelector<HTMLElement>(
-        'button:not(:disabled), a[href]',
+        // Disabled rows stay focusable (spec:AST-085) but are not the first action.
+        'button:not(:disabled):not([aria-disabled="true"]), a[href]',
       ) ?? null;
     let observer: MutationObserver | null = null;
     let frame = requestAnimationFrame(() => {
