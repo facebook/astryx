@@ -36,6 +36,7 @@ import {
   blockRegistryIdentity,
   componentRegistryIdentity,
   pageRegistryIdentity,
+  registryNameForPath,
 } from '../src/lib/shadcnRegistry.mjs';
 
 const REGISTRY_SCHEMA = 'https://ui.shadcn.com/schema/registry.json';
@@ -517,18 +518,30 @@ function assertUniqueItemNames(items) {
   }
 }
 
+/**
+ * Every file an item is written to, without `.json`: its organized path and
+ * aliases, plus the root name route standard clients derive from an index
+ * name (`shadcn search`, `@namespace/<name>`). An alias path also keeps the
+ * name it stood for, so a renamed item still answers at its old name.
+ */
+export function itemRoutes(item) {
+  if (registryNameForPath(item.astryx.path) !== item.name) {
+    throw new Error(
+      `${item.name} does not match the name of its path ${item.astryx.path}`,
+    );
+  }
+  const organized = [item.astryx.path, ...item.astryx.aliases];
+  return [...organized, ...organized.map(registryNameForPath)];
+}
+
 function assertUniqueItemPaths(items) {
-  // Every item is written at its name, its organized path, and its aliases.
-  // Names are kind-prefixed slugs with no slash and every path starts with a
-  // kind root, so a name cannot meet a path; checking all three in one set
-  // still fails generation if any two routes would write the same file.
-  const paths = new Map([['registry', 'the registry index']]);
+  // Names are kind-prefixed slugs with no slash and every organized path
+  // starts with a kind folder, so a name route can meet neither a path route
+  // nor the `registry.json` index; checking every route in one set still
+  // fails generation if any two items would write the same file.
+  const paths = new Map();
   for (const item of items) {
-    for (const itemPath of [
-      item.name,
-      item.astryx.path,
-      ...item.astryx.aliases,
-    ]) {
+    for (const itemPath of itemRoutes(item)) {
       const existing = paths.get(itemPath);
       if (existing) {
         throw new Error(
@@ -756,14 +769,7 @@ export function generateShadcnRegistry({
   fs.mkdirSync(outDir, {recursive: true});
   writeJson(path.join(outDir, 'registry.json'), result.registry);
   for (const item of result.items) {
-    // Standard clients address an index entry as `<name>.json` in the
-    // registry root (search results, `@namespace/<name>`), so every item is
-    // also served there, beside its organized path and aliases.
-    for (const itemPath of [
-      item.name,
-      item.astryx.path,
-      ...item.astryx.aliases,
-    ]) {
+    for (const itemPath of itemRoutes(item)) {
       writeJson(path.join(outDir, `${itemPath}.json`), item);
     }
   }

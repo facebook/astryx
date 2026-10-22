@@ -33,6 +33,7 @@ import {
   registryContentHash,
 } from '../../packages/cli/authoring/shadcn/receipt.mjs';
 import {expandWorkspaceDirs} from '../../scripts/lib/workspace-globs.mjs';
+import {registryNameForPath} from '../../apps/docsite/src/lib/shadcnRegistry.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, '../..');
@@ -271,17 +272,23 @@ function loadCatalog() {
     }
 
     // Search results and `@namespace/<name>` resolve `<name>.json` in the
-    // registry root; it must serve the canonical item's exact bytes.
-    const nameFile = resolveInside(
-      REGISTRY_DIR,
-      `${name}.json`,
-      `${name} name route`,
-    );
-    if (!fs.existsSync(nameFile)) {
-      fail(`${name} is missing its name route ${name}.json`);
-    }
-    if (fs.readFileSync(nameFile, 'utf8') !== canonicalBytes) {
-      fail(`name route ${name}.json drifted from canonical item ${name}`);
+    // registry root, and an alias keeps the old name it stood for; each must
+    // serve the canonical item's exact bytes.
+    const organized = [registryPath, ...(item.astryx?.aliases ?? [])];
+    for (const nameRoute of organized.map(registryNameForPath)) {
+      const nameFile = resolveInside(
+        REGISTRY_DIR,
+        `${nameRoute}.json`,
+        `${name} name route`,
+      );
+      if (!fs.existsSync(nameFile)) {
+        fail(`${name} is missing its name route ${nameRoute}.json`);
+      }
+      if (fs.readFileSync(nameFile, 'utf8') !== canonicalBytes) {
+        fail(
+          `name route ${nameRoute}.json drifted from canonical item ${name}`,
+        );
+      }
     }
 
     for (const route of [registryPath, ...(item.astryx?.aliases ?? [])]) {
