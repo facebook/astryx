@@ -589,31 +589,27 @@ export function Item({
   const LinkComponent = useLinkComponent();
   // A link row renders a different anchor once disabled (a router link needs a
   // live href), so keyboard focus is carried across that swap (spec:AST-085
-  // FR4). A focused element removed from the DOM gets no meaningful blur, so
-  // only a blur while still connected clears the flag.
-  const anchorRef = useRef<HTMLAnchorElement>(null);
-  const anchorHasFocusRef = useRef(false);
-  useLayoutEffect(() => {
-    const anchor = anchorRef.current;
-    if (
-      anchorHasFocusRef.current &&
-      anchor != null &&
-      !anchor.matches(':focus')
-    ) {
-      anchor.focus({preventScroll: true});
+  // FR4). The decision is made from the outgoing anchor itself: React detaches
+  // its ref while it is still in the document, so `activeElement` still names
+  // it (also while the window is in the background). The flag lives for one
+  // commit only, so a later re-render never pulls focus.
+  const anchorNodeRef = useRef<HTMLAnchorElement | null>(null);
+  const carryAnchorFocusRef = useRef(false);
+  const anchorRef = useCallback((node: HTMLAnchorElement | null) => {
+    const previous = anchorNodeRef.current;
+    anchorNodeRef.current = node;
+    if (node == null) {
+      carryAnchorFocusRef.current =
+        previous != null && previous.ownerDocument.activeElement === previous;
+    } else if (carryAnchorFocusRef.current) {
+      carryAnchorFocusRef.current = false;
+      node.focus({preventScroll: true});
     }
-  }, [isDisabled]);
-  const anchorFocusProps = {
-    ref: anchorRef,
-    onFocus: () => {
-      anchorHasFocusRef.current = true;
-    },
-    onBlur: (event: React.FocusEvent<HTMLAnchorElement>) => {
-      if (event.currentTarget.isConnected) {
-        anchorHasFocusRef.current = false;
-      }
-    },
-  };
+  }, []);
+  useLayoutEffect(() => {
+    carryAnchorFocusRef.current = false;
+  });
+  const anchorFocusProps = {ref: anchorRef};
 
   // Delegation mode: the row is an enlarged click/tap target for a nested
   // control (e.g. a checkbox) that owns the keyboard access and action. The

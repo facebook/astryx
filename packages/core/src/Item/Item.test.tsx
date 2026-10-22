@@ -427,6 +427,37 @@ describe('Item', () => {
     expect(fireEvent.click(link)).toBe(false);
   });
 
+  it('does not pull focus to a link row that is re-enabled while focus is elsewhere', async () => {
+    const user = userEvent.setup();
+    function RouterLink(props: {href?: string}) {
+      if (props.href == null) {
+        throw new Error('href is required');
+      }
+      return <a {...props} />;
+    }
+    function Form({locked}: {locked: boolean}) {
+      return (
+        <LinkProvider component={RouterLink}>
+          <input aria-label="Name" />
+          <Item label="Continue" href="/next" isDisabled={locked} />
+        </LinkProvider>
+      );
+    }
+    const {rerender} = render(<Form locked={false} />);
+    await user.tab();
+    await user.tab();
+    expect(screen.getByRole('link', {name: 'Continue'})).toHaveFocus();
+    rerender(<Form locked />);
+    expect(screen.getByRole('link', {name: 'Continue'})).toHaveFocus();
+    const name = screen.getByRole('textbox', {name: 'Name'});
+    await user.click(name);
+    await user.keyboard('a');
+    rerender(<Form locked={false} />);
+    await user.keyboard('b');
+    expect(name).toHaveFocus();
+    expect(name).toHaveValue('ab');
+  });
+
   it('keeps focus on a link row that becomes disabled and enabled again', async () => {
     const user = userEvent.setup();
     function RouterLink(props: {href?: string}) {
