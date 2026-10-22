@@ -904,7 +904,7 @@ export async function loadTreeInputs({
         kind: 'generic',
         name: doc.name,
         title: doc.title,
-        summary: renderTokens(doc.description),
+        summary: doc.description,
         group: null,
         placement: doc.placement,
         ref: {topicFile: file},
@@ -928,7 +928,7 @@ export async function loadTreeInputs({
         kind: doc.type,
         name: doc.name,
         title: doc.displayName ?? doc.name,
-        summary: renderTokens(doc.summary ?? doc.description ?? ''),
+        summary: doc.summary ?? doc.description ?? '',
         group: typeof doc.namespace === 'string' ? doc.namespace : null,
         placement: doc.placement,
         ref: {selfDoc: doc},
@@ -953,6 +953,11 @@ export function loadDocsTree({selfDocs = true, fresh = false} = {}) {
   if (!tree) {
     tree = loadTreeInputs({selfDocs}).then(inputs => {
       const result = buildDocsTree(inputs);
+      // Tree inputs carry authored summaries; each renders its doc tokens
+      // once, here or where the project tree is built.
+      for (const node of result.nodes.values()) {
+        node.summary = renderTokens(node.summary);
+      }
       return {
         ...result,
         diagnostics: sortDiagnostics([
