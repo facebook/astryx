@@ -30,6 +30,7 @@ import {DateRangeInput} from '../DateRangeInput';
 import {DateTimeInput} from '../DateTimeInput';
 import {TimeInput} from '../TimeInput';
 import {CheckboxInput} from '../CheckboxInput';
+import {FileInput} from '../FileInput';
 import {Thumbnail} from '../Thumbnail';
 import {
   DropdownMenu,
@@ -156,6 +157,21 @@ const OWNERS: ReadonlyArray<
       <Thumbnail src="/local.jpg" alt="Upload" isLoading={isLoading} />
     ),
   ],
+  ...(['dropzone', 'input'] as const).map(
+    mode =>
+      [
+        `FileInput (${mode})`,
+        (isLoading: boolean) => (
+          <FileInput
+            label="Attachment"
+            mode={mode}
+            value={null}
+            onChange={() => {}}
+            isLoading={isLoading}
+          />
+        ),
+      ] as const,
+  ),
   [
     'DateRangeInput',
     isLoading => (
@@ -571,6 +587,54 @@ describe('ChatMessageList top loader (spec:AST-086 FR4, FR8)', () => {
       'aria-hidden',
       'true',
     );
+    expect(busyAnnouncements()).toEqual([['Loading', 'polite']]);
+  });
+});
+
+describe('FileInput busy start from a pick or a clear (spec:AST-086 FR6, FR8)', () => {
+  const file = new File(['x'], 'report.pdf', {type: 'application/pdf'});
+
+  it('keeps a pick under a pending changeAction to its one "selected" message', async () => {
+    const {container} = render(
+      strict(
+        <FileInput
+          label="Attachment"
+          value={null}
+          onChange={() => {}}
+          changeAction={async () => new Promise<void>(() => {})}
+        />,
+      ),
+    );
+    act(() => {
+      fireEvent.change(
+        container.querySelector('input[type="file"]') as HTMLInputElement,
+        {target: {files: [file]}},
+      );
+    });
+    await nextFrame();
+    expect(container.querySelector('.astryx-spinner')).toHaveAttribute(
+      'aria-hidden',
+      'true',
+    );
+    expect(announce).toHaveBeenCalledWith('1 file selected: report.pdf');
+    expect(busyAnnouncements()).toEqual([]);
+  });
+
+  it('announces the busy start of a clear under a pending changeAction', async () => {
+    render(
+      strict(
+        <FileInput
+          label="Attachment"
+          value={file}
+          onChange={() => {}}
+          changeAction={async () => new Promise<void>(() => {})}
+        />,
+      ),
+    );
+    act(() => {
+      fireEvent.click(screen.getByRole('button', {name: /Clear/}));
+    });
+    await nextFrame();
     expect(busyAnnouncements()).toEqual([['Loading', 'polite']]);
   });
 });

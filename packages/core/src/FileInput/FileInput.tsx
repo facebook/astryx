@@ -47,6 +47,7 @@ import {Icon} from '../Icon';
 import {Spinner} from '../Spinner';
 import {VisuallyHidden} from '../VisuallyHidden';
 import {useAnnounce} from '../hooks/useAnnounce';
+import {useBusyAnnouncement} from '../hooks/useBusyAnnouncement';
 import {useInputStatusIcon} from '../hooks/useInputStatusIcon';
 import {useClickableContainer} from '../hooks/useClickableContainer';
 import {useTooltip} from '../Tooltip';
@@ -490,6 +491,15 @@ export function FileInput({
   const [, startTransition] = useTransition();
   const [optimisticValue, setOptimisticValue] = useOptimistic(value);
   const isBusy = isLoading || optimisticValue !== value;
+  // A pick that runs changeAction is one user action, already announced as
+  // "file selected"; its busy start does not add a second message (spec:AST-086
+  // FR6). Other busy starts announce, and the Spinner stays decorative (FR8).
+  const [isPickAnnounced, setIsPickAnnounced] = useState(false);
+  useBusyAnnouncement(
+    isBusy && !isPickAnnounced,
+    t('@astryx.spinner.loading'),
+    containerRef,
+  );
 
   // Announce successful file selection to screen readers via a persistent
   // live region (forms-17). Validation errors are announced (assertively) by
@@ -588,9 +598,14 @@ export function FileInput({
       }
 
       if (changeAction) {
+        setIsPickAnnounced(errors.length === 0);
         startTransition(async () => {
           setOptimisticValue(result);
-          await changeAction(result);
+          try {
+            await changeAction(result);
+          } finally {
+            setIsPickAnnounced(false);
+          }
         });
       }
     },
@@ -741,7 +756,7 @@ export function FileInput({
 
   const renderDropzoneContent = () => {
     if (isBusy) {
-      return <Spinner size="md" />;
+      return <Spinner size="md" aria-hidden="true" />;
     }
     if (hasFiles) {
       return (
@@ -772,7 +787,7 @@ export function FileInput({
           <span {...stylex.props(styles.fileNameText)}>
             {fileNames ?? displayPlaceholder}
           </span>
-          <Spinner size="sm" />
+          <Spinner size="sm" aria-hidden="true" />
         </>
       );
     }
