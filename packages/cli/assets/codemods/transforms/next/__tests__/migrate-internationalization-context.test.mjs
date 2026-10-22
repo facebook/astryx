@@ -471,6 +471,35 @@ const app = <InternationalizationContext value={i18n}><App /></Internationalizat
     );
   });
 
+  it('keeps a spread BEFORE value in place, since the explicit value overrides it', () => {
+    const input = `import {InternationalizationContext} from '@astryxdesign/core/i18n';
+const app = <InternationalizationContext {...rest} value={i18n}><App /></InternationalizationContext>;`;
+    const output = folded(apply(input));
+    expect(output).toContain(
+      '<InternationalizationProvider {...rest} locale={i18n.locale} dir={i18n.direction} messages={i18n.messages}><App /></InternationalizationProvider>',
+    );
+  });
+
+  it('declines a spread AFTER value, whose own value may override it', () => {
+    // JSX attributes apply in order: with props.value = w, the effective
+    // value is w, not v — the provider must not be built from v.
+    const input = `import {InternationalizationContext} from '@astryxdesign/core/i18n';
+const a = <InternationalizationContext value={v} {...props}><A /></InternationalizationContext>;
+const b = <InternationalizationContext {...before} value={v} {...after}><B /></InternationalizationContext>;`;
+    const output = apply(input);
+    expect(folded(output)).toContain(
+      '<InternationalizationContext value={v} {...props}><A /></InternationalizationContext>',
+    );
+    expect(folded(output)).toContain(
+      '<InternationalizationContext {...before} value={v} {...after}><B /></InternationalizationContext>',
+    );
+    expect(output).not.toContain('<InternationalizationProvider');
+    expect(
+      output.match(/a spread after `value` may carry its own `value`/g),
+    ).toHaveLength(2);
+    expect(transform({source: output, path: 'test.tsx'}, api)).toBeUndefined();
+  });
+
   it('is idempotent', () => {
     const input = `import {InternationalizationContext} from '@astryxdesign/core/i18n';
 const a = <InternationalizationContext value={i18n}><A /></InternationalizationContext>;

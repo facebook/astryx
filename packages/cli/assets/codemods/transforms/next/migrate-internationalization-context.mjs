@@ -34,7 +34,9 @@
  * provider is imported under a free name when the module already binds
  * `InternationalizationProvider` to something of its own, and the name
  * written must itself reach that import at the edit site. An element whose
- * value arrives through spread props gets the TODO and no rewrite.
+ * value arrives through spread props, or whose explicit `value` is followed
+ * by a spread that may override it, gets the TODO and no rewrite; a spread
+ * before `value` is overridden by it and is kept in place.
  * The import gains `InternationalizationProvider` under the file's existing
  * local name for it when it has one, and loses the context import when
  * nothing else reads it. A second run changes nothing.
@@ -67,6 +69,12 @@ const TODO_VARIABLE =
   `${TODO_PREFIX}InternationalizationProvider has no \`translate\` input; ` +
   'express those strings as `messages` (a catalog per locale) or `overrides`; ' +
   'pass the value\u2019s `overrides`, if it has any, as `overrides`. ';
+const TODO_SPREAD_AFTER_VALUE =
+  `${TODO_PREFIX}a raw InternationalizationContext value no longer configures Astryx; ` +
+  'mount InternationalizationProvider with this value\u2019s `locale`, `direction` (as `dir`), ' +
+  '`messages` and `overrides`. Not rewritten here: a spread after `value` may ' +
+  'carry its own `value` and override this one, so the effective value is not ' +
+  'provable. ';
 const TODO_EXPRESSION =
   `${TODO_PREFIX}a raw InternationalizationContext value no longer configures Astryx; ` +
   'mount InternationalizationProvider with this value\u2019s `locale`, `direction` (as `dir`), ' +
@@ -467,6 +475,19 @@ export default function migrateInternationalizationContext(file, api) {
       return;
     }
     if (valueAttribute.value?.type !== 'JSXExpressionContainer') return;
+    // JSX attributes apply in order: a spread AFTER `value` may carry its own
+    // `value` and win, so the effective value cannot be proven from here. A
+    // spread before it is overridden by the explicit `value` and stays put.
+    const attributes = opening.attributes ?? [];
+    const valueIndex = attributes.indexOf(valueAttribute);
+    if (
+      attributes
+        .slice(valueIndex + 1)
+        .some((/** @type {any} */ a) => a.type === 'JSXSpreadAttribute')
+    ) {
+      if (addComment(valueAttribute, TODO_SPREAD_AFTER_VALUE)) changed = true;
+      return;
+    }
     const value = valueAttribute.value.expression;
 
     /** @type {any[]} */
@@ -542,11 +563,14 @@ export default function migrateInternationalizationContext(file, api) {
       needsNamedProvider = true;
     }
 
-    const otherAttributes = (opening.attributes ?? []).filter(
-      (/** @type {any} */ a) => a !== valueAttribute,
-    );
+    // The mapped props take `value`'s slot, so a spread that came before it
+    // still comes before them and is still overridden, as it was.
     opening.name = providerName;
-    opening.attributes = [...otherAttributes, ...props];
+    opening.attributes = [
+      ...attributes.slice(0, valueIndex),
+      ...props,
+      ...attributes.slice(valueIndex + 1),
+    ];
     if (path.node.closingElement) {
       path.node.closingElement.name = providerName;
     }
