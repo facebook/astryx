@@ -96,6 +96,29 @@ describe('TimeInput presentation', () => {
     expect(screen.getByRole('listbox', {name: 'Minute'})).toBeInTheDocument();
   });
 
+  it('bottom-sheet: a disabled field stays focusable and inert (AST-085 FR1, FR2)', () => {
+    stubPointer(false);
+    const onClick = vi.fn();
+    render(
+      <TimeInput
+        label="Start"
+        presentation="bottom-sheet"
+        isDisabled
+        onClick={onClick}
+        onChange={() => {}}
+      />,
+    );
+    const input = screen.getByRole('combobox', {name: 'Start'});
+    expect(input).not.toHaveAttribute('disabled');
+    expect(input).toHaveAttribute('aria-disabled', 'true');
+    input.focus();
+    expect(input).toHaveFocus();
+    fireEvent.click(input);
+    expect(input).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.queryByRole('listbox', {name: 'Hour'})).toBeNull();
+    expect(onClick).not.toHaveBeenCalled();
+  });
+
   it('adaptive-bottom-sheet: typed on fine, sheet on coarse', () => {
     stubPointer(false);
     const {unmount} = render(

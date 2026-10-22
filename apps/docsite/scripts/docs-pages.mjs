@@ -25,43 +25,71 @@
 export const GUIDE_PAGE_NAMESPACES = new Set(['cli']);
 
 /**
- * The pages a root namespace in GUIDE_PAGE_NAMESPACES shows, as the docsite
- * listed them before the CLI's integration guide was split into short guides:
- * "CLI Integrations" and "Writing docs". Each is one full page of the
- * namespace at `route` (minus the routes in `except`, which another page
- * holds), at `slug`, so every guide slug below it redirects to its section
- * there. `aliases` are older slugs that redirect to the page.
+ * The pages a root namespace in GUIDE_PAGE_NAMESPACES shows besides one page
+ * per guide: each is one full page of the namespace at `route` (minus the
+ * routes in `except`, which another page holds), at `slug`, so every guide
+ * slug below it redirects to its section there. `aliases` are older slugs
+ * that redirect to the page. The integration guides that `cli` once held as
+ * two such pages now sit under `authoring`, an ordinary root namespace.
  * @type {Map<string, Array<{route: string, slug: string, title: string, except?: string[], aliases?: string[]}>>}
  */
-export const GUIDE_NAMESPACE_PAGES = new Map([
-  [
-    'cli',
-    [
-      {
-        route: 'cli/integrations',
-        slug: 'cli-integrations',
-        title: 'CLI Integrations',
-        except: ['cli/integrations/building-blocks/docs'],
-        aliases: ['cli-integrations-overview'],
-      },
-      {
-        route: 'cli/integrations/building-blocks/docs',
-        slug: 'cli-writing-docs',
-        title: 'Writing docs',
-        aliases: ['cli-integrations-docs-add-a-topic'],
-      },
-    ],
-  ],
-]);
+export const GUIDE_NAMESPACE_PAGES = new Map();
 
 /**
  * Older slugs of a root namespace's page, which redirect to it: global mode
- * was `cli/global`, and before that the `cli/install-once` guide.
+ * was `cli/global`, and before that the `cli/install-once` guide; the
+ * integration guides were the CLI Integrations page before `authoring` took
+ * them.
  * @type {Map<string, string[]>}
  */
 export const ROOT_PAGE_ALIASES = new Map([
   ['global', ['cli-global', 'cli-install-once']],
+  ['authoring', ['cli-integrations', 'cli-integrations-overview']],
 ]);
+
+/**
+ * Older guide slugs of a root namespace, from before its guides moved there:
+ * the integration guides were `cli/integrations/…` (/docs/cli-integrations-…)
+ * before `authoring` took them, and the Writing docs page and one older alias
+ * pointed into them. Each opens where its guide's new slug does.
+ * @type {Map<string, {prefix: string, pages: Record<string, string>}>}
+ */
+export const MOVED_GUIDE_SLUGS = new Map([
+  [
+    'authoring',
+    {
+      prefix: 'cli-integrations',
+      pages: {
+        'cli-writing-docs': 'authoring-building-blocks-docs',
+        'cli-integrations-docs-add-a-topic':
+          'authoring-building-blocks-docs-add-a-topic',
+      },
+    },
+  ],
+]);
+
+/**
+ * Redirects for a root namespace's older guide slugs (MOVED_GUIDE_SLUGS),
+ * read off the redirects its page made for the guides' new slugs.
+ * @param {string} root
+ * @param {Record<string, string>} redirects the page's redirects
+ * @returns {Record<string, string>}
+ */
+export function movedGuideRedirects(root, redirects) {
+  const moved = MOVED_GUIDE_SLUGS.get(root);
+  if (!moved) return {};
+  /** @type {Record<string, string>} */
+  const out = {};
+  for (const [slug, href] of Object.entries(redirects)) {
+    if (slug.startsWith(`${root}-`)) {
+      out[`${moved.prefix}-${slug.slice(root.length + 1)}`] = href;
+    }
+  }
+  for (const [old, now] of Object.entries(moved.pages)) {
+    if (Object.hasOwn(redirects, now)) out[old] = redirects[now];
+  }
+  return out;
+}
 
 /**
  * Flat topics whose full text the site shows on another topic's page. The
@@ -188,8 +216,9 @@ export function namespaceCategory(own, guideCategories) {
  * starts on the page. Typed docs (commands, API docs) open only in
  * `astryx docs` and add nothing to the page.
  *
- * A namespace with no guide placed under it (the tree's Unorganized level,
- * whose children are flat topics with pages of their own) has no page.
+ * A namespace with no guide placed under it (a generated topic level, Guides
+ * or Foundations, whose children are flat topics with pages of their own) has
+ * no page.
  * @param {(topic?: string, section?: string, options?: object) => Promise<any>} readDocs
  * @param {string} route
  * @param {{slug?: string, title?: string, except?: string[], aliases?: string[]}} [options]

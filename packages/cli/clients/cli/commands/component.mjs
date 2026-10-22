@@ -6,30 +6,30 @@
  * Global options: --detail full|compact|brief, --lang en|zh|dense
  */
 
-import {findCoreDir} from '../../../../foundation/fs/paths.mjs';
+import {findCoreDir} from '../../../foundation/fs/paths.mjs';
 import {
   resolveImportPath,
-} from '../../../../foundation/discovery/component-discovery.mjs';
+} from '../../../foundation/discovery/component-discovery.mjs';
 import {
   formatFull,
   formatCompact,
   formatBrief,
   formatProps,
   formatBriefAll,
-} from '../../lib/component-format.mjs';
-import {resolveTheme} from '../../lib/resolve-theme.mjs';
-import {getCliInvocation} from '../../../../foundation/env/package-manager.mjs';
-import {jsonOut} from '../../../../foundation/response/json.mjs';
-import {emit, section, text, list, record, records, code} from '../../formatters/index.mjs';
-import {cliError} from '../../lib/cli-error.mjs';
-import {defineCommand} from '../../lib/define-command.mjs';
-import {resultSet} from '../../../../foundation/debug/index.mjs';
-import {ERROR_CODES} from '../../../../foundation/response/error-codes.mjs';
-import {component as componentApi} from '../../../../api/component/component.mjs';
-import {Project} from '../../../../foundation/config/project.mjs';
-import {warnOnIntegrationIssues} from '../../../../foundation/integrations/integration-warnings.mjs';
-import {doc as componentCommand} from '../component.doc.mjs';
-import {doc as componentFn} from '../../../../api/component/component.doc.mjs';
+} from '../lib/component-format.mjs';
+import {resolveTheme} from '../lib/resolve-theme.mjs';
+import {getCliInvocation} from '../../../foundation/env/package-manager.mjs';
+import {jsonOut} from '../../../foundation/response/json.mjs';
+import {emit, section, text, list, record, records, code} from '../formatters/index.mjs';
+import {cliError} from '../lib/cli-error.mjs';
+import {defineCommand} from '../lib/define-command.mjs';
+import {resultSet} from '../../../foundation/debug/index.mjs';
+import {ERROR_CODES} from '../../../foundation/response/error-codes.mjs';
+import {component as componentApi} from '../../../api/component/component.mjs';
+import {Project} from '../../../foundation/config/project.mjs';
+import {warnOnIntegrationIssues} from '../../../foundation/integrations/integration-warnings.mjs';
+import {doc as componentCommand} from './component.doc.mjs';
+import {doc as componentFn} from '../../../api/component/component.doc.mjs';
 
 /**
  * The api layer's component() widens its return to `{type: string, data: unknown}`,
@@ -37,13 +37,13 @@ import {doc as componentFn} from '../../../../api/component/component.doc.mjs';
  * src/types/component to get narrowing + typed data.
  *
  * @typedef {(
- *   | import('../../../../api/component/component.type.mjs').ComponentListResponse
- *   | import('../../../../api/component/component.type.mjs').ComponentBatchResponse
- *   | import('../../../../api/component/component.type.mjs').ComponentDetailResponse
- *   | import('../../../../api/component/component.type.mjs').ComponentDetailPropsResponse
- *   | import('../../../../api/component/component.type.mjs').ComponentDetailSourceResponse
- *   | import('../../../../api/component/component.type.mjs').ComponentDetailShowcaseResponse
- *   | import('../../../../api/component/component.type.mjs').ComponentDetailBlocksResponse
+ *   | import('../../../api/component/component.type.mjs').ComponentListResponse
+ *   | import('../../../api/component/component.type.mjs').ComponentBatchResponse
+ *   | import('../../../api/component/component.type.mjs').ComponentDetailResponse
+ *   | import('../../../api/component/component.type.mjs').ComponentDetailPropsResponse
+ *   | import('../../../api/component/component.type.mjs').ComponentDetailSourceResponse
+ *   | import('../../../api/component/component.type.mjs').ComponentDetailShowcaseResponse
+ *   | import('../../../api/component/component.type.mjs').ComponentDetailBlocksResponse
  * )} ComponentResult
  */
 
@@ -57,7 +57,7 @@ import {doc as componentFn} from '../../../../api/component/component.doc.mjs';
  * the thing that resolved (the component) is not the thing being counted.
  *
  * @param {ComponentResult} result
- * @returns {import('../../../../foundation/debug/command-result.mjs').CommandResult}
+ * @returns {import('../../../foundation/debug/command-result.mjs').CommandResult}
  */
 function summarize(result) {
   switch (result.type) {
@@ -90,11 +90,11 @@ function summarize(result) {
 
 /**
  * Project one single-component API result through the existing formatter kit.
- * @param {import('../../../../api/component/component.type.mjs').ComponentSingleResponse} result
+ * @param {import('../../../api/component/component.type.mjs').ComponentSingleResponse} result
  * @param {string} requestedName
  * @param {'full'|'compact'|'brief'} detail
  * @param {Awaited<ReturnType<typeof resolveTheme>>} themeData
- * @returns {import('../../formatters/index.mjs').Block[]}
+ * @returns {import('../formatters/index.mjs').Block[]}
  */
 function componentDetailBlocks(result, requestedName, detail, themeData) {
   const requested = (requestedName.split('/').pop() ?? requestedName).replace(
@@ -111,7 +111,7 @@ function componentDetailBlocks(result, requestedName, detail, themeData) {
       : requested;
   switch (result.type) {
     case 'component.detail': {
-      /** @type {import('../../formatters/index.mjs').Block[]} */
+      /** @type {import('../formatters/index.mjs').Block[]} */
       const out = [record({package: result.package})];
       if (result.data.parentDoc) {
         out.push(record(result.data, {fields: ['parentDoc']}));
@@ -150,7 +150,7 @@ function componentDetailBlocks(result, requestedName, detail, themeData) {
       /** @param {{package: string}} block @param {string} label */
       const owned = (block, label) =>
         block.package === result.package ? label : `${label} (${block.package})`;
-      /** @type {import('../../formatters/index.mjs').Block[]} */
+      /** @type {import('../formatters/index.mjs').Block[]} */
       const out = [record({package: result.package})];
       if (showcase) {
         out.push(
@@ -243,7 +243,7 @@ export function registerComponent(program) {
           lang, zh, dense,
         }));
       } catch (e) {
-        const err = /** @type {import('../../../../api/error.mjs').AstryxError} */ (e);
+        const err = /** @type {import('../../../api/error.mjs').AstryxError} */ (e);
         return cliError(err.message, {suggestions: err.suggestions, code: err.code});
       }
 
@@ -326,7 +326,7 @@ export function registerComponent(program) {
             // description), grouped by category. Fields mirror the JSON keys.
             const groups = result.data.components;
             const entries = Object.entries(groups);
-            /** @type {import('../../formatters/index.mjs').Block[]} */
+            /** @type {import('../formatters/index.mjs').Block[]} */
             const out = [];
             for (const [cat, items] of entries) {
               // Skip the synthetic group header when there's only one ungrouped category
@@ -362,7 +362,7 @@ export function registerComponent(program) {
               nameCounts.set(item.name, set);
             }
           }
-          /** @param {import('../../../../api/component/component.type.mjs').ComponentListEntry} item */
+          /** @param {import('../../../api/component/component.type.mjs').ComponentListEntry} item */
           const importCell = item => {
             // Use a precomputed import when the API supplies one (integration
             // components carry it); only fall back to the core resolver for
@@ -392,7 +392,7 @@ export function registerComponent(program) {
         }
 
         case 'component.batch': {
-          /** @type {import('../../formatters/index.mjs').Block[]} */
+          /** @type {import('../formatters/index.mjs').Block[]} */
           const out = [
             section('Component batch'),
             record({count: result.data.count}),
@@ -474,8 +474,8 @@ export function registerComponent(program) {
 
 // Re-export lib functions for backward compatibility
 // (agent-docs.mjs, tests, and generate-skill-doc.sh import from here)
-export {discoverComponents, discoverExternalComponentsGrouped, findComponentReadme, findComponentSource, findExternalComponentDoc, resolveImportPath} from '../../../../foundation/discovery/component-discovery.mjs';
-export {discoverExternalPackages} from '../../../../foundation/fs/paths.mjs';
-export {loadDocs} from '../../../../foundation/discovery/component-loader.mjs';
-export {formatFull, formatCompact, formatBrief, formatProps, formatBriefAll} from '../../lib/component-format.mjs';
-export {levenshteinDistance, findClosestComponents, searchComponents} from '../../../../foundation/text/string-utils.mjs';
+export {discoverComponents, discoverExternalComponentsGrouped, findComponentReadme, findComponentSource, findExternalComponentDoc, resolveImportPath} from '../../../foundation/discovery/component-discovery.mjs';
+export {discoverExternalPackages} from '../../../foundation/fs/paths.mjs';
+export {loadDocs} from '../../../foundation/discovery/component-loader.mjs';
+export {formatFull, formatCompact, formatBrief, formatProps, formatBriefAll} from '../lib/component-format.mjs';
+export {levenshteinDistance, findClosestComponents, searchComponents} from '../../../foundation/text/string-utils.mjs';

@@ -80,7 +80,8 @@ export type NativeTimeSegmentProps = {
   max?: ISOTimeString;
   hourFormat: '12h' | '24h';
   isEffectivelyDisabled: boolean;
-  hasDisabledMessage: boolean;
+  /** While disabled, stay focusable: aria-disabled and readOnly, not `disabled`. */
+  isFocusableDisabled: boolean;
   isEffectivelyRequired: boolean;
   isBusy: boolean;
   statusType?: InputStatusType;
@@ -112,7 +113,7 @@ export function NativeTimeSegment({
   max,
   hourFormat,
   isEffectivelyDisabled,
-  hasDisabledMessage,
+  isFocusableDisabled,
   isEffectivelyRequired,
   isBusy,
   statusType,
@@ -285,7 +286,7 @@ export function NativeTimeSegment({
       <button
         type="button"
         onClick={openPicker}
-        disabled={isEffectivelyDisabled}
+        aria-disabled={isEffectivelyDisabled || undefined}
         aria-label={openPickerLabel}
         tabIndex={-1}
         {...stylex.props(
@@ -309,9 +310,11 @@ export function NativeTimeSegment({
           min={min}
           max={max}
           step={60}
-          disabled={isEffectivelyDisabled && !hasDisabledMessage}
-          aria-disabled={hasDisabledMessage ? 'true' : undefined}
-          readOnly={hasDisabledMessage || undefined}
+          disabled={isEffectivelyDisabled && !isFocusableDisabled}
+          aria-disabled={
+            isEffectivelyDisabled && isFocusableDisabled ? 'true' : undefined
+          }
+          readOnly={(isEffectivelyDisabled && isFocusableDisabled) || undefined}
           // The segment's own label applies only when nothing else names it;
           // otherwise a caller aria-label from the spread above stays.
           aria-label={

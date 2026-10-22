@@ -13,7 +13,7 @@ owners: [josephfarina]
 affects_architecture: [architecture:cli-surface]
 affects_families: []
 affects_contributing: []
-affects_consumer_docs: [cli/integrations]
+affects_consumer_docs: [authoring]
 ---
 
 # Discover integration manager system spec
@@ -186,7 +186,7 @@ source, packages}`. `source` has `name`, `generatedAt`, and `complete`. Each
   cache directory (INV10).
 - `spec:AST-031`: `discover` is a second named-export feature, without the
   consent gate (FR6).
-- Consumer docs: `cli/integrations` gains the `discover` named export and config
+- Consumer docs: `authoring` gains the `discover` named export and config
   field, and `astryx docs authoring` gains the `discover-source` section.
 - `astryx discover` with no source configured listed only the project's
   integrations. It also lists the official packages, first, each with the

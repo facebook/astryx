@@ -223,7 +223,6 @@ export async function discover(query, options = {}) {
       project,
       packages,
       declared,
-      add,
     );
     const fromSources = officialFirst(
       availableEntries(catalog, packages, declared, {

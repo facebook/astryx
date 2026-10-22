@@ -271,6 +271,21 @@ const styles = stylex.create({
       '[data-astryx-press="on"]': 'scale(0.98)',
     },
   },
+  // A disabled input-variant trigger keeps its tab stop (`spec:AST-085` FR1),
+  // and the shared disabled wrapper style drops the field focus ring, so the
+  // trigger shows keyboard focus here instead (FR6). It keys on the trigger
+  // itself, a direct child, so a focused status button keeps its own outline.
+  triggerDisabledFocus: {
+    borderColor: {
+      default: colorVars['--color-border-emphasized'],
+      ':has(> [aria-disabled="true"]:focus-visible)':
+        colorVars['--color-accent'],
+    },
+    boxShadow: {
+      default: 'none',
+      ':has(> [aria-disabled="true"]:focus-visible)': `inset 0px 0px 0px 2px ${colorVars['--color-accent-muted']}`,
+    },
+  },
   triggerGhostDisabled: {
     backgroundImage: 'none',
     transform: {
@@ -688,8 +703,8 @@ export interface MultiSelectorProps<
    * The selected values stay visible, focusable, and included in form
    * submission, and retain their combobox identity with `aria-readonly`. The
    * selection surface and editing affordances are removed.
-   * Unlike `isDisabled`, a read-only selector is not dimmed and stays in the
-   * tab order. `isDisabled` takes precedence when both are set.
+   * Unlike `isDisabled`, a read-only selector is not dimmed and keeps its
+   * value in form submission. `isDisabled` takes precedence when both are set.
    * @default false
    */
   isReadOnly?: boolean;
@@ -701,8 +716,8 @@ export interface MultiSelectorProps<
    * so the reason is discoverable by keyboard and assistive technology.
    * Activation stays blocked.
    *
-   * Use this instead of wrapping a disabled selector in `Tooltip` — disabled
-   * controls don't emit the pointer events an external tooltip needs.
+   * Use this instead of wrapping a disabled selector in `Tooltip`, so the
+   * reason is attached to the trigger itself.
    *
    * @example
    * ```
@@ -2409,8 +2424,18 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
     });
   }
 
+  // A disabled trigger stays focusable but, like a natively disabled button,
+  // runs no caller event handler other than focus and blur, and a press on it
+  // reaches no handler at all (`spec:AST-085` FR2).
+  const callerProps = isDisabled
+    ? Object.fromEntries(
+        Object.entries(rest).filter(
+          ([key]) => !/^on[A-Z]/.test(key) || /^on(Focus|Blur)/.test(key),
+        ),
+      )
+    : rest;
   const triggerSharedProps: React.HTMLAttributes<HTMLElement> = {
-    ...rest,
+    ...callerProps,
     id: triggerId,
     // A caller's description is kept alongside the field's own.
     'aria-describedby':
@@ -2423,13 +2448,20 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
     // Newly forwarded handlers compose component first: the built-in toggle
     // and keyboard model always run. `onFocus` keeps its existing caller-first
     // order.
-    onKeyDown: composeEventHandlers(onKeyDown, onKeyDownProp),
+    onKeyDown: isDisabled
+      ? onKeyDown
+      : composeEventHandlers(onKeyDown, onKeyDownProp),
     onFocus: event => {
       onFocus?.(event);
       surface.onTriggerFocus(event);
     },
-    onClick: composeEventHandlers(handleTriggerButtonClick, onClick),
-    tabIndex: isDisabled && !showsDisabledMessage ? -1 : 0,
+    onClick: isDisabled
+      ? event => {
+          event.preventDefault();
+          event.stopPropagation();
+        }
+      : composeEventHandlers(handleTriggerButtonClick, onClick),
+    tabIndex: 0,
     ...stylex.props(
       styles.trigger,
       isEffectivelyReadOnly && styles.triggerReadOnly,
@@ -2496,14 +2528,9 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
       <>
         {renderTrigger(triggerProps)}
         {htmlName != null &&
+          !isDisabled &&
           value.map(v => (
-            <input
-              key={v}
-              type="hidden"
-              name={htmlName}
-              value={v}
-              disabled={isDisabled}
-            />
+            <input key={v} type="hidden" name={htmlName} value={v} />
           ))}
         {selectionSurface}
       </>
@@ -2541,6 +2568,10 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
             surface.isTriggerFocusRingSuppressed &&
               selectorPresentationStyles.pointerRestoredFocus,
             isDisabled && inputWrapperStyles.disabled,
+            variant === 'input' &&
+              isDisabled &&
+              !surface.isTriggerFocusRingSuppressed &&
+              styles.triggerDisabledFocus,
             isEffectivelyReadOnly && styles.triggerReadOnly,
             variant !== 'input' && isDisabled && styles.triggerGhostDisabled,
             variant !== 'input' &&
@@ -2598,26 +2629,19 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
               ? activeDescendantId
               : undefined
           }
-          // With a disabledMessage the trigger keeps focusability via
-          // aria-disabled so the reason is focus-discoverable; activation is
-          // still blocked by the isDisabled guards in useMultiCombobox.
-          disabled={isDisabled && !showsDisabledMessage}
-          aria-disabled={showsDisabledMessage ? 'true' : undefined}>
+          // A disabled trigger keeps its tab stop and says so through
+          // aria-disabled (`spec:AST-085` FR1); the isDisabled guards in
+          // useMultiCombobox block every way of opening it.
+          aria-disabled={isDisabled ? 'true' : undefined}>
           <span {...stylex.props(styles.triggerContent)}>
             {renderTriggerContent()}
           </span>
         </button>
+        {/* A disabled selector submits no value (`spec:AST-085` FR3). */}
         {htmlName != null &&
+          !isDisabled &&
           value.map(v => (
-            <input
-              key={v}
-              type="hidden"
-              name={htmlName}
-              value={v}
-              // Disabled native controls are excluded from form submission;
-              // mirror that for the hidden carriers.
-              disabled={isDisabled}
-            />
+            <input key={v} type="hidden" name={htmlName} value={v} />
           ))}
         {isBusy && <Spinner size="sm" />}
         {hasClear &&

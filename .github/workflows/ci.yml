@@ -1401,6 +1401,24 @@ jobs:
             --project chromium \
             --output empty-state-announcement-output
 
+      # A disabled MultiSelector trigger keeps focus when it is disabled while
+      # focused. jsdom never moves focus off a newly disabled element, so only
+      # a real engine shows the loss this guards against.
+      - name: Run MultiSelector disabled-focus contract
+        run: |
+          pnpm exec playwright test \
+            packages/core/src/MultiSelector/MultiSelector.disabledFocus.a11y.chromium.spec.ts \
+            --project chromium \
+            --output multiselector-disabled-focus-output
+
+      # The same guard for Selector and ComplexSelector triggers.
+      - name: Run disabled trigger focus contract
+        run: |
+          pnpm exec playwright test \
+            packages/core/src/__tests__/DisabledTriggerFocus.a11y.chromium.spec.ts \
+            --project chromium \
+            --output disabled-trigger-focus-output
+
       # Table merges a consumer min-width with its column floors through CSS
       # max(). jsdom keeps any string, so only a real engine shows whether the
       # emitted declaration parses; an invalid one drops the floors entirely.
@@ -2873,6 +2891,71 @@ jobs:
           path: |
             dropdown-menu-divider-a11y-report.json
             dropdown-menu-divider-audit-evidence/
+          retention-days: 30
+          if-no-files-found: error
+
+      # DropdownMenuItem owns one interactive pointer-menu row. Its label, icon,
+      # description, and end content follow logical document direction; the row
+      # uses logical inline padding and start-aligned text. Parent DropdownMenu
+      # owns directional placement and keyboard navigation.
+      - name: Run DropdownMenuItem audit browser evidence
+        if: ${{ !cancelled() && github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, '[Component Audit] DropdownMenuItem:') }}
+        env:
+          ASTRYX_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          status=0
+          node .github/scripts/accessibility-audit.js \
+            --storybook-dir apps/storybook/dist \
+            --output dropdown-menu-item-a11y-report.json \
+            --components DropdownMenuItem \
+            --ready-selector '[role="menu"]' \
+            --baseline .github/a11y-baseline.json \
+            --fail-on-new || status=1
+          pnpm exec playwright test \
+            packages/core/src/DropdownMenu/__tests__/DropdownMenuItemAudit.a11y.chromium.spec.ts \
+            --project chromium || status=1
+          exit "$status"
+
+      - name: Upload DropdownMenuItem audit evidence
+        if: always() && github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, '[Component Audit] DropdownMenuItem:')
+        uses: actions/upload-artifact@v7
+        with:
+          name: dropdown-menu-item-audit-evidence-${{ needs.build-storybook.outputs.short_hash }}
+          path: |
+            dropdown-menu-item-a11y-report.json
+            dropdown-menu-item-audit-evidence/
+          retention-days: 30
+          if-no-files-found: error
+
+      # DropdownMenuRadioGroup owns controlled value propagation, the named
+      # role=group wrapper, close policy, and the tokenized gap between radio
+      # rows. Parent DropdownMenu owns keyboard navigation; each radio item owns
+      # menuitemradio semantics and indicator paint.
+      - name: Run DropdownMenuRadioGroup audit browser evidence
+        if: ${{ !cancelled() && github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, '[Component Audit] DropdownMenuRadioGroup:') }}
+        env:
+          ASTRYX_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          status=0
+          node .github/scripts/accessibility-audit.js \
+            --storybook-dir apps/storybook/dist \
+            --output dropdown-menu-radio-group-a11y-report.json \
+            --components DropdownMenuRadioGroup \
+            --baseline .github/a11y-baseline.json \
+            --fail-on-new || status=1
+          pnpm exec playwright test \
+            packages/core/src/DropdownMenu/__tests__/DropdownMenuRadioGroupAudit.a11y.chromium.spec.ts \
+            --project chromium || status=1
+          exit "$status"
+
+      - name: Upload DropdownMenuRadioGroup audit evidence
+        if: always() && github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, '[Component Audit] DropdownMenuRadioGroup:')
+        uses: actions/upload-artifact@v7
+        with:
+          name: dropdown-menu-radio-group-audit-evidence-${{ needs.build-storybook.outputs.short_hash }}
+          path: |
+            dropdown-menu-radio-group-a11y-report.json
+            dropdown-menu-radio-group-audit-evidence/
           retention-days: 30
           if-no-files-found: error
 

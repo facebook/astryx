@@ -763,9 +763,13 @@ describe('Pagination', () => {
         />,
       );
       const dot = screen.getByRole('button', {name: 'Go to page 2'});
-      expect(dot).toBeDisabled();
+      // spec:AST-085 FR1: the active dot keeps its tab stop, exposed as disabled.
+      expect(dot).not.toHaveAttribute('disabled');
+      expect(dot).toHaveAttribute('aria-disabled', 'true');
       dot.focus();
+      expect(dot).toHaveFocus();
       await user.keyboard('{ArrowRight}');
+      await user.keyboard('{Enter} ');
       expect(onChange).not.toHaveBeenCalled();
     });
   });
