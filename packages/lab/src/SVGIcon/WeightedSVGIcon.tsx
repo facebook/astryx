@@ -171,10 +171,8 @@ export function WeightedSVGIcon({
     ? ({role: 'img'} as const)
     : ({'aria-hidden': true} as const);
 
-  const pinnedStyle =
-    weight != null
-      ? ({'--astryx-icon-weight': String(weight)} as CSSProperties)
-      : undefined;
+  const pinnedStyle: Record<string, string> | undefined =
+    weight != null ? {'--astryx-icon-weight': String(weight)} : undefined;
 
   return (
     <svg
