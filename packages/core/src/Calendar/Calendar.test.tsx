@@ -382,11 +382,21 @@ describe('Calendar', () => {
   // ─── Date Constraints ────────────────────────────────────────
 
   it('respects min date constraint', () => {
-    render(<Calendar focusDate="2026-01-01" min="2026-01-10" />);
+    const onChange = vi.fn();
+    render(
+      <Calendar focusDate="2026-01-01" min="2026-01-10" onChange={onChange} />,
+    );
 
     // Day 5 should be disabled (before min)
     const day5 = getDayButton(5);
     expect(day5).toHaveAttribute('aria-disabled', 'true');
+    // spec:AST-085 FR1: focusable through aria-disabled, not natively disabled;
+    // a click still selects nothing.
+    expect(day5).not.toHaveAttribute('disabled');
+    day5.focus();
+    expect(day5).toHaveFocus();
+    day5.click();
+    expect(onChange).not.toHaveBeenCalled();
 
     // Day 15 should be enabled (after min)
     const day15 = getDayButton(15);
