@@ -657,7 +657,7 @@
       "support-older-clis: Support older CLIs",
       "codemods-and-versions: Name codemod folders after Core versions"
     ],
-    "digest": "4cdc34fb7dd6fa895ea4f6ff0f3669a227d2945d4f6bac038eb6971227bf89c7"
+    "digest": "4aed063dbaa96336c30fc7293697c1f84cbb100f9a26b84da726d6e51f450560"
   },
   "browser-support": {
     "type": "docs.detail",

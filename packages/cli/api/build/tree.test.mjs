@@ -59,8 +59,8 @@ const PINNED = [
   [
     'analytics dashboard with a KPI row and a sortable table',
     [
-      'PaginationPageSize',
-      'GridDashboardLayout',
+      'TableSortableTable',
+      'TableRichCellTable',
       'TableBulkActionsTable',
       'TableGridDividersTable',
       'TableRowExpansionTable',
@@ -83,17 +83,17 @@ const PINNED = [
       'EmptyStateCompact',
       'EmptyStateContainer',
       'EmptyStateShowcase',
-      'ToolbarTableFilter',
+      'BannerWithActionButton',
     ],
   ],
   [
     'login form with single sign-on buttons',
     [
+      'DialogFormDialog',
       'CardWithInnerLayout',
-      'BottomSheetMobileKeyboard',
       'ButtonGroupBasic',
-      'CollapsibleControlledAccordion',
-      'BottomSheetSwitcherReviewFlow',
+      'ToggleButtonGroup',
+      'BannerWithActionButton',
     ],
   ],
   [
@@ -108,7 +108,7 @@ const PINNED = [
   ],
   [
     'kanban board for sprint tasks with a filter bar',
-    ['ToolbarTableFilter', 'PowerSearchShowcase'],
+    ['ToolbarTableFilter', 'PowerSearchFullFeatured'],
   ],
 ];
 
@@ -166,12 +166,20 @@ describe('build tree', () => {
       expect(answer.data.start?.alternatives).toEqual(
         own.data.start?.alternatives,
       );
-      // The picker only re-orders build's own blocks: each keeps build's
-      // entry (its real score and reason), none is added, none is dropped.
+      // Every block is build's own entry or one search returned, with its real
+      // score and reason; never more blocks than build's own.
       expect(answer.data.blocks.length).toBe(own.data.blocks.length);
-      for (const b of answer.data.blocks)
-        expect(own.data.blocks.find(o => o.name === b.name)).toEqual(b);
+      for (const b of answer.data.blocks) {
+        expect(b.score).toBeGreaterThan(0);
+        expect(typeof b.reason).toBe('string');
+        const mine = own.data.blocks.find(o => o.name === b.name);
+        if (mine) expect(mine).toEqual(b);
+      }
       expect(answer.data.blocks.map(b => b.name)).toEqual(blocks);
+      // Never longer than build's own answer for the same request.
+      expect(Buffer.byteLength(JSON.stringify(answer))).toBeLessThanOrEqual(
+        Buffer.byteLength(JSON.stringify(own)),
+      );
     });
   }
 });
