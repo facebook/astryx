@@ -81,7 +81,8 @@ const SECONDARY_SELECTOR = {
 
 /**
  * The secondary Button treatment on ComplexSelector triggers (AST-079 FR2), with
- * the hover kept off a disabled trigger, whose inner button is disabled.
+ * the hover kept off a disabled trigger, whose inner button is disabled
+ * (natively or, keeping its tab stop, with `aria-disabled`).
  */
 const SECONDARY_COMPLEX_SELECTOR = {
   backgroundColor: SECONDARY_BUTTON.backgroundColor,
@@ -89,7 +90,8 @@ const SECONDARY_COMPLEX_SELECTOR = {
   borderStyle: SECONDARY_BUTTON.borderStyle,
   borderColor: SECONDARY_BUTTON.borderColor,
   color: SECONDARY_BUTTON.color,
-  ':hover:not(:has(> :disabled))': SECONDARY_BUTTON[':hover'],
+  ':hover:not(:has(> :is(:disabled, [aria-disabled="true"])))':
+    SECONDARY_BUTTON[':hover'],
 } as const;
 
 export const butterTheme = defineTheme({

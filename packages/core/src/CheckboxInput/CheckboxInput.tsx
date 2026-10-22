@@ -19,7 +19,6 @@
 import {
   useId,
   useCallback,
-  use,
   useOptimistic,
   useRef,
   useTransition,
@@ -52,7 +51,6 @@ import {usePressFeedback} from '../hooks/usePressFeedback';
 import {useResolvedRequired} from '../hooks/useResolvedRequired';
 import {useIndicator} from '../Indicator';
 import {themeProps} from '../utils/themeProps';
-import {CheckboxListContext} from '../CheckboxList/CheckboxListContext';
 
 import {useMergedRefs} from '../hooks/useMergedRefs';
 
@@ -354,21 +352,10 @@ export function CheckboxInput({
   const [optimisticValue, setOptimisticValue] = useOptimistic(value);
   const isBusy = isLoading || optimisticValue !== value;
 
-  // Disabled-reason tooltip. Disabled controls swallow pointer events, so the
-  // tooltip listeners attach to the checkbox row (which already exists) and the
-  // native checkbox stays perceivable via aria-disabled instead of the disabled
-  // attribute. Value mutation is blocked by the isDisabled guard in onChange.
+  // A disabled checkbox stays focusable via aria-disabled instead of the
+  // native disabled attribute (spec:AST-085 FR1). Value mutation is blocked by
+  // the click and onChange guards on the input.
   const showsDisabledMessage = isDisabled && !!disabledMessage;
-  // Keep the native checkbox focusable via aria-disabled either when it renders
-  // its own reason tooltip, or when it sits in a CheckboxList whose whole-group
-  // `disabledMessage` (shown on the group container) needs each checkbox to
-  // stay keyboard-perceivable. The group signals this through context rather
-  // than a public prop.
-  const checkboxListContext = use(CheckboxListContext);
-  const isFocusableDisabled =
-    isDisabled &&
-    (showsDisabledMessage ||
-      (checkboxListContext?.hasDisabledMessage ?? false));
   const disabledMessageTooltip = useTooltip({
     placement: 'above',
     // The container row is not naturally focusable; focusin bubbles up from the
@@ -384,7 +371,7 @@ export function CheckboxInput({
   // `opacity: 0`, and only the indicator's own element can shape the outline
   // to match it. See useIndicatorFocusRing.
   const indicatorRef = useRef<HTMLSpanElement>(null);
-  const {focusProps} = useIndicatorFocusRing(indicatorRef, isDisabled);
+  const {focusProps} = useIndicatorFocusRing(indicatorRef);
 
   const isIndeterminate = optimisticValue === 'indeterminate';
   const isChecked = optimisticValue === true;
@@ -471,22 +458,25 @@ export function CheckboxInput({
             )}
             id={id}
             type="checkbox"
-            // Withhold the name while disabled: with a disabledMessage the
-            // input stays focusable (not natively disabled), and a disabled
-            // control must not submit.
+            // Withhold the name while disabled: the input stays focusable (not
+            // natively disabled), and a disabled control must not submit.
             name={isDisabled ? undefined : htmlName}
             checked={isChecked}
-            // With a disabledMessage the checkbox keeps focusability via
-            // aria-disabled so the reason is focus-discoverable; toggling is
-            // still blocked by the isDisabled guard in onChange below.
-            disabled={isDisabled && !isFocusableDisabled}
-            aria-disabled={isFocusableDisabled ? 'true' : undefined}
-            form={isFocusableDisabled ? '' : undefined}
+            aria-disabled={isDisabled ? 'true' : undefined}
+            // Detached from its form while disabled, so it neither submits nor
+            // blocks submission through `required` (spec:AST-085 FR3).
+            form={isDisabled ? '' : undefined}
+            // Native `disabled` suppressed onClick (FR2); preventDefault here
+            // would desync React's controlled checked state.
+            onClick={isDisabled ? undefined : rest.onClick}
             readOnly={isReadOnly}
             required={isRequired}
             aria-required={isEffectivelyRequired ? 'true' : undefined}
             onChange={e => {
               if (isDisabled || isBusy || isReadOnly) {
+                // Activation clears the native mixed state; React restores
+                // only `checked`, so restore `indeterminate` too.
+                e.target.indeterminate = isIndeterminate;
                 return;
               }
               const checked = e.target.checked;

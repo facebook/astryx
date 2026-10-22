@@ -385,7 +385,7 @@ describe('Slider', () => {
     render(<Slider label="Volume" value={50} isDisabled />);
     const slider = screen.getByRole('slider');
     expect(slider).toHaveAttribute('aria-disabled', 'true');
-    expect(slider).toHaveAttribute('tabIndex', '-1');
+    expect(slider).toHaveAttribute('tabIndex', '0');
   });
 
   it('does not fire onChange on pointer down when disabled', () => {
@@ -1111,11 +1111,11 @@ describe('Slider', () => {
       expect(onChange).not.toHaveBeenCalled();
     });
 
-    it('remains non-focusable when disabled without a reason', () => {
+    it('stays focusable when disabled without a reason', () => {
       render(
         <Slider label="Volume" value={50} valueDisplay="none" isDisabled />,
       );
-      expect(screen.getByRole('slider')).toHaveAttribute('tabindex', '-1');
+      expect(screen.getByRole('slider')).toHaveAttribute('tabindex', '0');
     });
   });
   describe('form participation', () => {

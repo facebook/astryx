@@ -4,7 +4,7 @@
 
 /**
  * @file DropdownMenu.tsx
- * @input Uses React, StyleX, usePopover, MenuBottomSheet, Button, List,
+ * @input Uses React, StyleX, usePopover, MenuBottomSheet (lazy), Button, List,
  *   useListFocus, and the shared viewport-safe menu-width resolver
  * @output Exports DropdownMenu with caller-selected popover or bottom-sheet
  *   presentation
@@ -61,7 +61,10 @@ import {
 import {
   DropdownMenuContext,
   DropdownMenuRootOpenContext,
+  DropdownMenuSurfaceContext,
   type DropdownMenuContextValue,
+  type DropdownMenuSurfaceHost,
+  type DropdownMenuSurfaceValue,
 } from './DropdownMenuContext';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import {useListFocus} from '../hooks/useListFocus';
@@ -72,7 +75,7 @@ import {useFocusReturnVisibility} from '../hooks/useFocusReturnVisibility';
 import {focusForLastInput} from '../utils/focusReturn';
 import {useMenuOverflow} from './useMenuOverflow';
 import {MenuRegionsContext} from './menuRegionsContext';
-import {getFocusableElements} from '../hooks/useFocusTrap';
+import {moveRegionsTab} from './menuRegionStops';
 import {useDevWarning} from '../hooks/useDevWarning';
 import {useMenuDrillIn} from './useMenuDrillIn';
 import {resolveMenuWidth} from './menuWidth';
@@ -81,8 +84,11 @@ import {
   useAdaptivePresentation,
   type AdaptivePresentation,
 } from '../hooks/useAdaptivePresentation';
-import {MenuBottomSheet} from './MenuBottomSheet';
-import {MenuBottomSheetActionList} from './MenuBottomSheetActionList';
+// Loaded on demand: only the bottom-sheet presentation renders the sheet.
+import {
+  MenuBottomSheet,
+  MenuBottomSheetActionList,
+} from './lazyMenuBottomSheet';
 import {layerAnimations} from '../Layer/layerAnimations.stylex';
 import type {LayerAlignment, LayerPlacement} from '../Layer/useLayer';
 import {
@@ -109,101 +115,13 @@ const MENU_MAX_BLOCK_SIZE = `min(${MENU_BLOCK_CAP}, ${layerViewportInset.maxBloc
 const MENU_MAX_BLOCK_SIZE_FALLBACK = `min(${MENU_BLOCK_CAP}, ${layerViewportInset.maxBlockSizeFallback})`;
 const MENU_TRIGGER_OPEN_BACKGROUND = `linear-gradient(${colorVars['--color-overlay-pressed']}, ${colorVars['--color-overlay-pressed']})`;
 
-/**
- * The elements Tab reaches inside a header or footer region, in order. Hidden
- * controls (`hidden`, `display: none`, `visibility: hidden`, inert or
- * aria-hidden subtrees) are not reachable, judged by the popover focus trap's
- * own test so the two never disagree about where Tab can go.
- */
-/**
- * Collapse each named radio group to the one Tab stop a browser gives it: the
- * focused radio, else the checked one, else the first radio moving forward or
- * the last moving backward. The stop takes the group's first position.
- */
-function collapseRadioGroups(
-  elements: HTMLElement[],
-  active: Element | null,
-  isBackward: boolean,
-): HTMLElement[] {
-  const groups = new Map<string, HTMLInputElement[]>();
-  const groupKey = (el: HTMLElement): string | null =>
-    el instanceof HTMLInputElement &&
-    el.getAttribute('type') === 'radio' &&
-    el.name !== ''
-      ? `${el.form?.id ?? ''}\u0000${el.name}`
-      : null;
-  for (const el of elements) {
-    const key = groupKey(el);
-    if (key != null) {
-      const members = groups.get(key) ?? [];
-      members.push(el as HTMLInputElement);
-      groups.set(key, members);
-    }
-  }
-  const placed = new Set<string>();
-  const result: HTMLElement[] = [];
-  for (const el of elements) {
-    const key = groupKey(el);
-    if (key == null) {
-      result.push(el);
-      continue;
-    }
-    if (placed.has(key)) {
-      continue;
-    }
-    placed.add(key);
-    const members = groups.get(key) ?? [];
-    const stop =
-      members.find(radio => radio === active) ??
-      members.find(radio => radio.checked) ??
-      (isBackward ? members[members.length - 1] : members[0]);
-    result.push(stop);
-  }
-  return result;
-}
-
-function tabbablesIn(region: HTMLElement | null): HTMLElement[] {
-  if (region == null) {
-    return [];
-  }
-  return getFocusableElements(region).filter(
-    element => element.tabIndex >= 0 && !isInsideHiddenWrapper(element, region),
-  );
-}
-
-/**
- * Whether a `display: none` ancestor between the element and its region hides
- * it — a control in a wrapper hidden at some widths, say. The trap's test reads
- * only the element's own display.
- */
-function isInsideHiddenWrapper(
-  element: HTMLElement,
-  region: HTMLElement,
-): boolean {
-  if (typeof window === 'undefined' || !window.getComputedStyle) {
-    return false;
-  }
-  for (
-    let node = element.parentElement;
-    node != null && node !== region.parentElement;
-    node = node.parentElement
-  ) {
-    if (window.getComputedStyle(node).display === 'none') {
-      return true;
-    }
-  }
-  return false;
-}
-
-/**
- * Move focus to a Tab stop in the dialog. Reports whether focus actually
- * arrived, so a caller can fall back to the menu instead of stranding focus on
- * the page.
- */
-function focusRegionControl(element: HTMLElement): boolean {
-  element.focus();
-  return element.ownerDocument.activeElement === element;
-}
+// A sub-menu's drilled-in view with a header or footer renders in the surface
+// host that follows the menu, as the frame marked
+// `data-astryx-submenu-regions="view"` (hidden while a deeper view shows).
+// While one shows, the menu and its header and footer step aside. The rule
+// reads that from the DOM, so no state mirrors which view shows.
+const STEPS_ASIDE_FOR_VIEW =
+  ':has(~ * > [data-astryx-submenu-regions="view"]:not([hidden]))';
 
 const styles = stylex.create({
   triggerOpen: {
@@ -218,7 +136,12 @@ const styles = stylex.create({
   },
   dropdown: {
     boxSizing: 'border-box',
-    display: 'flex',
+    display: {
+      default: 'flex',
+      // A sub-menu's drilled-in view with a header or footer shows in its
+      // place (see `stepsAsideForView`).
+      [STEPS_ASIDE_FOR_VIEW]: 'none',
+    },
     flexDirection: 'column',
     gap: spacingVars['--spacing-0-5'],
     // Pointer opens focus this container so subsequent arrow keys and Escape
@@ -267,6 +190,22 @@ const styles = stylex.create({
     flexGrow: 1,
     flexShrink: 1,
     minBlockSize: 0,
+  },
+  // Where a sub-menu with a header or footer renders its surface: beside the
+  // menu, never inside it. It owns no box, so the popover's layout is
+  // unchanged.
+  surfaceHost: {
+    display: 'contents',
+  },
+  // While a sub-menu's drilled-in view with its own header or footer shows
+  // in the surface host, the header and footer step aside for it, as the menu
+  // does (see `dropdown`). Derived from the DOM by the rule itself: the view
+  // is the frame in the host that is not hidden.
+  stepsAsideForView: {
+    display: {
+      default: null,
+      [STEPS_ASIDE_FOR_VIEW]: 'none',
+    },
   },
   region: {
     flexShrink: 0,
@@ -759,12 +698,37 @@ function DropdownMenuBottomSheet({
     if (!isOpen || openModalityRef.current !== 'keyboard') {
       return;
     }
-    const frame = requestAnimationFrame(() => {
-      actionListRef.current
-        ?.querySelector<HTMLElement>('button:not(:disabled), a[href]')
-        ?.focus({preventScroll: true});
+    const findFirstAction = () =>
+      actionListRef.current?.querySelector<HTMLElement>(
+        'button:not(:disabled), a[href]',
+      ) ?? null;
+    let observer: MutationObserver | null = null;
+    let frame = requestAnimationFrame(() => {
+      const action = findFirstAction();
+      if (action != null) {
+        action.focus({preventScroll: true});
+        return;
+      }
+      // The sheet loads on demand, so a keyboard open can arrive before its
+      // rows exist. Wait for them, then focus a frame later so the sheet's
+      // own open-focus has already run.
+      observer = new MutationObserver(() => {
+        const loaded = findFirstAction();
+        if (loaded == null) {
+          return;
+        }
+        observer?.disconnect();
+        observer = null;
+        frame = requestAnimationFrame(() => {
+          loaded.focus({preventScroll: true});
+        });
+      });
+      observer.observe(document.body, {childList: true, subtree: true});
     });
-    return () => cancelAnimationFrame(frame);
+    return () => {
+      cancelAnimationFrame(frame);
+      observer?.disconnect();
+    };
   }, [currentItems, isOpen]);
 
   useEffect(() => {
@@ -1243,44 +1207,13 @@ function DropdownMenuPopover({
   // second time.
   const moveDialogTab = useCallback(
     (e: React.KeyboardEvent, isFromFlyout = false) => {
-      const menu = listRef.current;
-      if (menu == null) {
-        return;
-      }
-      e.preventDefault();
-      e.stopPropagation();
-      // A named radio group is one stop, as the browser's own Tab order has it.
-      const cycle = collapseRadioGroups(
-        [
-          ...tabbablesIn(headerRef.current),
-          menu,
-          ...tabbablesIn(footerRef.current),
-        ],
-        document.activeElement,
-        e.shiftKey,
+      moveRegionsTab(
+        e,
+        listRef.current,
+        headerRef.current,
+        footerRef.current,
+        isFromFlyout,
       );
-      if (cycle.length === 1) {
-        // Nothing else to reach: focus stays in the menu. From a flyout that
-        // has just closed itself, that is the menu's own stop.
-        if (isFromFlyout) {
-          menu.focus();
-        }
-        return;
-      }
-      const active = document.activeElement;
-      const menuIndex = cycle.indexOf(menu);
-      // A row, or a row of an open flyout, counts as the menu's stop.
-      let index = menu.contains(active)
-        ? menuIndex
-        : cycle.findIndex(el => el === active || el.contains(active));
-      if (index < 0) {
-        index = menuIndex;
-      }
-      const step = e.shiftKey ? -1 : 1;
-      const next = cycle[(index + step + cycle.length) % cycle.length];
-      if (!focusRegionControl(next)) {
-        menu.focus();
-      }
     },
     [listRef],
   );
@@ -1554,11 +1487,38 @@ function DropdownMenuPopover({
 
   // The drill-in view stack for sub-menus on a phone.
   const {drillIn, wrapContent} = useMenuDrillIn(isOpen);
+  // The surface host is owned through a ref. State keeps only a key that
+  // changes whenever a host element attaches, the host included when it
+  // moves (a header or footer coming or going), so sub-menus re-render into
+  // the element that is mounted.
+  const surfaceHostRef = useRef<HTMLDivElement | null>(null);
+  const [surfaceHostKey, setSurfaceHostKey] = useState(0);
+  const attachSurfaceHost = useCallback((node: HTMLDivElement | null) => {
+    surfaceHostRef.current = node;
+    if (node != null) {
+      setSurfaceHostKey(key => key + 1);
+    }
+  }, []);
+  const surfaceHost = useMemo<DropdownMenuSurfaceHost>(
+    () => ({
+      getElement: () => (surfaceHostKey > 0 ? surfaceHostRef.current : null),
+    }),
+    [surfaceHostKey],
+  );
   const resolvedMaxHeight = menuMaxHeight == null ? null : `${menuMaxHeight}px`;
   // Context for compound items
   const contextValue = useMemo<DropdownMenuContextValue>(
     () => ({closeMenu, menuSize, drillIn, menuLabel}),
     [closeMenu, menuSize, drillIn, menuLabel],
+  );
+  // What a sub-menu with a header or footer needs, on an internal context.
+  const surfaceValue = useMemo<DropdownMenuSurfaceValue>(
+    () => ({
+      host: surfaceHost,
+      ownerId: menuId,
+      menuMaxHeight: resolvedMaxHeight ?? undefined,
+    }),
+    [surfaceHost, menuId, resolvedMaxHeight],
   );
 
   // Resolve menu content: data-driven items become components
@@ -1568,7 +1528,13 @@ function DropdownMenuPopover({
   const hasOverflow = useMenuOverflow(listRef, menuContent, popover.isOpen);
 
   // The header and footer sit beside the menu inside the popover, never inside
-  // the role="menu" element: a menu holds only its rows.
+  // the role="menu" element: a menu holds only its rows. The surface host
+  // follows the menu, so a sub-menu with a header or footer renders beside the
+  // menu too; while such a sub-menu's drilled-in view shows there, the menu and
+  // the regions step aside (STEPS_ASIDE_FOR_VIEW).
+  const surfaceHostElement = (
+    <div ref={attachSurfaceHost} {...stylex.props(styles.surfaceHost)} />
+  );
   const renderWithRegions = (menu: ReactNode): ReactNode =>
     hasRegions ? (
       <div
@@ -1581,7 +1547,7 @@ function DropdownMenuPopover({
           <div
             ref={headerRef}
             onKeyDown={handleRegionKeyDown}
-            {...stylex.props(styles.region)}>
+            {...stylex.props(styles.region, styles.stepsAsideForView)}>
             {header}
           </div>
         )}
@@ -1590,13 +1556,17 @@ function DropdownMenuPopover({
           <div
             ref={footerRef}
             onKeyDown={handleRegionKeyDown}
-            {...stylex.props(styles.region)}>
+            {...stylex.props(styles.region, styles.stepsAsideForView)}>
             {footer}
           </div>
         )}
+        {surfaceHostElement}
       </div>
     ) : (
-      menu
+      <>
+        {menu}
+        {surfaceHostElement}
+      </>
     );
 
   const triggerProps: DropdownMenuTriggerProps = {
@@ -1735,9 +1705,11 @@ function DropdownMenuPopover({
             )}>
             <MenuRegionsContext value={hasRegions}>
               <DropdownMenuContext value={contextValue}>
-                <DropdownMenuRootOpenContext value={isOpen}>
-                  {menuContent}
-                </DropdownMenuRootOpenContext>
+                <DropdownMenuSurfaceContext value={surfaceValue}>
+                  <DropdownMenuRootOpenContext value={isOpen}>
+                    {menuContent}
+                  </DropdownMenuRootOpenContext>
+                </DropdownMenuSurfaceContext>
               </DropdownMenuContext>
             </MenuRegionsContext>
           </div>,

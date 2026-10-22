@@ -41,6 +41,7 @@ import * as path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {
   resolveProjectTypeScript,
+  TYPESCRIPT_FIX,
   unusableTypeScriptReason,
 } from './project-typescript.mjs';
 
@@ -91,8 +92,7 @@ import {
  */
 
 /** The line both surfaces print when the compiler is missing. */
-export const DOC_TYPES_TYPESCRIPT_MISSING_REASON =
-  'TypeScript is not installed in this project, so docs were not checked against the authoring types. Install typescript and run this check again.';
+export const DOC_TYPES_TYPESCRIPT_MISSING_REASON = `TypeScript is not installed in this project, so docs were not checked against the authoring types. ${TYPESCRIPT_FIX}`;
 
 const AUTHORING = '@astryxdesign/cli/authoring';
 const AUTHORING_TYPES = path.resolve(
@@ -827,16 +827,23 @@ function findingsFor(ts, diagnostic, astPath, where) {
       named != null && /^[A-Za-z_$][\w$]*$/.test(named)
         ? named
         : where.typeName;
+    // One diagnostic can list several missing fields; each finding's message
+    // names only its own field, so two findings never share one message.
+    const source = /^Type '(.*)' is missing the following properties/.exec(
+      leaf,
+    )?.[1];
     return missing.map(name => {
-      const field = formatPath([
-        ...parts,
-        unquote(/** @type {string} */ (name)),
-      ]);
+      const key = unquote(/** @type {string} */ (name));
+      const field = formatPath([...parts, key]);
+      const message =
+        missing.length > 1
+          ? `Property '${key}' is missing${source == null ? '' : ` in type '${source}'`} but required in type '${ownerType}'.`
+          : leaf;
       return {
         ...base,
         field,
         problem: /** @type {const} */ ('missing_field'),
-        message: shorten(leaf),
+        message: shorten(message),
         fix: `Add \`${field}\`: ${shorten(ownerType)} requires it.`,
       };
     });
@@ -933,7 +940,7 @@ export async function checkDocTypes(files, options) {
   if (major < needMajor || (major === needMajor && minor < needMinor)) {
     return {
       status: 'skipped',
-      reason: `TypeScript ${version} cannot check ${hasJs ? 'a JavaScript doc' : 'a doc'} against its type (that needs TypeScript ${needMajor}.${needMinor} or later), so docs were not checked. Upgrade typescript and run this check again.`,
+      reason: `TypeScript ${version} cannot check ${hasJs ? 'a JavaScript doc' : 'a doc'} against its type (that needs TypeScript ${needMajor}.${needMinor} or later), so docs were not checked. ${TYPESCRIPT_FIX}`,
       docs: 0,
       findings: [],
       unchecked: [],

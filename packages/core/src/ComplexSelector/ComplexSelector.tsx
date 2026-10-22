@@ -35,6 +35,7 @@ import {
 import {useDevWarning} from '../hooks/useDevWarning';
 import {mergeRefs} from '../utils/mergeRefs';
 import {useMergedRefs} from '../hooks/useMergedRefs';
+import {useBusyAnnouncement} from '../hooks/useBusyAnnouncement';
 import {Field, inputWrapperStyles, type FieldStatusVariant} from '../Field';
 import {Icon, renderIconSlot, type IconType} from '../Icon';
 import {Spinner} from '../Spinner';
@@ -547,6 +548,9 @@ export function ComplexSelector<Value>({
   const [isPending, startTransition] = useTransition();
   const [optimisticValue, setOptimisticValue] = useOptimistic(value);
   const isBusy = isLoading || isPending;
+  // The busy Spinner is decorative; this control announces its busy start
+  // (spec:AST-086 FR8).
+  useBusyAnnouncement(isBusy, t('@astryx.spinner.loading'), triggerRef);
 
   const handlePopoverShow = useCallback(() => {
     onOpenChange?.(true);
@@ -609,10 +613,24 @@ export function ComplexSelector<Value>({
     event: React.KeyboardEvent<HTMLElement>,
   ) => {
     handleTriggerKeyDown(event);
-    onKeyDownProp?.(event);
+    // A disabled trigger keeps its tab stop but invokes no callback
+    // (`spec:AST-085` FR2).
+    if (!isDisabled) {
+      onKeyDownProp?.(event);
+    }
+  };
+  // A press on a disabled control reaches no handler, the component's or an
+  // ancestor's, as with a natively disabled button (`spec:AST-085` FR2).
+  const swallowDisabledPress = (event: React.MouseEvent<HTMLElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
   };
   const handleControlBoxClick = useCallback(
     (event: React.MouseEvent<HTMLDivElement>) => {
+      if (isDisabled) {
+        event.stopPropagation();
+        return;
+      }
       if (triggerRef.current?.contains(event.target as Node)) {
         return;
       }
@@ -620,7 +638,7 @@ export function ComplexSelector<Value>({
       // press on the trigger itself, caller `onClick` included.
       triggerRef.current?.click();
     },
-    [],
+    [isDisabled],
   );
 
   useImperativeHandle(
@@ -767,13 +785,16 @@ export function ComplexSelector<Value>({
           aria-required={isEffectivelyRequired ? 'true' : undefined}
           aria-invalid={status?.type === 'error' ? 'true' : undefined}
           aria-busy={isBusy || undefined}
-          disabled={isDisabled}
-          onClick={handleTriggerButtonClick}
+          // A disabled trigger keeps its tab stop and says so through
+          // aria-disabled (`spec:AST-085` FR1). Its press runs neither the
+          // caller's handler nor the toggle (FR2).
+          aria-disabled={isDisabled ? 'true' : undefined}
+          onClick={isDisabled ? swallowDisabledPress : handleTriggerButtonClick}
           onKeyDown={handleTriggerButtonKeyDown}
           {...stylex.props(styles.trigger)}>
           <span {...stylex.props(styles.triggerText)}>{triggerContent}</span>
         </button>
-        {isBusy && <Spinner size="sm" />}
+        {isBusy && <Spinner size="sm" aria-hidden="true" />}
         <Icon
           icon="chevronDown"
           size="sm"

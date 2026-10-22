@@ -119,6 +119,16 @@ function scanDocText(text) {
 }
 
 /**
+ * Whether a component doc is hidden (`hidden: true`), read as discovery
+ * reads it: discovery skips a hidden doc.
+ * @param {string} docPath
+ * @returns {boolean}
+ */
+export function isHiddenComponentDoc(docPath) {
+  return readDocMeta(docPath).hidden;
+}
+
+/**
  * Read the `group`, `hiddenComponents`, and `hidden` fields from a
  * component's .doc.mjs file (synchronous), with what {@link scanDocText}
  * finds in it.
@@ -994,7 +1004,7 @@ function packageMain(packageDir) {
  * @param {Record<string, any> | null} doc
  * @returns {string | null | undefined}
  */
-function importedModule(integration, docPath, doc) {
+export function importedModule(integration, docPath, doc) {
   const packageName = integration?.name;
   const packageDir = integration?.__packageDir;
   if (!packageName || !packageDir) return undefined;
@@ -1022,6 +1032,42 @@ function importedModule(integration, docPath, doc) {
     packageDir,
     subpath,
   ).target;
+}
+
+/**
+ * The file an import of the package's own name resolves to, through its
+ * package.json `exports` (or `main` when it has none): `@acme/kit` or
+ * `@acme/kit/widget`. Null when the specifier names another package, or the
+ * package publishes nothing at it.
+ * @param {{name?: string, __packageDir?: string, __packageExports?: Record<string, unknown> | null}} integration
+ * @param {string} specifier
+ * @returns {string | null}
+ */
+export function ownPackageModule(integration, specifier) {
+  const packageName = integration?.name;
+  const packageDir = integration?.__packageDir;
+  if (!packageName || !packageDir) return null;
+  if (specifier !== packageName && !specifier.startsWith(`${packageName}/`)) {
+    return null;
+  }
+  const exportsMap =
+    integration.__packageExports === undefined
+      ? readPackageExports(packageDir)
+      : integration.__packageExports;
+  if (specifier === packageName && exportsMap == null) {
+    return packageMain(packageDir) ?? null;
+  }
+  const subpath =
+    specifier === packageName
+      ? '.'
+      : `./${specifier.slice(packageName.length + 1)}`;
+  return (
+    inspectPackageExport(
+      {name: packageName, exports: exportsMap ?? undefined},
+      packageDir,
+      subpath,
+    ).target ?? null
+  );
 }
 
 /**
@@ -1212,16 +1258,45 @@ export function integrationMemberEntry(doc, record) {
 }
 
 /**
+ * Whether `dir` is a folder to list. A declared root that is a file is
+ * reported by the root check; discovery finds nothing in it.
+ * @param {string} dir
+ */
+function isFolder(dir) {
+  try {
+    return fs.statSync(dir).isDirectory();
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Visit every component doc under an integration's components root, hidden
  * ones included, in discovery order, with its stem.
  * @param {string | undefined} componentsDir
  * @param {(docPath: string, stem: string) => void} visit
  */
 export function forEachIntegrationDoc(componentsDir, visit) {
-  if (!componentsDir || !pathExists(componentsDir)) return;
+  if (!componentsDir || !isFolder(componentsDir)) return;
+  /** @param {string} name */
+  const key = name => {
+    const rank = INTEGRATION_DOC_SUFFIXES.findIndex(s => name.endsWith(s));
+    return rank < 0
+      ? {stem: name, rank}
+      : {stem: name.slice(0, -INTEGRATION_DOC_SUFFIXES[rank].length), rank};
+  };
   /** @param {string} dirPath */
   function scanDir(dirPath) {
-    for (const entry of listDirEntries(dirPath)) {
+    // Name order, and for two docs of one stem the suffix precedence, so the
+    // doc a stem records is the one a lookup by name finds, on every disk.
+    const entries = listDirEntries(dirPath).sort((a, b) => {
+      const left = key(a.name);
+      const right = key(b.name);
+      return left.stem === right.stem
+        ? left.rank - right.rank
+        : byCodeUnit(left.stem, right.stem);
+    });
+    for (const entry of entries) {
       if (entry.name === 'node_modules' || entry.name === '__tests__') continue;
       const fullPath = path.join(dirPath, entry.name);
       if (entry.isDirectory()) {
@@ -1270,7 +1345,7 @@ export function discoverIntegrationComponents(
   {documentedNames = true} = {},
 ) {
   const componentsDir = integration?.components;
-  if (!componentsDir || !pathExists(componentsDir)) return [];
+  if (!componentsDir || !isFolder(componentsDir)) return [];
 
   /** @type {Map<string, {name: string, package: string, docPath: string, sourcePath: string|null, issuesUrl: string|undefined, group: string|null}>} */
   const byName = new Map();
@@ -1485,7 +1560,7 @@ function findDocumentedComponent(integration, componentsDir, name) {
  */
 export function findIntegrationComponent(integration, name) {
   const componentsDir = integration?.components;
-  if (!componentsDir || !pathExists(componentsDir)) return null;
+  if (!componentsDir || !isFolder(componentsDir)) return null;
   const sameStem = findSameStemDoc(componentsDir, name);
   if (sameStem) {
     const exportName = otherExportName({

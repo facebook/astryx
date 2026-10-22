@@ -21,7 +21,7 @@ export const docs = {
           type: 'code',
           lang: 'text',
           label: 'Set up the design system',
-          code: 'Install @astryxdesign/core, @stylexjs/stylex, @astryxdesign/theme-neutral, and @astryxdesign/cli in this project, then run `npx @astryxdesign/cli init` to set up agent docs. Read the generated files to learn the conventions.',
+          code: 'Install @astryxdesign/core, @stylexjs/stylex, @astryxdesign/theme-neutral, and @astryxdesign/cli in this project, then run `astryx init` to set up agent docs. Read the generated files to learn the conventions.',
         },
         {
           type: 'prose',
@@ -31,7 +31,7 @@ export const docs = {
           type: 'code',
           lang: 'text',
           label: 'Give it a look',
-          code: 'Ask me what look and feel this app should have. Run `npx @astryxdesign/cli theme list`, install the closest theme package, and run `theme add <slug>`; use `--package` when owners share a slug. Import `themes` and `defaultThemeSlug` from the generated module once and pass `themes[defaultThemeSlug]` to `<Theme>`. Customize with `defineTheme({extends: importedTheme, ...})`. Use `theme eject` only when I ask for an independent source fork. Default to neutral if I have no preference, and show me the result before moving on.',
+          code: 'Ask me what look and feel this app should have. Run `astryx theme list`, install the closest theme package, and run `theme add <slug>`; use `--package` when owners share a slug. Import `themes` and `defaultThemeSlug` from the generated module once and pass `themes[defaultThemeSlug]` to `<Theme>`. Customize with `defineTheme({extends: importedTheme, ...})`. Use `theme eject` only when I ask for an independent source fork. Default to neutral if I have no preference, and show me the result before moving on.',
         },
       ],
     },
@@ -60,7 +60,27 @@ export const docs = {
           type: 'code',
           lang: 'bash',
           label: 'Terminal',
-          code: `npx astryx init`,
+          code: `astryx init`,
+        },
+      ],
+    },
+    {
+      id: 'install-once',
+      title: 'Install once, use everywhere',
+      content: [
+        {
+          type: 'prose',
+          text: "Install the CLI once for your computer too, and the astryx command works in any folder, for you and for any coding agent, even before a project exists. Inside a project, the project's own version still answers, so a global install never changes what your team and CI get. Keep it in the project as well; that is the recommended setup.",
+        },
+        {
+          type: 'code',
+          lang: 'bash',
+          label: 'Terminal',
+          code: `npm i -g @astryxdesign/cli`,
+        },
+        {
+          type: 'prose',
+          text: 'Project, global, or both: {@link generic:project-global-or-both}. Everything else about global mode: {@link namespace:global}.',
         },
       ],
     },

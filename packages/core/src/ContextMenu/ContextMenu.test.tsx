@@ -10,7 +10,7 @@
 
 import {useRef, useState} from 'react';
 import {createPortal} from 'react-dom';
-import {describe, it, expect, vi, beforeEach} from 'vitest';
+import {describe, it, expect, vi, beforeAll, beforeEach} from 'vitest';
 import {render, screen, fireEvent, act, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {readFileSync} from 'node:fs';
@@ -24,8 +24,14 @@ import {
   ContextMenuRadioItem,
 } from './index';
 import {DropdownMenuItem} from '../DropdownMenu/DropdownMenuItem';
+import {DropdownMenuSubMenu} from '../DropdownMenu/DropdownMenuSubMenu';
 import {Divider} from '../Divider';
 import {useLayerDismissal} from '../Layer/useLayerDismissal';
+import {warmMenuBottomSheet} from '../DropdownMenu/__tests__/warmMenuBottomSheet';
+
+// The touch sheet is loaded lazily; resolve its modules once up front, so
+// ContextMenu's own lazy sheet renders within the cases' waitFor.
+beforeAll(warmMenuBottomSheet, 20000);
 
 function NestedDismissibleLayer({onDismiss}: {onDismiss: () => void}) {
   const [isOpen, setIsOpen] = useState(true);
@@ -268,7 +274,12 @@ describe('ContextMenu', () => {
     );
 
     fireEvent.contextMenu(screen.getByText('Right-click me'));
-    await user.click(screen.getByRole('button', {name: 'Move to project'}));
+    // The sheet is lazy: its first render suspends once even when the module
+    // is already loaded, so wait for the row rather than relying on an
+    // earlier case to have rendered a sheet.
+    await user.click(
+      await screen.findByRole('button', {name: 'Move to project'}),
+    );
 
     const submenuHeading = screen.getByRole('heading', {
       name: 'Move to project',
@@ -334,6 +345,40 @@ describe('ContextMenu', () => {
     fireEvent.keyDown(document, {key: 'Escape'});
     expect(HTMLElement.prototype.hidePopover).toHaveBeenCalled();
   });
+
+  it.each(['open', 'closed', 'nested'] as const)(
+    'judges presses once inside a %s shadow root',
+    mode => {
+      const host = document.createElement('div');
+      document.body.append(host);
+      let root = host.attachShadow({mode: mode === 'open' ? 'open' : 'closed'});
+      if (mode === 'nested') {
+        const innerHost = document.createElement('div');
+        root.append(innerHost);
+        root = innerHost.attachShadow({mode: 'closed'});
+      }
+      const container = document.createElement('div');
+      root.append(container);
+      try {
+        render(
+          <ContextMenu items={[{label: 'Item 1'}]}>
+            <div>Right-click me</div>
+          </ContextMenu>,
+          {container},
+        );
+        fireEvent.contextMenu(container.querySelector('div div')!);
+        // At the document a press on the menu is retargeted to a shadow host.
+        const item = container.querySelector('[role="menuitem"]')!;
+        fireEvent.mouseDown(item, {composed: true});
+        expect(HTMLElement.prototype.hidePopover).not.toHaveBeenCalled();
+        // A press on the host itself is outside the menu.
+        fireEvent.mouseDown(host);
+        expect(HTMLElement.prototype.hidePopover).toHaveBeenCalled();
+      } finally {
+        host.remove();
+      }
+    },
+  );
 
   it('closes the menu when Tab is pressed inside it (APG menu pattern)', () => {
     render(
@@ -696,6 +741,46 @@ describe('ContextMenu dividers', () => {
 });
 
 describe('ContextMenu compound mode', () => {
+  it('shows a sub-menu with a header or footer as its rows alone, and says why in development', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      render(
+        <ContextMenu
+          menuContent={
+            <>
+              <DropdownMenuItem label="Rename" onClick={() => {}} />
+              <DropdownMenuSubMenu
+                label="Labels"
+                header={<input aria-label="Filter labels" />}
+                footer={<button type="button">Create label</button>}>
+                <DropdownMenuItem label="Bug" onClick={() => {}} />
+              </DropdownMenuSubMenu>
+            </>
+          }>
+          <div>Right-click me</div>
+        </ContextMenu>,
+      );
+      fireEvent.contextMenu(screen.getByText('Right-click me'));
+      const row = screen.getByRole('menuitem', {name: /Labels/, hidden: true});
+      // No region can sit outside this menu, so none renders inside it.
+      expect(row).toHaveAttribute('aria-haspopup', 'menu');
+      fireEvent.click(row, {detail: 1});
+      await waitFor(() => expect(row).toHaveAttribute('aria-expanded', 'true'));
+      expect(screen.queryByRole('dialog', {hidden: true})).toBeNull();
+      expect(
+        screen.queryByRole('textbox', {name: 'Filter labels', hidden: true}),
+      ).toBeNull();
+      expect(
+        screen.getByRole('menuitem', {name: 'Bug', hidden: true}),
+      ).toBeInTheDocument();
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringContaining('DropdownMenuSubMenu: header and footer'),
+      );
+    } finally {
+      warn.mockRestore();
+    }
+  });
+
   it('renders menuContent as menu items', () => {
     render(
       <ContextMenu

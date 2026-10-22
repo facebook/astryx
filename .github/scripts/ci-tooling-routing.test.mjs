@@ -128,7 +128,8 @@ describe('Node-tooling CI routing', () => {
     ]);
     for (const [name, command] of familyCommands) {
       const ownerStep = step(ci.jobs['test-node'], name);
-      expect(ownerStep.if).toBe(BROAD_ONLY);
+      // One leg of the sharded Node lane owns the theme-family contract.
+      expect(ownerStep.if).toBe(`matrix.shard == 1 && ${BROAD_ONLY}`);
       expect(ownerStep.run).toBe(command);
       expect(step(ci.jobs['test-build'], name)).toBeUndefined();
     }
@@ -138,12 +139,13 @@ describe('Node-tooling CI routing', () => {
     expect(
       step(ci.jobs['docsite-test'], 'Skip docsite work for Node tooling').if,
     ).toContain(TOOLING_TRUE);
+    expect(ci.jobs['docsite-data'].if).toContain(TOOLING_FALSE);
     for (const name of [
       'Build core package',
       'Build canary component packages',
       'Generate and test docsite data',
     ]) {
-      expect(step(ci.jobs['docsite-test'], name).if).toContain(TOOLING_FALSE);
+      expect(step(ci.jobs['docsite-data'], name).if).toContain(TOOLING_FALSE);
     }
 
     expect(ci.jobs['build-sandbox'].if).toContain(TOOLING_FALSE);

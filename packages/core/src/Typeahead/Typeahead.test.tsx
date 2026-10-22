@@ -99,6 +99,17 @@ const fruitSource: SearchSource = {
   bootstrap: () => fruits.slice(0, 3),
 };
 
+/**
+ * The search Spinner: named but not live (family:input-fields FR7,
+ * spec:AST-086 FR8), so it is found as an image named "Loading".
+ */
+function queryBusySpinner(): Element | null {
+  return screen.queryByRole('img', {name: 'Loading'});
+}
+function getBusySpinner(): Element {
+  return screen.getByRole('img', {name: 'Loading'});
+}
+
 describe('BaseTypeahead', () => {
   it('renders input with combobox role', () => {
     render(
@@ -929,14 +940,12 @@ describe('BaseTypeahead hasEntriesOnFocus', () => {
 
     fireEvent.change(input, {target: {value: 'a'}});
     await waitFor(() => {
-      expect(screen.getByRole('status', {name: 'Loading'})).toBeInTheDocument();
+      expect(getBusySpinner()).toBeInTheDocument();
     });
 
     fireEvent.change(input, {target: {value: ''}});
     await waitFor(() => {
-      expect(
-        screen.queryByRole('status', {name: 'Loading'}),
-      ).not.toBeInTheDocument();
+      expect(queryBusySpinner()).not.toBeInTheDocument();
     });
 
     await act(async () => {
@@ -966,16 +975,14 @@ describe('BaseTypeahead hasEntriesOnFocus', () => {
 
     fireEvent.focus(input);
     await waitFor(() => {
-      expect(screen.getByRole('status', {name: 'Loading'})).toBeInTheDocument();
+      expect(getBusySpinner()).toBeInTheDocument();
     });
 
     await act(async () => {
       settle([]);
       await Promise.resolve();
     });
-    expect(
-      screen.queryByRole('status', {name: 'Loading'}),
-    ).not.toBeInTheDocument();
+    expect(queryBusySpinner()).not.toBeInTheDocument();
   });
 
   it('clears the loading state when the search source is replaced during an in-flight load', async () => {
@@ -1004,7 +1011,7 @@ describe('BaseTypeahead hasEntriesOnFocus', () => {
 
     fireEvent.focus(input);
     await waitFor(() => {
-      expect(screen.getByRole('status', {name: 'Loading'})).toBeInTheDocument();
+      expect(getBusySpinner()).toBeInTheDocument();
     });
 
     rerender(
@@ -1017,18 +1024,14 @@ describe('BaseTypeahead hasEntriesOnFocus', () => {
     );
 
     await waitFor(() => {
-      expect(
-        screen.queryByRole('status', {name: 'Loading'}),
-      ).not.toBeInTheDocument();
+      expect(queryBusySpinner()).not.toBeInTheDocument();
     });
 
     await act(async () => {
       settle([]);
       await Promise.resolve();
     });
-    expect(
-      screen.queryByRole('status', {name: 'Loading'}),
-    ).not.toBeInTheDocument();
+    expect(queryBusySpinner()).not.toBeInTheDocument();
   });
 
   it('keeps the loading state under StrictMode for a pending autofocus bootstrap', async () => {
@@ -1052,15 +1055,13 @@ describe('BaseTypeahead hasEntriesOnFocus', () => {
       </StrictMode>,
     );
 
-    expect(screen.getByRole('status', {name: 'Loading'})).toBeInTheDocument();
+    expect(getBusySpinner()).toBeInTheDocument();
 
     await act(async () => {
       settle([]);
       await Promise.resolve();
     });
-    expect(
-      screen.queryByRole('status', {name: 'Loading'}),
-    ).not.toBeInTheDocument();
+    expect(queryBusySpinner()).not.toBeInTheDocument();
   });
 
   let settlePendingTransitionA: (items: SearchableItem[]) => void = () => {};
@@ -1125,7 +1126,7 @@ describe('BaseTypeahead hasEntriesOnFocus', () => {
     await waitFor(() => {
       expect(input).toHaveAttribute('aria-busy', 'true');
     });
-    expect(screen.getByRole('status', {name: 'Loading'})).toBeInTheDocument();
+    expect(getBusySpinner()).toBeInTheDocument();
 
     // Create the pending promise for suspension
     isSuspended = true;
@@ -1160,9 +1161,7 @@ describe('BaseTypeahead hasEntriesOnFocus', () => {
 
     // The combobox must not keep aria-busy and the spinner must be gone
     expect(input).not.toHaveAttribute('aria-busy');
-    expect(
-      screen.queryByRole('status', {name: 'Loading'}),
-    ).not.toBeInTheDocument();
+    expect(queryBusySpinner()).not.toBeInTheDocument();
   });
 
   it('shows bootstrap results on mouse click', async () => {
@@ -1443,7 +1442,7 @@ describe('BaseTypeahead minQueryLength', () => {
 
     fireEvent.change(input, {target: {value: 'App'}});
     await waitFor(() => {
-      expect(screen.getByRole('status', {name: 'Loading'})).toBeInTheDocument();
+      expect(getBusySpinner()).toBeInTheDocument();
     });
     expect(input).toHaveAttribute('aria-busy', 'true');
 
@@ -1453,9 +1452,7 @@ describe('BaseTypeahead minQueryLength', () => {
       await Promise.resolve();
     });
 
-    expect(
-      screen.queryByRole('status', {name: 'Loading'}),
-    ).not.toBeInTheDocument();
+    expect(queryBusySpinner()).not.toBeInTheDocument();
     expect(input).not.toHaveAttribute('aria-busy');
     expect(input).toHaveAttribute('aria-expanded', 'false');
   });
@@ -1635,6 +1632,95 @@ describe('Typeahead edit mode', () => {
 
     // onChange should NOT have been called (value is preserved for restore)
     expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it('empties the input when cleared while editing the selected value (#7038)', async () => {
+    const onChangeQuery = vi.fn();
+    function Controlled() {
+      const [value, setValue] = useState<SearchableItem | null>(fruits[0]);
+      return (
+        <Typeahead
+          label="Fruit"
+          searchSource={fruitSource}
+          value={value}
+          onChange={setValue}
+          onChangeQuery={onChangeQuery}
+          hasClear
+        />
+      );
+    }
+    render(<Controlled />);
+    const input = screen.getByRole<HTMLInputElement>('combobox');
+
+    // Enter edit mode: the token gives way to the label as editable text
+    fireEvent.click(screen.getByText(fruits[0].label).closest('div')!);
+    await waitFor(() => expect(input.value).toBe(fruits[0].label));
+
+    fireEvent.click(screen.getByRole('button', {name: 'Clear selection'}));
+
+    // The value and the visible text agree: nothing selected, nothing typed
+    await waitFor(() => expect(input.value).toBe(''));
+    expect(onChangeQuery).toHaveBeenLastCalledWith('');
+    expect(input).toHaveFocus();
+  });
+
+  // Escape and blur restore the token but leave the edit-mode label in the
+  // base's query, so a clear from the restored token faces the same stale text.
+  it.each([
+    [
+      'Escape',
+      (input: HTMLElement) => fireEvent.keyDown(input, {key: 'Escape'}),
+    ],
+    ['blur', (input: HTMLElement) => fireEvent.blur(input)],
+  ])(
+    'empties the input when cleared after %s restored the token (#7038)',
+    async (_name, leaveEditMode) => {
+      const onChangeQuery = vi.fn();
+      function Controlled() {
+        const [value, setValue] = useState<SearchableItem | null>(fruits[0]);
+        return (
+          <Typeahead
+            label="Fruit"
+            searchSource={fruitSource}
+            value={value}
+            onChange={setValue}
+            onChangeQuery={onChangeQuery}
+            hasClear
+          />
+        );
+      }
+      render(<Controlled />);
+      const input = screen.getByRole<HTMLInputElement>('combobox');
+
+      fireEvent.click(screen.getByText(fruits[0].label).closest('div')!);
+      await waitFor(() => expect(input.value).toBe(fruits[0].label));
+
+      leaveEditMode(input);
+      await screen.findByRole('button', {name: 'Clear selection'});
+
+      fireEvent.click(screen.getByRole('button', {name: 'Clear selection'}));
+
+      await waitFor(() => expect(input.value).toBe(''));
+      expect(onChangeQuery).toHaveBeenLastCalledWith('');
+    },
+  );
+
+  it('does not report a query change when cleared outside edit mode', () => {
+    const onChangeQuery = vi.fn();
+    render(
+      <Typeahead
+        label="Fruit"
+        searchSource={fruitSource}
+        value={fruits[0]}
+        onChange={vi.fn()}
+        onChangeQuery={onChangeQuery}
+        hasClear
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', {name: 'Clear selection'}));
+
+    expect(onChangeQuery).not.toHaveBeenCalled();
   });
 
   it('restores token on blur without action', async () => {
@@ -2096,12 +2182,12 @@ describe('busy indicator ownership', () => {
     };
   };
 
-  it('renders its own named status for a direct caller', async () => {
+  it('renders its own indicator for a direct caller', async () => {
     // BaseTypeaheadProps is re-exported from the package entry point, so the
     // base has direct callers this repo cannot see. They painted no indicator
-    // of their own — the base did it for them — so it keeps doing it, and the
-    // status stays a named one rather than a bare aria-busy that only reaches
-    // assistive tech.
+    // of their own — the base did it for them — so it keeps doing it. The
+    // Spinner is decorative and the base announces the search's busy start
+    // through the shared channel (spec:AST-086 FR8).
     const {source, settle} = pendingSource();
     render(
       <BaseTypeahead
@@ -2115,22 +2201,18 @@ describe('busy indicator ownership', () => {
 
     fireEvent.change(input, {target: {value: 'App'}});
     await waitFor(() => {
-      expect(screen.getByRole('status', {name: 'Loading'})).toBeInTheDocument();
+      expect(getBusySpinner()).toBeInTheDocument();
     });
     // A Spinner, not the static clock glyph this used to render: `clock`
     // means *time* everywhere else in core, and nothing about it moved while
     // a search was out.
-    expect(
-      screen.getByRole('status', {name: 'Loading'}).querySelector('svg'),
-    ).toBeInTheDocument();
+    expect(getBusySpinner().querySelector('svg')).toBeInTheDocument();
 
     await act(async () => {
       settle();
       await Promise.resolve();
     });
-    expect(
-      screen.queryByRole('status', {name: 'Loading'}),
-    ).not.toBeInTheDocument();
+    expect(queryBusySpinner()).not.toBeInTheDocument();
   });
 
   it('hands the indicator over to a field that takes it, and renders none itself', async () => {
@@ -2161,9 +2243,7 @@ describe('busy indicator ownership', () => {
     });
     // Scoped by name: the announcer for result counts is a role="status"
     // live region too, and it is not the indicator.
-    expect(
-      screen.queryByRole('status', {name: 'Loading'}),
-    ).not.toBeInTheDocument();
+    expect(queryBusySpinner()).not.toBeInTheDocument();
     expect(onLoadingChange).toHaveBeenLastCalledWith(true);
 
     await act(async () => {

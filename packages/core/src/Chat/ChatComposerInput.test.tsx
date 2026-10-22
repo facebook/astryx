@@ -1,6 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import {describe, it, expect, vi, afterEach} from 'vitest';
+import {StrictMode} from 'react';
+import {describe, it, expect, vi, afterEach, beforeEach} from 'vitest';
 import {render, screen, fireEvent, waitFor, act} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {ChatComposer} from './ChatComposer';
@@ -12,6 +13,9 @@ import type {
 } from './ChatComposerInput';
 import {createStaticSource} from '../Typeahead/createStaticSource';
 import type {SearchableItem, SearchSource} from '../Typeahead/types';
+
+const announce = vi.hoisted(() => vi.fn());
+vi.mock('../hooks/useAnnounce', () => ({useAnnounce: () => announce}));
 
 // =============================================================================
 // Helpers
@@ -1822,5 +1826,167 @@ describe('ChatComposerInput', () => {
 
       expect(spy.mock.calls.length).toBeGreaterThan(callsAfterOpen);
     });
+  });
+});
+
+describe('ChatComposerInput trigger loading announcement (spec:AST-086)', () => {
+  function typeAtEnd(editable: HTMLElement, text: string) {
+    editable.textContent = text;
+    const node = editable.firstChild!;
+    const range = document.createRange();
+    range.setStart(node, text.length);
+    range.collapse(true);
+    const sel = window.getSelection()!;
+    sel.removeAllRanges();
+    sel.addRange(range);
+    fireEvent.input(editable);
+  }
+
+  /**
+   * Lets a settled search apply, as the browser would before the next frame,
+   * then lets the loading announcement's two frames run.
+   */
+  async function nextFrame() {
+    await act(async () => {});
+    await act(async () => {
+      for (let frame = 0; frame < 2; frame++) {
+        await new Promise(resolve => requestAnimationFrame(resolve));
+      }
+    });
+  }
+
+  /** An async source whose searches resolve only when the test says so. */
+  function createPendingSource() {
+    const resolvers: ((items: SearchableItem[]) => void)[] = [];
+    const source: SearchSource = {
+      bootstrap: async () => [],
+      search: async () =>
+        new Promise<SearchableItem[]>(resolve => {
+          resolvers.push(resolve);
+        }),
+    };
+    return {source, resolvers};
+  }
+
+  beforeEach(() => {
+    announce.mockClear();
+  });
+
+  it('shows the loading row without a live role (FR2)', () => {
+    const {source} = createPendingSource();
+    render(
+      <ChatComposerInput
+        triggers={[createMentionTrigger({searchSource: source})]}
+        debounceMs={0}
+      />,
+    );
+    const editable = screen.getByRole('combobox');
+    editable.focus();
+    typeAtEnd(editable, '@c');
+
+    const row = screen.getByText('Searching…');
+    expect(row).not.toHaveAttribute('role');
+    expect(screen.queryByRole('status')).toBeNull();
+  });
+
+  it('announces the loading text once per search, not on every keystroke (FR2, FR6)', async () => {
+    const {source, resolvers} = createPendingSource();
+    render(
+      <StrictMode>
+        <ChatComposerInput
+          triggers={[createMentionTrigger({searchSource: source})]}
+          debounceMs={0}
+        />
+      </StrictMode>,
+    );
+    const editable = screen.getByRole('combobox');
+    editable.focus();
+
+    typeAtEnd(editable, '@c');
+    await nextFrame();
+    typeAtEnd(editable, '@ci');
+    await nextFrame();
+    expect(announce.mock.calls).toEqual([['Searching…', 'polite']]);
+
+    await act(async () => {
+      resolvers.forEach(resolve =>
+        resolve([{id: 'cindy', label: 'Cindy Zhang'}]),
+      );
+    });
+    expect(screen.queryByText('Searching…')).toBeNull();
+
+    typeAtEnd(editable, '@cin');
+    await nextFrame();
+    expect(announce.mock.calls).toEqual([
+      ['Searching…', 'polite'],
+      ['Searching…', 'polite'],
+    ]);
+  });
+
+  it('announces nothing for a synchronous source, whose results are already listed (FR7)', async () => {
+    render(
+      <ChatComposerInput triggers={[createMentionTrigger()]} debounceMs={0} />,
+    );
+    const editable = screen.getByRole('combobox');
+    editable.focus();
+
+    typeAtEnd(editable, '@c');
+    await act(async () => {});
+    typeAtEnd(editable, '@ci');
+    await act(async () => {});
+
+    // jsdom gives the popover no semantics, so query the menu by its id.
+    const menu = document.getElementById(
+      editable.getAttribute('aria-controls')!,
+    );
+    expect(menu?.querySelector('[role="option"]')).toHaveTextContent(
+      'Cindy Zhang',
+    );
+    expect(screen.queryByText('Searching…')).toBeNull();
+    expect(announce).not.toHaveBeenCalled();
+  });
+
+  it('announces nothing for a search that settles before the row shows (FR7)', async () => {
+    const settled: SearchSource = {
+      bootstrap: async () => [],
+      search: async () => [{id: 'cindy', label: 'Cindy Zhang'}],
+    };
+    render(
+      <ChatComposerInput
+        triggers={[createMentionTrigger({searchSource: settled})]}
+        debounceMs={0}
+      />,
+    );
+    const editable = screen.getByRole('combobox');
+    editable.focus();
+
+    typeAtEnd(editable, '@c');
+    await nextFrame();
+    typeAtEnd(editable, '@ci');
+    await nextFrame();
+
+    expect(screen.queryByText('Searching…')).toBeNull();
+    expect(announce).not.toHaveBeenCalled();
+  });
+
+  it("announces a trigger's own loadingText", async () => {
+    const {source} = createPendingSource();
+    render(
+      <ChatComposerInput
+        triggers={[
+          createMentionTrigger({
+            searchSource: source,
+            loadingText: 'Looking up people…',
+          }),
+        ]}
+        debounceMs={0}
+      />,
+    );
+    const editable = screen.getByRole('combobox');
+    editable.focus();
+    typeAtEnd(editable, '@c');
+    await nextFrame();
+
+    expect(announce.mock.calls).toEqual([['Looking up people…', 'polite']]);
   });
 });

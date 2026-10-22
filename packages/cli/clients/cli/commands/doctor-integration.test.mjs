@@ -19,7 +19,10 @@ import {Command} from 'commander';
 import {discoverCoreTemplates} from '../../../foundation/discovery/template-adapter.mjs';
 import {discoverOwnedComponents} from '../../../foundation/discovery/component-discovery.mjs';
 import {discoverBuiltinTopics} from '../../../foundation/discovery/docs-discovery.mjs';
-import {findCoreDir} from '../../../foundation/fs/paths.mjs';
+import {
+  findCoreDir,
+  findProjectCoreDir,
+} from '../../../foundation/fs/paths.mjs';
 import {registerDoctor} from './doctor.mjs';
 import {expectRecordsCarry} from '../../../test-utils/text-projection.mjs';
 
@@ -185,7 +188,7 @@ describe('doctor integration — command', () => {
     ]);
 
     expect(logCalls.join('\n')).toContain(
-      'astryx doctor integration templates <package>',
+      ' doctor integration templates <package>',
     );
     expect(process.exitCode).toBeUndefined();
   });
@@ -208,6 +211,51 @@ describe('doctor integration — command', () => {
     expect(parsed.data.name).toBe('@acme/widgets');
     expect(parsed.data.issues).toEqual([]);
     expect(process.exitCode).toBeUndefined();
+  });
+
+  it('validate prints the fix and the file an issue carries, and JSON carries the same issue', async () => {
+    writeDocIntegration({name: 'deploying'});
+    fs.writeFileSync(
+      path.join(tmpDir, 'docs', 'ghost.doc.zh.mjs'),
+      "export default {title: 'ghost'};\n",
+    );
+    process.chdir(tmpDir);
+
+    await createProgram().parseAsync([
+      'node',
+      'astryx',
+      'doctor',
+      'integration',
+      'validate',
+    ]);
+    const output = logCalls.join('\n');
+    expect(output).toContain('orphan_doc_overlay');
+    expect(output).toMatch(
+      /fix:\s+Delete docs\/ghost\.doc\.zh\.mjs, or add the topic it translates/,
+    );
+    expect(output).toMatch(/file:\s+docs\/ghost\.doc\.zh\.mjs/);
+    expect(output).toMatch(/line:\s+1\b/);
+
+    logCalls = [];
+    await createProgram().parseAsync([
+      'node',
+      'astryx',
+      '--json',
+      'doctor',
+      'integration',
+      'validate',
+    ]);
+    const parsed = JSON.parse(logCalls.join('\n'));
+    expect(parsed.data.issues).toEqual([
+      {
+        code: 'orphan_doc_overlay',
+        severity: 'warning',
+        message: expect.stringContaining('docs/ghost.doc.zh.mjs'),
+        fix: expect.stringContaining('Delete docs/ghost.doc.zh.mjs'),
+        file: 'docs/ghost.doc.zh.mjs',
+        line: 1,
+      },
+    ]);
   });
 
   it('validate warns about each doc field that does not match its authoring type, and still exits 0', async () => {
@@ -629,6 +677,51 @@ describe('doctor integration — command', () => {
     }
   });
 
+  it('validate prints the public-import findings as listed only, and still exits 0', async () => {
+    writeIntegration({id: 'hero', name: 'Hero', type: 'block'});
+    fs.writeFileSync(
+      path.join(tmpDir, 'package.json'),
+      JSON.stringify({name: '@acme/widgets', version: '1.2.3', exports: {}}),
+    );
+    process.chdir(tmpDir);
+
+    await createProgram().parseAsync([
+      'node',
+      'astryx',
+      'doctor',
+      'integration',
+      'validate',
+    ]);
+
+    const output = logCalls.join('\n');
+    expect(output).toContain('note (template_import_not_exported):');
+    expect(output).toContain('Fix:');
+    expect(output).toContain('[ok] No integration issues found.');
+    expect(process.exitCode).toBeUndefined();
+  });
+
+  it('validate lists, as not checked, the imports it cannot judge when package.json has no name', async () => {
+    writeIntegration({id: 'hero', name: 'Hero', type: 'block'});
+    fs.writeFileSync(
+      path.join(tmpDir, 'package.json'),
+      JSON.stringify({version: '1.2.3'}),
+    );
+    process.chdir(tmpDir);
+
+    await createProgram().parseAsync([
+      'node',
+      'astryx',
+      'doctor',
+      'integration',
+      'validate',
+    ]);
+
+    const output = logCalls.join('\n');
+    expect(output).toMatch(/\[info\] Imports not checked: 1:/);
+    expect(output).toContain('package.json has no "name"');
+    expect(process.exitCode).toBeUndefined();
+  });
+
   it('templates warns on a Core id and writes the exact --package command', async () => {
     const [core] = await discoverCoreTemplates();
     expect(core).toBeDefined();
@@ -772,7 +865,8 @@ describe('doctor integration — command', () => {
     tmpDir = outside;
     try {
       writeComponentIntegration('AcmeCarousel');
-      expect(findCoreDir(outside)).toBeNull();
+      // Doctor judges the project's own Core, never the one a copy carries.
+      expect(findProjectCoreDir(outside)).toBeNull();
       process.chdir(outside);
 
       await createProgram().parseAsync([
@@ -1060,12 +1154,13 @@ describe('doctor integration — command', () => {
         "{name: 'elevation', type: 'number', description: 'Shadow.'}",
         "{name: 'size', type: 'string', description: 'Size.'}",
         "{name: 'meta', type: '{id: string; extra?: number}', description: 'Data.'}",
+        "{name: 'gap', type: 'number', description: 'Gap.', default: '8'}",
       ].join(', ')}]};\n`,
     );
     // `key` is a prop a doc never needs, though the component declares it.
     fs.writeFileSync(
       path.join(tmpDir, 'components', 'AcmeBadge.tsx'),
-      "export function AcmeBadge(props: {label: string; tone?: 'neutral' | 'info'; size?: number; meta?: {id: string}; key?: string}) { return null; }\n",
+      "export function AcmeBadge({gap = 4}: {label: string; tone?: 'neutral' | 'info'; size?: number; meta?: {id: string}; gap?: number; key?: string}) { return null; }\n",
     );
     fs.writeFileSync(
       path.join(tmpDir, 'components', 'AcmeLonely.doc.mjs'),
@@ -1094,6 +1189,7 @@ describe('doctor integration — command', () => {
 
     expect(report.findings.map(f => `${f.prop} ${f.kind}`)).toEqual([
       'elevation not_in_code',
+      'gap default_mismatch',
       'label required_mismatch',
       'size type_mismatch',
       'tone not_in_doc',

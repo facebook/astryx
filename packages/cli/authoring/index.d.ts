@@ -163,6 +163,7 @@ export type {
   CommandArgDoc,
   CommandOptionDoc,
   CommandExampleDoc,
+  CommandOutsideProject,
   // enum
   EnumMemberDoc,
 } from './doctypes/types.js';

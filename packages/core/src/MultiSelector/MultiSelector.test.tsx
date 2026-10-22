@@ -35,7 +35,7 @@ import {generateThemeCSS} from '../theme/generateThemeRules';
 import {selectorPresentationStyles} from '../Selector/selectorPresentation.stylex';
 import {groupStyles} from '../InputGroup/groupStyles';
 import {InputGroup, InputGroupText} from '../InputGroup';
-import {focusVars} from '../theme/tokens.stylex';
+import {colorVars, focusVars} from '../theme/tokens.stylex';
 
 function generateThemeTestCSS(theme: Parameters<typeof generateThemeCSS>[0]) {
   const {prose, component} = generateThemeCSS(theme);
@@ -104,6 +104,14 @@ afterEach(() => {
 // Helper: jsdom popover content is in the DOM but may not be
 // "visible" in the accessibility tree. Use hidden: true to find it.
 const h = {hidden: true} as const;
+
+/** A busy control's Spinner is decorative and silent (spec:AST-086 FR8). */
+function expectSilentBusySpinner() {
+  const spinner = document.querySelector('.astryx-spinner');
+  expect(spinner).not.toBeNull();
+  expect(spinner).toHaveAttribute('aria-hidden', 'true');
+  expect(screen.queryByRole('status', {name: 'Loading'})).toBeNull();
+}
 
 describe('MultiSelector', () => {
   const defaultOptions = ['Apple', 'Banana', 'Orange'];
@@ -208,6 +216,45 @@ describe('MultiSelector', () => {
     expect(trigger.parentElement).toHaveClass(
       stylex.props(selectorPresentationStyles.pointerRestoredFocus).className!,
     );
+  });
+
+  it('shows no disabled focus ring after a pointer pick (spec:AST-085 FR6)', async () => {
+    const field = (isDisabled: boolean) => (
+      <MultiSelector
+        label="Fruit"
+        options={defaultOptions}
+        value={[]}
+        onChange={() => {}}
+        presentation="bottom-sheet"
+        isDisabled={isDisabled}
+      />
+    );
+    const {rerender} = render(field(false));
+    const trigger = screen.getByRole('combobox');
+    fireEvent.pointerDown(trigger, {pointerType: 'touch'});
+    fireEvent.click(trigger, {detail: 1});
+    const dialog = await screen.findByRole('dialog', {name: 'Fruit'});
+    fireEvent.pointerDown(dialog, {pointerType: 'touch'});
+    fireEvent.click(dialog, {detail: 1});
+    rerender(field(true));
+    const ring = stylex
+      .props(
+        stylex.create({
+          ring: {
+            boxShadow: {
+              default: null,
+              ':has(> [aria-disabled="true"]:focus-visible)': `inset 0px 0px 0px 2px ${colorVars['--color-accent-muted']}`,
+            },
+          },
+        }).ring,
+      )
+      .className!.split(' ')
+      .pop()!;
+    const wrapper = screen.getByRole('combobox').parentElement!;
+    expect(wrapper).toHaveClass(
+      stylex.props(selectorPresentationStyles.pointerRestoredFocus).className!,
+    );
+    expect(wrapper).not.toHaveClass(ring);
   });
 
   it('renders with label', () => {
@@ -515,7 +562,9 @@ describe('MultiSelector', () => {
         isDisabled
       />,
     );
-    expect(screen.getByRole('combobox')).toBeDisabled();
+    const trigger = screen.getByRole('combobox');
+    expect(trigger).not.toHaveAttribute('disabled');
+    expect(trigger).toHaveAttribute('aria-disabled', 'true');
   });
 
   it('has correct ARIA attributes', () => {
@@ -1262,7 +1311,10 @@ describe('MultiSelector', () => {
     // component cannot make; the trigger's spinner carries the state.
     const listbox = screen.getByRole('listbox', h);
     expect(within(listbox).queryByText('No options')).not.toBeInTheDocument();
-    expect(politeRegion()?.textContent ?? '').toBe('');
+    // Only the busy start is spoken (spec:AST-086 FR8), never an empty or
+    // no-results message the panel is suppressing.
+    // (The channel clears its text on a timer, so it may already be empty.)
+    expect(['', 'Loading']).toContain(politeRegion()?.textContent ?? '');
   });
 
   it('announces nothing while isLoading, matching the silent panel', async () => {
@@ -1296,7 +1348,10 @@ describe('MultiSelector', () => {
     expect(
       within(listbox).queryByText('Nothing like that here'),
     ).not.toBeInTheDocument();
-    expect(politeRegion()?.textContent ?? '').toBe('');
+    // Only the busy start is spoken (spec:AST-086 FR8), never an empty or
+    // no-results message the panel is suppressing.
+    // (The channel clears its text on a timer, so it may already be empty.)
+    expect(['', 'Loading']).toContain(politeRegion()?.textContent ?? '');
   });
 
   it('renders emptyText when there are no options and no search input', async () => {
@@ -1514,7 +1569,7 @@ describe('MultiSelector', () => {
       />,
     );
     expect(screen.getByRole('combobox')).toHaveAttribute('aria-busy', 'true');
-    expect(screen.getByRole('status', {name: 'Loading'})).toBeInTheDocument();
+    expectSilentBusySpinner();
   });
 
   it('renders with custom selectAllLabel', async () => {
@@ -1602,7 +1657,7 @@ describe('MultiSelector', () => {
       expect(screen.getByRole('combobox')).toHaveFocus();
     });
 
-    it('trigger is not focusable when disabled', () => {
+    it('trigger keeps its tab stop when disabled (spec:AST-085 FR1)', () => {
       render(
         <MultiSelector
           label="Fruit"
@@ -1612,7 +1667,7 @@ describe('MultiSelector', () => {
           isDisabled
         />,
       );
-      expect(screen.getByRole('combobox')).toHaveAttribute('tabIndex', '-1');
+      expect(screen.getByRole('combobox')).toHaveAttribute('tabIndex', '0');
     });
 
     it('opens the listbox with ArrowDown from a focused trigger', async () => {
@@ -2076,7 +2131,7 @@ describe('MultiSelector', () => {
       expect(onChange).not.toHaveBeenCalled();
     });
 
-    it('remains non-focusable when disabled without a reason', () => {
+    it('stays focusable when disabled without a reason (spec:AST-085 FR1)', () => {
       render(
         <MultiSelector
           label="Fruit"
@@ -2087,8 +2142,9 @@ describe('MultiSelector', () => {
         />,
       );
       const trigger = screen.getByRole('combobox');
-      expect(trigger).toBeDisabled();
-      expect(trigger).toHaveAttribute('tabIndex', '-1');
+      expect(trigger).not.toHaveAttribute('disabled');
+      expect(trigger).toHaveAttribute('aria-disabled', 'true');
+      expect(trigger).toHaveAttribute('tabIndex', '0');
     });
   });
   describe('isReadOnly', () => {
@@ -2208,7 +2264,7 @@ describe('MultiSelector', () => {
 
       const trigger = screen.getByRole('combobox', {name: 'Fruit'});
       expect(trigger).toHaveAttribute('aria-busy', 'true');
-      expect(screen.getByRole('status', {name: 'Loading'})).toBeInTheDocument();
+      expectSilentBusySpinner();
 
       await user.click(trigger);
       expect(screen.queryByRole('listbox', h)).not.toBeInTheDocument();

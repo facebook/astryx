@@ -466,15 +466,27 @@ export function ContextMenu({
     if (!isOpen || usesBottomSheet) {
       return;
     }
-    const handleClickOutside = (e: MouseEvent) => {
+    // Inside a shadow root, even a closed or nested one, the document sees a
+    // press on the menu as a press on an outer shadow host, so the menu's own
+    // tree judges its presses first and the document skips those.
+    const tree = listRef.current?.getRootNode();
+    const shadow = tree instanceof ShadowRoot ? tree : null;
+    const judged = new WeakSet<Event>();
+    const handleClickOutside = (e: Event) => {
       const menu = listRef.current;
+      if (judged.has(e)) {
+        return;
+      }
+      judged.add(e);
       if (menu && !menu.contains(e.target as Node)) {
         closeMenu();
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
+    shadow?.addEventListener('mousedown', handleClickOutside);
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
+      shadow?.removeEventListener('mousedown', handleClickOutside);
     };
   }, [isOpen, closeMenu, listRef, usesBottomSheet]);
 

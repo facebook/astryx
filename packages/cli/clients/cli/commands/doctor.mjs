@@ -38,6 +38,8 @@ import {doc as integrationDocConflictsFn} from '../../../api/integration/integra
 import {NO_RESULT_SET} from '../../../foundation/debug/index.mjs';
 import {cliError} from '../lib/cli-error.mjs';
 import {ERROR_CODES} from '../../../foundation/response/error-codes.mjs';
+import {formatCliCommand} from '../../../foundation/env/package-manager.mjs';
+import {isOutsideProject} from '../../../foundation/env/project-scope.mjs';
 
 const STATUS = {
   pass: '[ok]',
@@ -92,7 +94,7 @@ function issueBlocks(issues) {
   return [
     section('Integration issues'),
     records(issues, {
-      fields: ['severity', 'code', 'message'],
+      fields: ['severity', 'code', 'message', 'fix', 'file', 'line'],
       format: {severity: statusToken},
     }),
   ];
@@ -178,6 +180,34 @@ function docTypesBlocks(report, failed) {
 }
 
 /**
+ * The component doc names that could not be judged against their sources.
+ * @param {import('../../../api/integration/validate-integration.type.mjs').DocNamesReport | undefined} report
+ */
+function docNamesBlocks(report) {
+  if (!report || report.unchecked.length === 0) return [];
+  return [
+    text(
+      `[info] Component names not checked: ${report.unchecked.length} doc(s) whose source exports this check cannot read:`,
+    ),
+    records(report.unchecked, {fields: ['file', 'name', 'reason']}),
+  ];
+}
+
+/**
+ * The block component names this check could not judge.
+ * @param {import('../../../api/integration/validate-integration.type.mjs').BlockComponentsReport | undefined} report
+ */
+function blockComponentsBlocks(report) {
+  if (!report || report.unchecked.length === 0) return [];
+  return [
+    text(
+      `[info] Block component names not checked: ${report.unchecked.length} name(s) this check could not judge:`,
+    ),
+    records(report.unchecked, {fields: ['file', 'name', 'reason']}),
+  ];
+}
+
+/**
  * @param {import('../../../api/integration/validate-integration.type.mjs').ValidateIntegrationResponse['data']} data
  */
 function printIntegrationValidation(data) {
@@ -189,16 +219,31 @@ function printIntegrationValidation(data) {
     ...(data.issues.length > 0
       ? [
           records(data.issues, {
-            fields: ['severity', 'code', 'message'],
+            fields: ['severity', 'code', 'message', 'fix', 'file', 'line'],
             format: {severity: statusToken},
           }),
         ]
       : [text('[ok] No integration issues found.')]),
+    ...(data.notes ?? []).map(note =>
+      text(`note (${note.code}): ${note.message}`),
+    ),
     text(
       `Summary: ${errors} error${errors === 1 ? '' : 's'}, ` +
         `${warnings} warning${warnings === 1 ? '' : 's'}`,
     ),
     ...docTypesBlocks(data.docTypes, errors > 0),
+    ...docNamesBlocks(data.docNames),
+    ...blockComponentsBlocks(data.blockComponents),
+    ...(data.publicImports && data.publicImports.unchecked.length > 0
+      ? [
+          text(
+            `[info] Imports not checked: ${data.publicImports.unchecked.length}:`,
+          ),
+          records(data.publicImports.unchecked, {
+            fields: ['file', 'specifier', 'reason'],
+          }),
+        ]
+      : []),
   );
 }
 
@@ -287,6 +332,9 @@ function propDriftBlocks(report, failed) {
           'codeType',
           'docRequired',
           'codeRequired',
+          'docDefault',
+          'codeDefault',
+          'fix',
         ],
         format: {severity: statusToken},
       }),
@@ -358,7 +406,8 @@ function printComponentConflicts(data) {
   // An [ok] after a failed check reads as a pass: say nothing it could not check.
   const failed = data.issues.some(issue => issue.severity === 'error');
   if (data.conflicts.length === 0) {
-    if (!failed) output.push(text('[ok] No component names conflict with Core.'));
+    if (!failed)
+      output.push(text('[ok] No component names conflict with Core.'));
   } else {
     output.push(
       records(data.conflicts, {
@@ -389,7 +438,16 @@ function printDocConflicts(data) {
     section(
       `Checking integration docs: ${integrationLabel(data) ?? '(local package)'}`,
     ),
-    ...issueBlocks(data.issues),
+    // A copied passage or fluff is listed below with its detail, so its
+    // issue is not printed twice.
+    ...issueBlocks(
+      data.issues.filter(
+        issue =>
+          issue.code !== 'copied_passage' &&
+          issue.code !== 'doc_fluff' &&
+          issue.code !== 'stray_doc_pointer',
+      ),
+    ),
   ];
   if (
     !data.issues.some(
@@ -409,6 +467,79 @@ function printDocConflicts(data) {
       records(data.findings, {
         fields: ['severity', 'topic', 'relationship', 'coreTopic', 'message'],
         format: {severity: statusToken},
+      }),
+    );
+  }
+  const copied = data.copiedPassages ?? [];
+  if (copied.length === 0) {
+    if (!data.issues.some(issue => issue.severity === 'error')) {
+      output.push(text('[ok] No topic copies a passage from another.'));
+    }
+  } else {
+    output.push(
+      text(
+        `[warn] ${copied.length} copied passage(s) (copied_passage): two topics say the same thing word for word. Keep the text in one and link to it from the other.`,
+      ),
+      records(copied, {
+        fields: [
+          'topic',
+          'section',
+          'line',
+          'otherTopic',
+          'otherOwner',
+          'owner',
+          'text',
+          'words',
+          'passages',
+          'message',
+        ],
+      }),
+    );
+  }
+  const fluff = data.fluff ?? [];
+  if (fluff.length === 0) {
+    if (!data.issues.some(issue => issue.severity === 'error')) {
+      output.push(text('[ok] No filler phrases or low-density topics.'));
+    }
+  } else {
+    output.push(
+      text(
+        `[warn] ${fluff.length} fluff finding(s) (doc_fluff): words that add length, not meaning. Cut each one.`,
+      ),
+      records(fluff, {
+        fields: [
+          'topic',
+          'kind',
+          'phrase',
+          'section',
+          'file',
+          'line',
+          'density',
+          'message',
+        ],
+      }),
+    );
+  }
+  const stray = data.strayPointers ?? [];
+  if (stray.length === 0) {
+    if (!data.issues.some(issue => issue.severity === 'error')) {
+      output.push(text('[ok] Every pointer to a doc is a link.'));
+    }
+  } else {
+    output.push(
+      text(
+        `[warn] ${stray.length} stray doc pointer(s) (stray_doc_pointer): a written \`astryx docs <name>\` where a link would be checked. Replace each with the link shown.`,
+      ),
+      records(stray, {
+        fields: [
+          'topic',
+          'section',
+          'file',
+          'line',
+          'pointer',
+          'link',
+          'message',
+        ],
       }),
     );
   }
@@ -432,9 +563,14 @@ export function printIntegrationCheckResponse(response) {
   }
 }
 
-/** @param {import('commander').Command} program */
-async function runProjectDoctor(program) {
-  const report = await runChecks();
+/**
+ * @param {import('commander').Command} program
+ * @param {{built?: string}} [options]
+ */
+async function runProjectDoctor(program, options = {}) {
+  const report = await runChecks(
+    options.built != null ? {built: options.built} : {},
+  );
   if (program.opts().json) jsonOut({type: 'doctor', data: report});
   else printHuman(report);
   if (report.summary.fail > 0) process.exitCode = 1;
@@ -455,7 +591,7 @@ async function runIntegrationValidation(program, pkg) {
         noPackage
           ? 'Nothing was validated: no package.json found. Run this command inside a package directory.'
           : 'Nothing was validated: no astryx.integration.* found next to package.json. ' +
-            'To validate an installed integration: astryx doctor integration validate <package>',
+              `To validate an installed integration: ${formatCliCommand('doctor integration validate <package>')}`,
       ),
     );
   } else printIntegrationValidation(result.data);
@@ -478,10 +614,14 @@ async function runAuthoringCheck(program, pkg, kind) {
 
   if (program.opts().json) jsonOut(result);
   else if (!result.data.validated) {
+    // Outside a project no integration is installed to check by name
+    // (spec AST-081 FR3).
     emit(
       text(
-        'Nothing was checked: no astryx.integration.* found next to package.json. ' +
-          `To check an installed integration: astryx doctor integration ${kind} <package>`,
+        isOutsideProject()
+          ? 'Nothing was checked: no astryx.integration.* found next to package.json, and this folder is outside a project.'
+          : 'Nothing was checked: no astryx.integration.* found next to package.json. ' +
+              `To check an installed integration: ${formatCliCommand(`doctor integration ${kind} <package>`)}`,
       ),
     );
   } else if (kind === 'templates') {
@@ -554,7 +694,7 @@ export function registerDoctor(program) {
     action: async (options, invoked) => {
       const word = unknownWord(invoked);
       if (word != null) return unknownSubcommand(doctorCmd, 'doctor', word);
-      return runProjectDoctor(program);
+      return runProjectDoctor(program, options);
     },
   });
   /** @type {import('commander').Command} */
@@ -569,20 +709,30 @@ export function registerDoctor(program) {
       return NO_RESULT_SET;
     },
   });
+  // `--built` checks a project's build; an integration check has none.
+  const refuseBuilt = () =>
+    doctorCmd.opts().built != null
+      ? cliError(
+          '`--built` checks a finished build and goes with `doctor` alone, not with a `doctor integration` check',
+          {code: ERROR_CODES.ERR_INVALID_OPTION},
+        )
+      : null;
   defineCommand(integrationCmd, doctorIntegrationValidateCommand, {
     fn: validateIntegrationFn,
-    action: async pkg => runIntegrationValidation(program, pkg),
+    action: async pkg => refuseBuilt() ?? runIntegrationValidation(program, pkg),
   });
   defineCommand(integrationCmd, doctorIntegrationTemplatesCommand, {
     fn: integrationTemplateConflictsFn,
-    action: async pkg => runAuthoringCheck(program, pkg, 'templates'),
+    action: async pkg =>
+      refuseBuilt() ?? runAuthoringCheck(program, pkg, 'templates'),
   });
   defineCommand(integrationCmd, doctorIntegrationComponentsCommand, {
     fn: integrationComponentConflictsFn,
-    action: async pkg => runAuthoringCheck(program, pkg, 'components'),
+    action: async pkg =>
+      refuseBuilt() ?? runAuthoringCheck(program, pkg, 'components'),
   });
   defineCommand(integrationCmd, doctorIntegrationDocsCommand, {
     fn: integrationDocConflictsFn,
-    action: async pkg => runAuthoringCheck(program, pkg, 'docs'),
+    action: async pkg => refuseBuilt() ?? runAuthoringCheck(program, pkg, 'docs'),
   });
 }

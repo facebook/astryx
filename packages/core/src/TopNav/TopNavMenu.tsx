@@ -494,6 +494,8 @@ export function TopNavMenu({
         </button>
         <div
           id={`${menuId}-items`}
+          aria-hidden={!drawerExpanded}
+          inert={!drawerExpanded ? true : undefined}
           {...stylex.props(
             drawerStyles.items,
             drawerExpanded && drawerStyles.itemsExpanded,

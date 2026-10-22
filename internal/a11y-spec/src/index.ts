@@ -147,6 +147,10 @@ export {
 } from './patterns/landmark';
 
 export {SLIDER_PATTERN, type SliderStateFacts} from './patterns/slider';
+export {
+  PROGRESSBAR_PATTERN,
+  type ProgressbarStateFacts,
+} from './patterns/progressbar';
 export {TREE_VIEW_PATTERN, type TreeViewStateFacts} from './patterns/tree-view';
 export {CAROUSEL_PATTERN, type CarouselStateFacts} from './patterns/carousel';
 export {
@@ -172,3 +176,5 @@ export {
   type LinkCurrentToken,
   type LinkStateFacts,
 } from './patterns/link';
+export {TOOLBAR_PATTERN, type ToolbarStateFacts} from './patterns/toolbar';
+export {TOOLTIP_PATTERN, type TooltipStateFacts} from './patterns/tooltip';

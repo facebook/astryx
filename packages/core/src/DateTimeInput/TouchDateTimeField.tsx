@@ -47,6 +47,7 @@ import {
 } from '../Field';
 import {useInputStatusIcon, useMergedRefs} from '../hooks';
 import {useResolvedRequired} from '../hooks/useResolvedRequired';
+import {useBusyAnnouncement} from '../hooks/useBusyAnnouncement';
 import {Icon} from '../Icon';
 import {IconButton} from '../IconButton';
 import {useTranslator, InternationalizationContext} from '../i18n';
@@ -159,6 +160,17 @@ const sizeStyles = stylex.create({
 const HORIZONTAL_SEGMENT_BASIS = 196;
 
 const styles = stylex.create({
+  // Same as DateTimeInput's: the focus ring for a focused disabled field.
+  disabledFocusRing: {
+    borderColor: {
+      default: colorVars['--color-border-emphasized'],
+      ':focus-within': colorVars['--color-accent'],
+    },
+    boxShadow: {
+      default: 'none',
+      ':focus-within': `inset 0px 0px 0px 2px ${colorVars['--color-accent-muted']}`,
+    },
+  },
   iconButton: {
     display: 'flex',
     alignItems: 'center',
@@ -565,6 +577,15 @@ export function TouchDateTimeField({
   });
 
   const [isSheetOpen, setIsSheetOpen] = useState(false);
+  const sheetBodyRef = useRef<HTMLDivElement | null>(null);
+  // The busy Spinner is decorative; this control announces its busy start
+  // (spec:AST-086 FR8). A change made in the open modal sheet starts it while
+  // the sheet is open, so it is announced from inside the sheet.
+  useBusyAnnouncement(
+    isBusy,
+    t('@astryx.spinner.loading'),
+    isSheetOpen ? sheetBodyRef : dateInputRef,
+  );
   const [activePanel, setActivePanel] = useState<TouchDateTimePanel>('date');
   const [isWheelOpen, setIsWheelOpen] = useState(false);
   const [draftTime, setDraftTime] = useState<ISOTimeString | undefined>(() =>
@@ -1330,6 +1351,7 @@ export function TouchDateTimeField({
               sizeStyles[size],
               styles.touchDateWrapper,
               isEffectivelyDisabled && inputWrapperStyles.disabled,
+              isEffectivelyDisabled && styles.disabledFocusRing,
               status && inputStatusBorderStyles[status.type],
               status &&
                 !isEffectivelyDisabled &&
@@ -1340,7 +1362,7 @@ export function TouchDateTimeField({
           <button
             type="button"
             onClick={() => openSheet('date')}
-            disabled={isEffectivelyDisabled}
+            aria-disabled={isEffectivelyDisabled || undefined}
             aria-label={t('@astryx.dateInput.openCalendar')}
             tabIndex={-1}
             {...stylex.props(
@@ -1367,7 +1389,11 @@ export function TouchDateTimeField({
             readOnly
             inputMode="none"
             onChange={() => {}}
-            onClick={chainEventHandlers(() => openSheet('date'), onClickProp)}
+            onClick={
+              isEffectivelyDisabled
+                ? undefined
+                : chainEventHandlers(() => openSheet('date'), onClickProp)
+            }
             onKeyDown={chainEventHandlers(
               (event: React.KeyboardEvent<HTMLInputElement>) =>
                 handleInputKeyDown(event, 'date'),
@@ -1375,8 +1401,7 @@ export function TouchDateTimeField({
             )}
             aria-labelledby={controlLabelledBy}
             placeholder={placeholder}
-            disabled={isEffectivelyDisabled && !showsDisabledMessage}
-            aria-disabled={showsDisabledMessage ? 'true' : undefined}
+            aria-disabled={isEffectivelyDisabled ? 'true' : undefined}
             aria-describedby={ariaDescribedBy}
             aria-required={isEffectivelyRequired ? 'true' : undefined}
             aria-invalid={status?.type === 'error' ? 'true' : undefined}
@@ -1397,7 +1422,7 @@ export function TouchDateTimeField({
               onClick={handleClear}
             />
           )}
-          {isBusy && <Spinner size="sm" />}
+          {isBusy && <Spinner size="sm" aria-hidden="true" />}
           {isRenderable(statusIcon) && statusIcon}
         </div>
 
@@ -1417,6 +1442,7 @@ export function TouchDateTimeField({
               sizeStyles[size],
               styles.touchTimeWrapper,
               isEffectivelyDisabled && inputWrapperStyles.disabled,
+              isEffectivelyDisabled && styles.disabledFocusRing,
               status && inputStatusBorderStyles[status.type],
               status &&
                 !isEffectivelyDisabled &&
@@ -1427,7 +1453,7 @@ export function TouchDateTimeField({
           <button
             type="button"
             onClick={() => openSheet('time')}
-            disabled={isEffectivelyDisabled}
+            aria-disabled={isEffectivelyDisabled || undefined}
             aria-label={t('@astryx.dateTimeInput.openTimePicker', {
               label: resolvedTimeLabel,
             })}
@@ -1456,8 +1482,7 @@ export function TouchDateTimeField({
             onClick={() => openSheet('time')}
             onKeyDown={event => handleInputKeyDown(event, 'time')}
             placeholder={timePlaceholder}
-            disabled={isEffectivelyDisabled && !showsDisabledMessage}
-            aria-disabled={showsDisabledMessage ? 'true' : undefined}
+            aria-disabled={isEffectivelyDisabled ? 'true' : undefined}
             aria-label={resolvedTimeLabel}
             aria-describedby={ariaDescribedBy}
             aria-required={isEffectivelyRequired ? 'true' : undefined}
@@ -1482,7 +1507,9 @@ export function TouchDateTimeField({
           // touchSheetBody owns the inset, including the band under the grab
           // handle.
           padding={0}>
-          <div {...stylex.props(styles.touchSheetBody)}>{surface}</div>
+          <div ref={sheetBodyRef} {...stylex.props(styles.touchSheetBody)}>
+            {surface}
+          </div>
         </BottomSheet>
         {showsDisabledMessage &&
           disabledMessageTooltip.renderTooltip(disabledMessage)}
