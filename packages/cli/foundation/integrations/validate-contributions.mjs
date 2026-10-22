@@ -1025,7 +1025,12 @@ export async function blockComponentsCheck(integration) {
 }
 
 /** A package's own template category: `"<Group> - <Variant>"`. */
-const CATEGORY_FORM = /^[^/\s-][^/]*? - [^/]+$/u;
+/**
+ * A category written as a path, such as `components/Button`: a slash with no
+ * " - " between a group and a variant. Single words (`Settings`) and
+ * `"<Group> - <Variant>"` (`Table - Index/Detail`) are fine.
+ */
+const PATH_CATEGORY = /^(?!.* - )[^\s/]+(?:\/[^/]+)+$/u;
 
 /** Imports a browser cannot load, which a showcase must not make. */
 const SERVER_ONLY_IMPORTS =
@@ -1045,21 +1050,23 @@ function isPackedBy(rel, files) {
   for (const entry of files) {
     if (typeof entry !== 'string') continue;
     const negated = entry.startsWith('!');
-    const pattern = entry
+    let pattern = entry
       .slice(negated ? 1 : 0)
       .replace(/^\.\//u, '')
       .replace(/\/+$/u, '');
+    // As in .gitignore, which npm follows: a pattern with no slash matches a
+    // name at any depth.
+    if (!pattern.includes('/')) pattern = `**/${pattern}`;
     const source = pattern
-      .split('/')
-      .map(part =>
-        part === '**'
-          ? '(?:.*)'
-          : part
-              .replace(/[.+^${}()|[\]\\]/gu, '\\$&')
-              .replace(/\*/gu, '[^/]*')
-              .replace(/\?/gu, '[^/]'),
-      )
-      .join('/');
+      .replace(/[.+^${}()|[\]\\]/gu, '\\$&')
+      .replace(/\*\*\//gu, '<<DIRS>>')
+      .replace(/\/\*\*$/u, '<<REST>>')
+      .replace(/\*\*/gu, '<<ANY>>')
+      .replace(/\*/gu, '[^/]*')
+      .replace(/\?/gu, '[^/]')
+      .replace(/<<DIRS>>/gu, '(?:.*/)?')
+      .replace(/<<REST>>/gu, '(?:/.*)?')
+      .replace(/<<ANY>>/gu, '.*');
     if (new RegExp(`^${source}(?:/.*)?$`, 'u').test(rel)) packed = !negated;
   }
   return packed;
@@ -1078,11 +1085,12 @@ function isPackedBy(rel, files) {
  *   family's example covers it), a doc kept off the overview
  *   (`isHiddenFromOverview: true`, for parts that only make sense inside a
  *   parent), and a `Utility` component (providers and context).
- * - `template_category`: a template `category` not in the `"<Group> -
- *   <Variant>"` form `astryx template` groups by, such as `components/X`.
+ * - `template_category`: a template `category` written as a path, such as
+ *   `components/X`, with a `"<Group> - <Variant>"` one to write.
  * - `showcase_not_standalone`: a showcase that imports what a browser cannot
  *   load (`server-only`, `next/headers`, `next/server`, `next/cache`, a Node
- *   built-in) or reads `process.env`. Live data is fine: a showcase may fetch
+ *   built-in) or reads `process.env` past `NODE_ENV`. Type-only imports and
+ *   comments don't count, and live data is fine: a showcase may fetch
  *   through the app. Only the showcase's own file is read.
  * - `template_asset_not_packed`: a file a template loads with `new URL(…,
  *   import.meta.url)` that does not exist or that the package's `files`
@@ -1129,7 +1137,7 @@ export async function componentExamplesCheck(integration) {
     if (
       typeof template.category === 'string' &&
       template.category !== '' &&
-      !CATEGORY_FORM.test(template.category)
+      PATH_CATEGORY.test(template.category)
     ) {
       const [group, ...rest] = template.category.split('/');
       const variant =
@@ -1137,7 +1145,7 @@ export async function componentExamplesCheck(integration) {
       const suggested = `${group.charAt(0).toUpperCase()}${group.slice(1)} - ${variant}`;
       notes.push({
         code: 'template_category',
-        message: `${docFile}: category '${template.category}' is not in the "<Group> - <Variant>" form that \`astryx template\` groups templates by. Fix: category: '${suggested}'.`,
+        message: `${docFile}: category '${template.category}' reads as a file path, and \`astryx template\` lists templates under their category as written. Fix: category: '${suggested}', a "<Group> - <Variant>" name.`,
       });
     }
     /** @type {string} */
@@ -1150,16 +1158,24 @@ export async function componentExamplesCheck(integration) {
     if (template.type === 'block' && template.isShowcase) {
       /** @type {string[]} */
       const blocked = [];
-      for (const match of source.matchAll(
-        /\bfrom\s+['"]([^'"]+)['"]|\bimport\s+['"]([^'"]+)['"]|\brequire\(\s*['"]([^'"]+)['"]\s*\)/gu,
+      // Comments are not code, and a type-only import is erased.
+      const code = source
+        .replace(/\/\*[\s\S]*?\*\//gu, '')
+        .replace(/(^|[^:'"`\\])\/\/.*$/gmu, '$1');
+      for (const match of code.matchAll(
+        /\b(import\s+type\b[^;]*?\bfrom|export\s+type\b[^;]*?\bfrom|from|import)\s+['"]([^'"]+)['"]|\brequire\(\s*['"]([^'"]+)['"]\s*\)/gu,
       )) {
-        const spec = match[1] ?? match[2] ?? match[3];
+        if (match[1] && /\btype\b/u.test(match[1])) continue;
+        const spec = match[2] ?? match[3];
         if (SERVER_ONLY_IMPORTS.test(spec) || builtins.has(spec)) {
           blocked.push(`imports '${spec}'`);
         }
       }
-      if (/\bprocess\.env\b/u.test(source)) blocked.push('reads process.env');
-      if (/^\s*['"]use server['"]/mu.test(source)) {
+      // Bundlers replace process.env.NODE_ENV; any other key is the server's.
+      if (/\bprocess\.env\b(?!\.NODE_ENV\b)/u.test(code)) {
+        blocked.push('reads process.env');
+      }
+      if (/^\s*['"]use server['"]/mu.test(code)) {
         blocked.push("is a 'use server' module");
       }
       if (blocked.length > 0) {
@@ -1216,7 +1232,7 @@ export async function componentExamplesCheck(integration) {
           ? ''
           : " The manifest sets no `templates` root; add `templates: './templates'` to it.") +
         ` Fix: add ${templatesDir}/${stem}.tsx, a small composition that renders ${name}, and beside it ${templatesDir}/${stem}.doc.mjs:` +
-        ` export default {type: 'block', name: '${stem}', displayName: '${name} showcase', description: 'A ${name} in use.', exampleFor: '${name}', isShowcase: true};` +
+        ` export default {type: 'block', name: '${stem}', displayName: '${name} showcase', description: 'A ${name} in use.', exampleFor: '${name}', isShowcase: true, aspectRatio: 16 / 10};` +
         ' A doc set to `hidden`, `isHiddenFromOverview` or category `Utility` needs no example.',
     });
   }

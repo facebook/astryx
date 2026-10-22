@@ -68,7 +68,7 @@ describe('component_without_example', () => {
     expect(notes[0].message).toContain('components/AcmeCard.doc.mjs');
     expect(notes[0].message).toContain('templates/acme-card-showcase.doc.mjs');
     expect(notes[0].message).toContain(
-      "exampleFor: 'AcmeCard', isShowcase: true",
+      "exampleFor: 'AcmeCard', isShowcase: true, aspectRatio: 16 / 10",
     );
   });
 
@@ -127,7 +127,7 @@ describe('component_without_example', () => {
 });
 
 describe('template_category', () => {
-  it('lists a category outside the "<Group> - <Variant>" form, with one in that form', async () => {
+  it('lists a category written as a path, with a "<Group> - <Variant>" one', async () => {
     write({
       'templates/card.doc.mjs': blockDoc(
         'card',
@@ -138,6 +138,14 @@ describe('template_category', () => {
       'templates/fine.tsx': 'export default () => null;\n',
       'templates/none.doc.mjs': blockDoc('none', ''),
       'templates/none.tsx': 'export default () => null;\n',
+      // Core's own forms: one word, and a variant with a slash.
+      'templates/word.doc.mjs': blockDoc('word', ", category: 'Settings'"),
+      'templates/word.tsx': 'export default () => null;\n',
+      'templates/slash.doc.mjs': blockDoc(
+        'slash',
+        ", category: 'Table - Index/Detail'",
+      ),
+      'templates/slash.tsx': 'export default () => null;\n',
     });
 
     const notes = await notesOf(['template_category']);
@@ -169,8 +177,16 @@ describe('showcase_not_standalone', () => {
         'live',
         ", exampleFor: 'AcmeCard', isShowcase: true",
       ),
-      'templates/live.tsx':
-        "export default function Live() { fetch('/api/graphql'); return null; }\n",
+      'templates/live.tsx': [
+        "import type {Headers} from 'next/headers';",
+        "// import fs from 'node:fs';",
+        '/* const key = process.env.SECRET; */',
+        'export default function Live() {',
+        "  if (process.env.NODE_ENV !== 'production') fetch('/api/graphql');",
+        '  return null;',
+        '}',
+        '',
+      ].join('\n'),
     });
 
     const notes = await notesOf(['showcase_not_standalone']);
@@ -215,6 +231,35 @@ describe('template_asset_not_packed', () => {
       ),
       expect.stringContaining('loads templates/dog.png, which does not exist.'),
     ]);
+  });
+
+  it.each([
+    [['templates/**/*', 'astryx.integration.mjs']],
+    [['templates', '*.png']],
+    [['./assets/', 'templates/']],
+  ])('counts what npm packs under %j', async files => {
+    write({
+      'package.json': JSON.stringify({
+        name: '@acme/kit',
+        version: '1.0.0',
+        files,
+      }),
+      'assets/cat.png': 'png',
+      'templates/cat.png': 'png',
+      'templates/card.doc.mjs': blockDoc(
+        'card',
+        ", exampleFor: 'AcmeCard', isShowcase: true",
+      ),
+      'templates/card.tsx': [
+        "const inside = new URL('./cat.png', import.meta.url);",
+        files.includes('templates/**/*')
+          ? ''
+          : "const outside = new URL('../assets/cat.png', import.meta.url);",
+        'export default () => null;',
+        '',
+      ].join('\n'),
+    });
+    expect(await notesOf(['template_asset_not_packed'])).toEqual([]);
   });
 });
 

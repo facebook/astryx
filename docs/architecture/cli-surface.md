@@ -865,6 +865,30 @@ Rejected: failing `--strict` on them in a patch (packages already running the
 check would break on an update), and leaving them unchecked (docs drift back
 to one package manager).
 
+### DEC-13 — A package's examples are checked, listed now and failing in the next minor
+
+**Decider:** `josephfarina`, `2026-10-21`
+
+Template lists, docs pages and catalog cards show a package through its
+examples, each block alone and from the packed package, so a package must ship
+what they need, as Core does. `validate` lists, as `next` notes with the fix
+to paste: a published component no block template shows with `exampleFor` and
+`isShowcase: true` (`component_without_example`; hidden docs, family members,
+`isHiddenFromOverview` docs and `Utility` components are exempt), a template
+category written as a path such as `components/X` (`template_category`; INV34
+still lets a package author any category, and this note only names a
+`"<Group> - <Variant>"` one), a showcase that imports server-only code or
+reads `process.env` past `NODE_ENV` (`showcase_not_standalone`; live data
+through the app is fine), and an asset loaded with `new URL(…,
+import.meta.url)` that is missing or outside `files`
+(`template_asset_not_packed`). Each fails `--strict --next` now and `--strict`
+from the next minor release (DEC-11). The CLI finds a component's showcase by
+`exampleFor` first, then by folder and `componentsUsed`.
+
+Rejected: failing them in a patch (packages already running the check would
+break on an update), and per-package special cases (a package that needs one
+is a package the checks should cover).
+
 ## Verification
 
 | Invariant | Evidence                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | Failure signal                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
