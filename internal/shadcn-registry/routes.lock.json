@@ -2425,6 +2425,21 @@
       "aliases": []
     },
     {
+      "name": "example-list-input-budget-allocation",
+      "path": "examples/list-input/budget-allocation",
+      "aliases": []
+    },
+    {
+      "name": "example-list-input-family-member-declaration",
+      "path": "examples/list-input/family-member-declaration",
+      "aliases": []
+    },
+    {
+      "name": "example-list-input-mailing-list",
+      "path": "examples/list-input/mailing-list",
+      "aliases": []
+    },
+    {
       "name": "example-list-item-basic",
       "path": "examples/list-item/basic",
       "aliases": []
@@ -4492,6 +4507,11 @@
     {
       "name": "showcase-link-default",
       "path": "showcases/link/default",
+      "aliases": []
+    },
+    {
+      "name": "showcase-list-input-tag-options",
+      "path": "showcases/list-input/tag-options",
       "aliases": []
     },
     {

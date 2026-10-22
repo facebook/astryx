@@ -25,7 +25,7 @@
  * - /packages/cli/assets/templates/blocks/components/Thumbnail/ (showcase blocks)
  */
 
-import {useState} from 'react';
+import {useRef, useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
   colorVars,
@@ -40,6 +40,7 @@ import {Skeleton} from '../Skeleton';
 import {Spinner} from '../Spinner';
 import {Tooltip} from '../Tooltip/Tooltip';
 import {useDevWarning} from '../hooks/useDevWarning';
+import {useBusyAnnouncement} from '../hooks/useBusyAnnouncement';
 import {useContainerReveal} from '../hooks/useContainerReveal';
 import type {BaseProps} from '../BaseProps';
 import {mergeProps} from '../utils';
@@ -352,6 +353,14 @@ export function Thumbnail({
   const showSkeleton = isLoading && !hasSrc;
   const showImage = hasSrc && !showSkeleton && !hasError;
   const showUploadOverlay = isLoading && hasSrc;
+  const uploadOverlayRef = useRef<HTMLDivElement>(null);
+  // The upload Spinner is decorative; the thumbnail announces its busy start
+  // instead (spec:AST-086 FR8).
+  useBusyAnnouncement(
+    showUploadOverlay,
+    t('@astryx.spinner.loading'),
+    uploadOverlayRef,
+  );
   const showPlaceholder = (!isLoading && !hasSrc) || hasError;
   const isInteractive = onClick != null && !isDisabled && !isLoading;
   const hasRemove = onRemove != null && !isDisabled;
@@ -472,8 +481,8 @@ export function Thumbnail({
         )}
         {showImage && <div {...stylex.props(styles.insetBorder)} />}
         {showUploadOverlay && (
-          <div {...stylex.props(styles.uploadOverlay)}>
-            <Spinner size="sm" shade="onMedia" />
+          <div ref={uploadOverlayRef} {...stylex.props(styles.uploadOverlay)}>
+            <Spinner size="sm" shade="onMedia" aria-hidden="true" />
           </div>
         )}
         {removeButtonEl}

@@ -452,7 +452,7 @@ function joinDeclarations(
   for (const [rawProp, rawValue] of entries) {
     // Legacy unenrolled tokens retain non-string values. Scan the same text
     // interpolation has always emitted, without changing the normalized theme.
-    const value = `${rawValue}`;
+    const value = stringifyTokenValue(rawValue);
     const prop = mapProp(rawProp);
     if (acceptDeclaration(prop, value, location, sink)) {
       lines.push(`    ${prop}: ${value};`);
@@ -492,6 +492,35 @@ const SCOPED_STATUS_ROLE_SOURCES = new Map(SCOPED_STATUS_ROLE_DEFAULTS);
 
 type TokenValues = Record<string, unknown>;
 
+function stringifyTokenValue(value: unknown): string {
+  if (typeof value === 'string') {
+    return value;
+  }
+  if (
+    value === null ||
+    value === undefined ||
+    typeof value === 'number' ||
+    typeof value === 'bigint' ||
+    typeof value === 'boolean'
+  ) {
+    return String(value);
+  }
+  if (typeof value === 'symbol') {
+    return value.toString();
+  }
+  if (typeof value === 'function') {
+    return Function.prototype.toString.call(value);
+  }
+  if (Array.isArray(value)) {
+    return value.map(stringifyTokenValue).join(',');
+  }
+  try {
+    return JSON.stringify(value) ?? Object.prototype.toString.call(value);
+  } catch {
+    return Object.prototype.toString.call(value);
+  }
+}
+
 interface TokenCascadeState {
   values: TokenValues;
   important: Set<string>;
@@ -504,7 +533,7 @@ function assignTokenCascade(
   for (const tokens of tokenSets) {
     for (const [rawToken, rawValue] of Object.entries(tokens ?? {})) {
       const token = canonicalizeDeclarationName(rawToken);
-      const value = `${rawValue}`;
+      const value = stringifyTokenValue(rawValue);
       const analysis = analyzeDeclarationValue(value);
       // Match joinDeclarations: declarations that cannot be emitted never
       // participate in the browser cascade this safety model validates.
@@ -541,7 +570,10 @@ function tokenValuesWouldHaveCycleWithValue(
   const stack = [...analyzeDeclarationValue(candidateValue).references];
   const visited = new Set<string>();
   while (stack.length > 0) {
-    const token = stack.pop()!;
+    const token = stack.pop();
+    if (token === undefined) {
+      continue;
+    }
     if (token === relevantToken) {
       return true;
     }
@@ -552,8 +584,9 @@ function tokenValuesWouldHaveCycleWithValue(
       continue;
     }
     visited.add(token);
-    for (const reference of analyzeDeclarationValue(`${tokens[token]}`)
-      .references) {
+    for (const reference of analyzeDeclarationValue(
+      stringifyTokenValue(tokens[token]),
+    ).references) {
       if (
         reference === relevantToken ||
         Object.prototype.hasOwnProperty.call(tokens, reference)
@@ -732,12 +765,15 @@ function authoredStatusRoleEntries(
   const canonicalTokens = createTokenCascade(tokens).values;
   return SCOPED_STATUS_ROLE_DEFAULTS.flatMap(([role]) => {
     const value = canonicalTokens[role];
-    return value === undefined ? [] : [[role, `${value}`]];
+    return value === undefined ? [] : [[role, stringifyTokenValue(value)]];
   });
 }
 
 function tokenValueIsAliasOf(value: unknown, source: string): boolean {
-  return analyzeDeclarationValue(`${value}`).singleVarReference === source;
+  return (
+    analyzeDeclarationValue(stringifyTokenValue(value)).singleVarReference ===
+    source
+  );
 }
 
 function mediaRoleRestorationValue(role: string, value: string): string {
@@ -843,7 +879,7 @@ function generatedMediaStatusRoleDefaults(
         });
       }
     }
-    return `${candidate.values[role]}`;
+    return stringifyTokenValue(candidate.values[role]);
   };
 
   for (const [role, source] of SCOPED_STATUS_ROLE_DEFAULTS) {
@@ -958,12 +994,14 @@ let activeStatusRoleGeneration: StatusRoleGenerationContext | undefined;
 
 function tokenSetSignature(
   tokens: Record<string, unknown> | undefined,
-): unknown {
-  return Object.entries(tokens ?? {}).map(([name, value]) => [
-    name,
-    typeof value,
-    `${value}`,
-  ]);
+): (readonly [string, string, string])[] {
+  return Object.entries(tokens ?? {}).map(
+    ([name, value]): readonly [string, string, string] => [
+      name,
+      typeof value,
+      stringifyTokenValue(value),
+    ],
+  );
 }
 
 function statusRoleGenerationSignature(
