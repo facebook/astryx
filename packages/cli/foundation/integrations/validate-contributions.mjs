@@ -1219,9 +1219,13 @@ function ignoreFilesFor(base, rel) {
  * @param {string} base
  * @param {string} template
  * @param {string} asset
+ * @param {boolean} [nestedOnly] with a `files` field npm skips the root's
+ *   ignore file but still reads those in folders below it
  */
-function ignoreFix(base, template, asset) {
-  const files = ignoreFilesFor(base, asset);
+function ignoreFix(base, template, asset, nestedOnly = false) {
+  const files = ignoreFilesFor(base, asset).filter(
+    file => !nestedOnly || file.includes('/'),
+  );
   for (const file of [...files].reverse()) {
     const folder = path.posix.dirname(file);
     const within = folder === '.' ? asset : asset.slice(folder.length + 1);
@@ -1608,9 +1612,16 @@ export async function componentExamplesCheck(integration) {
       notes.push({
         code: 'template_asset_not_packed',
         message: exists
-          ? Array.isArray(packedFiles)
+          ? Array.isArray(packedFiles) &&
+            (outsideFiles(assetRel, packedFiles) ||
+              !ignoreFilesFor(base, assetRel).some(file => file.includes('/')))
             ? `${rel(template.filePath)}: loads ${assetRel}, which npm leaves out of the package by its \`files\` field, so the template breaks once installed. Fix: add "${folder}" to \`files\`, drop any \`!\` entry that excludes it, and confirm with \`npm pack --dry-run\`.`
-            : ignoreFix(base, rel(template.filePath), assetRel)
+            : ignoreFix(
+                base,
+                rel(template.filePath),
+                assetRel,
+                Array.isArray(packedFiles),
+              )
           : `${rel(template.filePath)}: loads ${assetRel}, which does not exist. Fix: add the file, or point \`new URL()\` at one that does.`,
       });
     }

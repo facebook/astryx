@@ -583,6 +583,35 @@ describe('what npm packs decides', () => {
     expect(await notesOf(['template_asset_not_packed'])).toEqual([]);
   });
 
+  it('names a nested ignore file, not files, when files reaches the asset', async () => {
+    write({
+      'package.json': JSON.stringify({
+        name: '@acme/kit',
+        version: '1.0.0',
+        files: ['components', 'templates'],
+      }),
+      'templates/img/.npmignore': '*.png\n',
+      'templates/img/hero.png': 'png',
+      'templates/card.doc.mjs': blockDoc(
+        'card',
+        ", exampleFor: 'AcmeCard', isShowcase: true",
+      ),
+      'templates/card.tsx': [
+        "const hero = new URL('./img/hero.png', import.meta.url);",
+        'export default () => null;',
+        '',
+      ].join('\n'),
+    });
+    const notes = await notesOf(['template_asset_not_packed']);
+    expect(notes).toHaveLength(npmPacks('templates/img/hero.png') ? 0 : 1);
+    if (notes.length > 0) {
+      expect(notes[0].message).toContain(
+        'remove or narrow the line `*.png` in templates/img/.npmignore',
+      );
+      expect(notes[0].message).not.toContain('to `files`');
+    }
+  });
+
   it('names a nested ignore file that drops an asset', async () => {
     write({
       'package.json': JSON.stringify({name: '@acme/kit', version: '1.0.0'}),
