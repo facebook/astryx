@@ -109,8 +109,8 @@ announcement channel.
   state through a persistent region inside that modal (FR3, FR8). Other
   delivery inside native modals is outside this record.
 - Browser evidence: DOM and accessibility-tree checks prove routing (FR1–FR5,
-  FR7–FR10). Spoken timing, order, and repetition (FR6 on real AT) require
-  `spec:AST-009` FR4 evidence.
+  FR7–FR10). Spoken timing, order, and repetition on real AT are
+  recommended `spec:AST-009` follow-up, not a merge or release requirement.
 
 ## Current-state impact
 
@@ -173,7 +173,7 @@ announcement channel.
 | FR8      | Shared test: no live role inside a busy owner; channel spy on the owner | Busy TextInput, Selector, Switch thumb, ChatMessageList loader, busy CommandPalette (region inside its dialog)                                               | A composed indicator with a live role or its own announcement, or a busy owner that announces nothing, fails |
 | FR9      | `useAnnounce` tests                                                     | First use, many components, region removed, server render                                                                                                    | A second region pair, or stale text after the clear delay, fails                                             |
 | FR10     | Accessibility-tree check with a Dialog open                             | Info and error toast shown over an open Dialog                                                                                                               | A toast that reaches only the body-level channel, or no exposed live container, fails                        |
-| FR6 (AT) | `spec:AST-009` real-AT receipt                                          | Toast, busy Switch, chat notice                                                                                                                              | Missing, repeated, or out-of-order speech fails                                                              |
+| FR6 (AT) | Recommended `spec:AST-009` real-AT follow-up                            | Toast, busy Switch, chat notice                                                                                                                              | Missing, repeated, or out-of-order speech fails                                                              |
 
 ## Decision log
 

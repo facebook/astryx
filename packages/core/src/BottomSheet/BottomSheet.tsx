@@ -361,12 +361,16 @@ function StandaloneBottomSheet({
   });
 
   // The native `cancel` event is a close request the stack never saw a press
-  // for (Android back, the platform close watcher). Always preventDefault so
-  // the browser cannot close the controlled <dialog>, then answer with the
-  // stack's rules: only the top-most layer dismisses, and nothing dismisses
-  // during an IME composition.
+  // for (Android back, the platform close watcher). One that bubbles up from
+  // inside is not: a file input fires it when its picker is dismissed, so it is
+  // left alone. Otherwise always preventDefault so the browser cannot close the
+  // controlled <dialog>, then answer with the stack's rules: only the top-most
+  // layer dismisses, and nothing dismisses during an IME composition.
   const handleCancel = useCallback(
     (event: React.SyntheticEvent<HTMLDialogElement>) => {
+      if (event.target !== event.currentTarget) {
+        return;
+      }
       event.preventDefault();
       if (shouldDismissOnCloseRequest()) {
         dismissOnEscape();
