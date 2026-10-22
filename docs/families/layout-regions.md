@@ -141,7 +141,9 @@ wrapper, or a header-like visual treatment.
 - **FR9 — Responsive substitution is not automatic.** Section and Toolbar keep
   their current presentation. Layout renders the regions supplied by the
   caller. AppShell, product composition, or another component-specific owner
-  decides when a region is omitted or replaced at a narrower width.
+  decides when a region is omitted or replaced at a narrower width. AppShell
+  keeps main content mounted (state preserved) when crossing the mobile
+  breakpoint.
 - **FR10 — Resize ownership remains delegated.** A LayoutPanel with `resizable`
   uses the hook-provided current size instead of its `width` prop. The region
   family does not redefine snapping, persistence, collapse, keyboard, or pointer

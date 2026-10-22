@@ -27,6 +27,9 @@
  * @input --storybook-dir <path> --output <file> [--targets <path>]
  *   [--verified-not-applicable <path>] [--filter <csv>] [--packages <csv>]
  *   [--auto-only] [--curated-only]
+ *   [--shard <i>/<n> --shard-output <file>] audit every n-th planned item and
+ *   write only those cards; [--merge-shards <dir>] build the report from a
+ *   complete shard set without a browser (rtl-audit-shards.mjs).
  * @output JSON scorecard: D1/D5/D6 auto verdicts, curated D2/D3/D4/D7/D8/D9
  *   results, exact planned/completed scan counts, a component coverage
  *   rollup, and the worker pages replaced after a failed story
@@ -68,6 +71,14 @@ import {
   mapPool,
   runSteps,
 } from './rtl-audit-pool.mjs';
+import {
+  mergeRtlShards,
+  parseShard,
+  readShardFiles,
+  readStorybookSha,
+  shardFile,
+  shardPositions,
+} from './rtl-audit-shards.mjs';
 
 const {
   componentPackage,
@@ -125,6 +136,19 @@ const CONCURRENCY = Math.max(1, Number(getArg('concurrency') || process.env.RTL_
 // is validated (DateInput popover elements mirror), but stays opt-in until the
 // stability window promotes it. See README "D5 positional-mirror".
 const PM_REVEAL = hasFlag('pm-reveal');
+// A sharded audit: each `--shard i/n` job audits every n-th D1 target, story
+// and curated target and writes only those cards (`--shard-output`);
+// `--merge-shards` then builds the report from the complete set, exactly as
+// one run would, without opening a browser.
+const SHARD = getArg('shard') === null ? null : parseShard(getArg('shard'));
+const SHARD_OUTPUT = getArg('shard-output');
+const MERGE_SHARDS = getArg('merge-shards');
+if ((SHARD === null) !== (SHARD_OUTPUT === null)) {
+  throw new Error('--shard and --shard-output must be given together');
+}
+if (SHARD !== null && MERGE_SHARDS !== null) {
+  throw new Error('--shard and --merge-shards cannot be combined');
+}
 
 // ---------------------------------------------------------------------------
 // static file server (same shape as accessibility-audit.js)
@@ -435,31 +459,23 @@ async function detectDirectionalDecorations(page) {
   return page.evaluate(collectDirectionalDecorations).catch(() => []);
 }
 
-// Auto-discovery D6 runs every story because contextual separators often live
-// outside a component's default story. The LTR-first short-circuit avoids the
-// RTL navigation for the common case with no candidate.
-async function autoDirectionalDecorations(page, port, storyId, component) {
+// D6 contextual directional decorations: every story, because contextual
+// separators often live outside a component's default story. The verdict comes
+// from one LTR and (only when LTR found a candidate) one RTL measurement taken
+// by measureAutoStory() below.
+function decorationCard(component, storyId, ltr, rtl) {
   const card = {component, storyId, dim: 'D6-decoration', verdict: 'N-A', notes: [], decorations: 0, results: []};
-  await page.goto(storyUrl(port, storyId, false), {waitUntil: 'domcontentloaded'});
-  await settle(page);
-  const revealedL = await revealInteractionGated(page);
-  const ltr = await detectDirectionalDecorations(page);
-  if (ltr.length === 0) {
-    if (revealedL) card.notes.push('opened an interaction-gated surface before scanning');
+  if (ltr.decorations.length === 0) {
+    if (ltr.revealed) card.notes.push('opened an interaction-gated surface before scanning');
     card.notes.push('no contextual directional decorations');
     return card;
   }
-
-  await page.goto(storyUrl(port, storyId, true), {waitUntil: 'domcontentloaded'});
-  await settle(page);
-  const revealedR = await revealInteractionGated(page);
-  const rtl = await detectDirectionalDecorations(page);
-  const evaluated = evaluateDirectionalDecorations(ltr, rtl);
+  const evaluated = evaluateDirectionalDecorations(ltr.decorations, rtl.decorations);
   card.verdict = evaluated.verdict;
   card.notes.push(...evaluated.notes);
   card.results = evaluated.results;
-  card.decorations = Math.max(ltr.length, rtl.length);
-  if (revealedL || revealedR) card.notes.unshift('opened an interaction-gated surface before scanning');
+  card.decorations = Math.max(ltr.decorations.length, rtl.decorations.length);
+  if (ltr.revealed || rtl.revealed) card.notes.unshift('opened an interaction-gated surface before scanning');
   return card;
 }
 
@@ -556,17 +572,15 @@ async function detectPositioned(page) {
 }
 
 // Auto-discovery D5 for one story: compare LTR vs RTL positioned-element
-// centers about their offsetParent. Reuses settle() + the reveal step so
-// interaction-gated positioned elements (dialogs/popovers/menus) are covered,
-// not just static ones.
+// centers about their offsetParent. With --pm-reveal the measurement follows
+// the reveal step, so interaction-gated positioned elements
+// (dialogs/popovers/menus) are covered, not just static ones.
 const PM_TOL = Number(process.env.PM_TOL || 3); // px tolerance (signal gap was ~10x)
 
-async function autoPositionalMirror(page, port, storyId, component) {
+function positionalCard(component, storyId, ltrMeasure, rtlMeasure) {
   const card = {component, storyId, dim: 'D5-positional', verdict: 'N-A', notes: [], candidates: 0, fails: []};
-  await page.goto(storyUrl(port, storyId, false), {waitUntil: 'domcontentloaded'});
-  await settle(page);
-  const revealedL = PM_REVEAL ? await revealInteractionGated(page) : false;
-  const ltr = await detectPositioned(page);
+  const ltr = ltrMeasure.positioned;
+  const revealedL = PM_REVEAL && ltrMeasure.revealed;
 
   // Short-circuit before the RTL navigation: with no LTR candidate there is
   // nothing to measure an RTL center against, so the second load can't change
@@ -579,10 +593,8 @@ async function autoPositionalMirror(page, port, storyId, component) {
     return card;
   }
 
-  await page.goto(storyUrl(port, storyId, true), {waitUntil: 'domcontentloaded'});
-  await settle(page);
-  const revealedR = PM_REVEAL ? await revealInteractionGated(page) : false;
-  const rtl = await detectPositioned(page);
+  const rtl = rtlMeasure.positioned;
+  const revealedR = PM_REVEAL && rtlMeasure.revealed;
   if (revealedL || revealedR) card.notes.push('opened an interaction-gated surface before scanning');
 
   // Same reasoning in the other direction: zero comparisons is not a pass.
@@ -634,6 +646,37 @@ async function autoPositionalMirror(page, port, storyId, component) {
     card.notes.push(`every positioned candidate mirrors about its parent center (≤${PM_TOL}px)`);
   }
   return card;
+}
+
+// D5 and D6 both scan every audited story from the same LTR render, so one
+// LTR load serves both. Each dimension still reads the page at the point it
+// always did: D5 before the reveal step (unless --pm-reveal), D6 after it. The
+// RTL load runs only when either dimension found an LTR candidate, which is
+// when each of them used to load RTL on its own.
+async function measureAutoStory(page, port, storyId, rtl, {positioned, decorations}) {
+  await page.goto(storyUrl(port, storyId, rtl), {waitUntil: 'domcontentloaded'});
+  await settle(page);
+  const measure = {positioned: [], decorations: [], revealed: false};
+  if (positioned && !PM_REVEAL) measure.positioned = await detectPositioned(page);
+  if (decorations || (positioned && PM_REVEAL)) {
+    measure.revealed = await revealInteractionGated(page);
+  }
+  if (positioned && PM_REVEAL) measure.positioned = await detectPositioned(page);
+  if (decorations) measure.decorations = await detectDirectionalDecorations(page);
+  return measure;
+}
+
+async function autoPositionalAndDecorations(page, port, storyId, component) {
+  const ltr = await measureAutoStory(page, port, storyId, false, {positioned: true, decorations: true});
+  const needPositioned = ltr.positioned.length > 0;
+  const needDecorations = ltr.decorations.length > 0;
+  const rtl = needPositioned || needDecorations
+    ? await measureAutoStory(page, port, storyId, true, {positioned: needPositioned, decorations: needDecorations})
+    : null;
+  return {
+    positional: positionalCard(component, storyId, ltr, rtl),
+    decoration: decorationCard(component, storyId, ltr, rtl),
+  };
 }
 
 // Auto-discovery D1 for one story: compare LTR vs RTL directional-icon flip.
@@ -1081,48 +1124,99 @@ async function cleanupRuntime() {
     filters: FILTER,
   });
 
-  const {server, port} = await serve(path.resolve(DIST));
-  runtime.server = server;
-  const browser = await chromium.launch();
-  runtime.browser = browser;
-  const pool = await createPagePool({
-    size: CONCURRENCY,
-    openPage: () =>
-      browser.newPage({viewport: {width: 1100, height: 760}, deviceScaleFactor: 1}),
-  });
-  runtime.pool = pool;
-  // Curated dims run serially on the first slot's current page.
-  const d8BrowserContract = await verifyD8BrowserContract(pool.first());
-  const coarseContext = await browser.newContext({
-    viewport: {width: 1100, height: 760},
-    deviceScaleFactor: 1,
-    hasTouch: true,
-    isMobile: true,
-  });
-  runtime.coarseContext = coarseContext;
-  const curatedPages = createCuratedPages({
-    pool,
-    coarsePage: await coarseContext.newPage(),
-    openCoarsePage: () => coarseContext.newPage(),
-  });
-
-  // ---- (A) auto-discovery over every audited-package story ----
-  const autoResults = []; // D1 icon-mirror
-  const pmResults = []; // D5 positional-mirror
-  const decorationResults = []; // D6 contextual directional decoration
+  // The audit's plan: D1 runs one representative story per component (extra
+  // stories add little D1 signal); D5 (positional-mirror) and D6 run over
+  // EVERY story — a positioned bug can be story-specific (only a `withStatus`
+  // variant mounts the offending element), so they do not collapse to one per
+  // component; curated targets add the behaviour and geometry dims.
   const perComponent = new Map();
   for (const {component, id} of scopedStoryRoutes) {
     if (!perComponent.has(component)) perComponent.set(component, id);
   }
   const d1Targets = [...perComponent]
     .map(([component, id]) => ({comp: component, id}));
-  if (!CURATED_ONLY) {
-    // D1 runs one representative story per component (extra stories add little
-    // D1 signal). D5 (positional-mirror) runs over EVERY core story — a
-    // positioned bug can be story-specific (only a `withStatus` variant mounts
-    // the offending element), so we don't collapse to one-per-component.
-    autoResults.push(
-      ...(await mapPool(d1Targets, pool, {
+  const storyTargets = scopedStoryRoutes.map(({id, component}) => ({id, comp: component}));
+  const curatedTargets = [];
+  for (const t of targets) {
+    const component = componentFromTarget(
+      t,
+      AUDITED_PACKAGE_NAMES,
+      publicComponentsByPackage,
+    );
+    if (!belongsToActivePackage({component, id: t.storyId})) continue;
+    if (!matchesFilter(component)) continue;
+    if (!entries[t.storyId]) {
+      curatedTargets.push({t, component, missing: true});
+      continue;
+    }
+    // skip if the entry only had D1 (now covered by auto-discovery)
+    const dims = (t.dims || []).filter(d => d !== 'D1');
+    if (dims.length === 0) continue;
+    curatedTargets.push({t, component, dims});
+  }
+  const plan = {
+    d1: CURATED_ONLY ? [] : d1Targets.map(({comp, id}) => `${comp}::${id}`),
+    stories: CURATED_ONLY ? [] : storyTargets.map(({comp, id}) => `${comp}::${id}`),
+    curated: AUTO_ONLY
+      ? []
+      : curatedTargets.map(({t, component}) => `${component}::${t.storyId}`),
+  };
+  const storybookSha = readStorybookSha(DIST);
+  /** Positions of `items` this run audits. */
+  const mine = items =>
+    SHARD === null
+      ? items.map((_, position) => position)
+      : shardPositions(items.length, SHARD);
+
+  const autoResults = []; // D1 icon-mirror
+  const pmResults = []; // D5 positional-mirror
+  const decorationResults = []; // D6 contextual directional decoration
+  const curatedResults = [];
+  let d8BrowserContract;
+  let pageRecoveries;
+
+  if (MERGE_SHARDS !== null) {
+    const merged = mergeRtlShards(readShardFiles(MERGE_SHARDS), {plan, storybookSha});
+    autoResults.push(...merged.d1);
+    pmResults.push(...merged.stories.map(cards => cards.positional));
+    decorationResults.push(...merged.stories.map(cards => cards.decoration));
+    curatedResults.push(...merged.curated);
+    d8BrowserContract = merged.d8BrowserContract;
+    pageRecoveries = merged.pageRecoveries;
+    console.error(`MERGED ${MERGE_SHARDS}: ${autoResults.length} D1, ${pmResults.length} story, ${curatedResults.length} curated cards`);
+  } else {
+    const {server, port} = await serve(path.resolve(DIST));
+    runtime.server = server;
+    const browser = await chromium.launch();
+    runtime.browser = browser;
+    const pool = await createPagePool({
+      size: CONCURRENCY,
+      openPage: () =>
+        browser.newPage({viewport: {width: 1100, height: 760}, deviceScaleFactor: 1}),
+    });
+    runtime.pool = pool;
+    // Curated dims run serially on the first slot's current page.
+    d8BrowserContract = await verifyD8BrowserContract(pool.first());
+    const coarseContext = await browser.newContext({
+      viewport: {width: 1100, height: 760},
+      deviceScaleFactor: 1,
+      hasTouch: true,
+      isMobile: true,
+    });
+    runtime.coarseContext = coarseContext;
+    const curatedPages = createCuratedPages({
+      pool,
+      coarsePage: await coarseContext.newPage(),
+      openCoarsePage: () => coarseContext.newPage(),
+    });
+
+    // Cards by plan position, for a shard file.
+    const shardCards = {d1: new Map(), stories: new Map(), curated: new Map()};
+
+    // ---- (A) auto-discovery over every audited-package story ----
+    if (!CURATED_ONLY) {
+      const d1Positions = mine(d1Targets);
+      const d1Cards = await mapPool(d1Positions.map(position => d1Targets[position]), pool, {
         scan: async ({comp, id}, workerPage) => {
           const card = await autoD1(workerPage, port, id, comp);
           if (card.verdict !== 'N-A') {
@@ -1135,72 +1229,77 @@ async function cleanupRuntime() {
           return {component: comp, storyId: id, dim: 'D1', verdict: 'ERROR', notes: [String(e).slice(0, 160)], icons: 0};
         },
         describe: ({id}) => ({phase: 'D1', storyId: id}),
-      })),
-    );
-    // D5 positional-mirror over every audited story.
-    const pmTargets = scopedStoryRoutes.map(({id, component}) => ({id, comp: component}));
-    pmResults.push(
-      ...(await mapPool(pmTargets, pool, {
+      });
+      autoResults.push(...d1Cards);
+      d1Positions.forEach((position, i) => shardCards.d1.set(position, d1Cards[i]));
+      // D5 positional-mirror and D6 contextual decorations over every audited
+      // story, sharing one LTR load per story (see measureAutoStory).
+      const storyPositions = mine(storyTargets);
+      const storyCards = await mapPool(storyPositions.map(position => storyTargets[position]), pool, {
         scan: async ({id, comp}, workerPage) => {
-          const card = await autoPositionalMirror(workerPage, port, id, comp);
-          if (card.verdict !== 'N-A') {
-            console.error(`PM   ${card.verdict.toUpperCase().padEnd(4)} ${comp.padEnd(24)} ${id.padEnd(40)} cand=${card.candidates}`);
+          const cards = await autoPositionalAndDecorations(workerPage, port, id, comp);
+          if (cards.positional.verdict !== 'N-A') {
+            console.error(`PM   ${cards.positional.verdict.toUpperCase().padEnd(4)} ${comp.padEnd(24)} ${id.padEnd(40)} cand=${cards.positional.candidates}`);
           }
-          return card;
+          if (cards.decoration.verdict !== 'N-A') {
+            console.error(`DEC  ${cards.decoration.verdict.toUpperCase().padEnd(4)} ${comp.padEnd(24)} ${id.padEnd(40)} glyphs=${cards.decoration.decorations}`);
+          }
+          return cards;
         },
         onError: ({id, comp}, e) => {
-          console.error(`PM   ERROR ${comp} ${id}: ${String(e).slice(0, 120)}`);
-          return {component: comp, storyId: id, dim: 'D5-positional', verdict: 'ERROR', notes: [String(e).slice(0, 160)], candidates: 0, fails: []};
+          console.error(`PM+DEC ERROR ${comp} ${id}: ${String(e).slice(0, 120)}`);
+          const notes = [String(e).slice(0, 160)];
+          return {
+            positional: {component: comp, storyId: id, dim: 'D5-positional', verdict: 'ERROR', notes, candidates: 0, fails: []},
+            decoration: {component: comp, storyId: id, dim: 'D6-decoration', verdict: 'ERROR', notes: [...notes], decorations: 0, results: []},
+          };
         },
-        describe: ({id}) => ({phase: 'D5', storyId: id}),
-      })),
-    );
-    // D6 scans every story. A directional decoration can exist only in a
-    // custom/variant story even when the default story is neutral.
-    decorationResults.push(
-      ...(await mapPool(pmTargets, pool, {
-        scan: async ({id, comp}, workerPage) => {
-          const card = await autoDirectionalDecorations(workerPage, port, id, comp);
-          if (card.verdict !== 'N-A') {
-            console.error(`DEC  ${card.verdict.toUpperCase().padEnd(4)} ${comp.padEnd(24)} ${id.padEnd(40)} glyphs=${card.decorations}`);
-          }
-          return card;
-        },
-        onError: ({id, comp}, e) => {
-          console.error(`DEC  ERROR ${comp} ${id}: ${String(e).slice(0, 120)}`);
-          return {component: comp, storyId: id, dim: 'D6-decoration', verdict: 'ERROR', notes: [String(e).slice(0, 160)], decorations: 0, results: []};
-        },
-        describe: ({id}) => ({phase: 'D6', storyId: id}),
-      })),
-    );
-  }
+        describe: ({id}) => ({phase: 'D5+D6', storyId: id}),
+      });
+      pmResults.push(...storyCards.map(cards => cards.positional));
+      decorationResults.push(...storyCards.map(cards => cards.decoration));
+      storyPositions.forEach((position, i) => shardCards.stories.set(position, storyCards[i]));
+    }
 
-  // ---- (B) curated precision dims ----
-  // Deliberately serial on one page: only a handful of targets, and these do
-  // multi-step interactions (setup clicks, scroll assertions) where a shared
-  // machine under load is more likely to change behaviour than to save time.
-  const curatedResults = [];
-  if (!AUTO_ONLY) {
-    for (const t of targets) {
-      const component = componentFromTarget(
-        t,
-        AUDITED_PACKAGE_NAMES,
-        publicComponentsByPackage,
-      );
-      if (!belongsToActivePackage({component, id: t.storyId})) continue;
-      if (!matchesFilter(component)) continue;
-      if (!entries[t.storyId]) {
-        curatedResults.push({component, storyId: t.storyId, rollup: 'MISSING-STORY', dims: {}, notes: ['story not in index.json']});
-        continue;
+    // ---- (B) curated precision dims ----
+    // Deliberately serial on one page: only a handful of targets, and these do
+    // multi-step interactions (setup clicks, scroll assertions) where a shared
+    // machine under load is more likely to change behaviour than to save time.
+    if (!AUTO_ONLY) {
+      for (const position of mine(curatedTargets)) {
+        const {t, component, dims, missing} = curatedTargets[position];
+        if (missing) {
+          const card = {component, storyId: t.storyId, rollup: 'MISSING-STORY', dims: {}, notes: ['story not in index.json']};
+          curatedResults.push(card);
+          shardCards.curated.set(position, card);
+          continue;
+        }
+        // scoreCurated records each dim's failure itself; what escapes it is a
+        // page that could not be replaced, which ends the run.
+        const card = await scoreCurated(curatedPages, port, {...t, component, dims});
+        curatedResults.push(card);
+        shardCards.curated.set(position, card);
+        console.error(`CUR  ${card.rollup.padEnd(10)} ${component.padEnd(20)} ${JSON.stringify(card.dims)}`);
       }
-      // skip if the entry only had D1 (now covered by auto-discovery)
-      const dims = (t.dims || []).filter(d => d !== 'D1');
-      if (dims.length === 0) continue;
-      // scoreCurated records each dim's failure itself; what escapes it is a
-      // page that could not be replaced, which ends the run.
-      const card = await scoreCurated(curatedPages, port, {...t, component, dims});
-      curatedResults.push(card);
-      console.error(`CUR  ${card.rollup.padEnd(10)} ${component.padEnd(20)} ${JSON.stringify(card.dims)}`);
+    }
+    pageRecoveries = pool.recoveries;
+
+    if (SHARD !== null) {
+      fs.writeFileSync(
+        SHARD_OUTPUT,
+        JSON.stringify(
+          shardFile({
+            plan,
+            shard: SHARD,
+            storybookSha,
+            cards: shardCards,
+            d8BrowserContract,
+            pageRecoveries,
+          }),
+        ),
+      );
+      console.error(`WROTE ${SHARD_OUTPUT} (shard ${SHARD.index}/${SHARD.count})`);
+      return;
     }
   }
 
@@ -1268,7 +1367,7 @@ async function cleanupRuntime() {
     // Worker pages replaced after a story failed on them. The failed story
     // keeps its ERROR result; the record shows the stories after it ran on a
     // fresh page.
-    pageRecoveries: pool.recoveries,
+    pageRecoveries,
     autoDiscovery: {
       total: autoResults.length,
       applicable: autoResults.filter(r => r.verdict !== 'N-A').length,
@@ -1304,7 +1403,7 @@ async function cleanupRuntime() {
   console.error(`AUTO: ${report.autoDiscovery.pass} pass / ${report.autoDiscovery.fail} fail (${surprises.length} surprise) / ${report.autoDiscovery.na} N-A`);
   console.error(`PM  : ${report.positionalMirror.pass} pass / ${report.positionalMirror.fail} fail / ${report.positionalMirror.na} N-A (tol ${PM_TOL}px)`);
   console.error(`DEC : ${report.directionalDecorations.pass} pass / ${report.directionalDecorations.fail} fail / ${report.directionalDecorations.na} N-A`);
-  console.error(`POOL: ${pool.recoveries.length} page replacement(s) after a failed story`);
+  console.error(`POOL: ${pageRecoveries.length} page replacement(s) after a failed story`);
   console.error(`COV : ${coverage.measured} measured / ${coverage.verifiedNa} verified N-A / ${coverage.gaps} gap / ${coverage.staleVerifiedNa} stale`);
   // Non-zero exit only signals CI (which is soft/continue-on-error). Surface a
   // signal but never let it hard-block during the stability window.

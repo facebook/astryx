@@ -1,0 +1,150 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import {fileURLToPath} from 'node:url';
+import ts from 'typescript';
+import {describe, expect, it} from 'vitest';
+import {loadCoreDoc} from '../../scripts/core-docs.mjs';
+import {
+  buildContracts,
+  checkContract,
+  generateSwift,
+  generateTypeScript,
+} from './index.js';
+import type {ComponentContract} from './types.js';
+
+const PACKAGE_ROOT = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  '../..',
+);
+const APPLE_GENERATED = path.join(
+  PACKAGE_ROOT,
+  'apple/Sources/AstryxNative/Generated',
+);
+
+describe('native contracts', () => {
+  it('splits core Selector documentation into a portable core and a web part', async () => {
+    const {contracts} = await buildContracts(loadCoreDoc);
+    const selector = contracts.find(contract => contract.name === 'Selector');
+    expect(selector).toBeDefined();
+    expect(Object.keys(selector!.core)).toEqual(
+      expect.arrayContaining([
+        'label',
+        'options',
+        'value',
+        'onChange',
+        'isDisabled',
+        'status',
+      ]),
+    );
+    const web = new Map(
+      selector!.webOnly.map(prop => [prop.name, prop.reason]),
+    );
+    expect(web.get('renderOption')).toContain('render function');
+    expect(web.get('emptyText')).toContain('typed slot');
+    expect(web.get('onClick')).toContain('DOM event');
+    expect(web.get('presentation')).toContain(
+      'native platforms use their own control',
+    );
+    expect(selector!.core).not.toHaveProperty('controlXstyle');
+  });
+
+  it('reports naming and portability errors', () => {
+    const bad: ComponentContract = {
+      name: 'Bad',
+      baseTarget: 'root',
+      types: {},
+      core: {
+        as: {type: {kind: 'string'}},
+        style: {type: {kind: 'string'}},
+        item: {type: {kind: 'named', name: 'Missing'}},
+      },
+      platforms: {
+        ios: {item: {type: {kind: 'string'}}, var: {type: {kind: 'boolean'}}},
+      },
+      webOnly: [],
+    };
+    const rules = checkContract(bad).map(issue => issue.rule);
+    expect(rules).toEqual(
+      expect.arrayContaining([
+        'name-keyword',
+        'name-toolkit',
+        'platform-shadows-core',
+        'unknown-type',
+      ]),
+    );
+  });
+
+  it('keeps the committed Swift binding in sync with the contracts', async () => {
+    const {contracts} = await buildContracts(loadCoreDoc);
+    for (const [name, contents] of Object.entries(generateSwift(contracts))) {
+      const committed = fs.readFileSync(
+        path.join(APPLE_GENERATED, name),
+        'utf8',
+      );
+      expect(
+        committed,
+        `${name} is stale; run pnpm -F @astryxdesign/native generate:apple`,
+      ).toBe(contents);
+    }
+  });
+
+  it('exposes each platform only its own props through type-resolution conditions', async () => {
+    const {contracts} = await buildContracts(loadCoreDoc);
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'astryx-native-types-'));
+    const pkg = path.join(dir, 'node_modules/@astryxdesign/native');
+    fs.mkdirSync(path.join(pkg, 'types'), {recursive: true});
+    for (const [name, contents] of Object.entries(
+      generateTypeScript(contracts),
+    )) {
+      fs.writeFileSync(path.join(pkg, 'types', name), contents);
+    }
+    const manifest = JSON.parse(
+      fs.readFileSync(path.join(PACKAGE_ROOT, 'package.json'), 'utf8'),
+    );
+    const exportsMap = JSON.stringify(
+      manifest.exports['./components'],
+    ).replaceAll('./dist/types/', './types/');
+    fs.writeFileSync(
+      path.join(pkg, 'package.json'),
+      JSON.stringify({
+        name: '@astryxdesign/native',
+        type: 'module',
+        exports: {'./components': JSON.parse(exportsMap)},
+      }),
+    );
+    const usage = (menuStyle: string) =>
+      "import type {SelectorProps} from '@astryxdesign/native/components';\n" +
+      `export const props: SelectorProps = {label: 'Shipping', options: [], menuStyle: '${menuStyle}'};\n`;
+
+    const errorsFor = (condition: string | null, source: string) => {
+      const file = path.join(dir, `${condition ?? 'none'}.ts`);
+      fs.writeFileSync(file, source);
+      const program = ts.createProgram([file], {
+        strict: true,
+        noEmit: true,
+        module: ts.ModuleKind.ESNext,
+        moduleResolution: ts.ModuleResolutionKind.Bundler,
+        customConditions: condition ? [condition] : [],
+        types: [],
+      });
+      return ts
+        .getPreEmitDiagnostics(program)
+        .map(d => ts.flattenDiagnosticMessageText(d.messageText, '\n'));
+    };
+
+    expect(errorsFor('ios', usage('pullDown'))).toEqual([]);
+    expect(errorsFor('android', usage('bottomSheet'))).toEqual([]);
+    expect(errorsFor('android', usage('pullDown')).join('\n')).toContain(
+      'pullDown',
+    );
+    expect(errorsFor('shared', usage('pullDown')).join('\n')).toContain(
+      'menuStyle',
+    );
+    expect(errorsFor(null, usage('pullDown')).join('\n')).toContain(
+      'menuStyle',
+    );
+  });
+});

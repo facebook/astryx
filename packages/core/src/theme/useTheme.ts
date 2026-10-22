@@ -81,7 +81,7 @@ export interface UseThemeReturn {
    * @example
    * ```
    * const accent = token('--color-accent'); // "#0064E0" in light mode
-   * const spacing = token('--spacing-4');   // "16px"
+   * const spacing = token('--spacing-4');   // "1rem"
    * ```
    */
   token: (name: string) => string;

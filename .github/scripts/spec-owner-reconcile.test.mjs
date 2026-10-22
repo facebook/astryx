@@ -1551,3 +1551,144 @@ describe('spec owner workflow reconciliation', () => {
     });
   });
 });
+
+describe('relayed owner decisions', () => {
+  const appLogin = 'review-app[bot]';
+  function dispatchContext({
+    runId = 100n,
+    decision = 'approve',
+    ownerLogin = 'cixzhang',
+    headSha = head,
+    sender = {login: appLogin, type: 'Bot'},
+  } = {}) {
+    return {
+      actor: sender.login,
+      eventName: 'repository_dispatch',
+      runId,
+      runAttempt: 1,
+      repo: {owner: 'facebook', repo: 'astryx'},
+      payload: {
+        action: 'spec-owner-decision',
+        sender,
+        client_payload: {
+          pr: 17,
+          headSha,
+          ownerLogin,
+          decision,
+          requestKey: 'req-1',
+        },
+      },
+    };
+  }
+  async function runDispatch(harness, runContext) {
+    await reconcileSpecOwnerGate({
+      github: harness.github,
+      context: runContext,
+      core: harness.core,
+      workspace,
+      env: {...env, SPEC_DECISION_APP: appLogin},
+      now: () => new Date('2026-08-30T10:00:10.000Z'),
+    });
+  }
+  const decisionStatusFor = (state, login = 'cixzhang') =>
+    state.statuses.find(
+      status => status.context === `spec-owner-decision/${login}`,
+    );
+
+  it('clears the gate on a relayed exact-head ENGOWNER approval', async () => {
+    const harness = createHarness();
+
+    await runDispatch(harness, dispatchContext());
+
+    expect(decisionStatusFor(harness.state)).toMatchObject({
+      state: 'success',
+      description: 'Owner approved at 2026-08-30T10:00:10.000Z. Request req-1.',
+    });
+    expect(latestGateStatus(harness.state)).toMatchObject({
+      state: 'success',
+      description: expect.stringContaining('Approved by @cixzhang'),
+    });
+  });
+
+  it('reads an earlier relayed approval back on a later reconcile', async () => {
+    const harness = createHarness();
+    await runDispatch(harness, dispatchContext({runId: 100n}));
+
+    await run(harness, context({runId: 101n, action: 'synchronize'}));
+
+    expect(latestGateStatus(harness.state).state).toBe('success');
+  });
+
+  it('keeps the gate waiting and disables auto-merge on a relayed revoke', async () => {
+    const harness = createApprovedHarness({
+      autoMerge: {merge_method: 'squash'},
+      labels: ['spec-auto-merge'],
+    });
+
+    await runDispatch(
+      harness,
+      dispatchContext({decision: 'revoke', ownerLogin: 'imdreamrunner'}),
+    );
+
+    expect(decisionStatusFor(harness.state, 'imdreamrunner').state).toBe(
+      'failure',
+    );
+    expect(latestGateStatus(harness.state).state).toBe('pending');
+    expect(harness.state.pr.auto_merge).toBe(null);
+  });
+
+  it('publishes no decision for a superseded head', async () => {
+    const harness = createHarness();
+
+    await runDispatch(harness, dispatchContext({headSha: nextHead}));
+
+    expect(decisionStatusFor(harness.state)).toBeUndefined();
+    expect(latestGateStatus(harness.state).state).toBe('pending');
+  });
+
+  it('does not let a DESIGNOWNER relay approve a non-design spec', async () => {
+    const harness = createHarness();
+
+    await runDispatch(harness, dispatchContext({ownerLogin: 'ernestt'}));
+
+    expect(latestGateStatus(harness.state)).toMatchObject({
+      state: 'pending',
+      description: expect.stringContaining('engineering owner'),
+    });
+  });
+
+  it('rejects a dispatch from another sender before API work', async () => {
+    const harness = createHarness();
+
+    await runDispatch(
+      harness,
+      dispatchContext({sender: {login: 'someone', type: 'User'}}),
+    );
+
+    expect(harness.state.pullGets).toBe(0);
+    expect(harness.state.statuses).toEqual([]);
+  });
+
+  it('rejects a relayed decision for a non-owner before API work', async () => {
+    const harness = createHarness();
+
+    await runDispatch(harness, dispatchContext({ownerLogin: 'contributor'}));
+
+    expect(harness.state.pullGets).toBe(0);
+    expect(harness.state.statuses).toEqual([]);
+  });
+
+  it('ignores every dispatch while no review app is configured', async () => {
+    const harness = createHarness();
+
+    await reconcileSpecOwnerGate({
+      github: harness.github,
+      context: dispatchContext(),
+      core: harness.core,
+      workspace,
+      env,
+    });
+
+    expect(harness.state.pullGets).toBe(0);
+  });
+});

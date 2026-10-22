@@ -57,6 +57,10 @@ export type {
 } from '../Field';
 import {mergeProps} from '../utils';
 import type {BaseProps} from '../BaseProps';
+import {
+  type FieldInputBaseProps,
+  useFieldInputStyling,
+} from '../Field/fieldParts';
 import type {SizeValue} from '../utils/types';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
@@ -175,7 +179,12 @@ const styles = stylex.create({
   dropzoneDisabled: {
     cursor: 'default',
     opacity: 0.5,
-    borderColor: colorVars['--color-border-emphasized'],
+    // Keeps the :focus-within border: a focused disabled trigger still shows
+    // focus (spec:AST-085 FR6).
+    borderColor: {
+      default: colorVars['--color-border-emphasized'],
+      ':focus-within': colorVars['--color-accent'],
+    },
   },
   compact: {
     boxSizing: 'border-box',
@@ -217,7 +226,12 @@ const styles = stylex.create({
   compactDisabled: {
     cursor: 'default',
     opacity: 0.5,
-    borderColor: colorVars['--color-border-emphasized'],
+    // Keeps the :focus-within border: a focused disabled trigger still shows
+    // focus (spec:AST-085 FR6).
+    borderColor: {
+      default: colorVars['--color-border-emphasized'],
+      ':focus-within': colorVars['--color-accent'],
+    },
   },
   hiddenInput: {
     position: 'absolute',
@@ -291,7 +305,7 @@ const statusBorderStyles = stylex.create({
 });
 
 export interface FileInputProps extends Omit<
-  BaseProps,
+  FieldInputBaseProps,
   'onChange' | 'defaultValue' | 'value'
 > {
   ref?: React.Ref<HTMLInputElement>;
@@ -409,7 +423,7 @@ export interface FileInputProps extends Omit<
   /**
    * Width of the field. Numbers are treated as pixels, strings are used as-is
    * (e.g. `'100%'`). Sizes the whole field (label, control, and status) so they
-   * stay aligned, unlike setting width via `xstyle`/`className`/`style`.
+   * stay aligned, unlike setting width via `controlXstyle`/`controlClassName`/`controlStyle`.
    */
   width?: SizeValue;
   /**
@@ -448,14 +462,24 @@ export function FileInput({
   isOptional = false,
   labelTooltip,
   width,
-  xstyle,
-  className,
-  style,
+  containerXstyle,
+  containerClassName,
+  containerStyle,
+  controlXstyle,
+  controlClassName,
+  controlStyle,
   ref,
-  ...rest
+  id: idProp,
+  ...restProps
 }: FileInputProps) {
+  const {rest, container} = useFieldInputStyling('FileInput', restProps, {
+    containerXstyle,
+    containerClassName,
+    containerStyle,
+  });
   const t = useTranslator();
-  const id = useId();
+  const generatedID = useId();
+  const id = idProp ?? generatedID;
   const descriptionID = useId();
   const statusMessageID = useId();
   const requiredID = useId();
@@ -785,6 +809,7 @@ export function FileInput({
 
   return (
     <Field
+      {...container}
       label={label}
       isLabelHidden={isLabelHidden}
       description={description}
@@ -827,10 +852,10 @@ export function FileInput({
             isDropzone && isDisabled && styles.dropzoneDisabled,
             !isDropzone && isDisabled && styles.compactDisabled,
             status && statusBorderStyles[status.type],
-            xstyle,
+            controlXstyle,
           ),
-          className,
-          style,
+          controlClassName,
+          controlStyle,
         )}>
         {/* Visually hidden real button carrying the accessible role, name, and
             ARIA. Kept as a sibling of the clear/status controls inside a
@@ -842,14 +867,9 @@ export function FileInput({
         <VisuallyHidden>
           <button
             type="button"
-            // With a disabledMessage the trigger keeps focusability via
-            // aria-disabled so the reason is focus-discoverable; opening the
-            // picker is still blocked by the isDisabled guards in the handlers.
-            // Otherwise the native disabled attribute removes it from the tab
-            // order.
-            disabled={isDisabled && !showsDisabledMessage}
-            tabIndex={isDisabled && !showsDisabledMessage ? -1 : 0}
-            aria-disabled={showsDisabledMessage ? 'true' : undefined}
+            // A disabled trigger keeps its Tab stop (spec:AST-085 FR1).
+            tabIndex={0}
+            aria-disabled={isDisabled ? 'true' : undefined}
             onClick={handleClick}
             onKeyDown={handleKeyDown}
             // aria-label suppresses child content from the accessible name, so
@@ -873,7 +893,12 @@ export function FileInput({
           type="file"
           accept={accept}
           multiple={isMultiple}
-          disabled={isDisabled}
+          // Detached from its form while disabled, so selected files are not
+          // submitted and `required` does not block submission (FR3).
+          form={isDisabled ? '' : undefined}
+          // A label or description click activates this input directly; cancel
+          // it so a disabled input never opens the picker (FR2).
+          onClick={isDisabled ? event => event.preventDefault() : rest.onClick}
           onChange={handleInputChange}
           // The visually-hidden native input is never focused (tabIndex={-1});
           // its describedby/required/invalid live on the trigger button.

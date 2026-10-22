@@ -11,7 +11,7 @@
  *   top toolbar slot, configurable editable-surface minimum height, and distinct
  *   read-only and disabled states that follow prop changes, RichTextEditorProps,
  *   RichTextEditorStatus, RichTextEditorStatusType, RichTextEditorSize
- * @position Experimental (richtext) implementation; consumed by the package index.ts and
+ * @position @astryxdesign/richtext implementation; consumed by the package index.ts and
  *   re-exported from @astryxdesign/richtext. Tested by RichTextEditor.test.tsx.
  *
  * SYNC: When modified, update these files to stay in sync:
@@ -20,11 +20,8 @@
  * - /packages/richtext/src/index.ts (exports if types change)
  * - /apps/storybook/stories/RichTextEditor.stories.tsx (storybook stories)
  *
- * NOTE: This is an EXPERIMENTAL component in @astryxdesign/richtext (published only under
- * the `@canary` dist-tag, never as stable `latest`). It is the initial landing for the
- * OSS Lexical editor RFC; the goal is graduation to @astryxdesign/core after the
- * Component Specification Protocol. `lexical` and `@lexical/*` are OPTIONAL peer
- * dependencies — install them to use this component.
+ * NOTE: `lexical` and `@lexical/*` are OPTIONAL peer dependencies — install them to
+ * use this component.
  */
 
 import {
@@ -34,7 +31,6 @@ import {
   useMemo,
   useRef,
   useState,
-  forwardRef,
   type ReactNode,
   type Ref,
 } from 'react';
@@ -57,6 +53,7 @@ import {
 import type {BaseProps} from '@astryxdesign/core';
 import {useInputStatusIcon} from '@astryxdesign/core/hooks';
 import {VisuallyHidden} from '@astryxdesign/core/VisuallyHidden';
+import {useTranslator} from '@astryxdesign/core/i18n';
 import {mergeProps, themeProps, type SizeValue} from '@astryxdesign/core/utils';
 import {useSize} from '@astryxdesign/core/SizeContext';
 
@@ -81,7 +78,6 @@ import {MarkdownExtensionsPlugin} from './MarkdownExtensionsPlugin';
 import type {RichTextMarkdownExtension} from './markdownExtensions';
 import {TaskCheckboxPlugin} from './TaskCheckboxPlugin';
 import {type Transformer} from '@lexical/markdown';
-export type {Transformer} from '@lexical/markdown';
 import {$generateHtmlFromNodes} from '@lexical/html';
 import {DEFAULT_NODES} from './editorNodes';
 import {$exportMarkdownKeepingSource} from './markdownSource';
@@ -239,19 +235,12 @@ const dynamicStyles = stylex.create({
 });
 
 const editorBodySizeStyles = stylex.create({
-  sm: {},
-  md: {},
+  // Only `lg` adds block padding; `sm` and `md` take the base body spacing.
+  // An empty entry each would read as deliberate size-specific styling.
   lg: {
     paddingBlock: spacingVars['--spacing-2'],
   },
 });
-
-/**
- * Default screen-reader hint advertising the Tab escape. Overridable (or
- * suppressible) via the `tabEscapeHint` prop for localization.
- */
-const DEFAULT_TAB_ESCAPE_HINT =
-  'Press Escape then Tab to move focus out of the editor.';
 
 /**
  * Fraction of `maxLength` at which the character counter begins announcing
@@ -313,6 +302,12 @@ export interface RichTextEditorProps extends Omit<
   BaseProps,
   'onChange' | 'defaultValue'
 > {
+  /**
+   * Imperative handle for callers that manage the editor from outside. In
+   * React 19 `ref` is an ordinary prop, so it is declared here rather than
+   * supplied by a `forwardRef` wrapper.
+   */
+  ref?: Ref<RichTextEditorRef>;
   /** Label text for the editor (always rendered for accessibility). */
   label: string;
   /**
@@ -453,9 +448,9 @@ export interface RichTextEditorProps extends Omit<
    * Screen-reader hint describing how to move focus out of the editor, since
    * Tab is bound to indentation (press Escape, then Tab). Rendered visually
    * hidden and referenced from the editor's `aria-describedby`. Override it
-   * to localize the text, or pass an empty string to omit the hint entirely
+   * to change the text, or pass an empty string to omit the hint entirely
    * (e.g. when the host app provides its own instructions).
-   * @default 'Press Escape then Tab to move focus out of the editor.'
+   * @default 'Press Escape then Tab to move focus out of the editor.', translated for the active locale
    */
   tabEscapeHint?: string;
   /**
@@ -475,9 +470,8 @@ export interface RichTextEditorProps extends Omit<
 
 /**
  * A WYSIWYG rich-text editor built on Lexical, styled with Astryx design
- * tokens. Experimental — ships from `@astryxdesign/richtext` (canary). `lexical` and
- * `@lexical/*` are optional peer dependencies — install them to use this
- * component.
+ * tokens. Ships from `@astryxdesign/richtext`. `lexical` and `@lexical/*` are
+ * optional peer dependencies — install them to use this component.
  *
  * The editor is intentionally minimal and extensible: pass `toolbar`, `nodes`,
  * and `plugins` to layer richer behaviour (formatting, mentions, hover cards)
@@ -498,45 +492,43 @@ export interface RichTextEditorProps extends Omit<
  * />
  * ```
  */
-export const RichTextEditor = forwardRef<
-  RichTextEditorRef,
-  RichTextEditorProps
->(function RichTextEditor(
-  {
-    label,
-    isLabelHidden = false,
-    description,
-    isOptional = false,
-    isRequired = false,
-    defaultValue,
-    onChange,
-    placeholder,
-    isReadOnly = false,
-    isDisabled = false,
-    status,
-    statusVariant = 'attached',
-    width,
-    minHeight = '4.5rem',
-    labelTooltip,
-    size: sizeProp,
-    nodes,
-    toolbar,
-    plugins,
-    hasMarkdownShortcuts = true,
-    transformers = DEFAULT_TRANSFORMERS,
-    markdownExtensions,
-    hasAutoFocus = false,
-    tabEscapeHint = DEFAULT_TAB_ESCAPE_HINT,
-    maxLength,
-    namespace = 'astryx-editor',
-    xstyle,
-    className,
-    style,
-    ...rest
-  }: RichTextEditorProps,
-  ref: Ref<RichTextEditorRef>,
-) {
+export const RichTextEditor = function RichTextEditor({
+  label,
+  isLabelHidden = false,
+  description,
+  isOptional = false,
+  isRequired = false,
+  defaultValue,
+  onChange,
+  placeholder,
+  isReadOnly = false,
+  isDisabled = false,
+  status,
+  statusVariant = 'attached',
+  width,
+  minHeight = '4.5rem',
+  labelTooltip,
+  size: sizeProp,
+  nodes,
+  toolbar,
+  plugins,
+  hasMarkdownShortcuts = true,
+  transformers = DEFAULT_TRANSFORMERS,
+  markdownExtensions,
+  hasAutoFocus = false,
+  tabEscapeHint: tabEscapeHintFromProps,
+  maxLength,
+  namespace = 'astryx-editor',
+  xstyle,
+  className,
+  style,
+  ref,
+  ...rest
+}: RichTextEditorProps) {
   const size = useSize(sizeProp, 'md');
+  const t = useTranslator();
+  const tabEscapeHint =
+    tabEscapeHintFromProps ?? t('@astryx.richTextEditor.tabEscapeHint');
   const inputID = useId();
   const labelID = useId();
   const descriptionID = useId();
@@ -675,7 +667,7 @@ export const RichTextEditor = forwardRef<
               styles.editorBody,
               hasToolbar && styles.editorBodyWithToolbar,
               !!statusIcon && styles.editorBodyWithStatus,
-              editorBodySizeStyles[size],
+              size === 'lg' && editorBodySizeStyles.lg,
             )}>
             <div {...stylex.props(styles.editorRoot)}>
               <RichTextPlugin
@@ -764,16 +756,23 @@ export const RichTextEditor = forwardRef<
           <VisuallyHidden aria-live="polite">
             {charCount >= maxLength * COUNTER_WARNING_THRESHOLD
               ? charCount > maxLength
-                ? `${charCount - maxLength} characters over limit`
-                : `${maxLength - charCount} characters remaining`
+                ? t('@astryx.textArea.charactersOverLimit', {
+                    count: charCount - maxLength,
+                  })
+                : t('@astryx.textArea.charactersRemaining', {
+                    count: maxLength - charCount,
+                  })
               : ''}
           </VisuallyHidden>
         </div>
       )}
     </Field>
   );
-});
+};
 
+// Keeps the editor inside `@astryx/require-baseprops-passthrough`, which only
+// checks components that assign a top-level `displayName`. Without it, a
+// dropped `className`, `style` or `xstyle` on the root stops warning.
 RichTextEditor.displayName = 'RichTextEditor';
 
 /**
@@ -889,7 +888,9 @@ function EditorRefBridge({
   editable,
   transformers,
 }: {
-  editorRef: Ref<RichTextEditorRef>;
+  // Optional, matching the public `ref` prop: with `forwardRef` gone, React
+  // no longer supplies `null` when the caller passes nothing.
+  editorRef: Ref<RichTextEditorRef> | undefined;
   editable: boolean;
   transformers: Array<Transformer>;
 }): null {

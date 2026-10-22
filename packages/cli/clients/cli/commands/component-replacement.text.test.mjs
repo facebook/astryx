@@ -218,6 +218,51 @@ describe('component list text', () => {
       expect(run.stdout).toContain('AcmeSideNav');
     },
   );
+
+  it('prints only the requested category at full detail', async () => {
+    const layout = await runCli(
+      ['component', '--list', '--category', 'Layout', '--detail', 'full'],
+      {cwd: tmpDir},
+    );
+    expect(layout.status, layout.stderr).toBe(0);
+    expect(layout.stdout.match(/^## .+$/gm)).toEqual(['## Layout']);
+    expect(layout.stdout).not.toContain('@astryxdesign/core/SideNav');
+    expect(layout.stdout).not.toContain('AcmeSideNav');
+
+    const navigation = await runCli(
+      ['component', '--list', '--category', 'Navigation', '--detail', 'full'],
+      {cwd: tmpDir},
+    );
+    expect(navigation.status, navigation.stderr).toBe(0);
+    expect(navigation.stdout.match(/^## .+$/gm)).toEqual(['## Navigation']);
+    expect(navigation.stdout).toMatch(
+      /^AcmeSideNav {2}<- from '@acme\/nav\/components\/AcmeSideNav' {2}\[@acme\/nav\]$/m,
+    );
+    expect(navigation.stdout).not.toMatch(/^SideNav[( ]/m);
+  });
+
+  it.each(['brief', 'compact'])(
+    'prints only the requested category at %s detail',
+    async detail => {
+      const layout = await runCli(
+        ['component', '--category', 'Layout', '--detail', detail],
+        {cwd: tmpDir},
+      );
+      expect(layout.status, layout.stderr).toBe(0);
+      expect(layout.stdout).not.toContain('@astryxdesign/core/SideNav');
+      expect(layout.stdout).not.toContain('AcmeSideNav');
+
+      const navigation = await runCli(
+        ['component', '--category', 'Navigation', '--detail', detail],
+        {cwd: tmpDir},
+      );
+      expect(navigation.status, navigation.stderr).toBe(0);
+      expect(navigation.stdout).toContain(
+        '@acme/nav/components/AcmeSideNav  [@acme/nav]',
+      );
+      expect(navigation.stdout).not.toMatch(/^name: +SideNav$/m);
+    },
+  );
 });
 
 describe('help documents the replacement', () => {

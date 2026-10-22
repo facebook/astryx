@@ -70,9 +70,11 @@ those contracts.
   minimal rendering key or own the node through a ref.
 - **INV2 — Discrete intent stays discrete.** Work caused by one user or imperative
   action MUST NOT be deferred to an Effect when the originating handler can perform
-  it. Using the same state for rendered output does not make an Effect-owned copy of
-  the action valid. Deferral MUST NOT delay, repeat, or couple the action to
-  unrelated rendering.
+  it, including calling a consumer callback such as `onChange`, `onOpenChange`, or
+  `onSave`: the callback fires from the handler that caused the change, never from
+  an Effect reacting to the resulting state. Using the same state for rendered
+  output does not make an Effect-owned copy of the action valid. Deferral MUST NOT
+  delay, repeat, or couple the action to unrelated rendering.
 - **INV3 — Effects synchronize external systems.** A new or changed Effect MUST
   name the external system it synchronizes. When setup acquires, installs, or
   starts a resource, cleanup MUST release that resource. Synchronization that

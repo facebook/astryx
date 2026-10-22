@@ -34,11 +34,14 @@ presets beside that calendar.
 
 ## Compatibility and migration
 
-- Released default preserved: `yes`
-- Compatibility class: additive theme targets plus corrected preset constraint
-  enforcement; default appearance, DOM semantics, and public props remain unchanged
+- Released default preserved: `yes`; canonical DateRangeInput behavior is unchanged
+- 0.7.0 removes the `date-range-input-clear-icon` alias; the shared clear glyph
+  remains available through `input-clear-icon`
+- The preset constraint correction remains unchanged
 - Controlled/uncontrolled behavior: unchanged; DateRangeInput remains controlled
-- Migration decision: none
+- Migration decision: replace the removed theme key and CSS class with
+  `input-clear-icon` and `.astryx-input-clear-icon`, or run
+  `astryx upgrade --from 0.6.3 --apply --path .`
 
 Consumer migration instructions belong in consumer docs and release notes.
 
@@ -87,12 +90,12 @@ preset-list anatomy and its additive theming surface.
 
 ### Representative states
 
-| State             | Required invariant                                                                                                                          | Allowed variation       |
-| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------- |
-| No presets        | No preset group or preset-button target renders.                                                                                            | Calendar configuration  |
-| Presets, no match | Every button carries the preset target with no selected state.                                                                              | Preset count and labels |
-| Applied preset    | The matching button carries `aria-current="true"` and the target's selected state.                                                          | Selected range          |
-| Disabled preset   | A preset that violates an endpoint date constraint or a range-span constraint is natively disabled and carries the target's disabled state. | Constraint source       |
+| State             | Required invariant                                                                                                                                    | Allowed variation       |
+| ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------- |
+| No presets        | No preset group or preset-button target renders.                                                                                                      | Calendar configuration  |
+| Presets, no match | Every button carries the preset target with no selected state.                                                                                        | Preset count and labels |
+| Applied preset    | The matching button carries `aria-current="true"` and the target's selected state.                                                                    | Selected range          |
+| Disabled preset   | A preset that violates an endpoint date constraint or a range-span constraint is disabled per `spec:AST-085` and carries the target's disabled state. | Constraint source       |
 
 ### Transformation and precedence order
 
@@ -117,8 +120,8 @@ No new performance or resource constraint is introduced.
 - **AR2 — Current state.** The applied preset remains exposed with
   `aria-current="true"`; theme state reflection is additive.
 - **AR3 — Disabled state.** A preset that violates an endpoint date constraint or
-  a range-span constraint remains natively disabled; theme state reflection does
-  not replace that behavior.
+  a range-span constraint is disabled and stays focusable (`spec:AST-085`); theme
+  state reflection does not replace that behavior.
 
 ## Design relationships
 
@@ -159,9 +162,6 @@ No new performance or resource constraint is introduced.
 }
 ```
 
-The deprecated `date-range-input-clear-icon` alias remains compatibility metadata;
-the shared `input-clear-icon` target owns the current glyph contract.
-
 ## Family and system relationships
 
 - `family:input-fields` owns field sizing, status placement, loading, disabled
@@ -172,11 +172,11 @@ the shared `input-clear-icon` target owns the current glyph contract.
 
 ## Verification map
 
-| Contract            | Verification                                                               | Representative states                                                  | Mutation or failure expectation                                             | Audit section                  |
-| ------------------- | -------------------------------------------------------------------------- | ---------------------------------------------------------------------- | --------------------------------------------------------------------------- | ------------------------------ |
-| FR1, FR2, AR1–AR3   | `DateRangeInput.test.tsx`                                                  | no match, applied preset, endpoint-invalid preset, span-invalid preset | Semantics or state attributes disappear                                     | `audit:DateRangeInput/presets` |
-| FR3, FR4            | `DateRangeInput.test.tsx`, `themingTargets.test.ts`, generated probe theme | group target, selected button, disabled button                         | Target class/state is missing, undocumented, or placed on the wrong element | `audit:DateRangeInput/theming` |
-| Theming anatomy map | `scripts/check-knowledge.mjs`                                              | all documented anatomy                                                 | Target ownership or anatomy names drift                                     | `audit:DateRangeInput/theming` |
+| Contract            | Verification                                                                      | Representative states                                                  | Mutation or failure expectation                                             | Audit section                  |
+| ------------------- | --------------------------------------------------------------------------------- | ---------------------------------------------------------------------- | --------------------------------------------------------------------------- | ------------------------------ |
+| FR1, FR2, AR1–AR3   | `DateRangeInput.test.tsx`; disabled-preset focusability (AR3) pending conformance | no match, applied preset, endpoint-invalid preset, span-invalid preset | Semantics or state attributes disappear                                     | `audit:DateRangeInput/presets` |
+| FR3, FR4            | `DateRangeInput.test.tsx`, `themingTargets.test.ts`, generated probe theme        | group target, selected button, disabled button                         | Target class/state is missing, undocumented, or placed on the wrong element | `audit:DateRangeInput/theming` |
+| Theming anatomy map | `scripts/check-knowledge.mjs`                                                     | all documented anatomy                                                 | Target ownership or anatomy names drift                                     | `audit:DateRangeInput/theming` |
 
 ## Decision log
 

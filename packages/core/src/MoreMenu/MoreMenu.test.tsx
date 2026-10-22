@@ -9,11 +9,15 @@
  * SYNC: When MoreMenu.tsx changes, update tests to match new behavior
  */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
+import {describe, it, expect, vi, beforeAll, beforeEach} from 'vitest';
 import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {MoreMenu} from './MoreMenu';
 import {DropdownMenu} from '../DropdownMenu/DropdownMenu';
+import {warmMenuBottomSheet} from '../DropdownMenu/__tests__/warmMenuBottomSheet';
+
+// DropdownMenu's touch sheet is loaded lazily; resolve it once up front.
+beforeAll(warmMenuBottomSheet, 20000);
 
 // Mock showPopover and hidePopover methods since they're not implemented in jsdom
 beforeEach(() => {
@@ -157,6 +161,44 @@ describe('MoreMenu', () => {
     // Button uses aria-disabled (not native disabled) to keep
     // the button focusable for tooltip access
     expect(button).toHaveAttribute('aria-disabled', 'true');
+  });
+
+  it('keeps the menu closed from every opening key and press while disabled', async () => {
+    const user = userEvent.setup();
+    render(<MoreMenu items={defaultItems} isDisabled />);
+    const button = screen.getByRole('button', {name: 'More options'});
+    button.focus();
+    for (const key of ['{Enter}', ' ', '{ArrowDown}', '{ArrowUp}']) {
+      await user.keyboard(key);
+      expect(button).toHaveAttribute('aria-expanded', 'false');
+    }
+    await user.pointer([
+      {keys: '[MouseLeft>]', target: button},
+      {keys: '[/MouseLeft]'},
+    ]);
+    expect(button).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('does not carry a refused ArrowUp into a later open', async () => {
+    const user = userEvent.setup();
+    const {rerender} = render(<MoreMenu items={defaultItems} isDisabled />);
+    const button = screen.getByRole('button', {name: 'More options'});
+    button.focus();
+    await user.keyboard('{ArrowUp}');
+    expect(button).toHaveAttribute('aria-expanded', 'false');
+
+    // Enabled again, a synthesized click (detail 0: screen-reader activation)
+    // opens on the FIRST row; the refused ArrowUp must not have armed "last".
+    rerender(<MoreMenu items={defaultItems} />);
+    fireEvent.click(button, {detail: 0});
+    await waitFor(() => {
+      expect(button).toHaveAttribute('aria-expanded', 'true');
+    });
+    await waitFor(() => {
+      expect(
+        screen.getByRole('menuitem', {name: 'Edit', hidden: true}),
+      ).toHaveFocus();
+    });
   });
 
   it('supports custom label', () => {

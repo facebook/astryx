@@ -152,7 +152,7 @@ describe('ChatSystemMessage', () => {
     expect(root).toContainElement(screen.getByRole('separator'));
   });
 
-  it('records Divider numeric-zero output for the shared FR15 advisory', () => {
+  it('keeps the numeric-zero label visible and names the shared divider', () => {
     render(
       <ChatSystemMessage variant="divider" data-testid="divider-zero">
         {0}
@@ -160,8 +160,8 @@ describe('ChatSystemMessage', () => {
     );
     const root = screen.getByTestId('divider-zero');
     const separator = screen.getByRole('separator');
-    expect(root).toHaveTextContent('00');
-    expect(separator).not.toHaveAccessibleName();
-    expect(separator).not.toHaveAttribute('aria-labelledby');
+    expect(root).toHaveTextContent(/^0$/);
+    expect(separator).toHaveAccessibleName('0');
+    expect(separator).toHaveAttribute('aria-labelledby');
   });
 });

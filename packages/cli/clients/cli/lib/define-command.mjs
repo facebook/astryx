@@ -122,6 +122,10 @@ export function defineCommand(parent, doc, {fn, action} = {}) {
   const cmd = parent.command(argSpec ? `${token} ${argSpec}` : token);
   Object.defineProperty(cmd, COMMAND_DOCS, {value: {doc, fn}, configurable: true});
   if (doc.summary) cmd.description(doc.summary);
+  if (doc.deprecated) {
+    const base = cmd.description() || '';
+    cmd.description(`${base} [DEPRECATED: ${doc.deprecated}]`);
+  }
 
   const paramDesc = (/** @type {string | undefined} */ name) =>
     (fn?.params ?? []).find(p => p.name === name)?.description ?? '';
@@ -176,8 +180,8 @@ export function defineCommand(parent, doc, {fn, action} = {}) {
  */
 export function addDocHelp(cmd, doc) {
   addExitCodesHelp(cmd, doc.exitCodes);
-  // Rendered when help is shown, so the run prefix (npx astryx, pnpm astryx,
-  // ...) is looked up then, not on every start.
+  // Rendered when help is shown, so the run prefix (pnpm exec astryx, yarn
+  // astryx, ...) is looked up then, not on every start.
   cmd.addHelpText('after', () => {
     const examples = (doc.examples ?? []).flatMap(({label, cli}) => [
       ...(label ? [`  # ${label}`] : []),

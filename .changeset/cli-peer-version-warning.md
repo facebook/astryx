@@ -2,13 +2,6 @@
 '@astryxdesign/cli': patch
 ---
 
-[fix] Warn when an installed integration needs a newer CLI.
+[fix] The CLI now warns when a project's integration declares an `@astryxdesign/cli` peer range the running CLI is outside of. `astryx doctor` and `astryx doctor integration validate` report a `cli_peer_version` warning naming the package, the range and the running version, and everyday commands print the one-line integration nudge for that package. Below the range the warning gives the project's install command for a newer CLI; above it, it asks for a release of the package that supports this CLI. Exit codes do not change.
 
 @josephfarina
-
-When an integration declares `@astryxdesign/cli` in peerDependencies and
-the running CLI is outside that range, the CLI now warns once per package in
-`astryx doctor` and in the stderr nudge on everyday commands (component,
-discover, docs, search, template, theme). The warning names the package, the
-required range, the running version, and the upgrade command. No exit-code
-change.

@@ -195,21 +195,15 @@ export function CheckboxIndicator({
       ref={ref}
       aria-hidden="true"
       {...mergeProps(
-        themeProps(
-          'checkbox-indicator',
-          {
-            size,
-            checked: isChecked
-              ? 'checked'
-              : isIndeterminate
-                ? 'indeterminate'
-                : null,
-            disabled: isDisabled ? 'disabled' : null,
-          },
-          // `checkbox` was the target before indicators existed; keep it
-          // emitted so existing themes continue to work.
-          {legacyNames: ['checkbox']},
-        ),
+        themeProps('checkbox-indicator', {
+          size,
+          checked: isChecked
+            ? 'checked'
+            : isIndeterminate
+              ? 'indeterminate'
+              : null,
+          disabled: isDisabled ? 'disabled' : null,
+        }),
         stylex.props(
           styles.box,
           boxSizeStyles[size],

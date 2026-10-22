@@ -33,6 +33,8 @@ async function runSignal({
   backfill = false,
   helperMissing = false,
   reviews = [],
+  reviewApp = '',
+  permission = 'write',
 } = {}) {
   const pr = {
     number: 42,
@@ -84,7 +86,14 @@ async function runSignal({
         listReviews: async () => ({data: reviews}),
         requestReviewers: mutations.requestReviewers,
       },
-      repos: {getContent, createCommitStatus: mutations.createCommitStatus},
+      repos: {
+        getContent,
+        createCommitStatus: mutations.createCommitStatus,
+        getCollaboratorPermissionLevel: vi.fn(async () => {
+          if (permission instanceof Error) throw permission;
+          return {data: {permission}};
+        }),
+      },
       issues: {
         addLabels: mutations.addLabels,
         removeLabel: mutations.removeLabel,
@@ -121,6 +130,7 @@ async function runSignal({
         ...parsed.env,
         ENG_OWNERS: '@engineer',
         DESIGN_OWNERS: '@designer',
+        REVIEW_APP: reviewApp,
       },
     },
     Buffer,
@@ -331,5 +341,110 @@ describe('review-signal appearance-only contract', () => {
     expect(workflow).toContain(
       'Content-based visual classification failed closed',
     );
+  });
+});
+
+describe('review-signal review-app approval for write-access authors', () => {
+  const APP = 'review-app[bot]';
+  const appReview = (state, commitId = HEAD) => ({
+    user: {login: APP, type: 'Bot'},
+    state,
+    commit_id: commitId,
+  });
+  const gateStatus = mutations =>
+    mutations.createCommitStatus.mock.calls.map(([input]) => ({
+      state: input.state,
+      description: input.description,
+    }));
+
+  it('clears a write-access author whose exact head the app approved', async () => {
+    const {mutations, github} = await runSignal({
+      eventName: 'pull_request_target',
+      reviews: [appReview('APPROVED')],
+      reviewApp: APP,
+    });
+
+    expect(
+      github.rest.repos.getCollaboratorPermissionLevel,
+    ).toHaveBeenCalledWith({
+      owner: 'facebook',
+      repo: 'astryx',
+      username: 'contributor',
+    });
+    expect(gateStatus(mutations)).toEqual([
+      {
+        state: 'success',
+        description:
+          'Cleared by review-app approval for a write-access author.',
+      },
+    ]);
+  });
+
+  it('keeps the gate pending when the latest exact-head app verdict requests changes', async () => {
+    const {mutations} = await runSignal({
+      eventName: 'pull_request_target',
+      reviews: [appReview('APPROVED'), appReview('CHANGES_REQUESTED')],
+      reviewApp: APP,
+    });
+
+    expect(gateStatus(mutations)).toEqual([
+      expect.objectContaining({state: 'pending'}),
+    ]);
+  });
+
+  it('keeps a no-write author (including a fork author) waiting on an engineering owner', async () => {
+    const {mutations} = await runSignal({
+      eventName: 'pull_request_target',
+      reviews: [appReview('APPROVED')],
+      reviewApp: APP,
+      permission: 'read',
+    });
+
+    expect(gateStatus(mutations)).toEqual([
+      expect.objectContaining({state: 'pending'}),
+    ]);
+  });
+
+  it('gates a pushed head until the app approves that head', async () => {
+    const OLD_HEAD = '4'.repeat(40);
+    const {mutations} = await runSignal({
+      eventName: 'pull_request_target',
+      reviews: [appReview('APPROVED', OLD_HEAD)],
+      reviewApp: APP,
+    });
+
+    expect(gateStatus(mutations)).toEqual([
+      expect.objectContaining({state: 'pending'}),
+    ]);
+  });
+
+  it('fails closed to the engineering-owner path when permission cannot be read', async () => {
+    const {mutations, core} = await runSignal({
+      eventName: 'pull_request_target',
+      reviews: [appReview('APPROVED')],
+      reviewApp: APP,
+      permission: new Error('503'),
+    });
+
+    expect(gateStatus(mutations)).toEqual([
+      expect.objectContaining({state: 'pending'}),
+    ]);
+    expect(core.warning).toHaveBeenCalledWith(
+      expect.stringContaining('Could not read author permission'),
+    );
+  });
+
+  it('does not read permission or count the app when REVIEW_APP is unset', async () => {
+    const {mutations, github} = await runSignal({
+      eventName: 'pull_request_target',
+      reviews: [appReview('APPROVED')],
+    });
+
+    expect(
+      github.rest.repos.getCollaboratorPermissionLevel,
+    ).not.toHaveBeenCalled();
+    expect(gateStatus(mutations)).toEqual([
+      expect.objectContaining({state: 'pending'}),
+    ]);
   });
 });

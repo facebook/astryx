@@ -34,11 +34,14 @@ import {
 } from '../theme/tokens.stylex';
 import {mergeProps} from '../utils';
 import {useClipboard} from '../hooks/useClipboard';
+import {useScrollableArea} from '../hooks/useScrollableArea';
 import {Icon} from '../Icon';
 import {IconButton} from '../IconButton';
+import type {DiffLineKind} from './tokenizer';
 import {
   tokenize,
   tokenizeAsync,
+  splitDiffLines,
   flatTokensToLines,
   SYNC_TOKENIZE_THRESHOLD,
 } from './tokenizer';
@@ -117,6 +120,13 @@ const styles = stylex.create({
     backgroundColor: 'var(--color-syntax-background)',
     overflow: 'hidden',
   },
+  // The viewport is a flex item of the column root. Its implied min-height
+  // would be its content while it fits (the shared capability keeps it
+  // `overflow: clip` then), so a root sized from outside could never make it
+  // shrink and scroll; 0 lets the root's bound reach it.
+  viewport: {
+    minHeight: 0,
+  },
   headerRow: {
     display: 'flex',
     alignItems: 'center',
@@ -159,10 +169,6 @@ const styles = stylex.create({
     color: 'var(--color-syntax-comment)',
     margin: 0,
     lineHeight: typeScaleVars['--text-supporting-leading'],
-  },
-  scrollContainer: {
-    overflowX: 'auto',
-    overflowY: 'auto',
   },
   codeWrapper: {
     display: 'flex',
@@ -228,6 +234,10 @@ const styles = stylex.create({
   code: {
     display: 'block',
     flex: 1,
+    // The block grows to its longest line, so a row's paint (diff tint,
+    // highlightLines) spans the full scroll width instead of stopping at the
+    // viewport edge when the reader scrolls a long line.
+    minWidth: 'max-content',
     paddingBlock: spacingVars['--spacing-3'],
     paddingInline: spacingVars['--spacing-4'],
     margin: 0,
@@ -239,6 +249,8 @@ const styles = stylex.create({
     overflowWrap: 'normal',
   },
   codeWrapped: {
+    // Wrapped lines never overflow, and max-content would stop them wrapping.
+    minWidth: 'auto',
     whiteSpace: 'pre-wrap',
     wordBreak: 'break-all',
     overflowWrap: 'break-word',
@@ -298,6 +310,75 @@ const styles = stylex.create({
     marginInline: `calc(-1 * ${spacingVars['--spacing-4']})`,
     paddingInline: spacingVars['--spacing-4'],
   },
+  // Diff change rows: the whole row is tinted so added and removed lines read
+  // at a glance; the text keeps its ordinary colour, which stays readable on
+  // the tint where the semantic text colours would not, and the leading +/-
+  // glyph stays in the text as the cue that needs no colour. A caller's
+  // highlightLines row is declared after these and keeps its background.
+  // A changed row's margin reads the change: the tint runs under the gutter
+  // cell too (the row spans the full width), and the line number and the
+  // glyph take the row's marker slot. The code — tokens and plain runs alike
+  // — keeps the syntax theme's colours, so an identifier looks the same on a
+  // changed row as on a context row.
+  lineAdded: {
+    backgroundColor: 'var(--color-syntax-added)',
+    marginInline: `calc(-1 * ${spacingVars['--spacing-4']})`,
+    paddingInline: spacingVars['--spacing-4'],
+    '::before': {color: 'var(--color-syntax-added-marker)'},
+  },
+  lineRemoved: {
+    backgroundColor: 'var(--color-syntax-removed)',
+    marginInline: `calc(-1 * ${spacingVars['--spacing-4']})`,
+    paddingInline: spacingVars['--spacing-4'],
+    '::before': {color: 'var(--color-syntax-removed-marker)'},
+  },
+  // Hunk and file headers stay visible but quiet: a muted row with secondary
+  // text, never change paint.
+  lineDiffHeader: {
+    backgroundColor: 'var(--color-syntax-diff-header)',
+    // The syntax theme's own secondary colour: text-secondary in the default
+    // theme, the theme's punctuation colour in a defined one.
+    color: 'var(--color-syntax-punctuation)',
+    marginInline: `calc(-1 * ${spacingVars['--spacing-4']})`,
+    paddingInline: spacingVars['--spacing-4'],
+  },
+  // The glyph column: the +, - or space of every line sits in its own track
+  // before the code, so the code column starts at the same inline offset on
+  // every line and the content's indentation reads exactly as written. The
+  // glyph is laid out as text but not selectable; the copy button still
+  // copies the original source with its glyphs.
+  lineDiff: {
+    display: 'grid',
+    gridTemplateColumns: '1ch 1fr',
+    columnGap: spacingVars['--spacing-2'],
+  },
+  // With line numbers the gutter's gap (which the full-height divider sits
+  // in) has to stay between the number and the marker, so the grid has no
+  // gap of its own and the marker carries both gaps as margins.
+  lineDiffNumbered: {
+    // `auto`, not `1ch`: the marker's gap margins have to widen its track.
+    gridTemplateColumns: 'var(--_codeblock-gutter-width) auto 1fr',
+    columnGap: 0,
+  },
+  // The glyph is the source's own text: read by assistive technology, kept
+  // out of a drag selection (copy returns the exact source anyway).
+  diffMarker: {
+    color: colorVars['--color-text-secondary'],
+    userSelect: 'none',
+    whiteSpace: 'pre',
+  },
+  diffMarkerNumbered: {
+    marginInlineStart: `calc(${spacingVars['--spacing-3']} + ${borderVars['--border-width']} + ${spacingVars['--spacing-4']})`,
+    marginInlineEnd: spacingVars['--spacing-2'],
+  },
+  // On a tinted row the glyph is the cue a reader without colour depends on,
+  // so it takes the row's marker slot like the line number does.
+  diffMarkerAdded: {
+    color: 'var(--color-syntax-added-marker)',
+  },
+  diffMarkerRemoved: {
+    color: 'var(--color-syntax-removed-marker)',
+  },
   sizeSm: {
     fontSize: typeScaleVars['--text-supporting-size'],
   },
@@ -308,7 +389,7 @@ const styles = stylex.create({
     // The copy control is a ghost IconButton (Button owns its own padding,
     // radius, and hover surface); this only tints the resting glyph to the
     // muted syntax-comment colour so it blends into the header/corner. A theme
-    // reaches it via the `codeblock-copy-button` target on the Button.
+    // reaches it via the `code-block-copy-button` target on the Button.
     color: 'var(--color-syntax-comment)',
   },
   copyButtonAbsolute: {
@@ -332,12 +413,14 @@ const CodeChunk = React.memo(function CodeChunk({
   lines,
   startIndex,
   highlightSet,
+  diffKinds,
   renderLineContent,
   lineNumbers,
 }: {
   lines: string[];
   startIndex: number;
   highlightSet: Set<number> | null;
+  diffKinds: ReadonlyArray<DiffLineKind> | null;
   renderLineContent: (line: string, lineIndex: number) => React.ReactNode;
   lineNumbers: boolean;
 }) {
@@ -345,13 +428,22 @@ const CodeChunk = React.memo(function CodeChunk({
     <>
       {lines.map((line, j) => {
         const i = startIndex + j;
+        const diffKind = diffKinds?.[i];
         return (
           <div
             key={i}
             data-line={i + 1}
+            data-diff={diffKind === 'context' ? undefined : diffKind}
             {...stylex.props(
               styles.line,
               lineNumbers && styles.lineNumbered,
+              diffKinds != null && styles.lineDiff,
+              diffKinds != null && lineNumbers && styles.lineDiffNumbered,
+              diffKind === 'added' && styles.lineAdded,
+              diffKind === 'removed' && styles.lineRemoved,
+              diffKind === 'header' && styles.lineDiffHeader,
+              // Last on purpose: a highlight replaces a diff tint rather than
+              // stacking on it, so tokens keep their single-paint contrast.
               (highlightSet?.has(i + 1) ?? false) && styles.lineHighlighted,
             )}>
             {renderLineContent(line, i)}
@@ -365,6 +457,7 @@ const CodeChunk = React.memo(function CodeChunk({
 function renderLines(
   lines: string[],
   highlightSet: Set<number> | null,
+  diffKinds: ReadonlyArray<DiffLineKind> | null,
   renderLineContent: (line: string, lineIndex: number) => React.ReactNode,
   lineNumbers: boolean,
   chunkSize: number = LINE_CHUNK_SIZE,
@@ -377,6 +470,7 @@ function renderLines(
         lines={lines}
         startIndex={0}
         highlightSet={highlightSet}
+        diffKinds={diffKinds}
         renderLineContent={renderLineContent}
         lineNumbers={lineNumbers}
       />
@@ -399,6 +493,7 @@ function renderLines(
           lines={chunkLines}
           startIndex={start}
           highlightSet={highlightSet}
+          diffKinds={diffKinds}
           renderLineContent={renderLineContent}
           lineNumbers={lineNumbers}
         />
@@ -420,6 +515,15 @@ export interface CodeBlockProps extends BaseProps<HTMLPreElement> {
   hasLanguageLabel?: boolean;
   hasLineNumbers?: boolean;
   highlightLines?: number[];
+  /**
+   * Render the code as a unified diff over `language`: lines starting with
+   * `+` are added, `-` removed, `@@` is a hunk header (a `--- `/`+++ ` pair
+   * directly before one is a file header), anything else is context; the
+   * label reads `diff` or `<language> diff`. The glyph sits in its own column and the rest of every line
+   * keeps the language's syntax highlighting. Copy still returns the exact
+   * source, glyphs included.
+   */
+  isDiff?: boolean;
   hasCopyButton?: boolean;
   onCopy?: () => void;
   isWrapped?: boolean;
@@ -594,6 +698,8 @@ function SpanCodeContent({
   lines,
   tokenLines,
   highlightSet,
+  diffKinds,
+  diff,
   isWrapped,
   sizeStyle,
   hasLineNumbers,
@@ -602,6 +708,8 @@ function SpanCodeContent({
   lines: string[];
   tokenLines: TokenLine[];
   highlightSet: Set<number> | null;
+  diffKinds: ReadonlyArray<DiffLineKind> | null;
+  diff: ReturnType<typeof splitDiffLines> | null;
   isWrapped: boolean;
   sizeStyle: stylex.StyleXStyles;
   hasLineNumbers: boolean;
@@ -614,6 +722,31 @@ function SpanCodeContent({
   const renderLineContent = useCallback(
     (line: string, lineIndex: number): React.ReactNode => {
       const tokens = tokenLines[lineIndex] ?? [];
+      if (diff) {
+        // Header rows show their raw text; every other row shows its glyph in
+        // the marker column and the base-language tokens of the rest.
+        const kind = diff.kinds[lineIndex];
+        const content = kind === 'header' ? line : diff.content[lineIndex];
+        return (
+          <>
+            <span
+              data-diff-marker=""
+              {...stylex.props(
+                styles.diffMarker,
+                hasLineNumbers && styles.diffMarkerNumbered,
+                kind === 'added' && styles.diffMarkerAdded,
+                kind === 'removed' && styles.diffMarkerRemoved,
+              )}>
+              {diff.glyphs[lineIndex] || ' '}
+            </span>
+            <span {...stylex.props(styles.lineContent)}>
+              {kind === 'header'
+                ? content || '\u200b'
+                : buildSpanLine(content, tokens)}
+            </span>
+          </>
+        );
+      }
       // Wrap tokens in a single element so they occupy one grid cell when line
       // numbers are on (see `lineNumbered`); an inline span is a no-op when off.
       return (
@@ -622,7 +755,7 @@ function SpanCodeContent({
         </span>
       );
     },
-    [tokenLines],
+    [tokenLines, diff, hasLineNumbers],
   );
 
   return (
@@ -634,7 +767,13 @@ function SpanCodeContent({
         hasLineNumbers && styles.codeNumbered,
         hasLineNumbers && dynamicStyles.gutterWidth(maxDigits),
       )}>
-      {renderLines(lines, highlightSet, renderLineContent, hasLineNumbers)}
+      {renderLines(
+        lines,
+        highlightSet,
+        diffKinds,
+        renderLineContent,
+        hasLineNumbers,
+      )}
     </code>
   );
 }
@@ -647,6 +786,7 @@ function RangeCodeContent({
   lines,
   tokenLines,
   highlightSet,
+  diffKinds,
   isWrapped,
   sizeStyle,
   hasLineNumbers,
@@ -655,6 +795,7 @@ function RangeCodeContent({
   lines: string[];
   tokenLines: TokenLine[];
   highlightSet: Set<number> | null;
+  diffKinds: ReadonlyArray<DiffLineKind> | null;
   isWrapped: boolean;
   sizeStyle: stylex.StyleXStyles;
   hasLineNumbers: boolean;
@@ -694,7 +835,13 @@ function RangeCodeContent({
         hasLineNumbers && styles.codeNumbered,
         hasLineNumbers && dynamicStyles.gutterWidth(maxDigits),
       )}>
-      {renderLines(lines, highlightSet, renderLineContent, hasLineNumbers)}
+      {renderLines(
+        lines,
+        highlightSet,
+        diffKinds,
+        renderLineContent,
+        hasLineNumbers,
+      )}
     </code>
   );
 }
@@ -719,6 +866,7 @@ export function CodeBlock({
   hasLanguageLabel = true,
   hasLineNumbers = false,
   highlightLines,
+  isDiff = false,
   hasCopyButton = true,
   onCopy,
   isWrapped = false,
@@ -746,6 +894,7 @@ export function CodeBlock({
   });
 
   const useSpans =
+    isDiff ||
     highlightMode === 'spans' ||
     (highlightMode === 'auto' && !hasHighlightAPI()) ||
     (highlightMode === 'auto' && isSafari());
@@ -758,8 +907,19 @@ export function CodeBlock({
     return l;
   }, [code]);
 
-  const tokenLines = useTokenLines(code, language, customTokenizer);
-
+  // In diff mode the base language sees the code with the glyph column set
+  // aside, so a `tsx` diff still highlights as `tsx` on every line; headers
+  // contribute an empty line and are rendered as their raw text.
+  const diff = useMemo(
+    () => (isDiff ? splitDiffLines(lines) : null),
+    [isDiff, lines],
+  );
+  const tokenLines = useTokenLines(
+    diff ? diff.content.join('\n') : code,
+    language,
+    customTokenizer,
+  );
+  const diffKinds = diff?.kinds ?? null;
   const highlightSet = useMemo(
     () => (highlightLines ? new Set(highlightLines) : null),
     [highlightLines],
@@ -775,8 +935,18 @@ export function CodeBlock({
   const sizeStyle = size === 'sm' ? styles.sizeSm : styles.sizeMd;
   // Digits in the largest line number — sizes the gutter column width.
   const maxLineDigits = String(lines.length).length;
-  const languageLabel =
-    hasLanguageLabel && language !== 'plaintext' ? language : null;
+  // With the diff layer on, the label and viewport name say so: `diff` over
+  // plaintext, `tsx diff` over a language — so a diff keeps its header,
+  // collapse control, and a name that still matches a `diff` fence.
+  const languageLabel = !hasLanguageLabel
+    ? null
+    : isDiff
+      ? language === 'plaintext'
+        ? 'diff'
+        : `${language} diff`
+      : language !== 'plaintext'
+        ? language
+        : null;
   const showHeader = title != null || languageLabel != null;
 
   // A collapsed body must never outlive the visible header that controls it.
@@ -800,7 +970,19 @@ export function CodeBlock({
   // this is always a resolvable reference — aria-controls can be unconditional.
   const regionId = useId();
 
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  // The code viewport enters the Tab order only while its content actually
+  // overflows (AST-025 FR12–FR13): the shared scroll capability measures
+  // both axes, keeps focus where it is when overflow goes away, and owns the
+  // overflow declarations. role="group" (not "region") so several code
+  // blocks on a page don't create duplicate same-named landmarks.
+  const {getViewportProps, getContentProps} = useScrollableArea({
+    axis: 'both',
+    keyboardAccess: {
+      owner: 'viewport',
+      role: 'group',
+      label: languageLabel ?? t('@astryx.codeBlock.code'),
+    },
+  });
   const scrollStyle: CSSProperties | undefined =
     maxHeight != null
       ? {
@@ -828,20 +1010,14 @@ export function CodeBlock({
         void handleCopy();
       }}
       xstyle={[styles.copyButton, !showHeader && styles.copyButtonAbsolute]}
-      {...themeProps('code-block-copy-button', undefined, {
-        legacyNames: ['codeblock-copy-button'],
-      })}
+      {...themeProps('code-block-copy-button')}
     />
   ) : null;
 
   const headerEl = showHeader ? (
     <div
       {...mergeProps(
-        themeProps(
-          'code-block-header',
-          {size, language, container},
-          {legacyNames: ['codeblock-header']},
-        ),
+        themeProps('code-block-header', {size, language, container}),
         stylex.props(
           styles.headerRow,
           hasLineNumbers ? styles.headerWithDivider : styles.headerCompact,
@@ -874,11 +1050,7 @@ export function CodeBlock({
         )}>
         <span
           {...mergeProps(
-            themeProps(
-              'code-block-title',
-              {size, language},
-              {legacyNames: ['codeblock-title']},
-            ),
+            themeProps('code-block-title', {size, language}),
             stylex.props(styles.headerTitle),
           )}>
           {canCollapse && (
@@ -905,27 +1077,24 @@ export function CodeBlock({
 
   const codeBody = (
     <div
-      ref={scrollContainerRef}
-      // The scroll container is keyboard-focusable so keyboard users can
-      // scroll long or wide code that overflows the viewport. Uses
-      // role="group" (not "region") so multiple code blocks on a page don't
-      // create duplicate same-named landmarks (axe: landmark-unique).
-      tabIndex={0}
-      role="group"
-      aria-label={languageLabel ?? t('@astryx.codeBlock.code')}
-      {...mergeProps(stylex.props(styles.scrollContainer), {
+      {...getViewportProps<HTMLDivElement>({
+        ...stylex.props(styles.viewport),
         style: scrollStyle,
       })}>
       <div
-        {...stylex.props(
-          styles.codeWrapper,
-          showHeader && !hasLineNumbers && styles.codeWrapperCompact,
+        {...getContentProps<HTMLDivElement>(
+          stylex.props(
+            styles.codeWrapper,
+            showHeader && !hasLineNumbers && styles.codeWrapperCompact,
+          ),
         )}>
         {useSpans ? (
           <SpanCodeContent
             lines={lines}
             tokenLines={tokenLines}
             highlightSet={highlightSet}
+            diffKinds={diffKinds}
+            diff={diff}
             isWrapped={isWrapped}
             sizeStyle={sizeStyle}
             hasLineNumbers={hasLineNumbers}
@@ -936,6 +1105,7 @@ export function CodeBlock({
             lines={lines}
             tokenLines={tokenLines}
             highlightSet={highlightSet}
+            diffKinds={diffKinds}
             isWrapped={isWrapped}
             sizeStyle={sizeStyle}
             hasLineNumbers={hasLineNumbers}
@@ -950,13 +1120,7 @@ export function CodeBlock({
     <pre
       ref={ref}
       {...mergeProps(
-        themeProps(
-          'code-block',
-          {size, language, container},
-          // `codeblock` ran the compound name together; keep it emitted so
-          // existing themes continue to work.
-          {legacyNames: ['codeblock']},
-        ),
+        themeProps('code-block', {size, language, container}),
         stylex.props(
           styles.root,
           dynamicStyles.width(widthProp),
@@ -974,7 +1138,7 @@ export function CodeBlock({
           // While collapsed, the region is only hidden visually (0fr grid
           // row); inert also removes it from the tab order and accessibility
           // tree so keyboard users cannot Tab into the invisible scroll
-          // container (tabIndex=0). aria-controls pointing at an inert
+          // container (a tab stop while it overflows). aria-controls pointing at an inert
           // element remains a valid, resolvable reference.
           inert={isCollapsed ? true : undefined}
           {...stylex.props(

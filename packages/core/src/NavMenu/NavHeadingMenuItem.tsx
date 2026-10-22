@@ -130,6 +130,7 @@ export function NavHeadingMenuItem({
   className,
   style,
   'data-testid': testId,
+  ...restProps
 }: NavHeadingMenuItemProps) {
   const ctx = useNavHeadingMenuContext();
   const size = ctx?.size ?? 'md';
@@ -147,6 +148,7 @@ export function NavHeadingMenuItem({
 
   return (
     <Element
+      {...restProps}
       ref={ref}
       role="menuitem"
       tabIndex={isDisabled ? undefined : -1}

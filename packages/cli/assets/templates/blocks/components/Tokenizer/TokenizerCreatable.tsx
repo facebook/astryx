@@ -44,7 +44,7 @@ export default function TokenizerCreatable() {
           onChange={items => setTags(items)}
           hasCreate
           placeholder="Type a tag and press Enter..."
-          style={{width: 400}}
+          containerStyle={{width: 400}}
         />
       </Stack>
       <Stack direction="vertical" gap={1}>
@@ -59,7 +59,7 @@ export default function TokenizerCreatable() {
           hasCreate
           hasEntriesOnFocus
           placeholder="Search or type a new name..."
-          style={{width: 400}}
+          containerStyle={{width: 400}}
         />
       </Stack>
     </Stack>

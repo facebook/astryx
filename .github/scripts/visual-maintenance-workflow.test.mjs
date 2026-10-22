@@ -284,17 +284,4 @@ describe('canonical capture and checked-in baseline separation', () => {
       expect(result.status, result.stderr).toBe(expected);
     },
   );
-
-  it('retains non-regression Probe reach diagnostics in the existing accessibility owner', () => {
-    const a11y = workflow.jobs['pr-a11y'];
-    expect(step(a11y, 'Check Probe theme reach').run).toContain(
-      'gate.mjs reach',
-    );
-    expect(step(a11y, 'Check Probe theme reach')['continue-on-error']).toBe(
-      true,
-    );
-    expect(step(a11y, 'Upload Probe reach report').with.path).toBe(
-      '.visual-reach/reach.json',
-    );
-  });
 });

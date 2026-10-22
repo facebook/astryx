@@ -55,6 +55,14 @@ yarn add @astryxdesign/core @astryxdesign/theme-neutral @stylexjs/stylex
 yarn add -D @astryxdesign/cli
 ```
 
+You can also install the CLI once for your computer, so `astryx` works in any folder and every coding agent knows Astryx; in a project, it still runs that project's own version:
+
+```bash
+npm i -g @astryxdesign/cli
+```
+
+Project install, global install, or both? `astryx docs global/project-global-or-both` compares them (both is recommended), and `astryx docs global` explains how global mode works.
+
 The simplest setup is a few CSS imports plus a theme provider — no build plugin, no PostCSS or Babel config. See the **[@astryxdesign/core README](packages/core/README.md#quick-start)** for the full guide (Next.js, Tailwind, Vite, and CDN).
 
 For reliable CLI access, add a script to your `package.json`:
@@ -121,9 +129,8 @@ Our conventions and review rubrics live in the
 including [API Conventions](https://github.com/facebook/astryx/wiki/API-Conventions),
 [Design Conventions](https://github.com/facebook/astryx/wiki/Design-Conventions),
 the [Component Lifecycle](https://github.com/facebook/astryx/wiki/Component-Lifecycle),
-and the [Contributing Templates](https://github.com/facebook/astryx/wiki/Contributing-Templates)
-and [Blog Review](https://github.com/facebook/astryx/wiki/Blog-Review-Rubric)
-rubrics. Read the relevant one before opening a PR.
+the [Contributing Templates](https://github.com/facebook/astryx/wiki/Contributing-Templates),
+and the [Blog Review Rubric](https://github.com/facebook/astryx/wiki/Blog-Review-Rubric#three-required-scored-criteria). Read the relevant rubric before opening a PR.
 
 Quick start for contributors: this repo uses **Node 22+ on an active LTS line**
 and **pnpm 11**. Install pnpm directly, or enable

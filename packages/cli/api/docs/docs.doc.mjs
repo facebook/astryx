@@ -34,7 +34,8 @@ export const doc = {
     'for a typed doc, `related` to the docs it names (its command or function, ' +
     'and its related docs); `previous` and `next` ' +
     'to the section or node before and after it. ' +
-    'Overlay options select localized or dense variants.',
+    'Overlay options select localized or dense variants.' +
+    " In global mode: with `cwd` outside a project, doc topics from integrations installed next to this CLI package globally are listed too; inside a project, only the project's own integrations count. See {@link namespace:global} and {@link generic:computer-integrations}.",
   importPath: '@astryxdesign/cli/api',
   signature:
     'docs(topic?: string, section?: string, options?: DocsOptions): Promise<DocsListResponse | DocsIndexResponse | DocsDetailResponse | DocsDetailSectionResponse | DocsNodeResponse>',
@@ -121,7 +122,7 @@ export const doc = {
     {
       type: 'docs.detail.section',
       description:
-        'One ReferenceSection of the topic, found by key or title, with token-ref and reference blocks inlined.',
+        'One ReferenceSection of the topic, found by key or title, with token-ref and reference blocks inlined. Asked of a docs-tree namespace, it is the section read of the one guide below the namespace that has the section.',
     },
     {
       type: 'docs.node',
@@ -144,7 +145,7 @@ export const doc = {
     },
     {
       code: 'ERR_UNKNOWN_SECTION',
-      when: 'a section is requested but is empty, matches no section, matches more than one, or is asked of a docs-tree namespace or typed doc, which have no sections',
+      when: 'a section is requested but is empty, matches no section, or matches more than one; asked of a docs-tree namespace, when no guide below it or more than one has the section (suggestions name those guides); or asked of a typed doc, which has no sections',
     },
   ],
   examples: [
@@ -168,7 +169,7 @@ export const doc = {
       label: 'A whole guide from the docs tree',
       code: "await docs('cli/integrations/quick-start');",
     },
-    {label: 'One section by key', code: "await docs('tokens', 'spacing');"},
+    {label: 'One section by key', code: "await docs('spacing', 'scale');"},
   ],
   command: 'docs',
   related: ['search', 'component', 'hook', 'template'],

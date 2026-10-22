@@ -242,7 +242,8 @@ export function buildDocsTree({namespaces, docs, topics = []}) {
   // without case, as topic names do, so `CLI` claims `cli`.
   const cliRoutes = new Set(topics.length > 0 ? [UNORGANIZED] : []);
   for (const topic of topics) {
-    if (topic.provider === CLI_PROVIDER) cliRoutes.add(topic.name.toLowerCase());
+    if (topic.provider === CLI_PROVIDER)
+      cliRoutes.add(topic.name.toLowerCase());
   }
   // Every other name a topic answers to (the topics it replaced, directly or
   // through a chain) is that topic's route too: `astryx docs <name>` opens the
@@ -375,6 +376,34 @@ export function buildDocsTree({namespaces, docs, topics = []}) {
       return false;
     }
     const taken = byFoldedRoute.get(folded);
+    if (
+      taken &&
+      taken.provider === CLI_PROVIDER &&
+      node.provider !== CLI_PROVIDER &&
+      !node.generated
+    ) {
+      // Astryx's own doc keeps its route: name both docs as an author knows
+      // them, never by their ids, and say what to change.
+      const what = (/** @type {TreeNode} */ n) =>
+        n.kind === 'namespace'
+          ? 'namespace'
+          : n.kind === 'generic'
+            ? 'topic'
+            : `${n.kind} doc`;
+      const scope = String(node.provider).split('/').pop() ?? '';
+      const suggestion = `${
+        scope
+          .replace(/[^a-z0-9]+/gi, '-')
+          .replace(/^-|-$/g, '')
+          .toLowerCase() || 'my'
+      }-${node.name.toLowerCase()}`;
+      report(
+        'duplicate_route',
+        at,
+        `The ${what(node)} "${node.name}" from ${node.provider} and Astryx's own ${what(taken)} "${taken.name}" both have the route "${node.route}", so \`astryx docs ${node.route}\` cannot open both. Fix: rename "${node.name}" (its \`name\` and its file), such as \`name: '${suggestion}'\`${node.route.includes('/') ? ', or place it elsewhere' : ''}.`,
+      );
+      return false;
+    }
     if (taken) {
       report(
         'duplicate_route',
@@ -742,6 +771,28 @@ export function treeDocFiles(dir = TREE_DOCS_DIR) {
     .filter(file => /^[\w-]+\.doc\.mjs$/u.test(file))
     .sort(byText)
     .map(file => path.join(dir, file));
+}
+
+/**
+ * The names of the CLI's own root namespaces (spec:AST-046 FR7): each is read
+ * with `astryx docs <name>`, as a flat topic is, though no topic file has its
+ * name. Read from the namespace files' text, without loading them, so a
+ * synchronous caller (the agent docs block) lists them beside the flat topics.
+ * A topic split into a namespace keeps its name in every such list.
+ * @param {string} [dir]
+ * @returns {string[]}
+ */
+export function cliRootNamespaceNames(dir = TREE_DOCS_DIR) {
+  /** @type {string[]} */
+  const names = [];
+  for (const file of treeDocFiles(dir)) {
+    const text = fs.readFileSync(file, 'utf8');
+    if (!/["']?type["']?\s*:\s*["']namespace["']/u.test(text)) continue;
+    if (/["']?placement["']?\s*:/u.test(text)) continue;
+    const name = /["']?name["']?\s*:\s*["']([\w-]+)["']/u.exec(text)?.[1];
+    if (name) names.push(name);
+  }
+  return names.sort(byText);
 }
 
 /**

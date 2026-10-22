@@ -274,7 +274,7 @@ function checkEnvironmentImports(label, files, baseDir, knownGaps) {
   let checked = 0;
   for (const filePath of files) {
     checked++;
-    const rel = path.relative(baseDir, filePath);
+    const rel = path.relative(baseDir, filePath).split(path.sep).join('/');
     const sources = importSources(filePath);
     /** @type {Set<string>} */
     const found = new Set();
@@ -426,7 +426,7 @@ function isApiExempt(filePath) {
   if (adapterExemptions.has(filePath)) return true;
   const bn = path.basename(filePath);
   if (bn.endsWith('.type.mjs')) return true;
-  const rel = path.relative(API, filePath);
+  const rel = path.relative(API, filePath).split(path.sep).join('/');
   return rel === 'index.mjs' || rel === 'error.mjs' || rel === 'logger.mjs';
 }
 
@@ -451,7 +451,6 @@ const INV21_KNOWN_GAPS = new Map([
   ['integration/validate-integration.mjs', new Set(['fs', 'discovery'])],
   // remove with the layout command
   ['layout/expand/expand.mjs', new Set(['fs'])],
-  ['search/search.mjs', new Set(['discovery'])],
   // imported by a leaf (copy), not only by the adapter
   ['swizzle/_github.mjs', new Set(['child_process'])],
   ['swizzle/copy/copy.mjs', new Set(['fs', 'project', 'discovery'])],
@@ -461,7 +460,6 @@ const INV21_KNOWN_GAPS = new Map([
   ['template/show/show.mjs', new Set(['fs', 'discovery'])],
   ['template/skeleton/skeleton.mjs', new Set(['fs', 'discovery'])],
   ['template/template.mjs', new Set(['discovery'])],
-  ['theme/add/add.mjs', new Set(['fs'])],
   ['theme/build/build.mjs', new Set(['fs', 'discovery'])],
   ['theme/palette/generate/generate.mjs', new Set(['fs'])],
   ['theme/targets/targets.mjs', new Set(['discovery'])],

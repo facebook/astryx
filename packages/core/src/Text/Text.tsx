@@ -260,8 +260,12 @@ export function Text({
   // Resolve display - force block when maxLines > 0 or hasCapsize
   const resolvedDisplay = maxLines > 0 || hasCapsize ? 'block' : display;
 
-  // Truncation detection
-  const truncation = useTruncation({maxLines});
+  // Truncation detection. Only the tooltip reads the measured overflow, so
+  // with the tooltip off the text is clipped by CSS alone and nothing is
+  // measured or observed.
+  const truncation = useTruncation({
+    maxLines: hasTruncateTooltip === false ? 0 : maxLines,
+  });
 
   // Tooltip for truncated text
   const tooltipPlacement: LayerPlacement =

@@ -230,19 +230,6 @@ export function useMenuHover<T extends HTMLElement = HTMLElement>(
   const hoverOpenedAtRef = useRef(0);
   const prevIsOpenRef = useRef(isOpen);
 
-  // Catches every close, whatever caused it. A layout effect, not render: it
-  // must land before the browser hit-tests the vanished panel and fires the
-  // mouseenter REOPEN_SUPPRESS_MS exists to swallow.
-  useIsomorphicLayoutEffect(() => {
-    const wasOpen = prevIsOpenRef.current;
-    prevIsOpenRef.current = isOpen;
-    if (wasOpen && !isOpen) {
-      hoverModeRef.current = false;
-      hoverOpenedAtRef.current = 0;
-      closedAtRef.current = Date.now();
-    }
-  }, [isOpen]);
-
   const clearTimeouts = useCallback(() => {
     if (showTimerRef.current) {
       clearTimeout(showTimerRef.current);
@@ -255,6 +242,24 @@ export function useMenuHover<T extends HTMLElement = HTMLElement>(
     safeTriangleCleanupRef.current?.();
     safeTriangleCleanupRef.current = null;
   }, []);
+
+  // Catches every close, whatever caused it. A layout effect, not render: it
+  // must land before the browser hit-tests the vanished panel and fires the
+  // mouseenter REOPEN_SUPPRESS_MS exists to swallow.
+  useIsomorphicLayoutEffect(() => {
+    const wasOpen = prevIsOpenRef.current;
+    prevIsOpenRef.current = isOpen;
+    if (wasOpen && !isOpen) {
+      // A hover-open scheduled before the close must not fire afterwards and
+      // reopen what just closed from elsewhere — e.g. the root menu's light
+      // dismiss closing a submenu flyout mid hover-intent (#6893). A fresh
+      // mouseenter still opens; only the stale timer is cancelled.
+      clearTimeouts();
+      hoverModeRef.current = false;
+      hoverOpenedAtRef.current = 0;
+      closedAtRef.current = Date.now();
+    }
+  }, [isOpen, clearTimeouts]);
 
   // useListFocus needs an onEscape that is defined in terms of its own listRef;
   // the indirection avoids the use-before-declare.

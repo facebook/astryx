@@ -29,7 +29,7 @@ import {indicatorScope} from '../Indicator/indicator.markers.stylex';
 import {useIndicatorFocusRing} from '../hooks/useIndicatorFocusRing';
 import {usePressFeedback} from '../hooks/usePressFeedback';
 import {useIndicator} from '../Indicator';
-import {Item} from '../Item';
+import {Item, type ItemAlign} from '../Item';
 import {themeProps} from '../utils/themeProps';
 
 // The touch press's paint, declared by the shared overlay styles on the
@@ -157,6 +157,13 @@ const rowStyles = stylex.create({
 export interface RadioListItemProps extends BaseProps<HTMLDivElement> {
   ref?: React.Ref<HTMLDivElement>;
   /**
+   * Vertical alignment of the start and end content against the label,
+   * forwarded to Item. Use `first-line` to keep the radio level with the
+   * first line of a wrapped label.
+   * @default 'center'
+   */
+  align?: ItemAlign;
+  /**
    * Primary label for the radio item.
    *
    * Accepts a plain string or a ReactNode for rich content. Links and buttons
@@ -232,6 +239,7 @@ export function RadioListItem({
   isDisabled: isItemDisabled = false,
   startContent,
   endContent,
+  align,
   xstyle,
   className,
   style,
@@ -265,7 +273,8 @@ export function RadioListItem({
   const hasDescription = isRenderable(description);
   const size = context.size;
   // The radio visual is an indicator: a theme can restyle it through the
-  // `radio` / `radio-dot` targets or replace the component outright.
+  // `radio-indicator` / `radio-indicator-dot` targets or replace the component
+  // outright.
   const RadioControl = useIndicator('radio');
   // See CheckboxInput: the ring goes on the indicator's own element, because
   // the native input is visually hidden and only the indicator knows its shape.
@@ -365,6 +374,7 @@ export function RadioListItem({
         ) : undefined
       }
       endContent={endContent}
+      align={align}
       xstyle={
         [
           // Hover reaches the radio visual through this ancestor marker rather

@@ -57,11 +57,14 @@ describe('iconRegistry (global, RSC-compatible)', () => {
     );
   });
 
-  it('keeps complete registries authored before upload assignable', () => {
-    const {upload: _upload, ...legacyIcons} = defaultIcons;
-    const legacyRegistry: IconRegistry = legacyIcons;
+  it('requires all IconNames including upload in complete icon registries', () => {
+    const {upload: _upload, ...incompleteIcons} = defaultIcons;
+    // @ts-expect-error IconRegistry requires all IconNames including upload
+    const incompleteRegistry: IconRegistry = incompleteIcons;
+    expect(incompleteRegistry).toBeDefined();
 
-    expect(legacyRegistry.search).toBe(defaultIcons.search);
+    const completeRegistry: IconRegistry = defaultIcons;
+    expect(completeRegistry.upload).toBe(defaultIcons.upload);
   });
 
   it('lets a theme draw upload without changing arrowUp', () => {

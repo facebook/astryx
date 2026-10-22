@@ -26,11 +26,21 @@ export const CLI_PACKAGE = '@astryxdesign/cli';
 export const NAMESPACE_DOCS_CLI = '0.6.4';
 
 /**
- * The first CLI release that reads a template's `replaces` and `keywords`. A
- * release before it rejects either field, drops that template, and hides the
- * package's doc topics.
+ * The first stable CLI release that applies a template's `replaces`
+ * (spec:AST-035 FR1). Published 0.6.3 and earlier reject the field, drop that
+ * template, and hide every doc topic the package ships. Published 0.6.4 lists
+ * the template, keeps the topics, answers the Core id with the replacement,
+ * and still selects the Core original with `--package @astryxdesign/core`.
  */
-export const REPLACES_CLI = '0.7.0';
+export const TEMPLATE_REPLACES_CLI = '0.6.4';
+
+/**
+ * The first stable CLI release that reads a template's `keywords`. Published
+ * 0.6.4 and 0.6.5 reject the field and drop that template but keep the
+ * package's doc topics; 0.6.3 and earlier also hide them. Published 0.6.6
+ * lists the template, and search matches its keywords.
+ */
+export const KEYWORDS_CLI = '0.6.6';
 
 /**
  * The first stable CLI release that applies a component's `replaces`
@@ -166,9 +176,10 @@ export function docsTreeCliProblem(pkg) {
 }
 
 /**
- * Why a package with a template that sets `replaces` would lose templates and
- * doc topics on an older CLI (spec:AST-035), or null when its declared CLI
- * range admits only CLIs that read the field.
+ * Why a package with a template that sets `replaces` would lose that template
+ * and its doc topics on an older CLI (spec:AST-035 FR1), or null when its
+ * declared CLI range admits only CLIs that apply the field. Published 0.6.3
+ * rejects the field; published 0.6.4 applies it.
  * @param {any} pkg package.json
  * @returns {string | null}
  */
@@ -177,7 +188,7 @@ export function replacesCliProblem(pkg) {
     pkg,
     'has a template that sets `replaces`',
     "rejects the field, drops that template, and hides the package's doc topics",
-    REPLACES_CLI,
+    TEMPLATE_REPLACES_CLI,
   );
 }
 
@@ -235,9 +246,10 @@ export function themesCliProblem(pkg) {
 
 /**
  * Why a package with a template that sets `keywords` would lose that template
- * and its doc topics on an older CLI, or null when its declared CLI range
- * admits only CLIs that read the field. Published 0.6.3 rejects the field,
- * drops that template, and hides the package's doc topics.
+ * on an older CLI, or null when its declared CLI range admits only CLIs that
+ * read the field. Published 0.6.4 and 0.6.5 reject the field and drop that
+ * template; 0.6.3 and earlier also hide the package's doc topics. Published
+ * 0.6.6 reads it.
  * @param {any} pkg package.json
  * @returns {string | null}
  */
@@ -245,8 +257,8 @@ export function keywordsCliProblem(pkg) {
   return cliRangeProblem(
     pkg,
     'has a template that sets `keywords`',
-    "rejects the field, drops that template, and hides the package's doc topics",
-    REPLACES_CLI,
+    "rejects the field and drops that template, and one before 0.6.4 also hides the package's doc topics",
+    KEYWORDS_CLI,
   );
 }
 

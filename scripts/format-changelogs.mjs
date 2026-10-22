@@ -1,10 +1,11 @@
 #!/usr/bin/env node
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 /**
- * Post-`changeset version` changelog formatter — `node scripts/format-changelogs.mjs`.
+ * Release-branch changelog formatter — `node scripts/format-changelogs.mjs`.
  *
- * `changeset version` (with our custom .changeset/changelog.cjs) writes raw
- * entries per package in the form:
+ * The custom `pnpm version-packages` step uses the pinned Changesets libraries
+ * to write raw entries under the version already declared at the cut. Those
+ * entries have the form:
  *
  *   ## 0.0.16
  *

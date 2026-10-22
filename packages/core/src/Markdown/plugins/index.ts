@@ -33,6 +33,7 @@ export type {
 } from './sourceDecoration';
 export {createMarkdownFrontmatter} from './frontmatter';
 export {markdownSoftBreaksPlugin} from './softBreaks';
+export {markdownSourceLinesPlugin} from './sourceLines';
 export {createMarkdownHeadingLinks} from './headingLinks';
 export type {MarkdownHeadingLinksOptions} from './headingLinks';
 export type {

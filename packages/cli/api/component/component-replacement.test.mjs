@@ -6,24 +6,17 @@
  * Project, read through every component surface.
  */
 
-import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
+import {afterEach, beforeEach, describe, expect, it} from 'vitest';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {component} from './component.mjs';
 import {componentKeywords, search} from '../search/search.mjs';
 import {swizzleCopy} from '../swizzle/copy/copy.mjs';
+import {swizzle} from '../swizzle/swizzle.mjs';
 import {integrationComponentConflicts} from '../integration/authoring-checks.mjs';
 import {GAP_REPORT_CATEGORIES, gapReport} from '../gap-report/gap-report.mjs';
 import {Project} from '../../foundation/config/project.mjs';
 import {COMPONENT_REPLACES_CLI} from '../../foundation/integrations/cli-requirement.mjs';
-
-// The CLI peer version check fires on fixtures that declare a floor above this
-// repo's version. Mock it out: these tests are about component replacement
-// semantics, not CLI version warnings.
-vi.mock('../../foundation/integrations/cli-peer-version.mjs', () => ({
-  checkCliPeerVersion: () => null,
-  cliVersion: () => '99.0.0',
-}));
 
 const SLOW = 60_000;
 const FLOOR = {'@astryxdesign/cli': `>=${COMPONENT_REPLACES_CLI}`};
@@ -252,6 +245,17 @@ describe('a package that declares the CLI floor', () => {
       });
       expect(core.data.package).toBe('@astryxdesign/core');
       expect(fs.existsSync(path.join(tmpDir, 'core', 'SideNav'))).toBe(true);
+    },
+    SLOW,
+  );
+
+  it(
+    'leaves the swizzle list naming Core components, the replaced one included',
+    async () => {
+      const listed = await swizzle(undefined, {cwd: tmpDir, list: true});
+      expect(listed.type).toBe('swizzle.list');
+      expect(listed.data).toContain('SideNav');
+      expect(listed.data).not.toContain('AcmeSideNav');
     },
     SLOW,
   );

@@ -24,6 +24,7 @@ import {
   createMarkdownTextTransform,
   isMarkdownExtensionNode,
   markdownSoftBreaksPlugin,
+  markdownSourceLinesPlugin,
 } from './plugins';
 import type {
   MarkdownExtensionNode,
@@ -225,6 +226,9 @@ describe('Markdown public parser types', () => {
     expectTypeOf(visitMarkdownNodes).toBeFunction();
     expectTypeOf(createMarkdownTextTransform).toBeFunction();
     expectTypeOf(markdownSoftBreaksPlugin).toEqualTypeOf<
+      MarkdownPluginEntry<never>
+    >();
+    expectTypeOf(markdownSourceLinesPlugin).toEqualTypeOf<
       MarkdownPluginEntry<never>
     >();
     expectTypeOf(isMarkdownExtensionNode).toBeFunction();

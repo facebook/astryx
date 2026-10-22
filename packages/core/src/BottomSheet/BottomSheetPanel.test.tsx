@@ -432,7 +432,7 @@ describe('BottomSheetPanel', () => {
       return getComputedStyle(screen.getByTestId('sheet-child').parentElement!);
     }
 
-    it('keeps the released unpadded default and publishes the theme chain', () => {
+    it("pads by Dialog's default chain and publishes the inset it applies", () => {
       const computed = renderWithPadding();
       for (const [edge, property] of EDGES) {
         const published = computed
@@ -441,10 +441,8 @@ describe('BottomSheetPanel', () => {
         expect(published, edge).toContain(
           `var(--astryx-bottom-sheet-padding-${edge}`,
         );
-        // No theme padding resolves to no inset, as before the sheet was a
-        // container.
         expect(published, edge).toContain(
-          'var(--astryx-bottom-sheet-padding,0px)',
+          'var(--astryx-bottom-sheet-padding,var(--spacing-4))',
         );
         // Applied padding reads the published value, so bleed children
         // subtract exactly the inset they sit in.
@@ -452,17 +450,16 @@ describe('BottomSheetPanel', () => {
           `var(--container-padding-${edge})`,
         );
       }
-      // The Layout insets have no terminal value: unthemed, they stay invalid
-      // and a Layout inside the sheet keeps its own default padding.
       for (const name of [
         '--layout-padding-outer-x',
         '--layout-padding-outer-y',
         '--layout-padding-inner-x',
         '--layout-padding-inner-y',
       ]) {
-        const value = computed.getPropertyValue(name).replace(/\s+/g, '');
-        expect(value, name).toContain('var(--astryx-bottom-sheet-padding)');
-        expect(value, name).not.toMatch(/0px|--spacing-/);
+        expect(
+          computed.getPropertyValue(name).replace(/\s+/g, ''),
+          name,
+        ).toContain('var(--astryx-bottom-sheet-padding,var(--spacing-4))');
       }
     });
 

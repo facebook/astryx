@@ -4,13 +4,14 @@
 
 /**
  * @file BottomSheet.tsx
- * @input Uses React, StyleX, core hooks/utils, named BottomSheetPanel, BottomSheetSwitcherContext
+ * @input Uses React, StyleX, core hooks, shared layer dismissal, the shared interaction modality, named BottomSheetPanel, BottomSheetSwitcherContext
  * @output Exports BottomSheet component and BottomSheetProps
  * @position Public BottomSheet router plus private standalone/switcher hosts
  *
  * BottomSheet selects one of two focused hosts. A standalone host owns its
- * native dialog lifecycle; a switcher item participates in the parent's shared
- * dialog and transition state machine. Both render the same BottomSheetPanel,
+ * native dialog lifecycle and joins the shared layer dismissal stack; a
+ * switcher item participates in the parent's shared dialog, transition state
+ * machine, and dismissal registration. Both render the same BottomSheetPanel,
  * which owns sheet presentation, content padding, gestures, mobile-keyboard
  * accommodation, and motion completion.
  *
@@ -21,6 +22,8 @@
  * - /packages/core/src/BottomSheet/BottomSheet.test.tsx
  * - /packages/core/src/BottomSheet/BottomSheetSwitcher.tsx
  * - /packages/core/src/BottomSheet/BottomSheetSwitcher.test.tsx
+ * - /packages/core/src/Layer/layerDismissalFamilies.test.tsx
+ * - /packages/core/src/Layer/layerDismissalInvariants.test.tsx
  * - /apps/storybook/stories/BottomSheet.stories.tsx
  * - /packages/cli/assets/templates/blocks/components/BottomSheet/BottomSheetShowcase.tsx
  */
@@ -41,7 +44,10 @@ import type {DialogPurpose} from '../Dialog';
 import type {SpacingStep} from '../utils/types';
 import {colorVars, durationVars, easeVars} from '../theme/tokens.stylex';
 import {useDevWarning, useScrollLock} from '../hooks';
-import {isImeKeyEvent} from '../utils';
+import {LayerDepthProvider} from '../Layer/LayerDepthContext';
+import {useLayerDismissal} from '../Layer/useLayerDismissal';
+import {focusForLastInput} from '../utils/focusReturn';
+import {useInteractionModalityTracking} from '../utils/interactionModality';
 import {
   BottomSheetPanel,
   type BottomSheetPanelMotion,
@@ -142,10 +148,11 @@ interface BottomSheetSharedProps extends BaseProps<HTMLDivElement> {
   /**
    * Internal padding of the sheet content using the spacing scale, matching
    * Dialog. Accepts numeric spacing steps: 0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10.
-   * When omitted, uses the theme default for bottom sheets: no padding unless
-   * the theme sets `padding` on `bottom-sheet`. The content box is a
-   * container: a Section that is its only child escapes the padding, and bleed
-   * children such as Table and Divider compensate against it.
+   * When omitted, uses the theme default for bottom sheets (`--spacing-4`
+   * unless the theme sets `padding` on `bottom-sheet`), matching Dialog. The
+   * content box is a container: a Section that is its only child escapes the
+   * padding, and bleed children such as Table and Divider compensate against
+   * it. Pass `0` for content that supplies its own inset.
    */
   padding?: SpacingStep;
 
@@ -254,10 +261,10 @@ function StandaloneBottomSheet({
       : {kind: 'hidden'};
 
   const dismissOnEscape = useCallback(() => {
-    if (purpose !== 'required') {
+    if (isOpen && purpose !== 'required') {
       onOpenChange(false);
     }
-  }, [onOpenChange, purpose]);
+  }, [isOpen, onOpenChange, purpose]);
   const dismissOnLightInteraction = useCallback(() => {
     if (purpose === 'info') {
       onOpenChange(false);
@@ -315,12 +322,20 @@ function StandaloneBottomSheet({
         dialog.close();
       }
       setIsPresented(false);
-      (finalFocusRef?.current ?? triggerRef.current)?.focus();
+      // The returned focus shows the focus-visible ring only after keyboard
+      // input (`architecture:interaction-modality` INV1). The native close
+      // may already have restored focus to the target with a ring; the helper
+      // clears it first.
+      const returnTarget = finalFocusRef?.current ?? triggerRef.current;
+      if (returnTarget != null) {
+        focusForLastInput(returnTarget);
+      }
       triggerRef.current = null;
     },
     [finalFocusRef, isOpen],
   );
 
+  useInteractionModalityTracking();
   useScrollLock(shouldPresent && hasScrim);
   useDevWarning(
     'BottomSheet',
@@ -329,34 +344,35 @@ function StandaloneBottomSheet({
     isOpen && !label,
   );
 
+  // Join the shared layer dismissal stack. The stack owns the Escape listener
+  // and routes each press to the top-most layer, so a Popover or Dialog opened
+  // inside this sheet takes the press before the sheet does. It also claims a
+  // composing Escape without dismissing anything.
+  //
+  // The sheet stays registered while it is presented, including its exit
+  // animation: a closing sheet is still on screen, so it swallows the press
+  // rather than letting it close a layer behind it. `required` blocks too.
+  const {shouldDismissOnCloseRequest} = useLayerDismissal({
+    isActive: shouldPresent,
+    escapeBehavior: isOpen && purpose !== 'required' ? 'close' : 'block',
+    onDismiss: dismissOnEscape,
+    getContainer: () => dialogRef.current,
+    isPresent: () => dialogRef.current?.open ?? false,
+  });
+
+  // The native `cancel` event is a close request the stack never saw a press
+  // for (Android back, the platform close watcher). Always preventDefault so
+  // the browser cannot close the controlled <dialog>, then answer with the
+  // stack's rules: only the top-most layer dismisses, and nothing dismisses
+  // during an IME composition.
   const handleCancel = useCallback(
     (event: React.SyntheticEvent<HTMLDialogElement>) => {
-      // No IME guard here: `cancel` is a plain Event carrying no composition
-      // state, and handleKeyDown claims a composing Escape before the browser
-      // can raise the close request that would arrive here.
       event.preventDefault();
-      dismissOnEscape();
-    },
-    [dismissOnEscape],
-  );
-  const handleKeyDown = useCallback(
-    (event: React.KeyboardEvent<HTMLDialogElement>) => {
-      if (event.key !== 'Escape') {
-        return;
+      if (shouldDismissOnCloseRequest()) {
+        dismissOnEscape();
       }
-      // Claim the key before reading it: an unclaimed Escape lets the browser
-      // raise its own close request, which lands on handleCancel and dismisses
-      // on the same keypress.
-      event.preventDefault();
-      // An IME fires this keydown to cancel an in-progress composition, ahead
-      // of compositionend. It is a composition cancel, not a dismissal command
-      // — see utils/ime; Dialog and BottomSheetSwitcher guard the same way.
-      if (isImeKeyEvent(event.nativeEvent)) {
-        return;
-      }
-      dismissOnEscape();
     },
-    [dismissOnEscape],
+    [dismissOnEscape, shouldDismissOnCloseRequest],
   );
   const handleClick = useCallback(
     (event: React.MouseEvent<HTMLDialogElement>) => {
@@ -383,8 +399,7 @@ function StandaloneBottomSheet({
       role={purpose === 'required' ? 'alertdialog' : undefined}
       inert={!isOpen && isPresented ? true : undefined}
       onCancel={handleCancel}
-      onClick={handleClick}
-      onKeyDown={handleKeyDown}>
+      onClick={handleClick}>
       <div {...stylex.props(styles.positioner)}>
         <BottomSheetPanel
           {...props}
@@ -400,7 +415,7 @@ function StandaloneBottomSheet({
           onScrimOpacity={handleScrimOpacity}
           onElementChange={handlePanelElementChange}
           onMotionComplete={handleMotionComplete}>
-          {children}
+          <LayerDepthProvider>{children}</LayerDepthProvider>
         </BottomSheetPanel>
       </div>
       <BottomSheetEdgeTint />

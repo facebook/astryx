@@ -7,6 +7,7 @@ import userEvent from '@testing-library/user-event';
 import {Stepper} from './Stepper';
 import {Step} from './Step';
 import {useStepperContext} from './StepperContext';
+import {useLayer} from '../Layer/useLayer';
 import {defineTheme} from '../theme/defineTheme';
 import {generateThemeCSS} from '../theme/generateThemeRules';
 
@@ -1828,6 +1829,59 @@ describe('Stepper', () => {
       );
       expect(component).not.toMatch(
         /\.astryx-step-connector\s*\{[^}]*--step-connector-gap:/,
+      );
+    });
+
+    it('stops an outer gap at a layer opened from a step', async () => {
+      // An outer Stepper's gap is scoped to its own track. A layer opened from
+      // one of its steps is new content, so an inner Stepper there starts from
+      // the connector's own 0px fallback (AST-038 FR7) instead of inheriting
+      // the outer value through the DOM.
+      function StepLayer() {
+        const layer = useLayer({mode: 'context'});
+        return (
+          <>
+            <button type="button" ref={layer.ref} onClick={layer.show}>
+              Details
+            </button>
+            {layer.render(
+              <Stepper activeStep={0} indicatorPosition="on-track">
+                <Step step={0} label="Inner one" />
+                <Step step={1} label="Inner two" />
+              </Stepper>,
+            )}
+          </>
+        );
+      }
+      const user = userEvent.setup();
+      const {container} = render(
+        <div style={{'--step-connector-gap': '6px'} as React.CSSProperties}>
+          <Stepper activeStep={0} indicatorPosition="on-track">
+            <Step step={0} label="Outer one">
+              <StepLayer />
+            </Step>
+            <Step step={1} label="Outer two" />
+          </Stepper>
+        </div>,
+      );
+      await user.click(screen.getByRole('button', {name: 'Details'}));
+
+      const layerRoot = container.querySelector('[popover]') as HTMLElement;
+      expect(layerRoot).not.toBeNull();
+      expect(declarationsFor(layerRoot)).toContain(
+        '--step-connector-gap:initial',
+      );
+
+      // Ancestor inheritance still works outside the layer, and the inner
+      // Stepper keeps the same inheriting root, so a value set on it or through
+      // the `stepper` target still reaches its connectors.
+      const [outerRoot, innerRoot] = [
+        ...container.querySelectorAll<HTMLElement>('.astryx-stepper'),
+      ];
+      expect(layerRoot.contains(outerRoot)).toBe(false);
+      expect(layerRoot.contains(innerRoot)).toBe(true);
+      expect(declarationsFor(innerRoot)).toContain(
+        '--step-connector-gap:inherit',
       );
     });
 

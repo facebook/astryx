@@ -39,7 +39,7 @@ import {reportsResult, reportsResultVia} from './lib/define-command.mjs';
  * other. Its bare form prints help and never returns from that action, which
  * the recorder covers where help is recorded, not here.)
  */
-const NO_ACTION_OF_THEIR_OWN = ['layout'];
+const NO_ACTION_OF_THEIR_OWN = [];
 
 /**
  * Commands that record for themselves instead of returning a descriptor.

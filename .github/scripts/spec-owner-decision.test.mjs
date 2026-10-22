@@ -7,12 +7,15 @@ const require = createRequire(import.meta.url);
 const {
   OWNER_COMMAND_PREFIXES,
   canonicalRunUrl,
+  decisionStatusDescription,
   describeOwnerCommandProblem,
   isDispatchableOwnerCommand,
   newestGateRun,
   parseCanonicalRunId,
+  parseDecisionStatuses,
   parseOwnerCommand,
   parseOwnerCommandIntent,
+  parseOwnerDecisionDispatch,
   parseOwnerFile,
   parseReadyAttestations,
   requiredApprovalGroups,
@@ -764,5 +767,151 @@ describe('spec owner decision', () => {
       expect(parseOwnerCommand(`/approve-spec ${head}`, head)).toBe(true);
       expect(describeOwnerCommandProblem(null, head)).toBe(null);
     });
+  });
+});
+
+describe('relayed owner decisions', () => {
+  const appLogin = 'review-app[bot]';
+  function dispatch(overrides = {}, sender = {login: appLogin, type: 'Bot'}) {
+    return {
+      action: 'spec-owner-decision',
+      sender,
+      client_payload: {
+        pr: 17,
+        headSha: head,
+        ownerLogin: 'CixZhang',
+        decision: 'approve',
+        requestKey: 'req-1',
+        ...overrides,
+      },
+    };
+  }
+
+  it('reads a well-formed decision from the configured app', () => {
+    expect(parseOwnerDecisionDispatch(dispatch(), {appLogin})).toEqual({
+      decision: {
+        pr: 17,
+        headSha: head,
+        owner: 'cixzhang',
+        approved: true,
+        requestKey: 'req-1',
+      },
+    });
+  });
+
+  it('reads a revoke as a rejection', () => {
+    expect(
+      parseOwnerDecisionDispatch(dispatch({decision: 'revoke'}), {appLogin})
+        .decision.approved,
+    ).toBe(false);
+  });
+
+  it.each([
+    ['no app is configured', dispatch(), ''],
+    [
+      'another sender relays it',
+      dispatch({}, {login: 'someone', type: 'User'}),
+      appLogin,
+    ],
+    [
+      'a user borrows the app login',
+      dispatch({}, {login: appLogin, type: 'User'}),
+      appLogin,
+    ],
+    ['the pull request is not a number', dispatch({pr: '17'}), appLogin],
+    ['the head is abbreviated', dispatch({headSha: 'abcdef1'}), appLogin],
+    ['the owner is not a login', dispatch({ownerLogin: 'a b'}), appLogin],
+    ['the decision is unknown', dispatch({decision: 'lgtm'}), appLogin],
+    ['the request key is missing', dispatch({requestKey: ''}), appLogin],
+  ])('refuses a dispatch when %s', (_reason, payload, configured) => {
+    expect(
+      parseOwnerDecisionDispatch(payload, {appLogin: configured}).problem,
+    ).toEqual(expect.any(String));
+  });
+
+  function decisionStatus({
+    owner: login = 'cixzhang',
+    approved = true,
+    at = '2026-08-30T10:00:00.000Z',
+    state = approved ? 'success' : 'failure',
+    creator = 'github-actions[bot]',
+  } = {}) {
+    return {
+      context: `spec-owner-decision/${login}`,
+      state,
+      description: decisionStatusDescription({
+        approved,
+        at,
+        requestKey: 'req-1',
+      }),
+      target_url: canonicalRunUrl('facebook/astryx', '9', '1'),
+      creator: {login: creator},
+    };
+  }
+  const readBack = (statuses, owners = ['cixzhang']) =>
+    parseDecisionStatuses(statuses, {
+      repository: 'facebook/astryx',
+      headSha: head,
+      owners,
+    });
+
+  it('reads a published decision back for a current owner', () => {
+    expect(readBack([decisionStatus({approved: false})])).toEqual([
+      {
+        approved: false,
+        at: '2026-08-30T10:00:00.000Z',
+        headSha: head,
+        owner: 'cixzhang',
+        source: 'command',
+      },
+    ]);
+  });
+
+  it('ignores a decision whose owner has left the owner files', () => {
+    expect(readBack([decisionStatus()], ['ernestt'])).toEqual([]);
+  });
+
+  it('ignores a decision status this workflow did not publish', () => {
+    expect(readBack([decisionStatus({creator: 'someone'})])).toEqual([]);
+  });
+
+  it('ignores a decision whose state contradicts its description', () => {
+    expect(readBack([decisionStatus({state: 'failure'})])).toEqual([]);
+  });
+
+  it('lets a later relayed revoke override an earlier command', () => {
+    const decision = resolveOwnerDecision({
+      reviews: [],
+      comments: [
+        {
+          user: owner,
+          body: `/approve-spec ${head}`,
+          created_at: '2026-08-30T09:00:00Z',
+        },
+      ],
+      relayedDecisions: readBack([decisionStatus({approved: false})]),
+      owners: ['cixzhang'],
+      headSha: head,
+    });
+    expect(decision).toMatchObject({approved: false, source: 'command'});
+  });
+
+  it('ignores a relayed decision for another head', () => {
+    const decision = resolveOwnerDecision({
+      reviews: [],
+      comments: [],
+      relayedDecisions: [
+        {
+          approved: true,
+          at: '2026-08-30T10:00:00Z',
+          headSha: '1'.repeat(40),
+          owner: 'cixzhang',
+          source: 'command',
+        },
+      ],
+      owners: ['cixzhang'],
+      headSha: head,
+    });
+    expect(decision.approved).toBe(false);
   });
 });

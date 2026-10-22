@@ -4,7 +4,7 @@
 
 /**
  * @file Lightbox.tsx
- * @input Uses React, native dialog, StyleX, IconButton, theme tokens, layerTextReset
+ * @input Uses React, native dialog, StyleX, IconButton, theme tokens, layerTextReset, layerStructureReset
  * @output Exports Lightbox component, LightboxProps, LightboxMedia
  * @position Core implementation; consumed by index.ts
  *
@@ -38,6 +38,7 @@ import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
 import {focusOutlineStyles} from '../utils/focusOutline.stylex';
 import {layerTextReset} from '../Layer/layerTextReset.stylex';
+import {layerStructureReset} from '../Layer/layerStructureReset.stylex';
 import {LayerContentBoundary} from '../Layer/layerScopedContext';
 import {overlayPaddingReset} from '../Layout/padding.stylex';
 import {LayerDepthProvider} from '../Layer/LayerDepthContext';
@@ -366,14 +367,20 @@ export function Lightbox({
   // Scroll lock
   useScrollLock(isOpen);
 
-  // Reset zoom on image change
-  useEffect(() => {
-    // Reset image view state when the active media item changes.
-    // eslint-disable-next-line @eslint-react/set-state-in-effect
+  // A new media item starts unzoomed. Adjusted during render, so the new item
+  // never paints at the previous item's zoom and pan.
+  const currentSrc = currentItem?.src;
+  const [viewedItem, setViewedItem] = useState({index, src: currentSrc});
+  // Object.is, matching the dependency comparison of the effect this replaces:
+  // a controlled index of NaN must not re-render forever.
+  if (
+    !Object.is(viewedItem.index, index) ||
+    !Object.is(viewedItem.src, currentSrc)
+  ) {
+    setViewedItem({index, src: currentSrc});
     setZoom(1);
-    // eslint-disable-next-line @eslint-react/set-state-in-effect
     setPan({x: 0, y: 0});
-  }, [index, currentItem?.src]);
+  }
 
   // Announce gallery navigation to screen readers. Moving between images only
   // updates the visual counter, which is silent to assistive tech, so mirror
@@ -621,6 +628,7 @@ export function Lightbox({
         themeProps('lightbox'),
         stylex.props(
           layerTextReset.reset,
+          layerStructureReset.reset,
           styles.dialog,
           overlayPaddingReset.reset,
           xstyle,

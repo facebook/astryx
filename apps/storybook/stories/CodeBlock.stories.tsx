@@ -97,6 +97,62 @@ export const WithHighlightedLines: Story = {
   },
 };
 
+/**
+ * The diff layer over a language: `+` lines sit on a success-tinted row and
+ * `-` lines on an error-tinted row, the `@@` header is a quiet row, and the
+ * rest of every line keeps the language's syntax highlighting. The glyph has
+ * its own column, so the code's indentation lines up on every row, and copy
+ * returns the exact source with its glyphs. Markdown gets this from a
+ * ```diff-tsx fence.
+ */
+export const Diff: Story = {
+  args: {
+    language: 'tsx',
+    isDiff: true,
+    title: 'Button.tsx',
+    hasLineNumbers: true,
+    code: `@@ -12,7 +12,7 @@ export function Button({children, ...props}: ButtonProps) {
+   return (
+     <button
+-      className="astryx-button"
++      className="astryx-button astryx-button-primary"
+       type="button"
+       {...props}>
+       {children}`,
+  },
+};
+
+/**
+ * A diff whose changed lines run past the viewport: the row tint and the
+ * gutter tint must follow the line to the end of the scroll width, not stop at
+ * the visible edge. Toggle `isWrapped` to see the same rows wrapped instead.
+ */
+export const DiffLongLines: Story = {
+  args: {
+    language: 'tsx',
+    isDiff: true,
+    hasLineNumbers: true,
+    isWrapped: false,
+    code: `@@ -1,3 +1,3 @@
+ export function Button({children, ...props}: ButtonProps) {
+-  return <button className="astryx-button" type="button" aria-label="A deliberately long accessible label that pushes this changed line well past the width of a phone-sized viewport" {...props}>{children}</button>;
++  return <button className="astryx-button astryx-button-primary" type="button" aria-label="A deliberately long accessible label that pushes this changed line well past the width of a phone-sized viewport" {...props}>{children}</button>;
+ }`,
+  },
+};
+
+/**
+ * The code viewport is a keyboard stop only while its content overflows.
+ * This story starts fitting; the browser contract widens the code and caps
+ * the height to prove each state, and shrinks it again to prove focus stays.
+ */
+export const OverflowStop: Story = {
+  args: {
+    language: 'tsx',
+    code: 'const fits = true;',
+  },
+};
+
 export const JSON: Story = {
   args: {
     code: `{

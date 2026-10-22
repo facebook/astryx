@@ -45,8 +45,8 @@ export const docs = {
             'Use components for everything they cover',
             'Page layout is frame-first: pick the shell and budget regions before writing content (see {@link namespace:layout})',
             'Dense data renders as rows (Table, List/Item), edge-to-edge with dividers; Card is for widgets, galleries, and settings groups',
-            'StyleX or Tailwind for custom styling; both are first-class (see {@link generic:styling})',
-            'Semantic tokens, not hardcoded values (see {@link generic:tokens})',
+            'StyleX or Tailwind for custom styling; both are first-class (see {@link namespace:styling})',
+            'Semantic tokens, not hardcoded values (see {@link namespace:tokens})',
             'CSS custom properties for colors, not hex values',
             'Form inputs are controlled (value + onChange)',
             'Use useLinkComponent() for navigation so consumers can plug in their framework router via LinkProvider',
@@ -64,7 +64,7 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: 'See {@link generic:styling} for the complete guide with examples.',
+          text: 'See {@link namespace:styling} for the complete guide with examples.',
         },
       ],
     },
@@ -97,7 +97,7 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'The design system provides semantic design tokens for spacing, color, radius, shadow, typography, and size. Tokens adapt to the active theme and color mode. Run {@link generic:tokens} for the full reference with all values.',
+          text: 'The design system provides semantic design tokens for spacing, color, radius, shadow, typography, and size. Tokens adapt to the active theme and color mode. Run {@link namespace:tokens} for the full reference with all values.',
         },
       ],
     },

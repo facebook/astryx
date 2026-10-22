@@ -264,9 +264,13 @@ async function addComponent(name, options) {
       ERROR_CODES.ERR_FILE_EXISTS,
     );
   }
-  // Discovery keys components by doc stem anywhere under the root, so a second
-  // doc with this name would shadow one of the two.
-  const existingDoc = findIntegrationComponentDoc({components: root}, name);
+  // A second doc under a name discovery already records, by a doc's file name
+  // anywhere under the root or by a name a doc documents, would shadow one of
+  // the two.
+  const existingDoc = findIntegrationComponentDoc(
+    {name: owner, components: root, __packageDir: packageDir},
+    name,
+  );
   if (existingDoc != null) {
     throw new AstryxError(
       `Refusing to add component "${name}": ${projectPath(path.relative(packageDir, existingDoc))} already defines it.`,
@@ -691,7 +695,7 @@ async function addTemplate(name, options) {
   const sourcePath = projectPath(path.relative(packageDir, sourceFile));
   const extensionlessPath = sourcePath.replace(/\.tsx?$/u, '');
   const blockFields = templateType === 'block' ? '\n  aspectRatio: 1,' : '';
-  const specContents = `/** @type {import('@astryxdesign/cli/authoring').TemplateDoc} */\nexport default {\n  type: '${templateType}',\n  name: '${name}',\n  displayName: '${kebabToTitle(name)}',\n  description: '${kebabToTitle(name)} template.',${blockFields}\n};\n`;
+  const specContents = `/** @type {import('@astryxdesign/cli/authoring').IntegrationTemplateDoc} */\nexport default {\n  type: '${templateType}',\n  name: '${name}',\n  displayName: '${kebabToTitle(name)}',\n  description: '${kebabToTitle(name)} template.',${blockFields}\n};\n`;
   const sourceContents = `export default function ${pascalName}() {\n  return <div>${kebabToTitle(name)}</div>;\n}\n`;
 
   /** @type {import('./add-helpers.mjs').WritePlan[]} */

@@ -255,8 +255,56 @@ describe('ComplexSelector', () => {
       'detached',
     );
     expect(
-      screen.getByTestId('view-options').querySelectorAll('svg'),
+      screen
+        .getByTestId('view-options')
+        .closest('.astryx-complex-selector')
+        ?.querySelectorAll('svg'),
     ).toHaveLength(2);
+  });
+
+  it('applies distinct trigger chrome to the secondary variant', () => {
+    // data-testid reaches the native control; the variant is on the trigger root.
+    const triggerRoot = () =>
+      screen
+        .getByTestId('view-options')
+        .closest('.astryx-complex-selector') as HTMLElement;
+    const {rerender} = render(
+      <ComplexSelector
+        label="View options"
+        value={['name']}
+        variant="input"
+        data-testid="view-options">
+        {() => <div>Columns</div>}
+      </ComplexSelector>,
+    );
+    const inputClasses = triggerRoot().className;
+
+    rerender(
+      <ComplexSelector
+        label="View options"
+        value={['name']}
+        variant="secondary"
+        data-testid="view-options">
+        {() => <div>Columns</div>}
+      </ComplexSelector>,
+    );
+    const secondary = triggerRoot();
+    const secondaryClasses = secondary.className;
+    expect(secondary).toHaveAttribute('data-variant', 'secondary');
+
+    rerender(
+      <ComplexSelector
+        label="View options"
+        value={['name']}
+        variant="ghost"
+        data-testid="view-options">
+        {() => <div>Columns</div>}
+      </ComplexSelector>,
+    );
+    const ghostClasses = triggerRoot().className;
+
+    expect(secondaryClasses).not.toBe(inputClasses);
+    expect(secondaryClasses).not.toBe(ghostClasses);
   });
 
   it('supports end-aligned popup positioning', () => {
@@ -390,7 +438,7 @@ describe('ComplexSelector popup theme target', () => {
     // that inner box cannot paint the popup's background or radius, which is
     // what a theme reaches for this class to do.
     expect(popup).toHaveAttribute('role', 'dialog');
-    expect(popup).toHaveClass('astryx-popover-surface');
+    expect(popup).toHaveClass('astryx-popover');
     expect(popup.querySelector('[id]')).not.toBeNull();
     expect(popup).toContainElement(
       screen.getByRole('button', {name: 'Done', ...h}),
@@ -718,22 +766,25 @@ describe('ComplexSelector onOpenChange', () => {
       );
     });
 
-    it('forces detached when variant="ghost" even if statusVariant="attached"', () => {
-      const {container} = render(
-        <ComplexSelector
-          label="Filter"
-          value={[]}
-          variant="ghost"
-          status={{type: 'error', message: 'Required'}}
-          statusVariant="attached">
-          {() => <button type="button">Apply</button>}
-        </ComplexSelector>,
-      );
-      expect(container.querySelector('.astryx-field-status')).toHaveAttribute(
-        'data-variant',
-        'detached',
-      );
-    });
+    it.each(['secondary', 'ghost'] as const)(
+      'forces detached when variant="%s" even if statusVariant="attached"',
+      variant => {
+        const {container} = render(
+          <ComplexSelector
+            label="Filter"
+            value={[]}
+            variant={variant}
+            status={{type: 'error', message: 'Required'}}
+            statusVariant="attached">
+            {() => <button type="button">Apply</button>}
+          </ComplexSelector>,
+        );
+        expect(container.querySelector('.astryx-field-status')).toHaveAttribute(
+          'data-variant',
+          'detached',
+        );
+      },
+    );
 
     it('renders no message box for statusVariant="tooltip"', () => {
       const {container} = render(

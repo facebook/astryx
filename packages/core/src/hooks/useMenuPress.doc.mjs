@@ -132,7 +132,7 @@ export const docs = {
       {
         guidance: true,
         description:
-          'Declare touch-action on the menu root: none when its rows fit, pan-y when it scrolls, so the browser — not the hook — decides when a finger is scrolling.',
+          'Declare touch-action on the menu root: pinch-zoom when its rows fit, pan-y pinch-zoom when it scrolls, so the browser — not the hook — decides when a finger is scrolling, and a two-finger pinch still zooms the page.',
       },
       {
         guidance: false,
@@ -196,7 +196,7 @@ export const docsDense = {
       {
         guidance: true,
         description:
-          'touch-action on the root: none when rows fit, pan-y when it scrolls.',
+          'touch-action on the root: pinch-zoom when rows fit, pan-y pinch-zoom when it scrolls.',
       },
       {
         guidance: false,

@@ -733,8 +733,8 @@ export function PowerSearch({
       } else if (change.type === 'remove' && change.item) {
         const auxData = change.item.auxiliaryData as PowerSearchAuxData;
         if (auxData?.filterIndex != null) {
-          const newFilters = filters.filter(
-            (_, i) => i !== auxData.filterIndex,
+          const newFilters = filters.filter((_, i) =>
+            _items.some(item => item.auxiliaryData?.filterIndex === i),
           );
           onChange(newFilters, 'remove', auxData.filterIndex);
         }
@@ -755,6 +755,25 @@ export function PowerSearch({
         return;
       }
 
+      // An "empty" operator filter has no value for the built-in editor to
+      // edit: commit it as that editor's save would, the way adding one does,
+      // instead of opening it. A consumer's `empty` Editor override still opens.
+      const operator = config.getOperator(filter.field, filter.operator);
+      if (
+        operator?.value.type === 'empty' &&
+        componentOverrides?.empty?.Editor == null
+      ) {
+        const newFilters = [...filters];
+        newFilters[index] = {
+          field: filter.field,
+          operator: filter.operator,
+          value: {type: 'empty'},
+        };
+        onChange(newFilters, 'edit', index);
+        setPopoverState({type: 'idle'});
+        return;
+      }
+
       setPopoverState({
         type: 'editing',
         filterIndex: index,
@@ -765,7 +784,15 @@ export function PowerSearch({
         },
       });
     },
-    [filters, isReadOnly, isDisabled, setPopoverState],
+    [
+      filters,
+      isReadOnly,
+      isDisabled,
+      config,
+      componentOverrides,
+      onChange,
+      setPopoverState,
+    ],
   );
 
   // Handle popover save
@@ -873,6 +900,15 @@ export function PowerSearch({
           size={size}
           icon={tokenIcon}
           endContent={valueContent}
+          onMouseDown={
+            handleClick
+              ? e => {
+                  // Keep a token press from entering Tokenizer's input-focus
+                  // redirect. Click still edits/removes; Tab entry is unchanged.
+                  e.preventDefault();
+                }
+              : undefined
+          }
           onClick={
             handleClick
               ? (e: React.MouseEvent) => {
@@ -1087,9 +1123,9 @@ export function PowerSearch({
           statusVariant={statusVariant}
           onFocus={onFocus}
           onBlur={onBlur}
-          xstyle={xstyle}
-          className={className}
-          style={style}
+          containerXstyle={xstyle}
+          containerClassName={className}
+          containerStyle={style}
           data-testid={testId}
         />
       </div>

@@ -45,7 +45,7 @@
  * @property {'missing' | 'stale' | 'current'} status
  * @property {string} installedVersion Installed core version the block should reflect.
  * @property {string[]} fromVersions Distinct stale block versions found (the "from" side of the refresh).
- * @property {string[]} files Files rewritten (apply) or that would be rewritten (dry-run).
+ * @property {string[]} files Files rewritten (apply) or that would be rewritten (dry-run), relative to the folder the command ran in.
  * @property {boolean} refreshed True only when a block was actually rewritten (apply mode).
  * @property {'refreshed' | 'would-refresh' | 'nudge-init' | 'error' | 'none'} action
  */
@@ -70,7 +70,9 @@
  */
 
 /**
- * Aggregate receipt for ShadCN-copied composition reconciliation.
+ * Aggregate receipt for ShadCN-copied composition reconciliation. File paths
+ * are relative to the scanned source directory, or, when the upgrade ran in a
+ * folder below the project root, to that folder.
  * @typedef {object} RegistryCompositionSummary
  * @property {boolean} applied
  * @property {boolean} ok False when conflicts, missing files, invalid receipts, or failures remain.
@@ -99,11 +101,21 @@
 /**
  * A required codemod change blocked by effective working-tree protection.
  * @typedef {object} ProtectedCodemodFile
- * @property {string} file Project-relative path.
+ * @property {string} file Path relative to the folder the command ran in.
  * @property {string[]} codemods Codemods that still require a change.
  * @property {string[]} reasons Protection categories (generated, vendored, ignored, and hard boundaries).
  * @property {string[]} declarations Effective declarations that protect the file.
  * @property {string[]} commands Exact regeneration commands found in generated headers, when present.
+ */
+
+/**
+ * Present only when the installed `@astryxdesign/core` (the response's `to`) is
+ * newer than the running CLI. Core codemods ship inside the CLI, so this CLI
+ * has none for the releases after `cliVersion`: the run could not migrate them,
+ * whatever else the response reports.
+ * @typedef {object} CliBehindCore
+ * @property {string} cliVersion The running CLI's version, the last release it has codemods for.
+ * @property {string} command The same upgrade, run with the CLI release that matches the installed Core. It first changes to the folder this run used, then names the directory this run scanned as an absolute `--path`, both with symbolic links resolved, so pasted from any folder it finds the same Core and scans the same directory. It is written for a POSIX shell (sh, bash, zsh), or for PowerShell on Windows, with each argument quoted for that shell; cmd.exe is not a target.
  */
 
 /**
@@ -122,11 +134,12 @@
  * @property {boolean} [data.complete] False when protected required changes remain.
  * @property {'ERR_CODEMOD_PROTECTED'} [data.errorCode] Stable incomplete-result code when complete is false.
  * @property {number} [data.filesChanged] Distinct files changed across core + integration codemods (apply mode). One file that four codemods each changed counts once.
- * @property {string[]} [data.modifiedFiles] Project-relative files changed or previewed.
+ * @property {string[]} [data.modifiedFiles] Files changed or previewed, relative to the folder the command ran in.
  * @property {ProtectedCodemodFile[]} [data.protectedFiles] Protected files that still require a codemod change after regeneration.
- * @property {Array<{file: string, location?: string, reason: string}>} [data.declinedCandidates] Candidates left unchanged because proof was insufficient.
+ * @property {Array<{file: string, location?: string, reason: string}>} [data.declinedCandidates] Candidates left unchanged because proof was insufficient. Each `file` is relative to the folder the command ran in.
  * @property {number} [data.transformsApplied] Total codemod changes. A code or config codemod counts once for each file it changed, so one file changed by four of them counts four times; a project codemod counts once, however many files it writes.
- * @property {Array<{file: string, codemod: string, error: string}>} [data.errors] Per-codemod errors, when any codemod failed.
+ * @property {Array<{file: string, codemod: string, error: string}>} [data.errors] Per-codemod errors, when any codemod failed. Each `file` is relative to the folder the command ran in.
+ * @property {CliBehindCore} [data.cliBehindCore] Present only when the installed Core is newer than this CLI: codemods for the releases after `cliBehindCore.cliVersion` did not run.
  */
 
 /**
@@ -140,9 +153,13 @@
  *   reports the exact command to apply it; integrations are skipped for the
  *   preview (they will be processed on the `--apply` run).
  *
+ * `no_codemods` and `config_fixable` carry `cliBehindCore` when the installed
+ * Core is newer than this CLI; `no_codemods` then means only that this CLI has
+ * no codemods for the range.
+ *
  * @typedef {object} UpgradeStatusResponse
  * @property {'upgrade.status'} type
- * @property {{status: 'up_to_date', from: string, to: string, agentDocs: AgentDocsSummary, registryCompositions?: RegistryCompositionSummary} | {status: 'no_codemods', from: string, to: string, agentDocs: AgentDocsSummary, registryCompositions?: RegistryCompositionSummary} | {status: 'config_fixable', from: string, to: string, configError: string, configCodemods: string[], suggestedCommand: string, message: string, note: string, agentDocs: AgentDocsSummary}} data
+ * @property {{status: 'up_to_date', from: string, to: string, agentDocs: AgentDocsSummary, registryCompositions?: RegistryCompositionSummary} | {status: 'no_codemods', from: string, to: string, agentDocs: AgentDocsSummary, registryCompositions?: RegistryCompositionSummary, cliBehindCore?: CliBehindCore} | {status: 'config_fixable', from: string, to: string, configError: string, configCodemods: string[], suggestedCommand: string, message: string, note: string, agentDocs: AgentDocsSummary, cliBehindCore?: CliBehindCore}} data
  */
 
 /**

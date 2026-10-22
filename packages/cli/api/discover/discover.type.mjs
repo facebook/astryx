@@ -21,23 +21,27 @@
  * astryx --json discover
  * @typedef {object} DiscoverListResponse
  * @property {'discover.list'} type
- * @property {DiscoverListEntry[]} data The integrations the project loads.
+ * @property {DiscoverListEntry[]} data What the project has: the integrations
+ *   it loads and the official packages it declares, official packages first.
  * @property {DiscoverListMeta} [meta] Present when the list is empty, and
- *   whenever the project has a discover source.
+ *   whenever discover has a source, which is always: the official list the CLI
+ *   carries is one.
  */
 
 /**
  * @typedef {object} DiscoverListMeta
- * @property {boolean} [configured] Present when `data` is empty, so callers can
+ * @property {boolean} [configured] Present when `data` lists no integration (a
+ *   declared official package is not one), so callers can
  *   distinguish "no packages configured" from "configured but nothing
  *   discovered".
  * @property {DiscoverAvailableEntry[]} [available] What the project could add,
- *   one entry per integration, never an alias of a package it has.
+ *   one entry per integration, never an alias of a package it has; official
+ *   packages first.
  * @property {DiscoverSourceState[]} [sources] What each discover source did.
  */
 
 /**
- * An installed integration.
+ * An installed integration, or an official package the project declares.
  * @typedef {object} DiscoverListEntry
  * @property {string} name
  * @property {string} category
@@ -66,13 +70,19 @@
  * @property {string[]} [agentDocs]
  * @property {string} [description]
  * @property {string[]} [aliases] The integration's other package names.
- * @property {string} source The discover source that lists it.
+ * @property {string} source The discover source that lists it; `Astryx` for
+ *   the official list; `installed for this computer` for an integration
+ *   installed beside the CLI that the project does not install (spec AST-081
+ *   FR12).
+ * @property {string} [install] The package-manager command that adds it to
+ *   this project; discover prints it and never runs it.
  */
 
 /**
  * @typedef {object} DiscoverSourceState
  * @property {string} name
- * @property {string} from `astryx.config`, or the integration that exports it.
+ * @property {string} from `astryx.config`, the integration that exports it, or
+ *   `@astryxdesign/cli` for the official list.
  * @property {'fresh' | 'saved' | 'failed'} status `saved`: the live call
  *   failed and discover used the copy saved at `savedAt`.
  * @property {string} [generatedAt]

@@ -342,6 +342,11 @@ const CASES = [
     skipFieldChecks: true,
   },
   {
+    name: 'integration check',
+    args: ['integration', 'check'],
+    skipFieldChecks: true,
+  },
+  {
     name: 'doctor integration components',
     args: ['doctor', 'integration', 'components'],
     skipFieldChecks: true,
@@ -394,23 +399,6 @@ const CASES = [
     args: ['integration', 'pack', '--check'],
     skipFieldChecks: true,
   },
-  // ── Layout command: remove these cases when the layout command is deleted ──
-  {
-    name: 'layout check',
-    args: ['layout', 'check', 'Button'],
-    skipFieldChecks: true,
-  },
-  {
-    name: 'layout expand',
-    args: ['layout', 'expand', 'Button'],
-    skipFieldChecks: true,
-  },
-  {
-    name: 'layout grammar',
-    args: ['layout', 'grammar'],
-    skipFieldChecks: true,
-  },
-  // ── End layout cases ──
   {
     name: 'manifest',
     args: ['manifest'],

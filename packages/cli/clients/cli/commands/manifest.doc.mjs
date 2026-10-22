@@ -22,6 +22,7 @@ export const doc = {
     {label: 'Full manifest', cli: 'astryx manifest --json'},
     {label: 'The same manifest, under data.manifest (type "help")', cli: 'astryx --json'},
   ],
+  outsideProject: 'same',
   exitCodes: [
     {code: 0, when: 'success'},
     {code: 1, when: 'the manifest cannot be generated'},

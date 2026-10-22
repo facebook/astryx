@@ -303,7 +303,7 @@ pnpm -F @astryxdesign/cli typecheck:strict
 ```
 
 This is a **required CI gate**: it runs on every PR and in the merge queue (the `build`
-check in `ci.yml`) and again before every deploy (the `test` job in `deploy.yml`), so the
+check in `ci.yml`) and again in the post-merge validation gate in `deploy.yml`, so the
 CLI must stay strict-clean — a new un-annotated parameter or type error fails CI. Run it
 locally before pushing. (The emitted `templates/**/*.tsx` import built workspace packages,
 so run `pnpm build` first or you'll see spurious "cannot find module" errors from unbuilt

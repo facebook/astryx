@@ -42,7 +42,6 @@ import {useState} from 'react';
 import type {ISODateString} from '../utils';
 import {InputGroup} from '../InputGroup';
 import {InternationalizationProvider} from '../i18n';
-import {stableClassName} from '../naming';
 import {DateInput} from './DateInput';
 import {
   toMonthIndex,
@@ -1119,6 +1118,28 @@ describe('DateInput — calendar surface', () => {
     last.focus();
     fireEvent.keyDown(last, {key: 'ArrowRight'});
     expect(document.activeElement).toHaveAttribute('data-date', '2026-04-01');
+    // The real April 1, not its dimmed spill copy at the foot of the March
+    // pane (which is disabled and selects nothing).
+    expect(pane('April 2026')).toContainElement(
+      document.activeElement as HTMLElement,
+    );
+    expect(document.activeElement).not.toHaveAttribute('aria-disabled');
+  });
+
+  it('follows the reading direction under RTL: ArrowLeft moves to the next day', () => {
+    renderAndOpen(
+      <InternationalizationProvider locale="en-US" dir="rtl">
+        <Controlled initial="2026-03-10" />
+      </InternationalizationProvider>,
+    );
+    const day = within(pane('March 2026')).getByRole('button', {
+      name: /March 10, 2026/,
+    });
+    day.focus();
+    fireEvent.keyDown(day, {key: 'ArrowLeft'});
+    expect(document.activeElement).toHaveAttribute('data-date', '2026-03-11');
+    fireEvent.keyDown(document.activeElement!, {key: 'ArrowRight'});
+    expect(document.activeElement).toHaveAttribute('data-date', '2026-03-10');
   });
 
   it('moves a week at a time with the vertical arrows', () => {

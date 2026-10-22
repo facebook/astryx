@@ -11,6 +11,7 @@
 import {describe, it, expect} from 'vitest';
 import {docs} from './docs.mjs';
 import {AstryxError} from '../error.mjs';
+import {formatCliCommand} from '../../foundation/env/package-manager.mjs';
 
 const SLOW = 30_000;
 
@@ -53,7 +54,7 @@ describe('docs() dispatcher routing', () => {
 
   it('reads a shortened section by its old key, which its title still derives', async () => {
     const r = await docs(
-      'styling',
+      'styling/tokens-and-setup',
       'stylex-build-setup-required-for-swizzled-components',
     );
     expect(r.type).toBe('docs.detail.section');
@@ -92,7 +93,7 @@ describe('docs() dispatcher routing', () => {
 
   it("lists the docs tree's namespaces in meta, so every data entry reads as a topic", async () => {
     const res = await docs();
-    expect(res.meta.namespaces.map(entry => entry.topic)).toEqual(['cli', 'layout', 'unorganized']);
+    expect(res.meta.namespaces.map(entry => entry.topic)).toEqual(['cli', 'global', 'internationalization', 'layout', 'migration', 'styling', 'styling-libraries', 'tokens', 'typography', 'unorganized']);
     for (const entry of res.data) {
       expect((await docs(entry.topic)).type).toBe('docs.detail');
     }
@@ -107,7 +108,9 @@ describe('docs() dispatcher routing', () => {
   it('a section of a typed doc -> ERR_UNKNOWN_SECTION, suggesting the doc itself', async () => {
     const err = await docs('cli/api/functions/search', 'x').catch(e => e);
     expect(err.code).toBe('ERR_UNKNOWN_SECTION');
-    expect(err.message).toContain('astryx docs cli/api/functions/search');
+    expect(err.message).toContain(
+      formatCliCommand('docs cli/api/functions/search'),
+    );
     expect(err.suggestions.map(s => s.name)).toEqual(['cli/api/functions/search']);
   }, SLOW);
 
@@ -120,7 +123,13 @@ describe('docs() dispatcher routing', () => {
       kind: 'namespace',
       package: '@astryxdesign/cli',
       breadcrumb: [{route: 'cli', title: 'Astryx CLI'}],
-      content: [],
+      // Its one block points to the host entry's guide.
+      content: [
+        {
+          type: 'prose',
+          text: expect.stringContaining('`astryx docs cli/host-entry`'),
+        },
+      ],
     });
     expect(r.data.slots.flatMap(slot => slot.children.map(c => c.route))).toEqual([
       'cli/api/functions',
@@ -240,16 +249,15 @@ describe('docs() dispatcher routing', () => {
     );
   }, SLOW);
 
-  it('a section of a namespace -> ERR_UNKNOWN_SECTION, naming its children', async () => {
-    const err = await docs('cli', 'commands').catch(e => e);
+  it('a section no guide of a namespace has -> ERR_UNKNOWN_SECTION, naming its guides', async () => {
+    const err = await docs('cli', 'zzzz-nope').catch(e => e);
     expect(err).toBeInstanceOf(AstryxError);
     expect(err.code).toBe('ERR_UNKNOWN_SECTION');
-    // It names the namespace's children, in the order its slots list them.
-    const cli = (await docs('cli')).data;
-    expect(err.suggestions.map(s => s.name)).toEqual(
-      cli.slots.flatMap(slot => slot.children.map(child => child.route)),
-    );
-    expect(err.suggestions.map(s => s.name)).toContain('cli/commands');
+    // It names every guide below the namespace, at any depth.
+    const names = err.suggestions.map(s => s.name);
+    expect(names).toContain('cli/component-lookups');
+    expect(names).toContain('cli/integrations/quick-start');
+    expect(names.every(name => name.startsWith('cli/'))).toBe(true);
   }, SLOW);
 
   it('an unknown route suggests the children of the deepest namespace it reaches', async () => {

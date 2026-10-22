@@ -34,10 +34,10 @@ import {
 const OUTPUT = path.resolve('test-results/richtext-markdown-parity');
 
 const STORY = {
-  sideBySide: 'lab-richtexteditor--markdown-parity',
-  toggle: 'lab-richtexteditor--markdown-parity-toggle',
-  overlay: 'lab-richtexteditor--markdown-parity-overlay',
-  longDocument: 'lab-richtexteditor--markdown-parity-long-document',
+  sideBySide: 'richtext-richtexteditor--markdown-parity',
+  toggle: 'richtext-richtexteditor--markdown-parity-toggle',
+  overlay: 'richtext-richtexteditor--markdown-parity-overlay',
+  longDocument: 'richtext-richtexteditor--markdown-parity-long-document',
 } as const;
 
 /** The exemptions the repository's Storybook axe audit already makes. */
@@ -315,7 +315,7 @@ test('a rule at either edge of the document adds no outer margin', async ({
 }) => {
   await page.setViewportSize(DESKTOP);
   await page.goto(
-    `${storybook.origin}/iframe.html?id=lab-richtexteditor--markdown-serializers&viewMode=story&globals=astryxTheme:neutral;colorMode:light;direction:ltr`,
+    `${storybook.origin}/iframe.html?id=richtext-richtexteditor--markdown-serializers&viewMode=story&globals=astryxTheme:neutral;colorMode:light;direction:ltr`,
     {waitUntil: 'load'},
   );
   await page.locator('textarea').fill('---\n\nBetween the rules.\n\n---');
@@ -542,7 +542,7 @@ test('task items own their checkboxes, keep link tab order, and toggle by keyboa
 }) => {
   await page.setViewportSize(DESKTOP);
   await page.goto(
-    `${storybook.origin}/iframe.html?id=lab-richtexteditor--markdown-serializers&viewMode=story&globals=astryxTheme:neutral;colorMode:light;direction:ltr`,
+    `${storybook.origin}/iframe.html?id=richtext-richtexteditor--markdown-serializers&viewMode=story&globals=astryxTheme:neutral;colorMode:light;direction:ltr`,
     {waitUntil: 'load'},
   );
   await page
@@ -670,9 +670,8 @@ test('task items own their checkboxes, keep link tab order, and toggle by keyboa
 // both surfaces, so the code sits at the same place; the header is not part
 // of the editable text.
 /**
- * Whether core Markdown scrolls a fence's lines sideways. RichText wraps them
- * instead (a scrolling region inside the editable text cannot take focus), so
- * a fence whose lines do not fit is taller in RichText by its wrapped lines.
+ * Whether core Markdown scrolls a fence's lines sideways. Under spec:AST-061
+ * FR5 / DEC-9 it never does: both surfaces wrap long code lines.
  */
 async function markdownFenceScrolls(page: Page, key: string): Promise<boolean> {
   return page.evaluate(
@@ -695,12 +694,12 @@ for (const viewport of [PHONE, DESKTOP, {width: 2200, height: 900}] as const) {
     await waitForDocument(page, RICH_TEXT);
     const markdown = await surfaceGeometry(page, MARKDOWN);
     const richText = await surfaceGeometry(page, RICH_TEXT);
-    const code = (geometry: SurfaceGeometry) =>
-      geometry.blocks.find(block => block.key === 'code-fence');
-    if (!(await markdownFenceScrolls(page, 'code-fence'))) {
-      expect(
-        Math.abs((code(richText)?.height ?? 0) - (code(markdown)?.height ?? 0)),
-      ).toBeLessThanOrEqual(2);
+    // Fenced code wraps on both surfaces (spec:AST-061 FR5, DEC-9): no fence
+    // scrolls sideways.
+    for (const key of ['code-fence', 'code-long']) {
+      expect(await markdownFenceScrolls(page, key), `${key} scrolls`).toBe(
+        false,
+      );
     }
     // Each frame is sized like core Markdown's: as wide as its longest line,
     // at least the 680px measure (or the whole width when narrower), and no
@@ -747,6 +746,24 @@ for (const viewport of [PHONE, DESKTOP, {width: 2200, height: 900}] as const) {
         keys: ['code-fence', 'code-plain', 'code-unknown', 'code-long'],
       },
     );
+    // The editor's frame is 18px narrower than the reader's at every width
+    // (the field inset). Above phone width `code-long` still wraps to the same
+    // number of lines on both surfaces (two at 1440px), so the block is as
+    // tall in read as in edit mode (DEC-9). At phone width it takes one more
+    // line in the editor: the known editor-frame gap that AST-061's
+    // Current-state impact records, so the check skips that width.
+    if (viewport.width !== PHONE.width) {
+      for (const key of ['code-fence', 'code-long']) {
+        const block = (geometry: SurfaceGeometry) =>
+          geometry.blocks.find(candidate => candidate.key === key);
+        expect(
+          Math.abs(
+            (block(richText)?.height ?? 0) - (block(markdown)?.height ?? 0),
+          ),
+          `${key} height`,
+        ).toBeLessThanOrEqual(2);
+      }
+    }
     for (const frame of frames) {
       if (frame.key === 'code-long') {
         // A long line widens the frame past the measure, up to the room.
@@ -825,7 +842,7 @@ test('code blocks wrap long lines at phone width and copy from the keyboard', as
   await context.grantPermissions(['clipboard-read', 'clipboard-write']);
   await page.setViewportSize(PHONE);
   await page.goto(
-    `${storybook.origin}/iframe.html?id=lab-richtexteditor--markdown-serializers&viewMode=story&globals=astryxTheme:neutral;colorMode:light;direction:ltr`,
+    `${storybook.origin}/iframe.html?id=richtext-richtexteditor--markdown-serializers&viewMode=story&globals=astryxTheme:neutral;colorMode:light;direction:ltr`,
     {waitUntil: 'load'},
   );
   const token = 'x'.repeat(160);
@@ -938,7 +955,7 @@ for (const globals of [
   test(`list markers cycle by depth (${globals})`, async ({page}) => {
     await page.setViewportSize(DESKTOP);
     await page.goto(
-      `${storybook.origin}/iframe.html?id=lab-richtexteditor--markdown-serializers&viewMode=story&globals=astryxTheme:neutral;${globals}`,
+      `${storybook.origin}/iframe.html?id=richtext-richtexteditor--markdown-serializers&viewMode=story&globals=astryxTheme:neutral;${globals}`,
       {waitUntil: 'load'},
     );
     const depths = Array.from({length: 9}, (_, depth) => depth);
@@ -1044,7 +1061,7 @@ test('struck text is a deletion around its other marks, and stays one while edit
 }) => {
   await page.setViewportSize(DESKTOP);
   await page.goto(
-    `${storybook.origin}/iframe.html?id=lab-richtexteditor--markdown-serializers&viewMode=story&globals=astryxTheme:neutral;colorMode:light;direction:ltr`,
+    `${storybook.origin}/iframe.html?id=richtext-richtexteditor--markdown-serializers&viewMode=story&globals=astryxTheme:neutral;colorMode:light;direction:ltr`,
     {waitUntil: 'load'},
   );
   await page
@@ -1275,7 +1292,7 @@ for (const globals of [
 test('edited code is colored again as it changes', async ({page}) => {
   await page.setViewportSize(DESKTOP);
   await page.goto(
-    `${storybook.origin}/iframe.html?id=lab-richtexteditor--markdown-serializers&viewMode=story&globals=astryxTheme:neutral;colorMode:light;direction:ltr`,
+    `${storybook.origin}/iframe.html?id=richtext-richtexteditor--markdown-serializers&viewMode=story&globals=astryxTheme:neutral;colorMode:light;direction:ltr`,
     {waitUntil: 'load'},
   );
   await page.locator('textarea').fill('```ts\nlet value = 1;\n```');
@@ -1313,7 +1330,7 @@ test('bold italic text is emphasis and strong in the editor and the view', async
 }) => {
   await page.setViewportSize(DESKTOP);
   await page.goto(
-    `${storybook.origin}/iframe.html?id=lab-richtexteditor--markdown-serializers&viewMode=story&globals=astryxTheme:neutral;colorMode:light;direction:ltr`,
+    `${storybook.origin}/iframe.html?id=richtext-richtexteditor--markdown-serializers&viewMode=story&globals=astryxTheme:neutral;colorMode:light;direction:ltr`,
     {waitUntil: 'load'},
   );
   await page.locator('textarea').fill('Keep ***both*** and **bold** here.');
@@ -1334,7 +1351,7 @@ test('nested numbered lists keep their start in the editor and the view', async 
 }) => {
   await page.setViewportSize(DESKTOP);
   await page.goto(
-    `${storybook.origin}/iframe.html?id=lab-richtexteditor--markdown-serializers&viewMode=story&globals=astryxTheme:neutral;colorMode:light;direction:ltr`,
+    `${storybook.origin}/iframe.html?id=richtext-richtexteditor--markdown-serializers&viewMode=story&globals=astryxTheme:neutral;colorMode:light;direction:ltr`,
     {waitUntil: 'load'},
   );
   await page
@@ -1381,7 +1398,7 @@ for (const viewport of [PHONE, {width: 1280, height: 900}] as const) {
     }) => {
       await page.setViewportSize(viewport);
       await page.goto(
-        `${storybook.origin}/iframe.html?id=lab-richtexteditor--markdown-serializers&viewMode=story&globals=astryxTheme:neutral;${globals}`,
+        `${storybook.origin}/iframe.html?id=richtext-richtexteditor--markdown-serializers&viewMode=story&globals=astryxTheme:neutral;${globals}`,
         {waitUntil: 'load'},
       );
       for (const columnCount of [2, 20]) {
@@ -1853,7 +1870,7 @@ for (const direction of ['ltr', 'rtl'] as const) {
   }) => {
     await page.setViewportSize(DESKTOP);
     await page.goto(
-      `${storybook.origin}/iframe.html?id=lab-richtexteditor--markdown-serializers&viewMode=story&globals=astryxTheme:neutral;colorMode:light;direction:${direction}`,
+      `${storybook.origin}/iframe.html?id=richtext-richtexteditor--markdown-serializers&viewMode=story&globals=astryxTheme:neutral;colorMode:light;direction:${direction}`,
       {waitUntil: 'load'},
     );
     await page

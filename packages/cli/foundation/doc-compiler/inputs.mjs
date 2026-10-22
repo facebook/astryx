@@ -81,12 +81,38 @@ const NON_DESCRIPTOR_DIRS = new Set([
 export async function collectDocInputs(project) {
   const list = new InputList();
 
+  // A component documented as a member of its family's doc (HStack and VStack
+  // in Stack's doc) is read through the family's own entry: one descriptor,
+  // one reader. Own docs go first so the family keeps its name.
+  /** @type {Array<{name: string, package: string, docPath: string}>} */
+  const ownDocs = [];
+  /** @type {Array<{name: string, package: string, docPath: string}>} */
+  const familyDocs = [];
   for (const record of await project.components()) {
     if (record.docPath == null) continue;
+    const stem = path
+      .basename(record.docPath)
+      .replace(/\.doc\.[cm]?[jt]s$/u, '')
+      .replace(/^XDS/u, '');
+    const entry = {
+      name: record.name,
+      package: record.package,
+      docPath: record.docPath,
+    };
+    (stem === record.name ? ownDocs : familyDocs).push(entry);
+  }
+  for (const record of ownDocs) {
+    list.add('components', record.name, record.package, record.docPath);
+  }
+  for (const record of familyDocs) {
+    if (list.claims(record.docPath)) continue;
     list.add('components', record.name, record.package, record.docPath);
   }
 
-  const coreDir = findCoreDir(project.cwd);
+  const coreDir =
+    typeof project.coreDir === 'function'
+      ? project.coreDir()
+      : findCoreDir(project.cwd);
   if (coreDir != null) {
     for (const name of Object.values(discoverHooks(coreDir)).flat()) {
       const file = findHookDoc(coreDir, name);

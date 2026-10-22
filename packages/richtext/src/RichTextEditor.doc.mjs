@@ -37,6 +37,26 @@ export const docs = {
       description: 'Description text displayed between the label and editor.',
     },
     {
+      name: 'isOptional',
+      type: 'boolean',
+      description:
+        'Displays an "Optional" indicator next to the label. Mutually exclusive with isRequired.',
+      default: 'false',
+    },
+    {
+      name: 'isRequired',
+      type: 'boolean',
+      description:
+        'Displays a "Required" indicator next to the label and sets aria-required on the editable surface. Mutually exclusive with isOptional.',
+      default: 'false',
+    },
+    {
+      name: 'labelTooltip',
+      type: 'string',
+      description:
+        'Tooltip text displayed in an info icon at the end of the label.',
+    },
+    {
       name: 'defaultValue',
       type: 'string',
       description:
@@ -135,8 +155,9 @@ export const docs = {
       name: 'tabEscapeHint',
       type: 'string',
       description:
-        'Screen-reader hint describing how to move focus out of the editor, since Tab is bound to indentation (press Escape, then Tab). Visually hidden, wired via aria-describedby. Override to localize; pass "" to omit.',
-      default: "'Press Escape then Tab to move focus out of the editor.'",
+        'Screen-reader hint describing how to move focus out of the editor, since Tab is bound to indentation (press Escape, then Tab). Visually hidden, wired via aria-describedby. Translated for the active locale; override to change the text, or pass "" to omit.',
+      default:
+        "'Press Escape then Tab to move focus out of the editor.' (translated)",
     },
     {
       name: 'maxLength',
@@ -156,6 +177,12 @@ export const docs = {
       description:
         'Minimum height of the editable content surface. Numbers are pixels; strings are used as CSS lengths. Content continues growing beyond this height.',
       default: "'4.5rem'",
+    },
+    {
+      name: 'namespace',
+      type: 'string',
+      description: 'The Lexical composer namespace, used for editor identity.',
+      default: "'astryx-editor'",
     },
     {
       name: 'xstyle',
@@ -178,12 +205,12 @@ export const docs = {
   },
   usage: {
     description:
-      'A WYSIWYG rich-text editor built on Lexical, styled with Astryx design tokens. Its field container shares TextArea input visuals for the resting border, hover ring, focus-within ring, disabled state, and status colors. Experimental component in @astryxdesign/richtext (canary). lexical and @lexical/* are optional peer dependencies. The editor is deliberately minimal and extensible: pass toolbar, nodes, and plugins to layer richer behaviour (formatting, mentions, hover cards) on top without forking. Use RichTextView to render serialized content read-only.',
+      'A WYSIWYG rich-text editor built on Lexical, styled with Astryx design tokens. Its field container shares TextArea input visuals for the resting border, hover ring, focus-within ring, disabled state, and status colors. Ships from @astryxdesign/richtext; lexical and @lexical/* are optional peer dependencies. The editor is deliberately minimal and extensible: pass toolbar, nodes, and plugins to layer richer behaviour (formatting, mentions, hover cards) on top without forking. Use RichTextView to render serialized content read-only.',
     bestPractices: [
       {
         guidance: true,
         description:
-          'Install lexical and @lexical/react (optional peers) before importing from @astryxdesign/richtext.',
+          'RichText is built on Lexical and exposes it: nodes and transformers take Lexical types, plugins takes Lexical React plugins, and onChange and getEditorState() report Lexical types. Install the lexical and @lexical/* peers (optional peers) at the Lexical minor named in the package peer ranges before importing from @astryxdesign/richtext.',
       },
       {
         guidance: true,
@@ -223,12 +250,12 @@ export const docs = {
       {
         guidance: true,
         description:
-          'Add a formatting toolbar with toolbar={<RichTextEditorToolbar />}. The dedicated slot places it edge-to-edge at the top of the field, before the padded editing surface, with correct keyboard order. It uses small Astryx Toolbar controls: undo/redo, a divided block-format Selector for paragraphs/headings/lists/quotes, then divided inline ToggleButtons for bold/italic/underline/strikethrough/code and links. The complete action row scrolls horizontally when space is tight, keeping every control directly available without a More menu. The Selector keeps its default adaptive placement. Compose extra controls via endContent.',
+          'Add a formatting toolbar with toolbar={<RichTextEditorToolbar />}. The dedicated slot places it edge-to-edge at the top of the field, before the padded editing surface, with a RichText-owned 4px control gutter and correct keyboard order. It uses small Astryx Toolbar controls: undo/redo, a divided block-format Selector for paragraphs/headings/lists/quotes, then divided inline ToggleButtons for bold/italic/underline/strikethrough/code and links. The complete action row scrolls horizontally when space is tight, keeping every control directly available without a More menu. The Selector keeps its default adaptive placement. Compose extra controls via endContent.',
       },
       {
         guidance: true,
         description:
-          'Links: the toolbar Link button (on by default; disable with hasLink={false}) and Cmd/Ctrl+K open an Astryx Dialog. The form preserves the Lexical selection while focus moves into the URL input and supports add, update, remove, Escape, and focus return. Pass promptForUrl only when integrating an existing synchronous URL flow. Entered URLs are sanitized (only http/https/mailto/tel are written; javascript:/data: are rejected). Links open in a new tab by default: target=_blank and rel=noopener noreferrer are written into the link node data; set linkOpensInNewTab={false} for same-tab links.',
+          'Links: the toolbar Link button (on by default; disable with hasLink={false}) and Cmd/Ctrl+K open an Astryx Dialog. The form preserves the Lexical selection while focus moves into the URL input and supports add, update, remove, Escape, and focus return. Pass promptForUrl only when integrating an existing synchronous URL flow. Entered URLs are sanitized (only http/https/mailto/tel are written; javascript:/data: are rejected). Links open in a new tab by default: target=_blank and rel=noopener noreferrer are written into the link node data; set hasNewTabLinks={false} for same-tab links. The toolbar takes base props and passes them to the Astryx Toolbar it renders: ref, className, style and xstyle on its root; data-*, other aria-* attributes and DOM handlers on the toolbar element (name it with label, not aria-label).',
       },
       {
         guidance: true,
@@ -238,7 +265,7 @@ export const docs = {
       {
         guidance: true,
         description:
-          "The toolbar's glyphs are themeable. Each control resolves its icon from the core icon registry under a stable richtext:* key (see RICHTEXT_ICON_KEYS), falling back to a bundled inline SVG. A theme can restyle any glyph without forking the toolbar: registerIcons({'richtext:bold': <MyBoldIcon />}) from @astryxdesign/core/Icon. registerIcons now accepts arbitrary extension keys, and getExtendedIcon(key, fallback) resolves them; the same pattern any library can use to make its own icons theme-overridable.",
+          "The toolbar's glyphs are themeable. Each control resolves its icon from the core icon registry under a stable richtext:* key (see RICHTEXT_ICON_KEYS), falling back to a bundled inline SVG. A theme restyles any glyph without forking the toolbar by naming its key: defineTheme({icons: {'richtext:bold': <MyBoldIcon />}}). Undo and redo mirror under right-to-left direction, whichever glyph draws them.",
       },
       {
         guidance: false,

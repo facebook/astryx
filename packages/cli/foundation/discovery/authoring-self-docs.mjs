@@ -46,6 +46,7 @@ export const AUTHORING_SELF_DOCS = [
   'doctypes/reference/reference.doc.mjs',
   'doctypes/schema/schema.doc.mjs',
   'doctypes/template/template.doc.mjs',
+  'doctypes/template/integration-template.doc.mjs',
   'doctypes/theme/theme.doc.mjs',
 ];
 
@@ -192,7 +193,7 @@ export function buildAuthoringReferenceDoc(docs) {
     title: 'Authoring Reference',
     category: 'guide',
     description:
-      'Every file an integration author writes, field by field: the integration manifest, astryx.config, codemods, identity, and each doc type.',
+      'Every file an integration author writes, field by field: the integration manifest, astryx.config, codemods, identity, and each doc type. The step-by-step guides are under `astryx docs cli/integrations`.',
     sections: docs.map(selfDocSection),
   });
 }

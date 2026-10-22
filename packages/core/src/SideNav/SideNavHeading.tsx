@@ -4,7 +4,8 @@
 
 /**
  * @file SideNavHeading.tsx
- * @input Uses React, useRef, useCallback, ReactNode, StyleX, usePopover
+ * @input Uses React, useRef, useCallback, ReactNode, StyleX, usePopover,
+ *        useMenuHover
  * @output Exports SideNavHeading component and SideNavHeadingProps
  * @position Core implementation; used inside SideNav header slot
  *
@@ -397,6 +398,12 @@ export function SideNavHeading({
     isOpen: popover.isOpen,
     isEnabled: !!menu,
     showDelay: 0,
+    // Collapsed, the flyout opens beside the icon button, so a press on the
+    // button lands outside the auto popover and the browser would light-dismiss
+    // a hover-open before the click guard can confirm it. Expanded, the panel
+    // overlaps the heading, and the trigger is a <div> whose click must not be
+    // default-prevented: it holds the heading's own links.
+    popoverId: isCollapsed ? popover.id : undefined,
   });
 
   const closeMenuCtx = useMemo(() => ({closeMenu}), [closeMenu]);

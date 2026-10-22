@@ -9,6 +9,7 @@
  * SYNC: When DateRangeInput.tsx changes, update tests to match new behavior
  */
 
+import {useState} from 'react';
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -121,7 +122,7 @@ describe('DateRangeInput', () => {
     expect(screen.getByText('Range')).toBeInTheDocument();
   });
 
-  it('sets aria-required when isRequired is true', () => {
+  it('announces required state from a valid button description', () => {
     render(
       <DateRangeInput
         label="Range"
@@ -131,13 +132,17 @@ describe('DateRangeInput', () => {
       />,
     );
     const trigger = getButton(/Range/);
-    expect(trigger).toHaveAttribute('aria-required', 'true');
+    expect(trigger).not.toHaveAttribute('aria-required');
+    const describedBy = trigger.getAttribute('aria-describedby');
+    expect(describedBy).not.toBeNull();
+    expect(document.getElementById(describedBy!)).toHaveTextContent('Required');
   });
 
-  it('does not set aria-required when isRequired is false', () => {
+  it('does not add a required description when isRequired is false', () => {
     render(<DateRangeInput label="Range" value={null} onChange={() => {}} />);
     const trigger = getButton(/Range/);
     expect(trigger).not.toHaveAttribute('aria-required');
+    expect(trigger).not.toHaveAttribute('aria-describedby');
   });
 
   it('disables trigger when isDisabled is true', () => {
@@ -169,6 +174,31 @@ describe('DateRangeInput', () => {
     render(<DateRangeInput label="Range" value={null} onChange={() => {}} />);
     const trigger = getButton(/Range/);
     expect(trigger).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('keeps the optimistic range in the trigger name while saving', async () => {
+    const optimisticRange = {
+      start: '2026-03-01',
+      end: '2026-03-07',
+    } as const;
+    render(
+      <DateRangeInput
+        label="Range"
+        value={null}
+        onChange={() => {}}
+        changeAction={async () => new Promise(() => {})}
+        presets={[{label: 'Last 7 days', getRange: () => optimisticRange}]}
+      />,
+    );
+    const trigger = getButton(/^Range:/);
+
+    fireEvent.click(getButton('Open calendar'));
+    fireEvent.click(getButton('Last 7 days'));
+
+    await waitFor(() => {
+      expect(trigger).toHaveTextContent(/Mar.*1.*Mar.*7/);
+    });
+    expect(trigger).toHaveAccessibleName(/Range:.*Mar.*1.*Mar.*7/);
   });
 
   it('renders status icon for error status', () => {
@@ -258,6 +288,87 @@ describe('DateRangeInput', () => {
   });
 
   describe('hasClear', () => {
+    it('shows no selected calendar days after clearing', async () => {
+      const user = userEvent.setup();
+      function ControlledDateRangeInput() {
+        const [controlledValue, setControlledValue] =
+          useState<DateRange | null>({
+            start: '2026-01-01',
+            end: '2026-01-03',
+          });
+        return (
+          <DateRangeInput
+            label="Range"
+            value={controlledValue}
+            onChange={setControlledValue}
+            min="2026-01-01"
+            max="2026-01-31"
+            numberOfMonths={1}
+          />
+        );
+      }
+      render(<ControlledDateRangeInput />);
+
+      await user.click(getButton('Open calendar'));
+      await user.click(getButton(/January 15, 2026/));
+      await user.click(getButton(/January 16, 2026/));
+      await user.click(getButton('Clear Range'));
+      await user.click(getButton('Open calendar'));
+
+      expect(
+        screen.queryAllByRole('gridcell', {selected: true, hidden: true}),
+      ).toHaveLength(0);
+    });
+
+    it('returns focus to the trigger when the clear button is activated by keyboard', async () => {
+      const user = userEvent.setup();
+      function ControlledDateRangeInput() {
+        const [controlledValue, setControlledValue] =
+          useState<DateRange | null>({
+            start: '2026-01-01',
+            end: '2026-01-03',
+          });
+        return (
+          <DateRangeInput
+            label="Range"
+            value={controlledValue}
+            onChange={setControlledValue}
+          />
+        );
+      }
+      render(<ControlledDateRangeInput />);
+
+      getButton('Clear Range').focus();
+      await user.keyboard('{Enter}');
+
+      expect(queryButton('Clear Range')).not.toBeInTheDocument();
+      expect(getButton(/^Range:/)).toHaveFocus();
+    });
+
+    it('does not move focus to the trigger when the clear button is clicked', async () => {
+      const user = userEvent.setup();
+      function ControlledDateRangeInput() {
+        const [controlledValue, setControlledValue] =
+          useState<DateRange | null>({
+            start: '2026-01-01',
+            end: '2026-01-03',
+          });
+        return (
+          <DateRangeInput
+            label="Range"
+            value={controlledValue}
+            onChange={setControlledValue}
+          />
+        );
+      }
+      render(<ControlledDateRangeInput />);
+
+      await user.click(getButton('Clear Range'));
+
+      expect(queryButton('Clear Range')).not.toBeInTheDocument();
+      expect(getButton(/^Range:/)).not.toHaveFocus();
+    });
+
     it('shows clear button when hasClear is true and value exists', () => {
       const range: DateRange = {
         start: '2026-03-15',
@@ -709,7 +820,7 @@ describe('DateRangeInput icon theme targets', () => {
     return icon as HTMLElement;
   };
 
-  it('renders astryx-input-clear-icon (plus the legacy alias) on the clear glyph', () => {
+  it('renders only astryx-input-clear-icon on the clear glyph', () => {
     render(
       <DateRangeInput
         label="Range"
@@ -721,11 +832,10 @@ describe('DateRangeInput icon theme targets', () => {
     // The canonical target lands on the icon element itself (not the button),
     // so a theme can restyle just this glyph (color, size, hover) via
     // defineTheme — a button-level target could not reach the icon's own
-    // color/size. The original per-component name remains as a compatibility
-    // alias.
+    // color/size.
     const icon = iconIn(getButton('Clear Range'));
     expect(icon).toHaveClass('astryx-input-clear-icon');
-    expect(icon).toHaveClass('astryx-date-range-input-clear-icon');
+    expect(icon).not.toHaveClass('astryx-date-range-input-clear-icon');
     expect(icon).toHaveClass('astryx-icon');
   });
 
@@ -741,8 +851,9 @@ describe('DateRangeInput icon theme targets', () => {
   it('routes the clear glyph through the shared clear button (default look unchanged)', () => {
     // Default-look guard for the clear affordance. It now composes the shared
     // InputClearButton (a ghost Button with a secondary/sm glyph), so aside
-    // from its target classes the glyph matches a standalone `secondary`/`sm`
-    // close icon — the default clear look is defined once, in InputClearButton.
+    // from its canonical target class the glyph matches a standalone
+    // `secondary`/`sm` close icon — the default clear look is defined once, in
+    // InputClearButton.
     // (The calendar-toggle glyph is covered separately.)
     render(
       <DateRangeInput
@@ -764,11 +875,7 @@ describe('DateRangeInput icon theme targets', () => {
     const styleClasses = (el: HTMLElement) =>
       el.className
         .split(' ')
-        .filter(
-          c =>
-            c !== 'astryx-input-clear-icon' &&
-            c !== 'astryx-date-range-input-clear-icon',
-        )
+        .filter(c => c !== 'astryx-input-clear-icon')
         .sort();
 
     expect(styleClasses(clearIcon)).toEqual(styleClasses(clearRefIcon));
@@ -783,7 +890,7 @@ describe('DateRangeInput icon theme targets', () => {
     const theme = defineTheme({
       name: 'date-range-input-icon-test',
       components: {
-        'date-range-input-clear-icon': {
+        'input-clear-icon': {
           base: {
             width: '12px',
             height: '12px',
@@ -798,7 +905,7 @@ describe('DateRangeInput icon theme targets', () => {
       },
     });
     const css = generateThemeTestCSS(theme);
-    expect(css).toContain('.astryx-date-range-input-clear-icon');
+    expect(css).toContain('.astryx-input-clear-icon');
     expect(css).toContain('.astryx-date-range-input-toggle-icon');
     expect(css).toContain(':hover');
     expect(css).toContain('12px');

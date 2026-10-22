@@ -15,6 +15,7 @@ verified_by:
     packages/core/src/BottomSheet/BottomSheet.test.tsx,
     packages/core/src/BottomSheet/BottomSheetPanel.test.tsx,
     packages/core/src/BottomSheet/BottomSheetKeyboard.test.tsx,
+    packages/core/src/BottomSheet/__tests__/BottomSheetNativeModal.a11y.browser.spec.ts,
     packages/core/src/BottomSheet/__tests__/BottomSheetKeyboard.a11y.browser.spec.ts,
     apps/storybook/stories/BottomSheet.stories.tsx,
     scripts/check-knowledge.mjs,
@@ -53,6 +54,36 @@ scrolling, theming reachability, and the Content area's container padding.
 
 Consumer migration instructions belong in consumer docs and release notes.
 
+### DEP-0009 — Deprecate the unpadded default Content area of `BottomSheet`
+
+| Field            | Value                                                                                                                                                               |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| id               | `DEP-0009`                                                                                                                                                          |
+| cleanup          | `CLN-0018`                                                                                                                                                          |
+| package          | `@astryxdesign/core`                                                                                                                                                |
+| surface          | Default inset of the `BottomSheet` Content area when no `padding` prop and no theme padding are set                                                                 |
+| old contract     | The Content area has no padding                                                                                                                                     |
+| replacement      | `padding={0}` keeps the unpadded Content area; `padding` and theme padding already resolve before the default                                                       |
+| direct authority | `component:BottomSheet` Compatibility and migration. Owners: `cixzhang`                                                                                             |
+| warning          | Consumer docs and the release notes name `DEP-0009` and `padding={0}`. No runtime warning (`spec:AST-017` FR29)                                                     |
+| migration        | Mechanical: add `padding={0}` to a BottomSheet that sets no padding, unless its only child is a padded Section or a Layout                                          |
+| codemod          | `astryx upgrade` adds `padding={0}` before any spread, skips sheets whose only child is a core Section or Layout, and marks a nested padding-less Layout for review |
+| downstream       | In-repo sheets that supply their own inset pass `padding={0}`; consumer examples rely on the default inset                                                          |
+| transition       | no prior transition                                                                                                                                                 |
+| state            | `proposed`                                                                                                                                                          |
+| open decision    | This record is draft and needs approval                                                                                                                             |
+| target plan      | `CLN-0018` in the next minor release                                                                                                                                |
+
+### CLN-0018 — BottomSheet pads its Content area by default
+
+| Field     | Value                                                                                                                                |
+| --------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| id        | `CLN-0018`                                                                                                                           |
+| lifecycle | `DEP-0009`                                                                                                                           |
+| delta     | With no `padding` prop and no theme padding, the Content area insets by `--spacing-4` on every logical edge and publishes that inset |
+| rollback  | Restore the unpadded default from the final-patch baseline                                                                           |
+| state     | `pending` — lands in a declared minor with its `[breaking]` Changeset                                                                |
+
 ## Ownership boundary
 
 **Owns**
@@ -63,14 +94,17 @@ Consumer migration instructions belong in consumer docs and release notes.
 - The Content area's container padding, published per
   `architecture:container-padding`.
 - Standalone sheet presentation, including its optional native-dialog Scrim.
+- The native dialog every sheet renders, standalone or switcher-managed
+  (`component:BottomSheetSwitcher` DEC-1's decided structure).
 
 **Does not own / non-goals**
 
 - Caller-provided content rendered inside the Content area.
 - A separate target for Content area, Handle, or Scrim; none exists on current
   `main`.
-- A shared switcher dialog or scrim — owned by BottomSheetSwitcher when the sheet
-  participates in that host.
+- The presentation lifecycle of its dialog and the flow's scrim ownership when
+  the sheet participates in a BottomSheetSwitcher — owned by BottomSheetSwitcher
+  (`component:BottomSheetSwitcher` DEC-1's decided structure).
 - Shared layer hosting or dismissal policy.
 
 ## Public concepts
@@ -98,8 +132,10 @@ in `BottomSheet.doc.mjs`.
 - A standalone modal sheet renders Sheet panel, Content area, Handle, and Scrim.
 - A standalone non-modal sheet renders Sheet panel, Content area, and Handle
   without a Scrim.
-- A switcher-managed sheet renders the same panel anatomy while
-  BottomSheetSwitcher owns the shared dialog and optional Scrim.
+- A switcher-managed sheet renders the same panel anatomy in its own dialog while
+  BottomSheetSwitcher coordinates that dialog's lifecycle and the flow's one Scrim
+  (`component:BottomSheetSwitcher` DEC-1's decided structure, not shipped
+  anatomy).
 
 ### Transformation and precedence order
 
@@ -154,7 +190,7 @@ a decision that they must remain unthemeable.
   },
   "Scrim": {
     "none": {
-      "reason": "reachability-gap: No BottomSheet public target reaches the native dialog backdrop or switcher-owned scrim."
+      "reason": "reachability-gap: No BottomSheet public target reaches the native dialog backdrop, standalone or switcher-coordinated."
     }
   }
 }
@@ -170,9 +206,9 @@ a decision that they must remain unthemeable.
   and records that sheets retain local scrim and swipe behavior.
 - `spec:AST-025` owns effective scroll measurement, overflow and containment,
   automatic keyboard-owner selection, and focus continuity.
-- `family:overlay-dismissal` owns shared Escape and platform-close ordering and
-  records BottomSheet's current local-only adoption gap. This anatomy backfill
-  does not migrate that runtime behavior.
+- `family:overlay-dismissal` owns shared Escape and platform-close ordering. A
+  standalone BottomSheet registers with the shared stack while it is presented;
+  a switcher-hosted sheet is covered by BottomSheetSwitcher's registration.
 
 ## Verification map
 
@@ -180,7 +216,8 @@ a decision that they must remain unthemeable.
 | ------------------- | -------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------- | --------------------------------- |
 | FR1                 | `BottomSheet.test.tsx` render, content, Handle, and scrim behavior suites                          | Modal, non-modal, and switcher presentations                             | Removing a documented part fails existing content, structure, or dismissal assertions.                  | `audit:BottomSheet/anatomy`       |
 | FR2                 | Panel target assertion, source inspection, and theming target inventories                          | Sheet panel, Content area, Handle, and Scrim                             | Removing the panel target or documenting an unshipped child target fails evidence or inventory.         | `audit:BottomSheet/theming`       |
-| FR3, AR1–AR2        | `BottomSheetKeyboard.test.tsx`; `BottomSheetKeyboard.a11y.browser.spec.ts`; open Storybook stories | fitting/overflow, plain text, usable/unusable/dynamic descendants, focus | Missing/duplicate keyboard access, stale ownership, focus movement, or broken content-box layout fails. | `audit:BottomSheet/accessibility` |     | Layout evidence | `BottomSheetPanel.test.tsx` | Floating Handle and scrolling Content area | Reordering or merging the stable parts fails existing panel structure and style assertions. | `audit:BottomSheet/anatomy` |
+| FR3, AR1–AR2        | `BottomSheetKeyboard.test.tsx`; `BottomSheetKeyboard.a11y.browser.spec.ts`; open Storybook stories | fitting/overflow, plain text, usable/unusable/dynamic descendants, focus | Missing/duplicate keyboard access, stale ownership, focus movement, or broken content-box layout fails. | `audit:BottomSheet/accessibility` |
+| Layout evidence     | `BottomSheetPanel.test.tsx`                                                                        | Floating Handle and scrolling Content area                               | Reordering or merging the stable parts fails existing panel structure and style assertions.             | `audit:BottomSheet/anatomy`       |
 | FR4                 | `BottomSheetPanel.test.tsx` container padding tests; `derivedVarRegistry.test.ts`                  | default, `padding` prop, theme `padding`, lone padded Section child      | The published inset differs from the applied padding, or a lone padded Section changes geometry.        | `audit:BottomSheet/anatomy`       |
 | Theming anatomy map | `scripts/check-knowledge.mjs`                                                                      | Canonical anatomy and current target inventory                           | Missing, extra, prefixed, stale, or multiply assigned mappings fail repository validation.              | `audit:BottomSheet/theming`       |
 

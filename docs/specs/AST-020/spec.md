@@ -24,7 +24,7 @@ affects_consumer_docs: []
 {
   "scope": "global",
   "triggers": {
-    "accessibility": ["FR1", "FR2", "FR6"]
+    "accessibility": ["FR1", "FR2", "FR6", "FR15"]
   }
 }
 ```
@@ -80,6 +80,15 @@ review. It does not claim that one automated pass proves complete accessibility.
   pattern-specific role, state, relationship, keyboard, and focus requirements.
   A component part may bind to more than one pattern. A whole component MUST NOT be
   forced into one pattern when its parts have distinct roles.
+- **FR15 — Adoption follows the role a component already plays.** Where a
+  component part already plays an APG pattern's role, Astryx adopts that pattern's
+  required parts for it: the role, the accessible name, the state and relationship
+  properties, and activation by Tab plus Enter or Space. The pattern's optional
+  keyboard extras — arrow-key movement between parts, Home and End — are adopted
+  only where the component already acts as one composite control; a set of
+  independently focusable controls does not gain them. The owning component record
+  names the parts it adopts, any required part it does not adopt with the reason,
+  and any extra it adopts beyond this rule as a named exception.
 
 ### Expectation contract
 
@@ -212,13 +221,14 @@ or CI gate. Those changes follow in implementation work governed by this record.
 
 ## Verification
 
-| Contract  | Verification                                                                  | Representative states                                                                                  | Mutation or failure expectation                                                                                                                  |
-| --------- | ----------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| FR1–FR3   | Source and ownership review against WCAG 2.2, APG, and current Astryx records | component-owned A/AA criterion; page-owned criterion; one component with multiple parts                | A draft WCAG 3.0 statement gates CI, an APG example is treated as universal WCAG, or one component is forced into one pattern                    |
-| FR4–FR9   | Contract schema and runner self-tests                                         | required/advisory; unit/DOM/tree/axe/browser/manual/AT; toggle round trip; component-specific callback | A check lacks a source or layer, passes from an unsupported harness, depends on private markup, or one-way behavior hides a reverse-path failure |
-| FR10–FR12 | Completed checklist, positive/negative fixture suite, and independent review  | simple control; composite widget; overlay; page-owned criterion                                        | A dimension disappears silently, a mutation still passes, or review finds an unrecorded contract-encodable requirement                           |
-| FR13–FR14 | Pull-request template check plus id migration tests                           | new pattern; narrowed expectation; file-only refactor                                                  | Reviewers cannot understand the test from the PR, or an id change orphans bindings and gaps                                                      |
-| Platform  | Real-browser and AST-009 evidence-boundary checks                             | focus navigation; accessibility tree; forced colors; announcement timing                               | jsdom or a tree snapshot is credited with pixels, browser behavior, or spoken output it cannot observe                                           |
+| Contract  | Verification                                                                  | Representative states                                                                                     | Mutation or failure expectation                                                                                                                      |
+| --------- | ----------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| FR1–FR3   | Source and ownership review against WCAG 2.2, APG, and current Astryx records | component-owned A/AA criterion; page-owned criterion; one component with multiple parts                   | A draft WCAG 3.0 statement gates CI, an APG example is treated as universal WCAG, or one component is forced into one pattern                        |
+| FR4–FR9   | Contract schema and runner self-tests                                         | required/advisory; unit/DOM/tree/axe/browser/manual/AT; toggle round trip; component-specific callback    | A check lacks a source or layer, passes from an unsupported harness, depends on private markup, or one-way behavior hides a reverse-path failure     |
+| FR10–FR12 | Completed checklist, positive/negative fixture suite, and independent review  | simple control; composite widget; overlay; page-owned criterion                                           | A dimension disappears silently, a mutation still passes, or review finds an unrecorded contract-encodable requirement                               |
+| FR15      | Adoption review against the component's current role claims                   | a disclosure set adopting required parts only; a composite control adopting arrow keys; a named exception | A required part is skipped without the owning record's reason, or arrow keys are added to independently focusable controls without a named exception |
+| FR13–FR14 | Pull-request template check plus id migration tests                           | new pattern; narrowed expectation; file-only refactor                                                     | Reviewers cannot understand the test from the PR, or an id change orphans bindings and gaps                                                          |
+| Platform  | Real-browser and AST-009 evidence-boundary checks                             | focus navigation; accessibility tree; forced colors; announcement timing                                  | jsdom or a tree snapshot is credited with pixels, browser behavior, or spoken output it cannot observe                                               |
 
 ### Completion criteria
 
@@ -272,6 +282,22 @@ reviewable by accessibility specialists and maintainers.
 
 Rejected: code-only review or a generic accessibility checklist with no exact
 mapping to executable expectations.
+
+### DEC-4 — Adopt what the component already is
+
+**Reference:** `spec:AST-020/DEC-4`
+**Decider:** `cixzhang`, `2026-10-13`
+
+A pattern's required parts belong to any component part that already plays the
+pattern's role, because a user who meets that role expects its name, state, and
+activation. Its optional keyboard extras belong only to one composite control,
+because arrow keys and Home/End move within one widget; independent controls keep
+the page Tab order. A component that already ships an extra records it as a named
+exception rather than losing it.
+
+Rejected: adopting every part of a pattern wherever its role appears (arrow keys on
+independent controls); adopting nothing until a component matches an APG example in
+full.
 
 ## Open questions
 
