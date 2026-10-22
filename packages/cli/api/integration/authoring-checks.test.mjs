@@ -1642,7 +1642,7 @@ describe('validateIntegration runner-command notes', () => {
 
   it('reads the command after leading global flags in a {@command} token', async () => {
     writeTopic(
-      'Read it as data with {@command --json component Button} or {@command --detail full docs acme}, not {@command --json dcotor}, {@command --json nosuch docs} or {@command --detail full nosuch}.',
+      'Read it as data with {@command --json component Button} or {@command --detail full docs acme}, not {@command --json dcotor}, {@command --json nosuch docs} or {@command --detail full nosuch}. Check the version with {@command --version}; {@command --json} alone names nothing.',
     );
     const {data} = await validateIntegration(undefined, {cwd: tmpDir});
     const tokens = (data.notes ?? []).filter(
@@ -1650,7 +1650,8 @@ describe('validateIntegration runner-command notes', () => {
     );
     expect(
       tokens.map(note => note.message.match(/`(\w+)` is not/)?.[1]),
-    ).toEqual(['dcotor', 'nosuch', 'nosuch']);
+    ).toEqual(['dcotor', 'nosuch', 'nosuch', undefined]);
+    expect(tokens[3].message).toContain('names no Astryx command');
   });
 
   it('lists nothing for a topic written in the doc syntax', async () => {

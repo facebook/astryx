@@ -368,14 +368,19 @@ export function docCommandsIn(text, lang) {
       });
     } else if (
       step.kind === 'command' &&
-      !CLI_COMMANDS.includes(commandWord(step.args))
+      !CLI_COMMANDS.includes(commandWord(step.args)) &&
+      // `astryx --version` and `astryx --help` stand alone.
+      !(step.args.length === 1 && STANDALONE_FLAGS.has(step.args[0]))
     ) {
       const word = commandWord(step.args);
       found.push({
         at: source.indexOf(token),
         written: token,
         code: 'doc_token',
-        fix: `\`${word}\` is not an Astryx command; the commands are ${CLI_COMMANDS.join(', ')}`,
+        fix:
+          word === ''
+            ? `This token names no Astryx command: write the command first, then its flags; the commands are ${CLI_COMMANDS.join(', ')}`
+            : `\`${word}\` is not an Astryx command; the commands are ${CLI_COMMANDS.join(', ')}`,
       });
     }
   }
@@ -498,6 +503,9 @@ export async function findRunnerCommands(discovered) {
     each => each.code === 'runner_command',
   );
 }
+
+/** Flags the CLI answers on their own, with no command. */
+const STANDALONE_FLAGS = new Set(['--version', '-V', '--help', '-h']);
 
 /** The CLI's global flags that take a value (`--detail full`). */
 const VALUED_GLOBAL_FLAGS = new Set(['--detail', '--lang']);
