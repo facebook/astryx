@@ -135,17 +135,10 @@ export function useTypeahead(options: UseTypeaheadOptions): UseTypeaheadReturn {
     }
   }, []);
 
-  // The pending buffer reset never outlives the collection: a menu or list
-  // that unmounts mid-typing leaves no timer running behind it.
-  useEffect(
-    () => () => {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-        timeoutRef.current = undefined;
-      }
-    },
-    [],
-  );
+  // A collection that unmounts, or that an `<Activity>` boundary hides,
+  // mid-typing leaves no reset timer running and comes back with an empty
+  // buffer, as the reset would have left it.
+  useEffect(() => reset, [reset]);
 
   const scheduleReset = useCallback(() => {
     if (timeoutRef.current) {
