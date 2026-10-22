@@ -194,7 +194,15 @@
         },
         {
           "kind": "component",
+          "name": "TourStep"
+        },
+        {
+          "kind": "component",
           "name": "TransferList"
+        },
+        {
+          "kind": "component",
+          "name": "WeightedSVGIcon"
         },
         {
           "kind": "template",
