@@ -488,50 +488,201 @@ const SCOPED_STATUS_ROLE_DEFAULTS: ReadonlyArray<
 
 type TokenValues = Record<string, unknown>;
 
-const CSS_NAME_CHARACTER = String.raw`(?:[-_a-zA-Z0-9]|\P{ASCII}|\\(?:[0-9a-fA-F]{1,6}[ \t\r\n\f]?|[^\r\n\f]))`;
-const CSS_IGNORABLE = String.raw`(?:\s|\/\*[\s\S]*?\*\/)*`;
-const CSS_VAR_REFERENCE_PATTERN = new RegExp(
-  `var\\(${CSS_IGNORABLE}(--${CSS_NAME_CHARACTER}*)(?=${CSS_IGNORABLE}(?:,|\\)))`,
-  'giu',
-);
-const CSS_ESCAPE_PATTERN = /\\(?:([0-9a-fA-F]{1,6})[ \t\r\n\f]?|([^\r\n\f]))/gu;
+function isCSSWhitespace(character: string | undefined): boolean {
+  return character !== undefined && /[\t\n\f\r ]/.test(character);
+}
+
+function consumeCSSEscape(
+  text: string,
+  start: number,
+): {character: string; next: number} | null {
+  if (text[start] !== '\\' || start + 1 >= text.length) {
+    return null;
+  }
+  let next = start + 1;
+  let hex = '';
+  while (hex.length < 6 && /[0-9a-fA-F]/.test(text[next] ?? '')) {
+    hex += text[next];
+    next++;
+  }
+  if (hex.length > 0) {
+    if (isCSSWhitespace(text[next])) {
+      next++;
+    }
+    const codePoint = Number.parseInt(hex, 16);
+    return {
+      character:
+        codePoint === 0 || codePoint > 0x10ffff
+          ? '\uFFFD'
+          : String.fromCodePoint(codePoint),
+      next,
+    };
+  }
+  if (/\r|\n|\f/.test(text[next])) {
+    return null;
+  }
+  return {character: text[next], next: next + 1};
+}
+
+function readCSSIdentifier(
+  text: string,
+  start: number,
+): {value: string; next: number} | null {
+  let next = start;
+  let value = '';
+  while (next < text.length) {
+    const character = text[next];
+    if (/[-_a-zA-Z0-9]/.test(character) || character.charCodeAt(0) > 0x7f) {
+      value += character;
+      next++;
+      continue;
+    }
+    const escape = consumeCSSEscape(text, next);
+    if (escape === null) {
+      break;
+    }
+    value += escape.character;
+    next = escape.next;
+  }
+  return value.length > 0 ? {value, next} : null;
+}
+
+function skipCSSIgnorable(text: string, start: number): number {
+  let next = start;
+  for (;;) {
+    while (isCSSWhitespace(text[next])) {
+      next++;
+    }
+    if (text.startsWith('/*', next)) {
+      const end = text.indexOf('*/', next + 2);
+      return end === -1 ? text.length : skipCSSIgnorable(text, end + 2);
+    }
+    return next;
+  }
+}
+
+function skipCSSString(text: string, start: number): number {
+  const quote = text[start];
+  let next = start + 1;
+  while (next < text.length) {
+    if (text[next] === quote) {
+      return next + 1;
+    }
+    const escape = consumeCSSEscape(text, next);
+    next = escape?.next ?? next + 1;
+  }
+  return next;
+}
 
 function decodeCSSIdentifier(identifier: string): string {
-  return identifier.replace(
-    CSS_ESCAPE_PATTERN,
-    (_match, hex: string | undefined, escaped: string | undefined) => {
-      if (hex === undefined) {
-        return escaped ?? '';
-      }
-      const codePoint = Number.parseInt(hex, 16);
-      return codePoint === 0 || codePoint > 0x10ffff
-        ? '\uFFFD'
-        : String.fromCodePoint(codePoint);
-    },
-  );
+  return readCSSIdentifier(identifier, 0)?.value ?? identifier;
 }
 
 function tokenReferenceNames(value: unknown): string[] {
   const references: string[] = [];
   const text = `${value}`;
-  CSS_VAR_REFERENCE_PATTERN.lastIndex = 0;
-  for (
-    let match = CSS_VAR_REFERENCE_PATTERN.exec(text);
-    match;
-    match = CSS_VAR_REFERENCE_PATTERN.exec(text)
-  ) {
-    references.push(decodeCSSIdentifier(match[1]));
+  let index = 0;
+  while (index < text.length) {
+    if (text.startsWith('/*', index)) {
+      index = skipCSSIgnorable(text, index);
+      continue;
+    }
+    if (text[index] === '"' || text[index] === "'") {
+      index = skipCSSString(text, index);
+      continue;
+    }
+    const functionName = readCSSIdentifier(text, index);
+    if (functionName === null) {
+      index++;
+      continue;
+    }
+    const openParen = skipCSSIgnorable(text, functionName.next);
+    if (functionName.value.toLowerCase() === 'var' && text[openParen] === '(') {
+      const tokenStart = skipCSSIgnorable(text, openParen + 1);
+      const token = readCSSIdentifier(text, tokenStart);
+      if (token !== null && token.value.startsWith('--')) {
+        const tokenEnd = skipCSSIgnorable(text, token.next);
+        if (text[tokenEnd] === ',' || text[tokenEnd] === ')') {
+          references.push(token.value);
+        }
+      }
+    }
+    index = functionName.next;
   }
   return references;
 }
 
+interface TokenCascadeState {
+  values: TokenValues;
+  important: Set<string>;
+}
+
+function declarationIsImportant(value: unknown): boolean {
+  const text = `${value}`;
+  let bang = -1;
+  let index = 0;
+  while (index < text.length) {
+    if (text.startsWith('/*', index)) {
+      index = skipCSSIgnorable(text, index);
+      continue;
+    }
+    if (text[index] === '"' || text[index] === "'") {
+      index = skipCSSString(text, index);
+      continue;
+    }
+    if (text[index] === '!') {
+      bang = index;
+    }
+    index++;
+  }
+  if (bang === -1) {
+    return false;
+  }
+  const keywordStart = skipCSSIgnorable(text, bang + 1);
+  const keyword = readCSSIdentifier(text, keywordStart);
+  return (
+    keyword?.value.toLowerCase() === 'important' &&
+    skipCSSIgnorable(text, keyword.next) === text.length
+  );
+}
+
+function assignTokenCascade(
+  state: TokenCascadeState,
+  ...tokenSets: ReadonlyArray<TokenValues | undefined>
+): void {
+  for (const tokens of tokenSets) {
+    for (const [rawToken, value] of Object.entries(tokens ?? {})) {
+      const token = decodeCSSIdentifier(rawToken);
+      const important = declarationIsImportant(value);
+      if (state.important.has(token) && !important) {
+        continue;
+      }
+      state.values[token] = value;
+      if (important) {
+        state.important.add(token);
+      } else {
+        state.important.delete(token);
+      }
+    }
+  }
+}
+
+function createTokenCascade(
+  ...tokenSets: ReadonlyArray<TokenValues | undefined>
+): TokenCascadeState {
+  const state: TokenCascadeState = {values: {}, important: new Set()};
+  assignTokenCascade(state, ...tokenSets);
+  return state;
+}
+
 /** Linear-time cycle check over one reachable custom-property cascade. */
 function tokenValuesHaveCycle(tokens: TokenValues): boolean {
+  const canonicalTokens = createTokenCascade(tokens).values;
   const references = new Map(
-    Object.entries(tokens).map(([token, value]) => [
+    Object.entries(canonicalTokens).map(([token, value]) => [
       token,
       tokenReferenceNames(value).filter(reference =>
-        Object.prototype.hasOwnProperty.call(tokens, reference),
+        Object.prototype.hasOwnProperty.call(canonicalTokens, reference),
       ),
     ]),
   );
@@ -631,21 +782,29 @@ function effectiveAdaptationTokenValues(
     ReadonlyArray<readonly [string, string]>
   > = [],
 ): TokenValues {
-  const effective: TokenValues = {
-    ...rootTokens,
-    ...Object.fromEntries(rootAliases),
-    ...rootLocalTokens,
-  };
+  const effective = createTokenCascade(
+    rootTokens,
+    Object.fromEntries(rootAliases),
+    rootLocalTokens,
+  );
   for (const index of matchingRuleIndexes) {
     const rule = rules[index];
-    Object.assign(
+    assignTokenCascade(
       effective,
       rule.tokens,
       Object.fromEntries(conditionalAliases[index] ?? []),
       rule.localTokens,
     );
   }
-  return effective;
+  // Emission replays authored roles after every ordinary adaptation block so
+  // an explicit role beats aliases from any later overlapping rule.
+  for (const index of matchingRuleIndexes) {
+    assignTokenCascade(
+      effective,
+      Object.fromEntries(authoredStatusRoleEntries(rules[index].tokens)),
+    );
+  }
+  return effective.values;
 }
 
 function retainedAdaptationRules(
@@ -663,7 +822,7 @@ function generatedScopedStatusRoleDefaults(
   rules: ReadonlyArray<ResolvedThemeAdaptationRule> = [],
 ): [string, string][] {
   const entries: [string, string][] = [];
-  const authoredRoot: TokenValues = {...tokens, ...localTokens};
+  const authoredRoot = createTokenCascade(tokens, localTokens).values;
   const matchSets = reachableAdaptationMatchSets(rules);
 
   for (const [role, source] of SCOPED_STATUS_ROLE_DEFAULTS) {
@@ -708,9 +867,11 @@ function tokenEntriesWithScopedStatusRoleDefaults(
 function authoredStatusRoleEntries(
   tokens: Record<string, string>,
 ): [string, string][] {
-  return SCOPED_STATUS_ROLE_DEFAULTS.flatMap(([role]) =>
-    tokens[role] === undefined ? [] : [[role, tokens[role]]],
-  );
+  const canonicalTokens = createTokenCascade(tokens).values;
+  return SCOPED_STATUS_ROLE_DEFAULTS.flatMap(([role]) => {
+    const value = canonicalTokens[role];
+    return value === undefined ? [] : [[role, `${value}`]];
+  });
 }
 
 function generatedAdaptationStatusRoleDefaults(
@@ -720,15 +881,18 @@ function generatedAdaptationStatusRoleDefaults(
   rootAliases: ReadonlyArray<readonly [string, string]>,
 ): [string, string][][] {
   const aliases = rules.map((): [string, string][] => []);
-  const rootValues: TokenValues = {
-    ...rootTokens,
-    ...Object.fromEntries(rootAliases),
-    ...rootLocalTokens,
-  };
+  const rootValues = createTokenCascade(
+    rootTokens,
+    Object.fromEntries(rootAliases),
+    rootLocalTokens,
+  ).values;
   const matchSets = reachableAdaptationMatchSets(rules);
 
   for (const [index, rule] of rules.entries()) {
-    const authoredRule: TokenValues = {...rule.tokens, ...rule.localTokens};
+    const authoredRule = createTokenCascade(
+      rule.tokens,
+      rule.localTokens,
+    ).values;
     for (const [role, source] of SCOPED_STATUS_ROLE_DEFAULTS) {
       const alias = `var(${source})`;
       const rootRole = rootValues[role];
@@ -771,19 +935,20 @@ function generatedMediaStatusRoleDefaults(
   rootAliases: ReadonlyArray<readonly [string, string]>,
 ): [string, string][] {
   const aliases: [string, string][] = [];
-  const rootValues: TokenValues = {
-    ...rootTokens,
-    ...Object.fromEntries(rootAliases),
-    ...rootLocalTokens,
-  };
+  const rootValues = createTokenCascade(
+    rootTokens,
+    Object.fromEntries(rootAliases),
+    rootLocalTokens,
+  ).values;
   const matchSets = reachableAdaptationMatchSets(rules);
+  const authoredMedia = createTokenCascade(tokens).values;
 
   for (const [role, source] of SCOPED_STATUS_ROLE_DEFAULTS) {
     const alias = `var(${source})`;
     const rootRole = rootValues[role];
     if (
-      tokens[role] !== undefined ||
-      tokens[source] === undefined ||
+      authoredMedia[role] !== undefined ||
+      authoredMedia[source] === undefined ||
       (rootRole !== undefined && rootRole !== alias)
     ) {
       continue;
@@ -792,20 +957,20 @@ function generatedMediaStatusRoleDefaults(
     const tentativeAliases: [string, string][] = [...aliases, [role, alias]];
     const generatedRoles = new Set(tentativeAliases.map(([name]) => name));
     const isSafe = matchSets.every(matchingRuleIndexes => {
-      const localValues: TokenValues = {
-        ...tokens,
-        ...Object.fromEntries(tentativeAliases),
-      };
+      const local = createTokenCascade(
+        tokens,
+        Object.fromEntries(tentativeAliases),
+      );
       for (const index of matchingRuleIndexes) {
         for (const [authoredRole, authoredValue] of authoredStatusRoleEntries(
           rules[index].tokens,
         )) {
           if (generatedRoles.has(authoredRole)) {
-            localValues[authoredRole] = authoredValue;
+            assignTokenCascade(local, {[authoredRole]: authoredValue});
           }
         }
       }
-      return !tokenValuesHaveCycle(localValues);
+      return !tokenValuesHaveCycle(local.values);
     });
     if (isSafe) {
       aliases.push([role, alias]);

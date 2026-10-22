@@ -419,6 +419,60 @@ describe('rule order and writes', () => {
     );
   });
 
+  it('checks the final authored-role replay before emitting aliases', () => {
+    const theme = defineTheme({
+      name: 'adaptation-role-replay-cycle',
+      adaptations: {
+        rules: [
+          {
+            when: {pointer: 'coarse'},
+            value: {
+              tokens: {'--color-info': 'var(--color-on-info)'},
+            },
+          },
+          {
+            when: {pointer: 'coarse'},
+            value: {
+              tokens: {
+                '--color-accent': '#123456',
+                '--color-on-accent': 'var(--color-info)',
+              },
+            },
+          },
+        ],
+      },
+    });
+    const css = generateAdaptationCSS(theme).component;
+
+    expect(css).not.toContain('--color-on-info: var(--color-on-accent);');
+  });
+
+  it('preserves important declarations while modeling later repairs', () => {
+    const theme = defineTheme({
+      name: 'important-status-reference',
+      tokens: {'--color-accent': '#0099ff'},
+      adaptations: {
+        rules: [
+          {
+            when: {pointer: 'coarse'},
+            value: {
+              tokens: {
+                '--color-accent': 'var(--color-info) !important',
+              },
+            },
+          },
+          {
+            when: {pointer: 'coarse'},
+            value: {tokens: {'--color-accent': '#123456'}},
+          },
+        ],
+      },
+    });
+    const rootCss = generateThemeRules(theme).join('\n');
+
+    expect(rootCss).not.toContain('--color-info: var(--color-accent);');
+  });
+
   it('emits a guarded alias when only an adaptation authors the source', () => {
     const theme = defineTheme({
       name: 'adaptation-only-status-source',

@@ -105,6 +105,8 @@ describe('defineTheme', () => {
     ['uppercase VAR()', 'VAR(--color-info)', undefined],
     ['mixed-case var()', 'vAr(--color-info)', undefined],
     ['escaped identifier', 'var(--\\63 olor-info)', undefined],
+    ['escaped function name', 'v\\61r(--color-info)', undefined],
+    ['escaped leading hyphens', 'var(\\2d\\2d color-info)', undefined],
     ['comment-separated identifier', 'var(/*ok*/ --color-info)', undefined],
     ['non-ASCII local token', 'var(--品牌)', {'--品牌': 'var(--color-info)'}],
   ])(
@@ -118,6 +120,23 @@ describe('defineTheme', () => {
       expect(css).not.toContain('--color-info: var(--color-accent);');
     },
   );
+
+  it('canonicalizes escaped declaration keys while checking cycles', () => {
+    const css = generateThemeRules({
+      tokens: {'--color-accent': 'var(--\\62 rand)'},
+      localTokens: {'--\\62 rand': 'var(--color-info)'},
+    }).join('\n');
+
+    expect(css).not.toContain('--color-info: var(--color-accent);');
+  });
+
+  it('ignores var() text inside CSS comments', () => {
+    const css = generateThemeRules({
+      tokens: {'--color-accent': '#123456 /* var(--color-info) */'},
+    }).join('\n');
+
+    expect(css).toContain('--color-info: var(--color-accent);');
+  });
 
   it('checks a reconverging token graph in linear time', () => {
     const localTokens: Record<string, string> = {};
