@@ -554,9 +554,30 @@ describe('DateInput — field parity', () => {
         onChange={() => {}}
       />,
     );
-    expect(field()).toBeDisabled();
+    // Focusable, never natively disabled (AST-085 FR1), and still inert.
+    expect(field()).not.toHaveAttribute('disabled');
+    expect(field()).toHaveAttribute('aria-disabled', 'true');
+    field().focus();
+    expect(field()).toHaveFocus();
     fireEvent.click(field());
+    fireEvent.keyDown(field(), {key: 'Enter'});
+    expect(field()).toHaveAttribute('aria-expanded', 'false');
     expect(screen.queryByRole('grid')).not.toBeInTheDocument();
+  });
+
+  it('does not call a caller onClick while disabled (AST-085 FR2)', () => {
+    const onClick = vi.fn();
+    render(
+      <DateInput
+        nativePicker="never"
+        label="Ship date"
+        isDisabled
+        onClick={onClick}
+        onChange={() => {}}
+      />,
+    );
+    fireEvent.click(field());
+    expect(onClick).not.toHaveBeenCalled();
   });
 
   it('stays focusable and explains itself when disabled with a reason', () => {

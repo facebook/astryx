@@ -60,14 +60,19 @@ const WORKFLOWS = {
     lanes: ['test-ui', 'test-node'],
     // A PR that only touches docs skips the suite but must still report.
     scopeConditional: true,
+    // Each Vitest lane splits its project across matrix legs.
+    sharded: true,
   },
   'deploy.yml': {
     // The push gate also owns the build + typecheck gates, which need each
     // other and so ride one lane of their own.
     lanes: ['test-ui', 'test-node', 'typecheck'],
     scopeConditional: false,
+    sharded: false,
   },
 };
+
+const SHARD_ARG = '--shard=${{ matrix.shard }}/${{ strategy.job-total }}';
 
 function load(file) {
   return yaml.parse(read(`.github/workflows/${file}`));
@@ -82,7 +87,7 @@ function runLines(job) {
 
 describe.each(Object.entries(WORKFLOWS))(
   '%s test routing',
-  (file, {lanes, scopeConditional}) => {
+  (file, {lanes, scopeConditional, sharded}) => {
     const workflow = load(file);
 
     it('gives the Node suite more than one Vitest worker', () => {
@@ -123,17 +128,65 @@ describe.each(Object.entries(WORKFLOWS))(
       const suites = job.steps.filter(step =>
         step.run?.includes('--project ui'),
       );
-
-      // One conditional step preserves the existing scope gate for both runs.
-      // Exact foreground commands also reject backgrounding or ignored exits.
-      expect(suites).toHaveLength(1);
-      expect(suites[0].run.trim().split('\n')).toEqual([
-        `pnpm vitest run --project ui --exclude ${benchmark}`,
-        `pnpm vitest run --project ui ${benchmark} --no-file-parallelism`,
-      ]);
       expect(job['continue-on-error']).not.toBe(true);
-      expect(suites[0]['continue-on-error']).not.toBe(true);
+      for (const suite of suites) {
+        expect(suite['continue-on-error']).not.toBe(true);
+      }
+
+      if (!sharded) {
+        // One conditional step preserves the existing scope gate for both
+        // runs. Exact foreground commands also reject backgrounding or
+        // ignored exits.
+        expect(suites).toHaveLength(1);
+        expect(suites[0].run.trim().split('\n')).toEqual([
+          `pnpm vitest run --project ui --exclude ${benchmark}`,
+          `pnpm vitest run --project ui ${benchmark} --no-file-parallelism`,
+        ]);
+        return;
+      }
+
+      // Sharded: every leg runs its share without FR23, and exactly one leg
+      // runs FR23 in a later step on the same runner, after its share exited.
+      expect(suites).toHaveLength(2);
+      const [share, isolated] = suites;
+      expect(share.run.trim()).toBe(
+        `pnpm vitest run --project ui --exclude ${benchmark} ${SHARD_ARG}`,
+      );
+      expect(isolated.run.trim()).toBe(
+        `pnpm vitest run --project ui ${benchmark} --no-file-parallelism`,
+      );
+      expect(job.steps.indexOf(isolated)).toBeGreaterThan(
+        job.steps.indexOf(share),
+      );
+      expect(isolated.if).toBe(`matrix.shard == 1 && ${share.if}`);
     });
+
+    if (sharded) {
+      it('splits each Vitest lane across legs that together run every file', () => {
+        for (const lane of lanes) {
+          const job = workflow.jobs[lane];
+          const legs = job.strategy?.matrix?.shard;
+          expect(Array.isArray(legs), `${lane} has no shard matrix`).toBe(true);
+          // Legs are numbered 1..n exactly once, so --shard i/n covers all n.
+          expect(legs).toEqual(
+            Array.from({length: legs.length}, (_, index) => index + 1),
+          );
+          expect(Object.keys(job.strategy.matrix)).toEqual(['shard']);
+          expect(job.strategy['fail-fast']).toBe(false);
+          const suites = job.steps.filter(step =>
+            /--project \w+/.test(step.run ?? ''),
+          );
+          // The one step that is not sharded is the isolated FR23 benchmark.
+          const unsharded = suites.filter(
+            step => !step.run.includes(SHARD_ARG),
+          );
+          for (const step of unsharded) {
+            expect(step.run).toContain('Markdown.fr23.perf.test.ts');
+          }
+          expect(suites.length - unsharded.length).toBe(1);
+        }
+      });
+    }
 
     it('gives no lane the whole suite', () => {
       // A bare `pnpm test` runs every project in one job — the shape that hit
