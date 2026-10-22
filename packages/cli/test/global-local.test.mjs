@@ -1656,6 +1656,7 @@ describe.skipIf(!POSIX)(
       expect(notOfficial(discover)).toEqual([
         {
           name: '@acme/widgets',
+          package: '@acme/widgets',
           components: [],
           version: '1.0.0',
           source: 'installed for this computer',
@@ -1695,6 +1696,7 @@ describe.skipIf(!POSIX)(
       expect(notOfficial(discover)).toEqual([
         {
           name: '@acme/widgets',
+          package: '@acme/widgets',
           components: [],
           version: '1.0.0',
           source: 'installed for this computer',
@@ -2046,6 +2048,7 @@ describe.skipIf(!POSIX)(
       expect(notOfficial(discover)).toEqual([
         {
           name: '@acme/widgets',
+          package: '@acme/widgets',
           components: [],
           version: '1.0.0',
           source: 'installed for this computer',

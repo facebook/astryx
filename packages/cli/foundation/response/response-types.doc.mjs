@@ -117,22 +117,22 @@ export const doc = {
     {
       value: 'discover.list',
       description:
-        'What the project has, the integrations it loads and the official packages it declares, official packages first (name, category, components, version, a list per other kind they add, and latest when a source knows it); meta.available lists what the project could add, the official packages first, each with the command that adds it, and meta.sources reports each source, the official list last; when it lists no integration it carries meta.configured to tell "nothing configured" from "nothing discovered".',
+        'What the project has, the integrations it loads and the official packages it declares, official packages first (package, the npm package and always equal to name; name, category, components, version, a list per other kind they add, and latest when a source knows it); meta.available lists what the project could add, the official packages first, each with its package and the command that adds it, and meta.sources reports each source, the official list last; when it lists no integration it carries meta.configured to tell "nothing configured" from "nothing discovered".',
     },
     {
       value: 'discover.detail',
       description:
-        'One package, for an @scope/name or @scope/name@version query: what the shown version adds, whether the project has it, and, when a source knows the package, its versions, latest release, and the command that adds it.',
+        'One package, for an @scope/name or @scope/name@version query: its package (the npm package the result is about), what the shown version adds, whether the project has it, and, when a source knows the package, its versions, latest release, and the command that adds it.',
     },
     {
       value: 'discover.detail.doc',
       description:
-        'The validated ComponentDoc for one installed component, for an @scope/name/Component query.',
+        'The validated ComponentDoc for one installed component, for an @scope/name/Component query, plus package, the npm package that owns the component.',
     },
     {
       value: 'discover.item',
       description:
-        'One item that is not an installed component, for an @scope/name/<item> query: its kind, name, package, version, and whether the project has the package.',
+        'One item that is not an installed component, for an @scope/name/<item> query: its kind, name, package, version, and whether the project has the package. The envelope\'s package names the same package.',
     },
     {
       value: 'discover.search',
