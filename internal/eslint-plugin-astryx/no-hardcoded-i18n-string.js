@@ -2,9 +2,9 @@
 
 /**
  * @file no-hardcoded-i18n-string.js
- * @description Disallow hardcoded English string literals in user-facing
- * props. Any package that ships translatable UI can enable this rule; scope
- * it with the standard flat-config `files: [...]` pattern.
+ * @description Disallow hardcoded English in user-facing text sinks and
+ * formatter/helper returns. Any package that ships translatable UI can enable
+ * this rule; scope it with the standard flat-config `files: [...]` pattern.
  *
  * The rule itself is filesystem-agnostic — it does not hardcode any path.
  * The caller decides where to run it via `files` / `ignores` in the ESLint
