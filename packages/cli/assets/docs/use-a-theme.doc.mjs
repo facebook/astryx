@@ -87,7 +87,7 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: "Install the theme package you want with `{@pm install @astryxdesign/theme-{name}}`, then import its slug with `theme add <slug>`. The CLI imports the package's built outputs for you.",
+          text: "Install the theme package you want with `{@pm install @astryxdesign/theme-<name>}`, then import its slug with `theme add <slug>`. The CLI imports the package's built outputs for you.",
         },
         {
           type: 'table',

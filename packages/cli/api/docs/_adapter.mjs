@@ -42,6 +42,7 @@ import {
   linkBlocks,
   linkFields,
   parseLinkTarget,
+  renderTokens,
 } from '../../foundation/doc-compiler/links.mjs';
 import {
   createDocId,
@@ -409,7 +410,7 @@ async function flatTopicInputs(catalog) {
       providerId: entry.providerId ?? entry.package,
       name: entry.name,
       title: title ?? entry.name,
-      summary: description ?? '',
+      summary: renderTokens(description ?? ''),
       source: `${entry.package}:${entry.name}`,
       ...(aliases.length > 0 ? {aliases} : {}),
     });
@@ -620,7 +621,7 @@ function docFinderOver(catalog, tree, fromProvider, summaries = true) {
           id: createDocId(provider, authored.type, authored.name),
           route: 'authoring',
           title: authored.displayName ?? authored.name,
-          summary: authored.description ?? '',
+          summary: renderTokens(authored.description ?? ''),
           command: `astryx docs authoring ${authored.name}`,
         },
         kind: parsed.kind,
@@ -808,7 +809,7 @@ async function contributedDocLink(catalog, provider, kind, name) {
       id: createDocId(provider, 'component', name),
       route: null,
       title: entry?.displayName ?? name,
-      summary: entry?.description ?? doc?.description ?? '',
+      summary: renderTokens(entry?.description ?? doc?.description ?? ''),
       command: `astryx component ${name}${selectPackage ? ` --package ${record.package}` : ''}`,
     };
   }
@@ -831,7 +832,7 @@ async function contributedDocLink(catalog, provider, kind, name) {
     id: createDocId(provider, template.type, name),
     route: null,
     title: template.displayName ?? template.name,
-    summary: template.description ?? '',
+    summary: renderTokens(template.description ?? ''),
     command: `astryx template ${name} --type ${template.type}${selectPackage ? ` --package ${template.package}` : ''}`,
   };
 }

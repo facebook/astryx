@@ -25,6 +25,7 @@ import {routeSegment} from '../discovery/docs-section-key.mjs';
 import {diagnostic, sortDiagnostics} from './diagnostics.mjs';
 import {readDocView} from './read.mjs';
 import {packageSource} from './source.mjs';
+import {renderTokens} from './links.mjs';
 import {createDocId} from '../identity/provider-identity.mjs';
 import {CLI_PROVIDER_ID} from '../identity/providers.mjs';
 
@@ -869,7 +870,7 @@ export async function loadTreeInputs({
         kind: 'generic',
         name: doc.name,
         title: doc.title,
-        summary: doc.description,
+        summary: renderTokens(doc.description),
         group: null,
         placement: doc.placement,
         ref: {topicFile: file},
@@ -893,7 +894,7 @@ export async function loadTreeInputs({
         kind: doc.type,
         name: doc.name,
         title: doc.displayName ?? doc.name,
-        summary: doc.summary ?? doc.description ?? '',
+        summary: renderTokens(doc.summary ?? doc.description ?? ''),
         group: typeof doc.namespace === 'string' ? doc.namespace : null,
         placement: doc.placement,
         ref: {selfDoc: doc},

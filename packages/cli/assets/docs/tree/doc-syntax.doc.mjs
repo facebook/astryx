@@ -25,8 +25,8 @@ export const docs = {
     'yarn',
     'bun',
     'install command',
-    '{@pm}',
-    '{@command}',
+    'pm token',
+    'command token',
   ],
   sections: [
     {

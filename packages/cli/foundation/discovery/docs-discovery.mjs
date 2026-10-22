@@ -41,6 +41,7 @@ import {
   sourceTitle,
   withSourceTitle,
 } from './docs-section-key.mjs';
+import {renderTokens} from '../doc-compiler/links.mjs';
 
 export {withSourceTitle};
 
@@ -565,7 +566,7 @@ export async function discoverIntegrationDocs(integration) {
         kind: 'generic',
         name: parsed.name,
         title: parsed.title,
-        summary: parsed.description,
+        summary: renderTokens(parsed.description),
         group: null,
         placement: parsed.placement,
         ref: {topicFile: file},
