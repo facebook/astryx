@@ -1640,6 +1640,18 @@ describe('validateIntegration runner-command notes', () => {
     expect(tokens[0].message).toContain('`dcotor` is not an Astryx command');
   });
 
+  it('reads the command after leading global flags in a {@command} token', async () => {
+    writeTopic(
+      'Read it as data with {@command --json component Button} or {@command --detail full docs acme}, not {@command --json dcotor}.',
+    );
+    const {data} = await validateIntegration(undefined, {cwd: tmpDir});
+    const tokens = (data.notes ?? []).filter(
+      (/** @type {any} */ note) => note.code === 'doc_token',
+    );
+    expect(tokens).toHaveLength(1);
+    expect(tokens[0].message).toContain('`dcotor` is not an Astryx command');
+  });
+
   it('lists nothing for a topic written in the doc syntax', async () => {
     writeTopic(
       'Add it with {@pm install @acme/widgets --dev}, run {@command docs acme}, and {@pm-only npm "only npm has pkg" pkg set name=x}. Show the syntax: {@@pm install x}.',

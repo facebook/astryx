@@ -366,15 +366,13 @@ export function docCommandsIn(text, lang) {
         code: 'doc_token',
         fix: step.error,
       });
-    } else if (
-      step.kind === 'command' &&
-      !CLI_COMMANDS.includes(/** @type {string} */ (step.args[0]))
-    ) {
+    } else if (step.kind === 'command' && !namesCommand(step.args)) {
+      const word = step.args.find(arg => !arg.startsWith('-')) ?? '';
       found.push({
         at: source.indexOf(token),
         written: token,
         code: 'doc_token',
-        fix: `\`${step.args[0]}\` is not an Astryx command; the commands are ${CLI_COMMANDS.join(', ')}`,
+        fix: `\`${word}\` is not an Astryx command; the commands are ${CLI_COMMANDS.join(', ')}`,
       });
     }
   }
@@ -495,5 +493,20 @@ export async function findDocCommands(discovered) {
 export async function findRunnerCommands(discovered) {
   return (await findDocCommands(discovered)).filter(
     each => each.code === 'runner_command',
+  );
+}
+
+/**
+ * Whether a `{@command}` token's words name an Astryx command: the first word
+ * that is not a flag, or the one after it when a leading flag takes a value
+ * (`--json component Button`, `--detail full component Button`).
+ * @param {string[]} args
+ */
+function namesCommand(args) {
+  const words = args.filter(arg => !arg.startsWith('-'));
+  return (
+    CLI_COMMANDS.includes(/** @type {string} */ (words[0])) ||
+    (Boolean(args[0]?.startsWith('-')) &&
+      CLI_COMMANDS.includes(/** @type {string} */ (words[1])))
   );
 }
