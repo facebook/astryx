@@ -467,6 +467,21 @@ describe('public imports: component examples', () => {
     );
   });
 
+  it('never points a side-effect import of an undeclared subpath at another subpath', async () => {
+    write('styles.css', '.acme {}\n');
+    write(
+      'components/AcmeWidget.doc.mjs',
+      DOC(undefined, "import '@acme/widgets/styles.css';\\n<AcmeWidget />"),
+    );
+    const issue = (await found()).find(
+      i => i.code === 'example_import_not_exported',
+    );
+    expect(issue?.message).not.toContain('in the example');
+    expect(issue?.message).toContain(
+      'add "./styles.css": "./styles.css" to package.json "exports"',
+    );
+  });
+
   it('points an example at the subpath the source is already exported under', async () => {
     pkg(p => {
       delete p.exports['./components/AcmeWidget'];
@@ -704,6 +719,25 @@ describe('derived component imports', () => {
     expect(issues[0].message).toContain(
       "set import: '@acme/widgets/components/AcmeWidget' in the doc",
     );
+  });
+
+  it('names the wildcard subpath the component is already exported under', async () => {
+    write('index.js', 'export const Other = 1;\n');
+    pkg(p => {
+      p.exports = {
+        '.': './index.js',
+        './components/*': './components/*.tsx',
+        './templates/account-card': './templates/account-card.tsx',
+      };
+    });
+    write('components/AcmeWidget.doc.mjs', DOC('@acme/widgets'));
+    const issue = (await found()).find(
+      i => i.code === 'component_import_missing_name',
+    );
+    expect(issue?.message).toContain(
+      "set import: '@acme/widgets/components/AcmeWidget' in the doc (that subpath exports it)",
+    );
+    expect(issue?.message).not.toContain('add "./components/AcmeWidget"');
   });
 
   it('warns when the derived root import is not declared', async () => {

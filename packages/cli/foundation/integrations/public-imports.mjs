@@ -1194,20 +1194,18 @@ function judgeOwnImport(ctx, statement, subpath) {
  */
 function subpathExporting(ctx, name, preferred) {
   if (!isRecord(ctx.exportsField)) return null;
-  const keys = Object.keys(ctx.exportsField).filter(
-    key => key.startsWith('.') && !key.includes('*'),
-  );
-  if (preferred)
-    keys.sort((a, b) => (b === preferred ? 1 : 0) - (a === preferred ? 1 : 0));
-  for (const key of keys) {
-    const declaration = declarationIn(ctx.exportsField, ctx.packageDir, key);
-    const files = existingTargets(ctx.packageDir, declaration);
-    if (
-      files.some(file =>
-        moduleExportNames(file, ctx.exportNames).names.has(name),
-      )
-    )
-      return key;
+  /** @param {string} subpath */
+  const exportsName = subpath =>
+    existingTargets(
+      ctx.packageDir,
+      declarationIn(ctx.exportsField, ctx.packageDir, subpath),
+    ).some(file => moduleExportNames(file, ctx.exportNames).names.has(name));
+  // The source's own subpath, which may come from a wildcard key, first.
+  if (preferred && exportsName(preferred)) return preferred;
+  for (const key of Object.keys(ctx.exportsField)) {
+    if (!key.startsWith('.') || key.includes('*') || key === preferred)
+      continue;
+    if (exportsName(key)) return key;
   }
   return null;
 }
@@ -1370,8 +1368,8 @@ async function componentIssues(ctx, integration) {
      * doc's own import, when it differs from the example's and is declared;
      * else the subpath the component's source is already exported under;
      * else the exact `exports` entry to add for the example's subpath.
-     * Another subpath is offered only when its module provably exports every
-     * value name the statement imports.
+     * Another subpath is offered only when the statement imports at least one
+     * value name and its module provably exports every one of them.
      * @param {ImportStatement} statement
      * @param {string} subpath
      * @param {SubpathDeclaration} undeclared
@@ -1398,8 +1396,14 @@ async function componentIssues(ctx, integration) {
         );
         return Array.isArray(missing) && missing.length === 0;
       };
+      const values = statement.names
+        .filter(binding => !binding.typeOnly)
+        .map(binding => binding.imported);
+      // A statement that imports no value name (a side-effect, namespace or
+      // all-type import) is never sent to another subpath: no names prove it.
       const own = authored ? splitSpecifier(authored) : null;
       if (
+        values.length > 0 &&
         authored &&
         authored !== statement.source &&
         own?.pkg === ctx.name &&
@@ -1407,14 +1411,16 @@ async function componentIssues(ctx, integration) {
       ) {
         return `import from '${authored}' in the example, as the doc's import does.`;
       }
-      if (declared && declared !== subpath && provides(declared)) {
+      if (
+        values.length > 0 &&
+        declared &&
+        declared !== subpath &&
+        provides(declared)
+      ) {
         return `import from '${ctx.name}${declared.slice(1)}' in the example (already exported).`;
       }
       // The entry for the example's own subpath: the file there, or the
       // component's source when it exports every name, else a placeholder.
-      const values = statement.names
-        .filter(binding => !binding.typeOnly)
-        .map(binding => binding.imported);
       const atSubpath = [
         '',
         ...MODULE_EXTENSIONS,
@@ -1427,6 +1433,7 @@ async function componentIssues(ctx, integration) {
             isFile(file),
         );
       const sourceHasAll =
+        values.length > 0 &&
         source != null &&
         values.every(name =>
           moduleExportNames(source, ctx.exportNames).names.has(name),
@@ -1435,7 +1442,9 @@ async function componentIssues(ctx, integration) {
         ? `./${rel(ctx.packageDir, atSubpath)}`
         : sourceHasAll && sourceTarget
           ? fixTarget(subpath, sourceTarget)
-          : `<the file that exports ${values.join(', ') || 'them'}>`;
+          : values.length > 0
+            ? `<the file that exports ${values.join(', ')}>`
+            : '<the file it loads>';
       return exportsFix(ctx.exportsField, undeclared.state, subpath, target);
     };
 
