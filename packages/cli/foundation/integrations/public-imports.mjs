@@ -607,6 +607,14 @@ function typesOnlyImport(ctx, statement, subpath, declaration) {
  */
 function undeclaredOwnImport(ctx, statement, subpath) {
   const declaration = declarationIn(ctx.exportsField, ctx.packageDir, subpath);
+  // TypeScript resolves a type-only import through a `types` target, whatever
+  // runtime conditions sit beside it, and the import is dropped from output.
+  if (
+    declaration.state === 'not_importable' &&
+    typeOnlyStatement(statement) &&
+    typesTargets(declaration.value, declaration.wildcard ?? '').length > 0
+  )
+    return {undeclared: null};
   if (declaration.state === 'not_importable' && typesOnly(declaration.value)) {
     const unchecked = typesOnlyImport(ctx, statement, subpath, declaration);
     return unchecked ? {undeclared: null, unchecked} : {undeclared: null};
