@@ -122,6 +122,18 @@ const userSource: SearchSource = {
   bootstrap: () => users.slice(0, 3),
 };
 
+/** The busy Spinner, decorative and hidden from assistive technology (spec:AST-086 FR8). */
+function queryBusySpinner(): Element | null {
+  return document.querySelector('.astryx-spinner[aria-hidden="true"]');
+}
+function getBusySpinner(): Element {
+  const spinner = queryBusySpinner();
+  if (spinner == null) {
+    throw new Error('Expected the busy Spinner to be rendered');
+  }
+  return spinner;
+}
+
 describe('Tokenizer minQueryLength', () => {
   it('forwards the threshold to the typeahead engine', async () => {
     const search = vi.fn((query: string) =>
@@ -1675,7 +1687,7 @@ describe('Tokenizer end-lane reserve', () => {
       fireEvent.change(screen.getByRole('combobox'), {target: {value: 'Al'}});
     });
 
-    expect(screen.getByRole('status')).toBeInTheDocument();
+    expect(getBusySpinner()).toBeInTheDocument();
     expect(reserveOf(container)).toBe(
       `calc(var(--spacing-2) + ${LANE_LOCAL_WIDTH}px)`,
     );
@@ -1774,7 +1786,7 @@ describe('Tokenizer end-lane reserve', () => {
     // The indicator is up, so the transition really did happen. Scoped by
     // name: the announcer for result counts is a role="status" live region
     // too, and it is not the indicator.
-    expect(screen.getByRole('status', {name: 'Loading'})).toBeInTheDocument();
+    expect(getBusySpinner()).toBeInTheDocument();
     // ...and it cost no token a render.
     expect(renderedTokens).toEqual([]);
 
@@ -1783,9 +1795,7 @@ describe('Tokenizer end-lane reserve', () => {
       await Promise.resolve();
     });
     await waitFor(() => {
-      expect(
-        screen.queryByRole('status', {name: 'Loading'}),
-      ).not.toBeInTheDocument();
+      expect(queryBusySpinner()).not.toBeInTheDocument();
     });
     expect(renderedTokens).toEqual([]);
   });
@@ -1823,24 +1833,20 @@ describe('Tokenizer end-lane reserve', () => {
 
     fireEvent.focus(input);
     await waitFor(() => {
-      expect(screen.getByRole('status', {name: 'Loading'})).toBeInTheDocument();
+      expect(getBusySpinner()).toBeInTheDocument();
     });
 
     fireEvent.click(screen.getByRole('button', {name: 'Add Token'}));
 
     await waitFor(() => {
-      expect(
-        screen.queryByRole('status', {name: 'Loading'}),
-      ).not.toBeInTheDocument();
+      expect(queryBusySpinner()).not.toBeInTheDocument();
     });
 
     await act(async () => {
       settle([]);
       await Promise.resolve();
     });
-    expect(
-      screen.queryByRole('status', {name: 'Loading'}),
-    ).not.toBeInTheDocument();
+    expect(queryBusySpinner()).not.toBeInTheDocument();
   });
 
   it('shares one observer across every field on the page', () => {
