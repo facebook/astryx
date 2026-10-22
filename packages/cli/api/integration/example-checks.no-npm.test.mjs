@@ -9,12 +9,7 @@
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
-import {spawnSync} from 'node:child_process';
-import {fileURLToPath} from 'node:url';
-
-const CLI_BIN = fileURLToPath(
-  new URL('../../clients/cli/bin/astryx.mjs', import.meta.url),
-);
+import {Command} from 'commander';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 
 vi.mock('../../foundation/release/cache.mjs', () => ({
@@ -25,6 +20,7 @@ vi.mock('../../foundation/release/cache.mjs', () => ({
 
 const {validateIntegration} = await import('./validate-integration.mjs');
 const {integrationCheck} = await import('./check/check.mjs');
+const {registerDoctor} = await import('../../clients/cli/commands/doctor.mjs');
 
 /** @type {string} */
 let dir;
@@ -109,12 +105,31 @@ describe('template assets when npm gives no answer', () => {
 
   it('shows the assets it could not check in text output', async () => {
     packageWith(['templates', '!templates/img']);
-    const {stdout} = spawnSync(
-      process.execPath,
-      [CLI_BIN, 'doctor', 'integration', 'validate'],
-      {cwd: dir, encoding: 'utf-8', env: {...process.env, PATH: ''}},
-    );
-    expect(stdout).toContain('Template assets not checked: 1');
-    expect(stdout).toContain('templates/img/hero.png');
+    /** @type {string[]} */
+    const lines = [];
+    vi.spyOn(console, 'log').mockImplementation((...args) => {
+      lines.push(args.join(' '));
+    });
+    const previous = process.cwd();
+    process.chdir(dir);
+    try {
+      const program = new Command();
+      program.exitOverride();
+      program.option('--json', 'Output as typed JSON');
+      registerDoctor(program);
+      await program.parseAsync([
+        'node',
+        'astryx',
+        'doctor',
+        'integration',
+        'validate',
+      ]);
+    } finally {
+      process.chdir(previous);
+      vi.restoreAllMocks();
+    }
+    const out = lines.join('\n');
+    expect(out).toContain('Template assets not checked: 1');
+    expect(out).toContain('templates/img/hero.png');
   });
 });
