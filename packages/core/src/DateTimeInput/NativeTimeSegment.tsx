@@ -80,6 +80,8 @@ export type NativeTimeSegmentProps = {
   max?: ISOTimeString;
   hourFormat: '12h' | '24h';
   isEffectivelyDisabled: boolean;
+  /** Disabled stays focusable: aria-disabled and readOnly, not `disabled`. */
+  isFocusableDisabled: boolean;
   isEffectivelyRequired: boolean;
   isBusy: boolean;
   statusType?: InputStatusType;
@@ -111,6 +113,7 @@ export function NativeTimeSegment({
   max,
   hourFormat,
   isEffectivelyDisabled,
+  isFocusableDisabled,
   isEffectivelyRequired,
   isBusy,
   statusType,
@@ -307,8 +310,9 @@ export function NativeTimeSegment({
           min={min}
           max={max}
           step={60}
-          aria-disabled={isEffectivelyDisabled ? 'true' : undefined}
-          readOnly={isEffectivelyDisabled || undefined}
+          disabled={isEffectivelyDisabled && !isFocusableDisabled}
+          aria-disabled={isFocusableDisabled ? 'true' : undefined}
+          readOnly={isFocusableDisabled || undefined}
           // The segment's own label applies only when nothing else names it;
           // otherwise a caller aria-label from the spread above stays.
           aria-label={

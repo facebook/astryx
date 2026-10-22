@@ -1463,7 +1463,8 @@ function PointerDateTimeField({
       // window uses those same arrows to navigate candidates, so guard the
       // composing keydown (fires before compositionend) to avoid stealing them
       // mid-composition. See utils/ime.ts.
-      if (isImeKeyEvent(e.nativeEvent)) {
+      // A disabled or busy field steps nothing, so it announces nothing (FR2).
+      if (isImeKeyEvent(e.nativeEvent) || isEffectivelyDisabled) {
         return;
       }
 
@@ -1694,6 +1695,7 @@ function PointerDateTimeField({
               max={calendarMax}
               isDateDisabled={isDateDisabled}
               isEffectivelyDisabled={isEffectivelyDisabled}
+              isFocusableDisabled
               isEffectivelyRequired={isEffectivelyRequired}
               isBusy={isBusy}
               statusType={status?.type}
@@ -1847,6 +1849,7 @@ function PointerDateTimeField({
               max={timeMax}
               hourFormat={hourFormat}
               isEffectivelyDisabled={isEffectivelyDisabled}
+              isFocusableDisabled
               isEffectivelyRequired={isEffectivelyRequired}
               isBusy={isBusy}
               statusType={status?.type}

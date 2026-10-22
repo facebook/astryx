@@ -60,6 +60,8 @@ export type NativeDateSegmentProps = {
   max?: ISODateString;
   isDateDisabled: (date: ReturnType<typeof plainDateFromISO>) => boolean;
   isEffectivelyDisabled: boolean;
+  /** Disabled stays focusable: aria-disabled and readOnly, not `disabled`. */
+  isFocusableDisabled: boolean;
   isEffectivelyRequired: boolean;
   isBusy: boolean;
   statusType?: InputStatusType;
@@ -86,6 +88,7 @@ export function NativeDateSegment({
   max,
   isDateDisabled,
   isEffectivelyDisabled,
+  isFocusableDisabled,
   isEffectivelyRequired,
   isBusy,
   statusType,
@@ -288,8 +291,9 @@ export function NativeDateSegment({
           onBlur={chainEventHandlers(handleBlur, onBlurProp)}
           min={min}
           max={max}
-          aria-disabled={isEffectivelyDisabled ? 'true' : undefined}
-          readOnly={isEffectivelyDisabled || undefined}
+          disabled={isEffectivelyDisabled && !isFocusableDisabled}
+          aria-disabled={isFocusableDisabled ? 'true' : undefined}
+          readOnly={isFocusableDisabled || undefined}
           aria-describedby={ariaDescribedBy}
           aria-required={isEffectivelyRequired ? 'true' : undefined}
           aria-invalid={

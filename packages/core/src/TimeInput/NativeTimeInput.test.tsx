@@ -231,8 +231,8 @@ describe('TimeInput nativePicker', () => {
     expect(input).not.toBeDisabled();
     expect(input).toHaveAttribute('aria-disabled', 'true');
     expect(input).toHaveAttribute('readonly');
-    // The picker button shares DateTimeInput's native time segment, which is
-    // focusable-disabled (spec:AST-085 FR1) and still blocks opening.
+    // The shared native time segment's picker button is focusable-disabled
+    // (spec:AST-085 FR1) and still blocks opening.
     expect(
       screen.getByRole('button', {name: 'Open Start time'}),
     ).toHaveAttribute('aria-disabled', 'true');
