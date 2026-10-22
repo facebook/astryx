@@ -1830,6 +1830,24 @@ describe('toast announcements via singleton live regions', () => {
     expect(politeRegion()).toHaveTextContent('');
   });
 
+  it('announces through its own regions, not the shared channel, when it is top-layer', async () => {
+    render(
+      <ToastViewport>
+        <ShowToastButton options={INFO_A} triggerLabel="Show" />
+      </ToastViewport>,
+    );
+    act(() => {
+      fireEvent.click(screen.getByText('Show'));
+    });
+    const viewport = document.querySelector<HTMLElement>('[popover="manual"]')!;
+    await waitFor(() => {
+      expect(
+        viewport.parentElement!.querySelector(':scope > [aria-live="polite"]'),
+      ).toHaveTextContent('Toast A');
+    });
+    expect(announceSpy).not.toHaveBeenCalled();
+  });
+
   it('announces exactly once at dispatch, even under StrictMode', () => {
     render(
       <React.StrictMode>
