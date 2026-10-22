@@ -12,6 +12,7 @@ import {
 import {
   alignCliAndCore,
   cliInstallAdvice,
+  installFolder,
   globalBehind,
   globalUpgradeCommand,
   lastNoticeSkip,
@@ -353,6 +354,18 @@ export function outsideProject(/** @type {string} */ cwd) {
  */
 export function alignCommand(cwd, cli, core) {
   return alignCliAndCore({cwd, cli, core});
+}
+
+/**
+ * Whether install commands for a run in `cwd` run in the project's folder
+ * instead of `cwd`'s: `cwd`'s nearest package.json belongs to a project
+ * (`spec:AST-040` FR9) without being its package.json, as in a tool folder
+ * that installs its own Core (see `installFolder`).
+ * @param {string} cwd
+ * @returns {boolean}
+ */
+export function installMovesToProject(cwd) {
+  return installFolder(cwd)?.moved === true;
 }
 
 /**

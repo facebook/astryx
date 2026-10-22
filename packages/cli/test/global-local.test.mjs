@@ -460,6 +460,29 @@ describe.skipIf(!POSIX)(
       );
     });
 
+    it("in a tool folder whose project installs its own CLI, doctor's alignment fix points at the project, not at a command that leaves the warning", () => {
+      const pc = computer();
+      const g = globalCli('npm', '9.0.0', {root: pc.home});
+      const app = makeProject({core: '9.0.1', cli: '9.0.0'});
+      writeJson(path.join(app, 'package-lock.json'), {lockfileVersion: 3});
+      const tool = path.join(app, 'tools', 'codegen');
+      writeJson(path.join(tool, 'package.json'), {name: 'codegen'});
+      installCore(tool, '9.0.5');
+
+      const doctor = JSON.parse(
+        run(g.bin, ['doctor', '--json'], {cwd: tool, pc}).stdout,
+      );
+      const check = doctor.data.checks.find(
+        (/** @type {any} */ c) => c.id === 'version-alignment',
+      );
+      expect(check).toMatchObject({
+        status: 'warn',
+        fix: "Run this from the Astryx project's folder, or declare an Astryx package in this folder's package.json to make it a project of its own.",
+      });
+      // The message keeps naming the Core this folder reads.
+      expect(check.message).toContain('Core is 9.0.5');
+    });
+
     it('in a folder that installs Core with no Astryx project above, gives no install advice', () => {
       const pc = computer();
       const g = globalCli('npm', '9.0.0', {root: pc.home});

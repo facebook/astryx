@@ -66,7 +66,7 @@ import {detailView, indexView} from '../../foundation/doc-compiler/lenses.mjs';
 import {semverCompare, isValidSemver, satisfiesRange} from '../../foundation/env/semver.mjs';
 import {checkAppThemes, checkThemes} from './theme-checks.mjs';
 import {availableLine, upgradeLine} from '../../foundation/release/notices.mjs';
-import {alignCommand, addCliCommandFor, computerAgentTextState, installCommandFor, projectCoreVersion, projectHasOwnCli, computerIntegrationsOutside, computerIntegrationsToAdd, displayHomePath, outsideProject, releaseFacts} from './_adapter.mjs';
+import {alignCommand, addCliCommandFor, installMovesToProject, computerAgentTextState, installCommandFor, projectCoreVersion, projectHasOwnCli, computerIntegrationsOutside, computerIntegrationsToAdd, displayHomePath, outsideProject, releaseFacts} from './_adapter.mjs';
 
 /**
  * @typedef {'pass'|'warn'|'fail'|'info'} DoctorStatus
@@ -327,6 +327,10 @@ export function checkVersionAlignment(ctx) {
  * @returns {{fix?: string}}
  */
 function alignFix(cwd, cli, core) {
+  // From a folder inside a project whose package.json is not the project's,
+  // the Core the folder reads is not the project's, so aligning the project
+  // would leave this warning in place: point at the project instead.
+  if (installMovesToProject(cwd)) return {fix: NO_PROJECT_FIX};
   const command = alignCommand(cwd, cli, core);
   return {fix: command ? `To align them, run: ${command}.` : NO_PROJECT_FIX};
 }
