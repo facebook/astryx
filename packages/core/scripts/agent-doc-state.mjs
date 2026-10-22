@@ -55,6 +55,7 @@ export const WORKFLOW_STEPS = Object.freeze([
   '1. `astryx build "<idea>"` — names the template to scaffold from and the parts it lacks.',
   '2. `astryx template <name> <path>` — scaffold it; keep its frame, gap and padding; replace the content.',
   '3. `astryx template <Block>` for parts it lacks; `astryx component <Name>` to read props before using one.',
+  "4. Before you deliver a build, run `astryx doctor --built <dir>`; don't deliver it if it fails.",
 ]);
 
 /**
