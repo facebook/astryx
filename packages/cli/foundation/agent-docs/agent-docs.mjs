@@ -33,13 +33,11 @@ import {spawnSync} from 'node:child_process';
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
-import {findCoreDir, CLI_ROOT} from '../fs/paths.mjs';
+import {findCoreDir, findInstalledPackage, CLI_ROOT} from '../fs/paths.mjs';
 import {assertWithin, PathSafetyError} from '../fs/path-safety.mjs';
 import {createFileProtectionResolver} from '../fs/file-protection.mjs';
 import {getCliInvocation} from '../env/package-manager.mjs';
 import {isValidSemver, semverGte} from '../env/semver.mjs';
-import {coreVersionOf} from '../release/choose.mjs';
-import {readReleaseFacts} from '../release/project.mjs';
 import {discoverComponents} from '../discovery/component-discovery.mjs';
 import {Project} from '../config/project.mjs';
 import {cliRootNamespaceNames} from '../doc-compiler/tree.mjs';
@@ -703,36 +701,26 @@ function hasBuiltCheck(version) {
 }
 
 /**
- * Whether the project at `dir` can run `astryx doctor --built` once it is
- * installed: the Core release it records (installed, locked, or declared
- * exactly) has it, and so does the CLI release it records when it declares
- * one, since a project's own CLI answers whatever its version. Never the
- * running CLI's own version, so a block written before install matches the
- * CLI the install brings.
+ * Whether the project at `dir` can run `astryx doctor --built`: the CLI it
+ * installs, which answers it whatever the running copy is, has the option.
+ * Read from the installed CLI (the folder's own, or its workspace's), never
+ * from declared ranges or the running copy, so a block written before
+ * install, or by a newer copy, never names an option the project's CLI
+ * rejects; the next `init` or `upgrade --apply` after install adds it.
  * @param {string} dir
  * @returns {boolean}
  */
 export function projectHasBuiltCheck(dir) {
-  let facts;
+  const installed = findInstalledPackage(dir, '@astryxdesign/cli');
+  if (!installed) return false;
   try {
-    facts = readReleaseFacts(dir);
+    const {version} = JSON.parse(
+      fs.readFileSync(path.join(installed, 'package.json'), 'utf8'),
+    );
+    return hasBuiltCheck(version);
   } catch {
     return false;
   }
-  if (!hasBuiltCheck(coreVersionOf(facts))) return false;
-  const declaresCli = Boolean(
-    facts.cli || facts.lockedCliVersion || facts.declaredCliRange,
-  );
-  if (!declaresCli) return true;
-  const cliVersion =
-    facts.cli?.version ??
-    (isValidSemver(facts.lockedCliVersion ?? '')
-      ? facts.lockedCliVersion
-      : null) ??
-    (facts.declaredCliRange && isValidSemver(facts.declaredCliRange)
-      ? facts.declaredCliRange
-      : null);
-  return hasBuiltCheck(cliVersion);
 }
 
 /**

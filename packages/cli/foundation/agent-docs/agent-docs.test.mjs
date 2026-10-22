@@ -107,31 +107,49 @@ describe('generateCompressedIndex', () => {
     );
   });
 
-  describe('projectHasBuiltCheck reads the releases a project records, before install', () => {
-    /** @param {Record<string, string>} dependencies */
-    const project = dependencies => {
-      const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'astryx-built-check-'));
+  describe('projectHasBuiltCheck reads the CLI the project installs', () => {
+    /**
+     * @param {string | null} cliVersion the installed CLI, or none
+     * @param {{workspace?: boolean}} [options] install it at a workspace root
+     */
+    const project = (cliVersion, {workspace = false} = {}) => {
+      const root = fs.mkdtempSync(path.join(os.tmpdir(), 'astryx-built-check-'));
+      const app = workspace ? path.join(root, 'apps', 'web') : root;
+      fs.mkdirSync(app, {recursive: true});
+      if (workspace) {
+        fs.writeFileSync(
+          path.join(root, 'package.json'),
+          JSON.stringify({name: 'repo', private: true, workspaces: ['apps/*'], devDependencies: {'@astryxdesign/cli': cliVersion ?? '0.7.3'}}),
+        );
+      }
       fs.writeFileSync(
-        path.join(dir, 'package.json'),
-        JSON.stringify({name: 'app', dependencies}),
+        path.join(app, 'package.json'),
+        JSON.stringify({name: 'web', dependencies: {'@astryxdesign/core': '0.7.4'}}),
       );
-      return dir;
+      if (cliVersion) {
+        const cliDir = path.join(root, 'node_modules', '@astryxdesign', 'cli');
+        fs.mkdirSync(cliDir, {recursive: true});
+        fs.writeFileSync(
+          path.join(cliDir, 'package.json'),
+          JSON.stringify({name: '@astryxdesign/cli', version: cliVersion}),
+        );
+      }
+      return {root, app};
     };
     it.each([
-      ['Core 0.7.4 and no CLI', {'@astryxdesign/core': '0.7.4'}, true],
-      ['Core and CLI 0.7.4', {'@astryxdesign/core': '0.7.4', '@astryxdesign/cli': '0.7.4'}, true],
-      ['Core 0.7.3', {'@astryxdesign/core': '0.7.3'}, false],
-      ['Core and CLI 0.7.3', {'@astryxdesign/core': '0.7.3', '@astryxdesign/cli': '0.7.3'}, false],
-      ['Core 0.7.4 with CLI 0.7.3', {'@astryxdesign/core': '0.7.4', '@astryxdesign/cli': '0.7.3'}, false],
-      ['Core 0.7.4 with a CLI range', {'@astryxdesign/core': '0.7.4', '@astryxdesign/cli': '^0.7.0'}, false],
-      ['a 0.7.4 canary', {'@astryxdesign/core': '0.7.4-canary.b25f95e'}, false],
-      ['no Astryx at all', {react: '19.0.0'}, false],
-    ])('%s', (_label, dependencies, expected) => {
-      const dir = project(dependencies);
+      ['an installed CLI 0.7.4', '0.7.4', {}, true],
+      ['an installed CLI 0.8.0', '0.8.0', {}, true],
+      ['an installed CLI 0.7.3', '0.7.3', {}, false],
+      ['an installed 0.7.4 canary', '0.7.4-canary.b25f95e', {}, false],
+      ['no installed CLI (before install, or Core only)', null, {}, false],
+      ['a workspace root that installs CLI 0.7.3', '0.7.3', {workspace: true}, false],
+      ['a workspace root that installs CLI 0.7.4', '0.7.4', {workspace: true}, true],
+    ])('%s', (_label, cliVersion, options, expected) => {
+      const {root, app} = project(cliVersion, options);
       try {
-        expect(projectHasBuiltCheck(dir)).toBe(expected);
+        expect(projectHasBuiltCheck(app)).toBe(expected);
       } finally {
-        fs.rmSync(dir, {recursive: true, force: true});
+        fs.rmSync(root, {recursive: true, force: true});
       }
     });
   });
