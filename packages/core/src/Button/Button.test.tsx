@@ -17,6 +17,7 @@ import {
   fireEvent,
   createEvent,
   act,
+  waitFor,
 } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {Button} from './Button';
@@ -643,7 +644,17 @@ describe('Button', () => {
     expect(liveRegion).toHaveTextContent('Loading');
   });
 
-  it('localizes the loading announcement through the i18n catalog', () => {
+  it('mounts the loading live region empty when first rendered loading, then fills it (spec:AST-086 FR3)', async () => {
+    render(<Button label="Submit" isLoading />);
+    const button = screen.getByRole('button');
+    // The Spinner also has role="status", so grab the live region explicitly.
+    const regions = button.querySelectorAll('[role="status"]');
+    const liveRegion = regions[regions.length - 1];
+    expect(liveRegion).toHaveTextContent('');
+    await waitFor(() => expect(liveRegion).toHaveTextContent('Loading'));
+  });
+
+  it('localizes the loading announcement through the i18n catalog', async () => {
     render(
       <InternationalizationProvider
         locale="fr"
@@ -655,7 +666,7 @@ describe('Button', () => {
     // The Spinner also has role="status", so grab the live region explicitly.
     const regions = button.querySelectorAll('[role="status"]');
     const liveRegion = regions[regions.length - 1];
-    expect(liveRegion).toHaveTextContent('Chargement');
+    await waitFor(() => expect(liveRegion).toHaveTextContent('Chargement'));
   });
 
   describe('in a narrow row', () => {
