@@ -1,3 +1,5 @@
+# Copyright (c) Meta Platforms, Inc. and affiliates.
+
 """Regenerate the weight probe font embedded in src/SVGIcon/weightProbe.ts.
 
 The font has no visible glyphs and one axis, wght 1-1000. Its x-height and cap
