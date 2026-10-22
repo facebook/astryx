@@ -942,6 +942,34 @@ describe('TreeList', () => {
         expect(screen.queryByText('File')).not.toBeInTheDocument();
       });
 
+      it("exposes a disabled row's toggle and action as aria-disabled and keeps them inert", () => {
+        const onClick = vi.fn();
+        const {container} = render(
+          <TreeList
+            items={underRoot([
+              {id: 'run', label: 'Run', onClick, isDisabled: true},
+              {...folder, isDisabled: true},
+            ])}
+          />,
+        );
+        // spec:AST-085 FR1/FR2: no native disabled anywhere, and a click
+        // dispatched straight on the inner controls does nothing.
+        expect(container.querySelector('[disabled]')).toBeNull();
+        const toggle = container.querySelector<HTMLElement>(
+          '[data-tree-toggle][aria-disabled="true"]',
+        )!;
+        expect(toggle).not.toBeNull();
+        toggle.click();
+        fireEvent.keyDown(toggle, {key: 'Enter'});
+        expect(screen.queryByText('File')).not.toBeInTheDocument();
+        const action = Array.from(container.querySelectorAll('button')).find(
+          button => button.textContent?.includes('Run'),
+        )!;
+        expect(action).toHaveAttribute('aria-disabled', 'true');
+        action.click();
+        expect(onClick).not.toHaveBeenCalled();
+      });
+
       it('leaves a role-based control in start or end content to itself', () => {
         // Native and role-based controls alike keep their own activation,
         // the same rule link rows get from the shared enlarged-surface hook.

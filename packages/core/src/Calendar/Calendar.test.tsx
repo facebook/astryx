@@ -386,21 +386,21 @@ describe('Calendar', () => {
 
     // Day 5 should be disabled (before min)
     const day5 = getDayButton(5);
-    expect(day5).toBeDisabled();
+    expect(day5).toHaveAttribute('aria-disabled', 'true');
 
     // Day 15 should be enabled (after min)
     const day15 = getDayButton(15);
-    expect(day15).not.toBeDisabled();
+    expect(day15).not.toHaveAttribute('aria-disabled', 'true');
   });
 
   it('respects max date constraint', () => {
     render(<Calendar focusDate="2026-01-01" max="2026-01-20" />);
 
     const day25 = getDayButton(25);
-    expect(day25).toBeDisabled();
+    expect(day25).toHaveAttribute('aria-disabled', 'true');
 
     const day15 = getDayButton(15);
-    expect(day15).not.toBeDisabled();
+    expect(day15).not.toHaveAttribute('aria-disabled', 'true');
   });
 
   // ─── Initial Visible Month ───────────────────────────────────
@@ -424,14 +424,20 @@ describe('Calendar', () => {
       render(<Calendar min="2027-03-04" max="2027-06-30" />);
 
       expect(screen.getByText('March 2027')).toBeInTheDocument();
-      expect(getDayButton(4, 'March', 2027)).not.toBeDisabled();
+      expect(getDayButton(4, 'March', 2027)).not.toHaveAttribute(
+        'aria-disabled',
+        'true',
+      );
     });
 
     it('opens on max when the window is entirely in the past', () => {
       render(<Calendar min="2019-01-01" max="2019-04-30" />);
 
       expect(screen.getByText('April 2019')).toBeInTheDocument();
-      expect(getDayButton(30, 'April', 2019)).not.toBeDisabled();
+      expect(getDayButton(30, 'April', 2019)).not.toHaveAttribute(
+        'aria-disabled',
+        'true',
+      );
     });
 
     it('keeps max in the last pane in the two-month layout', () => {
@@ -466,7 +472,7 @@ describe('Calendar', () => {
 
     // January 4, 2026 is a Sunday - should be disabled
     const sunday = getDayButton(4);
-    expect(sunday).toBeDisabled();
+    expect(sunday).toHaveAttribute('aria-disabled', 'true');
   });
 
   it('caps the end date to maxRangeSpan once a start is picked', async () => {
@@ -475,15 +481,15 @@ describe('Calendar', () => {
     render(<Calendar mode="range" focusDate="2026-01-01" maxRangeSpan={7} />);
 
     // Before a start is picked every day is selectable.
-    expect(getDayButton(20)).not.toBeDisabled();
+    expect(getDayButton(20)).not.toHaveAttribute('aria-disabled', 'true');
 
     // Pick Jan 10 as the start. A 7-day window spans Jan 4–16 (start ± 6).
     await user.click(getDayButton(10));
 
-    expect(getDayButton(16)).not.toBeDisabled(); // 6 days after — the edge
-    expect(getDayButton(17)).toBeDisabled(); // 7 days after — beyond the cap
-    expect(getDayButton(4)).not.toBeDisabled(); // 6 days before — symmetric
-    expect(getDayButton(3)).toBeDisabled(); // 7 days before — beyond the cap
+    expect(getDayButton(16)).not.toHaveAttribute('aria-disabled', 'true'); // 6 days after — the edge
+    expect(getDayButton(17)).toHaveAttribute('aria-disabled', 'true'); // 7 days after — beyond the cap
+    expect(getDayButton(4)).not.toHaveAttribute('aria-disabled', 'true'); // 6 days before — symmetric
+    expect(getDayButton(3)).toHaveAttribute('aria-disabled', 'true'); // 7 days before — beyond the cap
   });
 
   it('enforces minRangeSpan once a start is picked', async () => {
@@ -496,11 +502,11 @@ describe('Calendar', () => {
 
     // The picked start itself stays enabled — it is the active selection
     // anchor, not an unreachable end.
-    expect(getDayButton(10)).not.toBeDisabled();
-    expect(getDayButton(11)).toBeDisabled(); // 1 day apart — too short
-    expect(getDayButton(12)).not.toBeDisabled(); // 3-day span — allowed
-    expect(getDayButton(8)).not.toBeDisabled(); // 3-day span the other way
-    expect(getDayButton(9)).toBeDisabled(); // 2-day span — too short
+    expect(getDayButton(10)).not.toHaveAttribute('aria-disabled', 'true');
+    expect(getDayButton(11)).toHaveAttribute('aria-disabled', 'true'); // 1 day apart — too short
+    expect(getDayButton(12)).not.toHaveAttribute('aria-disabled', 'true'); // 3-day span — allowed
+    expect(getDayButton(8)).not.toHaveAttribute('aria-disabled', 'true'); // 3-day span the other way
+    expect(getDayButton(9)).toHaveAttribute('aria-disabled', 'true'); // 2-day span — too short
   });
 
   it('commits a same-day range with the default minimum', async () => {
@@ -565,8 +571,8 @@ describe('Calendar', () => {
 
     // …and the start is cleared: the days that minRangeSpan disabled around
     // the old anchor are selectable again, so a new start can be placed there.
-    expect(getDayButton(11)).not.toBeDisabled();
-    expect(getDayButton(9)).not.toBeDisabled();
+    expect(getDayButton(11)).not.toHaveAttribute('aria-disabled', 'true');
+    expect(getDayButton(9)).not.toHaveAttribute('aria-disabled', 'true');
   });
 
   it('announces the cleared range in the provider locale', async () => {
@@ -603,7 +609,7 @@ describe('Calendar', () => {
 
     // A picked single date must not disable far-away days.
     await user.click(getDayButton(10));
-    expect(getDayButton(25)).not.toBeDisabled();
+    expect(getDayButton(25)).not.toHaveAttribute('aria-disabled', 'true');
   });
 
   it('keeps a controlled value that is wider than maxRangeSpan (selection-only)', () => {
@@ -621,7 +627,7 @@ describe('Calendar', () => {
 
     // No selection is in progress (both endpoints are set), so no anchor →
     // every day is pickable and both endpoints render selected.
-    expect(getDayButton(20)).not.toBeDisabled();
+    expect(getDayButton(20)).not.toHaveAttribute('aria-disabled', 'true');
     expect(getDayButton(5).closest('[role="gridcell"]')).toHaveAttribute(
       'aria-selected',
       'true',
@@ -1713,7 +1719,7 @@ describe('Calendar', () => {
     render(<Calendar focusDate="2026-01-01" min="2026-01-05" />);
 
     const day1 = getDayButton(1);
-    expect(day1).toBeDisabled();
+    expect(day1).toHaveAttribute('aria-disabled', 'true');
 
     const day8 = getDayButton(8);
     day8.focus();
@@ -1741,7 +1747,7 @@ describe('Calendar', () => {
     render(<Calendar focusDate="2026-01-01" dateConstraints={[disableJan8]} />);
 
     const day8 = getDayButton(8);
-    expect(day8).toBeDisabled();
+    expect(day8).toHaveAttribute('aria-disabled', 'true');
 
     const day15 = getDayButton(15);
     day15.focus();
