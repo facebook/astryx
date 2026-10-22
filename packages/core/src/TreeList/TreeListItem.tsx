@@ -38,6 +38,7 @@ import {TreeListBranches} from './TreeListBranches';
 import type {TreeListDensity, TreeListVariant} from './TreeListTypes';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
+import {disabledInteractionProps} from '../utils/disabledInteraction';
 
 // =============================================================================
 // Styles
@@ -552,11 +553,13 @@ export function TreeListItem({
         // Stable identity for TreeList's activateItem selector — do not
         // remove without also updating TreeList.tsx.
         data-tree-toggle=""
-        disabled={isDisabled}
+        // Disabled stays focusable (spec:AST-085 FR1) but inert (FR2).
+        aria-disabled={isDisabled || undefined}
         // Roving tabindex lives on the treeitem row; the chevron toggle is not
         // a separate tab stop. Row-level Enter/Space forwards to this button.
         tabIndex={-1}
         onClick={handleToggle}
+        {...(isDisabled ? disabledInteractionProps() : null)}
         {...mergeProps(
           // Stable theme target for the expand/collapse control. `data-tree-toggle`
           // stays as the functional activation hook; this adds a themeable
@@ -608,7 +611,8 @@ export function TreeListItem({
         <button
           type="button"
           onClick={onClick}
-          disabled={isDisabled}
+          aria-disabled={isDisabled || undefined}
+          {...(isDisabled ? disabledInteractionProps() : null)}
           aria-labelledby={labelId}
           aria-describedby={description != null ? descriptionId : undefined}
           // Roving tabindex lives on the treeitem row; inner action is not a

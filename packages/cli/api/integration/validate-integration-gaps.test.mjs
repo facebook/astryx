@@ -580,6 +580,9 @@ describe('block component names', () => {
       ),
       'templates/account-card.tsx':
         "import {Helper} from 'some-lib';\nexport default function A() {\n  return <Helper />;\n}\n",
+      // The package root the doc's derived import names exports the component.
+      'index.tsx':
+        "export function Panel() { return null; }\nexport {AcmeWidget} from './components/AcmeWidget';\n",
     });
 
     expect(await allOf(dir)).toEqual([]);
