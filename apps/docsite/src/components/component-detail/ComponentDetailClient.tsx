@@ -181,8 +181,7 @@ function OverviewContent({
             <MarkdownText type="body">
               Already using the shadcn registry workflow? Install the real
               Astryx package and a local public re-export. Component
-              implementation source stays in Astryx. [How compatibility
-              works](/docs/shadcn-compatibility).
+              implementation source stays in Astryx.
             </MarkdownText>
             {shadcnRegistryIsPreview && (
               <Text type="supporting" color="secondary">
