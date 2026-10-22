@@ -64,12 +64,12 @@ astryx --json template --list --package @acme/astryx-widgets
       content: [
         {
           type: 'prose',
-          text: "Run the type check (`{@pm dlx tsc --noEmit}`, or the app's own script) and the production build in every framework or bundler the integration supports. One toolchain passing does not prove another.",
+          text: "Run the type check (`{@pm exec tsc --noEmit}`, or the app's own script) and the production build in every framework or bundler the integration supports. One toolchain passing does not prove another.",
         },
         {
           type: 'code',
           lang: 'bash',
-          code: `{@pm dlx tsc --noEmit}
+          code: `{@pm exec tsc --noEmit}
 {@pm run build}`,
         },
         {

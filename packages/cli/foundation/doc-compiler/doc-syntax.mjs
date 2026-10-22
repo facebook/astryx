@@ -334,8 +334,18 @@ export function renderPmStep(step, pm) {
         }[pm],
         args,
       );
-    case 'create':
+    case 'create': {
+      // npm passes flags to the initializer only after `--`.
+      const flagAt = args.findIndex(arg => arg.startsWith('-'));
+      if (pm === 'npm' && flagAt > 0) {
+        return join('npm create', [
+          ...args.slice(0, flagAt),
+          '--',
+          ...args.slice(flagAt),
+        ]);
+      }
       return join(BINARY[pm], 'create', args);
+    }
     default:
       return join(BINARY[pm], verb, args);
   }
@@ -530,7 +540,15 @@ export function tokenForCommand(command) {
     `{@pm-only ${manager} "<why only ${manager}>" ${rest.join(' ')}}`;
   if (bin === 'npx' || bin === 'bunx') {
     const plain = rest.filter(w => w !== '-y' && w !== '--yes');
-    return `{@pm dlx ${plain.join(' ')}}`;
+    // npx runs the project's own binary when it has one: an unscoped,
+    // unversioned name such as `tsc` is that, so it is `exec`. A scoped or
+    // versioned package, or `--yes`, downloads one: `dlx`.
+    const target = plain.find(w => !w.startsWith('-')) ?? '';
+    const downloads =
+      plain.length < rest.length ||
+      target.startsWith('@') ||
+      /^[^@]+@/.test(target);
+    return `{@pm ${downloads ? 'dlx' : 'exec'} ${plain.join(' ')}}`;
   }
   let verb = rest[0];
   let tail = rest.slice(1);
