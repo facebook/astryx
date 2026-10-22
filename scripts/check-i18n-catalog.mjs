@@ -84,6 +84,14 @@ const COMPONENT_HOOK = 'useComponentTranslator';
 const CONSUMER_HOOK = 'useTranslator';
 /** The public context, which binds the whole catalog to its `translate`. */
 const CONSUMER_CONTEXT = 'InternationalizationContext';
+/**
+ * The internal whole-catalog translator for keys a CALLER supplies at runtime
+ * (PowerSearch's public `operator.i18nKey`). It carries the catalog like the
+ * consumer hook does, so its importers are counted in the summary: the
+ * carve-out stays visible, and a file using it for its own fixed strings is
+ * still caught by the key-coverage rule below.
+ */
+const CALLER_KEY_HOOK = 'useCatalogTranslator';
 const SLICE_MODULE_RE =
   /\/i18n\/generated-locales\/en\/([A-Za-z0-9]+)\.generated$/;
 
@@ -618,7 +626,8 @@ function namespaceOf(key) {
  * @param {string} source     file contents
  * @param {string} fileName   display name (drives .tsx parsing)
  * @returns {{hookCalls: {line: number, namespaces: string[] | null}[],
- *            consumerHookImports: {line: number, name: string}[]}}
+ *            consumerHookImports: {line: number, name: string}[],
+ *            importsCallerKeyHook: boolean}}
  */
 function extractSliceUsage(source, fileName) {
   const sourceFile = ts.createSourceFile(
@@ -638,6 +647,7 @@ function extractSliceUsage(source, fileName) {
   // lines where the consumer hook is imported from an i18n module.
   const sliceImports = new Map();
   const consumerHookImports = [];
+  let importsCallerKeyHook = false;
   for (const statement of sourceFile.statements) {
     if (!ts.isImportDeclaration(statement)) continue;
     if (!ts.isStringLiteral(statement.moduleSpecifier)) continue;
@@ -650,6 +660,7 @@ function extractSliceUsage(source, fileName) {
     }
     if (
       /(^|\/)i18n(\/[^/]+)?$/.test(specifier) &&
+      !clause.isTypeOnly &&
       clause.namedBindings &&
       ts.isNamedImports(clause.namedBindings)
     ) {
@@ -660,6 +671,9 @@ function extractSliceUsage(source, fileName) {
           !element.isTypeOnly
         ) {
           consumerHookImports.push({line: lineOf(element), name: imported});
+        }
+        if (imported === CALLER_KEY_HOOK && !element.isTypeOnly) {
+          importsCallerKeyHook = true;
         }
       }
     }
@@ -717,7 +731,7 @@ function extractSliceUsage(source, fileName) {
   };
   visit(sourceFile);
 
-  return {hookCalls, consumerHookImports};
+  return {hookCalls, consumerHookImports, importsCallerKeyHook};
 }
 
 /**
@@ -1034,9 +1048,15 @@ function main() {
     (n, f) => n + f.hookCalls.length,
     0,
   );
+  const callerKeyFiles = [...slicedFiles.values()].filter(
+    f => f.importsCallerKeyHook,
+  ).length;
   console.log(
     `✓ check:i18n-catalog — ${seen.size} key(s) over ${refCount} reference(s) resolve; ` +
-      `${slicedHookCalls} ${COMPONENT_HOOK} call(s) carry the namespaces their files read; ` +
+      `${slicedHookCalls} ${COMPONENT_HOOK} call(s) carry the namespaces their files read` +
+      (callerKeyFiles > 0
+        ? ` (${callerKeyFiles} file(s) also read caller-supplied keys through ${CALLER_KEY_HOOK}); `
+        : '; ') +
       `${enKeys.size} en and ${translatedMessageCount} translated message(s) parsed and contract-checked; ` +
       `plural categories evaluated with runtime CLDR ${process.versions.cldr}; ` +
       `${localeFiles.length} locale(s) consistent`,

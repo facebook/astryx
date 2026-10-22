@@ -538,6 +538,27 @@ describe('extractSliceUsage — the slices a component renders with', () => {
       ).consumerHookImports,
     ).toEqual([]);
   });
+
+  it('counts, and does not refuse, the caller-key translator a file reads caller-supplied keys through', () => {
+    // PowerSearch's public `operator.i18nKey` may name any namespace, so the
+    // whole-catalog fallback stays for it; the import is reported in the
+    // summary rather than as a problem, and a type import is neither.
+    const value = usage(
+      `import {useCatalogTranslator} from '../i18n/useCatalogTranslator';`,
+    );
+    expect(value.consumerHookImports).toEqual([]);
+    expect(value.importsCallerKeyHook).toBe(true);
+    expect(
+      usage(
+        `import {useComponentTranslator} from '../i18n/useComponentTranslator';`,
+      ).importsCallerKeyHook,
+    ).toBe(false);
+    expect(
+      usage(
+        `import type {useCatalogTranslator} from '../i18n/useCatalogTranslator';`,
+      ).importsCallerKeyHook,
+    ).toBe(false);
+  });
 });
 
 describe('checkSliceCoverage — every key a file reads is in a slice it renders with', () => {
