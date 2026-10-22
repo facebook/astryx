@@ -15,7 +15,13 @@ export const docs = {
   category: 'guide',
   description:
     'Pick the shell, budget each region, and choose navigation, before any content exists.',
-  keywords: ['shell', 'navigation', 'frame', 'region', 'width budget'],
+  keywords: [
+    'shell',
+    'navigation',
+    'frame',
+    'region',
+    'width budget',
+  ],
 
   sections: [
     {

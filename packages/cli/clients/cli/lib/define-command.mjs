@@ -200,10 +200,7 @@ export function addDocHelp(cmd, doc) {
       `  ${formatCliCommand(cli)}`,
     ]);
     const more = `More: ${formatCliCommand(`docs cli/commands/${routeSegment(doc.name)}`)}`;
-    const blocks =
-      examples.length > 0
-        ? [['Examples:', ...examples].join('\n'), more]
-        : [more];
+    const blocks = examples.length > 0 ? [['Examples:', ...examples].join('\n'), more] : [more];
     return `\n${text(blocks.join('\n\n')).toString()}`;
   });
 }
@@ -216,8 +213,5 @@ export function addDocHelp(cmd, doc) {
 export function addExitCodesHelp(cmd, exitCodes) {
   if (!exitCodes?.length) return;
   const lines = exitCodes.map(({code, when}) => `  ${code}  ${when}`);
-  cmd.addHelpText(
-    'after',
-    `\n${text(['Exit codes:', ...lines].join('\n')).toString()}`,
-  );
+  cmd.addHelpText('after', `\n${text(['Exit codes:', ...lines].join('\n')).toString()}`);
 }

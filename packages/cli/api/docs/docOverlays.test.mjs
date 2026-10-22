@@ -99,10 +99,7 @@ describe('reference doc overlays (#2182)', () => {
           }
         });
       }
-      expect(
-        dropped,
-        `${topic}.doc.${variant}.mjs overrides that never apply`,
-      ).toEqual([]);
+      expect(dropped, `${topic}.doc.${variant}.mjs overrides that never apply`).toEqual([]);
     });
 
     it(`${topic} --${variant}: no base section is overridden twice`, async () => {
@@ -110,10 +107,7 @@ describe('reference doc overlays (#2182)', () => {
       const overlay = overlayMod.docsDense || overlayMod.docsZh;
       const anchors = (overlay.sections || []).map(s => s.section);
       const dupes = anchors.filter((a, i) => anchors.indexOf(a) !== i);
-      expect(
-        dupes,
-        `${topic}.doc.${variant}.mjs overrides the same base section twice`,
-      ).toEqual([]);
+      expect(dupes, `${topic}.doc.${variant}.mjs overrides the same base section twice`).toEqual([]);
     });
   }
 });
@@ -127,10 +121,7 @@ describe('the reported defect: docs tokens --dense (#2182)', () => {
       const spacing = result.data.sections.find(s =>
         JSON.stringify(s).includes('--spacing-'),
       );
-      expect(
-        spacing,
-        `${topic} --dense should show the spacing table`,
-      ).toBeTruthy();
+      expect(spacing, `${topic} --dense should show the spacing table`).toBeTruthy();
       const text = JSON.stringify(spacing);
       expect(
         text.includes('--color-'),
@@ -146,16 +137,10 @@ describe('the reported defect: docs tokens --dense (#2182)', () => {
     // namespace, the other 10 must still render (in English), not vanish or
     // absorb a neighbour's title.
     const full = await docs('tokens', null, {depth: 'all', detail: 'full'});
-    const dense = await docs('tokens', null, {
-      depth: 'all',
-      detail: 'full',
-      dense: true,
-    });
+    const dense = await docs('tokens', null, {depth: 'all', detail: 'full', dense: true});
     const titles = read =>
       read.data.slots.flatMap(slot =>
-        slot.children.flatMap(child =>
-          (child.sections ?? []).map(s => s.title),
-        ),
+        slot.children.flatMap(child => (child.sections ?? []).map(s => s.title)),
       );
     expect(titles(dense).length).toBe(titles(full).length);
     expect(titles(dense)).toContain('Color');

@@ -76,10 +76,7 @@ async function searchRead(query, options) {
             await runTree(
               SEARCH_TREE,
               {query, options},
-              {
-                ...(await gatherCandidatesReused(options)),
-                data: loadSearchData(),
-              },
+              {...(await gatherCandidatesReused(options)), data: loadSearchData()},
             )
           ),
           options.cwd ?? process.cwd(),

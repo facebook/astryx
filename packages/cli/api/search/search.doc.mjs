@@ -72,7 +72,7 @@ export const doc = {
     },
     {
       code: 'ERR_VERSIONS_UNAVAILABLE',
-      when: '`type` names a domain that reads @astryxdesign/core, and outside a project, or in a project with nothing installed, the Core of the release that answers cannot be installed into the per-user cache; a search with no `type` answers with `meta.partial` instead',
+      when: "`type` names a domain that reads @astryxdesign/core, and outside a project, or in a project with nothing installed, the Core of the release that answers cannot be installed into the per-user cache; a search with no `type` answers with `meta.partial` instead",
     },
   ],
   examples: [
