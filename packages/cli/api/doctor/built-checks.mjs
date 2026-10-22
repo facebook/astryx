@@ -9,7 +9,7 @@
  *   built `.html` page or a source file), and the package names whose
  *   components count as Astryx: every `@astryxdesign/*` package and each
  *   integration the project loads (its component catalog's providers).
- * @output `built-astryx-usage`: fails when the path holds no import from those
+ * @output `built-astryx-usage`: fails when the path holds no value import from those
  *   packages, no use of a component imported from them, and no Astryx
  *   stylesheet in built CSS or HTML. `built-astryx-purity`: warns with the
  *   findings of the source check in `astryx docs is-my-code-good` (raw
@@ -323,12 +323,17 @@ function astImports(ast) {
   /** @type {{spec: string, names: string[], at: number}[]} */
   const found = [];
   for (const node of ast.program.body) {
+    // A type-only import or re-export is erased from the built page, so it
+    // is not Astryx use.
+    if (node.importKind === 'type' || node.exportKind === 'type') continue;
     if (node.type === 'ImportDeclaration') {
+      const values = node.specifiers.filter(
+        (/** @type {any} */ each) => each.importKind !== 'type',
+      );
+      if (node.specifiers.length > 0 && values.length === 0) continue;
       found.push({
         spec: node.source.value,
-        names: node.specifiers.map(
-          (/** @type {any} */ each) => each.local.name,
-        ),
+        names: values.map((/** @type {any} */ each) => each.local.name),
         at: node.start,
       });
     } else if (
@@ -336,6 +341,15 @@ function astImports(ast) {
         node.type === 'ExportAllDeclaration') &&
       node.source
     ) {
+      const specifiers = node.specifiers ?? [];
+      if (
+        specifiers.length > 0 &&
+        specifiers.every(
+          (/** @type {any} */ each) => each.exportKind === 'type',
+        )
+      ) {
+        continue;
+      }
       found.push({spec: node.source.value, names: [], at: node.start});
     }
   }
@@ -406,14 +420,26 @@ function importsOf(text) {
   /** @type {{spec: string, names: string[], at: number}[]} */
   const found = [];
   const fromImport =
-    /\bimport\s+(?:type\s+)?([^'";]*?)\s+from\s+['"]([^'"]+)['"]|\bimport\s+['"]([^'"]+)['"]/g;
+    /\bimport\s+(type\s+)?([^'";]*?)\s+from\s+['"]([^'"]+)['"]|\bimport\s+['"]([^'"]+)['"]/g;
+  /** Whether every name in a `{…}` list is marked `type`. */
+  const allTypes = (/** @type {string} */ list) => {
+    const parts = list
+      .split(',')
+      .map(part => part.trim())
+      .filter(Boolean);
+    return parts.length > 0 && parts.every(part => /^type\s/.test(part));
+  };
   for (const match of text.matchAll(fromImport)) {
     const at = /** @type {number} */ (match.index);
-    if (match[3]) {
-      found.push({spec: match[3], names: [], at});
+    if (match[4]) {
+      found.push({spec: match[4], names: [], at});
       continue;
     }
-    const clause = match[1];
+    // A type-only import is erased from the build, so it is not use.
+    if (match[1]) continue;
+    const clause = match[2];
+    const onlyBraces = /^\{([\s\S]*)\}$/.exec(clause.trim());
+    if (onlyBraces && allTypes(onlyBraces[1])) continue;
     /** @type {string[]} */
     const names = [];
     const braces = /\{([\s\S]*)\}/.exec(clause);
@@ -433,14 +459,18 @@ function importsOf(text) {
       const name = part.trim().replace(/^\*\s+as\s+/, '');
       if (/^[A-Za-z_$][\w$]*$/.test(name)) names.push(name);
     }
-    found.push({spec: match[2], names, at});
+    found.push({spec: match[3], names, at});
   }
-  // A barrel that re-exports a package reaches it as an import does.
+  // A barrel that re-exports a package reaches it as an import does; a
+  // type-only re-export is erased like a type-only import.
   for (const match of text.matchAll(
-    /\bexport\s+(?:type\s+)?(?:\*(?:\s+as\s+[\w$]+)?|\{[^}]*\})\s*from\s+['"]([^'"]+)['"]/g,
+    /\bexport\s+(type\s+)?(\*(?:\s+as\s+[\w$]+)?|\{[^}]*\})\s*from\s+['"]([^'"]+)['"]/g,
   )) {
+    if (match[1]) continue;
+    const list = /^\{([\s\S]*)\}$/.exec(match[2]);
+    if (list && allTypes(list[1])) continue;
     found.push({
-      spec: match[1],
+      spec: match[3],
       names: [],
       at: /** @type {number} */ (match.index),
     });
@@ -738,7 +768,7 @@ export function checkBuilt(target, {cwd, packages}) {
             id: 'built-astryx-usage',
             label: 'Built output uses Astryx',
             status: 'fail',
-            message: `Read ${read}: no import from an Astryx package, no Astryx component, and no Astryx styles, so this output does not use Astryx.`,
+            message: `Read ${read}: no value import from an Astryx package (a type-only import is erased from the build), no Astryx component, and no Astryx styles, so this output does not use Astryx.`,
             fix: `Rebuild the page from an Astryx template: run \`${formatCliCommand('build "<what the page is>"', cwd)}\`, scaffold the template it names, and fill it with Astryx components. Do not deliver this output.`,
           };
   const unreadNames =

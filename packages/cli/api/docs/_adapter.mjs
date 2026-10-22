@@ -685,6 +685,7 @@ function docFinderOver(catalog, tree, fromProvider, summaries = true) {
         // The summary is the target doc's own text, so its links resolve
         // against the target's provider, never the linking doc's: a Core
         // component's against the CLI's docs, like its other fields.
+        // contributedDocLink returns the authored text; it renders once here.
         if (summaries && link.summary.includes('{@')) {
           link.summary = await linkSummary(
             catalog,
@@ -692,6 +693,8 @@ function docFinderOver(catalog, tree, fromProvider, summaries = true) {
             provider === CORE_COMPONENT_PROVIDER ? CLI_PROVIDER_ID : provider,
             link.summary,
           );
+        } else {
+          link.summary = renderTokens(link.summary);
         }
         return {link: {target, ...link}, kind: parsed.kind, typed: null};
       }
@@ -815,7 +818,7 @@ async function contributedDocLink(catalog, provider, kind, name) {
       id: createDocId(provider, 'component', name),
       route: null,
       title: entry?.displayName ?? name,
-      summary: renderTokens(entry?.description ?? doc?.description ?? ''),
+      summary: entry?.description ?? doc?.description ?? '',
       command: `astryx component ${name}${selectPackage ? ` --package ${record.package}` : ''}`,
     };
   }
@@ -838,7 +841,7 @@ async function contributedDocLink(catalog, provider, kind, name) {
     id: createDocId(provider, template.type, name),
     route: null,
     title: template.displayName ?? template.name,
-    summary: renderTokens(template.description ?? ''),
+    summary: template.description ?? '',
     command: `astryx template ${name} --type ${template.type}${selectPackage ? ` --package ${template.package}` : ''}`,
   };
 }
