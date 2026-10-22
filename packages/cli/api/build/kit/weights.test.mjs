@@ -125,6 +125,46 @@ describe('weighStart', () => {
     expect(start).toBe('fresh');
   });
 
+  describe('a template the tables do not list (cold start)', () => {
+    // A made-up family the tables have never seen, described only by its own
+    // descriptor, next to listed templates with descriptors of their own.
+    const catalog = [
+      {name: 'board', displayName: 'Kanban Board', keywords: ['kanban']},
+      {name: 'charts', displayName: 'Charts', category: 'Charts - Overview'},
+      {name: 'grid', displayName: 'Grid'},
+      {
+        name: 'gauge-fleet',
+        displayName: 'Fleet Gauges',
+        category: 'Gauges - Fleet',
+        keywords: ['gauges', 'fleet', 'meters'],
+      },
+    ];
+
+    it('starts from it when the idea names its own words', () => {
+      const ranked = [page('gauge-fleet', 9, 'Gauges'), ...RANKED];
+      const start = weighStart(
+        'fleet gauges with meters per kanban lane',
+        ranked,
+        ranked[0],
+        catalog,
+        {weights: WEIGHTS},
+      );
+      expect(start).toBe('gauge-fleet');
+    });
+
+    it('yields to the listed template whose own words the idea names more', () => {
+      const ranked = [page('gauge-fleet', 9, 'Gauges'), ...RANKED];
+      const start = weighStart(
+        'a kanban board with a fleet column',
+        ranked,
+        ranked[0],
+        catalog,
+        {weights: WEIGHTS},
+      );
+      expect(start).toBe('board');
+    });
+  });
+
   it("keeps the ranker's template for an idea that asks for a new page", () => {
     const start = weighStart('the existing page', RANKED, RANKED[0], CATALOG, {
       weights: WEIGHTS,
