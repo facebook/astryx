@@ -415,7 +415,8 @@ async function flatTopicInputs(catalog) {
       providerId: entry.providerId ?? entry.package,
       name: entry.name,
       title: title ?? entry.name,
-      summary: renderTokens(description ?? ''),
+      // Rendered once, with the tree's other summaries (buildProjectTree).
+      summary: description ?? '',
       category: category ?? null,
       source: `${entry.package}:${entry.name}`,
       ...(aliases.length > 0 ? {aliases} : {}),
