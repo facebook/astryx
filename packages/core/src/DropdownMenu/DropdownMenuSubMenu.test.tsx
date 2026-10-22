@@ -2462,6 +2462,107 @@ describe('DropdownMenuSubMenu header and footer', () => {
     expect(sheet).toBeInTheDocument();
   });
 
+  it("a keyboard-opened bottom sheet leaves focus in a level's field while it is typed into", async () => {
+    const user = userEvent.setup();
+    function SheetLabels() {
+      const [query, setQuery] = useState('');
+      const labels = ['Bug', 'Feature', 'Design'].filter(label =>
+        label.toLowerCase().includes(query.toLowerCase()),
+      );
+      return (
+        <DropdownMenu
+          button={{label: 'Session'}}
+          presentation="bottom-sheet"
+          items={[
+            {
+              label: 'Labels',
+              header: (
+                <input
+                  aria-label="Filter labels"
+                  value={query}
+                  onChange={event => setQuery(event.target.value)}
+                />
+              ),
+              items: labels.map(label => ({label})),
+            },
+          ]}
+        />
+      );
+    }
+    // Lets the sheet's focus frames run between keystrokes.
+    const nextFrames = async () =>
+      act(
+        async () =>
+          new Promise<void>(resolve =>
+            requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+          ),
+      );
+    render(<SheetLabels />);
+    const trigger = screen.getByRole('button', {name: /Session/});
+    act(() => trigger.focus());
+    await user.keyboard('{Enter}');
+    const labelsRow = await screen.findByRole('button', {name: /Labels/});
+    await waitFor(() => expect(labelsRow).toHaveFocus());
+    await user.keyboard('{Enter}');
+    const filter = await screen.findByRole('textbox', {name: 'Filter labels'});
+    await nextFrames();
+
+    act(() => filter.focus());
+    for (const key of ['f', 'e', 'a']) {
+      await user.keyboard(key);
+      await nextFrames();
+    }
+    expect(filter).toHaveValue('fea');
+    expect(filter).toHaveFocus();
+    expect(screen.queryByRole('button', {name: /Bug/})).toBeNull();
+  });
+
+  it('the bottom sheet finds a level whose label changes again at its position, so its field filters it live', async () => {
+    const user = userEvent.setup();
+    function CountedLabels() {
+      const [query, setQuery] = useState('');
+      const labels = ['Bug', 'Feature', 'Performance'].filter(label =>
+        label.toLowerCase().includes(query.toLowerCase()),
+      );
+      return (
+        <DropdownMenu
+          button={{label: 'Session'}}
+          presentation="bottom-sheet"
+          items={[
+            {label: 'Rename'},
+            {
+              // No id, and a label that counts what the filter leaves.
+              label: `Labels (${labels.length})`,
+              header: (
+                <input
+                  aria-label="Filter labels"
+                  value={query}
+                  onChange={event => setQuery(event.target.value)}
+                />
+              ),
+              items: labels.map(label => ({label})),
+            },
+          ]}
+        />
+      );
+    }
+    render(<CountedLabels />);
+    await user.click(screen.getByRole('button', {name: /Session/}));
+    await user.click(await screen.findByRole('button', {name: /Labels \(3\)/}));
+    const filter = await screen.findByRole('textbox', {name: 'Filter labels'});
+    await user.type(filter, 'perf');
+    expect(filter).toHaveValue('perf');
+    await waitFor(() =>
+      expect(screen.queryByRole('button', {name: /Bug/})).toBeNull(),
+    );
+    expect(
+      screen.getByRole('button', {name: /Performance/}),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', {name: 'Labels (1)'}),
+    ).toBeInTheDocument();
+  });
+
   describe('on a phone', () => {
     const originalMatchMedia = window.matchMedia;
     beforeEach(() => {
