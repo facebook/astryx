@@ -209,8 +209,8 @@ export interface UseMenuPressOptions {
   getScroller?: () => HTMLElement | null;
   /**
    * Resolve the element under a viewport point. Defaults to
-   * `document.elementFromPoint`, falling back to the event target where the
-   * document lacks it (jsdom). A test seam.
+   * `elementFromPoint` on the menu's own document or shadow root, falling back
+   * to the event target where the document lacks it (jsdom). A test seam.
    */
   hitTest?: (x: number, y: number) => Element | null;
   /** @default 500 */
@@ -364,7 +364,16 @@ export function useMenuPress(options: UseMenuPressOptions): UseMenuPressReturn {
       if (hitTest != null) {
         element = hitTest(event.clientX, event.clientY);
       } else if (typeof doc.elementFromPoint === 'function') {
-        element = doc.elementFromPoint(event.clientX, event.clientY);
+        // Hit-test in the menu's own tree: inside a shadow root the document
+        // answers with the shadow host, never the row under the pointer.
+        const tree = menu?.getRootNode();
+        const scope: Pick<Document, 'elementFromPoint'> =
+          tree != null &&
+          tree !== doc &&
+          typeof (tree as ShadowRoot).elementFromPoint === 'function'
+            ? (tree as ShadowRoot)
+            : doc;
+        element = scope.elementFromPoint(event.clientX, event.clientY);
       } else {
         element = event.target instanceof Element ? event.target : null;
       }

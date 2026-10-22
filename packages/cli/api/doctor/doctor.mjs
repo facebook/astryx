@@ -66,6 +66,7 @@ import {detailView, indexView} from '../../foundation/doc-compiler/lenses.mjs';
 import {semverCompare, isValidSemver, satisfiesRange} from '../../foundation/env/semver.mjs';
 import {checkAppThemes, checkThemes} from './theme-checks.mjs';
 import {availableLine, RUN_FROM_PROJECT, upgradeLine} from '../../foundation/release/notices.mjs';
+import {COMPUTER_COMMAND, COMPUTER_INSTALL_STEP} from '../../foundation/agent-docs/computer-agent-text.mjs';
 import {alignCommand, addCliCommandFor, computerAgentTextState, installCommandFor, insideProjectElsewhere, projectCoreVersion, projectHasOwnCli, computerIntegrationsOutside, computerIntegrationsToAdd, displayHomePath, outsideProject, releaseFacts} from './_adapter.mjs';
 
 /**
@@ -1491,6 +1492,10 @@ export function checkCliCommand(ctx) {
   *   each file of the computer-level agent text against this release's rendering
  * @property {import('../../foundation/env/user-settings.mjs').ComputerAgentTextSettings} [agentTextSettings]
  *   the person's choices about the computer-level agent text
+ * @property {string | null} [agentTextCommand] the command the skill file
+ *   tells agents to run, or null
+ * @property {string | null} [agentTextInstall] the install step the skill
+ *   file records for when that command is not found, or null
   * @property {string} [cwd] the folder doctor runs in, for the printed fix
  * @property {import('../../foundation/release/notices.mjs').GlobalBehind | null} [globalBehind]
  *   the CLI installed for the computer, when it is older than the newest
@@ -1503,7 +1508,7 @@ export function checkCliCommand(ctx) {
  *   the newest update notice that did not print, and why (diagnostic only)
  * @property {{pid: number | null, host: string | null, since: number} | null} [stateLock]
  *   who holds the state file's lock now (diagnostic only)
-  * @property {Array<import('../../foundation/env/search-path.mjs').SearchPathCommand & {upgrade?: string | null}>} [searchPathCommands]
+  * @property {Array<import('../../foundation/env/search-path.mjs').SearchPathCommand & {upgrade?: string | null, runner?: boolean}>} [searchPathCommands]
  *   every `astryx` on the search path, with the command that upgrades it
  *   the `astryx` commands on the search path, in order
  * @property {import('../../foundation/integrations/computer-integrations.mjs').ComputerIntegrationCandidate[]} [computerIntegrations]
@@ -1714,6 +1719,8 @@ export function checkComputerAgentText(ctx) {
     };
   }
   const entries = ctx.agentText ?? /** @type {NonNullable<typeof state>} */ (state).entries;
+  const command = ctx.agentText ? (ctx.agentTextCommand ?? null) : /** @type {NonNullable<typeof state>} */ (state).command;
+  const recorded = (ctx.agentText ? ctx.agentTextInstall : /** @type {NonNullable<typeof state>} */ (state).install) ?? null;
   const fix = `Run \`${formatCliCommand('astryx init --user', ctx.cwd)}\`.`;
   const [file, ...links] = entries;
   const home = (/** @type {{path: string}} */ e) => displayHomePath(e.path);
@@ -1742,9 +1749,29 @@ export function checkComputerAgentText(ctx) {
     };
   }
   const current = file.state === 'current';
+  const status = `${current ? 'The computer-level agent text matches this release' : "The computer-level agent text differs from this release's"}: ${home(file)}.`;
+  // The skill outlives the CLI it names when the home folder outlasts the
+  // folder the CLI is installed in, as on a machine whose system folders
+  // reset on restart. Reported only when no `astryx` command is on the search
+  // path at all, apart from a package runner's own copy, which it puts first
+  // only for the run it starts (the way back when the global CLI is gone).
+  // Any other `astryx`, even one the scan cannot trace to the package, such
+  // as the shim of Volta, asdf or mise, may well run the CLI, so doctor stays
+  // quiet here and cli-on-path reports what it can; never a false "gone".
+  // The reinstalled copy refreshes the text too.
+  const rows = ctx.searchPathCommands;
+  if (command === COMPUTER_COMMAND && rows && !rows.some(r => !r.runner)) {
+    return {
+      ...base,
+      message: `${status} It tells agents to run \`${COMPUTER_COMMAND}\`, but no \`${COMPUTER_COMMAND}\` command is on the search path, so agents that read it find no CLI to run (as when a restart removes the CLI installed for the computer and keeps the home folder).${linkNote}`,
+      fix: recorded
+        ? `Run \`${recorded}\`, the step the skill names for when \`${COMPUTER_COMMAND}\` is not found.`
+        : `Install it for the computer: \`${COMPUTER_INSTALL_STEP}\`.`,
+    };
+  }
   return {
     ...base,
-    message: `${current ? 'The computer-level agent text matches this release' : "The computer-level agent text differs from this release's"}: ${home(file)}.${linkNote}`,
+    message: `${status}${linkNote}`,
     ...(!current || missing.length > 0 || dangling.length > 0 ? {fix} : {}),
   };
 }

@@ -77,7 +77,6 @@ export const SpinnerDefaultLabelMounted = coreStory(
 export const SpinnerVisibleLabelMounted = coreStory(
   'spinner-visible-label-mounted',
 );
-export const ChatSystemStatusMounted = coreStory('chat-system-status-mounted');
 export const ProgressLoadingToComplete = coreStory(
   'progress-loading-to-complete',
 );

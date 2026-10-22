@@ -3,7 +3,7 @@
 '@astryxdesign/core': patch
 ---
 
-[fix] `astryx init` writes the agent docs at the project root, in files the project commits, so that Codex, Gemini CLI, Copilot CLI and Claude Code all read the block, from the project root or any folder below it. It no longer writes agent docs into a project's subfolder, the home folder, or a settings folder in it such as `~/.gemini`.
+[fix] `astryx init` writes the agent docs at the project root, in files the project commits, so that Codex, Gemini CLI, Copilot CLI and Claude Code all read the block, from the project root or any folder below it. It no longer writes agent docs into a project's subfolder, the home folder, or a settings folder in it such as `~/.gemini`. Introduced in [#7497](https://github.com/facebook/astryx/pull/7497); final-state evidence: [#7888](https://github.com/facebook/astryx/pull/7888).
 @josephfarina
 
 - `AGENTS.md` holds the block, created when missing. Before, a project with only `CLAUDE.md` got the block only there, so Codex and Gemini CLI never saw it.

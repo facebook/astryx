@@ -129,7 +129,6 @@ describe('Core status-message binding inventory', () => {
         ),
       ].sort(),
     ).toEqual([
-      'ChatSystemMessage',
       'FieldStatus announcement channel',
       'ProgressBar',
       'Spinner announcement channel',
@@ -142,7 +141,7 @@ describe('Core status-message binding inventory', () => {
     expect(CORE_STATUS_MESSAGE_EXCLUSIONS.map(entry => entry.part)).toEqual([
       'visible validation text',
       'aria-hidden decorative spinner',
-      'date or section separator',
+      'chat notice or date separator',
       'role=log transcript updates',
       'composer errors and tool-run states',
       'busy announcement',

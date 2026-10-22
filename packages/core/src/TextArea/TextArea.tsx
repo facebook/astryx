@@ -63,6 +63,7 @@ import {characterCount} from '../utils/characters';
 import {useTranslator} from '../i18n';
 
 import {useMergedRefs} from '../hooks/useMergedRefs';
+import {useBusyAnnouncement} from '../hooks/useBusyAnnouncement';
 const COUNTER_WARNING_THRESHOLD = 0.8;
 
 const styles = stylex.create({
@@ -438,6 +439,9 @@ export function TextArea({
   const [, startTransition] = useTransition();
   const [optimisticValue, setOptimisticValue] = useOptimistic(value);
   const isBusy = isLoading || optimisticValue !== value;
+  // The busy Spinner is decorative; this control announces its busy start
+  // (spec:AST-086 FR8).
+  useBusyAnnouncement(isBusy, t('@astryx.spinner.loading'), containerRef);
 
   // Disabled-reason tooltip. Disabled controls swallow pointer events, so the
   // tooltip listeners attach to the textarea container (which already exists)
@@ -660,7 +664,7 @@ export function TextArea({
         />
         {(isBusy || statusIcon) && (
           <span {...stylex.props(styles.endSlot)}>
-            {isBusy && <Spinner size="sm" />}
+            {isBusy && <Spinner size="sm" aria-hidden="true" />}
             {statusIcon}
           </span>
         )}
