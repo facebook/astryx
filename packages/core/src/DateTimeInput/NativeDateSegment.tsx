@@ -60,7 +60,7 @@ export type NativeDateSegmentProps = {
   max?: ISODateString;
   isDateDisabled: (date: ReturnType<typeof plainDateFromISO>) => boolean;
   isEffectivelyDisabled: boolean;
-  /** Disabled stays focusable: aria-disabled and readOnly, not `disabled`. */
+  /** While disabled, stay focusable: aria-disabled and readOnly, not `disabled`. */
   isFocusableDisabled: boolean;
   isEffectivelyRequired: boolean;
   isBusy: boolean;
@@ -292,8 +292,10 @@ export function NativeDateSegment({
           min={min}
           max={max}
           disabled={isEffectivelyDisabled && !isFocusableDisabled}
-          aria-disabled={isFocusableDisabled ? 'true' : undefined}
-          readOnly={isFocusableDisabled || undefined}
+          aria-disabled={
+            isEffectivelyDisabled && isFocusableDisabled ? 'true' : undefined
+          }
+          readOnly={(isEffectivelyDisabled && isFocusableDisabled) || undefined}
           aria-describedby={ariaDescribedBy}
           aria-required={isEffectivelyRequired ? 'true' : undefined}
           aria-invalid={

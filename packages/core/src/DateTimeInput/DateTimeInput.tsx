@@ -344,12 +344,12 @@ export interface DateTimeInputProps extends Omit<
   /**
    * Explains why the input is disabled. When set together with
    * `isDisabled`, the input shows a tooltip with this text on hover and
-   * keyboard focus, and the date and time fields stay focusable (via
-   * `aria-disabled`) so the reason is discoverable by keyboard and assistive
-   * technology. Typing and calendar activation stay blocked.
+   * keyboard focus, and the date and time fields are described by it, so the
+   * reason is discoverable by keyboard and assistive technology. Typing and
+   * calendar activation stay blocked.
    *
-   * Use this instead of wrapping a disabled input in `Tooltip` — disabled
-   * controls don't emit the pointer events an external tooltip needs.
+   * Use this instead of wrapping a disabled input in `Tooltip`, so the
+   * reason is tied to the field.
    *
    * @example
    * ```

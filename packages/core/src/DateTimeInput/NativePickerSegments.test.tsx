@@ -183,6 +183,15 @@ describe('DateTimeInput nativePicker', () => {
     expect(onClick).not.toHaveBeenCalled();
   });
 
+  it('leaves enabled native controls editable (AST-043)', () => {
+    stubPointer(true);
+    render(<DateTimeInput label="Meeting" onChange={() => {}} />);
+    for (const input of [getNativeDateInput(), getNativeTimeInput()]) {
+      expect(input).not.toHaveAttribute('readonly');
+      expect(input).not.toHaveAttribute('aria-disabled');
+    }
+  });
+
   it('drops in-page popup ARIA because the OS owns both pickers', () => {
     stubPointer(true);
     render(<DateTimeInput label="Meeting" onChange={() => {}} />);
