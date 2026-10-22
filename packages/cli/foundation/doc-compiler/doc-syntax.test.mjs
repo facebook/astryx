@@ -145,7 +145,10 @@ describe('npm script shortcuts', () => {
   it('suggest {@pm run …}, which every package manager runs', () => {
     expect(tokenForCommand('npm test')).toBe('{@pm run test}');
     expect(tokenForCommand('npm start -- --port 3000')).toBe(
-      '{@pm run start -- --port 3000}',
+      '{@pm run start --port 3000}',
+    );
+    expect(tokenForCommand('npm test -- --watch')).toBe(
+      '{@pm run test --watch}',
     );
     expect(tokenForCommand('npm run-script build')).toBe('{@pm run build}');
   });
