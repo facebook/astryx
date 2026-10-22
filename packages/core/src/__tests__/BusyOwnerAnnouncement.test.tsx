@@ -30,6 +30,13 @@ import {DateRangeInput} from '../DateRangeInput';
 import {DateTimeInput} from '../DateTimeInput';
 import {TimeInput} from '../TimeInput';
 import {CheckboxInput} from '../CheckboxInput';
+import {Thumbnail} from '../Thumbnail';
+import {
+  DropdownMenu,
+  DropdownMenuItem,
+  DropdownMenuSubMenu,
+} from '../DropdownMenu';
+import {ChatMessageList} from '../Chat';
 import {BaseTypeahead, Typeahead} from '../Typeahead';
 import type {SearchableItem, SearchSource} from '../Typeahead';
 import type {ISOTimeString} from '../utils';
@@ -141,6 +148,12 @@ const OWNERS: ReadonlyArray<
         onChange={() => {}}
         isLoading={isLoading}
       />
+    ),
+  ],
+  [
+    'Thumbnail (uploading)',
+    isLoading => (
+      <Thumbnail src="/local.jpg" alt="Upload" isLoading={isLoading} />
     ),
   ],
   [
@@ -481,3 +494,83 @@ describe.each(SHEET_OWNERS)(
     });
   },
 );
+
+describe('DropdownMenuSubMenu loading state (spec:AST-086 FR8)', () => {
+  function Menu({isLoading}: {isLoading: boolean}) {
+    return (
+      <DropdownMenu button={{label: 'Actions'}}>
+        <DropdownMenuSubMenu label="Move to" hasSpinner={isLoading}>
+          <DropdownMenuItem label="Inbox" onClick={() => {}} />
+        </DropdownMenuSubMenu>
+      </DropdownMenu>
+    );
+  }
+
+  it('announces nothing while its menu is closed', async () => {
+    render(strict(<Menu isLoading />));
+    await nextFrame();
+    expect(busyAnnouncements()).toEqual([]);
+  });
+
+  it('announces the busy start when its menu opens while loading', async () => {
+    render(strict(<Menu isLoading />));
+    fireEvent.click(screen.getByRole('button', {name: /Actions/}));
+    await nextFrame();
+    expect(busyAnnouncements()).toEqual([['Loading', 'polite']]);
+  });
+
+  it('keeps the trigger Spinner silent and announces each busy start once', async () => {
+    const {rerender} = render(strict(<Menu isLoading={false} />));
+    fireEvent.click(screen.getByRole('button', {name: /Actions/}));
+    await nextFrame();
+    expect(busyAnnouncements()).toEqual([]);
+    rerender(strict(<Menu isLoading />));
+    await nextFrame();
+    const spinner = document.querySelector('.astryx-spinner');
+    expect(spinner).toHaveAttribute('aria-hidden', 'true');
+    expect(busyAnnouncements()).toEqual([['Loading', 'polite']]);
+    rerender(strict(<Menu isLoading={false} />));
+    rerender(strict(<Menu isLoading />));
+    await nextFrame();
+    expect(busyAnnouncements()).toEqual([
+      ['Loading', 'polite'],
+      ['Loading', 'polite'],
+    ]);
+  });
+});
+
+describe('ChatMessageList top loader (spec:AST-086 FR4, FR8)', () => {
+  it('keeps the loader inside the log silent and announces loading once through the channel', async () => {
+    let notify!: IntersectionObserverCallback;
+    vi.stubGlobal(
+      'IntersectionObserver',
+      class {
+        constructor(callback: IntersectionObserverCallback) {
+          notify = callback;
+        }
+        observe() {}
+        disconnect() {}
+      },
+    );
+    render(
+      strict(
+        <ChatMessageList
+          scrollToTopAction={async () => new Promise<void>(() => {})}>
+          <div>Earlier message</div>
+        </ChatMessageList>,
+      ),
+    );
+    act(() => {
+      notify(
+        [{isIntersecting: true} as IntersectionObserverEntry],
+        {} as IntersectionObserver,
+      );
+    });
+    await nextFrame();
+    expect(document.querySelector('.astryx-spinner')).toHaveAttribute(
+      'aria-hidden',
+      'true',
+    );
+    expect(busyAnnouncements()).toEqual([['Loading', 'polite']]);
+  });
+});
