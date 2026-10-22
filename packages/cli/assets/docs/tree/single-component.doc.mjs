@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file `astryx docs cli/integrations/building-blocks/components/describe-the-component/single-component`:
+ * @file `astryx docs authoring/building-blocks/components/describe-the-component/single-component`:
  * write and maintain the default ComponentDoc for one public component.
  */
 

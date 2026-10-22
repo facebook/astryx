@@ -1080,16 +1080,20 @@ function nameTypes(names) {
 }
 
 /**
- * The section keys `astryx docs authoring --index` lists, read the way that
- * command reads them.
+ * The section keys the field reference lists (`astryx docs
+ * authoring/field-reference --index`), read the way that command reads them.
  * @returns {Promise<{keys: Set<string>} | {keys: null, error: string}>}
  */
 async function authoringTopicKeys() {
   try {
+    const {AUTHORING_REFERENCE_ROUTE} =
+      await import('../../foundation/discovery/authoring-self-docs.mjs');
     const catalog = DocsCatalog.fromBuiltins();
-    const entry = catalog.resolve('authoring');
-    if (!entry) return {keys: null, error: 'it is not a built-in topic'};
-    const index = indexView(await lowerTopic(catalog, entry));
+    const node = (await projectTree(catalog)).get(AUTHORING_REFERENCE_ROUTE);
+    if (!node?.ref?.topicFile) {
+      return {keys: null, error: 'the docs tree has no field reference'};
+    }
+    const index = indexView(await lowerTopic(catalog, guideEntry(node)));
     return {keys: new Set(index.sections.map(section => section.id))};
   } catch (err) {
     return {
@@ -1108,7 +1112,7 @@ function surfaceProblems(surface) {
   const problems = [];
   if (surface.types === 0 && surface.untraced.length === 0) {
     problems.push(
-      `@astryxdesign/cli/authoring exports no types, so nothing was compared with \`${formatCliCommand('docs authoring')}\``,
+      `@astryxdesign/cli/authoring exports no types, so nothing was compared with \`${formatCliCommand('docs authoring/field-reference')}\``,
     );
   }
   for (const {module, names, reason, source, key} of surface.unreadable) {
@@ -1121,7 +1125,7 @@ function surfaceProblems(surface) {
             ? `${source} does not load`
             : `${source} renders section "${key}", which the topic's index does not list`;
     problems.push(
-      `${nameTypes(names)} from ${module} ${names.length === 1 ? 'has' : 'have'} no doc in \`${formatCliCommand('docs authoring')}\`: ${why}`,
+      `${nameTypes(names)} from ${module} ${names.length === 1 ? 'has' : 'have'} no doc in \`${formatCliCommand('docs authoring/field-reference')}\`: ${why}`,
     );
   }
   for (const {name, reason} of surface.untraced) {
@@ -1162,7 +1166,7 @@ export async function checkAuthoringDocs(_ctx, options = {}) {
     const audit = await auditAuthoringSelfDocs({root, sources});
     const problems = [
       ...audit.unreachable.map(
-        source => `${source} is not in \`${formatCliCommand('docs authoring')}\``,
+        source => `${source} is not in \`${formatCliCommand('docs authoring/field-reference')}\``,
       ),
       ...audit.failed.map(
         ({source, error}) => `${source} failed to load: ${error}`,
@@ -1178,7 +1182,7 @@ export async function checkAuthoringDocs(_ctx, options = {}) {
         : {keys: options.topicKeys};
     const surface = [
       ...('error' in topic
-        ? [`\`${formatCliCommand('docs authoring')}\` could not be read: ${topic.error}`]
+        ? [`\`${formatCliCommand('docs authoring/field-reference')}\` could not be read: ${topic.error}`]
         : []),
       ...surfaceProblems(
         await auditAuthoringSurface({root, sources, topicKeys: topic.keys}),
@@ -1202,7 +1206,7 @@ export async function checkAuthoringDocs(_ctx, options = {}) {
       id,
       label,
       status: 'pass',
-      message: `All ${audit.sections} authoring schemas are readable in \`${formatCliCommand('docs authoring')}\`.`,
+      message: `All ${audit.sections} authoring schemas are readable in \`${formatCliCommand('docs authoring/field-reference')}\`.`,
     };
   } catch (err) {
     return {
@@ -1270,7 +1274,7 @@ export async function checkCliDocs(_ctx, options = {}) {
       id,
       label,
       status: 'pass',
-      message: `All ${audit.docs} CLI docs are readable: ${audit.tree} in the \`${formatCliCommand('docs cli')}\` tree and ${audit.authoring} in \`${formatCliCommand('docs authoring')}\`.`,
+      message: `All ${audit.docs} CLI docs are readable: ${audit.tree} in the \`${formatCliCommand('docs cli')}\` tree and ${audit.authoring} in \`${formatCliCommand('docs authoring/field-reference')}\`.`,
     };
   } catch (err) {
     return {
@@ -1387,7 +1391,7 @@ export async function checkDocsProgressiveDisclosure(ctx) {
     // A guide the docs tree places is a topic read by its route; it is held
     // to the same budget as every flat topic.
     const guides = [...(await projectTree(catalog)).nodes.values()]
-      // A flat topic in the Unorganized level is checked above, as a topic.
+      // A flat topic in a topic level is checked above, as a topic.
       .filter(node => node.kind === 'generic' && !node.ref?.flatTopic)
       .map(guideEntry);
     for (const entry of [...catalog.entries(), ...guides]) {

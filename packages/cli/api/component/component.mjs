@@ -293,7 +293,7 @@ async function componentRead(name, options = {}) {
   const selectorList = Array.isArray(name) ? name : null;
   const noName = selectorList == null && !name;
 
-  // Default detail level mirrors the CLI (see commands/component/index.mjs):
+  // Default detail level mirrors the CLI (see commands/component.mjs):
   // single-component views default to 'full', list-style views (--list,
   // --category, or no name) default to 'brief' (scannable name lists).
   // An explicit array remains a batch even when it is empty or a caller also

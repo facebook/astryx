@@ -104,7 +104,7 @@ export function scoreCandidate(
   for (const candidateName of [name, ...aliases.filter(Boolean)]) {
     const nameLower = candidateName.toLowerCase();
     // A placed guide's name is its route, and the route's last segment is its
-    // name too, as a flat topic's is: `codemods` is cli/integrations/codemods.
+    // name too, as a flat topic's is: `codemods` is authoring/building-blocks/codemods.
     const leafLower = nameLower.slice(nameLower.lastIndexOf('/') + 1);
 
     // A plural of the name is the name: `integration` is the `integrations`

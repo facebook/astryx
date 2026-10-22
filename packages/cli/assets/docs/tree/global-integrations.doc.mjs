@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file `astryx docs cli/integrations/global-integrations`: make an
+ * @file `astryx docs authoring/global-integrations`: make an
  * integration work when people install it next to their global Astryx
  * install; a checklist and the commands to try it (spec AST-081 FR12).
  */
@@ -11,7 +11,7 @@ export const docs = {
   type: 'generic',
   name: 'global-integrations',
   placement: {
-    parent: 'namespace:integrations',
+    parent: 'namespace:authoring',
     slot: 'guides',
     order: 25,
   },

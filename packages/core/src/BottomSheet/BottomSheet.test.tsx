@@ -498,6 +498,35 @@ describe('BottomSheet', () => {
     expect(dialog).toHaveStyle({'--_sheet-scrim-opacity': '1'});
   });
 
+  it('stays open when a file picker inside it is dismissed, and still closes on its own close request', () => {
+    // A file input fires a bubbling `cancel` at itself when its picker is
+    // dismissed. It reaches the <dialog> like a close request but is not one.
+    const onOpenChange = vi.fn();
+    render(
+      <BottomSheet
+        isOpen
+        purpose="form"
+        onOpenChange={onOpenChange}
+        label="Upload">
+        <input type="file" aria-label="Picture" />
+      </BottomSheet>,
+    );
+
+    const fromPicker = new Event('cancel', {bubbles: true, cancelable: true});
+    fireEvent(screen.getByLabelText('Picture'), fromPicker);
+
+    expect(onOpenChange).not.toHaveBeenCalled();
+    expect(fromPicker.defaultPrevented).toBe(false);
+
+    fireEvent(
+      screen.getByRole('dialog'),
+      new Event('cancel', {cancelable: true}),
+    );
+
+    expect(onOpenChange).toHaveBeenCalledTimes(1);
+    expect(onOpenChange).toHaveBeenCalledWith(false);
+  });
+
   it('keeps a standalone modal sheet presented through its exit animation', () => {
     render(<ExitHarness />);
     const dialog = screen.getByRole('dialog', {name: 'Filters'});

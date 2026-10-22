@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file `astryx docs cli/integrations/building-blocks/components/component-imports`: make an
+ * @file `astryx docs authoring/building-blocks/components/component-imports`: make an
  * integration component's documented import resolve from the packed package.
  */
 

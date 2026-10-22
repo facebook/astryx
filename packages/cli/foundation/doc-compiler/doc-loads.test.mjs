@@ -102,7 +102,15 @@ const RUNNERS = {
     runs: SELF_DOCS,
     sites: ['import ../../../api/blog/blog.doc.mjs', 'import ./blog.doc.mjs'],
   },
-  'clients/cli/commands/build-theme.mjs': {
+  'clients/cli/commands/manifest.mjs': {
+    runs: SELF_DOCS,
+    sites: ['import ./manifest.doc.mjs'],
+  },
+  'clients/cli/commands/postinstall.mjs': {
+    runs: SELF_DOCS,
+    sites: ['import ./postinstall.doc.mjs'],
+  },
+  'clients/cli/commands/theme.mjs': {
     runs: `${SELF_DOCS}; and \`astryx theme build\`, a child process per theme`,
     sites: [
       'child_process.spawn',
@@ -135,11 +143,11 @@ const RUNNERS = {
       'import ./build.doc.mjs',
     ],
   },
-  'clients/cli/commands/component/index.mjs': {
+  'clients/cli/commands/component.mjs': {
     runs: SELF_DOCS,
     sites: [
-      'import ../../../../api/component/component.doc.mjs',
-      'import ../component.doc.mjs',
+      'import ../../../api/component/component.doc.mjs',
+      'import ./component.doc.mjs',
     ],
   },
   'clients/cli/commands/discover.mjs': {
@@ -180,11 +188,11 @@ const RUNNERS = {
       'import ./gap-report.doc.mjs',
     ],
   },
-  'clients/cli/commands/hook/index.mjs': {
+  'clients/cli/commands/hook.mjs': {
     runs: SELF_DOCS,
     sites: [
-      'import ../../../../api/hook/hook.doc.mjs',
-      'import ../hook.doc.mjs',
+      'import ../../../api/hook/hook.doc.mjs',
+      'import ./hook.doc.mjs',
     ],
   },
   'clients/cli/commands/init.mjs': {
@@ -233,8 +241,8 @@ const RUNNERS = {
     ],
   },
   'clients/cli/index.mjs': {
-    runs: 'the command modules, to register each command, and the manifest command doc',
-    sites: ['import ./commands/manifest.doc.mjs', 'import(<computed>)'],
+    runs: 'the command modules, to register each command',
+    sites: ['import(<computed>)'],
   },
   'clients/cli/lib/manifest.mjs': {
     runs: 'the manifest command doc, for the exit codes the manifest reports',
@@ -275,6 +283,10 @@ const RUNNERS = {
   'foundation/discovery/docs-discovery.mjs': {
     runs: 'a contributed topic, for its catalog fields: name, title, description, category, and relationships',
     sites: ['importDocModule'],
+  },
+  'foundation/discovery/runner-commands.mjs': {
+    runs: "the package's topics, to find each Astryx command written with a package runner",
+    sites: ['loadTopicModule'],
   },
   'foundation/discovery/stray-pointers.mjs': {
     runs: "the CLI's own guides, for their names, to tell which written `astryx docs <name>` points at a doc that exists",
@@ -318,6 +330,10 @@ const RUNNERS = {
       'require(<computed>)',
       'require.cache',
     ],
+  },
+  'foundation/fs/read-record.mjs': {
+    runs: "nothing; it wraps node:fs's read calls to record the paths an operation reads, and republishes them to ESM imports",
+    sites: ['module.syncBuiltinESMExports'],
   },
   'foundation/fs/paths.mjs': {
     runs: "Yarn's pnpapi, under Plug'n'Play, to find an installed package",

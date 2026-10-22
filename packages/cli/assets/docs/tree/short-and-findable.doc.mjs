@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file `astryx docs cli/integrations/building-blocks/docs/short-and-findable`:
+ * @file `astryx docs authoring/building-blocks/docs/short-and-findable`:
  * keep each read short, lead each section with its summary, and write docs
  * that search finds.
  */
