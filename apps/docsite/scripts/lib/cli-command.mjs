@@ -18,6 +18,7 @@ export {runWithCliDoor} from '../../../../packages/cli/foundation/env/cli-comman
 export {
   getCliInvocation,
   prefixCliCommands,
+  runWithDocPackageManager,
 } from '../../../../packages/cli/foundation/env/package-manager.mjs';
 
 /** The command docsite pages show for running the CLI. */

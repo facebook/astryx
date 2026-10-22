@@ -46,6 +46,7 @@ import {
   GLOBAL_PAGE_CLI_COMMAND,
   getCliInvocation,
   prefixCliCommands,
+  runWithDocPackageManager,
   runWithCliDoor,
 } from './lib/cli-command.mjs';
 import {
@@ -2589,7 +2590,8 @@ export const shadcnRegistryIsPreview = ${registryIsPreview};
   console.log('Done.');
 }
 
-main().catch(err => {
+// Every `{@pm}` step on the site reads as npm, whatever this checkout uses.
+runWithDocPackageManager(DOCSITE_PACKAGE_MANAGER, main).catch(err => {
   console.error(err);
   process.exit(1);
 });
