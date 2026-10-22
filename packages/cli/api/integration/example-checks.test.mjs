@@ -6,6 +6,7 @@ import * as path from 'node:path';
 import {afterEach, beforeEach, describe, expect, it} from 'vitest';
 import {validateIntegration} from './validate-integration.mjs';
 import {integrationCheck} from './check/check.mjs';
+import {outsideFiles} from '../../foundation/integrations/validate-contributions.mjs';
 
 /** @type {string} */
 let dir;
@@ -251,13 +252,13 @@ describe('template_asset_not_packed', () => {
     const notes = await notesOf(['template_asset_not_packed']);
     expect(notes.map(note => note.message)).toEqual([
       expect.stringContaining(
-        'loads assets/cat.png, which the package.json `files` field leaves out of the package, so the template breaks once installed. Fix: add "assets" to `files`.',
+        'loads assets/cat.png, which npm leaves out of the package by its `files` field, so the template breaks once installed. Fix: add "assets" to `files`',
       ),
       expect.stringContaining('loads templates/dog.png, which does not exist.'),
     ]);
   });
 
-  it('names the ! entry that leaves an asset out, and reads a template-literal path', async () => {
+  it('reports an asset a ! entry leaves out, and reads a template-literal path', async () => {
     write({
       'package.json': JSON.stringify({
         name: '@acme/kit',
@@ -278,9 +279,8 @@ describe('template_asset_not_packed', () => {
 
     const notes = await notesOf(['template_asset_not_packed']);
     expect(notes).toHaveLength(1);
-    expect(notes[0].message).toContain(
-      'the package.json `files` entry "!templates/*.png" leaves out',
-    );
+    expect(notes[0].message).toContain('npm leaves out of the package');
+    expect(notes[0].message).toContain('drop any `!` entry');
   });
 
   it.each([
@@ -397,6 +397,49 @@ describe('template_asset_not_packed', () => {
     const notes = await notesOf(['template_asset_not_packed']);
     expect(notes).toHaveLength(1);
     expect(notes[0].message).toContain('loads assets/cat.png');
+  });
+});
+
+describe('what npm packs decides', () => {
+  it.each([
+    [['templates/*'], 'templates/img/hero.png', true],
+    [['templates', '!templates/img'], 'templates/img/hero.png', false],
+    [
+      ['templates/card.tsx', 'templates/card.doc.mjs', 'img'],
+      'img/a.png',
+      true,
+    ],
+    [['Templates'], 'templates/img/hero.png', false],
+  ])('under %j, %s packed: %s', async (files, asset, packed) => {
+    write({
+      'package.json': JSON.stringify({
+        name: '@acme/kit',
+        version: '1.0.0',
+        files,
+      }),
+      'templates/img/hero.png': 'png',
+      'img/a.png': 'png',
+      'templates/card.doc.mjs': blockDoc(
+        'card',
+        ", exampleFor: 'AcmeCard', isShowcase: true",
+      ),
+      'templates/card.tsx': [
+        `const asset = new URL('${path.posix.relative('templates', asset).startsWith('..') ? '' : './'}${path.posix.relative('templates', asset)}', import.meta.url);`,
+        'export default () => null;',
+        '',
+      ].join('\n'),
+    });
+    expect(await notesOf(['template_asset_not_packed'])).toHaveLength(
+      packed ? 0 : 1,
+    );
+  });
+
+  it('without npm, reports only an asset no files entry can reach', () => {
+    expect(outsideFiles('assets/cat.png', ['templates', '*.svg'])).toBe(true);
+    expect(outsideFiles('assets/cat.png', ['templates', '*.PNG'])).toBe(false);
+    expect(outsideFiles('assets/cat.png', ['Assets'])).toBe(false);
+    expect(outsideFiles('templates/img/a.png', ['templates/*'])).toBe(false);
+    expect(outsideFiles('assets/cat.png', ['{assets,logos}'])).toBe(false);
   });
 });
 

@@ -23,6 +23,7 @@
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import {spawnSync} from 'node:child_process';
 import {builtinModules} from 'node:module';
 import {parse as parseModule} from '@babel/parser';
 import {isValidSemver} from '../env/semver.mjs';
@@ -1123,146 +1124,54 @@ function globSource(pattern) {
 }
 
 /**
- * Whether npm packs a package-relative path, by the package's `files` field
- * (everything without one), and the entry that decided it: the last entry
- * that matches, as npm reads them. Globs follow npm's matching, without
- * regard to case: `*`, `**`, `?`, `[…]` classes and `{a,b}` braces. A folder
- * an entry names with no glob brings everything inside it; a glob that names
- * a folder does not. A pattern with no slash names a file or folder by its
- * own name in every folder npm walks into: the root, a folder an entry names,
- * and a folder a path entry names files in. A leading `/` or `./` anchors a
- * pattern at the root. `package.json`,
- * the README and the license are always packed and never asked about here.
+ * The paths npm packs for the package in `base`, read from
+ * `npm pack --dry-run --json --ignore-scripts` (nothing runs, nothing is
+ * written), or null when npm cannot answer.
+ * @param {string} base
+ * @returns {Set<string> | null}
+ */
+function npmPackedPaths(base) {
+  const result = spawnSync(
+    'npm',
+    ['pack', '--dry-run', '--json', '--ignore-scripts', '--silent'],
+    {cwd: base, encoding: 'utf-8', timeout: 60_000},
+  );
+  if (result.error || result.status !== 0) return null;
+  try {
+    const [info] = JSON.parse(result.stdout);
+    return Array.isArray(info?.files)
+      ? new Set(info.files.map((/** @type {{path: string}} */ f) => f.path))
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Whether no `files` entry can reach a path, read case-insensitively and
+ * generously (`{a,b}` braces, globs, a no-slash entry at any depth, an entry
+ * for the path or any folder above it), for when npm cannot say what it
+ * packs: a path this misses is out of the package however npm reads the list.
  * @param {string} rel POSIX, relative to the package root
  * @param {unknown} files
- * @returns {{packed: boolean, entry: string | null}}
  */
-function packedBy(rel, files) {
-  if (!Array.isArray(files)) return {packed: true, entry: null};
-  const GLOB = /[*?[\]{}]/u;
-  const entries = files
-    .filter(entry => typeof entry === 'string')
-    .map(entry => {
-      const negated = entry.startsWith('!');
-      const raw = entry.slice(negated ? 1 : 0);
-      const anchored = /^\.?\//u.test(raw);
-      const trimmed = raw.replace(/^\.?\//u, '').replace(/\/+$/u, '');
-      const spellings = expandBraces(trimmed);
-      return {
-        entry,
-        negated,
-        // A pattern with no slash names a file or folder by its own name in
-        // any folder npm walks into; any other names a path from the root.
-        byName: !anchored && !trimmed.includes('/'),
-        // Only an entry with no glob brings a folder's whole contents.
-        literal: !GLOB.test(trimmed),
-        whole: spellings.map(
-          spelling => new RegExp(`^${globSource(spelling)}$`, 'iu'),
-        ),
-        segments: spellings.map(spelling =>
-          spelling
-            .split('/')
-            .map(part =>
-              part === '**' ? '**' : new RegExp(`^${globSource(part)}$`, 'iu'),
-            ),
-        ),
-      };
-    });
-  const live = entries.filter(each => !each.negated);
-  /** @param {string} at */
-  const parentOf = at =>
-    at.includes('/') ? at.slice(0, at.lastIndexOf('/')) : '';
-  /** @param {string} at */
-  const nameOf = at => at.slice(at.lastIndexOf('/') + 1);
-  /**
-   * Whether a path entry names files inside folder `dir`, so npm walks in.
-   * @param {Array<RegExp | '**'>} segments
-   * @param {string[]} dir
-   */
-  const reaches = (segments, dir) => {
-    for (let i = 0; i < dir.length; i++) {
-      const segment = segments[i];
-      if (segment === '**') return true;
-      if (segment == null || i === segments.length - 1) return false;
-      if (!segment.test(dir[i])) return false;
-    }
-    return dir.length < segments.length;
-  };
-  /** @type {Map<string, boolean>} */
-  const named = new Map();
-  /** @type {Map<string, boolean>} */
-  const walked = new Map();
-  /**
-   * Whether a literal entry names folder `dir`, so its contents come in.
-   * @param {string} dir
-   */
-  const folderNamed = dir => {
-    if (!named.has(dir)) {
-      let result = false;
-      for (const each of entries) {
-        if (!each.literal) continue;
-        const hit = each.byName
-          ? isWalked(parentOf(dir)) &&
-            each.whole.some(pattern => pattern.test(nameOf(dir)))
-          : each.whole.some(pattern => pattern.test(dir));
-        if (hit) result = !each.negated;
-      }
-      named.set(dir, result);
-    }
-    return /** @type {boolean} */ (named.get(dir));
-  };
-  /**
-   * Whether npm walks into folder `dir` (the root always).
-   * @param {string} dir
-   */
-  const isWalked = dir => {
-    if (dir === '') return true;
-    if (!walked.has(dir)) {
-      const parts = dir.split('/');
-      walked.set(
-        dir,
-        isWalked(parentOf(dir)) &&
-          (folderNamed(dir) ||
-            parts.some((_, i) =>
-              folderNamed(parts.slice(0, i + 1).join('/')),
-            ) ||
-            live.some(
-              each =>
-                !each.byName &&
-                each.segments.some(segments => reaches(segments, parts)),
-            )),
-      );
-    }
-    return /** @type {boolean} */ (walked.get(dir));
-  };
-  /** @type {{packed: boolean, entry: string | null}} */
-  let result = {packed: false, entry: null};
+export function outsideFiles(rel, files) {
+  if (!Array.isArray(files)) return false;
   const parts = rel.split('/');
-  // Inside a folder a literal entry names: packed until an entry says not.
-  for (let i = 1; i < parts.length; i++) {
-    const dir = parts.slice(0, i).join('/');
-    if (folderNamed(dir)) {
-      const naming = [...entries]
-        .reverse()
-        .find(
-          each =>
-            each.literal &&
-            !each.negated &&
-            each.whole.some(pattern =>
-              pattern.test(each.byName ? nameOf(dir) : dir),
-            ),
-        );
-      result = {packed: true, entry: naming?.entry ?? null};
-    }
-  }
-  for (const each of entries) {
-    const hit = each.byName
-      ? isWalked(parentOf(rel)) &&
-        each.whole.some(pattern => pattern.test(nameOf(rel)))
-      : each.whole.some(pattern => pattern.test(rel));
-    if (hit) result = {packed: !each.negated, entry: each.entry};
-  }
-  return result;
+  const paths = parts.map((_, i) => parts.slice(0, i + 1).join('/'));
+  return !files.some(entry => {
+    if (typeof entry !== 'string' || entry.startsWith('!')) return false;
+    const trimmed = entry
+      .replace(/^\.?\//u, '')
+      .replace(/\/+$/u, '')
+      .replace(/\/\*$/u, '/**');
+    return expandBraces(trimmed).some(spelling => {
+      const pattern = new RegExp(`^${globSource(spelling)}$`, 'iu');
+      return spelling.includes('/') || /^\.?\//u.test(entry)
+        ? paths.some(at => pattern.test(at))
+        : parts.some(name => pattern.test(name));
+    });
+  });
 }
 
 /**
@@ -1451,8 +1360,9 @@ function readModule(source, builtins) {
  *   comments don't count, and live data is fine: a showcase may fetch
  *   through the app. Only the showcase's own file is read.
  * - `template_asset_not_packed`: a file a template loads with `new URL(…,
- *   import.meta.url)` that does not exist or that the package's `files`
- *   field leaves out of the package.
+ *   import.meta.url)` that does not exist, or that npm leaves out of the
+ *   package (`npm pack --dry-run`; without npm, only one no `files` entry
+ *   can reach).
  * @param {LoadedIntegration} integration
  * @returns {Promise<{notes: Note[]}>}
  */
@@ -1492,6 +1402,8 @@ export async function componentExamplesCheck(integration) {
   } catch {
     packedFiles = undefined;
   }
+  /** @type {Set<string> | false | undefined} what npm packs, read once */
+  let packed;
   // A bare builtin name the package installs from npm (`buffer`, `events`)
   // is that package, which bundlers ship to the browser.
   const builtins = new Set(builtinModules.filter(name => !declared.has(name)));
@@ -1540,8 +1452,17 @@ export async function componentExamplesCheck(integration) {
       const asset = path.resolve(path.dirname(template.filePath), loaded);
       const assetRel = rel(asset);
       const exists = fs.existsSync(asset);
-      const packing = packedBy(assetRel, packedFiles);
-      if (exists && packing.packed) continue;
+      if (exists) {
+        if (!Array.isArray(packedFiles)) continue;
+        // What npm packs decides; without npm, only an asset no entry can
+        // reach is reported.
+        packed ??= npmPackedPaths(base) ?? false;
+        if (
+          packed ? packed.has(assetRel) : !outsideFiles(assetRel, packedFiles)
+        ) {
+          continue;
+        }
+      }
       const folder =
         path.posix.dirname(assetRel) === '.'
           ? assetRel
@@ -1549,9 +1470,7 @@ export async function componentExamplesCheck(integration) {
       notes.push({
         code: 'template_asset_not_packed',
         message: exists
-          ? packing.entry
-            ? `${rel(template.filePath)}: loads ${assetRel}, which the package.json \`files\` entry "${packing.entry}" leaves out of the package, so the template breaks once installed. Fix: remove or narrow "${packing.entry}" so it no longer matches ${assetRel}.`
-            : `${rel(template.filePath)}: loads ${assetRel}, which the package.json \`files\` field leaves out of the package, so the template breaks once installed. Fix: add "${folder}" to \`files\`.`
+          ? `${rel(template.filePath)}: loads ${assetRel}, which npm leaves out of the package by its \`files\` field, so the template breaks once installed. Fix: add "${folder}" to \`files\`, drop any \`!\` entry that excludes it, and confirm with \`npm pack --dry-run\`.`
           : `${rel(template.filePath)}: loads ${assetRel}, which does not exist. Fix: add the file, or point \`new URL()\` at one that does.`,
       });
     }
