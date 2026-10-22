@@ -555,15 +555,14 @@ async function reconcileSpecOwnerGate({
   // answer. A revoke of an earlier head stops a carry only when it names a
   // full SHA and comes from an owner of a group this head requires; the reply
   // says so only then.
-  async function answerInexactCommand(carriedFrom = null, carryOwners = []) {
+  async function answerInexactCommand(carriedFrom = [], carryOwners = []) {
     if (context.eventName !== 'issue_comment' || !commentAuthor) return;
     const intent = parseOwnerCommandIntent(context.payload.comment?.body);
     const problem = describeOwnerCommandProblem(intent, initialHead);
     if (!problem) return;
     if (
       intent.verb === 'approve' &&
-      carriedFrom &&
-      intent.argument.toLowerCase() === carriedFrom
+      carriedFrom.includes(intent.argument.toLowerCase())
     ) {
       return;
     }
@@ -794,16 +793,18 @@ async function reconcileSpecOwnerGate({
   specDecision = await carriedDecision(specDecision, engineeringOwners);
   designDecision = await carriedDecision(designDecision, designApprovers);
   themeDecision = await carriedDecision(themeDecision, themeApprovers);
-  await answerInexactCommand(
-    [specDecision, designDecision, themeDecision]
-      .map(decision => decision.carriedFrom)
-      .find(Boolean) ?? null,
-    [
-      ...(requiredGroups.spec ? engineeringOwners : []),
-      ...(requiredGroups.design ? designApprovers : []),
-      ...(requiredGroups.theme ? themeApprovers : []),
-    ],
-  );
+  const carriedFrom = [
+    ...new Set(
+      [specDecision, designDecision, themeDecision]
+        .map(decision => decision.carriedFrom)
+        .filter(Boolean),
+    ),
+  ];
+  await answerInexactCommand(carriedFrom, [
+    ...(requiredGroups.spec ? engineeringOwners : []),
+    ...(requiredGroups.design ? designApprovers : []),
+    ...(requiredGroups.theme ? themeApprovers : []),
+  ]);
 
   const approved =
     specDecision.approved && designDecision.approved && themeDecision.approved;
@@ -857,15 +858,14 @@ async function reconcileSpecOwnerGate({
     return;
   }
 
-  const carriedFrom = [specDecision, designDecision, themeDecision]
-    .map(decision => decision.carriedFrom)
-    .find(Boolean);
   const successDescription = ownerApprovalRequired
     ? `Approved by ${approvingOwners
         .map(name => `@${name}`)
         .join(' and ')} for ${initialHead.slice(0, 7)}${
-        carriedFrom
-          ? ` (carried from ${carriedFrom.slice(0, 7)}; no material change)`
+        carriedFrom.length > 0
+          ? ` (carried from ${carriedFrom
+              .map(sha => sha.slice(0, 7))
+              .join(' and ')}; no material change)`
           : ''
       }.`
     : 'Draft-only knowledge change; owner approval is not required.';

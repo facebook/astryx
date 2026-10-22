@@ -408,6 +408,31 @@ describe('carryCandidates', () => {
     ).toEqual([]);
   });
 
+  it('offers a head re-approved after a rejection by another owner', () => {
+    const candidates = carryCandidates({
+      reviews: [
+        {
+          user: {login: 'cixzhang'},
+          state: 'APPROVED',
+          commit_id: earlier,
+          submitted_at: '2026-10-20T10:00:00Z',
+        },
+        {
+          user: {login: 'czarandy'},
+          state: 'CHANGES_REQUESTED',
+          commit_id: earlier,
+          submitted_at: '2026-10-20T11:00:00Z',
+        },
+      ],
+      comments: [
+        command('approve', earlier, '2026-10-20T12:00:00Z', 'czarandy'),
+      ],
+      owners,
+      headSha: current,
+    });
+    expect(candidates.map(candidate => candidate.owner)).toEqual(['czarandy']);
+  });
+
   it('offers every owner whose approval of a head stands', () => {
     const candidates = carryCandidates({
       reviews: [],

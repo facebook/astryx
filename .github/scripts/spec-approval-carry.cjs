@@ -150,11 +150,9 @@ function carryCandidates({
         owners: groupOwners,
         headSha: candidateHead,
       });
-    const group = resolveFor(owners);
-    const groupAt = decisionTime(group.at);
-    if (!group.approved || groupAt === null || groupAt <= lastRejection) {
-      continue;
-    }
+    // The exact-head rules must approve the head on its own; whether each
+    // owner's approval came after the last rejection is judged per owner.
+    if (!resolveFor(owners).approved) continue;
     // Every owner whose approval of this head stands is a candidate, so the
     // record may name whichever of them it credits.
     for (const owner of owners) {
