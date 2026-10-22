@@ -19,13 +19,20 @@ import {
   lastNoticeSkip,
   projectLag,
 } from '../../foundation/release/notices.mjs';
-import {coreVersionOf, isGlobalCopy} from '../../foundation/release/choose.mjs';
+import {
+  coreVersionOf,
+  installPlaceOf,
+  isGlobalCopy,
+} from '../../foundation/release/choose.mjs';
 import {readReleaseFacts} from '../../foundation/release/project.mjs';
 import {astryxCommandsOnSearchPath} from '../../foundation/env/search-path.mjs';
 import {readDeclaredDependencies} from '../../foundation/integrations/autolink.mjs';
 import {
+  computerSkillFile,
   displayHomePath,
   inspectComputerAgentText,
+  skillCommandOf,
+  skillInstallStepOf,
 } from '../../foundation/agent-docs/computer-agent-text.mjs';
 import {computerAgentTextSettings} from '../../foundation/env/user-settings.mjs';
 import * as fs from 'node:fs';
@@ -288,12 +295,29 @@ function declaredPackageNames(cwd) {
 }
 
 /**
- * The computer-level agent text's setting and its state on disk.
- * @returns {{settings: import('../../foundation/env/user-settings.mjs').ComputerAgentTextSettings, entries: Array<{path: string, state: import('../../foundation/agent-docs/computer-agent-text.mjs').ComputerAgentTextState, link?: true}>}}
+ * The computer-level agent text's setting, its state on disk, and the command
+ * the skill file tells agents to run and the install step it records for when
+ * that command is not found (each null when there is no file, or it names
+ * none).
+ * @returns {{settings: import('../../foundation/env/user-settings.mjs').ComputerAgentTextSettings, entries: Array<{path: string, state: import('../../foundation/agent-docs/computer-agent-text.mjs').ComputerAgentTextState, link?: true}>, command: string | null, install: string | null}}
  */
 export function computerAgentTextState() {
   const settings = computerAgentTextSettings();
-  return {settings, entries: inspectComputerAgentText({links: settings.links})};
+  let command = null;
+  let install = null;
+  try {
+    const text = fs.readFileSync(computerSkillFile(), 'utf8');
+    command = skillCommandOf(text);
+    install = skillInstallStepOf(text);
+  } catch {
+    // No skill file, or one that cannot be read: no command to check.
+  }
+  return {
+    settings,
+    entries: inspectComputerAgentText({links: settings.links}),
+    command,
+    install,
+  };
 }
 
 export {displayHomePath};
@@ -306,7 +330,7 @@ export {displayHomePath};
  * command that upgrades it.
  * @param {string} cwd
  * @param {{project: boolean}} options
- * @returns {{answeredBy: {cli: string, core: string | null, copy: string}, latest: string | null, globalBehind: ReturnType<typeof globalBehind> | null, projectLag: ReturnType<typeof projectLag> | null, lastNoticeSkip: ReturnType<typeof lastNoticeSkip>, lastCheckFailure: ReturnType<typeof lastCheckFailure>, stateLock: ReturnType<typeof stateLockHolder>, searchPathCommands: Array<import('../../foundation/env/search-path.mjs').SearchPathCommand & {upgrade: string | null}>}}
+ * @returns {{answeredBy: {cli: string, core: string | null, copy: string}, latest: string | null, globalBehind: ReturnType<typeof globalBehind> | null, projectLag: ReturnType<typeof projectLag> | null, lastNoticeSkip: ReturnType<typeof lastNoticeSkip>, lastCheckFailure: ReturnType<typeof lastCheckFailure>, stateLock: ReturnType<typeof stateLockHolder>, searchPathCommands: Array<import('../../foundation/env/search-path.mjs').SearchPathCommand & {upgrade: string | null, runner: boolean}>}}
  */
 export function releaseFacts(cwd, {project}) {
   const answered = answeredBy(cwd);
@@ -333,6 +357,9 @@ export function releaseFacts(cwd, {project}) {
     searchPathCommands: astryxCommandsOnSearchPath().map(row => ({
       ...row,
       upgrade: row.cliRoot ? globalUpgradeCommand(row.cliRoot) : null,
+      // A package runner's temporary install, which it puts first on the
+      // search path only for the run it starts.
+      runner: row.cliRoot ? installPlaceOf(row.cliRoot).runner : false,
     })),
   };
 }
