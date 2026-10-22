@@ -2156,6 +2156,59 @@ describe('DropdownMenuSubMenu header and footer', () => {
     ).not.toHaveAttribute('header');
   });
 
+  it('data mode keeps a sub-menu with a header open, its field focused, while its filter matches nothing', async () => {
+    const user = userEvent.setup();
+    function FilteredLabels() {
+      const [query, setQuery] = useState('');
+      const labels = ['Bug', 'Feature'].filter(label =>
+        label.toLowerCase().includes(query.toLowerCase()),
+      );
+      return (
+        <DropdownMenu
+          button={{label: 'Session'}}
+          items={[
+            {label: 'Rename'},
+            {
+              label: 'Labels',
+              header: (
+                <input
+                  aria-label="Filter labels"
+                  value={query}
+                  onChange={event => setQuery(event.target.value)}
+                />
+              ),
+              footer: <button type="button">Create label</button>,
+              items: labels.map(label => ({label})),
+            },
+          ]}
+        />
+      );
+    }
+    render(<FilteredLabels />);
+    await user.click(screen.getByRole('button', {name: /Session/}));
+    const row = screen.getByRole('menuitem', {name: /Labels/, ...h});
+    fireEvent.click(row, {detail: 1});
+    await screen.findByRole('dialog', {name: /Labels/, ...h});
+    act(() => field().focus());
+
+    // A filter that matches nothing leaves the sub-menu, its field and its
+    // footer in place, with what was typed.
+    await user.keyboard('zz');
+    expect(screen.getByRole('dialog', {name: /Labels/, ...h})).toContainElement(
+      field(),
+    );
+    expect(field()).toHaveValue('zz');
+    expect(field()).toHaveFocus();
+    expect(create()).toBeInTheDocument();
+    expect(screen.queryByRole('menuitem', {name: 'Bug', ...h})).toBeNull();
+    expect(row).toHaveAttribute('aria-expanded', 'true');
+
+    await user.keyboard('{Backspace}{Backspace}');
+    expect(
+      screen.getByRole('menuitem', {name: 'Bug', ...h}),
+    ).toBeInTheDocument();
+  });
+
   it('a press from a menu row released on a row of the flyout acts on it, as in any flyout', async () => {
     const onPick = vi.fn();
     const {trigger} = await openLabels({onPick});
@@ -2359,6 +2412,54 @@ describe('DropdownMenuSubMenu header and footer', () => {
       ).toBeInTheDocument();
       unmount();
     }
+  });
+
+  it('the bottom sheet keeps a level with a header a sub-menu while its filter matches nothing, so it opens again after Back', async () => {
+    const user = userEvent.setup();
+    function SheetLabels() {
+      const [query, setQuery] = useState('');
+      const labels = ['Bug', 'Feature'].filter(label =>
+        label.toLowerCase().includes(query.toLowerCase()),
+      );
+      return (
+        <DropdownMenu
+          button={{label: 'Session'}}
+          presentation="bottom-sheet"
+          items={[
+            {
+              label: 'Labels',
+              header: (
+                <input
+                  aria-label="Filter labels"
+                  value={query}
+                  onChange={event => setQuery(event.target.value)}
+                />
+              ),
+              items: labels.map(label => ({label})),
+            },
+          ]}
+        />
+      );
+    }
+    render(<SheetLabels />);
+    await user.click(screen.getByRole('button', {name: /Session/}));
+    const sheet = await screen.findByRole('dialog', {name: 'Session'});
+    await user.click(screen.getByRole('button', {name: /Labels/}));
+    const filter = await screen.findByRole('textbox', {name: 'Filter labels'});
+    await user.type(filter, 'zz');
+    await waitFor(() =>
+      expect(screen.queryByRole('button', {name: /Bug/})).toBeNull(),
+    );
+    expect(filter).toHaveValue('zz');
+
+    // Back at the root the row still opens its level, with the field as the
+    // filter left it.
+    await user.click(screen.getByRole('button', {name: 'Back'}));
+    await user.click(await screen.findByRole('button', {name: /Labels/}));
+    expect(
+      await screen.findByRole('textbox', {name: 'Filter labels'}),
+    ).toHaveValue('zz');
+    expect(sheet).toBeInTheDocument();
   });
 
   describe('on a phone', () => {

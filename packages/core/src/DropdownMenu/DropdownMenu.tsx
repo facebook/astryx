@@ -331,11 +331,12 @@ export interface DropdownMenuItemData extends Pick<
   items?: DropdownMenuOption[];
   /**
    * With `items`: content above the sub-menu's rows, as `header` on
-   * `DropdownMenuSubMenu` (a filter field, say). The bottom sheet shows it
-   * above that level's actions, in place of the menu's own header, and reads
-   * the level from the current `items` while it shows; give the row an `id`
-   * when another row at its level has the same label. Ignored on a row
-   * without `items`.
+   * `DropdownMenuSubMenu` (a filter field, say). With it or `footer` the row
+   * stays a sub-menu while `items` is empty, so a filter that matches nothing
+   * keeps its field. The bottom sheet shows it above that level's actions, in
+   * place of the menu's own header, and reads the level from the current
+   * `items` while it shows; give the row an `id` when another row at its level
+   * has the same label. Ignored on a row without `items`.
    */
   header?: ReactNode;
   /**
