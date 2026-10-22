@@ -25,7 +25,7 @@ architecture:
     architecture:internationalization,
   ]
 contributing: []
-system_specs: [spec:AST-002/DEC-1, spec:AST-017/FR3]
+system_specs: [spec:AST-002/DEC-1, spec:AST-017/FR5]
 ---
 
 # Overlay component contract
@@ -39,15 +39,15 @@ record claims them.
 
 ## Contract at a glance
 
-| Area                    | Contract                                                                                                                                                                                                         |
-| ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Public contract         | New `OverlayRegion` component, exported beside Overlay: `x`, `y` (0–1, required), `width`, `height` (0–1, optional), `children`, `ref`, `xstyle`, `className`, `style`.                                          |
-| Behavior                | A region placed in overlay content centers on (`x`, `y`) as fractions of the overlay surface, sizes to `width`/`height` fractions or to its content, stays inside the surface on sized axes, and scales with it. |
-| End-user impact         | A caption, tag, or hotspot over an image or video stays on the same spot of the media at every size, in either text direction.                                                                                   |
-| Builder impact          | None by default. A builder places content with `OverlayRegion` instead of hand-written absolute positioning; moving a region stays the builder's code.                                                           |
-| Compatibility/readiness | Additive: a new component and export. Overlay's props, defaults, and rendering are unchanged.                                                                                                                    |
-| Review checks           | Reject coordinates that mirror in right-to-left, JavaScript measurement or observers, drag or resize behavior inside Overlay, a role or focus stop on the region, or a theme target on it.                       |
-| Governing rules         | FR1–FR9 below; `design:bidirectionality/DR5`, `DR6`; `architecture:component-theming-surface/INV4`; `spec:AST-017/FR3`.                                                                                          |
+| Area                    | Contract                                                                                                                                                                                                                   |
+| ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Public contract         | New `OverlayRegion` component, exported beside Overlay: `x`, `y` (0–1, required), `width`, `height` (0–1, optional), `children`, `ref`, `xstyle`, `className`, `style`.                                                    |
+| Behavior                | A region placed in overlay content centers on (`x`, `y`) as fractions of the overlay surface, sizes to `width`/`height` fractions or to its content, stays inside the surface on sized axes, and scales with it.           |
+| End-user impact         | A caption, tag, or hotspot over an image or video stays on the same spot of the media at every size, in either text direction.                                                                                             |
+| Builder impact          | None by default. A builder places content with `OverlayRegion` instead of hand-written absolute positioning; moving a region stays the builder's code.                                                                     |
+| Compatibility/readiness | Additive: a new component and export; Overlay's props, defaults, and rendering are unchanged. This record is current authority; `OverlayRegion`, its consumer docs, region tests, and region stories have not shipped yet. |
+| Review checks           | Reject coordinates that mirror in right-to-left, JavaScript measurement or observers, drag or resize behavior inside Overlay, a role or focus stop on the region, or a theme target on it.                                 |
+| Governing rules         | FR1–FR9 below; `design:bidirectionality/DR5`, `DR6`; `architecture:component-theming-surface/INV4`; `spec:AST-017/FR5`.                                                                                                    |
 
 This table is a review projection; the body below is authoritative.
 
@@ -67,7 +67,7 @@ the surface the fractions are measured against.
   not change.
 - Compatibility class: additive component and export.
 - Controlled/uncontrolled behavior: not applicable; a region holds no state.
-- Migration decision: none required (`spec:AST-017/FR3`).
+- Migration decision: none required (`spec:AST-017/FR5`).
 
 Consumer migration instructions belong in consumer docs and release notes.
 
@@ -100,17 +100,17 @@ Consumer migration instructions belong in consumer docs and release notes.
 
 ## Behavioral and layout contract
 
-| ID  | Invariant                                                                                                                                                                                                                                                                           | Basis                                   | Draft review state |
-| --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------- | ------------------ |
-| FR1 | `OverlayRegion` MUST position against the overlay surface that renders it: the scrim box of an Overlay or of a `useOverlay` host. Under `position="fill"` that box is the whole base surface, so 0 and 1 are its edges. Placing the region requires no prop on Overlay.             | `component:Overlay/DEC-1`               | settled            |
-| FR2 | On an axis with a size, the region MUST be exactly that fraction of the surface and MUST sit wholly inside it: its start edge is the coordinate minus half the size, clamped between 0 and one minus the size. A region whose coordinate leaves room is centered on the coordinate. | `component:Overlay/DEC-3`               | settled            |
-| FR3 | On an axis without a size, the region MUST fit its content up to the full surface size on that axis and MUST be centered on the coordinate. Content that then extends past a surface edge is clipped by the surface; it is not shifted inward.                                      | `component:Overlay/DEC-3`               | settled            |
-| FR4 | Coordinates and sizes MUST be clamped into 0–1 before FR2 and FR3 apply. A non-finite coordinate MUST resolve to 0, and a non-finite size MUST resolve to omitted.                                                                                                                  | Invalid-value behavior                  | settled            |
-| FR5 | When the surface changes size, every region MUST keep its fractional center and fractional size without a re-render: placement is expressed in fractions of the surface, never in measured pixels.                                                                                  | `component:Overlay/DEC-1`               | settled            |
-| FR6 | `x` MUST be measured from the surface's left edge and `y` from its top edge in every writing direction. A region's coordinates MUST NOT mirror in right-to-left; the region's own content follows the ambient direction.                                                            | `design:bidirectionality/DR5`           | settled            |
-| FR7 | A region MUST appear, hide, and become inert with the overlay content that contains it, following Overlay's `showOn` and `isOpen`, and MUST inherit the scrim's media theme. It adds no visibility rule of its own.                                                                 | Overlay's existing reveal behavior      | settled            |
-| FR8 | Regions MUST paint above the surface's in-flow overlay content and above earlier regions in source order. A region MUST NOT take part in the scrim's flow layout, so in-flow content keeps its `align` placement.                                                                   | Absolute positioning within the surface | settled            |
-| FR9 | Overlay and `OverlayRegion` MUST NOT move, drag, or resize a region, and MUST NOT attach pointer, keyboard, or gesture handlers to it. A region moves only when its caller passes new coordinates.                                                                                  | `component:Overlay/DEC-2`               | settled            |
+| ID  | Invariant                                                                                                                                                                                                                                                                                                                                                                                                                                | Basis                                                                                                     | Draft review state                                                      |
+| --- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| FR1 | `OverlayRegion` MUST position against the scrim box of the Overlay or `useOverlay` host whose content renders it. Under `position="fill"`, the default, that box is the whole base surface, so 0 and 1 are the media's edges and the box matches the Overlay's `ref`. Under `position="top"` or `"bottom"` that box is the strip, so a region's fractions are of the strip, not the media. Placing a region requires no prop on Overlay. | `component:Overlay/DEC-1`                                                                                 | settled                                                                 |
+| FR2 | On an axis with a size, the region MUST be exactly that fraction of the surface and MUST sit wholly inside it: its left edge (`x` axis) or top edge (`y` axis) is the coordinate minus half the size, clamped between 0 and one minus the size. A region whose coordinate leaves room is centered on the coordinate.                                                                                                                     | `component:Overlay/DEC-3`                                                                                 | settled                                                                 |
+| FR3 | On an axis without a size, the region MUST fit its content up to the full surface size on that axis and MUST be centered on the coordinate. Content that then extends past a surface edge is clipped by the surface; it is not shifted inward.                                                                                                                                                                                           | `component:Overlay/DEC-3`                                                                                 | settled                                                                 |
+| FR4 | Coordinates and sizes MUST be clamped into 0–1 before FR2 and FR3 apply. A non-finite coordinate MUST resolve to 0, and a non-finite size MUST resolve to omitted.                                                                                                                                                                                                                                                                       | Invalid-value behavior                                                                                    | settled                                                                 |
+| FR5 | When the surface changes size, every region MUST keep its fractional center and fractional size without a re-render: placement is expressed in fractions of the surface, never in measured pixels.                                                                                                                                                                                                                                       | `component:Overlay/DEC-1`                                                                                 | settled                                                                 |
+| FR6 | `x` MUST be measured from the surface's left edge and `y` from its top edge in every writing direction. A region's coordinates MUST NOT mirror in right-to-left; the region's own content follows the ambient direction.                                                                                                                                                                                                                 | `design:bidirectionality/DR5`                                                                             | settled                                                                 |
+| FR7 | `Overlay.test.tsx` reveal case with a region                                                                                                                                                                                                                                                                                                                                                                                             | `isOpen={false}`; the region renders inside the scrim, so every other reveal mode applies to it unchanged | A region outside the scrim, or a closed scrim that is not inert, fails. | `audit:Overlay/api` |
+| FR8 | Regions MUST paint above the surface's in-flow overlay content, including positioned in-flow content written after them, and later regions MUST paint above earlier ones. A region MUST NOT take part in the scrim's flow layout, so in-flow content keeps its `align` placement.                                                                                                                                                        | Absolute positioning within the surface                                                                   | settled                                                                 |
+| FR9 | Overlay and `OverlayRegion` MUST NOT move, drag, or resize a region, and MUST NOT attach pointer, keyboard, or gesture handlers to it. A region moves only when its caller passes new coordinates.                                                                                                                                                                                                                                       | `component:Overlay/DEC-2`                                                                                 | settled                                                                 |
 
 ### Allowed variation
 
@@ -130,6 +130,7 @@ Consumer migration instructions belong in consumer docs and release notes.
 | Content-sized pin                          | Pin's center is on (`x`, `y`).                                                      | Pin content and size. |
 | Surface resized from 640px to 320px wide   | Every region keeps its fractional center and size, with no re-render.               | Any surface size.     |
 | Right-to-left page                         | Same position on the media as left-to-right; the region's text reads right-to-left. | Writing direction.    |
+| `position="bottom"` strip with a region    | Fractions are of the strip box, not the media.                                      | Strip height.         |
 | `showOn="hover"` overlay at rest           | Regions are hidden with the rest of the overlay content.                            | Reveal mode.          |
 
 ### Transformation and precedence order
@@ -153,10 +154,11 @@ Consumer migration instructions belong in consumer docs and release notes.
 - **AR2 — Source order is reading order.** Assistive technology and keyboard
   focus follow the regions' source order, not their position on the surface. A
   caller renders regions in the order a reader should meet them.
-- **AR3 — Movement offers a non-drag path.** Overlay's documented move pattern
-  pairs pointer dragging with a keyboard path that moves a focused region by a
-  fixed step per arrow key, with arrow directions matching the visual axes
-  (`design:bidirectionality/DR6`).
+- **AR3 — Movement offers non-drag paths.** Overlay's documented move pattern
+  pairs pointer dragging with a single-pointer path that needs no drag, where
+  activating a spot on the media moves the region's center there, and a keyboard
+  path that moves a focused region by a fixed step per arrow key, with arrow
+  directions matching the visual axes (`design:bidirectionality/DR6`).
 
 ## Design relationships
 
@@ -174,20 +176,19 @@ Consumer migration instructions belong in consumer docs and release notes.
   has no theme target and its content owns its paint.
 - `architecture:public-component-api` owns prop admission and styling-input
   order; ORD1 applies INV6.
-- `spec:AST-017/FR3` classifies this as a non-breaking feature: it adds a
-  component, changes no default, and a caller who never renders a region sees no
-  change.
+- `spec:AST-017/FR5` classifies this as nonbreaking: it adds a new component,
+  changes no default, and a caller who never renders a region sees no change.
 
 ## Verification map
 
-| Contract                | Verification                                                                            | Representative states                                                      | Mutation or failure expectation                                                          | Audit section          |
-| ----------------------- | --------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- | ---------------------- |
-| FR1, FR4, FR9           | `Overlay.test.tsx` region suite                                                         | Region in fill content, in `useOverlay`; out-of-range and non-finite input | Unclamped values, a handler on the region, or a region rendered outside the scrim fails. | `audit:Overlay/api`    |
-| FR2, FR3, FR5, FR6, FR8 | Real-Chromium geometry assertions in the Overlay region story's play function           | Sized, edge-clamped, content-sized, resized surface, RTL, mixed content    | A region center or edge off its fraction of the surface by more than 0.5px fails.        | `audit:Overlay/layout` |
-| FR7                     | `Overlay.test.tsx` reveal cases with a region                                           | `showOn="hover"` at rest, `isOpen={false}`                                 | A region visible or focusable while its overlay content is hidden fails.                 | `audit:Overlay/api`    |
-| AR1, AR2                | Accessibility-tree comparison of region content with and without `OverlayRegion`        | Button and text content                                                    | Any added role, name, focus stop, or text fails.                                         | `audit:Overlay/a11y`   |
-| AR3                     | Region move story: arrow keys move the focused region by one step along the visual axis | LTR and RTL                                                                | ArrowRight moving a region left in either direction fails.                               | `audit:Overlay/a11y`   |
-| PR1                     | Source review of `OverlayRegion`                                                        | All inputs                                                                 | A ref read, observer, listener, or Effect added for placement fails review.              | `audit:Overlay/layout` |
+| Contract                | Verification                                                         | Representative states                                                                                                     | Mutation or failure expectation                                                                                                       | Audit section          |
+| ----------------------- | -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- | ---------------------- |
+| FR1, FR4, FR9           | `Overlay.test.tsx` region suite                                      | Region in Overlay content and in a `useOverlay` host's content; out-of-range and non-finite input; pointer and key events | Unclamped values, a region outside the scrim, or a region that moves on its own fails.                                                | `audit:Overlay/api`    |
+| FR2, FR3, FR5, FR6, FR8 | Real-Chromium assertions in the Overlay region story's play function | Sized, edge-clamped, content-sized, resized surface, RTL; a region written before a positioned in-flow control            | A region center or edge off its fraction of the surface by more than 0.5px, or the in-flow control hit at the region's center, fails. | `audit:Overlay/layout` |
+| FR7                     | `Overlay.test.tsx` reveal cases with a region                        | `showOn="hover"` at rest, `isOpen={false}`                                                                                | A region visible or focusable while its overlay content is hidden fails.                                                              | `audit:Overlay/api`    |
+| AR1, AR2                | `Overlay.test.tsx` DOM check of the region element                   | Text content                                                                                                              | Any attribute other than `class` and `style` on the region element, or text it adds, fails.                                           | `audit:Overlay/a11y`   |
+| AR3                     | Region move story's play function                                    | Arrow key and single activation on the media, LTR and RTL                                                                 | ArrowRight moving a region left, or an activation that does not move the region's center to the activated spot, fails.                | `audit:Overlay/a11y`   |
+| PR1                     | Source review of `OverlayRegion`                                     | All inputs                                                                                                                | A ref read, observer, listener, or Effect added for placement fails review.                                                           | `audit:Overlay/layout` |
 
 ## Decision log
 
@@ -218,7 +219,8 @@ system owns it once. What moving a region means differs by product: whether the
 position commits on release or live, the keyboard step, snapping, which regions
 move, and what happens while a new rendering of the media loads. Overlay
 therefore never moves a region; the caller converts pointer and keyboard input
-into new fractions with the Overlay's `ref` and passes them back.
+into new fractions with the Overlay's `ref`, which is the region's reference box
+in a fill overlay (FR1), and passes them back.
 
 Rejected: a drag hook on Overlay, because a shared drag primitive needs its own
 record and more than one caller's needs.
