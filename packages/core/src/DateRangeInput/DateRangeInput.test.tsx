@@ -23,6 +23,8 @@ function generateThemeTestCSS(theme: Parameters<typeof generateThemeCSS>[0]) {
 // made every role+name query compute ~85 accessible names through jsdom's
 // slow getComputedStyle (~450ms per query). See fastRoleQueries.ts.
 import {getButton, queryButton} from '../__tests__/fastRoleQueries';
+import * as stylex from '@stylexjs/stylex';
+import {colorVars} from '../theme/tokens.stylex';
 import {DateRangeInput} from './DateRangeInput';
 import type {DateRange} from './DateRangeInput';
 import {Icon} from '../Icon';
@@ -159,6 +161,42 @@ describe('DateRangeInput', () => {
     expect(trigger).toHaveAttribute('aria-disabled', 'true');
     trigger.focus();
     expect(trigger).toHaveFocus();
+  });
+
+  it('restores the focus ring on a focused disabled field (AST-085 FR6)', () => {
+    // The same declarations as the field's ring style compile to the same
+    // atomic classes.
+    const ringClasses = stylex
+      .props(
+        stylex.create({
+          ring: {
+            borderColor: {
+              default: colorVars['--color-border-emphasized'],
+              ':focus-within': colorVars['--color-accent'],
+            },
+            boxShadow: {
+              default: 'none',
+              ':focus-within': `inset 0px 0px 0px 2px ${colorVars['--color-accent-muted']}`,
+            },
+          },
+        }).ring,
+      )
+      .className!.split(' ')
+      // Keep the atomic classes, not the dev-only debug name.
+      .filter(name => !name.includes('__'));
+    render(
+      <DateRangeInput
+        label="Range"
+        isDisabled
+        value={null}
+        onChange={() => {}}
+      />,
+    );
+    // The shared disabled style alone drops these :focus-within declarations.
+    const wrapper = getButton(/Range/).parentElement!;
+    for (const name of ringClasses) {
+      expect(wrapper).toHaveClass(name);
+    }
   });
 
   it('is not disabled by default', () => {
