@@ -142,6 +142,19 @@ describe('a token whose body holds braces or quotes', () => {
 });
 
 describe('a token that never closes', () => {
+  it('counts a token broken across lines, or holding a backtick, as unclosed', () => {
+    expect(
+      unclosedTokensIn(
+        '{@command theme palette generate palette.config.json \\\n  --out src/acme.palette.ts}',
+      ),
+    ).toEqual(['{@command theme palette generate palette.config.json \\']);
+    expect(
+      unclosedTokensIn(
+        'Run {@pm-only npm "edits `package.json`" pkg set name=acme}.',
+      ),
+    ).toHaveLength(1);
+  });
+
   it('is found, with the rest of its line', () => {
     expect(
       unclosedTokensIn(
