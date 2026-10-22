@@ -20,7 +20,7 @@
  * - /packages/cli/assets/templates/blocks/components/DropdownMenu/ (the menu's
  *   showcase blocks)
  * - /packages/cli/assets/templates/blocks/components/DropdownMenuGroup/DropdownMenuGroupWithSelectable.tsx
- *   (the shipped block that wraps a single radio set in a DropdownMenuGroup)
+ *   (the shipped block that titles a single radio set)
  */
 
 import {
