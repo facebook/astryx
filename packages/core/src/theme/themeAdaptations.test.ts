@@ -14,6 +14,7 @@ import {
   defineTheme,
   generateAdaptationCSS,
   generateThemeCSS,
+  generateThemeRules,
   type DefineThemeInput,
   type DefinedTheme,
 } from './index';
@@ -335,10 +336,11 @@ describe('rule order and writes', () => {
         ],
       },
     });
-    const css = generateThemeCSS(theme).component;
+    const rootCss = generateThemeRules(theme).join('\n');
+    const fullCss = generateThemeCSS(theme).component;
 
-    expect(css).toContain('--color-accent: var(--color-info);');
-    expect(css).not.toContain('--color-info: var(--color-accent);');
+    expect(fullCss).toContain('--color-accent: var(--color-info);');
+    expect(rootCss).not.toContain('--color-info: var(--color-accent);');
   });
 
   it('checks generated aliases across overlapping adaptation rules', () => {
@@ -366,6 +368,54 @@ describe('rule order and writes', () => {
     expect(css).toContain('--color-info: var(--color-accent);');
     expect(css).not.toContain(
       '--color-status-foreground-info: var(--color-text-blue);',
+    );
+  });
+
+  it('keeps aliases across mutually exclusive adaptation conditions', () => {
+    const theme = defineTheme({
+      name: 'mutually-exclusive-status-references',
+      tokens: {'--color-accent': '#0099ff'},
+      adaptations: {
+        rules: [
+          {
+            when: {pointer: 'coarse'},
+            value: {
+              tokens: {'--color-accent': 'var(--color-text-blue)'},
+            },
+          },
+          {
+            when: {pointer: 'fine'},
+            value: {tokens: {'--color-text-blue': 'var(--color-info)'}},
+          },
+        ],
+      },
+    });
+
+    expect(generateThemeCSS(theme).component).toContain(
+      '--color-info: var(--color-accent);',
+    );
+  });
+
+  it('keeps an alias when a later matching rule repairs the cycle', () => {
+    const theme = defineTheme({
+      name: 'repaired-status-reference',
+      tokens: {'--color-accent': '#0099ff'},
+      adaptations: {
+        rules: [
+          {
+            when: {pointer: 'coarse'},
+            value: {tokens: {'--color-accent': 'var(--color-info)'}},
+          },
+          {
+            when: {pointer: 'coarse'},
+            value: {tokens: {'--color-accent': '#abcdef'}},
+          },
+        ],
+      },
+    });
+
+    expect(generateThemeCSS(theme).component).toContain(
+      '--color-info: var(--color-accent);',
     );
   });
 

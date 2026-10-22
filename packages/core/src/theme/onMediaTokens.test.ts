@@ -235,6 +235,43 @@ describe('generateOnMediaCSS', () => {
     }
   });
 
+  it('avoids a cycle formed only by multiple media role replays', () => {
+    const theme = defineTheme({
+      name: 'status-role-multi-replay-cycle',
+      adaptations: {
+        rules: [
+          {
+            when: {contrast: 'more'},
+            value: {
+              tokens: {
+                '--color-info': 'var(--color-on-info-muted)',
+                '--color-on-info-muted': 'var(--color-text-green)',
+              },
+            },
+          },
+        ],
+      },
+      onDark: {
+        tokens: {
+          '--color-text-blue': '#ffffff',
+          '--color-text-green': 'var(--color-info)',
+        },
+      },
+    });
+    const css = generateOnMediaCSS(theme);
+    const darkBlocks = Array.from(
+      css.matchAll(/\[data-astryx-media="dark"\] \{([\s\S]*?)\n\s*\}/g),
+      match => match[1],
+    );
+
+    expect(darkBlocks.length).toBeGreaterThan(0);
+    for (const block of darkBlocks) {
+      expect(block).not.toContain(
+        '--color-on-info-muted: var(--color-text-blue);',
+      );
+    }
+  });
+
   it('stringifies a legacy non-string media status source without throwing', () => {
     const theme = defineTheme({
       name: 'legacy-media-status-source',

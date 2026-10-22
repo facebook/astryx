@@ -486,130 +486,209 @@ const SCOPED_STATUS_ROLE_DEFAULTS: ReadonlyArray<
   ['--color-on-error-muted', '--color-text-red'],
 ];
 
-/** CSS custom-property references, including conditional alternatives. */
-type TokenReferenceGraph = Map<string, Set<string>>;
 type TokenValues = Record<string, unknown>;
 
-function tokenReferenceNames(value: unknown): string[] {
-  const text = `${value}`;
-  return Array.from(
-    text.matchAll(/var\(\s*(--[-_a-zA-Z0-9]+)/g),
-    match => match[1],
+const CSS_NAME_CHARACTER = String.raw`(?:[-_a-zA-Z0-9]|\P{ASCII}|\\(?:[0-9a-fA-F]{1,6}[ \t\r\n\f]?|[^\r\n\f]))`;
+const CSS_IGNORABLE = String.raw`(?:\s|\/\*[\s\S]*?\*\/)*`;
+const CSS_VAR_REFERENCE_PATTERN = new RegExp(
+  `var\\(${CSS_IGNORABLE}(--${CSS_NAME_CHARACTER}*)(?=${CSS_IGNORABLE}(?:,|\\)))`,
+  'giu',
+);
+const CSS_ESCAPE_PATTERN = /\\(?:([0-9a-fA-F]{1,6})[ \t\r\n\f]?|([^\r\n\f]))/gu;
+
+function decodeCSSIdentifier(identifier: string): string {
+  return identifier.replace(
+    CSS_ESCAPE_PATTERN,
+    (_match, hex: string | undefined, escaped: string | undefined) => {
+      if (hex === undefined) {
+        return escaped ?? '';
+      }
+      const codePoint = Number.parseInt(hex, 16);
+      return codePoint === 0 || codePoint > 0x10ffff
+        ? '\uFFFD'
+        : String.fromCodePoint(codePoint);
+    },
   );
 }
 
-function addTokenReferences(
-  graph: TokenReferenceGraph,
-  tokens: TokenValues,
-): void {
-  for (const [token, value] of Object.entries(tokens)) {
-    const references = graph.get(token) ?? new Set<string>();
-    for (const reference of tokenReferenceNames(value)) {
-      references.add(reference);
-    }
-    if (references.size > 0) {
-      graph.set(token, references);
-    }
+function tokenReferenceNames(value: unknown): string[] {
+  const references: string[] = [];
+  const text = `${value}`;
+  CSS_VAR_REFERENCE_PATTERN.lastIndex = 0;
+  for (
+    let match = CSS_VAR_REFERENCE_PATTERN.exec(text);
+    match;
+    match = CSS_VAR_REFERENCE_PATTERN.exec(text)
+  ) {
+    references.push(decodeCSSIdentifier(match[1]));
   }
+  return references;
 }
 
-function createTokenReferenceGraph(
-  tokenSets: ReadonlyArray<TokenValues | undefined>,
-): TokenReferenceGraph {
-  const graph: TokenReferenceGraph = new Map();
-  for (const tokens of tokenSets) {
-    if (tokens !== undefined) {
-      addTokenReferences(graph, tokens);
-    }
-  }
-  return graph;
-}
+/** Linear-time cycle check over one reachable custom-property cascade. */
+function tokenValuesHaveCycle(tokens: TokenValues): boolean {
+  const references = new Map(
+    Object.entries(tokens).map(([token, value]) => [
+      token,
+      tokenReferenceNames(value).filter(reference =>
+        Object.prototype.hasOwnProperty.call(tokens, reference),
+      ),
+    ]),
+  );
+  const states = new Map<string, 'visiting' | 'complete'>();
 
-/** Whether following var() references from source reaches target. */
-function graphReferences(
-  graph: TokenReferenceGraph,
-  source: string,
-  target: string,
-  seen: ReadonlySet<string> = new Set(),
-): boolean {
-  if (source === target) {
-    return true;
-  }
-  if (seen.has(source)) {
-    return false;
-  }
-  const nextSeen = new Set(seen).add(source);
-  for (const reference of graph.get(source) ?? []) {
-    if (graphReferences(graph, reference, target, nextSeen)) {
+  const visit = (token: string): boolean => {
+    const state = states.get(token);
+    if (state === 'visiting') {
       return true;
     }
+    if (state === 'complete') {
+      return false;
+    }
+    states.set(token, 'visiting');
+    for (const reference of references.get(token) ?? []) {
+      if (visit(reference)) {
+        return true;
+      }
+    }
+    states.set(token, 'complete');
+    return false;
+  };
+
+  return [...references.keys()].some(visit);
+}
+
+const WIDTH_CELL_RANK = {
+  sm: 1,
+  md: 2,
+  lg: 3,
+  xl: 4,
+  '2xl': 5,
+} as const;
+
+function adaptationConditionMatchesCell(
+  condition: ResolvedThemeAdaptationRule['when'],
+  widthRank: number,
+  pointer: 'coarse' | 'fine' | 'none',
+  contrast: 'more' | 'less' | 'no-preference' | 'custom',
+  motion: 'reduce' | 'no-preference',
+): boolean {
+  const from = condition.width?.from;
+  if (from !== undefined && widthRank < WIDTH_CELL_RANK[from]) {
+    return false;
   }
-  return false;
-}
-
-/** Whether adding another possible declaration would introduce a cycle. */
-function wouldCreateUnionCycle(
-  graph: TokenReferenceGraph,
-  token: string,
-  value: unknown,
-): boolean {
-  return tokenReferenceNames(value).some(reference =>
-    graphReferences(graph, reference, token),
+  const below = condition.width?.below;
+  if (below !== undefined && widthRank >= WIDTH_CELL_RANK[below]) {
+    return false;
+  }
+  return (
+    (condition.pointer === undefined || condition.pointer === pointer) &&
+    (condition.contrast === undefined || condition.contrast === contrast) &&
+    (condition.motion === undefined || condition.motion === motion)
   );
 }
 
-/** Whether a later same-scope declaration would introduce a cycle. */
-function wouldCreateOverrideCycle(
-  graph: TokenReferenceGraph,
-  token: string,
-  value: unknown,
-): boolean {
-  const graphWithoutOverriddenToken = new Map(graph);
-  graphWithoutOverriddenToken.delete(token);
-  return tokenReferenceNames(value).some(reference =>
-    graphReferences(graphWithoutOverriddenToken, reference, token),
-  );
-}
-
-function adaptationTokenSets(
+/** Every reachable ordered adaptation-rule match set, including the root. */
+function reachableAdaptationMatchSets(
   rules: ReadonlyArray<ResolvedThemeAdaptationRule>,
-): TokenValues[] {
-  return rules.flatMap(rule =>
-    [rule.tokens, rule.localTokens].filter(
-      (tokens): tokens is Record<string, string> => tokens !== undefined,
-    ),
-  );
+): number[][] {
+  const matchSets = new Map<string, number[]>();
+  for (let widthRank = 0; widthRank <= 5; widthRank++) {
+    for (const pointer of ['coarse', 'fine', 'none'] as const) {
+      for (const contrast of [
+        'more',
+        'less',
+        'no-preference',
+        'custom',
+      ] as const) {
+        for (const motion of ['reduce', 'no-preference'] as const) {
+          const indexes = rules.flatMap((rule, index) =>
+            adaptationConditionMatchesCell(
+              rule.when,
+              widthRank,
+              pointer,
+              contrast,
+              motion,
+            )
+              ? [index]
+              : [],
+          );
+          matchSets.set(indexes.join(','), indexes);
+        }
+      }
+    }
+  }
+  return [...matchSets.values()];
 }
 
-function retainedAdaptationTokenSets(theme: ThemeRuleSource): TokenValues[] {
+function effectiveAdaptationTokenValues(
+  rootTokens: Record<string, string>,
+  rootLocalTokens: Record<string, string> | undefined,
+  rootAliases: ReadonlyArray<readonly [string, string]>,
+  rules: ReadonlyArray<ResolvedThemeAdaptationRule>,
+  matchingRuleIndexes: ReadonlyArray<number>,
+  conditionalAliases: ReadonlyArray<
+    ReadonlyArray<readonly [string, string]>
+  > = [],
+): TokenValues {
+  const effective: TokenValues = {
+    ...rootTokens,
+    ...Object.fromEntries(rootAliases),
+    ...rootLocalTokens,
+  };
+  for (const index of matchingRuleIndexes) {
+    const rule = rules[index];
+    Object.assign(
+      effective,
+      rule.tokens,
+      Object.fromEntries(conditionalAliases[index] ?? []),
+      rule.localTokens,
+    );
+  }
+  return effective;
+}
+
+function retainedAdaptationRules(
+  theme: ThemeRuleSource,
+): ResolvedThemeAdaptationRule[] {
   if (!('__adaptations' in theme) && !('__adaptationRules' in theme)) {
     return [];
   }
-  return adaptationTokenSets(resolvedAdaptationRules(theme as DefinedTheme));
+  return resolvedAdaptationRules(theme as DefinedTheme);
 }
 
 function generatedScopedStatusRoleDefaults(
   tokens: Record<string, string>,
   localTokens: Record<string, string> = {},
-  conditionalTokenSets: ReadonlyArray<TokenValues> = [],
+  rules: ReadonlyArray<ResolvedThemeAdaptationRule> = [],
 ): [string, string][] {
   const entries: [string, string][] = [];
-  const effectiveTokens: TokenValues = {...tokens, ...localTokens};
-  const graph = createTokenReferenceGraph([
-    tokens,
-    localTokens,
-    ...conditionalTokenSets,
-  ]);
+  const authoredRoot: TokenValues = {...tokens, ...localTokens};
+  const matchSets = reachableAdaptationMatchSets(rules);
+
   for (const [role, source] of SCOPED_STATUS_ROLE_DEFAULTS) {
     const alias = `var(${source})`;
     if (
-      effectiveTokens[role] === undefined &&
-      effectiveTokens[source] !== undefined &&
-      !wouldCreateUnionCycle(graph, role, alias)
+      authoredRoot[role] !== undefined ||
+      authoredRoot[source] === undefined
     ) {
+      continue;
+    }
+    const tentativeEntries: [string, string][] = [...entries, [role, alias]];
+    const isSafe = matchSets.every(
+      matchingRuleIndexes =>
+        !tokenValuesHaveCycle(
+          effectiveAdaptationTokenValues(
+            tokens,
+            localTokens,
+            tentativeEntries,
+            rules,
+            matchingRuleIndexes,
+          ),
+        ),
+    );
+    if (isSafe) {
       entries.push([role, alias]);
-      effectiveTokens[role] = alias;
-      addTokenReferences(graph, {[role]: alias});
     }
   }
   return entries;
@@ -618,15 +697,11 @@ function generatedScopedStatusRoleDefaults(
 function tokenEntriesWithScopedStatusRoleDefaults(
   tokens: Record<string, string>,
   localTokens: Record<string, string> = {},
-  conditionalTokenSets: ReadonlyArray<TokenValues> = [],
+  rules: ReadonlyArray<ResolvedThemeAdaptationRule> = [],
 ): [string, string][] {
   return [
     ...Object.entries(tokens),
-    ...generatedScopedStatusRoleDefaults(
-      tokens,
-      localTokens,
-      conditionalTokenSets,
-    ),
+    ...generatedScopedStatusRoleDefaults(tokens, localTokens, rules),
   ];
 }
 
@@ -638,113 +713,105 @@ function authoredStatusRoleEntries(
   );
 }
 
-interface ConditionalStatusRoleOptions {
-  currentLocalTokens?: Record<string, string>;
-  rootLocalTokens?: Record<string, string>;
-  conditionalTokenSets?: ReadonlyArray<TokenValues>;
-  rootAliases?: ReadonlyArray<readonly [string, string]>;
-  sharedGraph?: TokenReferenceGraph;
-  replayRoles?: ReadonlyArray<readonly [string, unknown]>;
+function generatedAdaptationStatusRoleDefaults(
+  rootTokens: Record<string, string>,
+  rootLocalTokens: Record<string, string> | undefined,
+  rules: ReadonlyArray<ResolvedThemeAdaptationRule>,
+  rootAliases: ReadonlyArray<readonly [string, string]>,
+): [string, string][][] {
+  const aliases = rules.map((): [string, string][] => []);
+  const rootValues: TokenValues = {
+    ...rootTokens,
+    ...Object.fromEntries(rootAliases),
+    ...rootLocalTokens,
+  };
+  const matchSets = reachableAdaptationMatchSets(rules);
+
+  for (const [index, rule] of rules.entries()) {
+    const authoredRule: TokenValues = {...rule.tokens, ...rule.localTokens};
+    for (const [role, source] of SCOPED_STATUS_ROLE_DEFAULTS) {
+      const alias = `var(${source})`;
+      const rootRole = rootValues[role];
+      if (
+        authoredRule[role] !== undefined ||
+        authoredRule[source] === undefined ||
+        (rootRole !== undefined && rootRole !== alias) ||
+        rootRole === alias
+      ) {
+        continue;
+      }
+
+      aliases[index].push([role, alias]);
+      const isSafe = matchSets.every(
+        matchingRuleIndexes =>
+          !tokenValuesHaveCycle(
+            effectiveAdaptationTokenValues(
+              rootTokens,
+              rootLocalTokens,
+              rootAliases,
+              rules,
+              matchingRuleIndexes,
+              aliases,
+            ),
+          ),
+      );
+      if (!isSafe) {
+        aliases[index].pop();
+      }
+    }
+  }
+  return aliases;
 }
 
-function generatedConditionalStatusRoleDefaults(
+function generatedMediaStatusRoleDefaults(
   tokens: Record<string, string>,
   rootTokens: Record<string, string>,
-  scope: 'adaptation' | 'media',
-  options: ConditionalStatusRoleOptions = {},
+  rootLocalTokens: Record<string, string> | undefined,
+  rules: ReadonlyArray<ResolvedThemeAdaptationRule>,
+  rootAliases: ReadonlyArray<readonly [string, string]>,
 ): [string, string][] {
-  const currentLocalTokens = options.currentLocalTokens ?? {};
-  const rootLocalTokens = options.rootLocalTokens ?? {};
-  const conditionalTokenSets = options.conditionalTokenSets ?? [];
-  const rootAliases =
-    options.rootAliases ??
-    generatedScopedStatusRoleDefaults(
-      rootTokens,
-      rootLocalTokens,
-      conditionalTokenSets,
-    );
-  const effectiveRootTokens: TokenValues = {
+  const aliases: [string, string][] = [];
+  const rootValues: TokenValues = {
     ...rootTokens,
-    ...rootLocalTokens,
     ...Object.fromEntries(rootAliases),
+    ...rootLocalTokens,
   };
-  const currentTokens: TokenValues = {...tokens, ...currentLocalTokens};
-  const graph =
-    options.sharedGraph ??
-    createTokenReferenceGraph([
-      rootTokens,
-      rootLocalTokens,
-      ...conditionalTokenSets,
-      Object.fromEntries(rootAliases),
-      tokens,
-      currentLocalTokens,
-    ]);
-  const localGraph = createTokenReferenceGraph([tokens, currentLocalTokens]);
-  const entries: [string, string][] = [];
+  const matchSets = reachableAdaptationMatchSets(rules);
 
   for (const [role, source] of SCOPED_STATUS_ROLE_DEFAULTS) {
     const alias = `var(${source})`;
-    const rootRole = effectiveRootTokens[role];
-    const rootAllowsDefault = rootRole === undefined || rootRole === alias;
-    const rootAlreadyCarriesAlias = rootRole === alias;
+    const rootRole = rootValues[role];
     if (
-      currentTokens[role] !== undefined ||
-      currentTokens[source] === undefined ||
-      !rootAllowsDefault ||
-      (scope === 'adaptation' && rootAlreadyCarriesAlias) ||
-      wouldCreateUnionCycle(graph, role, alias)
+      tokens[role] !== undefined ||
+      tokens[source] === undefined ||
+      (rootRole !== undefined && rootRole !== alias)
     ) {
       continue;
     }
 
-    const tentativeLocalGraph = createTokenReferenceGraph([]);
-    for (const [token, references] of localGraph) {
-      tentativeLocalGraph.set(token, new Set(references));
+    const tentativeAliases: [string, string][] = [...aliases, [role, alias]];
+    const generatedRoles = new Set(tentativeAliases.map(([name]) => name));
+    const isSafe = matchSets.every(matchingRuleIndexes => {
+      const localValues: TokenValues = {
+        ...tokens,
+        ...Object.fromEntries(tentativeAliases),
+      };
+      for (const index of matchingRuleIndexes) {
+        for (const [authoredRole, authoredValue] of authoredStatusRoleEntries(
+          rules[index].tokens,
+        )) {
+          if (generatedRoles.has(authoredRole)) {
+            localValues[authoredRole] = authoredValue;
+          }
+        }
+      }
+      return !tokenValuesHaveCycle(localValues);
+    });
+    if (isSafe) {
+      aliases.push([role, alias]);
     }
-    addTokenReferences(tentativeLocalGraph, {[role]: alias});
-    const unsafeReplay = (options.replayRoles ?? []).some(
-      ([replayRole, replayValue]) =>
-        replayRole === role &&
-        wouldCreateOverrideCycle(tentativeLocalGraph, replayRole, replayValue),
-    );
-    if (unsafeReplay) {
-      continue;
-    }
-
-    entries.push([role, alias]);
-    currentTokens[role] = alias;
-    addTokenReferences(graph, {[role]: alias});
-    addTokenReferences(localGraph, {[role]: alias});
   }
-  return entries;
-}
-
-function withoutUnsafeMediaReplayAliases(
-  aliases: [string, string][],
-  tokens: Record<string, string>,
-  localTokens: Record<string, string> | undefined,
-  replayRoles: ReadonlyArray<readonly [string, unknown]>,
-): [string, string][] {
-  let safeAliases = aliases;
-  for (;;) {
-    const localGraph = createTokenReferenceGraph([
-      tokens,
-      localTokens,
-      Object.fromEntries(safeAliases),
-    ]);
-    const nextAliases = safeAliases.filter(
-      ([role]) =>
-        !replayRoles.some(
-          ([replayRole, replayValue]) =>
-            replayRole === role &&
-            wouldCreateOverrideCycle(localGraph, replayRole, replayValue),
-        ),
-    );
-    if (nextAliases.length === safeAliases.length) {
-      return safeAliases;
-    }
-    safeAliases = nextAliases;
-  }
+  return aliases;
 }
 
 /** The `:scope` token block for portable and theme-local token values. */
@@ -826,7 +893,7 @@ export function generateThemeRules(
     tokenEntriesWithScopedStatusRoleDefaults(
       theme.tokens,
       theme.localTokens,
-      retainedAdaptationTokenSets(theme),
+      retainedAdaptationRules(theme),
     ),
   );
   if (tokenRules !== null) {
@@ -1345,14 +1412,10 @@ export function generateOnMediaCSS(
   const scopeSelector = themeScopeStart(theme.name);
   const sink = diagnosticSink(warnings);
   const rules = resolvedAdaptationRules(theme);
-  const conditionalTokenSets = adaptationTokenSets(rules);
   const rootAliases = generatedScopedStatusRoleDefaults(
     theme.tokens,
     theme.localTokens,
-    conditionalTokenSets,
-  );
-  const replayRoles = rules.flatMap(rule =>
-    authoredStatusRoleEntries(rule.tokens),
+    rules,
   );
   const mediaStatusRoleDefaults = new Map<
     'dark' | 'light',
@@ -1368,21 +1431,12 @@ export function generateOnMediaCSS(
 
     // Token overrides. MediaTheme writes on a descendant surface, so a source
     // alias must be local unless an authored root/adaptation role owns it.
-    const statusRoleDefaults = withoutUnsafeMediaReplayAliases(
-      generatedConditionalStatusRoleDefaults(
-        onMedia.tokens,
-        theme.tokens,
-        'media',
-        {
-          rootLocalTokens: theme.localTokens,
-          conditionalTokenSets,
-          rootAliases,
-          replayRoles,
-        },
-      ),
+    const statusRoleDefaults = generatedMediaStatusRoleDefaults(
       onMedia.tokens,
-      undefined,
-      replayRoles,
+      theme.tokens,
+      theme.localTokens,
+      rules,
+      rootAliases,
     );
     mediaStatusRoleDefaults.set(surface, statusRoleDefaults);
     const tokenEntries = [
@@ -1547,31 +1601,16 @@ export function generateAdaptationCSS(
     hasHeadingComponentRules(rule.components),
   );
 
-  const conditionalTokenSets = adaptationTokenSets(rules);
   const rootAliases = generatedScopedStatusRoleDefaults(
     theme.tokens,
     theme.localTokens,
-    conditionalTokenSets,
+    rules,
   );
-  const sharedStatusRoleGraph = createTokenReferenceGraph([
+  const statusRoleDefaults = generatedAdaptationStatusRoleDefaults(
     theme.tokens,
     theme.localTokens,
-    ...conditionalTokenSets,
-    Object.fromEntries(rootAliases),
-  ]);
-  const statusRoleDefaults = rules.map(rule =>
-    generatedConditionalStatusRoleDefaults(
-      rule.tokens,
-      theme.tokens,
-      'adaptation',
-      {
-        currentLocalTokens: rule.localTokens,
-        rootLocalTokens: theme.localTokens,
-        conditionalTokenSets,
-        rootAliases,
-        sharedGraph: sharedStatusRoleGraph,
-      },
-    ),
+    rules,
+    rootAliases,
   );
 
   // Emit ordinary rule writes first, without inherited Heading weight

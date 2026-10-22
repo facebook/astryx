@@ -101,6 +101,44 @@ describe('defineTheme', () => {
     },
   );
 
+  it.each([
+    ['uppercase VAR()', 'VAR(--color-info)', undefined],
+    ['mixed-case var()', 'vAr(--color-info)', undefined],
+    ['escaped identifier', 'var(--\\63 olor-info)', undefined],
+    ['comment-separated identifier', 'var(/*ok*/ --color-info)', undefined],
+    ['non-ASCII local token', 'var(--品牌)', {'--品牌': 'var(--color-info)'}],
+  ])(
+    'recognizes %s while checking generated alias cycles',
+    (_, accent, localTokens) => {
+      const css = generateThemeRules({
+        tokens: {'--color-accent': accent},
+        localTokens,
+      }).join('\n');
+
+      expect(css).not.toContain('--color-info: var(--color-accent);');
+    },
+  );
+
+  it('checks a reconverging token graph in linear time', () => {
+    const localTokens: Record<string, string> = {};
+    for (let layer = 0; layer < 26; layer++) {
+      const next = layer + 1;
+      const value =
+        layer === 25
+          ? '#ffffff'
+          : `var(--layer-${next}-a, var(--layer-${next}-b))`;
+      localTokens[`--layer-${layer}-a`] = value;
+      localTokens[`--layer-${layer}-b`] = value;
+    }
+    const started = performance.now();
+    generateThemeRules({
+      tokens: {'--color-accent': 'var(--layer-0-a)'},
+      localTokens,
+    });
+
+    expect(performance.now() - started).toBeLessThan(1000);
+  });
+
   it('emits every source-derived status role without counting it as authored', () => {
     const theme = defineTheme({
       name: 'custom-status-sources',
