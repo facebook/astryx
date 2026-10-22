@@ -132,7 +132,8 @@ export function domainPriority(
   const fuzzy = tokens.length <= 1;
   return words.some(
     w =>
-      (bestForToken(w, candidate, {fuzzy})?.score ?? 0) >= STRONG_TOKEN_SCORE,
+      (bestForToken(w, candidate, {fuzzy, part: words.length > 1})?.score ??
+        0) >= STRONG_TOKEN_SCORE,
   )
     ? 1
     : 0;

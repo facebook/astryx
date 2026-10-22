@@ -47,6 +47,13 @@ describe('family members found by their spelled-out names', () => {
     expect(results[0]).toMatchObject({domain: 'component', name: 'Stack'});
   });
 
+  it("a longer query does not lift a head word's members", async () => {
+    const {results} = (await search('stack direction')).data;
+    const top = results.slice(0, 3).map(r => r.name);
+    expect(top).not.toContain('VStack');
+    expect(top).not.toContain('HStack');
+  });
+
   it('a word the description does not spell out is no name', async () => {
     const {results} = (await search('visual stack')).data;
     expect(results[0]?.name).not.toBe('VStack');
