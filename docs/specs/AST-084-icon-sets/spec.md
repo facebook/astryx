@@ -68,7 +68,10 @@ icon, and the CLI verifies it, writes the files, and checks the set.
     every stable command and its output; extending `help` or any stable family
     would change that command. Its one job is to group experimental
     commands. It performs no operation itself, so `spec:AST-042/FR1` names no
-    function for it; each command under it names its own;
+    function for it; each command under it names its own. It has no result of
+    its own: each command under it returns data, a typed JSON response that
+    agents and tools act on, while the reasons behind experimental features
+    are prose in their docs under `cli/experimental`;
   - configuration is `experimental.iconSet` in `astryx.config`, the project's
     opt-in, and `experimental.iconSets` in the integration manifest;
   - the guides and schemas live under `cli/experimental` (the guide, the
