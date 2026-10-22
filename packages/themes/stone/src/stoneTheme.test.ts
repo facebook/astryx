@@ -63,6 +63,15 @@ describe('stone strong status contrast', () => {
       expect(stoneTheme.tokens[token]).toBe('light-dark(#ffffff, #1b1b1f)');
     }
   });
+
+  it('uses dark ink for marks on Stone’s pale progress fills', () => {
+    const mark = stoneTheme.components!['progress-bar-mark'];
+    for (const variant of ['accent', 'success', 'warning', 'error']) {
+      expect(mark[`placement:fill+variant:${variant}`]).toMatchObject({
+        backgroundColor: 'var(--color-on-light)',
+      });
+    }
+  });
 });
 
 describe('stone secondary ComplexSelector', () => {
