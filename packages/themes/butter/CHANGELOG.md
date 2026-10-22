@@ -1,5 +1,19 @@
 # @xds/theme-butter
 
+# 0.7.3
+
+#### Fixes
+
+- The butter, stone, and y2k themes no longer show the secondary hover fill on a disabled `ComplexSelector` trigger, whether the trigger is natively disabled or exposes `aria-disabled="true"`, the focusable form every disabled control now uses. Before, the guard only recognized a natively disabled trigger. The themes `astryx theme eject` copies carry the same guard.
+
+#### Contributors
+
+Thanks to everyone who contributed to this release:
+
+- @cixzhang
+
+---
+
 # 0.7.2
 
 ---
