@@ -1384,6 +1384,8 @@ export async function packageDocTargets(integration, discovered) {
     let owner = null;
     /** @type {string | null} */
     let basePath = null;
+    /** @type {ReadonlyArray<{path: string}>} every extension of the target, in configured order */
+    let extensions = [];
     /** @type {string[]} */
     let guidesBelow = [];
     /** @type {string | null} */
@@ -1395,6 +1397,7 @@ export async function packageDocTargets(integration, discovered) {
         guide = node.route;
         owner = node.provider;
         basePath = node.guideOverlay?.replacement?.path ?? node.ref.topicFile;
+        extensions = node.guideOverlay?.extensions ?? [];
       }
     } else {
       // A replacement already holds the topic's place in the catalog, and
@@ -1407,6 +1410,7 @@ export async function packageDocTargets(integration, discovered) {
         kind = 'topic';
         owner = entry.package;
         basePath = entry.path;
+        extensions = entry.extensions;
       }
     }
     if (kind == null) {
@@ -1423,12 +1427,19 @@ export async function packageDocTargets(integration, discovered) {
     /** @type {DocTarget['unplaced']} */
     let unplaced = [];
     if (relationship === 'extends' && basePath != null) {
-      const [base, extension] = await Promise.all([
-        loadTopicFile(basePath, null),
-        loadTopicFile(record.path, null),
-      ]);
-      if (base.doc && extension.doc) {
-        unplaced = mergeTopicReport(base.doc, extension.doc).unplaced;
+      // Merge every extension in configured order, as a read does, so a key
+      // an earlier extension adds counts as a section of the target.
+      let doc = (await loadTopicFile(basePath, null)).doc;
+      for (const extension of extensions) {
+        if (doc == null) break;
+        const file = (await loadTopicFile(extension.path, null)).doc;
+        if (file == null) continue;
+        const merged = mergeTopicReport(doc, file);
+        if (extension.path === record.path) {
+          unplaced = merged.unplaced;
+          break;
+        }
+        doc = merged.doc;
       }
     }
     targets.push({

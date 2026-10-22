@@ -1402,7 +1402,10 @@ export async function integrationPackCheck(options = {}) {
     // patch release, it warns and never fails the check (INV35).
     if (
       await setsSectionField(
-        records.map(record => record.path),
+        [
+          ...records.map(record => record.path),
+          ...guides.map(guide => /** @type {any} */ (guide.ref).topicFile),
+        ],
         ['before', 'after'],
       )
     ) {

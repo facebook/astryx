@@ -1724,6 +1724,39 @@ describe('integrationPackCheck', () => {
     expect(await codes()).not.toContain('section_ids_need_cli');
   }, 120_000);
 
+  it('warns, without failing, when a doc section sets before or after on a CLI range that rejects them', async () => {
+    writePackage({
+      manifest: "export default {docs: './docs'};\n",
+      themes: false,
+    });
+    fs.mkdirSync(path.join(tmpDir, 'docs'), {recursive: true});
+    const pkgFile = path.join(tmpDir, 'package.json');
+    const pkg = JSON.parse(fs.readFileSync(pkgFile, 'utf-8'));
+    pkg.peerDependencies = {'@astryxdesign/cli': '>=0.7.0'};
+    fs.writeFileSync(pkgFile, `${JSON.stringify(pkg, null, 2)}\n`);
+    const issues = async () =>
+      (await integrationPackCheck({cwd: tmpDir})).data.issues.filter(
+        (/** @type {{code: string}} */ issue) =>
+          issue.code === 'section_position_needs_cli',
+      );
+    // A placed guide's section counts too: an older CLI rejects the field in
+    // any doc and hides the package's topics.
+    fs.writeFileSync(
+      path.join(tmpDir, 'docs', 'acme.doc.mjs'),
+      "export default {type: 'namespace', name: 'acme', title: 'Acme', summary: 'Acme.', slots: {guides: {title: 'Guides', accepts: {kinds: ['generic']}}}};\n",
+    );
+    fs.writeFileSync(
+      path.join(tmpDir, 'docs', 'setup.doc.mjs'),
+      "export default {type: 'generic', name: 'setup', title: 'Setup', description: 'Set up.', placement: {parent: 'namespace:acme', slot: 'guides'}, sections: [{id: 'overview', title: 'Overview', after: 'nothing', content: [{type: 'prose', text: 'Set up.'}]}]};\n",
+    );
+    expect(await issues()).toEqual([
+      expect.objectContaining({severity: 'warning'}),
+    ]);
+    pkg.peerDependencies = {'@astryxdesign/cli': '>=0.7.4'};
+    fs.writeFileSync(pkgFile, `${JSON.stringify(pkg, null, 2)}\n`);
+    expect(await issues()).toEqual([]);
+  }, 120_000);
+
   it('fails a package with a template that sets replaces on a CLI range that rejects the field', async () => {
     writePackage({
       manifest: "export default {templates: './templates'};\n",

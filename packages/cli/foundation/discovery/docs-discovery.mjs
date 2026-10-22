@@ -699,13 +699,23 @@ export function mergeTopicReport(base, overlay) {
         unplaced.push({section: sectionKey(section), field, key});
         sections.push(section);
       } else if (field === 'before') {
+        // Placed just before a section another was placed `after`, it joins
+        // that section's group, so later sections placed there follow both.
+        if (sections[anchor][PLACED_AFTER] != null) {
+          Object.defineProperty(section, PLACED_AFTER, {
+            value: sections[anchor][PLACED_AFTER],
+            configurable: true,
+          });
+        }
         sections.splice(anchor, 0, section);
       } else {
         // Sections placed after one key keep their order, across every
-        // extension merged onto the topic: each goes after those placed
-        // there before it.
+        // extension merged onto the topic: each goes after every section
+        // placed there before it, and after the sections placed after those.
+        const group = new Set([key]);
         let at = anchor + 1;
-        while (at < sections.length && sections[at][PLACED_AFTER] === key) {
+        while (at < sections.length && group.has(sections[at][PLACED_AFTER])) {
+          group.add(sectionKey(sections[at]));
           at += 1;
         }
         Object.defineProperty(section, PLACED_AFTER, {

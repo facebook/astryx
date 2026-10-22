@@ -865,3 +865,106 @@ describe('fifth review follow-ups', () => {
     SLOW,
   );
 });
+
+describe('whole-diff self-review', () => {
+  it('keeps a chain of after placements in order across packages', () => {
+    let doc = {
+      sections: [
+        {id: 'x', title: 'X', content: []},
+        {id: 'y', title: 'Y', content: []},
+      ],
+    };
+    for (const overlay of [
+      {sections: [{id: 'first', title: 'First', after: 'x', content: []}]},
+      {sections: [{id: 'second', title: 'Second', after: 'x', content: []}]},
+      {
+        sections: [
+          {
+            id: 'under-first',
+            title: 'Under first',
+            after: 'first',
+            content: [],
+          },
+        ],
+      },
+      {
+        sections: [
+          {
+            id: 'before-second',
+            title: 'Before second',
+            before: 'second',
+            content: [],
+          },
+        ],
+      },
+      {sections: [{id: 'last', title: 'Last', after: 'x', content: []}]},
+    ]) {
+      doc = mergeTopic(doc, overlay);
+    }
+    expect(doc.sections.map((/** @type {any} */ each) => each.id)).toEqual([
+      'x',
+      'first',
+      'under-first',
+      'before-second',
+      'second',
+      'last',
+      'y',
+    ]);
+  });
+
+  it(
+    'counts a key an earlier doc of the package adds as a section of the guide',
+    async () => {
+      scaffold({
+        'a.doc.mjs': topic('acme-a', {
+          extends: GUIDE,
+          sections: [section('acme-x', {after: 'quick-start'})],
+        }),
+        'b.doc.mjs': topic('acme-b', {
+          extends: GUIDE,
+          sections: [section('acme-y', {after: 'acme-x'})],
+        }),
+      });
+      const index = await docs(GUIDE, undefined, {cwd: tmpDir, index: true});
+      expect(index.data.sections.slice(0, 3).map(s => s.id)).toEqual([
+        'quick-start',
+        'acme-x',
+        'acme-y',
+      ]);
+      const validated = await validateIntegration(KIT, {cwd: tmpDir});
+      expect(
+        (validated.data.notes ?? []).filter(
+          n => n.code === 'doc_section_unplaced',
+        ),
+      ).toEqual([]);
+    },
+    SLOW,
+  );
+
+  it(
+    'still notes a key no doc of the target adds, with earlier extensions merged',
+    async () => {
+      scaffold({
+        'a.doc.mjs': topic('acme-a', {
+          extends: GUIDE,
+          sections: [section('acme-x', {after: 'quick-start'})],
+        }),
+        'b.doc.mjs': topic('acme-b', {
+          extends: GUIDE,
+          sections: [section('acme-y', {after: 'acme-nope'})],
+        }),
+      });
+      const validated = await validateIntegration(KIT, {cwd: tmpDir});
+      expect(
+        (validated.data.notes ?? []).filter(
+          n => n.code === 'doc_section_unplaced',
+        ),
+      ).toEqual([
+        expect.objectContaining({
+          message: expect.stringContaining('"acme-nope"'),
+        }),
+      ]);
+    },
+    SLOW,
+  );
+});
