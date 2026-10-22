@@ -1545,7 +1545,9 @@ export async function componentExamplesCheck(integration) {
           unchecked.push({
             file: rel(template.filePath),
             asset: assetRel,
-            reason: `${packed.error}, and a \`files\` entry may reach it`,
+            reason: Array.isArray(packedFiles)
+              ? `${packed.error}, and a \`files\` entry may reach it`
+              : `${packed.error}, and ${fs.existsSync(path.join(base, '.npmignore')) ? '.npmignore' : '.gitignore'} may drop it`,
           });
           continue;
         }
@@ -1577,6 +1579,37 @@ export async function componentExamplesCheck(integration) {
   const templatesDir = root ? rel(root) || '.' : 'templates';
   /** @type {Set<unknown>} blocks a note has already asked to show one component */
   const claimed = new Set();
+  // A block that names a component, by its category, name, display name or
+  // file (`acme-badge-showcase`), is offered to that component alone, so two
+  // notes never ask one block to show two components. The longest matching
+  // name wins (`AcmeBadgeGroup` over `AcmeBadge`).
+  const key = (/** @type {string} */ value) =>
+    value.toLowerCase().replace(/[-_\s]/g, '');
+  const componentNames = records
+    .map(record => record.name)
+    .filter(name => typeof name === 'string')
+    .sort((a, b) => b.length - a.length);
+  /** @type {Map<unknown, string>} */
+  const ownerOf = new Map();
+  for (const template of templates) {
+    if (template.type !== 'block' || typeof template.exampleFor === 'string') {
+      continue;
+    }
+    const words = [
+      template.category,
+      template.name,
+      template.displayName,
+      typeof template.filePath === 'string'
+        ? path.basename(template.filePath).replace(/\.[^.]+$/u, '')
+        : undefined,
+    ]
+      .filter(value => typeof value === 'string')
+      .map(key);
+    const owner = componentNames.find(name =>
+      words.some(word => word.includes(key(name))),
+    );
+    if (owner) ownerOf.set(template, owner);
+  }
   for (const record of records) {
     if (componentDiscovery.isIntegrationMember(record)) continue;
     if (shown.has(record.name)) continue;
@@ -1606,30 +1639,18 @@ export async function componentExamplesCheck(integration) {
       });
       continue;
     }
-    // Among the blocks that compose it, prefer one whose category, name or
-    // file names the component, then one that shows nothing yet, and never
-    // ask one block to show two components.
-    const key = name.toLowerCase();
+    // Among the blocks that compose it, prefer the one that names it, then
+    // one that names no component and shows nothing yet; a block that names
+    // another component is that component's.
     const namesIt = (/** @type {any} */ template) =>
-      [
-        template.category,
-        template.name,
-        template.displayName,
-        template.filePath,
-      ]
-        .filter(value => typeof value === 'string')
-        .some(value =>
-          value
-            .toLowerCase()
-            .replace(/[-_\s]/g, '')
-            .includes(key),
-        );
+      ownerOf.get(template) === name;
     const composing = templates
       .filter(
         template =>
           template.type === 'block' &&
           Array.isArray(template.componentsUsed) &&
-          template.componentsUsed.includes(name),
+          template.componentsUsed.includes(name) &&
+          (!ownerOf.has(template) || ownerOf.get(template) === name),
       )
       .sort(
         (a, b) =>

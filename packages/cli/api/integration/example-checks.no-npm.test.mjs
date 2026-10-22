@@ -101,6 +101,11 @@ describe('template assets when npm gives no answer', () => {
     expect(
       data.exampleAssets?.unchecked.map(each => each.asset).sort(),
     ).toEqual(['assets/cat.png', 'templates/img/hero.png']);
+    expect(
+      data.exampleAssets?.unchecked.every(each =>
+        each.reason.includes('.npmignore may drop it'),
+      ),
+    ).toBe(true);
   });
 
   it('shows the assets it could not check in text output', async () => {

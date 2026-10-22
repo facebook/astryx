@@ -118,6 +118,30 @@ describe('component_without_example', () => {
     expect(note.message).not.toContain("add `exampleFor: 'AcmeCard'`");
   });
 
+  it('offers a block only to the component it names, whatever the order', async () => {
+    write({
+      'components/AcmeAvatar.doc.mjs': componentDoc('AcmeAvatar'),
+      'components/AcmeAvatar.tsx': componentSource('AcmeAvatar'),
+      'components/AcmeBadge.doc.mjs': componentDoc('AcmeBadge'),
+      'components/AcmeBadge.tsx': componentSource('AcmeBadge'),
+      'templates/acme-badge-showcase.doc.mjs': blockDoc(
+        'acme-badge-showcase',
+        ", componentsUsed: ['AcmeAvatar', 'AcmeBadge']",
+      ),
+      'templates/acme-badge-showcase.tsx': 'export default () => null;\n',
+    });
+    const notes = await notesOf(['component_without_example']);
+    const asks = notes.filter(note =>
+      note.message.includes('templates/acme-badge-showcase.doc.mjs'),
+    );
+    expect(asks).toHaveLength(1);
+    expect(asks[0].message).toContain("add `exampleFor: 'AcmeBadge'`");
+    const avatar = notes.find(note =>
+      note.message.includes('AcmeAvatar.doc.mjs'),
+    );
+    expect(avatar?.message).not.toContain('acme-badge-showcase');
+  });
+
   it('asks for isShowcase when a block already names the component in exampleFor', async () => {
     write({
       'templates/card-demo.doc.mjs': blockDoc(
