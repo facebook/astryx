@@ -59,6 +59,7 @@ import {
 // integration-warnings need them too, and foundation must not depend on api.
 import {
   blockComponentsCheck,
+  componentExamplesCheck,
   componentDocNamesCheck,
   INVALID_CLI_COMMAND,
   isListedIssue,
@@ -703,6 +704,10 @@ export async function validateIntegration(pkg, options = {}) {
         await blockComponentsCheck(integration),
       ]
     : undefined;
+  // Components no block template shows.
+  const examples = integration
+    ? await componentExamplesCheck(integration)
+    : undefined;
   const docNames = names?.[0].report;
   const blockComponents = names?.[1].report;
   // Notes fail nothing: a malformed `cliCommand`, and the findings added
@@ -722,6 +727,7 @@ export async function validateIntegration(pkg, options = {}) {
         ...(names ?? []).flatMap(each =>
           each.notes.map(note => ({...note, next: true})),
         ),
+        ...(examples?.notes ?? []).map(note => ({...note, next: true})),
       ]
     : [];
   // The doc-syntax findings in the package's topics, as `next` notes with

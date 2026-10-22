@@ -23,6 +23,7 @@
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import {builtinModules} from 'node:module';
 import {parse as parseModule} from '@babel/parser';
 import {isValidSemver} from '../env/semver.mjs';
 import {findProjectCoreDir} from '../fs/paths.mjs';
@@ -1021,6 +1022,205 @@ export async function blockComponentsCheck(integration) {
     },
     notes: findings.map(entry => note('unknown_block_component', entry)),
   };
+}
+
+/** A package's own template category: `"<Group> - <Variant>"`. */
+const CATEGORY_FORM = /^[^/\s-][^/]*? - [^/]+$/u;
+
+/** Imports a browser cannot load, which a showcase must not make. */
+const SERVER_ONLY_IMPORTS =
+  /^(?:server-only|next\/headers|next\/server|next\/cache|node:.+)$/u;
+
+/**
+ * Whether a package-relative path is in what npm packs, by the package's
+ * `files` field: everything without one, else a path a listed entry names
+ * or lies under (`*` and `**` globs too). `package.json`, the README and the
+ * license are always packed and never asked about here.
+ * @param {string} rel POSIX, relative to the package root
+ * @param {unknown} files
+ */
+function isPackedBy(rel, files) {
+  if (!Array.isArray(files)) return true;
+  let packed = false;
+  for (const entry of files) {
+    if (typeof entry !== 'string') continue;
+    const negated = entry.startsWith('!');
+    const pattern = entry
+      .slice(negated ? 1 : 0)
+      .replace(/^\.\//u, '')
+      .replace(/\/+$/u, '');
+    const source = pattern
+      .split('/')
+      .map(part =>
+        part === '**'
+          ? '(?:.*)'
+          : part
+              .replace(/[.+^${}()|[\]\\]/gu, '\\$&')
+              .replace(/\*/gu, '[^/]*')
+              .replace(/\?/gu, '[^/]'),
+      )
+      .join('/');
+    if (new RegExp(`^${source}(?:/.*)?$`, 'u').test(rel)) packed = !negated;
+  }
+  return packed;
+}
+
+/**
+ * What a package's examples need to work everywhere they are shown: template
+ * lists, docs pages and catalog cards, which render each block alone from
+ * the packed package. Four `next` notes, each with a fix to paste
+ * (architecture:cli-surface INV35, DEC-11):
+ * - `component_without_example`: a published component no block template
+ *   shows, as its `exampleFor` with `isShowcase: true` (or in
+ *   `alsoShowcaseFor`). A block named like a showcase that sets neither is a
+ *   standalone block and does not count. Exempt, because an example cannot
+ *   fix them: a hidden doc (`hidden: true`), a member of a family (its
+ *   family's example covers it), a doc kept off the overview
+ *   (`isHiddenFromOverview: true`, for parts that only make sense inside a
+ *   parent), and a `Utility` component (providers and context).
+ * - `template_category`: a template `category` not in the `"<Group> -
+ *   <Variant>"` form `astryx template` groups by, such as `components/X`.
+ * - `showcase_not_standalone`: a showcase that imports what a browser cannot
+ *   load (`server-only`, `next/headers`, `next/server`, `next/cache`, a Node
+ *   built-in) or reads `process.env`. Live data is fine: a showcase may fetch
+ *   through the app. Only the showcase's own file is read.
+ * - `template_asset_not_packed`: a file a template loads with `new URL(…,
+ *   import.meta.url)` that does not exist or that the package's `files`
+ *   field leaves out of the package.
+ * @param {LoadedIntegration} integration
+ * @returns {Promise<{notes: Note[]}>}
+ */
+export async function componentExamplesCheck(integration) {
+  /** @type {Note[]} */
+  const notes = [];
+  const base = integration.__packageDir ?? integration.components ?? '';
+  const root = integration.templates;
+  /** @type {any[]} */
+  let templates = [];
+  if (root && !rootProblem(root)) {
+    try {
+      ({templates} = await discoverIntegrationTemplatesForOne(integration));
+    } catch {
+      // Templates that cannot be read are reported by the template check.
+      return {notes};
+    }
+  }
+  const rel = (/** @type {string} */ file) => slash(path.relative(base, file));
+  /** @type {unknown} */
+  let packedFiles;
+  try {
+    packedFiles = JSON.parse(
+      fs.readFileSync(path.join(base, 'package.json'), 'utf8'),
+    ).files;
+  } catch {
+    packedFiles = undefined;
+  }
+  const builtins = new Set(builtinModules);
+  /** @type {Set<string>} */
+  const shown = new Set();
+  for (const template of templates) {
+    const docFile = rel(template.docPath ?? template.filePath);
+    if (template.type === 'block') {
+      if (typeof template.exampleFor === 'string' && template.isShowcase) {
+        shown.add(template.exampleFor);
+      }
+      for (const name of template.alsoShowcaseFor ?? []) shown.add(name);
+    }
+    if (
+      typeof template.category === 'string' &&
+      template.category !== '' &&
+      !CATEGORY_FORM.test(template.category)
+    ) {
+      const [group, ...rest] = template.category.split('/');
+      const variant =
+        rest.join(' ').trim() || template.displayName || template.id;
+      const suggested = `${group.charAt(0).toUpperCase()}${group.slice(1)} - ${variant}`;
+      notes.push({
+        code: 'template_category',
+        message: `${docFile}: category '${template.category}' is not in the "<Group> - <Variant>" form that \`astryx template\` groups templates by. Fix: category: '${suggested}'.`,
+      });
+    }
+    /** @type {string} */
+    let source;
+    try {
+      source = fs.readFileSync(template.filePath, 'utf8');
+    } catch {
+      continue;
+    }
+    if (template.type === 'block' && template.isShowcase) {
+      /** @type {string[]} */
+      const blocked = [];
+      for (const match of source.matchAll(
+        /\bfrom\s+['"]([^'"]+)['"]|\bimport\s+['"]([^'"]+)['"]|\brequire\(\s*['"]([^'"]+)['"]\s*\)/gu,
+      )) {
+        const spec = match[1] ?? match[2] ?? match[3];
+        if (SERVER_ONLY_IMPORTS.test(spec) || builtins.has(spec)) {
+          blocked.push(`imports '${spec}'`);
+        }
+      }
+      if (/\bprocess\.env\b/u.test(source)) blocked.push('reads process.env');
+      if (/^\s*['"]use server['"]/mu.test(source)) {
+        blocked.push("is a 'use server' module");
+      }
+      if (blocked.length > 0) {
+        notes.push({
+          code: 'showcase_not_standalone',
+          message: `${rel(template.filePath)}: the showcase ${[...new Set(blocked)].join(', ')}, which cannot run in a browser, so a docs page or catalog card cannot render it. Fix: move that code into the app; pass values in as props or a sample-data provider the showcase renders itself. Fetching live data through the app is fine.`,
+        });
+      }
+    }
+    for (const match of source.matchAll(
+      /new\s+URL\(\s*['"](\.{1,2}\/[^'"]+)['"]\s*,\s*import\.meta\.url\s*\)/gu,
+    )) {
+      const asset = path.resolve(path.dirname(template.filePath), match[1]);
+      const assetRel = rel(asset);
+      const exists = fs.existsSync(asset);
+      if (exists && isPackedBy(assetRel, packedFiles)) continue;
+      notes.push({
+        code: 'template_asset_not_packed',
+        message: exists
+          ? `${rel(template.filePath)}: loads ${assetRel}, which the package.json \`files\` field leaves out of the package, so the template breaks once installed. Fix: add "${path.posix.dirname(assetRel) === '.' ? assetRel : path.posix.dirname(assetRel)}" to \`files\`.`
+          : `${rel(template.filePath)}: loads ${assetRel}, which does not exist. Fix: add the file, or point \`new URL()\` at one that does.`,
+      });
+    }
+  }
+  if (!integration.components || rootProblem(integration.components)) {
+    return {notes};
+  }
+  /** @type {any[]} */
+  let records;
+  try {
+    records = componentDiscovery.discoverIntegrationComponents(integration);
+  } catch {
+    return {notes};
+  }
+  const templatesDir = root ? rel(root) || '.' : 'templates';
+  for (const record of records) {
+    if (componentDiscovery.isIntegrationMember(record)) continue;
+    if (shown.has(record.name)) continue;
+    let doc;
+    try {
+      doc = await loadComponentDoc(record.docPath);
+    } catch {
+      continue;
+    }
+    if (doc?.hidden === true || doc?.isHiddenFromOverview === true) continue;
+    if (doc?.category === 'Utility') continue;
+    const name = record.name;
+    const stem = `${name.replace(/([a-z0-9])([A-Z])/gu, '$1-$2').toLowerCase()}-showcase`;
+    notes.push({
+      code: 'component_without_example',
+      message:
+        `${rel(record.docPath)}: no block template shows "${name}" (\`exampleFor: '${name}'\` with \`isShowcase: true\`), so template lists, docs pages and catalog cards have no example of it.` +
+        (root
+          ? ''
+          : " The manifest sets no `templates` root; add `templates: './templates'` to it.") +
+        ` Fix: add ${templatesDir}/${stem}.tsx, a small composition that renders ${name}, and beside it ${templatesDir}/${stem}.doc.mjs:` +
+        ` export default {type: 'block', name: '${stem}', displayName: '${name} showcase', description: 'A ${name} in use.', exampleFor: '${name}', isShowcase: true};` +
+        ' A doc set to `hidden`, `isHiddenFromOverview` or category `Utility` needs no example.',
+    });
+  }
+  return {notes};
 }
 
 /**
