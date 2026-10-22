@@ -1,4 +1,4 @@
-Results for "icon" (20 of 217)
+Results for "icon" (20 of 218)
 
 name:        Icon
 domain:      component
@@ -10,10 +10,10 @@ command:     pnpm exec astryx component Icon
 name:        icons
 domain:      doc
 package:     @astryxdesign/cli
-title:       Unorganized › Icons
+title:       Foundations › Icons
 description: Semantic icon names available in the design system. These adapt to the active theme's icon registry.
 command:     pnpm exec astryx docs icons --index
-parent:      pnpm exec astryx docs unorganized
+parent:      pnpm exec astryx docs foundations
 
 name:        IconButton
 domain:      component

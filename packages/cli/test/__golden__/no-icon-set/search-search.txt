@@ -114,14 +114,23 @@ kind:        block
 description: Table with inline filter controls rendered directly below each column header.
 command:     pnpm exec astryx template TableInlineFilterTable --type block
 
-name:        authoring
+name:        authoring/building-blocks/templates/document-the-template/template-doc-overview
+section:     document-the-shared-fields
+domain:      doc
+package:     @astryxdesign/cli
+title:       Authoring › Building Blocks › Templates › Document the template › Template doc overview › Document the shared fields
+description: The fields below apply to every page and block. The page, block, and replacement guides add the fields unique to each.
+command:     pnpm exec astryx docs authoring/building-blocks/templates/document-the-template/template-doc-overview document-the-shared-fields
+parent:      pnpm exec astryx docs authoring/building-blocks/templates/document-the-template/template-doc-overview --index
+
+name:        authoring/field-reference
 section:     config
 domain:      doc
 package:     @astryxdesign/cli
-title:       Unorganized › Authoring Reference › astryx.config
+title:       Authoring › Field reference › astryx.config
 description: The optional astryx.config.* file at your project root. Declares which integrations to load, where to route issue links, post-codemod hooks, local debug-log and gap-report handlers, a discover source, and experimental layout components....
-command:     pnpm exec astryx docs authoring config
-parent:      pnpm exec astryx docs authoring --index
+command:     pnpm exec astryx docs authoring/field-reference config
+parent:      pnpm exec astryx docs authoring/field-reference --index
 
 name:        cli/api/enums/response-types
 domain:      doc
@@ -138,15 +147,6 @@ title:       Astryx CLI › API › Functions › discover()
 description: Browse and search integrations: the ones a project has and, through the official list and discover sources, the ones it could add.
 command:     pnpm exec astryx docs cli/api/functions/discover
 parent:      pnpm exec astryx docs cli/api/functions
-
-name:        cli/integrations/building-blocks/templates/document-the-template/template-doc-overview
-section:     document-the-shared-fields
-domain:      doc
-package:     @astryxdesign/cli
-title:       Astryx CLI › Build an integration › Building Blocks › Templates › Document the template › Template doc overview › Document the shared fields
-description: The fields below apply to every page and block. The page, block, and replacement guides add the fields unique to each.
-command:     pnpm exec astryx docs cli/integrations/building-blocks/templates/document-the-template/template-doc-overview document-the-shared-fields
-parent:      pnpm exec astryx docs cli/integrations/building-blocks/templates/document-the-template/template-doc-overview --index
 
 name:        global/problems
 section:     core-offline

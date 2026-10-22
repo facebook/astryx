@@ -320,7 +320,7 @@ const HINT_READS = [
   ['docs', 'cli'],
   ['docs', 'cli/api/functions/search'],
   ['docs', 'theme'],
-  ['docs', 'cli/integrations', 'codemods'],
+  ['docs', 'authoring', 'codemods'],
   ['search', 'token-ref', '--type', 'doc'],
   ['--help'],
   ['docs', '--help'],
@@ -395,15 +395,16 @@ describe('the docs graph', () => {
     /** @type {string[]} */
     const unreached = [];
     // Command, API, schema, enum, and authoring docs: a tree leaf, or a section
-    // of `astryx docs authoring`.
+    // of the field reference, which `astryx docs authoring <name>` reads.
     const {loaded, failed} = await loadCliSelfDocs(discoverCliSelfDocSources(CLI), CLI);
     expect(failed).toEqual([]);
     // An experimental schema is a section of its own experimental route
-    // instead (spec:AST-084 FR0).
-    // That route is a tree node: one read returns all its sections.
+    // instead (spec:AST-084 FR0); that route is a tree node, and one read
+    // returns all its sections.
     const sectionsOf = (/** @type {string} */ route) =>
       (reads.get(`${TOP} ${route} --index`) ?? reads.get(`${TOP} ${route}`))
         ?.data.sections ?? [];
+    expect(sectionsOf('authoring/field-reference').length).toBeGreaterThan(10);
     for (const {source, doc} of loaded) {
       const leaf = [...tree.nodes.values()].find(
         node => node.kind === doc.type && node.name === doc.name,
@@ -411,15 +412,17 @@ describe('the docs graph', () => {
       const route =
         doc.stability === 'experimental'
           ? EXPERIMENTAL_AUTHORING_ROUTE
-          : 'authoring';
+          : 'authoring/field-reference';
       const section = sectionsOf(route).find(
         (/** @type {any} */ s) => s.id === routeSegment(doc.name) || s.title === doc.displayName,
       );
       const ok = leaf
         ? reached(`${TOP} ${leaf.route}`)
         : section
-          ? reached(`${TOP} ${route} ${section.id}`) ||
-            (route !== 'authoring' && reached(`${TOP} ${route}`))
+          ? reached(`${TOP} authoring ${section.id}`) ||
+            reached(`${TOP} ${route} ${section.id}`) ||
+            // The walk opens the reference whole, with every section.
+            reached(`${TOP} ${route}`)
           : false;
       if (!ok) unreached.push(source);
     }
@@ -620,7 +623,7 @@ describe('the docs graph', () => {
   it("opens every search hit's command and parent", async () => {
     /** @type {string[]} */
     const broken = [];
-    for (const query of ['assertResponse', 'token-ref', 'codemod protected files', 'agent docs', 'ERR_UNKNOWN_SECTION', 'theme', 'unorganized', 'Astryx CLI']) {
+    for (const query of ['assertResponse', 'token-ref', 'codemod protected files', 'agent docs', 'ERR_UNKNOWN_SECTION', 'theme', 'foundations', 'Astryx CLI']) {
       const {data} = await search(query, {type: 'doc', limit: 20});
       for (const hit of data.results) {
         if (!hit.parent) broken.push(`"${query}": ${hit.name} has no parent`);

@@ -117,15 +117,27 @@
       },
       {
         "domain": "doc",
-        "name": "authoring",
+        "name": "authoring/building-blocks/components/describe-the-component/subcomponent",
+        "package": "@astryxdesign/cli",
+        "score": 50,
+        "reason": "docs mention \"close\"",
+        "description": "Every field is in `astryx docs authoring component-doc`.",
+        "section": "write-the-subcomponent-doc",
+        "title": "Authoring › Building Blocks › Components › Describe the component › Subcomponent › Write the subcomponent doc",
+        "command": "astryx docs authoring/building-blocks/components/describe-the-component/subcomponent write-the-subcomponent-doc",
+        "parent": "astryx docs authoring/building-blocks/components/describe-the-component/subcomponent --index"
+      },
+      {
+        "domain": "doc",
+        "name": "authoring/field-reference",
         "package": "@astryxdesign/cli",
         "score": 50,
         "reason": "docs mention \"close\"",
         "description": "The doc-type for documenting an authored/received OBJECT shape (astryx.config, a codemod payload, the doc-types themselves). Colocated as a `.doc.mjs` next to the schema it describes. Fields nest recursively, so a whole shape is one tree.",
         "section": "schema-doc",
-        "title": "Unorganized › Authoring Reference › SchemaDoc",
-        "command": "astryx docs authoring schema-doc",
-        "parent": "astryx docs authoring --index"
+        "title": "Authoring › Field reference › SchemaDoc",
+        "command": "astryx docs authoring/field-reference schema-doc",
+        "parent": "astryx docs authoring/field-reference --index"
       },
       {
         "domain": "doc",
@@ -135,7 +147,7 @@
         "reason": "docs mention \"close\"",
         "description": "The tiers are rolling, not frozen to specific versions. They track the Web Baseline year:",
         "section": "how-these-tiers-move-over-time",
-        "title": "Unorganized › Browser Support › How These Tiers Move Over Time",
+        "title": "Guides › Browser Support › How These Tiers Move Over Time",
         "command": "astryx docs browser-support how-these-tiers-move-over-time",
         "parent": "astryx docs browser-support --index"
       },
@@ -152,25 +164,13 @@
       },
       {
         "domain": "doc",
-        "name": "cli/integrations/building-blocks/components/describe-the-component/subcomponent",
-        "package": "@astryxdesign/cli",
-        "score": 50,
-        "reason": "docs mention \"close\"",
-        "description": "Every field is in `astryx docs authoring component-doc`.",
-        "section": "write-the-subcomponent-doc",
-        "title": "Astryx CLI › Build an integration › Building Blocks › Components › Describe the component › Subcomponent › Write the subcomponent doc",
-        "command": "astryx docs cli/integrations/building-blocks/components/describe-the-component/subcomponent write-the-subcomponent-doc",
-        "parent": "astryx docs cli/integrations/building-blocks/components/describe-the-component/subcomponent --index"
-      },
-      {
-        "domain": "doc",
         "name": "icons",
         "package": "@astryxdesign/cli",
         "score": 50,
         "reason": "docs mention \"close\"",
         "description": "Components that accept an icon prop use IconType: either a semantic name string or a direct SVG component. The semantic names below are resolved through the global icon registry.",
         "section": "available-names",
-        "title": "Unorganized › Icons › Available Names",
+        "title": "Foundations › Icons › Available Names",
         "command": "astryx docs icons available-names",
         "parent": "astryx docs icons --index"
       },
@@ -182,7 +182,7 @@
         "reason": "docs mention \"close\"",
         "description": "Themes can replace the default SVGs for any semantic name with the `icons` field in `defineTheme()`. This lets you swap the icon set (e.g. heroicons → lucide) without touching component code, and keeps lookup scoped to the active theme…",
         "section": "theme-overrides",
-        "title": "Unorganized › Icons › Theme Overrides",
+        "title": "Foundations › Icons › Theme Overrides",
         "command": "astryx docs icons theme-overrides",
         "parent": "astryx docs icons --index"
       },

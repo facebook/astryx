@@ -43,10 +43,15 @@ describe('authoring self-docs', () => {
     });
   });
 
-  it('builds a valid topic with one section per stable self-doc, and serves the experimental ones on their own route', async () => {
-    const topic = await buildAuthoringTopic();
+  it('builds a valid guide with one section per stable self-doc, placed under authoring, and serves the experimental ones on their own route', async () => {
+    const {placement, ...topic} = await buildAuthoringTopic();
     expect(problemsInTopic(topic)).toEqual([]);
     expect(topic.sections).toHaveLength(AUTHORING_SELF_DOCS.length - 3);
+    expect(placement).toEqual({
+      parent: 'namespace:authoring',
+      slot: 'reference',
+      order: 10,
+    });
     const experimental = await buildExperimentalAuthoringSections();
     expect(experimental.map(section => section.id)).toEqual([
       'icon-set-doc',
@@ -63,11 +68,18 @@ describe('authoring self-docs', () => {
   it(
     'is readable progressively through the docs API',
     async () => {
-      const index = await docs('authoring', undefined, {index: true});
+      const index = await docs('authoring/field-reference', undefined, {
+        index: true,
+      });
       expect(index.type).toBe('docs.index');
       expect(index.data.sections.map(s => s.id)).toContain('integration');
+      // The namespace answers a section read from the field reference, as
+      // `astryx docs authoring <name>` always has.
       const section = await docs('authoring', 'integration');
       expect(section.data.title).toBe('Astryx Integration');
+      expect(
+        (await docs('authoring/field-reference', 'integration')).data,
+      ).toEqual(section.data);
       expect(section.data.content.some(block => block.type === 'table')).toBe(
         true,
       );

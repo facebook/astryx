@@ -166,15 +166,27 @@
       },
       {
         "domain": "doc",
-        "name": "authoring",
+        "name": "authoring/building-blocks/templates/document-the-template/template-doc-overview",
+        "package": "@astryxdesign/cli",
+        "score": 90,
+        "reason": "keyword \"search\"",
+        "description": "The fields below apply to every page and block. The page, block, and replacement guides add the fields unique to each.",
+        "section": "document-the-shared-fields",
+        "title": "Authoring › Building Blocks › Templates › Document the template › Template doc overview › Document the shared fields",
+        "command": "astryx docs authoring/building-blocks/templates/document-the-template/template-doc-overview document-the-shared-fields",
+        "parent": "astryx docs authoring/building-blocks/templates/document-the-template/template-doc-overview --index"
+      },
+      {
+        "domain": "doc",
+        "name": "authoring/field-reference",
         "package": "@astryxdesign/cli",
         "score": 90,
         "reason": "keyword \"search\"",
         "description": "The optional astryx.config.* file at your project root. Declares which integrations to load, where to route issue links, post-codemod hooks, local debug-log and gap-report handlers, a discover source, and experimental layout components.…",
         "section": "config",
-        "title": "Unorganized › Authoring Reference › astryx.config",
-        "command": "astryx docs authoring config",
-        "parent": "astryx docs authoring --index"
+        "title": "Authoring › Field reference › astryx.config",
+        "command": "astryx docs authoring/field-reference config",
+        "parent": "astryx docs authoring/field-reference --index"
       },
       {
         "domain": "doc",
@@ -197,18 +209,6 @@
         "title": "Astryx CLI › API › Functions › discover()",
         "command": "astryx docs cli/api/functions/discover",
         "parent": "astryx docs cli/api/functions"
-      },
-      {
-        "domain": "doc",
-        "name": "cli/integrations/building-blocks/templates/document-the-template/template-doc-overview",
-        "package": "@astryxdesign/cli",
-        "score": 90,
-        "reason": "keyword \"search\"",
-        "description": "The fields below apply to every page and block. The page, block, and replacement guides add the fields unique to each.",
-        "section": "document-the-shared-fields",
-        "title": "Astryx CLI › Build an integration › Building Blocks › Templates › Document the template › Template doc overview › Document the shared fields",
-        "command": "astryx docs cli/integrations/building-blocks/templates/document-the-template/template-doc-overview document-the-shared-fields",
-        "parent": "astryx docs cli/integrations/building-blocks/templates/document-the-template/template-doc-overview --index"
       },
       {
         "domain": "doc",

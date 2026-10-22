@@ -81,7 +81,7 @@ export async function gatherDocs(cwd) {
             ),
           }
         : read;
-    // A flat topic lives in the Unorganized level; its hits say so, and name
+    // A flat topic lives in its topic level; its hits say so, and name
     // the package each section came from.
     const home = tree?.get(entry.name);
     const placed = home?.ref?.flatTopic === entry.name ? home : null;
@@ -215,7 +215,7 @@ function isExperimentalNode(tree, node) {
  * @param {string} [path] - where the topic lives in the docs tree, as titles
  *   joined by ` › `; a flat topic is its own title
  * @param {string} [parent] - the command that opens the level above the
- *   topic: its namespace, or the Unorganized level for a flat topic
+ *   topic: its namespace, or the topic level for a flat topic
  * @param {string} [pkg] - the npm package that authored the topic
  * @param {(key: string) => string} [sectionPackage] - the npm package a
  *   section came from: an extension's section names the extension's package
@@ -236,7 +236,7 @@ function topicCandidates(
   const docTitle = path || doc?.title || title || name;
   const split = sections.length > 1;
   // A placed guide also answers to its last route segment's words:
-  // `quick start` is cli/integrations/quick-start.
+  // `quick start` is authoring/quick-start.
   const leaf = name.slice(name.lastIndexOf('/') + 1);
   /** @type {Candidate[]} */
   const out = [

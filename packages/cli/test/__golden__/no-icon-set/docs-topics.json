@@ -6,11 +6,6 @@
       "package": "@astryxdesign/cli"
     },
     {
-      "topic": "authoring",
-      "description": "Every file an integration author writes, field by field: the integration manifest, astryx.config, codemods, identity, and each doc type. The step-by-step guides are under `astryx docs cli/integrations`.",
-      "package": "@astryxdesign/cli"
-    },
-    {
       "topic": "browser-support",
       "description": "What browsers Astryx targets, which modern platform features it depends on, and how to support older browsers for your own audience.",
       "package": "@astryxdesign/cli"
@@ -103,30 +98,7 @@
         "token-utilities: Token Utilities",
         "usetheme-hook: useTheme Hook"
       ],
-      "digest": "dcb8e8d015dc58197f961174f25af513df92a8bcaa144402ad84f6a4fc264e29"
-    },
-    "authoring": {
-      "sections": [
-        "integration: Astryx Integration",
-        "config: astryx.config",
-        "debug-event: DebugEvent",
-        "gap-report-handler: GapReportHandler",
-        "discover-source: DiscoverSource",
-        "codemod: Astryx Codemod",
-        "provider-identity: Provider and artifact identity",
-        "authored-doc-graph-fields: Authored doc graph fields",
-        "component-doc: ComponentDoc",
-        "hook-doc: HookDoc",
-        "function-doc: FunctionDoc",
-        "command-doc: CommandDoc",
-        "enum-doc: EnumDoc",
-        "namespace-doc: NamespaceDoc",
-        "reference-doc: ReferenceDoc",
-        "schema-doc: SchemaDoc",
-        "template-doc: TemplateDoc",
-        "integration-template-doc: IntegrationTemplateDoc",
-        "theme-doc: ThemeDoc"
-      ]
+      "digest": "58a8752362798d72a0d7de97bd35a9e29725669167867aca81f74b8f7b6ee2df"
     },
     "browser-support": {
       "sections": [
@@ -138,7 +110,7 @@
         "supporting-older-browsers: Supporting Older Browsers",
         "how-these-tiers-move-over-time: How These Tiers Move Over Time"
       ],
-      "digest": "c9af1cabb6f660909c97b4ba8c4b055c1a0ebf9b5f742ac0d9f169e808d90bf8"
+      "digest": "283fd541884c526ef70d90e5cd435600a00c551419f753865523081b1548bde2"
     },
     "color": {
       "sections": [
@@ -147,7 +119,7 @@
         "usage: Use color tokens in StyleX",
         "best-practices: Best Practices"
       ],
-      "digest": "1a2c1edc6dd4989c0b03bef45171f6bc3acb147c23a1fa79c46683999bd2be53"
+      "digest": "355e47e582c883fd8016d594188e2b84806ae56a0ba72886792ccfaa912c9d9a"
     },
     "elevation": {
       "sections": [
@@ -158,7 +130,7 @@
         "usage: Usage",
         "best-practices: Best Practices"
       ],
-      "digest": "e59b363b460ce8422d5c0172be4e4f8873cb19a647de338adf6c7f4e5ecbe49a"
+      "digest": "69bc408bf791d4bf3a90cdd0e5a3d922466e9da6bafdbb4c02b346792c56e89d"
     },
     "getting-started": {
       "sections": [
@@ -171,7 +143,7 @@
         "example-apps: Example Apps",
         "explore-the-cli: Explore the CLI"
       ],
-      "digest": "daea0f59362d33eaf096c6ed58b4379964e123f89fae58e5c0262ed0cdba1e78"
+      "digest": "c11d38c8b6f925dd774d9b4314eaf5cc7cd5232964a23d09cd45d0273c2dc91b"
     },
     "icons": {
       "sections": [
@@ -180,7 +152,7 @@
         "theme-overrides: Theme Overrides",
         "component-and-library-icons: Component and Library Icons"
       ],
-      "digest": "aad2d01bcb211fd4f4764895a27aaeb7d5654661a0438c62e443f71d3598f6d7"
+      "digest": "4324ea34820fcf2a407765b4b53a3788e78e003cfba0f7d692483339dbf26bc5"
     },
     "illustrations": {
       "sections": [
@@ -188,7 +160,7 @@
         "guidelines: Guidelines",
         "placement: Placement"
       ],
-      "digest": "77338e22e247ce6f8ee5d2eb7b491cb1d747dec83b188c395b956c3d0583e85e"
+      "digest": "0aeaae5b2f621369d9b2a0a5d60261454676585e3cde1e557321972efda7eedd"
     },
     "is-my-code-good": {
       "sections": [
@@ -199,7 +171,7 @@
         "ask-an-agent: Ask an agent",
         "verify-and-repeat: Verify, improve, and repeat"
       ],
-      "digest": "8ddd69fec1d13b2aed57f7c043c0717bd389d7fadc294843043019e59d7723b1"
+      "digest": "bad81a1608a6781a847ef130fbe916e1e056f42e3ec45f7cf383136095910a0a"
     },
     "motion": {
       "sections": [
@@ -213,7 +185,7 @@
         "usage: Animate with motion tokens",
         "best-practices: Best Practices"
       ],
-      "digest": "36284b389ea018d6588dc82f883371f5454831020b640354245fbd955bd03485"
+      "digest": "086c03d399a5b2546f1be5bfdf8e2a6d040a74ab2705d4718f7ff24ee4b0b3f8"
     },
     "principles": {
       "sections": [
@@ -223,7 +195,7 @@
         "anti-patterns: Anti-Patterns",
         "design-tokens: Design Tokens"
       ],
-      "digest": "a73ac1da1d5747f11a8c0776c2642f03b490cf9cee8474f3fb632d0b7d0c70ab"
+      "digest": "4fefcbcc0af3e559dbcee499ec816092a6b49deb6946e6f9d6490d60442cccca"
     },
     "shape": {
       "sections": [
@@ -232,7 +204,7 @@
         "concentric-radius: Concentric Radius",
         "best-practices: Best Practices"
       ],
-      "digest": "2aed2eaead671a4a448d7f62aad48633358346552c26fbd162ae644a1f985969"
+      "digest": "0ae5e6ee559c9708c0d92764eaf1955193a2e66c569c8bca0fdb69c81ff86b9c"
     },
     "spacing": {
       "sections": [
@@ -241,7 +213,7 @@
         "usage: Usage",
         "best-practices: Best Practices"
       ],
-      "digest": "cc847c7f4b95f846e5c1665855d9b6e14c8123811fa15d8477ceea5877f198f2"
+      "digest": "4d7a60a5204d7ae251876e1eda8b4f6397f2a6dbc8e938b9e75e661e33fcf6d9"
     },
     "styling-overview": {
       "sections": [
@@ -253,7 +225,7 @@
         "what-each-file-does: What each import does",
         "further-reading: Further reading"
       ],
-      "digest": "006bdeb57afbf3eed940577d6b1703e31f93d0259a777d71aea1d5aedbcec801"
+      "digest": "3a82d1eadff0b31910391e56157af102600e000738ae94d575267b006a9d3618"
     },
     "theme": {
       "sections": [
@@ -262,7 +234,7 @@
         "light-dark-mode: Dark mode",
         "integration-themes: Integration themes"
       ],
-      "digest": "e7b1ce765a42274ebf5b764449bf64af3f8e3457d32005321d71cd0e5de79527"
+      "digest": "4f3aa3e73e024c3f7c207f3c6b2999c61b57b33d168e216c5340df68b525091f"
     },
     "use-a-theme": {
       "sections": [
@@ -275,7 +247,7 @@
         "nesting-themes: Nested themes",
         "runtime-vs-built-themes: Runtime vs Built Themes"
       ],
-      "digest": "d9a2d0a7bf59bdb3bfe2484d6c5df10031a48670d4b330917d6c9df1a916c448"
+      "digest": "db6dae57e9c082ebad4bfede16cb7ebfa41788353b27cc8cdd27d09c5ec1a306"
     },
     "working-with-ai": {
       "sections": [
@@ -289,7 +261,7 @@
         "mcp-server: MCP Server",
         "global-mode: In global mode"
       ],
-      "digest": "34cde5e4f808052dd47e04b015efe4c190d7194e4e3741361f6c59be980ec7ea"
+      "digest": "0248c6f393b5e63b5575088522624ae310d183c29b290116bcbf733d3538775b"
     }
   }
 }

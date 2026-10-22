@@ -3,7 +3,7 @@
   "type": "search",
   "data": {
     "query": "icon",
-    "matchCount": 217,
+    "matchCount": 218,
     "results": [
       {
         "domain": "component",
@@ -22,9 +22,9 @@
         "score": 99,
         "reason": "plural of the name",
         "description": "Semantic icon names available in the design system. These adapt to the active theme's icon registry.",
-        "title": "Unorganized › Icons",
+        "title": "Foundations › Icons",
         "command": "astryx docs icons --index",
-        "parent": "astryx docs unorganized"
+        "parent": "astryx docs foundations"
       },
       {
         "domain": "component",

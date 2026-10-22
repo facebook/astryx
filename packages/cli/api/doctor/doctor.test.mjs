@@ -652,7 +652,7 @@ describe('checkAuthoringDocs', () => {
   it('passes when every authoring self-doc is reachable and fits one read', async () => {
     const c = await checkAuthoringDocs();
     expect(c).toMatchObject({id: 'authoring-docs', status: 'pass'});
-    expect(c.message).toContain(formatCliCommand('docs authoring'));
+    expect(c.message).toContain(formatCliCommand('docs authoring/field-reference'));
   }, SLOW);
 });
 
@@ -681,7 +681,7 @@ describe('checkCliDocs', () => {
         label: 'CLI docs',
         status: 'pass',
         // Experimental docs are checked but not counted (spec:AST-017 FR27).
-        message: `All ${audit.docs - audit.experimental.docs} CLI docs are readable: ${audit.tree - audit.experimental.tree} in the \`${formatCliCommand('docs cli')}\` tree and ${audit.authoring - audit.experimental.authoring} in \`${formatCliCommand('docs authoring')}\`.`,
+        message: `All ${audit.docs - audit.experimental.docs} CLI docs are readable: ${audit.tree - audit.experimental.tree} in the \`${formatCliCommand('docs cli')}\` tree and ${audit.authoring - audit.experimental.authoring} in \`${formatCliCommand('docs authoring/field-reference')}\`.`,
       });
     },
     SLOW,
@@ -791,7 +791,7 @@ describe('checkDocsTree', () => {
 describe('checkAuthoringDocs against the public authoring surface', () => {
   const NAMESPACE = 'doctypes/namespace/namespace.doc.mjs';
   const NAMESPACE_TYPES =
-    `NamespaceDoc, NamespaceProviderScope, NamespaceSlotAcceptance, NamespaceSlot, NamespaceAdoptionSource, NamespaceAdoptionRule from doctypes/namespace/type.ts have no doc in \`${formatCliCommand('docs authoring')}\``;
+    `NamespaceDoc, NamespaceProviderScope, NamespaceSlotAcceptance, NamespaceSlot, NamespaceAdoptionSource, NamespaceAdoptionRule from doctypes/namespace/type.ts have no doc in \`${formatCliCommand('docs authoring/field-reference')}\``;
   const SURFACE_FIX =
     'Put a self-doc beside each module whose types @astryxdesign/cli/authoring exports and list it in AUTHORING_SELF_DOCS; export what each listed self-doc documents, or remove that self-doc.';
 
@@ -823,7 +823,7 @@ describe('checkAuthoringDocs against the public authoring surface', () => {
         status: 'pass',
         // The three experimental icon-set schemas are checked but not
         // counted (spec:AST-017 FR27).
-        message: `All ${AUTHORING_SELF_DOCS.length - 3} authoring schemas are readable in \`${formatCliCommand('docs authoring')}\`.`,
+        message: `All ${AUTHORING_SELF_DOCS.length - 3} authoring schemas are readable in \`${formatCliCommand('docs authoring/field-reference')}\`.`,
       });
     },
     SLOW,
@@ -852,7 +852,7 @@ describe('checkAuthoringDocs against the public authoring surface', () => {
       });
       expect(c.status).toBe('fail');
       expect(c.message).toBe(
-        `2 problems: ${NAMESPACE} is not in \`${formatCliCommand('docs authoring')}\`; ${NAMESPACE_TYPES}: ${NAMESPACE} is not listed in AUTHORING_SELF_DOCS`,
+        `2 problems: ${NAMESPACE} is not in \`${formatCliCommand('docs authoring/field-reference')}\`; ${NAMESPACE_TYPES}: ${NAMESPACE} is not listed in AUTHORING_SELF_DOCS`,
       );
     },
     SLOW,
@@ -861,7 +861,7 @@ describe('checkAuthoringDocs against the public authoring surface', () => {
   it(
     "fails when the topic's index no longer exposes the NamespaceDoc section",
     async () => {
-      const index = await docs('authoring', undefined, {index: true});
+      const index = await docs('authoring/field-reference', undefined, {index: true});
       const topicKeys = new Set(
         index.data.sections
           .map((/** @type {any} */ s) => s.id)
@@ -951,7 +951,7 @@ describe('checkAuthoringDocs against the public authoring surface', () => {
       expect(c.fix).toBe(SURFACE_FIX);
       expect(c.message).toMatch(
         new RegExp(
-          `^[A-Za-z, ]+ from ${escape(module)} have no doc in \`${escape(formatCliCommand('docs authoring'))}\`: no self-doc sits beside ${escape(module)}$`,
+          `^[A-Za-z, ]+ from ${escape(module)} have no doc in \`${escape(formatCliCommand('docs authoring/field-reference'))}\`: no self-doc sits beside ${escape(module)}$`,
         ),
       );
       for (const name of names) {
@@ -994,7 +994,7 @@ describe('checkAuthoringDocs against the public authoring surface', () => {
         expect(await checkAuthoringDocs()).toMatchObject({
           status: 'fail',
           message:
-            `\`${formatCliCommand('docs authoring')}\` could not be read: no built-in docs`,
+            `\`${formatCliCommand('docs authoring/field-reference')}\` could not be read: no built-in docs`,
           fix: SURFACE_FIX,
         });
       } finally {
@@ -1015,7 +1015,7 @@ describe('checkAuthoringDocs against the public authoring surface', () => {
       const c = await checkAuthoringDocs(undefined, {root});
       expect(c.status).toBe('fail');
       expect(c.message).toContain(
-        `@astryxdesign/cli/authoring exports no types, so nothing was compared with \`${formatCliCommand('docs authoring')}\``,
+        `@astryxdesign/cli/authoring exports no types, so nothing was compared with \`${formatCliCommand('docs authoring/field-reference')}\``,
       );
     },
     SLOW,

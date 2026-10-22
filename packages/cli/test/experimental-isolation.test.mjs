@@ -24,11 +24,20 @@ import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import {createHash} from 'node:crypto';
+import {pathToFileURL} from 'node:url';
 import {CLI_ROOT} from '../foundation/fs/paths.mjs';
 import {writeIconSetProject} from '../test-utils/icon-set-fixture.mjs';
 
 const REPO_ROOT = path.resolve(CLI_ROOT, '..', '..');
-const CLI_BIN = path.join(CLI_ROOT, 'clients', 'cli', 'bin', 'astryx.mjs');
+// Goldens come from the CLI without the feature: point these at a checkout of
+// main to rewrite them (`GOLDEN_CLI_BIN=<main>/packages/cli/clients/cli/bin/
+// astryx.mjs GOLDEN_CLI_ROOT=<main>/packages/cli vitest run -u` on this file).
+const CLI_BIN =
+  process.env.GOLDEN_CLI_BIN ??
+  path.join(CLI_ROOT, 'clients', 'cli', 'bin', 'astryx.mjs');
+const GOLDEN_REPO = process.env.GOLDEN_CLI_ROOT
+  ? path.resolve(process.env.GOLDEN_CLI_ROOT, '..', '..')
+  : REPO_ROOT;
 const GOLDEN = path.join(CLI_ROOT, 'test', '__golden__', 'no-icon-set');
 
 /** @type {string} */
@@ -46,7 +55,13 @@ function astryx(args, cwd = project) {
   });
   /** @param {string} text */
   const clean = text =>
-    text.split(cwd).join('<project>').split(REPO_ROOT).join('<repo>');
+    text
+      .split(cwd)
+      .join('<project>')
+      .split(REPO_ROOT)
+      .join('<repo>')
+      .split(GOLDEN_REPO)
+      .join('<repo>');
   return {
     status: result.status,
     stdout: clean(result.stdout),
@@ -104,9 +119,7 @@ afterAll(() => {
 
 describe('with no icon set, stable output is unchanged', () => {
   // Every stable docs topic, against the CLI without the feature: the
-  // listing, each topic's sections, and a digest of each topic's JSON. The
-  // `authoring` topic gains the stable `stability` field of every doc kind,
-  // so only its sections are compared: an experimental schema never adds one.
+  // listing, each topic's sections, and a digest of each topic's JSON.
   it('every stable docs topic: the listing, its sections, and its JSON', async () => {
     const list = JSON.parse(astryx(['docs', '--json']).stdout);
     /** @type {Record<string, {sections: string[], digest?: string}>} */
@@ -119,9 +132,7 @@ describe('with no icon set, stable output is unchanged', () => {
           (/** @type {any} */ section) =>
             `${section.id ?? section.key}: ${section.title}`,
         ),
-        ...(topic === 'authoring'
-          ? {}
-          : {digest: createHash('sha256').update(out).digest('hex')}),
+        digest: createHash('sha256').update(out).digest('hex'),
       };
     }
     await expect(
@@ -130,6 +141,75 @@ describe('with no icon set, stable output is unchanged', () => {
   }, 120_000);
 
   // Words an icon, an icon definition, or the icon-set docs would answer.
+  // Every stable node of the docs tree outside `cli`, the same way: each
+  // namespace's children and each guide's sections, and a digest of each
+  // read. The field reference gains the stable `stability` field of every
+  // doc kind, so it is compared by sections.
+  it('every stable docs tree node: its children or sections, and its JSON', async () => {
+    const root = process.env.GOLDEN_CLI_ROOT ?? CLI_ROOT;
+    const {docs} = await import(
+      pathToFileURL(path.join(root, 'api', 'docs', 'docs.mjs')).href
+    );
+    // The `cli` namespace is FR0's own case: its listing gains the
+    // experimental group, and the experimental commands and API functions
+    // document themselves on its routes, each marked experimental. Every
+    // other namespace answers exactly as it does without the feature.
+    const experimental = (/** @type {string} */ route) =>
+      route === 'cli' || route.startsWith('cli/');
+    /** @param {any} value */
+    const clean = value =>
+      JSON.stringify(value)
+        .split(project)
+        .join('<project>')
+        .split(path.resolve(root, '..', '..'))
+        .join('<repo>');
+    const list = await docs(undefined, undefined, {cwd: project});
+    const queue = (list.meta?.namespaces ?? []).map(
+      (/** @type {any} */ entry) => entry.topic,
+    );
+    /** @type {Record<string, any>} */
+    const nodes = {};
+    while (queue.length > 0) {
+      const route = queue.shift();
+      if (route in nodes || experimental(route)) continue;
+      const res = await docs(route, undefined, {cwd: project});
+      if (res.type === 'docs.node') {
+        for (const slot of res.data.slots) {
+          slot.children = slot.children.filter(
+            (/** @type {any} */ child) => !experimental(child.route),
+          );
+          for (const child of slot.children) queue.push(child.route);
+        }
+      }
+      nodes[route] = {
+        type: res.type,
+        ...(res.type === 'docs.node'
+          ? {
+              children: res.data.slots.flatMap((/** @type {any} */ slot) =>
+                slot.children.map((/** @type {any} */ c) => c.route),
+              ),
+            }
+          : {
+              sections: (res.data.sections ?? []).map(
+                (/** @type {any} */ section) =>
+                  `${section.id ?? section.key}: ${section.title}`,
+              ),
+            }),
+        ...(route === 'authoring/field-reference'
+          ? {}
+          : {digest: createHash('sha256').update(clean(res)).digest('hex')}),
+      };
+    }
+    const sorted = Object.fromEntries(
+      Object.keys(nodes)
+        .sort()
+        .map(route => [route, nodes[route]]),
+    );
+    await expect(`${JSON.stringify(sorted, null, 2)}\n`).toMatchFileSnapshot(
+      path.join(GOLDEN, 'docs-tree.json'),
+    );
+  }, 120_000);
+
   it.each(['delete', 'close', 'icon', 'trash can', 'search'])(
     'search %s, text and JSON',
     async query => {

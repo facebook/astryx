@@ -1,0 +1,1405 @@
+{
+  "author-a-theme": {
+    "type": "docs.detail",
+    "sections": [
+      "creating-a-custom-theme: Custom themes",
+      "palette: Generate a palette",
+      "definetheme: defineTheme",
+      "extending-a-theme: Extending a Theme",
+      "component-style-overrides: Component Style Overrides",
+      "custom-variants: Custom Variants",
+      "theme-adaptations: Theme Adaptations",
+      "adaptation-rules: Adaptation order and validation",
+      "building-themes-for-production: Build a theme",
+      "icon-registry: Built themes with an icon registry",
+      "building-a-theme-family: Building a Theme Family",
+      "token-utilities: Token Utilities",
+      "usetheme-hook: useTheme Hook"
+    ],
+    "digest": "01908d0309637aa318cece68a814e3afe7a4b449f082fb090d4ece1c0e229810"
+  },
+  "authoring": {
+    "type": "docs.node",
+    "children": [
+      "authoring/quick-start",
+      "authoring/building-blocks",
+      "authoring/global-integrations",
+      "authoring/ship",
+      "authoring/help",
+      "authoring/field-reference"
+    ],
+    "digest": "4833ec48943bd50f45856432cf12a34a694bad418ce8016b8ba0d31275967dec"
+  },
+  "authoring/building-blocks": {
+    "type": "docs.node",
+    "children": [
+      "authoring/building-blocks/components",
+      "authoring/building-blocks/templates",
+      "authoring/building-blocks/themes",
+      "authoring/building-blocks/docs",
+      "authoring/building-blocks/codemods",
+      "authoring/building-blocks/configuration"
+    ],
+    "digest": "a5f8a37a2d7a0574a084ad30e2c56c93d800f0ab37685900e9117e730a463233"
+  },
+  "authoring/building-blocks/codemods": {
+    "type": "docs.detail",
+    "sections": [
+      "add-a-codemod: Add a codemod",
+      "write-the-transform: Write the transform",
+      "which-codemods-run: Choose when a codemod runs",
+      "run-codemods-in-an-app: Run codemods in an app",
+      "global-mode: In global mode"
+    ],
+    "digest": "830fabfba9a3db5de529a4d62b1f68db47bf5e19275c3589458f0b25fbea39c2"
+  },
+  "authoring/building-blocks/components": {
+    "type": "docs.node",
+    "children": [
+      "authoring/building-blocks/components/add-a-component",
+      "authoring/building-blocks/components/describe-the-component",
+      "authoring/building-blocks/components/component-imports",
+      "authoring/building-blocks/components/see-it-in-an-app",
+      "authoring/building-blocks/components/replace-a-core-component"
+    ],
+    "digest": "cabd757606075746f538dd9cc6988571bb9fda925e4e216d4a402f8fdb0eab49"
+  },
+  "authoring/building-blocks/components/add-a-component": {
+    "type": "docs.detail",
+    "sections": [
+      "pick-a-component-name: Pick a component name",
+      "run-the-add-command: Run the add command",
+      "document-an-existing-component: Document a component you already have",
+      "global-mode: In global mode"
+    ],
+    "digest": "6d650097a916c7d26af3e04e88d0ea8c2ce32db2bf2298b38db039056a65221a"
+  },
+  "authoring/building-blocks/components/component-imports": {
+    "type": "docs.detail",
+    "sections": [
+      "export-the-component: Export the component",
+      "verify-the-packed-import: Verify the packed import",
+      "global-mode: In global mode"
+    ],
+    "digest": "945d9b67d5ccf2916aeb3ac37167ec7b5bad44d036b2fb6d5b9816edbfd62d4d"
+  },
+  "authoring/building-blocks/components/describe-the-component": {
+    "type": "docs.node",
+    "children": [
+      "authoring/building-blocks/components/describe-the-component/single-component",
+      "authoring/building-blocks/components/describe-the-component/component-family",
+      "authoring/building-blocks/components/describe-the-component/subcomponent",
+      "authoring/building-blocks/components/describe-the-component/check-the-props"
+    ],
+    "digest": "a57964749bf450e7711032c5df689ee9a06cddf98e903750c64e1ae9521cf93f"
+  },
+  "authoring/building-blocks/components/describe-the-component/check-the-props": {
+    "type": "docs.detail",
+    "sections": [
+      "run-the-props-check: Run the props check",
+      "fix-each-finding: Fix each finding",
+      "write-types-the-check-can-judge: Write types the check can judge",
+      "when-a-component-is-not-compared: When a component is not compared"
+    ],
+    "digest": "47da83d0f3e6cd47cb21bf6059cf226a12258ad4b2eb9cac5625173ee2e56348"
+  },
+  "authoring/building-blocks/components/describe-the-component/component-family": {
+    "type": "docs.detail",
+    "sections": [
+      "choose-the-family-shape: Choose the family shape",
+      "document-the-family-inline: Document the family inline",
+      "give-a-member-its-own-file: Give a member its own file"
+    ],
+    "digest": "c042ff24f53cd52623d82f48a414b0365c7bdb3c6969dd322abd1eddb4b12c58"
+  },
+  "authoring/building-blocks/components/describe-the-component/single-component": {
+    "type": "docs.detail",
+    "sections": [
+      "start-from-the-generated-doc: Start from the generated doc",
+      "explain-when-to-use-it: Explain when to use it",
+      "document-every-public-prop: Document every public prop",
+      "add-focused-examples: Add focused examples",
+      "read-the-result: Read the result"
+    ],
+    "digest": "6045f0a0dd0bfa240fbb391ecbd737eee3e31ce8add9b47858f4f96d6781c34e"
+  },
+  "authoring/building-blocks/components/describe-the-component/subcomponent": {
+    "type": "docs.detail",
+    "sections": [
+      "choose-a-separate-doc: Choose a separate doc",
+      "reference-it-from-the-parent: Reference it from the parent",
+      "write-the-subcomponent-doc: Write the subcomponent doc"
+    ],
+    "digest": "41f496b0063b25a3366e79d2b363dbb3df6c56f33a048555c412a233cd1c626c"
+  },
+  "authoring/building-blocks/components/replace-a-core-component": {
+    "type": "docs.detail",
+    "sections": [
+      "decide-whether-to-replace: Decide whether to replace",
+      "set-the-replacement: Set the replacement",
+      "check-replacement-resolution: Check replacement resolution",
+      "global-mode: In global mode"
+    ],
+    "digest": "3d46234e8308800b692903620be5f9246f65b01212a3318d12234b12bdc6b2f7"
+  },
+  "authoring/building-blocks/components/see-it-in-an-app": {
+    "type": "docs.detail",
+    "sections": [
+      "read-the-installed-component: Read the installed component",
+      "test-the-packed-package: Test the packed package",
+      "global-mode: In global mode"
+    ],
+    "digest": "754e70c578bd8c3ed908003b796fdc95d29bc24ff19c47414f123c240119b0c0"
+  },
+  "authoring/building-blocks/configuration": {
+    "type": "docs.node",
+    "children": [
+      "authoring/building-blocks/configuration/agent-guidance",
+      "authoring/building-blocks/configuration/cli-command",
+      "authoring/building-blocks/configuration/debug-and-gap-reports"
+    ],
+    "digest": "b8ef80768e59aef8d083e43544c1012d0fced930505b0494f002571e0dc88a62"
+  },
+  "authoring/building-blocks/configuration/agent-guidance": {
+    "type": "docs.detail",
+    "sections": [
+      "add-a-guidance-line: Add a line of guidance",
+      "keep-within-the-limits: Keep within the limits",
+      "see-what-agents-read: See what agents read",
+      "refresh-the-block: Refresh the block in an app",
+      "global-mode: In global mode"
+    ],
+    "digest": "b040954284d5037b54dc8e6514307642769869d82a6106a3cf5cb183afa16260"
+  },
+  "authoring/building-blocks/configuration/cli-command": {
+    "type": "docs.detail",
+    "sections": [
+      "when-to-set-it: When to set it",
+      "set-it: Set it",
+      "how-the-cli-picks: How the CLI picks the command",
+      "when-two-packages-disagree: When two packages disagree",
+      "check-it: Check it",
+      "global-mode: In global mode"
+    ],
+    "digest": "6f444ff1259aa3aa152a7914d48d6db753d784e147ba7943823275859ee65fe2"
+  },
+  "authoring/building-blocks/configuration/debug-and-gap-reports": {
+    "type": "docs.detail",
+    "sections": [
+      "record-runs-with-debug: Record runs with debug",
+      "turn-off-debug-in-an-app: Turn off debug in an app",
+      "handle-gap-reports: Handle gap reports",
+      "ask-before-filing-in-public: Ask before filing in public",
+      "fall-back-to-issues-url: Fall back to issuesUrl",
+      "choose-a-destination: Let the person choose where a report goes",
+      "global-mode: In global mode"
+    ],
+    "digest": "5a587a7550672692db9961630d3d73d0c892beb074ede793069ed69006999f79"
+  },
+  "authoring/building-blocks/docs": {
+    "type": "docs.node",
+    "children": [
+      "authoring/building-blocks/docs/add-a-topic",
+      "authoring/building-blocks/docs/sections-and-placement",
+      "authoring/building-blocks/docs/links",
+      "authoring/building-blocks/docs/extend-or-replace",
+      "authoring/building-blocks/docs/short-and-findable",
+      "authoring/building-blocks/docs/check-your-docs"
+    ],
+    "digest": "3441512008c1935a83e27aecdeb75f771e05f307f83ba30f8f55ff83345e6274"
+  },
+  "authoring/building-blocks/docs/add-a-topic": {
+    "type": "docs.detail",
+    "sections": [
+      "add-a-topic-with-the-cli: Add a topic with the CLI",
+      "write-the-sections: Write the sections",
+      "write-commands-without-a-runner: Write commands without a runner",
+      "pick-the-doc-kind: Pick the doc kind",
+      "keep-topics-in-the-docs-root: Keep topics in the docs root",
+      "global-mode: In global mode"
+    ],
+    "digest": "cdf726f4a26d9dbd53b0d5ebe2768121dfb6ae598f57c25013b278d78387ab53"
+  },
+  "authoring/building-blocks/docs/check-your-docs": {
+    "type": "docs.detail",
+    "sections": [
+      "run-the-docs-check: Run the docs check",
+      "know-what-fails-the-check: Know what fails the check",
+      "check-each-doc-against-its-type: Check each doc against its type",
+      "check-read-size: Check read size",
+      "check-the-cli-peer: Check the CLI peer"
+    ],
+    "digest": "93b7c4deb45b7412b9a48a06de54a0972bcc66fa3fea8bc8c9f09b80701b385d"
+  },
+  "authoring/building-blocks/docs/extend-or-replace": {
+    "type": "docs.detail",
+    "sections": [
+      "replace-a-topic: Replace a topic",
+      "extend-a-topic: Extend a topic",
+      "check-overlaps-with-core-topics: Check overlaps with Core topics",
+      "global-mode: In global mode"
+    ],
+    "digest": "6e32cf1e165e371ba1602dea98e2cb0b5773627e6ec03fef4ca0fd9cf47e1e3d"
+  },
+  "authoring/building-blocks/docs/links": {
+    "type": "docs.detail",
+    "sections": [
+      "link-another-doc: Link another doc",
+      "link-another-packages-docs: Link another package's docs",
+      "fix-a-link-that-names-no-doc: Fix a link that names no doc"
+    ],
+    "digest": "a391db2709cb43e184c624c60774fb8550ec6bcd89b0a9393b2a8eef34613539"
+  },
+  "authoring/building-blocks/docs/sections-and-placement": {
+    "type": "docs.detail",
+    "sections": [
+      "add-a-docs-section: Add a docs section",
+      "place-a-doc: Place a doc",
+      "fix-a-failed-placement: Fix a failed placement"
+    ],
+    "digest": "a9585ff0fde72ebd5d59ef609df95651e11ad039241e7a65919c0decf60335bf"
+  },
+  "authoring/building-blocks/docs/short-and-findable": {
+    "type": "docs.detail",
+    "sections": [
+      "keep-each-read-short: Keep each read short",
+      "lead-with-the-summary: Lead with the summary",
+      "make-docs-findable: Make docs findable",
+      "test-with-search: Test with search"
+    ],
+    "digest": "bae13ce872c234e38933c0d591a9cf4f77a43f3df132e168a469761e03716c2a"
+  },
+  "authoring/building-blocks/templates": {
+    "type": "docs.node",
+    "children": [
+      "authoring/building-blocks/templates/start-a-template",
+      "authoring/building-blocks/templates/document-the-template",
+      "authoring/building-blocks/templates/build-the-template",
+      "authoring/building-blocks/templates/write-good-templates"
+    ],
+    "digest": "7856a817cdf35847e0ea5faab73d2aaa81f517ca6433c8a9c8c59b5fea5fd247"
+  },
+  "authoring/building-blocks/templates/build-the-template": {
+    "type": "docs.node",
+    "children": [
+      "authoring/building-blocks/templates/build-the-template/write-the-template-file",
+      "authoring/building-blocks/templates/build-the-template/template-assets",
+      "authoring/building-blocks/templates/build-the-template/package-and-test"
+    ],
+    "digest": "bef37744658c6f38a0208136cc9f19401a0d603d567630495939587c925b5d5c"
+  },
+  "authoring/building-blocks/templates/build-the-template/package-and-test": {
+    "type": "docs.node",
+    "children": [
+      "authoring/building-blocks/templates/build-the-template/package-and-test/export-template-assets",
+      "authoring/building-blocks/templates/build-the-template/package-and-test/verify-packed-template",
+      "authoring/building-blocks/templates/build-the-template/package-and-test/test-template-in-app"
+    ],
+    "digest": "baec86c7d3fe88278acf9f80ce4fd7b44a70d4b83b25aad4e6d513ae10e53843"
+  },
+  "authoring/building-blocks/templates/build-the-template/package-and-test/export-template-assets": {
+    "type": "docs.detail",
+    "sections": [
+      "keep-the-generated-template-export: Keep the generated template export",
+      "export-package-owned-support-files: Export package-owned support files",
+      "include-every-file: Include every file",
+      "declare-what-the-copied-file-imports: Declare what the copied file imports"
+    ],
+    "digest": "4a2647a614fb13b5abab675c32726fa6367fb0b5819bdb516d82379f4645153e"
+  },
+  "authoring/building-blocks/templates/build-the-template/package-and-test/test-template-in-app": {
+    "type": "docs.detail",
+    "sections": [
+      "install-the-packed-package: Install the packed package",
+      "copy-the-template: Copy the template",
+      "build-every-supported-app: Build every supported app",
+      "render-the-behavior-matrix: Render the behavior matrix",
+      "grade-the-result: Grade the result"
+    ],
+    "digest": "256d9e103bcbc6232520067bdf78f650c58c05f3b66e5940fd27b768c0f499f4"
+  },
+  "authoring/building-blocks/templates/build-the-template/package-and-test/verify-packed-template": {
+    "type": "docs.detail",
+    "sections": [
+      "run-the-package-check: Run the package check",
+      "know-what-it-does-not-prove: Know what it does not prove"
+    ],
+    "digest": "d110691595edee60cc684135d682ad689a02876658c8e84eeb740ea0d1e8f2ef"
+  },
+  "authoring/building-blocks/templates/build-the-template/template-assets": {
+    "type": "docs.node",
+    "children": [
+      "authoring/building-blocks/templates/build-the-template/template-assets/template-styles",
+      "authoring/building-blocks/templates/build-the-template/template-assets/template-fonts",
+      "authoring/building-blocks/templates/build-the-template/template-assets/template-icons",
+      "authoring/building-blocks/templates/build-the-template/template-assets/template-images-media"
+    ],
+    "digest": "6aaa56687d2deb99ad40761f0f2205dc5bc4ef5068b38318d2bf03075f1a1b84"
+  },
+  "authoring/building-blocks/templates/build-the-template/template-assets/template-fonts": {
+    "type": "docs.detail",
+    "sections": [
+      "prefer-host-typography: Prefer host typography",
+      "package-a-required-font: Package a required font",
+      "check-fonts-in-the-app: Check fonts in the app"
+    ],
+    "digest": "0488f16389df3b57d8115f1b9964bf6ff395be4922c47437ebaeaa31c855636d"
+  },
+  "authoring/building-blocks/templates/build-the-template/template-assets/template-icons": {
+    "type": "docs.detail",
+    "sections": [
+      "use-astryx-icon: Use Astryx Icon",
+      "ship-a-custom-icon: Ship a custom icon deliberately",
+      "check-icons-in-the-app: Check icons in the app"
+    ],
+    "digest": "378c0e37531daa7c57a9de78957071d28a4939812acdab075e62061fa1d902f4"
+  },
+  "authoring/building-blocks/templates/build-the-template/template-assets/template-images-media": {
+    "type": "docs.detail",
+    "sections": [
+      "do-not-copy-relative-media: Do not rely on sibling media",
+      "understand-template-assets: Understand `/template-assets`",
+      "design-a-useful-placeholder: Design a useful placeholder",
+      "check-media-in-the-app: Check media in the app"
+    ],
+    "digest": "b22b103217e4a7e14b28a18bcce9d9f0e88a9919dfa2039ac9173362e1022453"
+  },
+  "authoring/building-blocks/templates/build-the-template/template-assets/template-styles": {
+    "type": "docs.detail",
+    "sections": [
+      "start-with-astryx: Start with Astryx",
+      "keep-editable-styles-with-the-source: Keep editable styles with the source",
+      "publish-shared-css: Publish shared CSS deliberately"
+    ],
+    "digest": "557e65658ef4098598423eeb5c189c4759cc277a3a17f75b635b0f5442dce995"
+  },
+  "authoring/building-blocks/templates/build-the-template/write-the-template-file": {
+    "type": "docs.detail",
+    "sections": [
+      "know-what-gets-copied: Know what gets copied",
+      "keep-edited-code-in-one-file: Keep edited code in one file",
+      "use-imports-that-work: Use imports that work in the app",
+      "export-one-component: Export one component"
+    ],
+    "digest": "0ac3eb806a30b8a72600dd43702f158b29d29faa56672af80781ceeea6069f99"
+  },
+  "authoring/building-blocks/templates/document-the-template": {
+    "type": "docs.node",
+    "children": [
+      "authoring/building-blocks/templates/document-the-template/template-doc-overview",
+      "authoring/building-blocks/templates/document-the-template/page-template",
+      "authoring/building-blocks/templates/document-the-template/block-template",
+      "authoring/building-blocks/templates/document-the-template/replace-a-core-template"
+    ],
+    "digest": "6a96da4bc841c2145166eced6455fd6d1415990ac3f7dd36b758cc5bd90c3627"
+  },
+  "authoring/building-blocks/templates/document-the-template/block-template": {
+    "type": "docs.detail",
+    "sections": [
+      "start-with-a-standalone-block: Start with a standalone block",
+      "choose-the-component-relationship: Choose the component relationship",
+      "choose-a-useful-preview: Choose a useful preview"
+    ],
+    "digest": "74c76d82b0ae5e8accf53f1a308acd480b2d52e3edf5252860ccb8af8cb3e3a8"
+  },
+  "authoring/building-blocks/templates/document-the-template/page-template": {
+    "type": "docs.detail",
+    "sections": [
+      "start-from-the-generated-page-doc: Start from the generated page doc",
+      "help-people-find-the-page: Help people find the page"
+    ],
+    "digest": "a56dd0e2f7c908a471155a71c43b819f0a11a60d8a3826570c56eefbfa540ee5"
+  },
+  "authoring/building-blocks/templates/document-the-template/replace-a-core-template": {
+    "type": "docs.detail",
+    "sections": [
+      "replace-only-on-purpose: Replace only on purpose",
+      "declare-the-replacement: Declare the replacement",
+      "require-a-compatible-cli: Require a compatible CLI",
+      "what-apps-receive: What apps receive",
+      "check-the-replacement: Check the replacement"
+    ],
+    "digest": "abad37e60a14a425efa86a9eac78f20eb140c767ae971b3df6b286ceb79ab14e"
+  },
+  "authoring/building-blocks/templates/document-the-template/template-doc-overview": {
+    "type": "docs.detail",
+    "sections": [
+      "understand-the-two-files: Understand the two files",
+      "document-the-shared-fields: Document the shared fields",
+      "check-how-astryx-lists-it: Check how Astryx lists it"
+    ],
+    "digest": "17d2d134a38eee38c4dbdb255687da2c28428ebc2495382098f7f718142f4731"
+  },
+  "authoring/building-blocks/templates/start-a-template": {
+    "type": "docs.detail",
+    "sections": [
+      "what-a-template-is: What a template is",
+      "why-share-one: Why share one",
+      "choose-page-or-block: Choose a page or block",
+      "pick-a-template-id: Pick a template id",
+      "run-the-add-command: Run the add command",
+      "global-mode: In global mode"
+    ],
+    "digest": "523b52ec8723487bcdbd70bc3956f0f26f255db585ae66f1f2fcf932113ffb45"
+  },
+  "authoring/building-blocks/templates/write-good-templates": {
+    "type": "docs.node",
+    "children": [
+      "authoring/building-blocks/templates/write-good-templates/template-grading-rubric",
+      "authoring/building-blocks/templates/write-good-templates/grade-template-with-agent"
+    ],
+    "digest": "e5c6e31710af2b0516f6425becc378957cf9c24e76fb37fdf64a0d3288cf3ac8"
+  },
+  "authoring/building-blocks/templates/write-good-templates/grade-template-with-agent": {
+    "type": "docs.detail",
+    "sections": [
+      "give-the-agent-the-rubric: Give the agent the rubric",
+      "require-a-scorecard: Require a scorecard",
+      "improve-and-regrade: Improve and regrade"
+    ],
+    "digest": "f702af1c3b7da751ecd62cda569f523a5566851ae34dcc81117533fddc088bd4"
+  },
+  "authoring/building-blocks/templates/write-good-templates/template-grading-rubric": {
+    "type": "docs.detail",
+    "sections": [
+      "understand-the-score: Understand the score",
+      "component-purity: Astryx component purity: 30 points",
+      "icon-purity: Icon purity: 15 points",
+      "custom-css: Custom CSS: 15 points",
+      "layout-and-structure: Layout and structure: 15 points",
+      "doc-metadata: Doc metadata: 10 points",
+      "image-handling: Image handling: 5 points",
+      "code-quality: Code quality: 10 points"
+    ],
+    "digest": "3978df46a38c4c69d574354f81e8573af8691d7509bf1f91814c778a187030ee"
+  },
+  "authoring/building-blocks/themes": {
+    "type": "docs.node",
+    "children": [
+      "authoring/building-blocks/themes/add-a-theme",
+      "authoring/building-blocks/themes/generate-a-palette",
+      "authoring/building-blocks/themes/define-the-theme",
+      "authoring/building-blocks/themes/fonts-and-assets",
+      "authoring/building-blocks/themes/use-a-theme-in-an-app",
+      "authoring/building-blocks/themes/document-the-theme"
+    ],
+    "digest": "e1d4a673a2e3e6da9fcd106f8976e99c34b81f4eb7ebadc81961b2c49bbde1cb"
+  },
+  "authoring/building-blocks/themes/add-a-theme": {
+    "type": "docs.detail",
+    "sections": [
+      "add-a-theme: Add a theme",
+      "start-from-an-existing-theme: Start from an existing theme",
+      "ship-several-themes: Ship several themes",
+      "global-mode: In global mode"
+    ],
+    "digest": "756220ecf70dd80f302e69d363b1698f9ead3491e2a7ea91bc97c547efdafd12"
+  },
+  "authoring/building-blocks/themes/define-the-theme": {
+    "type": "docs.detail",
+    "sections": [
+      "map-the-palette-to-tokens: Map the palette to tokens",
+      "build-on-another-theme: Build on another theme",
+      "keep-light-dark-to-colors: Keep light-dark() to colors",
+      "avoid-core-internals: Do not set Core private variables",
+      "declare-the-peers: Declare the peer dependencies"
+    ],
+    "digest": "b5fd2315150d1c6c4b2deafd3fc23dcf661025c30050a031d685b90ff41cd23b"
+  },
+  "authoring/building-blocks/themes/document-the-theme": {
+    "type": "docs.detail",
+    "sections": [
+      "extend-the-theme-topic: Extend the core theme topic",
+      "not-agent-guidance: Not agent guidance"
+    ],
+    "digest": "3021dcda403c184634414c589d6dac692d3749d12e1bb4145c814ae199e8c171"
+  },
+  "authoring/building-blocks/themes/fonts-and-assets": {
+    "type": "docs.detail",
+    "sections": [
+      "name-the-font: Name the font",
+      "ship-the-font-loader: Ship the font loader",
+      "verify-in-an-app: Verify in an app"
+    ],
+    "digest": "5febeed9d9e31063c101cea13d5b49f9d2a64682248d58641dd4f9153c83d416"
+  },
+  "authoring/building-blocks/themes/generate-a-palette": {
+    "type": "docs.detail",
+    "sections": [
+      "generate-a-palette: Generate a palette"
+    ],
+    "digest": "c7d979c0ff69389f5bcea799a923ff83d681fd80167bc00365d9fa8f4096efaa"
+  },
+  "authoring/building-blocks/themes/use-a-theme-in-an-app": {
+    "type": "docs.detail",
+    "sections": [
+      "apply-the-theme: Apply the theme",
+      "extend-the-theme: Extend to customize",
+      "global-mode: In global mode"
+    ],
+    "digest": "a658509e3a8a95bdead594969689647b1d2a3a0e99fb61765f8e3914d8ada29c"
+  },
+  "authoring/field-reference": {
+    "type": "docs.detail",
+    "sections": [
+      "integration: Astryx Integration",
+      "config: astryx.config",
+      "debug-event: DebugEvent",
+      "gap-report-handler: GapReportHandler",
+      "discover-source: DiscoverSource",
+      "codemod: Astryx Codemod",
+      "provider-identity: Provider and artifact identity",
+      "authored-doc-graph-fields: Authored doc graph fields",
+      "component-doc: ComponentDoc",
+      "hook-doc: HookDoc",
+      "function-doc: FunctionDoc",
+      "command-doc: CommandDoc",
+      "enum-doc: EnumDoc",
+      "namespace-doc: NamespaceDoc",
+      "reference-doc: ReferenceDoc",
+      "schema-doc: SchemaDoc",
+      "template-doc: TemplateDoc",
+      "integration-template-doc: IntegrationTemplateDoc",
+      "theme-doc: ThemeDoc"
+    ]
+  },
+  "authoring/global-integrations": {
+    "type": "docs.detail",
+    "sections": [
+      "peer-range: First: your peer ranges must include the global CLI's version",
+      "where-it-works: Where your integration works",
+      "checklist: Checklist",
+      "try-it: Try it globally",
+      "more: More on global mode"
+    ],
+    "digest": "39f42151a5f869a2e38f6b8dde55a590a623b9d53bbbcf787a12a0aaf79b49be"
+  },
+  "authoring/help": {
+    "type": "docs.node",
+    "children": [
+      "authoring/help/troubleshooting"
+    ],
+    "digest": "28a3bd2c7b81c80e0a94ca6d1be4037fdec39df0d2b9eb17f0d41fdb912182d6"
+  },
+  "authoring/help/troubleshooting": {
+    "type": "docs.detail",
+    "sections": [
+      "fix-setup-errors: Fix setup errors",
+      "fix-verify-failures: Fix integration verify failures",
+      "fix-problems-in-an-app: Fix problems in an app"
+    ],
+    "digest": "796718ce68f3c143df5b9f206f8e1bc588dfb1e81c87386ed1c158ba00cc879b"
+  },
+  "authoring/quick-start": {
+    "type": "docs.detail",
+    "sections": [
+      "quick-start: Quick start",
+      "fill-in-package-json: Fill in package.json",
+      "the-integration-file: The integration file",
+      "global-mode: In global mode"
+    ],
+    "digest": "7afeb5e44a843706b05f0d9af29a619b6c04a88edf0927f98f0130c91dec18b7"
+  },
+  "authoring/ship": {
+    "type": "docs.node",
+    "children": [
+      "authoring/ship/test-in-an-app",
+      "authoring/ship/checks",
+      "authoring/ship/versioning",
+      "authoring/ship/publishing",
+      "authoring/ship/upgrading"
+    ],
+    "digest": "1fe7ca393f6eaafa65e322378470526cca46241e3dad633adcb2bd801d6ca494"
+  },
+  "authoring/ship/checks": {
+    "type": "docs.detail",
+    "sections": [
+      "pick-a-check: Pick a check",
+      "run-every-check-in-ci: Run every check in every build (required)",
+      "what-integration-verify-does: Verify the packed package"
+    ],
+    "digest": "2d20add51061071ed8aab1c40db6b44e2a698938168c4cb20e88d4c82d7aabe5"
+  },
+  "authoring/ship/publishing": {
+    "type": "docs.detail",
+    "sections": [
+      "check-before-you-publish: Check before you publish",
+      "keep-private-files-out: Keep private files out",
+      "publish-to-npm: Publish to npm",
+      "check-the-published-package: Check the published package"
+    ],
+    "digest": "d54dfc0b31d5f878efb2a61faf0af5d0edeca51a56174f9e36583d2e5f3abe41"
+  },
+  "authoring/ship/test-in-an-app": {
+    "type": "docs.detail",
+    "sections": [
+      "install-the-packed-package: Install the packed package in an app",
+      "check-what-the-app-sees: Check what the app sees",
+      "run-doctor-in-the-app: Run doctor in the app"
+    ],
+    "digest": "f638e880070d808353b867cffbacf3b366c922939631834f4e4985309b8afbb4"
+  },
+  "authoring/ship/upgrading": {
+    "type": "docs.detail",
+    "sections": [
+      "update-for-a-new-astryx-release: Update for a new Astryx release",
+      "upgrade-an-app: Upgrade an app",
+      "know-which-files-upgrades-skip: Know which files upgrades skip"
+    ],
+    "digest": "69d9fc826f046dfeb21ca72644489da359d857c9865baf44daf5b796e9fcbe5a"
+  },
+  "authoring/ship/versioning": {
+    "type": "docs.detail",
+    "sections": [
+      "pick-a-version: Pick a version",
+      "know-what-breaks-apps: Know what breaks apps",
+      "declare-peer-ranges: Declare peer ranges",
+      "support-older-clis: Support older CLIs",
+      "codemods-and-versions: Name codemod folders after Core versions"
+    ],
+    "digest": "4cdc34fb7dd6fa895ea4f6ff0f3669a227d2945d4f6bac038eb6971227bf89c7"
+  },
+  "browser-support": {
+    "type": "docs.detail",
+    "sections": [
+      "overview: Overview",
+      "support-tiers: Support Tiers",
+      "which-features-set-the-floor: Which Features Set the Floor",
+      "which-components-are-affected: Which Components Are Affected",
+      "what-astryx-guarantees: What Astryx Guarantees",
+      "supporting-older-browsers: Supporting Older Browsers",
+      "how-these-tiers-move-over-time: How These Tiers Move Over Time"
+    ],
+    "digest": "dfb277537d347305f33dc46b80ad3b6999c34b220747576d17614de44f777817"
+  },
+  "color": {
+    "type": "docs.detail",
+    "sections": [
+      "overview: Overview",
+      "surface-colors: Color Tokens",
+      "usage: Use color tokens in StyleX",
+      "best-practices: Best Practices"
+    ],
+    "digest": "7397ab008ffa7145ee4e6257ba21b82fb6818b36dfec1a9b153d62c4926e2e41"
+  },
+  "elevation": {
+    "type": "docs.detail",
+    "sections": [
+      "overview: Overview",
+      "elevation-scale: Elevation Scale",
+      "choosing-a-level: Choosing a level",
+      "the-elevation-prop: The elevation prop",
+      "usage: Usage",
+      "best-practices: Best Practices"
+    ],
+    "digest": "ad8c76589082de9ad9d42093b3eb0fab9c109ba0798de0f33f1d274d006ffc6f"
+  },
+  "foundations": {
+    "type": "docs.node",
+    "children": [
+      "color",
+      "elevation",
+      "icons",
+      "illustrations",
+      "motion",
+      "shape",
+      "spacing"
+    ],
+    "digest": "db7024fe52c2f52958c551fb208b2dfb2befb2c7ccf0a5346052b4471b40fe78"
+  },
+  "getting-started": {
+    "type": "docs.detail",
+    "sections": [
+      "quick-start-with-ai: Quick Start with AI",
+      "install: Install",
+      "install-once: Install once, use everywhere",
+      "add-base-css-and-a-theme: Add base CSS and a theme",
+      "add-your-first-component: Add your first component",
+      "customize-with-stylex: Customize with StyleX",
+      "example-apps: Example Apps",
+      "explore-the-cli: Explore the CLI"
+    ],
+    "digest": "f89fbfdf682e21b59c98362c9df5a1adcecb9b577a9fd1f2e452c46c319c9156"
+  },
+  "global": {
+    "type": "docs.node",
+    "children": [
+      "global/project-global-or-both",
+      "global/install-once",
+      "global/who-answers",
+      "global/updates",
+      "global/computer-agent-guide",
+      "global/computer-integrations",
+      "global/monorepos",
+      "global/ci-and-containers",
+      "global/problems",
+      "global/uninstall",
+      "global/reference"
+    ],
+    "digest": "268332eff49e52ed19591bdf96917c114cbba874e9f710a3ccc39141d324f860"
+  },
+  "global/ci-and-containers": {
+    "type": "docs.detail",
+    "sections": [
+      "in-ci: In CI",
+      "cache: Cache project versions",
+      "read-only: Read-only home folders",
+      "more: More on global mode"
+    ],
+    "digest": "9cb4e731fd2df6d4212ee852346642ea5ce429c028745a3be1f8e951b97d738c"
+  },
+  "global/computer-agent-guide": {
+    "type": "docs.detail",
+    "sections": [
+      "what: What it is",
+      "where: Where agents find it",
+      "cloud-and-apps: Cloud agents and apps",
+      "other-agents: Other agents",
+      "choose: Write it now, or turn it off",
+      "more: More on global mode"
+    ],
+    "digest": "46eaa3b997b793d462b635a40cc658aeb91d0b191e6b3e1023e1961cf3d668fd"
+  },
+  "global/computer-integrations": {
+    "type": "docs.detail",
+    "sections": [
+      "install: Install one globally",
+      "outside: Outside a project, they work",
+      "inside: Inside a project, only the project's",
+      "check: See which ones work",
+      "more: More on global mode"
+    ],
+    "digest": "1e3be93f3ad9c2ad69496b3cca338dd6db57c8665134cba1356a3e10f22db221"
+  },
+  "global/install-once": {
+    "type": "docs.detail",
+    "sections": [
+      "install: Install it",
+      "eacces: Permission denied (EACCES)",
+      "versions-for-projects: Versions for your projects",
+      "offline: Offline",
+      "more: More on global mode"
+    ],
+    "digest": "4be6836598da9be6eaa45506d578797aadc3f2d9d0ab9e1dbfce945188c49618"
+  },
+  "global/monorepos": {
+    "type": "docs.detail",
+    "sections": [
+      "find: How a project is found",
+      "workspaces: Workspaces",
+      "nested: Nested folders",
+      "more: More on global mode"
+    ],
+    "digest": "6a2e3d334faf3b2e8e34492ec50970af9f42390255d535e9c6e8a46f128cc52a"
+  },
+  "global/problems": {
+    "type": "docs.detail",
+    "sections": [
+      "answered-by: \"astryx: answered by …\"",
+      "installing: \"installing CLI release … into the per-user cache\"",
+      "notices: \"A new release of Astryx is available\"",
+      "old-astryx: \"The astryx command on this computer runs CLI …\"",
+      "fallback: \"could not get Astryx … to match this project's Core\"",
+      "not-global: A global install that gets no update notice or agent guide",
+      "core-offline: \"Core … could not be installed\" outside a project",
+      "unavailable: ERR_VERSIONS_UNAVAILABLE",
+      "needs-a-project: Commands that need a project",
+      "install-problems: Install problems",
+      "more: More on global mode"
+    ],
+    "digest": "138a0e22502ed5cc502c09fa26221725f821fdccc9971a91b1d230e1b83b3846"
+  },
+  "global/project-global-or-both": {
+    "type": "docs.detail",
+    "sections": [
+      "both: Both (recommended)",
+      "compare: At a glance",
+      "set-up: How to set up each",
+      "what-happens: What happens when you have both",
+      "more: More on global mode"
+    ],
+    "digest": "2fa652b2640fa20babadfdfaa4639bc2f7dbd4856b077f6fad5d949f7d38ca59"
+  },
+  "global/reference": {
+    "type": "docs.detail",
+    "sections": [
+      "paths: Folders and files",
+      "env: Environment variables",
+      "json: JSON fields",
+      "errors: Error codes",
+      "changes: What changes in global mode",
+      "glossary: Glossary",
+      "more: More on global mode"
+    ],
+    "digest": "4f4a39b8b158a6bf7e0c24a7cc02f4e39f3553371fdd41743ff147240ff26696"
+  },
+  "global/uninstall": {
+    "type": "docs.detail",
+    "sections": [
+      "agent-guide: First, remove the agent guide",
+      "uninstall: Uninstall",
+      "reset: Reset",
+      "more: More on global mode"
+    ],
+    "digest": "56ead8f5b837f0fe13c63a977a1cde1dedc09160ba50dd790a2929b19f0033f3"
+  },
+  "global/updates": {
+    "type": "docs.detail",
+    "sections": [
+      "notice: The notice",
+      "project-notice: In a project",
+      "turn-off: Turn it off",
+      "more: More on global mode"
+    ],
+    "digest": "b272d23bbc28644bf8a88e843d9a48b0b64685fd3cc629508e8bb0536df7f57b"
+  },
+  "global/who-answers": {
+    "type": "docs.detail",
+    "sections": [
+      "in-a-project: In a project, the project's version",
+      "outside: Outside a project, your global install",
+      "see-it: See which version answered",
+      "printed-commands: Commands Astryx prints",
+      "more: More on global mode"
+    ],
+    "digest": "6b4dccdfb634a07dbf1359b7de30665c5336474ad2da7d7109c571092128fe7b"
+  },
+  "guides": {
+    "type": "docs.node",
+    "children": [
+      "author-a-theme",
+      "browser-support",
+      "getting-started",
+      "is-my-code-good",
+      "principles",
+      "styling-overview",
+      "theme",
+      "use-a-theme",
+      "working-with-ai"
+    ],
+    "digest": "e7c700daf2a3fd72e3b01b57f2d50b81410d576edcfd4fd55de8060c0c97edb8"
+  },
+  "icons": {
+    "type": "docs.detail",
+    "sections": [
+      "available-names: Available Names",
+      "custom-icons: Custom Icons",
+      "theme-overrides: Theme Overrides",
+      "component-and-library-icons: Component and Library Icons"
+    ],
+    "digest": "be237f2aa1b2b653ad1dbdd20b97b59f607166c0a0253f0669caff7785532ee1"
+  },
+  "illustrations": {
+    "type": "docs.detail",
+    "sections": [
+      "when-to-use: When to Use",
+      "guidelines: Guidelines",
+      "placement: Placement"
+    ],
+    "digest": "9b84085c4982d876b3ebac29a4c8491bcf4d9586899d88cd18a0d98405413766"
+  },
+  "internationalization": {
+    "type": "docs.node",
+    "children": [
+      "internationalization/i18n-quick-start",
+      "internationalization/i18n-library-integration",
+      "internationalization/i18n-rtl-and-testing"
+    ],
+    "digest": "229e86e11cdfa6670141fec79f6af3348e53d59c28b3fcd012172d675ebaad23"
+  },
+  "internationalization/i18n-library-integration": {
+    "type": "docs.detail",
+    "sections": [
+      "overriding-astryx-s-default-text: Overriding astryx's default text",
+      "using-astryx-with-your-own-i18n-library: Using astryx with your own i18n library",
+      "using-astryx-as-your-i18n-library: Using astryx as your i18n library"
+    ],
+    "digest": "74633ea7b8a24291068ecd0aa56e00e7d3d2f6643908e76865ddd3a28234fbe6"
+  },
+  "internationalization/i18n-quick-start": {
+    "type": "docs.detail",
+    "sections": [
+      "quick-start: Quick Start",
+      "runtime-language-swap: Runtime language swap"
+    ],
+    "digest": "0c528c5da540027339eda61ad7b7e94fc0fcb5dbbc77ee49c28a1a215cdf58ae"
+  },
+  "internationalization/i18n-rtl-and-testing": {
+    "type": "docs.detail",
+    "sections": [
+      "text-direction-rtl: Text direction (RTL)",
+      "testing-your-translations: Testing your translations",
+      "for-contributors: For contributors"
+    ],
+    "digest": "72727fec8a826420d42fe488462b319ac1861c3363f28cf93373f571d5d613fb"
+  },
+  "is-my-code-good": {
+    "type": "docs.detail",
+    "sections": [
+      "understand-the-app: Understand the app",
+      "choose-the-review: Choose the review",
+      "apply-the-rubric: Apply the shared rubric",
+      "collect-the-evidence: Collect the evidence",
+      "ask-an-agent: Ask an agent",
+      "verify-and-repeat: Verify, improve, and repeat"
+    ],
+    "digest": "2a90bde9cb99781cd900d906634fb927424fc203e7e4a77513ce40468e9a0031"
+  },
+  "layout": {
+    "type": "docs.node",
+    "children": [
+      "layout/scaffold",
+      "layout/structure",
+      "layout/headers-and-footers",
+      "layout/side-panels",
+      "layout/layout-spacing",
+      "layout/responsive"
+    ],
+    "digest": "2f4ab718ec734f3ac5b77c7a4d169953e11eca8acf11f1648d41e75705e3ff85"
+  },
+  "layout/headers-and-footers": {
+    "type": "docs.detail",
+    "sections": [
+      "headers-and-footers: Headers and footers"
+    ],
+    "digest": "bcbc4d7572590b1ca427859f57bb287c0b314d97f1a71b7134d9cf5396cff4c9"
+  },
+  "layout/layout-spacing": {
+    "type": "docs.detail",
+    "sections": [
+      "spacing: Spacing",
+      "alignment: Alignment",
+      "rhythm: Rhythm",
+      "density: Density and size"
+    ],
+    "digest": "18ab1a5b982c19049d6c32ce05332d337474165956acd8f9a68bbe5b96b5ee47"
+  },
+  "layout/responsive": {
+    "type": "docs.detail",
+    "sections": [
+      "breakpoints: Breakpoints",
+      "responsive-contract: Responsive contract",
+      "columns-that-reflow: Columns that reflow"
+    ],
+    "digest": "8e147febaea0f05df4397efa397aa820b07d4d1ab8a223006e72baa7c071939c"
+  },
+  "layout/scaffold": {
+    "type": "docs.detail",
+    "sections": [
+      "scaffold: Scaffold",
+      "shell: Shell",
+      "navigation: Navigation"
+    ],
+    "digest": "ed193a7faae6a4a6b3118994db0c8ae7c787586e0857d15d2c518bbdc60c6d18"
+  },
+  "layout/side-panels": {
+    "type": "docs.detail",
+    "sections": [
+      "side-panels: Side panels"
+    ],
+    "digest": "8b7db331ee6b58fac03ea8de40cb6ae78872e76e016fee6f35ceafa6e4093c3a"
+  },
+  "layout/structure": {
+    "type": "docs.detail",
+    "sections": [
+      "structure: Structure",
+      "type-hierarchy: Type hierarchy",
+      "containers: Card or rows"
+    ],
+    "digest": "ec64981ff6c0073381c0d357185f5670ecceff1fc97086bfaccc6e76932c68bc"
+  },
+  "migration": {
+    "type": "docs.node",
+    "children": [
+      "migration/migration-setup",
+      "migration/component-migration",
+      "migration/migration-verification"
+    ],
+    "digest": "7ad9f66ebfbe18e1f622dbe724bf3fc95ed4ad2e914e74352dee25cf41235506"
+  },
+  "migration/component-migration": {
+    "type": "docs.detail",
+    "sections": [
+      "move-the-app-frame-first: Move the App Frame First",
+      "map-shadcn-and-radix-primitives: Map shadcn and Radix Primitives",
+      "command-palette: Command Palette, Settings, and Theme"
+    ],
+    "digest": "f86006e4114d8c2fc926f968990cade14f0b7a1f693fb2bdbeb550833e1f1771"
+  },
+  "migration/migration-setup": {
+    "type": "docs.detail",
+    "sections": [
+      "overview: Overview",
+      "recommended-order: Recommended Order",
+      "cli-workflow: CLI Workflow",
+      "theme-and-css-setup: Theme and CSS Setup",
+      "cascade-layer-safety: Why resets break cascade layers",
+      "layer-audit: Cascade layer audit",
+      "foundation-smoke-test: Foundation Smoke Test"
+    ],
+    "digest": "094ce2059b2ede82f76a41c822b4ecc58fffc5d4376d2f709795f60c955968ce"
+  },
+  "migration/migration-verification": {
+    "type": "docs.detail",
+    "sections": [
+      "verification-checklist: Verification Checklist",
+      "ai-migration-prompt: AI Migration Prompt"
+    ],
+    "digest": "a8ce3f640dd2195e6c594688030f79cc6f67d2fed288f2bbaa008a1352507f46"
+  },
+  "motion": {
+    "type": "docs.detail",
+    "sections": [
+      "overview: Overview",
+      "duration: Duration",
+      "easing: Easing",
+      "where-motion-helps: Where Motion Helps",
+      "where-motion-hurts: Where Motion Hurts",
+      "movement-principles: Movement Principles",
+      "respecting-user-preferences: Respecting User Preferences",
+      "usage: Animate with motion tokens",
+      "best-practices: Best Practices"
+    ],
+    "digest": "0fee1763dfecf0353a2da56e55fbf2d3a71e821ed140b995cee1bc71831fa7a6"
+  },
+  "principles": {
+    "type": "docs.detail",
+    "sections": [
+      "design-philosophy: Design Philosophy",
+      "rules: Rules",
+      "styling-approach: Styling Approach",
+      "anti-patterns: Anti-Patterns",
+      "design-tokens: Design Tokens"
+    ],
+    "digest": "e7194bc606541737ebc3436e0349c0399407a5a82d07ac62194503906778ce38"
+  },
+  "shape": {
+    "type": "docs.detail",
+    "sections": [
+      "overview: Overview",
+      "radius-scale: Radius Scale",
+      "concentric-radius: Concentric Radius",
+      "best-practices: Best Practices"
+    ],
+    "digest": "7e9f44d5ae9d9f819b3cb4cf060678d7e9d19be96af467e3a2ef1df24a65de0a"
+  },
+  "spacing": {
+    "type": "docs.detail",
+    "sections": [
+      "overview: Overview",
+      "scale: Scale",
+      "usage: Usage",
+      "best-practices: Best Practices"
+    ],
+    "digest": "08439ce28224c2374962a8fc00c8767188b07494338a18f3d5b176cb6700cb62"
+  },
+  "styling": {
+    "type": "docs.node",
+    "children": [
+      "styling/styling-basics",
+      "styling/styling-advanced",
+      "styling/tokens-and-setup"
+    ],
+    "digest": "cefea23ed0dfc13cac737e576820bdb889cc3fda2439fd34c6bc7f54c38b651d"
+  },
+  "styling-libraries": {
+    "type": "docs.node",
+    "children": [
+      "styling-libraries/css-and-stylex",
+      "styling-libraries/tailwind",
+      "styling-libraries/other-libraries",
+      "styling-libraries/non-css-processing"
+    ],
+    "digest": "c26a4cdf2438b40cac50a94765d1c4984c4152138dd644d0bd6d49fd9f669b09"
+  },
+  "styling-libraries/css-and-stylex": {
+    "type": "docs.detail",
+    "sections": [
+      "core-principle: Core Principle",
+      "choose-an-integration-path: Choose an Integration Path",
+      "best-practices: Best Practices",
+      "plain-css-and-css-modules: Plain CSS and CSS Modules",
+      "stylex: StyleX"
+    ],
+    "digest": "cb15849c503c4e2ffe2ee2f473929a06d9a54078dd3e9c404edb8040c25063cc"
+  },
+  "styling-libraries/non-css-processing": {
+    "type": "docs.detail",
+    "sections": [
+      "non-css-processing: Non-CSS Processing",
+      "non-css-best-practices: Non-CSS Processing Best Practices"
+    ],
+    "digest": "ac5520819a0400b6d225d8b69f726de4c3bb0a184302bca166ca477cb4343092"
+  },
+  "styling-libraries/other-libraries": {
+    "type": "docs.detail",
+    "sections": [
+      "semantic-token-systems: Panda, Chakra, and Other Semantic Token Systems",
+      "mui-and-palette-based-themes: MUI and Palette-Based Themes",
+      "css-in-js: Emotion, styled-components, Theme UI, and Styled System",
+      "unocss: UnoCSS and Custom Utility Systems",
+      "interop-checklist: Interop Checklist"
+    ],
+    "digest": "20f4bd46e14aab750d81c0bf50e0ce918e380a49be3a6757303b73b5359ec743"
+  },
+  "styling-libraries/tailwind": {
+    "type": "docs.detail",
+    "sections": [
+      "tailwind: Tailwind"
+    ],
+    "digest": "26d7c8554f03aa1789f700d77ba22e955a73b9a3028c9a408c4984a88cb9c264"
+  },
+  "styling-overview": {
+    "type": "docs.detail",
+    "sections": [
+      "pick-a-path: Pick a path",
+      "plain: Plain CSS",
+      "tailwind: Tailwind",
+      "stylex-own-code: StyleX for your own code",
+      "other-packages: Other Astryx packages",
+      "what-each-file-does: What each import does",
+      "further-reading: Further reading"
+    ],
+    "digest": "e6cfbb2beb5ed7dca7715b581623b6fc9da31a3619631b076dfae63bad9bc314"
+  },
+  "styling/styling-advanced": {
+    "type": "docs.detail",
+    "sections": [
+      "compound-components: Compound Components",
+      "preferred-selector-surface-data-attributes: Data attribute selectors",
+      "deprecated-classes: Migrating Removed Theme Compatibility Selectors",
+      "what-not-to-do: What NOT to Do"
+    ],
+    "digest": "9492c37afe91b50bb42075804c62c53e7a352644653e31df628d60edf3476c0e"
+  },
+  "styling/styling-basics": {
+    "type": "docs.detail",
+    "sections": [
+      "overview: Overview",
+      "xstyle-prop: xstyle Prop",
+      "tailwind-integration: Tailwind Integration",
+      "classname-and-style-props: className and style Props",
+      "rest-props-prop-drilling: Rest Props (Prop Drilling)"
+    ],
+    "digest": "1c33e3259cb4ae952cabb78ca7514d6071b7c4d92867a047438c8dcaf91061fa"
+  },
+  "styling/tokens-and-setup": {
+    "type": "docs.detail",
+    "sections": [
+      "design-tokens: Design Tokens",
+      "stylex-setup: StyleX Build Setup (required for swizzled components)"
+    ],
+    "digest": "683b97e4d48c13a4b0a61beee8500924b5cc647b0a783edbbdf6f8fcb48562ae"
+  },
+  "theme": {
+    "type": "docs.detail",
+    "sections": [
+      "quick-start: Wrap your app in a theme",
+      "creating-a-custom-theme: Create a custom theme",
+      "light-dark-mode: Dark mode",
+      "integration-themes: Integration themes"
+    ],
+    "digest": "0f417238b7dc45c8ca6a58754104e3ec349d38944a3db57f9add30674aaf03f8"
+  },
+  "tokens": {
+    "type": "docs.node",
+    "children": [
+      "tokens/tokens-color",
+      "tokens/tokens-data",
+      "tokens/tokens-syntax",
+      "tokens/tokens-spacing",
+      "tokens/tokens-size",
+      "tokens/tokens-border",
+      "tokens/tokens-focus",
+      "tokens/tokens-radius",
+      "tokens/tokens-shadow",
+      "tokens/tokens-duration",
+      "tokens/tokens-ease",
+      "tokens/tokens-typography",
+      "tokens/tokens-text-size",
+      "tokens/tokens-font-weight",
+      "tokens/tokens-type-scale",
+      "tokens/tokens-usage"
+    ],
+    "digest": "a48ccb98ef9a770e11d7e5901f99fb19859ef2b0ba0287c03ad2e2c2d770da60"
+  },
+  "tokens/tokens-border": {
+    "type": "docs.detail",
+    "sections": [
+      "border-tokens: Border Tokens"
+    ],
+    "digest": "cb585bf5e20e8b3d0150b6c37041bcb5d43b490311ad02488b9b4e24fc8a780d"
+  },
+  "tokens/tokens-color": {
+    "type": "docs.detail",
+    "sections": [
+      "color-tokens: Color Tokens"
+    ],
+    "digest": "aee8a63f0ae3ba695c19e04b43a66791c365feb5904e85ff55f2a85a7707065a"
+  },
+  "tokens/tokens-data": {
+    "type": "docs.detail",
+    "sections": [
+      "data-visualization-tokens: Data Visualization Tokens"
+    ],
+    "digest": "58c382bf90d1a9b2f8e18449c589902db1e94b9264b91c649d69faad92d36b6a"
+  },
+  "tokens/tokens-duration": {
+    "type": "docs.detail",
+    "sections": [
+      "duration-tokens: Duration Tokens"
+    ],
+    "digest": "a9badf9b8831b0dca1bb84ba8fdc10cc45f8865fcf832841dec3838e79b25e19"
+  },
+  "tokens/tokens-ease": {
+    "type": "docs.detail",
+    "sections": [
+      "easing-tokens: Easing Tokens"
+    ],
+    "digest": "2b83bbe87c757104f3f01a637db2a2b7f62b0e52a4cd93dc7fcf265c3a6061a3"
+  },
+  "tokens/tokens-focus": {
+    "type": "docs.detail",
+    "sections": [
+      "focus-tokens: Focus Tokens"
+    ],
+    "digest": "d194a0851f5ac94f481358bc91e58e37d95634038b836170ad1e408d042c993c"
+  },
+  "tokens/tokens-font-weight": {
+    "type": "docs.detail",
+    "sections": [
+      "font-weight-tokens: Font Weight Tokens"
+    ],
+    "digest": "80daa328d88f372031f703a851b79222beaf43267af04c331d0994ee385516df"
+  },
+  "tokens/tokens-radius": {
+    "type": "docs.detail",
+    "sections": [
+      "radius-tokens: Radius Tokens"
+    ],
+    "digest": "c674ff79b155488a9f0f43c28ef95db786f4afab8d95fa058fea6879715cdedb"
+  },
+  "tokens/tokens-shadow": {
+    "type": "docs.detail",
+    "sections": [
+      "shadow-tokens: Shadow Tokens"
+    ],
+    "digest": "c02dca7a8fd20ed3f8719f14e43c9ebb0e76b41d1fbdefb738419388d9c039d1"
+  },
+  "tokens/tokens-size": {
+    "type": "docs.detail",
+    "sections": [
+      "size-tokens: Size Tokens"
+    ],
+    "digest": "631cbb05866cd9cbb0c142d5986edbfac80fa4fa844de066aba61f54bd7ca238"
+  },
+  "tokens/tokens-spacing": {
+    "type": "docs.detail",
+    "sections": [
+      "spacing-tokens: Spacing Tokens"
+    ],
+    "digest": "03568131f387d0a1800d322d18c8e500ce6d495ea494314f286cd603994b9fb7"
+  },
+  "tokens/tokens-syntax": {
+    "type": "docs.detail",
+    "sections": [
+      "syntax-tokens: Syntax Tokens"
+    ],
+    "digest": "a41e576b604c8a4ffcd4ca90a79ed1a0dbfc939ba07a1ebe163e7bb20f05a0e7"
+  },
+  "tokens/tokens-text-size": {
+    "type": "docs.detail",
+    "sections": [
+      "font-size-tokens: Font Size Tokens"
+    ],
+    "digest": "ee62836efd03e829fce151524d51c63f13ab06c90e4bf41a51dc6334cf3c28a6"
+  },
+  "tokens/tokens-type-scale": {
+    "type": "docs.detail",
+    "sections": [
+      "type-scale-tokens: Type Scale Tokens"
+    ],
+    "digest": "ee69d68b6feeb4edfeb715fbcd05a9d314af436c15af1807ecb348ff96d99d52"
+  },
+  "tokens/tokens-typography": {
+    "type": "docs.detail",
+    "sections": [
+      "font-family-tokens: Font Family Tokens"
+    ],
+    "digest": "b386c439af90d77102d9f113baf1e58ebd176b66adb892a3027f6445166f8c3f"
+  },
+  "tokens/tokens-usage": {
+    "type": "docs.detail",
+    "sections": [
+      "usage-in-stylex: Usage in StyleX"
+    ],
+    "digest": "d35dd42a61a5c43ca456b44e7784461285bb4a21b5338cc96dcd62b6e70f8923"
+  },
+  "typography": {
+    "type": "docs.node",
+    "children": [
+      "typography/font-setup",
+      "typography/type-scale",
+      "typography/typography-best-practices"
+    ],
+    "digest": "9f5669ab13642d6595aa3ad33372740d26116d69ace4c544384cf30b3f1e7f73"
+  },
+  "typography/font-setup": {
+    "type": "docs.detail",
+    "sections": [
+      "overview: Overview",
+      "font-families: Font Families",
+      "loading-custom-fonts: Custom fonts",
+      "font-sizes: Font Sizes",
+      "font-weights: Font Weights"
+    ],
+    "digest": "51096fecc58cb2d940ac73ae18018cf42f34aa925c36e6dece7337c09cdf85ad"
+  },
+  "typography/type-scale": {
+    "type": "docs.detail",
+    "sections": [
+      "line-height: Line Height",
+      "type-scale: Type Scale",
+      "display-text: Display Text",
+      "usage: Headings and text",
+      "custom-type-scale: Custom type scale"
+    ],
+    "digest": "c2c7ad789c877224689c9792a1fafb0cef07f1d72618526808b31ddabaa622f2"
+  },
+  "typography/typography-best-practices": {
+    "type": "docs.detail",
+    "sections": [
+      "best-practices: Best Practices"
+    ],
+    "digest": "033ee5c5abf5e62b2f2351dba98dbcf5b094b418bf43b801ebb289d05567994d"
+  },
+  "use-a-theme": {
+    "type": "docs.detail",
+    "sections": [
+      "quick-start: Wrap your app in a theme",
+      "migrating-earlier-theme-copies: Migrating Earlier Theme Copies",
+      "available-themes: Available Themes",
+      "theme-props: Theme Props",
+      "integration-themes: Using a Theme from an Integration",
+      "light-dark-mode: Dark mode",
+      "nesting-themes: Nested themes",
+      "runtime-vs-built-themes: Runtime vs Built Themes"
+    ],
+    "digest": "bc7d220b73b13531136dc17406bfcee8ee5ae7906a7da2e7779259a4a5694f7b"
+  },
+  "working-with-ai": {
+    "type": "docs.detail",
+    "sections": [
+      "overview: Overview",
+      "quick-start: Set up agent docs",
+      "what-gets-generated: What Gets Generated",
+      "cursor-setup: Cursor Setup",
+      "checking-your-setup: Checking Your Setup",
+      "the-astryx-pattern: The astryx Pattern",
+      "the-dense-flag: Shorter output: --detail and --dense",
+      "mcp-server: MCP Server",
+      "global-mode: In global mode"
+    ],
+    "digest": "67bcb92f683b2d4076364654872c7072c7dab430fe9ecbcac42bc94b79d2466c"
+  }
+}
