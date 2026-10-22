@@ -79,6 +79,20 @@ describe('cliPeerVersionProblem', () => {
     );
   });
 
+  it('starts the upgrade from the version it is given, such as a Core-only project\'s Core', () => {
+    const project = path.join(tmpDir, 'from-npm-project');
+    fs.mkdirSync(project, {recursive: true});
+    fs.writeFileSync(path.join(project, 'package-lock.json'), '{}\n');
+    const integration = makeIntegration('@test/from', {
+      name: '@test/from',
+      version: '1.0.0',
+      peerDependencies: {'@astryxdesign/cli': '>=0.8.0'},
+    });
+    expect(
+      cliPeerVersionProblem(integration, '0.7.3', project, {from: '0.6.0'}),
+    ).toContain('upgrade --from 0.6.0 --apply');
+  });
+
   it('installs them as dev dependencies in the package being authored', () => {
     const project = path.join(tmpDir, 'own-npm-project');
     fs.mkdirSync(project, {recursive: true});
@@ -261,6 +275,30 @@ describe('as a note that fails nothing', () => {
     );
     expect(envelope.data.failed).toBe(false);
     expect(status).toBe(0);
+  });
+
+  it('starts the upgrade from the Core of a project with no CLI of its own', async () => {
+    const cwd = project('>=99.0.0');
+    const pkgJson = path.join(cwd, 'package.json');
+    const pkg = JSON.parse(fs.readFileSync(pkgJson, 'utf8'));
+    pkg.dependencies['@astryxdesign/core'] = '0.6.0';
+    fs.writeFileSync(pkgJson, JSON.stringify(pkg));
+    const core = path.join(cwd, 'node_modules', '@astryxdesign', 'core');
+    fs.mkdirSync(core, {recursive: true});
+    fs.writeFileSync(
+      path.join(core, 'package.json'),
+      JSON.stringify({name: '@astryxdesign/core', version: '0.6.0'}),
+    );
+    const {status, stdout} = await runCli(
+      ['doctor', 'integration', 'validate', '@acme/widgets', '--json'],
+      {cwd},
+    );
+    expect(status).toBe(0);
+    const note = JSON.parse(stdout).data.notes.find(
+      (/** @type {{code: string}} */ n) => n.code === 'cli_peer_version',
+    );
+    expect(note.message).toContain('upgrade --from 0.6.0 --apply');
+    expect(note.message).not.toContain(`--from ${cliVersion()}`);
   });
 
   it('asks for a release of an installed package that supports a CLI above its range', async () => {

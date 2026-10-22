@@ -72,6 +72,7 @@ import {
 import {formatCliCommand} from '../../foundation/env/package-manager.mjs';
 import {cliPeerVersionProblem} from '../../foundation/integrations/cli-peer-version.mjs';
 import {publicImportIssues} from '../../foundation/integrations/public-imports.mjs';
+import {runChoice} from '../../foundation/release/run-context.mjs';
 
 /** The running CLI is outside the package's `@astryxdesign/cli` peer range. */
 const CLI_PEER_VERSION = 'cli_peer_version';
@@ -439,7 +440,17 @@ async function validateAtPackageDir(
   // note for the same reason. It is built here, not among the contribution
   // checks, so `integration verify` (which reports their layout findings)
   // does not see it.
-  const peerProblem = cliPeerVersionProblem(loaded, undefined, cwd, {own});
+  // The version an upgrade starts from is the project's: its own CLI's, or,
+  // with none, its Core's, as the project-upgrade notice takes it.
+  const choice = runChoice(cwd);
+  const from =
+    choice.inProject && choice.copy === 'starting' && choice.coreVersion
+      ? choice.coreVersion
+      : undefined;
+  const peerProblem = cliPeerVersionProblem(loaded, undefined, cwd, {
+    own,
+    from,
+  });
   if (peerProblem) {
     (result.notes ??= []).push({code: CLI_PEER_VERSION, message: peerProblem});
   }

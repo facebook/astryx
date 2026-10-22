@@ -73,16 +73,18 @@ export function cliVersion() {
  *   own package.json version
  * @param {string} [cwd] where the install command would run; decides the
  *   package manager it names
- * @param {{own?: boolean}} [options] `own`: the package is the one being
- *   authored in the current folder, so above the range its author is told to
- *   test with this CLI and widen the range instead
+ * @param {{own?: boolean, from?: string}} [options] `own`: the package is
+ *   the one being authored in the current folder, so above the range its
+ *   author is told to test with this CLI and widen the range instead; `from`:
+ *   the version the project's upgrade starts from when it is not the running
+ *   CLI's, such as the Core of a project with no CLI of its own
  * @returns {string | null}
  */
 export function cliPeerVersionProblem(
   integration,
   version,
   cwd = process.cwd(),
-  {own = false} = {},
+  {own = false, from} = {},
 ) {
   const ver = version ?? cliVersion();
   if (!integration.__packageDir) return null;
@@ -108,7 +110,7 @@ export function cliPeerVersionProblem(
     // Core. A package's own folder holds them as dev dependencies.
     const verb = ADD_VERB[detectPackageManager(cwd)] ?? ADD_VERB.npm;
     const install = `${verb}${own ? ' -D' : ''} @astryxdesign/core@latest ${CLI_PACKAGE}@latest`;
-    const upgrade = `${getCliInvocation(cwd, {installed: true})} upgrade --from ${ver} --apply`;
+    const upgrade = `${getCliInvocation(cwd, {installed: true})} upgrade --from ${from ?? ver} --apply`;
     return (
       `${name} needs ${CLI_PACKAGE} ${range}, but this CLI is ${ver}, so ` +
       `some of what it ships may not load. Upgrade Core and the CLI ` +
