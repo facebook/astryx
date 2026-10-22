@@ -8,7 +8,7 @@
  *   owning control announces each busy start once through the shared channel
  */
 
-import {StrictMode, type ReactElement} from 'react';
+import {StrictMode, useEffect, useRef, type ReactElement} from 'react';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {act, render, screen} from '@testing-library/react';
 import {TextInput} from '../TextInput';
@@ -82,6 +82,14 @@ function busyAnnouncements() {
   return announce.mock.calls.filter(([message]) => message === 'Loading');
 }
 
+/** The hook picks its route a frame after the busy start; wait for it. */
+async function nextFrame() {
+  await act(
+    async () =>
+      void (await new Promise(resolve => requestAnimationFrame(resolve))),
+  );
+}
+
 function strict(element: ReactElement) {
   return <StrictMode>{element}</StrictMode>;
 }
@@ -99,18 +107,23 @@ describe.each(OWNERS)('%s busy state (spec:AST-086)', (_name, renderOwner) => {
     expect(screen.queryByRole('status', {name: 'Loading'})).toBeNull();
   });
 
-  it('announces its busy start once through the polite channel, even under StrictMode (FR6, FR8)', () => {
+  it('announces its busy start once through the polite channel, even under StrictMode (FR6, FR8)', async () => {
     const {rerender} = render(strict(renderOwner(true)));
+    await nextFrame();
     rerender(strict(renderOwner(true)));
+    await nextFrame();
     expect(busyAnnouncements()).toEqual([['Loading', 'polite']]);
   });
 
-  it('announces nothing while idle, and again for each new busy start (FR6)', () => {
+  it('announces nothing while idle, and again for each new busy start (FR6)', async () => {
     const {rerender} = render(renderOwner(false));
+    await nextFrame();
     expect(busyAnnouncements()).toEqual([]);
     rerender(renderOwner(true));
+    await nextFrame();
     rerender(renderOwner(false));
     rerender(renderOwner(true));
+    await nextFrame();
     expect(busyAnnouncements()).toEqual([
       ['Loading', 'polite'],
       ['Loading', 'polite'],
@@ -142,17 +155,35 @@ describe.each(OWNERS)(
       const {rerender} = render(<dialog open>{renderOwner(false)}</dialog>);
       const dialog = document.querySelector('dialog') as HTMLDialogElement;
       rerender(<dialog open>{renderOwner(true)}</dialog>);
+      await nextFrame();
       const region = dialog.querySelector('[data-astryx-modal-busy-region]');
       expect(region).not.toBeNull();
       expect(region).toHaveAttribute('role', 'status');
       expect(region).toHaveAttribute('aria-live', 'polite');
       // Inserted empty, then filled on the next frame (FR3).
       expect(region).toHaveTextContent('');
-      await act(
-        async () =>
-          void (await new Promise(resolve => requestAnimationFrame(resolve))),
-      );
+      await nextFrame();
       expect(region).toHaveTextContent('Loading');
+      expect(busyAnnouncements()).toEqual([]);
+    });
+
+    it('announces inside the dialog when it is already busy as its dialog opens', async () => {
+      // The dialog opens in its own Effect, after the field's Effect has run,
+      // the way Dialog calls showModal().
+      function OpeningDialog() {
+        const ref = useRef<HTMLDialogElement>(null);
+        useEffect(() => {
+          ref.current?.setAttribute('open', '');
+        }, []);
+        return <dialog ref={ref}>{renderOwner(true)}</dialog>;
+      }
+      render(<OpeningDialog />);
+      await nextFrame();
+      await nextFrame();
+      const dialog = document.querySelector('dialog') as HTMLDialogElement;
+      expect(
+        dialog.querySelector('[data-astryx-modal-busy-region]'),
+      ).toHaveTextContent('Loading');
       expect(busyAnnouncements()).toEqual([]);
     });
   },
