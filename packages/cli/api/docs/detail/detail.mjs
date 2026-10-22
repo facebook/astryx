@@ -53,6 +53,11 @@ export async function detail(topic, options = {}) {
       // A guide the docs tree places is read by its route, not its doc name.
       ...(entry.tree ? {name: entry.name} : {}),
       // Whose topic or guide it took the place of, beside `replaces` (INV28).
+      // A guide names its route as the index and the listing do, even when
+      // the doc named a route the guide moved from.
+      ...(entry.tree && entry.replaces != null
+        ? {replaces: entry.replaces}
+        : {}),
       ...(entry.replaces != null && entry.replacedPackage != null
         ? {replacedPackage: entry.replacedPackage}
         : {}),

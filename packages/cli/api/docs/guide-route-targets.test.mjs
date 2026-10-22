@@ -464,7 +464,15 @@ describe('a route that moved', () => {
         }),
       });
       const read = await docs(GUIDE, undefined, {cwd: tmpDir});
-      expect(read).toMatchObject({package: KIT, data: {replacedPackage: CLI}});
+      expect(read).toMatchObject({
+        package: KIT,
+        data: {replaces: GUIDE, replacedPackage: CLI},
+      });
+      const index = await docs(GUIDE, undefined, {cwd: tmpDir, index: true});
+      expect(index.data.replaces).toBe(GUIDE);
+      const {stdout} = await cliText(['docs', GUIDE, '--full']);
+      expect(stdout).toContain(`replaces ${CLI}'s ${GUIDE}`);
+      expect(stdout).not.toContain('cli/integrations');
       const validated = await validateIntegration(KIT, {cwd: tmpDir});
       expect(
         (validated.data.notes ?? []).filter(n => n.code.startsWith('doc_')),
@@ -749,6 +757,71 @@ describe('third review follow-ups', () => {
         code: 'duplicate_guide_replacement',
         message: expect.stringContaining('"acme-b", is read'),
       });
+    },
+    SLOW,
+  );
+});
+
+describe('fourth review follow-ups', () => {
+  /**
+   * Add another configured package that ships these docs.
+   * @param {string} pkg
+   * @param {Record<string, object>} files
+   */
+  function addPackage(pkg, files) {
+    const config = path.join(tmpDir, 'astryx.config.mjs');
+    const listed = fs.readFileSync(config, 'utf8').match(/\[(.*)\]/)?.[1] ?? '';
+    fs.writeFileSync(
+      config,
+      `export default {integrations: [${listed}, '${pkg}']};\n`,
+    );
+    const dir = path.join(tmpDir, 'node_modules', ...pkg.split('/'));
+    fs.mkdirSync(path.join(dir, 'docs'), {recursive: true});
+    fs.writeFileSync(
+      path.join(dir, 'package.json'),
+      JSON.stringify({name: pkg, version: '1.0.0', type: 'module'}),
+    );
+    fs.writeFileSync(
+      path.join(dir, 'astryx.integration.mjs'),
+      "export default {docs: './docs'};\n",
+    );
+    for (const [file, doc] of Object.entries(files)) {
+      fs.writeFileSync(
+        path.join(dir, 'docs', file),
+        `export default ${JSON.stringify(doc, null, 2)};\n`,
+      );
+    }
+  }
+
+  it(
+    'keeps the place of a placed section that a later package replaces',
+    async () => {
+      scaffold({
+        'a.doc.mjs': topic('acme-a', {
+          extends: GUIDE,
+          sections: [section('acme-first', {after: 'quick-start'})],
+        }),
+      });
+      addPackage('@acme/two', {
+        'b.doc.mjs': topic('acme-b', {
+          extends: GUIDE,
+          sections: [{...section('acme-first'), title: 'First, revised'}],
+        }),
+      });
+      addPackage('@acme/three', {
+        'c.doc.mjs': topic('acme-c', {
+          extends: GUIDE,
+          sections: [section('acme-third', {after: 'quick-start'})],
+        }),
+      });
+      const index = await docs(GUIDE, undefined, {cwd: tmpDir, index: true});
+      expect(
+        index.data.sections.slice(0, 3).map(s => [s.id, s.package]),
+      ).toEqual([
+        ['quick-start', CLI],
+        ['acme-first', '@acme/two'],
+        ['acme-third', '@acme/three'],
+      ]);
     },
     SLOW,
   );

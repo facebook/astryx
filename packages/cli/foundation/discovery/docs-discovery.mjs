@@ -719,10 +719,33 @@ export function mergeTopicReport(base, overlay) {
       // stable ID keeps that ID, so readers addressing it keep working. A
       // replacing section keeps the place of the one it replaces.
       const replaced = sections[at];
-      sections[at] =
+      const replacing =
         section.id == null && replaced.id != null
           ? withSourceTitle({...section, id: replaced.id}, sourceTitle(section))
           : section;
+      // It also keeps the place an earlier `after` gave the one it replaces,
+      // so sections placed after that key later still follow it.
+      if (replaced[PLACED_AFTER] != null) {
+        const placed = replacing === section ? withoutPosition({...section}) : replacing;
+        for (const symbol of Object.getOwnPropertySymbols(section)) {
+          if (!(symbol in placed)) {
+            Object.defineProperty(
+              placed,
+              symbol,
+              /** @type {PropertyDescriptor} */ (
+                Object.getOwnPropertyDescriptor(section, symbol)
+              ),
+            );
+          }
+        }
+        Object.defineProperty(placed, PLACED_AFTER, {
+          value: replaced[PLACED_AFTER],
+          configurable: true,
+        });
+        sections[at] = placed;
+      } else {
+        sections[at] = replacing;
+      }
     }
   }
   return {doc: {...base, sections}, unplaced};
