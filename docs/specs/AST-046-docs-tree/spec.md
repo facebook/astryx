@@ -413,8 +413,8 @@ thins its page.
 **Decider:** `josephfarina`, `2026-10-21`
 
 Maintainer decision: everything an integration author reads lives under one
-top-level home, `authoring`: the guides that were `cli/integrations` and the
-field reference that was the `authoring` topic. No doc sits in a catch-all:
+top-level home, `authoring`, which holds the integration guides and the field
+reference. No doc sits in a catch-all:
 a flat topic's home is named for what it is, Guides or Foundations, after the
 docsite's sidebar groups. Routes move with every reference, as DEC-3 allows,
 and topic names do not change.
