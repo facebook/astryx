@@ -286,9 +286,8 @@ const TOKEN_ROW_INSET = `calc(${spacingVars['--spacing-1']} - 1px)`;
 // InputClearButton grows 2px past its visible box under `(pointer: coarse)`.
 // Keep this maximum reserve in sync with Field/InputClearButton.tsx.
 const INPUT_CLEAR_COARSE_POINTER_OUTSET = '2px';
-// Kept in sync with useEndLaneReserve: wrapperWithTokens and inputCompact read
-// the custom property directly, to keep token rows and the empty-query hit
-// surface short of the lane.
+// Kept in sync with useEndLaneReserve: inputCompact reads the custom property
+// directly so its empty-query pseudo-class can suppress the inner reserve.
 const END_LANE_RESERVE_VAR = '--_tokenizer-end-lane-reserve';
 
 const styles = stylex.create({
@@ -309,10 +308,6 @@ const styles = stylex.create({
     // = 8 - 4 - 1 = 3px.
     paddingBlock: TOKEN_ROW_INSET,
     paddingInline: TOKEN_ROW_INSET,
-    // The end lane is out of flow, so tokens would wrap under it. Every row
-    // stops short of the measured lane instead; with no lane up the variable
-    // is absent and this is the ordinary inset.
-    paddingInlineEnd: `calc(${TOKEN_ROW_INSET} + var(${END_LANE_RESERVE_VAR}, 0px))`,
     // Row gap must match paddingBlock so wrapped rows look evenly spaced.
     rowGap: TOKEN_ROW_INSET,
   },
@@ -326,9 +321,6 @@ const styles = stylex.create({
   token: {
     display: 'flex',
     flexShrink: 0,
-    // A renderToken wrapper sizes to its content; cap it at the row so the
-    // pill inside truncates instead of running past the field.
-    maxWidth: '100%',
     position: 'relative',
     zIndex: 1,
   },
@@ -343,14 +335,6 @@ const styles = stylex.create({
     gap: spacingVars['--spacing-2'],
     flexShrink: 0,
     zIndex: 1,
-  },
-  idleSpinner: {
-    // Hides the Spinner's own box too, which a theme may paint, and covers
-    // engines without content-visibility. Both keep the box's size.
-    visibility: 'hidden',
-    // Skips the ring's rendering, and with it the infinite arc animation,
-    // while the root keeps its own explicit, themed width and height.
-    contentVisibility: 'hidden',
   },
   inputAtMax: {
     width: 0,
@@ -394,8 +378,7 @@ const styles = stylex.create({
       ':placeholder-shown': 0,
     },
     paddingInlineEnd: {
-      // wrapperWithTokens already keeps the in-flow input short of the lane.
-      default: 0,
+      default: `var(${END_LANE_RESERVE_VAR}, 0px)`,
       ':placeholder-shown': spacingVars['--spacing-1'],
     },
     textAlign: {
@@ -545,13 +528,6 @@ const CREATABLE_ID_PREFIX = '__xds_create__';
  *
  * Renders nothing when the lane would be empty, so `useEndLaneReserve` sees no
  * element, publishes no width, and the input keeps its full content box.
- *
- * With `hasBusySlot` the Spinner stays mounted while idle, unrendered, not
- * animating and out of the accessibility tree, so its box keeps the themed
- * Spinner's own size.
- * Token rows reserve the lane's measured width, so a Spinner that came and
- * went with the search would re-wrap them, and widen a content-sized field,
- * on every search.
  */
 function EndLane({
   lane,
@@ -559,7 +535,6 @@ function EndLane({
   laneXStyle,
   loadingLabel,
   hasStaticContent,
-  hasBusySlot,
   children,
 }: {
   lane: BusyIndicatorLane;
@@ -567,26 +542,15 @@ function EndLane({
   laneXStyle: stylex.StyleXStyles[];
   loadingLabel: string;
   hasStaticContent: boolean;
-  hasBusySlot: boolean;
   children: ReactNode;
 }) {
   const isBusy = useIsBusy(lane);
-  if (!isBusy && !hasStaticContent && !hasBusySlot) {
+  if (!isBusy && !hasStaticContent) {
     return null;
   }
   return (
     <div ref={laneRef} {...stylex.props(laneXStyle)}>
-      {(isBusy || hasBusySlot) && (
-        <Spinner
-          // Remounts when a search starts, so the ring syncs its phase on
-          // mount exactly as a newly shown Spinner did before.
-          key={isBusy ? 'busy' : 'idle'}
-          size="sm"
-          aria-label={loadingLabel}
-          aria-hidden={isBusy ? undefined : true}
-          xstyle={isBusy ? undefined : styles.idleSpinner}
-        />
-      )}
+      {isBusy && <Spinner size="sm" aria-label={loadingLabel} />}
       {children}
     </div>
   );
@@ -1116,11 +1080,7 @@ export function Tokenizer<T extends SearchableItem>({
         laneRef={laneRef}
         laneXStyle={[styles.endSection, endSectionSizeStyles[size]]}
         loadingLabel={t('@astryx.typeahead.loading')}
-        hasStaticContent={hasStaticEndLane}
-        // Wherever a search can run beside tokens: enabled and below
-        // maxEntries. A collapsed overflow row keeps it too, since a search
-        // started while focused can settle after focus leaves.
-        hasBusySlot={value.length > 0 && !isDisabled && !isAtMax}>
+        hasStaticContent={hasStaticEndLane}>
         {endContent}
         {hasClearButton && (
           <InputClearButton
