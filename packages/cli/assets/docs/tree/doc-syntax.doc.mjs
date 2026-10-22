@@ -209,6 +209,10 @@ export const docs = {
             ],
           ],
         },
+        {
+          type: 'prose',
+          text: "In global mode: outside a project, a `{@@command}` token prints the way your global install prints every command, and a `{@@pm}` step prints for npm unless the CLI detects another package manager. In a project, the project's own runner and package manager decide. See {@link namespace:global}.",
+        },
       ],
     },
   ],
