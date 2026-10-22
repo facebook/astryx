@@ -404,8 +404,8 @@ const SHELL_LANGS = new Set(['', 'bash', 'sh', 'shell', 'zsh', 'console']);
  * Text with each `{@command}`, `{@pm}` and `{@pm-only}` token rendered for the
  * reader, and each `{@@…}` shown as `{@…}`. A token in prose prints as a code
  * span; in a code span or code block, as the bare command. A one-manager
- * step's reason follows it: in prose and code spans in parentheses, in a
- * shell block as a comment. A token that does not parse prints as written,
+ * step's reason follows it: in prose right after the command, after a code
+ * span, in parentheses; in a shell block as a comment. A token that does not parse prints as written,
  * and doctor names it.
  * @param {string} text
  * @param {RenderOptions} options
@@ -430,6 +430,8 @@ export function renderCommandTokens(text, options, lang = null) {
       const step = parseCommandToken(name, body);
       if ('error' in step) return whole;
       const {command, note} = renderStep(step, options);
+      // In prose the reason follows its own command, inside the sentence.
+      if (note != null && wrap) return `\`${command}\` (${note})`;
       if (note != null) notes.push(note);
       return wrap ? `\`${command}\`` : command;
     });

@@ -55,7 +55,7 @@ export const docs = {
         {
           type: 'code',
           lang: 'bash',
-          code: '{@pm remove @astryxdesign/cli --global}\n# or: pnpm remove -g @astryxdesign/cli · yarn global remove @astryxdesign/cli · bun remove -g @astryxdesign/cli · volta uninstall @astryxdesign/cli',
+          code: '{@pm remove @astryxdesign/cli --global}\n# with Volta: volta uninstall @astryxdesign/cli',
         },
         {
           type: 'prose',

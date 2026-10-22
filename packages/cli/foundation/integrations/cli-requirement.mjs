@@ -71,6 +71,13 @@ export const THEMES_CLI = '0.6.4';
  */
 export const SECTION_IDS_CLI = '0.6.4';
 
+/**
+ * The first stable CLI release that renders doc tokens (`{@command …}`,
+ * `{@pm …}`, `{@pm-only …}`) for the reader. Every earlier release prints
+ * them as written, so readers see raw tokens.
+ */
+export const DOC_TOKENS_CLI = '0.7.4';
+
 const VERSION_RE = /^v?(\d+|[xX*])(?:\.(\d+|[xX*]))?(?:\.(\d+|[xX*]))?(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/;
 
 /**
@@ -223,6 +230,23 @@ export function sectionIdsCliProblem(pkg) {
     'has a doc section that sets `id`',
     'rejects the field, and can hide every doc topic the package ships',
     SECTION_IDS_CLI,
+  );
+}
+
+/**
+ * Why a package whose docs write doc tokens would show them raw on an older
+ * CLI, or null when its declared CLI range admits only CLIs that render
+ * them. Every release before the first that renders them prints a token as
+ * written.
+ * @param {any} pkg package.json
+ * @returns {string | null}
+ */
+export function docTokensCliProblem(pkg) {
+  return cliRangeProblem(
+    pkg,
+    'writes doc tokens (`{@command …}`, `{@pm …}` or `{@pm-only …}`) in its docs',
+    'prints each token as written, so readers see raw tokens instead of commands',
+    DOC_TOKENS_CLI,
   );
 }
 

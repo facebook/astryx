@@ -109,6 +109,10 @@ export const docs = {
               '`section_ids_need_cli`: The package has a doc section that sets `id` but declares no @astryxdesign/cli peer.',
               'The same fix as `themes_need_cli`, or drop the section `id`s: a CLI older than published 0.6.4 rejects them and hides your doc topics.',
             ],
+            [
+              '`doc_tokens_need_cli`: The package writes doc tokens (`{@@command …}`, `{@@pm …}`, `{@@pm-only …}`) in its docs, but its @astryxdesign/cli peer admits a CLI before 0.7.4.',
+              'Run `{@pm-only npm "edits package.json" pkg set \'peerDependencies.@astryxdesign/cli=>=0.7.4\'}` and `{@pm-only npm "edits package.json" pkg set \'peerDependenciesMeta.@astryxdesign/cli.optional=true\' --json}`. A CLI before 0.7.4 prints each token as written, so readers see raw tokens.',
+            ],
           ],
         },
       ],

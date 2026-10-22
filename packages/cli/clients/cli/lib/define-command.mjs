@@ -126,10 +126,7 @@ export function defineCommand(parent, doc, {fn, action, hidden} = {}) {
     argSpec ? `${token} ${argSpec}` : token,
     hidden ? {hidden: true} : {},
   );
-  Object.defineProperty(cmd, COMMAND_DOCS, {
-    value: {doc, fn},
-    configurable: true,
-  });
+  Object.defineProperty(cmd, COMMAND_DOCS, {value: {doc, fn}, configurable: true});
   // Help shows doc tokens as commands, the way `astryx docs` does.
   if (doc.summary) cmd.description(renderTokens(doc.summary));
   if (doc.deprecated) {
@@ -147,9 +144,7 @@ export function defineCommand(parent, doc, {fn, action, hidden} = {}) {
     // current CLI has none. (Docsite/`astryx docs` read the arg's `param` for
     // its description instead.)
     if (arg.description) {
-      const argument = cmd.registeredArguments?.find(
-        a => a.name() === arg.name,
-      );
+      const argument = cmd.registeredArguments?.find(a => a.name() === arg.name);
       if (argument) argument.description = renderTokens(arg.description);
     }
   }

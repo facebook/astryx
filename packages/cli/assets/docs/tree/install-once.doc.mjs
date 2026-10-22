@@ -44,7 +44,7 @@ export const docs = {
         {
           type: 'code',
           lang: 'bash',
-          code: '{@pm install @astryxdesign/cli --global}\n# or: pnpm add -g @astryxdesign/cli · yarn global add @astryxdesign/cli · bun add -g @astryxdesign/cli · volta install @astryxdesign/cli',
+          code: '{@pm install @astryxdesign/cli --global}\n# with Volta: volta install @astryxdesign/cli',
         },
         {
           type: 'prose',

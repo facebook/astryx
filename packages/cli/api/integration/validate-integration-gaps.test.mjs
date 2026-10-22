@@ -1941,7 +1941,7 @@ describe('layout findings 0.7.2 did not fail on', () => {
     );
     expect(run.status, run.stderr).toBe(0);
     expect(run.stdout).toContain(
-      'note (duplicate_component_doc): Component "AcmeWidget" has 2 docs:',
+      'note (duplicate_component_doc): [next minor] Component "AcmeWidget" has 2 docs:',
     );
     expect(run.stdout).toContain('Summary: 0 errors, 0 warnings');
   });
@@ -1992,7 +1992,7 @@ describe('name findings listed until the next minor release', () => {
     );
     expect(run.status, run.stderr).toBe(0);
     expect(run.stdout).toContain(
-      'note (unknown_block_component): Template "account-card" names "AcmeGizmo" in componentsUsed',
+      'note (unknown_block_component): [next minor] Template "account-card" names "AcmeGizmo" in componentsUsed',
     );
     expect(run.stdout).toContain('Summary: 0 errors, 0 warnings');
   });

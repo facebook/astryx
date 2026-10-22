@@ -1724,6 +1724,36 @@ describe('integrationPackCheck', () => {
     expect(await codes()).not.toContain('section_ids_need_cli');
   }, 120_000);
 
+  it('fails a package whose docs write doc tokens on a CLI range that prints them raw', async () => {
+    writePackage({
+      manifest: "export default {docs: './docs'};\n",
+      themes: false,
+    });
+    fs.mkdirSync(path.join(tmpDir, 'docs'), {recursive: true});
+    const write = (/** @type {string} */ name, /** @type {string} */ text) =>
+      fs.writeFileSync(
+        path.join(tmpDir, 'docs', `${name}.doc.mjs`),
+        `export default {type: 'generic', name: '${name}', title: 'Notes', description: 'Notes.', sections: [{title: 'Run', content: [{type: 'prose', text: ${JSON.stringify(text)}}]}]};\n`,
+      );
+    const codes = async () =>
+      (await integrationPackCheck({cwd: tmpDir})).data.issues.map(
+        (/** @type {{code: string}} */ issue) => issue.code,
+      );
+    // An escaped token is shown as written by every release.
+    write('escaped', 'Write {@@pm install x} for an install.');
+    expect(await codes()).not.toContain('doc_tokens_need_cli');
+    write('tokens', 'Run {@command doctor} first.');
+    expect(await codes()).toContain('doc_tokens_need_cli');
+    const pkgFile = path.join(tmpDir, 'package.json');
+    const pkg = JSON.parse(fs.readFileSync(pkgFile, 'utf-8'));
+    pkg.peerDependencies = {'@astryxdesign/cli': '>=0.7.3'};
+    fs.writeFileSync(pkgFile, `${JSON.stringify(pkg, null, 2)}\n`);
+    expect(await codes()).toContain('doc_tokens_need_cli');
+    pkg.peerDependencies = {'@astryxdesign/cli': '>=0.7.4'};
+    fs.writeFileSync(pkgFile, `${JSON.stringify(pkg, null, 2)}\n`);
+    expect(await codes()).not.toContain('doc_tokens_need_cli');
+  }, 120_000);
+
   it('fails a package with a template that sets replaces on a CLI range that rejects the field', async () => {
     writePackage({
       manifest: "export default {templates: './templates'};\n",
