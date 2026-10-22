@@ -50,16 +50,20 @@ highlight follows the pointer — is contracted by
 
 ## Compatibility and migration
 
-- Released default preserved: `no` under a finger. The omitted
+- Released default preserved: `no`. Under a finger, the omitted
   `presentation`, released as `'popover'`, follows `spec:AST-094` FR29 (open
-  on press) under a finger; `presentation="popover"` keeps the released
-  behavior (`spec:AST-094` FR25). Mouse and keyboard are unchanged.
-- Compatibility class: compatible behavior correction; public API, DOM
-  shape, styling, and targets are preserved; the default under a finger
+  on press); `presentation="popover"` keeps the released behavior
+  (`spec:AST-094` FR25). With proposed FR21, ArrowDown in a single-line text
+  field in `header` moves focus to the first row, where the released header
+  kept every key of its own. Mouse and keyboard are otherwise unchanged.
+- Compatibility class: breaking interaction change under `spec:AST-017` FR1
+  (proposed FR21); otherwise a compatible behavior correction: public API, DOM
+  shape, styling, and targets are preserved, the default under a finger
   changes as above, and the press-model behavior delta is recorded in
   `module:DropdownMenu/useMenuPress`
 - Controlled/uncontrolled behavior: unchanged
-- Migration decision: `module:DropdownMenu/useMenuPress/DEC-3`; proposed
+- Migration decision: a field that needs ArrowDown prevents its default
+  (proposed DEC-14); `module:DropdownMenu/useMenuPress/DEC-3`; proposed
   `module:DropdownMenu/useMenuPress/DEC-4`; `spec:AST-094/DEC-4` (a caller
   that needs the released tap-open passes `presentation="popover"`)
 
