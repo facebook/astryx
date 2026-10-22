@@ -703,18 +703,36 @@ function hasBuiltCheck(version) {
 }
 
 /**
- * The Core release a project records (installed, locked, or declared
- * exactly), never the running CLI's own version, so a block written before
- * install matches the CLI the install brings.
+ * Whether the project at `dir` can run `astryx doctor --built` once it is
+ * installed: the Core release it records (installed, locked, or declared
+ * exactly) has it, and so does the CLI release it records when it declares
+ * one, since a project's own CLI answers whatever its version. Never the
+ * running CLI's own version, so a block written before install matches the
+ * CLI the install brings.
  * @param {string} dir
- * @returns {string | null}
+ * @returns {boolean}
  */
-export function recordedCoreOf(dir) {
+export function projectHasBuiltCheck(dir) {
+  let facts;
   try {
-    return coreVersionOf(readReleaseFacts(dir));
+    facts = readReleaseFacts(dir);
   } catch {
-    return null;
+    return false;
   }
+  if (!hasBuiltCheck(coreVersionOf(facts))) return false;
+  const declaresCli = Boolean(
+    facts.cli || facts.lockedCliVersion || facts.declaredCliRange,
+  );
+  if (!declaresCli) return true;
+  const cliVersion =
+    facts.cli?.version ??
+    (isValidSemver(facts.lockedCliVersion ?? '')
+      ? facts.lockedCliVersion
+      : null) ??
+    (facts.declaredCliRange && isValidSemver(facts.declaredCliRange)
+      ? facts.declaredCliRange
+      : null);
+  return hasBuiltCheck(cliVersion);
 }
 
 /**
@@ -741,7 +759,7 @@ export function recordedCoreOf(dir) {
  * `getting-started` is the one it should reach for first.
  *
  * @param {string | null} version the Core version
- * @param {{coreDir?: string|null, invocation?: string, stylingSystem?: 'stylex'|'tailwind'|'css', zh?: boolean, lang?: string, topics?: string[], agentDocs?: Array<{package: string, append: readonly string[]}>, recordedCore?: string | null}} [options]
+ * @param {{coreDir?: string|null, invocation?: string, stylingSystem?: 'stylex'|'tailwind'|'css', zh?: boolean, lang?: string, topics?: string[], agentDocs?: Array<{package: string, append: readonly string[]}>, builtCheck?: boolean}} [options]
  * @returns {string}
  */
 export function generateCompressedIndex(
@@ -752,7 +770,7 @@ export function generateCompressedIndex(
     stylingSystem = 'css',
     topics,
     agentDocs = [],
-    recordedCore = null,
+    builtCheck = false,
   } = {},
 ) {
   const run = invocation;
@@ -802,11 +820,11 @@ export function generateCompressedIndex(
   // intentionally omitted from the command reference below.
   lines.push(WORKFLOW_TITLE, ...WORKFLOW_STEPS);
   lines.push('Changing an existing page? Keep it: skip step 2 and add blocks/components inside its sections.');
-  // Only for a project whose recorded Core release has `doctor --built`: a
-  // newer copy may write this block in a project that then installs the CLI
-  // at its Core's version, and an older CLI rejects the option. The computer-level
+  // Only for a project whose recorded releases have `doctor --built`
+  // (projectHasBuiltCheck): a newer copy may write this block in a project
+  // whose install then brings an older CLI, which rejects the option. The computer-level
   // skill names only entry points every release keeps (AST-081 FR8).
-  if (hasBuiltCheck(recordedCore)) {
+  if (builtCheck) {
     lines.push("Before you deliver a build, run `astryx doctor --built <dir>`; don't deliver it if it fails.");
   }
   lines.push('');
@@ -953,7 +971,7 @@ export async function renderAgentDocsBlock(
 
   return generateCompressedIndex(version, {
     coreDir,
-    recordedCore: recordedCoreOf(targetDir),
+    builtCheck: projectHasBuiltCheck(targetDir),
     invocation: getCliInvocation(targetDir),
     stylingSystem: detectStylingSystem(targetDir),
     topics,
@@ -1042,7 +1060,7 @@ export function injectAgentsMd(targetDir, version) {
   const agentsPath = path.join(targetDir, AGENTS_MD);
   const compressedIndex = generateCompressedIndex(version, {
     coreDir: findCoreDir(targetDir),
-    recordedCore: recordedCoreOf(targetDir),
+    builtCheck: projectHasBuiltCheck(targetDir),
     stylingSystem: detectStylingSystem(targetDir),
   });
   injectXdsBlock(agentsPath, compressedIndex, {
@@ -1063,7 +1081,7 @@ export function injectClaudeMd(targetDir, version) {
   const claudePath = path.join(targetDir, CLAUDE_MD);
   const compressedIndex = generateCompressedIndex(version, {
     coreDir: findCoreDir(targetDir),
-    recordedCore: recordedCoreOf(targetDir),
+    builtCheck: projectHasBuiltCheck(targetDir),
     stylingSystem: detectStylingSystem(targetDir),
   });
   return injectXdsBlock(claudePath, compressedIndex);
@@ -1788,7 +1806,7 @@ export function installAgentDocs(
     renderedBlock ??
     generateCompressedIndex(version, {
       coreDir,
-      recordedCore: recordedCoreOf(targetDir),
+      builtCheck: projectHasBuiltCheck(targetDir),
       zh,
       lang,
       invocation,

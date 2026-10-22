@@ -7,7 +7,7 @@ import * as os from 'node:os';
 import {renderComputerAgentText} from './computer-agent-text.mjs';
 import {
   generateCompressedIndex,
-  recordedCoreOf,
+  projectHasBuiltCheck,
   detectStylingSystem,
   getXdsVersion,
   installAgentDocs,
@@ -100,37 +100,42 @@ describe('generateCompressedIndex', () => {
   it('tells agents to check a build with doctor --built; the computer-level skill does not', () => {
     const line =
       "Before you deliver a build, run `astryx doctor --built <dir>`; don't deliver it if it fails.";
-    expect(generateCompressedIndex('0.7.4', {recordedCore: '0.7.4'})).toContain(line);
-    expect(generateCompressedIndex('1.0.0', {recordedCore: '1.0.0'})).toContain(line);
-    // The project's recorded Core decides, not the version the block names
-    // (which falls back to the running CLI's own before install).
-    expect(generateCompressedIndex('0.7.4', {recordedCore: '0.7.3'})).not.toContain('doctor --built');
+    expect(generateCompressedIndex('0.7.4', {builtCheck: true})).toContain(line);
     expect(generateCompressedIndex('0.7.4')).not.toContain('doctor --built');
-    // A 0.7.4 canary predates the option.
-    expect(
-      generateCompressedIndex('0.7.4', {recordedCore: '0.7.4-canary.b25f95e'}),
-    ).not.toContain('doctor --built');
     expect(renderComputerAgentText({command: 'astryx'})).not.toContain(
       'doctor --built',
     );
   });
 
-  it('reads the Core release a fresh clone records, before install', () => {
-    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'astryx-recorded-core-'));
-    try {
+  describe('projectHasBuiltCheck reads the releases a project records, before install', () => {
+    /** @param {Record<string, string>} dependencies */
+    const project = dependencies => {
+      const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'astryx-built-check-'));
       fs.writeFileSync(
         path.join(dir, 'package.json'),
-        JSON.stringify({
-          name: 'app',
-          dependencies: {'@astryxdesign/core': '0.7.3'},
-          devDependencies: {'@astryxdesign/cli': '0.7.3'},
-        }),
+        JSON.stringify({name: 'app', dependencies}),
       );
-      expect(recordedCoreOf(dir)).toBe('0.7.3');
-    } finally {
-      fs.rmSync(dir, {recursive: true, force: true});
-    }
+      return dir;
+    };
+    it.each([
+      ['Core 0.7.4 and no CLI', {'@astryxdesign/core': '0.7.4'}, true],
+      ['Core and CLI 0.7.4', {'@astryxdesign/core': '0.7.4', '@astryxdesign/cli': '0.7.4'}, true],
+      ['Core 0.7.3', {'@astryxdesign/core': '0.7.3'}, false],
+      ['Core and CLI 0.7.3', {'@astryxdesign/core': '0.7.3', '@astryxdesign/cli': '0.7.3'}, false],
+      ['Core 0.7.4 with CLI 0.7.3', {'@astryxdesign/core': '0.7.4', '@astryxdesign/cli': '0.7.3'}, false],
+      ['Core 0.7.4 with a CLI range', {'@astryxdesign/core': '0.7.4', '@astryxdesign/cli': '^0.7.0'}, false],
+      ['a 0.7.4 canary', {'@astryxdesign/core': '0.7.4-canary.b25f95e'}, false],
+      ['no Astryx at all', {react: '19.0.0'}, false],
+    ])('%s', (_label, dependencies, expected) => {
+      const dir = project(dependencies);
+      try {
+        expect(projectHasBuiltCheck(dir)).toBe(expected);
+      } finally {
+        fs.rmSync(dir, {recursive: true, force: true});
+      }
+    });
   });
+
 
 
   it('includes theme nudge rule', () => {
