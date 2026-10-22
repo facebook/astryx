@@ -803,11 +803,21 @@ function RangeCodeContent({
 }) {
   const codeRef = useRef<HTMLElement>(null);
 
+  // Insert the ::highlight() rules before the commit's layout reads, as the
+  // span path does. Inserted later, the new rules restyle the whole document
+  // a second time after any layout read in the same commit has already
+  // styled it, which on a long page full of code blocks costs a full style
+  // recalculation.
+  useInsertionEffect(() => {
+    if (hasHighlightAPI()) {
+      ensureHighlightStyles();
+    }
+  }, []);
+
   useEffect(() => {
     if (!hasHighlightAPI()) {
       return;
     }
-    ensureHighlightStyles();
 
     const codeEl = codeRef.current;
     if (!codeEl || tokenLines.length === 0) {

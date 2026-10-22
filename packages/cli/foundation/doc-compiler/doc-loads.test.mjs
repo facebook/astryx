@@ -331,6 +331,10 @@ const RUNNERS = {
       'require.cache',
     ],
   },
+  'foundation/fs/read-record.mjs': {
+    runs: "nothing; it wraps node:fs's read calls to record the paths an operation reads, and republishes them to ESM imports",
+    sites: ['module.syncBuiltinESMExports'],
+  },
   'foundation/fs/paths.mjs': {
     runs: "Yarn's pnpapi, under Plug'n'Play, to find an installed package",
     sites: ['require(pnpapi)'],

@@ -7,7 +7,9 @@
  */
 
 import {readFileSync} from 'node:fs';
+import * as path from 'node:path';
 import {requireCoreDir} from '../../foundation/fs/paths.mjs';
+import {recordReads, unchangedSince} from '../../foundation/fs/read-record.mjs';
 import {isOutsideProject} from '../../foundation/env/project-scope.mjs';
 import {coreDirOrThrow} from '../error.mjs';
 import {CORELESS_DOMAINS} from './_query.mjs';
@@ -89,6 +91,43 @@ export async function gatherCandidates(options) {
     outside,
     coreSkipped,
   };
+}
+
+/**
+ * @typedef {Awaited<ReturnType<typeof gatherCandidates>>} Gathered
+ * @type {Map<string, {reads: Map<string, string>, value: Promise<Gathered>}>}
+ */
+const gathered = new Map();
+
+/**
+ * gatherCandidates, reused within one process: a later search in the same
+ * folder, for the same `type`, ranks the candidates an earlier search
+ * gathered when none of the files that gather read, and none of the folders
+ * it listed or probed, changed since (each is checked by its change time and
+ * size, so an edited doc in a linked package is seen on the next call). A
+ * long-running caller (a docs site's search, an agent harness) then pays the
+ * gather once. A one-shot `astryx search` gathers once, as before.
+ * @param {{cwd?: string, type?: string}} options
+ * @returns {Promise<Gathered>}
+ */
+export async function gatherCandidatesReused(options) {
+  const cwd = path.resolve(options.cwd ?? process.cwd());
+  const key = `${cwd}\0${options.type ?? ''}`;
+  const hit = gathered.get(key);
+  if (hit && unchangedSince(hit.reads)) return hit.value;
+  /** @type {Map<string, string>} */
+  const seen = new Map();
+  const value = recordReads(seen, () => gatherCandidates({...options, cwd}));
+  try {
+    await value;
+  } catch (error) {
+    if (gathered.get(key)?.value === value) gathered.delete(key);
+    throw error;
+  }
+  // Each path's state was taken as it was first read, so an edit made while
+  // the gather ran shows as a change on the next call.
+  gathered.set(key, {reads: seen, value});
+  return value;
 }
 
 /**
