@@ -2658,6 +2658,44 @@ describe('DropdownMenuSubMenu header and footer', () => {
     }
   });
 
+  it("the bottom sheet keeps an open level whose row loses its items, instead of listing the menu's rows under its heading", async () => {
+    const user = userEvent.setup();
+    function RecentMenu() {
+      const [recents, setRecents] = useState(['Report.pdf', 'Notes.txt']);
+      const recentItems =
+        recents.length > 0 ? recents.map(label => ({label})) : undefined;
+      return (
+        <DropdownMenu
+          button={{label: 'File'}}
+          presentation="bottom-sheet"
+          footer={
+            <button type="button" onClick={() => setRecents([])}>
+              Clear recent
+            </button>
+          }
+          items={[
+            {label: 'Rename'},
+            {label: 'Recent', items: recentItems},
+            {label: 'Delete'},
+          ]}
+        />
+      );
+    }
+    render(<RecentMenu />);
+    await user.click(screen.getByRole('button', {name: /File/}));
+    await user.click(await screen.findByRole('button', {name: /Recent/}));
+    await screen.findByRole('button', {name: /Report\.pdf/});
+    // The menu's own footer shows on Recent, which has none of its own.
+    await user.click(screen.getByRole('button', {name: 'Clear recent'}));
+    // The row no longer opens a sub-menu: the level keeps its last known rows.
+    expect(screen.getByRole('heading', {name: 'Recent'})).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', {name: /Report\.pdf/}),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('button', {name: /Delete/})).toBeNull();
+    expect(screen.queryByRole('button', {name: /Rename/})).toBeNull();
+  });
+
   describe('on a phone', () => {
     const originalMatchMedia = window.matchMedia;
     beforeEach(() => {
