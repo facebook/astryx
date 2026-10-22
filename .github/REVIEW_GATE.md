@@ -50,11 +50,11 @@ commit that only records the approval in the records (`authority: draft` to
 `current`, `phase: proposed` to `accepted`, `approved_by` naming the approver,
 `approved_at` within a day of the approval, and Decider lines whose date is
 still a placeholder, on lines naming the approver or no one yet, gaining that
-date). A Decider line that already has a date
-is never rewritten, and a named person is never replaced. Any other edit, added
+date and the approver). A Decider line that already has a date is never
+rewritten, and a named person is never replaced. Any other edit, added
 or removed line, or changed file needs a new approval. A decision on the new
-head, or any later owner revoke, request for changes, or dismissal of an owner's
-approving review, wins. A ready attestation never carries,
+head, or any later revoke, request for changes, or dismissal of an approving
+review by an owner who may approve the same group, wins. A ready attestation never carries,
 and while `SPEC_DECISION_APP` is set nothing carries (see below).
 The gate status names the head the approval was carried from.
 

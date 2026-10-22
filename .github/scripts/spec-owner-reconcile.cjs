@@ -59,7 +59,7 @@ function ownerCommandHelpMarker(headSha) {
   return `<!-- spec-owner-command-help:${headSha} -->`;
 }
 
-function ownerCommandHelpBody({verb, headSha, problem, namesFullSha}) {
+function ownerCommandHelpBody({verb, headSha, problem, stopsCarry}) {
   return [
     ownerCommandHelpMarker(headSha),
     `That \`/${verb}-spec\` comment did not decide \`${GATE_STATUS_CONTEXT}\` for the current head: ${problem}.`,
@@ -69,8 +69,8 @@ function ownerCommandHelpBody({verb, headSha, problem, namesFullSha}) {
     `    /${verb}-spec ${headSha}`,
     '',
     verb === 'revoke'
-      ? namesFullSha
-        ? 'A revoke of an earlier head still stops any earlier approval from carrying to this head.'
+      ? stopsCarry
+        ? 'A revoke of an earlier head still stops an earlier approval in the groups you may approve from carrying to this head.'
         : 'It also did not stop an earlier approval from carrying to this head.'
       : 'An approval stays in force through a rebase or a commit that only records it in the records; any other new commit needs the command again.',
   ].join('\n');
@@ -544,8 +544,10 @@ async function reconcileSpecOwnerGate({
   // believe they had approved a head the gate never read. Answer it once per
   // head with the exact command instead of leaving it silent. An approval of
   // an earlier head that this run carries did decide the gate, so it gets no
-  // answer.
-  async function answerInexactCommand(carriedFrom = null) {
+  // answer. A revoke of an earlier head stops a carry only when it names a
+  // full SHA and comes from an owner of a group this head requires; the reply
+  // says so only then.
+  async function answerInexactCommand(carriedFrom = null, carryOwners = []) {
     if (context.eventName !== 'issue_comment' || !commentAuthor) return;
     const intent = parseOwnerCommandIntent(context.payload.comment?.body);
     const problem = describeOwnerCommandProblem(intent, initialHead);
@@ -567,7 +569,9 @@ async function reconcileSpecOwnerGate({
         verb: intent.verb,
         headSha: initialHead,
         problem,
-        namesFullSha: /^[0-9a-f]{40}$/i.test(intent.argument),
+        stopsCarry:
+          /^[0-9a-f]{40}$/i.test(intent.argument) &&
+          carryOwners.some(name => name.toLowerCase() === commentAuthor),
       }),
     });
     core.info(`Answered an inexact ${intent.verb} command on ${initialHead}.`);
@@ -778,6 +782,11 @@ async function reconcileSpecOwnerGate({
     [specDecision, designDecision, themeDecision]
       .map(decision => decision.carriedFrom)
       .find(Boolean) ?? null,
+    [
+      ...(requiredGroups.spec ? engineeringOwners : []),
+      ...(requiredGroups.design ? designApprovers : []),
+      ...(requiredGroups.theme ? themeApprovers : []),
+    ],
   );
 
   const approved =

@@ -2196,4 +2196,30 @@ describe('an approval carries across heads with no material change', () => {
     expect(latestGateStatus(harness.state).state).toBe('pending');
     expect(harness.state.comments.at(-1).body).toContain('still stops');
   });
+
+  it('does not claim a revoke from outside the carried group stops the carry', async () => {
+    const designRevoke = {
+      user: {login: 'cvkxx'},
+      body: `/revoke-spec ${approvedHead}`,
+      created_at: '2026-08-30T09:30:00Z',
+    };
+    const harness = carryHarness({
+      comments: [approveEarlierHead, designRevoke],
+    });
+
+    await run(
+      harness,
+      context({
+        runId: 100n,
+        eventName: 'issue_comment',
+        action: 'created',
+        comment: designRevoke,
+      }),
+    );
+
+    expect(latestGateStatus(harness.state).state).toBe('success');
+    const reply = harness.state.comments.at(-1).body;
+    expect(reply).toContain('did not stop an earlier approval from carrying');
+    expect(reply).not.toContain('still stops');
+  });
 });

@@ -963,8 +963,8 @@ removed, or edited line, a different set of changed paths, or any other byte
 change needs a new decision. The carried approval satisfies only the groups its
 owner may approve, and wherever a record requires exact-head owner approval, an
 approval carried this way counts for that head. A decision on the new head, and
-any later owner revoke, request for changes, or dismissal of an owner's approving
-review, wins over it. A comparison the gate cannot complete carries
+any later revoke, request for changes, or dismissal of an approving review by an
+owner who may approve that group, wins over it. A comparison the gate cannot complete carries
 nothing. A DESIGNOWNER's ready
 attestation never carries, and while relayed owner decisions are enabled nothing
 carries, because the gate cannot see a relayed revoke of an intermediate head.
