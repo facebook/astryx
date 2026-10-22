@@ -3,7 +3,7 @@
   "type": "manifest",
   "data": {
     "name": "astryx",
-    "version": "0.7.3",
+    "version": "0.7.4",
     "apiVersion": 1,
     "description": "Design system CLI — components, themes, and tooling",
     "globalOptions": [
@@ -343,7 +343,13 @@
         "name": "doctor",
         "description": "Diagnose Astryx projects and integration packages",
         "arguments": [],
-        "options": [],
+        "options": [
+          {
+            "flag": "--built <path>",
+            "description": "Also check a finished build before you deliver it: a project folder, a build output folder, or one built HTML file. Fails when it does not use Astryx at all, and warns with each raw element, icon or custom style in its source.",
+            "type": "string"
+          }
+        ],
         "json": true,
         "responseTypes": [
           "doctor"
@@ -351,6 +357,7 @@
         "examples": [
           "astryx doctor",
           "astryx doctor --json",
+          "astryx doctor --built dist",
           "astryx doctor integration validate @acme/widgets",
           "astryx doctor integration templates @acme/widgets",
           "astryx doctor integration components @acme/widgets",
@@ -1792,8 +1799,8 @@
   },
   "meta": {
     "answeredBy": {
-      "cli": "0.7.3",
-      "core": "0.7.3",
+      "cli": "0.7.4",
+      "core": "0.7.4",
       "copy": "project"
     }
   }

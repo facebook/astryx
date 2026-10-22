@@ -224,8 +224,8 @@
   },
   "meta": {
     "answeredBy": {
-      "cli": "0.7.3",
-      "core": "0.7.3",
+      "cli": "0.7.4",
+      "core": "0.7.4",
       "copy": "project"
     }
   }

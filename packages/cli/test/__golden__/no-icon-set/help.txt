@@ -26,7 +26,7 @@ Commands:
   discover [options] [query]        Browse and search integrations: the ones you have and the ones you could add
   search [options] <query...>       Search components, hooks, docs, templates, and themes in one ranked list
   build [options] [query]           Build a page: the template to start from, or the workflow playbook (no query)
-  doctor                            Diagnose Astryx projects and integration packages
+  doctor [options]                  Diagnose Astryx projects and integration packages
   manifest                          Print the full CLI capability manifest (use with --json)
   help                              Show all commands
 

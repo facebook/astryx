@@ -13,13 +13,13 @@
         "id": "core-installed",
         "label": "@astryxdesign/core installed",
         "status": "pass",
-        "message": "@astryxdesign/core resolved (v0.7.3)."
+        "message": "@astryxdesign/core resolved (v0.7.4)."
       },
       {
         "id": "version-alignment",
         "label": "@astryxdesign/core <-> @astryxdesign/cli alignment",
         "status": "pass",
-        "message": "@astryxdesign/core v0.7.3 is in step with @astryxdesign/cli v0.7.3."
+        "message": "@astryxdesign/core v0.7.4 is in step with @astryxdesign/cli v0.7.4."
       },
       {
         "id": "themes",
@@ -134,8 +134,8 @@
   },
   "meta": {
     "answeredBy": {
-      "cli": "0.7.3",
-      "core": "0.7.3",
+      "cli": "0.7.4",
+      "core": "0.7.4",
       "copy": "project"
     }
   }
