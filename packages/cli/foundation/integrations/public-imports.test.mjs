@@ -550,55 +550,53 @@ describe('fixes for two components in one folder', () => {
 });
 
 describe('type-only imports', () => {
-  it('accepts a statement-level import type from a types-only subpath', async () => {
-    pkg(p => {
-      p.exports['./types'] = {types: './types.d.ts'};
-    });
-    write('types.d.ts', 'export type AcmeWidgetSize = "sm" | "md";\n');
-    write(
-      'components/AcmeWidget.doc.mjs',
-      DOC(
-        undefined,
-        "import type {AcmeWidgetSize} from '@acme/widgets/types';\\nimport {AcmeWidget} from '@acme/widgets/components/AcmeWidget';\\n<AcmeWidget />",
-      ),
-    );
-    expect(await codes()).toEqual([]);
-  });
-
-  it('accepts an import whose every binding is an inline type from a types-only subpath', async () => {
-    pkg(p => {
-      p.exports['./types'] = {types: './types.d.ts'};
-    });
-    write('types.d.ts', 'export type AcmeWidgetSize = "sm" | "md";\n');
-    write(
-      'components/AcmeWidget.doc.mjs',
-      DOC(
-        undefined,
-        "import {type AcmeWidgetSize} from '@acme/widgets/types';\\nimport {AcmeWidget} from '@acme/widgets/components/AcmeWidget';\\n<AcmeWidget />",
-      ),
-    );
-    expect(await codes()).toEqual([]);
-  });
-
-  it('accepts a plain import of names the types file declares as types', async () => {
-    pkg(p => {
-      p.exports['./types'] = {types: './types.d.ts'};
-    });
-    write(
-      'types.d.ts',
-      'export type AcmeWidgetSize = "sm" | "md";\ninterface AcmeTone {}\nexport {type AcmeTone as Tone};\n',
-    );
-    write(
-      'components/AcmeWidget.doc.mjs',
-      DOC(
-        undefined,
-        "import {AcmeWidgetSize, Tone} from '@acme/widgets/types';\\nimport {AcmeWidget} from '@acme/widgets/components/AcmeWidget';\\n<AcmeWidget />",
-      ),
-    );
-    expect(await codes()).toEqual([]);
-    const report = (await validateLocalIntegration(dir)).publicImports;
-    expect(report?.unchecked).toEqual([]);
-  });
+  it.each([
+    [
+      'a statement-level import type',
+      {'./types': {types: './types.d.ts'}},
+      {'types.d.ts': 'export type AcmeWidgetSize = "sm" | "md";\n'},
+      "import type {AcmeWidgetSize} from '@acme/widgets/types';",
+    ],
+    [
+      'an import whose every binding is an inline type',
+      {'./types': {types: './types.d.ts'}},
+      {'types.d.ts': 'export type AcmeWidgetSize = "sm" | "md";\n'},
+      "import {type AcmeWidgetSize} from '@acme/widgets/types';",
+    ],
+    [
+      'a plain import of names the types file declares as types',
+      {'./types': {types: './types.d.ts'}},
+      {
+        'types.d.ts':
+          'export type AcmeWidgetSize = "sm" | "md";\ninterface AcmeTone {}\nexport {type AcmeTone as Tone};\n',
+      },
+      "import {AcmeWidgetSize, Tone} from '@acme/widgets/types';",
+    ],
+    [
+      'a plain import of a declared type (wildcard entry)',
+      {'./types/*': {types: './types/*.d.ts'}},
+      {'types/size.d.ts': 'export type AcmeWidgetSize = "sm" | "md";\n'},
+      "import {AcmeWidgetSize} from '@acme/widgets/types/size';",
+    ],
+  ])(
+    'accepts %s from a types-only subpath',
+    async (_label, entries, files, typeImport) => {
+      pkg(p => {
+        Object.assign(p.exports, entries);
+      });
+      for (const [file, text] of Object.entries(files)) write(file, text);
+      write(
+        'components/AcmeWidget.doc.mjs',
+        DOC(
+          undefined,
+          `${typeImport}\\nimport {AcmeWidget} from '@acme/widgets/components/AcmeWidget';\\n<AcmeWidget />`,
+        ),
+      );
+      expect(await codes()).toEqual([]);
+      const report = (await validateLocalIntegration(dir)).publicImports;
+      expect(report?.unchecked).toEqual([]);
+    },
+  );
 
   it('lists a value or unreadable import from a types-only subpath as not checked, never a note', async () => {
     pkg(p => {
