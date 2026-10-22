@@ -27,15 +27,15 @@ system_specs: [spec:AST-085, spec:AST-025]
 
 ## Contract at a glance
 
-| Area                    | Contract                                                                                                                                                  |
-| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Public contract         | None changes.                                                                                                                                             |
-| Behavior                | An edge scroll button whose direction has run out is hidden and takes no tab stop. When the focused edge button runs out, focus moves to the scroll area. |
-| End-user impact         | A keyboard user who scrolls to the first or last item stays inside the carousel instead of landing on the page body or on an invisible control.           |
-| Builder impact          | None.                                                                                                                                                     |
-| Compatibility/readiness | No API change. Focus at the edge moves to the scroll area rather than the opposite button.                                                                |
-| Review checks           | Reject focus left on a hidden edge button, focus dropped to the page body, or an edge handoff that moves focus to anything but the scroll area.           |
-| Governing rules         | `spec:AST-085` FR1, FR4; `spec:AST-025` FR12; `architecture:interaction-modality` INV1.                                                                   |
+| Area                    | Contract                                                                                                                                                                                                                                                                           |
+| ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Public contract         | None changes.                                                                                                                                                                                                                                                                      |
+| Behavior                | An edge scroll button whose direction has run out is hidden and takes no tab stop. When the focused edge button runs out, focus moves to the scroll area.                                                                                                                          |
+| End-user impact         | A keyboard user who scrolls to the first or last item stays inside the carousel instead of landing on the page body or on an invisible control. The scroll area has no role or name yet, so screen-reader users hear little at the destination until it meets `spec:AST-025` FR12. |
+| Builder impact          | None.                                                                                                                                                                                                                                                                              |
+| Compatibility/readiness | No API change. Shipped Carousel and its current tests still use native `disabled` and hand focus to the opposite button; they change with conformance work.                                                                                                                        |
+| Review checks           | Reject focus left on a hidden edge button, focus dropped to the page body, or an edge handoff that moves focus to anything but the scroll area.                                                                                                                                    |
+| Governing rules         | `spec:AST-085` FR1, FR4; `spec:AST-025` FR12; `architecture:interaction-modality` INV1.                                                                                                                                                                                            |
 
 This table is a review projection; the body below is authoritative.
 
@@ -77,12 +77,12 @@ Consumer migration instructions belong in consumer docs and release notes.
 
 ## Behavioral and layout contract
 
-| ID  | Candidate invariant                                                                                                                                                                                                                                     | Basis                                    | Draft review state |
-| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------- | ------------------ |
-| FR1 | An edge scroll button whose direction has run out is hidden. While hidden it takes no tab stop and is not exposed to assistive technology. It stays mounted so layout does not shift. This is removal under `spec:AST-085` FR4, not a disabled control. | DEC-1                                    | settled            |
-| FR2 | When the focused edge scroll button runs out, focus moves to the scroll area, the labelled region's tab stop, without scrolling it. Focus never lands on the page body or on a hidden button.                                                           | DEC-1; `spec:AST-085` FR4                | settled            |
-| FR3 | The handoff happens once per edge transition, and only while the edge button held focus. An edge reached by swipe, resize, or wheel while focus is elsewhere moves nothing.                                                                             | `architecture:interaction-modality` INV8 | settled            |
-| FR4 | An edge scroll button that is available behaves as an ordinary Button.                                                                                                                                                                                  | `family:buttons`                         | settled            |
+| ID  | Candidate invariant                                                                                                                                                                                                                                                                                                    | Basis                                    | Draft review state |
+| --- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------- | ------------------ |
+| FR1 | An edge scroll button whose direction has run out is hidden. While hidden it takes no tab stop and is not exposed to assistive technology. It stays mounted so layout does not shift. This is removal under `spec:AST-085` FR4, not a disabled control.                                                                | DEC-1                                    | settled            |
+| FR2 | When the focused edge scroll button runs out, focus moves to the scroll area without scrolling it. This holds when the content no longer overflows and the scroll area is out of the tab order (`spec:AST-025` FR12): it still takes focus programmatically. Focus never lands on the page body or on a hidden button. | DEC-1; `spec:AST-085` FR4                | settled            |
+| FR3 | The handoff happens once per edge transition, and only while the edge button held focus. An edge reached by swipe, resize, or wheel while focus is elsewhere moves nothing.                                                                                                                                            | `architecture:interaction-modality` INV8 | settled            |
+| FR4 | An edge scroll button that is available behaves as an ordinary Button.                                                                                                                                                                                                                                                 | `family:buttons`                         | settled            |
 
 ### Representative states
 
@@ -129,9 +129,9 @@ visual evidence.
 **Decider:** cixzhang, 2026-10-22
 
 Carousel hides an edge button whose direction has run out, so keeping focus on
-it would leave a keyboard user on an invisible control. The scroll area is the
-region's own tab stop and is always present, so focus moving there keeps the
-user in place inside the carousel.
+it would leave a keyboard user on an invisible control. The scroll area is always
+mounted inside the labelled region and can take focus whether or not it is in the
+tab order, so focus moving there keeps the user in place inside the carousel.
 
 Rejected: the opposite edge button — it may be hidden too, and focus would jump
 across the carousel.
