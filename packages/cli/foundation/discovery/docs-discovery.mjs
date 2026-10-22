@@ -41,7 +41,6 @@ import {
   sourceTitle,
   withSourceTitle,
 } from './docs-section-key.mjs';
-import {renderTokens} from '../doc-compiler/links.mjs';
 
 export {withSourceTitle};
 
@@ -566,7 +565,8 @@ export async function discoverIntegrationDocs(integration) {
         kind: 'generic',
         name: parsed.name,
         title: parsed.title,
-        summary: renderTokens(parsed.description),
+        // Rendered once, where the tree is built (api/docs/_adapter.mjs).
+        summary: parsed.description,
         group: null,
         placement: parsed.placement,
         ref: {topicFile: file},

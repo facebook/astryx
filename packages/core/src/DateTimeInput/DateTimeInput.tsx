@@ -65,6 +65,7 @@ import {useCalendarConstraints} from '../Calendar/hooks';
 import {usePopover} from '../Popover';
 import {useTooltip} from '../Tooltip';
 import {useInputContainer} from '../hooks/useInputContainer';
+import {useBusyAnnouncement} from '../hooks/useBusyAnnouncement';
 import {useInputStatusIcon} from '../hooks/useInputStatusIcon';
 import {
   type ISOTimeString,
@@ -709,6 +710,9 @@ function PointerDateTimeField({
   const [optimisticValue, setOptimisticValue] = useOptimistic(value);
   const isPendingChange = optimisticValue !== value;
   const isBusy = isLoading || isPendingChange;
+  // The busy Spinner is decorative; this control announces its busy start
+  // (spec:AST-086 FR8).
+  useBusyAnnouncement(isBusy, t('@astryx.spinner.loading'), dateInputRef);
   // A native wheel emits several edits while it remains open. Disabling the
   // control after the first optimistic edit detaches the iOS picker, so pending
   // changeAction work stays interactive just like TouchDateTimeField. Explicit
@@ -1801,7 +1805,7 @@ function PointerDateTimeField({
               onClick={handleClear}
             />
           )}
-          {isBusy && <Spinner size="sm" />}
+          {isBusy && <Spinner size="sm" aria-hidden="true" />}
           {statusIcon}
         </div>
 
