@@ -1186,6 +1186,35 @@ function npmPackedPaths(base) {
 }
 
 /**
+ * The note for an asset a package with no `files` field leaves out through
+ * an ignore file: npm reads `.npmignore`, or `.gitignore` when there is none,
+ * and the fix is to remove the line that drops the asset, never to add a
+ * `files` field, which would leave out everything else.
+ * @param {string} base
+ * @param {string} template
+ * @param {string} asset
+ */
+function ignoreFix(base, template, asset) {
+  const ignoreFile = fs.existsSync(path.join(base, '.npmignore'))
+    ? '.npmignore'
+    : '.gitignore';
+  let lines = /** @type {string[]} */ ([]);
+  try {
+    lines = fs.readFileSync(path.join(base, ignoreFile), 'utf8').split(/\r?\n/);
+  } catch {
+    // named without a line below
+  }
+  const line = lines.find(
+    entry =>
+      entry.trim() !== '' &&
+      !entry.trim().startsWith('#') &&
+      !entry.trim().startsWith('!') &&
+      !outsideFiles(asset, [entry.trim()]),
+  );
+  return `${template}: loads ${asset}, which npm leaves out of the package because ${ignoreFile} drops it, so the template breaks once installed. Fix: ${line ? `remove or narrow the line \`${line.trim()}\` in ${ignoreFile}` : `remove the ${ignoreFile} line that matches ${asset}`}, and confirm with \`npm pack --dry-run\`.`;
+}
+
+/**
  * Whether no `files` entry can reach a path, read case-insensitively and
  * generously (`{a,b}` braces, globs, a no-slash entry at any depth, an entry
  * for the path or any folder above it), for when npm cannot say what it
@@ -1528,7 +1557,9 @@ export async function componentExamplesCheck(integration) {
       notes.push({
         code: 'template_asset_not_packed',
         message: exists
-          ? `${rel(template.filePath)}: loads ${assetRel}, which npm leaves out of the package by its \`files\` field, so the template breaks once installed. Fix: add "${folder}" to \`files\`, drop any \`!\` entry that excludes it, and confirm with \`npm pack --dry-run\`.`
+          ? Array.isArray(packedFiles)
+            ? `${rel(template.filePath)}: loads ${assetRel}, which npm leaves out of the package by its \`files\` field, so the template breaks once installed. Fix: add "${folder}" to \`files\`, drop any \`!\` entry that excludes it, and confirm with \`npm pack --dry-run\`.`
+            : ignoreFix(base, rel(template.filePath), assetRel)
           : `${rel(template.filePath)}: loads ${assetRel}, which does not exist. Fix: add the file, or point \`new URL()\` at one that does.`,
       });
     }
@@ -1544,6 +1575,8 @@ export async function componentExamplesCheck(integration) {
     return {notes, unchecked};
   }
   const templatesDir = root ? rel(root) || '.' : 'templates';
+  /** @type {Set<unknown>} blocks a note has already asked to show one component */
+  const claimed = new Set();
   for (const record of records) {
     if (componentDiscovery.isIntegrationMember(record)) continue;
     if (shown.has(record.name)) continue;
@@ -1561,17 +1594,57 @@ export async function componentExamplesCheck(integration) {
     // A block that composes the component and shows nothing else takes the
     // fields; one that is already another component's showcase takes
     // `alsoShowcaseFor` instead, so it keeps its own.
-    const composing = templates.filter(
-      template =>
-        template.type === 'block' &&
-        Array.isArray(template.componentsUsed) &&
-        template.componentsUsed.includes(name),
+    // A block whose `exampleFor` already names the component only needs
+    // `isShowcase: true`.
+    const named = templates.find(
+      template => template.type === 'block' && template.exampleFor === name,
     );
+    if (named) {
+      notes.push({
+        code: 'component_without_example',
+        message: `${rel(record.docPath)}: no block template shows "${name}" (\`exampleFor: '${name}'\` with \`isShowcase: true\`), so template lists, docs pages and catalog cards have no example of it. Fix: add \`isShowcase: true\` to ${rel(named.docPath ?? named.filePath)}, whose \`exampleFor\` already names ${name}.`,
+      });
+      continue;
+    }
+    // Among the blocks that compose it, prefer one whose category, name or
+    // file names the component, then one that shows nothing yet, and never
+    // ask one block to show two components.
+    const key = name.toLowerCase();
+    const namesIt = (/** @type {any} */ template) =>
+      [
+        template.category,
+        template.name,
+        template.displayName,
+        template.filePath,
+      ]
+        .filter(value => typeof value === 'string')
+        .some(value =>
+          value
+            .toLowerCase()
+            .replace(/[-_\s]/g, '')
+            .includes(key),
+        );
+    const composing = templates
+      .filter(
+        template =>
+          template.type === 'block' &&
+          Array.isArray(template.componentsUsed) &&
+          template.componentsUsed.includes(name),
+      )
+      .sort(
+        (a, b) =>
+          Number(namesIt(b)) - Number(namesIt(a)) ||
+          Number(typeof a.exampleFor === 'string') -
+            Number(typeof b.exampleFor === 'string'),
+      );
     const existing =
-      composing.find(template => typeof template.exampleFor !== 'string') ??
-      composing[0];
+      composing.find(
+        template =>
+          typeof template.exampleFor !== 'string' && !claimed.has(template),
+      ) ?? composing.find(template => typeof template.exampleFor === 'string');
     const showsAnother =
       existing != null && typeof existing.exampleFor === 'string';
+    if (existing && !showsAnother) claimed.add(existing);
     const taken =
       !existing &&
       root &&

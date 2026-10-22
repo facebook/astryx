@@ -118,6 +118,46 @@ describe('component_without_example', () => {
     expect(note.message).not.toContain("add `exampleFor: 'AcmeCard'`");
   });
 
+  it('asks for isShowcase when a block already names the component in exampleFor', async () => {
+    write({
+      'templates/card-demo.doc.mjs': blockDoc(
+        'card-demo',
+        ", exampleFor: 'AcmeCard'",
+      ),
+      'templates/card-demo.tsx': 'export default () => null;\n',
+    });
+    const [note] = await notesOf(['component_without_example']);
+    expect(note.message).toContain(
+      'add `isShowcase: true` to templates/card-demo.doc.mjs',
+    );
+  });
+
+  it('never asks one block to show two components, and prefers the block that names one', async () => {
+    write({
+      'components/AcmeText.doc.mjs': componentDoc('AcmeText'),
+      'components/AcmeText.tsx': componentSource('AcmeText'),
+      'templates/both.doc.mjs': blockDoc(
+        'both',
+        ", componentsUsed: ['AcmeCard', 'AcmeText']",
+      ),
+      'templates/both.tsx': 'export default () => null;\n',
+      'templates/text-sample.doc.mjs': blockDoc(
+        'text-sample',
+        ", category: 'Text - Sample', componentsUsed: ['AcmeText']",
+      ),
+      'templates/text-sample.tsx': 'export default () => null;\n',
+    });
+    const notes = await notesOf(['component_without_example']);
+    const card = notes.find(note => note.message.includes('AcmeCard.doc.mjs'));
+    const text = notes.find(note => note.message.includes('AcmeText.doc.mjs'));
+    expect(card?.message).toContain(
+      "add `exampleFor: 'AcmeCard'` and `isShowcase: true` to templates/both.doc.mjs",
+    );
+    expect(text?.message).toContain(
+      "add `exampleFor: 'AcmeText'` and `isShowcase: true` to templates/text-sample.doc.mjs",
+    );
+  });
+
   it('names the block that already composes the component instead of new files', async () => {
     write({
       'templates/card-demo.doc.mjs': blockDoc(
@@ -461,6 +501,31 @@ describe('template_asset_not_packed', () => {
 });
 
 describe('what npm packs decides', () => {
+  it('names the ignore-file line, not files, when a package has no files field', async () => {
+    write({
+      'package.json': JSON.stringify({name: '@acme/kit', version: '1.0.0'}),
+      '.npmignore': '# local only\ntemplates/img\n',
+      'templates/img/hero.png': 'png',
+      'templates/card.doc.mjs': blockDoc(
+        'card',
+        ", exampleFor: 'AcmeCard', isShowcase: true",
+      ),
+      'templates/card.tsx': [
+        "const hero = new URL('./img/hero.png', import.meta.url);",
+        'export default () => null;',
+        '',
+      ].join('\n'),
+    });
+    const notes = await notesOf(['template_asset_not_packed']);
+    expect(notes).toHaveLength(npmPacks('templates/img/hero.png') ? 0 : 1);
+    if (notes.length > 0) {
+      expect(notes[0].message).toContain(
+        'remove or narrow the line `templates/img` in .npmignore',
+      );
+      expect(notes[0].message).not.toContain('to `files`');
+    }
+  });
+
   it.each([
     [['templates/*'], 'templates/img/hero.png', true],
     [['templates', '!templates/img'], 'templates/img/hero.png', false],
