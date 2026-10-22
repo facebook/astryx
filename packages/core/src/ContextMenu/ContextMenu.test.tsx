@@ -338,6 +338,33 @@ describe('ContextMenu', () => {
     ).toBeInTheDocument();
   });
 
+  it('reads an open BottomSheet level from the current items, so a row the caller adds while it shows appears', async () => {
+    const user = userEvent.setup();
+    function RowMenu({labels}: {labels: string[]}) {
+      return (
+        <ContextMenu
+          presentation="bottom-sheet"
+          label="Row actions"
+          items={[
+            {label: 'Rename', onClick: () => {}},
+            {label: 'Labels', items: labels.map(label => ({label}))},
+          ]}>
+          <div>Right-click me</div>
+        </ContextMenu>
+      );
+    }
+    const {rerender} = render(<RowMenu labels={['Bug']} />);
+    fireEvent.contextMenu(screen.getByText('Right-click me'));
+    await user.click(await screen.findByRole('button', {name: 'Labels'}));
+    await screen.findByRole('button', {name: 'Bug'});
+
+    rerender(<RowMenu labels={['Bug', 'Feature']} />);
+    expect(
+      await screen.findByRole('button', {name: 'Feature'}),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('button', {name: 'Rename'})).toBeNull();
+  });
+
   it("shows a level's own header and footer around its actions in the BottomSheet", async () => {
     const user = userEvent.setup();
 
