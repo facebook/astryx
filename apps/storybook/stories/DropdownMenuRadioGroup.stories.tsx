@@ -9,7 +9,7 @@
 
 import type {Meta, StoryObj} from '@storybook/react';
 import {useState} from 'react';
-import {expect, userEvent, within} from 'storybook/test';
+import {expect, within} from 'storybook/test';
 import {
   DropdownMenu,
   DropdownMenuRadioGroup,
@@ -38,7 +38,9 @@ function ControlledSelectionFixture() {
   const [sort, setSort] = useState('newest');
   return (
     <DropdownMenu
-      button={{label: 'Open sort options'}}
+      button={{label: 'Sort options'}}
+      isMenuOpen
+      onOpenChange={() => {}}
       menuWidth={280}
       presentation="popover">
       <DropdownMenuRadioGroup
@@ -61,24 +63,13 @@ function ControlledSelectionFixture() {
 
 export const ControlledSelection: Story = {
   render: () => <ControlledSelectionFixture />,
-  play: async ({canvasElement}) => {
-    const canvas = within(canvasElement);
-    await userEvent.click(
-      canvas.getByRole('button', {name: 'Open sort options'}),
-    );
+  play: async () => {
     const menu = await within(document.body).findByRole('menu');
     const scope = within(menu);
     const group = scope.getByRole('group', {name: 'Sort options'});
     await expect(within(group).getAllByRole('menuitemradio')).toHaveLength(3);
     await expect(
       within(group).getByRole('menuitemradio', {name: 'Newest first'}),
-    ).toHaveAttribute('aria-checked', 'true');
-    await userEvent.click(
-      within(group).getByRole('menuitemradio', {name: /Oldest first/}),
-    );
-    await expect(menu).toBeVisible();
-    await expect(
-      within(group).getByRole('menuitemradio', {name: /Oldest first/}),
     ).toHaveAttribute('aria-checked', 'true');
   },
 };

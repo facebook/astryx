@@ -158,6 +158,8 @@ for (const item of cases) {
     await expect(group).toBeVisible();
     const radios = group.getByRole('menuitemradio');
     await expect(radios).toHaveCount(3);
+    await expect(radios.first()).toHaveAttribute('aria-checked', 'true');
+    await radios.nth(1).click();
     await expect(radios.nth(1)).toHaveAttribute('aria-checked', 'true');
     await expect(menu).toBeVisible();
     await settle(page);
