@@ -300,7 +300,7 @@ describe('MobileTokenizer (Lab, single-sheet flow)', () => {
     const title = await screen.findByRole('heading', {
       name: 'No results found',
     });
-    const emptyState = title.closest('[role="status"]');
+    const emptyState = title.closest('.astryx-empty-state');
     expect(emptyState).toHaveTextContent('Try a different search.');
     expect(emptyState?.querySelector('.astryx-icon')).toHaveAttribute(
       'data-size',

@@ -123,7 +123,8 @@ export interface EmptyStateProps extends BaseProps<HTMLDivElement> {
  * An empty state placeholder for content areas with no data.
  * Displays an icon or illustration, title, optional description, and action buttons.
  *
- * Uses `role="status"` to announce content to screen readers.
+ * The root is not a live region. Announce an empty result from the code that
+ * produced it, with `useAnnounce`, when the change needs announcing.
  * Styles use Astryx theme tokens via StyleX. Wrap your app in <Theme> to apply a theme.
  *
  * @example
@@ -158,7 +159,6 @@ export function EmptyState({
     <div
       ref={ref}
       {...props}
-      role="status"
       {...mergeProps(
         themeProps('empty-state', {variant: isCompact ? 'compact' : null}),
         stylex.props(
