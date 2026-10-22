@@ -9,13 +9,24 @@
  */
 
 import {StrictMode, useEffect, useRef, type ReactElement} from 'react';
-import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
+import {
+  afterAll,
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from 'vitest';
 import {act, fireEvent, render, screen} from '@testing-library/react';
 import {TextInput} from '../TextInput';
 import {TextArea} from '../TextArea';
 import {Selector} from '../Selector';
 import {MultiSelector} from '../MultiSelector';
 import {ComplexSelector} from '../ComplexSelector';
+import {DateInput} from '../DateInput';
+import {DateRangeInput} from '../DateRangeInput';
 import {BaseTypeahead, Typeahead} from '../Typeahead';
 import type {SearchableItem, SearchSource} from '../Typeahead';
 import {Tokenizer} from '../Tokenizer';
@@ -79,6 +90,31 @@ const OWNERS: ReadonlyArray<
       />
     ),
   ],
+  ...(['popover', 'native', 'bottom-sheet'] as const).map(
+    presentation =>
+      [
+        `DateInput (${presentation})`,
+        (isLoading: boolean) => (
+          <DateInput
+            label="Date"
+            presentation={presentation}
+            onChange={() => {}}
+            isLoading={isLoading}
+          />
+        ),
+      ] as const,
+  ),
+  [
+    'DateRangeInput',
+    isLoading => (
+      <DateRangeInput
+        label="Dates"
+        value={null}
+        onChange={() => {}}
+        isLoading={isLoading}
+      />
+    ),
+  ],
   [
     'ComplexSelector',
     isLoading => (
@@ -137,6 +173,21 @@ const SEARCH_OWNERS: ReadonlyArray<
     ),
   ],
 ];
+
+// The bottom-sheet DateInput measures its sheet; jsdom has no ResizeObserver.
+beforeAll(() => {
+  vi.stubGlobal(
+    'ResizeObserver',
+    class {
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+    },
+  );
+});
+afterAll(() => {
+  vi.unstubAllGlobals();
+});
 
 /** Calls that announced the busy start, ignoring each control's other messages. */
 function busyAnnouncements() {
