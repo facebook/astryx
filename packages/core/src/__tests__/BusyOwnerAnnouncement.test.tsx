@@ -18,7 +18,7 @@ import {MultiSelector} from '../MultiSelector';
 
 const announce = vi.fn();
 vi.mock('../hooks/useAnnounce', async importOriginal => ({
-  ...(await importOriginal<typeof import('../hooks/useAnnounce')>()),
+  ...(await importOriginal<Record<string, unknown>>()),
   useAnnounce: () => announce,
 }));
 
