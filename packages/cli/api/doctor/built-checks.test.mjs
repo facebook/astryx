@@ -7,6 +7,7 @@ import {afterEach, beforeEach, describe, expect, it} from 'vitest';
 import {checkBuilt, scanBuilt} from './built-checks.mjs';
 import {builtIntegrationPackages} from './_adapter.mjs';
 import {runChecks} from './doctor.mjs';
+import {runCli} from '../../test-utils/run-cli.mjs';
 
 /** @type {string} */
 let dir;
@@ -227,6 +228,20 @@ describe('what a --built path counts', () => {
 });
 
 describe('doctor --built', () => {
+  it('composes with --json: one envelope with the two checks last, exit 1 on a failed build', async () => {
+    write({'out/index.html': '<div>no astryx</div>'});
+    const result = await runCli(['--json', 'doctor', '--built', 'out'], dir);
+    const envelope = JSON.parse(result.stdout);
+    const ids = envelope.data.checks.map(
+      (/** @type {{id: string}} */ c) => c.id,
+    );
+    expect(ids.slice(-2)).toEqual([
+      'built-astryx-usage',
+      'built-astryx-purity',
+    ]);
+    expect(result.status).toBe(1);
+  }, 60_000);
+
   it('adds the two checks after the others, and plain doctor runs without them', async () => {
     write({'out/index.html': '<div>no astryx</div>'});
 
