@@ -3,11 +3,11 @@ schema_version: 3
 template_version: 3
 kind: component
 id: component:BottomSheet
-authority: draft
+authority: current
 archive_reason: null
 superseded_by: null
-approved_by: null
-approved_at: null
+approved_by: imdreamrunner
+approved_at: 2026-10-21
 owners: [cixzhang]
 review_triggers: [theming, layout, public-api]
 verified_by:
@@ -15,7 +15,6 @@ verified_by:
     packages/core/src/BottomSheet/BottomSheet.test.tsx,
     packages/core/src/BottomSheet/BottomSheetPanel.test.tsx,
     packages/core/src/BottomSheet/BottomSheetKeyboard.test.tsx,
-    packages/core/src/BottomSheet/__tests__/BottomSheetNativeModal.a11y.browser.spec.ts,
     packages/core/src/BottomSheet/__tests__/BottomSheetKeyboard.a11y.browser.spec.ts,
     apps/storybook/stories/BottomSheet.stories.tsx,
     scripts/check-knowledge.mjs,
@@ -38,51 +37,23 @@ system_specs: [spec:AST-025]
 ## Intent
 
 BottomSheet presents caller-provided content in a panel that rises from the
-bottom edge. This draft records current consumer anatomy, keyboard-reachable
-scrolling, theming reachability, and the Content area's container padding.
+bottom edge. This record covers consumer anatomy, the native dialog every sheet
+renders, keyboard-reachable scrolling, theming reachability, and the Content
+area's container padding. Where the shipped sheet does not yet meet a
+requirement, the row carries a present-tense implementation gap note.
 
 ## Compatibility and migration
 
-- Released default preserved: `no` — with no `padding` prop and no theme
-  padding, the Content area insets by `--spacing-4` on every logical edge
-- Compatibility class: breaking default, scheduled for a minor release. Content
-  whose only child is a padded Section keeps its geometry because that Section
-  escapes the inset; content that supplies its own inset is padded twice until
-  it drops that inset or sets `padding={0}`
+- Released default preserved: `yes`; with no `padding` prop and no theme
+  padding, the Content area insets by `--spacing-4` on every logical edge, and
+  `padding={0}` keeps an unpadded Content area
+- Compatibility class: records the shipped anatomy, padded Content area, and
+  native dialog; no public prop, default, or export changes
 - Controlled/uncontrolled behavior: unchanged
-- Migration decision: `padding={0}` restores the released unpadded Content area
+- Migration decision: none; the precedence rule under Transformation and
+  precedence order is the whole contract
 
 Consumer migration instructions belong in consumer docs and release notes.
-
-### DEP-0009 — Deprecate the unpadded default Content area of `BottomSheet`
-
-| Field            | Value                                                                                                                                                               |
-| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| id               | `DEP-0009`                                                                                                                                                          |
-| cleanup          | `CLN-0018`                                                                                                                                                          |
-| package          | `@astryxdesign/core`                                                                                                                                                |
-| surface          | Default inset of the `BottomSheet` Content area when no `padding` prop and no theme padding are set                                                                 |
-| old contract     | The Content area has no padding                                                                                                                                     |
-| replacement      | `padding={0}` keeps the unpadded Content area; `padding` and theme padding already resolve before the default                                                       |
-| direct authority | `component:BottomSheet` Compatibility and migration. Owners: `cixzhang`                                                                                             |
-| warning          | Consumer docs and the release notes name `DEP-0009` and `padding={0}`. No runtime warning (`spec:AST-017` FR29)                                                     |
-| migration        | Mechanical: add `padding={0}` to a BottomSheet that sets no padding, unless its only child is a padded Section or a Layout                                          |
-| codemod          | `astryx upgrade` adds `padding={0}` before any spread, skips sheets whose only child is a core Section or Layout, and marks a nested padding-less Layout for review |
-| downstream       | In-repo sheets that supply their own inset pass `padding={0}`; consumer examples rely on the default inset                                                          |
-| transition       | no prior transition                                                                                                                                                 |
-| state            | `proposed`                                                                                                                                                          |
-| open decision    | This record is draft and needs approval                                                                                                                             |
-| target plan      | `CLN-0018` in the next minor release                                                                                                                                |
-
-### CLN-0018 — BottomSheet pads its Content area by default
-
-| Field     | Value                                                                                                                                |
-| --------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| id        | `CLN-0018`                                                                                                                           |
-| lifecycle | `DEP-0009`                                                                                                                           |
-| delta     | With no `padding` prop and no theme padding, the Content area insets by `--spacing-4` on every logical edge and publishes that inset |
-| rollback  | Restore the unpadded default from the final-patch baseline                                                                           |
-| state     | `pending` — lands in a declared minor with its `[breaking]` Changeset                                                                |
 
 ## Ownership boundary
 
@@ -95,7 +66,9 @@ Consumer migration instructions belong in consumer docs and release notes.
   `architecture:container-padding`.
 - Standalone sheet presentation, including its optional native-dialog Scrim.
 - The native dialog every sheet renders, standalone or switcher-managed
-  (`component:BottomSheetSwitcher` DEC-1's decided structure).
+  (`component:BottomSheetSwitcher` DEC-1). Implementation gap: a
+  switcher-managed sheet renders a panel inside the switcher's one shared
+  dialog and owns no dialog of its own.
 
 **Does not own / non-goals**
 
@@ -104,7 +77,7 @@ Consumer migration instructions belong in consumer docs and release notes.
   `main`.
 - The presentation lifecycle of its dialog and the flow's scrim ownership when
   the sheet participates in a BottomSheetSwitcher — owned by BottomSheetSwitcher
-  (`component:BottomSheetSwitcher` DEC-1's decided structure).
+  (`component:BottomSheetSwitcher` DEC-1).
 - Shared layer hosting or dismissal policy.
 
 ## Public concepts
@@ -114,12 +87,12 @@ in `BottomSheet.doc.mjs`.
 
 ## Behavioral and layout contract
 
-| ID  | Candidate invariant                                                                                                                                                                                                                         | Basis                              | Draft review state                                 |
-| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- | -------------------------------------------------- |
-| FR1 | The current presented sheet contains one Sheet panel, one scrolling Content area, and one decorative Handle; a Scrim is present only in scrim-backed presentation.                                                                          | Current source, docs, and tests    | Verified current behavior; no new behavior decided |
-| FR2 | The Sheet panel carries `bottom-sheet`; Content area, Handle, and Scrim carry no BottomSheet public target.                                                                                                                                 | Current source, docs, and tests    | Verified current behavior; no target change        |
-| FR3 | Content renders in one real observed content box. Effective overflow, containment, and keyboard access come from `useScrollableArea`; the named overflowing body delegates forward Tab entry to a safe first sequential native link/button. | `spec:AST-025`; issue #5207; tests | Focus-time prototype for owner review              |
-| FR4 | The Content area pads caller content by the sheet's container inset and publishes the applied inset to descendants as a container publisher.                                                                                                | `architecture:container-padding`   | Admitted; implementation pending                   |
+| ID  | Invariant                                                                                                                                                                                                                                   | Basis                            |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------- |
+| FR1 | The current presented sheet contains one Sheet panel, one scrolling Content area, and one decorative Handle; a Scrim is present only in scrim-backed presentation.                                                                          | Current source, docs, and tests  |
+| FR2 | The Sheet panel carries `bottom-sheet`; Content area, Handle, and Scrim carry no BottomSheet public target.                                                                                                                                 | Current source, docs, and tests  |
+| FR3 | Content renders in one real observed content box. Effective overflow, containment, and keyboard access come from `useScrollableArea`; the named overflowing body delegates forward Tab entry to a safe first sequential native link/button. | `spec:AST-025`; tests            |
+| FR4 | The Content area pads caller content by the sheet's container inset and publishes the applied inset to descendants as a container publisher.                                                                                                | `architecture:container-padding` |
 
 ### Allowed variation
 
@@ -134,8 +107,8 @@ in `BottomSheet.doc.mjs`.
   without a Scrim.
 - A switcher-managed sheet renders the same panel anatomy in its own dialog while
   BottomSheetSwitcher coordinates that dialog's lifecycle and the flow's one Scrim
-  (`component:BottomSheetSwitcher` DEC-1's decided structure, not shipped
-  anatomy).
+  (`component:BottomSheetSwitcher` DEC-1). Implementation gap: the panel
+  renders inside the switcher's one shared dialog.
 
 ### Transformation and precedence order
 

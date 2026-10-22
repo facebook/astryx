@@ -231,9 +231,11 @@ describe('TimeInput nativePicker', () => {
     expect(input).not.toBeDisabled();
     expect(input).toHaveAttribute('aria-disabled', 'true');
     expect(input).toHaveAttribute('readonly');
+    // The shared native time segment's picker button is focusable-disabled
+    // (spec:AST-085 FR1) and still blocks opening.
     expect(
       screen.getByRole('button', {name: 'Open Start time'}),
-    ).toBeDisabled();
+    ).toHaveAttribute('aria-disabled', 'true');
     const tooltip = document.querySelector<HTMLElement>('[role="tooltip"]');
     expect(tooltip).not.toBeNull();
     expect(input.getAttribute('aria-describedby')).toContain(tooltip?.id);
