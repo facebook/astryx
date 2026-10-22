@@ -9,6 +9,7 @@
  *   outcomes live in their reusable contracts; Menu retains navigation.
  */
 
+import {useState} from 'react';
 import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -328,6 +329,98 @@ describe('DropdownMenuRadioGroup / RadioItem', () => {
       screen.getByRole('menuitemradio', {name: 'Oldest', hidden: true}),
     );
     expect(onChange).toHaveBeenCalledWith('oldest');
+    expect(
+      screen.getByRole('menuitemradio', {name: 'Newest', hidden: true}),
+    ).toHaveAttribute('aria-checked', 'true');
+    expect(
+      screen.getByRole('menuitemradio', {name: 'Oldest', hidden: true}),
+    ).toHaveAttribute('aria-checked', 'false');
+    expect(HTMLElement.prototype.hidePopover).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps the menu open while controlled selection updates when requested', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+
+    function ControlledGroup() {
+      const [value, setValue] = useState('newest');
+      return (
+        <DropdownMenu button={{label: 'Sort'}}>
+          <DropdownMenuRadioGroup
+            value={value}
+            onChange={nextValue => {
+              onChange(nextValue);
+              setValue(nextValue);
+            }}
+            label="Sort by"
+            hasCloseOnSelect={false}>
+            <DropdownMenuRadioItem value="newest" label="Newest" />
+            <DropdownMenuRadioItem value="oldest" label="Oldest" />
+          </DropdownMenuRadioGroup>
+        </DropdownMenu>
+      );
+    }
+
+    render(<ControlledGroup />);
+    await user.click(screen.getByRole('button', {name: /Sort/}));
+    const oldest = screen.getByRole('menuitemradio', {
+      name: 'Oldest',
+      hidden: true,
+    });
+    await user.click(oldest);
+
+    expect(onChange).toHaveBeenCalledWith('oldest');
+    expect(oldest).toHaveAttribute('aria-checked', 'true');
+    expect(HTMLElement.prototype.hidePopover).not.toHaveBeenCalled();
+  });
+
+  it('names and composes the group root when no value matches', async () => {
+    const user = userEvent.setup();
+    const ref = vi.fn();
+    const onClick = vi.fn();
+    render(
+      <>
+        <span id="sort-label">Visible sort label</span>
+        <DropdownMenu button={{label: 'Sort'}}>
+          <DropdownMenuRadioGroup
+            ref={ref}
+            role="tree"
+            aria-label="Consumer label"
+            aria-labelledby="sort-label"
+            data-owner="consumer"
+            className="consumer-group"
+            style={{inlineSize: 240}}
+            onClick={onClick}
+            value={undefined}
+            onChange={() => {}}
+            label="Sort fallback">
+            <DropdownMenuRadioItem value="newest" label="Newest" />
+            <DropdownMenuRadioItem value="oldest" label="Oldest" />
+          </DropdownMenuRadioGroup>
+        </DropdownMenu>
+      </>,
+    );
+    await user.click(screen.getByRole('button', {name: /Sort/}));
+
+    const group = screen.getByRole('group', {
+      name: 'Visible sort label',
+      hidden: true,
+    });
+    expect(group).toHaveAttribute('role', 'group');
+    expect(group).toHaveAttribute('aria-label', 'Sort fallback');
+    expect(group).toHaveAttribute('aria-labelledby', 'sort-label');
+    expect(group).toHaveAttribute('data-owner', 'consumer');
+    expect(group).toHaveClass('consumer-group');
+    expect(group).toHaveStyle({inlineSize: '240px'});
+    expect(ref).toHaveBeenCalledWith(group);
+    expect(
+      screen
+        .getAllByRole('menuitemradio', {hidden: true})
+        .every(item => item.getAttribute('aria-checked') === 'false'),
+    ).toBe(true);
+
+    fireEvent.click(group);
+    expect(onClick).toHaveBeenCalledTimes(1);
   });
 
   it('throws when a radio item is used outside a group', () => {

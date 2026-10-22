@@ -108,7 +108,7 @@ review. It does not claim that one automated pass proves complete accessibility.
   manual, or real-AT checks. A lower layer MUST NOT claim a result only a higher
   layer observes. Announcement wording or timing, virtual-cursor entry, and known
   AT/browser divergence follow [AST-009](../AST-009/spec.md); an accessibility-tree
-  snapshot does not satisfy that real-AT contract.
+  snapshot does not prove spoken output.
 - **FR7 — Contracts assert outcomes, not Astryx internals.** A reusable expectation
   MUST query and act through public semantics and observable behavior. It MUST NOT
   depend on Astryx class names, private DOM wrappers, implementation callbacks, or

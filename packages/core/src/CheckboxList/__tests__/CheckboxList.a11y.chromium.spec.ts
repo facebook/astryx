@@ -10,7 +10,8 @@
  *   indicators, row paint, hit targets, wrapping, list structure) are recorded
  *   for the audit and never gate. Only frames that prove a shipped remediation
  *   gate on its outcome. The select-all CLI block renders through its own
- *   story, and its source blob is bound in the manifest.
+ *   story, and its source blob is bound in the manifest. Disabled rows expect
+ *   focusable aria-disabled controls under AST-085 FR1 and FR7.
  */
 
 import {createHash} from 'node:crypto';
@@ -271,9 +272,9 @@ const CASES: AuditCase[] = [
     expect: {
       groupName: GROUP,
       rows: [
-        {checked: true, disabled: 'native'},
-        {checked: false, disabled: 'native'},
-        {checked: false, disabled: 'native'},
+        {checked: true, disabled: 'focusable'},
+        {checked: false, disabled: 'focusable'},
+        {checked: false, disabled: 'focusable'},
       ],
     },
   },
@@ -285,7 +286,7 @@ const CASES: AuditCase[] = [
       groupName: GROUP,
       rows: [
         {checked: false, disabled: false},
-        {checked: false, disabled: 'native'},
+        {checked: false, disabled: 'focusable'},
         {checked: false, disabled: false},
       ],
     },
@@ -471,7 +472,7 @@ const CASES: AuditCase[] = [
       rows: [
         {checked: true},
         {checked: false},
-        {checked: false, disabled: 'native'},
+        {checked: false, disabled: 'focusable'},
       ],
     },
   },

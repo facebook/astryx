@@ -1459,6 +1459,16 @@ jobs:
             --project chromium \
             --output menu-header-footer-output
 
+      # A menu inside a shadow root must act on the row under a released
+      # pointer; at the document level a real engine resolves that point to
+      # the shadow host, which jsdom cannot show.
+      - name: Run menu press shadow-root contract
+        run: |
+          pnpm exec playwright test \
+            packages/core/src/hooks/__tests__/MenuPressShadowRoot.a11y.chromium.spec.ts \
+            --project chromium \
+            --output menu-press-shadow-root-output
+
       # A sub-menu with a header or footer is a modal dialog beside the root's
       # menu, outside every role="menu" element. Its Tab order, a header radio
       # group the browser moves focus in after the pointer leaves, the
@@ -2019,6 +2029,55 @@ jobs:
         with:
           name: slider-contract-evidence-${{ needs.build-storybook.outputs.short_hash }}
           path: slider-contract/
+          retention-days: 30
+          if-no-files-found: warn
+
+      # The progressbar contract's role and name, value and range, indeterminate
+      # state, and value text are accessibility-tree facts that jsdom cannot
+      # observe. Run the contract's own fixture proof and the ProgressBar and
+      # CircularProgress bindings whenever either component, the binding
+      # stories, or the contract changes. Its own --output directory; the JSON
+      # report is the head-bound record, uploaded next.
+      - name: Run Progressbar accessibility contract
+        id: progressbar-contract
+        if: ${{ !cancelled() && github.event_name == 'pull_request' }}
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PLAYWRIGHT_JSON_OUTPUT_FILE: progressbar-contract/report.json
+        run: |
+          should_run=false
+          # The helper comes from the base, since an older PR head lacks it.
+          # Exit 1 means out of scope; 0 in scope; 2 unknown, so run.
+          scope=2
+          helper="$(mktemp)"
+          if git fetch --quiet --no-tags --depth=1 origin "$BASE_SHA" \
+            && git show "$BASE_SHA:.github/scripts/pr-scope-touches.sh" > "$helper"; then
+            scope=0
+            bash "$helper" "$BASE_SHA" \
+              '^(internal/a11y-spec/src/patterns/progressbar\.|packages/core/src/ProgressBar/|packages/lab/src/CircularProgress/|apps/storybook/stories/ProgressbarA11y)' || scope=$?
+          fi
+          if [ "$scope" != 1 ]; then
+            should_run=true
+          fi
+          echo "should_run=${should_run}" >> "$GITHUB_OUTPUT"
+          if [ "$should_run" != true ]; then
+            echo "ProgressBar, CircularProgress and the progressbar contract are not in PR scope; skipping progressbar evidence."
+            exit 0
+          fi
+          pnpm exec playwright test \
+            internal/a11y-spec/src/patterns/progressbar.chromium.spec.ts \
+            packages/core/src/ProgressBar/__tests__/ProgressBar.a11y.chromium.spec.ts \
+            packages/lab/src/CircularProgress/__tests__/CircularProgress.a11y.chromium.spec.ts \
+            --project chromium \
+            --reporter list,json \
+            --output progressbar-contract-output
+
+      - name: Upload Progressbar accessibility contract evidence
+        if: ${{ !cancelled() && steps.progressbar-contract.outputs.should_run == 'true' }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: progressbar-contract-evidence-${{ needs.build-storybook.outputs.short_hash }}
+          path: progressbar-contract/
           retention-days: 30
           if-no-files-found: warn
 
@@ -2891,6 +2950,71 @@ jobs:
           path: |
             dropdown-menu-divider-a11y-report.json
             dropdown-menu-divider-audit-evidence/
+          retention-days: 30
+          if-no-files-found: error
+
+      # DropdownMenuItem owns one interactive pointer-menu row. Its label, icon,
+      # description, and end content follow logical document direction; the row
+      # uses logical inline padding and start-aligned text. Parent DropdownMenu
+      # owns directional placement and keyboard navigation.
+      - name: Run DropdownMenuItem audit browser evidence
+        if: ${{ !cancelled() && github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, '[Component Audit] DropdownMenuItem:') }}
+        env:
+          ASTRYX_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          status=0
+          node .github/scripts/accessibility-audit.js \
+            --storybook-dir apps/storybook/dist \
+            --output dropdown-menu-item-a11y-report.json \
+            --components DropdownMenuItem \
+            --ready-selector '[role="menu"]' \
+            --baseline .github/a11y-baseline.json \
+            --fail-on-new || status=1
+          pnpm exec playwright test \
+            packages/core/src/DropdownMenu/__tests__/DropdownMenuItemAudit.a11y.chromium.spec.ts \
+            --project chromium || status=1
+          exit "$status"
+
+      - name: Upload DropdownMenuItem audit evidence
+        if: always() && github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, '[Component Audit] DropdownMenuItem:')
+        uses: actions/upload-artifact@v7
+        with:
+          name: dropdown-menu-item-audit-evidence-${{ needs.build-storybook.outputs.short_hash }}
+          path: |
+            dropdown-menu-item-a11y-report.json
+            dropdown-menu-item-audit-evidence/
+          retention-days: 30
+          if-no-files-found: error
+
+      # DropdownMenuRadioGroup owns controlled value propagation, the named
+      # role=group wrapper, close policy, and the tokenized gap between radio
+      # rows. Parent DropdownMenu owns keyboard navigation; each radio item owns
+      # menuitemradio semantics and indicator paint.
+      - name: Run DropdownMenuRadioGroup audit browser evidence
+        if: ${{ !cancelled() && github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, '[Component Audit] DropdownMenuRadioGroup:') }}
+        env:
+          ASTRYX_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          status=0
+          node .github/scripts/accessibility-audit.js \
+            --storybook-dir apps/storybook/dist \
+            --output dropdown-menu-radio-group-a11y-report.json \
+            --components DropdownMenuRadioGroup \
+            --baseline .github/a11y-baseline.json \
+            --fail-on-new || status=1
+          pnpm exec playwright test \
+            packages/core/src/DropdownMenu/__tests__/DropdownMenuRadioGroupAudit.a11y.chromium.spec.ts \
+            --project chromium || status=1
+          exit "$status"
+
+      - name: Upload DropdownMenuRadioGroup audit evidence
+        if: always() && github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, '[Component Audit] DropdownMenuRadioGroup:')
+        uses: actions/upload-artifact@v7
+        with:
+          name: dropdown-menu-radio-group-audit-evidence-${{ needs.build-storybook.outputs.short_hash }}
+          path: |
+            dropdown-menu-radio-group-a11y-report.json
+            dropdown-menu-radio-group-audit-evidence/
           retention-days: 30
           if-no-files-found: error
 
