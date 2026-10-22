@@ -257,11 +257,39 @@ describe('template_asset_not_packed', () => {
     ]);
   });
 
+  it('names the ! entry that leaves an asset out, and reads a template-literal path', async () => {
+    write({
+      'package.json': JSON.stringify({
+        name: '@acme/kit',
+        version: '1.0.0',
+        files: ['components', 'templates', '!templates/*.png'],
+      }),
+      'templates/cat.png': 'png',
+      'templates/card.doc.mjs': blockDoc(
+        'card',
+        ", exampleFor: 'AcmeCard', isShowcase: true",
+      ),
+      'templates/card.tsx': [
+        'const cat = new URL(`./cat.png`, import.meta.url);',
+        'export default () => null;',
+        '',
+      ].join('\n'),
+    });
+
+    const notes = await notesOf(['template_asset_not_packed']);
+    expect(notes).toHaveLength(1);
+    expect(notes[0].message).toContain(
+      'the package.json `files` entry "!templates/*.png" leaves out',
+    );
+  });
+
   it.each([
     [['templates/**/*', 'astryx.integration.mjs']],
     [['templates', '*.png']],
     [['./assets/', 'templates/']],
     [['/assets', '/templates']],
+    [['assets', 'templates/*.{tsx,mjs,png}']],
+    [['assets', 'templates/*.[pt][ns][gx]', 'templates/*.mjs']],
   ])('counts what npm packs under %j', async files => {
     write({
       'package.json': JSON.stringify({

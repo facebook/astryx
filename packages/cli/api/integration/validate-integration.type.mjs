@@ -42,6 +42,9 @@
  * @property {{validated: boolean, name: string | null, version: string | null, issues: import('../../foundation/integrations/issue').AstryxIntegrationIssue[], notes?: Array<{code: string, message: string, next?: boolean}>, docTypes?: DocTypesReport, docNames?: DocNamesReport, blockComponents?: BlockComponentsReport, publicImports?: PublicImportsReport}} data
  *   `notes`: information beside the issues that fails nothing, such as
  *   `invalid_cli_command`, a `cliCommand` that was ignored as malformed;
+ *   `component_without_example`, `template_category`,
+ *   `showcase_not_standalone` and `template_asset_not_packed`, what a
+ *   package's examples need (next minor);
  *   `cli_peer_version`, the running CLI outside the package's
  *   `@astryxdesign/cli` peer range; and
  *   the package layout findings added after the last minor release, each with

@@ -1037,39 +1037,134 @@ const SERVER_ONLY_IMPORTS =
   /^(?:server-only|next\/headers|next\/server|next\/cache|node:.+)$/u;
 
 /**
- * Whether a package-relative path is in what npm packs, by the package's
- * `files` field: everything without one, else a path a listed entry names
- * or lies under (`*` and `**` globs too). `package.json`, the README and the
- * license are always packed and never asked about here.
+ * Every spelling a glob's `{a,b}` braces stand for, nested braces included.
+ * @param {string} pattern
+ * @returns {string[]}
+ */
+function expandBraces(pattern) {
+  let depth = 0;
+  let open = -1;
+  for (let i = 0; i < pattern.length; i++) {
+    const ch = pattern[i];
+    if (ch === '\\') {
+      i++;
+    } else if (ch === '{') {
+      if (depth++ === 0) open = i;
+    } else if (ch === '}' && depth > 0 && --depth === 0) {
+      const body = pattern.slice(open + 1, i);
+      /** @type {string[]} */
+      const parts = [];
+      let level = 0;
+      let from = 0;
+      for (let j = 0; j < body.length; j++) {
+        if (body[j] === '{') level++;
+        else if (body[j] === '}') level--;
+        else if (body[j] === ',' && level === 0) {
+          parts.push(body.slice(from, j));
+          from = j + 1;
+        }
+      }
+      parts.push(body.slice(from));
+      if (parts.length < 2) continue;
+      const head = pattern.slice(0, open);
+      const tail = pattern.slice(i + 1);
+      return parts.flatMap(part => expandBraces(head + part + tail));
+    }
+  }
+  return [pattern];
+}
+
+/**
+ * One brace-free glob as a regular expression source: `**`, `*`, `?` and
+ * `[…]` classes (`[!…]` negated), as npm's `files` matching reads them.
+ * @param {string} pattern
+ */
+function globSource(pattern) {
+  let out = '';
+  for (let i = 0; i < pattern.length; i++) {
+    const ch = pattern[i];
+    if (ch === '*') {
+      if (pattern[i + 1] === '*') {
+        const slashAfter = pattern[i + 2] === '/';
+        const atStart = i === 0 || pattern[i - 1] === '/';
+        if (atStart && slashAfter) {
+          out += '(?:.*/)?';
+          i += 2;
+        } else if (atStart && i + 2 === pattern.length) {
+          out = out.replace(/\/$/u, '') + '(?:/.*)?';
+          i += 1;
+        } else {
+          out += '.*';
+          i += 1;
+        }
+      } else {
+        out += '[^/]*';
+      }
+    } else if (ch === '?') {
+      out += '[^/]';
+    } else if (ch === '[') {
+      const close = pattern.indexOf(']', i + 2);
+      if (close === -1) {
+        out += '\\[';
+      } else {
+        let body = pattern.slice(i + 1, close);
+        const negated = body.startsWith('!') || body.startsWith('^');
+        if (negated) body = body.slice(1);
+        out += `[${negated ? '^' : ''}${body.replace(/[\\\]]/gu, '\\$&')}]`;
+        i = close;
+      }
+    } else if (ch === '\\' && i + 1 < pattern.length) {
+      out += pattern[++i].replace(/[.+^${}()|[\]\\*?/]/gu, '\\$&');
+    } else {
+      out += ch.replace(/[.+^${}()|[\]\\]/gu, '\\$&');
+    }
+  }
+  return out;
+}
+
+/**
+ * Whether npm packs a package-relative path, by the package's `files` field
+ * (everything without one), and the entry that decided it: the last entry
+ * that matches, as npm reads them. Globs follow npm's matching: `*`, `**`,
+ * `?`, `[…]` classes and `{a,b}` braces, and a pattern with no slash matches
+ * a name at any depth unless a leading `/` or `./` anchors it. `package.json`,
+ * the README and the license are always packed and never asked about here.
  * @param {string} rel POSIX, relative to the package root
  * @param {unknown} files
+ * @returns {{packed: boolean, entry: string | null}}
  */
-function isPackedBy(rel, files) {
-  if (!Array.isArray(files)) return true;
-  let packed = false;
+function packedBy(rel, files) {
+  if (!Array.isArray(files)) return {packed: true, entry: null};
+  /** @type {{packed: boolean, entry: string | null}} */
+  let result = {packed: false, entry: null};
   for (const entry of files) {
     if (typeof entry !== 'string') continue;
     const negated = entry.startsWith('!');
     const raw = entry.slice(negated ? 1 : 0);
-    // A leading `/` or `./` anchors the pattern at the package root.
     const anchored = /^\.?\//u.test(raw);
-    let pattern = raw.replace(/^\.?\//u, '').replace(/\/+$/u, '');
-    // As in .gitignore, which npm follows: an unanchored pattern with no
-    // slash matches a name at any depth.
-    if (!anchored && !pattern.includes('/')) pattern = `**/${pattern}`;
-    const source = pattern
-      .replace(/[.+^${}()|[\]\\]/gu, '\\$&')
-      .replace(/\*\*\//gu, '<<DIRS>>')
-      .replace(/\/\*\*$/u, '<<REST>>')
-      .replace(/\*\*/gu, '<<ANY>>')
-      .replace(/\*/gu, '[^/]*')
-      .replace(/\?/gu, '[^/]')
-      .replace(/<<DIRS>>/gu, '(?:.*/)?')
-      .replace(/<<REST>>/gu, '(?:/.*)?')
-      .replace(/<<ANY>>/gu, '.*');
-    if (new RegExp(`^${source}(?:/.*)?$`, 'u').test(rel)) packed = !negated;
+    const trimmed = raw.replace(/^\.?\//u, '').replace(/\/+$/u, '');
+    const matches = expandBraces(trimmed).some(spelling => {
+      const pattern =
+        !anchored && !spelling.includes('/') ? `**/${spelling}` : spelling;
+      return new RegExp(`^${globSource(pattern)}(?:/.*)?$`, 'u').test(rel);
+    });
+    if (matches) result = {packed: !negated, entry};
   }
-  return packed;
+  return result;
+}
+
+/**
+ * The path a `new URL()` argument spells out: a string, or a template
+ * literal with no expressions. Anything computed is not read.
+ * @param {any} node
+ * @returns {string | null}
+ */
+function literalPath(node) {
+  if (node?.type === 'StringLiteral') return node.value;
+  if (node?.type === 'TemplateLiteral' && node.expressions.length === 0) {
+    return node.quasis[0]?.value?.cooked ?? null;
+  }
+  return null;
 }
 
 /**
@@ -1163,8 +1258,8 @@ function readModule(source, builtins) {
         if (
           node.callee.type === 'Identifier' &&
           node.callee.name === 'URL' &&
-          first?.type === 'StringLiteral' &&
-          /^\.{1,2}\//u.test(first.value) &&
+          literalPath(first) != null &&
+          /^\.{1,2}\//u.test(/** @type {string} */ (literalPath(first))) &&
           second?.type === 'MemberExpression' &&
           second.object?.type === 'MetaProperty' &&
           second.object.meta?.name === 'import' &&
@@ -1172,7 +1267,7 @@ function readModule(source, builtins) {
           !second.computed &&
           second.property?.name === 'url'
         ) {
-          assets.push(first.value);
+          assets.push(/** @type {string} */ (literalPath(first)));
         }
         break;
       }
@@ -1333,11 +1428,18 @@ export async function componentExamplesCheck(integration) {
       const asset = path.resolve(path.dirname(template.filePath), loaded);
       const assetRel = rel(asset);
       const exists = fs.existsSync(asset);
-      if (exists && isPackedBy(assetRel, packedFiles)) continue;
+      const packing = packedBy(assetRel, packedFiles);
+      if (exists && packing.packed) continue;
+      const folder =
+        path.posix.dirname(assetRel) === '.'
+          ? assetRel
+          : path.posix.dirname(assetRel);
       notes.push({
         code: 'template_asset_not_packed',
         message: exists
-          ? `${rel(template.filePath)}: loads ${assetRel}, which the package.json \`files\` field leaves out of the package, so the template breaks once installed. Fix: add "${path.posix.dirname(assetRel) === '.' ? assetRel : path.posix.dirname(assetRel)}" to \`files\`.`
+          ? packing.entry
+            ? `${rel(template.filePath)}: loads ${assetRel}, which the package.json \`files\` entry "${packing.entry}" leaves out of the package, so the template breaks once installed. Fix: remove or narrow "${packing.entry}" so it no longer matches ${assetRel}.`
+            : `${rel(template.filePath)}: loads ${assetRel}, which the package.json \`files\` field leaves out of the package, so the template breaks once installed. Fix: add "${folder}" to \`files\`.`
           : `${rel(template.filePath)}: loads ${assetRel}, which does not exist. Fix: add the file, or point \`new URL()\` at one that does.`,
       });
     }
