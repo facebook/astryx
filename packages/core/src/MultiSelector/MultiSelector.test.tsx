@@ -4704,7 +4704,67 @@ describe('MultiSelector renderCreateOption', () => {
     );
   });
 
-  it('warns in development when the content renders no readable text, and not when it names the row', async () => {
+  it('names the row by an aria-label inside its content, as the browser does, and announces that name without a warning', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      const user = userEvent.setup();
+      const {unmount} = render(
+        <MultiSelector
+          label="Labels"
+          options={OPTIONS}
+          value={[]}
+          onChange={() => {}}
+          hasSearch
+          hasCreate
+          renderCreateOption={({query}) => (
+            <span role="img" aria-label={`New label ${query}`} />
+          )}
+        />,
+      );
+      await user.click(screen.getByRole('button', {name: 'Labels'}));
+      await user.type(screen.getByRole('combobox', h), 'Urgent');
+      expect(
+        screen.getByRole('option', {name: 'New label Urgent', ...h}),
+      ).toBeInTheDocument();
+      await waitFor(() => {
+        expect(politeRegion()?.textContent).toBe('New label Urgent');
+      });
+      expect(warn).not.toHaveBeenCalledWith(
+        expect.stringContaining('rendered nothing that names the create row'),
+      );
+      unmount();
+
+      // A named swatch beside the text: the region says the option's whole
+      // name, as the accessibility tree computes it.
+      render(
+        <MultiSelector
+          label="Labels"
+          options={OPTIONS}
+          value={[]}
+          onChange={() => {}}
+          hasSearch
+          hasCreate
+          renderCreateOption={({label}) => (
+            <>
+              <span role="img" aria-label="Red" /> {label}
+            </>
+          )}
+        />,
+      );
+      await user.click(screen.getByRole('button', {name: 'Labels'}));
+      await user.type(screen.getByRole('combobox', h), 'Urgent');
+      await waitFor(() => {
+        expect(politeRegion()?.textContent).toBe('Red Create "Urgent"');
+      });
+      expect(screen.getByRole('option', h)).toHaveAccessibleName(
+        'Red Create "Urgent"',
+      );
+    } finally {
+      warn.mockRestore();
+    }
+  });
+
+  it('warns in development when the content names nothing, and not when it names the row', async () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     try {
       const user = userEvent.setup();
@@ -4723,7 +4783,7 @@ describe('MultiSelector renderCreateOption', () => {
       await user.type(screen.getByRole('combobox', h), 'Urgent');
       await waitFor(() =>
         expect(warn).toHaveBeenCalledWith(
-          expect.stringContaining('rendered no readable text'),
+          expect.stringContaining('rendered nothing that names the create row'),
         ),
       );
       unmount();
@@ -4751,7 +4811,7 @@ describe('MultiSelector renderCreateOption', () => {
         screen.getByRole('option', {name: 'Create "Urgent"', ...h}),
       ).toBeInTheDocument();
       expect(warn).not.toHaveBeenCalledWith(
-        expect.stringContaining('rendered no readable text'),
+        expect.stringContaining('rendered nothing that names the create row'),
       );
     } finally {
       warn.mockRestore();
