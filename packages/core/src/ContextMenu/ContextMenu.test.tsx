@@ -906,6 +906,41 @@ describe('ContextMenu compound mode', () => {
     );
   });
 
+  it("a right-click in a regioned sub-menu's dialog keeps the browser's own menu, and one on a row does not", async () => {
+    const user = userEvent.setup();
+    render(
+      <ContextMenu
+        label="Row actions"
+        menuContent={
+          <>
+            <DropdownMenuItem label="Rename" onClick={() => {}} />
+            <DropdownMenuSubMenu
+              label="Labels"
+              header={<input aria-label="Filter labels" />}>
+              <DropdownMenuItem label="Bug" onClick={() => {}} />
+            </DropdownMenuSubMenu>
+          </>
+        }>
+        <div>Right-click me</div>
+      </ContextMenu>,
+    );
+    fireEvent.contextMenu(screen.getByText('Right-click me'));
+    await user.click(
+      screen.getByRole('menuitem', {name: /Labels/, hidden: true}),
+    );
+    const field = await screen.findByRole('textbox', {
+      name: 'Filter labels',
+      hidden: true,
+    });
+    // fireEvent returns false when a handler prevented the default.
+    expect(fireEvent.contextMenu(field)).toBe(true);
+    expect(
+      fireEvent.contextMenu(
+        screen.getByRole('menuitem', {name: 'Rename', hidden: true}),
+      ),
+    ).toBe(false);
+  });
+
   it("a mouse press on a regioned sub-menu's field, button or row reaches it and keeps the menu open", async () => {
     const user = userEvent.setup();
     const onCreate = vi.fn();

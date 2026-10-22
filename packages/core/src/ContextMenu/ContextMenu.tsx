@@ -785,7 +785,14 @@ export function ContextMenu({
       tabIndex={usesBottomSheet ? 0 : -1}
       aria-label={label}
       onKeyDown={listKeyDown}
-      onContextMenu={e => e.preventDefault()}
+      onContextMenu={e => {
+        // Only a right-click on the menu itself: a sub-menu's dialog renders
+        // beside the menu but React still bubbles its events here, and a field
+        // there keeps the browser's own menu (paste, spelling).
+        if (e.currentTarget.contains(e.target as Node)) {
+          e.preventDefault();
+        }
+      }}
       {...menuPress.menuProps}
       {...mergeProps(
         themeProps('context-menu'),
