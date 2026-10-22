@@ -107,7 +107,7 @@ function headOfLetters(term, name) {
  * @param {string} [candidate.description]
  * @param {string[]} [candidate.prose] - Extra free-text blobs (doc section text, best practices).
  * @param {string[]} [candidate.guidance] - Usage guidance (features, best practices) — scored a tier below description.
- * @param {{fuzzy?: boolean, joins?: boolean}} [opts] - `fuzzy`: allow edit-distance (typo) matches. Default true; multi-word queries pass false. `joins`: read a spaced query joined into a name or keyword (default true); off when the query names an entry outright.
+ * @param {{fuzzy?: boolean, joins?: boolean, part?: boolean}} [opts] - `fuzzy`: allow edit-distance (typo) matches. Default true; multi-word queries pass false. `joins`: read a spaced query joined into a name or keyword (default true); off when the query names an entry outright. `part`: the term is one word of a longer query, so a name's head word after single letters (Stack in VStack) does not count as a keyword hit for it.
  * @returns {{score: number, reason: string, alias?: 'partial' | 'keyword'} | null}
  *   `alias` marks a hit that read the query's words joined.
  */
@@ -123,7 +123,7 @@ export function scoreCandidate(
     prose = [],
     guidance = [],
   },
-  {fuzzy = true, joins = true} = {},
+  {fuzzy = true, joins = true, part = false} = {},
 ) {
   let best = 0;
   let reason = '';
@@ -190,12 +190,13 @@ export function scoreCandidate(
       if (sameWord(term, nameLower)) consider(95, `name "${candidateName}"`);
       // The term is a word of the name, or starts one: "input" in TextInput.
       else if (
+        !part &&
         domain !== 'doc' &&
         domain !== 'theme' &&
         headOfLetters(term, candidateName)
       ) {
-        // The term is the name's head word after single letters (Stack in
-        // VStack, HStack): a variant named by its head, as a keyword is.
+        // The whole query is the name's head word after single letters (Stack
+        // in VStack, HStack): a variant named by its head, as a keyword is.
         consider(90, `name "${candidateName}" ends in "${term}"`);
       } else if (startsAWordOf(term, candidateName)) {
         consider(60, `name contains "${term}"`);

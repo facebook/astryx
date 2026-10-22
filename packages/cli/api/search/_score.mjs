@@ -187,7 +187,7 @@ export function scoreQuery(
   let alias = false;
   let aliasWords = 0;
   for (const tok of tokens) {
-    let h = bestForToken(tok, candidate, {fuzzy});
+    let h = bestForToken(tok, candidate, {fuzzy, part: true});
     if (
       compound?.covered.has(joined(tok)) &&
       compound.score > (h?.score ?? 0)

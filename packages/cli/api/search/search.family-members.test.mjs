@@ -41,6 +41,12 @@ describe('family members found by their spelled-out names', () => {
     expect(results[0]?.reason).not.toMatch(/spelled out/);
   });
 
+  it('a longer query keeps Stack first', async () => {
+    // Stack in VStack counts as a keyword hit only when it is the whole query.
+    const {results} = (await search('vertical stack of cards')).data;
+    expect(results[0]).toMatchObject({domain: 'component', name: 'Stack'});
+  });
+
   it('a word the description does not spell out is no name', async () => {
     const {results} = (await search('visual stack')).data;
     expect(results[0]?.name).not.toBe('VStack');
