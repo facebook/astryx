@@ -19,17 +19,15 @@ export default function DropdownMenuGroupWithSelectable() {
 
   return (
     <DropdownMenu button={{label: 'Run settings'}}>
-      <DropdownMenuGroup title="Model">
-        <DropdownMenuRadioGroup
-          label="Model"
-          value={model}
-          onChange={setModel}
-          hasCloseOnSelect={false}>
-          <DropdownMenuRadioItem value="fast" label="Fast" />
-          <DropdownMenuRadioItem value="balanced" label="Balanced" />
-          <DropdownMenuRadioItem value="thorough" label="Thorough" />
-        </DropdownMenuRadioGroup>
-      </DropdownMenuGroup>
+      <DropdownMenuRadioGroup
+        title="Model"
+        value={model}
+        onChange={setModel}
+        hasCloseOnSelect={false}>
+        <DropdownMenuRadioItem value="fast" label="Fast" />
+        <DropdownMenuRadioItem value="balanced" label="Balanced" />
+        <DropdownMenuRadioItem value="thorough" label="Thorough" />
+      </DropdownMenuRadioGroup>
       <DropdownMenuDivider />
       <DropdownMenuGroup title="On completion">
         <DropdownMenuCheckboxItem
