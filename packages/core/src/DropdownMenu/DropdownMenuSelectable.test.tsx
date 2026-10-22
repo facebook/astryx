@@ -329,6 +329,12 @@ describe('DropdownMenuRadioGroup / RadioItem', () => {
       screen.getByRole('menuitemradio', {name: 'Oldest', hidden: true}),
     );
     expect(onChange).toHaveBeenCalledWith('oldest');
+    expect(
+      screen.getByRole('menuitemradio', {name: 'Newest', hidden: true}),
+    ).toHaveAttribute('aria-checked', 'true');
+    expect(
+      screen.getByRole('menuitemradio', {name: 'Oldest', hidden: true}),
+    ).toHaveAttribute('aria-checked', 'false');
     expect(HTMLElement.prototype.hidePopover).toHaveBeenCalledTimes(1);
   });
 
@@ -378,6 +384,8 @@ describe('DropdownMenuRadioGroup / RadioItem', () => {
         <DropdownMenu button={{label: 'Sort'}}>
           <DropdownMenuRadioGroup
             ref={ref}
+            role="tree"
+            aria-label="Consumer label"
             aria-labelledby="sort-label"
             data-owner="consumer"
             className="consumer-group"
@@ -398,6 +406,7 @@ describe('DropdownMenuRadioGroup / RadioItem', () => {
       name: 'Visible sort label',
       hidden: true,
     });
+    expect(group).toHaveAttribute('role', 'group');
     expect(group).toHaveAttribute('aria-label', 'Sort fallback');
     expect(group).toHaveAttribute('aria-labelledby', 'sort-label');
     expect(group).toHaveAttribute('data-owner', 'consumer');

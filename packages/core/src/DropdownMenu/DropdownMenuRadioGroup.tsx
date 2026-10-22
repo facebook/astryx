@@ -51,9 +51,9 @@ export interface DropdownMenuRadioGroupProps extends Omit<
   /**
    * Accessible name for the group, announced by screen readers so the radios
    * read as a named set (e.g. "Sort by"). Applied as the group's `aria-label`.
-   * Required -- an unnamed radio group is an accessibility defect. Pass
-   * `aria-labelledby` (via base props) instead if the name already exists as a
-   * visible element on the page.
+   * Required even when `aria-labelledby` (via base props) points to visible
+   * text; that visible reference becomes the computed name while `label`
+   * remains the fallback.
    */
   label: string;
   /**

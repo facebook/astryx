@@ -36,15 +36,15 @@ system_specs: [spec:AST-020, spec:AST-029]
 
 ## Contract at a glance
 
-| Area                    | Contract                                                                                                                                                    |
-| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Public contract         | One controlled, named single-selection group of `DropdownMenuRadioItem` children with value, change callback, close policy, root inputs, and inherited ref. |
-| Behavior                | The group supplies selection and close-policy context; radio items emit values; the parent DropdownMenu owns keyboard navigation and menu lifecycle.        |
-| End-user impact         | Assistive technology encounters one named group with exactly one current choice when a value matches, while pointer and keyboard selection stay aligned.    |
-| Builder impact          | Keep the value controlled, provide a stable accessible label, and place only DropdownMenuRadioItem options inside the group.                                |
-| Compatibility/readiness | Patch-compatible observational contract. Runtime, exports, defaults, and theme surfaces remain unchanged; authority stays `draft` until owner approval.     |
-| Review checks           | Reject unnamed groups, local selection state, dropped root inputs, a second keyboard owner, or a close policy that bypasses the controlled callback.        |
-| Governing rules         | WAI-ARIA menu pattern; `architecture:public-component-api/INV5–INV9`; `architecture:component-test-sufficiency/INV1–INV7`; `spec:AST-020/FR1,FR2,FR6`.      |
+| Area                    | Contract                                                                                                                                                                                          |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Public contract         | One controlled, named single-selection group of `DropdownMenuRadioItem` children with value, change callback, close policy, root inputs, and an explicit React 19 ref.                            |
+| Behavior                | The group supplies selection and close-policy context; radio items emit values; the parent DropdownMenu owns keyboard navigation and menu lifecycle.                                              |
+| End-user impact         | Assistive technology encounters one named group with exactly one current choice when a value matches, while pointer and keyboard selection stay aligned.                                          |
+| Builder impact          | Keep the value controlled, provide a stable accessible label, and place only DropdownMenuRadioItem options inside the group.                                                                      |
+| Compatibility/readiness | Patch-compatible additive `ref` prop on the existing group root. Existing runtime behavior, exports, defaults, and theme surfaces remain unchanged; authority stays `draft` until owner approval. |
+| Review checks           | Reject unnamed groups, local selection state, dropped root inputs, a second keyboard owner, or a close policy that bypasses the controlled callback.                                              |
+| Governing rules         | WAI-ARIA menu pattern; `architecture:public-component-api/INV5–INV9`; `architecture:component-test-sufficiency/INV1–INV7`; `spec:AST-020/FR1,FR2,FR6`.                                            |
 
 This table is a review projection; the body below is authoritative.
 
@@ -60,7 +60,8 @@ and menu open/close lifecycle.
 ## Compatibility and migration
 
 - Released default preserved: yes (`hasCloseOnSelect=true`).
-- Compatibility class: observational patch; no behavior or public-surface change.
+- Compatibility class: additive patch; declares and forwards the React 19 `ref`
+  prop to the existing group root without changing existing behavior.
 - Controlled behavior: `value` is caller-owned and `onChange` is the only commit path.
 - Migration decision: none.
 

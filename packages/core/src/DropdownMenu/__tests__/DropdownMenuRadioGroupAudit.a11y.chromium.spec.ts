@@ -168,6 +168,7 @@ for (const item of cases) {
       );
       const groupStyle = getComputedStyle(element);
       const groupBox = element.getBoundingClientRect();
+      const currentMenu = element.closest<HTMLElement>('[role="menu"]');
       const rows = currentRadios.map(row => {
         const box = row.getBoundingClientRect();
         const style = getComputedStyle(row);
@@ -204,6 +205,8 @@ for (const item of cases) {
           display: groupStyle.display,
           flexDirection: groupStyle.flexDirection,
           rowGap: groupStyle.rowGap,
+          menuRowGap:
+            currentMenu === null ? null : getComputedStyle(currentMenu).rowGap,
           geometry: {
             x: groupBox.x,
             y: groupBox.y,
@@ -226,6 +229,8 @@ for (const item of cases) {
     const layoutPass =
       observed.group.display === 'flex' &&
       observed.group.flexDirection === 'column' &&
+      observed.group.menuRowGap !== null &&
+      observed.group.rowGap === observed.group.menuRowGap &&
       Number.parseFloat(observed.group.rowGap) > 0 &&
       observed.group.geometry.width > 0 &&
       observed.group.geometry.height > 0 &&
