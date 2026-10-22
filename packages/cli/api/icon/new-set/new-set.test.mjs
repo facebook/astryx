@@ -3,8 +3,9 @@
 import {afterEach, beforeEach, describe, expect, it} from 'vitest';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import {integrationAdd, iconNewSet} from './add-contribution.mjs';
-import {discoverIconSetDirectory} from '../../foundation/discovery/icon-set-discovery.mjs';
+import {integrationAdd} from '../../integration/add-contribution.mjs';
+import {iconNewSet} from './new-set.mjs';
+import {discoverIconSetDirectory} from '../../../foundation/discovery/icon-set-discovery.mjs';
 
 /** @type {string} */
 let tmpDir;
@@ -254,7 +255,7 @@ describe('iconNewSet (experimental icon new-set)', () => {
 
 describe('experimental icon authoring API', () => {
   it('exports iconNewSet and iconNewDefinition, and no integrationAdd icon kind', async () => {
-    const api = await import('../index.mjs');
+    const api = await import('../../index.mjs');
     expect(api.iconNewSet).toBeTypeOf('function');
     expect(api.iconNewDefinition).toBeTypeOf('function');
     expect(api).not.toHaveProperty('integrationAddIconSet');

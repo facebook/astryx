@@ -35,10 +35,8 @@ import {icon as iconApi} from '../../../../api/icon/icon.mjs';
 import {iconAdd} from '../../../../api/icon/add/add.mjs';
 import {iconMap} from '../../../../api/icon/map/map.mjs';
 import {iconUse} from '../../../../api/icon/use/use.mjs';
-import {
-  iconNewDefinition,
-  iconNewSet,
-} from '../../../../api/integration/add-contribution.mjs';
+import {iconNewSet} from '../../../../api/icon/new-set/new-set.mjs';
+import {iconNewDefinition} from '../../../../api/icon/new-definition/new-definition.mjs';
 import {doc as iconCommand} from '../experimental-icon.doc.mjs';
 import {doc as iconUseCommand} from '../experimental-icon-use.doc.mjs';
 import {doc as iconMapCommand} from '../experimental-icon-map.doc.mjs';

@@ -13,10 +13,10 @@ import * as path from 'node:path';
 const reread = vi.hoisted(() => ({calls: 0, failOn: 0}));
 
 vi.mock(
-  '../../foundation/discovery/icon-set-writer.mjs',
+  '../../../foundation/discovery/icon-set-writer.mjs',
   async importOriginal => {
     const actual =
-      /** @type {typeof import('../../foundation/discovery/icon-set-writer.mjs')} */ (
+      /** @type {typeof import('../../../foundation/discovery/icon-set-writer.mjs')} */ (
         await importOriginal()
       );
     return {
@@ -33,7 +33,8 @@ vi.mock(
   },
 );
 
-const {iconNewSet, iconNewDefinition} = await import('./add-contribution.mjs');
+const {iconNewSet} = await import('../new-set/new-set.mjs');
+const {iconNewDefinition} = await import('./new-definition.mjs');
 
 /** @type {string} */
 let tmpDir;

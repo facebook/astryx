@@ -9,9 +9,9 @@ import {
   integrationAddCodemod,
   integrationAddComponent,
   integrationAddDoc,
-  iconNewSet,
   integrationAddTemplate,
 } from './add-contribution.mjs';
+import {iconNewSet} from '../icon/new-set/new-set.mjs';
 import {validateLocalIntegration} from './validate-integration.mjs';
 import {NAMESPACE_DOCS_CLI} from '../../foundation/integrations/cli-requirement.mjs';
 
