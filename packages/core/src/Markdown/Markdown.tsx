@@ -41,6 +41,7 @@ import {TableHeaderCell} from '../Table/TableHeaderCell';
 import {TableHeader} from '../Table/TableHeader';
 import {TableBody} from '../Table/TableBody';
 import {mergeProps} from '../utils';
+import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import {useStreamingText} from '../hooks/useStreamingText';
 import {computeBoundaries, computeSegments} from './streaming';
 import type {BaseProps} from '../BaseProps';
@@ -2122,6 +2123,21 @@ export function Markdown<
 }: MarkdownProps<Plugins>): React.ReactElement {
   const t = useTranslator();
   const LinkComponent = useLinkComponent();
+  // Links read the caller's handler when clicked, so a handler recreated on
+  // every caller render does not invalidate the memoized document below.
+  // Only whether a handler exists changes the rendered links.
+  const onLinkClickRef = useRef(onLinkClick);
+  useIsomorphicLayoutEffect(() => {
+    onLinkClickRef.current = onLinkClick;
+  });
+  const hasLinkClick = onLinkClick != null;
+  const stableOnLinkClick = useMemo<MarkdownProps['onLinkClick']>(
+    () =>
+      hasLinkClick
+        ? (href, event) => onLinkClickRef.current?.(href, event)
+        : undefined,
+    [hasLinkClick],
+  );
   // Derive the set of source IDs for the parser (stable across renders when sources don't change)
   const sourceIds = useMemo(
     () => (sources ? new Set(Object.keys(sources)) : undefined),
@@ -2327,19 +2343,80 @@ export function Markdown<
     return next;
   }, [display, smoothedLen, maxSpans]);
 
-  const cursor: StreamingCursor = {
-    offset: 0,
-    boundaries,
-    active: isStreaming,
-  };
-
-  // Build citation context — numbers are assigned in encounter order during rendering.
-  // This is recreated each render so numbering stays consistent with the AST.
-  const citationCtx: CitationContext | null = sources
-    ? {sources, numberMap: new Map(), nextNumber: 1, style: citationStyle}
+  const contentWidthValue = contentWidth
+    ? typeof contentWidth === 'number'
+      ? `${contentWidth}px`
+      : contentWidth
     : null;
 
+  // The block document is the expensive part of a long Markdown render. It
+  // depends only on these inputs, so a caller re-render that changes none of
+  // them returns the same elements and React skips the whole subtree. The
+  // cursor and citation numbering are rebuilt inside, from the start of the
+  // document, exactly as a full render builds them.
+  const renderedBlocks = useMemo(() => {
+    if (display === 'inline') {
+      return null;
+    }
+    const blockCursor: StreamingCursor = {
+      offset: 0,
+      boundaries,
+      active: isStreaming,
+    };
+    // Numbers are assigned in encounter order during rendering.
+    const blockCitationCtx: CitationContext | null = sources
+      ? {sources, numberMap: new Map(), nextNumber: 1, style: citationStyle}
+      : null;
+    return blocks.map((block, i) =>
+      renderBlock(
+        block,
+        i,
+        blocks.length,
+        density,
+        headingLevelStart,
+        stableOnLinkClick,
+        blockCursor,
+        blockCitationCtx,
+        contentWidthValue,
+        contentAlign,
+        LinkComponent,
+        inlinePlugins,
+        components,
+        preparedPlugins,
+        t,
+        headingProjection,
+      ),
+    );
+  }, [
+    display,
+    blocks,
+    boundaries,
+    isStreaming,
+    sources,
+    citationStyle,
+    density,
+    headingLevelStart,
+    stableOnLinkClick,
+    contentWidthValue,
+    contentAlign,
+    LinkComponent,
+    inlinePlugins,
+    components,
+    preparedPlugins,
+    t,
+    headingProjection,
+  ]);
+
   if (display === 'inline') {
+    const cursor: StreamingCursor = {
+      offset: 0,
+      boundaries,
+      active: isStreaming,
+    };
+    // Numbers are assigned in encounter order during rendering.
+    const citationCtx: CitationContext | null = sources
+      ? {sources, numberMap: new Map(), nextNumber: 1, style: citationStyle}
+      : null;
     const renderedInline = (
       <span
         ref={ref}
@@ -2357,7 +2434,7 @@ export function Markdown<
           renderInline(
             node,
             i,
-            onLinkClick,
+            stableOnLinkClick,
             cursor,
             citationCtx,
             LinkComponent,
@@ -2391,30 +2468,7 @@ export function Markdown<
         className,
         style,
       )}>
-      {blocks.map((block, i) =>
-        renderBlock(
-          block,
-          i,
-          blocks.length,
-          density,
-          headingLevelStart,
-          onLinkClick,
-          cursor,
-          citationCtx,
-          contentWidth
-            ? typeof contentWidth === 'number'
-              ? `${contentWidth}px`
-              : contentWidth
-            : null,
-          contentAlign,
-          LinkComponent,
-          inlinePlugins,
-          components,
-          preparedPlugins,
-          t,
-          headingProjection,
-        ),
-      )}
+      {renderedBlocks}
     </div>
   );
 

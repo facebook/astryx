@@ -300,11 +300,11 @@ describe('a reference block that includes what it names', () => {
 });
 
 describe('what a reference block names', () => {
-  it('resolves a CLI authoring schema by identity, to its section of `astryx docs authoring`', async () => {
+  it('resolves a CLI authoring schema by identity, to its section of the field reference', async () => {
     const resolve = await linkResolver(builtinCatalog(), CLI_PROVIDER_ID);
     expect(await resolve('schema:integration')).toMatchObject({
       id: createDocId(CLI_PROVIDER_ID, 'schema', 'integration'),
-      route: 'authoring',
+      route: 'authoring/field-reference',
       title: 'Astryx Integration',
       command: 'astryx docs authoring integration',
     });

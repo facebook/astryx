@@ -89,4 +89,3 @@ export const ProgressMarkFocusedUpdate = coreStory(
 export const ChatTypingEmptyToMessage = labStory(
   'chat-typing-empty-to-message',
 );
-export const ChatTypingNameMounted = labStory('chat-typing-name-mounted');

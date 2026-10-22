@@ -824,7 +824,8 @@ export function generateCompressedIndex(
     const suffix = resolvedTopics.length > shown.length ? ' …' : '';
     lines.push(`  docs <topic>       ${shown.join(', ')}${suffix} (\`astryx docs\` lists all)`);
   }
-  lines.push('  docs cli           commands, API reference, integration authoring');
+  lines.push('  docs cli           commands and API reference');
+  lines.push('  docs authoring     build an integration package, and every field it holds');
   lines.push('  upgrade --from <old version> --apply   run after a dependency bump');
   const appendCount = agentDocs.reduce(
     (count, contribution) => count + contribution.append.length,

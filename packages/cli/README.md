@@ -37,12 +37,12 @@ The CLI documents itself, so these commands print what the installed version doe
   `astryx docs cli/commands` lists every command, `astryx docs cli/api` lists
   the API's functions, schemas, and enums, and a route such as
   `astryx docs cli/api/functions/search` prints one.
-- `astryx docs authoring --index`: the authoring reference, with one section for
-  each file an author writes: the `astryx.config.*` file, the
+- `astryx docs authoring/field-reference --index`: the field reference, with one
+  section for each file an author writes: the `astryx.config.*` file, the
   `astryx.integration.*` manifest, codemods, and every doc type (`ComponentDoc`,
   `TemplateDoc`, `ThemeDoc`, and the rest). Read one section with
   `astryx docs authoring <section>`, for example `astryx docs authoring config`.
-- `astryx docs cli/integrations`: the guides to building an integration package,
+- `astryx docs authoring`: the guides to building an integration package,
   from a quick start to publishing.
 - `astryx docs`: every docs topic, including the design-system guides (for
   example `tokens`, `theme`, and `layout`).
@@ -741,6 +741,6 @@ For the full walkthrough, from an empty folder to a published package, see the
 guides:
 
 ```bash
-astryx docs cli/integrations
-astryx docs cli/integrations/quick-start
+astryx docs authoring
+astryx docs authoring/quick-start
 ```
