@@ -146,7 +146,7 @@ describe('generateOnMediaCSS', () => {
     expect(css).toContain('[data-astryx-media="dark"]');
     expect(css).toContain('color-scheme: dark');
     expect(css).toContain('var(--color-on-dark)');
-    expect(css).toContain('--color-info: var(--color-accent);');
+    expect(css).not.toContain('--color-info: var(--color-accent);');
   });
 
   it('emits light media rules', () => {
@@ -176,7 +176,12 @@ describe('generateOnMediaCSS', () => {
         '--color-accent': '#0074E2',
         '--color-info': 'var(--color-accent)',
       },
-      onDark: {tokens: {'--color-accent': '#FFFFFF'}},
+      onDark: {
+        tokens: {
+          '--color-accent': '#FFFFFF',
+          '--color-on-accent': '#000000',
+        },
+      },
     });
     const canonicalCss = generateOnMediaCSS(canonical);
 
@@ -196,7 +201,12 @@ describe('generateOnMediaCSS', () => {
         '--color-accent': '#0074E2',
         '--color-info': info,
       },
-      onDark: {tokens: {'--color-accent': '#FFFFFF'}},
+      onDark: {
+        tokens: {
+          '--color-accent': '#FFFFFF',
+          '--color-on-accent': '#000000',
+        },
+      },
     });
 
     expect(generateOnMediaCSS(theme)).toContain(
@@ -215,16 +225,47 @@ describe('generateOnMediaCSS', () => {
           },
         ],
       },
-      onDark: {tokens: {'--color-accent': '#FFFFFF'}},
+      onDark: {
+        tokens: {
+          '--color-accent': '#FFFFFF',
+          '--color-on-accent': '#000000',
+        },
+      },
     });
     const css = generateOnMediaCSS(theme);
 
     expect(css).toContain('--color-accent: #FFFFFF;');
     expect(css).toContain('--color-info: var(--color-accent);');
-    expect(css).toContain('--color-info: #123456;');
-    expect(css.lastIndexOf('--color-info: #123456;')).toBeGreaterThan(
+    expect(css).toContain('--color-info: inherit;');
+    expect(css.lastIndexOf('--color-info: inherit;')).toBeGreaterThan(
       css.lastIndexOf('--color-info: var(--color-accent);'),
     );
+  });
+
+  it('inherits non-default adaptation roles instead of re-resolving them locally', () => {
+    const theme = defineTheme({
+      name: 'status-role-media-inherit',
+      tokens: {'--color-text-purple': '#123456'},
+      adaptations: {
+        rules: [
+          {
+            when: {contrast: 'more'},
+            value: {tokens: {'--color-info': 'var(--color-text-purple)'}},
+          },
+        ],
+      },
+      onDark: {
+        tokens: {
+          '--color-text-purple': '#ffffff',
+          '--color-accent': '#ffffff',
+          '--color-on-accent': '#000000',
+        },
+      },
+    });
+    const css = generateOnMediaCSS(theme);
+
+    expect(css).toContain('--color-info: inherit;');
+    expect(css).not.toContain('--color-info: var(--color-text-purple);');
   });
 
   it('avoids a descendant-local cycle while replaying an adaptation role', () => {
@@ -255,7 +296,7 @@ describe('generateOnMediaCSS', () => {
     }
   });
 
-  it('avoids a cycle formed only by multiple media role replays', () => {
+  it('uses inheritance when multiple local role replays would form a cycle', () => {
     const theme = defineTheme({
       name: 'status-role-multi-replay-cycle',
       adaptations: {
@@ -279,17 +320,13 @@ describe('generateOnMediaCSS', () => {
       },
     });
     const css = generateOnMediaCSS(theme);
-    const darkBlocks = Array.from(
-      css.matchAll(/\[data-astryx-media="dark"\] \{([\s\S]*?)\n\s*\}/g),
-      match => match[1],
+    const alias = '--color-on-info-muted: var(--color-text-blue);';
+    const restoration = '--color-on-info-muted: inherit;';
+    expect(css).toContain(alias);
+    expect(css).toContain(restoration);
+    expect(css.lastIndexOf(restoration)).toBeGreaterThan(
+      css.lastIndexOf(alias),
     );
-
-    expect(darkBlocks.length).toBeGreaterThan(0);
-    for (const block of darkBlocks) {
-      expect(block).not.toContain(
-        '--color-on-info-muted: var(--color-text-blue);',
-      );
-    }
   });
 
   it('stringifies a legacy non-string media status source without throwing', () => {

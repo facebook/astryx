@@ -285,9 +285,8 @@ describe('rule order and writes', () => {
     const adaptationCss = generateAdaptationCSS(theme).component;
 
     // The root alias follows source-only adaptation writes through var(), but
-    // no later generated role declaration can outrank the first adaptation's
-    // explicit role when both conditions match.
-    expect(count(component, '--color-info: var(--color-accent);')).toBe(3);
+    // no media alias is generated from the unpaired default accent collapse.
+    expect(count(component, '--color-info: var(--color-accent);')).toBe(1);
     expect(component).toContain('--color-info: #123456;');
     expect(adaptationCss).toContain('--color-accent: #abcdef;');
     expect(adaptationCss).not.toContain('--color-info: var(--color-accent);');
@@ -314,12 +313,12 @@ describe('rule order and writes', () => {
     const alias = '--color-info: var(--color-accent);';
     const authored = '--color-info: #123456;';
 
-    // The adaptation-only source and both generated media surfaces keep their
-    // aliases for states where the authored role condition is inactive.
-    expect(count(css, alias)).toBe(3);
-    // The authored role is emitted once normally, once after adaptation aliases,
-    // and once on each media descendant after its local alias.
-    expect(count(css, authored)).toBe(4);
+    // The adaptation-only source keeps its alias where that condition matches.
+    // Default media accent collapses are intentionally not propagated without
+    // a paired on-accent override.
+    expect(count(css, alias)).toBe(1);
+    // The authored role is emitted normally and replayed after adaptation aliases.
+    expect(count(css, authored)).toBe(2);
     expect(css.lastIndexOf(authored)).toBeGreaterThan(css.lastIndexOf(alias));
   });
 

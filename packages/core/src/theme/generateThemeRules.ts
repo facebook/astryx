@@ -488,6 +488,8 @@ const SCOPED_STATUS_ROLE_DEFAULTS: ReadonlyArray<
   ['--color-on-error-muted', '--color-text-red'],
 ];
 
+const SCOPED_STATUS_ROLE_SOURCES = new Map(SCOPED_STATUS_ROLE_DEFAULTS);
+
 type TokenValues = Record<string, unknown>;
 
 interface TokenCascadeState {
@@ -591,10 +593,19 @@ function adaptationConditionMatchesCell(
   );
 }
 
+const REACHABLE_MATCH_SET_CACHE = new WeakMap<
+  ReadonlyArray<ResolvedThemeAdaptationRule>,
+  number[][]
+>();
+
 /** Every reachable ordered adaptation-rule match set, including the root. */
 function reachableAdaptationMatchSets(
   rules: ReadonlyArray<ResolvedThemeAdaptationRule>,
 ): number[][] {
+  const cached = REACHABLE_MATCH_SET_CACHE.get(rules);
+  if (cached !== undefined) {
+    return cached;
+  }
   const matchSets = new Map<string, number[]>();
   for (let widthRank = 0; widthRank <= 5; widthRank++) {
     for (const pointer of ['coarse', 'fine', 'none'] as const) {
@@ -621,7 +632,9 @@ function reachableAdaptationMatchSets(
       }
     }
   }
-  return [...matchSets.values()];
+  const reachable = [...matchSets.values()];
+  REACHABLE_MATCH_SET_CACHE.set(rules, reachable);
+  return reachable;
 }
 
 function effectiveAdaptationTokenValues(
@@ -738,6 +751,13 @@ function tokenValueIsAliasOf(value: unknown, source: string): boolean {
   return analyzeDeclarationValue(`${value}`).singleVarReference === source;
 }
 
+function mediaRoleRestorationValue(role: string, value: string): string {
+  const source = SCOPED_STATUS_ROLE_SOURCES.get(role);
+  return source !== undefined && tokenValueIsAliasOf(value, source)
+    ? value
+    : 'inherit';
+}
+
 function generatedAdaptationStatusRoleDefaults(
   rootTokens: Record<string, string>,
   rootLocalTokens: Record<string, string> | undefined,
@@ -826,7 +846,12 @@ function generatedMediaStatusRoleDefaults(
         rules[index].tokens,
       )) {
         if (generatedRoles.has(authoredRole)) {
-          assignTokenCascade(local, {[authoredRole]: authoredValue});
+          assignTokenCascade(local, {
+            [authoredRole]: mediaRoleRestorationValue(
+              authoredRole,
+              authoredValue,
+            ),
+          });
         }
       }
     }
@@ -839,6 +864,9 @@ function generatedMediaStatusRoleDefaults(
     if (
       authoredMedia[role] !== undefined ||
       authoredMedia[source] === undefined ||
+      (role === '--color-info' &&
+        source === '--color-accent' &&
+        authoredMedia['--color-on-accent'] === undefined) ||
       (rootRole !== undefined && !tokenValueIsAliasOf(rootRole, source))
     ) {
       continue;
@@ -1538,9 +1566,9 @@ export function generateOnMediaCSS(
       const generatedRoles = new Set(
         (mediaStatusRoleDefaults.get(surface) ?? []).map(([role]) => role),
       );
-      const restorationEntries = authoredRoles.filter(([role]) =>
-        generatedRoles.has(role),
-      );
+      const restorationEntries: [string, string][] = authoredRoles
+        .filter(([role]) => generatedRoles.has(role))
+        .map(([role, value]) => [role, mediaRoleRestorationValue(role, value)]);
       if (restorationEntries.length === 0) {
         continue;
       }

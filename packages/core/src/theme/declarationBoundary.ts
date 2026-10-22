@@ -427,6 +427,9 @@ function consumeNumber(input: string, position: number): number {
   return index;
 }
 
+const DECLARATION_ANALYSIS_CACHE = new Map<string, DeclarationValueAnalysis>();
+const MAX_DECLARATION_ANALYSIS_CACHE = 4096;
+
 /**
  * Analyze one accepted declaration value using the same CSS tokenization rules
  * as the declaration-boundary check.
@@ -434,14 +437,23 @@ function consumeNumber(input: string, position: number): number {
 export function analyzeDeclarationValue(
   input: string,
 ): DeclarationValueAnalysis {
+  const cached = DECLARATION_ANALYSIS_CACHE.get(input);
+  if (cached !== undefined) {
+    return cached;
+  }
   const reason = checkDeclarationValue(input);
   if (reason !== null) {
-    return {
+    const analysis = {
       reason,
       references: [],
       important: false,
       singleVarReference: null,
     };
+    if (DECLARATION_ANALYSIS_CACHE.size >= MAX_DECLARATION_ANALYSIS_CACHE) {
+      DECLARATION_ANALYSIS_CACHE.clear();
+    }
+    DECLARATION_ANALYSIS_CACHE.set(input, analysis);
+    return analysis;
   }
 
   const value = preprocess(input);
@@ -576,7 +588,12 @@ export function analyzeDeclarationValue(
     firstTopLevelToken?.type === 'var-function'
       ? (firstTopLevelToken.reference ?? null)
       : null;
-  return {reason: null, references, important, singleVarReference};
+  const analysis = {reason: null, references, important, singleVarReference};
+  if (DECLARATION_ANALYSIS_CACHE.size >= MAX_DECLARATION_ANALYSIS_CACHE) {
+    DECLARATION_ANALYSIS_CACHE.clear();
+  }
+  DECLARATION_ANALYSIS_CACHE.set(input, analysis);
+  return analysis;
 }
 
 /** The browser-canonical spelling of one valid declaration name. */
