@@ -57,3 +57,18 @@ export const TouchFlow: Story = {
   },
   name: 'Touch flow (single searchable management sheet)',
 };
+
+export const Disabled: Story = {
+  render: () => (
+    <div style={{width: 350}}>
+      <MobileTokenizer
+        label="Tags"
+        searchSource={source}
+        value={[tags[0], tags[1]]}
+        onChange={() => {}}
+        placeholder="Add tags"
+        isDisabled
+      />
+    </div>
+  ),
+};

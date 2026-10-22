@@ -118,6 +118,19 @@ const styles = stylex.create({
       ':is(:disabled,[aria-disabled="true"])': 'default',
     },
   },
+  // An aria-disabled button gets no system disabled paint in forced colors;
+  // GrayText is the platform's disabled affordance there. Defaults repeat the
+  // base values, since StyleX merges per property.
+  triggerDisabled: {
+    borderColor: {
+      default: colorVars['--color-border'],
+      '@media (forced-colors: active)': 'GrayText',
+    },
+    color: {
+      default: null,
+      '@media (forced-colors: active)': 'GrayText',
+    },
+  },
   triggerPlaceholder: {
     color: colorVars['--color-text-secondary'],
   },
@@ -156,6 +169,21 @@ const styles = stylex.create({
     cursor: {
       default: 'pointer',
       ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
+  },
+  // A Token authors its own color, which forced colors replace with
+  // CanvasText; GrayText marks the tokens of a disabled trigger as disabled.
+  // The default repeats Token's own default color.
+  tokenDisabled: {
+    color: {
+      default: colorVars['--color-text-primary'],
+      '@media (forced-colors: active)': 'GrayText',
+    },
+  },
+  rowDisabled: {
+    color: {
+      default: colorVars['--color-text-primary'],
+      '@media (forced-colors: active)': 'GrayText',
     },
   },
   rowLabel: {
@@ -376,17 +404,25 @@ export function MobileTokenizer<T extends SearchableItem>({
         aria-haspopup="dialog"
         aria-expanded={activeSheet != null}
         aria-label={label}
-        disabled={isDisabled}
+        aria-disabled={isDisabled || undefined}
         onClick={() => {
+          if (isDisabled) {
+            return;
+          }
           setSelectedItemsAtOpen(value);
           lastLoadScrollHeightRef.current = null;
           setRenderedItemCount(LIST_RENDER_BATCH_SIZE);
           setActiveSheet('manage');
         }}
-        {...stylex.props(styles.trigger)}>
+        {...stylex.props(styles.trigger, isDisabled && styles.triggerDisabled)}>
         {value.length > 0 ? (
           value.map(item => (
-            <Token key={item.id} label={item.label} isDisabled={isDisabled} />
+            <Token
+              key={item.id}
+              label={item.label}
+              isDisabled={isDisabled}
+              xstyle={isDisabled ? styles.tokenDisabled : undefined}
+            />
           ))
         ) : (
           <span {...stylex.props(styles.triggerPlaceholder)}>
@@ -500,13 +536,27 @@ export function MobileTokenizer<T extends SearchableItem>({
                         role="checkbox"
                         aria-checked={isSelected}
                         aria-label={item.label}
-                        disabled={rowDisabled}
-                        onClick={() =>
-                          isSelected ? handleRemove(item) : handleAdd(item)
-                        }
-                        {...stylex.props(styles.row)}>
+                        aria-disabled={rowDisabled || undefined}
+                        onClick={() => {
+                          if (rowDisabled) {
+                            return;
+                          }
+                          if (isSelected) {
+                            handleRemove(item);
+                          } else {
+                            handleAdd(item);
+                          }
+                        }}
+                        {...stylex.props(
+                          styles.row,
+                          rowDisabled && styles.rowDisabled,
+                        )}>
                         <span {...stylex.props(styles.rowLabel)}>
-                          <Text type="body">{item.label}</Text>
+                          <Text
+                            type="body"
+                            color={rowDisabled ? 'inherit' : undefined}>
+                            {item.label}
+                          </Text>
                         </span>
                         <CheckboxIndicator
                           state={isSelected ? 'checked' : 'unchecked'}
