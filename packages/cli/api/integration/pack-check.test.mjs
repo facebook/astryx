@@ -2038,6 +2038,20 @@ describe('integrationPackCheck', () => {
     ).toEqual([]);
   });
 
+  it("reads npm 8's scoped tarball name as the file npm writes", () => {
+    const entry = {entryCount: 1, size: 1, unpackedSize: 1, files: []};
+    expect(
+      parseNpmPackOutput(
+        JSON.stringify([{...entry, filename: '@acme/kit-1.0.0.tgz'}]),
+      ).filename,
+    ).toBe('acme-kit-1.0.0.tgz');
+    expect(
+      parseNpmPackOutput(
+        JSON.stringify([{...entry, filename: 'acme-kit-1.0.0.tgz'}]),
+      ).filename,
+    ).toBe('acme-kit-1.0.0.tgz');
+  });
+
   it('rejects malformed npm pack output without a raw TypeError', () => {
     expect(() =>
       parseNpmPackOutput(
