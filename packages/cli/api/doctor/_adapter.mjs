@@ -31,6 +31,7 @@ import {
   displayHomePath,
   inspectComputerAgentText,
   skillCommandOf,
+  skillInstallStepOf,
 } from '../../foundation/agent-docs/computer-agent-text.mjs';
 import {computerAgentTextSettings} from '../../foundation/env/user-settings.mjs';
 import * as fs from 'node:fs';
@@ -294,15 +295,19 @@ function declaredPackageNames(cwd) {
 
 /**
  * The computer-level agent text's setting, its state on disk, and the command
- * the skill file tells agents to run (null when there is no file, or it names
+ * the skill file tells agents to run and the install step it records for when
+ * that command is not found (each null when there is no file, or it names
  * none).
- * @returns {{settings: import('../../foundation/env/user-settings.mjs').ComputerAgentTextSettings, entries: Array<{path: string, state: import('../../foundation/agent-docs/computer-agent-text.mjs').ComputerAgentTextState, link?: true}>, command: string | null}}
+ * @returns {{settings: import('../../foundation/env/user-settings.mjs').ComputerAgentTextSettings, entries: Array<{path: string, state: import('../../foundation/agent-docs/computer-agent-text.mjs').ComputerAgentTextState, link?: true}>, command: string | null, install: string | null}}
  */
 export function computerAgentTextState() {
   const settings = computerAgentTextSettings();
   let command = null;
+  let install = null;
   try {
-    command = skillCommandOf(fs.readFileSync(computerSkillFile(), 'utf8'));
+    const text = fs.readFileSync(computerSkillFile(), 'utf8');
+    command = skillCommandOf(text);
+    install = skillInstallStepOf(text);
   } catch {
     // No skill file, or one that cannot be read: no command to check.
   }
@@ -310,6 +315,7 @@ export function computerAgentTextState() {
     settings,
     entries: inspectComputerAgentText({links: settings.links}),
     command,
+    install,
   };
 }
 

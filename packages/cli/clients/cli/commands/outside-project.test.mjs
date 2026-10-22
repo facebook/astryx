@@ -411,6 +411,21 @@ describe('doctor: the computer-level agent text', () => {
     );
     // With the CLI on the search path, or a skill naming a host's command,
     // there is nothing to restore.
+    // The step the skill records, such as pnpm's.
+    expect(
+      checkComputerAgentText({
+        nodeVersion: '22.13.0',
+        answeredBy: {cli: '1.2.0', core: '1.2.0', copy: 'carried'},
+        latest: null,
+        agentText: [{path: A, state: 'current'}],
+        agentTextCommand: 'astryx',
+        agentTextInstall: 'pnpm add -g @astryxdesign/cli',
+        searchPathCommands: [],
+        cwd: os.tmpdir(),
+      }).fix,
+    ).toBe(
+      'Run `pnpm add -g @astryxdesign/cli`, the step the skill names for when `astryx` is not found.',
+    );
     for (const ctx of [
       {
         agentTextCommand: 'astryx',

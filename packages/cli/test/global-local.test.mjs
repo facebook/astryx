@@ -594,39 +594,64 @@ describe.skipIf(!POSIX)(
       ).toBe('warn');
     });
 
-    it('the skill outlives the CLI installed for the computer: it names the install step, and doctor names it too', () => {
-      const pc = computer();
-      const g = globalCli('npm', '9.0.0', {root: pc.home});
-      pc.path.unshift(g.binDir);
-      const empty = tempDir('empty');
-      expect(run(g.bin, ['init', '--user'], {cwd: empty, pc}).status).toBe(0);
-      const skill = path.join(
-        pc.home,
-        '.agents',
-        'skills',
-        'astryx',
-        'SKILL.md',
-      );
-      expect(fs.readFileSync(skill, 'utf8')).toContain(
-        'If `astryx` is not found, run `npm i -g @astryxdesign/cli` first.',
-      );
-      // A restart removes the system folder the CLI was installed in and
-      // keeps the home folder: no `astryx` on the search path any more. The
-      // CLI still runs as a package runner would start it.
-      fs.rmSync(path.join(g.binDir, 'astryx'));
-      pc.path.splice(pc.path.indexOf(g.binDir), 1);
-      const doctor = JSON.parse(
-        run(g.bin, ['doctor', '--json'], {cwd: empty, pc}).stdout,
-      );
-      const check = doctor.data.checks.find(
-        (/** @type {any} */ c) => c.id === 'computer-agent-text',
-      );
-      expect(check.message).toContain(
-        'but no `astryx` command on the search path runs the Astryx CLI',
-      );
-      expect(check.fix).toBe(
-        'Run `npm i -g @astryxdesign/cli`, the step the skill names for when `astryx` is not found.',
-      );
+    it('the skill outlives the CLI installed for the computer: it repeats the step that installed it, and doctor names it too', () => {
+      for (const [layout, step] of /** @type {const} */ ([
+        // The npm layout is a prefix in the home folder, so the step names it.
+        ['npm', 'npm i -g --prefix ~/.npm-global @astryxdesign/cli'],
+        ['pnpm', 'pnpm add -g @astryxdesign/cli'],
+        ['bun', 'bun add -g @astryxdesign/cli'],
+      ])) {
+        const pc = computer();
+        let g;
+        if (layout === 'bun') {
+          // Bun's global folder, as `bun add -g` makes it.
+          const global = path.join(pc.home, '.bun', 'install', 'global');
+          writeJson(path.join(global, 'package.json'), {
+            dependencies: {'@astryxdesign/cli': '9.0.0'},
+          });
+          fs.writeFileSync(path.join(global, 'bun.lock'), '{}');
+          const placed = placeCli(
+            path.join(global, 'node_modules', '@astryxdesign', 'cli'),
+            '9.0.0',
+          );
+          const binDir = path.join(pc.home, '.bun', 'bin');
+          fs.mkdirSync(binDir, {recursive: true});
+          fs.symlinkSync(placed.bin, path.join(binDir, 'astryx'));
+          g = {...placed, binDir};
+        } else {
+          g = globalCli(layout, '9.0.0', {root: pc.home});
+        }
+        pc.path.unshift(g.binDir);
+        const empty = tempDir('empty');
+        expect(run(g.bin, ['init', '--user'], {cwd: empty, pc}).status).toBe(0);
+        const skill = path.join(
+          pc.home,
+          '.agents',
+          'skills',
+          'astryx',
+          'SKILL.md',
+        );
+        expect(fs.readFileSync(skill, 'utf8')).toContain(
+          `If \`astryx\` is not found, run \`${step}\` first.`,
+        );
+        // A restart removes the folder the CLI was installed in from the
+        // search path and keeps the home folder. The CLI still runs as a
+        // package runner would start it.
+        fs.rmSync(path.join(g.binDir, 'astryx'));
+        pc.path.splice(pc.path.indexOf(g.binDir), 1);
+        const doctor = JSON.parse(
+          run(g.bin, ['doctor', '--json'], {cwd: empty, pc}).stdout,
+        );
+        const check = doctor.data.checks.find(
+          (/** @type {any} */ c) => c.id === 'computer-agent-text',
+        );
+        expect(check.message).toContain(
+          'but no `astryx` command on the search path runs the Astryx CLI',
+        );
+        expect(check.fix).toBe(
+          `Run \`${step}\`, the step the skill names for when \`astryx\` is not found.`,
+        );
+      }
     });
 
     it('G14 a Node version manager: each Node has its own global copy, which answers itself', () => {

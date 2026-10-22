@@ -25,6 +25,7 @@ import {
   inspectComputerAgentText,
   removeComputerAgentText,
   renderComputerAgentText,
+  skillInstallStepOf,
   writeComputerAgentText,
 } from './computer-agent-text.mjs';
 import {MARKER_END, MARKER_START} from './agent-doc-state.mjs';
@@ -138,9 +139,24 @@ describe('renderComputerAgentText', () => {
   // A machine can keep the home folder and lose the CLI installed for the
   // computer, so the skill says how to get it back, with no version.
   it('names the install step for when `astryx` is not found, and only for the global command', () => {
-    expect(renderComputerAgentText({command: 'astryx'})).toContain(
+    expect(
+      renderComputerAgentText({
+        command: 'astryx',
+        install: 'npm i -g @astryxdesign/cli',
+      }),
+    ).toContain(
       'If `astryx` is not found, run `npm i -g @astryxdesign/cli` first.',
     );
+    // It repeats the step that installed the copy writing it, which doctor
+    // reads back.
+    const bun = renderComputerAgentText({
+      command: 'astryx',
+      install: 'bun add -g @astryxdesign/cli',
+    });
+    expect(bun).toContain(
+      'If `astryx` is not found, run `bun add -g @astryxdesign/cli` first.',
+    );
+    expect(skillInstallStepOf(bun)).toBe('bun add -g @astryxdesign/cli');
     expect(renderComputerAgentText({command: 'acme astryx'})).not.toContain(
       'npm i -g',
     );

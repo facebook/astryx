@@ -1463,6 +1463,8 @@ export function checkCliCommand(ctx) {
  *   the person's choices about the computer-level agent text
  * @property {string | null} [agentTextCommand] the command the skill file
  *   tells agents to run, or null
+ * @property {string | null} [agentTextInstall] the install step the skill
+ *   file records for when that command is not found, or null
   * @property {string} [cwd] the folder doctor runs in, for the printed fix
  * @property {import('../../foundation/release/notices.mjs').GlobalBehind | null} [globalBehind]
  *   the CLI installed for the computer, when it is older than the newest
@@ -1686,6 +1688,7 @@ export function checkComputerAgentText(ctx) {
   }
   const entries = ctx.agentText ?? /** @type {NonNullable<typeof state>} */ (state).entries;
   const command = ctx.agentText ? (ctx.agentTextCommand ?? null) : /** @type {NonNullable<typeof state>} */ (state).command;
+  const install = (ctx.agentText ? ctx.agentTextInstall : /** @type {NonNullable<typeof state>} */ (state).install) ?? COMPUTER_INSTALL_STEP;
   const fix = `Run \`${formatCliCommand('astryx init --user', ctx.cwd)}\`.`;
   const [file, ...links] = entries;
   const home = (/** @type {{path: string}} */ e) => displayHomePath(e.path);
@@ -1721,7 +1724,7 @@ export function checkComputerAgentText(ctx) {
     return {
       ...base,
       message: `${home(file)} tells agents to run \`${COMPUTER_COMMAND}\`, but no \`${COMPUTER_COMMAND}\` command on the search path runs the Astryx CLI, so agents that read it find no CLI to run (as when a restart removes the CLI installed for the computer and keeps the home folder).${linkNote}`,
-      fix: `Run \`${COMPUTER_INSTALL_STEP}\`, the step the skill names for when \`${COMPUTER_COMMAND}\` is not found.`,
+      fix: `Run \`${install}\`, the step the skill names for when \`${COMPUTER_COMMAND}\` is not found.`,
     };
   }
   const current = file.state === 'current';
