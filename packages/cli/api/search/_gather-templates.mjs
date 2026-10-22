@@ -67,6 +67,10 @@ export async function gatherTemplates(cwd) {
       // as its prose does, not as a name: one of them matching one word of a
       // short idea is not a direct match.
       prose: t.keywords ?? [],
+      // An authored display name is the template's title: a query that holds
+      // it as a phrase ("rich text" in "Rich Text Editor") finds the template
+      // in search's title tier, above entries that match one of its words.
+      ...(t.displayName ? {titles: [t.displayName]} : {}),
       _displayName: t.name,
       _package: t.package ?? CORE_PACKAGE,
       _kind: t.type, // 'page' | 'block'
