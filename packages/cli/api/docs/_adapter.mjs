@@ -1349,6 +1349,8 @@ function placedGuidesBelow(tree, namespace) {
  * @property {'topic' | 'guide' | 'namespace' | null} kind what the target
  *   is: a flat topic, a guide the docs tree places, a namespace (which neither
  *   takes), or null when it names nothing
+ * @property {string | null} guide for a guide, the route it is placed at now,
+ *   which an old route resolves to
  * @property {string[]} guidesBelow for a namespace, the routes of the guides
  *   placed below it, any of which the doc could name instead
  * @property {string | null} owner the package whose topic or guide it is
@@ -1384,10 +1386,13 @@ export async function packageDocTargets(integration, discovered) {
     let basePath = null;
     /** @type {string[]} */
     let guidesBelow = [];
+    /** @type {string | null} */
+    let guide = null;
     if (isGuideRoute(target)) {
       const node = placedGuideAt(tree, target);
       if (node) {
         kind = 'guide';
+        guide = node.route;
         owner = node.provider;
         basePath = node.guideOverlay?.replacement?.path ?? node.ref.topicFile;
       }
@@ -1432,6 +1437,7 @@ export async function packageDocTargets(integration, discovered) {
       target,
       kind,
       owner,
+      guide,
       guidesBelow,
       unplaced,
     });

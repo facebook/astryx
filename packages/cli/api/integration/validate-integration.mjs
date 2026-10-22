@@ -732,7 +732,8 @@ async function docTargetNotes(integration) {
   const replacers = new Map();
   for (const each of targets) {
     if (each.kind !== 'guide' || each.relationship !== 'replaces') continue;
-    const key = each.target.toLowerCase();
+    // An old route and the new one name one guide.
+    const key = each.guide ?? each.target.toLowerCase();
     replacers.set(key, [...(replacers.get(key) ?? []), each.topic]);
   }
   for (const [route, topics] of replacers) {

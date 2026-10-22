@@ -675,3 +675,81 @@ describe('second review follow-ups', () => {
     ).toBeNull();
   });
 });
+
+describe('third review follow-ups', () => {
+  /**
+   * A project that configures two kits, each with these docs.
+   * @param {Record<string, object>} one
+   * @param {Record<string, object>} two
+   */
+  function scaffoldTwo(one, two) {
+    scaffold(one);
+    fs.writeFileSync(
+      path.join(tmpDir, 'astryx.config.mjs'),
+      `export default {integrations: ['${KIT}', '@acme/more']};\n`,
+    );
+    const dir = path.join(tmpDir, 'node_modules', '@acme', 'more');
+    fs.mkdirSync(path.join(dir, 'docs'), {recursive: true});
+    fs.writeFileSync(
+      path.join(dir, 'package.json'),
+      JSON.stringify({name: '@acme/more', version: '1.0.0', type: 'module'}),
+    );
+    fs.writeFileSync(
+      path.join(dir, 'astryx.integration.mjs'),
+      "export default {docs: './docs'};\n",
+    );
+    for (const [file, doc] of Object.entries(two)) {
+      fs.writeFileSync(
+        path.join(dir, 'docs', file),
+        `export default ${JSON.stringify(doc, null, 2)};\n`,
+      );
+    }
+  }
+
+  it(
+    'keeps configured order for sections two packages place after one key',
+    async () => {
+      scaffoldTwo(
+        {
+          'a.doc.mjs': topic('acme-a', {
+            extends: GUIDE,
+            sections: [section('acme-first', {after: 'quick-start'})],
+          }),
+        },
+        {
+          'b.doc.mjs': topic('acme-b', {
+            extends: GUIDE,
+            sections: [section('acme-second', {after: 'quick-start'})],
+          }),
+        },
+      );
+      const index = await docs(GUIDE, undefined, {cwd: tmpDir, index: true});
+      expect(
+        index.data.sections.slice(0, 3).map(s => [s.id, s.package]),
+      ).toEqual([
+        ['quick-start', CLI],
+        ['acme-first', KIT],
+        ['acme-second', '@acme/more'],
+      ]);
+    },
+    SLOW,
+  );
+
+  it(
+    'notes one package replacing a guide by its old and its new route',
+    async () => {
+      scaffold({
+        'a.doc.mjs': topic('acme-a', {
+          replaces: 'cli/integrations/quick-start',
+        }),
+        'b.doc.mjs': topic('acme-b', {replaces: GUIDE}),
+      });
+      const validated = await validateIntegration(KIT, {cwd: tmpDir});
+      expect(validated.data.notes).toContainEqual({
+        code: 'duplicate_guide_replacement',
+        message: expect.stringContaining('"acme-b", is read'),
+      });
+    },
+    SLOW,
+  );
+});

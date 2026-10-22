@@ -681,8 +681,7 @@ export function mergeTopicReport(base, overlay) {
   const sections = [...(base.sections ?? [])];
   /** @type {Array<{section: string, field: 'before' | 'after', key: string}>} */
   const unplaced = [];
-  /** The last section placed after each anchor, so later ones follow it. */
-  const lastAfter = new Map();
+
   for (const authored of overlay.sections ?? []) {
     const section = withoutPosition(authored);
     const at = findMergeTarget(sections, section);
@@ -702,10 +701,18 @@ export function mergeTopicReport(base, overlay) {
       } else if (field === 'before') {
         sections.splice(anchor, 0, section);
       } else {
-        // Sections placed after one anchor keep their authored order.
-        const previous = sections.indexOf(lastAfter.get(sections[anchor]));
-        sections.splice((previous === -1 ? anchor : previous) + 1, 0, section);
-        lastAfter.set(sections[anchor], section);
+        // Sections placed after one key keep their order, across every
+        // extension merged onto the topic: each goes after those placed
+        // there before it.
+        let at = anchor + 1;
+        while (at < sections.length && sections[at][PLACED_AFTER] === key) {
+          at += 1;
+        }
+        Object.defineProperty(section, PLACED_AFTER, {
+          value: key,
+          configurable: true,
+        });
+        sections.splice(at, 0, section);
       }
     } else {
       // A legacy extension that replaces a section which has since gained a
@@ -720,6 +727,9 @@ export function mergeTopicReport(base, overlay) {
   }
   return {doc: {...base, sections}, unplaced};
 }
+
+/** The key a merged section was placed `after`, so later ones follow it. */
+const PLACED_AFTER = Symbol('astryx.docs.placedAfter');
 
 /**
  * A section without the fields that place it; readers never see them.
