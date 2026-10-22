@@ -339,10 +339,10 @@ export interface DropdownMenuItemData extends Pick<
    * stays a sub-menu while `items` is empty, so a filter that matches nothing
    * keeps its field. The bottom sheet shows it above that level's actions, in
    * place of the menu's own header, and reads the level from the current
-   * `items` while it shows, by `id`, by label, or, while its level keeps its
-   * row count, by position; give the row an `id` when another row at its level
-   * has the same label or the rows can reorder. Ignored on a row without
-   * `items`.
+   * `items` while it shows, by `id`, by a label it has to itself, or, while
+   * its level keeps its row count, by position; give the row an `id` when
+   * another row at its level has the same label or the rows can reorder.
+   * Ignored on a row without `items`.
    */
   header?: ReactNode;
   /**
