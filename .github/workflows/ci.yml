@@ -2032,6 +2032,55 @@ jobs:
           retention-days: 30
           if-no-files-found: warn
 
+      # The progressbar contract's role and name, value and range, indeterminate
+      # state, and value text are accessibility-tree facts that jsdom cannot
+      # observe. Run the contract's own fixture proof and the ProgressBar and
+      # CircularProgress bindings whenever either component, the binding
+      # stories, or the contract changes. Its own --output directory; the JSON
+      # report is the head-bound record, uploaded next.
+      - name: Run Progressbar accessibility contract
+        id: progressbar-contract
+        if: ${{ !cancelled() && github.event_name == 'pull_request' }}
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PLAYWRIGHT_JSON_OUTPUT_FILE: progressbar-contract/report.json
+        run: |
+          should_run=false
+          # The helper comes from the base, since an older PR head lacks it.
+          # Exit 1 means out of scope; 0 in scope; 2 unknown, so run.
+          scope=2
+          helper="$(mktemp)"
+          if git fetch --quiet --no-tags --depth=1 origin "$BASE_SHA" \
+            && git show "$BASE_SHA:.github/scripts/pr-scope-touches.sh" > "$helper"; then
+            scope=0
+            bash "$helper" "$BASE_SHA" \
+              '^(internal/a11y-spec/src/patterns/progressbar\.|packages/core/src/ProgressBar/|packages/lab/src/CircularProgress/|apps/storybook/stories/ProgressbarA11y)' || scope=$?
+          fi
+          if [ "$scope" != 1 ]; then
+            should_run=true
+          fi
+          echo "should_run=${should_run}" >> "$GITHUB_OUTPUT"
+          if [ "$should_run" != true ]; then
+            echo "ProgressBar, CircularProgress and the progressbar contract are not in PR scope; skipping progressbar evidence."
+            exit 0
+          fi
+          pnpm exec playwright test \
+            internal/a11y-spec/src/patterns/progressbar.chromium.spec.ts \
+            packages/core/src/ProgressBar/__tests__/ProgressBar.a11y.chromium.spec.ts \
+            packages/lab/src/CircularProgress/__tests__/CircularProgress.a11y.chromium.spec.ts \
+            --project chromium \
+            --reporter list,json \
+            --output progressbar-contract-output
+
+      - name: Upload Progressbar accessibility contract evidence
+        if: ${{ !cancelled() && steps.progressbar-contract.outputs.should_run == 'true' }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: progressbar-contract-evidence-${{ needs.build-storybook.outputs.short_hash }}
+          path: progressbar-contract/
+          retention-days: 30
+          if-no-files-found: warn
+
       # A treeitem's computed name and description are accessibility-tree facts
       # jsdom approximates but a browser decides. Run the TreeList row-naming
       # evidence whenever TreeList, its focus hook, or the story changes.
