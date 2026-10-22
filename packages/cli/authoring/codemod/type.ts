@@ -117,12 +117,6 @@ export interface CodemodEntry {
     description?: string;
     isOptional?: boolean;
     fileExtensions?: string[];
-    /**
-     * Core code codemods only: the codemod annotates files for review, so a
-     * change the runner cannot make (a protected file, or output that fails
-     * validation) is skipped instead of failing the run. Throws still fail.
-     */
-    advisory?: boolean;
     transform: CodemodTransform;
   };
   /** Owning package name. */

@@ -6,7 +6,6 @@ import * as path from 'node:path';
 import {afterAll, describe, expect, it} from 'vitest';
 import transform, {
   dataDefaultsMayBeMissing,
-  meta,
 } from '../validate-data-token-ownership.mjs';
 import {runCodemods} from '../../../runner.mjs';
 import {upgrade} from '../../../../../api/upgrade/upgrade.mjs';
@@ -69,9 +68,6 @@ async function run(source, file) {
   return transform({source, path: file}, api);
 }
 
-const TODO =
-  /TODO\(astryx upgrade\): var\(--color-data-\*\) without a fallback/;
-
 const DIRECT_USES = [
   `const fill = 'var(--color-data-categorical-green)';`,
   'const fill = `var(--color-data-categorical-green)`;',
@@ -119,6 +115,16 @@ describe('validate-data-token-ownership: data-default availability', () => {
     ).toBe(false);
   });
 
+  it('treats an app whose build sits below a shared root stylesheet as covered', () => {
+    const root = repo({
+      'styles/base.css': "@import '@astryxdesign/core/astryx.css';\n",
+      'apps/web/package.json': {dependencies: CORE, devDependencies: BUILD},
+    });
+    expect(
+      dataDefaultsMayBeMissing(path.join(root, 'apps/web/src/a.tsx')),
+    ).toBe(false);
+  });
+
   it('flags a workspace app when the root build compiles Core and nothing loads prebuilt Core CSS', () => {
     const root = repo({
       'package.json': {devDependencies: BUILD},
@@ -141,6 +147,38 @@ describe('validate-data-token-ownership: data-default availability', () => {
     expect(dataDefaultsMayBeMissing(path.join(inner, 'src/a.tsx'))).toBe(false);
   });
 
+  it('treats a symlinked source file as unknown, not as proof of a source build', () => {
+    const target = repo({'main.tsx': LOADS_PREBUILT_CORE});
+    const root = repo({
+      'package.json': {dependencies: CORE, devDependencies: BUILD},
+    });
+    fs.mkdirSync(path.join(root, 'src'));
+    fs.symlinkSync(
+      path.join(target, 'main.tsx'),
+      path.join(root, 'src/main.tsx'),
+    );
+    expect(dataDefaultsMayBeMissing(path.join(root, 'src/a.tsx'))).toBe(false);
+  });
+
+  it.skipIf(process.platform === 'win32' || process.getuid?.() === 0)(
+    'treats an unreadable source file as unknown, not as proof of a source build',
+    () => {
+      const root = repo({
+        'package.json': {dependencies: CORE, devDependencies: BUILD},
+        'src/main.tsx': LOADS_PREBUILT_CORE,
+      });
+      const entry = path.join(root, 'src/main.tsx');
+      fs.chmodSync(entry, 0o000);
+      try {
+        expect(dataDefaultsMayBeMissing(path.join(root, 'src/a.tsx'))).toBe(
+          false,
+        );
+      } finally {
+        fs.chmodSync(entry, 0o644);
+      }
+    },
+  );
+
   it('does not count node_modules or dot folders as loading prebuilt Core CSS', () => {
     const root = repo({
       'package.json': {dependencies: CORE, devDependencies: BUILD},
@@ -152,11 +190,7 @@ describe('validate-data-token-ownership: data-default availability', () => {
 });
 
 describe('validate-data-token-ownership: transform', () => {
-  it('is an advisory codemod', () => {
-    expect(meta.advisory).toBe(true);
-  });
-
-  it('leaves fallback-less uses unchanged where prebuilt Core CSS is loaded', async () => {
+  it('passes fallback-less uses where prebuilt Core CSS is loaded', async () => {
     const root = prebuilt();
     for (const source of DIRECT_USES) {
       expect(
@@ -171,79 +205,37 @@ describe('validate-data-token-ownership: transform', () => {
     ).toBeUndefined();
   });
 
-  it('marks direct string and static-template uses where Core is source-built', async () => {
+  it('fails direct string and static-template uses where Core is source-built', async () => {
     const root = coreSourceBuilt();
     for (const source of DIRECT_USES) {
-      const output = await run(source, path.join(root, 'src/chart.tsx'));
-      expect(output).toMatch(TODO);
-      expect(output).toMatch(
-        /@astryxdesign\/build.*astryx\.css.*dataVars.*resolveThemeToken/s,
+      await expect(
+        run(source, path.join(root, 'src/chart.tsx')),
+      ).rejects.toThrow(
+        /has no guaranteed default: Core compiles from source.*astryx\.css.*dataVars.*resolveThemeToken/s,
       );
-      expect(output.endsWith(source)).toBe(true);
     }
   });
 
-  it('puts the JS TODO on the enclosing statement, not inside JSX', async () => {
-    const root = coreSourceBuilt();
-    const source = `export function Bar() {
-  return <rect fill="var(--color-data-categorical-green)" />;
-}`;
-    const output = await run(source, path.join(root, 'src/Bar.tsx'));
-    expect(output).toMatch(
-      /\/\* TODO\(astryx upgrade\)[^]*?\*\/\n\s*return <rect/,
-    );
-  });
-
-  it('marks the first use in the file, whatever kind of literal holds it', async () => {
+  it('names the first use in the file, whatever kind of literal holds it', async () => {
     const root = coreSourceBuilt();
     const source = `export function Bar({width}) {
   const border = \`\${width}px solid var(--color-data-categorical-green)\`;
   return <rect fill="var(--color-data-categorical-red)" style={{border}} />;
 }`;
-    const output = await run(source, path.join(root, 'src/Bar.tsx'));
-    expect(output).toMatch(
-      /\/\* TODO\(astryx upgrade\)[^]*?\*\/\n\s*const border/,
+    await expect(run(source, path.join(root, 'src/Bar.tsx'))).rejects.toThrow(
+      /Direct var\(--color-data-categorical-green\) at line 2/,
     );
   });
 
-  it('marks a file once, so a second run changes nothing', async () => {
+  it('fails raw stylesheet uses where Core is source-built', async () => {
     const root = coreSourceBuilt();
-    const file = path.join(root, 'src/chart.tsx');
-    const source = `const a = 'var(--color-data-categorical-green)';
-const b = 'var(--color-data-categorical-red)';`;
-    const once = await run(source, file);
-    expect(once.match(new RegExp(TODO, 'g'))).toHaveLength(1);
-    expect(await run(once, file)).toBeUndefined();
-
-    const cssFile = path.join(root, 'src/chart.css');
-    const css = '.bar { fill: var(--color-data-categorical-green); }';
-    const cssOnce = await run(css, cssFile);
-    expect(await run(cssOnce, cssFile)).toBeUndefined();
-  });
-
-  it('marks raw stylesheet uses on their own line', async () => {
-    const root = coreSourceBuilt();
-    const output = await run(
-      `.bar {
-  stroke: red;
-  fill: var(--color-data-categorical-green);
-}`,
-      path.join(root, 'src/chart.css'),
-    );
-    expect(output).toMatch(
-      /stroke: red;\n {2}\/\* TODO\(astryx upgrade\)[^]*?\*\/\n {2}fill: var\(--color-data-categorical-green\);/,
-    );
-  });
-
-  it('marks a stylesheet use directly when a comment ends on its line', async () => {
-    const root = coreSourceBuilt();
-    const output = await run(
-      `/* note
-   */ .bar { fill: var(--color-data-categorical-green); }`,
-      path.join(root, 'src/chart.css'),
-    );
-    expect(output).toMatch(
-      /\*\/ \.bar \{ fill: \/\* TODO\(astryx upgrade\)[^]*?\*\/ var\(--color-data/,
+    await expect(
+      run(
+        '.bar {\n  fill: var(--color-data-categorical-green);\n}',
+        path.join(root, 'src/chart.css'),
+      ),
+    ).rejects.toThrow(
+      /Raw var\(--color-data-categorical-green\) without a fallback at line 2 has no guaranteed default/,
     );
   });
 
@@ -299,21 +291,12 @@ const fill = dataVars['--color-data-categorical-green'];
 describe('validate-data-token-ownership: runner', () => {
   const RAW_USE =
     "export const fill = 'var(--color-data-categorical-green)';\n";
-
-  /** Core source-built, with an ordinary, a generated and an ignored use. */
-  function sourceBuiltWithProtectedFiles() {
-    return repo({
-      'package.json': {dependencies: CORE, devDependencies: BUILD},
-      '.gitignore': 'src/ignored/\n',
-      '.gitattributes': 'src/vendor/** linguist-generated=true\n',
-      'src/app.tsx': RAW_USE,
-      'src/generated.tsx': `/* @generated */\n${RAW_USE}`,
-      'src/vendor/chart.tsx': RAW_USE,
-      'src/ignored/chart.tsx': RAW_USE,
-      'src/vendor/chart.css':
-        '.bar { fill: var(--color-data-categorical-green); }\n',
-    });
-  }
+  const PROTECTED = {
+    '.gitattributes': 'src/vendor/** linguist-generated=true\n',
+    'src/app.tsx': RAW_USE,
+    'src/generated.tsx': `/* @generated */\n${RAW_USE}`,
+    'src/vendor/chart.tsx': RAW_USE,
+  };
 
   async function runValidator(root) {
     const {default: transforms} = await import('../index.mjs');
@@ -327,77 +310,78 @@ describe('validate-data-token-ownership: runner', () => {
     });
   }
 
-  it('skips protected and generated files instead of failing, and annotates the rest', async () => {
-    const root = sourceBuiltWithProtectedFiles();
+  it('reports no errors and changes nothing where prebuilt Core CSS is loaded, protected files included', async () => {
+    const root = repo({
+      'package.json': {dependencies: CORE},
+      'src/main.tsx': LOADS_PREBUILT_CORE,
+      ...PROTECTED,
+    });
     const result = await runValidator(root);
     expect(result.errors).toEqual([]);
     expect(result.protectedFiles).toEqual([]);
-    expect(result.changedFiles).toEqual([path.join(root, 'src/app.tsx')]);
-    expect(fs.readFileSync(path.join(root, 'src/app.tsx'), 'utf-8')).toMatch(
-      TODO,
-    );
-    for (const rel of [
-      'src/generated.tsx',
-      'src/vendor/chart.tsx',
-      'src/ignored/chart.tsx',
-      'src/vendor/chart.css',
-    ]) {
-      expect(fs.readFileSync(path.join(root, rel), 'utf-8')).not.toMatch(TODO);
-    }
+    expect(result.changedFiles).toEqual([]);
   });
 
-  it('still records an ordinary codemod change to a protected file as protected', async () => {
-    const root = sourceBuiltWithProtectedFiles();
-    const result = await runCodemods(
-      [
-        {
-          version: '0.7.0',
-          transforms: [
-            {
-              name: 'rename',
-              meta: {title: 'rename'},
-              transform: file =>
-                file.source.includes('fill')
-                  ? file.source.replace('fill', 'paint')
-                  : undefined,
-            },
-          ],
-        },
-      ],
-      {
-        apply: false,
-        path: path.join(root, 'src'),
-        root,
-        skipCodemods: new Set(),
-        silent: true,
-      },
-    );
-    expect(result.protectedFiles.map(item => item.file).sort()).toEqual([
+  it('reports every raw use as an error where Core is source-built, protected files included, writing nothing', async () => {
+    const root = repo({
+      'package.json': {dependencies: CORE, devDependencies: BUILD},
+      ...PROTECTED,
+    });
+    const result = await runValidator(root);
+    expect(result.errors.map(error => error.file).sort()).toEqual([
+      'src/app.tsx',
       'src/generated.tsx',
-      'src/ignored/chart.tsx',
       'src/vendor/chart.tsx',
     ]);
+    expect(result.protectedFiles).toEqual([]);
+    expect(result.changedFiles).toEqual([]);
   });
 
+  /** @param {Record<string, string | object>} extra */
+  function installedProject(extra) {
+    const root = repo({...PROTECTED, ...extra});
+    const coreDir = path.join(root, 'node_modules', '@astryxdesign', 'core');
+    fs.mkdirSync(coreDir, {recursive: true});
+    fs.writeFileSync(
+      path.join(coreDir, 'package.json'),
+      JSON.stringify({name: '@astryxdesign/core', version: '0.7.0'}),
+    );
+    return root;
+  }
+
   it(
-    'completes `astryx upgrade --apply` with a protected use where Core is source-built',
+    'completes `astryx upgrade --apply` where prebuilt Core CSS is loaded',
     async () => {
-      const root = sourceBuiltWithProtectedFiles();
-      const coreDir = path.join(root, 'node_modules', '@astryxdesign', 'core');
-      fs.mkdirSync(coreDir, {recursive: true});
-      fs.writeFileSync(
-        path.join(coreDir, 'package.json'),
-        JSON.stringify({name: '@astryxdesign/core', version: '0.7.0'}),
-      );
+      const root = installedProject({
+        'package.json': {dependencies: CORE},
+        'src/main.tsx': LOADS_PREBUILT_CORE,
+      });
       const res = await upgrade(
         {from: '0.6.9', codemod: 'validate-data-token-ownership', apply: true},
         {cwd: root},
       );
       expect(res.data.complete).toBe(true);
-      expect(res.data.errorCode).toBeUndefined();
       expect(res.data.errors ?? []).toEqual([]);
-      expect(res.data.protectedFiles).toEqual([]);
-      expect(res.data.modifiedFiles).toContain('src/app.tsx');
+    },
+    SLOW,
+  );
+
+  it(
+    'fails `astryx upgrade --apply` where Core is source-built',
+    async () => {
+      const root = installedProject({
+        'package.json': {dependencies: CORE, devDependencies: BUILD},
+      });
+      await expect(
+        upgrade(
+          {
+            from: '0.6.9',
+            codemod: 'validate-data-token-ownership',
+            apply: true,
+          },
+          {cwd: root},
+        ),
+      ).rejects.toMatchObject({code: 'ERR_CODEMOD_FAILED'});
     },
     SLOW,
   );

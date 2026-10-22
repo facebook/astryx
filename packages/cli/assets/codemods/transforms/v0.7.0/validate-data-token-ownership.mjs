@@ -4,28 +4,21 @@
  * @file Report data-token consumers that need an ownership migration.
  *
  * @input Consumer JavaScript/TypeScript source and generated theme CSS
- * @output An upgrade error for stale generated root-default artifacts. Where
- *   the data-color defaults are not guaranteed, one review TODO per file at
- *   the first fallback-less `var(--color-data-*)` use (in JS strings,
- *   embedded or whole, and in CSS). Nothing else changes.
+ * @output No rewritten source. Upgrade errors for stale generated
+ *   root-default artifacts and, where Core compiles from source without the
+ *   prebuilt Core stylesheet, for fallback-less `var(--color-data-*)` uses
+ *   (in JS strings, embedded or whole, and in CSS)
  * @position Next-release upgrade validation for spec:AST-066 FR18/FR19
  *
- * The defaults are guaranteed when prebuilt `@astryxdesign/core/astryx.css`
- * is loaded (spec:AST-066 FR3). They are treated as not guaranteed only on
- * positive evidence that Core compiles from source: the project, or a
- * workspace above it up to the repository root, declares
- * `@astryxdesign/build`, and no file under the highest such folder references
- * the prebuilt Core stylesheet. Every documented prebuilt setup loads that
- * stylesheet (spec:AST-080 FR5), and `@astryxdesign/build` is the only
- * supported source build, so that combination means Core is source-built.
- * Anything else, including an unreadable or oversized tree, gets no TODO:
- * prebuilt CSS carries the defaults, so a missed TODO is harmless.
- *
- * The codemod is `advisory`: the runner skips a TODO it cannot write (a
- * protected or generated file) instead of failing the upgrade. A TODO comment
- * is the only non-failing report channel a codemod has (`api.report` is a
- * stub); `annotateStylesheet` and `annotateScript` keep that choice in one
- * place. Each file is annotated once, so a second run changes nothing.
+ * Prebuilt `@astryxdesign/core/astryx.css` defines all 56 data defaults
+ * (spec:AST-066 FR3), so a raw use fails only on positive evidence that Core
+ * compiles from source: the project, or a workspace above it up to the
+ * repository root, declares `@astryxdesign/core` and `@astryxdesign/build`,
+ * and no file in the repository references the prebuilt Core stylesheet.
+ * Every documented prebuilt setup loads that stylesheet (spec:AST-080 FR5),
+ * and `@astryxdesign/build` is the only supported source build. A tree too
+ * large to read, or a skipped symlink or unreadable file, leaves the answer
+ * unknown, and an unknown answer never fails.
  */
 
 import * as fs from 'node:fs';
@@ -34,9 +27,8 @@ import * as path from 'node:path';
 export const meta = {
   title: 'Validate data-token ownership',
   description:
-    'Fails on stale generated theme CSS that still owns root data defaults. Where Core compiles from source through @astryxdesign/build and nothing loads prebuilt @astryxdesign/core/astryx.css, marks the first fallback-less data-token var() use in each file with a TODO; apps that load the prebuilt stylesheet already get all 56 defaults and are left unchanged. Never fails on those uses, and skips protected or generated files.',
+    'Fails on stale generated theme CSS that still owns root data defaults, and, where Core compiles from source through @astryxdesign/build and nothing loads prebuilt @astryxdesign/core/astryx.css, on fallback-less data-token var() uses in source strings and stylesheets. Apps that load the prebuilt stylesheet get all 56 defaults from it and pass.',
   fileExtensions: ['.tsx', '.ts', '.jsx', '.js', '.mjs', '.cjs', '.css'],
-  advisory: true,
 };
 
 // A use without a fallback; `var(--color-data-x, <fallback>)` stays valid.
@@ -82,14 +74,15 @@ const SKIPPED_DIRS = new Set([
   'bower_components',
   'jspm_packages',
 ]);
-// Past this many files the tree is treated as unknown (no TODO).
+// Past either bound the answer is unknown, and an unknown answer never fails.
 export const SCAN_FILE_LIMIT = 20000;
-
-// One upgrade run asks once per file; the scan is reused for a short window
-// so a long-lived host never answers from an old tree.
+export const SCAN_BYTE_LIMIT = 64 * 1024 * 1024;
+// One upgrade run asks once per file; reuse a scan only briefly so a
+// long-lived host never answers from an old tree.
 const SCAN_CACHE_MS = 30_000;
-/** @type {Map<string, {at: number, result: boolean|null}>} */
-const prebuiltReferenceCache = new Map();
+
+/** @type {Map<string, {at: number, result: 'found'|'absent'|'unknown'}>} */
+const scanCache = new Map();
 
 /** @param {string} dir @returns {Record<string, unknown>|null} */
 function readPackageDependencies(dir) {
@@ -118,17 +111,20 @@ function isRepositoryRoot(dir) {
 }
 
 /**
- * Whether any scanned file under `root` references the prebuilt Core
- * stylesheet. `null` when the tree is too large to read.
+ * Whether a file under `root` references the prebuilt Core stylesheet:
+ * `found`, `absent`, or `unknown` when a bound is reached or a candidate file
+ * cannot be read (a symlink, or a read error).
  * @param {string} root
- * @returns {boolean|null}
+ * @returns {'found'|'absent'|'unknown'}
  */
-function referencesPrebuiltCoreCss(root) {
-  const cached = prebuiltReferenceCache.get(root);
+function scanForPrebuiltCoreCss(root) {
+  const cached = scanCache.get(root);
   if (cached && Date.now() - cached.at < SCAN_CACHE_MS) return cached.result;
-  let seen = 0;
-  /** @type {boolean|null} */
-  let result = false;
+  let files = 0;
+  let bytes = 0;
+  let unreadable = false;
+  /** @type {'found'|'absent'|'unknown'} */
+  let result = 'absent';
   const stack = [root];
   scan: while (stack.length > 0) {
     const dir = /** @type {string} */ (stack.pop());
@@ -136,6 +132,7 @@ function referencesPrebuiltCoreCss(root) {
     try {
       entries = fs.readdirSync(dir, {withFileTypes: true});
     } catch {
+      unreadable = true;
       continue;
     }
     for (const entry of entries) {
@@ -145,95 +142,70 @@ function referencesPrebuiltCoreCss(root) {
         }
         continue;
       }
-      if (!entry.isFile()) continue;
       if (!SCANNED_EXTENSIONS.has(path.extname(entry.name))) continue;
-      if (++seen > SCAN_FILE_LIMIT) {
-        result = null;
+      if (!entry.isFile()) {
+        // A symlinked source file could be the stylesheet import.
+        if (entry.isSymbolicLink()) unreadable = true;
+        continue;
+      }
+      if (++files > SCAN_FILE_LIMIT) {
+        result = 'unknown';
         break scan;
       }
+      let contents;
       try {
-        if (
-          PREBUILT_CORE_CSS.test(
-            fs.readFileSync(path.join(dir, entry.name), 'utf-8'),
-          )
-        ) {
-          result = true;
-          break scan;
-        }
+        contents = fs.readFileSync(path.join(dir, entry.name), 'utf-8');
       } catch {
-        // An unreadable file cannot be evidence either way.
+        unreadable = true;
+        continue;
+      }
+      bytes += contents.length;
+      if (PREBUILT_CORE_CSS.test(contents)) {
+        result = 'found';
+        break scan;
+      }
+      if (bytes > SCAN_BYTE_LIMIT) {
+        result = 'unknown';
+        break scan;
       }
     }
   }
-  prebuiltReferenceCache.set(root, {at: Date.now(), result});
+  if (result === 'absent' && unreadable) result = 'unknown';
+  scanCache.set(root, {at: Date.now(), result});
   return result;
 }
 
 /**
- * Whether the data-color defaults may be missing for `filePath`: true only
- * when Core compiles from source and nothing loads the prebuilt Core
- * stylesheet. See the file header for the rule.
+ * Whether Core compiles from source for `filePath` without the prebuilt Core
+ * stylesheet, so the data defaults are not guaranteed. See the file header.
  * @param {string} filePath
  * @returns {boolean}
  */
 export function dataDefaultsMayBeMissing(filePath) {
   let dir = path.dirname(path.resolve(filePath));
   let usesCore = false;
-  /** @type {string|null} */
-  let buildRoot = null;
+  let usesSourceBuild = false;
   for (;;) {
     const deps = readPackageDependencies(dir);
     if (deps) {
       if (Object.hasOwn(deps, CORE_PACKAGE)) usesCore = true;
-      if (Object.hasOwn(deps, SOURCE_BUILD_PACKAGE)) buildRoot = dir;
+      if (Object.hasOwn(deps, SOURCE_BUILD_PACKAGE)) usesSourceBuild = true;
     }
     if (isRepositoryRoot(dir)) break;
     const parent = path.dirname(dir);
     if (parent === dir) break;
     dir = parent;
   }
-  if (!usesCore || buildRoot == null) return false;
-  return referencesPrebuiltCoreCss(buildRoot) === false;
+  if (!usesCore || !usesSourceBuild) return false;
+  return scanForPrebuiltCoreCss(dir) === 'absent';
 }
 
-// --- Annotation --------------------------------------------------------------
+// --- Transform ---------------------------------------------------------------
 
-const TODO_MARKER =
-  'TODO(astryx upgrade): var(--color-data-*) without a fallback';
-const TODO_TEXT =
-  `${TODO_MARKER}. Core compiles from source here (@astryxdesign/build) and ` +
-  'nothing loads @astryxdesign/core/astryx.css, so the data-color defaults ' +
-  'exist only when a compiled dataVars import retains them. Import dataVars ' +
-  'from @astryxdesign/core/theme/dataTokens.stylex in CSS-capable code, or ' +
-  'add a fallback. Canvas and other non-CSS APIs use resolveThemeToken() or ' +
-  'useTheme().token().';
-
-/** @param {string} source */
-function isAnnotated(source) {
-  return source.includes(TODO_MARKER);
-}
-
-/**
- * Put the TODO on its own line before the stylesheet line of the first use,
- * or directly before the use when an earlier comment ends on that line.
- * @param {string} source
- * @returns {string|undefined}
- */
-function annotateStylesheet(source) {
-  const uncommented = source.replace(CSS_COMMENT, comment =>
-    comment.replace(/[^\n]/gu, ' '),
-  );
-  const match = DIRECT_DATA_VAR.exec(uncommented);
-  if (!match) return undefined;
-  const index = match.index;
-  const lineStart = source.lastIndexOf('\n', index - 1) + 1;
-  const prefix = source.slice(lineStart, index);
-  if (prefix !== uncommented.slice(lineStart, index)) {
-    return `${source.slice(0, index)}/* ${TODO_TEXT} */ ${source.slice(index)}`;
-  }
-  const indent = /^[ \t]*/u.exec(prefix)?.[0] ?? '';
-  return `${source.slice(0, lineStart)}${indent}/* ${TODO_TEXT} */\n${source.slice(lineStart)}`;
-}
+const SOURCE_BUILD_REASON =
+  'Core compiles from source here (@astryxdesign/build) and nothing loads @astryxdesign/core/astryx.css, so the data-color defaults exist only when a compiled dataVars import retains them.';
+const MIGRATION =
+  'Import dataVars from @astryxdesign/core/theme/dataTokens.stylex in CSS-capable code, load @astryxdesign/core/astryx.css, or add an explicit fallback.';
 
 /** @param {any} node */
 function staticString(node) {
@@ -253,47 +225,9 @@ function staticString(node) {
 }
 
 /**
- * Put the TODO on the statement enclosing the first string or template use.
- * A comment on a node inside JSX children would print as text.
- * @param {string} source
- * @param {import('../../../../authoring/codemod/type').CodemodTransformApi} api
- * @returns {string|undefined}
- */
-function annotateScript(source, api) {
-  const j = api.jscodeshift;
-  const root = j(source);
-  /** @type {any} */
-  let found = null;
-  /** @param {any} nodePath */
-  const inspect = nodePath => {
-    const value = staticString(nodePath.node);
-    if (
-      typeof value === 'string' &&
-      DIRECT_DATA_VAR.test(value) &&
-      (found == null || nodePath.node.start < found.node.start)
-    ) {
-      found = nodePath;
-    }
-  };
-  root.find(j.StringLiteral).forEach(inspect);
-  root.find(j.Literal).forEach(inspect);
-  root.find(j.TemplateLiteral).forEach(inspect);
-  if (!found) return undefined;
-
-  let host = found;
-  while (host && !j.Statement.check(host.node)) host = host.parent;
-  const node = host?.node ?? root.find(j.Program).get('body', 0).node;
-  node.comments = node.comments ?? [];
-  node.comments.push(j.commentBlock(` ${TODO_TEXT} `, true, false));
-  return root.toSource();
-}
-
-// --- Transform ---------------------------------------------------------------
-
-/**
  * @param {import('../../../../authoring/codemod/type').AstryxCodemodFile} file
  * @param {import('../../../../authoring/codemod/type').CodemodTransformApi} api
- * @returns {string | undefined}
+ * @returns {undefined}
  */
 export default function validateDataTokenOwnership(file, api) {
   if (!file.source.includes('--color-data-')) return undefined;
@@ -309,12 +243,50 @@ export default function validateDataTokenOwnership(file, api) {
     );
   }
 
-  if (isAnnotated(file.source) || !DIRECT_DATA_VAR.test(file.source)) {
-    return undefined;
-  }
+  if (!DIRECT_DATA_VAR.test(file.source)) return undefined;
   if (!dataDefaultsMayBeMissing(file.path)) return undefined;
 
-  return isStylesheet
-    ? annotateStylesheet(file.source)
-    : annotateScript(file.source, api);
+  if (isStylesheet) {
+    const uncommented = file.source.replace(CSS_COMMENT, comment =>
+      comment.replace(/[^\n]/gu, ' '),
+    );
+    const cssMatch = DIRECT_DATA_VAR.exec(uncommented);
+    if (cssMatch) {
+      const line = uncommented.slice(0, cssMatch.index).split('\n').length;
+      throw new Error(
+        `Raw var(${cssMatch[1]}) without a fallback at line ${line} has no guaranteed default: ${SOURCE_BUILD_REASON} ${MIGRATION}`,
+      );
+    }
+    return undefined;
+  }
+
+  const j = api.jscodeshift;
+  const root = j(file.source);
+  /** @type {{token: string, line: number|null, start: number}|null} */
+  let found = null;
+  /** @param {any} nodePath */
+  const inspect = nodePath => {
+    const node = nodePath.node;
+    const value = staticString(node);
+    const match =
+      typeof value === 'string' ? value.match(DIRECT_DATA_VAR) : null;
+    if (match && (found == null || node.start < found.start)) {
+      found = {
+        token: match[1],
+        line: node.loc?.start?.line ?? null,
+        start: node.start,
+      };
+    }
+  };
+  root.find(j.StringLiteral).forEach(inspect);
+  root.find(j.Literal).forEach(inspect);
+  root.find(j.TemplateLiteral).forEach(inspect);
+
+  if (found) {
+    const {token, line} = found;
+    throw new Error(
+      `Direct var(${token})${line == null ? '' : ` at line ${line}`} has no guaranteed default: ${SOURCE_BUILD_REASON} ${MIGRATION} Canvas and other non-CSS APIs use resolveThemeToken() or useTheme().token().`,
+    );
+  }
+  return undefined;
 }
