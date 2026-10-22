@@ -4,7 +4,7 @@
 
 ## Rule
 
-`spec:AST-083` owns search's result order; this file describes the data that implements it. Inside one score band, a searcher's static weights decide the order. Matches with the same score move together as one block, in the lexical ranker's order, placed by the learned position of the block's first match: moving each one on its own breaks search's existing rules for tied matches. Matches never cross bands or kinds, with one exception: for a query that names a doc topic, the doc-topic searcher keeps that topic's own sections directly after it, ahead of entries of another kind that only mention the words. There is no model runtime: every number is a plain static value read at load time.
+`spec:AST-083` owns search's result order; this file describes the data that implements it. Inside one score band, a searcher's static weights decide the order. Matches with the same score move together as one block, in the lexical ranker's order, placed by the learned position of the block's first match: moving each one on its own breaks search's existing rules for tied matches. Matches never cross bands or kinds, with one exception: for a query that names a doc topic, when only entries of another kind that merely mention the words sit among that topic's own sections, the doc-topic searcher moves the sections up to follow the topic. There is no model runtime: every number is a plain static value read at load time.
 
 ## Files
 

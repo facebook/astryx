@@ -20,8 +20,8 @@ export const doc = {
     'Matching and scores are keyword + fuzzy (not embeddings). Between score bands ' +
     'results keep the lexical order, whose domain priority can put a weaker ' +
     'component, hook, template, or theme above a stronger doc, and a query that is an entry\'s exact name answers ' +
-    'with that entry first; a query that names a doc topic keeps its sections right ' +
-    'after it. Inside a band, fixed weights order the matches, so a ' +
+    'with that entry first; when only passing mentions of other kinds sit among a ' +
+    'named doc topic\'s sections, the sections move up to follow it. Inside a band, fixed weights order the matches, so a ' +
     'description match can lead a keyword match in the same band (55–99 holds both). ' +
     'A component\'s usage guidance (its best practices) is indexed one tier below ' +
     'its description, so the words a reader types still find it.' +

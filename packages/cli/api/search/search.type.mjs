@@ -22,8 +22,9 @@
  *   including its domain priority, which can place a weaker non-doc match above
  *   a stronger doc; within a run of one score band and kind it orders matches
  *   by its static ordering weights, so a lower score can lead inside a band.
- *   One exception: for a query that names a doc topic, that topic's own
- *   sections sit directly after it, ahead of other kinds' passing mentions.
+ *   One exception: for a query that names a doc topic, when only passing
+ *   mentions of other kinds sit among the topic's own sections, the sections
+ *   move up to follow the topic.
  *   Build's `blocks` use their own order.
  * @property {string} reason - Human-readable reason the candidate matched (e.g. `keyword "button"`).
  * @property {string} description - One-line description, when available.
