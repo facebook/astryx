@@ -9,6 +9,12 @@
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
+import {spawnSync} from 'node:child_process';
+import {fileURLToPath} from 'node:url';
+
+const CLI_BIN = fileURLToPath(
+  new URL('../../clients/cli/bin/astryx.mjs', import.meta.url),
+);
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 
 vi.mock('../../foundation/release/cache.mjs', () => ({
@@ -85,5 +91,30 @@ describe('template assets when npm gives no answer', () => {
 
     const check = await integrationCheck({cwd: dir});
     expect(check.data.unchecked).toBeGreaterThanOrEqual(1);
+  });
+
+  it('lists an asset not checked when there is no files field but an ignore file', async () => {
+    packageWith(['templates']);
+    const pkg = JSON.parse(
+      fs.readFileSync(path.join(dir, 'package.json'), 'utf8'),
+    );
+    delete pkg.files;
+    fs.writeFileSync(path.join(dir, 'package.json'), JSON.stringify(pkg));
+    fs.writeFileSync(path.join(dir, '.npmignore'), 'templates/img\n');
+    const {data} = await validateIntegration(undefined, {cwd: dir});
+    expect(
+      data.exampleAssets?.unchecked.map(each => each.asset).sort(),
+    ).toEqual(['assets/cat.png', 'templates/img/hero.png']);
+  });
+
+  it('shows the assets it could not check in text output', async () => {
+    packageWith(['templates', '!templates/img']);
+    const {stdout} = spawnSync(
+      process.execPath,
+      [CLI_BIN, 'doctor', 'integration', 'validate'],
+      {cwd: dir, encoding: 'utf-8', env: {...process.env, PATH: ''}},
+    );
+    expect(stdout).toContain('Template assets not checked: 1');
+    expect(stdout).toContain('templates/img/hero.png');
   });
 });

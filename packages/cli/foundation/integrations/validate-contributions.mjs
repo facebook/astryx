@@ -1494,13 +1494,25 @@ export async function componentExamplesCheck(integration) {
       const assetRel = rel(asset);
       const exists = fs.existsSync(asset);
       if (exists) {
-        if (!Array.isArray(packedFiles)) continue;
+        // With no `files` field npm packs everything but what an ignore file
+        // drops, so with no ignore file there is nothing to ask.
+        if (
+          !Array.isArray(packedFiles) &&
+          !['.npmignore', '.gitignore'].some(file =>
+            fs.existsSync(path.join(base, file)),
+          )
+        ) {
+          continue;
+        }
         // What npm packs decides. Without npm's answer, an asset no entry
         // can reach is reported, and any other is listed as not checked.
         packed ??= npmPackedPaths(base);
         if ('paths' in packed) {
           if (packed.paths.has(assetRel)) continue;
-        } else if (!outsideFiles(assetRel, packedFiles)) {
+        } else if (
+          !Array.isArray(packedFiles) ||
+          !outsideFiles(assetRel, packedFiles)
+        ) {
           unchecked.push({
             file: rel(template.filePath),
             asset: assetRel,
@@ -1546,12 +1558,20 @@ export async function componentExamplesCheck(integration) {
     const name = record.name;
     const stem = `${name.replace(/([a-z0-9])([A-Z])/gu, '$1-$2').toLowerCase()}-showcase`;
     // A block that already composes the component only needs the fields.
-    const existing = templates.find(
+    // A block that composes the component and shows nothing else takes the
+    // fields; one that is already another component's showcase takes
+    // `alsoShowcaseFor` instead, so it keeps its own.
+    const composing = templates.filter(
       template =>
         template.type === 'block' &&
         Array.isArray(template.componentsUsed) &&
         template.componentsUsed.includes(name),
     );
+    const existing =
+      composing.find(template => typeof template.exampleFor !== 'string') ??
+      composing[0];
+    const showsAnother =
+      existing != null && typeof existing.exampleFor === 'string';
     const taken =
       !existing &&
       root &&
@@ -1563,7 +1583,7 @@ export async function componentExamplesCheck(integration) {
         : `${templatesDir}/${stem}.doc.mjs`;
       notes.push({
         code: 'component_without_example',
-        message: `${rel(record.docPath)}: no block template shows "${name}" (\`exampleFor: '${name}'\` with \`isShowcase: true\`), so template lists, docs pages and catalog cards have no example of it. Fix: add \`exampleFor: '${name}'\` and \`isShowcase: true\` to ${doc}${existing ? `, the block that already composes ${name}` : ''}. A doc set to \`hidden\`, \`isHiddenFromOverview\` or category \`Utility\` needs no example.`,
+        message: `${rel(record.docPath)}: no block template shows "${name}" (\`exampleFor: '${name}'\` with \`isShowcase: true\`), so template lists, docs pages and catalog cards have no example of it. Fix: ${showsAnother ? `add '${name}' to \`alsoShowcaseFor\` in ${doc}, the block that already composes ${name} as the showcase of ${existing.exampleFor}` : `add \`exampleFor: '${name}'\` and \`isShowcase: true\` to ${doc}${existing ? `, the block that already composes ${name}` : ''}`}. A doc set to \`hidden\`, \`isHiddenFromOverview\` or category \`Utility\` needs no example.`,
       });
       continue;
     }

@@ -101,6 +101,23 @@ describe('component_without_example', () => {
     );
   });
 
+  it('points at alsoShowcaseFor when the composing block already shows another component', async () => {
+    write({
+      'components/AcmeBadge.doc.mjs': componentDoc('AcmeBadge'),
+      'components/AcmeBadge.tsx': componentSource('AcmeBadge'),
+      'templates/badge-demo.doc.mjs': blockDoc(
+        'badge-demo',
+        ", exampleFor: 'AcmeBadge', isShowcase: true, componentsUsed: ['AcmeBadge', 'AcmeCard']",
+      ),
+      'templates/badge-demo.tsx': 'export default () => null;\n',
+    });
+    const [note] = await notesOf(['component_without_example']);
+    expect(note.message).toContain(
+      "add 'AcmeCard' to `alsoShowcaseFor` in templates/badge-demo.doc.mjs",
+    );
+    expect(note.message).not.toContain("add `exampleFor: 'AcmeCard'`");
+  });
+
   it('names the block that already composes the component instead of new files', async () => {
     write({
       'templates/card-demo.doc.mjs': blockDoc(
