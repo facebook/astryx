@@ -153,14 +153,17 @@ for (const item of cases) {
     await page.goto(storyUrl(item), {waitUntil: 'load'});
     await page.locator('#storybook-root').waitFor();
 
+    const fixture = page.getByTestId('dropdown-menu-radio-group-audit');
     const menu = page.getByRole('menu').last();
     const group = menu.getByRole('group', {name: 'Sort options'});
     await expect(group).toBeVisible();
     const radios = group.getByRole('menuitemradio');
     await expect(radios).toHaveCount(3);
+    await expect(fixture).toHaveAttribute('data-close-request-count', '0');
     await expect(radios.first()).toHaveAttribute('aria-checked', 'true');
     await radios.nth(1).click();
     await expect(radios.nth(1)).toHaveAttribute('aria-checked', 'true');
+    await expect(fixture).toHaveAttribute('data-close-request-count', '0');
     await expect(menu).toBeVisible();
     await settle(page);
 
@@ -198,6 +201,10 @@ for (const item of cases) {
         direction: groupStyle.direction,
         viewport: {width: innerWidth, height: innerHeight},
         reducedMotion: matchMedia('(prefers-reduced-motion: reduce)').matches,
+        closeRequestCount:
+          element
+            .closest('[data-close-request-count]')
+            ?.getAttribute('data-close-request-count') ?? null,
         horizontalOverflow:
           document.documentElement.scrollWidth > innerWidth + 1,
         fonts: document.fonts.status,
@@ -227,7 +234,8 @@ for (const item of cases) {
       observed.rows.every(row => row.role === 'menuitemradio') &&
       observed.rows.filter(row => row.checked === 'true').length === 1 &&
       observed.rows[1]?.checked === 'true' &&
-      observed.rows[1]?.text?.includes('Oldest first') === true;
+      observed.rows[1]?.text?.includes('Oldest first') === true &&
+      observed.closeRequestCount === '0';
     const layoutPass =
       observed.group.display === 'flex' &&
       observed.group.flexDirection === 'column' &&

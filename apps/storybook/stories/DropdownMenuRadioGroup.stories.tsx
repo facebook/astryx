@@ -36,28 +36,37 @@ type Story = StoryObj<typeof DropdownMenuRadioGroup>;
 
 function ControlledSelectionFixture() {
   const [sort, setSort] = useState('newest');
+  const [closeRequestCount, setCloseRequestCount] = useState(0);
   return (
-    <DropdownMenu
-      button={{label: 'Sort options'}}
-      isMenuOpen
-      onOpenChange={() => {}}
-      menuWidth={280}
-      presentation="popover">
-      <DropdownMenuRadioGroup
-        data-testid="sort-group"
-        value={sort}
-        onChange={setSort}
-        label="Sort options"
-        hasCloseOnSelect={false}>
-        <DropdownMenuRadioItem value="newest" label="Newest first" />
-        <DropdownMenuRadioItem
-          value="oldest"
-          label="Oldest first"
-          description="Use creation date"
-        />
-        <DropdownMenuRadioItem value="name" label="Name" />
-      </DropdownMenuRadioGroup>
-    </DropdownMenu>
+    <div
+      data-testid="dropdown-menu-radio-group-audit"
+      data-close-request-count={closeRequestCount}>
+      <DropdownMenu
+        button={{label: 'Sort'}}
+        isMenuOpen
+        onOpenChange={isOpen => {
+          if (!isOpen) {
+            setCloseRequestCount(count => count + 1);
+          }
+        }}
+        menuWidth={280}
+        presentation="popover">
+        <DropdownMenuRadioGroup
+          data-testid="sort-group"
+          value={sort}
+          onChange={setSort}
+          label="Sort options"
+          hasCloseOnSelect={false}>
+          <DropdownMenuRadioItem value="newest" label="Newest first" />
+          <DropdownMenuRadioItem
+            value="oldest"
+            label="Oldest first"
+            description="Use creation date"
+          />
+          <DropdownMenuRadioItem value="name" label="Name" />
+        </DropdownMenuRadioGroup>
+      </DropdownMenu>
+    </div>
   );
 }
 
