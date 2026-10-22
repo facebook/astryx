@@ -397,6 +397,11 @@ works on is `spec:AST-040` FR9's.
     start with `astryx search`; it names no version, no release-specific
     command or prop, and only entry points every release keeps (`search`,
     `docs`, `component`, and the like), so an older copy never misleads.
+    It also gives the build route the project agent docs give, through their
+    shared workflow wording: work in a project folder, new or existing, adding
+    `@astryxdesign/core` and `@astryxdesign/cli`, or, where the project already
+    installs Core, the CLI at that Core's version; run `astryx init` there; then
+    start from a template, check, and deliver the built project.
   - The computer-level text is one file, `.agents/skills/astryx/SKILL.md` in
     the home folder, which most agent tools read. The computer-level agent
     files table below names each other folder it reaches: a folder link to its
