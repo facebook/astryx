@@ -341,8 +341,8 @@ maps, and compound state keys.
 **Reference:** `spec:AST-087/DEC-5`
 **Decider:** cixzhang, 2026-10-22
 
-A state-dependent icon is a theme decision made through a slot resolver, so every
-instance follows one rule. Indicators keep stateful control marks, because they
+A state-dependent icon that a component exposes as a slot is a theme decision made
+through its resolver, so every instance follows one rule. Indicators keep stateful control marks, because they
 draw a family's state rather than choose an icon.
 
 ### DEC-6 — A selected function's result is final

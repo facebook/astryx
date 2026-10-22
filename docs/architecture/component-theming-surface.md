@@ -366,9 +366,11 @@ how themes become output, or the design rationale for a component's appearance.
   and every ineligible axis stays closed. A focused component test covers the
   custom value with no matching active theme rule. `extensibleAxes.test.ts`
   checks only the structural wiring: the public map, `themeProps()` reflection,
-  and consumer metadata. An artwork axis has none of that styling wiring: the
-  guard exempts it by an explicit list of artwork-request maps, currently
-  `IconVariantMap`, and its focused fallback test renders an unlisted name.
+  and consumer metadata. An artwork axis keeps the public map check, because
+  its map is the one theme build augments, but has no styling wiring: the guard
+  exempts it from the `themeProps()` reflection and `visualProps` checks only,
+  by an explicit list of artwork-request maps, currently `IconVariantMap`. Its
+  focused fallback test renders an unlisted name.
 - Adding a property to a target's `guaranteedProperties` records its purpose and
   scope, proves a rational observable effect on the owned anatomy part, and adds
   representative compiler/runtime coverage. Catalog membership alone does not add
