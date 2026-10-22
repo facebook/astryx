@@ -52,3 +52,11 @@ describe('butter input status roles', () => {
     }
   });
 });
+
+describe('butter secondary ComplexSelector', () => {
+  it('keeps the hover fill off a disabled trigger in either form', () => {
+    expect(generateThemeCSS(butterTheme).component).toMatch(
+      /:hover:not\(:has\(> ?:is\(:disabled, ?\[aria-disabled="true"\]\)\)\)/,
+    );
+  });
+});

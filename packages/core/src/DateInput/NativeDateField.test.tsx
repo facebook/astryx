@@ -601,12 +601,38 @@ describe('DateInput nativePicker', () => {
     await act(async () => resolveAction());
   });
 
-  it('disables the control and its toggle when isDisabled', () => {
+  it('keeps a disabled control focusable and its toggle inert (AST-085 FR1, FR2)', () => {
     stubPointer(true);
     render(<DateInput label="Date" isDisabled onChange={() => {}} />);
 
-    expect(getInput()).toBeDisabled();
-    expect(screen.getByLabelText('Open calendar')).toBeDisabled();
+    const input = getInput();
+    expect(input).not.toHaveAttribute('disabled');
+    expect(input).toHaveAttribute('aria-disabled', 'true');
+    expect(input).toHaveAttribute('readonly');
+    input.focus();
+    expect(input).toHaveFocus();
+    const toggle = screen.getByLabelText('Open calendar');
+    expect(toggle).not.toHaveAttribute('disabled');
+    expect(toggle).toHaveAttribute('aria-disabled', 'true');
+    const showPicker = vi.fn();
+    Object.defineProperty(input, 'showPicker', {value: showPicker});
+    fireEvent.click(toggle);
+    expect(showPicker).not.toHaveBeenCalled();
+  });
+
+  it('does not call a caller onClick while disabled (AST-085 FR2)', () => {
+    stubPointer(true);
+    const onClick = vi.fn();
+    render(
+      <DateInput
+        label="Date"
+        isDisabled
+        onClick={onClick}
+        onChange={() => {}}
+      />,
+    );
+    fireEvent.click(getInput());
+    expect(onClick).not.toHaveBeenCalled();
   });
 
   it('ignores a change while disabled', () => {

@@ -18,7 +18,13 @@
  * Last synced props: label, variant, size, isDisabled, isLoading, isInterruptible, clickAction, icon, isIconOnly, width, children, tooltip, endContent, href, as, target, rel
  */
 
-import {useRef, useTransition, type ReactNode} from 'react';
+import {
+  useEffect,
+  useRef,
+  useState,
+  useTransition,
+  type ReactNode,
+} from 'react';
 import type {BaseProps} from '../BaseProps';
 import type {Elevation, SizeValue} from '../utils/types';
 import * as stylex from '@stylexjs/stylex';
@@ -587,6 +593,21 @@ export function Button({
   // re-click can land and interrupt the in-flight action with a fresh one.
   const actionInFlightRef = useRef(false);
   const isLoadingState = isLoading || isPending;
+  // The loading live region must exist empty before it receives "Loading":
+  // many screen readers skip a live region that mounts already holding its
+  // text, which is what a Button first rendered loading did (spec:AST-086
+  // FR3). Only that case holds the text back, until the frame after the
+  // region mounts; a Button mounted idle never re-renders for this.
+  const [isLiveRegionReady, setIsLiveRegionReady] = useState(
+    () => !isLoadingState,
+  );
+  useEffect(() => {
+    if (isLiveRegionReady) {
+      return;
+    }
+    const frame = requestAnimationFrame(() => setIsLiveRegionReady(true));
+    return () => cancelAnimationFrame(frame);
+  }, [isLiveRegionReady]);
   // Delay the spinner reveal for action-driven loading (clickAction's own
   // transition) so a fast action that settles within the delay does not flash
   // a spinner. Interruptible loading is delayed too, so rapid re-clicks settle
@@ -767,7 +788,7 @@ export function Button({
       </span>
       {/* Live region for loading state announcements */}
       <VisuallyHidden role="status" aria-live="polite">
-        {isLoadingState ? t('@astryx.button.loading') : ''}
+        {isLoadingState && isLiveRegionReady ? t('@astryx.button.loading') : ''}
       </VisuallyHidden>
     </>
   );

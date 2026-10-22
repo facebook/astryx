@@ -536,7 +536,9 @@ describe('integrationAdd template', () => {
       path.join(tmpDir, 'templates/my-widget.doc.mjs'),
       'utf-8',
     );
-    expect(spec).toContain("@astryxdesign/cli/authoring').TemplateDoc");
+    expect(spec).toContain(
+      "@astryxdesign/cli/authoring').IntegrationTemplateDoc",
+    );
     expect(spec).toContain("type: 'page'");
     expect(spec).toContain("name: 'my-widget'");
 
@@ -830,7 +832,7 @@ describe('typed descriptor conformance', () => {
     for (const [relativePath, type] of [
       ['components/MyWidget.doc.mjs', 'ComponentDoc'],
       ['docs/my-guide.doc.mjs', 'ReferenceDoc'],
-      ['templates/my-page.doc.mjs', 'TemplateDoc'],
+      ['templates/my-page.doc.mjs', 'IntegrationTemplateDoc'],
       ['themes/ocean/oceanTheme.doc.mjs', 'ThemeDoc'],
     ]) {
       const source = fs.readFileSync(path.join(tmpDir, relativePath), 'utf-8');

@@ -265,9 +265,9 @@ copying.
   current API until the rule is settled for it.
 - Browser evidence: DOM live-region assertions prove the rendered content source,
   but they do not prove what assistive technology announces or when. Any adopter
-  that changes announcement content or timing follows `spec:AST-009`: name the
-  applicable real-AT matrix and keep the first affected stable release blocked
-  until the required durable receipts pass or a current exception applies.
+  that changes announcement content or timing proves its routing, text, and
+  occasion count at the DOM and accessibility-tree layers; real-AT observation is
+  recommended follow-up under `spec:AST-009`.
 
 ## Migration and compatibility
 

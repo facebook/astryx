@@ -418,6 +418,7 @@ async function runProjectCodemod(
  * @param {boolean} [options.silent] - Suppress all human-facing output (for --json)
  * @param {string} [options.root] - Project root a project codemod reads (default: the process cwd)
  * @param {{root: string, classify: (file: string) => import('../../foundation/fs/file-protection.mjs').FileProtection[]}} [options.protection] - Preloaded protection resolver
+ * @param {boolean} [options.coversTarget] - False when these codemods stop before the installed target (the CLI is older than Core), so a run with no changes does not say the code is up to date. Default true.
  * @returns {Promise<{totalFilesChanged: number, totalTransformsApplied: number, totalValidationBlocked: number, changedFiles: string[], writtenFiles: string[], stagedContents: Map<string, string>, protectedFiles: import('../../authoring/codemod/type').CodemodRunResult['protectedFiles'], errors: Array<{file: string, codemod: string, error: string}>, skippedOptional: Array<{name: string, meta: {title: string, description?: string, fileExtensions?: string[], codemodType?: string}, version: string}>} | {ok: false, reason: string, resolvedPath: string}>}
  */
 export async function runCodemods(
@@ -430,6 +431,7 @@ export async function runCodemods(
     silent = false,
     root = process.cwd(),
     protection: providedProtection,
+    coversTarget = true,
   },
 ) {
   // No-op stub object so silent mode skips log output entirely without
@@ -643,7 +645,11 @@ export async function runCodemods(
     errors.length === 0 &&
     protectedFiles.length === 0
   ) {
-    log.success('No changes needed — your code is already up to date!');
+    // Codemods that stop before the installed target cannot vouch for the
+    // code; the caller says what is missing.
+    if (coversTarget) {
+      log.success('No changes needed — your code is already up to date!');
+    }
   } else if (apply && protectedFiles.length > 0) {
     log.warn(
       `Applied ${totalTransformsApplied} owned change${totalTransformsApplied === 1 ? '' : 's'} across ${totalFilesChanged} file${totalFilesChanged === 1 ? '' : 's'}; protected changes remain.`,

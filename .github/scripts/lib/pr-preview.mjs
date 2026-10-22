@@ -30,6 +30,37 @@ function refuse(message) {
   throw new Error(`PR preview refused: ${message}`);
 }
 
+/**
+ * The pull request moved on from the source run: it closed, merged, or got a
+ * newer head. That is ordinary churn, not a forged identity. Nothing is
+ * published for the old run and the job stays green; the newer head's own run
+ * reports.
+ */
+export class PullRequestMovedOn extends Error {
+  constructor(message) {
+    super(`PR preview stood down: ${message}`);
+    this.name = 'PullRequestMovedOn';
+  }
+}
+
+function standDown(message) {
+  throw new PullRequestMovedOn(message);
+}
+
+/**
+ * An artifact can come from an earlier attempt of the same run: rerunning only
+ * the failed jobs keeps the artifacts of the jobs that passed. A later attempt
+ * than the reported one cannot have produced it.
+ */
+export function attemptBelongsToRun(artifactAttempt, reportedAttempt) {
+  const artifact = Number(artifactAttempt);
+  return (
+    Number.isSafeInteger(artifact) &&
+    artifact > 0 &&
+    artifact <= Number(reportedAttempt)
+  );
+}
+
 function positiveInteger(value, name) {
   const number = Number(value);
   if (!Number.isSafeInteger(number) || number <= 0) {
@@ -83,9 +114,9 @@ function identityFromPullAndRun({pull, run, baseRepository}) {
   const headRepository = runRepository(run);
   const headRepositoryId = runRepositoryId(run);
 
-  if (pull?.state !== 'open') refuse('pull request is not open');
+  if (pull?.state !== 'open') standDown('pull request is not open');
   if (pull?.head?.sha !== headSha)
-    refuse('pull request head does not match source run');
+    standDown('pull request head does not match source run');
   if (pull?.head?.ref !== headRef)
     refuse('pull request branch does not match source run');
   if (pull?.head?.repo?.full_name !== headRepository) {
@@ -98,21 +129,12 @@ function identityFromPullAndRun({pull, run, baseRepository}) {
     refuse('pull request targets another repository');
   }
 
-  const sourcePull = run.pull_requests?.find(
-    candidate =>
-      Number(candidate.number) === Number(pull.number) &&
-      candidate.head?.sha === headSha,
-  );
-  // The source run records the tested base. Live main may have advanced by the
-  // time its report is published; that is not a new CI attempt. Fork runs may
-  // omit this association, so absence is explicit rather than replaced by main.
-  const testedBaseSha = sourcePull?.base?.sha
-    ? fullSha(sourcePull.base.sha, 'source pull request base')
-    : null;
-
+  // The run's `pull_requests` association is not a record of the tested base:
+  // GitHub reports the pull request's live base and head there, so it moves
+  // with main. No trusted field records the tested base; the visual report
+  // carries the base its own CI run tested.
   return {
     prNumber: positiveInteger(pull.number, 'pull request number'),
-    testedBaseSha,
     headSha,
     headRef,
     headRepository,
@@ -126,18 +148,24 @@ function identityFromPullAndRun({pull, run, baseRepository}) {
   };
 }
 
-function sameIdentity(actual, expected) {
-  for (const key of [
-    'prNumber',
-    'headSha',
-    'headRef',
-    'headRepository',
-    'headRepositoryId',
-    'baseRepository',
-    'sourceRunId',
-    'sourceRunAttempt',
-    'sourceConclusion',
-  ]) {
+const RUN_IDENTITY_KEYS = [
+  'headSha',
+  'headRef',
+  'headRepository',
+  'headRepositoryId',
+  'sourceRunId',
+  'sourceRunAttempt',
+  'sourceConclusion',
+];
+
+const SOURCE_IDENTITY_KEYS = [
+  'prNumber',
+  'baseRepository',
+  ...RUN_IDENTITY_KEYS,
+];
+
+function sameIdentity(actual, expected, keys = SOURCE_IDENTITY_KEYS) {
+  for (const key of keys) {
     if (String(actual[key]) !== String(expected[key])) {
       refuse(`${key} does not match the trusted source identity`);
     }
@@ -251,6 +279,22 @@ export async function confirmSourceRunIdentity({
     readRun,
     github.rest.pulls.get({owner, repo, pull_number: prNumber}),
   ]);
+  // Compare the run with the trusted event before looking at the pull request.
+  // A run's own identity never changes, so a mismatch there refuses even when
+  // the pull request has also moved on.
+  sameIdentity(
+    {
+      headSha: run?.head_sha,
+      headRef: run?.head_branch,
+      headRepository: run?.head_repository?.full_name,
+      headRepositoryId: run?.head_repository?.id,
+      sourceRunId: run?.id,
+      sourceRunAttempt: run?.run_attempt,
+      sourceConclusion: run?.conclusion ?? '',
+    },
+    expected,
+    RUN_IDENTITY_KEYS,
+  );
   const actual = identityFromPullAndRun({
     pull,
     run,
@@ -258,6 +302,26 @@ export async function confirmSourceRunIdentity({
   });
   sameIdentity(actual, expected);
   return actual;
+}
+
+/**
+ * The confirmed identity, or null when the pull request moved on from the
+ * source run. Any other mismatch still refuses.
+ */
+export async function confirmOrStandDown({
+  github,
+  owner,
+  repo,
+  expected,
+  core,
+}) {
+  try {
+    return await confirmSourceRunIdentity({github, owner, repo, expected});
+  } catch (error) {
+    if (!(error instanceof PullRequestMovedOn)) throw error;
+    core.info(`${error.message}; nothing to publish for this run.`);
+    return null;
+  }
 }
 
 /**
@@ -319,7 +383,7 @@ export function validateAnalysisMetadata(metadata, identity) {
   }
   if (
     metadata?.runAttempt !== undefined &&
-    String(metadata.runAttempt) !== String(identity.sourceRunAttempt)
+    !attemptBelongsToRun(metadata.runAttempt, identity.sourceRunAttempt)
   ) {
     refuse('analysis source run attempt does not match');
   }
@@ -409,12 +473,16 @@ export async function reconcilePrComment({
   execute = execFileSync,
 }) {
   const {owner, repo} = context.repo;
-  const identity = await confirmSourceRunIdentity({
+  const identity = await confirmOrStandDown({
     github,
     owner,
     repo,
     expected: expectedIdentity,
+    core,
   });
+  if (identity === null) {
+    return {action: 'none', body: null, identity: null};
+  }
   if (await supersededByNewerAttempt({github, owner, repo, identity, core})) {
     return {action: 'none', body: null, identity};
   }
@@ -522,12 +590,17 @@ export async function reconcilePrComment({
   // the reported attempt's identity again, and stand down if a newer attempt
   // of the run has started since: an earlier attempt's report must not replace
   // the latest attempt's.
-  await confirmSourceRunIdentity({
-    github,
-    owner,
-    repo,
-    expected: expectedIdentity,
-  });
+  if (
+    (await confirmOrStandDown({
+      github,
+      owner,
+      repo,
+      expected: expectedIdentity,
+      core,
+    })) === null
+  ) {
+    return {action: 'none', body: null, identity};
+  }
   if (await supersededByNewerAttempt({github, owner, repo, identity, core})) {
     return {action: 'none', body: null, identity};
   }

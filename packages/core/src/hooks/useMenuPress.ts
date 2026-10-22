@@ -36,7 +36,9 @@
  *
  * The menu root is marked `data-astryx-menu-press` so a nested flyout (a DOM
  * descendant of its parent menu) can tell which level owns a press, and so a
- * surface can be recognised as carrying this model.
+ * surface can be recognised as carrying this model. A menu the root renders
+ * beside itself names the root with `data-astryx-menu-press-surface` and counts
+ * as nested in it.
  *
  * SYNC: When modified, update:
  * - /packages/core/src/hooks/index.ts
@@ -60,6 +62,14 @@ import {useLongPress, type UseLongPressHandlers} from './useLongPress';
 /** Marks a menu root that carries this press model. */
 export const MENU_PRESS_MARKER = 'data-astryx-menu-press';
 const MENU_PRESS_ROOT_SELECTOR = `[${MENU_PRESS_MARKER}]`;
+/**
+ * Carried by a menu root that another root renders beside itself rather than
+ * inside it, naming that root's `id`: the menu of a sub-menu with a header or
+ * footer, in a dialog beside the root's menu, is nested in that root for the
+ * press model, as a flyout inside the root's DOM is. Nothing else beside the
+ * root carries it, so a picker placed in a header or footer stays its own root.
+ */
+export const MENU_PRESS_SURFACE_ATTR = 'data-astryx-menu-press-surface';
 
 /** How long after a tracked release the browser's click is still swallowed. */
 export const MENU_PRESS_STRAY_CLICK_MS = 400;
@@ -199,8 +209,8 @@ export interface UseMenuPressOptions {
   getScroller?: () => HTMLElement | null;
   /**
    * Resolve the element under a viewport point. Defaults to
-   * `document.elementFromPoint`, falling back to the event target where the
-   * document lacks it (jsdom). A test seam.
+   * `elementFromPoint` on the menu's own document or shadow root, falling back
+   * to the event target where the document lacks it (jsdom). A test seam.
    */
   hitTest?: (x: number, y: number) => Element | null;
   /** @default 500 */
@@ -246,14 +256,42 @@ function isRowFocusable(row: HTMLElement): boolean {
 function getOutermostRoot(menu: HTMLElement): HTMLElement {
   let root = menu;
   for (;;) {
-    const parent = root.parentElement?.closest<HTMLElement>(
-      MENU_PRESS_ROOT_SELECTOR,
-    );
-    if (parent == null) {
+    const parent =
+      root.parentElement?.closest<HTMLElement>(MENU_PRESS_ROOT_SELECTOR) ??
+      getSurfaceOwner(root);
+    if (parent == null || parent === root) {
       return root;
     }
     root = parent;
   }
+}
+
+/**
+ * The menu root that renders `menu` beside itself, if any (see
+ * `MENU_PRESS_SURFACE_ATTR`). Read off the menu itself, never an ancestor, so
+ * a root placed in a region of that surface is not adopted.
+ */
+function getSurfaceOwner(menu: HTMLElement): HTMLElement | null {
+  const ownerId = menu.getAttribute(MENU_PRESS_SURFACE_ATTR);
+  if (!ownerId) {
+    return null;
+  }
+  const owner = menu.ownerDocument.getElementById(ownerId);
+  return owner?.matches(MENU_PRESS_ROOT_SELECTOR) === true ? owner : null;
+}
+
+/**
+ * Whether `element` is inside the menu tree whose outermost root is `root`:
+ * inside the root itself, or inside a menu nested in it through a surface
+ * the root renders beside itself. Anything else in such a surface (a header
+ * field, say) is outside the menu, as the root's own regions are.
+ */
+function isInMenuTree(element: Element, root: HTMLElement): boolean {
+  if (root.contains(element)) {
+    return true;
+  }
+  const owner = element.closest<HTMLElement>(MENU_PRESS_ROOT_SELECTOR);
+  return owner != null && getOutermostRoot(owner) === root;
 }
 
 interface ResolvedPoint {
@@ -326,20 +364,29 @@ export function useMenuPress(options: UseMenuPressOptions): UseMenuPressReturn {
       if (hitTest != null) {
         element = hitTest(event.clientX, event.clientY);
       } else if (typeof doc.elementFromPoint === 'function') {
-        element = doc.elementFromPoint(event.clientX, event.clientY);
+        // Hit-test in the menu's own tree: inside a shadow root the document
+        // answers with the shadow host, never the row under the pointer.
+        const tree = menu?.getRootNode();
+        const scope: Pick<Document, 'elementFromPoint'> =
+          tree != null &&
+          tree !== doc &&
+          typeof (tree as ShadowRoot).elementFromPoint === 'function'
+            ? (tree as ShadowRoot)
+            : doc;
+        element = scope.elementFromPoint(event.clientX, event.clientY);
       } else {
         element = event.target instanceof Element ? event.target : null;
       }
       const root = menu == null ? null : getOutermostRoot(menu);
       const isInMenu =
-        root != null && element != null && root.contains(element);
+        root != null && element != null && isInMenuTree(element, root);
       const trigger = triggerRef?.current ?? null;
       const isOnTrigger =
         trigger != null && element != null && trigger.contains(element);
       let row: HTMLElement | null = null;
       if (isInMenu && element != null) {
         row = element.closest<HTMLElement>(itemSelector);
-        if (row != null && !root.contains(row)) {
+        if (row != null && !isInMenuTree(row, root)) {
           row = null;
         }
       }

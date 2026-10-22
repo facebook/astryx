@@ -574,6 +574,7 @@ export const CommandDocKindSchema = z
     exitCodes: z
       .array(z.object({code: z.number(), when: z.string()}).passthrough())
       .optional(),
+    outsideProject: z.enum(['same', 'refuse', 'own']).optional(),
     related: z.array(z.string()).optional(),
     notes: z.array(ReferenceContentBlockSchema).optional(),
   })

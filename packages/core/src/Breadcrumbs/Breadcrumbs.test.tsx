@@ -7,12 +7,13 @@ import {Breadcrumbs} from './Breadcrumbs';
 import {BreadcrumbItem} from './BreadcrumbItem';
 import {
   BreadcrumbMenuItem,
+  BreadcrumbMenuDivider,
   BreadcrumbMenuGroup,
   BreadcrumbMenuCheckboxItem,
   BreadcrumbMenuRadioGroup,
   BreadcrumbMenuRadioItem,
 } from './index';
-import type {BreadcrumbMenuOption} from './index';
+import type {BreadcrumbMenuDividerProps, BreadcrumbMenuOption} from './index';
 import {LinkProvider} from '../Link/LinkProvider';
 
 function CustomLink({
@@ -769,6 +770,34 @@ describe('BreadcrumbItem menu', () => {
       'ol > li > span[aria-hidden="true"]',
     );
     expect(separators).toHaveLength(3);
+  });
+
+  it('renders the separator and props types through the BreadcrumbMenuDivider aliases', async () => {
+    const user = userEvent.setup();
+    const dividerProps: BreadcrumbMenuDividerProps = {
+      'data-testid': 'breadcrumb-menu-divider',
+    };
+    render(
+      <Breadcrumbs>
+        <BreadcrumbItem
+          menu={
+            <>
+              <BreadcrumbMenuItem label="Overview" />
+              <BreadcrumbMenuDivider {...dividerProps} />
+              <BreadcrumbMenuItem label="Settings" />
+            </>
+          }>
+          Project
+        </BreadcrumbItem>
+        <BreadcrumbItem isCurrent>Current</BreadcrumbItem>
+      </Breadcrumbs>,
+    );
+    await user.click(screen.getByRole('button', {name: 'Project'}));
+
+    expect(screen.getByTestId('breadcrumb-menu-divider')).toHaveAttribute(
+      'role',
+      'separator',
+    );
   });
 
   it('carries the group semantics through the BreadcrumbMenuGroup alias', async () => {
