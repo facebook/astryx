@@ -307,13 +307,21 @@ describe('the command that adds an integration installed for the computer', () =
     expect(installCommandFor(dir)?.('@acme/a')).toBe('pnpm add @acme/a');
   });
 
-  // A package.json that is not the project's (spec AST-040 FR9): adding
-  // there would leave the integration out of the project.
-  it("from a tool folder inside the project, adds it in the project's folder", () => {
+  // A package.json that is not the project's (spec AST-040 FR9): a run
+  // there loads integrations from it, so a package added to the project
+  // stays unused there. No command; the fix points at the project.
+  it("from a tool folder inside the project, names no command and points at the project's folder", () => {
     const dir = app();
-    expect(
-      installCommandFor(path.join(dir, 'tools', 'codegen'))?.('@acme/a'),
-    ).toBe(`cd ${dir} && pnpm add @acme/a`);
+    expect(installCommandFor(path.join(dir, 'tools', 'codegen'))).toBeNull();
+    const c = checkComputerIntegrationsAvailable({
+      installed: new Set(),
+      candidates: [/** @type {any} */ ({name: '@acme/a'})],
+      install: null,
+      elsewhere: true,
+    });
+    expect(c.fix).toBe(
+      "Run this from the Astryx project's folder, or declare an Astryx package in this folder's package.json to make it a project of its own.",
+    );
   });
 
   it('in a folder that belongs to no project, names no command', () => {

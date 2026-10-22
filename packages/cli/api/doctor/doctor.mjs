@@ -65,8 +65,8 @@ import {typedEdges} from '../docs/node/node.mjs';
 import {detailView, indexView} from '../../foundation/doc-compiler/lenses.mjs';
 import {semverCompare, isValidSemver, satisfiesRange} from '../../foundation/env/semver.mjs';
 import {checkAppThemes, checkThemes} from './theme-checks.mjs';
-import {availableLine, upgradeLine} from '../../foundation/release/notices.mjs';
-import {alignCommand, addCliCommandFor, computerAgentTextState, installCommandFor, projectCoreVersion, projectHasOwnCli, computerIntegrationsOutside, computerIntegrationsToAdd, displayHomePath, outsideProject, releaseFacts} from './_adapter.mjs';
+import {availableLine, RUN_FROM_PROJECT, upgradeLine} from '../../foundation/release/notices.mjs';
+import {alignCommand, addCliCommandFor, computerAgentTextState, installCommandFor, insideProjectElsewhere, projectCoreVersion, projectHasOwnCli, computerIntegrationsOutside, computerIntegrationsToAdd, displayHomePath, outsideProject, releaseFacts} from './_adapter.mjs';
 
 /**
  * @typedef {'pass'|'warn'|'fail'|'info'} DoctorStatus
@@ -341,8 +341,7 @@ function alignFix(cwd, cli, core) {
  * The fix where no install command fits: the folder's package.json is not an
  * Astryx project's (spec AST-040 FR9), and adding there would make it one.
  */
-const NO_PROJECT_FIX =
-  "Run this from the Astryx project's folder, or declare an Astryx package in this folder's package.json to make it a project of its own.";
+const NO_PROJECT_FIX = RUN_FROM_PROJECT;
 
 /**
  * Check 5 — astryx.config.mjs (if present) loads and has a valid shape.
@@ -1797,13 +1796,14 @@ export function checkComputerIntegrations(ctx) {
  * Inside a project, the integrations installed for the computer that the
  * project does not install: available, never used (spec AST-081 FR12).
  * Always info.
- * @param {{installed: Set<string>, candidates: import('../../foundation/integrations/computer-integrations.mjs').ComputerIntegrationCandidate[], install: ((name: string) => string) | null}} input
+ * @param {{installed: Set<string>, candidates: import('../../foundation/integrations/computer-integrations.mjs').ComputerIntegrationCandidate[], install: ((name: string) => string) | null, elsewhere?: boolean}} input
  *   `install`: the command that adds a package with the project's package
- *   manager, in the project's folder (read by the adapter); null when the
- *   folder belongs to no project, so no command is named
+ *   manager (read by the adapter); null when the folder belongs to no
+ *   project, or `elsewhere`: its package.json is not the project's, where the
+ *   fix points at the project's folder
  * @returns {DoctorCheck}
  */
-export function checkComputerIntegrationsAvailable({installed, candidates, install}) {
+export function checkComputerIntegrationsAvailable({installed, candidates, install, elsewhere = false}) {
   const available = candidates.filter(c => !installed.has(c.name));
   const base = {id: 'computer-integrations', label: 'Integrations installed for this computer', status: /** @type {const} */ ('info')};
   if (available.length === 0) {
@@ -1813,7 +1813,11 @@ export function checkComputerIntegrationsAvailable({installed, candidates, insta
   return {
     ...base,
     message: `Installed for this computer but not in this project, so not used here: ${available.map(c => c.name).join(', ')}.`,
-    ...(add ? {fix: `To use one in this project, run ${available.map(c => `\`${add(c.name)}\``).join(' or ')}.`} : {}),
+    ...(add
+      ? {fix: `To use one in this project, run ${available.map(c => `\`${add(c.name)}\``).join(' or ')}.`}
+      : elsewhere
+        ? {fix: NO_PROJECT_FIX}
+        : {}),
   };
 }
 
@@ -2072,7 +2076,7 @@ export async function runChecks(options = {}) {
   {
     const loadedNames = (project?.loadedIntegrations ?? []).map((/** @type {{name: string}} */ i) => i.name);
     const candidates = await computerIntegrationsToAdd(cwd, loadedNames);
-    checks.push(checkComputerIntegrationsAvailable({installed: new Set(loadedNames), candidates, install: installCommandFor(cwd)}));
+    checks.push(checkComputerIntegrationsAvailable({installed: new Set(loadedNames), candidates, install: installCommandFor(cwd), elsewhere: insideProjectElsewhere(cwd)}));
   }
   checks.push(await checkAuthoringDocs(ctx));
   checks.push(await checkCliDocs(ctx));

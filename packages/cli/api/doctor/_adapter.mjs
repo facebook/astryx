@@ -12,6 +12,7 @@ import {
 import {
   alignCliAndCore,
   cliInstallAdvice,
+  installFolder,
   projectAddCommand,
   globalBehind,
   globalUpgradeCommand,
@@ -390,11 +391,22 @@ export function addCliCommandFor(cwd, version) {
 }
 
 /**
- * The command that adds a package to the project of `cwd`, in the project's
- * folder; null when `cwd` belongs to no project (see `projectAddCommand`).
+ * The command that adds a package to the project of `cwd`; null in a folder
+ * that belongs to no project or whose package.json is not the project's (see
+ * `projectAddCommand`).
  * @param {string} cwd
  * @returns {((name: string) => string) | null}
  */
 export function installCommandFor(cwd) {
   return projectAddCommand(cwd);
+}
+
+/**
+ * Whether `cwd` is inside a project whose package.json is not the project's,
+ * so advice points at the project's folder (see `installFolder`).
+ * @param {string} cwd
+ * @returns {boolean}
+ */
+export function insideProjectElsewhere(cwd) {
+  return installFolder(cwd)?.moved === true;
 }

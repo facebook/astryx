@@ -184,9 +184,11 @@ const notOfficial = discover =>
 const DOCTOR_RUN_FROM_PROJECT =
   "Run this from the Astryx project's folder, or declare an Astryx package in this folder's package.json to make it a project of its own.";
 
-/** The hint's advice in a folder whose package.json is not the project's. */
-const RUN_FROM_PROJECT =
-  "Run astryx from the Astryx project's folder, or declare an Astryx package in this folder's package.json to make it a project of its own.";
+/**
+ * The hint's advice in a folder whose package.json is not the project's: the
+ * same words as doctor's, naming no command (spec AST-081 FR5).
+ */
+const RUN_FROM_PROJECT = DOCTOR_RUN_FROM_PROJECT;
 
 /**
  * The once-a-day hint in a project with no CLI of its own.
@@ -1447,7 +1449,7 @@ describe.skipIf(!POSIX)(
       });
     });
 
-    it("from a tool folder inside a project (as G36), discover and doctor add an integration installed for the computer in the project's folder; with no project, discover names no command", () => {
+    it("from a tool folder inside a project (as G36), discover and doctor point an integration installed for the computer at the project's folder, where its command adds it for good; with no project, discover names no command", () => {
       const pc = computer();
       const g = globalCli('npm', '9.0.0', {root: pc.home});
       acmeWidgets(path.resolve(g.dir, '..', '..', '..'), {
@@ -1461,25 +1463,49 @@ describe.skipIf(!POSIX)(
       const discover = JSON.parse(
         run(g.bin, ['discover', '--json'], {cwd: tool, pc}).stdout,
       );
+      // A run there loads integrations from the tool's own package.json, so
+      // a package added to the project would stay unused there: no command,
+      // only the way to the project.
       expect(notOfficial(discover)).toEqual([
         {
           name: '@acme/widgets',
           components: [],
           version: '1.0.0',
           source: 'installed for this computer',
-          install: `cd ${dir} && npm install @acme/widgets`,
         },
       ]);
-      const doctor = JSON.parse(
-        run(g.bin, ['doctor', '--json'], {cwd: tool, pc}).stdout,
-      );
-      expect(
-        doctor.data.checks.find(
+      const integrationsCheck = (/** @type {string} */ cwd) =>
+        JSON.parse(
+          run(g.bin, ['doctor', '--json'], {cwd, pc}).stdout,
+        ).data.checks.find(
           (/** @type {any} */ c) => c.id === 'computer-integrations',
-        ).fix,
-      ).toBe(
-        `To use one in this project, run \`cd ${dir} && npm install @acme/widgets\`.`,
+        );
+      expect(integrationsCheck(tool).fix).toBe(DOCTOR_RUN_FROM_PROJECT);
+
+      // Followed: from the project's folder, the command adds it there, and
+      // once it is installed nothing is offered any more.
+      const fromProject = JSON.parse(
+        run(g.bin, ['discover', '--json'], {cwd: dir, pc}).stdout,
       );
+      expect(notOfficial(fromProject)[0].install).toBe(
+        'npm install @acme/widgets',
+      );
+      expect(integrationsCheck(dir).fix).toBe(
+        'To use one in this project, run `npm install @acme/widgets`.',
+      );
+      const pkg = JSON.parse(
+        fs.readFileSync(path.join(dir, 'package.json'), 'utf8'),
+      );
+      writeJson(path.join(dir, 'package.json'), {
+        ...pkg,
+        dependencies: {...pkg.dependencies, '@acme/widgets': '1.0.0'},
+      });
+      acmeWidgets(dir, {topic: 'acme-project'});
+      const after = JSON.parse(
+        run(g.bin, ['discover', '--json'], {cwd: dir, pc}).stdout,
+      );
+      expect(notOfficial(after)).toEqual([]);
+      expect(integrationsCheck(dir)).not.toHaveProperty('fix');
 
       // A folder that installs Core but belongs to no project.
       const alone = tempDir('alone');

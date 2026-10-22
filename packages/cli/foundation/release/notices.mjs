@@ -384,20 +384,20 @@ const ADD = {
 
 /**
  * The command that adds a package to the project of a run in `cwd`, with the
- * project's package manager: from a folder inside the project whose
- * package.json is not the project's, in the project's folder (see
- * {@link installFolder}; spec AST-081 FR12). Null when `cwd` belongs to no
- * project `spec:AST-040` FR9 defines.
+ * project's package manager (spec AST-081 FR12). Null when `cwd` belongs to
+ * no project `spec:AST-040` FR9 defines, and in a folder inside the project
+ * whose package.json is not the project's (see {@link installFolder}): a run
+ * there loads integrations from that package.json, so a package added to the
+ * project would stay unused there, and the advice is
+ * {@link RUN_FROM_PROJECT}.
  * @param {string} cwd
  * @returns {((name: string) => string) | null}
  */
 export function projectAddCommand(cwd) {
   const target = installFolder(cwd);
-  if (target == null) return null;
-  const dir = target.moved ? target.dir : cwd;
-  const add = ADD[detectPackageManager(dir)] ?? ADD.npm;
-  return name =>
-    target.moved ? commandInFolder(dir, `${add} ${name}`) : `${add} ${name}`;
+  if (target == null || target.moved) return null;
+  const add = ADD[detectPackageManager(cwd)] ?? ADD.npm;
+  return name => `${add} ${name}`;
 }
 
 /**
@@ -457,7 +457,7 @@ export function installFolder(cwd) {
  * the folder a project of its own (spec AST-081 FR2).
  */
 export const RUN_FROM_PROJECT =
-  "Run astryx from the Astryx project's folder, or declare an Astryx package in this folder's package.json to make it a project of its own.";
+  "Run this from the Astryx project's folder, or declare an Astryx package in this folder's package.json to make it a project of its own.";
 
 /**
  * The command that adds the CLI at Core's version, for a run in `cwd` whose
