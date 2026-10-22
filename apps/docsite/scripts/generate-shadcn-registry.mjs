@@ -518,9 +518,17 @@ function assertUniqueItemNames(items) {
 }
 
 function assertUniqueItemPaths(items) {
-  const paths = new Map();
+  // Every item is written at its name, its organized path, and its aliases.
+  // Names are kind-prefixed slugs with no slash and every path starts with a
+  // kind root, so a name cannot meet a path; checking all three in one set
+  // still fails generation if any two routes would write the same file.
+  const paths = new Map([['registry', 'the registry index']]);
   for (const item of items) {
-    for (const itemPath of [item.astryx.path, ...item.astryx.aliases]) {
+    for (const itemPath of [
+      item.name,
+      item.astryx.path,
+      ...item.astryx.aliases,
+    ]) {
       const existing = paths.get(itemPath);
       if (existing) {
         throw new Error(

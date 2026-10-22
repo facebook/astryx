@@ -408,6 +408,25 @@ describe('buildShadcnRegistry', () => {
     }
   });
 
+  it('fails generation when two items would claim the same route', () => {
+    const outDir = mkdtempSync(path.join(tmpdir(), 'astryx-shadcn-clash-'));
+    try {
+      const input = fixture();
+      input.blocks[0].registry = {slug: 'button-styles'};
+      input.blocks.push({
+        ...input.blocks[0],
+        dirName: 'ButtonStylesCopy',
+        name: 'Button Styles Copy',
+        displayName: 'Button Styles Copy',
+      });
+      expect(() =>
+        generateShadcnRegistry({...input, outDir, cliRoot: outDir}),
+      ).toThrow(/Duplicate shadcn registry item name/);
+    } finally {
+      rmSync(outDir, {recursive: true, force: true});
+    }
+  });
+
   it('generates exact-version compatibility output for production', () => {
     const root = mkdtempSync(path.join(tmpdir(), 'astryx-shadcn-production-'));
     const outDir = path.join(root, 'shadcn');
