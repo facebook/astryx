@@ -267,7 +267,7 @@ export function docCommandsIn(text, lang) {
       written: each.written,
       code: 'runner_command',
       fix:
-        `Write \`${each.bare}\`, or the token \`{@command ${each.bare.slice('astryx '.length) || '…'}}\`; the CLI shows it with your project's runner` +
+        `Write the token \`{@command ${each.bare.slice('astryx '.length) || '…'}}\`; the CLI shows it with your project's runner` +
         (each.download
           ? ', and a download runner with the bare name fetches an unrelated package called astryx.'
           : '.'),

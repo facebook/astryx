@@ -758,7 +758,11 @@ export async function validateIntegration(pkg, options = {}) {
   // `integration check --strict --next` fails on it today.
   const notes = result.found
     ? [
-        ...(result.notes ?? []),
+        // A malformed cliCommand fails --strict from the next minor
+        // (spec:AST-081 FR5).
+        ...(result.notes ?? []).map(note =>
+          note.code === INVALID_CLI_COMMAND ? {...note, next: true} : note,
+        ),
         ...(result.listed ?? []).map(issue => ({
           code: issue.code,
           message: issue.message,
